@@ -1,4 +1,6 @@
 // GameLoop.js
+
+// Ini testing
 import Config from "../Config/Config.js";
 
 export default class GameLoop {
