@@ -1,15 +1,23 @@
 const Config = {
-  // Virtual resolution (untuk koordinat dunia game)
+  // Virtual screen
   VIRTUAL_WIDTH: 1920,
   VIRTUAL_HEIGHT: 1080,
 
-  // Target tick rate (logic update per detik)
+  // Tile info
+  TILE_SIZE: 16,
+  SCALE: 4,
+  PIXEL_ART: true, // <— aktifkan mode pixel-perfect
+
+  // World size (contoh: 2x layar)
+  WORLD_WIDTH: 1920 * 2,
+  WORLD_HEIGHT: 1080 * 1.5,
+
+  // Physics & timing
   TICK_RATE: 60,
 
-  // Ukuran player (contoh entity)
   PLAYER: {
-    WIDTH: 120,
-    HEIGHT: 120,
+    WIDTH: 16 * 4,  // 64 px di layar
+    HEIGHT: 16 * 4,
     SPEED: 400
   }
 };

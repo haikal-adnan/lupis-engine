@@ -1,4 +1,4 @@
-import Game from "../Entity/Game.js";
+import Game from "../World/Game.js";
 import { loader } from "../main.js";
 
 export default class TouchHandler {

@@ -1,0 +1,36 @@
+{
+  "name": "level1",
+  "tileSize": 16,
+  "chunkWidth": 16,
+  "chunkHeight": 16,
+  "tileset": "Asset/Tile/terrain.json",
+  "width": 32,
+  "height": 16,
+  "layers": [
+    {
+      "name": "Ground",
+      "chunks": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 16,
+          "height": 16,
+          "encoding": "rle",
+          "rleData": [
+            [112,0],[6,0],[4,3],[6,0],[48,0],[64,1],[16,0]
+          ]
+        },
+        {
+          "x": 1,
+          "y": 0,
+          "width": 16,
+          "height": 16,
+          "encoding": "rle",
+          "rleData": [
+            [112,0],[5,0],[5,3],[6,0],[48,0],[64,1],[16,0]
+          ]
+        }
+      ]
+    }
+  ]
+}

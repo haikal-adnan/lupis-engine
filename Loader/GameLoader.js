@@ -1,7 +1,7 @@
 import GameLoop from "../Loop/GameLoop.js";
 import GLRenderer from "../Renderer/GLRenderer.js";
 import UIRenderer from "../Renderer/UIRenderer.js";
-import Game from "../Entity/Game.js";
+import Game from "../World/Game.js";
 import InputHandler from "../Interaction/InputHandler.js";
 import TouchHandler from "../Interaction/TouchHandler.js";
 import { game } from "../main.js";
