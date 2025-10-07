@@ -8,29 +8,23 @@ export default class Player {
     this.width = width;
     this.height = height;
     this.layer = layer;
-
     this.speed = 400;
     this.direction = "down";
   }
 
   update(dt, input) {
-    // Simpan posisi sebelumnya
     this.prevX = this.x;
     this.prevY = this.y;
-
-    const { x: dirX, y: dirY, dir } = input.getDirection();
+    const { x: dx, y: dy, dir } = input.getDirection();
     if (dir) this.direction = dir;
-
-    this.x += dirX * this.speed * dt;
-    this.y += dirY * this.speed * dt;
+    this.x += dx * this.speed * dt;
+    this.y += dy * this.speed * dt;
   }
 
   render(glRenderer, projection, alpha = 1) {
-    // Interpolasi posisi agar halus
-    const renderX = this.prevX + (this.x - this.prevX) * alpha;
-    const renderY = this.prevY + (this.y - this.prevY) * alpha;
-
-    this.image.drawImage(renderX, renderY, this.width, this.height, projection);
+    const rx = this.prevX + (this.x - this.prevX) * alpha;
+    const ry = this.prevY + (this.y - this.prevY) * alpha;
+    this.image.drawImage(rx, ry, this.width, this.height, projection);
   }
 
   getLayer() {

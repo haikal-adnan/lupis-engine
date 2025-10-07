@@ -3,23 +3,13 @@ import { mat4 } from "https://cdn.jsdelivr.net/npm/gl-matrix@3.4.3/esm/index.js"
 export default class GLRenderer {
   constructor(canvas) {
     this.canvas = canvas;
-
-    // aktifkan alpha agar transparansi PNG bisa tampil
     this.gl = canvas.getContext("webgl", { alpha: true });
     if (!this.gl) throw new Error("WebGL tidak didukung.");
-
     const gl = this.gl;
-
-    // warna latar belakang default: hitam
     this.backgroundColor = [0, 0, 0, 1];
-
-    // ✅ aktifkan transparansi blending
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-
-    // nonaktifkan depth test (karena 2D)
     gl.disable(gl.DEPTH_TEST);
-
     this.resize();
   }
 
@@ -41,17 +31,10 @@ export default class GLRenderer {
 
   getWorldProjection(offsetX = 0, offsetY = 0) {
     const { gl } = this;
-    const w = gl.canvas.width;
-    const h = gl.canvas.height;
+    const w = gl.canvas.width, h = gl.canvas.height;
     const proj = mat4.create();
-
-    // batas minimal dan maksimal proyeksi
-    const left = Math.max(0, offsetX);
-    const top = Math.max(0, offsetY);
+    const left = Math.max(0, offsetX), top = Math.max(0, offsetY);
     mat4.ortho(proj, left, left + w, top + h, top, -1, 1);
-
     return { isProjection: true, matrix: proj };
   }
-
-  
 }

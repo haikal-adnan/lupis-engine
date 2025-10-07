@@ -5,17 +5,14 @@ export default class GLImage {
   constructor(gl) {
     this.gl = gl;
     this.program = this._createProgram();
-
-    this.aPosition   = gl.getAttribLocation(this.program, "aPosition");
-    this.aTexCoord   = gl.getAttribLocation(this.program, "aTexCoord");
+    this.aPosition = gl.getAttribLocation(this.program, "aPosition");
+    this.aTexCoord = gl.getAttribLocation(this.program, "aTexCoord");
     this.uProjection = gl.getUniformLocation(this.program, "uProjection");
-    this.uSampler    = gl.getUniformLocation(this.program, "uSampler");
-
-    this.vertexBuffer   = gl.createBuffer();
+    this.uSampler = gl.getUniformLocation(this.program, "uSampler");
+    this.vertexBuffer = gl.createBuffer();
     this.texCoordBuffer = gl.createBuffer();
-
-    this.texture  = null;
-    this.image    = null;
+    this.texture = null;
+    this.image = null;
     this.isLoaded = false;
   }
 
@@ -24,9 +21,8 @@ export default class GLImage {
     const sh = gl.createShader(type);
     gl.shaderSource(sh, src);
     gl.compileShader(sh);
-    if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
+    if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS))
       console.error(gl.getShaderInfoLog(sh));
-    }
     return sh;
   }
 
@@ -40,25 +36,20 @@ export default class GLImage {
       void main() {
         gl_Position = uProjection * vec4(aPosition, 0.0, 1.0);
         vTexCoord = aTexCoord;
-      }
-    `);
-
+      }`);
     const fs = this._compileShader(gl.FRAGMENT_SHADER, `
       precision mediump float;
       uniform sampler2D uSampler;
       varying vec2 vTexCoord;
       void main() {
         gl_FragColor = texture2D(uSampler, vTexCoord);
-      }
-    `);
-
+      }`);
     const program = gl.createProgram();
     gl.attachShader(program, vs);
     gl.attachShader(program, fs);
     gl.linkProgram(program);
-    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS))
       console.error(gl.getProgramInfoLog(program));
-    }
     return program;
   }
 
@@ -82,20 +73,16 @@ export default class GLImage {
     const tex = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, tex);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
-
     const pixelArt = Config?.PIXEL_ART ?? true;
     const filter = pixelArt ? gl.NEAREST : gl.LINEAR;
-
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, filter);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, filter);
     gl.bindTexture(gl.TEXTURE_2D, null);
-
     return tex;
   }
 
-  // === ✨ Tambahan untuk Polygon/Bitmap ===
   cloneEmpty(glContext) {
     return new GLImage(glContext);
   }
@@ -104,76 +91,52 @@ export default class GLImage {
     const gl = this.gl;
     this.texture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, this.texture);
-
     const pixelArt = Config?.PIXEL_ART ?? true;
     const filter = pixelArt ? gl.NEAREST : gl.LINEAR;
-
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, bitmap);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, filter);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, filter);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     gl.bindTexture(gl.TEXTURE_2D, null);
-
-    this.image = bitmap; // penting!
+    this.image = bitmap;
     this.isLoaded = true;
   }
 
-  /**
-   * drawImage dengan dukungan kamera
-   * drawImage(sx, sy, sw, sh, dx, dy, dw, dh, projection)
-   */
   drawImage(...args) {
     if (!this.isLoaded || !this.texture || !this.image) {
       console.warn("⚠️ drawImage dipanggil sebelum texture siap:", this);
       return;
     }
-
     const gl = this.gl;
-
-    // Ambil projection di argumen terakhir
     let projection = null;
     if (args.length && typeof args[args.length - 1] === "object" && args[args.length - 1].isProjection)
       projection = args.pop().matrix;
 
-    // Tentukan parameter
     let sx = 0, sy = 0, sw = this.image.width, sh = this.image.height;
     let dx = 0, dy = 0, dw = this.image.width, dh = this.image.height;
-
     if (args.length === 4) [dx, dy, dw, dh] = args;
     else if (args.length === 8) [sx, sy, sw, sh, dx, dy, dw, dh] = args;
 
     gl.useProgram(this.program);
-
     const proj = projection || (() => {
       const p = mat4.create();
-      const canvas = gl.canvas;
-      mat4.ortho(p, 0, canvas.width, canvas.height, 0, -1, 1);
+      const c = gl.canvas;
+      mat4.ortho(p, 0, c.width, c.height, 0, -1, 1);
       return p;
     })();
 
-    // Vertex posisi
     const verts = new Float32Array([
-      dx, dy,
-      dx+dw, dy,
-      dx, dy+dh,
-      dx+dw, dy,
-      dx+dw, dy+dh,
-      dx, dy+dh
+      dx, dy, dx + dw, dy, dx, dy + dh,
+      dx + dw, dy, dx + dw, dy + dh, dx, dy + dh
     ]);
-
-    // TexCoord
-    const u0 = sx / this.image.width;
-    const v0 = sy / this.image.height;
-    const u1 = (sx + sw) / this.image.width;
-    const v1 = (sy + sh) / this.image.height;
-
+    const u0 = sx / this.image.width, v0 = sy / this.image.height;
+    const u1 = (sx + sw) / this.image.width, v1 = (sy + sh) / this.image.height;
     const tex = new Float32Array([
-      u0, v0,  u1, v0,  u0, v1,
-      u1, v0,  u1, v1,  u0, v1
+      u0, v0, u1, v0, u0, v1,
+      u1, v0, u1, v1, u0, v1
     ]);
 
-    // Upload data
     gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, verts, gl.STATIC_DRAW);
     gl.enableVertexAttribArray(this.aPosition);
@@ -185,17 +148,12 @@ export default class GLImage {
     gl.vertexAttribPointer(this.aTexCoord, 2, gl.FLOAT, false, 0, 0);
 
     gl.uniformMatrix4fv(this.uProjection, false, proj);
-
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, this.texture);
     gl.uniform1i(this.uSampler, 0);
-
     gl.drawArrays(gl.TRIANGLES, 0, 6);
 
     const err = gl.getError();
-    if (err !== gl.NO_ERROR) {
-      console.error("❌ WebGL Error:", err);
-    }
-
+    if (err !== gl.NO_ERROR) console.error("❌ WebGL Error:", err);
   }
 }

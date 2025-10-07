@@ -9,18 +9,15 @@ export default class Chunk {
     this.height = chunkData.height;
     this.tileSize = Config.TILE_SIZE;
     this.scale = Config.SCALE;
-
     this.encoding = chunkData.encoding || "array";
     this.rawData = chunkData.rleData || chunkData.data;
     this.tileset = tileset;
     this.image = image;
     this.glRenderer = glRenderer;
-
     this.data = [];
     this._decode();
   }
 
-  /** Dekode data tile dari RLE → array 2D */
   _decode() {
     const isRLE = this.encoding === "rle" || !!this.rawData;
     if (isRLE && Array.isArray(this.rawData[0])) {
@@ -35,32 +32,21 @@ export default class Chunk {
     }
   }
 
-  /** Render semua tile di chunk ini */
   render(cameraX = 0, cameraY = 0, projection = null) {
     if (!this.image?.isLoaded) return;
+    const t = this.tileSize, s = this.scale, ts = t * s;
+    const baseX = this.x * this.width * ts;
+    const baseY = this.y * this.height * ts;
 
-    const tileSize = this.tileSize;
-    const scale = this.scale;
-    const tileScreenSize = tileSize * scale;
-
-    // Posisi chunk dalam pixel (di dunia)
-    const chunkWorldX = this.x * this.width * tileScreenSize;
-    const chunkWorldY = this.y * this.height * tileScreenSize;
-
-    for (let row = 0; row < this.height; row++) {
-      for (let col = 0; col < this.width; col++) {
-        const tileId = this.data[row][col];
-        if (tileId === 0) continue;
-
-        const tile = this.tileset.tiles[tileId];
+    for (let r = 0; r < this.height; r++) {
+      for (let c = 0; c < this.width; c++) {
+        const id = this.data[r][c];
+        if (!id) continue;
+        const tile = this.tileset.tiles[id];
         if (!tile) continue;
-
-        const dx = chunkWorldX + col * tileScreenSize - cameraX;
-        const dy = chunkWorldY + row * tileScreenSize - cameraY;
-        const dw = tile.w * scale;
-        const dh = tile.h * scale;
-
-        // 🧠 Kirim projection agar layer ikut pergerakan kamera
+        const dx = baseX + c * ts - cameraX;
+        const dy = baseY + r * ts - cameraY;
+        const dw = tile.w * s, dh = tile.h * s;
         this.image.drawImage(tile.x, tile.y, tile.w, tile.h, dx, dy, dw, dh, projection);
       }
     }
