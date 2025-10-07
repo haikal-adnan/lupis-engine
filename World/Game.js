@@ -12,9 +12,10 @@ export default class Game {
     this.touch = null;
     this.world = null;
     this.image = null;
-    this.width = Config.VIRTUAL_WIDTH;
+
+    this.width  = Config.VIRTUAL_WIDTH;
     this.height = Config.VIRTUAL_HEIGHT;
-    this.scale = Config.SCALE;
+    this.scale  = Config.SCALE;
     this.tileSize = Config.TILE_SIZE;
   }
 
@@ -23,11 +24,14 @@ export default class Game {
   }
 
   update(dt) {
-    this.world?.update(dt);
+    if (this.world) this.world.update(dt);
   }
 
   render(alpha) {
-    this.glRenderer?.clear();
-    this.world?.render(alpha);
+    // bersihkan layar setiap frame render
+    if (this.glRenderer) this.glRenderer.clear();
+
+    // render dunia (dengan interpolasi alpha)
+    if (this.world) this.world.render(alpha);
   }
 }
