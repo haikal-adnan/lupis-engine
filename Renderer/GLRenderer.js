@@ -39,9 +39,19 @@ export default class GLRenderer {
     gl.clear(gl.COLOR_BUFFER_BIT);
   }
 
-  getWorldProjection(width, height) {
+  getWorldProjection(offsetX = 0, offsetY = 0) {
+    const { gl } = this;
+    const w = gl.canvas.width;
+    const h = gl.canvas.height;
     const proj = mat4.create();
-    mat4.ortho(proj, 0, width, height, 0, -1, 1);
-    return proj;
+
+    // batas minimal dan maksimal proyeksi
+    const left = Math.max(0, offsetX);
+    const top = Math.max(0, offsetY);
+    mat4.ortho(proj, left, left + w, top + h, top, -1, 1);
+
+    return { isProjection: true, matrix: proj };
   }
+
+  
 }

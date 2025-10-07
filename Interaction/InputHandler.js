@@ -1,63 +1,65 @@
 export default class InputHandler {
-    constructor() {
-        // status tombol
-        this.keys = {
-            arrowleft: false,
-            arrowright: false,
-            arrowup: false,
-            arrowdown: false,
-        };
+  constructor() {
+    this.keys = {
+      arrowleft: false,
+      arrowright: false,
+      arrowup: false,
+      arrowdown: false,
+    };
 
-        // mapping tombol alternatif
-        this.keyMap = {
-            a: "arrowleft",
-            d: "arrowright",
-            w: "arrowup",
-            s: "arrowdown",
-            arrowleft: "arrowleft",
-            arrowright: "arrowright",
-            arrowup: "arrowup",
-            arrowdown: "arrowdown",
-        };
+    this.keyMap = {
+      a: "arrowleft",
+      d: "arrowright",
+      w: "arrowup",
+      s: "arrowdown",
+      arrowleft: "arrowleft",
+      arrowright: "arrowright",
+      arrowup: "arrowup",
+      arrowdown: "arrowdown",
+    };
 
-        this.initListeners();
+    this.initListeners();
+  }
+
+  initListeners() {
+    document.addEventListener("keydown", this.handleKeyDown.bind(this));
+    document.addEventListener("keyup", this.handleKeyUp.bind(this));
+  }
+
+  handleKeyDown(event) {
+    const gameKey = event.key.toLowerCase();
+    if (this.keyMap.hasOwnProperty(gameKey)) {
+      const mappedKey = this.keyMap[gameKey];
+      this.keys[mappedKey] = true;
     }
+  }
 
-    initListeners() {
-        document.addEventListener("keydown", this.handleKeyDown.bind(this));
-        document.addEventListener("keyup", this.handleKeyUp.bind(this));
+  handleKeyUp(event) {
+    const gameKey = event.key.toLowerCase();
+    if (this.keyMap.hasOwnProperty(gameKey)) {
+      const mappedKey = this.keyMap[gameKey];
+      this.keys[mappedKey] = false;
     }
+  }
 
-    handleKeyDown(event) {
-        const gameKey = event.key.toLowerCase();
-        if (this.keyMap.hasOwnProperty(gameKey)) {
-            const mappedKey = this.keyMap[gameKey];
-            this.keys[mappedKey] = true;
-        }
-    }
+  /** 🔽 Tambahan helper */
+  getDirection() {
 
-    handleKeyUp(event) {
-        const gameKey = event.key.toLowerCase();
-        if (this.keyMap.hasOwnProperty(gameKey)) {
-            const mappedKey = this.keyMap[gameKey];
-            this.keys[mappedKey] = false;
-        }
-    }
+    const { arrowup, arrowdown, arrowleft, arrowright } = this.keys;
+    let x = 0, y = 0;
+
+    if (arrowup) y -= 1;
+    if (arrowdown) y += 1;
+    if (arrowleft) x -= 1;
+    if (arrowright) x += 1;
+
+    const len = Math.hypot(x, y);
+    if (len > 0) { x /= len; y /= len; }
+
+    let dir = null;
+    if (Math.abs(x) > Math.abs(y)) dir = x > 0 ? "right" : "left";
+    else if (Math.abs(y) > 0) dir = y > 0 ? "down" : "up";
+
+    return { x, y, dir };
+  }
 }
-
-// import InputHandler from "./InputHandler.js";
-
-const input = new InputHandler();
-
-// contoh cek input di update loop
-function update() {
-    if (input.keys.arrowleft) {
-        console.log("← ditekan");
-    }
-    if (input.keys.arrowright) {
-        console.log("→ ditekan");
-    }
-    requestAnimationFrame(update);
-}
-
-update();

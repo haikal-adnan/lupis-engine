@@ -1,5 +1,5 @@
 import { mat4 } from "https://cdn.jsdelivr.net/npm/gl-matrix@3.4.3/esm/index.js";
-import Config from "../Config/Config.js"; // <— pastikan ini diimpor
+import Config from "../Config/Config.js";
 
 export default class GLImage {
   constructor(gl) {
@@ -62,7 +62,7 @@ export default class GLImage {
     return program;
   }
 
-  loadImage(src) {
+  async loadImage(src) {
     return new Promise((resolve, reject) => {
       const img = new Image();
       img.src = src;
@@ -83,7 +83,6 @@ export default class GLImage {
     gl.bindTexture(gl.TEXTURE_2D, tex);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
 
-    // 🎨 Gunakan konfigurasi pixel-art dari Config
     const pixelArt = Config?.PIXEL_ART ?? true;
     const filter = pixelArt ? gl.NEAREST : gl.LINEAR;
 
@@ -91,50 +90,79 @@ export default class GLImage {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, filter);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, filter);
-
     gl.bindTexture(gl.TEXTURE_2D, null);
+
     return tex;
   }
 
+  // === ✨ Tambahan untuk Polygon/Bitmap ===
+  cloneEmpty(glContext) {
+    return new GLImage(glContext);
+  }
+
+  async loadFromBitmap(bitmap) {
+    const gl = this.gl;
+    this.texture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, this.texture);
+
+    const pixelArt = Config?.PIXEL_ART ?? true;
+    const filter = pixelArt ? gl.NEAREST : gl.LINEAR;
+
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, bitmap);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, filter);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, filter);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.bindTexture(gl.TEXTURE_2D, null);
+
+    this.image = bitmap; // penting!
+    this.isLoaded = true;
+  }
+
   /**
-   * Mirip ctx.drawImage():
-   * drawImage(sx, sy, sw, sh, dx, dy, dw, dh)
-   * atau drawImage(dx, dy, dw, dh) → full texture
+   * drawImage dengan dukungan kamera
+   * drawImage(sx, sy, sw, sh, dx, dy, dw, dh, projection)
    */
   drawImage(...args) {
-    if (!this.isLoaded) return;
-    const gl = this.gl;
-
-    // --- Tentukan parameter ---
-    let sx = 0, sy = 0, sw = this.image.width, sh = this.image.height;
-    let dx = 0, dy = 0, dw = this.image.width, dh = this.image.height;
-
-    if (args.length === 4) {
-      [dx, dy, dw, dh] = args;
-    } else if (args.length === 8) {
-      [sx, sy, sw, sh, dx, dy, dw, dh] = args;
-    } else {
-      console.error("❌ drawImage() membutuhkan 4 atau 8 parameter");
+    if (!this.isLoaded || !this.texture || !this.image) {
+      console.warn("⚠️ drawImage dipanggil sebelum texture siap:", this);
       return;
     }
 
+    const gl = this.gl;
+
+    // Ambil projection di argumen terakhir
+    let projection = null;
+    if (args.length && typeof args[args.length - 1] === "object" && args[args.length - 1].isProjection)
+      projection = args.pop().matrix;
+
+    // Tentukan parameter
+    let sx = 0, sy = 0, sw = this.image.width, sh = this.image.height;
+    let dx = 0, dy = 0, dw = this.image.width, dh = this.image.height;
+
+    if (args.length === 4) [dx, dy, dw, dh] = args;
+    else if (args.length === 8) [sx, sy, sw, sh, dx, dy, dw, dh] = args;
+
     gl.useProgram(this.program);
 
-    const canvas = gl.canvas;
-    const proj = mat4.create();
-    mat4.ortho(proj, 0, canvas.width, canvas.height, 0, -1, 1);
+    const proj = projection || (() => {
+      const p = mat4.create();
+      const canvas = gl.canvas;
+      mat4.ortho(p, 0, canvas.width, canvas.height, 0, -1, 1);
+      return p;
+    })();
 
-    // Vertex posisi di layar
+    // Vertex posisi
     const verts = new Float32Array([
-      dx,     dy,
-      dx+dw,  dy,
-      dx,     dy+dh,
-      dx+dw,  dy,
-      dx+dw,  dy+dh,
-      dx,     dy+dh
+      dx, dy,
+      dx+dw, dy,
+      dx, dy+dh,
+      dx+dw, dy,
+      dx+dw, dy+dh,
+      dx, dy+dh
     ]);
 
-    // TexCoord dihitung relatif terhadap sumber atlas
+    // TexCoord
     const u0 = sx / this.image.width;
     const v0 = sy / this.image.height;
     const u1 = (sx + sw) / this.image.width;
@@ -145,7 +173,7 @@ export default class GLImage {
       u1, v0,  u1, v1,  u0, v1
     ]);
 
-    // Upload data ke GPU
+    // Upload data
     gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, verts, gl.STATIC_DRAW);
     gl.enableVertexAttribArray(this.aPosition);
@@ -163,5 +191,11 @@ export default class GLImage {
     gl.uniform1i(this.uSampler, 0);
 
     gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+    const err = gl.getError();
+    if (err !== gl.NO_ERROR) {
+      console.error("❌ WebGL Error:", err);
+    }
+
   }
 }
