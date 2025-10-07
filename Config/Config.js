@@ -9,8 +9,8 @@ const Config = {
   PIXEL_ART: true, // <— aktifkan mode pixel-perfect
 
   // World size (contoh: 2x layar)
-  WORLD_WIDTH: 1920 * 2,
-  WORLD_HEIGHT: 1080 * 1.5,
+  WORLD_WIDTH: 1920 ,
+  WORLD_HEIGHT: 1080 ,
 
   // Physics & timing
   TICK_RATE: 60,
@@ -19,7 +19,15 @@ const Config = {
     WIDTH: 16 * 4,  // 64 px di layar
     HEIGHT: 16 * 4,
     SPEED: 400
+  },
+
+  CAMERA: {
+    DEADZONE_X: [0.5, 0.5],
+    DEADZONE_Y: [0.5, 0.5],
+    LERP: 3.0,          
+    PIXEL_LOCK: false  
   }
+
 };
 
 export default Config;
