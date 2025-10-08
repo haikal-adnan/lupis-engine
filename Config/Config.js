@@ -24,7 +24,7 @@ const Config = {
   CAMERA: {
     DEADZONE_X: [0.5, 0.5],
     DEADZONE_Y: [0.5, 0.5],
-    LERP: 3.0,          
+    LERP: 6.0,          
     PIXEL_LOCK: false  
   }
 

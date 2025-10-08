@@ -48,7 +48,6 @@ export default class World {
       this.layers.push(layer);
     }
 
-    // hitung ulang world bounds berdasar isi tile non-0 + edge guard
     await this.#recalcBoundsFromContent();
 
     // player placeholder
