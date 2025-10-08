@@ -8,6 +8,7 @@ import { initializeTileset } from "./InitializeTileset.js";
 import { initializeAtlas } from "./InitializeAtlas.js";
 import { initializeTilemap } from "./InitializeTilemap.js";
 import { game } from "../main.js";
+import Grid from "../Util/Grid.js";
 
 export default class GameLoader {
   async initializeGame() {
@@ -24,6 +25,8 @@ export default class GameLoader {
 
     game.touch = new TouchHandler();
     game.touch.initListeners();
+
+    game.grid = new Grid(game.uiContext, 64)
 
     const [tileset, image, tilemap] = await Promise.all([
       initializeTileset(),

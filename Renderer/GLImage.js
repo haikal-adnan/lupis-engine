@@ -144,6 +144,7 @@ export default class GLImage {
   }
 
   async loadFromBitmap(bitmap) {
+
     this._uploadTexture(bitmap);
     this.image = bitmap;
     this.isLoaded = true;

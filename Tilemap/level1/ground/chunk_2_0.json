@@ -5,6 +5,7 @@
   "height": 16,
   "encoding": "rle",
   "rleData": [
-    [256, 0]
+    [17, 5],
+    [239, 0]
   ]
 }

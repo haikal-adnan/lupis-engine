@@ -17,6 +17,7 @@ export default class Game {
     this.height = Config.VIRTUAL_HEIGHT;
     this.scale  = Config.SCALE;
     this.tileSize = Config.TILE_SIZE;
+    this.grid = null;
   }
 
   attachWorld(world) {
@@ -30,7 +31,6 @@ export default class Game {
   render(alpha) {
     // bersihkan layar setiap frame render
     if (this.glRenderer) this.glRenderer.clear();
-
     // render dunia (dengan interpolasi alpha)
     if (this.world) this.world.render(alpha);
   }
