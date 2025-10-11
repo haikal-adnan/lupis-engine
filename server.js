@@ -9,18 +9,13 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3002;
 
-// PIN rahasia (bisa kamu ambil dari process.env.ACCESS_PIN)
 const ACCESS_PIN = "2533";
 
-// Middleware untuk parsing cookie
 app.use(cookieParser());
 
-// Middleware verifikasi PIN
 app.use((req, res, next) => {
-  // Jika sudah punya cookie, lanjutkan
   if (req.cookies.access === "granted") return next();
 
-  // Jika user memasukkan PIN via query (atau header)
   const pin = req.query.pin || req.headers["x-access-pin"];
   if (pin === ACCESS_PIN) {
     // Set cookie agar user tidak perlu input PIN lagi
@@ -28,7 +23,6 @@ app.use((req, res, next) => {
     return res.redirect("/");
   }
 
-  // Jika belum ada cookie & PIN salah → tampilkan form
   res.status(401).send(`
     <html>
       <head><title>PIN Required</title></head>
@@ -44,15 +38,12 @@ app.use((req, res, next) => {
   `);
 });
 
-// Sajikan file statis
 app.use(express.static(__dirname, { extensions: ["html", "js"] }));
 
-// Fallback ke index.html
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "index.html"));
 });
 
-// Jalankan server
 app.listen(PORT, () => {
   console.log(`🚀 Lupis Engine protected running at http://localhost:${PORT}`);
 });

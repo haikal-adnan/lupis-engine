@@ -1,6 +1,3 @@
-// Physics/CollisionSystem.js
-// Clamp entity ke ukuran area (boundW, boundH).
-// boundW/H = max(levelSize, virtualSize) sesuai permintaan.
 export function clampEntityToBounds(entity, boundW, boundH, opts = {}) {
   const pad = opts.pad ?? 0;
 
