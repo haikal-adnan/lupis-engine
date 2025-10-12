@@ -1,5 +1,5 @@
 // /Collision/CollisionGrid.js
-const EPS = 0.0001;
+const EPS = 1e-4;
 const NAME_RE = /(solid|wall|terrain|ground|collid)/i;
 
 export default class CollisionGrid {
@@ -7,145 +7,143 @@ export default class CollisionGrid {
     this.tile = tileSizePx | 0;
     this.wt = widthTiles | 0;
     this.ht = heightTiles | 0;
-    this.bits = new Uint8Array(this.wt * this.ht); // 0/1 solid
+    this.bits = new Uint8Array(this.wt * this.ht);
+    this.SKIN  = Math.max(0.5, this.tile * 0.02);
+    this.NUDGE = Math.max(0.01, this.tile * 0.001);
   }
 
   index(tx, ty) { return ty * this.wt + tx; }
   inBounds(tx, ty) { return tx >= 0 && ty >= 0 && tx < this.wt && ty < this.ht; }
+  setSolid(tx, ty, v = 1) { if (this.inBounds(tx, ty)) this.bits[this.index(tx, ty)] = v ? 1 : 0; }
+  isSolid(tx, ty) { return this.inBounds(tx, ty) && this.bits[this.index(tx, ty)] === 1; }
 
-  setSolid(tx, ty, v = 1) {
-    if (this.inBounds(tx, ty)) this.bits[this.index(tx, ty)] = v ? 1 : 0;
+  tilesForRect(x, y, w, h, s = 0) {
+    const t = this.tile, k = Math.max(0, s);
+    return {
+      left:   Math.floor((x + k)     / t),
+      right:  Math.floor((x + w - k) / t),
+      top:    Math.floor((y + k)     / t),
+      bottom: Math.floor((y + h - k) / t),
+    };
   }
 
-  isSolid(tx, ty) {
-    if (!this.inBounds(tx, ty)) return false;
-    return this.bits[this.index(tx, ty)] === 1;
+  // sweep generik 1D (axis: 'x' | 'y')
+  #sweep(pos, oth, size, span, d, axis) {
+    if (!d) return { pos, hitL: false, hitR: false, hitT: false, hitB: false };
+    const t = this.tile, dir = Math.sign(d), SKIN = this.SKIN, NUDGE = this.NUDGE;
+    const offA = dir > 0 ? size - EPS : EPS;
+    const a0 = Math.floor((pos + offA)      / t);
+    const a1 = Math.floor((pos + d + offA)  / t);
+    const step = dir > 0 ? 1 : -1;
+    let target = pos + d, hit = false;
+
+    if (axis === "x") {
+      const { top, bottom } = this.tilesForRect(pos, oth, size, span, SKIN);
+      for (let cx = a0; !hit && (step > 0 ? cx <= a1 : cx >= a1); cx += step) {
+        for (let cy = top; cy <= bottom; cy++) if (this.isSolid(cx, cy)) {
+          target = dir > 0 ? Math.min(target, cx * t - size) : Math.max(target, (cx + 1) * t);
+          hit = true; break;
+        }
+      }
+      if (hit) target += dir > 0 ? -NUDGE : +NUDGE;
+      return { pos: target, hitL: dir < 0 && hit, hitR: dir > 0 && hit, hitT: false, hitB: false };
+    } else {
+      const { left, right } = this.tilesForRect(oth, pos, span, size, SKIN);
+      for (let cy = a0; !hit && (step > 0 ? cy <= a1 : cy >= a1); cy += step) {
+        for (let cx = left; cx <= right; cx++) if (this.isSolid(cx, cy)) {
+          target = dir > 0 ? Math.min(target, cy * t - size) : Math.max(target, (cy + 1) * t);
+          hit = true; break;
+        }
+      }
+      if (hit) target += dir > 0 ? -NUDGE : +NUDGE;
+      return { pos: target, hitL: false, hitR: false, hitT: dir < 0 && hit, hitB: dir > 0 && hit };
+    }
   }
 
-  tilesForRect(x, y, w, h) {
-    const t = this.tile;
-    const left   = Math.floor((x + EPS) / t);
-    const right  = Math.floor((x + w - EPS) / t);
-    const top    = Math.floor((y + EPS) / t);
-    const bottom = Math.floor((y + h - EPS) / t);
-    return { left, right, top, bottom };
-  }
-
-  // Resolusi axis-terpisah: move X lalu Y (sturdy untuk platformer)
   moveAABB(x, y, w, h, dx, dy) {
-    let nx = x, ny = y;
-    let hitL = false, hitR = false, hitT = false, hitB = false;
-    const t = this.tile;
+    let r = this.#sweep(x, y, w, h, dx, "x");
+    const nx = Math.round(r.pos * 1000) / 1000;
 
-    // --- Gerak X ---
-    if (dx !== 0) {
-      const dir = Math.sign(dx);
-      let target = nx + dx;
+    let r2 = this.#sweep(y, nx, h, w, dy, "y");
+    const ny = Math.round(r2.pos * 1000) / 1000;
 
-      if (dir > 0) {
-        const edgeStart = Math.floor((nx + w - EPS) / t);
-        const edgeEnd   = Math.floor((target + w - EPS) / t);
-        const { top, bottom } = this.tilesForRect(nx, ny, w, h);
-        for (let cx = edgeStart; cx <= edgeEnd; cx++) {
-          for (let cy = top; cy <= bottom; cy++) {
-            if (this.isSolid(cx, cy)) {
-              target = Math.min(target, cx * t - w);
-              hitR = true;
-              break;
-            }
-          }
-          if (hitR) break;
-        }
-      } else {
-        const edgeStart = Math.floor((nx + EPS) / t);
-        const edgeEnd   = Math.floor((target + EPS) / t);
-        const { top, bottom } = this.tilesForRect(nx, ny, w, h);
-        for (let cx = edgeStart; cx >= edgeEnd; cx--) {
-          for (let cy = top; cy <= bottom; cy++) {
-            if (this.isSolid(cx, cy)) {
-              target = Math.max(target, (cx + 1) * t);
-              hitL = true;
-              break;
-            }
-          }
-          if (hitL) break;
-        }
-      }
-      nx = target;
-    }
-
-    // --- Gerak Y ---
-    if (dy !== 0) {
-      const dir = Math.sign(dy);
-      let target = ny + dy;
-
-      if (dir > 0) {
-        const edgeStart = Math.floor((ny + h - EPS) / t);
-        const edgeEnd   = Math.floor((target + h - EPS) / t);
-        const { left, right } = this.tilesForRect(nx, ny, w, h);
-        for (let cy = edgeStart; cy <= edgeEnd; cy++) {
-          for (let cx = left; cx <= right; cx++) {
-            if (this.isSolid(cx, cy)) {
-              target = Math.min(target, cy * t - h);
-              hitB = true;
-              break;
-            }
-          }
-          if (hitB) break;
-        }
-      } else {
-        const edgeStart = Math.floor((ny + EPS) / t);
-        const edgeEnd   = Math.floor((target + EPS) / t);
-        const { left, right } = this.tilesForRect(nx, ny, w, h);
-        for (let cy = edgeStart; cy >= edgeEnd; cy--) {
-          for (let cx = left; cx <= right; cx++) {
-            if (this.isSolid(cx, cy)) {
-              target = Math.max(target, (cy + 1) * t);
-              hitT = true;
-              break;
-            }
-          }
-          if (hitT) break;
-        }
-      }
-      ny = target;
-    }
-
-    return { x: nx, y: ny, hitLeft: hitL, hitRight: hitR, hitTop: hitT, hitBottom: hitB };
+    return {
+      x: nx, y: ny,
+      hitLeft:   r.hitL,
+      hitRight:  r.hitR,
+      hitTop:    r2.hitT,
+      hitBottom: r2.hitB,
+    };
   }
 
-  // Bangun grid dari tilemap/chunk RLE (pilih layer yang bernuansa "solid/wall/terrain...")
-  static async fromTilemap(tilemap, decodeRLE, tilePx, layerNameRegex = NAME_RE) {
-    const wt = tilemap.width  ?? 0;
-    const ht = tilemap.height ?? 0;
-    const grid = new CollisionGrid(tilePx, wt, ht);
-
+  static async fromTilemap(tilemap, decodeRLE, tilePx, layerNameRegex = NAME_RE, pathBase = "Tilemap") {
+    const cached = [];
     for (const L of tilemap.layers) {
-      if (!layerNameRegex.test(L.name)) continue; // lewati dekorasi/background
-      const base = `Tilemap/${tilemap.name}/${L.name.toLowerCase()}`;
+      if (!layerNameRegex.test(L.name)) continue;
+      const base = `${pathBase}/${tilemap.name}/${L.name.toLowerCase()}`;
       for (const c of L.chunks) {
         try {
           const j = await (await fetch(`${base}/${c.path}`)).json();
           const w = j?.width ?? 16, h = j?.height ?? 16;
-          const rle = j?.rleData;
-          if (!Array.isArray(rle)) continue;
+          const arr = Array.isArray(j?.rleData) ? decodeRLE(j.rleData, w, h) : null;
+          if (arr) cached.push({ arr, w, h, cx: c.x, cy: c.y });
+        } catch {}
+      }
+    }
 
-          const arr = decodeRLE(rle, w, h);
-          for (let y = 0; y < h; y++) {
-            const row = arr[y];
-            for (let x = 0; x < w; x++) {
-              if (row[x]) {
-                const tx = c.x * w + x;
-                const ty = c.y * h + y;
-                grid.setSolid(tx, ty, 1);
-              }
-            }
-          }
-        } catch (e) {
-          console.warn("[CollisionGrid] chunk load fail:", L.name, c, e);
+    const guess = (mul) => {
+      let mx = -1, my = -1;
+      for (const { w, h, cx, cy } of cached) {
+        const bx = mul ? cx * w : cx, by = mul ? cy * h : cy;
+        mx = Math.max(mx, bx + (w - 1)); my = Math.max(my, by + (h - 1));
+      }
+      return { wt: mx + 1, ht: my + 1 };
+    };
+
+    const wt = (tilemap.width  ?? 0) || guess(true).wt;
+    const ht = (tilemap.height ?? 0) || guess(true).ht;
+    const grid = new CollisionGrid(tilePx, wt | 0, ht | 0);
+
+    // pilih skema index chunk: mul(c*w) vs add(c)
+    let sm = 0, sa = 0;
+    for (const { arr, w, h, cx, cy } of cached) {
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          if (!arr[y][x]) continue;
+          const xm = cx * w + x, ym = cy * h + y;
+          const xa = cx + x,     ya = cy + y;
+          if (xm >= 0 && xm < grid.wt && ym >= 0 && ym < grid.ht) sm++;
+          if (xa >= 0 && xa < grid.wt && ya >= 0 && ya < grid.ht) sa++;
         }
       }
     }
+    const useMul = sm >= sa;
+
+    // isi grid + auto-offset leading empty rows per chunk
+    let solidCount = 0;
+    const firstSolidRow = (arr, w, h) => {
+      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (arr[y][x] !== 0) return y;
+      return 0;
+    };
+
+    for (const { arr, w, h, cx, cy } of cached) {
+      const baseX = useMul ? cx * w : cx;
+      const baseY = useMul ? cy * h : cy;
+      const offsetY = firstSolidRow(arr, w, h);
+
+      for (let y = 0; y < h; y++) {
+        const row = arr[y];
+        for (let x = 0; x < w; x++) {
+          const tile = row[x];
+          if (!tile) continue;
+          const tx = baseX + x, ty = baseY + y - offsetY;
+          if (grid.inBounds(tx, ty)) { grid.setSolid(tx, ty, 1); solidCount++; }
+        }
+      }
+    }
+
+    console.log("[CollisionGrid] tiles:", grid.wt, "x", grid.ht, "tilePx:", tilePx, "| mode:", useMul ? "mul" : "add");
+    console.log("[CollisionGrid] solidCount:", solidCount);
     return grid;
   }
 }

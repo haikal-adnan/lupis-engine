@@ -29,9 +29,7 @@ export default class Game {
   }
 
   render(alpha) {
-    // bersihkan layar setiap frame render
     if (this.glRenderer) this.glRenderer.clear();
-    // render dunia (dengan interpolasi alpha)
     if (this.world) this.world.render(alpha);
   }
 }
