@@ -1,52 +1,56 @@
 // Config/Config.js
+const TILE  = 16;        // ukuran dasar tile (tanpa skala)
+const SCALE = 2;       // faktor skala pixel art
+const PX    = TILE * SCALE; // ukuran tile final (px)
+
 const Config = {
-  // ===== Virtual screen =====
+  // ===== Virtual Screen =====
   VIRTUAL_WIDTH: 1920,
   VIRTUAL_HEIGHT: 1080,
 
   // ===== Tile / Rendering =====
-  TILE_SIZE: 16,      // ukuran tile dasar (px)
-  SCALE: 4,           // skala pixel-art
-  PIXEL_ART: true,    // rounding & pixel snapping optional via CAMERA.PIXEL_LOCK
+  TILE_SIZE: TILE,
+  SCALE,
+  PX_TILE: PX,
+  PIXEL_ART: true,
 
   // ===== World / Level =====
   WORLD: {
-    WIDTH: 1920 * 2,       // fallback lebar world (px)
-    HEIGHT: 1080 * 2,      // fallback tinggi world (px)
-    CHUNK_SIZE: 16,        // jumlah tile per chunk default
-    PATH_BASE: "Tilemap",  // folder dasar untuk tilemap
-    // Opsional: regex nama layer solid; dipakai jika diintegrasikan ke CollisionGrid.fromTilemap
+    WIDTH: 10000,
+    HEIGHT: 10000,
+    CHUNK_SIZE: 16,
+    PATH_BASE: "Tilemap",
     SOLID_LAYER_REGEX: "(solid|wall|terrain|ground|collid)"
   },
 
-  // ===== Player =====
+  // ===== Player (semua sudah dalam px final) =====
   PLAYER: {
-    WIDTH: 16 * 4,
-    HEIGHT: 16 * 4,
-    SPEED: 400,
-    START_POS: { X: 0*16, Y: 56*16 }
+    WIDTH: 1 * PX,           // 1 tile
+    HEIGHT: 1 * PX,          // 1 tile
+    SPEED: 6 * PX,           // 6 tile per detik
+    START_POS: { X: 0 * PX, Y: 10 * PX }
   },
 
-  // ===== Physics =====
+  // ===== Physics (semua dalam px/s, px/s²) =====
   PHYSICS: {
     MODE: "platformer",
-    GRAVITY: 9.8 * 100,
-    MAX_VELOCITY_Y: 2000,
+    GRAVITY: 9.8 * PX,        // 60 tile/s²
+    MAX_VELOCITY_Y: 62 * PX, // batas kecepatan jatuh
     FRICTION: 0.9,
 
-    JUMP_VELOCITY: 900,
-    COYOTE_TIME: 0.08,          // ← wajib 0 untuk “harus menyentuh dulu”
-    JUMP_BUFFER_TIME: 0.10,  // boleh 0 kalau mau super ketat
+    STRICT_GROUNDED_JUMP: true,
+    JUMP_VELOCITY: 12 * PX,  // 12 tile/s
+    COYOTE_TIME: 0,
+    JUMP_BUFFER_TIME: 0,
     CUT_JUMP_FACTOR: 0.5
   },
-
 
   // ===== Camera =====
   CAMERA: {
     DEADZONE_X: [0.5, 0.5],
     DEADZONE_Y: [0.5, 0.5],
-    LERP: 10.0,
-    PIXEL_LOCK: false       // true jika ingin pixel-perfect follow
+    LERP: 20.0,
+    PIXEL_LOCK: false
   },
 
   // ===== Timing =====
