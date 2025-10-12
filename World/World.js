@@ -205,42 +205,46 @@ export default class World {
 
   // ===== CAMERA FOLLOW =====
   #updateCamera(dt) {
-    const pw = this.player.width, ph = this.player.height;
+    const gl = this.glRenderer?.gl;
+    const viewW = gl?.canvas?.width  ?? this.vw;
+    const viewH = gl?.canvas?.height ?? this.vh;
+
+    const pw = this.player.width;
+    const ph = this.player.height;
+
+    // posisi tengah player (world)
     const pCX = this.player.x + pw * 0.5;
     const pCY = this.player.y + ph * 0.5;
-    const maxCamX = Math.max(0, Math.min(this.boundW, this.levelW) - this.vw);
-    const maxCamY = Math.max(0, Math.min(this.boundH, this.levelH) - this.vh);
 
-    if (!this._camSnapped) {
-      let sx = clamp(pCX - this.vw * 0.5, 0, maxCamX);
-      let sy = clamp(pCY - this.vh * 0.5, 0, maxCamY);
-      if (this.pixelLock) { sx = Math.round(sx); sy = Math.round(sy); }
-      this.camera.x = this.camera.prevX = sx;
-      this.camera.y = this.camera.prevY = sy;
-      this._camSnapped = true;
-      return;
-    }
+    // target kamera supaya player di tengah
+    let tx = pCX - viewW * 0.5;
+    let ty = pCY - viewH * 0.5;
 
-    const left   = this.camera.x + this.vw * this.deadX[0];
-    const right  = this.camera.x + this.vw * this.deadX[1];
-    const top    = this.camera.y + this.vh * this.deadY[0];
-    const bottom = this.camera.y + this.vh * this.deadY[1];
+    // jaga batas world
+    const maxCamX = Math.max(0, this.levelW - viewW);
+    const maxCamY = Math.max(0, this.levelH - viewH);
+    tx = Math.max(0, Math.min(tx, maxCamX));
+    ty = Math.max(0, Math.min(ty, maxCamY));
 
-    let tx = this.camera.x, ty = this.camera.y;
-    if (pCX < left)        tx = pCX - this.vw * this.deadX[0];
-    else if (pCX > right)  tx = pCX - this.vw * this.deadX[1];
-    if (pCY < top)         ty = pCY - this.vh * this.deadY[0];
-    else if (pCY > bottom) ty = pCY - this.vh * this.deadY[1];
+    // ===== tambahkan margin bawah minimal N tile =====
+    const minTiles = (Config.CAMERA?.MIN_BOTTOM_TILES ?? 8) | 0;
+    const t = this.tilePx;
+    const pb = this.player.y + ph;
+    const bottomScreen = ty + viewH;
+    const tilesBelow = Math.floor((bottomScreen - pb) / t);
+    if (tilesBelow < minTiles) ty += (minTiles - tilesBelow) * t;
+    ty = Math.min(ty, maxCamY);
+    // =================================================
 
-    tx = clamp(tx, 0, maxCamX);
-    ty = clamp(ty, 0, maxCamY);
-
+    // LERP halus
     const k = this.camLerp * dt;
-    const nx = lerp(this.camera.x, tx, k);
-    const ny = lerp(this.camera.y, ty, k);
+    const nx = this.camera.x + (tx - this.camera.x) * k;
+    const ny = this.camera.y + (ty - this.camera.y) * k;
+
     this.camera.x = this.pixelLock ? Math.round(nx) : nx;
     this.camera.y = this.pixelLock ? Math.round(ny) : ny;
   }
+
 
   // ===== HELPER =====
   #lockClamp(v, a, b) {

@@ -1,6 +1,6 @@
 // Config/Config.js
 const TILE  = 16;        // ukuran dasar tile (tanpa skala)
-const SCALE = 2;       // faktor skala pixel art
+const SCALE = 3;       // faktor skala pixel art
 const PX    = TILE * SCALE; // ukuran tile final (px)
 
 const Config = {
@@ -46,11 +46,14 @@ const Config = {
   },
 
   // ===== Camera =====
+  // Config/Config.js
+// Config/Config.js
   CAMERA: {
-    DEADZONE_X: [0.5, 0.5],
-    DEADZONE_Y: [0.5, 0.5],
-    LERP: 20.0,
-    PIXEL_LOCK: false
+    DEADZONE_X: [0.35, 0.65],   // bebas
+    DEADZONE_Y: [0.0, 1.0],     // matikan deadzone vertikal (full screen)
+    LERP: 20,
+    PIXEL_LOCK: true,
+    MIN_BOTTOM_TILES: 1,        // target minimal tile di bawah player
   },
 
   // ===== Timing =====

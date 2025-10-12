@@ -7,8 +7,11 @@ export default class Chunk {
     this.y = chunkData.y;
     this.width = chunkData.width;
     this.height = chunkData.height;
-    this.tileSize = Config.TILE_SIZE;
-    this.scale = Config.SCALE;
+
+    // Gunakan px dunia final biar konsisten dengan physics/collision
+    this.pxTile = Config.PX_TILE;           // = TILE_SIZE * SCALE
+    this.scaleAtlas = Config.SCALE;         // untuk ukuran sprite atlas (w,h)
+
     this.encoding = chunkData.encoding || "array";
     this.rawData = chunkData.rleData || chunkData.data;
     this.tileset = tileset;
@@ -20,23 +23,25 @@ export default class Chunk {
 
   _decode() {
     const isRLE = this.encoding === "rle" || !!this.rawData;
-    if (isRLE && Array.isArray(this.rawData[0])) {
+    if (isRLE && Array.isArray(this.rawData?.[0])) {
       this.data = decodeRLE(this.rawData, this.width, this.height);
     } else if (Array.isArray(this.rawData)) {
       this.data = this.rawData;
     } else {
       console.error("❌ Tidak ada data tile di chunk:", this);
-      this.data = Array.from({ length: this.height }, () =>
-        Array(this.width).fill(0)
-      );
+      this.data = Array.from({ length: this.height }, () => Array(this.width).fill(0));
     }
   }
 
-  render(cameraX = 0, cameraY = 0, projection = null) {
+  render(projection = null) {
     if (!this.image?.isLoaded) return;
-    const t = this.tileSize, s = this.scale, ts = t * s;
-    const baseX = this.x * this.width * ts;
+
+    const ts = this.pxTile; // ukuran tile di dunia (px final)
+    const baseX = this.x * this.width  * ts;
     const baseY = this.y * this.height * ts;
+
+    // (opsional) snap pixel untuk hindari seams
+    const snap = (Config?.PIXEL_ART ?? false) || (Config?.CAMERA?.PIXEL_LOCK ?? false);
 
     for (let r = 0; r < this.height; r++) {
       for (let c = 0; c < this.width; c++) {
@@ -44,9 +49,15 @@ export default class Chunk {
         if (!id) continue;
         const tile = this.tileset.tiles[id];
         if (!tile) continue;
-        const dx = baseX + c * ts - cameraX;
-        const dy = baseY + r * ts - cameraY;
-        const dw = tile.w * s, dh = tile.h * s;
+
+        let dx = baseX + c * ts;
+        let dy = baseY + r * ts;
+        if (snap) { dx = Math.round(dx); dy = Math.round(dy); }
+
+        // Ukuran gambar atlas → skala ke dunia
+        const dw = tile.w * this.scaleAtlas;
+        const dh = tile.h * this.scaleAtlas;
+
         this.image.drawImage(tile.x, tile.y, tile.w, tile.h, dx, dy, dw, dh, projection);
       }
     }

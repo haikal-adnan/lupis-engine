@@ -23,6 +23,6 @@ export default class Layering {
 
   render(cameraX = 0, cameraY = 0, projection = null) {
     if (!this.isLoaded) return;
-    for (const c of this.chunks) c.render(cameraX, cameraY, projection);
+    for (const c of this.chunks) c.render(projection); // <- cukup projection
   }
 }
