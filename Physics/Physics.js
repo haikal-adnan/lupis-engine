@@ -1,16 +1,18 @@
-// /Physics/Physics.js
+// Physics/Physics.js
+import Config from "../Config/Config.js";
+
 export default class Physics {
-  constructor({ mode = "platformer" } = {}) {
-    this.mode = mode;
+  constructor() {
+    this.mode = Config.PHYSICS.MODE;   // "platformer" / "topdown"
     this.bodies = new Set();
     this.forces = [];
   }
 
   addBody(body, {
     mass = 1,
-    damping = 0.9,
+    damping = Config.PHYSICS.FRICTION,
     useGravity = (this.mode === "platformer"),
-    maxFallSpeed = 1600
+    maxFallSpeed = Config.PHYSICS.MAX_VELOCITY_Y
   } = {}) {
     body.mass = mass;
     body.damping = damping;
@@ -26,20 +28,23 @@ export default class Physics {
 
   addForce(force) { this.forces.push(force); }
 
-  // Terapkan gaya → update velocity (posisi diurus CollisionSystem)
+  // Terapkan gaya → update velocity
   step(dt) {
     for (const b of this.bodies) {
-      // apply forces
+      // apply all registered forces
       for (const f of this.forces) f.apply?.(b, dt, this.mode);
 
-      // damping (top-down biasanya lebih kuat)
-      const damp = (this.mode === "topdown") ? Math.min(0.92, b.damping ?? 0.9) : (b.damping ?? 0.9);
-      b.vx *= damp;
-      if (this.mode === "topdown") b.vy *= damp; // di platformer, vy diatur gravitas & collision
+      // damping: kurangi kecepatan (friction)
+      const damp = (this.mode === "topdown")
+        ? Math.min(0.92, b.damping)
+        : b.damping;
 
-      // clamp terminal fall (platformer)
-      if (this.mode === "platformer" && b.vy > (b.maxFallSpeed ?? 1600)) {
-        b.vy = b.maxFallSpeed ?? 1600;
+      b.vx *= damp;
+      if (this.mode === "topdown") b.vy *= damp;
+
+      // batas kecepatan jatuh
+      if (this.mode === "platformer" && b.vy > b.maxFallSpeed) {
+        b.vy = b.maxFallSpeed;
       }
     }
   }

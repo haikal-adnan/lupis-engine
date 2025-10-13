@@ -36,21 +36,15 @@ const Config = {
   // ===== Physics =====
   PHYSICS: {
     MODE: "platformer",                 // mode fisika
-    GRAVITY: 6 * PX,                    // gaya gravitasi
+    GRAVITY: 9.8 * PX,                    // gaya gravitasi
     MAX_VELOCITY_Y: 62 * PX,            // batas kecepatan jatuh
     FRICTION: 0.9,                      // gesekan umum
-
-    STRICT_GROUNDED_JUMP: true,         // hanya boleh lompat saat di tanah
-    JUMP_VELOCITY: 12 * PX,             // kecepatan awal lompat
-    COYOTE_TIME: 0,                     // toleransi lompat setelah jatuh
-    JUMP_BUFFER_TIME: 0,                // buffer input lompat
-    CUT_JUMP_FACTOR: 0.5                // potongan kecepatan saat tombol dilepas
+    JUMP_VELOCITY: 5 * PX,             // kecepatan awal lompat
+    CUT_JUMP_FACTOR: 1              // potongan kecepatan saat tombol dilepas
   },
 
   // ===== Camera =====
   CAMERA: {
-    DEADZONE_X: [0.35, 0.65],           // area aman horizontal
-    DEADZONE_Y: [0.0, 1.0],             // area aman vertikal (0=off)
     LERP: 20,                           // kehalusan gerak kamera
     PIXEL_LOCK: true,                   // snap ke pixel terdekat
     MIN_BOTTOM_TILES: 1                 // jarak minimal tile di bawah player
