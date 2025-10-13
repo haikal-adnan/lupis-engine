@@ -1,63 +1,63 @@
 // Config/Config.js
-const TILE  = 16;        // ukuran dasar tile (tanpa skala)
-const SCALE = 3;       // faktor skala pixel art
-const PX    = TILE * SCALE; // ukuran tile final (px)
+
+const TILE  = 16;          // ukuran dasar tile (tanpa skala)
+const SCALE = 4;           // faktor skala pixel art
+const PX    = TILE * SCALE; // ukuran tile akhir (px)
 
 const Config = {
   // ===== Virtual Screen =====
-  VIRTUAL_WIDTH: 1920,
-  VIRTUAL_HEIGHT: 1080,
+  VIRTUAL_WIDTH: 1920,     // lebar viewport virtual
+  VIRTUAL_HEIGHT: 1080,    // tinggi viewport virtual
 
   // ===== Tile / Rendering =====
-  TILE_SIZE: TILE,
-  SCALE,
-  PX_TILE: PX,
-  PIXEL_ART: true,
+  TILE_SIZE: TILE,         // ukuran tile asli (px)
+  SCALE,                   // faktor skala visual
+  PX_TILE: PX,             // ukuran tile hasil skala
+  PIXEL_ART: true,         // aktifkan pixel snapping
 
   // ===== World / Level =====
   WORLD: {
-    WIDTH: 10000,
-    HEIGHT: 10000,
-    CHUNK_SIZE: 16,
-    PATH_BASE: "Tilemap",
-    SOLID_LAYER_REGEX: "(solid|wall|terrain|ground|collid)"
+    AUTO_SIZE: true,                    // auto hitung world dari meta/chunk
+    WIDTH: 1920,                        // fallback width (px)
+    HEIGHT: 1080,                       // fallback height (px)
+    CHUNK_SIZE: 16,                     // ukuran chunk dalam tile
+    PATH_BASE: "Tilemap",               // path dasar world
+    SOLID_LAYER_REGEX: "(solid|wall|terrain|ground|collid)" // regex layer solid
   },
 
-  // ===== Player (semua sudah dalam px final) =====
+  // ===== Player =====
   PLAYER: {
-    WIDTH: 1 * PX,           // 1 tile
-    HEIGHT: 1 * PX,          // 1 tile
-    SPEED: 6 * PX,           // 6 tile per detik
-    START_POS: { X: 0 * PX, Y: 10 * PX }
+    WIDTH: 1 * PX,                      // lebar player (1 tile)
+    HEIGHT: 1 * PX,                     // tinggi player (1 tile)
+    SPEED: 6 * PX,                      // kecepatan horizontal
+    START_POS: { X: 0 * PX, Y: 10 * PX } // posisi awal player
   },
 
-  // ===== Physics (semua dalam px/s, px/s²) =====
+  // ===== Physics =====
   PHYSICS: {
-    MODE: "platformer",
-    GRAVITY: 9.8 * PX,        // 60 tile/s²
-    MAX_VELOCITY_Y: 62 * PX, // batas kecepatan jatuh
-    FRICTION: 0.9,
+    MODE: "platformer",                 // mode fisika
+    GRAVITY: 6 * PX,                    // gaya gravitasi
+    MAX_VELOCITY_Y: 62 * PX,            // batas kecepatan jatuh
+    FRICTION: 0.9,                      // gesekan umum
 
-    STRICT_GROUNDED_JUMP: true,
-    JUMP_VELOCITY: 12 * PX,  // 12 tile/s
-    COYOTE_TIME: 0,
-    JUMP_BUFFER_TIME: 0,
-    CUT_JUMP_FACTOR: 0.5
+    STRICT_GROUNDED_JUMP: true,         // hanya boleh lompat saat di tanah
+    JUMP_VELOCITY: 12 * PX,             // kecepatan awal lompat
+    COYOTE_TIME: 0,                     // toleransi lompat setelah jatuh
+    JUMP_BUFFER_TIME: 0,                // buffer input lompat
+    CUT_JUMP_FACTOR: 0.5                // potongan kecepatan saat tombol dilepas
   },
 
   // ===== Camera =====
-  // Config/Config.js
-// Config/Config.js
   CAMERA: {
-    DEADZONE_X: [0.35, 0.65],   // bebas
-    DEADZONE_Y: [0.0, 1.0],     // matikan deadzone vertikal (full screen)
-    LERP: 20,
-    PIXEL_LOCK: true,
-    MIN_BOTTOM_TILES: 1,        // target minimal tile di bawah player
+    DEADZONE_X: [0.35, 0.65],           // area aman horizontal
+    DEADZONE_Y: [0.0, 1.0],             // area aman vertikal (0=off)
+    LERP: 20,                           // kehalusan gerak kamera
+    PIXEL_LOCK: true,                   // snap ke pixel terdekat
+    MIN_BOTTOM_TILES: 1                 // jarak minimal tile di bawah player
   },
 
   // ===== Timing =====
-  TICK_RATE: 60
+  TICK_RATE: 60                         // target update per detik
 };
 
 export default Config;
