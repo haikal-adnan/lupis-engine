@@ -25,6 +25,12 @@ const Config = {
     SOLID_LAYER_REGEX: "(solid|wall|terrain|ground|collid)" // regex layer solid
   },
 
+  TILESETS: [
+    { name: "terrain",   solid: true  },   // tile atlas terrain → solid penuh
+    { name: "rectangle", solid: true  },   // bentuk GL (nanti), ikut solid jika perlu
+    { name: "stair",     solid: true  }    // tangga: sementara dianggap solid penuh
+  ],
+
   // ===== Player =====
   PLAYER: {
     WIDTH: 1 * PX,                      // lebar player (1 tile)

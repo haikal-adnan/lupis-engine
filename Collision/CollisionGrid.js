@@ -1,5 +1,5 @@
 const LAYER_RE_DEFAULT = /(solid|wall|terrain|ground|collid)/i;
-
+import Config from "../Config/Config.js";
 
 export default class CollisionGrid {
   constructor(tilePx, widthTiles, heightTiles) {
@@ -123,25 +123,55 @@ export default class CollisionGrid {
     const cw = tilemap?.chunkWidth  | 0;
     const ch = tilemap?.chunkHeight | 0;
 
+    // Set nama tileset yang bersifat solid dari Config
+    const SOLID_SET = new Set((Config?.TILESETS || [])
+      .filter(t => t?.solid)
+      .map(t => String(t.name)));
+
     for (const L of tilemap.layers) {
       if (!layerRegex.test(L.name)) continue;
       const base = `${pathBase}/${tilemap.name}/${L.name.toLowerCase()}`;
+
       for (const c of L.chunks) {
         try {
           const j  = await (await fetch(`${base}/${c.path}`)).json();
           const w  = (j?.width  | 0) || cw || 16;
           const h  = (j?.height | 0) || ch || 16;
-          const arr = Array.isArray(j?.rleData) ? decodeRLE(j.rleData, w, h)
-                     : Array.isArray(j?.data)   ? j.data
-                     : null;
-          if (!arr) continue;
+
+          // Decode: ambil id & index tileset
+          let rows, tsRows;
+          if (Array.isArray(j?.rleData)) {
+            const res = decodeRLE(j.rleData, w, h, {
+              tilesets: j?.tilesets,
+              returnTilesetIndex: true
+            });
+            rows   = res.rows;
+            tsRows = res.tsRows;
+          } else if (Array.isArray(j?.data)) {
+            // Format array 2D (mungkin berisi [tsIdx, tileId])
+            if (Array.isArray(j.data[0]) && Array.isArray(j.data[0][0])) {
+              rows   = j.data.map(row => row.map(v => Array.isArray(v) ? (v[1] | 0) : (v | 0)));
+              tsRows = j.data.map(row => row.map(v => Array.isArray(v) ? (v[0] | 0) : -1));
+            } else {
+              rows   = j.data;
+              tsRows = rows.map(row => row.map(_ => -1));
+            }
+          } else {
+            continue;
+          }
 
           const ox = (c.x | 0) * w;
           const oy = (c.y | 0) * h;
           for (let yy = 0; yy < h; yy++) {
             for (let xx = 0; xx < w; xx++) {
-              if (!arr[yy][xx]) continue;
-              grid.setSolid(ox + xx, oy + yy, 1);
+              const id = rows[yy][xx] | 0;
+              if (!id) continue;
+
+              const tsIdx  = tsRows?.[yy]?.[xx] ?? -1;
+              const tsName = Array.isArray(j?.tilesets) ? j.tilesets[tsIdx] : null;
+              if (tsName && SOLID_SET.has(String(tsName))) {
+                grid.setSolid(ox + xx, oy + yy, 1);
+              }
             }
           }
         } catch (e) {

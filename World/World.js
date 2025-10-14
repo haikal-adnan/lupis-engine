@@ -52,10 +52,24 @@ export default class World {
   // =============================
   async load() {
     const layers = this.tilemap.layers || [];
+
+    // Buat map tileset & image sesuai daftar di Config.TILESETS
+    // (nama: objek tileset/image)
+    const tilesetMap = {};
+    const imageMap = {};
+    for (const t of Config.TILESETS) {
+      const name = String(t.name);
+      if (this.tileset?.[name]) tilesetMap[name] = this.tileset[name];
+      else if (name === "terrain") tilesetMap[name] = this.tileset; // fallback
+      if (this.image?.[name]) imageMap[name] = this.image[name];
+      else if (name === "terrain") imageMap[name] = this.image; // fallback
+    }
+
     await Promise.all(
       layers.map(async (info) => {
         const base = `${this.pathBase}/${this.tilemap.name}/${info.name.toLowerCase()}`;
-        const L = new Layering(info.name, base, this.tileset, this.image, this.glRenderer);
+        // 🔹 kirim map, bukan objek tunggal
+        const L = new Layering(info.name, base, tilesetMap, imageMap, this.glRenderer);
         await L.loadChunks(info.chunks);
         this.layers.push(L);
       })
@@ -63,6 +77,9 @@ export default class World {
 
     if (Config.WORLD.AUTO_SIZE) await this.#recalcBoundsFromMetaChunks();
     await this.#initWorld();
+
+    console.log("Tilesets map:", tilesetMap);
+    console.log("Images map:", imageMap);
   }
 
   // =============================
