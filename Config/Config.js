@@ -13,7 +13,7 @@ const Config = {
   TILE_SIZE: TILE,         // ukuran tile asli (px)
   SCALE,                   // faktor skala visual
   PX_TILE: PX,             // ukuran tile hasil skala
-  PIXEL_ART: true,         // aktifkan pixel snapping
+  PIXEL_ART: false,         // aktifkan pixel snapping
 
   // ===== World / Level =====
   WORLD: {
@@ -26,9 +26,25 @@ const Config = {
   },
 
   TILESETS: [
-    { name: "terrain",   solid: true  },   // tile atlas terrain → solid penuh
-    { name: "rectangle", solid: true  },   // bentuk GL (nanti), ikut solid jika perlu
-    { name: "stair",     solid: true  }    // tangga: sementara dianggap solid penuh
+    {
+      name: "terrain",
+      tileset: "Tileset/terrain.json",
+      image:   "Asset/Atlas/terrain.png",
+      solid: true
+    },
+    {
+      name: "stair",
+      tileset: "Tileset/stair.json",
+      image:   "Asset/Atlas/stair.png",
+      solid: true
+    },
+    {
+      name: "rectangle",
+      tileset: "Tileset/rectangle.json",
+      image:   null,             
+      procedural: { color: "#FFFFFF", size: 16 },
+      solid: false
+    }
   ],
 
   // ===== Player =====

@@ -5,11 +5,11 @@ import Player from "../Entity/Player.js";
 import Polygon from "../Entity/Polygon.js";
 import Config from "../Config/Config.js";
 import { decodeRLE } from "../Util/RLE.js";
-
 import CollisionSystem from "../Collision/CollisionSystem.js";
 import CollisionGrid from "../Collision/CollisionGrid.js";
 import Physics from "../Physics/Physics.js";
 import Gravity from "../Physics/Gravity.js";
+import GLImage from "../Renderer/GLImage.js";
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 
@@ -17,14 +17,12 @@ export default class World {
   constructor(tilemap, tileset, image, glRenderer, glContext, input) {
     Object.assign(this, { tilemap, tileset, image, glRenderer, glContext, input });
 
-    // ======== Snapshot dari Config ========
     this.vw = Config.VIRTUAL_WIDTH;
     this.vh = Config.VIRTUAL_HEIGHT;
     this.tilePx = Config.PX_TILE;
     this.mode = Config.PHYSICS.MODE;
     this.pathBase = Config.WORLD.PATH_BASE;
 
-    // ======== Setup kamera ========
     const C = Config.CAMERA;
     this.camera = new Camera2D(0, 0);
     this.camera.prevX = 0;
@@ -32,14 +30,12 @@ export default class World {
     this.camLerp = C.LERP;
     this.pixelLock = C.PIXEL_LOCK && Config.PIXEL_ART;
 
-    // ======== Batas & layer ========
     this.levelW = Config.WORLD.WIDTH;
     this.levelH = Config.WORLD.HEIGHT;
     this.boundW = Math.max(this.levelW, this.vw);
     this.boundH = Math.max(this.levelH, this.vh);
     this.layers = [];
 
-    // ======== Entity & sistem ========
     this.player = null;
     this.physics = null;
     this.gravity = null;
@@ -47,28 +43,22 @@ export default class World {
     this.collisionGrid = null;
   }
 
-  // =============================
-  // 📦 Memuat world & tile layer
-  // =============================
   async load() {
     const layers = this.tilemap.layers || [];
 
-    // Buat map tileset & image sesuai daftar di Config.TILESETS
-    // (nama: objek tileset/image)
     const tilesetMap = {};
     const imageMap = {};
     for (const t of Config.TILESETS) {
       const name = String(t.name);
       if (this.tileset?.[name]) tilesetMap[name] = this.tileset[name];
-      else if (name === "terrain") tilesetMap[name] = this.tileset; // fallback
+      else if (name === "terrain") tilesetMap[name] = this.tileset;
       if (this.image?.[name]) imageMap[name] = this.image[name];
-      else if (name === "terrain") imageMap[name] = this.image; // fallback
+      else if (name === "terrain") imageMap[name] = this.image;
     }
 
     await Promise.all(
       layers.map(async (info) => {
         const base = `${this.pathBase}/${this.tilemap.name}/${info.name.toLowerCase()}`;
-        // 🔹 kirim map, bukan objek tunggal
         const L = new Layering(info.name, base, tilesetMap, imageMap, this.glRenderer);
         await L.loadChunks(info.chunks);
         this.layers.push(L);
@@ -77,58 +67,50 @@ export default class World {
 
     if (Config.WORLD.AUTO_SIZE) await this.#recalcBoundsFromMetaChunks();
     await this.#initWorld();
-
-    console.log("Tilesets map:", tilesetMap);
-    console.log("Images map:", imageMap);
   }
 
-  // =============================
-  // 🔄 Update setiap frame
-  // =============================
   update(dt) {
     if (!this.player || !isFinite(dt) || dt <= 0) return;
 
-    // Simpan posisi sebelumnya
     this.player.prevX = this.player.x;
     this.player.prevY = this.player.y;
     this.camera.prevX = this.camera.x;
     this.camera.prevY = this.camera.y;
 
-    // Input → update player
+    // 1) Input.beginFrame: siapkan state input untuk frame ini (edge/duration)
     this.input.beginFrame();
+
+    // 2) Player.update: terjemahkan input → intent/velocity (mode-aware)
     this.player.update(dt, this.input, this.mode);
 
-    // Physics & gaya gravitasi
+    // 3) Physics.step: akumulasikan gaya (mis. gravitasi) → update velocity
     this.physics.step(dt);
 
-    // Collision & resolusi tabrakan
+    // 4) Collision.moveBody: integrasi posisi + resolusi tabrakan terhadap grid
     const wasGrounded = this.player.grounded;
     this.collision.moveBody(this.player, dt);
 
-    // Snap vertikal pixel-perfect
+    // 5) Pixel snap saat grounded: sejajarkan kaki ke grid tile terdekat
     if (this.player.grounded) {
       const t = this.tilePx;
       const py = Math.floor((this.player.y + this.player.height) / t);
       this.player.y = py * t - this.player.height;
     }
 
-    // Event pendaratan
+    // 6) Player.postCollisionJump: proses event pendaratan/queue jump (coyote, buffer)
     const landed = (!wasGrounded && this.player.grounded);
     this.player.postCollisionJump(this.input, landed);
 
-    // Clamp posisi ke batas world
+    // 7) Clamp: batasi posisi ke dalam batas world (pixel-lock bila aktif)
     const maxPX = Math.max(0, this.boundW - this.player.width);
     const maxPY = Math.max(0, this.boundH - this.player.height);
     this.player.x = this.#lockClamp(this.player.x, 0, maxPX);
     this.player.y = this.#lockClamp(this.player.y, 0, maxPY);
 
-    // Update kamera
+    // 8) UpdateCamera: lerp kamera mengikuti player dengan batas & bottom padding
     this.#updateCamera(dt);
   }
 
-  // =============================
-  // 🖼️ Render world dan entity
-  // =============================
   render(alpha) {
     const camX = this.camera.prevX + (this.camera.x - this.camera.prevX) * alpha;
     const camY = this.camera.prevY + (this.camera.y - this.camera.prevY) * alpha;
@@ -138,14 +120,10 @@ export default class World {
     this.player?.render(this.glRenderer, proj, alpha);
   }
 
-  // =============================
-  // 🔧 Inisialisasi sistem world
-  // =============================
   async #initWorld() {
-    // Buat sprite player sederhana
     const poly = new Polygon(this.glContext);
     const bmp = await poly.createRect(Config.PLAYER.WIDTH, Config.PLAYER.HEIGHT, "#2196F3");
-    const img = this.image.cloneEmpty(this.glContext);
+    const img = new GLImage(this.glContext);
     await img.loadFromBitmap(bmp);
 
     const start = Config.PLAYER.START_POS;
@@ -153,13 +131,11 @@ export default class World {
     this.player.prevX = start.X;
     this.player.prevY = start.Y;
 
-    // Collision grid dari tilemap
     const regex = new RegExp(Config.WORLD.SOLID_LAYER_REGEX, "i");
     this.collisionGrid = await CollisionGrid.fromTilemap(
       this.tilemap, decodeRLE, this.tilePx, regex, this.pathBase
     );
 
-    // Sistem fisika dan gravitasi
     this.physics = new Physics();
     this.gravity = new Gravity({ gy: Config.PHYSICS.GRAVITY });
     this.physics.addForce(this.gravity);
@@ -173,9 +149,6 @@ export default class World {
     this.collision = new CollisionSystem(this.collisionGrid, this.mode);
   }
 
-  // =============================
-  // 📏 Auto-size dari meta chunk
-  // =============================
   async #recalcBoundsFromMetaChunks() {
     const tpx = this.tilePx;
     const metaW = this.tilemap?.width | 0;
@@ -216,9 +189,6 @@ export default class World {
     this.boundH = Math.max(this.levelH, this.vh);
   }
 
-  // =============================
-  // 🔍 Deteksi ukuran chunk awal
-  // =============================
   async #inferChunkSize() {
     let cw = this.tilemap?.chunkWidth | 0;
     let ch = this.tilemap?.chunkHeight | 0;
@@ -239,9 +209,6 @@ export default class World {
     return { cw: sz, ch: sz };
   }
 
-  // =============================
-  // 🎥 Update kamera follow player
-  // =============================
   #updateCamera(dt) {
     const gl = this.glRenderer?.gl;
     const viewW = gl?.canvas?.width ?? this.vw;
@@ -269,9 +236,6 @@ export default class World {
     this.camera.y = this.pixelLock ? Math.round(ny) : ny;
   }
 
-  // =============================
-  // 🧱 Clamp nilai dengan pixel-lock
-  // =============================
   #lockClamp(v, a, b) {
     return this.pixelLock ? clamp(Math.round(v), a, b) : clamp(v, a, b);
   }

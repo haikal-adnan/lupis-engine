@@ -1,5 +1,5 @@
 {
-  "name": "terrain_tileset",
+  "name": "stair_tileset",
   "image": "Asset/Tile/stair.png",
   "tileSize": 16,
   "imageWidth": 256,

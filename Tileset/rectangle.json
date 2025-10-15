@@ -1,13 +1,6 @@
 {
-  "name": "terrain_tileset",
-  "image": "",
-  "tileSize": 0,
-  "imageWidth": 0,
-  "imageHeight": 0,
-  "columns": 0,
-  "rows": 0,
-  "totalTiles": 0,
+  "name": "rectangle_tileset",
   "tiles": {
-    "1": { "x": 0,  "y": 0,  "w": 16, "h": 16, "name": "bg" }
+    "1": { "x": 0,  "y": 0,  "w": 16, "h": 16, "name": "kotak" }
   }
 }
