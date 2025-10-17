@@ -23,6 +23,8 @@ export default class GameLoader {
     game.input = new InputHandler();
     game.input.initListeners();
 
+    this.setupMobileControls(game.input);
+
     game.touch = new TouchHandler();
     game.touch.initListeners();
 
@@ -41,8 +43,43 @@ export default class GameLoader {
     game.loop = new GameLoop(game);
   }
 
+  setupMobileControls(input) {
+    const btnLeft = document.getElementById("btn-left");
+    const btnRight = document.getElementById("btn-right");
+    const btnJump = document.getElementById("btn-jump");
+
+    const setKey = (key, state) => {
+      input.keys[key] = state;
+      if (key === "arrowup" && state) {
+        if (!input.actions.jump) input._pressedQueue.add("jump");
+        input.actions.jump = true;
+      }
+      if (key === "arrowup" && !state) {
+        input._releasedQueue.add("jump");
+        input.actions.jump = false;
+      }
+    };
+
+    const bindTouch = (btn, key) => {
+      ["touchstart", "mousedown"].forEach(e =>
+        btn.addEventListener(e, ev => { ev.preventDefault(); setKey(key, true); })
+      );
+      ["touchend", "mouseup", "mouseleave"].forEach(e =>
+        btn.addEventListener(e, ev => { ev.preventDefault(); setKey(key, false); })
+      );
+    };
+
+    bindTouch(btnLeft, "arrowleft");
+    bindTouch(btnRight, "arrowright");
+    bindTouch(btnJump, "arrowup");
+  }
+
+
   gameStart() {
     console.log("✅ Semua data berhasil dimuat. Memulai game...");
     game.loop?.start();
   }
+
+
 }
+
