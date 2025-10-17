@@ -1,4 +1,5 @@
-import { mat4 } from "https://cdn.jsdelivr.net/npm/gl-matrix@3.4.3/esm/index.js";
+// /Renderer/GLRenderer.js
+import Mat4 from "../Util/Mat4.js";
 import Config from "../Config/Config.js";
 
 export default class GLRenderer {
@@ -8,53 +9,63 @@ export default class GLRenderer {
       alpha: false,
       antialias: false,
       powerPreference: "high-performance",
-      // desynchronized kadang menimbulkan tearing/flicker di beberapa GPU.
-      // Jika masih ada jitter, set ke false (default di sini).
       desynchronized: false,
       preserveDrawingBuffer: false,
     });
+
     if (!this.gl) throw new Error("WebGL tidak didukung.");
 
     const gl = this.gl;
     this.backgroundColor = [0, 0, 0, 1];
 
+    // Konfigurasi dasar WebGL
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
     gl.disable(gl.DEPTH_TEST);
-    gl.disable(gl.DITHER); // kecilkan noise/diff
+    gl.disable(gl.DITHER);
 
-    this._projection = { isProjection: true, matrix: mat4.create() };
+    // Matriks proyeksi default (ortografik)
+    this._projection = {
+      isProjection: true,
+      matrix: Mat4.create(),
+    };
     this._lastW = 0;
     this._lastH = 0;
 
-    // Debug context lost
+    // Deteksi context hilang
     canvas.addEventListener("webglcontextlost", (e) => {
       e.preventDefault();
-      console.warn("[WebGL] context lost");
+      console.warn("[WebGL] Context hilang");
     });
     canvas.addEventListener("webglcontextrestored", () => {
-      console.warn("[WebGL] context restored — reinit resources if needed");
+      console.warn("[WebGL] Context kembali — muat ulang resource jika perlu");
       this.resize();
     });
 
     this.resize();
   }
 
+  /** Ubah warna latar belakang renderer */
   setBackgroundColor(r, g, b, a = 1) {
     this.backgroundColor = [r, g, b, a];
   }
 
+  /** Sesuaikan viewport & proyeksi dengan ukuran canvas */
   resize() {
-    const { width, height } = this.canvas; // kamu pakai virtual size → biarkan
+    const { width, height } = this.canvas;
     const gl = this.gl;
+
     gl.viewport(0, 0, width, height);
 
+    // Hanya update jika ukuran berubah
     if (this._lastW !== width || this._lastH !== height) {
-      this._lastW = width; this._lastH = height;
-      mat4.ortho(this._projection.matrix, 0, width, height, 0, -1, 1);
+      this._lastW = width;
+      this._lastH = height;
+      Mat4.ortho(this._projection.matrix, 0, width, height, 0, -1, 1);
     }
   }
 
+  /** Bersihkan layar dengan warna background */
   clear() {
     const gl = this.gl;
     const [r, g, b, a] = this.backgroundColor;
@@ -62,21 +73,23 @@ export default class GLRenderer {
     gl.clear(gl.COLOR_BUFFER_BIT);
   }
 
-  // Offset kamera (world) → proyeksi layar (pixel-snapped bila pixel-art)
+  /**
+   * Buat matriks proyeksi dunia berdasarkan offset kamera.
+   * Jika PIXEL_ART aktif, posisi dibulatkan agar tidak blur (pixel-perfect).
+   */
   getWorldProjection(offsetX = 0, offsetY = 0) {
     const gl = this.gl;
     const w = gl.canvas.width, h = gl.canvas.height;
 
-    // Pixel snap untuk menghindari sub-pixel seams
+    // Pixel snap (menghindari subpixel seam)
     const snap = (Config?.PIXEL_ART ?? false) || (Config?.CAMERA?.PIXEL_LOCK ?? false);
     if (snap) {
       offsetX = Math.round(offsetX);
       offsetY = Math.round(offsetY);
     }
 
-    const proj = mat4.create();
-    const left = Math.max(0, offsetX), top = Math.max(0, offsetY);
-    mat4.ortho(proj, left, left + w, top + h, top, -1, 1);
+    const proj = Mat4.create();
+    Mat4.ortho(proj, offsetX, offsetX + w, offsetY + h, offsetY, -1, 1);
     return { isProjection: true, matrix: proj };
   }
 

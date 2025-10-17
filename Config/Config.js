@@ -13,7 +13,7 @@ const Config = {
   TILE_SIZE: TILE,         // ukuran tile asli (px)
   SCALE,                   // faktor skala visual
   PX_TILE: PX,             // ukuran tile hasil skala
-  PIXEL_ART: false,         // aktifkan pixel snapping
+  PIXEL_ART: true,         // aktifkan pixel snapping
 
   // ===== World / Level =====
   WORLD: {
