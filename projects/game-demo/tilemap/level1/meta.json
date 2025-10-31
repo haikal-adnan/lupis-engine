@@ -1,0 +1,37 @@
+{
+  "name": "level1",
+  "tileSize": 16,
+  "chunkWidth": 16,
+  "chunkHeight": 16,
+  "tileset": "tileset/terrain.json",
+  "width": 48,
+  "height": 32,
+  "layers": [
+    {
+      "name": "Ground",
+      "folder": "layers/ground",
+      "encoding": "rle",
+      "chunks": [
+        { "x": 0, "y": 0, "path": "chunk_0_0.json" },
+        { "x": 0, "y": 1, "path": "chunk_0_1.json" },
+        { "x": 1, "y": 0, "path": "chunk_1_0.json" },
+        { "x": 1, "y": 1, "path": "chunk_1_1.json" },
+        { "x": 2, "y": 0, "path": "chunk_2_0.json" },
+        { "x": 2, "y": 1, "path": "chunk_2_1.json" }
+      ]
+    },
+    {
+      "name": "Solid",
+      "folder": "layers/solid",
+      "encoding": "rle",
+      "chunks": [
+        { "x": 0, "y": 0, "path": "chunk_0_0.json" },
+        { "x": 0, "y": 1, "path": "chunk_0_1.json" },
+        { "x": 1, "y": 0, "path": "chunk_1_0.json" },
+        { "x": 1, "y": 1, "path": "chunk_1_1.json" },
+        { "x": 2, "y": 0, "path": "chunk_2_0.json" },
+        { "x": 2, "y": 1, "path": "chunk_2_1.json" }
+      ]
+    }
+  ]
+}

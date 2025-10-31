@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@engine/*": ["engine/*"],
+      "@utils/*": ["utils/*"],
+      "@backend/*": ["backend/*"],
+      "@schemas/*": ["schemas/*"],
+      "@projects/*": ["projects/*"],
+      "@frontend/*": ["frontend/*"]
+    }
+  },
+  "include": [
+    "engine",
+    "utils",
+    "backend",
+    "frontend",
+    "projects",
+    "schemas"
+  ]
+}

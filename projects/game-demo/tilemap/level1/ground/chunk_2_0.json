@@ -1,0 +1,11 @@
+{
+  "x": 2,
+  "y": 0,
+  "width": 16,
+  "height": 16,
+  "encoding": "rle",
+  "tilesets": ["terrain"],
+  "rleData": [
+    [256, [0, 0]]
+  ]
+}
