@@ -1,12 +1,7 @@
 <template>
-  <div
-    ref="wrap"
-    class="w-full h-full card p-0 overflow-hidden flex flex-col !rounded-b-none !rounded-t-md"
-  >
-    <!-- === Top Bar === -->
-    <div
-      class="card flex items-center justify-between px-4 py-2 bg-white/5 border-b border-white/10 select-none !rounded-t-md !rounded-b-none"
-    >
+  <div class="w-full h-full card p-0 overflow-hidden flex flex-col !rounded-b-none !rounded-t-md">
+    <!-- Top bar -->
+    <div class="card flex items-center justify-between px-4 py-2 bg-white/5 border-b border-white/10 select-none !rounded-t-md !rounded-b-none">
       <div class="text-sm font-semibold text-white/80">
         Scene: <span class="text-white">Main level</span>
       </div>
@@ -25,52 +20,20 @@
       </div>
     </div>
 
-    <!-- === Engine Canvas Container === -->
+    <!-- Engine canvas -->
     <div ref="stage" class="relative flex-1 bg-slate-800 !rounded-b-md overflow-hidden">
       <canvas id="glCanvas" class="absolute inset-0 w-full h-full z-0"></canvas>
       <canvas id="uiCanvas" class="absolute inset-0 w-full h-full z-10 pointer-events-none"></canvas>
     </div>
   </div>
 </template>
+
 <script setup>
-import { onMounted, onBeforeUnmount, ref, nextTick } from "vue";
-import { startEngine } from "../../../engine/main.js"; // pastikan file ini diekspor
-
-const wrap = ref(null);
-const stage = ref(null);
-let ro;
-
-function fit() {
-  const el = stage.value;
-  if (!el) return;
-  const rect = el.getBoundingClientRect();
-  const dpr = Math.min(2, window.devicePixelRatio || 1);
-
-  // Resize kedua canvas
-  ["glCanvas", "uiCanvas"].forEach(id => {
-    const c = document.getElementById(id);
-    if (!c) return;
-    c.width = Math.floor(rect.width * dpr);
-    c.height = Math.floor(rect.height * dpr);
-    c.style.width = rect.width + "px";
-    c.style.height = rect.height + "px";
-  });
-}
+import { onMounted, nextTick } from "vue";
+import { main } from "../../../projects/template-platformer/code/Main.js";
 
 onMounted(async () => {
   await nextTick();
-  fit();
-  ro = new ResizeObserver(fit);
-  ro.observe(stage.value);
-
-  try {
-    await startEngine("glCanvas", "uiCanvas");
-  } catch (err) {
-    console.error("❌ Gagal memuat engine:", err);
-  }
-});
-
-onBeforeUnmount(() => {
-  ro?.disconnect();
+  await main();
 });
 </script>

@@ -1,0 +1,13 @@
+{
+  "name": "stair_tileset",
+  "image": "asset/stair.png",
+  "tileSize": 16,
+  "imageWidth": 256,
+  "imageHeight": 432,
+  "columns": 16,
+  "rows": 27,
+  "totalTiles": 432,
+  "tiles": {
+    "1": { "x": 0,  "y": 0,  "w": 16, "h": 16, "name": "bg" }
+  }
+}

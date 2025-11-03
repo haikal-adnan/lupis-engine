@@ -1,0 +1,17 @@
+{
+  "name": "terrain_tileset",
+  "image": "asset/terrain.png",
+  "tileSize": 16,
+  "imageWidth": 352,
+  "imageHeight": 176,
+  "columns": 22,
+  "rows": 11,
+  "totalTiles": 242,
+  "tiles": {
+    "1": { "x": 112,  "y": 0,  "w": 16, "h": 16, "name": "dirt" },
+    "2": { "x": 272, "y": 16,  "w": 16, "h": 16, "name": "plat_1" },
+    "3": { "x": 288, "y": 16,  "w": 16, "h": 16, "name": "plat_2" },
+    "4": { "x": 304, "y": 16,  "w": 16, "h": 16, "name": "plat_3" },
+    "5": { "x": 112,  "y": 16,  "w": 16, "h": 16, "name": "dirt_2" }
+  }
+}

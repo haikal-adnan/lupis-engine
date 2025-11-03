@@ -1,0 +1,6 @@
+{
+  "name": "rectangle_tileset",
+  "tiles": {
+    "1": { "x": 0,  "y": 0,  "w": 16, "h": 16, "name": "kotak" }
+  }
+}
