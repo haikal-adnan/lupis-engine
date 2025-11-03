@@ -4,9 +4,9 @@ import GameLoader from "./Loader/GameLoader.js";
 
 export const game = new Game();
 
-export async function startEngine(glId = "glCanvas", uiId = "uiCanvas") {
-  const glCanvas = document.getElementById(glId);
-  const uiCanvas = document.getElementById(uiId);
+export async function startEngine() {
+  const glCanvas = document.getElementById("glCanvas");
+  const uiCanvas = document.getElementById("uiCanvas");
   if (!glCanvas || !uiCanvas)
     throw new Error("Canvas element(s) not found in DOM");
 

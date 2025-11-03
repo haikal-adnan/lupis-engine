@@ -27,9 +27,11 @@ export default defineConfig({
     alias: {
       // === Alias bawaan untuk folder src (frontend sendiri) ===
       '@': fileURLToPath(new URL('./src', import.meta.url)),
-
+      "@engine": fileURLToPath(new URL("../new-engine", import.meta.url)),
+      "@utils": fileURLToPath(new URL("../utils", import.meta.url)), // ✅ tambahkan ini
+      "@projects": fileURLToPath(new URL("../projects", import.meta.url)), // opsional
       // === Alias eksternal menuju folder di luar frontend ===
-      '@engine': path.resolve(__dirname, '../engine'),
+      '@engine': path.resolve(__dirname, '../new-engine'),
       '@utils': path.resolve(__dirname, '../utils'),
       '@schemas': path.resolve(__dirname, '../schemas'),
       '@projects': path.resolve(__dirname, '../projects'),
