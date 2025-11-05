@@ -1,5 +1,5 @@
 import { Integrator } from "./Integrator.js";
-import Config from "../../engine/Config/Config.js";
+import Config from "../../zDeprecated/engine/Config/Config.js";
 
 /**
  * PhysicsCore — inti dari sistem fisika modular.

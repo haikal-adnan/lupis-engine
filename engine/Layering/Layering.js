@@ -15,7 +15,7 @@ export default class Layering {
   }
 
   async loadChunks(chunkList) {
-    const baseURL = `http://api.example.com/projects/${this.projectId}`;
+    const baseURL = `http://example.com/api/projects/${this.projectId}`;
     const folderPath = `tilemap/${this.levelName}/${this.name.toLowerCase()}`;
 
     const tasks = chunkList.map(async (info) => {

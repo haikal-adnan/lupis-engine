@@ -4,7 +4,8 @@ import { econsole } from "@engine/Core/EngineConsole.js";
 import { initPlayer } from "./InitPlayer.js";
 import { initInput } from "./InitInput.js";
 
-export async function initEngine() {
+export async function initEngine(glCanvas, uiCanvas) {
+  console.log(glCanvas, uiCanvas)
   bus.on("world:ready", async (info) => {
     econsole.log("🌍 EventBus: world:ready → " + info.message);
 
@@ -12,24 +13,21 @@ export async function initEngine() {
     const world = game.world;
     if (!world) return econsole.warn("⚠️ World belum siap untuk Player");
 
-    // 🔹 Buat Player
     const player = await initPlayer(game.glContext);
     world.player = player;
 
-    // 🔹 Hubungkan input ke player
     initInput(game);
 
-    econsole.log("✅ Player & InputHandler berhasil diinisialisasi");
   });
 
   try {
-    await startEngine();
+    await startEngine(glCanvas, uiCanvas);
     econsole.log("🎮 Engine berhasil dijalankan");
   } catch (err) {
     econsole.error("❌ Gagal memuat engine:", err);
   }
 }
 
-export async function main() {
-  await initEngine();
+export async function main(glCanvas, uiCanvas) {
+  await initEngine(glCanvas, uiCanvas);
 }

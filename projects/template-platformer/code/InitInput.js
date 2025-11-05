@@ -19,6 +19,6 @@ export function initInput(game) {
   // Update movement di tiap frame
   bus.on("game:update", (dt) => {
     input.beginFrame();
-    player.update(dt, input, "platformer"); // mode bisa diganti
+    player.update(dt, input, "platformer"); 
   });
 }

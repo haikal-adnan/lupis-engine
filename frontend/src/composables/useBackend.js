@@ -49,6 +49,7 @@ export function useBackend() {
   }
 
   return {
+    API_URL,
     projects,
     assets,
     projectFiles,

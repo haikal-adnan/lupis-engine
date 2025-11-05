@@ -16,26 +16,37 @@ export default defineConfig({
       'localhost',
     ],
     hmr: {
-      overlay: true // ubah ke false jika ingin matikan tampilan error overlay merah
-    }
+      overlay: true, // ubah ke false jika ingin matikan tampilan error overlay merah
+    },
+
+    // ⬇️ IZINKAN AKSES FOLDER DI LUAR ROOT FRONTEND
+    fs: {
+      allow: [
+        '..', // folder di atas root frontend
+        '../engine',
+        '../utils',
+        '../projects',
+        '../schemas',
+        '../backend',
+        '../public',
+      ],
+    },
   },
-  plugins: [
-    vue(),
-    vueDevTools(),
-  ],
+
+  plugins: [vue(), vueDevTools()],
+
   resolve: {
     alias: {
       // === Alias bawaan untuk folder src (frontend sendiri) ===
       '@': fileURLToPath(new URL('./src', import.meta.url)),
-      "@engine": fileURLToPath(new URL("../new-engine", import.meta.url)),
-      "@utils": fileURLToPath(new URL("../utils", import.meta.url)), // ✅ tambahkan ini
-      "@projects": fileURLToPath(new URL("../projects", import.meta.url)), // opsional
+
       // === Alias eksternal menuju folder di luar frontend ===
-      '@engine': path.resolve(__dirname, '../new-engine'),
+      '@engine': path.resolve(__dirname, '../engine'),
       '@utils': path.resolve(__dirname, '../utils'),
       '@schemas': path.resolve(__dirname, '../schemas'),
       '@projects': path.resolve(__dirname, '../projects'),
       '@backend': path.resolve(__dirname, '../backend'),
+      '@public': path.resolve(__dirname, '../public'),
     },
   },
 });
