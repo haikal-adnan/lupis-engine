@@ -1,4 +1,5 @@
 {
+  "NAME" : "Core",
   "TILE_SIZE": 16,
   "SCALE": 4,
   "PX_TILE": 64,

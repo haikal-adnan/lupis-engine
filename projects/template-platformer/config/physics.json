@@ -1,4 +1,5 @@
 {
+  "NAME" : "Physics",
   "MODE": "platformer",
   "GRAVITY": 627.2,
   "MAX_VELOCITY_Y": 3968,

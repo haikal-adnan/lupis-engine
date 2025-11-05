@@ -36,9 +36,7 @@
     <Sidebar :style="[rowMainMargin, { minWidth: 'var(--min-right)' }]">
       <h3 class="font-semibold mb-3 text-white">Property Inspector</h3>
       <div class="flex flex-col space-y-5 text-sm">
-        <PropertyDisplay />
-        <PropertyPhysics />
-        <PropertyPlayer />
+        <Property />
       </div>
     </Sidebar>
 
@@ -115,6 +113,7 @@ import AssetManagement from "../management/AssetManagement.vue";
 import ConsoleView from "../console/ConsoleView.vue";
 import icImage from "@/assets/icons/ic_image.svg";
 import icCode from "@/assets/icons/ic_code.svg";
+import Property from "../inspector/Property.vue";
 
 /* === Layout Config === */
 const LAYOUT = Object.freeze({
