@@ -1,10 +1,10 @@
 <template>
   <div class="w-full h-full card p-0 overflow-hidden flex flex-col !rounded-b-none !rounded-t-md">
-    <!-- Top bar -->
+    <!-- 🔹 Top bar -->
     <div
       class="card flex items-center justify-between px-4 py-2 bg-white/5 border-b border-white/10 select-none !rounded-t-md !rounded-b-none"
     >
-      <!-- 🔹 Tombol Preview / Update -->
+      <!-- Tombol Preview / Update -->
       <button
         @click="openOrUpdatePreview"
         class="flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-semibold transition"
@@ -46,77 +46,62 @@
 <script setup>
 import { ref, onMounted, nextTick, onBeforeUnmount } from "vue";
 import { main } from "../../../projects/template-platformer/code/Main.js";
-import { useBackend } from "@/composables/useBackend.js";
 
-const { API_URL } = useBackend(); // kamu bisa expose API_URL juga di composable
 const previewWindow = ref(null);
 
-// Jalankan engine statis (mode edit)
+// Jalankan engine dalam editor
 onMounted(async () => {
   await nextTick();
   await main("glCanvas", "uiCanvas");
 });
 
-// Bersihkan jika popup ditutup manual
+// Bersihkan popup jika ditutup manual
 window.addEventListener("focus", () => {
-  if (previewWindow.value && previewWindow.value.closed) {
-    previewWindow.value = null;
-  }
+  if (previewWindow.value && previewWindow.value.closed) previewWindow.value = null;
 });
 
 onBeforeUnmount(() => {
-  if (previewWindow.value && !previewWindow.value.closed) {
-    previewWindow.value.close();
-  }
+  if (previewWindow.value && !previewWindow.value.closed) previewWindow.value.close();
 });
 
-// === Fungsi Preview / Update via Backend ===
-async function openOrUpdatePreview() {
+// === 🔹 Buka popup ke preview.html tanpa backend ===
+function openOrUpdatePreview() {
   const projectId = "template-platformer";
-  console.log(API_URL)
 
-  if (!previewWindow.value || previewWindow.value.closed) {
-    try {
-      const res = await fetch(`${API_URL}/preview/start`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ project: projectId }),
-      });
-      const data = await res.json();
-      if (!data.url) throw new Error("Gagal mendapatkan URL preview dari backend");
-
-      // Gunakan absolute path relatif domain sama
-      const previewUrl = `${data.url.startsWith("/") ? data.url : "/" + data.url}`;
-
-      // Popup ukuran menengah
-      const w = 960, h = 540;
-      const left = window.screenX + (window.outerWidth - w) / 2;
-      const top = window.screenY + (window.outerHeight - h) / 2;
-
-      const features = `
-        popup=yes,
-        width=${w},
-        height=${h},
-        left=${left},
-        top=${top},
-        resizable=yes,
-        scrollbars=no,
-        status=no,
-        menubar=no,
-        toolbar=no
-      `.replace(/\s+/g, "");
-
-      previewWindow.value = window.open("http://api.lupis.calk.cloud/preview/template-platformer", "LupisPreview", features);
-
-      console.log("🎮 Popup preview dibuka:", previewUrl);
-    } catch (err) {
-      console.error("❌ Gagal membuka preview:", err);
-    }
-  } else {
-    // Kirim sinyal update ke popup
-    previewWindow.value.postMessage({ type: "reloadGame" }, location.origin);
-    console.log("🔄 Update dikirim ke popup preview");
+  if (previewWindow.value && !previewWindow.value.closed) {
+    // Kirim sinyal reload
+    previewWindow.value.postMessage({ type: "reloadGame" }, "*");
+    console.log("🔄 Reload dikirim ke popup preview");
+    return;
   }
-}
 
+  // Buat URL preview statis (tanpa backend)
+  const previewUrl = `/preview/preview.html?project=${projectId}`;
+
+  // Popup config
+  const w = 960, h = 540;
+  const left = window.screenX + (window.outerWidth - w) / 2;
+  const top = window.screenY + (window.outerHeight - h) / 2;
+  const features = `
+    popup=yes,
+    width=${w},
+    height=${h},
+    left=${left},
+    top=${top},
+    resizable=yes,
+    scrollbars=no,
+    status=no,
+    menubar=no,
+    toolbar=no
+  `.replace(/\s+/g, "");
+
+  previewWindow.value = window.open(previewUrl, "LupisPreview", features);
+  console.log("🎮 Popup preview dibuka:", previewUrl);
+}
 </script>
+
+<style scoped>
+.card {
+  color: white;
+}
+</style>

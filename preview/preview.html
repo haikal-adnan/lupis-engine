@@ -1,99 +1,58 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Lupis Engine Preview</title>
-    <style>
-      html, body {
-        margin: 0;
-        padding: 0;
-        width: 100%;
-        height: 100%;
-        overflow: hidden;
-        background: #111;
-      }
-      #glPreviewCanvas,
-      #uiPreviewCanvas {
-        position: absolute;
-        inset: 0;
-        width: 100%;
-        height: 100%;
-      }
-      #loading {
-        position: absolute;
-        inset: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #bbb;
-        font-family: sans-serif;
-      }
-    </style>
-    <script type="importmap">
-    {
-      "imports": {
-        "@engine/": "/engine/",
-        "@utils/": "/utils/",
-        "@projects/": "/projects/"
-      }
+<head>
+  <meta charset="UTF-8" />
+  <title>Lupis Engine Preview</title>
+  <style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #111;
+  }
+  #glPreviewCanvas,
+  #uiPreviewCanvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+  #loading {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #bbb;
+    font-family: sans-serif;
+  }
+</style>
+  <script type="importmap">
+  {
+    "imports": {
+      "@engine/": "/engine/",
+      "@utils/": "/utils/",
+      "@projects/": "/projects/"
     }
-    </script>
+  }
+  </script>
+</head>
+<body>
+  <div id="loading">Ngopi oy</div>
+  <canvas id="glPreviewCanvas"></canvas>
+  <canvas id="uiPreviewCanvas"></canvas>
 
-  </head>
-  <body>
-    <div id="loading">Loading engine...</div>
-    <canvas id="glPreviewCanvas"></canvas>
-    <canvas id="uiPreviewCanvas"></canvas>
-    <script type="module">
-      import { startEngine } from "../../engine/main.js";
-      import { initEngine } from "../projects/template-platformer/code/Main.js";
+  <script type="module">
+    import { startEngine } from "@engine/main.js";
+    import { initEngine } from "@projects/template-platformer/code/Main.js";
 
-      const project = new URLSearchParams(location.search).get("project") || "default";
-      const gl = document.getElementById("glPreviewCanvas");
-      const ui = document.getElementById("uiPreviewCanvas");
-      const loading = document.getElementById("loading");
+    const gl = document.getElementById("glPreviewCanvas");
+    const ui = document.getElementById("uiPreviewCanvas");
 
-      async function boot() {
-        try {
-          console.log(`🚀 Starting Lupis Engine preview for project: ${project}`);
-
-          // Inisialisasi engine secara global (memastikan module utama ter-load)
-          await initEngine({
-            project,
-            glCanvas: gl,
-            uiCanvas: ui,
-          });
-
-          // Jalankan loop utama engine
-          await startEngine("glPreviewCanvas", "uiPreviewCanvas");
-
-          // Hilangkan teks "Loading"
-          loading.remove();
-
-          console.log("✅ Engine started successfully.");
-        } catch (err) {
-          loading.textContent = "❌ Failed to start engine";
-          console.error("Engine start failed:", err);
-        }
-      }
-
-      boot();
-
-      // --- Integrasi dengan Visual Editor (opsional) ---
-      window.addEventListener("message", async (e) => {
-        if (e.data?.type === "reloadGame") {
-          console.log("♻ Reload game from editor");
-          loading.textContent = "Reloading...";
-          try {
-            await startEngine("glPreviewCanvas", "uiPreviewCanvas");
-            loading.remove();
-          } catch (err) {
-            loading.textContent = "❌ Reload failed";
-            console.error(err);
-          }
-        }
-      });
-
-    </script>
-  </body>
+    await initEngine({ project: "template-platformer", glCanvas: gl, uiCanvas: ui });
+    await startEngine("glPreviewCanvas", "uiPreviewCanvas");
+  </script>
+</body>
 </html>

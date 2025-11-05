@@ -1,4 +1,5 @@
 {
+  "NAME" : "World",
   "WIDTH": 64,
   "HEIGHT": 64,
   "SPEED": 384,
