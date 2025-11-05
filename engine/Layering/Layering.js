@@ -15,7 +15,7 @@ export default class Layering {
   }
 
   async loadChunks(chunkList) {
-    const baseURL = `http://api.lupis.calk.cloud/projects/${this.projectId}`;
+    const baseURL = `http://lupis.calk.cloud/api/projects/${this.projectId}`;
     const folderPath = `tilemap/${this.levelName}/${this.name.toLowerCase()}`;
 
     const tasks = chunkList.map(async (info) => {

@@ -29,7 +29,7 @@ import { ref, onMounted, watch } from "vue";
 import FileItem from "./FileItem.vue";
 import { useBackend } from "@/composables/useBackend";
 
-const projectId = "game-demo"; // proyek aktif
+const projectId = "template-platformer"; // proyek aktif
 const { projectFiles, fetchProjectFiles, loading } = useBackend();
 const fileTree = ref([]);
 

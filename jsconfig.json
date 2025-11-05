@@ -2,20 +2,22 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@engine/*": ["engine/*"],
+      "@engine/*": ["zDeprecated/engine/*"],
       "@utils/*": ["utils/*"],
       "@backend/*": ["backend/*"],
       "@schemas/*": ["schemas/*"],
       "@projects/*": ["projects/*"],
-      "@frontend/*": ["frontend/*"]
+      "@frontend/*": ["frontend/*"],
+      "@public/*": ["preview/*"]
     }
   },
   "include": [
-    "engine",
+    "zDeprecated/engine",
     "utils",
     "backend",
     "frontend",
     "projects",
-    "schemas"
+    "schemas",
+    "preview"
   ]
 }

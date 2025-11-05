@@ -1,14 +1,12 @@
-// src/engine/main.js
-import Game from "./Core/Game.js";
+// src/engine/embed.js
+import Game from "./World/Game.js";
 import GameLoader from "./Loader/GameLoader.js";
 
 export const game = new Game();
 
-export async function startEngine(glId = "glCanvas", uiId = "uiCanvas") {
-  const glCanvas = document.getElementById(glId);
-  const uiCanvas = document.getElementById(uiId);
-  
-
+export async function startEngine(glCanvas, uiCanvas) {
+  // const glCanvas = document.getElementById("glCanvas");
+  // const uiCanvas = document.getElementById("uiCanvas");
   if (!glCanvas || !uiCanvas)
     throw new Error("Canvas element(s) not found in DOM");
 
@@ -35,7 +33,9 @@ export async function startEngine(glId = "glCanvas", uiId = "uiCanvas") {
   resizeCanvas();
 
   const loader = new GameLoader();
-  await loader.initializeGame(glCanvas, uiCanvas);
+
+  await loader.initializeGame();
   loader.gameStart();
 
+  console.log("🎮 Engine berhasil dijalankan di", glId, uiId);
 }

@@ -1,7 +1,7 @@
 // src/engine/Core/Game.js
 import Config from "../Config/Config.js";
 import World from "../World/World.js";
-import { bus } from "../Core/EventBus.js";
+import { bus } from "./EventBus.js";
 
 export default class Game {
   constructor() {
