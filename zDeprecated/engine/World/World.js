@@ -123,10 +123,11 @@ export default class World {
     const img = new GLImage(this.glContext);
     await img.loadFromBitmap(bmp);
 
-    const start = Config.PLAYER.START_POS;
-    this.player = new Player(img, start.X, start.Y);
-    this.player.prevX = start.X;
-    this.player.prevY = start.Y;
+    const startX = Config.PLAYER.X;
+    const startY = Config.PLAYER.Y;
+    this.player = new Player(img, startX, startY);
+    this.player.prevX = startX;
+    this.player.prevY = startY;
 
     const regex = new RegExp(Config.WORLD.SOLID_LAYER_REGEX, "i");
     if (this.tilemap?.layers?.length) {

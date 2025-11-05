@@ -16,7 +16,8 @@ bus.on("world:ready", async (world) => {
   const img = new GLImage(world.glContext);
   await img.loadFromBitmap(bmp);
 
-  const start = Config.PLAYER.START_POS;
+  const startX = Config.PLAYER.X;
+  const startY = Config.PLAYER.Y;
   const player = new Player(img, start.X, start.Y);
   player.prevX = start.X;
   player.prevY = start.Y;

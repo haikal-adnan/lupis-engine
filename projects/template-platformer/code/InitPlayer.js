@@ -8,7 +8,9 @@ export async function initPlayer(glContext) {
   const poly = new Polygon(glContext);
   const image = await poly.createRect(32, 32, "#2196F3");
 
-  const start = Config.PLAYER?.START_POS ?? { X: 64, Y: 64 };
+  const startX = Config.PLAYER?.X ?? 64;
+  const startY = Config.PLAYER?.Y ?? 64;
+
   const options = {
     width: 32,
     height: 32,
@@ -18,8 +20,8 @@ export async function initPlayer(glContext) {
     pixelArt: Config.PIXEL_ART ?? true,
   };
 
-  const player = new Player(image, start.X, start.Y, options);
+  const player = new Player(image, startX, startY, options);
 
-  econsole.log(`Player polygon siap di posisi (${start.X}, ${start.Y})`);
+  econsole.log(`Player polygon siap di posisi (${startX}, ${startY})`);
   return player;
 }
