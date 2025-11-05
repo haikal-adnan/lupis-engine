@@ -1,7 +1,7 @@
 import Config from "../Config/Config.js";
 
 export default class Player {
-  constructor(image, x = Config.PLAYER.START_POS.X, y = Config.PLAYER.START_POS.Y, layer = "PLAYER") {
+  constructor(image, x = Config.PLAYER.X, y = Config.PLAYER.Y, layer = "PLAYER") {
     this.image = image;
     this.width  = Config.PLAYER.WIDTH;
     this.height = Config.PLAYER.HEIGHT;
