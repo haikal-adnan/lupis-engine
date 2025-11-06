@@ -31,9 +31,24 @@ export default class World {
   }
 
   render(alpha) {
-    const cam = this.camera.getInterpolated(alpha);
-    const proj = this.glRenderer.getWorldProjection(cam.x, cam.y);
+    const isEditor = Config.ENGINE_MODE === "editor";
 
-    this.player?.render(this.glRenderer, proj, alpha);
+    // === Jika editor, kamera langsung pakai posisi real tanpa interpolasi ===
+    const cam = isEditor
+      ? { x: this.camera.x, y: this.camera.y, scale: this.camera.scale ?? 1 }
+      : this.camera.getInterpolated(alpha);
+
+    const proj = this.glRenderer.getWorldProjection(cam.x, cam.y, cam.scale);
+
+    // === Editor mode → non-interpolated rendering ===
+    const useStrict = isEditor;
+
+    // Render semua entity dengan strict = true (tanpa interpolasi)
+    if (this.player) {
+      this.player.render(this.glRenderer, proj, alpha, useStrict);
+    }
+
+    // Tambahkan entity lain jika ada
   }
+
 }

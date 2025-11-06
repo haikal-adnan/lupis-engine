@@ -4,7 +4,7 @@ import GameLoader from "./Loader/GameLoader.js";
 
 export const game = new Game();
 
-export async function startEngine(glId, uiId) {
+export async function startEngine(glId, uiId, mode = "runtime") {
   const glCanvas = document.getElementById(glId);
   const uiCanvas = document.getElementById(uiId);
 
@@ -36,7 +36,7 @@ export async function startEngine(glId, uiId) {
   resizeCanvas();
 
   const loader = new GameLoader();
-  await loader.initializeGame(glCanvas, uiCanvas);
+  await loader.initializeGame(glCanvas, uiCanvas, mode);
   loader.gameStart();
 
 }

@@ -75,9 +75,17 @@ export default class Player {
   render(glRenderer, projection, alpha = 1, strict = false) {
     const rx = strict ? this.x : this.prevX + (this.x - this.prevX) * alpha;
     const ry = strict ? this.y : this.prevY + (this.y - this.prevY) * alpha;
+
     const fx = strict && this.pixelArt ? Math.round(rx) : rx;
     const fy = strict && this.pixelArt ? Math.round(ry) : ry;
 
-    this.image?.drawImage(fx, fy, this.width, this.height, projection);
+    const s = projection.zoom ?? 1;
+    const x = (fx - (projection.offsetX ?? 0)) * s;
+    const y = (fy - (projection.offsetY ?? 0)) * s;
+    const w = this.width * s;
+    const h = this.height * s;
+
+    this.image?.drawImage(x, y, w, h, projection);
   }
+
 }

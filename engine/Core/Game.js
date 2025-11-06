@@ -33,9 +33,15 @@ export default class Game {
   }
 
   render(alpha) {
-    // Bersihkan layar via GL renderer
+    const isEditor = Config.ENGINE_MODE === "editor";
+
+    // === Bersihkan layar ===
     this.glRenderer?.clear();
-    // World boleh menggambar sesuatu; untuk saat ini kosong
-    this.world?.render?.(alpha);
+
+    // === Render world tanpa interpolasi saat editor ===
+    if (this.world) {
+      const renderAlpha = isEditor ? 1 : alpha;
+      this.world.render(renderAlpha);
+    }
   }
 }

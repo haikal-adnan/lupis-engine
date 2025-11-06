@@ -21,7 +21,7 @@ export async function initEngine(glCanvas, uiCanvas) {
   });
 
   try {
-    await startEngine(glCanvas, uiCanvas);
+    await startEngine(glCanvas, uiCanvas, "editor");
     econsole.log("🎮 Engine berhasil dijalankan");
   } catch (err) {
     econsole.error("❌ Gagal memuat engine:", err);
