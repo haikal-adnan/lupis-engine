@@ -8,7 +8,7 @@ export async function initPlayer(glContext) {
   const poly = new Polygon(glContext);
   const image = await poly.createRect(32, 32, "#2196F3");
 
-  const startX = Config.PLAYER?.X ?? 64;
+  const startX = Config.PLAYER?.X ?? 200;
   const startY = Config.PLAYER?.Y ?? 64;
 
   const options = {

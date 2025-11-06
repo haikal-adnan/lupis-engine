@@ -66,6 +66,8 @@ export default class GameLoader {
       console.warn("⚠️ Lewati config dinamis (pakai default minimal):", err.message);
     }
 
+    // console.log(Config)
+
     const world = new World(game.glRenderer, game.uiRenderer);
     await world.load();      
     game.attachWorld(world);

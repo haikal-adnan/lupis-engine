@@ -1,8 +1,8 @@
 {
-  "NAME" : "World",
+  "NAME" : "Player",
   "WIDTH": 64,
   "HEIGHT": 64,
   "SPEED": 384,
-  "X": 300,
-  "Y": 800
+  "X": 500,
+  "Y": 500
 }
