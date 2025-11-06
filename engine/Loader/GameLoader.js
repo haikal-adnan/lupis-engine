@@ -7,9 +7,10 @@ import TouchHandler from "../Input/TouchHandler.js";
 import World from "../World/World.js";
 import Config from "../Config/Config.js";
 import { game } from "../main.js";
+import CameraController from "../Editor/CameraController.js";
 
 export default class GameLoader {
-  async initializeGame(glCanvas, uiCanvas) {
+  async initializeGame(glCanvas, uiCanvas, mode) {
     game.glRenderer = new GLRenderer(glCanvas);
     game.glContext  = glCanvas.getContext("webgl", { alpha: false, antialias: true });
 
@@ -67,10 +68,16 @@ export default class GameLoader {
     }
 
     // console.log(Config)
+    Config.ENGINE_MODE = mode;
+    console.log(Config.ENGINE_MODE)
 
     const world = new World(game.glRenderer, game.uiRenderer);
     await world.load();      
     game.attachWorld(world);
+    if (Config.ENGINE_MODE === "editor") {
+      game.cameraController = new CameraController(world.camera, glCanvas);
+    }
+
 
     game.loop = new GameLoop(game);
   }

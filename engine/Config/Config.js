@@ -4,11 +4,13 @@ class Configs {
     this.TILE = 16;
     this.SCALE = 4;
     this.PX_TILE = this.TILE * this.SCALE;
-    this.ENGINE_MODE = "play"; // atau "pause, restart"
+    this.ENGINE_MODE = "runtime"; // atau "pause, restart"
 
     this.VIRTUAL_WIDTH = 1920;
     this.VIRTUAL_HEIGHT = 1080;
     this.PIXEL_ART = true;
+
+    this
 
     this.WORLD = {
       WIDTH: this.VIRTUAL_WIDTH,

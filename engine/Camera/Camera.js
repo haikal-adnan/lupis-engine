@@ -13,7 +13,7 @@ export default class Camera {
     this.y = y;
     this.prevX = x;
     this.prevY = y;
-
+    this.scale = 1.0; // default zoom level
     const C = Config.CAMERA ?? {};
     this.lerp = C.LERP ?? 0.1;               // kehalusan pergerakan kamera
     this.pixelLock = C.PIXEL_LOCK && Config.PIXEL_ART;
@@ -29,40 +29,41 @@ export default class Camera {
    * @param {WebGLRenderingContext} gl - Konteks WebGL dari renderer
    */
   updateFollow(player, dt, levelW, levelH, gl) {
-    if (!player) return;
+    // 🔹 Jangan lakukan follow jika tidak ada player atau sedang di editor
+    if (!player || Config.ENGINE_MODE === "editor") return;
 
-    const viewW = gl?.canvas?.width ?? Config.VIRTUAL_WIDTH;
+    // Ambil ukuran viewport dari GL context atau fallback ke config
+    const viewW = gl?.canvas?.width  ?? Config.VIRTUAL_WIDTH;
     const viewH = gl?.canvas?.height ?? Config.VIRTUAL_HEIGHT;
-    const tilePx = Config.PX_TILE;
 
-    const playerCenterX = player.x + player.width * 0.5;
+    // Hitung titik tengah kamera agar player selalu di tengah layar
+    const halfViewW = viewW * 0.5;
+    const halfViewH = viewH * 0.5;
+
+    const playerCenterX = player.x + player.width  * 0.5;
     const playerCenterY = player.y + player.height * 0.5;
 
-    // Target posisi kamera agar player selalu di tengah
-    let targetX = clamp(playerCenterX - viewW * 0.5, 0, Math.max(0, levelW - viewW));
-    let targetY = clamp(playerCenterY - viewH * 0.5, 0, Math.max(0, levelH - viewH));
+    // 🔹 Tentukan target posisi kamera (agar player di tengah)
+    const maxX = Math.max(0, levelW - viewW);
+    const maxY = Math.max(0, levelH - viewH);
 
-    // Tambahan: jaga jarak bawah (agar player tidak terlalu ke tepi bawah)
-    const pb = player.y + player.height;
-    const bottomScreen = targetY + viewH;
-    const tilesBelow = Math.floor((bottomScreen - pb) / tilePx);
-    if (tilesBelow < this.minBottomTiles) {
-      targetY = Math.min(
-        targetY + (this.minBottomTiles - tilesBelow) * tilePx,
-        Math.max(0, levelH - viewH)
-      );
-    }
+    const targetX = clamp(playerCenterX - halfViewW, 0, maxX);
+    const targetY = clamp(playerCenterY - halfViewH, 0, maxY);
 
-    // Interpolasi posisi kamera (smooth follow)
+    // 🔹 Lerp untuk smooth movement
     const k = this.lerp * dt;
-    const nx = this.x + (targetX - this.x) * k;
-    const ny = this.y + (targetY - this.y) * k;
+    const nextX = this.x + (targetX - this.x) * k;
+    const nextY = this.y + (targetY - this.y) * k;
 
+    // 🔹 Simpan posisi sebelumnya untuk interpolasi render
     this.prevX = this.x;
     this.prevY = this.y;
-    this.x = this.pixelLock ? Math.round(nx) : nx;
-    this.y = this.pixelLock ? Math.round(ny) : ny;
+
+    // 🔹 Terapkan posisi baru (pixelLock jika pixel-art)
+    this.x = this.pixelLock ? Math.round(nextX) : nextX;
+    this.y = this.pixelLock ? Math.round(nextY) : nextY;
   }
+
 
   /**
    * Ambil posisi kamera interpolasi untuk rendering
@@ -70,12 +71,12 @@ export default class Camera {
    * @returns {{x: number, y: number}}
    */
   getInterpolated(alpha = 1) {
-    if (this.pixelLock) {
-      return { x: Math.round(this.x), y: Math.round(this.y) };
-    }
+    const ix = this.prevX + (this.x - this.prevX) * alpha;
+    const iy = this.prevY + (this.y - this.prevY) * alpha;
     return {
-      x: this.prevX + (this.x - this.prevX) * alpha,
-      y: this.prevY + (this.y - this.prevY) * alpha
+      x: this.pixelLock ? Math.round(ix) : ix,
+      y: this.pixelLock ? Math.round(iy) : iy,
+      scale: this.scale
     };
   }
 
