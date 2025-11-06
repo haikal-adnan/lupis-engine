@@ -17,7 +17,7 @@ export default class GameLoop {
 
     while (this.accumulator >= this.interval) {
       // 🔹 cek mode di Config
-      console.log("GameLoop mode:", Config.ENGINE_MODE);
+      console.log("GameLoop mode:", Config.PLAYER);
       if (Config.ENGINE_MODE === "play") {
         this.game.update(this.interval / 1000);
       }
