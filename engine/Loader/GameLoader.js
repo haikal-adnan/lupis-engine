@@ -8,6 +8,7 @@ import World from "../World/World.js";
 import Config from "../Config/Config.js";
 import { game } from "../main.js";
 import CameraController from "../Editor/CameraController.js";
+import SelectionOutline from "../Editor/SelectionOutline.js";
 
 export default class GameLoader {
   async initializeGame(glCanvas, uiCanvas, mode) {
@@ -76,8 +77,8 @@ export default class GameLoader {
     game.attachWorld(world);
     if (Config.ENGINE_MODE === "editor") {
       game.cameraController = new CameraController(world.camera, glCanvas);
+      game.selectionOutline = new SelectionOutline(world, glCanvas, game.glRenderer);
     }
-
 
     game.loop = new GameLoop(game);
   }
