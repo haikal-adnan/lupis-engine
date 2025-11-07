@@ -1,7 +1,4 @@
 <template>
-  <Sidebar :style="[rowMainMargin, { minWidth: 'var(--min-right)' }]">
-    <h3 class="font-semibold mb-3 text-white">Property Inspector</h3>
-
     <div v-if="loading" class="text-white/70 text-sm">Loading properties...</div>
     <div v-else class="flex flex-col space-y-5 text-sm">
       <section
@@ -31,7 +28,6 @@
         </template>
       </section>
     </div>
-  </Sidebar>
 </template>
 
 <script setup>

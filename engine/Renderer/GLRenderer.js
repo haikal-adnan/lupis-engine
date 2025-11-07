@@ -77,21 +77,29 @@ export default class GLRenderer {
    * Buat matriks proyeksi dunia berdasarkan offset kamera.
    * Jika PIXEL_ART aktif, posisi dibulatkan agar tidak blur (pixel-perfect).
    */
-  getWorldProjection(offsetX = 0, offsetY = 0) {
+  getWorldProjection(offsetX = 0, offsetY = 0, scale = 1) {
     const gl = this.gl;
-    const w = gl.canvas.width, h = gl.canvas.height;
+    const w = gl.canvas.width;
+    const h = gl.canvas.height;
 
-    // Pixel snap (menghindari subpixel seam)
+    // Pixel snap (menghindari blur)
     const snap = (Config?.PIXEL_ART ?? false) || (Config?.CAMERA?.PIXEL_LOCK ?? false);
     if (snap) {
       offsetX = Math.round(offsetX);
       offsetY = Math.round(offsetY);
     }
 
+    // Terapkan zoom (scale)
+    const viewW = w / scale;
+    const viewH = h / scale;
+
     const proj = Mat4.create();
-    Mat4.ortho(proj, offsetX, offsetX + w, offsetY + h, offsetY, -1, 1);
+    // Offset = posisi kamera (x,y) di dunia, ukuran view diperkecil sesuai zoom
+    Mat4.ortho(proj, offsetX, offsetX + viewW, offsetY + viewH, offsetY, -1, 1);
+
     return { isProjection: true, matrix: proj };
   }
+
 
   getScreenProjection() {
     return this._projection;
