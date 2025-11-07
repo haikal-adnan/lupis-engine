@@ -49,6 +49,7 @@ export default class GLRenderer {
   setBackgroundColor(r, g, b, a = 1) {
     this.backgroundColor = [r, g, b, a];
   }
+  
 
   /** Sesuaikan viewport & proyeksi dengan ukuran canvas */
   resize() {

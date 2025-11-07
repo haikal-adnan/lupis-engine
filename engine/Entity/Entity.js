@@ -6,14 +6,14 @@ export default class Entity {
     this.width = width;
     this.height = height;
     this.visible = true;
-    this.world = null; // referensi world saat ditambahkan
+    this.world = null;
+    this.type = "generic"; // bisa digunakan untuk filtering
   }
 
   onAddedToWorld(world) {
     this.world = world;
   }
 
-  // === Optional hooks ===
   update(dt) {}
   render(renderer, projection, alpha, strict) {}
 }

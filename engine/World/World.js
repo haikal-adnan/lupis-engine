@@ -1,18 +1,32 @@
 // src/engine/World/World.js
 import Camera from "../Camera/Camera.js";
 import Config from "../Config/Config.js";
-import { bus } from "../Core/EventBus.js";   // ✅ BENAR
+import { bus } from "../Core/EventBus.js";
 
 export default class World {
   constructor(glRenderer, uiRenderer) {
     this.glRenderer = glRenderer;
     this.uiRenderer = uiRenderer;
-
     this.camera = new Camera(0, 0);
-    this.player = null;
+    this.entities = [];
+    this.systems = []; // daftar sistem
+  }
+
+  addEntity(entity) {
+    entity.onAddedToWorld(this);
+    this.entities.push(entity);
+    if (entity.type === "player") this.player = entity;
+  }
+
+  addSystem(system) {
+    this.systems.push(system);
   }
 
   update(dt) {
+    for (const system of this.systems)
+      for (const e of this.entities)
+        system.update?.(e, dt);
+
     if (this.player) {
       this.camera.updateFollow(
         this.player,
@@ -24,31 +38,23 @@ export default class World {
     }
   }
 
-  async load() {
-    console.log("🌍 World mulai dimuat...");
-    await new Promise(r => setTimeout(r, 500)); // simulasi delay loading
-    bus.emit("world:ready", { message: "World sudah siap dimainkan!" });
-  }
-
   render(alpha) {
     const isEditor = Config.ENGINE_MODE === "editor";
-
-    // === Jika editor, kamera langsung pakai posisi real tanpa interpolasi ===
     const cam = isEditor
       ? { x: this.camera.x, y: this.camera.y, scale: this.camera.scale ?? 1 }
       : this.camera.getInterpolated(alpha);
 
     const proj = this.glRenderer.getWorldProjection(cam.x, cam.y, cam.scale);
+    const strict = isEditor;
 
-    // === Editor mode → non-interpolated rendering ===
-    const useStrict = isEditor;
-
-    // Render semua entity dengan strict = true (tanpa interpolasi)
-    if (this.player) {
-      this.player.render(this.glRenderer, proj, alpha, useStrict);
-    }
-
-    // Tambahkan entity lain jika ada
+    for (const system of this.systems)
+      for (const e of this.entities)
+        system.render?.(e, this.glRenderer, proj, alpha, strict);
   }
 
+  async load() {
+    console.log("🌍 World mulai dimuat...");
+    await new Promise(r => setTimeout(r, 500));
+    bus.emit("world:ready", { message: "World sudah siap dimainkan!" });
+  }
 }

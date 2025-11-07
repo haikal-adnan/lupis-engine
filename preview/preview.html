@@ -48,10 +48,12 @@
     import { startEngine } from "@engine/main.js";
     import { initEngine } from "@projects/template-platformer/code/Main.js";
 
-    const gl = document.getElementById("glPreviewCanvas");
-    const ui = document.getElementById("uiPreviewCanvas");
+    const gl = "glPreviewCanvas"
+    const ui = "uiPreviewCanvas"
 
-    await initEngine({ project: "template-platformer", glCanvas: gl, uiCanvas: ui });
+    console.log(gl, ui)
+
+    await initEngine(gl, ui);
     await startEngine("glPreviewCanvas", "uiPreviewCanvas", "runtime");
   </script>
 </body>
