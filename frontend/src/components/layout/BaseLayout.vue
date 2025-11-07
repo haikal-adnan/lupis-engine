@@ -20,7 +20,10 @@
 
     <!-- Left Sidebar -->
     <Sidebar :style="[rowMainMargin, { minWidth: 'var(--min-left)' }]">
-      <FileExplorer />
+      <h3 class="font-semibold mb-3 text-white">File System</h3>
+      <div class="flex flex-col space-y-5 text-sm">
+        <FileExplorer />
+      </div>
     </Sidebar>
 
     <!-- Handle Left | Center -->
@@ -102,11 +105,6 @@ import FooterBar from "./FooterBar.vue";
 import ResizeHandle from "./ResizeHandle.vue";
 import CanvasStage from "../CanvasStage.vue";
 import FileExplorer from "../system/FileExplorer.vue";
-
-// Inspector
-import PropertyDisplay from "../inspector/PropertyDisplay.vue";
-import PropertyPhysics from "../inspector/PropertyPhysics.vue";
-import PropertyPlayer from "../inspector/PropertyPlayer.vue";
 
 // Footer Tabs
 import AssetManagement from "../management/AssetManagement.vue";

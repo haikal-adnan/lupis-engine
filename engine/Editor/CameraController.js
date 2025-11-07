@@ -22,7 +22,7 @@ export default class CameraController {
 
         this.scale = 1.0;
         this.minZoom = 0.25;
-        this.maxZoom = 4.0;
+        this.maxZoom = 99999.0;
         this.zoomSpeed = 0.1;
 
         if (this.active) {
@@ -99,6 +99,28 @@ export default class CameraController {
     _onWheel(e) {
         e.preventDefault();
 
+        // === Modifier keys ===
+        const isShift = e.shiftKey;
+        const isAlt = e.altKey;
+
+        // Scroll sensitivity 
+        const panSpeed = 50 / this.scale;  // semakin besar zoom, gerakan makin halus
+
+        if (isShift) {
+            // 🔹 Geser vertikal (scroll atas/bawah)
+            this.camera.y += e.deltaY * 0.5 / this.scale; // bisa sesuaikan faktor
+            bus.emit("camera:pan", { x: this.camera.x, y: this.camera.y });
+            return;
+        }
+
+        if (isAlt) {
+            // 🔹 Geser horizontal (scroll kiri/kanan)
+            this.camera.x += e.deltaY * 0.5 / this.scale;
+            bus.emit("camera:pan", { x: this.camera.x, y: this.camera.y });
+            return;
+        }
+
+        // === Default: Zoom ===
         const oldScale = this.scale;
         const delta = e.deltaY < 0 ? 1 + this.zoomSpeed : 1 - this.zoomSpeed;
         this.scale = Math.min(this.maxZoom, Math.max(this.minZoom, this.scale * delta));
@@ -112,10 +134,11 @@ export default class CameraController {
         // Zoom relatif terhadap posisi mouse
         this.camera.x = cx - mx / this.scale;
         this.camera.y = cy - my / this.scale;
-
         this.camera.scale = this.scale;
+
         bus.emit("camera:zoom", { scale: this.scale });
     }
+
 
     destroy() {
         window.removeEventListener("keydown", this._onKeyDown);

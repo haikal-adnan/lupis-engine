@@ -1,7 +1,5 @@
 <template>
   <div class="text-sm text-white/90">
-    <h3 class="font-semibold mb-2">File System</h3>
-
     <!-- Loading -->
     <div v-if="loading" class="text-xs italic opacity-70">
       Memuat struktur project...
