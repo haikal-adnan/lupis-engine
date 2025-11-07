@@ -4,17 +4,14 @@ import GameLoader from "./Loader/GameLoader.js";
 
 export const game = new Game();
 
-export async function startEngine(glId, uiId, mode = "runtime") {
+export async function startEngine(glId, mode = "runtime") {
   const glCanvas = document.getElementById(glId);
-  const uiCanvas = document.getElementById(uiId);
-
-  console.log(glCanvas, uiCanvas);
   
-  if (!glCanvas || !uiCanvas)
+  if (!glCanvas)
     throw new Error("Canvas element(s) not found in DOM");
 
   const W = 1920, H = 1080;
-  [glCanvas, uiCanvas].forEach(c => { c.width = W; c.height = H; });
+  [glCanvas].forEach(c => { c.width = W; c.height = H; });
 
   const resizeCanvas = () => {
     const r = window.innerWidth / window.innerHeight;
@@ -22,7 +19,7 @@ export async function startEngine(glId, uiId, mode = "runtime") {
     const useH = r > g;
     const dw = useH ? window.innerHeight * g : window.innerWidth;
     const dh = useH ? window.innerHeight : window.innerWidth / g;
-    [glCanvas, uiCanvas].forEach(c => {
+    [glCanvas].forEach(c => {
       Object.assign(c.style, {
         width: dw + "px",
         height: dh + "px",
@@ -36,7 +33,7 @@ export async function startEngine(glId, uiId, mode = "runtime") {
   resizeCanvas();
 
   const loader = new GameLoader();
-  await loader.initializeGame(glCanvas, uiCanvas, mode);
+  await loader.initializeGame(glCanvas, mode);
   loader.gameStart();
 
 }

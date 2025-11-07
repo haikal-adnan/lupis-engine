@@ -4,9 +4,8 @@ import Config from "../Config/Config.js";
 import { bus } from "../Core/EventBus.js";
 
 export default class World {
-  constructor(glRenderer, uiRenderer) {
+  constructor(glRenderer) {
     this.glRenderer = glRenderer;
-    this.uiRenderer = uiRenderer;
     this.camera = new Camera(0, 0);
     this.entities = [];
     this.systems = []; // daftar sistem

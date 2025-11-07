@@ -5,7 +5,7 @@ import { initPlayer } from "./InitPlayer.js";
 import { initInput } from "./InitInput.js";
 import PlayerSystem from "@utils/Systems/PlayerSystem.js";
 
-export async function initEngine(glCanvas, uiCanvas) {
+export async function initEngine(glCanvas) {
   bus.on("world:ready", async (info) => {
     econsole.log("🌍 EventBus: world:ready → " + info.message);
 
@@ -21,10 +21,10 @@ export async function initEngine(glCanvas, uiCanvas) {
     world.addSystem(playerSystem);
   });
 
-  await startEngine(glCanvas, uiCanvas, "editor");
+  await startEngine(glCanvas, "editor");
   econsole.log("🎮 Engine berhasil dijalankan");
 }
 
-export async function main(glCanvas, uiCanvas) {
-  await initEngine(glCanvas, uiCanvas);
+export async function main(glCanvas) {
+  await initEngine(glCanvas);
 }
