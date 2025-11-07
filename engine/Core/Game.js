@@ -6,7 +6,6 @@ import { bus } from "./EventBus.js";
 export default class Game {
   constructor() {
     this.glRenderer = null;
-    this.uiRenderer = null;
     this.glContext  = null;
     this.uiContext  = null;
     this.loop  = null;

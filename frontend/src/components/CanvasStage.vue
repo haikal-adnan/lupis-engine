@@ -38,7 +38,6 @@
     <!-- Engine canvas -->
     <div ref="stage" class="relative flex-1 bg-slate-800 !rounded-b-md overflow-hidden">
       <canvas id="glCanvas" class="absolute inset-0 w-full h-full z-0"></canvas>
-      <canvas id="uiCanvas" class="absolute inset-0 w-full h-full z-10 pointer-events-none"></canvas>
     </div>
   </div>
 </template>
@@ -52,7 +51,7 @@ const previewWindow = ref(null);
 // Jalankan engine dalam editor
 onMounted(async () => {
   await nextTick();
-  await main("glCanvas", "uiCanvas");
+  await main("glCanvas");
 });
 
 // Bersihkan popup jika ditutup manual

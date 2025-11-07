@@ -1,7 +1,6 @@
 // src/engine/Loader/GameLoader.js
 import GameLoop from "../Loop/GameLoop.js";
 import GLRenderer from "../Renderer/GLRenderer.js";
-import UIRenderer from "../Renderer/UIRenderer.js";
 import InputHandler from "../Input/InputHandler.js";
 import TouchHandler from "../Input/TouchHandler.js";
 import World from "../World/World.js";
@@ -11,12 +10,9 @@ import CameraController from "../Editor/CameraController.js";
 import SelectionOutline from "../Editor/SelectionOutline.js";
 
 export default class GameLoader {
-  async initializeGame(glCanvas, uiCanvas, mode) {
+  async initializeGame(glCanvas, mode) {
     game.glRenderer = new GLRenderer(glCanvas);
     game.glContext  = glCanvas.getContext("webgl", { alpha: false, antialias: true });
-
-    game.uiRenderer = new UIRenderer(uiCanvas);
-    game.uiContext  = uiCanvas.getContext("2d");
 
     game.input = new InputHandler();
     game.input.initListeners();
@@ -72,7 +68,7 @@ export default class GameLoader {
     Config.ENGINE_MODE = mode;
     console.log(Config.ENGINE_MODE)
 
-    const world = new World(game.glRenderer, game.uiRenderer);
+    const world = new World(game.glRenderer);
     await world.load();      
     game.attachWorld(world);
     if (Config.ENGINE_MODE === "editor") {
