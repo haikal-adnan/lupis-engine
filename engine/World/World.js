@@ -45,10 +45,22 @@ export default class World {
 
     const proj = this.glRenderer.getWorldProjection(cam.x, cam.y, cam.scale);
     const strict = isEditor;
-
+    
     for (const system of this.systems)
       for (const e of this.entities)
         system.render?.(e, this.glRenderer, proj, alpha, strict);
+
+    const gl = this.glRenderer.gl;
+    let text = this.text;
+
+    // gl.enable(gl.BLEND);
+    // gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+    // text.drawText("LUPIS WORLD", 200, 200, "#FFDD55", 96, proj);
+    // text.drawText("MSDF TEXT TEST", 220, 320, "#55FFCC", 48, proj);
+
+    
+    // gl.disable(gl.BLEND);
   }
 
   async load() {

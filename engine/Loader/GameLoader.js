@@ -8,15 +8,25 @@ import Config from "../Config/Config.js";
 import { game } from "../main.js";
 import CameraController from "../Editor/CameraController.js";
 import SelectionOutline from "../Editor/SelectionOutline.js";
+import Rulers from "../Editor/Rulers.js";
+import TextRenderer from "../Renderer/TextRenderer.js"; 
+import Text from "../Core/Text.js";
 
 export default class GameLoader {
   async initializeGame(glCanvas, mode) {
     game.glRenderer = new GLRenderer(glCanvas);
     game.glContext  = glCanvas.getContext("webgl", { alpha: false, antialias: true });
-
+    
     game.input = new InputHandler();
     game.input.initListeners();
 
+    // game.text = new TextRenderer(game.glRenderer.gl);
+    // await game.text.loadFont(
+    //   "http://lupis.calk.cloud/@fs/home/ubuntu/lupis-engine/engine/Assets/Fonts/poppins.fnt",
+    //   "http://lupis.calk.cloud/@fs/home/ubuntu/lupis-engine/engine/Assets/Fonts/poppins.png"
+    // );
+
+    // console.log("✅ Font dimuat:", game.text.font);
     // game.touch = new TouchHandler();
     // game.touch.initListeners();
 
@@ -74,13 +84,30 @@ export default class GameLoader {
     if (Config.ENGINE_MODE === "editor") {
       game.cameraController = new CameraController(world.camera, glCanvas);
       game.selectionOutline = new SelectionOutline(world, glCanvas, game.glRenderer);
+      game.rulers = new Rulers(game.glRenderer, world.camera);
     }
+
+    world.text = new TextRenderer(game.glRenderer.gl);
+    await world.text.loadFont(
+      "http://lupis.calk.cloud/@fs/home/ubuntu/lupis-engine/engine/Assets/Fonts/poppins.fnt",
+      "http://lupis.calk.cloud/@fs/home/ubuntu/lupis-engine/engine/Assets/Fonts/poppins.png"
+    );
+
+    console.log("✅ Font dimuat:", world.text.font);
 
     game.loop = new GameLoop(game);
   }
 
   gameStart() {
-
     game.loop?.start();
+
+    // // Contoh render teks:
+    // const gl = game.glContext;
+    // gl.clearColor(0.08, 0.08, 0.1, 1.0);
+    // gl.clear(gl.COLOR_BUFFER_BIT);
+
+    // game.text.draw("Lupis Engine", 200, 250, "#FFD966", 400);
+    // game.text.draw("MSDF + RGSS + Mat4", 200, 900, "#80FFFF", 20);
+    // game.text.draw("With Alpha Blend", 200, 1200, "#FF008080", 120);
   }
 }
