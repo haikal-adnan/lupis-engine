@@ -7,51 +7,26 @@ import GameLoop from "../Loop/GameLoop.js";
 import CameraController from "../Editor/CameraController.js";
 import SelectionOutline from "../Editor/SelectionOutline.js";
 import Rulers from "../Editor/Rulers.js";
+import PointerCoordinates from "../Editor/PointerCoordinates.js";
 import GLImageResource from "../Renderer/GLImageResource.js";
-
-window.LUPIS = window.LUPIS || {};
-window.LUPIS.runtime = window.LUPIS.runtime || {};
 
 export default class GameLoader {
 
     async initializeGame(game, canvas, mode = "runtime", baseURL = "./") {
-
         Config.ENGINE_MODE = mode;
 
-        // Renderer
         game.renderer = new RendererManager(canvas);
         const gl = game.renderer.gl;
         const loader = new GLImageResource(gl);
 
+        // WORLD
         const world = new World();
         game.world = world;
 
-        let project, scene;
+        const project = await fetch(baseURL + "project.json").then(r => r.json());
+        const sceneName = project.startScene;
+        const scene = await fetch(`${baseURL}scenes/${sceneName}.json`).then(r => r.json());
 
-        // ===============================
-        // HYBRID MODE (data dari Vue)
-        // ===============================
-        if (window.LUPIS.runtime.project) {
-            console.log("📦 Hybrid project → loaded from memory");
-
-            project = window.LUPIS.runtime.project;
-            scene   = window.LUPIS.runtime.scene;
-        }
-
-        // ===============================
-        // OFFLINE MODE (fetch dari folder)
-        // ===============================
-        else {
-            console.log("🌐 Loading project from:", baseURL);
-
-            project = await fetch(baseURL + "project.json").then(r => r.json());
-            const sceneName = project.startScene;
-            scene   = await fetch(`${baseURL}scenes/${sceneName}.json`).then(r => r.json());
-        }
-
-        // ===============================
-        // LOAD WORLD
-        // ===============================
         await world.loadProject(
             project,
             scene,
@@ -63,16 +38,26 @@ export default class GameLoader {
             }
         );
 
-        // Editor Tools
-        // if (mode === "editor") {
-        //     game.cameraController = new CameraController(world.camera, canvas);
-        //     game.selectionOutline = new SelectionOutline(world, canvas, game.renderer);
-        //     game.rulers = new Rulers(game.renderer, world.camera);
-        // }
+        if (mode === "editor") {
+
+            if (Config.EDITOR.CAMERA_CONTROLLER)
+                game.cameraController = new CameraController(game.camera, canvas);
+
+            if (Config.EDITOR.SELECTION)
+                game.selectionOutline = new SelectionOutline(world, game, canvas, game.renderer);
+                //                          ⬆ world  ⬆ game  ⬆ canvas  ⬆ renderer
+
+            if (Config.EDITOR.RULERS)
+                game.rulers = new Rulers(game.renderer, game.camera);
+
+            if (Config.EDITOR.POINTER)
+                game.pointerCoords = new PointerCoordinates(game, game.renderer);
+        }
+
 
         game.loop = new GameLoop({
             update: dt => game.update(dt),
-            render: a => game.render(a)
+            render: a  => game.render(a),
         });
     }
 

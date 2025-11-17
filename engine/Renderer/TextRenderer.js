@@ -2,9 +2,6 @@ import Mat4 from "../Util/Mat4.js";
 
 const _shared = new WeakMap();
 
-// =====================================================================================
-// SHARED SHADER (HANYA 1 PER GL)
-// =====================================================================================
 function getShared(gl) {
     let s = _shared.get(gl);
     if (s) return s;
@@ -12,9 +9,6 @@ function getShared(gl) {
     const isWebGL2 = gl instanceof WebGL2RenderingContext;
     const hasDeriv = isWebGL2 || !!gl.getExtension("OES_standard_derivatives");
 
-    // ---------------------------------------------------------------------
-    // VERTEX SHADER (pos + uv + color)
-    // ---------------------------------------------------------------------
     const vs = isWebGL2 ? `#version 300 es
         layout(location=0) in vec2 aPos;
         layout(location=1) in vec2 aUV;
@@ -47,9 +41,6 @@ function getShared(gl) {
         }
     `;
 
-    // ---------------------------------------------------------------------
-    // FRAGMENT SHADER (MSDF)
-    // ---------------------------------------------------------------------
     const fs = isWebGL2 ? `#version 300 es
         precision mediump float;
 
@@ -106,7 +97,6 @@ function getShared(gl) {
         }
     `;
 
-    // Compile util
     const compile = (t, src) => {
         const sh = gl.createShader(t);
         gl.shaderSource(sh, src);
@@ -135,7 +125,9 @@ function getShared(gl) {
     }
 
     s = {
-        gl, isWebGL2, program,
+        gl,
+        isWebGL2,
+        program,
         uProjection: gl.getUniformLocation(program, "uProjection"),
         uTex: gl.getUniformLocation(program, "uTex"),
         uDist: gl.getUniformLocation(program, "uDist")
@@ -145,12 +137,6 @@ function getShared(gl) {
     return s;
 }
 
-
-
-// =====================================================================================
-// TEXT RENDERER — PER GLYPH COLOR — FULL BATCH
-// =====================================================================================
-
 export default class TextRenderer {
     constructor(ctx, cache) {
         this.ctx = ctx;
@@ -158,9 +144,8 @@ export default class TextRenderer {
         this.cache = cache;
         this.s = getShared(this.gl);
 
-        // BATCH
         this.maxGlyphs = 20000;
-        this.floatsPerVertex = 2 + 2 + 4;  // pos2 + uv2 + color4
+        this.floatsPerVertex = 2 + 2 + 4;
         this.vertsPerGlyph = 6;
         this.floatsPerGlyph = this.floatsPerVertex * this.vertsPerGlyph;
 
@@ -177,9 +162,6 @@ export default class TextRenderer {
         this._initVAO();
     }
 
-    // -------------------------------------------------------------------------
-    // VAO
-    // -------------------------------------------------------------------------
     _initVAO() {
         const gl = this.gl;
         const stride = this.floatsPerVertex * 4;
@@ -189,15 +171,12 @@ export default class TextRenderer {
         gl.bindBuffer(gl.ARRAY_BUFFER, this.vbo);
         gl.bufferData(gl.ARRAY_BUFFER, this.bufferData, gl.DYNAMIC_DRAW);
 
-        // aPos
         gl.enableVertexAttribArray(0);
         gl.vertexAttribPointer(0, 2, gl.FLOAT, false, stride, 0);
 
-        // aUV
         gl.enableVertexAttribArray(1);
         gl.vertexAttribPointer(1, 2, gl.FLOAT, false, stride, 8);
 
-        // aColor
         gl.enableVertexAttribArray(2);
         gl.vertexAttribPointer(2, 4, gl.FLOAT, false, stride, 16);
 
@@ -205,10 +184,6 @@ export default class TextRenderer {
         this.cache.bindVAO(null);
     }
 
-
-    // -------------------------------------------------------------------------
-    // LOAD MSDF FONT
-    // -------------------------------------------------------------------------
     async loadFont(xmlURL, texURL) {
         const xml = new DOMParser().parseFromString(
             await (await fetch(xmlURL)).text(),
@@ -224,22 +199,24 @@ export default class TextRenderer {
                 h: +c.getAttribute("height"),
                 ox: +c.getAttribute("xoffset"),
                 oy: +c.getAttribute("yoffset"),
-                adv: +c.getAttribute("xadvance"),
+                adv: +c.getAttribute("xadvance")
             };
         });
 
         const common = xml.querySelector("common");
         const distField = xml.querySelector("distanceField");
+        const info = xml.querySelector("info");
 
         this.font = {
             chars,
             texW: +common.getAttribute("scaleW"),
             texH: +common.getAttribute("scaleH"),
-            size: +(xml.querySelector("info").getAttribute("size")),
-            distance: +(distField?.getAttribute("distanceRange") ?? 4),
+            base: +common.getAttribute("base"),
+            lineHeight: +common.getAttribute("lineHeight"),
+            size: +info.getAttribute("size"),
+            distance: +(distField?.getAttribute("distanceRange") ?? 4)
         };
 
-        // Load texture
         const img = new Image();
         img.src = texURL;
         await img.decode();
@@ -247,7 +224,8 @@ export default class TextRenderer {
         this.texture = this.gl.createTexture();
         this.gl.bindTexture(this.gl.TEXTURE_2D, this.texture);
         this.gl.texImage2D(
-            this.gl.TEXTURE_2D, 0,
+            this.gl.TEXTURE_2D,
+            0,
             this.gl.RGBA,
             this.gl.RGBA,
             this.gl.UNSIGNED_BYTE,
@@ -258,10 +236,56 @@ export default class TextRenderer {
         this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.LINEAR);
     }
 
+    measureText(str, size, fontOverride = null) {
+        const font = fontOverride || this.font;
+        if (!font || !str) {
+            return { width: 0, height: 0, xMin: 0, yMin: 0, xMax: 0, yMax: 0 };
+        }
 
-    // -------------------------------------------------------------------------
-    // ADD TO BATCH
-    // -------------------------------------------------------------------------
+        const scale = size / font.size;
+        let cx = 0;
+
+        let xMin = Infinity;
+        let yMin = Infinity;
+        let xMax = -Infinity;
+        let yMax = -Infinity;
+
+        for (const ch of str) {
+            const gdat = font.chars[ch.charCodeAt(0)];
+            if (!gdat) continue;
+
+            const x0 = cx + gdat.ox * scale;
+            const y0 = gdat.oy * scale;
+            const x1 = x0 + gdat.w * scale;
+            const y1 = y0 + gdat.h * scale;
+
+            if (x0 < xMin) xMin = x0;
+            if (y0 < yMin) yMin = y0;
+            if (x1 > xMax) xMax = x1;
+            if (y1 > yMax) yMax = y1;
+
+            cx += gdat.adv * scale;
+        }
+
+        if (xMin === Infinity) {
+            xMin = 0;
+            xMax = cx;
+            yMin = 0;
+            yMax = font.lineHeight * scale;
+        }
+
+        return {
+            width: cx,
+            boundsWidth: xMax - xMin,
+            boundsHeight: yMax - yMin,
+            xMin,
+            yMin,
+            xMax,
+            yMax,
+            baseline: font.base * scale
+        };
+    }
+
     drawText(str, x, y, size, color, projection) {
         if (!this.font || !this.texture || !str) return;
 
@@ -271,13 +295,11 @@ export default class TextRenderer {
         const scale = size / font.size;
         const chars = font.chars;
 
-        // Jika teks pakai texture lain → flush dulu
         if (this.currentTexture !== this.texture) {
             this.flush();
             this.currentTexture = this.texture;
         }
 
-        // Jika projection berbeda → flush dulu
         if (projection !== this.currentProjection) {
             this.flush();
             this.currentProjection = projection;
@@ -289,8 +311,10 @@ export default class TextRenderer {
         const d = this.bufferData;
         let i = this.bufferIndex;
 
-        // parse color
-        const r = color[0], g = color[1], b = color[2], a = color[3];
+        const r = color[0];
+        const g = color[1];
+        const b = color[2];
+        const a = color[3];
 
         for (const ch of str) {
             const gdat = chars[ch.charCodeAt(0)];
@@ -306,7 +330,6 @@ export default class TextRenderer {
             const u1 = (gdat.x + gdat.w) / font.texW;
             const v1 = (gdat.y + gdat.h) / font.texH;
 
-            // vertex (pos, uv, color)
             const push = (px, py, u, v) => {
                 d[i++] = px;
                 d[i++] = py;
@@ -338,10 +361,6 @@ export default class TextRenderer {
         this._lastDist = font.distance;
     }
 
-
-    // -------------------------------------------------------------------------
-    // FLUSH BATCH
-    // -------------------------------------------------------------------------
     flush() {
         if (this.bufferIndex === 0) return;
 
