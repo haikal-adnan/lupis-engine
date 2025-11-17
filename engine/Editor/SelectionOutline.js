@@ -1,28 +1,31 @@
-// src/engine/Editor/SelectionOutline.js
 import Config from "../Config/Config.js";
 import { bus } from "../Core/EventBus.js";
 
 export default class SelectionOutline {
-  constructor(world, glCanvas, glRenderer) {
+  constructor(world, game, glCanvas, glRenderer) {
     this.world = world;
+    this.game = game;
     this.canvas = glCanvas;
     this.glRenderer = glRenderer;
-    this.active = Config.ENGINE_MODE === "editor";
 
+    this.active = Config.ENGINE_MODE === "editor";
     this.hovered = null;
     this.selected = null;
 
     if (this.active) {
       this._bindEvents();
       this._ensureOverlaySize();
-      console.log("🟩 SelectionOutline aktif (DPR-precise)");
+      console.log("🟩 SelectionOutline aktif");
     }
   }
 
+  // ============================================================
+  // EVENT BINDING
+  // ============================================================
   _bindEvents() {
-    this._onMouseMove = this._onMouseMove.bind(this);
-    this._onMouseDown = this._onMouseDown.bind(this);
-    this._onResize = this._onResize.bind(this);
+    this._onMouseMove = e => this._onMouseMoveImpl(e);
+    this._onMouseDown = e => this._onMouseDownImpl(e);
+    this._onResize    = () => this._resizeImpl();
 
     this.canvas.addEventListener("mousemove", this._onMouseMove);
     this.canvas.addEventListener("mousedown", this._onMouseDown);
@@ -32,69 +35,92 @@ export default class SelectionOutline {
     bus.on("camera:pan", () => this.redraw());
   }
 
-  _onResize() {
+  _resizeImpl() {
     this._ensureOverlaySize();
     this.redraw();
   }
 
+  // ============================================================
+  // OVERLAY CANVAS
+  // ============================================================
   _ensureOverlaySize() {
-    const dpr = window.devicePixelRatio || 1;
     const w = this.canvas.width;
     const h = this.canvas.height;
 
-    // siapkan overlay 2D berukuran pixel yang sama dengan GL canvas
     if (!this._overlay) {
       const c = document.createElement("canvas");
       c.style.position = "absolute";
       c.style.inset = 0;
       c.style.pointerEvents = "none";
-      // penting: ukuran CSS mengikuti canvas GL
       c.style.width  = this.canvas.style.width  || "100%";
       c.style.height = this.canvas.style.height || "100%";
+
       this.canvas.parentElement.appendChild(c);
       this._overlay = c;
       this.glRenderer.overlayCtx = c.getContext("2d");
     }
 
     if (this._overlay.width !== w || this._overlay.height !== h) {
-      this._overlay.width = w;
+      this._overlay.width  = w;
       this._overlay.height = h;
     }
   }
 
-  /** mouse → world (pakai canvas pixels, bukan CSS) */
+  // ============================================================
+  // POINTER → WORLD
+  // ============================================================
   _pointerWorld(e) {
     const rect = this.canvas.getBoundingClientRect();
-    const sx = this.canvas.width  / rect.width;
-    const sy = this.canvas.height / rect.height;
+    const cssX = e.clientX - rect.left;
+    const cssY = e.clientY - rect.top;
 
-    const px = (e.clientX - rect.left) * sx;  // canvas pixels
-    const py = (e.clientY - rect.top)  * sy;
+    const cam = this.game.camera;
+    const scale = cam.scale;
 
-    const { camera } = this.world;
-    const scale = camera.scale || 1;
+    const cw = this.canvas.clientWidth;
+    const ch = this.canvas.clientHeight;
 
     return {
-      x: camera.x + px / scale,
-      y: camera.y + py / scale,
+      x: cam.x + (cssX - cw * 0.5) / scale,
+      y: cam.y + (cssY - ch * 0.5) / scale
     };
   }
 
-  _onMouseMove(e) {
+  // ============================================================
+  // HOVER DETECTION
+  // ============================================================
+  _onMouseMoveImpl(e) {
     const { x, y } = this._pointerWorld(e);
     this.hovered = null;
 
     for (const ent of this.world.entities) {
       if (!ent.visible) continue;
-      if (x >= ent.x && x <= ent.x + ent.width && y >= ent.y && y <= ent.y + ent.height) {
+
+      const isLine = ent.shape?.type === "line";
+
+      const x0 = isLine ? ent.hitX : ent.x;
+      const y0 = isLine ? ent.hitY : ent.y;
+
+      const w = isLine ? ent.hitWidth  : ent.width;
+      const h = isLine ? ent.hitHeight : ent.height;
+
+      const inside =
+        x >= x0 && x <= x0 + w &&
+        y >= y0 && y <= y0 + h;
+
+      if (inside) {
         this.hovered = ent;
         break;
       }
     }
+
     this.redraw();
   }
 
-  _onMouseDown() {
+  // ============================================================
+  // SELECTION
+  // ============================================================
+  _onMouseDownImpl() {
     if (this.hovered) {
       this.selected = this.hovered;
       bus.emit("entity:selected", this.selected);
@@ -102,52 +128,83 @@ export default class SelectionOutline {
       this.selected = null;
       bus.emit("entity:deselected");
     }
+
     this.redraw();
   }
 
+  // ============================================================
+  // RENDER OUTLINE
+  // ============================================================
   redraw() {
     this._ensureOverlaySize();
+
     const ctx = this.glRenderer.overlayCtx;
     if (!ctx) return;
 
-    const { camera } = this.world;
-    const scale = camera.scale || 1;
+    const cam = this.game.camera;
+    const scale = cam.scale;
 
-    ctx.clearRect(0, 0, this._overlay.width, this._overlay.height);
+    const W = this._overlay.width;
+    const H = this._overlay.height;
+
+    ctx.clearRect(0, 0, W, H);
 
     const draw = (ent, color, lw) => {
-      // world → screen (di canvas pixels)
-      let sx = (ent.x - camera.x) * scale;
-      let sy = (ent.y - camera.y) * scale;
-      let sw = ent.width  * scale;
-      let sh = ent.height * scale;
+      const isLine = ent.shape?.type === "line";
 
-      // optional: pixel snap biar tajam di pixel-art mode
-      const snap = (Config?.PIXEL_ART ?? false) || (Config?.CAMERA?.PIXEL_LOCK ?? false);
-      if (snap) {
-        sx = Math.round(sx) + 0.5; // 0.5 untuk align stroke 1px
+      const x0 = isLine ? ent.hitX : ent.x;
+      const y0 = isLine ? ent.hitY : ent.y;
+
+      const w = isLine ? ent.hitWidth  : ent.width;
+      const h = isLine ? ent.hitHeight : ent.height;
+
+      // convert world → screen
+      let sx = (x0 - cam.x) * scale + W * 0.5;
+      let sy = (y0 - cam.y) * scale + H * 0.5;
+      let sw = w * scale;
+      let sh = h * scale;
+
+      // Optional pixel lock
+      if (Config.PIXEL_ART || Config.CAMERA?.PIXEL_LOCK) {
+        sx = Math.round(sx) + 0.5;
         sy = Math.round(sy) + 0.5;
         sw = Math.round(sw);
         sh = Math.round(sh);
       }
 
+      // ============================================================
+      // 🟧 DEBUG TEXT BOUNDING BOX (REALITY)
+      // ============================================================
+      if (ent.text) {
+        console.log("🟧 TEXT REALITY (SelectionOutline)", {
+          name: ent.name ?? ent.id,
+          world: {
+            x: x0,
+            y: y0,
+            width: w,
+            height: h
+          },
+          screen: {
+            x: sx,
+            y: sy,
+            width: sw,
+            height: sh
+          }
+        });
+      }
+      // ============================================================
+
       ctx.save();
-      ctx.setLineDash([]);
       ctx.strokeStyle = color;
       ctx.lineWidth = lw;
       ctx.strokeRect(sx, sy, sw, sh);
       ctx.restore();
     };
 
-    if (this.hovered && this.hovered !== this.selected) draw(this.hovered, "rgba(0,255,0,0.7)", 1.5);
-    if (this.selected) draw(this.selected, "rgba(255,215,0,0.95)", 2);
-  }
+    if (this.selected)
+      draw(this.selected, "rgba(255,215,0,1)", 2);
 
-  destroy() {
-    this.canvas.removeEventListener("mousemove", this._onMouseMove);
-    this.canvas.removeEventListener("mousedown", this._onMouseDown);
-    window.removeEventListener("resize", this._onResize);
-    bus.off("camera:zoom");
-    bus.off("camera:pan");
+    if (this.hovered)
+      draw(this.hovered, "rgba(0,255,0,0.75)", 1.5);
   }
 }

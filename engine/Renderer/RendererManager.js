@@ -84,7 +84,7 @@ export default class RendererManager {
         return this.projUI;
     }
 
-    render(world, camera) {
+    render(world, camera, game) {
         this.begin();
 
         // WORLD
@@ -99,6 +99,10 @@ export default class RendererManager {
         const pUI = this.getUIProjection();
         this.uiRenderer.setProjection(pUI);
         this.uiRenderer.render(world.ui);
+
+        if (game.pointerCoords) {
+            game.pointerCoords.renderUI();
+        }
 
         this.image.flush();
         this.shape.flush();

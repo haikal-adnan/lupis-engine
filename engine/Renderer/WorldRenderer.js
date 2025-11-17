@@ -4,6 +4,9 @@ export default class WorldRenderer {
         this.image = image;
         this.text = text;
         this.shape = shape;
+        
+        // Cache untuk warna hex agar tidak diparse setiap frame
+        this._colorCache = new Map();
     }
 
     render(world, proj) {
@@ -11,11 +14,15 @@ export default class WorldRenderer {
         const image = this.image;
         const text  = this.text;
 
-        for (const layer of world.layerOrder) {
-            const ents = world.layers.get(layer);
-            if (!ents) continue;
+        // Optimization: Access layer map directly usually faster if managed well
+        for (const layerName of world.layerOrder) {
+            const ents = world.layers.get(layerName);
+            if (!ents || ents.length === 0) continue;
 
             for (const e of ents) {
+                if (!e.visible) continue; // Skip invisible entities
+
+                // 1. IMAGE RENDER
                 if (e.image && e.frame) {
                     image.draw(
                         e.image,
@@ -29,56 +36,71 @@ export default class WorldRenderer {
                     );
                 }
 
+                // 2. TEXT RENDER
                 if (e.text) {
+                    // Text Renderer expects [r,g,b,a]
+                    const colorVec = this._getColorVec(e.text.color);
+                    
                     text.drawText(
                         e.text.value,
                         e.x,
                         e.y,
                         e.text.size,
-                        this._hex(e.text.color),
+                        colorVec,
                         proj
                     );
                 }
 
+                // 3. SHAPE RENDER
                 if (e.shape) {
-                    let c = this._hex(e.shape.color);
-                    if (e.shape.type === "rectangle")
+                    const c = this._getColorVec(e.shape.color);
+                    const t = e.shape.thickness || 1;
+
+                    if (e.shape.type === "rectangle") {
                         shape.drawRect(e.x, e.y, e.shape.width, e.shape.height, c, proj);
-
-                    if (e.shape.type === "rectStroke") {
-                        const x = e.x;
-                        const y = e.y;
-                        const w = e.shape.width;
-                        const h = e.shape.height;
-                        const t = e.shape.thickness;
-
-                        // TOP
-                        shape.drawLine(x, y, x + w, y, c, t, proj);
-
-                        // RIGHT
-                        shape.drawLine(x + w, y, x + w, y + h, c, t, proj);
-
-                        // BOTTOM
-                        shape.drawLine(x + w, y + h, x, y + h, c, t, proj);
-
-                        // LEFT
-                        shape.drawLine(x, y + h, x, y, c, t, proj);
+                    } 
+                    else if (e.shape.type === "rectStroke") {
+                        const x = e.x, y = e.y, w = e.shape.width, h = e.shape.height;
+                        
+                        // Menggambar 4 garis manual (atau buat method strokeRect di ShapeRenderer)
+                        shape.drawLine(x, y, x + w, y, c, t, proj);         // Top
+                        shape.drawLine(x + w, y, x + w, y + h, c, t, proj); // Right
+                        shape.drawLine(x + w, y + h, x, y + h, c, t, proj); // Bottom
+                        shape.drawLine(x, y + h, x, y, c, t, proj);         // Left
                     }
-
-                    if (e.shape.type === "line")
-                        shape.drawLine(e.x, e.y, e.shape.x2, e.shape.y2, c, e.shape.thickness, proj);
+                    else if (e.shape.type === "line") {
+                        shape.drawLine(e.x, e.y, e.shape.x2, e.shape.y2, c, t, proj);
+                    }
                 }
             }
         }
     }
 
-    _hex(hex) {
-        hex = hex.replace("#", "");
-        const r = parseInt(hex.substring(0,2),16)/255;
-        const g = parseInt(hex.substring(2,4),16)/255;
-        const b = parseInt(hex.substring(4,6),16)/255;
-        const a = hex.length===8 ? parseInt(hex.substring(6,8),16)/255 : 1;
+    /**
+     * Convert Hex String to [r,g,b,a] Normalized Float
+     * Uses caching to avoid garbage collection spam
+     */
+    _getColorVec(hex) {
+        if (!hex) return [1, 1, 1, 1]; // Default White
+        
+        // Check cache
+        if (this._colorCache.has(hex)) {
+            return this._colorCache.get(hex);
+        }
 
-        return [r,g,b,a];
+        // Parse
+        const cleanHex = hex.replace("#", "");
+        const r = parseInt(cleanHex.substring(0, 2), 16) / 255;
+        const g = parseInt(cleanHex.substring(2, 4), 16) / 255;
+        const b = parseInt(cleanHex.substring(4, 6), 16) / 255;
+        const a = cleanHex.length === 8 ? parseInt(cleanHex.substring(6, 8), 16) / 255 : 1;
+
+        const vec = [r, g, b, a];
+        
+        // Save to cache (limit size simple protection)
+        if (this._colorCache.size > 1000) this._colorCache.clear();
+        this._colorCache.set(hex, vec);
+
+        return vec;
     }
 }
