@@ -1,21 +1,45 @@
+// engine/Renderer/UIRenderer.js
 export default class UIRenderer {
-  constructor(canvas) {
-    this.canvas = canvas;
-    this.ctx = canvas.getContext("2d");
-  }
+    constructor(image, shape, text) {
+        this.image = image;
+        this.shape = shape;
+        this.text = text;
+        this.projection = null;
+    }
 
-  resize(width, height) {
-    this.canvas.width = width;
-    this.canvas.height = height;
-  }
+    setProjection(p) {
+        this.projection = p;
+    }
 
-  clear() {
-    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-  }
+    render(uiList) {
+        if (!uiList) return;
 
-  drawText(text, x, y, size = 24, color = "white") {
-    this.ctx.fillStyle = color;
-    this.ctx.font = `${size}px Arial`;
-    this.ctx.fillText(text, x, y);
-  }
+        for (const fn of uiList) {
+            fn(this);
+        }
+    }
+
+    drawImage(tex, x, y, w, h) {
+        this.image.draw(
+            tex,
+            { sx:0, sy:0, sw:tex.width, sh:tex.height },
+            x, y, w, h,
+            this.projection
+        );
+    }
+
+    fillRect(x, y, w, h, color) {
+        this.shape.drawRect(x, y, w, h, color, this.projection);
+    }
+
+    strokeRect(x, y, w, h, color, t=1) {
+        this.shape.drawLine(x, y, x+w, y, color, t, this.projection);
+        this.shape.drawLine(x+w, y, x+w, y+h, color, t, this.projection);
+        this.shape.drawLine(x+w, y+h, x, y+h, color, t, this.projection);
+        this.shape.drawLine(x, y+h, x, y, color, t, this.projection);
+    }
+
+    drawText(str, x, y, size, color) {
+        this.text.drawText(str, x, y, size, color, this.projection);
+    }
 }
