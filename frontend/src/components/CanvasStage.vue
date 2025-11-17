@@ -44,63 +44,53 @@
 
 <script setup>
 import { ref, onMounted, nextTick, onBeforeUnmount } from "vue";
-import { main } from "../../../projects/template-platformer/code/Main.js";
+import { startEngine } from "../../../engine/main.js";
 
 const previewWindow = ref(null);
 
-// Jalankan engine dalam editor
-onMounted(async () => {
-  await nextTick();
-  await main("glCanvas");
-});
+async function loadProject() {
+  const project = await fetch("/projects/ProjectTemplate/project.json").then(r => r.json());
+  const scene = await fetch(`/projects/ProjectTemplate/scenes/${project.startScene}.json`).then(r => r.json());
 
-// Bersihkan popup jika ditutup manual
-window.addEventListener("focus", () => {
-  if (previewWindow.value && previewWindow.value.closed) previewWindow.value = null;
-});
+  return { project, scene };
+}
 
-onBeforeUnmount(() => {
-  if (previewWindow.value && !previewWindow.value.closed) previewWindow.value.close();
-});
+async function openOrUpdatePreview() {
+  const payload = await loadProject();
 
-// === 🔹 Buka popup ke preview.html tanpa backend ===
-function openOrUpdatePreview() {
-  const projectId = "template-platformer";
-
+  // Jika popup sudah terbuka → kirim update
   if (previewWindow.value && !previewWindow.value.closed) {
-    // Kirim sinyal reload
-    previewWindow.value.postMessage({ type: "reloadGame" }, "*");
-    console.log("🔄 Reload dikirim ke popup preview");
+    previewWindow.value.postMessage({
+      type: "projectData",
+      payload
+    }, "*");
+
+    console.log("🔄 Update sent");
     return;
   }
 
-  // Buat URL preview statis (tanpa backend)
-  const previewUrl = `/preview/preview.html?project=${projectId}`;
+  // Buka popup baru
+  previewWindow.value = window.open(
+    "/preview/preview.html",
+    "LupisPreview",
+    "width=960,height=540,resizable=yes"
+  );
 
-  // Popup config
-  const w = 960, h = 540;
-  const left = window.screenX + (window.outerWidth - w) / 2;
-  const top = window.screenY + (window.outerHeight - h) / 2;
-  const features = `
-    popup=yes,
-    width=${w},
-    height=${h},
-    left=${left},
-    top=${top},
-    resizable=yes,
-    scrollbars=no,
-    status=no,
-    menubar=no,
-    toolbar=no
-  `.replace(/\s+/g, "");
+  const check = setInterval(() => {
+    if (!previewWindow.value) return;
 
-  previewWindow.value = window.open(previewUrl, "LupisPreview", features);
-  console.log("🎮 Popup preview dibuka:", previewUrl);
+    previewWindow.value.postMessage({
+      type: "projectData",
+      payload
+    }, "*");
+
+    clearInterval(check);
+    console.log("▶ Sent initial project");
+  }, 250);
 }
+
+onMounted(async () => {
+  await nextTick();
+  startEngine("glCanvas", "editor", "/projects/ProjectTemplate/");
+});
 </script>
-
-<style scoped>
-.card {
-  color: white;
-}
-</style>

@@ -1,113 +1,82 @@
-// src/engine/Loader/GameLoader.js
-import GameLoop from "../Loop/GameLoop.js";
-import GLRenderer from "../Renderer/GLRenderer.js";
-import InputHandler from "../Input/InputHandler.js";
-import TouchHandler from "../Input/TouchHandler.js";
-import World from "../World/World.js";
+// engine/Loader/GameLoader.js
+
 import Config from "../Config/Config.js";
-import { game } from "../main.js";
+import RendererManager from "../Renderer/RendererManager.js";
+import World from "../World/World.js";
+import GameLoop from "../Loop/GameLoop.js";
 import CameraController from "../Editor/CameraController.js";
 import SelectionOutline from "../Editor/SelectionOutline.js";
 import Rulers from "../Editor/Rulers.js";
-import TextRenderer from "../Renderer/TextRenderer.js"; 
-import Text from "../Core/Text.js";
+import GLImageResource from "../Renderer/GLImageResource.js";
+
+window.LUPIS = window.LUPIS || {};
+window.LUPIS.runtime = window.LUPIS.runtime || {};
 
 export default class GameLoader {
-  async initializeGame(glCanvas, mode) {
-    game.glRenderer = new GLRenderer(glCanvas);
-    game.glContext  = glCanvas.getContext("webgl", { alpha: false, antialias: true });
-    
-    game.input = new InputHandler();
-    game.input.initListeners();
 
-    // game.text = new TextRenderer(game.glRenderer.gl);
-    // await game.text.loadFont(
-    //   "http://lupis.calk.cloud/@fs/home/ubuntu/lupis-engine/engine/Assets/Fonts/poppins.fnt",
-    //   "http://lupis.calk.cloud/@fs/home/ubuntu/lupis-engine/engine/Assets/Fonts/poppins.png"
-    // );
+    async initializeGame(game, canvas, mode = "runtime", baseURL = "./") {
 
-    // console.log("✅ Font dimuat:", game.text.font);
-    // game.touch = new TouchHandler();
-    // game.touch.initListeners();
+        Config.ENGINE_MODE = mode;
 
-    game.project = game.project ?? "template-platformer";
-    game.level = game.level ?? "level1";
+        // Renderer
+        game.renderer = new RendererManager(canvas);
+        const gl = game.renderer.gl;
+        const loader = new GLImageResource(gl);
 
-    const baseURL = `http://api.lupis.calk.cloud/projects/${game.project}`;
+        const world = new World();
+        game.world = world;
 
-    try {
-      const res = await fetch(`${baseURL}/tree`);
-      if (!res.ok) throw new Error(`Gagal ambil tree: ${res.status}`);
-      const tree = await res.json();
+        let project, scene;
 
-      const configFolder = tree.find(n => n.name === "config" && n.type === "folder");
-      if (configFolder?.children?.length) {
-        for (const file of configFolder.children) {
-          if (file.type !== "file" || !file.name.endsWith(".json")) continue;
+        // ===============================
+        // HYBRID MODE (data dari Vue)
+        // ===============================
+        if (window.LUPIS.runtime.project) {
+            console.log("📦 Hybrid project → loaded from memory");
 
-          const fileURL = `${baseURL}/file/config/${file.name}`;
-          try {
-            const jsonRes = await fetch(fileURL);
-            if (!jsonRes.ok) throw new Error(`HTTP ${jsonRes.status} ${jsonRes.statusText}`);
-            const data = await jsonRes.json();
-            const key = file.name.replace(/\.json$/i, "").toUpperCase();
-
-            if (Array.isArray(data)) {
-              Config[key] = data; 
-            } else if (data && typeof data === "object") {
-              if (Config[key] && typeof Config[key] === "object") {
-                Object.assign(Config[key], data);
-              } else {
-                Config[key] = data;
-              }
-            } else {
-              Config[key] = data;
-            }
-
-            console.log(`📦 Config dimuat: ${file.name} -> Config.${key}`);
-          } catch (err) {
-            console.warn(`⚠️ Gagal baca ${file.name}:`, err.message);
-          }
+            project = window.LUPIS.runtime.project;
+            scene   = window.LUPIS.runtime.scene;
         }
-      }
-    } catch (err) {
-      console.warn("⚠️ Lewati config dinamis (pakai default minimal):", err.message);
+
+        // ===============================
+        // OFFLINE MODE (fetch dari folder)
+        // ===============================
+        else {
+            console.log("🌐 Loading project from:", baseURL);
+
+            project = await fetch(baseURL + "project.json").then(r => r.json());
+            const sceneName = project.startScene;
+            scene   = await fetch(`${baseURL}scenes/${sceneName}.json`).then(r => r.json());
+        }
+
+        // ===============================
+        // LOAD WORLD
+        // ===============================
+        await world.loadProject(
+            project,
+            scene,
+            loader,
+            baseURL,
+            async (fnt, png) => {
+                await game.renderer.text.loadFont(fnt, png);
+                return game.renderer.text;
+            }
+        );
+
+        // Editor Tools
+        // if (mode === "editor") {
+        //     game.cameraController = new CameraController(world.camera, canvas);
+        //     game.selectionOutline = new SelectionOutline(world, canvas, game.renderer);
+        //     game.rulers = new Rulers(game.renderer, world.camera);
+        // }
+
+        game.loop = new GameLoop({
+            update: dt => game.update(dt),
+            render: a => game.render(a)
+        });
     }
 
-    // console.log(Config)
-    Config.ENGINE_MODE = mode;
-    console.log(Config.ENGINE_MODE)
-
-    const world = new World(game.glRenderer);
-    await world.load();      
-    game.attachWorld(world);
-    if (Config.ENGINE_MODE === "editor") {
-      game.cameraController = new CameraController(world.camera, glCanvas);
-      game.selectionOutline = new SelectionOutline(world, glCanvas, game.glRenderer);
-      game.rulers = new Rulers(game.glRenderer, world.camera);
+    start(game) {
+        game.loop.start();
     }
-
-    world.text = new TextRenderer(game.glRenderer.gl);
-    await world.text.loadFont(
-      "http://lupis.calk.cloud/@fs/home/ubuntu/lupis-engine/engine/Assets/Fonts/poppins.fnt",
-      "http://lupis.calk.cloud/@fs/home/ubuntu/lupis-engine/engine/Assets/Fonts/poppins.png"
-    );
-
-    console.log("✅ Font dimuat:", world.text.font);
-
-    game.loop = new GameLoop(game);
-  }
-
-  gameStart() {
-    game.loop?.start();
-
-    // // Contoh render teks:
-    // const gl = game.glContext;
-    // gl.clearColor(0.08, 0.08, 0.1, 1.0);
-    // gl.clear(gl.COLOR_BUFFER_BIT);
-
-    // game.text.draw("Lupis Engine", 200, 250, "#FFD966", 400);
-    // game.text.draw("MSDF + RGSS + Mat4", 200, 900, "#80FFFF", 20);
-    // game.text.draw("With Alpha Blend", 200, 1200, "#FF008080", 120);
-  }
 }

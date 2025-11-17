@@ -1,71 +1,124 @@
-// src/engine/World/World.js
-import Camera from "../Camera/Camera.js";
-import Config from "../Config/Config.js";
-import { bus } from "../Core/EventBus.js";
+// engine/World/World.js
 
 export default class World {
-  constructor(glRenderer) {
-    this.glRenderer = glRenderer;
-    this.camera = new Camera(0, 0);
-    this.entities = [];
-    this.systems = []; // daftar sistem
-  }
 
-  addEntity(entity) {
-    entity.onAddedToWorld(this);
-    this.entities.push(entity);
-    if (entity.type === "player") this.player = entity;
-  }
+    constructor() {
+        this.layers = new Map();
+        this.layerOrder = [];
+        this.entities = [];
+        this.systems = [];
 
-  addSystem(system) {
-    this.systems.push(system);
-  }
+        this.assets = {
+            textures: {},
+            fonts: {}
+        };
 
-  update(dt) {
-    for (const system of this.systems)
-      for (const e of this.entities)
-        system.update?.(e, dt);
+        this.ui = [];
 
-    if (this.player) {
-      this.camera.updateFollow(
-        this.player,
-        dt,
-        Config.WORLD.WIDTH,
-        Config.WORLD.HEIGHT,
-        this.glRenderer?.gl
-      );
+        // ======= ADD TOGGLES ========
+        this.showAxis = true;
+        this.showUIRect = true;
     }
-  }
 
-  render(alpha) {
-    const isEditor = Config.ENGINE_MODE === "editor";
-    const cam = isEditor
-      ? { x: this.camera.x, y: this.camera.y, scale: this.camera.scale ?? 1 }
-      : this.camera.getInterpolated(alpha);
+    addUI(fn) { this.ui.push(fn); }
 
-    const proj = this.glRenderer.getWorldProjection(cam.x, cam.y, cam.scale);
-    const strict = isEditor;
-    
-    for (const system of this.systems)
-      for (const e of this.entities)
-        system.render?.(e, this.glRenderer, proj, alpha, strict);
+    addEntity(e, layer) {
+        if (!this.layers.has(layer))
+            this.layers.set(layer, []);
 
-    const gl = this.glRenderer.gl;
-    let text = this.text;
+        this.layers.get(layer).push(e);
+    }
 
-    // gl.enable(gl.BLEND);
-    // gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    async loadProject(project, scene, loader, baseURL, fontLoader) {
 
-    // text.drawText("LUPIS WORLD", 200, 200, "#FFDD55", 96, proj);
-    // text.drawText("MSDF TEXT TEST", 220, 320, "#55FFCC", 48, proj);
+        this.layerOrder = scene.layers.map(l => l.id);
+        for (const l of scene.layers)
+            this.layers.set(l.id, []);
 
-    
-    // gl.disable(gl.BLEND);
-  }
+        // textures
+        for (const tex of scene.assets.textures) {
+            const img = await loader.load(baseURL + "assets/" + tex);
+            this.assets.textures[tex] = img;
+        }
 
-  async load() {
-    console.log("🌍 World mulai dimuat...");
-    await new Promise(r => setTimeout(r, 500));
-    bus.emit("world:ready", { message: "World sudah siap dimainkan!" });
-  }
+        // font
+        if (fontLoader && scene.assets.fonts.length === 2) {
+            const [fnt, png] = scene.assets.fonts;
+            const fontObj = await fontLoader(
+                baseURL + "assets/" + fnt,
+                baseURL + "assets/" + png
+            );
+            this.assets.fonts.default = fontObj;
+        }
+
+        // entities
+        for (const ent of scene.entities) {
+            const e = this._buildEntity(ent);
+            this.entities.push(e);
+
+            const layer = ent.layer || "objects";
+            this.addEntity(e, layer);
+        }
+    }
+
+    _buildEntity(desc) {
+        const e = {
+            id: desc.id,
+            name: desc.name,
+            layer: desc.layer,
+            components: desc.components || {}
+        };
+
+        // Transform
+        const t = e.components.Transform;
+        if (t) {
+            e.x = t.x || 0;
+            e.y = t.y || 0;
+            e.scaleX = t.scaleX ?? 1;
+            e.scaleY = t.scaleY ?? 1;
+            e.rotation = t.rotation || 0;
+        }
+
+        // SpriteRenderer
+        const s = e.components.SpriteRenderer;
+        if (s) {
+            e.image = this.assets.textures[s.texture];
+            e.frame = s.source;
+            e.width = s.width;
+            e.height = s.height;
+            e.zIndex = s.zIndex || 0;
+            e.pixelPerfect = !!s.pixelPerfect;
+        }
+
+        // TextRenderer
+        const text = e.components.TextRenderer;
+        if (text) {
+            e.text = {
+                value: text.text,
+                size: text.size,
+                color: text.color,
+                offsetX: 0,
+                offsetY: 0
+            };
+        }
+
+        // ShapeRenderer
+        const sh = e.components.ShapeRenderer;
+        if (sh) {
+            e.shape = sh;
+        }
+
+        return e;
+    }
+
+    update(dt) {
+        for (const system of this.systems) {
+            for (const layer of this.layerOrder) {
+                const ents = this.layers.get(layer);
+                if (!ents) continue;
+                for (const e of ents)
+                    system.update?.(e, dt);
+            }
+        }
+    }
 }
