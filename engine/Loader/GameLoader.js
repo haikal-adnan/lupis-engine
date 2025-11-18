@@ -9,6 +9,7 @@ import SelectionOutline from "../Editor/SelectionOutline.js";
 import Rulers from "../Editor/Rulers.js";
 import PointerCoordinates from "../Editor/PointerCoordinates.js";
 import GLImageResource from "../Renderer/GLImageResource.js";
+import EntityMoveTool from "../Editor/EntityMoveTool.js";
 
 export default class GameLoader {
 
@@ -46,6 +47,19 @@ export default class GameLoader {
             if (Config.EDITOR.SELECTION)
                 game.selectionOutline = new SelectionOutline(world, game, canvas, game.renderer);
                 //                          ⬆ world  ⬆ game  ⬆ canvas  ⬆ renderer
+
+            if (Config.EDITOR.MOVE && Config.EDITOR.SELECTION){
+                game.selectionOutline = new SelectionOutline(world, game, canvas, game.renderer);
+                // ---------------------------
+                // ✨ Tambahkan MoveTool
+                // ---------------------------
+                game.entityMoveTool = new EntityMoveTool(
+                    world,
+                    game,
+                    canvas,
+                    game.selectionOutline
+                );
+            }
 
             if (Config.EDITOR.RULERS)
                 game.rulers = new Rulers(game.renderer, game.camera);

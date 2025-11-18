@@ -28,7 +28,6 @@ export default class Game {
 
     update(dt) {
 
-        // FOLLOW PLAYER HANYA DI RUNTIME
         if (Config.ENGINE_MODE !== "editor") {
             if (this.world.player) {
                 this.camera.updateFollow(this.world.player, dt);
@@ -40,6 +39,11 @@ export default class Game {
 
     render(alpha) {
         const cam = this.camera.getInterpolated(alpha);
+
+        if(this.selectionOutline) {
+            this.selectionOutline?.redraw();
+        }
+
         this.renderer?.render(this.world, cam, this);
     }
 }

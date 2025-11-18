@@ -8,7 +8,8 @@ class Configs {
       CAMERA_CONTROLLER: true,
       RULERS: false,             
       SELECTION: true,
-      POINTER: true     
+      POINTER: true,
+      MOVE: true,
     };
   }
 }
