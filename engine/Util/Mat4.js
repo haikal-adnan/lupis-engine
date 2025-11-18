@@ -1,7 +1,4 @@
 export default class Mat4 {
-  // ======== Dasar ========
-
-  // Membuat matriks identitas baru
   static identity(out = new Float32Array(16)) {
     out.set([
       1, 0, 0, 0,
@@ -12,15 +9,11 @@ export default class Mat4 {
     return out;
   }
 
-  // Menyalin matriks
   static copy(out, a) {
     out.set(a);
     return out;
   }
 
-  // ======== Transformasi 2D ========
-
-  // Translasi (geser)
   static translate(out, a, tx, ty, tz = 0) {
     const x = tx, y = ty, z = tz;
     if (a === out) {
@@ -30,7 +23,6 @@ export default class Mat4 {
       out[15] = a[3] * x + a[7] * y + a[11] * z + a[15];
       return out;
     }
-    // Kalau berbeda, salin dulu
     for (let i = 0; i < 12; i++) out[i] = a[i];
     out[12] = a[0] * x + a[4] * y + a[8] * z + a[12];
     out[13] = a[1] * x + a[5] * y + a[9] * z + a[13];
@@ -39,7 +31,6 @@ export default class Mat4 {
     return out;
   }
 
-  // Skala
   static scale(out, a, sx, sy, sz = 1) {
     out[0] = a[0] * sx; out[1] = a[1] * sx; out[2] = a[2] * sx; out[3] = a[3] * sx;
     out[4] = a[4] * sy; out[5] = a[5] * sy; out[6] = a[6] * sy; out[7] = a[7] * sy;
@@ -48,7 +39,6 @@ export default class Mat4 {
     return out;
   }
 
-  // Rotasi di bidang XY (2D)
   static rotateZ(out, a, rad) {
     const s = Math.sin(rad);
     const c = Math.cos(rad);
@@ -74,9 +64,6 @@ export default class Mat4 {
     return out;
   }
 
-  // ======== Proyeksi ========
-
-  // Proyeksi ortografik (kamera 2D)
   static ortho(out, left, right, bottom, top, near = -1, far = 1) {
     const lr = 1 / (left - right);
     const bt = 1 / (bottom - top);
@@ -104,9 +91,6 @@ export default class Mat4 {
     return out;
   }
 
-  // ======== Operasi dasar ========
-
-  // Perkalian matriks (out = a * b)
   static multiply(out, a, b) {
     const a00 = a[0], a01 = a[1], a02 = a[2], a03 = a[3];
     const a10 = a[4], a11 = a[5], a12 = a[6], a13 = a[7];
@@ -140,8 +124,6 @@ export default class Mat4 {
 
     return out;
   }
-
-  // ======== Utilitas ========
 
   static create() {
     return new Float32Array(16);

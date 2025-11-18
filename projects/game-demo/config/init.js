@@ -1,6 +1,6 @@
 import PhysicsCore from "@utils/Physics/PhysicsCore.js";
 import Gravity from "@utils/Physics/Gravity.js";
-import Config from "@engine/Config/Config.js";
+import Config from "@engine/Core/Config.js";
 
 export async function setupPhysics(world, config = Config) {
   const P = config.PHYSICS;

@@ -2,9 +2,9 @@
 
 import RendererManager from "../Renderer/RendererManager.js";
 import GameLoop from "../Loop/GameLoop.js";
-import World from "../World/World.js";
-import Camera from "../Camera/Camera.js";
-import Config from "../Config/Config.js";
+import World from "./World.js";
+import Camera from "../Util/Camera.js";
+import Config from "./Config.js";
 
 export default class Game {
     constructor() {

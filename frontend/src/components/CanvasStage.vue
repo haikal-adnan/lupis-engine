@@ -35,7 +35,6 @@
       </div>
     </div>
 
-    <!-- Engine canvas -->
     <div ref="stage" class="relative flex-1 bg-slate-800 !rounded-b-md overflow-hidden">
       <canvas id="glCanvas" class="absolute inset-0 w-full h-full z-0"></canvas>
     </div>
@@ -43,8 +42,8 @@
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick, onBeforeUnmount } from "vue";
-import { startEngine } from "../../../engine/main.js";
+import { ref, onMounted, nextTick } from "vue";
+import { startEngine } from "@engine/main.js";
 
 const previewWindow = ref(null);
 
@@ -58,7 +57,6 @@ async function loadProject() {
 async function openOrUpdatePreview() {
   const payload = await loadProject();
 
-  // Jika popup sudah terbuka → kirim update
   if (previewWindow.value && !previewWindow.value.closed) {
     previewWindow.value.postMessage({
       type: "projectData",
@@ -69,7 +67,6 @@ async function openOrUpdatePreview() {
     return;
   }
 
-  // Buka popup baru
   previewWindow.value = window.open(
     "/preview/preview.html",
     "LupisPreview",

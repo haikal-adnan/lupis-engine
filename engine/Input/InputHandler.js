@@ -18,14 +18,11 @@ export default class InputHandler {
       arrowdown: "arrowdown",
     };
 
-    // aksi
     this.actions = { jump: false };
 
-    // event yang datang di antara frame
     this._pressedQueue = new Set();
     this._releasedQueue = new Set();
 
-    // event yang hanya berlaku di frame ini
     this._pressedFrame = new Set();
     this._releasedFrame = new Set();
 
@@ -50,7 +47,7 @@ export default class InputHandler {
 
     const isSpace = e.code === "Space" || k === " " || k === "space" || k === "spacebar";
     if (this.actionMap[k] === "jump" || isSpace) {
-      if (!this.actions.jump) this._pressedQueue.add("jump"); // dicatat untuk frame berikutnya
+      if (!this.actions.jump) this._pressedQueue.add("jump"); 
       this.actions.jump = true;
       if (isSpace) e.preventDefault();
     }
@@ -67,7 +64,6 @@ export default class InputHandler {
     }
   }
 
-  // Panggil SEKALI di awal tiap frame
   beginFrame() {
     this._pressedFrame = this._pressedQueue;
     this._releasedFrame = this._releasedQueue;
@@ -75,7 +71,6 @@ export default class InputHandler {
     this._releasedQueue = new Set();
   }
 
-  // arah (untuk gerak horizontal/vertikal)
   getDirection() {
     const { arrowup, arrowdown, arrowleft, arrowright } = this.keys;
     let x = 0, y = 0;
@@ -91,20 +86,16 @@ export default class InputHandler {
     return { x, y, dir };
   }
 
-  // Tambahan di kelas InputHandler
   isPressedLate(name) {
-    // true kalau tombol ditekan setelah beginFrame() di frame ini
     return this._pressedQueue.has(name);
   }
   consumePressedLate(name) {
-    // optional kalau mau mengonsumsi eventnya
     const had = this._pressedQueue.has(name);
     if (had) this._pressedQueue.delete(name);
     return had;
   }
 
 
-  // state/edge untuk frame ini saja (no buffer)
   isDown(name)     { return !!this.actions[name]; }
   isPressed(name)  { return this._pressedFrame.has(name); }
   isReleased(name) { return this._releasedFrame.has(name); }

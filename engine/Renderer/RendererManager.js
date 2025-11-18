@@ -1,12 +1,12 @@
 // engine/Renderer/RendererManager.js
-import GLContext from "./GLContext.js";
-import GLStateCache from "./GLStateCache.js";
+import GLContext from "./Graphic/GLContext.js";
+import GLStateCache from "./Graphic/GLStateCache.js";
 
-import ImageRenderer from "./ImageRenderer.js";
-import ShapeRenderer from "./ShapeRenderer.js";
-import TextRenderer from "./TextRenderer.js";
-import WorldRenderer from "./WorldRenderer.js";
-import UIRenderer from "./UIRenderer.js";
+import ImageRenderer from "./Entity/ImageRenderer.js";
+import ShapeRenderer from "./Entity/ShapeRenderer.js";
+import TextRenderer from "./Entity/TextRenderer.js";
+import WorldRenderer from "./Scene/WorldRenderer.js";
+import UIRenderer from "./Scene/UIRenderer.js";
 
 import Mat4 from "../Util/Mat4.js";
 
@@ -17,10 +17,8 @@ export default class RendererManager {
         this.ctx = new GLContext(canvas);
         this.gl = this.ctx.gl;
 
-        // GLOBAL state cache
         this.cache = new GLStateCache(this.gl, this.ctx.bindVAO);
 
-        // RENDERERS
         this.image = new ImageRenderer(this.ctx, this.cache);
         this.shape = new ShapeRenderer(this.ctx, this.cache);
         this.text  = new TextRenderer(this.ctx, this.cache);
@@ -87,7 +85,6 @@ export default class RendererManager {
     render(world, camera, game) {
         this.begin();
 
-        // WORLD
         const pWorld = this.getWorldProjection(camera);
         this.worldRenderer.render(world, pWorld);
 
@@ -95,7 +92,6 @@ export default class RendererManager {
         this.shape.flush();
         this.text.flush();
 
-        // UI
         const pUI = this.getUIProjection();
         this.uiRenderer.setProjection(pUI);
         this.uiRenderer.render(world.ui);

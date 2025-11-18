@@ -1,5 +1,5 @@
-import { bus } from "../Core/EventBus.js";
-import Config from "../Config/Config.js";
+import { bus } from "../Util/EventBus.js";
+import Config from "../Core/Config.js";
 
 export default class EntityMoveTool {
     constructor(world, game, canvas, selection) {

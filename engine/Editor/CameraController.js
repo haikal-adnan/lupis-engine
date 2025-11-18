@@ -1,5 +1,5 @@
-import Config from "../Config/Config.js";
-import { bus } from "../Core/EventBus.js";
+import Config from "../Core/Config.js";
+import { bus } from "../Util/EventBus.js";
 
 export default class CameraController {
     constructor(camera, canvas) {
