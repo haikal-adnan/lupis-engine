@@ -1,4 +1,4 @@
-import Config from "../Config/Config.js";
+import Config from "../Core/Config.js";
 
 export default class GameLoop {
   constructor(game) {

@@ -1,7 +1,7 @@
 import { econsole } from "@engine/Core/EngineConsole.js";
 import Polygon from "@utils/Entity/Polygon.js";
 import Player from "@utils/Entity/Player.js";
-import Config from "@engine/Config/Config.js";
+import Config from "@engine/Core/Config.js";
 
 export async function initPlayer(glContext) {
 

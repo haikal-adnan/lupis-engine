@@ -54,8 +54,8 @@
 
 <script setup>
 import { ref } from "vue";
-import Config from "@engine/Config/Config.js";
-import { econsole } from "@engine/Core/EngineConsole.js";
+import Config from "@engine/Core/Config.js";
+import { econsole } from "@engine/Util/EngineConsole.js";
 import { startEngine } from "@engine/main.js";
 
 const mode = ref(Config.ENGINE_MODE);

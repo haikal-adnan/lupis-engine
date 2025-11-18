@@ -3,7 +3,7 @@ import { bus } from "@engine/Core/EventBus.js";
 import Player from "@utils/Entity/Player.js";
 import Polygon from "@utils/Entity/Polygon.js";
 import GLImage from "@engine/Renderer/GLImage.js";
-import Config from "@engine/Config/Config.js";
+import Config from "@engine/Core/Config.js";
 import PhysicsCore from "@utils/Physics/PhysicsCore.js";
 import Gravity from "@utils/Physics/Gravity.js";
 

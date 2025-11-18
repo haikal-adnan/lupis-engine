@@ -47,7 +47,7 @@
 
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from "vue";
-import { bus } from "@engine/Core/EventBus.js";
+import { bus } from "@engine/Util/EventBus.js";
 
 const logs = ref([]);
 
