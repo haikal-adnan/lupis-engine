@@ -1,6 +1,6 @@
 import { ref } from "vue";
 
-const API_URL = "http://api.example.com"; // pakai https agar aman
+const API_URL = "https://api.example.com"; // pakai https agar aman
 
 export function useBackend() {
   const projects = ref([]);

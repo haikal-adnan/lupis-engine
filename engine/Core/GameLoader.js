@@ -9,7 +9,9 @@ import SelectionOutline from "../Editor/SelectionOutline.js";
 import Rulers from "../Editor/Rulers.js";
 import PointerCoordinates from "../Editor/PointerCoordinates.js";
 import GLImageResource from "../Renderer/Graphic/GLImageResource.js";
-import EntityMoveTool from "../Editor/EntityMoveTool.js";
+// import EntityMoveTool from "../Editor/EntityMoveTool.js";
+import InputManager from "../Input/InputManager.js";
+// import TransformBox from "../Editor/TransformBox.js";
 
 export default class GameLoader {
 
@@ -20,7 +22,6 @@ export default class GameLoader {
         const gl = game.renderer.gl;
         const loader = new GLImageResource(gl);
 
-        // WORLD
         const world = new World();
         game.world = world;
 
@@ -39,35 +40,42 @@ export default class GameLoader {
             }
         );
 
+        game.input = new InputManager(canvas);
+
         if (mode === "editor") {
 
             if (Config.EDITOR.CAMERA_CONTROLLER)
-                game.cameraController = new CameraController(game.camera, canvas);
+                game.cameraController = new CameraController(game.camera, canvas, game.input);
 
             if (Config.EDITOR.SELECTION)
-                game.selectionOutline = new SelectionOutline(world, game, canvas, game.renderer);
-                //                          ⬆ world  ⬆ game  ⬆ canvas  ⬆ renderer
+                game.selectionOutline = new SelectionOutline(world, game, canvas, game.renderer, game.input);
 
-            if (Config.EDITOR.MOVE && Config.EDITOR.SELECTION){
-                game.selectionOutline = new SelectionOutline(world, game, canvas, game.renderer);
-                // ---------------------------
-                // ✨ Tambahkan MoveTool
-                // ---------------------------
-                game.entityMoveTool = new EntityMoveTool(
-                    world,
-                    game,
-                    canvas,
-                    game.selectionOutline
-                );
-            }
+            // if (Config.EDITOR.MOVE && Config.EDITOR.SELECTION){
+            //     game.entityMoveTool = new EntityMoveTool(
+            //         world,
+            //         game,
+            //         canvas,
+            //         game.input,
+            //         game.selectionOutline,
+            //     );
+            // }
 
             if (Config.EDITOR.RULERS)
                 game.rulers = new Rulers(game.renderer, game.camera);
 
             if (Config.EDITOR.POINTER)
                 game.pointerCoords = new PointerCoordinates(game, game.renderer);
-        }
 
+            // if (Config.EDITOR.TRANSFORM)
+            //     game.transformBox = new TransformBox(
+            //         world,
+            //         game,
+            //         canvas,
+            //         game.renderer,
+            //         game.input,
+            //         game.selectionOutline,
+            //     );
+        }
 
         game.loop = new GameLoop({
             update: dt => game.update(dt),
