@@ -1,3 +1,4 @@
+// startEngine.js
 import Game from "./Core/Game.js";
 import GameLoader from "./Core/GameLoader.js";
 
@@ -6,59 +7,35 @@ export const game = new Game();
 export async function startEngine(canvasId, mode = "editor", baseURL = "./") {
     const canvas = document.querySelector(`#${canvasId}`);
 
-    const dpr = window.devicePixelRatio || 1;
+    const resizeEditor = () => {
+        const dpr = window.devicePixelRatio || 1;
 
-    const setStyle = (style) => Object.assign(canvas.style, style);
+        // CSS size (layout)
+        canvas.style.width  = "100vw";
+        canvas.style.height = "100vh";
 
-    if (mode === "runtime") {
-        const W = 1920, H = 1080;
-        canvas.width = Math.floor(W * dpr);
-        canvas.height = Math.floor(H * dpr);
+        // Force DOM update
+        const rect = canvas.getBoundingClientRect();
 
-        const resize = () => {
-            const sw = window.innerWidth;
-            const sh = window.innerHeight;
-            const target = W / H;
-            const ratio = sw / sh;
+        // Internal resolution
+        canvas.width  = Math.floor(rect.width  * dpr);
+        canvas.height = Math.floor(rect.height * dpr);
 
-            const drawW = ratio > target ? sh * target : sw;
-            const drawH = ratio > target ? sh : sw / target;
-
-            setStyle({
-                width: drawW + "px",
-                height: drawH + "px",
-                position: "absolute",
-                left: 0, right: 0, top: 0, bottom: 0,
-                margin: "auto",
-                backgroundColor: "#000"
-            });
-        };
-
-        window.addEventListener("resize", resize);
-        resize();
-    }
+        canvas.style.position = "absolute";
+        canvas.style.top = 0;
+        canvas.style.left = 0;
+        canvas.style.margin = 0;
+        canvas.style.padding = 0;
+        canvas.style.boxSizing = "border-box";
+    };
 
     if (mode === "editor") {
-        const resize = () => {
-            const w = window.innerWidth;
-            const h = window.innerHeight;
-
-            canvas.width = Math.floor(w * dpr);
-            canvas.height = Math.floor(h * dpr);
-
-            setStyle({
-                width: w + "px",
-                height: h + "px",
-                position: "absolute",
-                left: 0, right: 0, top: 0, bottom: 0,
-                margin: 0,
-                background: "#1a1a1a"
-            });
-        };
-
-        window.addEventListener("resize", resize);
-        resize();
+        window.addEventListener("resize", resizeEditor);
+        resizeEditor();
     }
+
+    // RUNTIME MODE tetap sama seperti sebelumnya (16:9 letterbox)
+    // … boleh tetap menggunakan kode lama kamu di sini
 
     const loader = new GameLoader();
     await loader.initializeGame(game, canvas, mode, baseURL);

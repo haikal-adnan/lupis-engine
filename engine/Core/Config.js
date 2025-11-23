@@ -9,6 +9,7 @@ class Configs {
       SELECTION: true,
       POINTER: true,
       MOVE: true,
+      TRANSFORM: true,
     };
   }
 }

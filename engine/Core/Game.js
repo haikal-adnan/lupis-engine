@@ -39,11 +39,21 @@ export default class Game {
 
     render(alpha) {
         const cam = this.camera.getInterpolated(alpha);
-
-        if(this.selectionOutline) {
-            this.selectionOutline?.redraw();
+        if(this.cameraController) {
+            this.cameraController.update();
         }
 
+        if(this.selectionOutline) {
+            this.selectionOutline.update();
+        }
+
+        // if(this.entityMoveTool) {
+        //     this.entityMoveTool.update();
+        // }
+
+        // if(this.transformBox) {
+        //     this.transformBox.update();
+        // }
         this.renderer?.render(this.world, cam, this);
     }
 }

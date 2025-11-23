@@ -29,7 +29,7 @@ export default class PointerCoordinates {
 
         this.renderer.uiRenderer.drawText(
             `X: ${worldX.toFixed(2)}   Y: ${worldY.toFixed(2)}`,
-            cw - 230,  
+            cw - 1530,  
             20,   
             20,          
             [1,1,1,1]    

@@ -1,6 +1,6 @@
 import { ref } from "vue";
 
-const API_URL = "http://api.lupis.calk.cloud"; // pakai https agar aman
+const API_URL = "https://api.lupis.calk.cloud"; // pakai https agar aman
 
 export function useBackend() {
   const projects = ref([]);

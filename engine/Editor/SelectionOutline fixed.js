@@ -11,8 +11,9 @@ export default class SelectionOutline {
         this.input = input;
 
         this.active = Config.ENGINE_MODE === "editor";
+
         this.hovered = null;
-       	this.selected = null;
+        this.selected = null;
 
         this.isPointerDown = false;
         this.draggingMove = false;
@@ -34,9 +35,11 @@ export default class SelectionOutline {
         c.style.inset = 0;
         c.style.pointerEvents = "none";
         this.canvas.parentElement.appendChild(c);
+
         this._overlay = c;
         this.ctx = c.getContext("2d");
         this._resizeOverlay();
+
         window.addEventListener("resize", () => this._resizeOverlay());
     }
 
@@ -44,8 +47,10 @@ export default class SelectionOutline {
         const dpr = window.devicePixelRatio || 1;
         const w = this.canvas.clientWidth;
         const h = this.canvas.clientHeight;
+
         this._overlay.width = w * dpr;
         this._overlay.height = h * dpr;
+
         this._overlay.style.width = w + "px";
         this._overlay.style.height = h + "px";
     }
@@ -53,18 +58,21 @@ export default class SelectionOutline {
     _world(px, py) {
         const cam = this.game.camera;
         const s = cam.scale;
-
         const dpr = window.devicePixelRatio || 1;
-        const W = this._overlay.width;
-        const H = this._overlay.height;
+        const W = this._overlay.width / dpr;
+        const H = this._overlay.height / dpr;
 
         return {
-            x: cam.x + (px * dpr - W * 0.5) / s,
-            y: cam.y + (py * dpr - H * 0.5) / s
+            x: cam.x + (px - W * 0.5) / s,
+            y: cam.y + (py - H * 0.5) / s
         };
     }
 
+    // ================================
+    // BOUNDING — FINAL TEXT FIX
+    // ================================
     getBounding(ent) {
+        // TEXT → gunakan hitbox yang sudah dihitung MSDF
         if (ent.components?.TextRenderer) {
             return {
                 x: ent.hitX,
@@ -73,6 +81,8 @@ export default class SelectionOutline {
                 h: ent.hitHeight
             };
         }
+
+        // LINE
         if (ent.shape?.type === "line") {
             return {
                 x: ent.hitX,
@@ -81,6 +91,8 @@ export default class SelectionOutline {
                 h: ent.hitHeight
             };
         }
+
+        // SPRITE / SHAPE
         return {
             x: ent.x,
             y: ent.y,
@@ -151,9 +163,13 @@ export default class SelectionOutline {
 
         for (const e of this.world.entities) {
             if (!e.visible) continue;
+
             const b = this.getBounding(e);
-            if (p.x >= b.x && p.x <= b.x + b.w &&
-                p.y >= b.y && p.y <= b.y + b.h) {
+
+            if (
+                p.x >= b.x && p.x <= b.x + b.w &&
+                p.y >= b.y && p.y <= b.y + b.h
+            ) {
                 this.hovered = e;
                 return;
             }
@@ -163,26 +179,36 @@ export default class SelectionOutline {
     _down(px, py) {
         const p = this._world(px, py);
 
+        // ============ Resize Start ============
         if (this.hoverHandle) {
             this.draggingResize = true;
             this.resizeType = this.hoverHandle.type;
 
             const b = this.getBounding(this.selected);
-            this.entStart = { x: b.x, y: b.y, w: b.w, h: b.h };
+
+            // TEXT: hanya simpan width/height
+            if (this.selected.components?.TextRenderer) {
+                this.entStart = {
+                    w: b.w,
+                    h: b.h
+                };
+            } else {
+                // NORMAL ent
+                this.entStart = { x: b.x, y: b.y, w: b.w, h: b.h };
+            }
+
             this.startWorld = this._world(px, py);
 
-            if (this.selected.components?.TextRenderer) {
-                const t = this.selected.components.TextRenderer;
-                this.selected._resizeStartSize = t.size;
-                this.selected._resizeFactor = 1;
-            }
             return;
         }
 
+        // ============ Select ============
         const e = this._hit(p.x, p.y);
+
         if (e) {
             this.selected = e;
             bus.emit("entity:selected", e);
+
             this.draggingMove = true;
             this.startWorld = this._world(px, py);
             return;
@@ -195,10 +221,13 @@ export default class SelectionOutline {
     _hit(wx, wy) {
         for (const e of this.world.entities) {
             if (!e.visible) continue;
+
             const b = this.getBounding(e);
-            if (wx >= b.x && wx <= b.x + b.w &&
-                wy >= b.y && wy <= b.y + b.h)
-                return e;
+
+            if (
+                wx >= b.x && wx <= b.x + b.w &&
+                wy >= b.y && wy <= b.y + b.h
+            ) return e;
         }
         return null;
     }
@@ -214,6 +243,7 @@ export default class SelectionOutline {
         e.x += dx;
         e.y += dy;
 
+        // TEXT: update hitbox
         if (e.components?.TextRenderer) {
             const t = e.components.TextRenderer;
             const font = this.world.assets.fonts.default;
@@ -221,7 +251,7 @@ export default class SelectionOutline {
 
             e.hitX = e.x + m.xMin;
             e.hitY = e.y + m.yMin;
-            e.hitWidth = m.boundsWidth;
+            e.hitWidth  = m.boundsWidth;
             e.hitHeight = m.boundsHeight;
         }
 
@@ -266,6 +296,7 @@ export default class SelectionOutline {
         for (const h of this.handles) {
             const dx = cx - h.x;
             const dy = cy - h.y;
+
             if (dx*dx + dy*dy <= R*R) {
                 this.hoverHandle = h;
                 return;
@@ -273,15 +304,18 @@ export default class SelectionOutline {
         }
     }
 
-    _cursor(type) {
+    _cursor(t) {
         return {
             nw: "nwse-resize",
             ne: "nesw-resize",
             sw: "nesw-resize",
             se: "nwse-resize"
-        }[type];
+        }[t];
     }
 
+    // ==========================================
+    //              FINAL TEXT RESIZE
+    // ==========================================
     _resize(px, py) {
         const e = this.selected;
         if (!e) return;
@@ -291,6 +325,7 @@ export default class SelectionOutline {
         const dy = now.y - this.startWorld.y;
 
         if (e.components?.TextRenderer) {
+
             const startW = this.entStart.w;
             const startH = this.entStart.h;
 
@@ -302,15 +337,24 @@ export default class SelectionOutline {
             if (this.resizeType === "sw") { newW -= dx; newH += dy; }
             if (this.resizeType === "se") { newW += dx; newH += dy; }
 
+            // menjaga minimal
             newW = Math.max(5, newW);
             newH = Math.max(5, newH);
 
             const scaleW = newW / startW;
             const scaleH = newH / startH;
-            const scale = Math.max(scaleW, scaleH);
+            const scale  = Math.max(scaleW, scaleH);
 
             e._resizeFactor = scale;
+
+            // apply text scaling
             ApplyResizeToEntity(e, this.world);
+
+            const b = this.getBounding(e);
+            this.entStart.w = b.w;
+            this.entStart.h = b.h;
+
+            this.startWorld = now;
 
             this._computeHandles();
             this._draw();
@@ -322,23 +366,22 @@ export default class SelectionOutline {
         let w = this.entStart.w;
         let h = this.entStart.h;
 
-        if (this.resizeType === "nw") { x += dx; y += dy; w -= dx; h -= dy; }
-        if (this.resizeType === "ne") { y += dy; w += dx; h -= dy; }
-        if (this.resizeType === "sw") { x += dx; w -= dx; h += dy; }
-        if (this.resizeType === "se") { w += dx; h += dy; }
+        if (this.resizeType === "nw") { x+=dx; y+=dy; w-=dx; h-=dy; }
+        if (this.resizeType === "ne") { y+=dy; w+=dx; h-=dy; }
+        if (this.resizeType === "sw") { x+=dx; w-=dx; h+=dy; }
+        if (this.resizeType === "se") { w+=dx; h+=dy; }
 
         e.x = x;
         e.y = y;
-        e.width = w;
+        e.width  = w;
         e.height = h;
 
         ApplyResizeToEntity(e, this.world);
 
-        this.startWorld = now;
-
         const bb = this.getBounding(e);
         this.entStart = { x: bb.x, y: bb.y, w: bb.w, h: bb.h };
 
+        this.startWorld = now;
         this._computeHandles();
         this._draw();
     }
@@ -359,6 +402,7 @@ export default class SelectionOutline {
             const b = this.getBounding(ent);
             const x = (b.x - cam.x) * s + W * 0.5;
             const y = (b.y - cam.y) * s + H * 0.5;
+
             ctx.lineWidth = lw * s;
             ctx.strokeStyle = col;
             ctx.strokeRect(x, y, b.w * s, b.h * s);
