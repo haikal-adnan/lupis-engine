@@ -157,6 +157,57 @@ export default class ShapeRenderer {
         this._push(x2 + nx, y2 + ny, r,g,b,a);
     }
 
+    drawCircle(cx, cy, r, color=[1,1,1,1], segments=24, projection) {
+        if (projection !== this.currentProjection) {
+            this.flush();
+            this.currentProjection = projection;
+        }
+
+        const [cr, cg, cb, ca] = color;
+        const step = (Math.PI * 2) / segments;
+
+        for (let i = 0; i < segments; i++) {
+            const a1 = i * step;
+            const a2 = (i+1) * step;
+
+            const x1 = cx + Math.cos(a1) * r;
+            const y1 = cy + Math.sin(a1) * r;
+
+            const x2 = cx + Math.cos(a2) * r;
+            const y2 = cy + Math.sin(a2) * r;
+
+            // triangle fan from center → p1 → p2
+            this._push(cx, cy, cr, cg, cb, ca);
+            this._push(x1, y1, cr, cg, cb, ca);
+            this._push(x2, y2, cr, cg, cb, ca);
+        }
+    }
+
+    drawCircleOutline(cx, cy, r, color=[0,0,0,1], thickness=2, segments=32, projection) {
+        if (projection !== this.currentProjection) {
+            this.flush();
+            this.currentProjection = projection;
+        }
+
+        const [cr, cg, cb, ca] = color;
+        const step = (Math.PI * 2) / segments;
+
+        for (let i = 0; i < segments; i++) {
+            const a1 = i * step;
+            const a2 = (i+1) * step;
+
+            const x1 = cx + Math.cos(a1) * r;
+            const y1 = cy + Math.sin(a1) * r;
+
+            const x2 = cx + Math.cos(a2) * r;
+            const y2 = cy + Math.sin(a2) * r;
+
+            this.drawLine(x1, y1, x2, y2, [cr,cg,cb,ca], thickness, projection);
+        }
+    }
+
+
+
     flush() {
         const gl = this.gl;
 

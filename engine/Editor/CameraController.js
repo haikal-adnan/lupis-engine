@@ -135,63 +135,75 @@ export default class CameraController {
         }
 
         const T = touch.touches;
-
-        if (T.length === 1) {
-            const t = T[0];
-
-            if (this.touchMode !== "pan") {
-                this.touchMode = "pan";
-                this.lastPx = t.x;
-                this.lastPy = t.y;
-                return;
-            }
-
-            const dx = t.x - this.lastPx;
-            const dy = t.y - this.lastPy;
-
-            this.lastPx = t.x;
-            this.lastPy = t.y;
-
-            cam.x -= dx / cam.scale;
-            cam.y -= dy / cam.scale;
-
-            bus.emit("camera:pan", { x: cam.x, y: cam.y });
+        if (T.length !== 2) {
+            this.touchMode = null;
+            return;
         }
 
-        else if (T.length === 2) {
-            const t1 = T[0];
-            const t2 = T[1];
+        const t1 = T[0];
+        const t2 = T[1];
 
-            const dist = Math.hypot(t2.x - t1.x, t2.y - t1.y);
+        const rawMidX = (t1.x + t2.x) * 0.5;
+        const rawMidY = (t1.y + t2.y) * 0.5;
 
-            if (this.touchMode !== "pinch") {
-                this.touchMode = "pinch";
-                this.startPinchDist = dist;
-                this.startPinchScale = cam.scale;
-                return;
-            }
+        const rawDist = Math.hypot(t2.x - t1.x, t2.y - t1.y);
 
-            const ratio = dist / this.startPinchDist;
-            let next = this.startPinchScale * ratio;
-            next = Math.max(this.minZoom, Math.min(this.maxZoom, next));
+        if (this.touchMode !== "pinch") {
+            this.touchMode = "pinch";
+
+            this.smoothMidX = rawMidX;
+            this.smoothMidY = rawMidY;
+
+            this.startDist = rawDist;
+            this.startScale = cam.scale;
 
             const rect = this.canvas.getBoundingClientRect();
+            const cw = this.canvas.width;
+            const ch = this.canvas.height;
 
-            const cssMidX = (t1.x + t2.x) * 0.5;
-            const cssMidY = (t1.y + t2.y) * 0.5;
+            const px = rawMidX * (cw / rect.width);
+            const py = rawMidY * (ch / rect.height);
 
-            const pxMidX = cssMidX * (this.canvas.width  / rect.width);
-            const pxMidY = cssMidY * (this.canvas.height / rect.height);
+            this.anchorWX = cam.x + (px - cw * 0.5) / cam.scale;
+            this.anchorWY = cam.y + (py - ch * 0.5) / cam.scale;
 
-            const wx = cam.x + (pxMidX - this.canvas.width  * 0.5) / cam.scale;
-            const wy = cam.y + (pxMidY - this.canvas.height * 0.5) / cam.scale;
+            this.targetScale = cam.scale;
+            this.targetX = cam.x;
+            this.targetY = cam.y;
 
-            cam.scale = next;
-
-            cam.x = wx - (pxMidX - this.canvas.width  * 0.5) / cam.scale;
-            cam.y = wy - (pxMidY - this.canvas.height * 0.5) / cam.scale;
-
-            bus.emit("camera:zoom", { scale: cam.scale });
+            return;
         }
+
+        this.smoothMidX = this.smoothMidX + (rawMidX - this.smoothMidX) * 0.3;
+        this.smoothMidY = this.smoothMidY + (rawMidY - this.smoothMidY) * 0.3;
+
+        const scaleRatio = rawDist / this.startDist;
+        this.targetScale = this.startScale * scaleRatio;
+        this.targetScale = Math.max(this.minZoom, Math.min(this.maxZoom, this.targetScale));
+
+        const rect = this.canvas.getBoundingClientRect();
+        const cw = this.canvas.width;
+        const ch = this.canvas.height;
+
+        const px = this.smoothMidX * (cw / rect.width);
+        const py = this.smoothMidY * (ch / rect.height);
+
+        const wx = cam.x + (px - cw * 0.5) / cam.scale;
+        const wy = cam.y + (py - ch * 0.5) / cam.scale;
+
+        const wx2 = cam.x + (px - cw * 0.5) / this.targetScale;
+        const wy2 = cam.y + (py - ch * 0.5) / this.targetScale;
+
+        this.targetX = cam.x + (wx - wx2);
+        this.targetY = cam.y + (wy - wy2);
+
+        cam.scale = cam.scale + (this.targetScale - cam.scale) * 0.2;
+        cam.x     = cam.x     + (this.targetX    - cam.x)     * 0.2;
+        cam.y     = cam.y     + (this.targetY    - cam.y)     * 0.2;
+
+        bus.emit("camera:zoom", { scale: cam.scale });
     }
+
+
+
 }

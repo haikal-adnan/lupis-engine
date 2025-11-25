@@ -9,9 +9,9 @@ import SelectionOutline from "../Editor/SelectionOutline.js";
 import Rulers from "../Editor/Rulers.js";
 import PointerCoordinates from "../Editor/PointerCoordinates.js";
 import GLImageResource from "../Renderer/Graphic/GLImageResource.js";
-// import EntityMoveTool from "../Editor/EntityMoveTool.js";
 import InputManager from "../Input/InputManager.js";
-// import TransformBox from "../Editor/TransformBox.js";
+import SelectionTool from "../Editor/SelectionTool.js";
+import TransformTool from "../Editor/TransformTool.js";
 
 export default class GameLoader {
 
@@ -47,34 +47,37 @@ export default class GameLoader {
             if (Config.EDITOR.CAMERA_CONTROLLER)
                 game.cameraController = new CameraController(game.camera, canvas, game.input);
 
-            if (Config.EDITOR.SELECTION)
-                game.selectionOutline = new SelectionOutline(world, game, canvas, game.renderer, game.input);
-
-            // if (Config.EDITOR.MOVE && Config.EDITOR.SELECTION){
-            //     game.entityMoveTool = new EntityMoveTool(
-            //         world,
-            //         game,
-            //         canvas,
-            //         game.input,
-            //         game.selectionOutline,
-            //     );
+            // if (Config.EDITOR.SELECTION){
+            //     game.selectionOutline = new SelectionOutline(world, game, canvas, game.renderer, game.input);
+            //     world.layers.set("__editor_selection", []);
+            //     world.layerOrder.push("__editor_selection");
+            //     world.selectionRenderer = (image, shape, text, proj) => {
+            //         game.selectionOutline._drawWorld(shape, proj);
+            //     };
             // }
+
+            if (Config.EDITOR.SELECTION) {
+                game.selection = new SelectionTool(world, game, canvas, game.renderer, game.input);
+                world.layers.set("__editor_selection", []);
+                world.layerOrder.push("__editor_selection");
+            }
+
+            if (Config.EDITOR.TRANSFORM) {
+                game.transform = new TransformTool(
+                    game.selection,
+                    world,
+                    game,
+                    canvas,
+                    game.renderer,
+                    game.input
+                );
+            }
 
             if (Config.EDITOR.RULERS)
                 game.rulers = new Rulers(game.renderer, game.camera);
 
             if (Config.EDITOR.POINTER)
                 game.pointerCoords = new PointerCoordinates(game, game.renderer);
-
-            // if (Config.EDITOR.TRANSFORM)
-            //     game.transformBox = new TransformBox(
-            //         world,
-            //         game,
-            //         canvas,
-            //         game.renderer,
-            //         game.input,
-            //         game.selectionOutline,
-            //     );
         }
 
         game.loop = new GameLoop({

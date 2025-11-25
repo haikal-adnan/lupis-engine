@@ -12,7 +12,7 @@ export default class SelectionOutline {
 
         this.active = Config.ENGINE_MODE === "editor";
         this.hovered = null;
-       	this.selected = null;
+        this.selected = null;
 
         this.isPointerDown = false;
         this.draggingMove = false;
@@ -25,84 +25,58 @@ export default class SelectionOutline {
         this.handles = [];
         this.hoverHandle = null;
 
-        if (this.active) this._makeOverlay();
-    }
+        this.touchMode = "idle";
+        this.holdTimer = null;
+        this.allowTransform = false;
 
-    _makeOverlay() {
-        const c = document.createElement("canvas");
-        c.style.position = "absolute";
-        c.style.inset = 0;
-        c.style.pointerEvents = "none";
-        this.canvas.parentElement.appendChild(c);
-        this._overlay = c;
-        this.ctx = c.getContext("2d");
-        this._resizeOverlay();
-        window.addEventListener("resize", () => this._resizeOverlay());
-    }
-
-    _resizeOverlay() {
-        const dpr = window.devicePixelRatio || 1;
-        const w = this.canvas.clientWidth;
-        const h = this.canvas.clientHeight;
-        this._overlay.width = w * dpr;
-        this._overlay.height = h * dpr;
-        this._overlay.style.width = w + "px";
-        this._overlay.style.height = h + "px";
+        world.selectionRenderer = (image, shape, text, proj) => {
+            this._drawWorld(shape, proj);
+        };
     }
 
     _world(px, py) {
         const cam = this.game.camera;
         const s = cam.scale;
-
-        const dpr = window.devicePixelRatio || 1;
-        const W = this._overlay.width;
-        const H = this._overlay.height;
+        const W = this.canvas.width;
+        const H = this.canvas.height;
 
         return {
-            x: cam.x + (px * dpr - W * 0.5) / s,
-            y: cam.y + (py * dpr - H * 0.5) / s
+            x: cam.x + (px - W * 0.5) / s,
+            y: cam.y + (py - H * 0.5) / s
         };
     }
 
     getBounding(ent) {
         if (ent.components?.TextRenderer) {
-            return {
-                x: ent.hitX,
-                y: ent.hitY,
-                w: ent.hitWidth,
-                h: ent.hitHeight
-            };
+            return { x: ent.hitX, y: ent.hitY, w: ent.hitWidth, h: ent.hitHeight };
         }
         if (ent.shape?.type === "line") {
-            return {
-                x: ent.hitX,
-                y: ent.hitY,
-                w: ent.hitWidth,
-                h: ent.hitHeight
-            };
+            return { x: ent.hitX, y: ent.hitY, w: ent.hitWidth, h: ent.hitHeight };
         }
-        return {
-            x: ent.x,
-            y: ent.y,
-            w: ent.width,
-            h: ent.height
-        };
+        return { x: ent.x, y: ent.y, w: ent.width, h: ent.height };
     }
 
     update() {
         if (!this.active) return;
 
-        const m = this.input.mouse;
-        const px = m.x, py = m.y;
+        if (this.input.touch.active && this.input.touch.touches.length !== 1) {
+            this.isPointerDown = false;
+            this.draggingMove = false;
+            this.draggingResize = false;
+            return;
+        }
+
+        const p = this.input.getPointer();
+        const px = p.x, py = p.y;
 
         this._hover(px, py);
 
-        if (m.isDown(0) && !this.isPointerDown) {
+        if (p.down && !this.isPointerDown) {
             this._down(px, py);
             this.isPointerDown = true;
         }
 
-        if (!m.isDown(0) && this.isPointerDown) {
+        if (!p.down && this.isPointerDown) {
             this.draggingMove = false;
             this.draggingResize = false;
             this.resizeType = null;
@@ -119,15 +93,12 @@ export default class SelectionOutline {
         if (this.draggingResize) this._resize(px, py);
     }
 
+
     _hover(px, py) {
-        if (this.draggingMove || this.draggingResize) {
-            this._draw();
-            return;
-        }
+        if (this.draggingMove || this.draggingResize) return;
 
         if (!this.selected) {
             this._hoverEntity(px, py);
-            this._draw();
             return;
         }
 
@@ -136,13 +107,11 @@ export default class SelectionOutline {
 
         if (this.hoverHandle) {
             this.canvas.style.cursor = this._cursor(this.hoverHandle.type);
-            this._draw();
             return;
         }
 
         this._hoverEntity(px, py);
         this.canvas.style.cursor = this.hovered ? "move" : "default";
-        this._draw();
     }
 
     _hoverEntity(px, py) {
@@ -169,7 +138,7 @@ export default class SelectionOutline {
 
             const b = this.getBounding(this.selected);
             this.entStart = { x: b.x, y: b.y, w: b.w, h: b.h };
-            this.startWorld = this._world(px, py);
+            this.startWorld = p;
 
             if (this.selected.components?.TextRenderer) {
                 const t = this.selected.components.TextRenderer;
@@ -184,7 +153,7 @@ export default class SelectionOutline {
             this.selected = e;
             bus.emit("entity:selected", e);
             this.draggingMove = true;
-            this.startWorld = this._world(px, py);
+            this.startWorld = p;
             return;
         }
 
@@ -196,6 +165,7 @@ export default class SelectionOutline {
         for (const e of this.world.entities) {
             if (!e.visible) continue;
             const b = this.getBounding(e);
+
             if (wx >= b.x && wx <= b.x + b.w &&
                 wy >= b.y && wy <= b.y + b.h)
                 return e;
@@ -218,7 +188,6 @@ export default class SelectionOutline {
             const t = e.components.TextRenderer;
             const font = this.world.assets.fonts.default;
             const m = font.measureText(t.text, t.size);
-
             e.hitX = e.x + m.xMin;
             e.hitY = e.y + m.yMin;
             e.hitWidth = m.boundsWidth;
@@ -227,46 +196,31 @@ export default class SelectionOutline {
 
         this.startWorld = n;
         this._computeHandles();
-        this._draw();
     }
 
     _computeHandles() {
         if (!this.selected) return;
 
         const b = this.getBounding(this.selected);
-        const cam = this.game.camera;
-        const s = cam.scale;
-
-        const W = this._overlay.width;
-        const H = this._overlay.height;
-
-        const sx = (b.x - cam.x) * s + W * 0.5;
-        const sy = (b.y - cam.y) * s + H * 0.5;
-        const sw = b.w * s;
-        const sh = b.h * s;
 
         this.handles = [
-            { type: "nw", x: sx,      y: sy      },
-            { type: "ne", x: sx+sw,   y: sy      },
-            { type: "sw", x: sx,      y: sy+sh   },
-            { type: "se", x: sx+sw,   y: sy+sh   }
+            { type: "nw", x: b.x,      y: b.y      },
+            { type: "ne", x: b.x+b.w,  y: b.y      },
+            { type: "sw", x: b.x,      y: b.y+b.h  },
+            { type: "se", x: b.x+b.w,  y: b.y+b.h  }
         ];
     }
 
     _hoverHandle(px, py) {
-        const dpr = window.devicePixelRatio || 1;
-        const cx = px * dpr;
-        const cy = py * dpr;
-
-        const s = this.game.camera.scale;
-        const R = 18 * s;
+        const p = this._world(px, py);
+        const r = 6 / this.game.camera.scale;
 
         this.hoverHandle = null;
 
         for (const h of this.handles) {
-            const dx = cx - h.x;
-            const dy = cy - h.y;
-            if (dx*dx + dy*dy <= R*R) {
+            const dx = p.x - h.x;
+            const dy = p.y - h.y;
+            if (dx*dx + dy*dy <= r*r * 4) {
                 this.hoverHandle = h;
                 return;
             }
@@ -313,7 +267,6 @@ export default class SelectionOutline {
             ApplyResizeToEntity(e, this.world);
 
             this._computeHandles();
-            this._draw();
             return;
         }
 
@@ -340,48 +293,37 @@ export default class SelectionOutline {
         this.entStart = { x: bb.x, y: bb.y, w: bb.w, h: bb.h };
 
         this._computeHandles();
-        this._draw();
     }
 
-    _draw() {
-        const ctx = this.ctx;
-        const W = this._overlay.width;
-        const H = this._overlay.height;
-
-        ctx.clearRect(0, 0, W, H);
-
-        if (!this.selected && !this.hovered) return;
-
+    _drawWorld(shape, proj) {
         const cam = this.game.camera;
-        const s = cam.scale;
-
-        const drawBox = (ent, col, lw) => {
-            const b = this.getBounding(ent);
-            const x = (b.x - cam.x) * s + W * 0.5;
-            const y = (b.y - cam.y) * s + H * 0.5;
-            ctx.lineWidth = lw * s;
-            ctx.strokeStyle = col;
-            ctx.strokeRect(x, y, b.w * s, b.h * s);
-        };
 
         if (this.selected) {
-            drawBox(this.selected, "rgba(255,215,0,1)", 2);
+            this._computeHandles();
+            const b = this.getBounding(this.selected);
+            const t = 2 / cam.scale;
 
-            const r = 6 * s;
-            ctx.fillStyle = "#fff";
-            ctx.strokeStyle = "#000";
-            ctx.lineWidth = 2;
+            shape.drawLine(b.x,      b.y,      b.x+b.w, b.y,      [1,0.84,0,1], t, proj);
+            shape.drawLine(b.x+b.w,  b.y,      b.x+b.w, b.y+b.h,  [1,0.84,0,1], t, proj);
+            shape.drawLine(b.x+b.w,  b.y+b.h,  b.x,     b.y+b.h,  [1,0.84,0,1], t, proj);
+            shape.drawLine(b.x,      b.y+b.h,  b.x,     b.y,      [1,0.84,0,1], t, proj);
+
+            const r = 6 / cam.scale;
 
             for (const h of this.handles) {
-                ctx.beginPath();
-                ctx.arc(h.x, h.y, r, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.stroke();
+                shape.drawCircle(h.x, h.y, r, [1,1,1,1], 24, proj);
+                shape.drawCircleOutline(h.x, h.y, r, [0,0,0,1], t, 32, proj);
             }
         }
 
         if (this.hovered && this.hovered !== this.selected) {
-            drawBox(this.hovered, "rgba(0,255,0,0.6)", 1.5);
+            const b = this.getBounding(this.hovered);
+            const t = 1.5 / cam.scale;
+
+            shape.drawLine(b.x,      b.y,      b.x+b.w, b.y,      [0,1,0,0.6], t, proj);
+            shape.drawLine(b.x+b.w,  b.y,      b.x+b.w, b.y+b.h,  [0,1,0,0.6], t, proj);
+            shape.drawLine(b.x+b.w,  b.y+b.h,  b.x,     b.y+b.h,  [0,1,0,0.6], t, proj);
+            shape.drawLine(b.x,      b.y+b.h,  b.x,     b.y,      [0,1,0,0.6], t, proj);
         }
     }
 }
