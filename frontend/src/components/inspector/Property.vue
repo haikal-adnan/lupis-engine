@@ -1,3 +1,5 @@
+<!-- components/inspector/Property.vue -->
+
 <template>
     <div v-if="loading" class="text-white/70 text-sm">Loading properties...</div>
     <div v-else class="flex flex-col space-y-5 text-sm">
@@ -10,7 +12,6 @@
           {{ section.name }}
         </h4>
 
-        <!-- skip field NAME -->
         <template
           v-for="(value, key) in filteredFields(section.fields)"
           :key="key"
@@ -40,18 +41,16 @@ import { useBackend } from "@/composables/useBackend.js"
 const { API_URL } = useBackend()
 const rowMainMargin = { marginRight: "0px" }
 
-const project = "template-platformer" // nanti bisa diganti dinamis lewat props
+const project = "template-platformer" 
 const sections = ref([])
 const loading = ref(false)
 
-// Label formatter
 function formatLabel(key) {
   return key
     .replace(/_/g, " ")
     .replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
-// Filter untuk sembunyikan NAME
 function filteredFields(fields) {
   const result = {}
   for (const key in fields) {
@@ -60,7 +59,6 @@ function filteredFields(fields) {
   return result
 }
 
-// Ambil semua JSON config dari folder
 async function loadProjectConfigs() {
   loading.value = true
   try {

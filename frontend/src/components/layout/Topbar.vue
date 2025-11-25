@@ -1,8 +1,9 @@
+<!-- components/layout/Topbar.vue -->
+
 <template>
   <header class="h-12 px-4 flex items-center justify-between card">
     <div class="flex items-center gap-3">
 
-      <!-- Project Title -->
       <div class="flex items-center gap-2 bg-white/10 rounded-md px-2 py-1">
         <img src="@/assets/icons/ic_folder_open.svg" class="w-3.5 h-3.5 icon-white" />
         <div class="font-semibold text-sm text-white/90">
@@ -12,7 +13,6 @@
 
       <div class="w-px h-5 bg-white/20"></div>
 
-      <!-- ▶ ⏸ -->
       <div class="flex items-center gap-2">
         <button
           class="p-1.5 rounded-md transition"

@@ -1,3 +1,5 @@
+<!-- components/CanvasStage.vue -->
+
 <template>
   <div class="w-full h-full card p-0 overflow-hidden flex flex-col !rounded-b-none !rounded-t-md">
     <!-- 🔹 Top bar -->

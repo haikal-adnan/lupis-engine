@@ -135,26 +135,6 @@
           "zIndex": 3
         }
       }
-    },
-
-    {
-      "id": "WhiteLine",
-      "name": "White Line",
-      "layer": "objects",
-      "components": {
-        "Transform": {
-          "x": 150,
-          "y": -40
-        },
-        "ShapeRenderer": {
-          "type": "line",
-          "x2": 200,
-          "y2": -40,
-          "thickness": 3,
-          "color": "#FFFFFFFF",
-          "zIndex": 5
-        }
-      }
     }
   ]
 }
