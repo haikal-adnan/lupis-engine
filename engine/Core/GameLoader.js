@@ -5,7 +5,6 @@ import RendererManager from "../Renderer/RendererManager.js";
 import World from "./World.js";
 import GameLoop from "../Loop/GameLoop.js";
 import CameraController from "../Editor/CameraController.js";
-import SelectionOutline from "../Editor/SelectionOutline.js";
 import Rulers from "../Editor/Rulers.js";
 import PointerCoordinates from "../Editor/PointerCoordinates.js";
 import GLImageResource from "../Renderer/Graphic/GLImageResource.js";

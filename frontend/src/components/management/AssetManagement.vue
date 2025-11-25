@@ -1,6 +1,7 @@
+<!-- components/management/AssetManagement.vue -->
+
 <template>
   <div class="flex h-full text-white text-sm select-none">
-    <!-- === Kiri: Navigasi Folder === -->
     <div class="w-64 border-r border-white/10 p-2 overflow-auto">
       <h3 class="font-semibold mb-2">Asset Folders</h3>
 
@@ -17,7 +18,6 @@
       <div v-else class="text-white/50 italic text-xs mt-3">Tidak ada data asset.</div>
     </div>
 
-    <!-- === Kanan: Isi Folder === -->
     <div class="flex-1 p-3 overflow-auto">
       <div class="flex items-center justify-between mb-3">
         <div>
@@ -28,7 +28,6 @@
         </div>
       </div>
 
-      <!-- Grid File -->
       <div
         v-if="filteredChildren.length"
         class="grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-3"
@@ -46,7 +45,6 @@
         </div>
       </div>
 
-      <!-- Kosong -->
       <div v-else class="text-center text-white/50 mt-12">
         <p class="text-sm italic">
           Folder ini masih kosong atau tidak ada file dengan ekstensi valid.
@@ -74,11 +72,9 @@ const props = defineProps({
   },
 });
 
-// === State ===
 const currentFolder = ref(null);
 const { assets, fetchAssets, loading } = useBackend();
 
-// === Fetch data saat mount ===
 onMounted(async () => {
   await fetchAssets(props.projectId);
   // Setelah data masuk, pilih folder pertama
@@ -87,9 +83,6 @@ onMounted(async () => {
   }
 });
 
-/** ===============================
- *  UTILITAS FILTER EKSTENSI
- * =============================== */
 function normalizeExts(exts) {
   return exts.map((e) => {
     const s = e.trim().toLowerCase();
@@ -102,9 +95,6 @@ function matchExt(filename, validExts) {
   return validExts.some((ext) => lower.endsWith(ext));
 }
 
-/** ===============================
- *  FILTER POHON UNTUK PANEL KIRI
- * =============================== */
 function filterTreeNodes(nodes, validExts) {
   if (!Array.isArray(nodes)) return [];
 
@@ -121,7 +111,7 @@ function filterTreeNodes(nodes, validExts) {
       out.push({
         ...node,
         children: filteredChildren,
-        _raw: node, // simpan referensi asli
+        _raw: node,
       });
     }
   }
@@ -141,9 +131,6 @@ function selectFolder(node) {
   }
 }
 
-/** ===============================
- *  FILTER ISI FOLDER (KANAN)
- * =============================== */
 const filteredChildren = computed(() => {
   if (!currentFolder.value) return [];
   const validExts = normalizeExts(props.extensions);

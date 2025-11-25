@@ -1,3 +1,5 @@
+<!-- components/console -->
+
 <template>
   <div class="p-4 text-white font-mono text-sm bg-black/20 h-full overflow-auto">
     <h3 class="font-semibold text-lg mb-3">Console Log</h3>

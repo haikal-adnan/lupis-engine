@@ -1,3 +1,4 @@
+// engine/Tools/SelectionTool.js
 import Config from "../Core/Config.js";
 import { bus } from "../Util/EventBus.js";
 
@@ -10,73 +11,123 @@ export default class SelectionTool {
         this.input = input;
 
         this.active = Config.EDITOR.SELECTION;
+
         this.hovered = null;
-        this.selected = null;
+        this.hoverMarqueeList = [];
+        this.selectedList = [];
+
+        this.marqueeUseLayerFilter = false;
+        this.marqueeAllowedLayers = ["background"];
 
         this.isPointerDown = false;
+        this.marqueeActive = false;
+
+        this.marqueeStart = { x:0, y:0 };
+        this.marqueeEnd   = { x:0, y:0 };
+
+        this.outlineColor = [0, 0.55, 1, 1];
+        this.hoverHandle = null;
+
+        this.pointerDownTime = 0;
+        this.isLongPress = false;
+        this.LONG_PRESS_TIME = 50;
+
+        this.lastAutoPanTime = 0;
+        this.autoPanVel = { x:0, y:0 };
 
         world.selectionRenderer = (image, shape, text, proj) => {
-            if (this.transform)
-                this.transform.draw(shape, proj);
-
+            this.drawSelected(shape, proj);
+            this.drawMultiSelection(shape, proj);
             this.drawHover(shape, proj);
+            if (this.transform) this.transform.draw(shape, proj);
+            this.drawMarquee(shape, proj);
         };
-
     }
 
-    attachTransform(transformTool) {
-        this.transform = transformTool;
+    attachTransform(t) {
+        this.transform = t;
+    }
+
+    getPrimary() {
+        return this.selectedList.length ? this.selectedList[0] : null;
     }
 
     toWorld(px, py) {
-        const cam = this.game.camera;
-        const s = cam.scale;
+        const c = this.game.camera;
+        const s = c.scale;
         const W = this.canvas.width;
         const H = this.canvas.height;
         return {
-            x: cam.x + (px - W * 0.5) / s,
-            y: cam.y + (py - H * 0.5) / s
+            x: c.x + (px - W * 0.5) / s,
+            y: c.y + (py - H * 0.5) / s
         };
     }
 
-    getBounding(ent) {
-        if (ent.components?.TextRenderer)
-            return { x: ent.hitX, y: ent.hitY, w: ent.hitWidth, h: ent.hitHeight };
-        if (ent.shape?.type === "line")
-            return { x: ent.hitX, y: ent.hitY, w: ent.hitWidth, h: ent.hitHeight };
-        return { x: ent.x, y: ent.y, w: ent.width, h: ent.height };
+    getBounding(e) {
+        if (e.components?.TextRenderer)
+            return { x:e.hitX, y:e.hitY, w:e.hitWidth, h:e.hitHeight };
+        if (e.shape?.type === "line")
+            return { x:e.hitX, y:e.hitY, w:e.hitWidth, h:e.hitHeight };
+        return { x:e.x, y:e.y, w:e.width, h:e.height };
     }
 
     update() {
         if (!this.active) return;
 
-        if (this.input.touch.active && this.input.touch.touches.length !== 1) {
-            this.isPointerDown = false;
-            return;
-        }
-
         const p = this.input.getPointer();
         const px = p.x, py = p.y;
 
-        this.hover(px, py);
+        this.updateHover(px, py);
 
         if (p.down && !this.isPointerDown) {
-            this.pointerDown(px, py);
+            this.pointerDownTime = performance.now();
+            this.isLongPress = false;
+            this.pointerDown(px, py, p.isTouch);
             this.isPointerDown = true;
         }
 
+        if (p.down && this.isPointerDown && !this.isLongPress) {
+            if (performance.now() - this.pointerDownTime >= this.LONG_PRESS_TIME) {
+                this.isLongPress = true;
+
+                if (p.isTouch) {
+                    const w = this.toWorld(px, py);
+                    const hit = this.hit(w.x, w.y);
+                    if (hit && this.transform) this.transform.beginMove(px, py);
+                    return;
+                }
+
+                if (this.selectedList.length > 1 && this.isInsideGroup(px, py)) {
+                    if (this.transform) this.transform.beginMove(px, py);
+                } else {
+                    const w = this.toWorld(px, py);
+                    const hit = this.hit(w.x, w.y);
+                    if (hit && this.transform) this.transform.beginMove(px, py);
+                }
+            }
+        }
+
+        if (!p.isTouch && p.down && this.marqueeActive) {
+            const w = this.toWorld(px, py);
+            this.marqueeEnd.x = w.x;
+            this.marqueeEnd.y = w.y;
+
+            this.updateHoverMarquee();
+            this.applyMarqueeAutoPan(px, py);
+        }
+
         if (!p.down && this.isPointerDown) {
+            this.pointerUp(px, py);
             this.isPointerDown = false;
         }
+
+        this.updateAutoPan();
     }
 
-    hover(px, py) {
-        if (this.transform && (this.transform.draggingMove || this.transform.draggingResize))
-            return;
-
+    updateHover(px, py) {
         this.hoverHandle = null;
 
-        if (this.transform && this.selected) {
+        if (this.transform && this.selectedList.length > 0) {
             this.transform.computeHandles();
             this.hoverHandle = this.transform.getHoverHandle(px, py);
             if (this.hoverHandle) {
@@ -85,69 +136,316 @@ export default class SelectionTool {
             }
         }
 
-        this.hoverEntity(px, py);
-        this.canvas.style.cursor = this.hovered ? "move" : "default";
-    }
+        if (this.selectedList.length > 1 && this.isInsideGroup(px, py)) {
+            this.canvas.style.cursor = "move";
+            this.hovered = null;
+            return;
+        }
 
-    hoverEntity(px, py) {
         const p = this.toWorld(px, py);
         this.hovered = null;
 
-        for (const e of this.world.entities) {
-            if (!e.visible) continue;
-            const b = this.getBounding(e);
-            if (p.x >= b.x && p.x <= b.x + b.w &&
-                p.y >= b.y && p.y <= b.y + b.h) {
-                this.hovered = e;
-                return;
+        for (let li = this.world.layerOrder.length - 1; li >= 0; li--) {
+            const layerId = this.world.layerOrder[li];
+            const ents = this.world.layers.get(layerId);
+            if (!ents) continue;
+
+            for (let i = ents.length - 1; i >= 0; i--) {
+                const e = ents[i];
+                if (!e.visible) continue;
+
+                const b = this.getBounding(e);
+                if (p.x >= b.x && p.x <= b.x + b.w &&
+                    p.y >= b.y && p.y <= b.y + b.h) {
+                    this.hovered = e;
+                    this.canvas.style.cursor = "move";
+                    return;
+                }
             }
         }
+
+        this.canvas.style.cursor = "default";
     }
 
-    pointerDown(px, py) {
-        if (this.hoverHandle && this.transform) {
+    isInsideGroup(px, py) {
+        if (this.selectedList.length <= 1) return false;
+
+        let minX = Infinity, minY = Infinity;
+        let maxX = -Infinity, maxY = -Infinity;
+
+        for (const e of this.selectedList) {
+            const b = this.getBounding(e);
+            if (b.x < minX) minX = b.x;
+            if (b.y < minY) minY = b.y;
+            if (b.x + b.w > maxX) maxX = b.x + b.w;
+            if (b.y + b.h > maxY) maxY = b.y + b.h;
+        }
+
+        const p = this.toWorld(px, py);
+        return (p.x >= minX && p.x <= maxX && p.y >= minY && p.y <= maxY);
+    }
+
+    updateHoverMarquee() {
+        if (!this.marqueeActive) {
+            this.hoverMarqueeList = [];
+            return;
+        }
+
+        const box = this.getMarqueeWorld();
+        const list = [];
+
+        for (const layerId of this.world.layerOrder) {
+            const ents = this.world.layers.get(layerId);
+            if (!ents) continue;
+
+            for (const e of ents) {
+                if (!e.visible) continue;
+
+                const b = this.getBounding(e);
+                const i =
+                    b.x + b.w >= box.x &&
+                    b.x <= box.x + box.w &&
+                    b.y + b.h >= box.y &&
+                    b.y <= box.y + box.h;
+
+                if (i) list.push(e);
+            }
+        }
+
+        this.hoverMarqueeList = list;
+    }
+
+    pointerDown(px, py, isTouch) {
+        const w = this.toWorld(px, py);
+        const hit = this.hit(w.x, w.y);
+
+        if (this.transform && this.hoverHandle) {
             this.transform.beginResize(this.hoverHandle.type, px, py);
             return;
         }
 
-        const w = this.toWorld(px, py);
-        const e = this.hit(w.x, w.y);
+        const ctrl = this.input.keyboard.ctrl || this.input.keyboard.shift || this.input.keyboard.meta;
 
-        if (e) {
-            this.selected = e;
-            bus.emit("entity:selected", e);
-
-            if (this.transform)
-                this.transform.beginMove(px, py);
-
+        if (!ctrl && this.selectedList.length > 1 && this.isInsideGroup(px, py)) {
             return;
         }
 
-        this.selected = null;
-        bus.emit("entity:deselected");
+        if (hit) {
+            const inside = this.selectedList.includes(hit);
+
+            if (ctrl) {
+                this.selectedList = inside
+                    ? this.selectedList.filter(a => a !== hit)
+                    : [...this.selectedList, hit];
+            } else {
+                if (!inside) this.selectedList = [hit];
+            }
+
+            bus.emit("entity:selected", this.selectedList);
+            return;
+        }
+
+        if (!isTouch) {
+            this.marqueeActive = true;
+            const w = this.toWorld(px, py);
+
+            this.marqueeStart.x = w.x;
+            this.marqueeStart.y = w.y;
+            this.marqueeEnd.x = w.x;
+            this.marqueeEnd.y = w.y;
+
+            this.updateHoverMarquee();
+        }
+    }
+
+    pointerUp(px, py) {
+        if (!this.isLongPress) {
+            const w = this.toWorld(px, py);
+            const hit = this.hit(w.x, w.y);
+            if (!hit && !this.marqueeActive) {
+                this.selectedList = [];
+                bus.emit("entity:deselected");
+                return;
+            }
+        }
+
+        if (!this.marqueeActive) return;
+
+        const box = this.getMarqueeWorld();
+        const list = [];
+
+        for (const layerId of this.world.layerOrder) {
+            if (this.marqueeUseLayerFilter) {
+                if (!this.marqueeAllowedLayers.includes(layerId))
+                    continue;
+            }
+
+            const ents = this.world.layers.get(layerId);
+            if (!ents) continue;
+
+            for (const e of ents) {
+                if (!e.visible) continue;
+
+                const b = this.getBounding(e);
+                const i =
+                    b.x + b.w >= box.x &&
+                    b.x <= box.x + box.w &&
+                    b.y + b.h >= box.y &&
+                    b.y <= box.y + box.h;
+
+                if (i) list.push(e);
+            }
+        }
+
+        this.selectedList = list;
+        bus.emit("entity:selected", list);
+
+        this.marqueeActive = false;
+        this.hoverMarqueeList = [];
     }
 
     hit(wx, wy) {
-        for (const e of this.world.entities) {
-            if (!e.visible) continue;
-            const b = this.getBounding(e);
-            if (wx >= b.x && wx <= b.x + b.w &&
-                wy >= b.y && wy <= b.y + b.h)
-                return e;
+        for (let li = this.world.layerOrder.length - 1; li >= 0; li--) {
+            const layerId = this.world.layerOrder[li];
+            const ents = this.world.layers.get(layerId);
+            if (!ents) continue;
+
+            for (let i = ents.length - 1; i >= 0; i--) {
+                const e = ents[i];
+                if (!e.visible) continue;
+
+                const b = this.getBounding(e);
+                if (wx >= b.x && wx <= b.x + b.w &&
+                    wy >= b.y && wy <= b.y + b.h)
+                    return e;
+            }
         }
         return null;
     }
 
-    drawHover(shape, proj) {
-        if (!this.hovered || this.selected) return;
+    getMarqueeWorld() {
+        const x1 = Math.min(this.marqueeStart.x, this.marqueeEnd.x);
+        const y1 = Math.min(this.marqueeStart.y, this.marqueeEnd.y);
+        const x2 = Math.max(this.marqueeStart.x, this.marqueeEnd.x);
+        const y2 = Math.max(this.marqueeStart.y, this.marqueeEnd.y);
 
-        const b = this.getBounding(this.hovered);
-        const t = 1.5 / this.game.camera.scale;
-
-        shape.drawLine(b.x,      b.y,      b.x+b.w, b.y,      [0,1,0,0.6], t, proj);
-        shape.drawLine(b.x+b.w,  b.y,      b.x+b.w, b.y+b.h,  [0,1,0,0.6], t, proj);
-        shape.drawLine(b.x+b.w,  b.y+b.h,  b.x,     b.y+b.h,  [0,1,0,0.6], t, proj);
-        shape.drawLine(b.x,      b.y+b.h,  b.x,     b.y,      [0,1,0,0.6], t, proj);
+        return { x:x1, y:y1, w:x2 - x1, h:y2 - y1 };
     }
 
+    // ★ Figma-like smooth autopan (easing)
+    updateAutoPan() {
+        const now = performance.now();
+        const dt = (now - this.lastAutoPanTime) / 1000;
+        this.lastAutoPanTime = now;
+
+        if (Math.abs(this.autoPanVel.x) < 0.01 &&
+            Math.abs(this.autoPanVel.y) < 0.01) return;
+
+        const cam = this.game.camera;
+        cam.x += this.autoPanVel.x * dt;
+        cam.y += this.autoPanVel.y * dt;
+
+        this.autoPanVel.x *= 0.85;
+        this.autoPanVel.y *= 0.85;
+    }
+
+    applyMarqueeAutoPan(px, py) {
+        const rect = this.canvas.getBoundingClientRect();
+        const W = rect.width;
+        const H = rect.height;
+
+        const scaleX = this.canvas.width  / W;
+        const scaleY = this.canvas.height / H;
+
+        const cssX = px / scaleX;
+        const cssY = py / scaleY;
+
+        const margin = 80;
+        const maxSpeed = 450;
+        const accel = 90;
+
+        let vx = 0;
+        let vy = 0;
+
+        if (cssX < margin) vx = -accel;
+        if (cssX > W - margin) vx = accel;
+        if (cssY < margin) vy = -accel;
+        if (cssY > H - margin) vy = accel;
+
+        this.autoPanVel.x = Math.min(maxSpeed, Math.max(-maxSpeed, this.autoPanVel.x + vx));
+        this.autoPanVel.y = Math.min(maxSpeed, Math.max(-maxSpeed, this.autoPanVel.y + vy));
+    }
+
+    drawMarquee(shape, proj) {
+        if (!this.marqueeActive) return;
+        const b = this.getMarqueeWorld();
+        const t = 1 / this.game.camera.scale;
+        const c = this.outlineColor;
+        const fill = [c[0], c[1], c[2], 0.15];
+
+        shape.drawRect(b.x, b.y, b.w, b.h, fill, proj);
+        shape.drawLine(b.x, b.y, b.x+b.w, b.y, c, t, proj);
+        shape.drawLine(b.x+b.w, b.y, b.x+b.w, b.y+b.h, c, t, proj);
+        shape.drawLine(b.x+b.w, b.y+b.h, b.x, b.y+b.h, c, t, proj);
+        shape.drawLine(b.x, b.y+b.h, b.x, b.y, c, t, proj);
+    }
+
+    drawHover(shape, proj) {
+        const t = 1.5 / this.game.camera.scale;
+        const c = this.outlineColor;
+
+        if (this.hovered) {
+            const b = this.getBounding(this.hovered);
+            shape.drawLine(b.x, b.y, b.x+b.w, b.y, c, t, proj);
+            shape.drawLine(b.x+b.w, b.y, b.x+b.w, b.y+b.h, c, t, proj);
+            shape.drawLine(b.x+b.w, b.y+b.h, b.x, b.y+b.h, c, t, proj);
+            shape.drawLine(b.x, b.y+b.h, b.x, b.y, c, t, proj);
+        }
+
+        for (const e of this.hoverMarqueeList) {
+            const b = this.getBounding(e);
+            shape.drawLine(b.x, b.y, b.x+b.w, b.y, c, t, proj);
+            shape.drawLine(b.x+b.w, b.y, b.x+b.w, b.y+b.h, c, t, proj);
+            shape.drawLine(b.x+b.w, b.y+b.h, b.x, b.y+b.h, c, t, proj);
+            shape.drawLine(b.x, b.y+b.h, b.x, b.y, c, t, proj);
+        }
+    }
+
+    drawSelected(shape, proj) {
+        if (!this.selectedList.length) return;
+
+        const t = 2 / this.game.camera.scale;
+        const c = this.outlineColor;
+
+        for (const e of this.selectedList) {
+            const b = this.getBounding(e);
+            shape.drawLine(b.x,      b.y,      b.x+b.w, b.y,      c, t, proj);
+            shape.drawLine(b.x+b.w,  b.y,      b.x+b.w, b.y+b.h,  c, t, proj);
+            shape.drawLine(b.x+b.w,  b.y+b.h,  b.x,     b.y+b.h,  c, t, proj);
+            shape.drawLine(b.x,      b.y+b.h,  b.x,     b.y,      c, t, proj);
+        }
+    }
+
+    drawMultiSelection(shape, proj) {
+        if (this.selectedList.length <= 1) return;
+
+        let minX = Infinity, minY = Infinity;
+        let maxX = -Infinity, maxY = -Infinity;
+
+        for (const e of this.selectedList) {
+            const b = this.getBounding(e);
+            if (b.x < minX) minX = b.x;
+            if (b.y < minY) minY = b.y;
+            if (b.x + b.w > maxX) maxX = b.x + b.w;
+            if (b.y + b.h > maxY) maxY = b.y + b.h;
+        }
+
+        const t = 2 / this.game.camera.scale;
+        const c = this.outlineColor;
+
+        shape.drawLine(minX, minY, maxX, minY, c, t, proj);
+        shape.drawLine(maxX, minY, maxX, maxY, c, t, proj);
+        shape.drawLine(maxX, maxY, minX, maxY, c, t, proj);
+        shape.drawLine(minX, maxY, minX, minY, c, t, proj);
+    }
 }

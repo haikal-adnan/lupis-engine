@@ -1,4 +1,4 @@
-// startEngine.js
+// engine/startEngine.js
 import Game from "./Core/Game.js";
 import GameLoader from "./Core/GameLoader.js";
 
@@ -10,14 +10,11 @@ export async function startEngine(canvasId, mode = "editor", baseURL = "./") {
     const resizeEditor = () => {
         const dpr = window.devicePixelRatio || 1;
 
-        // CSS size (layout)
-        canvas.style.width  = "100vw";
-        canvas.style.height = "100vh";
+        canvas.style.width  = "100%";
+        canvas.style.height = "100%";
 
-        // Force DOM update
         const rect = canvas.getBoundingClientRect();
 
-        // Internal resolution
         canvas.width  = Math.floor(rect.width  * dpr);
         canvas.height = Math.floor(rect.height * dpr);
 
@@ -33,9 +30,6 @@ export async function startEngine(canvasId, mode = "editor", baseURL = "./") {
         window.addEventListener("resize", resizeEditor);
         resizeEditor();
     }
-
-    // RUNTIME MODE tetap sama seperti sebelumnya (16:9 letterbox)
-    // … boleh tetap menggunakan kode lama kamu di sini
 
     const loader = new GameLoader();
     await loader.initializeGame(game, canvas, mode, baseURL);

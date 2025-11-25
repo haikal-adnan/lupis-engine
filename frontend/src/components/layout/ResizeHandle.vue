@@ -1,3 +1,5 @@
+<!-- components/layout/ResizeHandle.vue -->
+
 <template>
   <div
     :role="'separator'"
@@ -7,7 +9,6 @@
     :style="styleObj"
     @pointerdown="onDown"
   >
-    <!-- garis tipis; visual muncul hanya saat hover -->
     <div
       class="absolute inset-0 rounded opacity-0 group-hover:opacity-100 transition-opacity"
       :class="axis === 'x' ? 'bg-white/20' : 'bg-white/20'"
@@ -19,9 +20,9 @@
 import { computed } from "vue";
 
 const props = defineProps({
-  axis: { type: String, default: "x" },            // 'x' (vertikal) atau 'y' (horizontal)
-  onDrag: { type: Function, required: true },      // ({clientX, clientY}) => void
-  thickness: { type: Number, default: 3 },         // px: lebar/tinggi handle (kecil)
+  axis: { type: String, default: "x" },           
+  onDrag: { type: Function, required: true },      
+  thickness: { type: Number, default: 3 },       
 });
 
 const styleObj = computed(() => (

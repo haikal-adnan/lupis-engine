@@ -1,5 +1,6 @@
+<!-- components/layout/BaseLayout.vue -->
+
 <template>
-  <!-- 5 kolom: left | HX | center | HX | right -->
   <div
     ref="root"
     class="grid p-2 h-full w-full"
@@ -13,12 +14,10 @@
       '--footer-h': footerCSS
     }]"
   >
-    <!-- Topbar -->
     <div class="col-span-5">
       <Topbar />
     </div>
 
-    <!-- Left Sidebar -->
     <Sidebar :style="[rowMainMargin, { minWidth: 'var(--min-left)' }]">
       <h3 class="font-semibold mb-3 text-white">File System</h3>
       <div class="flex flex-col space-y-5 text-sm">
@@ -26,16 +25,12 @@
       </div>
     </Sidebar>
 
-    <!-- Handle Left | Center -->
     <ResizeHandle axis="x" :onDrag="dragLeft" :thickness="LAYOUT.HANDLE_X" :style="rowMainMargin" />
 
-    <!-- Center (Canvas) -->
     <CanvasStage :style="rowMainMargin" />
 
-    <!-- Handle Center | Right -->
     <ResizeHandle axis="x" :onDrag="dragRight" :thickness="LAYOUT.HANDLE_X" :style="rowMainMargin" />
 
-    <!-- Right Sidebar -->
     <Sidebar :style="[rowMainMargin, { minWidth: 'var(--min-right)' }]">
       <h3 class="font-semibold mb-3 text-white">Property Inspector</h3>
       <div class="flex flex-col space-y-5 text-sm">
@@ -43,7 +38,6 @@
       </div>
     </Sidebar>
 
-    <!-- Footer -->
     <div class="relative col-span-5">
       <ResizeHandle
         axis="y"
@@ -54,7 +48,6 @@
       />
 
       <FooterBar class="h-full flex flex-col bg-black/40 rounded-t-md border-t border-white/10">
-        <!-- Tabs -->
         <div class="flex items-center gap-3 px-3 py-1.5 border-b border-white/10">
           <button
             v-for="tab in tabs"
@@ -76,9 +69,7 @@
           </button>
         </div>
 
-        <!-- Konten aktif -->
         <div class="flex-1 overflow-auto">
-          <!-- Saat tab asset, kirim daftar ekstensi langsung -->
           <component
             :is="activeComponent"
             v-if="activeTab === 'asset'"
@@ -98,7 +89,6 @@
 import { ref, computed } from "vue";
 import { clamp } from "../../composables/useClamp";
 
-// Komponen layout utama
 import Topbar from "./Topbar.vue";
 import Sidebar from "./Sidebar.vue";
 import FooterBar from "./FooterBar.vue";
@@ -106,14 +96,12 @@ import ResizeHandle from "./ResizeHandle.vue";
 import CanvasStage from "../CanvasStage.vue";
 import FileExplorer from "../system/FileExplorer.vue";
 
-// Footer Tabs
 import AssetManagement from "../management/AssetManagement.vue";
 import ConsoleView from "../console/ConsoleView.vue";
 import icImage from "@/assets/icons/ic_image.svg";
 import icCode from "@/assets/icons/ic_code.svg";
 import Property from "../inspector/Property.vue";
 
-/* === Layout Config === */
 const LAYOUT = Object.freeze({
   GAP_X: 2,
   GAP_TOP: 6,
@@ -157,7 +145,6 @@ const rowMainMargin = computed(() => {
   return { marginTop: `${diff}px` };
 });
 
-/* === Resize Handlers === */
 function getContentGeom() {
   const el = root.value;
   if (!el) {
@@ -204,7 +191,6 @@ function dragFooter({ clientY }) {
   footerPct.value = clamp((vh - clientY) / vh, LAYOUT.MIN_FOOTER_PCT, maxFooter);
 }
 
-/* === Footer Tabs === */
 const tabs = [
   { key: "asset", label: "Assets", icon: icImage, component: AssetManagement },
   { key: "console", label: "Console", icon: icCode, component: ConsoleView },
@@ -216,6 +202,5 @@ const activeComponent = computed(() => {
   return tab ? tab.component : null;
 });
 
-/* === Filter Ekstensi Otomatis untuk AssetManagement === */
 const allExtensions = [".png", ".jpg", ".jpeg", ".svg", ".wav", ".mp3"];
 </script>
