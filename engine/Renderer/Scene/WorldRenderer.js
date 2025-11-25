@@ -67,6 +67,9 @@ export default class WorldRenderer {
                 }
             }
         }
+        if (world.selectionRenderer) {
+            world.selectionRenderer(image, shape, text, proj);
+        }
     }
 
     _getColorVec(hex) {

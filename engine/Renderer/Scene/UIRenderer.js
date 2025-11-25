@@ -42,4 +42,13 @@ export default class UIRenderer {
     drawText(str, x, y, size, color) {
         this.text.drawText(str, x, y, size, color, this.projection);
     }
+
+    drawCircle(x, y, r, color) {
+        this.shape.drawCircle(x, y, r, color, 24, this.projection);
+    }
+
+    strokeCircle(x, y, r, color, t=2) {
+        this.shape.drawCircleOutline(x, y, r, color, t, 32, this.projection);
+    }
+
 }
