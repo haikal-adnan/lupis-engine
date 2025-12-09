@@ -1,3 +1,4 @@
+// engine/Renderer/Entity/ImageRenderer.js
 import Mat4 from "../../Util/Mat4.js";
 
 export default class ImageRenderer {
@@ -10,7 +11,7 @@ export default class ImageRenderer {
 
         this.maxSprites = 20000;
         this.verticesPerQuad = 6;
-        this.floatsPerVertex = 4;
+        this.floatsPerVertex = 5;
         this.floatsPerQuad = this.verticesPerQuad * this.floatsPerVertex;
 
         this.bufferData = new Float32Array(this.maxSprites * this.floatsPerQuad);
@@ -30,19 +31,25 @@ export default class ImageRenderer {
         const vs = this.isWebGL2 ? `#version 300 es
             layout(location=0) in vec2 aPos;
             layout(location=1) in vec2 aUV;
+            layout(location=2) in float aAlpha;
             uniform mat4 uProjection;
             out vec2 vUV;
+            out float vAlpha;
             void main(){
                 vUV = aUV;
+                vAlpha = aAlpha;
                 gl_Position = uProjection * vec4(aPos,0.0,1.0);
             }
         ` : `
             attribute vec2 aPos;
             attribute vec2 aUV;
+            attribute float aAlpha;
             uniform mat4 uProjection;
             varying vec2 vUV;
+            varying float vAlpha;
             void main(){
                 vUV = aUV;
+                vAlpha = aAlpha;
                 gl_Position = uProjection * vec4(aPos,0.0,1.0);
             }
         `;
@@ -50,27 +57,30 @@ export default class ImageRenderer {
         const fs = this.isWebGL2 ? `#version 300 es
             precision mediump float;
             in vec2 vUV;
+            in float vAlpha;
             out vec4 outColor;
             uniform sampler2D uTex;
             void main(){
-                outColor = texture(uTex,vUV);
+                vec4 c = texture(uTex, vUV);
+                c.a *= vAlpha;
+                outColor = c;
             }
         ` : `
             precision mediump float;
             varying vec2 vUV;
+            varying float vAlpha;
             uniform sampler2D uTex;
             void main(){
-                gl_FragColor = texture2D(uTex,vUV);
+                vec4 c = texture2D(uTex, vUV);
+                c.a *= vAlpha;
+                gl_FragColor = c;
             }
         `;
 
-        const compile = (type, src) => {
-            const sh = gl.createShader(type);
-            gl.shaderSource(sh, src);
+        const compile = (t, s) => {
+            const sh = gl.createShader(t);
+            gl.shaderSource(sh, s);
             gl.compileShader(sh);
-            if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
-                console.error("Shader error:", gl.getShaderInfoLog(sh));
-            }
             return sh;
         };
 
@@ -84,6 +94,7 @@ export default class ImageRenderer {
         if (!this.isWebGL2) {
             gl.bindAttribLocation(this.program, 0, "aPos");
             gl.bindAttribLocation(this.program, 1, "aUV");
+            gl.bindAttribLocation(this.program, 2, "aAlpha");
         }
 
         gl.linkProgram(this.program);
@@ -99,7 +110,6 @@ export default class ImageRenderer {
         this.vao = this.ctx.createVAO();
 
         this.cache.bindVAO(this.vao);
-
         gl.bindBuffer(gl.ARRAY_BUFFER, this.vbo);
         gl.bufferData(gl.ARRAY_BUFFER, this.bufferData, gl.DYNAMIC_DRAW);
 
@@ -111,12 +121,15 @@ export default class ImageRenderer {
         gl.enableVertexAttribArray(1);
         gl.vertexAttribPointer(1, 2, gl.FLOAT, false, stride, 8);
 
+        gl.enableVertexAttribArray(2);
+        gl.vertexAttribPointer(2, 1, gl.FLOAT, false, stride, 16);
+
         gl.bindBuffer(gl.ARRAY_BUFFER, null);
         this.cache.bindVAO(null);
     }
 
-    draw(texRes, frame, x, y, w, h, projection, pixelPerfect = false) {
-        if (!projection) throw new Error("ImageRenderer.draw() requires projection.");
+    draw(texRes, frame, x, y, w, h, projection, pixelPerfect = false, alpha = 1) {
+        if (!projection) return;
 
         this.lastProjection = projection;
 
@@ -144,19 +157,15 @@ export default class ImageRenderer {
         const d = this.bufferData;
         let i = this.bufferIndex;
 
-        d[i++] = x0; d[i++] = y0; d[i++] = u0; d[i++] = v0;
-        d[i++] = x1; d[i++] = y0; d[i++] = u1; d[i++] = v0;
-        d[i++] = x0; d[i++] = y1; d[i++] = u0; d[i++] = v1;
-
-        d[i++] = x1; d[i++] = y0; d[i++] = u1; d[i++] = v0;
-        d[i++] = x1; d[i++] = y1; d[i++] = u1; d[i++] = v1;
-        d[i++] = x0; d[i++] = y1; d[i++] = u0; d[i++] = v1;
+        d[i++] = x0; d[i++] = y0; d[i++] = u0; d[i++] = v0; d[i++] = alpha;
+        d[i++] = x1; d[i++] = y0; d[i++] = u1; d[i++] = v0; d[i++] = alpha;
+        d[i++] = x0; d[i++] = y1; d[i++] = u0; d[i++] = v1; d[i++] = alpha;
+        d[i++] = x1; d[i++] = y0; d[i++] = u1; d[i++] = v0; d[i++] = alpha;
+        d[i++] = x1; d[i++] = y1; d[i++] = u1; d[i++] = v1; d[i++] = alpha;
+        d[i++] = x0; d[i++] = y1; d[i++] = u0; d[i++] = v1; d[i++] = alpha;
 
         this.bufferIndex = i;
-
-        if (this.bufferIndex >= this.bufferData.length) {
-            this.flush();
-        }
+        if (i >= this.bufferData.length) this.flush();
     }
 
     flush() {

@@ -5,6 +5,7 @@ import GLStateCache from "./Graphic/GLStateCache.js";
 import ImageRenderer from "./Entity/ImageRenderer.js";
 import ShapeRenderer from "./Entity/ShapeRenderer.js";
 import TextRenderer from "./Entity/TextRenderer.js";
+
 import WorldRenderer from "./Scene/WorldRenderer.js";
 import UIRenderer from "./Scene/UIRenderer.js";
 
@@ -21,7 +22,7 @@ export default class RendererManager {
 
         this.image = new ImageRenderer(this.ctx, this.cache);
         this.shape = new ShapeRenderer(this.ctx, this.cache);
-        this.text  = new TextRenderer(this.ctx, this.cache);
+        this.text = new TextRenderer(this.ctx, this.cache);
 
         this.worldRenderer = new WorldRenderer(
             this.image,
@@ -44,8 +45,10 @@ export default class RendererManager {
 
     _resize() {
         const dpr = window.devicePixelRatio || 1;
-        this.canvas.width  = this.canvas.clientWidth  * dpr;
+
+        this.canvas.width = this.canvas.clientWidth * dpr;
         this.canvas.height = this.canvas.clientHeight * dpr;
+
         this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
     }
 
@@ -56,11 +59,11 @@ export default class RendererManager {
     }
 
     getWorldProjection(camera) {
-        const viewW = this.canvas.width  / camera.scale;
+        const viewW = this.canvas.width / camera.scale;
         const viewH = this.canvas.height / camera.scale;
 
-        const hw = viewW / 2;
-        const hh = viewH / 2;
+        const hw = viewW * 0.5;
+        const hh = viewH * 0.5;
 
         Mat4.ortho(
             this.projWorld,
@@ -78,7 +81,13 @@ export default class RendererManager {
         const w = this.canvas.width;
         const h = this.canvas.height;
 
-        Mat4.ortho(this.projUI, 0, w, h, 0, -1, 1);
+        Mat4.ortho(
+            this.projUI,
+            0, w,
+            h, 0,
+            -1, 1
+        );
+
         return this.projUI;
     }
 
@@ -88,17 +97,9 @@ export default class RendererManager {
         const pWorld = this.getWorldProjection(camera);
         this.worldRenderer.render(world, pWorld);
 
-        this.image.flush();
-        this.shape.flush();
-        this.text.flush();
-
         const pUI = this.getUIProjection();
         this.uiRenderer.setProjection(pUI);
         this.uiRenderer.render(world.ui);
-
-        if (game.pointerCoords) {
-            game.pointerCoords.renderUI();
-        }
 
         this.image.flush();
         this.shape.flush();

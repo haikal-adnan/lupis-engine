@@ -11,6 +11,7 @@ import GLImageResource from "../Renderer/Graphic/GLImageResource.js";
 import InputManager from "../Input/InputManager.js";
 import SelectionTool from "../Editor/SelectionTool.js";
 import TransformTool from "../Editor/TransformTool.js";
+import Grid from "../Editor/Grid.js";
 
 export default class GameLoader {
 
@@ -45,15 +46,17 @@ export default class GameLoader {
 
             if (Config.EDITOR.CAMERA_CONTROLLER)
                 game.cameraController = new CameraController(game.camera, canvas, game.input);
+        
 
-            // if (Config.EDITOR.SELECTION){
-            //     game.selectionOutline = new SelectionOutline(world, game, canvas, game.renderer, game.input);
-            //     world.layers.set("__editor_selection", []);
-            //     world.layerOrder.push("__editor_selection");
-            //     world.selectionRenderer = (image, shape, text, proj) => {
-            //         game.selectionOutline._drawWorld(shape, proj);
-            //     };
-            // }
+            if (Config.EDITOR.GRID)
+                game.grid = new Grid(world, game, canvas, game.renderer, game.camera, {
+                    color: "#ffffff",
+                    width: 50,
+                    height: 50,
+                    alpha: 0.5
+                });
+
+                
 
             if (Config.EDITOR.SELECTION) {
                 game.selection = new SelectionTool(world, game, canvas, game.renderer, game.input);

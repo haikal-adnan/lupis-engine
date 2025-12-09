@@ -22,8 +22,8 @@ export default class SelectionTool {
         this.isPointerDown = false;
         this.marqueeActive = false;
 
-        this.marqueeStart = { x:0, y:0 };
-        this.marqueeEnd   = { x:0, y:0 };
+        this.marqueeStart = { x: 0, y: 0 };
+        this.marqueeEnd = { x: 0, y: 0 };
 
         this.outlineColor = [0, 0.55, 1, 1];
         this.hoverHandle = null;
@@ -33,7 +33,7 @@ export default class SelectionTool {
         this.LONG_PRESS_TIME = 50;
 
         this.lastAutoPanTime = 0;
-        this.autoPanVel = { x:0, y:0 };
+        this.autoPanVel = { x: 0, y: 0 };
 
         world.selectionRenderer = (image, shape, text, proj) => {
             this.drawSelected(shape, proj);
@@ -65,17 +65,18 @@ export default class SelectionTool {
 
     getBounding(e) {
         if (e.components?.TextRenderer)
-            return { x:e.hitX, y:e.hitY, w:e.hitWidth, h:e.hitHeight };
+            return { x: e.hitX, y: e.hitY, w: e.hitWidth, h: e.hitHeight };
         if (e.shape?.type === "line")
-            return { x:e.hitX, y:e.hitY, w:e.hitWidth, h:e.hitHeight };
-        return { x:e.x, y:e.y, w:e.width, h:e.height };
+            return { x: e.hitX, y: e.hitY, w: e.hitWidth, h: e.hitHeight };
+        return { x: e.x, y: e.y, w: e.width, h: e.height };
     }
 
     update() {
         if (!this.active) return;
 
         const p = this.input.getPointer();
-        const px = p.x, py = p.y;
+        const px = p.x;
+        const py = p.y;
 
         this.updateHover(px, py);
 
@@ -127,6 +128,8 @@ export default class SelectionTool {
     updateHover(px, py) {
         this.hoverHandle = null;
 
+        if (this.isPointerDown) return;
+
         if (this.transform && this.selectedList.length > 0) {
             this.transform.computeHandles();
             this.hoverHandle = this.transform.getHoverHandle(px, py);
@@ -143,28 +146,13 @@ export default class SelectionTool {
         }
 
         const p = this.toWorld(px, py);
-        this.hovered = null;
+        this.hovered = this.hit(p.x, p.y);
 
-        for (let li = this.world.layerOrder.length - 1; li >= 0; li--) {
-            const layerId = this.world.layerOrder[li];
-            const ents = this.world.layers.get(layerId);
-            if (!ents) continue;
-
-            for (let i = ents.length - 1; i >= 0; i--) {
-                const e = ents[i];
-                if (!e.visible) continue;
-
-                const b = this.getBounding(e);
-                if (p.x >= b.x && p.x <= b.x + b.w &&
-                    p.y >= b.y && p.y <= b.y + b.h) {
-                    this.hovered = e;
-                    this.canvas.style.cursor = "move";
-                    return;
-                }
-            }
+        if (this.hovered) {
+            this.canvas.style.cursor = "move";
+        } else {
+            this.canvas.style.cursor = "default";
         }
-
-        this.canvas.style.cursor = "default";
     }
 
     isInsideGroup(px, py) {
@@ -195,6 +183,8 @@ export default class SelectionTool {
         const list = [];
 
         for (const layerId of this.world.layerOrder) {
+            if (!this.world.layerVisibility[layerId]) continue;
+
             const ents = this.world.layers.get(layerId);
             if (!ents) continue;
 
@@ -247,12 +237,12 @@ export default class SelectionTool {
 
         if (!isTouch) {
             this.marqueeActive = true;
-            const w = this.toWorld(px, py);
+            const w2 = this.toWorld(px, py);
 
-            this.marqueeStart.x = w.x;
-            this.marqueeStart.y = w.y;
-            this.marqueeEnd.x = w.x;
-            this.marqueeEnd.y = w.y;
+            this.marqueeStart.x = w2.x;
+            this.marqueeStart.y = w2.y;
+            this.marqueeEnd.x = w2.x;
+            this.marqueeEnd.y = w2.y;
 
             this.updateHoverMarquee();
         }
@@ -276,9 +266,10 @@ export default class SelectionTool {
 
         for (const layerId of this.world.layerOrder) {
             if (this.marqueeUseLayerFilter) {
-                if (!this.marqueeAllowedLayers.includes(layerId))
-                    continue;
+                if (!this.marqueeAllowedLayers.includes(layerId)) continue;
             }
+
+            if (!this.world.layerVisibility[layerId]) continue;
 
             const ents = this.world.layers.get(layerId);
             if (!ents) continue;
@@ -305,21 +296,36 @@ export default class SelectionTool {
     }
 
     hit(wx, wy) {
-        for (let li = this.world.layerOrder.length - 1; li >= 0; li--) {
-            const layerId = this.world.layerOrder[li];
-            const ents = this.world.layers.get(layerId);
+        const world = this.world;
+
+        for (let li = world.layerOrder.length - 1; li >= 0; li--) {
+            const layerId = world.layerOrder[li];
+            if (!world.layerVisibility[layerId]) continue;
+
+            const ents = world.layers.get(layerId);
             if (!ents) continue;
 
-            for (let i = ents.length - 1; i >= 0; i--) {
+            let best = null;
+            let bestZ = -Infinity;
+
+            for (let i = 0; i < ents.length; i++) {
                 const e = ents[i];
                 if (!e.visible) continue;
 
                 const b = this.getBounding(e);
                 if (wx >= b.x && wx <= b.x + b.w &&
-                    wy >= b.y && wy <= b.y + b.h)
-                    return e;
+                    wy >= b.y && wy <= b.y + b.h) {
+                    const z = e.zIndex || 0;
+                    if (z > bestZ) {
+                        bestZ = z;
+                        best = e;
+                    }
+                }
             }
+
+            if (best) return best;
         }
+
         return null;
     }
 
@@ -329,10 +335,9 @@ export default class SelectionTool {
         const x2 = Math.max(this.marqueeStart.x, this.marqueeEnd.x);
         const y2 = Math.max(this.marqueeStart.y, this.marqueeEnd.y);
 
-        return { x:x1, y:y1, w:x2 - x1, h:y2 - y1 };
+        return { x: x1, y: y1, w: x2 - x1, h: y2 - y1 };
     }
 
-    // ★ Figma-like smooth autopan (easing)
     updateAutoPan() {
         const now = performance.now();
         const dt = (now - this.lastAutoPanTime) / 1000;
@@ -354,7 +359,7 @@ export default class SelectionTool {
         const W = rect.width;
         const H = rect.height;
 
-        const scaleX = this.canvas.width  / W;
+        const scaleX = this.canvas.width / W;
         const scaleY = this.canvas.height / H;
 
         const cssX = px / scaleX;
@@ -384,10 +389,10 @@ export default class SelectionTool {
         const fill = [c[0], c[1], c[2], 0.15];
 
         shape.drawRect(b.x, b.y, b.w, b.h, fill, proj);
-        shape.drawLine(b.x, b.y, b.x+b.w, b.y, c, t, proj);
-        shape.drawLine(b.x+b.w, b.y, b.x+b.w, b.y+b.h, c, t, proj);
-        shape.drawLine(b.x+b.w, b.y+b.h, b.x, b.y+b.h, c, t, proj);
-        shape.drawLine(b.x, b.y+b.h, b.x, b.y, c, t, proj);
+        shape.drawLine(b.x, b.y, b.x + b.w, b.y, c, t, proj);
+        shape.drawLine(b.x + b.w, b.y, b.x + b.w, b.y + b.h, c, t, proj);
+        shape.drawLine(b.x + b.w, b.y + b.h, b.x, b.y + b.h, c, t, proj);
+        shape.drawLine(b.x, b.y + b.h, b.x, b.y, c, t, proj);
     }
 
     drawHover(shape, proj) {
@@ -396,18 +401,18 @@ export default class SelectionTool {
 
         if (this.hovered) {
             const b = this.getBounding(this.hovered);
-            shape.drawLine(b.x, b.y, b.x+b.w, b.y, c, t, proj);
-            shape.drawLine(b.x+b.w, b.y, b.x+b.w, b.y+b.h, c, t, proj);
-            shape.drawLine(b.x+b.w, b.y+b.h, b.x, b.y+b.h, c, t, proj);
-            shape.drawLine(b.x, b.y+b.h, b.x, b.y, c, t, proj);
+            shape.drawLine(b.x, b.y, b.x + b.w, b.y, c, t, proj);
+            shape.drawLine(b.x + b.w, b.y, b.x + b.w, b.y + b.h, c, t, proj);
+            shape.drawLine(b.x + b.w, b.y + b.h, b.x, b.y + b.h, c, t, proj);
+            shape.drawLine(b.x, b.y + b.h, b.x, b.y, c, t, proj);
         }
 
         for (const e of this.hoverMarqueeList) {
             const b = this.getBounding(e);
-            shape.drawLine(b.x, b.y, b.x+b.w, b.y, c, t, proj);
-            shape.drawLine(b.x+b.w, b.y, b.x+b.w, b.y+b.h, c, t, proj);
-            shape.drawLine(b.x+b.w, b.y+b.h, b.x, b.y+b.h, c, t, proj);
-            shape.drawLine(b.x, b.y+b.h, b.x, b.y, c, t, proj);
+            shape.drawLine(b.x, b.y, b.x + b.w, b.y, c, t, proj);
+            shape.drawLine(b.x + b.w, b.y, b.x + b.w, b.y + b.h, c, t, proj);
+            shape.drawLine(b.x + b.w, b.y + b.h, b.x, b.y + b.h, c, t, proj);
+            shape.drawLine(b.x, b.y + b.h, b.x, b.y, c, t, proj);
         }
     }
 
@@ -419,10 +424,10 @@ export default class SelectionTool {
 
         for (const e of this.selectedList) {
             const b = this.getBounding(e);
-            shape.drawLine(b.x,      b.y,      b.x+b.w, b.y,      c, t, proj);
-            shape.drawLine(b.x+b.w,  b.y,      b.x+b.w, b.y+b.h,  c, t, proj);
-            shape.drawLine(b.x+b.w,  b.y+b.h,  b.x,     b.y+b.h,  c, t, proj);
-            shape.drawLine(b.x,      b.y+b.h,  b.x,     b.y,      c, t, proj);
+            shape.drawLine(b.x, b.y, b.x + b.w, b.y, c, t, proj);
+            shape.drawLine(b.x + b.w, b.y, b.x + b.w, b.y + b.h, c, t, proj);
+            shape.drawLine(b.x + b.w, b.y + b.h, b.x, b.y + b.h, c, t, proj);
+            shape.drawLine(b.x, b.y + b.h, b.x, b.y, c, t, proj);
         }
     }
 

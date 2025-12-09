@@ -1,27 +1,16 @@
 // engine/World/World.js
-
 export default class World {
     constructor() {
         this.layers = new Map();
         this.layerOrder = [];
+        this.layerVisibility = {};
         this.entities = [];
         this.systems = [];
-
-        this.assets = {
-            textures: {},
-            fonts: {}
-        };
-
+        this.assets = { textures: {}, fonts: {} };
         this.ui = [];
-
+        this.camera = { x: 0, y: 0, scale: 1 };
         this.showAxis = true;
         this.showUIRect = true;
-
-        this.camera = {
-            x: 0,
-            y: 0,
-            scale: 1
-        };
     }
 
     addUI(fn) {
@@ -34,9 +23,12 @@ export default class World {
     }
 
     async loadProject(project, scene, loader, baseURL, fontLoader) {
-        this.layerOrder = scene.layers.map(l => l.id);
+        const sortedLayers = scene.layers.slice().sort((a, b) => a.order - b.order);
+        this.layerOrder = sortedLayers.map(l => l.id);
+
         for (const l of scene.layers) {
             this.layers.set(l.id, []);
+            this.layerVisibility[l.id] = l.visible ?? true;
         }
 
         for (const tex of scene.assets.textures) {
@@ -46,17 +38,16 @@ export default class World {
 
         if (fontLoader && scene.assets.fonts.length === 2) {
             const [fnt, png] = scene.assets.fonts;
-            const fontObj = await fontLoader(
+            const f = await fontLoader(
                 baseURL + "assets/" + fnt,
                 baseURL + "assets/" + png
             );
-            this.assets.fonts.default = fontObj;
+            this.assets.fonts.default = f;
         }
 
         for (const ent of scene.entities) {
             const e = this._buildEntity(ent);
             this.entities.push(e);
-
             const layer = ent.layer || "objects";
             this.addEntity(e, layer);
         }
@@ -68,16 +59,17 @@ export default class World {
             name: desc.name,
             layer: desc.layer,
             components: desc.components || {},
-            visible: desc.visible ?? true
+            visible: desc.visible ?? true,
+            zIndex: 0
         };
 
         const t = e.components.Transform;
         if (t) {
-            e.x = t.x || 0;
-            e.y = t.y || 0;
+            e.x = t.x ?? 0;
+            e.y = t.y ?? 0;
             e.scaleX = t.scaleX ?? 1;
             e.scaleY = t.scaleY ?? 1;
-            e.rotation = t.rotation || 0;
+            e.rotation = t.rotation ?? 0;
         }
 
         const s = e.components.SpriteRenderer;
@@ -86,8 +78,9 @@ export default class World {
             e.frame = s.source;
             e.width = s.width;
             e.height = s.height;
-            e.zIndex = s.zIndex || 0;
             e.pixelPerfect = !!s.pixelPerfect;
+            e.zIndex = s.zIndex ?? 0;
+            e.alpha = s.alpha ?? 1;
         }
 
         const text = e.components.TextRenderer;
@@ -95,30 +88,27 @@ export default class World {
             e.text = {
                 value: text.text,
                 size: text.size,
-                color: text.color,
-                offsetX: 0,
-                offsetY: 0
+                color: text.color
             };
 
-            const fontObj = this.assets.fonts.default;
+            e.zIndex = text.zIndex ?? e.zIndex;
 
-            if (fontObj && typeof fontObj.measureText === "function") {
-                const metrics = fontObj.measureText(text.text, text.size);
-
-                e.hitX = e.x + metrics.xMin;
-                e.hitY = e.y + metrics.yMin;
-
-                e.hitWidth = metrics.boundsWidth;
-                e.hitHeight = metrics.boundsHeight;
-
-                e.width = metrics.width;
-                e.height = metrics.boundsHeight;
+            const f = this.assets.fonts.default;
+            if (f && f.measureText) {
+                const m = f.measureText(text.text, text.size);
+                e.hitX = e.x + m.xMin;
+                e.hitY = e.y + m.yMin;
+                e.hitWidth = m.boundsWidth;
+                e.hitHeight = m.boundsHeight;
+                e.width = m.width;
+                e.height = m.boundsHeight;
             }
         }
 
         const sh = e.components.ShapeRenderer;
         if (sh) {
             e.shape = sh;
+            e.zIndex = sh.zIndex ?? 0;
 
             if (sh.type === "rectangle" || sh.type === "rectStroke") {
                 e.width = sh.width;
@@ -130,35 +120,31 @@ export default class World {
                 const y1 = e.y;
                 const x2 = sh.x2;
                 const y2 = sh.y2;
+                const th = sh.thickness ?? 1;
 
-                const t = sh.thickness ?? 1;
                 const dx = x2 - x1;
                 const dy = y2 - y1;
 
                 if (Math.abs(dy) < 0.0001) {
                     e.hitX = Math.min(x1, x2);
-                    e.hitY = y1 - t / 2;
+                    e.hitY = y1 - th / 2;
                     e.hitWidth = Math.abs(dx);
-                    e.hitHeight = t;
+                    e.hitHeight = th;
                 } else if (Math.abs(dx) < 0.0001) {
-                    e.hitX = x1 - t / 2;
+                    e.hitX = x1 - th / 2;
                     e.hitY = Math.min(y1, y2);
-                    e.hitWidth = t;
+                    e.hitWidth = th;
                     e.hitHeight = Math.abs(dy);
                 } else {
                     const minX = Math.min(x1, x2);
                     const maxX = Math.max(x1, x2);
                     const minY = Math.min(y1, y2);
                     const maxY = Math.max(y1, y2);
-
-                    e.hitX = minX - t / 2;
-                    e.hitY = minY - t / 2;
-                    e.hitWidth = (maxX - minX) + t;
-                    e.hitHeight = (maxY - minY) + t;
+                    e.hitX = minX - th / 2;
+                    e.hitY = minY - th / 2;
+                    e.hitWidth = (maxX - minX) + th;
+                    e.hitHeight = (maxY - minY) + th;
                 }
-
-                e.width = 0;
-                e.height = 0;
             }
         }
 
@@ -166,14 +152,11 @@ export default class World {
     }
 
     update(dt) {
-        for (const system of this.systems) {
+        for (const sys of this.systems) {
             for (const layer of this.layerOrder) {
                 const ents = this.layers.get(layer);
                 if (!ents) continue;
-
-                for (const e of ents) {
-                    system.update?.(e, dt);
-                }
+                for (const e of ents) sys.update?.(e, dt);
             }
         }
     }

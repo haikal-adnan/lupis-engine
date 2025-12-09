@@ -1,3 +1,6 @@
+// engine/ui/PointerCoordinates.js
+import { bus } from "../Util/EventBus.js";
+
 export default class PointerCoordinates {
     constructor(game, renderer) {
         this.game = game;        
@@ -12,9 +15,8 @@ export default class PointerCoordinates {
         });
     }
 
-    renderUI() {
+    update() {
         const cam = this.game.camera;
-
         const canvas = this.renderer.canvas;
         const rect = canvas.getBoundingClientRect();
 
@@ -27,12 +29,9 @@ export default class PointerCoordinates {
         const worldX = cam.x + (cssX - cw * 0.5) / cam.scale;
         const worldY = cam.y + (cssY - ch * 0.5) / cam.scale;
 
-        this.renderer.uiRenderer.drawText(
-            `X: ${worldX.toFixed(2)}   Y: ${worldY.toFixed(2)}`,
-            cw - 1530,  
-            20,   
-            20,          
-            [1,1,1,1]    
-        );
+        bus.emit("pointer:coords", {
+            x: worldX,
+            y: worldY
+        });
     }
 }
