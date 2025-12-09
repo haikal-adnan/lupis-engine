@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.handle-hit {
+  @apply hover:bg-white/10 active:bg-white/20;
+}
+.card {
+  @apply rounded-2xl border border-white/10 bg-[#1F242D] text-white select-none;
+}
+.icon-white {
+  filter: brightness(0) invert(1);
+}

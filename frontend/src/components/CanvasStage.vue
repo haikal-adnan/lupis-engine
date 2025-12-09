@@ -2,11 +2,9 @@
 
 <template>
   <div class="w-full h-full card p-0 overflow-hidden flex flex-col !rounded-b-none !rounded-t-md">
-    <!-- 🔹 Top bar -->
     <div
       class="card flex items-center justify-between px-4 py-2 bg-white/5 border-b border-white/10 select-none !rounded-t-md !rounded-b-none"
     >
-      <!-- Tombol Preview / Update -->
       <button
         @click="openOrUpdatePreview"
         class="flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-semibold transition"
@@ -21,7 +19,6 @@
         <span>{{ previewWindow && !previewWindow.closed ? 'Update' : 'Preview' }}</span>
       </button>
 
-      <!-- Kanan -->
       <div class="flex items-center gap-3 text-white/80">
         <button class="p-1.5 hover:bg-white/10 rounded-md" title="Zoom Out">
           <img src="@/assets/icons/ic_zoom_out.svg" class="w-4 h-4 filter invert brightness-200" />

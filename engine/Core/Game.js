@@ -46,6 +46,11 @@ export default class Game {
 
         if (this.selection) this.selection.update();
         if (this.transform) this.transform.update();
+        if (this.pointerCoords) {
+            this.pointerCoords.update();
+        }
+
+        console.log(this.world.layers)
 
         this.renderer?.render(this.world, cam, this);
 

@@ -10,6 +10,7 @@ class Configs {
       POINTER: true,
       MOVE: true,
       TRANSFORM: true,
+      GRID: true
     };
   }
 }
