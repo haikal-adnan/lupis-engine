@@ -1,9 +1,0 @@
-{
-  "NAME" : "World",
-  "AUTO_SIZE": true,
-  "WIDTH": 1920,
-  "HEIGHT": 1080,
-  "CHUNK_SIZE": 16,
-  "PATH_BASE": "Tilemap",
-  "SOLID_LAYER_REGEX": "(solid|wall|terrain|ground|collid)"
-}

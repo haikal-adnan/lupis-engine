@@ -1,4 +1,3 @@
-// engine/Renderer/RendererManager.js
 import GLContext from "./Graphic/GLContext.js";
 import GLStateCache from "./Graphic/GLStateCache.js";
 
@@ -38,18 +37,21 @@ export default class RendererManager {
 
         this.projWorld = Mat4.create();
         this.projUI = Mat4.create();
-
-        this._resize();
-        window.addEventListener("resize", () => this._resize());
     }
 
-    _resize() {
+    _resizeIfNeeded() {
         const dpr = window.devicePixelRatio || 1;
+        
+        const displayWidth  = Math.floor(this.canvas.clientWidth * dpr);
+        const displayHeight = Math.floor(this.canvas.clientHeight * dpr);
 
-        this.canvas.width = this.canvas.clientWidth * dpr;
-        this.canvas.height = this.canvas.clientHeight * dpr;
-
-        this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+        if (this.canvas.width !== displayWidth || this.canvas.height !== displayHeight) {
+            
+            this.canvas.width  = displayWidth;
+            this.canvas.height = displayHeight;
+            
+            this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+        }
     }
 
     begin() {
@@ -92,6 +94,8 @@ export default class RendererManager {
     }
 
     render(world, camera, game) {
+        this._resizeIfNeeded();
+
         this.begin();
 
         const pWorld = this.getWorldProjection(camera);

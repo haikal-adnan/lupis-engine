@@ -1,6 +1,6 @@
 <template>
   <div
-    class="absolute top-20 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-md 
+    class="absolute top-2 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-md 
            bg-black/40 backdrop-blur-md border border-white/10 shadow-sm
            text-white text-xs font-medium select-none pointer-events-none"
   >

@@ -1,8 +1,0 @@
-{
-  "NAME" : "Player",
-  "WIDTH": 64,
-  "HEIGHT": 64,
-  "SPEED": 384,
-  "X": 500,
-  "Y": 500
-}
