@@ -2,12 +2,50 @@
 @tailwind components;
 @tailwind utilities;
 
-.handle-hit {
-  @apply hover:bg-white/10 active:bg-white/20;
+@layer base {
+  :root {
+    /* --- LIGHT MODE --- */
+    --bg-app: #f4f4f5;        /* Zinc-100: Background paling belakang */
+    --bg-panel: #ffffff;      /* White: Sidebar */
+    /* UBAH INI: Gelapkan sedikit agar beda dengan background */
+    --bg-element: #e4e4e7;    /* Zinc-200: Input/Button inactive */ 
+    --bg-element-hover: #d4d4d8; /* Zinc-300 */
+    --bg-canvas: #d4d4d8;     /* Zinc-300 */
+    
+    --text-primary: #18181b;  /* Zinc-900 */
+    --text-secondary: #52525b;/* Zinc-600 */
+    --text-muted: #a1a1aa;    /* Zinc-400 */
+    
+    --border-base: #e4e4e7;   /* Zinc-200 */
+    --action-active: #18181b; /* Zinc-900 */
+    --action-text: #ffffff;   
+  }
+
+  .dark {
+    /* --- DARK MODE --- */
+    --bg-app: #09090b;        /* Zinc-950 */
+    --bg-panel: #18181b;      /* Zinc-900 */
+    --bg-element: #27272a;    /* Zinc-800 */
+    --bg-element-hover: #3f3f46; /* Zinc-700 */
+    --bg-canvas: #000000;     /* Black */
+    
+    --text-primary: #f4f4f5;  /* Zinc-100 */
+    --text-secondary: #a1a1aa;/* Zinc-400 */
+    --text-muted: #52525b;    /* Zinc-600 */
+    
+    --border-base: #27272a;   /* Zinc-800 */
+    --action-active: #fafafa; /* Zinc-50 */
+    --action-text: #18181b;   
+  }
 }
-.card {
-  @apply rounded-2xl border border-white/10 bg-[#1F242D] text-white select-none;
+
+/* Helper Class untuk Icon */
+.icon-adaptive {
+  @apply opacity-70 transition-opacity duration-200;
 }
-.icon-white {
-  filter: brightness(0) invert(1);
+html:not(.dark) .icon-adaptive {
+  filter: invert(1) brightness(0.5); 
+}
+.icon-adaptive:hover {
+  @apply opacity-100;
 }

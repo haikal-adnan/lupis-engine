@@ -1,14 +1,12 @@
-<!-- components/inspector/Property.vue -->
-
 <template>
-    <div v-if="loading" class="text-white/70 text-sm">Loading properties...</div>
+    <div v-if="loading" class="text-muted text-sm">Loading properties...</div>
     <div v-else class="flex flex-col space-y-5 text-sm">
       <section
         v-for="(section, index) in sections"
         :key="index"
         class="space-y-2"
       >
-        <h4 class="font-semibold text-sm text-white/90 mb-1">
+        <h4 class="font-semibold text-sm text-primary mb-1 uppercase tracking-wider opacity-90">
           {{ section.name }}
         </h4>
 
@@ -16,12 +14,12 @@
           v-for="(value, key) in filteredFields(section.fields)"
           :key="key"
         >
-          <InputField
+          <BaseInput
             v-if="typeof value !== 'boolean'"
             :label="formatLabel(key)"
             v-model="section.fields[key]"
           />
-          <SwitchButton
+          <BaseSwitch
             v-else
             :label="formatLabel(key)"
             v-model="section.fields[key]"
@@ -33,13 +31,11 @@
 
 <script setup>
 import { ref, onMounted } from "vue"
-import Sidebar from "../layout/Sidebar.vue"
-import InputField from "../ui/InputField.vue"
-import SwitchButton from "../ui/SwitchButton.vue"
+import BaseInput from "../../ui/BaseInput.vue"
+import BaseSwitch from "../../ui/BaseSwitch.vue"
 import { useBackend } from "@/composables/useBackend.js"
 
 const { API_URL } = useBackend()
-const rowMainMargin = { marginRight: "0px" }
 
 const project = "template-platformer" 
 const sections = ref([])
@@ -63,12 +59,8 @@ async function loadProjectConfigs() {
   loading.value = true
   try {
     const configFiles = [
-      "camera.json",
-      "core.json",
-      "physics.json",
-      "player.json",
-      "timing.json",
-      "world.json",
+      "camera.json", "core.json", "physics.json", 
+      "player.json", "timing.json", "world.json",
     ]
 
     const promises = configFiles.map(async (file) => {
@@ -98,8 +90,5 @@ onMounted(() => {
 </script>
 
 <style scoped>
-h3,
-h4 {
-  user-select: none;
-}
+h3, h4 { user-select: none; }
 </style>

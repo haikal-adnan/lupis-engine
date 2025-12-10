@@ -1,4 +1,3 @@
-// engine/Tools/SelectionTool.js
 import Config from "../Core/Config.js";
 import { bus } from "../Util/EventBus.js";
 
@@ -34,6 +33,8 @@ export default class SelectionTool {
 
         this.lastAutoPanTime = 0;
         this.autoPanVel = { x: 0, y: 0 };
+        
+        this.viewportInsets = { top: 0, left: 0, right: 0, bottom: 0 };
 
         world.selectionRenderer = (image, shape, text, proj) => {
             this.drawSelected(shape, proj);
@@ -205,6 +206,19 @@ export default class SelectionTool {
         this.hoverMarqueeList = list;
     }
 
+    calculateViewportInsets() {
+        const topEl = document.getElementById("editor-topbar");
+        const leftEl = document.getElementById("editor-sidebar-left");
+        const rightEl = document.getElementById("editor-sidebar-right");
+
+        this.viewportInsets = {
+            top: topEl ? topEl.offsetHeight : 0,
+            left: leftEl ? leftEl.offsetWidth : 0,
+            right: rightEl ? rightEl.offsetWidth : 0,
+            bottom: 0
+        };
+    }
+
     pointerDown(px, py, isTouch) {
         const w = this.toWorld(px, py);
         const hit = this.hit(w.x, w.y);
@@ -236,6 +250,7 @@ export default class SelectionTool {
         }
 
         if (!isTouch) {
+            this.calculateViewportInsets();
             this.marqueeActive = true;
             const w2 = this.toWorld(px, py);
 
@@ -347,14 +362,19 @@ export default class SelectionTool {
             Math.abs(this.autoPanVel.y) < 0.01) return;
 
         const cam = this.game.camera;
-        cam.x += this.autoPanVel.x * dt;
-        cam.y += this.autoPanVel.y * dt;
+        const scale = Math.max(0.001, cam.scale);
+
+        cam.x += (this.autoPanVel.x / scale) * dt;
+        cam.y += (this.autoPanVel.y / scale) * dt;
 
         this.autoPanVel.x *= 0.85;
         this.autoPanVel.y *= 0.85;
     }
 
-    applyMarqueeAutoPan(px, py) {
+    // [BARU] Ini adalah fungsi inti matematika auto-pan.
+    // Tidak peduli apakah Marquee, Move, atau Resize yang memanggilnya.
+    // Ia hanya peduli posisi mouse vs tepi layar.
+    applyPointerAutoPan(px, py) {
         const rect = this.canvas.getBoundingClientRect();
         const W = rect.width;
         const H = rect.height;
@@ -365,20 +385,53 @@ export default class SelectionTool {
         const cssX = px / scaleX;
         const cssY = py / scaleY;
 
-        const margin = 80;
-        const maxSpeed = 450;
-        const accel = 90;
+        const margin = 50;
+        const maxSpeed = 600; 
 
         let vx = 0;
         let vy = 0;
 
-        if (cssX < margin) vx = -accel;
-        if (cssX > W - margin) vx = accel;
-        if (cssY < margin) vy = -accel;
-        if (cssY > H - margin) vy = accel;
+        const getSpeed = (distance) => {
+            if (distance <= 0) return 0;
+            const t = Math.min(1.5, distance / margin);
+            return maxSpeed * (t * t);
+        };
+
+        const leftEdge = this.viewportInsets.left;
+        const distLeft = (leftEdge + margin) - cssX;
+        if (distLeft > 0) vx = -getSpeed(distLeft);
+
+        const rightEdge = W - this.viewportInsets.right;
+        const distRight = cssX - (rightEdge - margin);
+        if (distRight > 0) vx = getSpeed(distRight);
+
+        const topEdge = this.viewportInsets.top;
+        const distTop = (topEdge + margin) - cssY;
+        if (distTop > 0) vy = -getSpeed(distTop);
+
+        const bottomEdge = H - this.viewportInsets.bottom;
+        const distBottom = cssY - (bottomEdge - margin);
+        if (distBottom > 0) vy = getSpeed(distBottom);
 
         this.autoPanVel.x = Math.min(maxSpeed, Math.max(-maxSpeed, this.autoPanVel.x + vx));
         this.autoPanVel.y = Math.min(maxSpeed, Math.max(-maxSpeed, this.autoPanVel.y + vy));
+    }
+
+    // [BARU] Fungsi wrapper khusus Marquee
+    // Hanya mengeksekusi pan jika drag sudah cukup jauh (mencegah pan saat klik diam)
+    applyMarqueeAutoPan(px, py) {
+        const dragThreshold = 5; 
+        const dx = Math.abs(this.marqueeStart.x - this.marqueeEnd.x);
+        const dy = Math.abs(this.marqueeStart.y - this.marqueeEnd.y);
+        
+        const scale = this.game.camera.scale;
+        // Jika drag marquee terlalu kecil (klik biasa), jangan pan
+        if (dx * scale < dragThreshold && dy * scale < dragThreshold) {
+            return;
+        }
+
+        // Jika lolos, panggil fungsi pan generik
+        this.applyPointerAutoPan(px, py);
     }
 
     drawMarquee(shape, proj) {

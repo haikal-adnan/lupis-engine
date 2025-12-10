@@ -3,6 +3,7 @@ import path from 'path';
 import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import vueDevTools from 'vite-plugin-vue-devtools';
+import svgLoader from 'vite-svg-loader'
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -33,7 +34,26 @@ export default defineConfig({
     },
   },
 
-  plugins: [vue(), vueDevTools()],
+  plugins: [
+    vue(), 
+    vueDevTools(), 
+    svgLoader({
+      defaultImport: 'component', 
+      svgoConfig: {
+        multipass: true,
+        plugins: [
+          {
+            name: 'preset-default',
+            params: {
+              overrides: {
+                removeViewBox: false, 
+              },
+            },
+          },
+          'removeDimensions', 
+        ],
+      },
+    })],
 
   resolve: {
     alias: {

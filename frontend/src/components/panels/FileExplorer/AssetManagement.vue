@@ -57,7 +57,7 @@
 <script setup>
 import { ref, computed, onMounted } from "vue";
 import { useBackend } from "@/composables/useBackend";
-import FileItem from "../system/FileItem.vue";
+import FileItem from "../panels/FileExplorer/FileNode.vue";
 import fileIcon from "@/assets/icons/ic_file_code.svg";
 import folderIcon from "@/assets/icons/ic_folder_open.svg";
 

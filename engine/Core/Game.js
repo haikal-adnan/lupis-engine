@@ -50,8 +50,6 @@ export default class Game {
             this.pointerCoords.update();
         }
 
-        console.log(this.world.layers)
-
         this.renderer?.render(this.world, cam, this);
 
     }
