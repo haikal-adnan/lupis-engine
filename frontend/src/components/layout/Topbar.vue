@@ -15,8 +15,8 @@
         <button
           class="p-1.5 rounded-md transition-colors"
           :class="mode === 'play' 
-            ? 'bg-action text-action-text shadow-sm'   /* AKTIF: Bg Hitam/Putih, Icon Putih/Hitam */
-            : 'text-secondary hover:bg-element-hover hover:text-primary' /* NON-AKTIF */
+            ? 'bg-action text-action-text shadow-sm'  
+            : 'text-secondary hover:bg-element-hover hover:text-primary'
           "
           title="Play"
           @click="setMode('play')"

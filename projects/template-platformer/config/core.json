@@ -1,9 +1,0 @@
-{
-  "NAME" : "Core",
-  "TILE_SIZE": 16,
-  "SCALE": 4,
-  "PX_TILE": 64,
-  "VIRTUAL_WIDTH": 1920,
-  "VIRTUAL_HEIGHT": 1080,
-  "PIXEL_ART": true
-}

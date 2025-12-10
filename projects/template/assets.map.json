@@ -1,0 +1,10 @@
+{
+  "textures": {
+    "tex_bg_wif": "Image/wif.png",
+    "tex_terrain": "Image/terrain.png"
+  },
+  "fonts": {
+    "font_gaegu": "Fonts/gaegu.fnt" 
+  },
+  "sounds": {}
+}
