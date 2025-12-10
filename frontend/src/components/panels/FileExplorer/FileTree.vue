@@ -1,13 +1,11 @@
 <template>
-  <div class="text-sm text-white/90">
-    <!-- Loading -->
-    <div v-if="loading" class="text-xs italic opacity-70">
+  <div class="text-sm text-primary transition-colors duration-200">
+    <div v-if="loading" class="text-xs italic text-muted">
       Memuat struktur project...
     </div>
 
-    <!-- Pohon folder -->
     <ul v-else-if="fileTree.length" class="space-y-1">
-      <FileItem
+      <FileNode
         v-for="(node, index) in fileTree"
         :key="index"
         :node="node"
@@ -15,8 +13,7 @@
       />
     </ul>
 
-    <!-- Jika kosong -->
-    <div v-else class="text-xs italic opacity-70">
+    <div v-else class="text-xs italic text-muted">
       Tidak ada file ditemukan.
     </div>
   </div>
@@ -24,19 +21,17 @@
 
 <script setup>
 import { ref, onMounted, watch } from "vue";
-import FileItem from "./FileItem.vue";
+import FileNode from "./FileNode.vue";
 import { useBackend } from "@/composables/useBackend";
 
-const projectId = "template-platformer"; // proyek aktif
+const projectId = "template-platformer"; 
 const { projectFiles, fetchProjectFiles, loading } = useBackend();
 const fileTree = ref([]);
 
-// Ambil data project saat komponen di-mount
 onMounted(async () => {
   await fetchProjectFiles(projectId);
 });
 
-// Sinkronkan jika projectFiles reactive berubah
 watch(projectFiles, (v) => {
   fileTree.value = v;
 });

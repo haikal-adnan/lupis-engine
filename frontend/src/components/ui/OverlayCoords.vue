@@ -1,9 +1,12 @@
-// src/components/PointerCoordsDisplay.vue
 <template>
   <div
-    class="absolute top-4 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-md bg-black/40 text-white text-xs font-medium backdrop-blur-md border border-white/10 select-none"
+    class="absolute top-20 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-md 
+           bg-black/40 backdrop-blur-md border border-white/10 shadow-sm
+           text-white text-xs font-medium select-none pointer-events-none"
   >
-    X: {{ x.toFixed(2) }}   Y: {{ y.toFixed(2) }}
+    <span class="font-mono">X: {{ x.toFixed(2) }}</span>
+    <span class="mx-2 text-white/30">|</span>
+    <span class="font-mono">Y: {{ y.toFixed(2) }}</span>
   </div>
 </template>
 

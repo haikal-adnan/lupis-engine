@@ -1,4 +1,3 @@
-// engine/Tools/TransformTool.js
 import Config from "../Core/Config.js";
 import { ApplyResizeToEntity } from "../Util/ApplyResizeToEntity.js";
 
@@ -104,6 +103,11 @@ export default class TransformTool {
         const list = this.selection.selectedList;
         if (!list.length) return;
 
+        // [PENTING] Update ukuran insets agar deteksi tepi akurat
+        if (this.selection.calculateViewportInsets) {
+            this.selection.calculateViewportInsets();
+        }
+
         const p = this.toWorld(px, py);
 
         this.draggingMove = true;
@@ -122,6 +126,11 @@ export default class TransformTool {
     beginResize(type, px, py) {
         const list = this.selection.selectedList;
         if (!list.length) return;
+
+        // [PENTING] Update ukuran insets
+        if (this.selection.calculateViewportInsets) {
+            this.selection.calculateViewportInsets();
+        }
 
         const p = this.toWorld(px, py);
 
@@ -161,16 +170,32 @@ export default class TransformTool {
         if (this.draggingMove) this.move(px, py);
         if (this.draggingResize) this.resize(px, py);
 
+        // Update fisika kamera jika ada velocity
+        if (this.selection.updateAutoPan) {
+            this.selection.updateAutoPan();
+        }
+
         if (!p.down) {
             this.draggingMove = false;
             this.draggingResize = false;
             this.resizeType = null;
             this.computeHandles();
+            
+            // Stop velocity saat mouse dilepas
+            if (this.selection.autoPanVel) {
+                this.selection.autoPanVel.x = 0;
+                this.selection.autoPanVel.y = 0;
+            }
         }
     }
 
     move(px, py) {
         if (!this.moveStartData) return;
+
+        // [BARU] Panggil fungsi pan generik tanpa syarat marquee
+        if (this.selection.applyPointerAutoPan) {
+            this.selection.applyPointerAutoPan(px, py);
+        }
 
         const n = this.toWorld(px, py);
         const dx = n.x - this.startWorld.x;
@@ -196,6 +221,11 @@ export default class TransformTool {
     resize(px, py) {
         const list = this.selection.selectedList;
         if (!list.length) return;
+
+        // [BARU] Panggil fungsi pan generik tanpa syarat marquee
+        if (this.selection.applyPointerAutoPan) {
+            this.selection.applyPointerAutoPan(px, py);
+        }
 
         const now = this.toWorld(px, py);
         const dx = now.x - this.startWorld.x;
@@ -263,8 +293,6 @@ export default class TransformTool {
             this.startWorld = now;
         }
     }
-
-
 
     draw(shape, proj) {
         const list = this.selection.selectedList;

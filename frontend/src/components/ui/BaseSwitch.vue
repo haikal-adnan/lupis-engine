@@ -3,24 +3,25 @@
     class="flex items-center justify-between w-full select-none"
     :style="{ padding }"
   >
-    <!-- Label kiri -->
-    <span class="text-sm text-white/80">{{ label }}</span>
+    <span class="text-sm text-secondary">{{ label }}</span>
 
-    <!-- Switch kanan -->
     <button
       @click="toggle"
-      class="relative transition-all duration-200"
+      class="relative transition-colors duration-200 border border-transparent focus:outline-none"
       :class="[
-        'w-[42px] h-[22px] rounded-full flex items-center',
-        value
-          ? 'bg-blue-500 hover:bg-blue-600'
-          : 'bg-white/20 hover:bg-white/30'
+        'flex items-center',
+        value 
+          ? 'bg-action'         // Aktif: Zinc-900 (Light) / Zinc-50 (Dark)
+          : 'bg-element hover:bg-element-hover' // Tidak aktif: Abu-abu
       ]"
-      :style="{ borderRadius: radius }"
+      :style="{ 
+        borderRadius: radius,
+        width: '42px',
+        height: '22px'
+      }"
     >
-      <!-- Knob -->
       <span
-        class="absolute bg-white rounded-full transition-all duration-200 shadow-sm"
+        class="absolute rounded-full transition-transform duration-200 shadow-sm bg-panel"
         :class="value ? 'translate-x-[22px]' : 'translate-x-[4px]'"
         :style="{
           width: knobSize,

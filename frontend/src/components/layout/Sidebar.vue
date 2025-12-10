@@ -1,7 +1,5 @@
-<!-- components/layout/Sidebar.vue -->
-
 <template>
-  <aside class="h-full overflow-auto card p-3">
+  <aside class="h-full overflow-auto bg-panel p-3 transition-colors duration-200">
     <slot />
   </aside>
 </template>
