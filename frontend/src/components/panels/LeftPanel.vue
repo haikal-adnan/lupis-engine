@@ -1,9 +1,10 @@
+// src/components/LeftPanel.vue
 <script setup>
 import { ref } from 'vue';
-import FileExplorer from '../panels/FileExplorer/FileTree.vue'; 
-import SceneTree from '../panels/SceneGraph/SceneTree.vue'; // IMPORT BARU
+import SceneTree from '../panels/SceneGraph/SceneTree.vue';
+import FileNode from '../panels/FileExplorer/FileNode.vue';
 
-const props = defineProps({
+const { collapsed } = defineProps({
   collapsed: Boolean
 });
 
@@ -12,10 +13,38 @@ const activeTab = ref('layers');
 
 const selectTab = (tab) => {
   activeTab.value = tab;
-  if (props.collapsed) {
-    emit('toggle'); 
+  if (collapsed) {
+    emit('toggle');
   }
 };
+
+const fileTree = ref([
+  {
+    name: 'assets',
+    type: 'folder',
+    children: [
+      { name: 'player.png', type: 'file' },
+      { name: 'enemy.png', type: 'file' },
+      {
+        name: 'icons',
+        type: 'folder',
+        children: [
+          { name: 'ic_play.svg', type: 'file' },
+          { name: 'ic_pause.svg', type: 'file' }
+        ]
+      }
+    ]
+  },
+  {
+    name: 'scenes',
+    type: 'folder',
+    children: [
+      { name: 'level_1.json', type: 'file' },
+      { name: 'level_2.json', type: 'file' }
+    ]
+  },
+  { name: 'package.json', type: 'file' }
+]);
 </script>
 
 <template>
@@ -74,7 +103,14 @@ const selectTab = (tab) => {
          <div class="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide px-1">
            FileSystem
          </div>
-        <FileExplorer />
+         <ul class="space-y-1">
+           <FileNode
+             v-for="(node, index) in fileTree"
+             :key="index"
+             :node="node"
+             :level="0"
+           />
+         </ul>
       </div>
 
     </div>

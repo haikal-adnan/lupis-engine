@@ -1,6 +1,7 @@
 <template>
     <div v-if="loading" class="text-muted text-sm">Loading properties...</div>
     <div v-else class="flex flex-col space-y-5 text-sm">
+      
       <section
         v-for="(section, index) in sections"
         :key="index"
@@ -14,30 +15,49 @@
           v-for="(value, key) in filteredFields(section.fields)"
           :key="key"
         >
-          <BaseInput
-            v-if="typeof value !== 'boolean'"
-            :label="formatLabel(key)"
-            v-model="section.fields[key]"
-          />
+          <div v-if="isNestedObject(value)" :key="key + '_nested'" class="space-y-1 ml-2 border-l pl-3 border-gray-700">
+             <h5 class="text-xs font-medium text-gray-400 mt-2">{{ formatLabel(key) }}</h5>
+             
+             <template v-for="(nestedValue, nestedKey) in filteredFields(value)" :key="nestedKey">
+                 <BaseInput
+                   v-if="typeof nestedValue === 'string' || typeof nestedValue === 'number'"
+                   :label="formatLabel(nestedKey)"
+                   v-model="section.fields[key][nestedKey]"
+                 />
+                 <BaseSwitch
+                   v-else-if="typeof nestedValue === 'boolean'"
+                   :label="formatLabel(nestedKey)"
+                   v-model="section.fields[key][nestedKey]"
+                 />
+                 </template>
+          </div>
+          
           <BaseSwitch
-            v-else
+            v-else-if="typeof value === 'boolean'"
             :label="formatLabel(key)"
             v-model="section.fields[key]"
           />
-        </template>
+
+          <BaseInput
+            v-else-if="typeof value === 'string' || typeof value === 'number'"
+            :label="formatLabel(key)"
+            v-model="section.fields[key]"
+          />
+          
+          </template>
       </section>
     </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from "vue"
-import BaseInput from "../../ui/BaseInput.vue"
+import BaseInput from "../../ui/BaseInput.vue" 
 import BaseSwitch from "../../ui/BaseSwitch.vue"
 import { useBackend } from "@/composables/useBackend.js"
 
 const { API_URL } = useBackend()
 
-const project = "template-platformer" 
+const project = "template"
 const sections = ref([])
 const loading = ref(false)
 
@@ -47,38 +67,55 @@ function formatLabel(key) {
     .replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
+function isNestedObject(value) {
+    // Definisi ulang: Objek harus ada, harus bertipe 'object', dan BUKAN Array.
+    return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
 function filteredFields(fields) {
   const result = {}
   for (const key in fields) {
-    if (key !== "NAME") result[key] = fields[key]
+    if (key !== "NAME" && key !== "layers" && key !== "id") {
+      result[key] = fields[key]
+    }
   }
   return result
 }
 
+// ... (loadProjectConfigs dan onMounted tidak berubah)
 async function loadProjectConfigs() {
   loading.value = true
   try {
-    const configFiles = [
-      "camera.json", "core.json", "physics.json", 
-      "player.json", "timing.json", "world.json",
-    ]
+    const res = await fetch(`${API_URL}/projects/${project}/config`)
+    
+    if (!res.ok) {
+        console.error(`Gagal memuat config: Status ${res.status}`)
+        return
+    }
+    
+    const configData = await res.json()
+    
+    const parsedSections = []
 
-    const promises = configFiles.map(async (file) => {
-      const res = await fetch(
-        `${API_URL}/static/projects/${project}/config/${file}`
-      )
-      if (!res.ok) return null
-      const json = await res.json()
-      return {
-        name: json.NAME || file.replace(".json", ""),
-        fields: json,
-      }
-    })
+    // Section 1: Meta
+    if (configData.meta) {
+        parsedSections.push({ name: "Project Metadata", fields: configData.meta })
+    }
+    
+    // Section 2: Editor
+    if (configData.editor) {
+        parsedSections.push({ name: "Editor Configuration", fields: configData.editor })
+    }
 
-    const results = (await Promise.all(promises)).filter(Boolean)
-    sections.value = results
+    // Section 3: Settings (Termasuk Physics)
+    if (configData.settings) {
+        parsedSections.push({ name: "Global Settings", fields: configData.settings })
+    }
+    
+    sections.value = parsedSections
+    
   } catch (err) {
-    console.error("❌ Gagal memuat config:", err)
+    console.error("❌ Gagal memuat/parse config:", err)
   } finally {
     loading.value = false
   }

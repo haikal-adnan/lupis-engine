@@ -88,23 +88,25 @@ export default class SelectionTool {
             this.isPointerDown = true;
         }
 
-        if (p.down && this.isPointerDown && !this.isLongPress) {
+        const isDraggingResize = this.transform && this.transform.draggingResize;
+
+        if (p.down && this.isPointerDown && !this.isLongPress && !isDraggingResize) {
             if (performance.now() - this.pointerDownTime >= this.LONG_PRESS_TIME) {
                 this.isLongPress = true;
 
                 if (p.isTouch) {
                     const w = this.toWorld(px, py);
                     const hit = this.hit(w.x, w.y);
-                    if (hit && this.transform) this.transform.beginMove(px, py);
+                    if (hit && this.transform) this.transform.beginMove(px, py, true);
                     return;
                 }
 
                 if (this.selectedList.length > 1 && this.isInsideGroup(px, py)) {
-                    if (this.transform) this.transform.beginMove(px, py);
+                    if (this.transform) this.transform.beginMove(px, py, false);
                 } else {
                     const w = this.toWorld(px, py);
                     const hit = this.hit(w.x, w.y);
-                    if (hit && this.transform) this.transform.beginMove(px, py);
+                    if (hit && this.transform) this.transform.beginMove(px, py, false);
                 }
             }
         }
@@ -264,6 +266,12 @@ export default class SelectionTool {
     }
 
     pointerUp(px, py) {
+        // --- Perbaikan Utama di SelectionTool ---
+        if (this.transform) {
+            this.transform.resetDrag();
+        }
+        // ----------------------------------------
+        
         if (!this.isLongPress) {
             const w = this.toWorld(px, py);
             const hit = this.hit(w.x, w.y);
@@ -371,9 +379,6 @@ export default class SelectionTool {
         this.autoPanVel.y *= 0.85;
     }
 
-    // [BARU] Ini adalah fungsi inti matematika auto-pan.
-    // Tidak peduli apakah Marquee, Move, atau Resize yang memanggilnya.
-    // Ia hanya peduli posisi mouse vs tepi layar.
     applyPointerAutoPan(px, py) {
         const rect = this.canvas.getBoundingClientRect();
         const W = rect.width;
@@ -417,20 +422,16 @@ export default class SelectionTool {
         this.autoPanVel.y = Math.min(maxSpeed, Math.max(-maxSpeed, this.autoPanVel.y + vy));
     }
 
-    // [BARU] Fungsi wrapper khusus Marquee
-    // Hanya mengeksekusi pan jika drag sudah cukup jauh (mencegah pan saat klik diam)
     applyMarqueeAutoPan(px, py) {
         const dragThreshold = 5; 
         const dx = Math.abs(this.marqueeStart.x - this.marqueeEnd.x);
         const dy = Math.abs(this.marqueeStart.y - this.marqueeEnd.y);
         
         const scale = this.game.camera.scale;
-        // Jika drag marquee terlalu kecil (klik biasa), jangan pan
         if (dx * scale < dragThreshold && dy * scale < dragThreshold) {
             return;
         }
 
-        // Jika lolos, panggil fungsi pan generik
         this.applyPointerAutoPan(px, py);
     }
 

@@ -1,7 +1,7 @@
+import Config from "../Core/Config.js";
+
 export function ApplyResizeToEntity(ent, world) {
     if (ent.components.SpriteRenderer) {
-        // SpriteRenderer already uses ent.width / ent.height directly.
-        // Nothing special needed here.
     }
 
     if (ent.components.ShapeRenderer) {
@@ -10,16 +10,17 @@ export function ApplyResizeToEntity(ent, world) {
         if (sh.type === "rectangle" || sh.type === "rectStroke") {
             sh.width = ent.width;
             sh.height = ent.height;
+            
+            ent.hitX = ent.x;
+            ent.hitY = ent.y;
+            ent.hitWidth = ent.width;
+            ent.hitHeight = ent.height;
         }
 
         if (sh.type === "line") {
-            const dx = ent.width;
-            const dy = ent.height;
+            sh.x2 = ent.x + ent.width;
+            sh.y2 = ent.y + ent.height;
 
-            sh.x2 = ent.x + dx;
-            sh.y2 = ent.y + dy;
-
-            // Update hitbox
             const x1 = ent.x;
             const y1 = ent.y;
             const x2 = sh.x2;
@@ -52,39 +53,39 @@ export function ApplyResizeToEntity(ent, world) {
     }
 
     if (ent.components.TextRenderer) {
-
         const tr = ent.components.TextRenderer;
-        const font = world.assets.fonts?.default;
-        if (!font) return;
+        
+        const start = ent._textStartData;
+        const factor = ent._resizeFactor || 1;
 
-        const baseSize = ent._resizeStartSize ?? tr.size;
-        const factor   = ent._resizeFactor     ?? 1;
+        if (start) {
+            const newSize = start.size * factor;
+            tr.size = newSize;
 
-        const newSize = baseSize * factor;
+            if (ent.text) {
+                ent.text.size = newSize;    
+                ent.text.value = tr.text;    
+            }
 
-        tr.size = newSize;
+            ent.width = start.w * factor;
+            ent.height = start.h * factor;
 
-        if (ent.text) {
-            ent.text.size = newSize;    
-            ent.text.value = tr.text;    
+            ent.hitX = ent.x + (start.hitXOffset * factor);
+            ent.hitY = ent.y + (start.hitYOffset * factor);
+            ent.hitWidth = start.hitW * factor;
+            ent.hitHeight = start.hitH * factor;
+        } 
+        else {
+            const font = world.assets.fonts[Config.FONT];
+            if (!font || !font.measureText) return;
+
+             const m = font.measureText(tr.text, tr.size);
+             ent.width  = m.width;
+             ent.height = m.boundsHeight;
+             ent.hitX = ent.x + m.xMin;
+             ent.hitY = ent.y + m.yMin;
+             ent.hitWidth  = m.boundsWidth;
+             ent.hitHeight = m.boundsHeight;
         }
-
-        const m = font.measureText(ent.text.value, newSize);
-
-        ent.width  = m.width;
-        ent.height = m.boundsHeight;
-
-        ent.hitX = ent.x + m.xMin;
-        ent.hitY = ent.y + m.yMin;
-        ent.hitWidth  = m.boundsWidth;
-        ent.hitHeight = m.boundsHeight;
-    }
-
-    if (ent.components.Transform) {
-        const t = ent.components.Transform;
-        t.x = ent.x;
-        t.y = ent.y;
-        t.width  = ent.width;
-        t.height = ent.height;
     }
 }
