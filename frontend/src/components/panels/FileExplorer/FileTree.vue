@@ -24,7 +24,7 @@ import { ref, onMounted, watch } from "vue";
 import FileNode from "./FileNode.vue";
 import { useBackend } from "@/composables/useBackend";
 
-const projectId = "template-platformer"; 
+const projectId = "template"; 
 const { projectFiles, fetchProjectFiles, loading } = useBackend();
 const fileTree = ref([]);
 

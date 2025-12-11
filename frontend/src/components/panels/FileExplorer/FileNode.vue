@@ -39,7 +39,6 @@
 <script setup>
 import { ref, computed } from 'vue'
 
-// IMPORT SEBAGAI COMPONENT (Penting!)
 import FileIcon from '@/assets/icons/ic_file_code.svg?component'
 import FolderOpenIcon from '@/assets/icons/ic_folder_open.svg?component'
 import FolderCloseIcon from '@/assets/icons/ic_folder_close.svg?component'

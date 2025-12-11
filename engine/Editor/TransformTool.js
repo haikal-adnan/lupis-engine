@@ -79,12 +79,14 @@ export default class TransformTool {
 
     getHoverHandle(px, py) {
         const p = this.toWorld(px, py);
-        const r = 6 / this.game.camera.scale;
+        
+        const hitRadius = 20 / this.game.camera.scale; 
 
         for (const h of this.handles) {
             const dx = p.x - h.x;
             const dy = p.y - h.y;
-            if (dx*dx + dy*dy <= r*r * 4)
+            
+            if (dx*dx + dy*dy <= hitRadius * hitRadius)
                 return h;
         }
         return null;
@@ -103,7 +105,6 @@ export default class TransformTool {
         const list = this.selection.selectedList;
         if (!list.length) return;
 
-        // [PENTING] Update ukuran insets agar deteksi tepi akurat
         if (this.selection.calculateViewportInsets) {
             this.selection.calculateViewportInsets();
         }
@@ -127,7 +128,6 @@ export default class TransformTool {
         const list = this.selection.selectedList;
         if (!list.length) return;
 
-        // [PENTING] Update ukuran insets
         if (this.selection.calculateViewportInsets) {
             this.selection.calculateViewportInsets();
         }
@@ -144,19 +144,44 @@ export default class TransformTool {
 
         this.resizeEntityStarts = list.map(e => {
             const bb = this.selection.getBounding(e);
+
+            const textData = e.components?.TextRenderer ? {
+                w: e.width,
+                h: e.height,
+                hitXOffset: e.hitX - e.x,
+                hitYOffset: e.hitY - e.y,
+                hitW: e.hitWidth,
+                hitH: e.hitHeight,
+                size: e.components.TextRenderer.size
+            } : null;
+
+            e._textStartData = textData;
+
             return {
                 e,
                 x:e.x,
                 y:e.y,
                 w:e.width ?? bb.w,
-                h:e.height ?? bb.h,
-                relX:(bb.x - b.x) / b.w,
-                relY:(bb.y - b.y) / b.h
+                h:e.height ?? bb.h
             };
         });
 
         this.startWorld = p;
     }
+
+    // --- Perbaikan Utama di TransformTool ---
+    resetDrag() {
+        this.draggingMove = false;
+        this.draggingResize = false;
+        this.resizeType = null;
+        this.computeHandles();
+        
+        if (this.selection.autoPanVel) {
+            this.selection.autoPanVel.x = 0;
+            this.selection.autoPanVel.y = 0;
+        }
+    }
+    // ----------------------------------------
 
     update() {
         if (!this.active) return;
@@ -170,29 +195,19 @@ export default class TransformTool {
         if (this.draggingMove) this.move(px, py);
         if (this.draggingResize) this.resize(px, py);
 
-        // Update fisika kamera jika ada velocity
         if (this.selection.updateAutoPan) {
             this.selection.updateAutoPan();
         }
 
+        // Perbaikan: Hanya reset jika tombol mouse diangkat
         if (!p.down) {
-            this.draggingMove = false;
-            this.draggingResize = false;
-            this.resizeType = null;
-            this.computeHandles();
-            
-            // Stop velocity saat mouse dilepas
-            if (this.selection.autoPanVel) {
-                this.selection.autoPanVel.x = 0;
-                this.selection.autoPanVel.y = 0;
-            }
+            this.resetDrag();
         }
     }
 
     move(px, py) {
         if (!this.moveStartData) return;
 
-        // [BARU] Panggil fungsi pan generik tanpa syarat marquee
         if (this.selection.applyPointerAutoPan) {
             this.selection.applyPointerAutoPan(px, py);
         }
@@ -201,6 +216,9 @@ export default class TransformTool {
         const dx = n.x - this.startWorld.x;
         const dy = n.y - this.startWorld.y;
 
+        const fontKey = Config.FONT;
+        const font = this.world.assets.fonts[fontKey];
+
         for (const item of this.moveStartData) {
             const e = item.e;
             e.x = item.x + dx;
@@ -208,12 +226,13 @@ export default class TransformTool {
 
             if (e.components?.TextRenderer) {
                 const t = e.components.TextRenderer;
-                const font = this.world.assets.fonts.default;
-                const m = font.measureText(t.text, t.size);
-                e.hitX = e.x + m.xMin;
-                e.hitY = e.y + m.yMin;
-                e.hitWidth = m.boundsWidth;
-                e.hitHeight = m.boundsHeight;
+                if (font && font.measureText) {
+                    const m = font.measureText(t.text, t.size);
+                    e.hitX = e.x + m.xMin;
+                    e.hitY = e.y + m.yMin;
+                    e.hitWidth = m.boundsWidth;
+                    e.hitHeight = m.boundsHeight;
+                }
             }
         }
     }
@@ -222,7 +241,6 @@ export default class TransformTool {
         const list = this.selection.selectedList;
         if (!list.length) return;
 
-        // [BARU] Panggil fungsi pan generik tanpa syarat marquee
         if (this.selection.applyPointerAutoPan) {
             this.selection.applyPointerAutoPan(px, py);
         }
@@ -232,24 +250,27 @@ export default class TransformTool {
         const dy = now.y - this.startWorld.y;
 
         const sb = this.resizeStartBounds;
+        const type = this.resizeType;
 
-        const baseW = sb.w;
-        const baseH = sb.h;
+        let originX = sb.x;
+        let originY = sb.y;
 
-        let newW = baseW;
-        let newH = baseH;
+        if (type === "nw" || type === "sw") originX = sb.x + sb.w;
+        
+        if (type === "nw" || type === "ne") originY = sb.y + sb.h;
 
-        if (this.resizeType === "nw") { newW = baseW - dx; newH = baseH - dy; }
-        if (this.resizeType === "ne") { newW = baseW + dx; newH = baseH - dy; }
-        if (this.resizeType === "sw") { newW = baseW - dx; newH = baseH + dy; }
-        if (this.resizeType === "se") { newW = baseW + dx; newH = baseH + dy; }
+        let rawNewW = sb.w;
+        let rawNewH = sb.h;
 
-        newW = Math.max(5, newW);
-        newH = Math.max(5, newH);
+        if (type === "nw") { rawNewW = sb.w - dx; rawNewH = sb.h - dy; }
+        if (type === "ne") { rawNewW = sb.w + dx; rawNewH = sb.h - dy; }
+        if (type === "sw") { rawNewW = sb.w - dx; rawNewH = sb.h + dy; }
+        if (type === "se") { rawNewW = sb.w + dx; rawNewH = sb.h + dy; }
 
-        const scaleW = newW / baseW;
-        const scaleH = newH / baseH;
-        const scaleUniform = Math.max(scaleW, scaleH);
+        const scaleW = rawNewW / (sb.w || 0.001);
+        const scaleH = rawNewH / (sb.h || 0.001);
+        
+        const scaleUniform = Math.max(Math.abs(scaleW), Math.abs(scaleH));
 
         let anyText = false;
 
@@ -257,40 +278,35 @@ export default class TransformTool {
             const e = item.e;
             const isText = !!e.components?.TextRenderer;
 
-            const gx = sb.x + item.relX * sb.w;
-            const gy = sb.y + item.relY * sb.h;
+            let nextX = originX + (item.x - originX) * scaleW;
+            let nextY = originY + (item.y - originY) * scaleH;
 
-            const ngx = sb.x + item.relX * newW;
-            const ngy = sb.y + item.relY * newH;
+            let nextW = item.w * scaleW;
+            let nextH = item.h * scaleH;
 
-            const dx2 = ngx - gx;
-            const dy2 = ngy - gy;
+            if (nextW < 0) {
+                nextX += nextW; 
+                nextW = Math.abs(nextW);
+            }
+            if (nextH < 0) {
+                nextY += nextH;
+                nextH = Math.abs(nextH);
+            }
 
-            e.x = item.x + dx2;
-            e.y = item.y + dy2;
+            e.x = nextX;
+            e.y = nextY;
 
             if (isText) {
                 anyText = true;
-
-                e._resizeStartSize = item.e.components.TextRenderer.size;
-                e._resizeFactor = scaleUniform;
-
+                e._resizeFactor = scaleUniform; 
                 ApplyResizeToEntity(e, this.world);
                 continue;
             }
 
-            const nw = Math.max(5, item.w * scaleW);
-            const nh = Math.max(5, item.h * scaleH);
-
-            e.width = nw;
-            e.height = nh;
+            e.width = Math.max(0.1, nextW);
+            e.height = Math.max(0.1, nextH);
 
             ApplyResizeToEntity(e, this.world);
-        }
-
-        // update delta per frame hanya untuk text
-        if (anyText) {
-            this.startWorld = now;
         }
     }
 

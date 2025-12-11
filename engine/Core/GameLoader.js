@@ -26,6 +26,7 @@ export default class GameLoader {
         game.renderer = new RendererManager(canvas);
         game.input = new InputManager(canvas);
         game.world = new World();
+        game.font = "font_gaegu"
 
         // 2. Fetch Configs
         const [project, assetsMap] = await Promise.all([

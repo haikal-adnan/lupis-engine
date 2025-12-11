@@ -98,3 +98,27 @@ export const getProjectFileRegex = (req, res) => {
   });
   stream.pipe(res);
 };
+
+export const getProjectConfig = (req, res) => {
+  const projectName = req.params.id;
+  const projectPath = path.join(projectsDir, projectName);
+  const configPath = path.join(projectPath, "project.config.json");
+
+  if (!fs.existsSync(projectPath))
+    return res.status(404).json({ error: "Project not found" });
+
+  if (!fs.existsSync(configPath)) {
+    // Fallback jika belum ada config, return default basic
+    return res.json({
+      meta: { name: projectName, version: "0.0.1" },
+      editor: { grid: { enabled: true, size: 32 } }
+    });
+  }
+
+  try {
+    const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
+    res.json(config);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to parse config file" });
+  }
+};
