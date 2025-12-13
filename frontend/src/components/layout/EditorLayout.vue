@@ -1,72 +1,117 @@
 <script setup>
-import { ref, computed, onUnmounted } from 'vue';
+import { ref, computed, onUnmounted, watch } from 'vue'
 
 const props = defineProps({
   isLeftCollapsed: { type: Boolean, default: false },
   isRightCollapsed: { type: Boolean, default: false }
-});
+})
 
-// -- KONFIGURASI UKURAN --
-const HEADER_HEIGHT = 48; // (h-12 di Tailwind = 48px). Tetap/Fixed.
-const MIN_WIDTH = 200;
-const MAX_WIDTH = 600;
-const COLLAPSED_WIDTH = 50; 
-const DEFAULT_LEFT_WIDTH = 288;
-const DEFAULT_RIGHT_WIDTH = 320;
+const emit = defineEmits(['update:isLeftCollapsed', 'update:isRightCollapsed'])
 
-// -- STATE UKURAN --
-const leftWidth = ref(DEFAULT_LEFT_WIDTH);
-const rightWidth = ref(DEFAULT_RIGHT_WIDTH);
+const CONFIG = {
+  HEADER_HEIGHT: 48,
+  COLLAPSED_WIDTH: 50,
+  MIN_WIDTH: 200,
+  MAX_WIDTH: 600,
+  SNAP_CLOSE: 80,
+  SNAP_OPEN: 100,
+  DEFAULT_LEFT: 288,
+  DEFAULT_RIGHT: 320,
+  TRANSITION: '300ms cubic-bezier(0.25, 0.8, 0.25, 1)'
+}
 
-const isResizingLeft = ref(false);
-const isResizingRight = ref(false);
+const usePanelResize = (side, defaultWidth, collapsedProp, updateCollapsed) => {
+  const width = ref(defaultWidth)
+  const isResizing = ref(false)
+  const willSnapClose = ref(false)
 
-// -- COMPUTED --
-const activeLeftWidth = computed(() => props.isLeftCollapsed ? COLLAPSED_WIDTH : leftWidth.value);
-const activeRightWidth = computed(() => props.isRightCollapsed ? COLLAPSED_WIDTH : rightWidth.value);
+  const activeWidth = computed(() => 
+    isResizing.value || !collapsedProp.value ? width.value : CONFIG.COLLAPSED_WIDTH
+  )
 
-// -- LOGIKA RESIZE --
-// (Sama seperti sebelumnya, tidak ada perubahan logika di sini)
-const startResizeLeft = () => {
-  if (props.isLeftCollapsed) return;
-  isResizingLeft.value = true;
-  document.addEventListener('mousemove', handleMouseMoveLeft);
-  document.addEventListener('mouseup', stopResize);
-  document.body.style.cursor = 'col-resize';
-};
+  const panelStyle = computed(() => ({
+    width: `${activeWidth.value}px`,
+    transition: isResizing.value ? 'none' : `width ${CONFIG.TRANSITION}`
+  }))
 
-const handleMouseMoveLeft = (e) => {
-  let newWidth = e.clientX;
-  if (newWidth < MIN_WIDTH) newWidth = MIN_WIDTH;
-  if (newWidth > MAX_WIDTH) newWidth = MAX_WIDTH;
-  leftWidth.value = newWidth;
-};
+  watch(collapsedProp, (isCollapsed) => {
+    if (isResizing.value) return
+    if (!isCollapsed && width.value < CONFIG.MIN_WIDTH) {
+      width.value = defaultWidth
+    }
+  })
 
-const startResizeRight = () => {
-  if (props.isRightCollapsed) return;
-  isResizingRight.value = true;
-  document.addEventListener('mousemove', handleMouseMoveRight);
-  document.addEventListener('mouseup', stopResize);
-  document.body.style.cursor = 'col-resize';
-};
+  const handleMove = (e) => {
+    let newW = side === 'left' ? e.clientX : window.innerWidth - e.clientX
+    
+    willSnapClose.value = !collapsedProp.value && newW < CONFIG.SNAP_CLOSE
 
-const handleMouseMoveRight = (e) => {
-  let newWidth = window.innerWidth - e.clientX;
-  if (newWidth < MIN_WIDTH) newWidth = MIN_WIDTH;
-  if (newWidth > MAX_WIDTH) newWidth = MAX_WIDTH;
-  rightWidth.value = newWidth;
-};
+    if (!collapsedProp.value) {
+      if (newW < CONFIG.SNAP_CLOSE) {
+        updateCollapsed(true)
+        width.value = CONFIG.COLLAPSED_WIDTH
+        stop()
+        return
+      }
+      if (newW < CONFIG.MIN_WIDTH) newW = Math.max(newW, CONFIG.SNAP_CLOSE)
+      if (newW > CONFIG.MAX_WIDTH) newW = CONFIG.MAX_WIDTH
+    } else {
+      if (newW > CONFIG.SNAP_OPEN) updateCollapsed(false)
+      if (newW < CONFIG.COLLAPSED_WIDTH) newW = CONFIG.COLLAPSED_WIDTH
+    }
+    width.value = newW
+  }
 
-const stopResize = () => {
-  isResizingLeft.value = false;
-  isResizingRight.value = false;
-  document.removeEventListener('mousemove', handleMouseMoveLeft);
-  document.removeEventListener('mousemove', handleMouseMoveRight);
-  document.removeEventListener('mouseup', stopResize);
-  document.body.style.cursor = '';
-};
+  const start = () => {
+    if (collapsedProp.value) width.value = CONFIG.COLLAPSED_WIDTH
+    isResizing.value = true
+    document.addEventListener('mousemove', handleMove)
+    document.addEventListener('mouseup', stop)
+    document.body.style.cursor = 'col-resize'
+    document.body.style.userSelect = 'none'
+  }
 
-onUnmounted(() => stopResize());
+  const stop = () => {
+    isResizing.value = false
+    willSnapClose.value = false
+    document.removeEventListener('mousemove', handleMove)
+    document.removeEventListener('mouseup', stop)
+    document.body.style.cursor = ''
+    document.body.style.userSelect = ''
+
+    setTimeout(() => {
+      if (!collapsedProp.value) {
+        width.value = Math.max(Math.min(width.value, CONFIG.MAX_WIDTH), CONFIG.MIN_WIDTH)
+      }
+    }, 10)
+  }
+
+  onUnmounted(() => stop())
+
+  return { width, activeWidth, isResizing, willSnapClose, start, panelStyle }
+}
+
+const left = usePanelResize(
+  'left', 
+  CONFIG.DEFAULT_LEFT, 
+  computed(() => props.isLeftCollapsed), 
+  (val) => emit('update:isLeftCollapsed', val)
+)
+
+const right = usePanelResize(
+  'right', 
+  CONFIG.DEFAULT_RIGHT, 
+  computed(() => props.isRightCollapsed), 
+  (val) => emit('update:isRightCollapsed', val)
+)
+
+const canvasStyle = computed(() => ({
+  '--left-width': `${left.activeWidth.value}px`,
+  '--right-width': `${right.activeWidth.value}px`,
+  transition: (left.isResizing.value || right.isResizing.value) 
+    ? 'none' 
+    : `padding ${CONFIG.TRANSITION}`
+}))
 </script>
 
 <template>
@@ -74,52 +119,64 @@ onUnmounted(() => stopResize());
     
     <header 
       class="absolute inset-x-0 top-0 z-30 border-b border-border bg-panel"
-      :style="{ height: HEADER_HEIGHT + 'px' }"
+      :style="{ height: CONFIG.HEADER_HEIGHT + 'px' }"
     >
       <slot name="topbar" />
     </header>
 
     <div 
       class="absolute inset-x-0 bottom-0 z-0"
-      :style="{ top: HEADER_HEIGHT + 'px' }"
+      :style="{ top: CONFIG.HEADER_HEIGHT + 'px' }"
     >
       
       <div 
-        class="absolute inset-0 z-0 transition-[padding] duration-300 ease-in-out pl-[var(--left-width)] pr-[var(--right-width)]"
-        :style="{ 
-          '--left-width': activeLeftWidth + 'px',
-          '--right-width': activeRightWidth + 'px'
-        }"
+        class="absolute inset-0 z-0 pl-[var(--left-width)] pr-[var(--right-width)] will-change-[padding]"
+        :style="canvasStyle"
       >
-        <slot name="canvas" />
+        <div class="h-full w-full overflow-auto relative">
+          <slot name="canvas" />
+        </div>
       </div>
 
       <aside 
-        class="absolute top-0 bottom-0 left-0 z-20 bg-panel flex border-r border-border"
-        :class="{ 'transition-width duration-300 ease-[cubic-bezier(0.25,0.8,0.25,1)]': !isResizingLeft }"
-        :style="{ width: activeLeftWidth + 'px' }"
+        class="absolute top-0 bottom-0 left-0 z-20 bg-panel flex border-r border-border group/left will-change-[width]"
+        :style="left.panelStyle.value"
       >
-        <div class="flex-1 overflow-hidden h-full w-full">
-           <slot name="left-panel" />
+        <div class="flex-1 overflow-hidden h-full w-full relative">
+          <div :style="{ minWidth: isLeftCollapsed ? 'auto' : CONFIG.MIN_WIDTH + 'px' }" class="h-full">
+            <slot name="left-panel" />
+          </div>
         </div>
-        <div v-show="!isLeftCollapsed"
-          class="w-1 h-full cursor-col-resize hover:bg-blue-500/50 active:bg-blue-500 transition-colors absolute right-0 top-0 z-50"
-          @mousedown.prevent="startResizeLeft"
-        ></div>
+        
+        <div 
+          class="w-4 -right-2 h-full cursor-col-resize absolute z-50 flex justify-center items-center group touch-none"
+          @mousedown.prevent="left.start"
+        >
+          <div 
+            class="w-1 h-full transition-colors duration-200 rounded-full"
+            :class="left.willSnapClose.value ? 'bg-red-400' : 'group-hover:bg-blue-500/50 active:bg-blue-500'"
+          ></div>
+        </div>
       </aside>
 
       <aside 
-        class="absolute top-0 bottom-0 right-0 z-20 bg-panel flex border-l border-border"
-        :class="{ 'transition-width duration-300 ease-[cubic-bezier(0.25,0.8,0.25,1)]': !isResizingRight }"
-        :style="{ width: activeRightWidth + 'px' }"
+        class="absolute top-0 bottom-0 right-0 z-20 bg-panel flex border-l border-border will-change-[width]"
+        :style="right.panelStyle.value"
       >
-        <div v-show="!isRightCollapsed"
-          class="w-1 h-full cursor-col-resize hover:bg-blue-500/50 active:bg-blue-500 transition-colors absolute left-0 top-0 z-50"
-          @mousedown.prevent="startResizeRight"
-        ></div>
+        <div 
+          class="w-4 -left-2 h-full cursor-col-resize absolute z-50 flex justify-center items-center group touch-none"
+          @mousedown.prevent="right.start"
+        >
+          <div 
+            class="w-1 h-full transition-colors duration-200 rounded-full"
+            :class="right.willSnapClose.value ? 'bg-red-400' : 'group-hover:bg-blue-500/50 active:bg-blue-500'"
+          ></div>
+        </div>
 
-        <div class="flex-1 overflow-hidden h-full w-full">
-           <slot name="right-panel" />
+        <div class="flex-1 overflow-hidden h-full w-full relative">
+          <div :style="{ minWidth: isRightCollapsed ? 'auto' : CONFIG.MIN_WIDTH + 'px' }" class="h-full">
+            <slot name="right-panel" />
+          </div>
         </div>
       </aside>
 
@@ -128,12 +185,5 @@ onUnmounted(() => stopResize());
       </div>
 
     </div>
-
   </div>
 </template>
-
-<style scoped>
-.transition-width {
-  transition-property: width;
-}
-</style>

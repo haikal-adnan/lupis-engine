@@ -1,51 +1,125 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    /* --- LIGHT MODE --- */
-    --bg-app: #f4f4f5;        /* Zinc-100: Background paling belakang */
-    --bg-panel: #ffffff;      /* White: Sidebar */
-    /* UBAH INI: Gelapkan sedikit agar beda dengan background */
-    --bg-element: #e4e4e7;    /* Zinc-200: Input/Button inactive */ 
-    --bg-element-hover: #d4d4d8; /* Zinc-300 */
-    --bg-canvas: #d4d4d8;     /* Zinc-300 */
+    /* Figma-inspired neutral palette */
+    --background: #FAFAFA;
+    --foreground: #2E3238;
+
+    --card: #FFFFFF;
+    --card-foreground: #2E3238;
+
+    --popover: #FFFFFF;
+    --popover-foreground: #2E3238;
+
+    /* Subtle blue accent like Figma */
+    --primary: #3B82F6;
+    --primary-foreground: #FFFFFF;
+
+    --secondary: #F1F5F9;
+    --secondary-foreground: #454950;
+
+    --muted: #F1F5F9;
+    --muted-foreground: #717579;
+
+    --accent: #3B82F6;
+    --accent-foreground: #FFFFFF;
+
+    --destructive: #EF4444;
+    --destructive-foreground: #FFFFFF;
+
+    --border: #E2E8F0;
+    --input: #E2E8F0;
+    --ring: #3B82F6;
+
+    --radius: 0.5rem;
+
+    /* Editor-specific tokens */
+    --editor-bg: #F1F5F9;
+    --editor-sidebar: #FFFFFF;
+    --editor-canvas: #EEF2F6;
+    --editor-grid: #DCE1E7;
+    --editor-selection: #3B82F6;
+    --editor-hover: #F5F7FA;
+    --editor-active: #EFF6FF;
     
-    --text-primary: #18181b;  /* Zinc-900 */
-    --text-secondary: #52525b;/* Zinc-600 */
-    --text-muted: #a1a1aa;    /* Zinc-400 */
+    /* Shadow menggunakan Hex 8 digit (#RRGGBBAA) untuk transparansi */
+    --editor-panel-shadow: 0 4px 24px -4px #292E3D14;
     
-    --border-base: #e4e4e7;   /* Zinc-200 */
-    --action-active: #18181b; /* Zinc-900 */
-    --action-text: #ffffff;   
+    /* Glass effects menggunakan Hex 8 digit untuk transparansi */
+    --editor-float-bg: #FFFFFFE6; /* ~90% opacity */
+    --editor-glass: #FFFFFFBF;    /* ~75% opacity */
+    --editor-glass-border: #FFFFFF33; /* ~20% opacity */
+
+    /* Typography */
+    --font-sans: 'Inter', system-ui, sans-serif;
+
+    --sidebar-background: #FFFFFF;
+    --sidebar-foreground: #454950;
+    --sidebar-primary: #3B82F6;
+    --sidebar-primary-foreground: #FFFFFF;
+    --sidebar-accent: #F1F5F9;
+    --sidebar-accent-foreground: #2E3238;
+    --sidebar-border: #E2E8F0;
+    --sidebar-ring: #3B82F6;
   }
 
   .dark {
-    /* --- DARK MODE --- */
-    --bg-app: #09090b;        /* Zinc-950 */
-    --bg-panel: #18181b;      /* Zinc-900 */
-    --bg-element: #27272a;    /* Zinc-800 */
-    --bg-element-hover: #3f3f46; /* Zinc-700 */
-    --bg-canvas: #000000;     /* Black */
-    
-    --text-primary: #f4f4f5;  /* Zinc-100 */
-    --text-secondary: #a1a1aa;/* Zinc-400 */
-    --text-muted: #52525b;    /* Zinc-600 */
-    
-    --border-base: #27272a;   /* Zinc-800 */
-    --action-active: #fafafa; /* Zinc-50 */
-    --action-text: #18181b;   
-  }
-}
+    --background: #151921;
+    --foreground: #F1F5F9;
 
-/* Helper Class untuk Icon */
-.icon-adaptive {
-  @apply opacity-70 transition-opacity duration-200;
-}
-html:not(.dark) .icon-adaptive {
-  filter: invert(1) brightness(0.5); 
-}
-.icon-adaptive:hover {
-  @apply opacity-100;
+    --card: #191D26;
+    --card-foreground: #F1F5F9;
+
+    --popover: #191D26;
+    --popover-foreground: #F1F5F9;
+
+    --primary: #3B82F6;
+    --primary-foreground: #FFFFFF;
+
+    --secondary: #222631;
+    --secondary-foreground: #E2E6EA;
+
+    --muted: #222631;
+    --muted-foreground: #8B919A;
+
+    --accent: #262B37;
+    --accent-foreground: #F1F5F9;
+
+    --destructive: #CF3030;
+    --destructive-foreground: #FFFFFF;
+
+    --border: #262B37;
+    --input: #262B37;
+    --ring: #3B82F6;
+
+    --editor-bg: #11141B;
+    --editor-sidebar: #191D26;
+    --editor-canvas: #151921;
+    --editor-grid: #1E222C;
+    --editor-selection: #3B82F6;
+    --editor-hover: #1E222C;
+    --editor-active: #052E61;
+    
+    /* Shadow dark mode dengan transparansi Hex 8 */
+    --editor-panel-shadow: 0 4px 24px -4px #0A0F1466;
+    
+    /* Glass effects dark mode */
+    --editor-float-bg: #191D26F2; /* ~95% opacity */
+    --editor-glass: #1E222CCC;    /* ~80% opacity */
+    --editor-glass-border: #262B374D; /* ~30% opacity */
+
+    --sidebar-background: #191D26;
+    --sidebar-foreground: #E2E6EA;
+    --sidebar-primary: #3B82F6;
+    --sidebar-primary-foreground: #FFFFFF;
+    --sidebar-accent: #222631;
+    --sidebar-accent-foreground: #F1F5F9;
+    --sidebar-border: #262B37;
+    --sidebar-ring: #3B82F6;
+  }
 }
