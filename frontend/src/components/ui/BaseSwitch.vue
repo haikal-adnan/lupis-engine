@@ -3,16 +3,25 @@
     class="flex items-center justify-between w-full select-none"
     :style="{ padding }"
   >
-    <span class="text-sm text-secondary">{{ label }}</span>
+    <label 
+      v-if="label" 
+      :for="id" 
+      class="text-xs font-medium cursor-pointer text-muted-foreground"
+    >
+      {{ label }}
+    </label>
 
     <button
+      :id="id"
+      type="button"
+      role="switch"
+      :aria-checked="model"
       @click="toggle"
-      class="relative transition-colors duration-200 border border-transparent focus:outline-none"
+      class="relative flex items-center transition-colors duration-200 border border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
       :class="[
-        'flex items-center',
-        value 
-          ? 'bg-action'         // Aktif: Zinc-900 (Light) / Zinc-50 (Dark)
-          : 'bg-element hover:bg-element-hover' // Tidak aktif: Abu-abu
+        model 
+          ? 'bg-primary'              
+          : 'bg-zinc-200 dark:bg-zinc-700' 
       ]"
       :style="{ 
         borderRadius: radius,
@@ -21,8 +30,10 @@
       }"
     >
       <span
-        class="absolute rounded-full transition-transform duration-200 shadow-sm bg-panel"
-        :class="value ? 'translate-x-[22px]' : 'translate-x-[4px]'"
+        class="absolute rounded-full shadow-sm ring-0 transition-transform duration-200 bg-white"
+        :class="[
+          model ? 'translate-x-[22px]' : 'translate-x-[4px]'
+        ]"
         :style="{
           width: knobSize,
           height: knobSize
@@ -33,26 +44,24 @@
 </template>
 
 <script setup>
-import { ref, watch } from "vue"
+import { useId } from 'vue'
 
-const props = defineProps({
-  label: { type: String, default: "Switch" },
-  modelValue: { type: Boolean, default: false },
-  radius: { type: String, default: "9999px" },
-  knobSize: { type: String, default: "14px" },
-  padding: { type: String, default: "4px 0" }
+const {
+  label,
+  radius = '9999px',
+  knobSize = '14px',
+  padding = '4px 0'
+} = defineProps({
+  label: String,
+  radius: String,
+  knobSize: String,
+  padding: String
 })
 
-const emit = defineEmits(["update:modelValue"])
-const value = ref(props.modelValue)
-
-watch(
-  () => props.modelValue,
-  (v) => (value.value = v)
-)
+const model = defineModel({ type: Boolean, default: false })
+const id = useId()
 
 function toggle() {
-  value.value = !value.value
-  emit("update:modelValue", value.value)
+  model.value = !model.value
 }
 </script>

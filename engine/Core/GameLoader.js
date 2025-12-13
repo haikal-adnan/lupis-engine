@@ -5,11 +5,9 @@ import GameLoop from "../Loop/GameLoop.js";
 import InputManager from "../Input/InputManager.js";
 import GLImageResource from "../Renderer/Graphic/GLImageResource.js";
 
-// Loaders
 import AssetLoader from "../Loader/AssetLoader.js";
 import SceneLoader from "../Loader/SceneLoader.js";
 
-// Editor Tools
 import CameraController from "../Editor/CameraController.js";
 import Rulers from "../Editor/Rulers.js";
 import PointerCoordinates from "../Editor/PointerCoordinates.js";
@@ -22,19 +20,16 @@ export default class GameLoader {
     async initializeGame(game, canvas, mode = "runtime", baseURL = "./") {
         Config.ENGINE_MODE = mode;
 
-        // 1. Init Core Systems
         game.renderer = new RendererManager(canvas);
         game.input = new InputManager(canvas);
         game.world = new World();
         game.font = "font_gaegu"
 
-        // 2. Fetch Configs
         const [project, assetsMap] = await Promise.all([
             fetch(baseURL + "project.config.json").then(r => r.json()),
             fetch(baseURL + "assets.map.json").then(r => r.json())
         ]);
 
-        // 3. Load Assets
         const glImageLoader = new GLImageResource(game.renderer.gl);
         const assetLoader = new AssetLoader(
             glImageLoader, 
@@ -44,23 +39,19 @@ export default class GameLoader {
             }
         );
         
-        // Inject loaded assets into World
         game.world.assets = await assetLoader.loadMap(assetsMap, baseURL);
         console.log("Assets Loaded:", Object.keys(game.world.assets.textures));
 
-        // 4. Load Scene & Build Entities
         const sceneName = project.meta?.entryScene || project.entryScene || "level_1";
         const sceneData = await fetch(`${baseURL}scenes/${sceneName}.json`).then(r => r.json());
 
         const sceneLoader = new SceneLoader(game.world, game.world.assets);
         await sceneLoader.load(sceneData, project, baseURL);
 
-        // 5. Init Editor Tools (If needed)
         if (mode === "editor") {
             this._initializeEditorTools(game, canvas);
         }
 
-        // 6. Start Loop
         game.loop = new GameLoop({
             update: dt => game.update(dt),
             render: alpha => game.render(alpha),

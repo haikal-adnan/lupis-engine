@@ -1,21 +1,21 @@
 <script setup>
 import EditorLayout from "./components/layout/EditorLayout.vue";
-import LeftPanel from "./components/panels/LeftPanel.vue";
-import RightPanel from "./components/panels/RightPanel.vue";
-import Canvas from "./components/core/Canvas.vue"; 
-import Topbar from "./components/layout/Topbar.vue"; 
-import BottomFloatingMenu from "./components/ui/FloatingMenu.vue"; 
-import PointerCoordsDisplay from "./components/ui/OverlayCoords.vue"; 
+import LeftPanel from "./components/panels/LeftPanel.vue"; // Asumsi ada
+import RightPanel from "./components/panels/RightPanel.vue"; // Asumsi ada
+import Canvas from "./components/core/Canvas.vue"; // Asumsi ada
+import Topbar from "./components/layout/Topbar.vue"; // Asumsi ada
+import BottomFloatingMenu from "./components/ui/FloatingMenu.vue"; // Asumsi ada
+import PointerCoordsDisplay from "./components/ui/OverlayCoords.vue"; // Asumsi ada
 import { ref } from "vue";
 
 // State Sidebar Kiri
 const isLeftSidebarCollapsed = ref(false);
+const isRightSidebarCollapsed = ref(false);
+
+// Handler opsional (untuk tombol toggle manual)
 const toggleLeftSidebar = () => {
   isLeftSidebarCollapsed.value = !isLeftSidebarCollapsed.value;
 };
-
-// State Sidebar Kanan (BARU)
-const isRightSidebarCollapsed = ref(false);
 const toggleRightSidebar = () => {
   isRightSidebarCollapsed.value = !isRightSidebarCollapsed.value;
 };
@@ -23,11 +23,11 @@ const toggleRightSidebar = () => {
 
 <template>
   <EditorLayout 
-    :is-left-collapsed="isLeftSidebarCollapsed"
-    :is-right-collapsed="isRightSidebarCollapsed"
+    v-model:is-left-collapsed="isLeftSidebarCollapsed"
+    v-model:is-right-collapsed="isRightSidebarCollapsed"
   >
     
-    <template #canvas><Canvas class="w-full h-full" /></template>
+    <template #canvas><Canvas class="w-full h-full bg-slate-100" /></template>
     <template #topbar><Topbar /></template>
 
     <template #left-panel>
