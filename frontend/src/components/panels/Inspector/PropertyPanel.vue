@@ -4,6 +4,6 @@
 </template>
 
 <script setup>
-  import Entity from './Entity.vue';
-  import Transform from './Transform.vue';
+  import Entity from './parts/Entity.vue';
+  import Transform from './parts/Transform.vue';
 </script>

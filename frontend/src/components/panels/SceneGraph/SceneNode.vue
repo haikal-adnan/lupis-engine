@@ -1,36 +1,52 @@
 <template>
   <li>
     <div
-      class="flex items-center gap-1 cursor-pointer select-none hover:bg-accent/50 rounded-sm px-1 py-0.5 transition-colors duration-200 group"
-      :style="{ paddingLeft: `${level * 12}px` }"
-      @click="toggle"
+      class="group relative flex items-center h-7 cursor-pointer border border-transparent transition-all duration-75"
+      :class="[
+        isSelected ? 'bg-[#37373d] border-[#094771]' : 'hover:bg-[#2a2d2e] border-transparent text-gray-400 hover:text-gray-200',
+        isDragOver ? 'bg-blue-500/20 border-blue-500' : '' 
+      ]"
+      :style="{ paddingLeft: `${level * 14 + 4}px` }"
+      
+      draggable="true"
+      @click.stop="handleClick"
+      @dragstart.stop="onDragStart"
+      @dragover.prevent="onDragOver"
+      @dragleave="onDragLeave"
+      @drop.stop="onDrop"
     >
-      <div class="flex items-center justify-center w-4 h-4 shrink-0">
-        <span v-if="hasChildren" class="text-muted-foreground group-hover:text-primary transition-colors">
-            <svg v-if="isOpen" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-            <svg v-else xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
-        </span>
+      
+      <div 
+        class="w-4 h-4 flex items-center justify-center shrink-0 hover:text-white"
+        @click.stop="toggleExpand"
+      >
+        <template v-if="hasChildren">
+           <svg v-if="isOpen" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+           <svg v-else width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+        </template>
       </div>
 
-      <div class="flex items-center justify-center w-4 h-4 mr-1 text-primary">
-         <svg v-if="node.type === 'camera'" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
-         
-         <svg v-else-if="node.type === 'mesh'" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
-         
-         <svg v-else-if="node.type === 'folder'" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 2H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/></svg>
-         
-         <svg v-else xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/></svg>
+      <div class="flex items-center gap-2 overflow-hidden">
+        <span v-if="node.type === 'scene'" class="text-orange-400">🌐</span>
+        <span v-else-if="node.type === 'folder'" class="text-yellow-500">📁</span>
+        <span v-else-if="node.type === 'camera'" class="text-green-400">🎥</span>
+        <span v-else-if="node.type === 'character'" class="text-pink-400">👤</span>
+        <span v-else class="text-blue-400">🧊</span>
+        
+        <span class="truncate">{{ node.name }}</span>
       </div>
 
-      <span class="text-primary truncate">{{ node.name }}</span>
     </div>
 
-    <ul v-if="hasChildren && isOpen" class="mt-0.5 space-y-0.5">
+    <ul v-if="hasChildren && isOpen" class="border-l border-gray-700 ml-[11px]">
       <SceneNode
-        v-for="(child, index) in node.children"
-        :key="index"
+        v-for="child in node.children"
+        :key="child.id"
         :node="child"
         :level="level + 1"
+        :selectedId="selectedId"
+        @select="$emit('select', $event)"
+        @drag-drop="$emit('drag-drop', $event)"
       />
     </ul>
   </li>
@@ -41,16 +57,60 @@ import { ref, computed } from 'vue';
 
 const props = defineProps({
   node: Object,
-  level: { type: Number, default: 0 }
+  level: { type: Number, default: 0 },
+  selectedId: [String, Number]
 });
 
-const isOpen = ref(true); // Default open agar terlihat semua hierarki
+const emit = defineEmits(['select', 'drag-drop']);
+
+const isOpen = ref(true);
+const isDragOver = ref(false);
 
 const hasChildren = computed(() => props.node.children && props.node.children.length > 0);
+const isSelected = computed(() => props.node.id === props.selectedId);
 
-function toggle() {
-  if (hasChildren.value) {
-    isOpen.value = !isOpen.value;
-  }
+function toggleExpand() {
+  if (hasChildren.value) isOpen.value = !isOpen.value;
 }
+
+function handleClick() {
+  emit('select', props.node.id);
+}
+
+// --- DRAG & DROP LOGIC ---
+
+function onDragStart(event) {
+    // Set data ID node yang sedang ditarik
+    event.dataTransfer.dropEffect = 'move';
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('nodeId', props.node.id);
+    // Tambahkan visual opacity sedikit
+    event.target.style.opacity = '0.5';
+}
+
+function onDragOver(event) {
+    // Izinkan drop (default browser behavior menolak drop)
+    // Highlight target
+    isDragOver.value = true;
+}
+
+function onDragLeave() {
+    isDragOver.value = false;
+}
+
+function onDrop(event) {
+    isDragOver.value = false;
+    const draggedId = event.dataTransfer.getData('nodeId');
+    const targetId = props.node.id;
+
+    // Reset opacity elemen asal (agak tricky di framework, tapi browser biasanya handle reset saat drag end)
+    // Emit event ke atas
+    emit('drag-drop', { draggedId, targetId });
+}
+
+// Reset opacity when drag ends (global fix)
+window.addEventListener('dragend', (e) => {
+    e.target.style.opacity = '1';
+});
+
 </script>
