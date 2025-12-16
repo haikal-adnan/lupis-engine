@@ -1,49 +1,45 @@
 <template>
-  <div class="text-sm select-none">
-    <ul class="space-y-0.5">
+  <div class="text-xs select-none font-sans pb-10">
+    <ul class="space-y-[1px]">
       <SceneNode
-        v-for="(node, index) in sceneData"
-        :key="index"
+        v-for="node in data"
+        :key="node.id"
         :node="node"
         :level="0"
+        :selectedId="selectedId"
+        @select="$emit('select', $event)"
+        @drag-start="handleDragStart"
+        @drag-drop="handleDrop"
       />
     </ul>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue';
 import SceneNode from './SceneNode.vue';
 
-// Dummy Data Struktur Game (Nanti diganti state asli engine)
-const sceneData = ref([
-  {
-    name: "Main Scene",
-    type: "folder",
-    children: [
-      {
-        name: "Main Camera",
-        type: "camera",
-        children: []
-      },
-      {
-        name: "Player",
-        type: "mesh",
-        children: [
-            { name: "Sprite", type: "node" },
-            { name: "CollisionBox", type: "node" }
-        ]
-      },
-      {
-        name: "Environment",
-        type: "node",
-        children: [
-            { name: "Ground_01", type: "mesh" },
-            { name: "Ground_02", type: "mesh" },
-            { name: "Background", type: "mesh" }
-        ]
-      }
-    ]
-  }
-]);
+// Menerima data dari Parent (LeftPanel)
+const props = defineProps({
+  data: Array,
+  selectedId: [String, Number]
+});
+
+const emit = defineEmits(['select', 'move-node']);
+
+// --- DRAG & DROP HANDLERS ---
+const handleDragStart = (nodeId) => {
+    // Kita simpan ID node yang sedang ditarik di DataTransfer
+    // Tapi karena Vue event handling, kita bisa pass lewat event emit juga
+    // Untuk HTML5 DnD standar, kita set di SceneNode.vue
+};
+
+const handleDrop = (payload) => {
+    const { draggedId, targetId } = payload;
+    
+    // Prevent dropping to self
+    if (draggedId === targetId) return;
+
+    // Emit ke LeftPanel untuk memproses perpindahan data
+    emit('move-node', { draggedId, targetId });
+};
 </script>
