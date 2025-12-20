@@ -1,61 +1,48 @@
-<template>
-  <li>
-    <div
-      class="flex items-center gap-1 cursor-pointer select-none hover:bg-element-hover rounded px-1 py-0.5 transition-colors duration-200"
-      :style="{ paddingLeft: `${level * 14}px` }"
-      @click="toggle"
-    >
-      <div v-if="node.type === 'folder' && hasChildren" class="flex items-center">
-        <component 
-          :is="isOpen ? ArrowDownIcon : ArrowRightIcon" 
-          class="w-3.5 h-3.5 text-muted" 
-        />
-      </div>
-      <div v-else class="w-3.5 h-3.5"></div>
-
-      <div class="flex items-center">
-        <component
-          :is="node.type === 'folder' 
-            ? (isOpen ? FolderOpenIcon : FolderCloseIcon) 
-            : FileIcon"
-          class="w-4 h-4 text-primary" 
-        />
-      </div>
-
-      <span class="ml-1 text-primary">{{ node.name }}</span>
-    </div>
-
-    <ul v-if="node.type === 'folder' && isOpen && hasChildren" class="mt-1 space-y-1">
-      <FileNode
-        v-for="(child, index) in node.children"
-        :key="index"
-        :node="child"
-        :level="level + 1"
-      />
-    </ul>
-  </li>
-</template>
-
 <script setup>
-import { ref, computed } from 'vue'
-
-import FileIcon from '@/assets/icons/ic_file_code.svg?component'
-import FolderOpenIcon from '@/assets/icons/ic_folder_open.svg?component'
-import FolderCloseIcon from '@/assets/icons/ic_folder_close.svg?component'
-import ArrowRightIcon from '@/assets/icons/ic_arrow_right.svg?component'
-import ArrowDownIcon from '@/assets/icons/ic_arrow_down.svg?component'
+import { ref } from 'vue';
 
 const props = defineProps({
-  node: Object,
-  level: { type: Number, default: 0 }
-})
+  item: Object,
+  depth: { type: Number, default: 0 }
+});
 
-const isOpen = ref(false)
-const hasChildren = computed(() => props.node.children?.length > 0)
+const isOpen = ref(false);
 
-function toggle() {
-  if (props.node.type === 'folder' && hasChildren.value) {
-    isOpen.value = !isOpen.value
-  }
-}
+const getIcon = (type) => {
+  if (type === 'folder') return '📁';
+  if (type === 'texture') return '🖼️';
+  if (type === 'script') return '📜';
+  if (type === 'sound') return '🔊';
+  return '📄';
+};
 </script>
+
+<template>
+  <div>
+    <div 
+      class="flex items-center py-1 px-2 cursor-pointer hover:bg-accent/20 text-[11px] text-muted-foreground hover:text-foreground"
+      :style="{ paddingLeft: `${(depth * 12) + 8}px` }"
+      @click="isOpen = !isOpen"
+    >
+      <span class="w-4 flex justify-center shrink-0">
+        <svg v-if="item.children?.length" 
+             xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" 
+             stroke="currentColor" stroke-width="3" 
+             :class="{ '-rotate-90': !isOpen }">
+          <path d="m6 9 6 6 6-6"/>
+        </svg>
+      </span>
+      <span class="mr-1.5">{{ getIcon(item.type) }}</span>
+      <span class="truncate">{{ item.name }}{{ item.meta?.extension || '' }}</span>
+    </div>
+
+    <div v-if="isOpen && item.children?.length">
+      <FileNode 
+        v-for="child in item.children" 
+        :key="child._id" 
+        :item="child" 
+        :depth="depth + 1"
+      />
+    </div>
+  </div>
+</template>

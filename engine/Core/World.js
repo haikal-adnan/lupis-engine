@@ -1,4 +1,4 @@
-// engine/World/World.js
+// engine/Core/World.js
 export default class World {
     constructor() {
         this.layers = new Map();
@@ -17,13 +17,21 @@ export default class World {
         this.ui.push(fn);
     }
 
+    // engine/World/World.js
     setupLayers(layersSource) {
-        const sortedLayers = layersSource.slice().sort((a, b) => (a.order || 0) - (b.order || 0));
-        this.layerOrder = sortedLayers.map(l => l.id);
+        // Pastikan layersSource adalah array
+        const source = Array.isArray(layersSource) ? layersSource : ["layer_objects"];
+        
+        this.layerOrder = source.map(l => {
+            // Jika l adalah string, gunakan l langsung. Jika object, gunakan l.id
+            return typeof l === 'string' ? l : l.id;
+        });
 
-        for (const l of sortedLayers) {
-            this.layers.set(l.id, []);
-            this.layerVisibility[l.id] = l.visible ?? true;
+        for (const id of this.layerOrder) {
+            if (!this.layers.has(id)) {
+                this.layers.set(id, []);
+            }
+            this.layerVisibility[id] = true;
         }
     }
 

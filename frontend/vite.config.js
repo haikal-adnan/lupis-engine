@@ -1,44 +1,41 @@
 import { fileURLToPath, URL } from 'node:url';
 import path from 'path';
-import { defineConfig } from 'vite';
+import { defineConfig, searchForWorkspaceRoot } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import vueDevTools from 'vite-plugin-vue-devtools';
-import svgLoader from 'vite-svg-loader'
+import svgLoader from 'vite-svg-loader';
 
-// https://vite.dev/config/
 export default defineConfig({
   server: {
     host: '0.0.0.0',
-    port: 6500, // atau 5174, sesuaikan
+    port: 6500,
     allowedHosts: [
-      'lupis-visual.calk.cloud',
-      'lupis-engine.calk.cloud',
       'lupis.calk.cloud',
       'localhost',
     ],
     hmr: {
-      overlay: true, // ubah ke false jika ingin matikan tampilan error overlay merah
+      overlay: true,
     },
 
-    // ⬇️ IZINKAN AKSES FOLDER DI LUAR ROOT FRONTEND
+    // ✅ HANYA IZINKAN FOLDER KODE/LOGIC YANG DIBUTUHKAN UNTUK BUILD
+    // Folder data seperti '../projects' atau '../backend' dihapus dari sini demi keamanan
     fs: {
       allow: [
-        '..', // folder di atas root frontend
-        '../engine',
-        '../utils',
-        '../projects',
-        '../schemas',
-        '../backend',
-        '../public',
+        searchForWorkspaceRoot(process.cwd()),
+        'src',               // Folder frontend sendiri
+        '../engine',         // Logic core engine
+        '../utils',          // Fungsi helper bersama
+        '../schemas',        // Skema data/validasi bersama
+        'node_modules',      // Dependensi
       ],
     },
   },
 
   plugins: [
-    vue(), 
-    vueDevTools(), 
+    vue(),
+    vueDevTools(),
     svgLoader({
-      defaultImport: 'component', 
+      defaultImport: 'component',
       svgoConfig: {
         multipass: true,
         plugins: [
@@ -46,27 +43,37 @@ export default defineConfig({
             name: 'preset-default',
             params: {
               overrides: {
-                removeViewBox: false, 
+                removeViewBox: false,
               },
             },
           },
-          'removeDimensions', 
+          'removeDimensions',
         ],
       },
-    })],
+    })
+  ],
 
   resolve: {
     alias: {
-      // === Alias bawaan untuk folder src (frontend sendiri) ===
+      // === Alias untuk folder src (Frontend) ===
       '@': fileURLToPath(new URL('./src', import.meta.url)),
 
-      // === Alias eksternal menuju folder di luar frontend ===
+      // === Alias untuk LOGIC (Boleh diakses Vite untuk kompilasi) ===
       '@engine': path.resolve(__dirname, '../engine'),
       '@utils': path.resolve(__dirname, '../utils'),
       '@schemas': path.resolve(__dirname, '../schemas'),
-      '@projects': path.resolve(__dirname, '../projects'),
-      '@backend': path.resolve(__dirname, '../backend'),
-      '@public': path.resolve(__dirname, '../public'),
+      
+      // ❌ ALIAS UNTUK DATA SEPERTI @projects DIHAPUS
+      // Data sekarang diakses via CDN_URL melalui HTTP, bukan via filesystem alias
+    },
+  },
+
+  // Menangani build agar tetap rapi jika ada file di luar root
+  build: {
+    outDir: 'dist',
+    emptyOutDir: true,
+    commonjsOptions: {
+      include: [/engine/, /node_modules/],
     },
   },
 });
