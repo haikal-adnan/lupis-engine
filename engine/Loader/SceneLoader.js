@@ -1,21 +1,21 @@
 export default class SceneLoader {
-    constructor(world, assets) {
+    constructor(world) {
         this.world = world;
-        this.assets = assets;
         this.prefabCache = {};
     }
 
-    async load(sceneData, projectConfig, baseURL) {
-        // 1. Setup Layers
-        const layersSource = projectConfig.layers || projectConfig.editor?.layers || [];
+    async load(sceneData, projectConfig, baseURL, loadedAssets) {
+        const layersSource = projectConfig.layers || projectConfig.editor?.layers || ["layer_objects"];
         this.world.setupLayers(layersSource);
 
-        // 2. Build Entities
-        const entitiesSource = sceneData.root || sceneData.entities || [];
+        const entitiesSource = sceneData.entities || sceneData.root || [];
+        
         for (const entDesc of entitiesSource) {
             const resolvedDesc = await this._resolvePrefabIfNeeded(entDesc, baseURL);
-            const entity = this._buildEntity(resolvedDesc);
-            this.world.addEntity(entity, resolvedDesc.layerId || resolvedDesc.layer || "layer_objects");
+            
+            const entity = this._buildEntity(resolvedDesc, loadedAssets);
+
+            this.world.addEntity(entity, resolvedDesc.layerId || resolvedDesc.layer || layersSource[0]);
         }
     }
 
@@ -34,6 +34,7 @@ export default class SceneLoader {
             this.prefabCache[name] = prefab;
             return this._mergePrefab(prefab, desc);
         } catch (e) {
+            console.warn(`[SceneLoader] Failed to load prefab: ${name}`, e);
             return desc;
         }
     }
@@ -49,7 +50,7 @@ export default class SceneLoader {
         return merged;
     }
 
-    _buildEntity(desc) {
+    _buildEntity(desc, assets) {
         const transform = desc.transform || {};
         const scale = transform.scale || {};
         
@@ -67,26 +68,25 @@ export default class SceneLoader {
             scaleY: scale.y ?? 1
         };
 
-        this._applySpriteRenderer(e, desc.components.SpriteRenderer);
-        this._applyTextRenderer(e, desc.components.TextRenderer);
+        this._applySpriteRenderer(e, desc.components.SpriteRenderer, assets);
+        this._applyTextRenderer(e, desc.components.TextRenderer, assets);
         this._applyShapeRenderer(e, desc.components.ShapeRenderer);
 
         return e;
     }
 
-    _applySpriteRenderer(e, s) {
+
+    _applySpriteRenderer(e, s, assets) {
         if (!s) return;
         
-        const stored = this.assets.textures[s.assetId];
+        const stored = assets && assets.textures ? assets.textures[s.assetId] : null;
         
         if (stored) {
-            e.image = stored; // Keeping the wrapper logic
+            e.image = stored;
         } else {
-            console.warn("Sprite asset not found:", s.assetId);
-            e.image = null;
+            e.image = null; 
         }
 
-        // Fix logic: Mapping x/y/w/h to sx/sy/sw/sh
         if (s.source) {
             e.frame = { sx: s.source.x, sy: s.source.y, sw: s.source.w, sh: s.source.h };
         } else if (stored) {
@@ -97,12 +97,20 @@ export default class SceneLoader {
 
         e.width = s.width ?? s.w ?? (stored?.width ?? 0);
         e.height = s.height ?? s.h ?? (stored?.height ?? 0);
-        e.pixelPerfect = !!s.pixelPerfect;
+        
+        const assetIsPixelated = stored?.filterMode === 'pixelated' || stored?.filterMode === 'nearest';
+        
+        if (s.pixelPerfect !== undefined && s.pixelPerfect !== null) {
+            e.pixelPerfect = s.pixelPerfect;
+        } else {
+            e.pixelPerfect = assetIsPixelated;
+        }
+
         e.zIndex = s.zIndex ?? e.zIndex;
         e.alpha = s.alpha ?? 1;
     }
 
-    _applyTextRenderer(e, text) {
+    _applyTextRenderer(e, text, assets) {
         if (!text) return;
         e.text = {
             value: text.text,
@@ -112,7 +120,8 @@ export default class SceneLoader {
         };
         e.zIndex = text.zIndex ?? e.zIndex;
 
-        const f = this.assets.fonts[text.assetId] || this.assets.fonts.default;
+        const f = (assets && assets.fonts ? assets.fonts[text.assetId] : null) || (assets?.fonts?.default);
+        
         if (f && f.measureText) {
             const m = f.measureText(text.text, text.size);
             e.hitX = (e.x ?? 0) + (m.xMin ?? 0);
@@ -135,15 +144,20 @@ export default class SceneLoader {
         }
 
         if (sh.type === "line") {
-            // ... (Kode kalkulasi line hit area sama seperti sebelumnya)
-            const x1 = e.x; const y1 = e.y; const x2 = sh.x2; const y2 = sh.y2; const th = sh.thickness ?? 1;
+            const x1 = e.x; const y1 = e.y; 
+            const x2 = sh.x2; const y2 = sh.y2; 
+            const th = sh.thickness ?? 1;
             const dx = x2 - x1; const dy = y2 - y1;
-            if (Math.abs(dy) < 0.0001) { e.hitX = Math.min(x1, x2); e.hitY = y1 - th / 2; e.hitWidth = Math.abs(dx); e.hitHeight = th; } 
-            else if (Math.abs(dx) < 0.0001) { e.hitX = x1 - th / 2; e.hitY = Math.min(y1, y2); e.hitWidth = th; e.hitHeight = Math.abs(dy); } 
-            else { 
+            
+            if (Math.abs(dy) < 0.0001) { 
+                e.hitX = Math.min(x1, x2); e.hitY = y1 - th / 2; e.hitWidth = Math.abs(dx); e.hitHeight = th; 
+            } else if (Math.abs(dx) < 0.0001) { 
+                e.hitX = x1 - th / 2; e.hitY = Math.min(y1, y2); e.hitWidth = th; e.hitHeight = Math.abs(dy); 
+            } else { 
                 const minX = Math.min(x1, x2); const maxX = Math.max(x1, x2); 
                 const minY = Math.min(y1, y2); const maxY = Math.max(y1, y2); 
-                e.hitX = minX - th / 2; e.hitY = minY - th / 2; e.hitWidth = (maxX - minX) + th; e.hitHeight = (maxY - minY) + th; 
+                e.hitX = minX - th / 2; e.hitY = minY - th / 2; 
+                e.hitWidth = (maxX - minX) + th; e.hitHeight = (maxY - minY) + th; 
             }
         }
     }

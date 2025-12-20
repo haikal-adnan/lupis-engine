@@ -1,5 +1,3 @@
-// engine/Renderer/GLImageResource.js
-
 let __textureID = 1;
 
 export default class GLImageResource {
@@ -8,11 +6,28 @@ export default class GLImageResource {
     }
 
     async load(url) {
-        const img = new Image();
-        img.src = url;
-        img.decoding = "async";
-        await img.decode();
-        return this._uploadToGPU(img);
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            
+            img.crossOrigin = "anonymous"; 
+            
+            img.onload = async () => {
+                try {
+                    img.decoding = "async";
+                    await img.decode();
+                    const result = this._uploadToGPU(img);
+                    resolve(result);
+                } catch (err) {
+                    reject(err);
+                }
+            };
+            
+            img.onerror = (err) => {
+                reject(new Error(`Failed to load image at ${url}`));
+            };
+
+            img.src = url;
+        });
     }
 
     async loadBitmap(bitmap) {
@@ -21,10 +36,9 @@ export default class GLImageResource {
 
     _uploadToGPU(image) {
         const gl = this.gl;
-
         const tex = gl.createTexture();
+        
         gl.bindTexture(gl.TEXTURE_2D, tex);
-
         gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
 
         gl.texImage2D(
@@ -50,5 +64,4 @@ export default class GLImageResource {
             height: image.height
         };
     }
-
 }
