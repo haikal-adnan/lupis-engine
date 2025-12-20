@@ -2,7 +2,6 @@ export default class AssetLoader {
     constructor(glLoader, fontLoaderFunc) {
         this.glLoader = glLoader;
         this.fontLoaderFunc = fontLoaderFunc;
-        // Container penyimpanan hasil load
         this.assets = { textures: {}, fonts: {} };
     }
 
@@ -14,7 +13,6 @@ export default class AssetLoader {
         // 1. Queue Textures
         if (assetsMap.textures) {
             for (const [id, val] of Object.entries(assetsMap.textures)) {
-                // Handle jika val berupa string (Legacy/Simple JSON) atau Object (Editor Payload)
                 const config = (typeof val === 'string') 
                     ? { uri: val, filterMode: 'smooth' } 
                     : val;
@@ -23,23 +21,22 @@ export default class AssetLoader {
                 
                 promises.push(
                     this._loadTexture(id, url, config)
-                        .catch(err => console.error(`Failed: ${config.uri}`, err))
-                );
-            }
-        }
-        // 2. Queue Fonts
-        if (assetsMap.fonts) {
-            for (const [id, fileName] of Object.entries(assetsMap.fonts)) {
-                promises.push(
-                    this._loadFont(id, fileName, baseURL)
-                        .catch(err => console.error(`[AssetLoader] Failed font: ${fileName}`, err))
+                        .catch(err => console.error(`Failed texture: ${config.uri}`, err))
                 );
             }
         }
 
-        // 3. Tunggu semua selesai (Parallel)
+        // 2. Queue Fonts
+        if (assetsMap.fonts) {
+            for (const [id, fileKey] of Object.entries(assetsMap.fonts)) {
+                promises.push(
+                    this._loadFont(id, fileKey, baseURL)
+                        .catch(err => console.error(`[AssetLoader] Failed font: ${fileKey}`, err))
+                );
+            }
+        }
+
         await Promise.all(promises);
-        
         return this.assets;
     }
 
@@ -47,7 +44,6 @@ export default class AssetLoader {
         const raw = await this.glLoader.load(url);
         const normalized = this._normalizeTextureResult(raw);
         if (normalized) {
-            // Gabungkan hasil load dengan meta filterMode dari backend
             this.assets.textures[id] = {
                 ...normalized,
                 filterMode: config.filterMode 
@@ -55,19 +51,28 @@ export default class AssetLoader {
         }
     }
 
-    async _loadFont(id, fileName, baseURL) {
-        // Asumsi format font bitmap: .fnt dan .png dengan nama sama
-        const cleanPath = fileName.replace(/\.[^/.]+$/, "");
-        const fntPath = baseURL + fileName;
-        const pngPath = baseURL + cleanPath + ".png";
-        
-        this.assets.fonts[id] = await this.fontLoaderFunc(fntPath, pngPath);
-    }
 
+    async _loadFont(id, fileKey, baseURL) {
+        // fileKey adalah nama file fisik di storage (misal: "uud-v4-uuid.ttf" atau "uud-v4-uuid")
+        // Kita perlu membuang ekstensinya (misal .ttf) agar bisa diganti .fnt dan .png
+        
+        // Regex: Hapus teks mulai dari titik terakhir sampai ujung string
+        const cleanKey = fileKey.replace(/\.[^/.]+$/, "");
+        
+        const pathPrefix = baseURL.endsWith('/') ? baseURL : baseURL + '/';
+
+        // Engine otomatis mencari pasangan .fnt dan .png
+        const fntUrl = `${pathPrefix}${cleanKey}.fnt`;
+        const pngUrl = `${pathPrefix}${cleanKey}.png`;
+
+        // console.log(`🔤 Loading Font: ${cleanKey}`);
+        
+        this.assets.fonts[id] = await this.fontLoaderFunc(fntUrl, pngUrl);
+    }
+     
     _normalizeTextureResult(raw) {
         if (!raw) return null;
-        console.log(raw)
-        // Jika output dari GLImageResource adalah WebGL Texture
+
         if (raw.texture || raw.glTexture) {
             return { 
                 type: "gl", 
@@ -78,7 +83,6 @@ export default class AssetLoader {
             };
         }
 
-        // Fallback untuk HTML Image (jarang terjadi jika pake GLImageResource)
         if (raw instanceof HTMLImageElement || raw.src) {
             return { 
                 type: "image", 

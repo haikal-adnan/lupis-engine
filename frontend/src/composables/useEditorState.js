@@ -1,6 +1,8 @@
+// composables/useEditorState.js
+
 import { ref, watch } from 'vue';
 
-const DEFAULT_PROJECT_ID = "69439d0b62f67d99dc24b34e";
+const DEFAULT_PROJECT_ID = "6946619548879c35d277311e";
 
 const activeProjectId = ref(localStorage.getItem('active_project_id') || DEFAULT_PROJECT_ID);
 

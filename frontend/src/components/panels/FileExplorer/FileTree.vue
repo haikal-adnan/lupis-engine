@@ -8,29 +8,38 @@ const props = defineProps({
 });
 
 const treeData = computed(() => {
-  // Pastikan props tersedia dan merupakan array
-  if (!props.folders?.length && !props.assets?.length) return [];
-
   const map = {};
   const roots = [];
 
-  // Inisialisasi Map
+  // 1. Masukkan Folder ke Map
   props.folders.forEach(f => {
     map[f._id] = { ...f, type: 'folder', children: [] };
   });
-  
+
+  // 2. Masukkan Assets ke Map (sebagai leaf node)
   props.assets.forEach(a => {
-    map[a._id] = { ...a, children: [] };
+    map[a._id] = { ...a, children: [] }; // Asset biasanya tidak punya children, tapi disiapkan saja
   });
 
-  // Susun Hierarki
-  [...props.folders, ...props.assets].forEach(item => {
-    const node = map[item._id];
-    const parentId = item.folderId || item.parentId;
-
-    if (parentId && map[parentId]) {
-      map[parentId].children.push(node);
+  // 3. Bangun Hierarki Folder (Sub-folder)
+  props.folders.forEach(f => {
+    const node = map[f._id];
+    // Asumsi: Folder bisa punya parentId jika itu subfolder
+    if (f.parentId && map[f.parentId]) {
+      map[f.parentId].children.push(node);
     } else {
+      roots.push(node);
+    }
+  });
+
+  // 4. Masukkan Asset ke Folder yang sesuai
+  props.assets.forEach(a => {
+    const node = map[a._id];
+    // Asset menggunakan 'folderId' untuk merujuk ke parent folder
+    if (a.folderId && map[a.folderId]) {
+      map[a.folderId].children.push(node);
+    } else {
+      // Jika asset tidak punya folder (di root project)
       roots.push(node);
     }
   });
@@ -43,8 +52,7 @@ const treeData = computed(() => {
   <div class="py-1">
     <div v-if="treeData.length === 0" class="px-4 py-8 text-center">
       <div class="text-2xl mb-2 opacity-20">📁</div>
-      <p class="text-[10px] text-muted-foreground uppercase tracking-widest">No assets found</p>
-      <button class="mt-3 text-[10px] text-primary hover:underline">Import Assets</button>
+      <p class="text-[10px] text-muted-foreground uppercase tracking-widest">No resources</p>
     </div>
 
     <FileNode v-for="node in treeData" :key="node._id" :item="node" />

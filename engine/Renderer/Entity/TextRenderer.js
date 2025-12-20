@@ -219,6 +219,7 @@ export default class TextRenderer {
 
         const img = new Image();
         img.src = texURL;
+        img.crossOrigin = "anonymous"; 
         await img.decode();
 
         this.texture = this.gl.createTexture();
