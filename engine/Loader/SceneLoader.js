@@ -12,9 +12,7 @@ export default class SceneLoader {
         
         for (const entDesc of entitiesSource) {
             const resolvedDesc = await this._resolvePrefabIfNeeded(entDesc, baseURL);
-            
             const entity = this._buildEntity(resolvedDesc, loadedAssets);
-
             this.world.addEntity(entity, resolvedDesc.layerId || resolvedDesc.layer || layersSource[0]);
         }
     }
@@ -53,28 +51,29 @@ export default class SceneLoader {
     _buildEntity(desc, assets) {
         const transform = desc.transform || {};
         const scale = transform.scale || {};
-        
+        const components = desc.components || {}; 
+
         const e = {
             id: desc.id,
             name: desc.name,
             layer: desc.layerId || desc.layer,
-            components: desc.components || {},
+            components: components,
             visible: desc.visible ?? true,
             zIndex: 0,
-            x: transform.x ?? 0,
-            y: transform.y ?? 0,
+            x: transform.translate?.x ?? transform.x ?? 0,
+            y: transform.translate?.y ?? transform.y ?? 0,
             rotation: transform.rotation ?? 0,
             scaleX: scale.x ?? 1,
-            scaleY: scale.y ?? 1
+            scaleY: scale.y ?? 1,
+            parentId: desc.parentId || null 
         };
 
-        this._applySpriteRenderer(e, desc.components.SpriteRenderer, assets);
-        this._applyTextRenderer(e, desc.components.TextRenderer, assets);
-        this._applyShapeRenderer(e, desc.components.ShapeRenderer);
+        this._applySpriteRenderer(e, components.SpriteRenderer, assets);
+        this._applyTextRenderer(e, components.TextRenderer, assets);
+        this._applyShapeRenderer(e, components.ShapeRenderer);
 
         return e;
     }
-
 
     _applySpriteRenderer(e, s, assets) {
         if (!s) return;
@@ -99,13 +98,7 @@ export default class SceneLoader {
         e.height = s.height ?? s.h ?? (stored?.height ?? 0);
         
         const assetIsPixelated = stored?.filterMode === 'pixelated' || stored?.filterMode === 'nearest';
-        
-        if (s.pixelPerfect !== undefined && s.pixelPerfect !== null) {
-            e.pixelPerfect = s.pixelPerfect;
-        } else {
-            e.pixelPerfect = assetIsPixelated;
-        }
-
+        e.pixelPerfect = (s.pixelPerfect !== undefined) ? s.pixelPerfect : assetIsPixelated;
         e.zIndex = s.zIndex ?? e.zIndex;
         e.alpha = s.alpha ?? 1;
     }
@@ -114,20 +107,27 @@ export default class SceneLoader {
         if (!text) return;
         e.text = {
             value: text.text,
-            size: text.size,
+            size: text.fontSize ?? text.size, // Support nama baru fontSize
             color: text.color,
-            assetId: text.assetId
+            assetId: text.assetId,
+            align: text.align || "left"
         };
         e.zIndex = text.zIndex ?? e.zIndex;
 
-        const f = (assets && assets.fonts ? assets.fonts[text.assetId] : null) || (assets?.fonts?.default);
+        // Ambil instance font class yang sudah diload
+        const f = (assets && assets.fonts ? assets.fonts[text.assetId] : null);
         
+        // Hitung bounding box text jika font sudah tersedia
         if (f && f.measureText) {
-            const m = f.measureText(text.text, text.size);
+            // Gunakan e.text.size agar konsisten
+            const m = f.measureText(e.text.value, e.text.size);
+            
             e.hitX = (e.x ?? 0) + (m.xMin ?? 0);
             e.hitY = (e.y ?? 0) + (m.yMin ?? 0);
             e.hitWidth = m.boundsWidth ?? m.width ?? 0;
             e.hitHeight = m.boundsHeight ?? 0;
+            
+            // Opsional: set width/height entity agar selection box pas
             e.width = m.width ?? e.width;
             e.height = m.boundsHeight ?? e.height;
         }

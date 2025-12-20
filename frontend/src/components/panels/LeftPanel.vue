@@ -1,6 +1,7 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import { useBackend } from '@/composables/useBackend.js';
+import { useEditorState } from '@/composables/useEditorState.js'; // Import composable state
 import SceneTree from './SceneGraph/SceneTree.vue';
 import FileTree from './FileExplorer/FileTree.vue';
 
@@ -9,6 +10,10 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['toggle']);
+
+// --- EDITOR STATE ---
+// Ambil activeProjectId (ref)
+const { activeProjectId } = useEditorState();
 
 // --- BACKEND INTEGRATION ---
 const { 
@@ -30,15 +35,36 @@ const isResizingPrefabs = ref(false);
 const containerRef = ref(null);
 
 // --- INITIALIZATION ---
-onMounted(async () => {
-  // Ganti dengan ID project yang sesuai dari useEditorState nantinya
-  const projectId = '69439d0b62f67d99dc24b34e'; 
+
+// Fungsi helper untuk memuat data project
+const loadProjectData = async () => {
+  // Cek apakah ada ID aktif
+  if (!activeProjectId.value) {
+    console.warn("No active project ID found.");
+    return;
+  }
+
+  // Gunakan ID dinamis dari state
+  await fetchAllProjectResources(activeProjectId.value);
   
-  await fetchAllProjectResources(projectId);
-  
-  // Auto-load scene pertama jika ada
+  // Auto-load scene pertama jika ada resources dan belum ada scene aktif
   if (scenes.value.length > 0 && !currentScene.value) {
     await fetchScene(scenes.value[0]._id);
+  }
+};
+
+// Jalankan saat komponen di-mount
+onMounted(async () => {
+  await loadProjectData();
+});
+
+// Watcher: Jika activeProjectId berubah (misal ganti project), muat ulang data
+watch(activeProjectId, async (newId) => {
+  if (newId) {
+    console.log("Project ID changed to:", newId);
+    // Reset selection jika perlu
+    selectedNodeId.value = null; 
+    await loadProjectData();
   }
 });
 

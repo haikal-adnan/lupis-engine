@@ -5,8 +5,8 @@
   <title>Lupis Engine Preview</title>
   <style>
     html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; }
-    #lp_canvas_preview { position: absolute; inset: 0; width: 100%; height: 100%; }
-    #loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #ccc; font-family: sans-serif; }
+    #lp_canvas_preview { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+    #loading { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #888; font-family: sans-serif; background: #111; z-index: 10; }
   </style>
   <script type="importmap">
   {
@@ -18,47 +18,49 @@
   </script>
 </head>
 <body>
-  <div id="loading">Waiting for project...</div>
+  <div id="loading">Waiting for Data...</div>
   <canvas id="lp_canvas_preview"></canvas>
 
   <script type="module">
     import { startEngine } from "/engine/main.js";
 
-    let pending = null;
-    let engineStarted = false;
+    const CANVAS_ID = "lp_canvas_preview";
+    let isRunning = false;
 
-    function canvasReady() {
-      const el = document.getElementById("lp_canvas_preview");
-      return el instanceof HTMLCanvasElement;
-    }
+    window.addEventListener("message", async (event) => {
+        if (!event.data || event.data.type !== "projectData") return;
 
-    async function boot() {
-      if (engineStarted) return;
-      if (!pending) return;
-      if (!canvasReady()) return;
-      engineStarted = true;
-      document.getElementById("loading").style.display = "none";
-      window.LUPIS = window.LUPIS || {};
-      window.LUPIS.runtime = { project: pending.project, scene: pending.scene };
-      await startEngine("lp_canvas_preview", "runtime", pending.basePath || "/projects/template/");
-    }
+        if (isRunning) { window.location.reload(); return; }
 
-    window.addEventListener("message", (event) => {
-      if (!event.data) return;
-      if (event.data.type === "projectData") {
-        pending = event.data.payload;
-        setTimeout(boot, 50);
-        return;
-      }
-      if (event.data.type === "requestProject") {
-        window.opener?.postMessage?.({ type: "requestProject" }, "*");
-        return;
-      }
+        try {
+            // DEBUG: Cek apa yang dikirim dari Vue
+            console.group("🚀 [Preview] Incoming Data");
+            console.log("Full Payload:", event.data.payload);
+            console.groupEnd();
+
+            const { mode, baseURL, initialData } = event.data.payload || {};
+
+            if (!initialData) {
+                throw new Error("Initial Data is missing (undefined)!");
+            }
+
+            document.getElementById("loading").innerText = "Starting Engine...";
+            
+            // Start Engine
+            await startEngine(CANVAS_ID, mode, baseURL, initialData);
+
+            document.getElementById("loading").style.display = "none";
+            isRunning = true;
+
+        } catch (error) {
+            console.error("❌ [Preview] Error:", error);
+            document.getElementById("loading").innerText = "Error: " + error.message;
+            document.getElementById("loading").style.color = "red";
+        }
     });
 
     window.addEventListener("DOMContentLoaded", () => {
-      window.opener?.postMessage?.({ type: "previewReady" }, "*");
-      if (pending) boot();
+        if (window.opener) window.opener.postMessage({ type: "previewReady" }, "*");
     });
   </script>
 </body>

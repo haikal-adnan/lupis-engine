@@ -59,33 +59,45 @@ export function ApplyResizeToEntity(ent, world) {
         const factor = ent._resizeFactor || 1;
 
         if (start) {
-            const newSize = start.size * factor;
-            tr.size = newSize;
+            // Gunakan Math.abs untuk mencegah nilai negatif
+            const newSize = Math.abs(start.size * factor);
+            
+            // --- FIX UTAMA: Update KEDUANYA ---
+            tr.fontSize = newSize; // Prioritas sistem
+            tr.size = newSize;     // Fallback legacy
 
+            // Update Runtime (Visual di layar)
             if (ent.text) {
                 ent.text.size = newSize;    
                 ent.text.value = tr.text;    
             }
 
-            ent.width = start.w * factor;
-            ent.height = start.h * factor;
+            // Update Dimensi Fisik (Penting untuk perhitungan scale berikutnya)
+            ent.width = Math.abs(start.w * factor);
+            ent.height = Math.abs(start.h * factor);
 
+            // Update Hitbox (Selection Box)
             ent.hitX = ent.x + (start.hitXOffset * factor);
             ent.hitY = ent.y + (start.hitYOffset * factor);
             ent.hitWidth = start.hitW * factor;
             ent.hitHeight = start.hitH * factor;
         } 
         else {
-            const font = world.assets.fonts[Config.FONT];
+            // Fallback: Gunakan Asset ID dari entity, jangan Config.FONT global
+            const assetId = tr.assetId;
+            const font = world.assets.fonts[assetId];
+            
             if (!font || !font.measureText) return;
 
-             const m = font.measureText(tr.text, tr.size);
-             ent.width  = m.width;
-             ent.height = m.boundsHeight;
-             ent.hitX = ent.x + m.xMin;
-             ent.hitY = ent.y + m.yMin;
-             ent.hitWidth  = m.boundsWidth;
-             ent.hitHeight = m.boundsHeight;
+            const currentSize = tr.fontSize || tr.size || 40;
+            const m = font.measureText(tr.text, currentSize);
+             
+            ent.width  = m.width;
+            ent.height = m.boundsHeight;
+            ent.hitX = ent.x + m.xMin;
+            ent.hitY = ent.y + m.yMin;
+            ent.hitWidth  = m.boundsWidth;
+            ent.hitHeight = m.boundsHeight;
         }
     }
 }

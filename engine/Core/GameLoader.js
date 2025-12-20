@@ -7,6 +7,7 @@ import GLImageResource from "../Renderer/Graphic/GLImageResource.js";
 import AssetLoader from "../Loader/AssetLoader.js";
 import SceneLoader from "../Loader/SceneLoader.js";
 
+// Tools
 import CameraController from "../Editor/CameraController.js";
 import Rulers from "../Editor/Rulers.js";
 import PointerCoordinates from "../Editor/PointerCoordinates.js";
@@ -17,88 +18,101 @@ import Grid from "../Editor/Grid.js";
 export default class GameLoader {
     async initializeGame(game, canvas, mode = "runtime", baseURL = "./", payload = {}) {
         Config.ENGINE_MODE = mode;
-        // console.log(payload)
 
         game.renderer = new RendererManager(canvas);
         game.input = new InputManager(canvas);
         game.world = new World();
-        game.font = "font_gaegu"; 
 
-        let projectConfig, assetsMap, sceneData;
+        console.log("📦 [GameLoader] Received Payload:", payload);
 
-        if (mode === "editor") {
-            const prepared = this._prepareEditorData(payload);
-            projectConfig = prepared.project;
-            assetsMap = prepared.assetsMap;
-            sceneData = prepared.sceneData;
-        } else {
-            [projectConfig, assetsMap] = await Promise.all([
-                fetch(baseURL + "project.config.json").then(r => r.json()),
-                fetch(baseURL + "assets.map.json").then(r => r.json())
-            ]);
-            
-            const sceneName = projectConfig.meta?.entryScene || projectConfig.entryScene || "level_1";
-            sceneData = await fetch(`${baseURL}scenes/${sceneName}.json`).then(r => r.json());
+        // --- 1. SAFETY CHECK & PREPARATION ---
+        // Kita validasi dulu payload-nya. Jika kosong, kita buat object dummy agar tidak crash.
+        const safePayload = payload || {};
+        
+        // Cek apakah 'project' ada isinya. Jika undefined, kita stop atau beri warning.
+        if (!safePayload.project) {
+            console.error("❌ [GameLoader] CRITICAL: Payload 'project' is missing!", safePayload);
+            // Jangan lanjutkan jika data project fatal error, atau gunakan default
+             safePayload.project = { name: "Error Project", settings: {}, layers: ["default"] };
         }
 
+        const prepared = this._prepareEditorData(safePayload);
+        
+        const projectConfig = prepared.project;
+        const assetsMap = prepared.assetsMap;
+        const sceneData = prepared.sceneData;
+
+        // --- 2. INITIALIZE LOADERS ---
         const glImageLoader = new GLImageResource(game.renderer.gl);
+        
         const assetLoader = new AssetLoader(
             glImageLoader,
-            async (fnt, png) => {
-                await game.renderer.text.loadFont(fnt, png);
-                return game.renderer.text;
+            async (fntUrl, pngUrl) => {
+                await game.renderer.text.loadFont(fntUrl, pngUrl);
+                return game.renderer.text; 
             }
         );
 
         const sceneLoader = new SceneLoader(game.world);
         
+        // --- 3. LOAD ASSETS (TANPA FETCH JSON) ---
+        // Kita pastikan assetsMap valid. AssetLoader Anda yang baru sudah aman (tidak fetch json).
+        console.log(`🔄 [GameLoader] Loading ${Object.keys(assetsMap.textures).length} textures...`);
         game.world.assets = await assetLoader.loadMap(assetsMap, baseURL);
-        
 
-        console.log(assetLoader)
-        
-        await sceneLoader.load(sceneData, projectConfig, baseURL, game.world.assets);
-        
+        // --- 4. LOAD SCENE (TANPA FETCH JSON) ---
+        if (sceneData) {
+            console.log("🔄 [GameLoader] Loading Scene Data...");
+            await sceneLoader.load(sceneData, projectConfig, baseURL, game.world.assets);
+        } else {
+            console.warn("⚠️ [GameLoader] No scene data found in payload.");
+        }
 
+        // --- 5. EDITOR TOOLS ---
         if (mode === "editor") {
             this._initializeEditorTools(game, canvas);
         }
 
-        // 6. Mulai Game Loop
+        // --- 6. START LOOP ---
         game.loop = new GameLoop({
             update: dt => game.update(dt),
             render: alpha => game.render(alpha),
         });
-
-        // console.log("🚀 Engine Started.");
+        
+        console.log("✅ [GameLoader] Initialization Complete.");
     }
 
     _prepareEditorData(payload) {
+        // Destructure dengan default empty object untuk keamanan
         const { project, assets, scene } = payload;
 
+        // SAFE GUARD: Jika project null/undefined (meski sudah dicek diatas), gunakan fallback
+        const rawProject = project || { name: "Untitled", settings: {}, layers: [] };
+        
         const projectConfig = {
-            name: project.name,
-            ...project.settings, 
-            layers: project.layers || ["layer_background", "layer_objects"]
+            name: rawProject.name,
+            ...rawProject.settings, 
+            layers: rawProject.layers || ["layer_background", "layer_objects"]
         };
 
         const texturesMap = {};
         const fontsMap = {};
 
+        // Validasi: Pastikan assets adalah Array
         if (Array.isArray(assets)) {
             assets.forEach(asset => {
                 const fileName = asset.fileKey || asset._id;
-                const ext = asset.meta?.extension || '.png';
-                const fullName = `${fileName}${ext}`;
 
                 if (asset.type === 'texture' || asset.type === 'sprite') {
+                    const ext = asset.meta?.extension || '.png';
+                    const fullName = `${fileName}${ext}`;
+                    
                     texturesMap[asset._id] = {
-                    uri: fullName,
-                    // Ambil filterMode dari backend (misal: 'pixelated' atau 'smooth')
-                    filterMode: asset.meta?.filterMode || 'smooth' 
-                };
+                        uri: fullName,
+                        filterMode: asset.meta?.filterMode || 'smooth' 
+                    };
                 } else if (asset.type === 'font') {
-                    fontsMap[asset._id] = fullName; 
+                    fontsMap[asset._id] = fileName; 
                 }
             });
         }
@@ -109,7 +123,8 @@ export default class GameLoader {
                 textures: texturesMap,
                 fonts: fontsMap
             },
-            sceneData: scene
+            // Jika scene undefined, kirim object kosong agar SceneLoader tidak error
+            sceneData: scene || { entities: [] } 
         };
     }
 
