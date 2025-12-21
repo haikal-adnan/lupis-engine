@@ -1,6 +1,8 @@
 import { ref, onUnmounted } from "vue";
+import { db } from "@/db/index.js"; // Akses langsung ke Dexie
 import { useEditorState } from "@/composables/useEditorState.js";
 import { useBackend } from "@/composables/useBackend.js";
+import { useSyncManager } from "@/composables/useSyncManager.js"; // Untuk flush changes
 
 export function usePreview() {
   const isPreviewing = ref(false);
@@ -10,79 +12,78 @@ export function usePreview() {
   let fallbackTimer = null;
 
   const { activeProjectId } = useEditorState();
-  const { 
-    CDN_URL, 
-    projectData, 
-    assets, 
-    scenes, 
-    currentScene, 
-    fetchProjectDetails, 
-    fetchAllProjectResources, 
-    fetchScene 
-  } = useBackend();
+  const { CDN_URL, currentScene } = useBackend();
+  const { saveLocal, syncStatus } = useSyncManager();
 
+  // Fungsi untuk mengambil data MENTAH dari IndexedDB
   async function getFreshRuntimeData() {
     if (!activeProjectId.value) {
-      throw new Error("Project ID tidak ditemukan (activeProjectId null).");
+      throw new Error("Project ID tidak ditemukan.");
     }
 
-    // 1. Fetch Data Terbaru
-    console.log("🔄 [usePreview] Fetching fresh data...");
-    await Promise.all([
-      fetchProjectDetails(activeProjectId.value),
-      fetchAllProjectResources(activeProjectId.value)
+    console.log("💾 [usePreview] Preparing Local Data...");
+
+    // 1. FLUSH RAM TO DISK (PENTING!)
+    // Jika status masih RED (Unsaved in RAM), simpan dulu ke IndexedDB
+    // agar preview menampilkan perubahan terakhir user.
+    if (syncStatus.value === 'RED' && currentScene.value) {
+        console.log("⚠️ [usePreview] Unsaved changes detected. Auto-saving to Local DB...");
+        await saveLocal(currentScene.value._id);
+    }
+
+    // 2. Ambil Data Project & Assets dari IndexedDB
+    // Kita gunakan Promise.all agar parallel dan cepat
+    const [localProject, localAssets] = await Promise.all([
+        db.projects.get(activeProjectId.value),
+        db.assets.where('projectId').equals(activeProjectId.value).toArray()
     ]);
 
-    // 2. Tentukan Scene
-    let entrySceneId = null;
-    const tempProject = projectData.value; 
-    
-    if (tempProject?.entryScene) {
-      entrySceneId = tempProject.entryScene;
-    } else if (tempProject?.meta?.entryScene) {
-      entrySceneId = tempProject.meta.entryScene;
-    } else if (scenes.value.length > 0) {
-      entrySceneId = scenes.value[0]._id;
+    if (!localProject) throw new Error("Project data not found in Local DB");
+
+    // 3. Tentukan Scene mana yang akan dimainkan
+    // Prioritas: Scene yang sedang dibuka di editor -> Entry Scene di Project -> Scene pertama di DB
+    let targetSceneId = null;
+
+    if (currentScene.value) {
+        targetSceneId = currentScene.value._id; // Preview scene yang sedang diedit
+    } else if (localProject.meta?.entryScene) {
+        targetSceneId = localProject.meta.entryScene;
+    } else {
+        // Fallback: ambil scene pertama yang ketemu
+        const firstScene = await db.scenes.where('projectId').equals(activeProjectId.value).first();
+        if (firstScene) targetSceneId = firstScene._id;
     }
 
-    if (entrySceneId) {
-      await fetchScene(entrySceneId);
-    }
+    if (!targetSceneId) throw new Error("No Scene found to preview.");
 
-    if (!projectData.value || !currentScene.value) {
-      throw new Error("Data Project/Scene dari backend tidak lengkap.");
-    }
+    // 4. Ambil Scene Data dari IndexedDB
+    const localScene = await db.scenes.get(targetSceneId);
+    if (!localScene) throw new Error(`Scene ${targetSceneId} not found in Local DB`);
 
+    // 5. Construct Payload
+    // Data dari Dexie sudah berupa Plain JS Object (Raw), tidak perlu toRaw() atau JSON hack.
     const projectBaseUrl = `${CDN_URL}/projects/${activeProjectId.value}/`;
 
-    // 3. Sanitasi Data (Hapus Reactivity Vue)
-    // PENTING: Struktur ini harus lengkap!
-    const cleanProject = JSON.parse(JSON.stringify(projectData.value));
-    const cleanAssets = JSON.parse(JSON.stringify(assets.value || [])); // Default array kosong
-    const cleanScene = JSON.parse(JSON.stringify(currentScene.value));
-
-    // 4. SUSUN OBJECT UTAMA
-    // Ini adalah object yang dibaca oleh preview.html
     const finalPayload = {
       mode: "runtime",
       baseURL: projectBaseUrl,
-      // Properti ini WAJIB ada bernama 'initialData'
       initialData: {
-        project: cleanProject,
-        assets: cleanAssets,
-        scene: cleanScene
+        project: localProject,
+        assets: localAssets || [],
+        scene: localScene
       }
     };
 
-    console.log("📦 [usePreview] Data Prepared:", finalPayload); // <--- Cek Console Editor saat klik preview
+    console.log("📦 [usePreview] Payload Ready (From Dexie):", finalPayload);
     return finalPayload;
   }
 
   async function openOrUpdatePreview() {
     try {
+      // Step 1: Siapkan Data (Async operations terjadi di sini)
       const payload = await getFreshRuntimeData();
 
-      // --- Window Management ---
+      // Step 2: Window Management (Logic UI tetap sama)
       if (previewWindow.value && !previewWindow.value.closed) {
         previewWindow.value.postMessage({ type: "projectData", payload }, "*");
         previewWindow.value.focus();
@@ -91,10 +92,10 @@ export function usePreview() {
         return previewWindow.value;
       }
 
-      // Buka Window Baru
       previewWindow.value = window.open("/preview/preview.html", "LupisPreview", "width=1280,height=720,resizable=yes");
       isPreviewing.value = true;
 
+      // Setup Message Listener
       if (readyListener) window.removeEventListener("message", readyListener);
       
       readyListener = (ev) => {
@@ -102,23 +103,19 @@ export function usePreview() {
         if (!previewWindow.value || previewWindow.value.closed) return;
         
         console.log("✅ [usePreview] Window Ready. Sending Payload...");
-        // KIRIM PAYLOAD DI SINI
         previewWindow.value.postMessage({ type: "projectData", payload }, "*");
         
-        window.removeEventListener("message", readyListener);
-        readyListener = null;
-        if (fallbackTimer) { clearTimeout(fallbackTimer); fallbackTimer = null; }
+        cleanupListeners();
       };
       
       window.addEventListener("message", readyListener);
 
-      // Fallback timer
+      // Fallback timer (jika preview.html loading kelamaan atau event missed)
       fallbackTimer = setTimeout(() => {
         if (!previewWindow.value || previewWindow.value.closed) return;
-        console.warn("⚠️ [usePreview] Timeout. Sending payload forcibly.");
+        console.warn("⚠️ [usePreview] Timeout waiting for ready signal. Sending payload forcibly.");
         previewWindow.value.postMessage({ type: "projectData", payload }, "*");
-        if (readyListener) { window.removeEventListener("message", readyListener); readyListener = null; }
-        fallbackTimer = null;
+        cleanupListeners();
       }, 3000);
 
       startMonitoring();
@@ -131,6 +128,11 @@ export function usePreview() {
     }
   }
 
+  function cleanupListeners() {
+    if (readyListener) { window.removeEventListener("message", readyListener); readyListener = null; }
+    if (fallbackTimer) { clearTimeout(fallbackTimer); fallbackTimer = null; }
+  }
+
   function startMonitoring() {
     if (pollInterval) clearInterval(pollInterval);
     pollInterval = setInterval(() => {
@@ -139,8 +141,7 @@ export function usePreview() {
         isPreviewing.value = false;
         clearInterval(pollInterval);
         pollInterval = null;
-        if (readyListener) { window.removeEventListener("message", readyListener); readyListener = null; }
-        if (fallbackTimer) { clearTimeout(fallbackTimer); fallbackTimer = null; }
+        cleanupListeners();
       }
     }, 1000);
   }
@@ -150,8 +151,7 @@ export function usePreview() {
     previewWindow.value = null;
     isPreviewing.value = false;
     if (pollInterval) clearInterval(pollInterval);
-    if (readyListener) { window.removeEventListener("message", readyListener); readyListener = null; }
-    if (fallbackTimer) clearTimeout(fallbackTimer);
+    cleanupListeners();
   }
 
   onUnmounted(() => {

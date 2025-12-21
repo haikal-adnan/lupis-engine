@@ -1,25 +1,21 @@
-// composables/useBackend.js
-
 import { ref } from "vue";
 
 const API_URL = "https://api-lupis.calk.cloud";
 const CDN_URL = "https://cdn-lupis.calk.cloud";
 
+const projectData = ref(null);
+const folders = ref([]);
+const assets = ref([]);
+const scenes = ref([]);   
+const prefabs = ref([]);
+const currentScene = ref(null);
+
+const loading = ref(false);
+const error = ref(null);
+
 export function useBackend() {
-  // --- STATE ---
-  const projectData = ref(null); // Menyimpan detail project (width, height, layers)
-  const folders = ref([]);
-  const assets = ref([]);
-  const scenes = ref([]);   
-  const prefabs = ref([]);
-  const currentScene = ref(null); 
 
-  const loading = ref(false);
-  const error = ref(null);
 
-  // --- ACTIONS ---
-
-  // 1. Fetch Detail Project (PENTING untuk inisialisasi Canvas)
   async function fetchProjectDetails(projectId) {
     loading.value = true;
     try {
@@ -33,7 +29,6 @@ export function useBackend() {
     }
   }
 
-  // 2. Fetch Resources (Assets, Scenes, etc)
   async function fetchAllProjectResources(projectId) {
     loading.value = true;
     error.value = null;
@@ -57,7 +52,6 @@ export function useBackend() {
     }
   }
 
-  // 3. Fetch Detail Scene
   async function fetchScene(sceneId) {
     loading.value = true;
     try {
@@ -69,6 +63,13 @@ export function useBackend() {
     } finally {
       loading.value = false;
     }
+  }
+
+  function resetState() {
+      projectData.value = null;
+      assets.value = [];
+      scenes.value = [];
+      currentScene.value = null;
   }
 
   return {
@@ -84,6 +85,7 @@ export function useBackend() {
     fetchProjectDetails,
     fetchAllProjectResources,
     fetchScene,
+    resetState,
     
     API_URL,
     CDN_URL

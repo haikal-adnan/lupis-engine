@@ -1,5 +1,5 @@
 <template>
-  <header class="h-12 flex items-center justify-between bg-background border-b border-border select-none text-foreground font-sans">
+  <header class="h-12 flex items-center justify-between bg-background border-b border-border select-none text-foreground font-sans z-50 relative">
     
     <div class="flex items-center h-full">
       
@@ -9,24 +9,50 @@
           class="h-full flex items-center gap-2 px-4 hover:bg-secondary transition-colors border-r border-border outline-none focus:bg-secondary"
         >
           <div 
-            v-if="hasUnsavedChanges" 
-            class="w-2 h-2 rounded-full bg-primary animate-pulse" 
-            title="Unsaved changes"
+            class="w-2.5 h-2.5 rounded-full transition-colors duration-300 shadow-sm" 
+            :class="[indicatorColor, { 'animate-pulse': isWorking }]"
+            :title="statusTooltip"
           ></div>
-          <div v-else class="w-2 h-2"></div> <span class="text-sm font-semibold tracking-tight">Lupis Engine</span>
+          
+          <span class="text-sm font-semibold tracking-tight">Lupis Engine</span>
           
           <svg class="w-3 h-3 text-muted-foreground opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
           </svg>
         </button>
 
-        <div v-if="isMenuOpen" class="absolute top-full left-1 mt-1 w-56 rounded-md border border-border bg-popover shadow-lg py-1 z-50">
+        <div v-if="isMenuOpen" class="absolute top-full left-1 mt-1 w-64 rounded-md border border-border bg-popover shadow-lg py-1 z-50">
           <div class="px-2 py-1.5 text-xs text-muted-foreground font-medium">Project Options</div>
           <div class="h-px bg-border my-1"></div>
-          <button class="w-full text-left px-3 py-1.5 text-sm hover:bg-secondary transition-colors">Back to Files</button>
-          <button class="w-full text-left px-3 py-1.5 text-sm hover:bg-secondary transition-colors">Save Local Copy</button>
+          
+          <button class="w-full text-left px-3 py-1.5 text-sm hover:bg-secondary transition-colors">
+            Back to Files
+          </button>
+
+          <button 
+            @click="handleSaveLocal"
+            :disabled="isSavingLocal"
+            class="w-full text-left px-3 py-1.5 text-sm hover:bg-secondary transition-colors flex justify-between items-center group"
+          >
+            <span>Save Local <span class="text-xs text-muted-foreground ml-1">(Ctrl+S)</span></span>
+            <span v-if="isSavingLocal" class="loading loading-spinner loading-xs"></span>
+            <span v-else class="text-xs opacity-0 group-hover:opacity-100 transition-opacity">Draft</span>
+          </button>
+
+          <button 
+            @click="handleSyncCloud"
+            :disabled="isUploading"
+            class="w-full text-left px-3 py-1.5 text-sm hover:bg-secondary transition-colors flex justify-between items-center group"
+          >
+            <span>Sync to Cloud</span>
+            <span v-if="isUploading" class="loading loading-spinner loading-xs"></span>
+            <span v-else class="text-xs opacity-0 group-hover:opacity-100 transition-opacity">Pub</span>
+          </button>
+
           <div class="h-px bg-border my-1"></div>
-          <button class="w-full text-left px-3 py-1.5 text-sm hover:bg-secondary text-destructive transition-colors">Close Project</button>
+          <button class="w-full text-left px-3 py-1.5 text-sm hover:bg-secondary text-destructive transition-colors">
+            Close Project
+          </button>
         </div>
       </div>
 
@@ -56,7 +82,6 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
           <span class="text-xs text-muted-foreground group-hover:text-foreground transition-colors truncate">PlayerController.js</span>
-          
            <button class="ml-auto p-0.5 rounded-sm hover:bg-secondary opacity-0 group-hover:opacity-100 transition-opacity">
             <svg class="w-3 h-3 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -72,13 +97,13 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11.5V14m0-2.5v-6a1.5 1.5 0 113 0m-3 6a1.5 1.5 0 00-3 0v2a7.5 7.5 0 0015 0v-5a1.5 1.5 0 00-3 0m-6-3V11m0-5.5v-1a1.5 1.5 0 013 0v1m0 0V11" />
           </svg>
           <span class="text-xs text-muted-foreground group-hover:text-foreground transition-colors truncate">Player.flow</span>
-
           <button class="ml-auto p-0.5 rounded-sm hover:bg-secondary opacity-0 group-hover:opacity-100 transition-opacity">
             <svg class="w-3 h-3 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
+
       </div>
     </div>
 
@@ -124,21 +149,42 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
+import { useSyncManager } from "@/composables/useSyncManager.js";
+import { useBackend } from "@/composables/useBackend.js";
 
-// State
-const isDark = ref(false);
-const hasUnsavedChanges = ref(true); // Simulasi status unsaved (dot biru)
+const { currentScene } = useBackend();
+const { 
+  syncStatus, 
+  indicatorColor, 
+  isSavingLocal, 
+  isUploading, 
+  saveLocal, 
+  syncCloud 
+} = useSyncManager();
+
 const isMenuOpen = ref(false);
-const activeTab = ref('scene'); // Simulasi tab aktif
+const activeTab = ref('scene');
+const isDark = ref(false);
+
+const isWorking = computed(() => isSavingLocal.value || isUploading.value);
+
+const statusTooltip = computed(() => {
+  if (isSavingLocal.value) return "Saving to local storage...";
+  if (isUploading.value) return "Syncing to cloud...";
+  
+  switch(syncStatus.value) {
+    case 'RED': return 'Unsaved Changes (RAM)';
+    case 'BLUE': return 'Saved Locally (Draft)';
+    case 'GREEN': return 'Fully Synced';
+    default: return 'Ready';
+  }
+});
 
 function applyTheme() {
   const html = document.documentElement;
-  if (isDark.value) {
-    html.classList.add("dark");
-  } else {
-    html.classList.remove("dark");
-  }
+  if (isDark.value) html.classList.add("dark");
+  else html.classList.remove("dark");
 }
 
 function toggleTheme() {
@@ -147,26 +193,40 @@ function toggleTheme() {
   applyTheme();
 }
 
+async function handleSaveLocal() {
+  console.log(currentScene)
+  if (!currentScene.value) return;
+  console.log(currentScene.value)
+    
+  await saveLocal(currentScene.value._id);
+  isMenuOpen.value = false;
+}
+
+async function handleSyncCloud() {
+  if (!currentScene.value) return;
+  await syncCloud(currentScene.value._id);
+  isMenuOpen.value = false;
+}
+
 onMounted(() => {
   const saved = localStorage.getItem("theme");
-  if (saved) {
-    isDark.value = saved === "dark";
-  } else {
-    isDark.value = window.matchMedia("(prefers-color-scheme: dark)").matches;
-  }
+  isDark.value = saved === "dark" || (!saved && window.matchMedia("(prefers-color-scheme: dark)").matches);
   applyTheme();
   
-  // Close menu ketika klik di luar (basic implementation)
   document.addEventListener('click', (e) => {
-    if (!e.target.closest('button')) {
-      isMenuOpen.value = false;
+    if (!e.target.closest('button')) isMenuOpen.value = false;
+  });
+
+  window.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+      e.preventDefault();
+      handleSaveLocal();
     }
   });
 });
 </script>
 
 <style scoped>
-/* Utility untuk menyembunyikan scrollbar pada tabs tapi tetap bisa scroll */
 .no-scrollbar::-webkit-scrollbar {
     display: none;
 }

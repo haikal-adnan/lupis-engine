@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 
 const ProjectSchema = new mongoose.Schema({
+  _id: { type: String, required: true },
   ownerId: { type: String, required: true },
   name: { type: String, required: true },
   description: { type: String },
@@ -18,7 +19,10 @@ const ProjectSchema = new mongoose.Schema({
     }
   ],
   thumbnailUrl: { type: String }
-}, { timestamps: true });
+}, { 
+  timestamps: true,
+  _id: false // Matikan auto ObjectId, kita handle manual
+});
 
 const Project = mongoose.models.Project || mongoose.model('Project', ProjectSchema);
 export default Project;

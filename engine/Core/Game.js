@@ -40,6 +40,8 @@ export default class Game {
     render(alpha) {
         const cam = this.camera.getInterpolated(alpha);
 
+        this.history?.update();
+
         if(this.cameraController) {
             this.cameraController.update();
         }

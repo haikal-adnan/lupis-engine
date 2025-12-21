@@ -2,90 +2,120 @@ export default class SceneLoader {
     constructor(world) {
         this.world = world;
         this.prefabCache = {};
+        
+        // Strategy Pattern untuk handling Components
+        // Agar _buildEntity tidak terlalu panjang
+        this.componentHandlers = {
+            SpriteRenderer: (e, data, assets) => this._applySpriteRenderer(e, data, assets),
+            TextRenderer: (e, data, assets) => this._applyTextRenderer(e, data, assets),
+            ShapeRenderer: (e, data) => this._applyShapeRenderer(e, data),
+        };
     }
 
     async load(sceneData, projectConfig, baseURL, loadedAssets) {
-        const layersSource = projectConfig.layers || projectConfig.editor?.layers || ["layer_objects"];
+        const layersSource = projectConfig.layers || ["layer_objects"];
         this.world.setupLayers(layersSource);
 
         const entitiesSource = sceneData.entities || sceneData.root || [];
         
+        // Async Loop untuk resolve prefab dan build entity
         for (const entDesc of entitiesSource) {
             const resolvedDesc = await this._resolvePrefabIfNeeded(entDesc, baseURL);
             const entity = this._buildEntity(resolvedDesc, loadedAssets);
-            this.world.addEntity(entity, resolvedDesc.layerId || resolvedDesc.layer || layersSource[0]);
+            
+            // Default ke layer pertama jika tidak diset
+            const targetLayer = resolvedDesc.layerId || resolvedDesc.layer || layersSource[0];
+            this.world.addEntity(entity, targetLayer);
         }
     }
 
     async _resolvePrefabIfNeeded(desc, baseURL) {
         if (!desc.prefab) return desc;
-        const name = desc.prefab;
         
-        if (this.prefabCache[name]) {
-            return this._mergePrefab(this.prefabCache[name], desc);
+        const name = desc.prefab;
+        let prefabData = this.prefabCache[name];
+
+        if (!prefabData) {
+            try {
+                const res = await fetch(`${baseURL}prefabs/${name}.json`);
+                if (res.ok) {
+                    prefabData = await res.json();
+                    this.prefabCache[name] = prefabData;
+                }
+            } catch (e) {
+                console.warn(`[SceneLoader] Prefab fetch failed: ${name}`, e);
+            }
         }
 
-        try {
-            const res = await fetch(baseURL + "prefabs/" + name + ".json");
-            if (!res.ok) return desc;
-            const prefab = await res.json();
-            this.prefabCache[name] = prefab;
-            return this._mergePrefab(prefab, desc);
-        } catch (e) {
-            console.warn(`[SceneLoader] Failed to load prefab: ${name}`, e);
-            return desc;
-        }
+        return prefabData ? this._mergePrefab(prefabData, desc) : desc;
     }
 
     _mergePrefab(prefab, instance) {
-        const merged = JSON.parse(JSON.stringify(prefab));
-        merged.id = instance.id ?? merged.id;
-        merged.name = instance.name ?? merged.name;
-        merged.layerId = instance.layerId ?? merged.layerId;
-        merged.transform = Object.assign({}, merged.transform || {}, instance.transform || {});
-        merged.components = Object.assign({}, merged.components || {}, instance.components || {});
-        merged.visible = instance.visible ?? merged.visible;
-        return merged;
+        // Deep clone prefab to avoid mutation issues
+        const merged = structuredClone ? structuredClone(prefab) : JSON.parse(JSON.stringify(prefab));
+        
+        // Override with instance specific data
+        return {
+            ...merged,
+            ...instance, // Instance properties win
+            transform: { ...merged.transform, ...instance.transform },
+            components: { ...merged.components, ...instance.components }
+        };
     }
 
     _buildEntity(desc, assets) {
+        // 1. Normalize Transform (Pos, Rot, Scale)
+        // Logic ini menangani backward compatibility data transform
         const transform = desc.transform || {};
-        const scale = transform.scale || {};
-        const components = desc.components || {}; 
+        const { x, y, rotation, scaleX, scaleY } = this._resolveTransform(desc, transform);
 
-        const e = {
-            id: desc.id,
+        // 2. Base Entity Structure
+        const entity = {
+            _id: desc._id || desc.id, 
             name: desc.name,
             layer: desc.layerId || desc.layer,
-            components: components,
+            components: desc.components || {},
             visible: desc.visible ?? true,
-            zIndex: 0,
-            x: transform.translate?.x ?? transform.x ?? 0,
-            y: transform.translate?.y ?? transform.y ?? 0,
-            rotation: transform.rotation ?? 0,
-            scaleX: scale.x ?? 1,
-            scaleY: scale.y ?? 1,
-            parentId: desc.parentId || null 
+            zIndex: desc.zIndex || 0,
+            parentId: desc.parentId || null,
+            x, y, rotation, scaleX, scaleY
         };
 
-        this._applySpriteRenderer(e, components.SpriteRenderer, assets);
-        this._applyTextRenderer(e, components.TextRenderer, assets);
-        this._applyShapeRenderer(e, components.ShapeRenderer);
-
-        return e;
-    }
-
-    _applySpriteRenderer(e, s, assets) {
-        if (!s) return;
-        
-        const stored = assets && assets.textures ? assets.textures[s.assetId] : null;
-        
-        if (stored) {
-            e.image = stored;
-        } else {
-            e.image = null; 
+        // 3. Apply Components
+        if (entity.components) {
+            for (const [key, handler] of Object.entries(this.componentHandlers)) {
+                if (entity.components[key]) {
+                    handler(entity, entity.components[key], assets);
+                }
+            }
         }
 
+        return entity;
+    }
+
+    _resolveTransform(desc, t) {
+        const scale = t.scale || {};
+        return {
+            x: desc.x ?? t.translate?.x ?? t.x ?? 0,
+            y: desc.y ?? t.translate?.y ?? t.y ?? 0,
+            rotation: desc.rotation ?? t.rotation ?? 0,
+            scaleX: desc.scaleX ?? scale.x ?? 1,
+            scaleY: desc.scaleY ?? scale.y ?? 1
+        };
+    }
+
+    // --- Component Applicators ---
+
+    _applySpriteRenderer(e, s, assets) {
+        const stored = assets?.textures?.[s.assetId];
+        
+        e.image = stored || null;
+        e.width = s.width ?? s.w ?? (stored?.width ?? 0);
+        e.height = s.height ?? s.h ?? (stored?.height ?? 0);
+        e.zIndex = s.zIndex ?? e.zIndex;
+        e.alpha = s.alpha ?? 1;
+
+        // Frame Logic
         if (s.source) {
             e.frame = { sx: s.source.x, sy: s.source.y, sw: s.source.w, sh: s.source.h };
         } else if (stored) {
@@ -94,71 +124,70 @@ export default class SceneLoader {
             e.frame = { sx: 0, sy: 0, sw: 0, sh: 0 };
         }
 
-        e.width = s.width ?? s.w ?? (stored?.width ?? 0);
-        e.height = s.height ?? s.h ?? (stored?.height ?? 0);
-        
-        const assetIsPixelated = stored?.filterMode === 'pixelated' || stored?.filterMode === 'nearest';
-        e.pixelPerfect = (s.pixelPerfect !== undefined) ? s.pixelPerfect : assetIsPixelated;
-        e.zIndex = s.zIndex ?? e.zIndex;
-        e.alpha = s.alpha ?? 1;
+        // Pixel Perfect Logic
+        const assetIsPixelated = ['pixelated', 'nearest'].includes(stored?.filterMode);
+        e.pixelPerfect = s.pixelPerfect ?? assetIsPixelated;
     }
 
     _applyTextRenderer(e, text, assets) {
-        if (!text) return;
         e.text = {
             value: text.text,
-            size: text.fontSize ?? text.size, // Support nama baru fontSize
+            size: text.fontSize ?? text.size, 
             color: text.color,
             assetId: text.assetId,
             align: text.align || "left"
         };
         e.zIndex = text.zIndex ?? e.zIndex;
 
-        // Ambil instance font class yang sudah diload
-        const f = (assets && assets.fonts ? assets.fonts[text.assetId] : null);
+        const font = assets?.fonts?.[text.assetId];
         
-        // Hitung bounding box text jika font sudah tersedia
-        if (f && f.measureText) {
-            // Gunakan e.text.size agar konsisten
-            const m = f.measureText(e.text.value, e.text.size);
+        // Auto-calculate bounds if font is loaded
+        if (font?.measureText) {
+            const m = font.measureText(e.text.value, e.text.size);
+            e.width = m.width ?? 0;
+            e.height = m.boundsHeight ?? 0;
             
+            // Hitbox for selection
             e.hitX = (e.x ?? 0) + (m.xMin ?? 0);
             e.hitY = (e.y ?? 0) + (m.yMin ?? 0);
             e.hitWidth = m.boundsWidth ?? m.width ?? 0;
             e.hitHeight = m.boundsHeight ?? 0;
-            
-            // Opsional: set width/height entity agar selection box pas
-            e.width = m.width ?? e.width;
-            e.height = m.boundsHeight ?? e.height;
         }
     }
 
     _applyShapeRenderer(e, sh) {
-        if (!sh) return;
         e.shape = sh;
         e.zIndex = sh.zIndex ?? e.zIndex;
 
-        if (sh.type === "rectangle" || sh.type === "rectStroke") {
+        if (['rectangle', 'rectStroke'].includes(sh.type)) {
             e.width = sh.width;
             e.height = sh.height;
+        } else if (sh.type === "line") {
+            this._calculateLineHitbox(e, sh);
         }
+    }
 
-        if (sh.type === "line") {
-            const x1 = e.x; const y1 = e.y; 
-            const x2 = sh.x2; const y2 = sh.y2; 
-            const th = sh.thickness ?? 1;
-            const dx = x2 - x1; const dy = y2 - y1;
-            
-            if (Math.abs(dy) < 0.0001) { 
-                e.hitX = Math.min(x1, x2); e.hitY = y1 - th / 2; e.hitWidth = Math.abs(dx); e.hitHeight = th; 
-            } else if (Math.abs(dx) < 0.0001) { 
-                e.hitX = x1 - th / 2; e.hitY = Math.min(y1, y2); e.hitWidth = th; e.hitHeight = Math.abs(dy); 
-            } else { 
-                const minX = Math.min(x1, x2); const maxX = Math.max(x1, x2); 
-                const minY = Math.min(y1, y2); const maxY = Math.max(y1, y2); 
-                e.hitX = minX - th / 2; e.hitY = minY - th / 2; 
-                e.hitWidth = (maxX - minX) + th; e.hitHeight = (maxY - minY) + th; 
-            }
+    _calculateLineHitbox(e, sh) {
+        const { x: x1, y: y1 } = e;
+        const { x2, y2, thickness: th = 1 } = sh;
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        const epsilon = 0.0001;
+
+        if (Math.abs(dy) < epsilon) { 
+            // Horizontal
+            e.hitX = Math.min(x1, x2); e.hitY = y1 - th / 2; 
+            e.hitWidth = Math.abs(dx); e.hitHeight = th; 
+        } else if (Math.abs(dx) < epsilon) { 
+            // Vertical
+            e.hitX = x1 - th / 2; e.hitY = Math.min(y1, y2); 
+            e.hitWidth = th; e.hitHeight = Math.abs(dy); 
+        } else { 
+            // Angled (Simplified bounding box)
+            e.hitX = Math.min(x1, x2) - th / 2; 
+            e.hitY = Math.min(y1, y2) - th / 2; 
+            e.hitWidth = Math.abs(dx) + th; 
+            e.hitHeight = Math.abs(dy) + th; 
         }
     }
 }

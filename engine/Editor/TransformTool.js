@@ -1,5 +1,6 @@
 import Config from "../Core/Config.js";
 import { ApplyResizeToEntity } from "../Util/ApplyResizeToEntity.js";
+import { bus } from "../Util/EventBus.js";
 
 export default class TransformTool {
     constructor(selectionTool, world, game, canvas, renderer, input) {
@@ -25,11 +26,106 @@ export default class TransformTool {
         this.groupBounds = null;
         this.resizeStartBounds = null;
         this.resizeEntityStarts = null;
+
+        // [UNDO/REDO] Penampung snapshot awal sebelum drag
+        this.initialState = [];
     }
 
     toWorld(px, py) {
         return this.selection.toWorld(px, py);
     }
+
+    // --- HELPER UNDO/REDO ---
+    
+    // 1. Membuat snapshot data entity saat ini (Deep Copy)
+// engine/Tools/TransformTool.js
+
+    // ...
+
+    // 1. Helper untuk membersihkan object komponen dari data runtime (DOM/Image/Gl)
+    _cleanComponents(components) {
+        if (!components) return {};
+        
+        // Teknik "Brute Force" paling aman untuk membuang Reference, Function, & DOM Element
+        // Ini akan mengubah object menjadi string JSON lalu balik ke Object murni
+        try {
+            return JSON.parse(JSON.stringify(components));
+        } catch (e) {
+            console.warn("⚠️ Circular reference detected in components, falling back to manual clean.");
+            // Fallback jika ada circular ref: copy manual properti penting saja
+            const clean = {};
+            for (const [key, comp] of Object.entries(components)) {
+                clean[key] = {};
+                for (const [prop, val] of Object.entries(comp)) {
+                    // Skip properti yang diawali underscore (biasanya private/runtime)
+                    if (prop.startsWith('_')) continue;
+                    // Skip jika nilai adalah DOM Element atau Function
+                    if (val instanceof HTMLElement || typeof val === 'function') continue;
+                    
+                    clean[key][prop] = val;
+                }
+            }
+            return clean;
+        }
+    }
+
+    // 2. Update _createSnapshot untuk menggunakan cleaner di atas
+    _createSnapshot() {
+        return this.selection.selectedList.map(e => ({
+            _id: e._id,
+            version: e.version || 0, // Pastikan version terbawa
+            x: e.x,
+            y: e.y,
+            width: e.width,
+            height: e.height,
+            rotation: e.rotation || 0,
+            
+            // PENTING: Gunakan fungsi pembersih di sini
+            components: this._cleanComponents(e.components)
+        }));
+    }
+    
+    // ...
+    // 2. Mengembalikan state ke entity (Dipanggil oleh HistoryManager)
+    _applyState(stateList) {
+        const world = this.world;
+        const affectedEntities = [];
+
+        stateList.forEach(state => {
+            // Kita cari entity manual di world layers
+            let ent = null;
+            
+            // Loop semua layer untuk cari ID (bisa dioptimasi jika World punya map ID)
+            for (const [layerId, entities] of world.layers) {
+                const found = entities.find(e => e._id === state._id);
+                if (found) {
+                    ent = found;
+                    break;
+                }
+            }
+            
+            if (ent) {
+                ent.x = state.x;
+                ent.y = state.y;
+                ent.width = state.width;
+                ent.height = state.height;
+                ent.rotation = state.rotation;
+                ent.components = state.components; // Restore komponen
+
+                // Update visual shape/text renderer (ApplyResize logic)
+                ApplyResizeToEntity(ent, world); 
+
+                affectedEntities.push(ent);
+            }
+        });
+
+        // Update selection agar user melihat apa yang berubah
+        if (affectedEntities.length > 0) {
+            this.selection.selectedList = affectedEntities;
+            bus.emit("entity:modified", stateList); // Update Dirty Flag di Vue
+        }
+    }
+    // -------------------------
 
     _updateTextBounds(e) {
         if (!e.components?.TextRenderer) return;
@@ -50,9 +146,6 @@ export default class TransformTool {
 
             e.width = e.hitWidth;
             e.height = e.hitHeight;
-
-        } else {
-
         }
     }
 
@@ -127,6 +220,9 @@ export default class TransformTool {
         const list = this.selection.selectedList;
         if (!list.length) return;
 
+        // [UNDO/REDO] Simpan Snapshot AWAL
+        this.initialState = this._createSnapshot();
+
         if (this.selection.calculateViewportInsets) {
             this.selection.calculateViewportInsets();
         }
@@ -151,6 +247,9 @@ export default class TransformTool {
     beginResize(type, px, py) {
         const list = this.selection.selectedList;
         if (!list.length) return;
+
+        // [UNDO/REDO] Simpan Snapshot AWAL
+        this.initialState = this._createSnapshot();
 
         if (this.selection.calculateViewportInsets) {
             this.selection.calculateViewportInsets();
@@ -200,6 +299,8 @@ export default class TransformTool {
     }
 
     resetDrag() {
+        const wasInteracting = this.draggingMove || this.draggingResize;
+
         this.draggingMove = false;
         this.draggingResize = false;
         this.resizeType = null;
@@ -208,6 +309,37 @@ export default class TransformTool {
         if (this.selection.autoPanVel) {
             this.selection.autoPanVel.x = 0;
             this.selection.autoPanVel.y = 0;
+        }
+
+        if (wasInteracting) {
+            // 1. Ambil Snapshot AKHIR
+            const finalState = this._createSnapshot();
+            
+            // Simpan variabel scope untuk Undo/Redo Closure
+            const startState = this.initialState; 
+
+            // 2. Buat Command Object
+            const command = {
+                name: "Transform Entity", // Label untuk debug
+                undo: () => {
+                    this._applyState(startState);
+                },
+                redo: () => {
+                    this._applyState(finalState);
+                }
+            };
+
+            // 3. Masukkan ke History Manager (Jika ada)
+            if (this.game.history) {
+                this.game.history.push(command);
+            }
+
+            // 4. Emit ke Frontend (Dirty Flag / Auto Save)
+            // Filter agar tidak crash jika ID undefined
+            const validUpdates = finalState.filter(u => u._id !== undefined);
+            if (validUpdates.length > 0) {
+                bus.emit("entity:modified", validUpdates);
+            }
         }
     }
 
@@ -272,7 +404,6 @@ export default class TransformTool {
         let originX = sb.x;
         let originY = sb.y;
 
-        // Tentukan pivot
         if (type === "nw" || type === "sw") originX = sb.x + sb.w;
         if (type === "nw" || type === "ne") originY = sb.y + sb.h;
 
