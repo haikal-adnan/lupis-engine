@@ -6,8 +6,9 @@ import InputManager from "../Input/InputManager.js";
 import GLImageResource from "../Renderer/Graphic/GLImageResource.js";
 import AssetLoader from "../Loader/AssetLoader.js";
 import SceneLoader from "../Loader/SceneLoader.js";
+import HistoryManager from "../Core/HistoryManager.js";
 
-// Tools
+// Tools Imports... (Biarkan sama)
 import CameraController from "../Editor/CameraController.js";
 import Rulers from "../Editor/Rulers.js";
 import PointerCoordinates from "../Editor/PointerCoordinates.js";
@@ -19,145 +20,113 @@ export default class GameLoader {
     async initializeGame(game, canvas, mode = "runtime", baseURL = "./", payload = {}) {
         Config.ENGINE_MODE = mode;
 
+        // Init Core Systems
         game.renderer = new RendererManager(canvas);
         game.input = new InputManager(canvas);
         game.world = new World();
+        game.history = new HistoryManager(game, game.input);
 
-        console.log("📦 [GameLoader] Received Payload:", payload);
+        console.log("📦 [GameLoader] Processing Payload...");
 
-        // --- 1. SAFETY CHECK & PREPARATION ---
-        // Kita validasi dulu payload-nya. Jika kosong, kita buat object dummy agar tidak crash.
-        const safePayload = payload || {};
-        
-        // Cek apakah 'project' ada isinya. Jika undefined, kita stop atau beri warning.
-        if (!safePayload.project) {
-            console.error("❌ [GameLoader] CRITICAL: Payload 'project' is missing!", safePayload);
-            // Jangan lanjutkan jika data project fatal error, atau gunakan default
-             safePayload.project = { name: "Error Project", settings: {}, layers: ["default"] };
-        }
+        // 1. Prepare Data (Fail-safe)
+        const { project, assetsMap, sceneData } = this._prepareData(payload);
 
-        const prepared = this._prepareEditorData(safePayload);
-        
-        const projectConfig = prepared.project;
-        const assetsMap = prepared.assetsMap;
-        const sceneData = prepared.sceneData;
-
-        // --- 2. INITIALIZE LOADERS ---
-        const glImageLoader = new GLImageResource(game.renderer.gl);
-        
+        // 2. Initialize Loaders
         const assetLoader = new AssetLoader(
-            glImageLoader,
-            async (fntUrl, pngUrl) => {
-                await game.renderer.text.loadFont(fntUrl, pngUrl);
+            new GLImageResource(game.renderer.gl),
+            async (fnt, png) => {
+                await game.renderer.text.loadFont(fnt, png);
                 return game.renderer.text; 
             }
         );
-
         const sceneLoader = new SceneLoader(game.world);
         
-        // --- 3. LOAD ASSETS (TANPA FETCH JSON) ---
-        // Kita pastikan assetsMap valid. AssetLoader Anda yang baru sudah aman (tidak fetch json).
+        // 3. Load Assets & Scene
         console.log(`🔄 [GameLoader] Loading ${Object.keys(assetsMap.textures).length} textures...`);
         game.world.assets = await assetLoader.loadMap(assetsMap, baseURL);
 
-        // --- 4. LOAD SCENE (TANPA FETCH JSON) ---
         if (sceneData) {
-            console.log("🔄 [GameLoader] Loading Scene Data...");
-            await sceneLoader.load(sceneData, projectConfig, baseURL, game.world.assets);
+            console.log("🔄 [GameLoader] Building Scene...");
+            await sceneLoader.load(sceneData, project, baseURL, game.world.assets);
         } else {
-            console.warn("⚠️ [GameLoader] No scene data found in payload.");
+            console.warn("⚠️ [GameLoader] Scene data is empty.");
         }
 
-        // --- 5. EDITOR TOOLS ---
+        // 4. Setup Editor Tools (Only in Editor Mode)
         if (mode === "editor") {
             this._initializeEditorTools(game, canvas);
         }
 
-        // --- 6. START LOOP ---
+        // 5. Start Loop
         game.loop = new GameLoop({
             update: dt => game.update(dt),
             render: alpha => game.render(alpha),
         });
         
-        console.log("✅ [GameLoader] Initialization Complete.");
+        console.log("✅ [GameLoader] Ready.");
     }
 
-    _prepareEditorData(payload) {
-        // Destructure dengan default empty object untuk keamanan
-        const { project, assets, scene } = payload;
-
-        // SAFE GUARD: Jika project null/undefined (meski sudah dicek diatas), gunakan fallback
-        const rawProject = project || { name: "Untitled", settings: {}, layers: [] };
+    _prepareData(payload = {}) {
+        // Fallback Defaults
+        const rawProject = payload.project || { name: "Untitled", settings: {}, layers: [] };
         
-        const projectConfig = {
+        const project = {
             name: rawProject.name,
             ...rawProject.settings, 
-            layers: rawProject.layers || ["layer_background", "layer_objects"]
+            layers: rawProject.layers?.length ? rawProject.layers : ["layer_background", "layer_objects"]
         };
 
-        const texturesMap = {};
-        const fontsMap = {};
+        const assetsMap = { textures: {}, fonts: {} };
+        const rawAssets = Array.isArray(payload.assets) ? payload.assets : [];
 
-        // Validasi: Pastikan assets adalah Array
-        if (Array.isArray(assets)) {
-            assets.forEach(asset => {
-                const fileName = asset.fileKey || asset._id;
-
-                if (asset.type === 'texture' || asset.type === 'sprite') {
-                    const ext = asset.meta?.extension || '.png';
-                    const fullName = `${fileName}${ext}`;
-                    
-                    texturesMap[asset._id] = {
-                        uri: fullName,
-                        filterMode: asset.meta?.filterMode || 'smooth' 
-                    };
-                } else if (asset.type === 'font') {
-                    fontsMap[asset._id] = fileName; 
-                }
-            });
-        }
+        // Map Assets for faster lookup
+        rawAssets.forEach(asset => {
+            const fileName = asset.fileKey || asset._id;
+            
+            if (['texture', 'sprite'].includes(asset.type)) {
+                assetsMap.textures[asset._id] = {
+                    uri: `${fileName}${asset.meta?.extension || '.png'}`,
+                    filterMode: asset.meta?.filterMode || 'smooth' 
+                };
+            } else if (asset.type === 'font') {
+                assetsMap.fonts[asset._id] = fileName; 
+            }
+        });
 
         return {
-            project: projectConfig,
-            assetsMap: {
-                textures: texturesMap,
-                fonts: fontsMap
-            },
-            // Jika scene undefined, kirim object kosong agar SceneLoader tidak error
-            sceneData: scene || { entities: [] } 
+            project,
+            assetsMap,
+            sceneData: payload.scene || { entities: [] }
         };
     }
 
     _initializeEditorTools(game, canvas) {
         const { world, renderer, camera, input } = game;
+        const { EDITOR } = Config;
 
-        if (Config.EDITOR.CAMERA_CONTROLLER)
-            game.cameraController = new CameraController(camera, canvas, input);
-
-        if (Config.EDITOR.GRID)
+        if (EDITOR.CAMERA_CONTROLLER) game.cameraController = new CameraController(camera, canvas, input);
+        
+        if (EDITOR.GRID) {
             game.grid = new Grid(world, game, canvas, renderer, camera, {
                 color: "#ffffff", width: 50, height: 50, alpha: 0.5
             });
+        }
 
-        if (Config.EDITOR.SELECTION) {
+        if (EDITOR.SELECTION) {
             game.selection = new SelectionTool(world, game, canvas, renderer, input);
+            // Ensure editor layer exists
             if (!world.layers.has("__editor_selection")) {
                 world.layers.set("__editor_selection", []);
                 world.layerOrder.push("__editor_selection");
             }
         }
 
-        if (Config.EDITOR.TRANSFORM)
-            game.transform = new TransformTool(game.selection, world, game, canvas, renderer, input);
-
-        if (Config.EDITOR.RULERS)
-            game.rulers = new Rulers(renderer, camera);
-
-        if (Config.EDITOR.POINTER)
-            game.pointerCoords = new PointerCoordinates(game, renderer);
+        if (EDITOR.TRANSFORM) game.transform = new TransformTool(game.selection, world, game, canvas, renderer, input);
+        if (EDITOR.RULERS) game.rulers = new Rulers(renderer, camera);
+        if (EDITOR.POINTER) game.pointerCoords = new PointerCoordinates(game, renderer);
     }
 
     start(game) {
-        if(game.loop) game.loop.start();
+        game.loop?.start();
     }
 }

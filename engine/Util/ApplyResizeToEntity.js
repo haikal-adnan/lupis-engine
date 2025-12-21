@@ -1,12 +1,36 @@
 import Config from "../Core/Config.js";
 
 export function ApplyResizeToEntity(ent, world) {
+    
+    // --- 1. FIX SPRITE RENDERER ---
+    // Masalah sebelumnya: Blok ini kosong, jadi width/height di komponen tidak pernah berubah.
     if (ent.components.SpriteRenderer) {
+        const sr = ent.components.SpriteRenderer;
+
+        // Sync Data Komponen (Agar tersimpan ke DB/JSON)
+        sr.width = ent.width;
+        sr.height = ent.height;
+
+        // Update Hitbox (Agar seleksi pas)
+        ent.hitX = ent.x;
+        ent.hitY = ent.y;
+        ent.hitWidth = ent.width;
+        ent.hitHeight = ent.height;
+
+        // Jika Anda menggunakan tiling atau custom scaling di renderer:
+        if (ent.image) {
+            // Opsional: Jika renderer butuh update frame visual
+            // ent.frame.sw = sr.width; 
+            // ent.frame.sh = sr.height;
+        }
     }
 
+    // --- 2. FIX SHAPE RENDERER ---
     if (ent.components.ShapeRenderer) {
         const sh = ent.components.ShapeRenderer;
 
+        // Pastikan width/height komponen disinkronkan dengan entity
+        // Loader Anda membaca sh.width/sh.height, jadi ini WAJIB diupdate.
         if (sh.type === "rectangle" || sh.type === "rectStroke") {
             sh.width = ent.width;
             sh.height = ent.height;
@@ -17,7 +41,23 @@ export function ApplyResizeToEntity(ent, world) {
             ent.hitHeight = ent.height;
         }
 
+        if (sh.type === "circle" || sh.type === "ellipse") {
+             // Tambahan logic jika nanti pakai lingkaran
+             sh.width = ent.width;
+             sh.height = ent.height;
+             
+             ent.hitX = ent.x;
+             ent.hitY = ent.y;
+             ent.hitWidth = ent.width;
+             ent.hitHeight = ent.height;
+        }
+
         if (sh.type === "line") {
+            // Untuk line, width/height adalah bounding box.
+            // Kita perlu update x2/y2 berdasarkan bounding box baru.
+            
+            // Logic ini agak tricky karena resize line mengubah koordinat ujungnya.
+            // Sederhananya, kita update ujung garis (x2, y2) relatif terhadap (x,y)
             sh.x2 = ent.x + ent.width;
             sh.y2 = ent.y + ent.height;
 
@@ -52,6 +92,7 @@ export function ApplyResizeToEntity(ent, world) {
         }
     }
 
+    // --- 3. TEXT RENDERER (Sudah Aman) ---
     if (ent.components.TextRenderer) {
         const tr = ent.components.TextRenderer;
         
@@ -59,31 +100,25 @@ export function ApplyResizeToEntity(ent, world) {
         const factor = ent._resizeFactor || 1;
 
         if (start) {
-            // Gunakan Math.abs untuk mencegah nilai negatif
             const newSize = Math.abs(start.size * factor);
             
-            // --- FIX UTAMA: Update KEDUANYA ---
-            tr.fontSize = newSize; // Prioritas sistem
-            tr.size = newSize;     // Fallback legacy
+            tr.fontSize = newSize; 
+            tr.size = newSize;     
 
-            // Update Runtime (Visual di layar)
             if (ent.text) {
                 ent.text.size = newSize;    
                 ent.text.value = tr.text;    
             }
 
-            // Update Dimensi Fisik (Penting untuk perhitungan scale berikutnya)
             ent.width = Math.abs(start.w * factor);
             ent.height = Math.abs(start.h * factor);
 
-            // Update Hitbox (Selection Box)
             ent.hitX = ent.x + (start.hitXOffset * factor);
             ent.hitY = ent.y + (start.hitYOffset * factor);
             ent.hitWidth = start.hitW * factor;
             ent.hitHeight = start.hitH * factor;
         } 
         else {
-            // Fallback: Gunakan Asset ID dari entity, jangan Config.FONT global
             const assetId = tr.assetId;
             const font = world.assets.fonts[assetId];
             

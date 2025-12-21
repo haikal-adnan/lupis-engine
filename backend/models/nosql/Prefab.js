@@ -1,7 +1,8 @@
 import mongoose from 'mongoose';
 
 const PrefabSchema = new mongoose.Schema({
-  projectId: { type: mongoose.Schema.Types.ObjectId, ref: 'Project', required: true },
+  _id: { type: String, required: true },
+  projectId: { type: String, ref: 'Project', required: true },
   name: { type: String, required: true },
   data: {
     tag: { type: String, default: 'Untagged' },
@@ -13,7 +14,10 @@ const PrefabSchema = new mongoose.Schema({
     }
   },
   thumbnailUrl: { type: String }
-}, { timestamps: true });
+}, { 
+  timestamps: true,
+  _id: false 
+});
 
 const Prefab = mongoose.models.Prefab || mongoose.model('Prefab', PrefabSchema);
 export default Prefab;

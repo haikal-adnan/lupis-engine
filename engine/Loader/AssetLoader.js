@@ -8,32 +8,28 @@ export default class AssetLoader {
     async loadMap(assetsMap, baseURL) {
         if (!assetsMap) return this.assets;
 
+        const pathPrefix = baseURL.endsWith('/') ? baseURL : baseURL + '/';
         const promises = [];
 
-        // 1. Queue Textures
+        // 1. Process Textures
         if (assetsMap.textures) {
-            for (const [id, val] of Object.entries(assetsMap.textures)) {
-                const config = (typeof val === 'string') 
-                    ? { uri: val, filterMode: 'smooth' } 
-                    : val;
-
-                const url = baseURL + config.uri;
+            const texturePromises = Object.entries(assetsMap.textures).map(([id, val]) => {
+                const config = (typeof val === 'string') ? { uri: val, filterMode: 'smooth' } : val;
+                const url = pathPrefix + config.uri;
                 
-                promises.push(
-                    this._loadTexture(id, url, config)
-                        .catch(err => console.error(`Failed texture: ${config.uri}`, err))
-                );
-            }
+                return this._loadTexture(id, url, config)
+                    .catch(err => console.error(`❌ Failed texture: ${config.uri}`, err));
+            });
+            promises.push(...texturePromises);
         }
 
-        // 2. Queue Fonts
+        // 2. Process Fonts
         if (assetsMap.fonts) {
-            for (const [id, fileKey] of Object.entries(assetsMap.fonts)) {
-                promises.push(
-                    this._loadFont(id, fileKey, baseURL)
-                        .catch(err => console.error(`[AssetLoader] Failed font: ${fileKey}`, err))
-                );
-            }
+            const fontPromises = Object.entries(assetsMap.fonts).map(([id, fileKey]) => {
+                return this._loadFont(id, fileKey, pathPrefix)
+                    .catch(err => console.error(`❌ Failed font: ${fileKey}`, err));
+            });
+            promises.push(...fontPromises);
         }
 
         await Promise.all(promises);
@@ -51,21 +47,10 @@ export default class AssetLoader {
         }
     }
 
-
-    async _loadFont(id, fileKey, baseURL) {
-        // fileKey adalah nama file fisik di storage (misal: "uud-v4-uuid.ttf" atau "uud-v4-uuid")
-        // Kita perlu membuang ekstensinya (misal .ttf) agar bisa diganti .fnt dan .png
-        
-        // Regex: Hapus teks mulai dari titik terakhir sampai ujung string
-        const cleanKey = fileKey.replace(/\.[^/.]+$/, "");
-        
-        const pathPrefix = baseURL.endsWith('/') ? baseURL : baseURL + '/';
-
-        // Engine otomatis mencari pasangan .fnt dan .png
+    async _loadFont(id, fileKey, pathPrefix) {
+        const cleanKey = fileKey.replace(/\.[^/.]+$/, ""); // Strip extension
         const fntUrl = `${pathPrefix}${cleanKey}.fnt`;
         const pngUrl = `${pathPrefix}${cleanKey}.png`;
-
-        // console.log(`🔤 Loading Font: ${cleanKey}`);
         
         this.assets.fonts[id] = await this.fontLoaderFunc(fntUrl, pngUrl);
     }
@@ -73,6 +58,7 @@ export default class AssetLoader {
     _normalizeTextureResult(raw) {
         if (!raw) return null;
 
+        // Handle GL Texture Wrapper
         if (raw.texture || raw.glTexture) {
             return { 
                 type: "gl", 
@@ -83,6 +69,7 @@ export default class AssetLoader {
             };
         }
 
+        // Handle Raw HTML Image
         if (raw instanceof HTMLImageElement || raw.src) {
             return { 
                 type: "image", 

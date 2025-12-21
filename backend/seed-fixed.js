@@ -4,6 +4,7 @@ import Project from './models/nosql/Project.js';
 import Folder from './models/nosql/Folder.js';
 import Asset from './models/nosql/Asset.js';
 import Scene from './models/nosql/Scene.js';
+// import { generateId } from './utils/idGenerator.js'; // Tidak perlu dipakai di sini dulu
 
 dotenv.config();
 
@@ -11,14 +12,30 @@ const seedDatabase = async () => {
   try {
     await mongoose.connect(process.env.MONGO_URI);
 
-    // Membersihkan data lama
+    // Bersihkan Data Lama
     await Project.deleteMany({});
     await Folder.deleteMany({});
     await Asset.deleteMany({});
     await Scene.deleteMany({});
+    
+    const projectId = "project_dungeon_demo_01";
+    
+    const fSpritesId = "folder_sprites_main";
+    const fFontsId = "folder_fonts_main";
+    
+    const assetDungeonId = "asset_tex_dungeon_sheet";
+    const assetFontId = "asset_font_gaegu_reg";
+    
+    const sceneId = "scene_level_1_demo";
 
-    // 1. Buat Project
-    const project = await Project.create({
+    const entBgId = "ent_background_map";
+    const entGroupId = "ent_group_dungeon";
+    const entItemId = "ent_item_inner";
+    const entBoxId = "ent_debug_redbox";
+    const entTextId = "ent_ui_text_label";
+
+    await Project.create({
+      _id: projectId, 
       ownerId: "[REDACTED_USER_ID]",
       name: "Dungeon Project",
       settings: { width: 1280, height: 720 },
@@ -28,51 +45,56 @@ const seedDatabase = async () => {
       ]
     });
 
-    // 2. Buat Folder (Sprites & Fonts)
-    const fSprites = await Folder.create({ 
-      projectId: project._id, 
+    await Folder.create({ 
+      _id: fSpritesId,
+      projectId: projectId, 
       name: "Sprites" 
     });
 
-    const fFonts = await Folder.create({ 
-      projectId: project._id, 
+    await Folder.create({ 
+      _id: fFontsId,
+      projectId: projectId, 
       name: "Fonts" 
     });
 
-    // 3. Buat Asset
-    // --- Texture Asset ---
-    const assetDungeon = await Asset.create({
-      projectId: project._id,
-      folderId: fSprites._id,
+    const mockCdnUrl = "http://localhost:3000/cdn"; 
+
+    await Asset.create({
+      _id: assetDungeonId,
+      projectId: projectId,
+      folderId: fSpritesId,
       name: "dungeon_sheet",
       type: "texture",
+      fileKey: "dungeon_sheet_fixed_key", // Fixed key juga
+      fileUrl: `${mockCdnUrl}/dungeon_sheet.png`,
       meta: { extension: ".png", filterMode: "nearest" }
     });
 
-    // --- NEW: Font Asset (Gaegu) ---
-    const assetFontGaegu = await Asset.create({
-      projectId: project._id,
-      folderId: fFonts._id, // Masuk ke folder Fonts
-      name: "gaegu",        // Nama font
+    await Asset.create({
+      _id: assetFontId,
+      projectId: projectId,
+      folderId: fFontsId, 
+      name: "gaegu",     
       type: "font",
+      fileKey: "gaegu_fixed_key",
+      fileUrl: `${mockCdnUrl}/gaegu.ttf`,
       meta: { 
         extension: ".ttf", 
         originalName: "Gaegu-Regular.ttf" 
       }
     });
 
-    console.log("Project created:", project._id);
-    console.log("Assets created:", assetDungeon.fileKey, assetFontGaegu.fileKey);
+    console.log("Project created:", projectId);
+    console.log("Assets created:", assetDungeonId, assetFontId);
 
-    // 4. Buat Scene dengan Entities
     await Scene.create({
-      projectId: project._id,
+      _id: sceneId,
+      projectId: projectId,
       name: "Level 1",
       settings: { backgroundColor: "#222222" },
       entities: [
-        // --- Background (Root Layer) ---
         {
-          id: "ent_bg_01",
+          _id: entBgId,
           name: "Background Map",
           type: "object",
           layerId: "layer_root",
@@ -83,16 +105,15 @@ const seedDatabase = async () => {
           },
           components: {
             "SpriteRenderer": {
-              "assetId": assetDungeon._id,
+              "assetId": assetDungeonId, // Menggunakan Fixed ID Asset
               "source": { "x": 0, "y": 0, "w": 256, "h": 256 },
               "opacity": 1.0
             }
           }
         },
         
-        // --- Group Dungeon (Hero Layer) ---
         {
-          id: "grp_dungeon",
+          _id: entGroupId,
           name: "dungeon",
           type: "group",
           layerId: "layer_hero",
@@ -100,41 +121,35 @@ const seedDatabase = async () => {
           transform: {
             translate: { x: 100, y: 100 },
             width: 0, height: 0
-          },
-          components: {}
+          }
         },
 
-        // --- Item Dungeon (Child of grp_dungeon) ---
         {
-          id: "ent_dungeon_item",
+          _id: entItemId,
           name: "Inner Dungeon Item",
-          type: "object",
           layerId: "layer_hero",
-          parentId: "grp_dungeon",
+          parentId: entGroupId, 
           transform: {
             translate: { x: 50, y: 50 },
             width: 64, height: 64
           },
           components: {
             "SpriteRenderer": {
-              "assetId": assetDungeon._id,
+              "assetId": assetDungeonId,
               "source": { "x": 32, "y": 0, "w": 16, "h": 16 },
               "opacity": 1.0
             }
           }
         },
 
-        // --- Shape Entity (Child of grp_dungeon) ---
         {
-          id: "ent_red_box",
+          _id: entBoxId,
           name: "Red Rectangle",
-          type: "object",
           layerId: "layer_hero",
-          parentId: "grp_dungeon",
+          parentId: entGroupId,
           transform: {
             translate: { x: 0, y: 100 }, 
-            width: 100, 
-            height: 100
+            width: 100, height: 100
           },
           components: {
             "ShapeRenderer": {
@@ -146,25 +161,21 @@ const seedDatabase = async () => {
           }
         },
 
-        // --- NEW: Text Entity (Child of grp_dungeon) ---
         {
-          id: "ent_text_test",
+          _id: entTextId,
           name: "Text Label",
-          type: "object",
           layerId: "layer_hero",
-          parentId: "grp_dungeon",
+          parentId: entGroupId,
           transform: {
-            // Posisi relatif: di bawah kotak merah (y=100 + height=100 + gap)
             translate: { x: 0, y: 220 }, 
-            width: 200, // Estimasi lebar text box
-            height: 50
+            width: 200, height: 50
           },
           components: {
             "TextRenderer": {
               "text": "Testing",
-              "fontSize": 50,        // Mapping dari 'size' lama
-              "color": "#FFFFFF",    // Putih agar terlihat di BG gelap
-              "assetId": assetFontGaegu._id, // Menggunakan ID dari asset yang baru dibuat
+              "fontSize": 50,     
+              "color": "#FFFFFF",   
+              "assetId": assetFontId,
               "align": "center"
             }
           }
@@ -172,7 +183,7 @@ const seedDatabase = async () => {
       ]
     });
 
-    console.log("Database seeded successfully.");
+    console.log("Database seeded successfully with FIXED IDs.");
     process.exit();
   } catch (err) {
     console.error(err);

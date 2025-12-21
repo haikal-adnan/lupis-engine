@@ -1,10 +1,15 @@
 <script setup>
-import { onMounted, nextTick, ref } from "vue";
+import { onMounted, onUnmounted, nextTick, ref, toRaw } from "vue";
 import { startEngine } from "@engine/main.js"; 
 import { useEditorState } from "@/composables/useEditorState.js";
 import { useBackend } from "@/composables/useBackend.js";
+import { useLocalDB } from "@/composables/useLocalDB.js";
+import { useSyncManager } from "@/composables/useSyncManager.js";
+import { hasPendingCloudSync } from "@/services/sceneService.js";
 
 const { activeProjectId } = useEditorState();
+const { initDB, hydrateFromBackend, getSceneFromLocal } = useLocalDB();
+const { registerChange, setInitialSyncStatus } = useSyncManager();
 const { 
   CDN_URL, 
   projectData, 
@@ -13,57 +18,94 @@ const {
   currentScene, 
   fetchProjectDetails, 
   fetchAllProjectResources, 
-  fetchScene 
+  fetchScene
 } = useBackend();
 
 const isEngineReady = ref(false);
+let engineBus = null;
+
+// Engine Handler: Murni jembatan antara EventBus Engine -> SyncManager
+const handleEntityModified = (updates) => {
+  // updates biasanya array object [{_id, x, y, ...}]
+  if (Array.isArray(updates)) {
+    updates.forEach(u => registerChange(u));
+  } else {
+    registerChange(updates);
+  }
+};
 
 onMounted(async () => {
   await nextTick();
+  const dbReady = await initDB();
+  if (!dbReady || !activeProjectId.value) return;
 
-  if (!activeProjectId.value) return;
-
+  // 1. Fetch Basic Metadata
   await Promise.all([
     fetchProjectDetails(activeProjectId.value),
     fetchAllProjectResources(activeProjectId.value)
   ]);
 
-  if (!currentScene.value && scenes.value.length > 0) {
-    await fetchScene(scenes.value[0]._id);
+  if (!projectData.value) return;
+
+  // 2. Tentukan Scene Awal (Prioritas: Local DB > Cloud)
+  const targetSceneId = currentScene.value?._id || scenes.value[0]?._id;
+  if (!targetSceneId) return;
+
+  const localSceneData = await getSceneFromLocal(targetSceneId);
+
+  if (localSceneData) {
+      // Load Local (Offline capability)
+      currentScene.value = localSceneData;
+      const isPending = await hasPendingCloudSync(targetSceneId);
+      setInitialSyncStatus(isPending);
+  } else {
+      // Load Cloud & Hydrate Local
+      await fetchScene(targetSceneId);
+      
+      const serverPayload = {
+        project: toRaw(projectData.value),
+        assets: toRaw(assets.value),
+        scenes: [toRaw(currentScene.value)]
+      };
+      
+      await hydrateFromBackend(serverPayload);
+      setInitialSyncStatus(false);
   }
 
-  if (!projectData.value || !currentScene.value) {
-    console.error("❌ Data Project tidak lengkap.");
-    return;
-  }
-
-  const projectBaseUrl = `${CDN_URL}/projects/${activeProjectId.value}/`;
-
-  const rawPayload = {
-    project: projectData.value, 
-    assets: assets.value,        
-    scene: currentScene.value 
+  // 3. Start Engine
+  // Menggunakan toRaw() agar Engine tidak menyentuh Proxy Vue (Critical Performance)
+  const enginePayload = {
+    project: toRaw(projectData.value), 
+    assets: toRaw(assets.value),        
+    scene: toRaw(currentScene.value) 
   };
 
-  console.log("📦 Sending Raw Data to Engine...");
-
-  await startEngine("glCanvas", "editor", projectBaseUrl, rawPayload);
+  const engineInstance = await startEngine("glCanvas", "editor", `${CDN_URL}/projects/${activeProjectId.value}/`, enginePayload);
   
-  isEngineReady.value = true;
+  if (engineInstance) {
+      engineBus = engineInstance.bus;
+      engineBus.on("entity:modified", handleEntityModified);
+      isEngineReady.value = true;
+  }
+});
+
+onUnmounted(() => {
+  if (engineBus) {
+    engineBus.off("entity:modified", handleEntityModified);
+    engineInstance?.destroy(); // Pastikan ada method destroy/cleanup di engine
+  }
 });
 </script>
 
 <template>
-  <div class="w-full h-full relative overflow-hidden flex flex-col bg-slate-900">
-    <div v-if="!isEngineReady" class="absolute inset-0 z-50 flex items-center justify-center bg-slate-900 text-white">
-      <div class="flex flex-col items-center gap-2">
-        <span class="loading loading-spinner loading-lg"></span>
-        <p>Memuat Engine & Aset...</p>
+  <div class="w-full h-full relative overflow-hidden flex flex-col bg-slate-900 select-none">
+    <div v-if="!isEngineReady" class="absolute inset-0 z-50 flex items-center justify-center bg-slate-950 text-white">
+      <div class="flex flex-col items-center gap-3">
+        <span class="loading loading-spinner loading-lg text-primary"></span>
+        <p class="text-sm text-slate-400 font-mono animate-pulse">Initializing Engine Context...</p>
       </div>
     </div>
 
-    <div class="relative flex-1 overflow-hidden shadow-inner">
-      <canvas id="glCanvas" class="absolute inset-0 w-full h-full block"></canvas>
-    </div>
+    <canvas id="glCanvas" class="absolute inset-0 w-full h-full block outline-none"></canvas>
   </div>
 </template>
