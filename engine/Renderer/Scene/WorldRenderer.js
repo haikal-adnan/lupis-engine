@@ -1,4 +1,3 @@
-// engine/Renderer/WorldRenderer.js
 export default class WorldRenderer {
     constructor(image, text, shape) {
         this.image = image;
@@ -33,14 +32,33 @@ export default class WorldRenderer {
                 const baseZ = e.zIndex || 0;
                 const layerIndex = li;
 
+                // LOGIC OPACITY BARU:
+                // Ambil nilai raw (biasanya 0-100). Default ke 100.
+                const rawOpacity = (e.opacity !== undefined && e.opacity !== null) ? e.opacity : 100;
+                
+                // Konversi ke 0.0 - 1.0 untuk WebGL
+                const normalizedOpacity = Math.max(0, Math.min(100, rawOpacity)) / 100;
+
+                // Gabungkan dengan alpha transform (jika ada)
+                const finalAlpha = normalizedOpacity * (e.alpha ?? 1);
+
+                const renderData = {
+                    x: e.x, y: e.y,
+                    w: e.width, h: e.height,
+                    rot: e.rotation || 0,
+                    sx: e.scaleX ?? 1, sy: e.scaleY ?? 1,
+                    px: e.pivotX ?? 0.5, py: e.pivotY ?? 0.5,
+                    alpha: finalAlpha // Kirim alpha 0.0-1.0 yang sudah bersih
+                };
+
                 if (e.image && e.frame) {
-                    queue.push({ type: "image", layerIndex, z: baseZ, e });
+                    queue.push({ type: "image", layerIndex, z: baseZ, e, renderData });
                 }
                 if (e.shape) {
-                    queue.push({ type: "shape", layerIndex, z: baseZ, e });
+                    queue.push({ type: "shape", layerIndex, z: baseZ, e, renderData });
                 }
                 if (e.text) {
-                    queue.push({ type: "text", layerIndex, z: baseZ, e });
+                    queue.push({ type: "text", layerIndex, z: baseZ, e, renderData });
                 }
             }
         }
@@ -62,40 +80,53 @@ export default class WorldRenderer {
             }
 
             const e = item.e;
+            const r = item.renderData;
 
             if (item.type === "image") {
                 image.draw(
-                    e.image,
-                    e.frame,
-                    e.x,
-                    e.y,
-                    e.width,
-                    e.height,
-                    proj,
-                    e.pixelPerfect,
-                    e.alpha
+                    e.image, e.frame,
+                    r.x, r.y, r.w, r.h,
+                    r.rot, r.sx, r.sy, r.px, r.py,
+                    proj, e.pixelPerfect, r.alpha
                 );
-            } else if (item.type === "shape") {
+            } 
+            else if (item.type === "shape") {
                 const c = this._getColorVec(e.shape.color);
                 const t = e.shape.thickness || 1;
 
                 if (e.shape.type === "rectangle") {
-                    shape.drawRect(e.x, e.y, e.shape.width, e.shape.height, c, proj);
-                } else if (e.shape.type === "rectStroke") {
-                    const x = e.x;
-                    const y = e.y;
-                    const w = e.shape.width;
-                    const h = e.shape.height;
-                    shape.drawLine(x, y, x + w, y, c, t, proj);
-                    shape.drawLine(x + w, y, x + w, y + h, c, t, proj);
-                    shape.drawLine(x + w, y + h, x, y + h, c, t, proj);
-                    shape.drawLine(x, y + h, x, y, c, t, proj);
-                } else if (e.shape.type === "line") {
-                    shape.drawLine(e.x, e.y, e.shape.x2, e.shape.y2, c, t, proj);
+                    // FIX: Kirim param r.rot, r.sx, dll
+                    shape.drawRect(
+                        r.x, r.y, r.w, r.h, 
+                        c, proj, 
+                        r.rot, r.sx, r.sy, r.px, r.py, 
+                        r.alpha
+                    );
+                } 
+                else if (e.shape.type === "rectStroke") {
+                    // FIX: Gunakan drawRectStroke baru agar ikut rotasi
+                    shape.drawRectStroke(
+                        r.x, r.y, r.w, r.h, 
+                        c, t, proj,
+                        r.rot, r.sx, r.sy, r.px, r.py, 
+                        r.alpha
+                    );
+                } 
+                else if (e.shape.type === "line") {
+                    // Line biasanya pakai absolute coordinate, tidak dipengaruhi pivot entity
+                    // Kecuali jika anda ingin line tersebut relative terhadap entity
+                    shape.drawLine(e.shape.x1 ?? r.x, e.shape.y1 ?? r.y, e.shape.x2, e.shape.y2, c, t, proj);
                 }
-            } else if (item.type === "text") {
+            } 
+            else if (item.type === "text") {
                 const col = this._getColorVec(e.text.color);
-                text.drawText(e.text.value, e.x, e.y, e.text.size, col, proj);
+                text.drawText(
+                    e.text.value,
+                    r.x, r.y, r.w, r.h,
+                    e.text.size, col, proj,
+                    r.rot, r.sx, r.sy, r.px, r.py, 
+                    r.alpha
+                );
             }
         }
 
@@ -106,20 +137,16 @@ export default class WorldRenderer {
         image.flush();
         shape.flush();
         text.flush();
-
-
     }
 
     _getColorVec(hex) {
         if (!hex) return [1, 1, 1, 1];
         if (this._colorCache.has(hex)) return this._colorCache.get(hex);
-
         const clean = hex.replace("#", "");
         const r = parseInt(clean.slice(0, 2), 16) / 255;
         const g = parseInt(clean.slice(2, 4), 16) / 255;
         const b = parseInt(clean.slice(4, 6), 16) / 255;
         const a = clean.length === 8 ? parseInt(clean.slice(6, 8), 16) / 255 : 1;
-
         const vec = [r, g, b, a];
         if (this._colorCache.size > 1000) this._colorCache.clear();
         this._colorCache.set(hex, vec);

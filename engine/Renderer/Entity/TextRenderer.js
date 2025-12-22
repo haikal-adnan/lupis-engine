@@ -13,12 +13,9 @@ function getShared(gl) {
         layout(location=0) in vec2 aPos;
         layout(location=1) in vec2 aUV;
         layout(location=2) in vec4 aColor;
-
         uniform mat4 uProjection;
-
         out vec2 vUV;
         out vec4 vColor;
-
         void main() {
             vUV = aUV;
             vColor = aColor;
@@ -28,12 +25,9 @@ function getShared(gl) {
         attribute vec2 aPos;
         attribute vec2 aUV;
         attribute vec4 aColor;
-
         uniform mat4 uProjection;
-
         varying vec2 vUV;
         varying vec4 vColor;
-
         void main() {
             vUV = aUV;
             vColor = aColor;
@@ -43,56 +37,40 @@ function getShared(gl) {
 
     const fs = isWebGL2 ? `#version 300 es
         precision mediump float;
-
         in vec2 vUV;
         in vec4 vColor;
-
         out vec4 outColor;
-
         uniform sampler2D uTex;
         uniform float uDist;
-
         float median3(vec3 v) {
             return max(min(v.r, v.g), min(max(v.r, v.g), v.b));
         }
-
         void main() {
             vec3 msdf = texture(uTex, vUV).rgb;
             float sd = median3(msdf);
             float dist = sd - 0.5;
-
             float fw = fwidth(dist) * 0.5;
             float alpha = smoothstep(-fw, fw, dist);
-
             if (alpha < 0.01) discard;
-
             outColor = vec4(vColor.rgb, vColor.a * alpha);
         }
     ` : `
         precision mediump float;
-
         varying vec2 vUV;
         varying vec4 vColor;
-
         uniform sampler2D uTex;
         uniform float uDist;
-
         float median3(vec3 v) {
             return max(min(v.r, v.g), min(max(v.r, v.g), v.b));
         }
-
         ${hasDeriv ? "#extension GL_OES_standard_derivatives : enable" : ""}
-
         void main() {
             vec3 msdf = texture2D(uTex, vUV).rgb;
             float sd = median3(msdf);
             float dist = sd - 0.5;
-
             float fw = ${hasDeriv ? "fwidth(dist) * 0.5" : "0.003 * uDist"};
             float alpha = smoothstep(-fw, fw, dist);
-
             if (alpha < 0.01) discard;
-
             gl_FragColor = vec4(vColor.rgb, vColor.a * alpha);
         }
     `;
@@ -101,8 +79,6 @@ function getShared(gl) {
         const sh = gl.createShader(t);
         gl.shaderSource(sh, src);
         gl.compileShader(sh);
-        if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS))
-            console.error("Shader error:", gl.getShaderInfoLog(sh));
         return sh;
     };
 
@@ -120,9 +96,6 @@ function getShared(gl) {
     }
 
     gl.linkProgram(program);
-    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-        console.error("Link error:", gl.getProgramInfoLog(program));
-    }
 
     s = {
         gl,
@@ -145,7 +118,7 @@ export default class TextRenderer {
         this.s = getShared(this.gl);
 
         this.maxGlyphs = 20000;
-        this.floatsPerVertex = 2 + 2 + 4;
+        this.floatsPerVertex = 8;
         this.vertsPerGlyph = 6;
         this.floatsPerGlyph = this.floatsPerVertex * this.vertsPerGlyph;
 
@@ -219,18 +192,13 @@ export default class TextRenderer {
 
         const img = new Image();
         img.src = texURL;
-        img.crossOrigin = "anonymous"; 
+        img.crossOrigin = "anonymous";
         await img.decode();
 
         this.texture = this.gl.createTexture();
         this.gl.bindTexture(this.gl.TEXTURE_2D, this.texture);
         this.gl.texImage2D(
-            this.gl.TEXTURE_2D,
-            0,
-            this.gl.RGBA,
-            this.gl.RGBA,
-            this.gl.UNSIGNED_BYTE,
-            img
+            this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE, img
         );
 
         this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR);
@@ -269,32 +237,54 @@ export default class TextRenderer {
         }
 
         if (xMin === Infinity) {
-            xMin = 0;
-            xMax = cx;
-            yMin = 0;
-            yMax = font.lineHeight * scale;
+            xMin = 0; xMax = cx; yMin = 0; yMax = font.lineHeight * scale;
         }
 
         return {
             width: cx,
             boundsWidth: xMax - xMin,
             boundsHeight: yMax - yMin,
-            xMin,
-            yMin,
-            xMax,
-            yMax,
+            xMin, yMin, xMax, yMax,
             baseline: font.base * scale
         };
     }
 
-    drawText(str, x, y, size, color, projection) {
+    drawText(str, x, y, w, h, size, color, projection, rot = 0, sx = 1, sy = 1, px = 0, py = 0, alpha = 1) {
         if (!this.font || !this.texture || !str) return;
 
-        const gl = this.gl;
         const font = this.font;
+        const measurement = this.measureText(str, size);
+        
+        const nativeW = measurement.boundsWidth; 
+        const nativeH = measurement.boundsHeight;
 
-        const scale = size / font.size;
-        const chars = font.chars;
+        const offsetX = measurement.xMin;
+        const offsetY = measurement.yMin;
+
+        const targetW = w || nativeW;
+        const targetH = h || nativeH;
+
+        const ratioX = (nativeW > 0 ? targetW / nativeW : 1);
+        const ratioY = (nativeH > 0 ? targetH / nativeH : 1);
+
+        const c = Math.cos(rot);
+        const s = Math.sin(rot);
+
+        const pivotOffsetX = -px * targetW * sx;
+        const pivotOffsetY = -py * targetH * sy;
+
+        const transform = (localX, localY) => {
+            const finalX = localX * ratioX * sx;
+            const finalY = localY * ratioY * sy;
+
+            const ox = finalX + pivotOffsetX;
+            const oy = finalY + pivotOffsetY;
+
+            return {
+                x: x + (ox * c - oy * s),
+                y: y + (ox * s + oy * c)
+            };
+        };
 
         if (this.currentTexture !== this.texture) {
             this.flush();
@@ -306,51 +296,50 @@ export default class TextRenderer {
             this.currentProjection = projection;
         }
 
-        let cx = x;
-        const cy = y;
-
         const d = this.bufferData;
         let i = this.bufferIndex;
-
+        
         const r = color[0];
         const g = color[1];
         const b = color[2];
-        const a = color[3];
+        const a = color[3] * alpha;
+
+        const scaleFont = size / font.size; 
+        let cx = 0;
 
         for (const ch of str) {
-            const gdat = chars[ch.charCodeAt(0)];
+            const gdat = font.chars[ch.charCodeAt(0)];
             if (!gdat) continue;
 
-            const x0 = cx + gdat.ox * scale;
-            const y0 = cy + gdat.oy * scale;
-            const x1 = x0 + gdat.w * scale;
-            const y1 = y0 + gdat.h * scale;
+            const x0 = cx + gdat.ox * scaleFont;
+            const y0 = gdat.oy * scaleFont;
+            const x1 = x0 + gdat.w * scaleFont;
+            const y1 = y0 + gdat.h * scaleFont;
+
+            const pTL = transform(x0 - offsetX, y0 - offsetY);
+            const pTR = transform(x1 - offsetX, y0 - offsetY);
+            const pBL = transform(x0 - offsetX, y1 - offsetY);
+            const pBR = transform(x1 - offsetX, y1 - offsetY);
 
             const u0 = gdat.x / font.texW;
             const v0 = gdat.y / font.texH;
             const u1 = (gdat.x + gdat.w) / font.texW;
             const v1 = (gdat.y + gdat.h) / font.texH;
 
-            const push = (px, py, u, v) => {
-                d[i++] = px;
-                d[i++] = py;
-                d[i++] = u;
-                d[i++] = v;
-                d[i++] = r;
-                d[i++] = g;
-                d[i++] = b;
-                d[i++] = a;
+            const push = (vtx, u, v) => {
+                d[i++] = vtx.x; d[i++] = vtx.y;
+                d[i++] = u; d[i++] = v;
+                d[i++] = r; d[i++] = g; d[i++] = b; d[i++] = a;
             };
 
-            push(x0, y0, u0, v0);
-            push(x1, y0, u1, v0);
-            push(x0, y1, u0, v1);
+            push(pTL, u0, v0);
+            push(pTR, u1, v0);
+            push(pBL, u0, v1);
+            push(pTR, u1, v0);
+            push(pBR, u1, v1);
+            push(pBL, u0, v1);
 
-            push(x1, y0, u1, v0);
-            push(x1, y1, u1, v1);
-            push(x0, y1, u0, v1);
-
-            cx += gdat.adv * scale;
+            cx += gdat.adv * scaleFont;
         }
 
         this.bufferIndex = i;
@@ -358,13 +347,11 @@ export default class TextRenderer {
         if (i >= this.bufferData.length - this.floatsPerGlyph) {
             this.flush();
         }
-
         this._lastDist = font.distance;
     }
 
     flush() {
         if (this.bufferIndex === 0) return;
-
         const gl = this.gl;
         const s = this.s;
 

@@ -3,59 +3,72 @@ import { computed } from 'vue';
 import SceneNode from './SceneNode.vue';
 
 const props = defineProps({
-  data: { type: Array, default: () => [] }, // Flat array dari backend (Mongo) atau IndexedDB
-  selectedId: String
+  data: { type: Array, default: () => [] },
+  selectedIds: { type: Array, default: () => [] } // Ubah jadi Array
 });
 
-defineEmits(['select']);
+const emit = defineEmits(['select']);
 
-// Transformasi Flat Array -> Nested Tree
+// Transformasi Data ke Tree
 const nestedEntities = computed(() => {
-  // Cek defensive programming
-  if (!props.data || !Array.isArray(props.data) || props.data.length === 0) {
-    return [];
-  }
-
+  if (!props.data || !props.data.length) return [];
   const map = {};
   const roots = [];
 
-  // 1. Buat Map dan Normalisasi ID (_id -> id)
-  props.data.forEach(entity => {
-    // PENTING: Backend Mongoose mengirim '_id', tapi IndexedDB/UI mungkin pakai 'id'.
-    // Kita ambil mana yang ada (prioritas _id dari server).
-    const uniqueId = entity._id || entity.id;
-
-    if (!uniqueId) return; // Skip jika data corrupt tidak punya ID
-
-    // Clone object dan siapkan array children
-    // Kita inject properti 'id' agar komponen anak (SceneNode) konsisten membacanya
-    map[uniqueId] = { 
-      ...entity, 
-      id: uniqueId, // Standardisasi ke 'id'
-      children: [] 
-    };
+  props.data.forEach(e => {
+    const id = e._id || e.id;
+    if (!id) return;
+    map[id] = { ...e, id, children: [] };
   });
 
-  // 2. Susun relasi Parent-Child
-  props.data.forEach(entity => {
-    const uniqueId = entity._id || entity.id;
-    const node = map[uniqueId];
-    
-    // Safety check jika node entah kenapa tidak masuk map
+  props.data.forEach(e => {
+    const id = e._id || e.id;
+    const node = map[id];
     if (!node) return;
-
-    // Cek apakah punya parent DAN parent-nya ada di dalam list saat ini
-    // (Penting: kadang parentId ada, tapi parent-nya belum terload/terhapus)
-    if (entity.parentId && map[entity.parentId]) {
-      map[entity.parentId].children.push(node);
+    
+    if (e.parentId && map[e.parentId]) {
+      map[e.parentId].children.push(node);
     } else {
-      // Jika parentId null atau parent tidak ditemukan, anggap sebagai Root
       roots.push(node);
     }
   });
-
   return roots;
 });
+
+// --- RECURSIVE HELPER ---
+// Mengumpulkan semua ID (Self + Descendants)
+const collectIds = (node, result = []) => {
+  result.push(node.id);
+  if (node.children && node.children.length > 0) {
+    node.children.forEach(child => collectIds(child, result));
+  }
+  return result;
+};
+
+// Mencari Node di dalam Tree yang sudah computed
+const findNode = (nodes, id) => {
+  for (const node of nodes) {
+    if (node.id === id) return node;
+    if (node.children) {
+      const found = findNode(node.children, id);
+      if (found) return found;
+    }
+  }
+  return null;
+};
+
+// Handler Klik
+const handleSelect = (clickedId) => {
+  const targetNode = findNode(nestedEntities.value, clickedId);
+  
+  if (targetNode) {
+    // Kumpulkan ID dari node ini dan semua anaknya
+    const allIds = collectIds(targetNode);
+    emit('select', allIds); // Emit Array of IDs
+  } else {
+    emit('select', [clickedId]);
+  }
+};
 </script>
 
 <template>
@@ -63,7 +76,6 @@ const nestedEntities = computed(() => {
     <div v-if="!nestedEntities || nestedEntities.length === 0" class="px-4 py-8 text-center select-none">
       <div class="text-2xl mb-2 opacity-20">🧊</div>
       <p class="text-[10px] text-muted-foreground uppercase tracking-widest">Scene is empty</p>
-      <p class="text-[9px] text-muted-foreground/60 mt-1">Right-click to add Entity</p>
     </div>
 
     <SceneNode 
@@ -71,8 +83,8 @@ const nestedEntities = computed(() => {
       v-for="node in nestedEntities" 
       :key="node.id" 
       :node="node" 
-      :selectedId="selectedId"
-      @select="$emit('select', $event)"
+      :selectedIds="selectedIds"
+      @select="handleSelect" 
     />
   </div>
 </template>

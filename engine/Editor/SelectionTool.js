@@ -1,5 +1,6 @@
 import Config from "../Core/Config.js";
 import { bus } from "../Util/EventBus.js";
+import { calculateQuadVertices } from "../Util/calculateQuadVertices.js";
 
 export default class SelectionTool {
     constructor(world, game, canvas, renderer, input) {
@@ -29,20 +30,68 @@ export default class SelectionTool {
 
         this.pointerDownTime = 0;
         this.isLongPress = false;
-        this.LONG_PRESS_TIME = 50;
+        this.LONG_PRESS_TIME = 10;
 
         this.lastAutoPanTime = 0;
         this.autoPanVel = { x: 0, y: 0 };
         
         this.viewportInsets = { top: 0, left: 0, right: 0, bottom: 0 };
 
+        this.onExternalSelect = (list) => {
+            this.syncSelectionFromBus(list);
+        };
+        bus.on("entity:selected", this.onExternalSelect);
+        bus.on("entity:deselected", () => {
+            this.selectedList = [];
+        });
+
         world.selectionRenderer = (image, shape, text, proj) => {
-            this.drawSelected(shape, proj);
-            this.drawMultiSelection(shape, proj);
+            if (!this.active) return;
             this.drawHover(shape, proj);
+            this.drawSelected(shape, proj);
             if (this.transform) this.transform.draw(shape, proj);
             this.drawMarquee(shape, proj);
         };
+    }
+
+    _findEntity(id) {
+        for (const [lid, ents] of this.world.layers) {
+            const found = ents.find(e => (e._id || e.id) === id);
+            if (found) return found;
+        }
+        return null;
+    }
+
+    _findChildren(parentId) {
+        let children = [];
+        for (const [lid, ents] of this.world.layers) {
+            children.push(...ents.filter(e => e.parentId === parentId && e.visible));
+        }
+        return children;
+    }
+
+    syncSelectionFromBus(externalList) {
+        if (!externalList || externalList.length === 0) {
+            this.selectedList = [];
+            return;
+        }
+        if (externalList === this.selectedList) return;
+
+        const engineEntities = [];
+        const idsToFind = externalList.map(e => e._id || e.id);
+
+        for (const [layerId, ents] of this.world.layers) {
+            for (const e of ents) {
+                if (idsToFind.includes(e._id || e.id)) {
+                    engineEntities.push(e);
+                }
+            }
+        }
+        this.selectedList = engineEntities;
+    }
+
+    destroy() {
+        bus.off("entity:selected", this.onExternalSelect);
     }
 
     attachTransform(t) {
@@ -64,12 +113,23 @@ export default class SelectionTool {
         };
     }
 
-    getBounding(e) {
-        if (e.components?.TextRenderer)
-            return { x: e.hitX, y: e.hitY, w: e.hitWidth, h: e.hitHeight };
-        if (e.shape?.type === "line")
-            return { x: e.hitX, y: e.hitY, w: e.hitWidth, h: e.hitHeight };
-        return { x: e.x, y: e.y, w: e.width, h: e.height };
+    getAABB(e) {
+        const r = e.rotation || 0;
+        const sx = e.scaleX ?? 1;
+        const sy = e.scaleY ?? 1;
+        const px = e.pivotX ?? 0.5;
+        const py = e.pivotY ?? 0.5;
+
+        const v = calculateQuadVertices(e.x, e.y, e.width, e.height, r, sx, sy, px, py);
+        const xs = [v.tl.x, v.tr.x, v.bl.x, v.br.x];
+        const ys = [v.tl.y, v.tr.y, v.bl.y, v.br.y];
+
+        const minX = Math.min(...xs);
+        const maxX = Math.max(...xs);
+        const minY = Math.min(...ys);
+        const maxY = Math.max(...ys);
+
+        return { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
     }
 
     update() {
@@ -88,25 +148,24 @@ export default class SelectionTool {
             this.isPointerDown = true;
         }
 
-        const isDraggingResize = this.transform && this.transform.draggingResize;
+        const isDraggingResize = this.transform && (this.transform.draggingResize || this.transform.draggingMove || this.transform.draggingRotate);
 
         if (p.down && this.isPointerDown && !this.isLongPress && !isDraggingResize) {
             if (performance.now() - this.pointerDownTime >= this.LONG_PRESS_TIME) {
                 this.isLongPress = true;
-
-                if (p.isTouch) {
-                    const w = this.toWorld(px, py);
-                    const hit = this.hit(w.x, w.y);
-                    if (hit && this.transform) this.transform.beginMove(px, py, true);
-                    return;
-                }
-
-                if (this.selectedList.length > 1 && this.isInsideGroup(px, py)) {
-                    if (this.transform) this.transform.beginMove(px, py, false);
+                const w = this.toWorld(px, py);
+                
+                if (this.selectedList.length > 1 && this.isInsideGroup(w.x, w.y)) {
+                     if (this.transform) this.transform.beginMove(px, py, false);
                 } else {
-                    const w = this.toWorld(px, py);
                     const hit = this.hit(w.x, w.y);
-                    if (hit && this.transform) this.transform.beginMove(px, py, false);
+                    if (hit && this.transform) {
+                        if(!this.selectedList.includes(hit)) {
+                            this.selectedList = [hit];
+                            bus.emit("entity:selected", this.selectedList);
+                        }
+                        this.transform.beginMove(px, py, false);
+                    }
                 }
             }
         }
@@ -137,43 +196,35 @@ export default class SelectionTool {
             this.transform.computeHandles();
             this.hoverHandle = this.transform.getHoverHandle(px, py);
             if (this.hoverHandle) {
-                this.canvas.style.cursor = this.transform.getCursor(this.hoverHandle.type);
+                this.canvas.style.cursor = this.transform.getCursor(this.hoverHandle);
+                this.hovered = null;
                 return;
             }
         }
 
-        if (this.selectedList.length > 1 && this.isInsideGroup(px, py)) {
+        const w = this.toWorld(px, py);
+
+        if (this.selectedList.length > 1 && this.isInsideGroup(w.x, w.y)) {
             this.canvas.style.cursor = "move";
             this.hovered = null;
             return;
         }
 
-        const p = this.toWorld(px, py);
-        this.hovered = this.hit(p.x, p.y);
+        this.hovered = this.hit(w.x, w.y);
 
         if (this.hovered) {
-            this.canvas.style.cursor = "move";
+            const isSelected = this.selectedList.includes(this.hovered);
+            this.canvas.style.cursor = isSelected ? "move" : "pointer";
         } else {
             this.canvas.style.cursor = "default";
         }
     }
 
-    isInsideGroup(px, py) {
+    isInsideGroup(wx, wy) {
         if (this.selectedList.length <= 1) return false;
-
-        let minX = Infinity, minY = Infinity;
-        let maxX = -Infinity, maxY = -Infinity;
-
-        for (const e of this.selectedList) {
-            const b = this.getBounding(e);
-            if (b.x < minX) minX = b.x;
-            if (b.y < minY) minY = b.y;
-            if (b.x + b.w > maxX) maxX = b.x + b.w;
-            if (b.y + b.h > maxY) maxY = b.y + b.h;
-        }
-
-        const p = this.toWorld(px, py);
-        return (p.x >= minX && p.x <= maxX && p.y >= minY && p.y <= maxY);
+        const box = this.transform ? this.transform.computeGroupBounds() : null;
+        if (!box) return false;
+        return (wx >= box.x && wx <= box.x + box.w && wy >= box.y && wy <= box.y + box.h);
     }
 
     updateHoverMarquee() {
@@ -187,55 +238,35 @@ export default class SelectionTool {
 
         for (const layerId of this.world.layerOrder) {
             if (!this.world.layerVisibility[layerId]) continue;
-
             const ents = this.world.layers.get(layerId);
             if (!ents) continue;
 
             for (const e of ents) {
                 if (!e.visible) continue;
+                const b = this.getAABB(e);
+                const overlap = 
+                    b.x < box.x + box.w &&
+                    b.x + b.w > box.x &&
+                    b.y < box.y + box.h &&
+                    b.y + b.h > box.y;
 
-                const b = this.getBounding(e);
-                const i =
-                    b.x + b.w >= box.x &&
-                    b.x <= box.x + box.w &&
-                    b.y + b.h >= box.y &&
-                    b.y <= box.y + box.h;
-
-                if (i) list.push(e);
+                if (overlap) list.push(e);
             }
         }
-
         this.hoverMarqueeList = list;
-    }
-
-    calculateViewportInsets() {
-        const topEl = document.getElementById("editor-topbar");
-        const leftEl = document.getElementById("editor-sidebar-left");
-        const rightEl = document.getElementById("editor-sidebar-right");
-
-        this.viewportInsets = {
-            top: topEl ? topEl.offsetHeight : 0,
-            left: leftEl ? leftEl.offsetWidth : 0,
-            right: rightEl ? rightEl.offsetWidth : 0,
-            bottom: 0
-        };
     }
 
     pointerDown(px, py, isTouch) {
         const w = this.toWorld(px, py);
-        const hit = this.hit(w.x, w.y);
-
+        
         if (this.transform && this.hoverHandle) {
-            this.transform.beginResize(this.hoverHandle.type, px, py);
+            this.transform.beginResize(this.hoverHandle, px, py);
             return;
         }
 
         const ctrl = this.input.keyboard.ctrl || this.input.keyboard.shift || this.input.keyboard.meta;
-
-        if (!ctrl && this.selectedList.length > 1 && this.isInsideGroup(px, py)) {
-            return;
-        }
-
+        const hit = this.hit(w.x, w.y);
+        
         if (hit) {
             const inside = this.selectedList.includes(hit);
 
@@ -244,83 +275,87 @@ export default class SelectionTool {
                     ? this.selectedList.filter(a => a !== hit)
                     : [...this.selectedList, hit];
             } else {
-                if (!inside) this.selectedList = [hit];
+                if (!inside) {
+                    this.selectedList = [hit];
+                }
             }
-
             bus.emit("entity:selected", this.selectedList);
             return;
         }
 
-        if (!isTouch) {
+        if (!isTouch && !hit) {
             this.calculateViewportInsets();
             this.marqueeActive = true;
-            const w2 = this.toWorld(px, py);
+            this.selectedList = [];
+            bus.emit("entity:deselected");
 
-            this.marqueeStart.x = w2.x;
-            this.marqueeStart.y = w2.y;
-            this.marqueeEnd.x = w2.x;
-            this.marqueeEnd.y = w2.y;
-
+            this.marqueeStart.x = w.x;
+            this.marqueeStart.y = w.y;
+            this.marqueeEnd.x = w.x;
+            this.marqueeEnd.y = w.y;
+            
             this.updateHoverMarquee();
         }
     }
 
     pointerUp(px, py) {
-        // --- Perbaikan Utama di SelectionTool ---
-        if (this.transform) {
-            this.transform.resetDrag();
+        if (this.transform) this.transform.resetDrag();
+
+        // --- UPDATE: MARQUEE PARENT INCLUSIVE SELECTION ---
+        if (this.marqueeActive) {
+            // 1. Mulai dengan daftar entity yang terkena marquee
+            let selectionSet = new Set(this.hoverMarqueeList);
+            let hasChanged = true;
+
+            // 2. Loop sampai stabil (untuk nested group: Child -> Parent -> Grandparent)
+            while (hasChanged) {
+                hasChanged = false;
+                
+                // Kumpulkan ID parent dari entity yang SAAT INI terpilih
+                const parentIdsToCheck = new Set();
+                for (const e of selectionSet) {
+                    if (e.parentId) parentIdsToCheck.add(e.parentId);
+                }
+
+                for (const pid of parentIdsToCheck) {
+                    const parent = this._findEntity(pid);
+                    // Jika parent tidak ketemu atau SUDAH terpilih, skip
+                    if (!parent || selectionSet.has(parent)) continue;
+
+                    // Ambil semua anak dari parent ini
+                    const children = this._findChildren(pid);
+                    if (children.length === 0) continue;
+
+                    // SYARAT: Seluruh anak harus ada di dalam selectionSet
+                    const allChildrenSelected = children.every(c => selectionSet.has(c));
+
+                    if (allChildrenSelected) {
+                        // Tambahkan Parent ke selection (JANGAN hapus anak)
+                        selectionSet.add(parent);
+                        hasChanged = true; // Ulangi loop karena parent baru mungkin punya parent lagi
+                    }
+                }
+            }
+
+            this.selectedList = Array.from(selectionSet);
+            bus.emit("entity:selected", this.selectedList);
+            
+            this.marqueeActive = false;
+            this.hoverMarqueeList = [];
+            return;
         }
-        // ----------------------------------------
-        
-        if (!this.isLongPress) {
+
+        if (!this.isLongPress && !this.marqueeActive) {
             const w = this.toWorld(px, py);
-            const hit = this.hit(w.x, w.y);
-            if (!hit && !this.marqueeActive) {
+            if (!this.hit(w.x, w.y)) {
                 this.selectedList = [];
                 bus.emit("entity:deselected");
-                return;
             }
         }
-
-        if (!this.marqueeActive) return;
-
-        const box = this.getMarqueeWorld();
-        const list = [];
-
-        for (const layerId of this.world.layerOrder) {
-            if (this.marqueeUseLayerFilter) {
-                if (!this.marqueeAllowedLayers.includes(layerId)) continue;
-            }
-
-            if (!this.world.layerVisibility[layerId]) continue;
-
-            const ents = this.world.layers.get(layerId);
-            if (!ents) continue;
-
-            for (const e of ents) {
-                if (!e.visible) continue;
-
-                const b = this.getBounding(e);
-                const i =
-                    b.x + b.w >= box.x &&
-                    b.x <= box.x + box.w &&
-                    b.y + b.h >= box.y &&
-                    b.y <= box.y + box.h;
-
-                if (i) list.push(e);
-            }
-        }
-
-        this.selectedList = list;
-        bus.emit("entity:selected", list);
-
-        this.marqueeActive = false;
-        this.hoverMarqueeList = [];
     }
 
     hit(wx, wy) {
         const world = this.world;
-
         for (let li = world.layerOrder.length - 1; li >= 0; li--) {
             const layerId = world.layerOrder[li];
             if (!world.layerVisibility[layerId]) continue;
@@ -331,25 +366,53 @@ export default class SelectionTool {
             let best = null;
             let bestZ = -Infinity;
 
-            for (let i = 0; i < ents.length; i++) {
-                const e = ents[i];
+            for (const e of ents) {
                 if (!e.visible) continue;
-
-                const b = this.getBounding(e);
-                if (wx >= b.x && wx <= b.x + b.w &&
-                    wy >= b.y && wy <= b.y + b.h) {
+                if (this.isPointInEntity(wx, wy, e)) {
                     const z = e.zIndex || 0;
-                    if (z > bestZ) {
+                    if (z >= bestZ) {
                         bestZ = z;
                         best = e;
                     }
                 }
             }
-
             if (best) return best;
         }
-
         return null;
+    }
+
+    isPointInEntity(wx, wy, e) {
+        const r = e.rotation || 0;
+        const sx = e.scaleX ?? 1;
+        const sy = e.scaleY ?? 1;
+        const px = e.pivotX ?? 0.5;
+        const py = e.pivotY ?? 0.5;
+        const w = e.width;
+        const h = e.height;
+
+        let dx = wx - e.x;
+        let dy = wy - e.y;
+
+        const c = Math.cos(-r);
+        const s = Math.sin(-r);
+        const localX = dx * c - dy * s;
+        const localY = dx * s + dy * c;
+
+        const unscaledMouseX = localX / sx;
+        const unscaledMouseY = localY / sy;
+
+        const left = -px * w;
+        const right = w - (px * w);
+        const top = -py * h;
+        const bottom = h - (py * h);
+
+        const minX = Math.min(left, right);
+        const maxX = Math.max(left, right);
+        const minY = Math.min(top, bottom);
+        const maxY = Math.max(top, bottom);
+
+        return (unscaledMouseX >= minX && unscaledMouseX <= maxX && 
+                unscaledMouseY >= minY && unscaledMouseY <= maxY);
     }
 
     getMarqueeWorld() {
@@ -357,82 +420,41 @@ export default class SelectionTool {
         const y1 = Math.min(this.marqueeStart.y, this.marqueeEnd.y);
         const x2 = Math.max(this.marqueeStart.x, this.marqueeEnd.x);
         const y2 = Math.max(this.marqueeStart.y, this.marqueeEnd.y);
-
         return { x: x1, y: y1, w: x2 - x1, h: y2 - y1 };
     }
 
-    updateAutoPan() {
-        const now = performance.now();
-        const dt = (now - this.lastAutoPanTime) / 1000;
-        this.lastAutoPanTime = now;
+    drawObb(shape, e, color, proj) {
+        const r = e.rotation || 0;
+        const sx = e.scaleX ?? 1;
+        const sy = e.scaleY ?? 1;
+        const px = e.pivotX ?? 0.5;
+        const py = e.pivotY ?? 0.5;
 
-        if (Math.abs(this.autoPanVel.x) < 0.01 &&
-            Math.abs(this.autoPanVel.y) < 0.01) return;
+        const v = calculateQuadVertices(e.x, e.y, e.width, e.height, r, sx, sy, px, py);
+        const t = 2 / this.game.camera.scale;
 
-        const cam = this.game.camera;
-        const scale = Math.max(0.001, cam.scale);
-
-        cam.x += (this.autoPanVel.x / scale) * dt;
-        cam.y += (this.autoPanVel.y / scale) * dt;
-
-        this.autoPanVel.x *= 0.85;
-        this.autoPanVel.y *= 0.85;
+        shape.drawLine(v.tl.x, v.tl.y, v.tr.x, v.tr.y, color, t, proj);
+        shape.drawLine(v.tr.x, v.tr.y, v.br.x, v.br.y, color, t, proj);
+        shape.drawLine(v.br.x, v.br.y, v.bl.x, v.bl.y, color, t, proj);
+        shape.drawLine(v.bl.x, v.bl.y, v.tl.x, v.tl.y, color, t, proj);
     }
 
-    applyPointerAutoPan(px, py) {
-        const rect = this.canvas.getBoundingClientRect();
-        const W = rect.width;
-        const H = rect.height;
-
-        const scaleX = this.canvas.width / W;
-        const scaleY = this.canvas.height / H;
-
-        const cssX = px / scaleX;
-        const cssY = py / scaleY;
-
-        const margin = 50;
-        const maxSpeed = 600; 
-
-        let vx = 0;
-        let vy = 0;
-
-        const getSpeed = (distance) => {
-            if (distance <= 0) return 0;
-            const t = Math.min(1.5, distance / margin);
-            return maxSpeed * (t * t);
-        };
-
-        const leftEdge = this.viewportInsets.left;
-        const distLeft = (leftEdge + margin) - cssX;
-        if (distLeft > 0) vx = -getSpeed(distLeft);
-
-        const rightEdge = W - this.viewportInsets.right;
-        const distRight = cssX - (rightEdge - margin);
-        if (distRight > 0) vx = getSpeed(distRight);
-
-        const topEdge = this.viewportInsets.top;
-        const distTop = (topEdge + margin) - cssY;
-        if (distTop > 0) vy = -getSpeed(distTop);
-
-        const bottomEdge = H - this.viewportInsets.bottom;
-        const distBottom = cssY - (bottomEdge - margin);
-        if (distBottom > 0) vy = getSpeed(distBottom);
-
-        this.autoPanVel.x = Math.min(maxSpeed, Math.max(-maxSpeed, this.autoPanVel.x + vx));
-        this.autoPanVel.y = Math.min(maxSpeed, Math.max(-maxSpeed, this.autoPanVel.y + vy));
-    }
-
-    applyMarqueeAutoPan(px, py) {
-        const dragThreshold = 5; 
-        const dx = Math.abs(this.marqueeStart.x - this.marqueeEnd.x);
-        const dy = Math.abs(this.marqueeStart.y - this.marqueeEnd.y);
-        
-        const scale = this.game.camera.scale;
-        if (dx * scale < dragThreshold && dy * scale < dragThreshold) {
-            return;
+    drawSelected(shape, proj) {
+        if (!this.selectedList.length) return;
+        const c = this.outlineColor;
+        for (const e of this.selectedList) {
+            this.drawObb(shape, e, c, proj);
         }
+    }
 
-        this.applyPointerAutoPan(px, py);
+    drawHover(shape, proj) {
+        const c = [this.outlineColor[0], this.outlineColor[1], this.outlineColor[2], 0.5];
+        if (this.hovered && !this.selectedList.includes(this.hovered)) {
+            this.drawObb(shape, this.hovered, c, proj);
+        }
+        for (const e of this.hoverMarqueeList) {
+            this.drawObb(shape, e, c, proj);
+        }
     }
 
     drawMarquee(shape, proj) {
@@ -440,71 +462,56 @@ export default class SelectionTool {
         const b = this.getMarqueeWorld();
         const t = 1 / this.game.camera.scale;
         const c = this.outlineColor;
-        const fill = [c[0], c[1], c[2], 0.15];
+        const fill = [c[0], c[1], c[2], 0.1];
 
         shape.drawRect(b.x, b.y, b.w, b.h, fill, proj);
-        shape.drawLine(b.x, b.y, b.x + b.w, b.y, c, t, proj);
-        shape.drawLine(b.x + b.w, b.y, b.x + b.w, b.y + b.h, c, t, proj);
-        shape.drawLine(b.x + b.w, b.y + b.h, b.x, b.y + b.h, c, t, proj);
-        shape.drawLine(b.x, b.y + b.h, b.x, b.y, c, t, proj);
+        shape.drawLine(b.x, b.y, b.x+b.w, b.y, c, t, proj);
+        shape.drawLine(b.x+b.w, b.y, b.x+b.w, b.y+b.h, c, t, proj);
+        shape.drawLine(b.x+b.w, b.y+b.h, b.x, b.y+b.h, c, t, proj);
+        shape.drawLine(b.x, b.y+b.h, b.x, b.y, c, t, proj);
+    }
+    
+    calculateViewportInsets() {
+        const topEl = document.getElementById("editor-topbar");
+        const leftEl = document.getElementById("editor-sidebar-left");
+        const rightEl = document.getElementById("editor-sidebar-right");
+        this.viewportInsets = {
+            top: topEl ? topEl.offsetHeight : 0,
+            left: leftEl ? leftEl.offsetWidth : 0,
+            right: rightEl ? rightEl.offsetWidth : 0,
+            bottom: 0
+        };
     }
 
-    drawHover(shape, proj) {
-        const t = 1.5 / this.game.camera.scale;
-        const c = this.outlineColor;
-
-        if (this.hovered) {
-            const b = this.getBounding(this.hovered);
-            shape.drawLine(b.x, b.y, b.x + b.w, b.y, c, t, proj);
-            shape.drawLine(b.x + b.w, b.y, b.x + b.w, b.y + b.h, c, t, proj);
-            shape.drawLine(b.x + b.w, b.y + b.h, b.x, b.y + b.h, c, t, proj);
-            shape.drawLine(b.x, b.y + b.h, b.x, b.y, c, t, proj);
-        }
-
-        for (const e of this.hoverMarqueeList) {
-            const b = this.getBounding(e);
-            shape.drawLine(b.x, b.y, b.x + b.w, b.y, c, t, proj);
-            shape.drawLine(b.x + b.w, b.y, b.x + b.w, b.y + b.h, c, t, proj);
-            shape.drawLine(b.x + b.w, b.y + b.h, b.x, b.y + b.h, c, t, proj);
-            shape.drawLine(b.x, b.y + b.h, b.x, b.y, c, t, proj);
-        }
+    updateAutoPan() {
+        const now = performance.now();
+        const dt = (now - this.lastAutoPanTime) / 1000;
+        this.lastAutoPanTime = now;
+        if (Math.abs(this.autoPanVel.x) < 0.01 && Math.abs(this.autoPanVel.y) < 0.01) return;
+        const cam = this.game.camera;
+        const scale = Math.max(0.001, cam.scale);
+        cam.x += (this.autoPanVel.x / scale) * dt;
+        cam.y += (this.autoPanVel.y / scale) * dt;
+        this.autoPanVel.x *= 0.85; this.autoPanVel.y *= 0.85;
     }
 
-    drawSelected(shape, proj) {
-        if (!this.selectedList.length) return;
+    applyPointerAutoPan(px, py) {
+        const rect = this.canvas.getBoundingClientRect();
+        const W = rect.width; const H = rect.height;
+        const scaleX = this.canvas.width / W; const scaleY = this.canvas.height / H;
+        const cssX = px / scaleX; const cssY = py / scaleY;
+        const margin = 50; const maxSpeed = 600; 
+        let vx = 0; let vy = 0;
+        const getSpeed = (dist) => dist <= 0 ? 0 : maxSpeed * Math.min(1.5, dist/margin)**2;
+        
+        const distLeft = (this.viewportInsets.left + margin) - cssX; if(distLeft>0) vx=-getSpeed(distLeft);
+        const distRight = cssX - (W - this.viewportInsets.right - margin); if(distRight>0) vx=getSpeed(distRight);
+        const distTop = (this.viewportInsets.top + margin) - cssY; if(distTop>0) vy=-getSpeed(distTop);
+        const distBottom = cssY - (H - this.viewportInsets.bottom - margin); if(distBottom>0) vy=getSpeed(distBottom);
 
-        const t = 2 / this.game.camera.scale;
-        const c = this.outlineColor;
-
-        for (const e of this.selectedList) {
-            const b = this.getBounding(e);
-            shape.drawLine(b.x, b.y, b.x + b.w, b.y, c, t, proj);
-            shape.drawLine(b.x + b.w, b.y, b.x + b.w, b.y + b.h, c, t, proj);
-            shape.drawLine(b.x + b.w, b.y + b.h, b.x, b.y + b.h, c, t, proj);
-            shape.drawLine(b.x, b.y + b.h, b.x, b.y, c, t, proj);
-        }
+        this.autoPanVel.x = Math.min(maxSpeed, Math.max(-maxSpeed, this.autoPanVel.x + vx));
+        this.autoPanVel.y = Math.min(maxSpeed, Math.max(-maxSpeed, this.autoPanVel.y + vy));
     }
 
-    drawMultiSelection(shape, proj) {
-        if (this.selectedList.length <= 1) return;
-
-        let minX = Infinity, minY = Infinity;
-        let maxX = -Infinity, maxY = -Infinity;
-
-        for (const e of this.selectedList) {
-            const b = this.getBounding(e);
-            if (b.x < minX) minX = b.x;
-            if (b.y < minY) minY = b.y;
-            if (b.x + b.w > maxX) maxX = b.x + b.w;
-            if (b.y + b.h > maxY) maxY = b.y + b.h;
-        }
-
-        const t = 2 / this.game.camera.scale;
-        const c = this.outlineColor;
-
-        shape.drawLine(minX, minY, maxX, minY, c, t, proj);
-        shape.drawLine(maxX, minY, maxX, maxY, c, t, proj);
-        shape.drawLine(maxX, maxY, minX, maxY, c, t, proj);
-        shape.drawLine(minX, maxY, minX, minY, c, t, proj);
-    }
+    applyMarqueeAutoPan(px, py) { this.applyPointerAutoPan(px, py); }
 }

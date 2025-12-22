@@ -6,7 +6,9 @@ import { useBackend } from "@/composables/useBackend.js";
 import { useLocalDB } from "@/composables/useLocalDB.js";
 import { useSyncManager } from "@/composables/useSyncManager.js";
 import { hasPendingCloudSync } from "@/services/sceneService.js";
+import { useSelection } from "@/composables/useSelection.js";
 
+const { initSelectionListener } = useSelection();
 const { activeProjectId } = useEditorState();
 const { initDB, hydrateFromBackend, getSceneFromLocal } = useLocalDB();
 const { registerChange, setInitialSyncStatus } = useSyncManager();
@@ -24,9 +26,7 @@ const {
 const isEngineReady = ref(false);
 let engineBus = null;
 
-// Engine Handler: Murni jembatan antara EventBus Engine -> SyncManager
 const handleEntityModified = (updates) => {
-  // updates biasanya array object [{_id, x, y, ...}]
   if (Array.isArray(updates)) {
     updates.forEach(u => registerChange(u));
   } else {
@@ -39,7 +39,6 @@ onMounted(async () => {
   const dbReady = await initDB();
   if (!dbReady || !activeProjectId.value) return;
 
-  // 1. Fetch Basic Metadata
   await Promise.all([
     fetchProjectDetails(activeProjectId.value),
     fetchAllProjectResources(activeProjectId.value)
@@ -47,19 +46,16 @@ onMounted(async () => {
 
   if (!projectData.value) return;
 
-  // 2. Tentukan Scene Awal (Prioritas: Local DB > Cloud)
   const targetSceneId = currentScene.value?._id || scenes.value[0]?._id;
   if (!targetSceneId) return;
 
   const localSceneData = await getSceneFromLocal(targetSceneId);
 
   if (localSceneData) {
-      // Load Local (Offline capability)
       currentScene.value = localSceneData;
       const isPending = await hasPendingCloudSync(targetSceneId);
       setInitialSyncStatus(isPending);
   } else {
-      // Load Cloud & Hydrate Local
       await fetchScene(targetSceneId);
       
       const serverPayload = {
@@ -72,8 +68,6 @@ onMounted(async () => {
       setInitialSyncStatus(false);
   }
 
-  // 3. Start Engine
-  // Menggunakan toRaw() agar Engine tidak menyentuh Proxy Vue (Critical Performance)
   const enginePayload = {
     project: toRaw(projectData.value), 
     assets: toRaw(assets.value),        
@@ -85,6 +79,7 @@ onMounted(async () => {
   if (engineInstance) {
       engineBus = engineInstance.bus;
       engineBus.on("entity:modified", handleEntityModified);
+      initSelectionListener(engineBus);
       isEngineReady.value = true;
   }
 });
@@ -92,7 +87,7 @@ onMounted(async () => {
 onUnmounted(() => {
   if (engineBus) {
     engineBus.off("entity:modified", handleEntityModified);
-    engineInstance?.destroy(); // Pastikan ada method destroy/cleanup di engine
+    engineInstance?.destroy();
   }
 });
 </script>
