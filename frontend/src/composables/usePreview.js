@@ -80,10 +80,8 @@ export function usePreview() {
 
   async function openOrUpdatePreview() {
     try {
-      // Step 1: Siapkan Data (Async operations terjadi di sini)
       const payload = await getFreshRuntimeData();
 
-      // Step 2: Window Management (Logic UI tetap sama)
       if (previewWindow.value && !previewWindow.value.closed) {
         previewWindow.value.postMessage({ type: "projectData", payload }, "*");
         previewWindow.value.focus();
@@ -95,7 +93,6 @@ export function usePreview() {
       previewWindow.value = window.open("/preview/preview.html", "LupisPreview", "width=1280,height=720,resizable=yes");
       isPreviewing.value = true;
 
-      // Setup Message Listener
       if (readyListener) window.removeEventListener("message", readyListener);
       
       readyListener = (ev) => {
@@ -110,7 +107,6 @@ export function usePreview() {
       
       window.addEventListener("message", readyListener);
 
-      // Fallback timer (jika preview.html loading kelamaan atau event missed)
       fallbackTimer = setTimeout(() => {
         if (!previewWindow.value || previewWindow.value.closed) return;
         console.warn("⚠️ [usePreview] Timeout waiting for ready signal. Sending payload forcibly.");

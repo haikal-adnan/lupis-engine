@@ -64,10 +64,14 @@ export default class SceneLoader {
     }
 
     _buildEntity(desc, assets) {
-        // 1. Normalize Transform (Pos, Rot, Scale)
-        // Logic ini menangani backward compatibility data transform
+        // 1. Resolve Transform (tambahkan Pivot, Opacity)
         const transform = desc.transform || {};
-        const { x, y, rotation, scaleX, scaleY } = this._resolveTransform(desc, transform);
+        const { x, y, rotation, scaleX, scaleY, pivotX, pivotY } = this._resolveTransform(desc, transform);
+
+        // Normalize Opacity (0-100 menjadi 0.0-1.0)
+        // Cek property 'opacity' di root entity, lalu fallback ke transform (jika ada logic lama)
+        const rawOpacity = desc.opacity ?? 100;
+        const opacity = desc.opacity !== undefined ? desc.opacity : 100;
 
         // 2. Base Entity Structure
         const entity = {
@@ -76,9 +80,12 @@ export default class SceneLoader {
             layer: desc.layerId || desc.layer,
             components: desc.components || {},
             visible: desc.visible ?? true,
-            zIndex: desc.zIndex || 0,
+            zIndex: desc.zIndex ?? transform.zIndex ?? 0, // Ambil zIndex dari transform juga
             parentId: desc.parentId || null,
-            x, y, rotation, scaleX, scaleY
+            // --- DATA BARU ---
+            x, y, rotation, scaleX, scaleY, 
+            pivotX, pivotY,
+            opacity
         };
 
         // 3. Apply Components
@@ -95,12 +102,18 @@ export default class SceneLoader {
 
     _resolveTransform(desc, t) {
         const scale = t.scale || {};
+        const pivot = t.pivot || {};
+
         return {
             x: desc.x ?? t.translate?.x ?? t.x ?? 0,
             y: desc.y ?? t.translate?.y ?? t.y ?? 0,
-            rotation: desc.rotation ?? t.rotation ?? 0,
+            rotation: desc.rotation ?? t.rotation ?? 0, // Dalam radian
             scaleX: desc.scaleX ?? scale.x ?? 1,
-            scaleY: desc.scaleY ?? scale.y ?? 1
+            scaleY: desc.scaleY ?? scale.y ?? 1,
+            // Default Pivot 0.5 (Tengah) atau 0 (Kiri Atas) tergantung preferensi
+            // Di schema Anda default 0.5
+            pivotX: desc.pivotX ?? pivot.x ?? 0.5, 
+            pivotY: desc.pivotY ?? pivot.y ?? 0.5
         };
     }
 

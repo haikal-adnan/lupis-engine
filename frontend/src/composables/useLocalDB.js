@@ -25,7 +25,6 @@ export function useLocalDB() {
         await updateSceneEntities(sceneId, entities);
     };
 
-    // --- TAMBAHAN BARU ---
     const getSceneFromLocal = async (sceneId) => {
         if (!sceneId) return null;
         try {
@@ -35,13 +34,12 @@ export function useLocalDB() {
             return null;
         }
     };
-    // ---------------------
 
     return {
         isReady,
         initDB,
         hydrateFromBackend,
         saveEntitiesToLocal,
-        getSceneFromLocal // Export fungsi baru
+        getSceneFromLocal
     };
 }

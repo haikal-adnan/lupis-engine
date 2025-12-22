@@ -6,18 +6,33 @@ const TransformSchema = new mongoose.Schema({
   height: { type: Number, default: 100 },
   rotation: { type: Number, default: 0 },
   scale: { x: { type: Number, default: 1 }, y: { type: Number, default: 1 } },
+  
+  // Pivot Point (Default Center)
+  pivot: { x: { type: Number, default: 0.5 }, y: { type: Number, default: 0.5 } },
+  
   zIndex: { type: Number, default: 0 }
+
 }, { _id: false });
 
 const EntitySchema = new mongoose.Schema({
   _id: { type: String, required: true }, 
   
   name: { type: String, required: true },
+  
+  // Tagging
+  tag: { type: String, default: null },
+
   prefabId: { type: String, ref: 'Prefab', default: null },
   
   isActive: { type: Boolean, default: true },
   isVisible: { type: Boolean, default: true },
+
+  // Global Opacity
+  opacity: { type: Number, default: 100 },
+
+  // Physics Layer ID
   layerId: { type: String, default: 'default' },
+  
   parentId: { type: String, default: null }, 
   
   transform: { type: TransformSchema, default: () => ({}) },
