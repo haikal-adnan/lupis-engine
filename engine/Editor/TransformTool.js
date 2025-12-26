@@ -40,13 +40,21 @@ export default class TransformTool {
     _cleanComponents(c) { return JSON.parse(JSON.stringify(c)); }
 
     _createSnapshot() {
-        return this.selection.selectedList.map(e => ({
-            _id: e._id, version: e.version, x: e.x, y: e.y, width: e.width, height: e.height,
-            rotation: e.rotation, scaleX: e.scaleX, scaleY: e.scaleY, 
-            pivotX: e.pivotX, pivotY: e.pivotY,
-            zIndex: e.zIndex, opacity: e.opacity ?? 100, visible: e.visible ?? true, tag: e.tag,
-            components: this._cleanComponents(e.components)
-        }));
+        return this.selection.selectedList.map(e => {
+            const t = e.transform;
+            return {
+                _id: e._id, version: e.version, 
+                // Flatten data transform untuk snapshot
+                x: t.x, y: t.y, rotation: t.rotation, 
+                scaleX: t.scaleX, scaleY: t.scaleY, 
+                pivotX: t.pivotX, pivotY: t.pivotY,
+                zIndex: t.zIndex,
+                // Data root
+                width: e.width, height: e.height,
+                opacity: e.opacity ?? 100, visible: e.visible ?? true, tag: e.tag,
+                components: this._cleanComponents(e.components)
+            };
+        });
     }
 
     _applyState(list) {
@@ -59,12 +67,17 @@ export default class TransformTool {
                 if(f) { ent = f; break; }
             }
             if(ent) {
-                ent.x = s.x; ent.y = s.y; ent.width = s.width; ent.height = s.height;
-                ent.rotation = s.rotation; ent.scaleX = s.scaleX; ent.scaleY = s.scaleY;
-                ent.pivotX = s.pivotX; ent.pivotY = s.pivotY;
-                ent.zIndex = s.zIndex; ent.opacity = s.opacity; ent.visible = s.visible;
+                const t = ent.transform;
+                t.x = s.x; t.y = s.y; 
+                t.rotation = s.rotation; t.scaleX = s.scaleX; t.scaleY = s.scaleY;
+                t.pivotX = s.pivotX; t.pivotY = s.pivotY;
+                t.zIndex = s.zIndex;
+
+                ent.width = s.width; ent.height = s.height;
+                ent.opacity = s.opacity; ent.visible = s.visible;
                 ent.tag = s.tag;
                 ent.components = s.components;
+                
                 ApplyResizeToEntity(ent, world);
                 affected.push(ent);
             }
@@ -85,13 +98,14 @@ export default class TransformTool {
 
         if (list.length === 1) {
             const e = list[0];
-            const r = e.rotation || 0;
-            const sx = e.scaleX ?? 1;
-            const sy = e.scaleY ?? 1;
-            const px = e.pivotX ?? 0.5;
-            const py = e.pivotY ?? 0.5;
+            const t = e.transform;
+            const r = t.rotation || 0;
+            const sx = t.scaleX ?? 1;
+            const sy = t.scaleY ?? 1;
+            const px = t.pivotX ?? 0.5;
+            const py = t.pivotY ?? 0.5;
 
-            const v = calculateQuadVertices(e.x, e.y, e.width, e.height, r, sx, sy, px, py);
+            const v = calculateQuadVertices(t.x, t.y, e.width, e.height, r, sx, sy, px, py);
 
             const nw = { type: "nw", x: v.tl.x, y: v.tl.y };
             const ne = { type: "ne", x: v.tr.x, y: v.tr.y };
@@ -202,8 +216,8 @@ export default class TransformTool {
 
         this.moveStartData = list.map(e => ({
             e,
-            x: e.x,
-            y: e.y
+            x: e.transform.x, // Read from transform
+            y: e.transform.y
         }));
     }
 
@@ -222,10 +236,11 @@ export default class TransformTool {
             this.draggingMove = false;
             
             const e = list[0];
+            const t = e.transform;
             
-            this.rotateCenter = { x: e.x, y: e.y };
-            this.rotateStartAngle = Math.atan2(p.y - e.y, p.x - e.x);
-            this.entityStartRotation = e.rotation || 0;
+            this.rotateCenter = { x: t.x, y: t.y };
+            this.rotateStartAngle = Math.atan2(p.y - t.y, p.x - t.x);
+            this.entityStartRotation = t.rotation || 0;
 
         } else {
             this.draggingResize = true;
@@ -234,11 +249,14 @@ export default class TransformTool {
             this.resizeType = handle.type;
             this.startWorld = p;
 
-            this.resizeEntityStarts = list.map(e => ({
-                e,
-                x: e.x, y: e.y, w: e.width, h: e.height,
-                r: e.rotation || 0, sx: e.scaleX ?? 1, sy: e.scaleY ?? 1
-            }));
+            this.resizeEntityStarts = list.map(e => {
+                const t = e.transform;
+                return {
+                    e,
+                    x: t.x, y: t.y, w: e.width, h: e.height,
+                    r: t.rotation || 0, sx: t.scaleX ?? 1, sy: t.scaleY ?? 1
+                };
+            });
         }
     }
 
@@ -297,8 +315,8 @@ export default class TransformTool {
         if (dx === 0 && dy === 0) return;
 
         for (const item of this.moveStartData) {
-            item.e.x = item.x + dx;
-            item.e.y = item.y + dy;
+            item.e.transform.x = item.x + dx; // Write to transform
+            item.e.transform.y = item.y + dy;
         }
         bus.emit("entity:modified", this.selection.selectedList, true); 
     }
@@ -360,20 +378,20 @@ export default class TransformTool {
             let shiftY = 0;
 
             if (anchorX !== null) {
-                const ratioX = (e.pivotX ?? 0.5) - anchorX;
+                const ratioX = (e.transform.pivotX ?? 0.5) - anchorX;
                 shiftX = dW * ratioX; 
             }
             
             if (anchorY !== null) {
-                const ratioY = (e.pivotY ?? 0.5) - anchorY;
+                const ratioY = (e.transform.pivotY ?? 0.5) - anchorY;
                 shiftY = dH * ratioY;
             }
 
             const wc = Math.cos(item.r);
             const ws = Math.sin(item.r);
 
-            e.x = item.x + (shiftX * wc - shiftY * ws);
-            e.y = item.y + (shiftX * ws + shiftY * wc);
+            e.transform.x = item.x + (shiftX * wc - shiftY * ws);
+            e.transform.y = item.y + (shiftX * ws + shiftY * wc);
             
             ApplyResizeToEntity(e, this.world);
         } 
@@ -398,7 +416,7 @@ export default class TransformTool {
             newRotation = snap * (Math.PI / 180);
         }
 
-        e.rotation = newRotation;
+        e.transform.rotation = newRotation;
 
         bus.emit("entity:modified", list, true);
     }
@@ -415,7 +433,7 @@ export default class TransformTool {
         const t = 2 / scale;
         const c = this.selection.outlineColor;
         
-        // --- 1. DRAW BOX (FIX: Garis Kotak yang hilang) ---
+        // --- DRAW BOX ---
         const b = this.groupBounds;
         if (b) {
             if (b.type === 'obb') {
@@ -433,7 +451,7 @@ export default class TransformTool {
             }
         }
 
-        // --- 2. DRAW HANDLES ---
+        // --- DRAW HANDLES ---
         const capLen = 24 / scale; 
         const capThick = 6 / scale;
         const rot = this.activeRotation || 0;

@@ -114,13 +114,15 @@ export default class SelectionTool {
     }
 
     getAABB(e) {
-        const r = e.rotation || 0;
-        const sx = e.scaleX ?? 1;
-        const sy = e.scaleY ?? 1;
-        const px = e.pivotX ?? 0.5;
-        const py = e.pivotY ?? 0.5;
+        const t = e.transform;
+        const r = t.rotation || 0;
+        const sx = t.scaleX ?? 1;
+        const sy = t.scaleY ?? 1;
+        const px = t.pivotX ?? 0.5;
+        const py = t.pivotY ?? 0.5;
 
-        const v = calculateQuadVertices(e.x, e.y, e.width, e.height, r, sx, sy, px, py);
+        // Note: e.width dan e.height masih di root
+        const v = calculateQuadVertices(t.x, t.y, e.width, e.height, r, sx, sy, px, py);
         const xs = [v.tl.x, v.tr.x, v.bl.x, v.br.x];
         const ys = [v.tl.y, v.tr.y, v.bl.y, v.br.y];
 
@@ -301,17 +303,13 @@ export default class SelectionTool {
     pointerUp(px, py) {
         if (this.transform) this.transform.resetDrag();
 
-        // --- UPDATE: MARQUEE PARENT INCLUSIVE SELECTION ---
+        // --- MARQUEE PARENT INCLUSIVE SELECTION ---
         if (this.marqueeActive) {
-            // 1. Mulai dengan daftar entity yang terkena marquee
             let selectionSet = new Set(this.hoverMarqueeList);
             let hasChanged = true;
 
-            // 2. Loop sampai stabil (untuk nested group: Child -> Parent -> Grandparent)
             while (hasChanged) {
                 hasChanged = false;
-                
-                // Kumpulkan ID parent dari entity yang SAAT INI terpilih
                 const parentIdsToCheck = new Set();
                 for (const e of selectionSet) {
                     if (e.parentId) parentIdsToCheck.add(e.parentId);
@@ -319,20 +317,15 @@ export default class SelectionTool {
 
                 for (const pid of parentIdsToCheck) {
                     const parent = this._findEntity(pid);
-                    // Jika parent tidak ketemu atau SUDAH terpilih, skip
                     if (!parent || selectionSet.has(parent)) continue;
 
-                    // Ambil semua anak dari parent ini
                     const children = this._findChildren(pid);
                     if (children.length === 0) continue;
 
-                    // SYARAT: Seluruh anak harus ada di dalam selectionSet
                     const allChildrenSelected = children.every(c => selectionSet.has(c));
-
                     if (allChildrenSelected) {
-                        // Tambahkan Parent ke selection (JANGAN hapus anak)
                         selectionSet.add(parent);
-                        hasChanged = true; // Ulangi loop karena parent baru mungkin punya parent lagi
+                        hasChanged = true;
                     }
                 }
             }
@@ -369,7 +362,7 @@ export default class SelectionTool {
             for (const e of ents) {
                 if (!e.visible) continue;
                 if (this.isPointInEntity(wx, wy, e)) {
-                    const z = e.zIndex || 0;
+                    const z = e.transform.zIndex || 0;
                     if (z >= bestZ) {
                         bestZ = z;
                         best = e;
@@ -382,16 +375,17 @@ export default class SelectionTool {
     }
 
     isPointInEntity(wx, wy, e) {
-        const r = e.rotation || 0;
-        const sx = e.scaleX ?? 1;
-        const sy = e.scaleY ?? 1;
-        const px = e.pivotX ?? 0.5;
-        const py = e.pivotY ?? 0.5;
+        const t = e.transform;
+        const r = t.rotation || 0;
+        const sx = t.scaleX ?? 1;
+        const sy = t.scaleY ?? 1;
+        const px = t.pivotX ?? 0.5;
+        const py = t.pivotY ?? 0.5;
         const w = e.width;
         const h = e.height;
 
-        let dx = wx - e.x;
-        let dy = wy - e.y;
+        let dx = wx - t.x;
+        let dy = wy - t.y;
 
         const c = Math.cos(-r);
         const s = Math.sin(-r);
@@ -424,19 +418,20 @@ export default class SelectionTool {
     }
 
     drawObb(shape, e, color, proj) {
-        const r = e.rotation || 0;
-        const sx = e.scaleX ?? 1;
-        const sy = e.scaleY ?? 1;
-        const px = e.pivotX ?? 0.5;
-        const py = e.pivotY ?? 0.5;
+        const t = e.transform;
+        const r = t.rotation || 0;
+        const sx = t.scaleX ?? 1;
+        const sy = t.scaleY ?? 1;
+        const px = t.pivotX ?? 0.5;
+        const py = t.pivotY ?? 0.5;
 
-        const v = calculateQuadVertices(e.x, e.y, e.width, e.height, r, sx, sy, px, py);
-        const t = 2 / this.game.camera.scale;
+        const v = calculateQuadVertices(t.x, t.y, e.width, e.height, r, sx, sy, px, py);
+        const strokeT = 2 / this.game.camera.scale;
 
-        shape.drawLine(v.tl.x, v.tl.y, v.tr.x, v.tr.y, color, t, proj);
-        shape.drawLine(v.tr.x, v.tr.y, v.br.x, v.br.y, color, t, proj);
-        shape.drawLine(v.br.x, v.br.y, v.bl.x, v.bl.y, color, t, proj);
-        shape.drawLine(v.bl.x, v.bl.y, v.tl.x, v.tl.y, color, t, proj);
+        shape.drawLine(v.tl.x, v.tl.y, v.tr.x, v.tr.y, color, strokeT, proj);
+        shape.drawLine(v.tr.x, v.tr.y, v.br.x, v.br.y, color, strokeT, proj);
+        shape.drawLine(v.br.x, v.br.y, v.bl.x, v.bl.y, color, strokeT, proj);
+        shape.drawLine(v.bl.x, v.bl.y, v.tl.x, v.tl.y, color, strokeT, proj);
     }
 
     drawSelected(shape, proj) {

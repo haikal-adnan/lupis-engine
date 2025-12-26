@@ -29,26 +29,22 @@ export default class WorldRenderer {
             for (const e of ents) {
                 if (!e.visible) continue;
 
-                const baseZ = e.zIndex || 0;
+                const t = e.transform;
+                const baseZ = t.zIndex || 0;
                 const layerIndex = li;
 
-                // LOGIC OPACITY BARU:
-                // Ambil nilai raw (biasanya 0-100). Default ke 100.
                 const rawOpacity = (e.opacity !== undefined && e.opacity !== null) ? e.opacity : 100;
-                
-                // Konversi ke 0.0 - 1.0 untuk WebGL
                 const normalizedOpacity = Math.max(0, Math.min(100, rawOpacity)) / 100;
-
-                // Gabungkan dengan alpha transform (jika ada)
+                // Alpha mungkin di komponen atau root, asumsi belum ada di transform secara explisit selain via opacity
                 const finalAlpha = normalizedOpacity * (e.alpha ?? 1);
 
                 const renderData = {
-                    x: e.x, y: e.y,
+                    x: t.x, y: t.y,
                     w: e.width, h: e.height,
-                    rot: e.rotation || 0,
-                    sx: e.scaleX ?? 1, sy: e.scaleY ?? 1,
-                    px: e.pivotX ?? 0.5, py: e.pivotY ?? 0.5,
-                    alpha: finalAlpha // Kirim alpha 0.0-1.0 yang sudah bersih
+                    rot: t.rotation || 0,
+                    sx: t.scaleX ?? 1, sy: t.scaleY ?? 1,
+                    px: t.pivotX ?? 0.5, py: t.pivotY ?? 0.5,
+                    alpha: finalAlpha
                 };
 
                 if (e.image && e.frame) {
@@ -95,7 +91,6 @@ export default class WorldRenderer {
                 const t = e.shape.thickness || 1;
 
                 if (e.shape.type === "rectangle") {
-                    // FIX: Kirim param r.rot, r.sx, dll
                     shape.drawRect(
                         r.x, r.y, r.w, r.h, 
                         c, proj, 
@@ -104,7 +99,6 @@ export default class WorldRenderer {
                     );
                 } 
                 else if (e.shape.type === "rectStroke") {
-                    // FIX: Gunakan drawRectStroke baru agar ikut rotasi
                     shape.drawRectStroke(
                         r.x, r.y, r.w, r.h, 
                         c, t, proj,
@@ -113,8 +107,8 @@ export default class WorldRenderer {
                     );
                 } 
                 else if (e.shape.type === "line") {
-                    // Line biasanya pakai absolute coordinate, tidak dipengaruhi pivot entity
-                    // Kecuali jika anda ingin line tersebut relative terhadap entity
+                    // Line menggunakan world coordinate dari shape properties, 
+                    // atau fallback ke renderData (root entity pos) jika x1/y1 null
                     shape.drawLine(e.shape.x1 ?? r.x, e.shape.y1 ?? r.y, e.shape.x2, e.shape.y2, c, t, proj);
                 }
             } 

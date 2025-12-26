@@ -62,7 +62,7 @@ export default defineConfig({
       '@engine': path.resolve(__dirname, '../engine'),
       '@utils': path.resolve(__dirname, '../utils'),
       '@schemas': path.resolve(__dirname, '../schemas'),
-      
+      'vue': 'vue/dist/vue.esm-bundler.js',
       // ❌ ALIAS UNTUK DATA SEPERTI @projects DIHAPUS
       // Data sekarang diakses via CDN_URL melalui HTTP, bukan via filesystem alias
     },
