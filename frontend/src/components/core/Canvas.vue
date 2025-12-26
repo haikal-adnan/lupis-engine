@@ -12,11 +12,13 @@ const { initSelectionListener } = useSelection();
 const { activeProjectId } = useEditorState();
 const { initDB, hydrateFromBackend, getSceneFromLocal } = useLocalDB();
 const { registerChange, setInitialSyncStatus } = useSyncManager();
+
 const { 
   CDN_URL, 
   projectData, 
   assets, 
-  scenes, 
+  scenes,
+  prefabs, // <--- 1. AMBIL VARIABEL PREFABS DISINI
   currentScene, 
   fetchProjectDetails, 
   fetchAllProjectResources, 
@@ -25,6 +27,7 @@ const {
 
 const isEngineReady = ref(false);
 let engineBus = null;
+let engineInstance = null; // Fix: Declare variable di scope luar agar bisa didestroy
 
 const handleEntityModified = (updates) => {
   if (Array.isArray(updates)) {
@@ -61,20 +64,23 @@ onMounted(async () => {
       const serverPayload = {
         project: toRaw(projectData.value),
         assets: toRaw(assets.value),
-        scenes: [toRaw(currentScene.value)]
+        scenes: [toRaw(currentScene.value)],
+        prefabs: toRaw(prefabs.value) // <--- 2. MASUKKAN KE LOCAL DB JUGA
       };
       
       await hydrateFromBackend(serverPayload);
       setInitialSyncStatus(false);
   }
 
+  // --- 3. FIX UTAMA: MASUKKAN KE ENGINE PAYLOAD ---
   const enginePayload = {
     project: toRaw(projectData.value), 
     assets: toRaw(assets.value),        
-    scene: toRaw(currentScene.value) 
+    scene: toRaw(currentScene.value),
+    prefabs: toRaw(prefabs.value) // <--- WAJIB ADA AGAR GAMELOADER TIDAK BINGUNG
   };
 
-  const engineInstance = await startEngine("glCanvas", "editor", `${CDN_URL}/projects/${activeProjectId.value}/`, enginePayload);
+  engineInstance = await startEngine("glCanvas", "editor", `${CDN_URL}/projects/${activeProjectId.value}/`, enginePayload);
   
   if (engineInstance) {
       engineBus = engineInstance.bus;
@@ -87,7 +93,10 @@ onMounted(async () => {
 onUnmounted(() => {
   if (engineBus) {
     engineBus.off("entity:modified", handleEntityModified);
-    engineInstance?.destroy();
+  }
+  // Pastikan engineInstance didefinisikan di scope luar onMounted agar bisa diakses disini
+  if (engineInstance) {
+    engineInstance.destroy();
   }
 });
 </script>

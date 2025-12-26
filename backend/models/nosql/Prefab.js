@@ -8,9 +8,14 @@ const PrefabSchema = new mongoose.Schema({
     tag: { type: String, default: 'Untagged' },
     layerId: { type: String },
     components: { type: mongoose.Schema.Types.Mixed, default: {} },
+    
+    // --- PERBAIKAN DISINI ---
     transform: {
+      x: { type: Number, default: 0 }, // <--- Tambahkan ini
+      y: { type: Number, default: 0 }, // <--- Tambahkan ini
       scale: { x: { type: Number, default: 1 }, y: { type: Number, default: 1 } },
-      rotation: { type: Number, default: 0 }
+      rotation: { type: Number, default: 0 },
+      zIndex: { type: Number, default: 0 }
     }
   },
   thumbnailUrl: { type: String }

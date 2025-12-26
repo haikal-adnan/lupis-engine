@@ -1,7 +1,8 @@
 import Config from "../Core/Config.js";
 
 export function ApplyResizeToEntity(ent, world) {
-    
+    const t = ent.transform; // Helper shorthand
+
     if (ent.components.SpriteRenderer) {
         ent.components.SpriteRenderer.width = ent.width;
         ent.components.SpriteRenderer.height = ent.height;
@@ -16,34 +17,35 @@ export function ApplyResizeToEntity(ent, world) {
         }
 
         if (sh.type === "line") {
-            sh.x2 = ent.x + ent.width;
-            sh.y2 = ent.y + ent.height;
+            // Update posisi endpoint relatif terhadap transform baru
+            sh.x2 = t.x + ent.width;
+            sh.y2 = t.y + ent.height;
             
-            const x1 = ent.x;
-            const y1 = ent.y;
+            const x1 = t.x;
+            const y1 = t.y;
             const x2 = sh.x2;
             const y2 = sh.y2;
-            const t = sh.thickness ?? 1;
+            const thick = sh.thickness ?? 1;
 
             if (Math.abs(y2 - y1) < 0.0001) {
                 ent.hitX = Math.min(x1, x2);
-                ent.hitY = y1 - t / 2;
+                ent.hitY = y1 - thick / 2;
                 ent.hitWidth = Math.abs(x2 - x1);
-                ent.hitHeight = t;
+                ent.hitHeight = thick;
             } else if (Math.abs(x2 - x1) < 0.0001) {
-                ent.hitX = x1 - t / 2;
+                ent.hitX = x1 - thick / 2;
                 ent.hitY = Math.min(y1, y2);
-                ent.hitWidth = t;
+                ent.hitWidth = thick;
                 ent.hitHeight = Math.abs(y2 - y1);
             } else {
                 const minX = Math.min(x1, x2);
                 const maxX = Math.max(x1, x2);
                 const minY = Math.min(y1, y2);
                 const maxY = Math.max(y1, y2);
-                ent.hitX = minX - t / 2;
-                ent.hitY = minY - t / 2;
-                ent.hitWidth = (maxX - minX) + t;
-                ent.hitHeight = (maxY - minY) + t;
+                ent.hitX = minX - thick / 2;
+                ent.hitY = minY - thick / 2;
+                ent.hitWidth = (maxX - minX) + thick;
+                ent.hitHeight = (maxY - minY) + thick;
             }
             return;
         }
@@ -65,8 +67,8 @@ export function ApplyResizeToEntity(ent, world) {
         }
     } 
     
-    ent.hitX = ent.x;
-    ent.hitY = ent.y;
+    ent.hitX = t.x;
+    ent.hitY = t.y;
     ent.hitWidth = ent.width;
     ent.hitHeight = ent.height;
 }

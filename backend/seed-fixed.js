@@ -4,6 +4,7 @@ import Project from './models/nosql/Project.js';
 import Folder from './models/nosql/Folder.js';
 import Asset from './models/nosql/Asset.js';
 import Scene from './models/nosql/Scene.js';
+import Prefab from './models/nosql/Prefab.js'; // <--- IMPORT BARU
 
 dotenv.config();
 
@@ -16,6 +17,7 @@ const seedDatabase = async () => {
     await Folder.deleteMany({});
     await Asset.deleteMany({});
     await Scene.deleteMany({});
+    await Prefab.deleteMany({}); // <--- BERSIHKAN PREFAB LAMA
     
     const projectId = "project_dungeon_demo_01";
     
@@ -25,16 +27,20 @@ const seedDatabase = async () => {
     const assetDungeonId = "asset_tex_dungeon_sheet";
     const assetFontId = "asset_font_gaegu_reg";
     
+    // --- ID BARU UNTUK PREFAB ---
+    const prefabChestId = "prefab_chest_001";
+
     const sceneId = "scene_level_1_demo";
 
     const entBgId = "ent_background_map";
     const entGroupId = "ent_group_dungeon";
     const entItemId = "ent_item_inner";
-    const entMirroredId = "ent_item_mirrored_demo"; 
     const entBoxId = "ent_debug_redbox";
     const entTextId = "ent_ui_text_label";
+    
+    const entChestStandardId = "ent_chest_std"; 
+    const entChestBigId = "ent_chest_big"; 
 
-    // 1. Setup Project
     await Project.create({
       _id: projectId, 
       ownerId: "dev_2025",
@@ -46,22 +52,15 @@ const seedDatabase = async () => {
       ]
     });
 
-    // 2. Setup Folders
     await Folder.create({ 
-      _id: fSpritesId,
-      projectId: projectId, 
-      name: "Sprites" 
+      _id: fSpritesId, projectId: projectId, name: "Sprites" 
     });
-
     await Folder.create({ 
-      _id: fFontsId,
-      projectId: projectId, 
-      name: "Fonts" 
+      _id: fFontsId, projectId: projectId, name: "Fonts" 
     });
 
     const mockCdnUrl = "http://localhost:3000/cdn"; 
 
-    // 3. Setup Assets
     await Asset.create({
       _id: assetDungeonId,
       projectId: projectId,
@@ -81,15 +80,38 @@ const seedDatabase = async () => {
       type: "font",
       fileKey: "gaegu_fixed_key",
       fileUrl: `${mockCdnUrl}/gaegu.ttf`,
-      meta: { 
-        extension: ".ttf", 
-        originalName: "Gaegu-Regular.ttf" 
+      meta: { extension: ".ttf", originalName: "Gaegu-Regular.ttf" }
+    });
+
+    await Prefab.create({
+      _id: prefabChestId,
+      projectId: projectId,
+      name: "Wooden Chest",
+      thumbnailUrl: "", 
+      data: {
+        tag: "interactable",
+        layerId: "layer_hero",
+        // Komponen Default: Gambar Peti
+        components: {
+            "SpriteRenderer": {
+              "assetId": assetDungeonId,
+              "source": { "x": 128, "y": 0, "w": 32, "h": 32 } 
+            },
+            "BoxCollider": {
+                "width": 32, "height": 32, "isTrigger": false
+            }
+        },
+        transform: {
+            x: 200,
+            y: 300,
+            scale: { x: 2, y: 2 },
+            rotation: 0
+        }
       }
     });
 
-    console.log("Project & Assets created.");
+    console.log("Project, Assets & Prefab created.");
 
-    // 4. Setup Scene (zIndex ditambahkan kembali)
     await Scene.create({
       _id: sceneId,
       projectId: projectId,
@@ -110,7 +132,7 @@ const seedDatabase = async () => {
             rotation: 0,
             pivot: { x: 0, y: 0 }, 
             scale: { x: 1, y: 1 },
-            zIndex: 0 // [ADA KEMBALI]
+            zIndex: 0
           },
           components: {
             "SpriteRenderer": {
@@ -133,7 +155,7 @@ const seedDatabase = async () => {
             width: 0, height: 0,
             pivot: { x: 0, y: 0 },
             scale: { x: 1, y: 1 },
-            zIndex: 1 // Contoh: Group ini sedikit di atas background
+            zIndex: 1
           },
           components: {}
         },
@@ -152,31 +174,7 @@ const seedDatabase = async () => {
             rotation: 0,
             pivot: { x: 0.5, y: 1.0 }, 
             scale: { x: 1, y: 1 },
-            zIndex: 0 // Relatif terhadap parent
-          },
-          components: {
-            "SpriteRenderer": {
-              "assetId": assetDungeonId,
-              "source": { "x": 32, "y": 0, "w": 16, "h": 16 }
-            }
-          }
-        },
-
-        // --- ENTITY 4: Mirrored Item ---
-        {
-          _id: entMirroredId,
-          name: "Mirrored Prop",
-          tag: "props",
-          layerId: "layer_hero",
-          parentId: entGroupId, 
-          opacity: 80, 
-          transform: {
-            translate: { x: 150, y: 50 },
-            width: 64, height: 64,
-            rotation: 0,
-            pivot: { x: 0.5, y: 1.0 },
-            scale: { x: -1, y: 1 },
-            zIndex: 1
+            zIndex: 0
           },
           components: {
             "SpriteRenderer": {
@@ -225,7 +223,7 @@ const seedDatabase = async () => {
             width: 200, height: 50,
             pivot: { x: 0.5, y: 0.5 },
             scale: { x: 1, y: 1 },
-            zIndex: 10 // UI biasanya paling atas
+            zIndex: 10
           },
           components: {
             "TextRenderer": {
@@ -236,11 +234,59 @@ const seedDatabase = async () => {
               "align": "center"
             }
           }
+        },
+
+        {
+            _id: entChestStandardId,
+            name: "Chest 1 (Standard)",
+            // Kita hubungkan ke Prefab ID
+            prefabId: prefabChestId, 
+            
+            parentId: entGroupId,
+            layerId: "layer_hero",
+            
+            transform: {
+                translate: { x: 200, y: 0 }, 
+                width: 32, height: 32,
+                pivot: { x: 0.5, y: 1 },
+                zIndex: 5
+            },
+            
+            components: {
+              "ShapeRenderer": {
+              "type": "rectangle",
+              "color": "#3c1ee7ff",
+              "width": 100,
+              "height": 100
+            }
+            } 
+        },
+
+        {
+            _id: entChestBigId,
+            name: "Chest 2 (Big & Red)",
+            prefabId: prefabChestId,
+            
+            parentId: entGroupId,
+            layerId: "layer_hero",
+            
+            transform: {
+                zIndex: 6
+            },
+
+            components: {
+              
+                "SpriteRenderer": {
+                    "assetId": assetDungeonId,
+                    "source": { "x": 128, "y": 0, "w": 32, "h": 32 },
+                    "color": "#FF0000" 
+                }
+            }
         }
       ]
     });
 
-    console.log("Database seeded successfully with NEW SCHEMA (Pivot, Opacity, Tag, Scale, Z-Index).");
+    console.log("Database seeded successfully with PREFAB support.");
     process.exit();
   } catch (err) {
     console.error(err);

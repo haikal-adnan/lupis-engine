@@ -7,8 +7,6 @@ import GLImageResource from "../Renderer/Graphic/GLImageResource.js";
 import AssetLoader from "../Loader/AssetLoader.js";
 import SceneLoader from "../Loader/SceneLoader.js";
 import HistoryManager from "../Core/HistoryManager.js";
-
-// Tools Imports... (Biarkan sama)
 import CameraController from "../Editor/CameraController.js";
 import Rulers from "../Editor/Rulers.js";
 import PointerCoordinates from "../Editor/PointerCoordinates.js";
@@ -20,18 +18,13 @@ export default class GameLoader {
     async initializeGame(game, canvas, mode = "runtime", baseURL = "./", payload = {}) {
         Config.ENGINE_MODE = mode;
 
-        // Init Core Systems
         game.renderer = new RendererManager(canvas);
         game.input = new InputManager(canvas);
         game.world = new World();
         game.history = new HistoryManager(game, game.input);
 
-        console.log("📦 [GameLoader] Processing Payload...");
+        const { project, assetsMap, sceneData, prefabsMap } = this._prepareData(payload);
 
-        // 1. Prepare Data (Fail-safe)
-        const { project, assetsMap, sceneData } = this._prepareData(payload);
-
-        // 2. Initialize Loaders
         const assetLoader = new AssetLoader(
             new GLImageResource(game.renderer.gl),
             async (fnt, png) => {
@@ -41,33 +34,23 @@ export default class GameLoader {
         );
         const sceneLoader = new SceneLoader(game.world);
         
-        // 3. Load Assets & Scene
-        console.log(`🔄 [GameLoader] Loading ${Object.keys(assetsMap.textures).length} textures...`);
         game.world.assets = await assetLoader.loadMap(assetsMap, baseURL);
 
         if (sceneData) {
-            console.log("🔄 [GameLoader] Building Scene...");
-            await sceneLoader.load(sceneData, project, baseURL, game.world.assets);
-        } else {
-            console.warn("⚠️ [GameLoader] Scene data is empty.");
+            await sceneLoader.load(sceneData, project, game.world.assets, prefabsMap);
         }
 
-        // 4. Setup Editor Tools (Only in Editor Mode)
         if (mode === "editor") {
             this._initializeEditorTools(game, canvas);
         }
 
-        // 5. Start Loop
         game.loop = new GameLoop({
             update: dt => game.update(dt),
             render: alpha => game.render(alpha),
         });
-        
-        console.log("✅ [GameLoader] Ready.");
     }
 
     _prepareData(payload = {}) {
-        // Fallback Defaults
         const rawProject = payload.project || { name: "Untitled", settings: {}, layers: [] };
         
         const project = {
@@ -79,7 +62,6 @@ export default class GameLoader {
         const assetsMap = { textures: {}, fonts: {} };
         const rawAssets = Array.isArray(payload.assets) ? payload.assets : [];
 
-        // Map Assets for faster lookup
         rawAssets.forEach(asset => {
             const fileName = asset.fileKey || asset._id;
             
@@ -93,9 +75,17 @@ export default class GameLoader {
             }
         });
 
+        const prefabsMap = {};
+        const rawPrefabs = Array.isArray(payload.prefabs) ? payload.prefabs : [];
+        
+        rawPrefabs.forEach(p => {
+            prefabsMap[p._id] = p;
+        });
+
         return {
             project,
             assetsMap,
+            prefabsMap,
             sceneData: payload.scene || { entities: [] }
         };
     }
@@ -114,7 +104,6 @@ export default class GameLoader {
 
         if (EDITOR.SELECTION) {
             game.selection = new SelectionTool(world, game, canvas, renderer, input);
-            // Ensure editor layer exists
             if (!world.layers.has("__editor_selection")) {
                 world.layers.set("__editor_selection", []);
                 world.layerOrder.push("__editor_selection");
