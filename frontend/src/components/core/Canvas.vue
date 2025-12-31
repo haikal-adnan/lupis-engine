@@ -18,7 +18,7 @@ const {
   projectData, 
   assets, 
   scenes,
-  prefabs, // <--- 1. AMBIL VARIABEL PREFABS DISINI
+  prefabs, 
   currentScene, 
   fetchProjectDetails, 
   fetchAllProjectResources, 
@@ -27,7 +27,7 @@ const {
 
 const isEngineReady = ref(false);
 let engineBus = null;
-let engineInstance = null; // Fix: Declare variable di scope luar agar bisa didestroy
+let engineInstance = null; 
 
 const handleEntityModified = (updates) => {
   if (Array.isArray(updates)) {
@@ -65,20 +65,21 @@ onMounted(async () => {
         project: toRaw(projectData.value),
         assets: toRaw(assets.value),
         scenes: [toRaw(currentScene.value)],
-        prefabs: toRaw(prefabs.value) // <--- 2. MASUKKAN KE LOCAL DB JUGA
+        prefabs: toRaw(prefabs.value) 
       };
       
       await hydrateFromBackend(serverPayload);
       setInitialSyncStatus(false);
   }
 
-  // --- 3. FIX UTAMA: MASUKKAN KE ENGINE PAYLOAD ---
   const enginePayload = {
     project: toRaw(projectData.value), 
     assets: toRaw(assets.value),        
     scene: toRaw(currentScene.value),
-    prefabs: toRaw(prefabs.value) // <--- WAJIB ADA AGAR GAMELOADER TIDAK BINGUNG
+    prefabs: toRaw(prefabs.value) 
   };
+
+  console.log(enginePayload)
 
   engineInstance = await startEngine("glCanvas", "editor", `${CDN_URL}/projects/${activeProjectId.value}/`, enginePayload);
   
@@ -94,7 +95,6 @@ onUnmounted(() => {
   if (engineBus) {
     engineBus.off("entity:modified", handleEntityModified);
   }
-  // Pastikan engineInstance didefinisikan di scope luar onMounted agar bisa diakses disini
   if (engineInstance) {
     engineInstance.destroy();
   }

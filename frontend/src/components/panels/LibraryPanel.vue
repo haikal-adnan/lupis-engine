@@ -123,6 +123,7 @@ const selectPrefab = (prefab) => {
     _id: prefab._id,      
     name: prefab.name,    
     isPrefabMaster: true,
+    isAsset: true,
     transform: normalizedTransform, // <--- INI KUNCINYA
     
     // Fallback Root Properties
@@ -133,7 +134,7 @@ const selectPrefab = (prefab) => {
     tag: rawData.tag || 'untagged'
   };
 
-  bus.emit("entity:selected", [entityFormat]);
+  bus.emit("prefab:selected", [entityFormat]);
   console.log("📦 Selected Prefab:", entityFormat);
 };
 </script>

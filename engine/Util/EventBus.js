@@ -1,4 +1,4 @@
-// engine/Core/EventBus.js
+// engine/Util/EventBus.js
 class EventBus {
   constructor() {
     this.events = new Map();

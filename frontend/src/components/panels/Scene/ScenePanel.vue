@@ -9,7 +9,6 @@ import SceneTree from '@/components/panels/Scene/parts/SceneTree.vue';
 const { activeProjectId } = useEditorState();
 
 // --- BACKEND ---
-// Hanya ambil yang berhubungan dengan Scene
 const { 
   scenes, currentScene, 
   fetchAllProjectResources, fetchScene, loading 
@@ -18,44 +17,34 @@ const {
 // --- SELECTION STATE ---
 const selectedIds = ref([]);
 
-// --- 1. HANDLE SELECTION DARI TREE (User klik di Sidebar) ---
+// --- HANDLERS ---
 const handleTreeSelect = (idsToSelect) => {
-  if (!currentScene.value || !currentScene.value.entities) return;
-
-  // Cari object Entity asli berdasarkan ID
-  const entities = currentScene.value.entities.filter(e => 
-    idsToSelect.includes(e._id || e.id)
-  );
-
-  if (entities.length > 0) {
-    // Kirim ke Global Bus (agar TransformTool & Inspector update)
-    bus.emit("entity:selected", entities);
-  } else {
-    bus.emit("entity:deselected");
-  }
+   bus.emit("ui:select-by-id", idsToSelect);
 };
 
-// --- 2. HANDLE SELECTION DARI ENGINE (Listener Global) ---
+// Handle Selection Entity Scene
 const onGlobalSelected = (list) => {
   if (!list || list.length === 0) {
     selectedIds.value = [];
     return;
   }
-  // Update visual tree agar highlight sinkron dengan canvas
   selectedIds.value = list.map(e => e._id || e.id);
 };
 
+// Handle Deselect Scene
 const onGlobalDeselected = () => {
+  selectedIds.value = [];
+};
+
+// [BARU] Handle Selection Prefab (Hapus highlight di tree)
+const onPrefabSelected = () => {
   selectedIds.value = [];
 };
 
 // --- LIFECYCLE ---
 const loadProjectData = async () => {
   if (!activeProjectId.value) return;
-  // Kita asumsikan fetchAllProjectResources menarik list scenes juga
   await fetchAllProjectResources(activeProjectId.value);
-  
-  // Auto load scene pertama jika belum ada yang aktif
   if (scenes.value.length > 0 && !currentScene.value) {
     await fetchScene(scenes.value[0]._id);
   }
@@ -67,12 +56,15 @@ onMounted(async () => {
   // Register Listeners
   bus.on("entity:selected", onGlobalSelected);
   bus.on("entity:deselected", onGlobalDeselected);
+  // [BARU]
+  bus.on("prefab:selected", onPrefabSelected);
 });
 
 onUnmounted(() => {
-  // Cleanup Listeners
   bus.off("entity:selected", onGlobalSelected);
   bus.off("entity:deselected", onGlobalDeselected);
+  // [BARU] Cleanup
+  bus.off("prefab:selected", onPrefabSelected);
 });
 
 watch(activeProjectId, async (newId) => {
@@ -85,22 +77,11 @@ watch(activeProjectId, async (newId) => {
 
 <template>
   <div class="flex flex-col h-full">
-    
     <div v-if="scenes.length > 0" class="p-2 border-b border-border bg-muted/10 shrink-0">
       <select 
         :value="currentScene?._id" 
         @change="fetchScene($event.target.value)" 
-        class="
-          w-full 
-          bg-background 
-          border border-border 
-          rounded 
-          px-2 py-1.5 
-          text-xs 
-          outline-none 
-          focus:ring-1 focus:ring-primary/50
-          transition-shadow
-        "
+        class="w-full bg-background border border-border rounded px-2 py-1.5 text-xs outline-none focus:ring-1 focus:ring-primary/50 transition-shadow"
       >
         <option v-for="s in scenes" :key="s._id" :value="s._id">
           🎬 {{ s.name }}
