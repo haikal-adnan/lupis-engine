@@ -8,6 +8,7 @@ export default class AssetLoader {
     async loadMap(assetsMap, baseURL) {
         if (!assetsMap) return this.assets;
 
+        // Pastikan ada slash di akhir Base URL
         const pathPrefix = baseURL.endsWith('/') ? baseURL : baseURL + '/';
         const promises = [];
 
@@ -15,10 +16,31 @@ export default class AssetLoader {
         if (assetsMap.textures) {
             const texturePromises = Object.entries(assetsMap.textures).map(([id, val]) => {
                 const config = (typeof val === 'string') ? { uri: val, filterMode: 'smooth' } : val;
-                const url = pathPrefix + config.uri;
                 
+                let url;
+
+                // --- LOGIKA PRIORITAS ---
+                
+                // 1. Prioritas Blob IndexedDB
+                if (config.fileUrl) {
+                    url = config.fileUrl; 
+                }
+                // 2. Cek jika URI sudah Absolute (http/https/blob manual)
+                else if (config.uri && (config.uri.startsWith('http') || config.uri.startsWith('blob:'))) {
+                     url = config.uri;
+                }
+                // 3. Logika Lama (CDN) -> BaseURL + Filename
+                else {
+                    // baseURL diharapkan: "cdn/projects/id_project/"
+                    // uri diharapkan: "nama_file.png"
+                    // Hasil: "cdn/projects/id_project/nama_file.png"
+                    url = pathPrefix + (config.uri || '');
+                }
+                
+                // ------------------------
+
                 return this._loadTexture(id, url, config)
-                    .catch(err => console.error(`❌ Failed texture: ${config.uri}`, err));
+                    .catch(err => console.error(`❌ Failed texture: ${url}`, err));
             });
             promises.push(...texturePromises);
         }
@@ -54,11 +76,10 @@ export default class AssetLoader {
         
         this.assets.fonts[id] = await this.fontLoaderFunc(fntUrl, pngUrl);
     }
-     
+      
     _normalizeTextureResult(raw) {
         if (!raw) return null;
 
-        // Handle GL Texture Wrapper
         if (raw.texture || raw.glTexture) {
             return { 
                 type: "gl", 
@@ -69,7 +90,6 @@ export default class AssetLoader {
             };
         }
 
-        // Handle Raw HTML Image
         if (raw instanceof HTMLImageElement || raw.src) {
             return { 
                 type: "image", 

@@ -10,18 +10,15 @@ export default class SceneLoader {
         };
     }
 
-    // Hapus parameter 'baseURL' karena SceneLoader tidak lagi melakukan fetch URL
     async load(sceneData, projectConfig, loadedAssets, prefabsLibrary = {}) {
         const layersSource = projectConfig.layers || ["layer_objects"];
         this.world.setupLayers(layersSource);
 
         const entitiesSource = sceneData.entities || sceneData.root || [];
         
-        // 1. Load Library ke Cache Lokal
         this.prefabCache = { ...this.prefabCache, ...prefabsLibrary };
 
         for (const entDesc of entitiesSource) {
-            // 2. Resolve (Merge) secara Sinkronus (Memory Lookup)
             const resolvedDesc = this._resolvePrefab(entDesc);
             
             // 3. Build
@@ -35,15 +32,11 @@ export default class SceneLoader {
     _resolvePrefab(desc) {
         const pId = desc.prefabId || desc.prefab;
         
-        // Jika bukan prefab, kembalikan apa adanya
         if (!pId) return desc;
         
-        // Lookup langsung ke Memory
         const prefabMaster = this.prefabCache[pId];
 
         if (!prefabMaster) {
-            // Jika master hilang (misal file prefab terhapus tapi entity di scene masih ada)
-            // Kita log warning, tapi tetap return desc (entity akan muncul tanpa data prefab/kosong)
             console.warn(`[SceneLoader] Missing Prefab Master: ${pId} for Entity: ${desc.name}`);
             return desc;
         }
@@ -147,23 +140,11 @@ export default class SceneLoader {
         };
     }
     
-    // ... (Helper Methods Component Apply tetap sama) ...
     _applySpriteRenderer(e, s, assets) {
         const stored = assets?.textures?.[s.assetId];
         e.image = stored || null;
-
-        // --- PERBAIKAN LOGIKA SIZE ---
-        // Prioritas Ukuran:
-        // 1. Component Override (s.width) -> Jika user menset spesifik di komponen sprite
-        // 2. Entity/Transform Data (e.width) -> Data dari DB/Seed (800x600)
-        // 3. Texture Original Size (stored.width) -> Fallback jika tidak ada data sama sekali
         
-        e.width = s.width ?? s.w ?? (e.width > 0 ? e.width : (stored?.width ?? 0));
-        e.height = s.height ?? s.h ?? (e.height > 0 ? e.height : (stored?.height ?? 0));
-        // -----------------------------
-
         e.transform.zIndex = s.zIndex ?? e.transform.zIndex;
-        e.alpha = s.alpha ?? 1;
 
         if (s.source) {
             e.frame = { sx: s.source.x, sy: s.source.y, sw: s.source.w, sh: s.source.h };
@@ -172,16 +153,15 @@ export default class SceneLoader {
         } else {
             e.frame = { sx: 0, sy: 0, sw: 0, sh: 0 };
         }
-        if (s.color) e.tint = s.color;
         const assetIsPixelated = ['pixelated', 'nearest'].includes(stored?.filterMode);
         e.pixelPerfect = s.pixelPerfect ?? assetIsPixelated;
     }
 
     _applyTextRenderer(e, text, assets) {
        e.text = {
-           value: text.text,
+           value: text.value,
            size: text.fontSize ?? text.size, 
-           color: text.color,
+           color: text.color || "#FFFFFF",
            assetId: text.assetId,
            align: text.align || "left"
        };

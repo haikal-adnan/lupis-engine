@@ -40,7 +40,20 @@ export default class SelectionTool {
         this.onExternalSelect = (list) => {
             this.syncSelectionFromBus(list);
         };
+
+        this.onUISelect = (ids) => {
+            this.handleUISelect(ids);
+        };
+
+        this.onPrefabSelect = () => {
+            this.selectedList = [];
+            this.hovered = null;
+        };
+
         bus.on("entity:selected", this.onExternalSelect);
+        bus.on("ui:select-by-id", this.onUISelect);
+        bus.on("prefab:selected", this.onPrefabSelect);
+        
         bus.on("entity:deselected", () => {
             this.selectedList = [];
         });
@@ -52,6 +65,53 @@ export default class SelectionTool {
             if (this.transform) this.transform.draw(shape, proj);
             this.drawMarquee(shape, proj);
         };
+    }
+
+    handleUISelect(ids) {
+        if (!ids || ids.length === 0) {
+            this.selectedList = [];
+            bus.emit("entity:deselected");
+            return;
+        }
+
+        const realEntities = [];
+        const idsToFind = Array.isArray(ids) ? ids : [ids];
+
+        for (const [layerId, ents] of this.world.layers) {
+            for (const e of ents) {
+                if (idsToFind.includes(e._id || e.id)) {
+                    realEntities.push(e);
+                }
+            }
+        }
+
+        if (realEntities.length > 0) {
+            this.selectedList = realEntities;
+            bus.emit("entity:selected", this.selectedList);
+        }
+    }
+
+    syncSelectionFromBus(externalList) {
+        if (!externalList || externalList.length === 0) {
+            this.selectedList = [];
+            return;
+        }
+        if (externalList === this.selectedList) return;
+
+        if (externalList[0]?.isAsset || externalList[0]?.isPrefabMaster) {
+            this.selectedList = [];
+            return;
+        }
+
+        if (externalList[0] && externalList[0].transform) {
+             this.selectedList = externalList;
+        }
+    }
+
+    destroy() {
+        bus.off("entity:selected", this.onExternalSelect);
+        bus.off("ui:select-by-id", this.onUISelect);
+        bus.off("prefab:selected", this.onPrefabSelect);
     }
 
     _findEntity(id) {
@@ -68,30 +128,6 @@ export default class SelectionTool {
             children.push(...ents.filter(e => e.parentId === parentId && e.visible));
         }
         return children;
-    }
-
-    syncSelectionFromBus(externalList) {
-        if (!externalList || externalList.length === 0) {
-            this.selectedList = [];
-            return;
-        }
-        if (externalList === this.selectedList) return;
-
-        const engineEntities = [];
-        const idsToFind = externalList.map(e => e._id || e.id);
-
-        for (const [layerId, ents] of this.world.layers) {
-            for (const e of ents) {
-                if (idsToFind.includes(e._id || e.id)) {
-                    engineEntities.push(e);
-                }
-            }
-        }
-        this.selectedList = engineEntities;
-    }
-
-    destroy() {
-        bus.off("entity:selected", this.onExternalSelect);
     }
 
     attachTransform(t) {
@@ -121,7 +157,6 @@ export default class SelectionTool {
         const px = t.pivotX ?? 0.5;
         const py = t.pivotY ?? 0.5;
 
-        // Note: e.width dan e.height masih di root
         const v = calculateQuadVertices(t.x, t.y, e.width, e.height, r, sx, sy, px, py);
         const xs = [v.tl.x, v.tr.x, v.bl.x, v.br.x];
         const ys = [v.tl.y, v.tr.y, v.bl.y, v.br.y];
@@ -158,7 +193,7 @@ export default class SelectionTool {
                 const w = this.toWorld(px, py);
                 
                 if (this.selectedList.length > 1 && this.isInsideGroup(w.x, w.y)) {
-                     if (this.transform) this.transform.beginMove(px, py, false);
+                      if (this.transform) this.transform.beginMove(px, py, false);
                 } else {
                     const hit = this.hit(w.x, w.y);
                     if (hit && this.transform) {
@@ -303,7 +338,6 @@ export default class SelectionTool {
     pointerUp(px, py) {
         if (this.transform) this.transform.resetDrag();
 
-        // --- MARQUEE PARENT INCLUSIVE SELECTION ---
         if (this.marqueeActive) {
             let selectionSet = new Set(this.hoverMarqueeList);
             let hasChanged = true;

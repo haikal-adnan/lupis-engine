@@ -34,6 +34,7 @@ export default class GameLoader {
         );
         const sceneLoader = new SceneLoader(game.world);
         
+        // Load Assets (Pass baseURL yang berisi path project)
         game.world.assets = await assetLoader.loadMap(assetsMap, baseURL);
 
         if (sceneData) {
@@ -65,9 +66,15 @@ export default class GameLoader {
         rawAssets.forEach(asset => {
             const fileName = asset.fileKey || asset._id;
             
-            if (['texture', 'sprite'].includes(asset.type)) {
+            if (['texture', 'sprite', 'image'].includes(asset.type)) {
                 assetsMap.textures[asset._id] = {
+                    // URI hanya nama file (misal: "player.png")
                     uri: `${fileName}${asset.meta?.extension || '.png'}`,
+                    
+                    // --- WAJIB ADA: Agar Engine tahu ada Blob lokal ---
+                    fileUrl: asset.fileUrl, 
+                    // -------------------------------------------------
+                    
                     filterMode: asset.meta?.filterMode || 'smooth' 
                 };
             } else if (asset.type === 'font') {
@@ -91,6 +98,7 @@ export default class GameLoader {
     }
 
     _initializeEditorTools(game, canvas) {
+        // ... (Kode Editor Tools sama seperti sebelumnya) ...
         const { world, renderer, camera, input } = game;
         const { EDITOR } = Config;
 

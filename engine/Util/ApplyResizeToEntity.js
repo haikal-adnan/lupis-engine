@@ -51,21 +51,48 @@ export function ApplyResizeToEntity(ent, world) {
         }
     }
 
-    if (ent.components.TextRenderer) {
+if (ent.components.TextRenderer) {
         const tr = ent.components.TextRenderer;
+        // Support 'value' (baru) dan fallback ke 'text' (lama)
+        const textStr = tr.value || tr.text || ""; 
         const assetId = tr.assetId || Config.FONT;
-        const font = world.assets.fonts[assetId];
+        
+        // Cek keberadaan font
+        const font = world.assets.fonts?.[assetId];
         
         if (font && font.measureText) {
-            const size = tr.fontSize || tr.size || 40;
-            const m = font.measureText(tr.text, size);
+            // 1. Ambil ukuran font saat ini sebelum resize
+            const currentSize = tr.fontSize || tr.size || 12;
+
+            // 2. Ukur dimensi teks jika menggunakan ukuran font saat ini
+            const m = font.measureText(textStr, currentSize);
+            const baseHeight = m.boundsHeight || m.baseline || 1;
+            const baseWidth = m.width || 1;
+
+            // 3. Hitung Ratio Scale
+            // Kita gunakan Height sebagai patokan utama perubahan font size
+            // (Standard tipografi: tinggi menentukan ukuran)
+            let newFontSize = currentSize;
             
-            if (ent.width < 1 || ent.height < 1) {
-                ent.width = m.width;
-                ent.height = m.boundsHeight;
+            // Mencegah pembagian nol
+            if (baseHeight > 0) {
+                const ratio = ent.height / baseHeight;
+                newFontSize = currentSize * ratio;
+            }
+
+            // 4. Update Properti Component
+            tr.fontSize = newFontSize;
+            tr.size = newFontSize; // Sync fallback property
+
+            // 5. [PENTING] Koreksi Width Entity agar Aspect Ratio terjaga
+            // Jika kita hanya drag tinggi, lebar harus menyesuaikan proporsi text
+            // agar huruf tidak gepeng (stretch)
+            if (baseWidth > 0 && baseHeight > 0) {
+                const aspectRatio = baseWidth / baseHeight;
+                ent.width = ent.height * aspectRatio;
             }
         }
-    } 
+    }
     
     ent.hitX = t.x;
     ent.hitY = t.y;

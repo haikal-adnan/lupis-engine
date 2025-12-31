@@ -12,7 +12,6 @@ export async function startEngine(canvasId, mode = "editor", baseURL = "./", ini
         return null;
     }
     
-    // Best Practice: Batch style assignment
     Object.assign(canvas.style, {
         width: "100%", height: "100%", display: "block",
         position: "absolute", top: "0", left: "0",

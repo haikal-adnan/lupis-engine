@@ -12,7 +12,7 @@ const AssetSchema = new mongoose.Schema({
     required: true 
   },
   
-  fileUrl: { type: String, required: true }, 
+  fileUrl: { type: String, default: null },
   
   fileKey: { type: String, required: true }, 
   

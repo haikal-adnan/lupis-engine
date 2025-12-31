@@ -260,6 +260,8 @@ export default class TransformTool {
         }
     }
 
+// Ganti method resetDrag() dengan ini:
+
     resetDrag() {
         const wasInteracting = this.draggingMove || this.draggingResize || this.draggingRotate;
         
@@ -277,6 +279,8 @@ export default class TransformTool {
         if (wasInteracting) {
             const finalState = this._createSnapshot();
             const startState = this.initialState;
+            
+            // Simpan ke history (Undo/Redo)
             const command = {
                 name: "Transform Entity",
                 undo: () => this._applyState(startState),
@@ -284,8 +288,11 @@ export default class TransformTool {
             };
             if (this.game.history) this.game.history.push(command);
             
-            const validUpdates = finalState.filter(u => u._id !== undefined);
-            if (validUpdates.length > 0) bus.emit("entity:modified", validUpdates);
+            // PERBAIKAN: Kirim Entity Asli (this.selection.selectedList)
+            // Agar SyncEntity menerima objek dengan properti lengkap (.transform, dll)
+            if (this.selection.selectedList.length > 0) {
+                bus.emit("entity:modified", this.selection.selectedList);
+            }
         }
     }
 

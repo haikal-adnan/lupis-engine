@@ -5,53 +5,66 @@ export default class GLImageResource {
         this.gl = gl;
     }
 
-    async load(url) {
+    // --- BARU: Method All-in-One untuk Runtime Load ---
+    async loadTextureFromAsset(asset) {
+        // 1. Resolve Source (Blob vs URL)
+        let src = asset.fileUrl;
+        if (asset.localBlob) {
+            src = URL.createObjectURL(asset.localBlob);
+        }
+
+        if (!src) throw new Error("No source found for asset");
+
+        // 2. Load Image
+        const img = await this._loadImage(src);
+
+        // 3. Tentukan Filter Mode
+        const filterMode = (asset.meta?.filterMode === 'linear') 
+            ? this.gl.LINEAR 
+            : this.gl.NEAREST;
+
+        // 4. Upload ke GPU
+        const textureData = this._uploadToGPU(img, filterMode);
+
+        // Tambahkan properti src/image asli untuk referensi jika perlu
+        textureData.src = src;
+        textureData.image = img;
+        
+        return textureData;
+    }
+
+    // Wrapper Promise untuk load image HTML
+    _loadImage(url) {
         return new Promise((resolve, reject) => {
             const img = new Image();
-            
-            img.crossOrigin = "anonymous"; 
-            
-            img.onload = async () => {
-                try {
-                    img.decoding = "async";
-                    await img.decode();
-                    const result = this._uploadToGPU(img);
-                    resolve(result);
-                } catch (err) {
-                    reject(err);
-                }
-            };
-            
-            img.onerror = (err) => {
-                reject(new Error(`Failed to load image at ${url}`));
-            };
-
+            img.crossOrigin = "anonymous";
+            img.onload = () => resolve(img);
+            img.onerror = (e) => reject(new Error(`Failed to load image: ${url}`));
             img.src = url;
         });
     }
 
-    async loadBitmap(bitmap) {
-        return this._uploadToGPU(bitmap);
+    async load(url, config = {}) {
+        const img = await this._loadImage(url);
+        const filter = config.filterMode === 'linear' ? this.gl.LINEAR : this.gl.NEAREST;
+        return this._uploadToGPU(img, filter);
     }
 
-    _uploadToGPU(image) {
+    // --- UPDATE: Terima parameter filterMode ---
+    _uploadToGPU(image, filterMode) {
         const gl = this.gl;
         const tex = gl.createTexture();
-        
+        const filter = filterMode || gl.NEAREST; // Default Nearest/Pixelated
+
         gl.bindTexture(gl.TEXTURE_2D, tex);
         gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
 
-        gl.texImage2D(
-            gl.TEXTURE_2D,
-            0,
-            gl.RGBA,
-            gl.RGBA,
-            gl.UNSIGNED_BYTE,
-            image
-        );
+        // Upload Pixel
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
 
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        // Set Parameter
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, filter);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, filter);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 
@@ -59,6 +72,7 @@ export default class GLImageResource {
 
         return {
             id: __textureID++,
+            type: "gl",
             glTexture: tex,
             width: image.width,
             height: image.height

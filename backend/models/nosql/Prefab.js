@@ -9,12 +9,23 @@ const PrefabSchema = new mongoose.Schema({
     layerId: { type: String },
     components: { type: mongoose.Schema.Types.Mixed, default: {} },
     
-    // --- PERBAIKAN DISINI ---
+    // --- PERBAIKAN: MENYAMAKAN STRUKTUR DENGAN ENTITY ---
     transform: {
-      x: { type: Number, default: 0 }, // <--- Tambahkan ini
-      y: { type: Number, default: 0 }, // <--- Tambahkan ini
-      scale: { x: { type: Number, default: 1 }, y: { type: Number, default: 1 } },
+      translate: { 
+          x: { type: Number, default: 0 }, 
+          y: { type: Number, default: 0 } 
+      },
+      width:  { type: Number, default: 0 }, 
+      height: { type: Number, default: 0 },
       rotation: { type: Number, default: 0 },
+      scale: { 
+          x: { type: Number, default: 1 }, 
+          y: { type: Number, default: 1 } 
+      },
+      pivot: { 
+          x: { type: Number, default: 0.5 }, 
+          y: { type: Number, default: 0.5 } 
+      },
       zIndex: { type: Number, default: 0 }
     }
   },

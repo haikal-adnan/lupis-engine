@@ -250,12 +250,12 @@ export default class TextRenderer {
     }
 
     drawText(str, x, y, w, h, size, color, projection, rot = 0, sx = 1, sy = 1, px = 0, py = 0, alpha = 1) {
-        if (!this.font || !this.texture || !str) return;
+        if (!this.font || !this.texture || !str || str.trim() === "") return;
 
         const font = this.font;
         const measurement = this.measureText(str, size);
-        
-        const nativeW = measurement.boundsWidth; 
+
+        const nativeW = measurement.boundsWidth;
         const nativeH = measurement.boundsHeight;
 
         const offsetX = measurement.xMin;
@@ -298,13 +298,14 @@ export default class TextRenderer {
 
         const d = this.bufferData;
         let i = this.bufferIndex;
-        
-        const r = color[0];
-        const g = color[1];
-        const b = color[2];
-        const a = color[3] * alpha;
 
-        const scaleFont = size / font.size; 
+        const safeColor = color || [1, 1, 1, 1];
+        const r = safeColor[0];
+        const g = safeColor[1];
+        const b = safeColor[2];
+        const a = (safeColor[3] !== undefined ? safeColor[3] : 1) * alpha;
+
+        const scaleFont = size / font.size;
         let cx = 0;
 
         for (const ch of str) {

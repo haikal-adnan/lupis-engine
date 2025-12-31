@@ -1,11 +1,28 @@
 <script setup>
+import { watch } from 'vue';
 import ScenePanel from '@/components/panels/Scene/ScenePanel.vue';
+import { useEditorLayout } from "@/composables/useEditorLayout.js"; // Import baru
 
-defineProps({
+// Props & Emits tetap ada untuk kompatibilitas
+const props = defineProps({
   collapsed: Boolean
 });
 
-defineEmits(['toggle']);
+const emit = defineEmits(['toggle']);
+
+// Gunakan Composable
+const { isLeftCollapsed, setLeftCollapsed } = useEditorLayout();
+
+// Sinkronisasi Prop (jika layout dikontrol parent) ke State Global
+watch(() => props.collapsed, (val) => {
+    setLeftCollapsed(val);
+}, { immediate: true });
+
+// Handler Toggle
+const handleToggle = () => {
+    emit('toggle'); // Beritahu parent (opsional, tergantung arsitektur layout Anda)
+    // setLeftCollapsed(!isLeftCollapsed.value); // Jika parent tidak reaktif, uncomment ini
+};
 </script>
 
 <template>
