@@ -7,34 +7,45 @@ const TransformSchema = new mongoose.Schema({
   rotation: { type: Number, default: 0 },
   scale: { x: { type: Number, default: 1 }, y: { type: Number, default: 1 } },
   
-  // Pivot Point (Default Center)
   pivot: { x: { type: Number, default: 0.5 }, y: { type: Number, default: 0.5 } },
   
   zIndex: { type: Number, default: 0 }
+}, { _id: false });
 
+const EditorStateSchema = new mongoose.Schema({
+    locked: { type: Boolean, default: false },   
+    expanded: { type: Boolean, default: false },  
+    hiddenInList: { type: Boolean, default: false }
 }, { _id: false });
 
 const EntitySchema = new mongoose.Schema({
   _id: { type: String, required: true }, 
   
+  // --- ADDED TYPE FIELD ---
+  type: { 
+    type: String, 
+    enum: ['entity', 'group'], // Membatasi hanya 2 tipe sesuai permintaan
+    default: 'entity' 
+  },
+  // ------------------------
+
   name: { type: String, required: true },
   
-  // Tagging
-  tag: { type: String, default: null },
+  tag: { type: String, default: 'untagged' },
 
   prefabId: { type: String, ref: 'Prefab', default: null },
   
-  isActive: { type: Boolean, default: true },
-  isVisible: { type: Boolean, default: true },
+  isActive: { type: Boolean, default: true }, 
+  isVisible: { type: Boolean, default: true }, 
 
-  // Global Opacity
   opacity: { type: Number, default: 100 },
 
-  // Physics Layer ID
-  layerId: { type: String, default: 'default' },
+  layerId: { type: String, default: 'layer_root' },
   
   parentId: { type: String, default: null }, 
   
+  _editor: { type: EditorStateSchema, default: () => ({}) },
+
   transform: { type: TransformSchema, default: () => ({}) },
   
   components: { type: mongoose.Schema.Types.Mixed, default: {} }
@@ -48,9 +59,9 @@ const SceneSchema = new mongoose.Schema({
   version: { type: Number, default: 1 },
   
   settings: {
-    backgroundColor: { type: String, default: '#000000' },
+    backgroundColor: { type: String, default: '#222222' },
     gravity: { x: { type: Number, default: 0 }, y: { type: Number, default: 9.8 } },
-    worldBounds: { x: Number, y: Number, width: Number, height: Number }
+    worldBounds: { x: { type: Number, default: 0 }, y: { type: Number, default: 0 }, width: { type: Number, default: 2000 }, height: { type: Number, default: 2000 } }
   },
   entities: [EntitySchema]
 }, { 
