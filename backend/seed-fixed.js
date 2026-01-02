@@ -26,6 +26,7 @@ const seedDatabase = async () => {
     const fFontsId = "folder_fonts_main";
     const assetDungeonId = "asset_tex_dungeon_sheet";
     const assetFontId = "asset_font_gaegu_reg";
+    const assetFontId2 = "asset_font_inter_reg";
     const prefabChestId = "prefab_chest_001";
     const sceneId = "scene_level_1_demo";
     
@@ -74,11 +75,22 @@ const seedDatabase = async () => {
       folderId: fFontsId, 
       name: "gaegu",      
       type: "font",
-      fileKey: "gaegu_fixed_key",
+      fileKey: "gaegu",
       fileUrl: null,
-      meta: { extension: ".ttf", originalName: "Gaegu-Regular.ttf" }
+      meta: { extension: ".ttf", originalName: "gaegu.ttf" }
     });
     
+    await Asset.create({
+      _id: assetFontId2,
+      projectId: projectId,
+      folderId: fFontsId, 
+      name: "inter",      
+      type: "font",
+      fileKey: "inter",
+      fileUrl: null,
+      meta: { extension: ".ttf", originalName: "inter.ttf" }
+    });
+
     // 4. Create Prefab
     const chestPrefabData = {
       transform: {

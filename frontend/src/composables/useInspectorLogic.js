@@ -22,9 +22,11 @@ export function useInspectorLogic() {
       },
       set: (val) => {
         if (selectedEntity.value?.components?.[compName]) {
+          // UPDATE: Pastikan val diset ke component
           selectedEntity.value.components[compName][propName] = val;
+          
           triggerRef(selectedEntity);
-          notifyChange();
+          notifyChange(); // Emit 'entity:modified'
         }
       },
     });

@@ -29,21 +29,60 @@ export default class Game {
         bus.on("engine:load_asset", async (assetData) => {
             if (!this.renderer) return;
 
-            const loader = new GLImageResource(this.renderer.gl);
-            try {
-                const textureData = await loader.loadTextureFromAsset(assetData);
-                
-                if (!this.world.assets.textures) this.world.assets.textures = {};
-                this.world.assets.textures[assetData._id] = textureData;
-
-                console.log(`✅ Engine: Texture loaded [${assetData.name}]`);
-            } catch (err) {
-                console.error("❌ Engine: Failed runtime load", err);
+            // 1. HANDLE TEXTURE / IMAGE
+            const isTexture = ['texture', 'sprite', 'image'].includes(assetData.type) || 
+                              assetData.itemType === 'image';
+                              
+            if (isTexture) {
+                const loader = new GLImageResource(this.renderer.gl);
+                try {
+                    const textureData = await loader.loadTextureFromAsset(assetData);
+                    if (!this.world.assets.textures) this.world.assets.textures = {};
+                    this.world.assets.textures[assetData._id] = textureData;
+                    console.log(`✅ Engine: Texture loaded [${assetData.name}]`);
+                } catch (err) {
+                    console.error("❌ Engine: Failed runtime texture load", err);
+                }
+                return; // Selesai untuk texture
             }
-        });
 
-        bus.on("entity:update-hierarchy", (payload) => {
-            this.handleHierarchyUpdate(payload);
+            // 2. HANDLE FONT (KODE BARU)
+            const isFont = ['font', 'typeface'].includes(assetData.type) || 
+                           assetData.itemType === 'font' ||
+                           (assetData.meta?.extension && ['.ttf', '.fnt'].includes(assetData.meta.extension));
+
+            if (isFont) {
+                try {
+                    // Konstruksi URL (Sesuaikan logika ini dengan AssetLoader kamu)
+                    const baseUrl = this.world.cdnUrl || Config.CDN_URL || ""; 
+                    const pathPrefix = baseUrl.endsWith('/') ? baseUrl : baseUrl + '/';
+                    
+                    // Asumsi: assetData memiliki fileKey. Jika .ttf, backend harusnya sudah convert ke .fnt + .png
+                    // Kita ambil nama file tanpa ekstensi untuk mencari pasangan .fnt dan .png
+                    const fileKey = assetData.fileKey;
+                    const cleanKey = fileKey.replace(/\.[^/.]+$/, ""); 
+                    
+                    // Construct URL untuk folder projects
+                    const pId = assetData.projectId;
+                    const fullPrefix = `${pathPrefix}projects/${pId}/`;
+                    
+                    const fntUrl = `${fullPrefix}${cleanKey}.fnt`;
+                    const pngUrl = `${fullPrefix}${cleanKey}.png`;
+
+                    // Gunakan TextRenderer yang sudah ada di instance renderer untuk memuat font
+                    // Pastikan TextRenderer memiliki method loadFont yang public
+                    if (this.renderer && this.renderer.text) {
+                        const fontData = await this.renderer.text.loadFont(fntUrl, pngUrl);
+                        
+                        if (!this.world.assets.fonts) this.world.assets.fonts = {};
+                        this.world.assets.fonts[assetData._id] = fontData;
+                        
+                        console.log(`✅ Engine: Font loaded [${assetData.name}]`);
+                    }
+                } catch (err) {
+                    console.error("❌ Engine: Failed runtime font load", err);
+                }
+            }
         });
     }
 
