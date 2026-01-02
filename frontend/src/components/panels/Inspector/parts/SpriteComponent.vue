@@ -5,8 +5,6 @@ import { useBackend } from "@/composables/useBackend.js";
 import { useEditorState } from "@/composables/useEditorState.js";
 import { useEditorLayout } from "@/composables/useEditorLayout.js";
 import TextureUtil from "@engine/Util/TextureUtil.js";
-
-// 1. Import Actions untuk Shared State (autoResetRect)
 import { useAssetActions } from "@/composables/useAssetActions.js"; 
 
 import BaseInput from "@/components/ui/BaseInput.vue";
@@ -18,8 +16,6 @@ const { selectedEntity, removeComponent, bindNestedProp, bindComponentProp } = u
 const { assets, CDN_URL } = useBackend();
 const { activeProjectId } = useEditorState();
 const { isLeftCollapsed, isRightCollapsed } = useEditorLayout();
-
-// 2. Ambil state autoResetRect agar checkbox berfungsi global
 const { autoResetRect } = useAssetActions(); 
 
 const componentData = computed(() => selectedEntity.value?.components?.SpriteRenderer);
@@ -35,27 +31,21 @@ const sourceRaw = {
 const isAdvancedOpen = ref(false);
 
 const assetDisplayName = computed(() => {
-    if (!boundAssetId.value) return "None";
+    if (!boundAssetId.value) return "None (Sprite)";
     if (!assets.value) return "Loading...";
     const asset = assets.value.find(a => a._id === boundAssetId.value);
-    return asset ? asset.name : "Unknown Asset";
+    return asset ? asset.name : "Unknown Asset"; // Atau tampilkan ID jika nama tidak ketemu
 });
 
-// 3. Logic URL: Prioritas Blob Lokal > Fallback CDN Manual
+// --- Logic URL & Preview Thumbnail (Sama seperti sebelumnya) ---
 const currentAssetUrl = computed(() => {
     if (!boundAssetId.value || !assets.value) return null;
     const asset = assets.value.find(a => a._id === boundAssetId.value);
     if (!asset) return null;
 
-    // A. Cek Blob URL (untuk asset baru dari IndexedDB)
-    if (asset.fileUrl && asset.fileUrl.startsWith('blob:')) {
-        return asset.fileUrl;
-    }
-    if (asset.localBlob) {
-        return URL.createObjectURL(asset.localBlob);
-    }
+    if (asset.fileUrl && asset.fileUrl.startsWith('blob:')) return asset.fileUrl;
+    if (asset.localBlob) return URL.createObjectURL(asset.localBlob);
 
-    // B. Fallback ke CDN (untuk asset lama/server)
     const baseUrl = CDN_URL ? CDN_URL.replace(/\/$/, "") : "";
     const pId = asset.projectId || activeProjectId.value;
     const key = asset.fileKey;
@@ -69,7 +59,6 @@ const showPopup = ref(false);
 const triggerRef = ref(null);
 const popupRef = ref(null);
 const imgMeta = reactive({ w: 0, h: 0 });
-
 const isPositioned = ref(false); 
 const popupPosition = reactive({ top: '80vh', left: 0 });
 
@@ -81,17 +70,9 @@ watch(currentAssetUrl, async (url) => {
 
 const thumbnailStyle = computed(() => {
     if (!currentAssetUrl.value || imgMeta.w === 0) return {};
-    
-    const currentSource = {
-        x: sourceRaw.x.value,
-        y: sourceRaw.y.value,
-        w: sourceRaw.w.value,
-        h: sourceRaw.h.value
-    };
-
     return TextureUtil.getThumbnailStyle(
         currentAssetUrl.value, 
-        currentSource, 
+        { x: sourceRaw.x.value, y: sourceRaw.y.value, w: sourceRaw.w.value, h: sourceRaw.h.value }, 
         { width: imgMeta.w, height: imgMeta.h }, 
         48
     );
@@ -99,13 +80,9 @@ const thumbnailStyle = computed(() => {
 
 const updatePopupPosition = () => {
     if (!triggerRef.value) return;
-    
     const rect = triggerRef.value.getBoundingClientRect();
-    const popupWidth = 192;
-    const gap = 12;
-
     popupPosition.top = '80vh'; 
-    popupPosition.left = rect.left - popupWidth - gap; 
+    popupPosition.left = rect.left - 192 - 12; 
     isPositioned.value = true;
 };
 
@@ -127,9 +104,7 @@ const handleClickOutside = (e) => {
 };
 
 watch([isLeftCollapsed, isRightCollapsed], () => {
-    if (showPopup.value) {
-        showPopup.value = false;
-    }
+    if (showPopup.value) showPopup.value = false;
 });
 
 watch(showPopup, (val) => {
@@ -142,10 +117,33 @@ watch(showPopup, (val) => {
     }
 });
 
-// Handler texture change (opsional/placeholder)
-const handleTextureChange = async (newAssetId) => {
-  boundAssetId.value = newAssetId;
+// --- NEW HANDLERS FOR ASSET PICKER ---
+
+const openAssetPicker = () => {
+    console.log("TODO: Open Modal Asset Picker here");
+    // Nanti Anda panggil emit('open-picker') atau state global untuk buka modal
 };
+
+const clearAsset = () => {
+    // 1. Set assetId jadi null di Component Data
+    boundAssetId.value = null; 
+    
+    // 2. (Opsional tapi Bagus) Reset Source Rect agar kembali default
+    // Karena kalau tidak di-reset, mungkin masih ada sisa koordinat crop dari gambar sebelumnya
+    if (componentData.value && componentData.value.source) {
+         componentData.value.source = { x: 0, y: 0, w: 0, h: 0 };
+    }
+    
+    // Trigger update (NotifyChange sudah dipanggil oleh setter boundAssetId)
+};
+
+const handleDropAsset = (event) => {
+    // Contoh logic drop
+    // const assetId = event.dataTransfer.getData("application/lupis-asset-id");
+    // if(assetId) boundAssetId.value = assetId;
+    console.log("Dropped asset on slot", event);
+};
+
 </script>
 
 <template>
@@ -171,17 +169,14 @@ const handleTextureChange = async (newAssetId) => {
                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
                 </div>
             </button>
-
+            
             <Teleport to="body">
                 <div 
                      v-if="showPopup && currentAssetUrl && isPositioned" 
                      ref="popupRef"
                      class="fixed z-[9999] p-2 bg-gray-900 border border-gray-700 rounded shadow-xl flex flex-col gap-2 min-w-[150px] animate-in fade-in zoom-in-95 duration-100"
                      style="transform: translateY(-50%)"
-                     :style="{ 
-                        top: popupPosition.top, 
-                        left: `${popupPosition.left}px` 
-                     }"
+                     :style="{ top: popupPosition.top, left: `${popupPosition.left}px` }"
                 >
                     <div class="text-[10px] text-gray-400 border-b border-gray-800 pb-1">
                         {{ imgMeta.w }} x {{ imgMeta.h }}
@@ -195,12 +190,32 @@ const handleTextureChange = async (newAssetId) => {
 
         <div class="flex-1 flex flex-col justify-center">
             <PropertyRow label="Texture" :no-padding="true">
-                <BaseInput 
-                    :model-value="assetDisplayName" 
-                    readonly 
-                    class="w-full text-xs text-gray-300 cursor-default focus:ring-0 border-gray-700 bg-gray-800/50" 
-                    title="Asset Name"
-                />
+                <div 
+                    class="relative w-full flex items-center bg-gray-900 border border-gray-700 rounded px-2 py-1.5 cursor-pointer hover:bg-gray-800 hover:border-blue-500/50 transition-all group"
+                    @click="openAssetPicker"
+                    @dragover.prevent
+                    @drop.prevent="handleDropAsset"
+                    title="Click to change texture"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-blue-400 mr-2 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>
+                        <circle cx="9" cy="9" r="2"/>
+                        <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
+                    </svg>
+
+                    <span class="text-xs text-gray-300 truncate select-none flex-grow">
+                        {{ assetDisplayName }}
+                    </span>
+
+                    <button 
+                        v-if="boundAssetId"
+                        @click.stop="clearAsset"
+                        class="absolute right-1 p-0.5 rounded-sm hover:bg-red-500/20 hover:text-red-400 text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                        title="Clear Texture"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                    </button>
+                </div>
             </PropertyRow>
         </div>
     </div>

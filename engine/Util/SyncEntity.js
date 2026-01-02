@@ -1,13 +1,11 @@
 export function SyncEntityComponents(entity, game) {
     if (!entity || !entity.components) return;
 
-    // --- 1. SYNC TEXT RENDERER ---
     if (entity.components.TextRenderer) {
         const comp = entity.components.TextRenderer;
         
         if (!entity.text) entity.text = {};
         
-        // Support 'value' dan fallback ke 'text'
         const rawValue = comp.value !== undefined ? comp.value : (comp.text || "");
         
         entity.text.value = rawValue;
@@ -16,18 +14,15 @@ export function SyncEntityComponents(entity, game) {
         entity.text.align = comp.align || "left";
         entity.text.assetId = comp.assetId;
 
-        // Logic Dimensi Text (Real-time sizing)
         if (game && game.renderer && game.renderer.text) {
             const textRenderer = game.renderer.text;
             const isEmpty = !entity.text.value || entity.text.value.trim() === "";
 
             if (isEmpty) {
-                // Beri ukuran "Phantom" agar bisa diselect di Editor
                 entity.width = 50; 
                 entity.height = entity.text.size; 
             } 
             else if (textRenderer.font) {
-                // Hitung ukuran asli berdasarkan font
                 const m = textRenderer.measureText(entity.text.value, entity.text.size);
                 
                 entity.width = m.width || 1;
@@ -38,7 +33,6 @@ export function SyncEntityComponents(entity, game) {
         delete entity.text;
     }
 
-    // --- 2. SYNC SHAPE RENDERER ---
     if (entity.components.ShapeRenderer) {
         entity.shape = entity.components.ShapeRenderer;
         
@@ -50,34 +44,43 @@ export function SyncEntityComponents(entity, game) {
         delete entity.shape;
     }
 
-        // --- 3. SYNC SPRITE RENDERER ---
     if (entity.components.SpriteRenderer) {
         const comp = entity.components.SpriteRenderer;
-        const texture = game?.world?.assets?.textures?.[comp.assetId];
         
-        entity.image = texture || null;
+        const assetId = comp.assetId;
+        
+        const texture = (assetId && game?.world?.assets?.textures?.[assetId]) 
+                        ? game.world.assets.textures[assetId] 
+                        : null;
+        
+        entity.image = texture;
 
         if (entity.transform) {
             entity.transform.zIndex = comp.zIndex ?? entity.transform.zIndex;
         }
         
-        if (comp.source) {
-            // Setup Frame (Crop)
-            entity.frame = { sx: comp.source.x, sy: comp.source.y, sw: comp.source.w, sh: comp.source.h };
+        if (comp.source && (comp.source.w > 0 || comp.source.h > 0)) {
+            entity.frame = { 
+                sx: Number(comp.source.x) || 0, 
+                sy: Number(comp.source.y) || 0, 
+                sw: Number(comp.source.w) || 0, 
+                sh: Number(comp.source.h) || 0 
+            };
             
-            // PERBAIKAN: Cek apakah entity.width sudah ada nilainya (dari transform/scene)
-            // Jika entity.width = 0 atau null, baru gunakan comp.width atau source.w
             if (!entity.width) entity.width = comp.width || comp.source.w;
             if (!entity.height) entity.height = comp.height || comp.source.h;
-
-        } else if (texture) {
-            // Setup Frame (Full Texture)
+        } 
+        else if (texture) {
             entity.frame = { sx: 0, sy: 0, sw: texture.width, sh: texture.height };
 
-            // PERBAIKAN: Jangan timpa jika width/height sudah ada (misal hasil resize di editor)
-            // Gunakan texture.width HANYA jika entity.width masih 0/undefined.
             if (!entity.width) entity.width = comp.width || texture.width;
             if (!entity.height) entity.height = comp.height || texture.height;
+        }
+        else {
+            entity.frame = { sx: 0, sy: 0, sw: 100, sh: 100 };
+             
+            if (!entity.width) entity.width = 100;
+            if (!entity.height) entity.height = 100;
         }
 
         if (comp.color) entity.tint = comp.color;

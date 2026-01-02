@@ -1,3 +1,4 @@
+// composables/useAssetActions.js
 import { ref } from 'vue'; 
 import { useSelection } from '@/composables/useSelection.js';
 import { useSyncManager } from '@/composables/useSyncManager.js';
@@ -5,7 +6,6 @@ import { useBackend } from '@/composables/useBackend.js';
 import { useEditorState } from '@/composables/useEditorState.js';
 import { bus } from '@engine/Util/EventBus.js'; 
 
-// State Global (Singleton)
 const autoResetRect = ref(true);
 
 export function useAssetActions() {
@@ -23,18 +23,11 @@ export function useAssetActions() {
         });
     };
 
-    // --- FUNGSI UTAMA YANG MEMPERBAIKI MASALAH ---
     const resolveAssetUrl = (asset) => {
         if (!asset) return null;
-
-        // 1. PRIORITAS TERTINGGI: Blob URL dari IndexedDB (Hasil Hydration useBackend)
-        // Ini memperbaiki masalah "Masih mencari di server" saat baru upload
         if (asset.fileUrl) return asset.fileUrl;
-
-        // 2. Fallback: Raw Blob (Jaga-jaga jika hydration belum jalan)
         if (asset.localBlob) return URL.createObjectURL(asset.localBlob);
 
-        // 3. Terakhir: Construct CDN URL (Hanya jika tidak ada data lokal)
         const rawCdn = CDN_URL.value || '';
         const baseUrl = rawCdn.replace(/\/$/, "");
         const pId = asset.projectId || activeProjectId.value;
@@ -42,73 +35,73 @@ export function useAssetActions() {
         const ext = asset.meta?.extension || '.png';
 
         if (baseUrl && pId && key) return `${baseUrl}/projects/${pId}/${key}${ext}`;
-        
         return null;
     };
 
-    const applyTextureToEntity = async (asset, options = {}) => {
+    const applyAssetToEntity = async (asset, options = {}) => {
         if (!selectedEntity.value) return;
         if (selectionMode.value !== 'SCENE') return;
 
-        // Cek tipe file image yang valid
-        const isImage = asset.type === 'texture' || 
+        const entity = selectedEntity.value;
+
+        // --- IMAGE LOGIC ---
+        const isImage = ['texture', 'image', 'sprite'].includes(asset.type) || 
                         asset.itemType === 'image' || 
-                        ['texture', 'image', 'sprite'].includes(asset.type) ||
                         (asset.meta?.extension && ['.png','.jpg','.jpeg','.webp'].includes(asset.meta.extension));
 
-        if (!isImage) return;
+        if (isImage) {
+            if (!entity.components || !entity.components.SpriteRenderer) {
+                console.warn("Entity missing SpriteRenderer");
+                return;
+            }
+            const comp = { ...entity.components.SpriteRenderer };
+            comp.assetId = asset._id;
 
-        const entity = selectedEntity.value;
-        if (!entity.components || !entity.components.SpriteRenderer) {
-            console.warn("Entity missing SpriteRenderer");
+            const shouldReset = options.resetRect !== undefined ? options.resetRect : autoResetRect.value;
+            if (shouldReset) {
+                let w = 100, h = 100;
+                if (asset.meta?.dimensions?.w) {
+                    w = asset.meta.dimensions.w;
+                    h = asset.meta.dimensions.h;
+                } else {
+                    const url = resolveAssetUrl(asset);
+                    if (url) {
+                        const size = await getImageSize(url);
+                        w = size.w; h = size.h;
+                    }
+                }
+                comp.source = { x: 0, y: 0, w, h };
+                entity.width = w;
+                entity.height = h;
+            }
+            entity.components.SpriteRenderer = comp;
+            bus.emit('entity:modified', [entity]);
+            registerChange(entity);
             return;
         }
-        
-        // Clone Component
-        const comp = { ...entity.components.SpriteRenderer };
-        comp.assetId = asset._id;
 
-        // Logic Reset Rect
-        const shouldReset = options.resetRect !== undefined ? options.resetRect : autoResetRect.value;
+        // --- FONT LOGIC ---
+        const isFont = ['font', 'typeface'].includes(asset.type) || 
+                       asset.itemType === 'font' || 
+                       (asset.meta?.extension && ['.ttf','.fnt'].includes(asset.meta.extension));
 
-        if (shouldReset) {
-            let w = 100;
-            let h = 100;
-
-            // Ambil dimensi dari metadata jika ada
-            if (asset.meta?.dimensions?.w && asset.meta?.dimensions?.h) {
-                w = asset.meta.dimensions.w;
-                h = asset.meta.dimensions.h;
-            } else {
-                // Jika tidak ada meta, fetch manual menggunakan resolveAssetUrl
-                const url = resolveAssetUrl(asset);
-                if (url) {
-                    const size = await getImageSize(url);
-                    w = size.w;
-                    h = size.h;
-                }
+        if (isFont) {
+            if (!entity.components || !entity.components.TextRenderer) {
+                console.warn("Entity missing TextRenderer");
+                return;
             }
 
-            // Reset Source & Transform
-            comp.source = { x: 0, y: 0, w: w, h: h };
-            entity.width = w;
-            entity.height = h;
+            // Update Component Data
+            entity.components.TextRenderer.assetId = asset._id;
 
-            console.log(`✅ Applied ${asset.name} (Reset: YES, Size: ${w}x${h})`);
-        } else {
-            console.log(`✅ Applied ${asset.name} (Reset: NO, Keep Transform)`);
+            console.log(`✅ Applied Font [${asset.name}] to Entity`);
+            
+            // Trigger Update ke Engine
+            bus.emit('entity:modified', [entity]);
+            registerChange(entity);
+            return;
         }
-        
-        // Update Entity
-        entity.components.SpriteRenderer = comp;
-
-        bus.emit('entity:modified', [entity]);
-        registerChange(entity);
     };
 
-    return {
-        applyTextureToEntity,
-        resolveAssetUrl, // <--- Penting: Diexport agar dipakai Inspector
-        autoResetRect
-    };
+    return { applyAssetToEntity, resolveAssetUrl, autoResetRect };
 }
