@@ -95,16 +95,12 @@ const model = defineModel()
 const id = useId()
 const inputRef = ref(null)
 
-// State untuk Scrubbing
 const isDragging = ref(false)
 let startX = 0
 let startValue = 0
 
-// Input type text agar spinner hilang, tapi logic tetap number
 const inputType = computed(() => type === 'number' ? 'text' : type) 
 const canScrub = computed(() => type === 'number' || typeof model.value === 'number')
-
-// --- SCRUBBING LOGIC ---
 
 function startScrub(event) {
   if (!canScrub.value) return
@@ -126,15 +122,13 @@ function onMouseMove(event) {
   const currentX = event.clientX
   const deltaX = currentX - startX
 
-  // Modifier keys
   let multiplier = 1
-  if (event.shiftKey) multiplier = 10   // Cepat
-  if (event.altKey) multiplier = 0.1    // Presisi
+  if (event.shiftKey) multiplier = 10   
+  if (event.altKey) multiplier = 0.1   
 
   const change = deltaX * step * multiplier
   let newValue = startValue + change
 
-  // Formatting value
   if (Number.isInteger(step) && !event.altKey && Number.isInteger(startValue)) {
      newValue = Math.round(newValue)
   } else {

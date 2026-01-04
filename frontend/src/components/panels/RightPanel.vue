@@ -71,7 +71,6 @@ defineEmits(['toggle'])
       </button>
     </div>
 
-    <!-- Header (Collapsed) -->
     <div
       v-else
       class="
@@ -109,7 +108,6 @@ defineEmits(['toggle'])
       </button>
     </div>
 
-    <!-- Content (Expanded) -->
     <div
       v-if="!collapsed"
       class="
