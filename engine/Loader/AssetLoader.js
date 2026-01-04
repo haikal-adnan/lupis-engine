@@ -70,7 +70,8 @@ export default class AssetLoader {
     }
 
     async _loadFont(id, fileKey, pathPrefix) {
-        const cleanKey = fileKey.replace(/\.[^/.]+$/, ""); // Strip extension
+        console.log(fileKey)
+        const cleanKey = fileKey.replace(/\.[^/.]+$/, ""); 
         const fntUrl = `${pathPrefix}${cleanKey}.fnt`;
         const pngUrl = `${pathPrefix}${cleanKey}.png`;
         

@@ -7,10 +7,11 @@ import { useAssetActions } from '@/composables/useAssetActions.js';
 import { bus } from "@engine/Util/EventBus.js";
 
 const emit = defineEmits(['close']);
-const { applyTextureToEntity } = useAssetActions();
+
+const { applyAssetToEntity } = useAssetActions();
 
 const handleAssetDoubleClick = (item) => {
-    applyTextureToEntity(item);
+    applyAssetToEntity(item);
 };
 
 const viewMode = ref('grid');
@@ -24,21 +25,18 @@ const uploadQueue = ref([]);
 const contextMenu = ref({ visible: false, x: 0, y: 0, item: null });
 const clipboard = ref(null);
 
-// --- STATE & LOGIC UNTUK TOOLTIP HOVER (BARU) ---
+// --- STATE & LOGIC UNTUK TOOLTIP HOVER ---
 const hoveredItem = ref(null);
 const tooltipPos = ref({ x: 0, y: 0 });
 
 const onItemMouseEnter = (e, item) => {
-    if (item.isGhost) return; // Jangan tampilkan tooltip untuk item loading
+    if (item.isGhost) return;
     hoveredItem.value = item;
 
-    // Hitung posisi elemen di layar
     const rect = e.currentTarget.getBoundingClientRect();
-    
-    // Posisikan tooltip di tengah horizontal item, dan sedikit di bawahnya
     tooltipPos.value = {
         x: rect.left + (rect.width / 2), 
-        y: rect.bottom + 5 // +5px jarak dari bawah item
+        y: rect.bottom + 5 
     };
 };
 
@@ -50,7 +48,8 @@ const onItemMouseLeave = () => {
 const { activeProjectId } = useEditorState();
 const { folders, CDN_URL } = useBackend(); 
 
-const ALLOWED_EXTS = ['.png', '.jpg', '.jpeg', '.webp', '.svg', '.mp3', '.wav', '.ogg', '.js', '.ts', '.json', '.ttf'];
+// Tambahkan .ttf dan .fnt ke allowed exts
+const ALLOWED_EXTS = ['.png', '.jpg', '.jpeg', '.webp', '.svg', '.mp3', '.wav', '.ogg', '.js', '.ts', '.json', '.ttf', '.fnt'];
 const ACCEPT_ATTR = ALLOWED_EXTS.join(',');
 
 const detectAssetType = (asset) => {
@@ -58,19 +57,21 @@ const detectAssetType = (asset) => {
   if (['texture', 'sprite', 'image'].includes(asset.type)) return 'image';
   if (['audio', 'sound'].includes(asset.type)) return 'audio';
   if (['script', 'json'].includes(asset.type)) return 'script';
-  if (asset.type === 'font') return 'font';
+  if (['font', 'typeface'].includes(asset.type)) return 'font'; // Detect Font Type
 
   if (asset.meta && asset.meta.extension) {
       const ext = asset.meta.extension.replace('.', '').toLowerCase();
       if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'].includes(ext)) return 'image';
       if (['mp3', 'wav', 'ogg'].includes(ext)) return 'audio';
       if (['js', 'ts', 'json'].includes(ext)) return 'script';
+      if (['ttf', 'fnt', 'woff'].includes(ext)) return 'font'; // Detect Font Ext
   }
 
   const name = asset.name || "";
   if (name.includes('.')) {
       const ext = name.split('.').pop().toLowerCase();
       if (['png', 'jpg', 'jpeg'].includes(ext)) return 'image';
+      if (['ttf', 'fnt'].includes(ext)) return 'font';
   }
 
   return 'file';
@@ -123,7 +124,7 @@ const combinedItems = computed(() => {
   const ghostItems = uploadQueue.value.map(file => ({
       _id: 'ghost_' + file.name,
       name: file.name,
-      itemType: 'image',
+      itemType: detectAssetType({ name: file.name, meta: { extension: '.' + file.name.split('.').pop() } }), // Deteksi tipe ghost item
       isGhost: true, 
       folderId: currentFolderId.value
   }));
@@ -277,16 +278,21 @@ watch(activeProjectId, async (newId) => { if (newId) await refreshAssets(); });
                     class="max-w-full max-h-full object-contain"
                     style="image-rendering: pixelated;"
                     alt="thumb"
-                 />
+                  />
                  <svg v-else class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
             </div>
 
             <svg v-else-if="item.itemType === 'audio'" class="w-8 h-8 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" /></svg>
+            
+            <div v-else-if="item.itemType === 'font'" class="w-full h-full flex items-center justify-center bg-slate-800 rounded border border-slate-700">
+               <span class="text-xs font-serif font-bold text-slate-300">Aa</span>
+            </div>
+
             <svg v-else class="w-8 h-8 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
           </div>
 
           <span class="text-[11px] text-center text-muted-foreground font-medium truncate w-full group-hover:text-foreground">
-             {{ item.name }}
+              {{ item.name }}
           </span>
         </div>
       </div>
@@ -302,6 +308,7 @@ watch(activeProjectId, async (newId) => { if (newId) await refreshAssets(); });
              @contextmenu.stop="!item.isGhost && handleContextMenu($event, item)">
             <div class="w-4 h-4 shrink-0 flex items-center justify-center">
                  <svg v-if="item.itemType === 'folder'" class="w-4 h-4 text-orange-400" fill="currentColor" viewBox="0 0 24 24"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>
+                 <span v-else-if="item.itemType === 'font'" class="text-[10px] font-bold text-slate-400">Aa</span>
                  <img v-else-if="item.itemType === 'image' && getThumbnailUrl(item)" :src="getThumbnailUrl(item)" class="w-4 h-4 object-contain bg-gray-700" />
                  <svg v-else class="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
             </div>
@@ -312,7 +319,7 @@ watch(activeProjectId, async (newId) => { if (newId) await refreshAssets(); });
       <div v-if="!localAssets.length && combinedItems.length === 0" class="flex flex-col items-center justify-center h-40 text-muted-foreground opacity-50"><span class="text-xs">No assets found</span></div>
     </div>
 
-  <Teleport to="body">
+    <Teleport to="body">
       <div 
           v-if="contextMenu.visible" 
           :style="{ top: contextMenu.y + 'px', left: contextMenu.x + 'px' }" 
@@ -330,7 +337,7 @@ watch(activeProjectId, async (newId) => { if (newId) await refreshAssets(); });
               <button @click="handleMenuAction('paste')" :disabled="!clipboard" class="px-3 py-1.5 text-xs text-left hover:bg-secondary disabled:opacity-50 text-foreground">Paste</button>
           </template>
       </div>
-  </Teleport>
+    </Teleport>
 
     <Teleport to="body">
       <div 

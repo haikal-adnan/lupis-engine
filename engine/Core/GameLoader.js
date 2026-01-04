@@ -45,6 +45,8 @@ export default class GameLoader {
             this._initializeEditorTools(game, canvas);
         }
 
+        console.log(game.world.assets)
+
         game.loop = new GameLoop({
             update: dt => game.update(dt),
             render: alpha => game.render(alpha),
