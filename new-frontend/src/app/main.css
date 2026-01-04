@@ -1,0 +1,117 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: hsl(0 0% 98%);
+    --foreground: hsl(220 11% 20%);
+
+    --card: hsl(0 0% 100%);
+    --card-foreground: hsl(220 11% 20%);
+
+    --popover: hsl(0 0% 100%);
+    --popover-foreground: hsl(220 11% 20%);
+
+    --primary: hsl(217 91% 60%);
+    --primary-foreground: hsl(0 0% 100%);
+
+    --secondary: hsl(210 40% 96%);
+    --secondary-foreground: hsl(220 8% 28%);
+
+    --muted: hsl(210 40% 96%);
+    --muted-foreground: hsl(215 7% 46%);
+
+    --accent: hsl(217 91% 60%);
+    --accent-foreground: hsl(0 0% 100%);
+
+    --destructive: hsl(0 84% 60%);
+    --destructive-foreground: hsl(0 0% 100%);
+
+    --border: hsl(214 32% 91%);
+    --input: hsl(214 32% 91%);
+    --ring: hsl(217 91% 60%);
+
+    --radius: 0.5rem;
+
+    --editor-bg: hsl(210 40% 96%);
+    --editor-sidebar: hsl(0 0% 100%);
+    --editor-canvas: hsl(210 35% 95%);
+    --editor-grid: hsl(215 25% 89%);
+    --editor-selection: hsl(217 91% 60%);
+    --editor-hover: hsl(210 33% 97%);
+    --editor-active: hsl(214 100% 97%);
+
+    --editor-panel-shadow: 0 4px 24px -4px hsl(220 20% 20% / 0.08);
+
+    --editor-float-bg: hsl(0 0% 100% / 0.9);
+    --editor-glass: hsl(0 0% 100% / 0.75);
+    --editor-glass-border: hsl(0 0% 100% / 0.2);
+
+    --font-sans: 'Inter', system-ui, sans-serif;
+
+    --sidebar-background: hsl(0 0% 100%);
+    --sidebar-foreground: hsl(220 8% 28%);
+    --sidebar-primary: hsl(217 91% 60%);
+    --sidebar-primary-foreground: hsl(0 0% 100%);
+    --sidebar-accent: hsl(210 40% 96%);
+    --sidebar-accent-foreground: hsl(220 11% 20%);
+    --sidebar-border: hsl(214 32% 91%);
+    --sidebar-ring: hsl(217 91% 60%);
+  }
+
+  .dark {
+    --background: hsl(220 25% 10%);
+    --foreground: hsl(210 40% 96%);
+
+    --card: hsl(220 23% 13%);
+    --card-foreground: hsl(210 40% 96%);
+
+    --popover: hsl(220 23% 13%);
+    --popover-foreground: hsl(210 40% 96%);
+
+    --primary: hsl(217 91% 60%);
+    --primary-foreground: hsl(0 0% 100%);
+
+    --secondary: hsl(220 20% 17%);
+    --secondary-foreground: hsl(210 30% 92%);
+
+    --muted: hsl(220 20% 17%);
+    --muted-foreground: hsl(215 10% 58%);
+
+    --accent: hsl(220 18% 19%);
+    --accent-foreground: hsl(210 40% 96%);
+
+    --destructive: hsl(0 63% 50%);
+    --destructive-foreground: hsl(0 0% 100%);
+
+    --border: hsl(220 18% 19%);
+    --input: hsl(220 18% 19%);
+    --ring: hsl(217 91% 60%);
+
+    --editor-bg: hsl(220 28% 8%);
+    --editor-sidebar: hsl(220 23% 13%);
+    --editor-canvas: hsl(220 25% 10%);
+    --editor-grid: hsl(220 20% 15%);
+    --editor-selection: hsl(217 91% 60%);
+    --editor-hover: hsl(220 20% 15%);
+    --editor-active: hsl(213 90% 20%);
+
+    --editor-panel-shadow: 0 4px 24px -4px hsl(220 30% 5% / 0.4);
+
+    --editor-float-bg: hsl(220 23% 13% / 0.95);
+    --editor-glass: hsl(220 20% 15% / 0.8);
+    --editor-glass-border: hsl(220 18% 19% / 0.3);
+
+    --sidebar-background: hsl(220 23% 13%);
+    --sidebar-foreground: hsl(210 30% 92%);
+    --sidebar-primary: hsl(217 91% 60%);
+    --sidebar-primary-foreground: hsl(0 0% 100%);
+    --sidebar-accent: hsl(220 20% 17%);
+    --sidebar-accent-foreground: hsl(210 40% 96%);
+    --sidebar-border: hsl(220 18% 19%);
+    --sidebar-ring: hsl(217 91% 60%);
+  }
+}

@@ -75,9 +75,9 @@ import { ref, computed, useId } from 'vue'
 
 const props = defineProps({
   label: String,
-  options: { type: Array, default: () => [] }, // Format: [{ label: 'Layer 1', value: 1 }]
+  options: { type: Array, default: () => [] }, 
   placeholder: { type: String, default: 'Select...' },
-  height: { type: String, default: '32px' }, // Samakan dengan BaseInput
+  height: { type: String, default: '32px' }, 
   radius: { type: String, default: '0.375rem' }
 })
 
@@ -98,7 +98,6 @@ function select(option) {
   close()
 }
 
-// Simple Directive untuk click outside (bisa dipindah ke utils)
 const vClickOutside = {
   mounted(el, binding) {
     el.clickOutsideEvent = function(event) {

@@ -22,9 +22,8 @@
         v-if="prefix"
         @mousedown.prevent="startScrub"
         class="h-full flex items-center justify-center pl-3 pr-2 select-none border-r border-transparent 
-               bg-muted/20 transition-colors relative z-10"
+               bg-muted/20 transition-colors relative z-10 cursor-ew-resize hover:bg-muted/40 hover:text-primary"
         :class="[
-          canScrub ? 'cursor-ew-resize hover:bg-muted/40 hover:text-primary' : 'cursor-default',
           isDragging ? '!bg-primary/20 !text-primary border-primary/20' : 'group-focus-within:border-border/50'
         ]"
       >
@@ -41,7 +40,7 @@
         :id="id"
         ref="inputRef"
         v-model="model"
-        :type="inputType"
+        type="text" 
         class="w-full h-full bg-transparent border-none outline-none text-sm text-foreground placeholder:text-muted-foreground/40
                focus:ring-0 px-2"
         :placeholder="placeholder"
@@ -50,6 +49,7 @@
         }"
         @keydown.up.prevent="increment(step)"
         @keydown.down.prevent="increment(-step)"
+        @blur="formatOnBlur"
       />
       
       <div 
@@ -63,14 +63,13 @@
 </template>
 
 <script setup>
-import { ref, computed, useId } from 'vue'
+import { ref, useId } from 'vue'
 
 const { 
   label, 
   prefix, 
   suffix,
   placeholder = '', 
-  type = 'text',
   radius = '0.375rem', 
   height = '2rem',
   paddingX = '0.75rem',
@@ -82,7 +81,6 @@ const {
   prefix: String,
   suffix: String,
   placeholder: String,
-  type: String,
   radius: String,
   height: String,
   paddingX: String,
@@ -91,7 +89,7 @@ const {
   max: Number
 })
 
-const model = defineModel()
+const model = defineModel({ type: [Number, String] })
 const id = useId()
 const inputRef = ref(null)
 
@@ -99,12 +97,7 @@ const isDragging = ref(false)
 let startX = 0
 let startValue = 0
 
-const inputType = computed(() => type === 'number' ? 'text' : type) 
-const canScrub = computed(() => type === 'number' || typeof model.value === 'number')
-
 function startScrub(event) {
-  if (!canScrub.value) return
-
   isDragging.value = true
   startX = event.clientX
   startValue = parseFloat(model.value) || 0
@@ -135,7 +128,6 @@ function onMouseMove(event) {
      newValue = parseFloat(newValue.toFixed(2))
   }
 
-  // Clamp
   if (newValue < min) newValue = min
   if (newValue > max) newValue = max
 
@@ -151,9 +143,23 @@ function stopScrub() {
 }
 
 function increment(val) {
-  if (!canScrub.value) return
   const current = parseFloat(model.value) || 0
-  model.value = parseFloat((current + val).toFixed(2))
+  let newValue = current + val
+  
+  if (newValue < min) newValue = min
+  if (newValue > max) newValue = max
+
+  model.value = parseFloat(newValue.toFixed(2))
+}
+
+function formatOnBlur() {
+    let val = parseFloat(model.value)
+    if (isNaN(val)) return 
+    
+    if (val < min) val = min
+    if (val > max) val = max
+    
+    model.value = val
 }
 </script>
 
