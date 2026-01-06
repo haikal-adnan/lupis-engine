@@ -18,5 +18,5 @@
     "frontend",
     "projects",
     "schemas",
-    "preview"]
+    "preview", "engine/Loader/AssetLoader.js"]
 }

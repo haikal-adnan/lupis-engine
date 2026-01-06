@@ -5,9 +5,8 @@ export default class GLImageResource {
         this.gl = gl;
     }
 
-    // --- BARU: Method All-in-One untuk Runtime Load ---
     async loadTextureFromAsset(asset) {
-        // 1. Resolve Source (Blob vs URL)
+        // ... logika load sama ...
         let src = asset.fileUrl;
         if (asset.localBlob) {
             src = URL.createObjectURL(asset.localBlob);
@@ -15,25 +14,22 @@ export default class GLImageResource {
 
         if (!src) throw new Error("No source found for asset");
 
-        // 2. Load Image
         const img = await this._loadImage(src);
 
-        // 3. Tentukan Filter Mode
         const filterMode = (asset.meta?.filterMode === 'linear') 
             ? this.gl.LINEAR 
             : this.gl.NEAREST;
 
-        // 4. Upload ke GPU
         const textureData = this._uploadToGPU(img, filterMode);
 
-        // Tambahkan properti src/image asli untuk referensi jika perlu
         textureData.src = src;
         textureData.image = img;
         
+        // Kita tidak perlu mengembalikan _id disini karena AssetLoader yang memegangnya
         return textureData;
     }
-
-    // Wrapper Promise untuk load image HTML
+    
+    // ... sisa file tetap sama ...
     _loadImage(url) {
         return new Promise((resolve, reject) => {
             const img = new Image();
@@ -50,19 +46,16 @@ export default class GLImageResource {
         return this._uploadToGPU(img, filter);
     }
 
-    // --- UPDATE: Terima parameter filterMode ---
     _uploadToGPU(image, filterMode) {
         const gl = this.gl;
         const tex = gl.createTexture();
-        const filter = filterMode || gl.NEAREST; // Default Nearest/Pixelated
+        const filter = filterMode || gl.NEAREST;
 
         gl.bindTexture(gl.TEXTURE_2D, tex);
         gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
 
-        // Upload Pixel
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
 
-        // Set Parameter
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, filter);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, filter);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -71,7 +64,7 @@ export default class GLImageResource {
         gl.bindTexture(gl.TEXTURE_2D, null);
 
         return {
-            id: __textureID++,
+            id: __textureID++, // Ini internal GL ID, aman dibiarkan 'id' atau ganti '_glId' jika mau sangat strict
             type: "gl",
             glTexture: tex,
             width: image.width,

@@ -1,7 +1,7 @@
 // src/services/api/useCloudSync.js
 import { ref } from 'vue'
 
-export function useCloudSync() {
+export function useSyncManager() {
   const isUploading = ref(false)
   const cloudStatus = ref('idle') // idle, syncing, synced, error
 

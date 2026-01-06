@@ -14,37 +14,20 @@ function getShared(gl) {
         layout(location=1) in vec2 aUV;
         layout(location=2) in vec4 aColor;
         uniform mat4 uProjection;
-        out vec2 vUV;
-        out vec4 vColor;
-        void main() {
-            vUV = aUV;
-            vColor = aColor;
-            gl_Position = uProjection * vec4(aPos, 0.0, 1.0);
-        }
+        out vec2 vUV; out vec4 vColor;
+        void main() { vUV = aUV; vColor = aColor; gl_Position = uProjection * vec4(aPos, 0.0, 1.0); }
     ` : `
-        attribute vec2 aPos;
-        attribute vec2 aUV;
-        attribute vec4 aColor;
+        attribute vec2 aPos; attribute vec2 aUV; attribute vec4 aColor;
         uniform mat4 uProjection;
-        varying vec2 vUV;
-        varying vec4 vColor;
-        void main() {
-            vUV = aUV;
-            vColor = aColor;
-            gl_Position = uProjection * vec4(aPos, 0.0, 1.0);
-        }
+        varying vec2 vUV; varying vec4 vColor;
+        void main() { vUV = aUV; vColor = aColor; gl_Position = uProjection * vec4(aPos, 0.0, 1.0); }
     `;
 
     const fs = isWebGL2 ? `#version 300 es
         precision mediump float;
-        in vec2 vUV;
-        in vec4 vColor;
-        out vec4 outColor;
-        uniform sampler2D uTex;
-        uniform float uDist;
-        float median3(vec3 v) {
-            return max(min(v.r, v.g), min(max(v.r, v.g), v.b));
-        }
+        in vec2 vUV; in vec4 vColor; out vec4 outColor;
+        uniform sampler2D uTex; uniform float uDist;
+        float median3(vec3 v) { return max(min(v.r, v.g), min(max(v.r, v.g), v.b)); }
         void main() {
             vec3 msdf = texture(uTex, vUV).rgb;
             float sd = median3(msdf);
@@ -56,13 +39,9 @@ function getShared(gl) {
         }
     ` : `
         precision mediump float;
-        varying vec2 vUV;
-        varying vec4 vColor;
-        uniform sampler2D uTex;
-        uniform float uDist;
-        float median3(vec3 v) {
-            return max(min(v.r, v.g), min(max(v.r, v.g), v.b));
-        }
+        varying vec2 vUV; varying vec4 vColor;
+        uniform sampler2D uTex; uniform float uDist;
+        float median3(vec3 v) { return max(min(v.r, v.g), min(max(v.r, v.g), v.b)); }
         ${hasDeriv ? "#extension GL_OES_standard_derivatives : enable" : ""}
         void main() {
             vec3 msdf = texture2D(uTex, vUV).rgb;
@@ -84,7 +63,6 @@ function getShared(gl) {
 
     const vsObj = compile(gl.VERTEX_SHADER, vs);
     const fsObj = compile(gl.FRAGMENT_SHADER, fs);
-
     const program = gl.createProgram();
     gl.attachShader(program, vsObj);
     gl.attachShader(program, fsObj);
@@ -94,18 +72,14 @@ function getShared(gl) {
         gl.bindAttribLocation(program, 1, "aUV");
         gl.bindAttribLocation(program, 2, "aColor");
     }
-
     gl.linkProgram(program);
 
     s = {
-        gl,
-        isWebGL2,
-        program,
+        gl, isWebGL2, program,
         uProjection: gl.getUniformLocation(program, "uProjection"),
         uTex: gl.getUniformLocation(program, "uTex"),
         uDist: gl.getUniformLocation(program, "uDist")
     };
-
     _shared.set(gl, s);
     return s;
 }
@@ -119,8 +93,7 @@ export default class TextRenderer {
 
         this.maxGlyphs = 20000;
         this.floatsPerVertex = 8;
-        this.vertsPerGlyph = 6;
-        this.floatsPerGlyph = this.floatsPerVertex * this.vertsPerGlyph;
+        this.floatsPerGlyph = this.floatsPerVertex * 6;
 
         this.bufferData = new Float32Array(this.maxGlyphs * this.floatsPerGlyph);
         this.bufferIndex = 0;
@@ -138,244 +111,139 @@ export default class TextRenderer {
     _initVAO() {
         const gl = this.gl;
         const stride = this.floatsPerVertex * 4;
-
         this.cache.bindVAO(this.vao);
-
         gl.bindBuffer(gl.ARRAY_BUFFER, this.vbo);
         gl.bufferData(gl.ARRAY_BUFFER, this.bufferData, gl.DYNAMIC_DRAW);
-
-        gl.enableVertexAttribArray(0);
-        gl.vertexAttribPointer(0, 2, gl.FLOAT, false, stride, 0);
-
-        gl.enableVertexAttribArray(1);
-        gl.vertexAttribPointer(1, 2, gl.FLOAT, false, stride, 8);
-
-        gl.enableVertexAttribArray(2);
-        gl.vertexAttribPointer(2, 4, gl.FLOAT, false, stride, 16);
-
+        gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, stride, 0);
+        gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 2, gl.FLOAT, false, stride, 8);
+        gl.enableVertexAttribArray(2); gl.vertexAttribPointer(2, 4, gl.FLOAT, false, stride, 16);
         gl.bindBuffer(gl.ARRAY_BUFFER, null);
         this.cache.bindVAO(null);
     }
 
-    async loadFont(xmlURL, texURL) {
-        const xml = new DOMParser().parseFromString(
-            await (await fetch(xmlURL)).text(),
-            "application/xml"
-        );
+    /**
+     * Menghitung dimensi teks berdasarkan font asset
+     * @param {Object} font - Asset font dari World (hasil load GLFontResource)
+     * @param {String} str - Teks
+     * @param {Number} size - Ukuran font dalam pixel world
+     */
+    measureText(font, str, size) {
+        if (!font || !str) return { width: 0, height: 0, xMin: 0, yMin: 0, xMax: 0, yMax: 0 };
 
-        const chars = {};
-        xml.querySelectorAll("char").forEach(c => {
-            chars[c.getAttribute("id")] = {
-                x: +c.getAttribute("x"),
-                y: +c.getAttribute("y"),
-                w: +c.getAttribute("width"),
-                h: +c.getAttribute("height"),
-                ox: +c.getAttribute("xoffset"),
-                oy: +c.getAttribute("yoffset"),
-                adv: +c.getAttribute("xadvance")
-            };
-        });
-
-        const common = xml.querySelector("common");
-        const distField = xml.querySelector("distanceField");
-        const info = xml.querySelector("info");
-
-        this.font = {
-            chars,
-            texW: +common.getAttribute("scaleW"),
-            texH: +common.getAttribute("scaleH"),
-            base: +common.getAttribute("base"),
-            lineHeight: +common.getAttribute("lineHeight"),
-            size: +info.getAttribute("size"),
-            distance: +(distField?.getAttribute("distanceRange") ?? 4)
-        };
-
-        const img = new Image();
-        img.src = texURL;
-        img.crossOrigin = "anonymous";
-        await img.decode();
-
-        this.texture = this.gl.createTexture();
-        this.gl.bindTexture(this.gl.TEXTURE_2D, this.texture);
-        this.gl.texImage2D(
-            this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE, img
-        );
-
-        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR);
-        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.LINEAR);
-    }
-
-    measureText(str, size, fontOverride = null) {
-        const font = fontOverride || this.font;
-        if (!font || !str) {
-            return { width: 0, height: 0, xMin: 0, yMin: 0, xMax: 0, yMax: 0 };
-        }
-
-        const scale = size / font.size;
-        let cx = 0;
-
-        let xMin = Infinity;
-        let yMin = Infinity;
-        let xMax = -Infinity;
-        let yMax = -Infinity;
+        // [UPDATE] Menggunakan font.info.size
+        const scale = size / font.info.size;
+        let cx = 0, xMin = Infinity, yMin = Infinity, xMax = -Infinity, yMax = -Infinity;
 
         for (const ch of str) {
             const gdat = font.chars[ch.charCodeAt(0)];
             if (!gdat) continue;
-
-            const x0 = cx + gdat.ox * scale;
-            const y0 = gdat.oy * scale;
-            const x1 = x0 + gdat.w * scale;
-            const y1 = y0 + gdat.h * scale;
-
-            if (x0 < xMin) xMin = x0;
-            if (y0 < yMin) yMin = y0;
-            if (x1 > xMax) xMax = x1;
-            if (y1 > yMax) yMax = y1;
-
+            const x0 = cx + gdat.ox * scale, y0 = gdat.oy * scale;
+            const x1 = x0 + gdat.w * scale, y1 = y0 + gdat.h * scale;
+            if (x0 < xMin) xMin = x0; if (y0 < yMin) yMin = y0;
+            if (x1 > xMax) xMax = x1; if (y1 > yMax) yMax = y1;
             cx += gdat.adv * scale;
         }
-
-        if (xMin === Infinity) {
-            xMin = 0; xMax = cx; yMin = 0; yMax = font.lineHeight * scale;
+        
+        if (xMin === Infinity) { 
+            xMin = 0; 
+            xMax = cx; 
+            yMin = 0; 
+            // [UPDATE] Menggunakan font.common.lineHeight
+            yMax = font.common.lineHeight * scale; 
         }
-
-        return {
-            width: cx,
-            boundsWidth: xMax - xMin,
-            boundsHeight: yMax - yMin,
-            xMin, yMin, xMax, yMax,
-            baseline: font.base * scale
+        
+        return { 
+            width: cx, 
+            boundsWidth: xMax - xMin, 
+            boundsHeight: yMax - yMin, 
+            xMin, yMin, xMax, yMax, 
+            // [UPDATE] Menggunakan font.common.base
+            baseline: font.common.base * scale 
         };
     }
 
-    drawText(str, x, y, w, h, size, color, projection, rot = 0, sx = 1, sy = 1, px = 0, py = 0, alpha = 1) {
-        if (!this.font || !this.texture || !str || str.trim() === "") return;
+    drawText(font, str, x, y, w, h, size, color, projection, rot = 0, sx = 1, sy = 1, px = 0, py = 0, alpha = 1) {
+        // [UPDATE] Cek properti glTexture (camelCase dari GLFontResource)
+        if (!font || !font.glTexture || !str || str.trim() === "") return;
 
-        const font = this.font;
-        const measurement = this.measureText(str, size);
-
-        const nativeW = measurement.boundsWidth;
-        const nativeH = measurement.boundsHeight;
-
-        const offsetX = measurement.xMin;
-        const offsetY = measurement.yMin;
-
-        const targetW = w || nativeW;
-        const targetH = h || nativeH;
-
+        const measurement = this.measureText(font, str, size);
+        const nativeW = measurement.boundsWidth, nativeH = measurement.boundsHeight;
+        const offsetX = measurement.xMin, offsetY = measurement.yMin;
+        const targetW = w || nativeW, targetH = h || nativeH;
         const ratioX = (nativeW > 0 ? targetW / nativeW : 1);
         const ratioY = (nativeH > 0 ? targetH / nativeH : 1);
-
-        const c = Math.cos(rot);
-        const s = Math.sin(rot);
-
-        const pivotOffsetX = -px * targetW * sx;
-        const pivotOffsetY = -py * targetH * sy;
-
-        const transform = (localX, localY) => {
-            const finalX = localX * ratioX * sx;
-            const finalY = localY * ratioY * sy;
-
-            const ox = finalX + pivotOffsetX;
-            const oy = finalY + pivotOffsetY;
-
-            return {
-                x: x + (ox * c - oy * s),
-                y: y + (ox * s + oy * c)
-            };
+        const c = Math.cos(rot), s = Math.sin(rot);
+        const pivotOffsetX = -px * targetW * sx, pivotOffsetY = -py * targetH * sy;
+        
+        const transform = (lx, ly) => {
+            const fx = lx * ratioX * sx + pivotOffsetX;
+            const fy = ly * ratioY * sy + pivotOffsetY;
+            return { x: x + (fx * c - fy * s), y: y + (fx * s + fy * c) };
         };
 
-        if (this.currentTexture !== this.texture) {
-            this.flush();
-            this.currentTexture = this.texture;
+        if (this.currentTexture !== font.glTexture) { 
+            this.flush(); 
+            this.currentTexture = font.glTexture; 
         }
-
-        if (projection !== this.currentProjection) {
-            this.flush();
-            this.currentProjection = projection;
+        if (projection !== this.currentProjection) { 
+            this.flush(); 
+            this.currentProjection = projection; 
         }
 
         const d = this.bufferData;
         let i = this.bufferIndex;
-
-        const safeColor = color || [1, 1, 1, 1];
-        const r = safeColor[0];
-        const g = safeColor[1];
-        const b = safeColor[2];
-        const a = (safeColor[3] !== undefined ? safeColor[3] : 1) * alpha;
-
-        const scaleFont = size / font.size;
+        const col = color || [1, 1, 1, 1];
+        const alph = (col[3] ?? 1) * alpha;
+        
+        // [UPDATE] Menggunakan font.info.size
+        const scale = size / font.info.size;
         let cx = 0;
 
         for (const ch of str) {
-            const gdat = font.chars[ch.charCodeAt(0)];
-            if (!gdat) continue;
+            const g = font.chars[ch.charCodeAt(0)];
+            if (!g) continue;
+            const x0 = cx + g.ox * scale, y0 = g.oy * scale;
+            const x1 = x0 + g.w * scale, y1 = y0 + g.h * scale;
+            
+            const pTL = transform(x0-offsetX, y0-offsetY);
+            const pTR = transform(x1-offsetX, y0-offsetY);
+            const pBL = transform(x0-offsetX, y1-offsetY);
+            const pBR = transform(x1-offsetX, y1-offsetY);
+            
+            // [UPDATE] Menggunakan font.common.texW dan texH
+            const u0 = g.x / font.common.texW, v0 = g.y / font.common.texH;
+            const u1 = (g.x + g.w) / font.common.texW, v1 = (g.y + g.h) / font.common.texH;
 
-            const x0 = cx + gdat.ox * scaleFont;
-            const y0 = gdat.oy * scaleFont;
-            const x1 = x0 + gdat.w * scaleFont;
-            const y1 = y0 + gdat.h * scaleFont;
-
-            const pTL = transform(x0 - offsetX, y0 - offsetY);
-            const pTR = transform(x1 - offsetX, y0 - offsetY);
-            const pBL = transform(x0 - offsetX, y1 - offsetY);
-            const pBR = transform(x1 - offsetX, y1 - offsetY);
-
-            const u0 = gdat.x / font.texW;
-            const v0 = gdat.y / font.texH;
-            const u1 = (gdat.x + gdat.w) / font.texW;
-            const v1 = (gdat.y + gdat.h) / font.texH;
-
-            const push = (vtx, u, v) => {
-                d[i++] = vtx.x; d[i++] = vtx.y;
-                d[i++] = u; d[i++] = v;
-                d[i++] = r; d[i++] = g; d[i++] = b; d[i++] = a;
+            const push = (v, u, v_tex) => { 
+                d[i++] = v.x; d[i++] = v.y; 
+                d[i++] = u; d[i++] = v_tex; 
+                d[i++] = col[0]; d[i++] = col[1]; d[i++] = col[2]; d[i++] = alph; 
             };
-
-            push(pTL, u0, v0);
-            push(pTR, u1, v0);
-            push(pBL, u0, v1);
-            push(pTR, u1, v0);
-            push(pBR, u1, v1);
-            push(pBL, u0, v1);
-
-            cx += gdat.adv * scaleFont;
+            
+            push(pTL, u0, v0); push(pTR, u1, v0); push(pBL, u0, v1);
+            push(pTR, u1, v0); push(pBR, u1, v1); push(pBL, u0, v1);
+            
+            cx += g.adv * scale;
         }
 
         this.bufferIndex = i;
-
-        if (i >= this.bufferData.length - this.floatsPerGlyph) {
-            this.flush();
-        }
-        this._lastDist = font.distance;
+        // [UPDATE] Menggunakan font.info.distance
+        this._lastDist = font.info.distance;
+        
+        if (i >= this.bufferData.length - this.floatsPerGlyph) this.flush();
     }
 
     flush() {
         if (this.bufferIndex === 0) return;
-        const gl = this.gl;
-        const s = this.s;
-
+        const gl = this.gl; const s = this.s;
         this.cache.useProgram(s.program);
         this.cache.bindVAO(this.vao);
         this.cache.bindTexture(this.currentTexture);
-
         gl.uniformMatrix4fv(s.uProjection, false, this.currentProjection);
         gl.uniform1f(s.uDist, this._lastDist);
-
         gl.bindBuffer(gl.ARRAY_BUFFER, this.vbo);
-        gl.bufferSubData(
-            gl.ARRAY_BUFFER,
-            0,
-            this.bufferData.subarray(0, this.bufferIndex)
-        );
-
-        gl.drawArrays(
-            gl.TRIANGLES,
-            0,
-            this.bufferIndex / this.floatsPerVertex
-        );
-
+        gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.bufferData.subarray(0, this.bufferIndex));
+        gl.drawArrays(gl.TRIANGLES, 0, this.bufferIndex / this.floatsPerVertex);
         this.bufferIndex = 0;
     }
 }
