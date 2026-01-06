@@ -21,7 +21,6 @@ export default class GameLoop {
       }
       this.accumulator -= this.interval;
     }
-
     this.game.render(this.accumulator / this.interval);
     requestAnimationFrame(t => this.loop(t));
   }

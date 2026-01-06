@@ -1,98 +1,32 @@
 <script setup>
-import { ref, shallowRef } from 'vue'
+import { useProjectStore } from '@/stores/useProjectStore'
+import { useAppInit } from '@/composables/useAppInit'
 
-import EditorLayout from '@/layouts/EditorLayout.vue'
-import TopBar from '@/layouts/parts/TopBar.vue'
-import LeftPanel from '@/layouts/parts/LeftPanel.vue'
-import RightPanel from '@/layouts/parts/RightPanel.vue'
-import BottomBar from '@/layouts/parts/BottomBar.vue'
+import AppLoading from '@/commons/components/overlay/AppLoading.vue'
+import EditorView from '@/layouts/EditorView.vue'
 
-import AssetPanel from '@/modules/assets/AssetPanel.vue'
-
-import { useLayoutState } from '@/composables/useLayoutState.js'
-
-const CanvasPlaceholder = { 
-  template: '<div class="w-full h-full flex items-center justify-center text-slate-500 select-none">Game Canvas Area</div>' 
-}
-
-const {
-  layoutRef,
-  isLeftSidebarCollapsed,
-  isRightSidebarCollapsed,
-  toggleLeftSidebar,
-  toggleRightSidebar
-} = useLayoutState()
-
-const currentBottomComponent = shallowRef(AssetPanel) 
-const isBottomPanelOpen = ref(false) 
-
-const handleComponentUpdate = (component) => {
-  currentBottomComponent.value = component
-}
-
-const handleToggleRequest = (shouldOpen) => {
-  isBottomPanelOpen.value = shouldOpen
-  layoutRef.value?.setBottomPanel(shouldOpen)
-}
-
-const onLayoutClosePanel = () => {
-  isBottomPanelOpen.value = false
-}
-
-const onLayoutDragOpen = () => {
-  isBottomPanelOpen.value = true
-}
+useAppInit()
+const projectStore = useProjectStore()
 </script>
 
 <template>
-  <EditorLayout 
-    ref="layoutRef"
-    v-model:is-left-collapsed="isLeftSidebarCollapsed"
-    v-model:is-right-collapsed="isRightSidebarCollapsed"
-    @close="onLayoutClosePanel"
-    @drag-open="onLayoutDragOpen"
-  >
-    
-    <template #canvas>
-      <component :is="CanvasPlaceholder" class="w-full h-full bg-slate-900 shadow-inner" />
-    </template>
+  <div class="relative w-full h-full">
+    <EditorView />
 
-    <template #topbar>
-      <TopBar />
-    </template>
-
-    <template #left-panel>
-      <LeftPanel 
-        :collapsed="isLeftSidebarCollapsed"
-        @toggle="toggleLeftSidebar" 
-      />
-    </template>
-
-    <template #right-panel>
-      <RightPanel 
-        :collapsed="isRightSidebarCollapsed" 
-        @toggle="toggleRightSidebar" 
-      />
-    </template>
-
-    <template #bottom-panel="{ close }">
-      <div class="h-full w-full bg-background flex flex-col overflow-hidden">
-        <KeepAlive>
-          <component 
-            :is="currentBottomComponent" 
-            @close="close" 
-          />
-        </KeepAlive>
+    <transition
+      enter-active-class="transition duration-300 ease-out"
+      enter-from-class="opacity-0"
+      enter-to-class="opacity-100"
+      leave-active-class="transition duration-200 ease-in"
+      leave-from-class="opacity-100"
+      leave-to-class="opacity-0"
+    >
+      <div 
+        v-if="projectStore.isLoading" 
+        class="absolute inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+      >
+        <AppLoading />
       </div>
-    </template>
-
-    <template #bottom-bar>
-      <BottomBar 
-        :is-open="isBottomPanelOpen"
-        @update:component="handleComponentUpdate"
-        @toggle="handleToggleRequest"
-      />
-    </template>
-
-  </EditorLayout>
+    </transition>
+  </div>
 </template>

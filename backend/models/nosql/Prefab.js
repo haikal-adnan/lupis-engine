@@ -1,34 +1,33 @@
 import mongoose from 'mongoose';
 
+const EditorStateSchema = new mongoose.Schema({
+    locked: { type: Boolean, default: false },
+    expanded: { type: Boolean, default: false },
+    hiddenInList: { type: Boolean, default: false }
+}, { _id: false });
+
+const PrefabDataSchema = new mongoose.Schema({
+  type: { 
+    type: String, 
+    enum: ['entity', 'group'],
+    default: 'entity' 
+  },
+  name: { type: String },
+  tag: { type: String, default: 'untagged' },
+  prefabId: { type: String, ref: 'Prefab', default: null },
+  isActive: { type: Boolean, default: true },
+  isVisible: { type: Boolean, default: true },
+  layerId: { type: String, default: 'layer_root' },
+  parentId: { type: String, default: null },
+  _editor: { type: EditorStateSchema, default: () => ({}) },
+  components: { type: mongoose.Schema.Types.Mixed, default: {} }
+}, { _id: false });
+
 const PrefabSchema = new mongoose.Schema({
   _id: { type: String, required: true },
   projectId: { type: String, ref: 'Project', required: true },
   name: { type: String, required: true },
-  data: {
-    tag: { type: String, default: 'Untagged' },
-    layerId: { type: String },
-    components: { type: mongoose.Schema.Types.Mixed, default: {} },
-    
-    // --- PERBAIKAN: MENYAMAKAN STRUKTUR DENGAN ENTITY ---
-    transform: {
-      translate: { 
-          x: { type: Number, default: 0 }, 
-          y: { type: Number, default: 0 } 
-      },
-      width:  { type: Number, default: 0 }, 
-      height: { type: Number, default: 0 },
-      rotation: { type: Number, default: 0 },
-      scale: { 
-          x: { type: Number, default: 1 }, 
-          y: { type: Number, default: 1 } 
-      },
-      pivot: { 
-          x: { type: Number, default: 0.5 }, 
-          y: { type: Number, default: 0.5 } 
-      },
-      zIndex: { type: Number, default: 0 }
-    }
-  },
+  data: { type: PrefabDataSchema, default: () => ({}) },
   thumbnailUrl: { type: String }
 }, { 
   timestamps: true,

@@ -24,12 +24,16 @@
 
       <div class="w-px h-4 bg-border mx-1"></div>
 
-      <button @click="logs = []" class="p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive rounded transition-colors" title="Clear Console">
+      <button 
+        @click="triggerClear" 
+        class="p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive rounded transition-colors" 
+        title="Clear Console"
+      >
         <Trash2 class="w-4 h-4" />
       </button>
     </div>
 
-    <div class="flex-1 overflow-y-auto bg-background custom-scrollbar">
+    <div ref="scrollContainer" class="flex-1 overflow-y-auto bg-background custom-scrollbar p-1">
       <div v-if="filteredLogs.length === 0" class="flex flex-col items-center justify-center h-full text-muted-foreground/40 italic">
         <span class="text-xs">No logs to display</span>
       </div>
@@ -44,20 +48,18 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import { Trash2 } from 'lucide-vue-next'
+import { useConsole } from '@/modules/console/composables/useConsole.js' // Import composable
 import BaseSearchInput from '@/commons/components/inputs/BaseSearchInput.vue'
 import ConsoleItem from './parts/ConsoleItem.vue'
 
+// Gunakan Composable
+const { logs, triggerClear } = useConsole()
+
 const activeFilter = ref('all')
 const searchQuery = ref('')
-
-const logs = ref([
-  { type: 'info', time: '10:23:45', source: 'System', message: 'Engine initialized successfully.' },
-  { type: 'warn', time: '10:23:46', source: 'AssetLoader', message: 'Texture "hero_run.png" took 200ms to load.' },
-  { type: 'error', time: '10:23:50', source: 'Script', message: 'ReferenceError: "player" is not defined at update()' },
-  { type: 'info', time: '10:24:01', source: 'Network', message: 'Connected to localhost:3000' },
-])
+const scrollContainer = ref(null)
 
 const filters = computed(() => [
   { id: 'all', label: 'All', count: logs.value.length },
@@ -69,12 +71,10 @@ const filters = computed(() => [
 const filteredLogs = computed(() => {
   let result = logs.value
   
-  // Filter Type
   if (activeFilter.value !== 'all') {
     result = result.filter(l => l.type === activeFilter.value)
   }
 
-  // Filter Search
   if (searchQuery.value) {
     const q = searchQuery.value.toLowerCase()
     result = result.filter(l => 
@@ -83,5 +83,13 @@ const filteredLogs = computed(() => {
     )
   }
   return result
+})
+
+// Auto Scroll ke bawah jika ada log baru
+watch(() => logs.value.length, async () => {
+  if (scrollContainer.value && activeFilter.value === 'all' && !searchQuery.value) {
+    await nextTick()
+    scrollContainer.value.scrollTop = scrollContainer.value.scrollHeight
+  }
 })
 </script>

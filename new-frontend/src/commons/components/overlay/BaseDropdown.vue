@@ -3,7 +3,7 @@
     class="relative inline-block text-left h-full"
     v-click-outside="close"
   >
-    <div @click="toggle" class="h-full cursor-pointer outline-none">
+    <div @click.stop="toggle" class="h-full cursor-pointer outline-none">
       <slot name="trigger" :isOpen="isOpen"></slot>
     </div>
 
@@ -15,6 +15,7 @@
           align === 'right' ? 'right-0 left-auto origin-top-right mt-1.5 mr-1' : 'left-0 origin-top-left mt-1.5 ml-1'
         ]"
         tabindex="-1"
+        @click.stop 
       >
         <slot :close="close" />
       </div>
@@ -39,19 +40,22 @@ function close() {
   isOpen.value = false
 }
 
+// Expose fungsi ke parent (TopBar)
 defineExpose({ close, open: toggle })
 
+// Custom Directive: v-click-outside
 const vClickOutside = {
   mounted(el, binding) {
     el.clickOutsideEvent = function(event) {
+      // Cek apakah klik terjadi di luar element ini
       if (!(el === event.target || el.contains(event.target))) {
         binding.value(event)
       }
     }
-    document.body.addEventListener('click', el.clickOutsideEvent)
+    document.addEventListener('click', el.clickOutsideEvent)
   },
   unmounted(el) {
-    document.body.removeEventListener('click', el.clickOutsideEvent)
+    document.removeEventListener('click', el.clickOutsideEvent)
   }
 }
 </script>
@@ -59,7 +63,7 @@ const vClickOutside = {
 <style scoped>
 .fade-scale-enter-active,
 .fade-scale-leave-active {
-  transition: opacity 0.1s ease, transform 0.1s ease;
+  transition: opacity 0.15s ease, transform 0.15s ease;
 }
 .fade-scale-enter-from,
 .fade-scale-leave-to {

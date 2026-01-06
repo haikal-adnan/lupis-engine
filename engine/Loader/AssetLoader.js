@@ -1,105 +1,53 @@
+import { econsole } from "../Util/EngineConsole.js";
+
 export default class AssetLoader {
-    constructor(glLoader, fontLoaderFunc) {
-        this.glLoader = glLoader;
-        this.fontLoaderFunc = fontLoaderFunc;
-        this.assets = { textures: {}, fonts: {} };
+    constructor(imageResource, fontResource) {
+        this.imageResource = imageResource
+        this.fontResource = fontResource 
     }
 
-    async loadMap(assetsMap, baseURL) {
-        if (!assetsMap) return this.assets;
-
-        // Pastikan ada slash di akhir Base URL
-        const pathPrefix = baseURL.endsWith('/') ? baseURL : baseURL + '/';
-        const promises = [];
-
-        // 1. Process Textures
-        if (assetsMap.textures) {
-            const texturePromises = Object.entries(assetsMap.textures).map(([id, val]) => {
-                const config = (typeof val === 'string') ? { uri: val, filterMode: 'smooth' } : val;
-                
-                let url;
-
-                // --- LOGIKA PRIORITAS ---
-                
-                // 1. Prioritas Blob IndexedDB
-                if (config.fileUrl) {
-                    url = config.fileUrl; 
-                }
-                // 2. Cek jika URI sudah Absolute (http/https/blob manual)
-                else if (config.uri && (config.uri.startsWith('http') || config.uri.startsWith('blob:'))) {
-                     url = config.uri;
-                }
-                // 3. Logika Lama (CDN) -> BaseURL + Filename
-                else {
-                    // baseURL diharapkan: "cdn/projects/id_project/"
-                    // uri diharapkan: "nama_file.png"
-                    // Hasil: "cdn/projects/id_project/nama_file.png"
-                    url = pathPrefix + (config.uri || '');
-                }
-                
-                // ------------------------
-
-                return this._loadTexture(id, url, config)
-                    .catch(err => console.error(`❌ Failed texture: ${url}`, err));
-            });
-            promises.push(...texturePromises);
+    async loadAsset(world, assets) {
+        for (const asset of assets) {
+            switch (asset.type) {
+                case "texture":
+                    await this.loadTexture(world, asset);
+                    break;
+                case "font":
+                    await this.loadFont(world, asset);
+                    break;
+                default:
+                    break;
+            }
         }
-
-        // 2. Process Fonts
-        if (assetsMap.fonts) {
-            const fontPromises = Object.entries(assetsMap.fonts).map(([id, fileKey]) => {
-                return this._loadFont(id, fileKey, pathPrefix)
-                    .catch(err => console.error(`❌ Failed font: ${fileKey}`, err));
-            });
-            promises.push(...fontPromises);
-        }
-
-        await Promise.all(promises);
-        return this.assets;
     }
 
-    async _loadTexture(id, url, config) {
-        const raw = await this.glLoader.load(url);
-        const normalized = this._normalizeTextureResult(raw);
-        if (normalized) {
-            this.assets.textures[id] = {
-                ...normalized,
-                filterMode: config.filterMode 
+    async loadTexture(world, asset) {
+        try {
+            const textureData = await this.imageResource.loadTextureFromAsset(asset);
+            
+            const data = {
+                _id: asset._id, 
+                gltexture: textureData.glTexture,
+                fileurl: asset.fileUrl,
+                width: textureData.width,
+                height: textureData.height,
+                filterMode: asset.meta?.filterMode || "nearest"
             };
+
+            // Simpan ke world menggunakan key _id
+            world.addTexture(asset._id, data);
+
+        } catch (error) {
+            console.error(error);
         }
     }
 
-    async _loadFont(id, fileKey, pathPrefix) {
-        console.log(fileKey)
-        const cleanKey = fileKey.replace(/\.[^/.]+$/, ""); 
-        const fntUrl = `${pathPrefix}${cleanKey}.fnt`;
-        const pngUrl = `${pathPrefix}${cleanKey}.png`;
+    async loadFont(world, asset) {
+        const fontResult = await this.fontResource.loadFontFromAsset(asset);
         
-        this.assets.fonts[id] = await this.fontLoaderFunc(fntUrl, pngUrl);
-    }
-      
-    _normalizeTextureResult(raw) {
-        if (!raw) return null;
-
-        if (raw.texture || raw.glTexture) {
-            return { 
-                type: "gl", 
-                glTexture: raw.texture || raw.glTexture, 
-                width: raw.width || raw.w, 
-                height: raw.height || raw.h, 
-                meta: raw 
-            };
+        if (fontResult) {
+            // Font result sudah dimodifikasi di class GLFontResource untuk pakai _id
+            world.addFont(asset._id, fontResult);
         }
-
-        if (raw instanceof HTMLImageElement || raw.src) {
-            return { 
-                type: "image", 
-                image: raw, 
-                width: raw.naturalWidth || raw.width, 
-                height: raw.naturalHeight || raw.height 
-            };
-        }
-        
-        return null;
     }
 }
