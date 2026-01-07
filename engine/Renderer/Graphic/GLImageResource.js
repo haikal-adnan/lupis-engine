@@ -6,7 +6,6 @@ export default class GLImageResource {
     }
 
     async loadTextureFromAsset(asset) {
-        // ... logika load sama ...
         let src = asset.fileUrl;
         if (asset.localBlob) {
             src = URL.createObjectURL(asset.localBlob);
@@ -25,11 +24,9 @@ export default class GLImageResource {
         textureData.src = src;
         textureData.image = img;
         
-        // Kita tidak perlu mengembalikan _id disini karena AssetLoader yang memegangnya
         return textureData;
     }
     
-    // ... sisa file tetap sama ...
     _loadImage(url) {
         return new Promise((resolve, reject) => {
             const img = new Image();
@@ -64,7 +61,7 @@ export default class GLImageResource {
         gl.bindTexture(gl.TEXTURE_2D, null);
 
         return {
-            id: __textureID++, // Ini internal GL ID, aman dibiarkan 'id' atau ganti '_glId' jika mau sangat strict
+            id: __textureID++,
             type: "gl",
             glTexture: tex,
             width: image.width,

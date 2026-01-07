@@ -12,13 +12,12 @@ dotenv.config();
 const seedDatabase = async () => {
   try {
     if (!process.env.MONGO_URI) {
-      throw new Error("❌ MONGO_URI is missing in .env file");
+      throw new Error("MONGO_URI is missing in .env file");
     }
 
     await mongoose.connect(process.env.MONGO_URI);
-    console.log("🔥 Connected to MongoDB...");
+    console.log("Connected to MongoDB...");
 
-    console.log("🧹 Cleaning old data...");
     await Project.deleteMany({});
     await Folder.deleteMany({});
     await Asset.deleteMany({});
@@ -26,6 +25,7 @@ const seedDatabase = async () => {
     await Prefab.deleteMany({});
 
     const projectId = "project_dungeon_demo_01";
+    const sceneId = "scene_level_1_demo";
 
     const fSpritesId = "folder_sprites_main";
     const fFontsId = "folder_fonts_main";
@@ -34,8 +34,6 @@ const seedDatabase = async () => {
     const assetFontId = "gaegu";
 
     const prefabChestId = "prefab_chest_001";
-
-    const sceneId = "scene_level_1_demo";
 
     const entBgId = "ent_background_map";
     const entGroupId = "ent_group_dungeon";
@@ -49,11 +47,7 @@ const seedDatabase = async () => {
       ownerId: "dev_2025",
       name: "Dungeon Project",
       settings: { width: 1280, height: 720 },
-      layers: [
-        { _id: "layer_root", name: "Root", order: 0 },
-        { _id: "layer_hero", name: "Hero", order: 1 },
-        { _id: "layer_ui", name: "UI", order: 2 }
-      ]
+      scenes: [sceneId]
     });
 
     await Folder.create([
@@ -126,6 +120,11 @@ const seedDatabase = async () => {
         backgroundColor: "#222222",
         worldBounds: { x: 0, y: 0, width: 2000, height: 2000 }
       },
+      layers: [
+        { _id: "layer_root", name: "Root" },
+        { _id: "layer_hero", name: "Hero" },
+        { _id: "layer_ui", name: "UI" }
+      ],
       entities: [
         {
           _id: entBgId,
@@ -206,7 +205,9 @@ const seedDatabase = async () => {
           components: {
             Transform: {
               x: 200,
-              y: 0
+              y: 0,
+              width: 50, 
+              height: 50  
             }
           }
         },
@@ -224,13 +225,15 @@ const seedDatabase = async () => {
               x: 400,
               y: 0,
               scaleX: 3,
-              scaleY: 3
+              scaleY: 3,
+              width: 50, 
+              height: 50 
             },
             SpriteRenderer: {
               assetId: assetDungeonId,
               source: { x: 128, y: 0, w: 32, h: 32 },
               color: "#FFCCCC",
-              opacity: 0.5
+              opacity: 1
             }
           }
         },
@@ -247,7 +250,7 @@ const seedDatabase = async () => {
               x: 640,
               y: 100,
               width: 300,
-              height: 60,
+              height: 42,
               pivotX: 0.5,
               pivotY: 0.5
             },
@@ -264,10 +267,10 @@ const seedDatabase = async () => {
       ]
     });
 
-    console.log("\n🎉 Database Seeding Completed Successfully!");
+    console.log("Database Seeding Completed Successfully!");
     process.exit(0);
   } catch (err) {
-    console.error("\n❌ Seed Error:", err);
+    console.error(err);
     process.exit(1);
   }
 };

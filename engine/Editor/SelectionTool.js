@@ -16,9 +16,6 @@ export default class SelectionTool {
         this.hoverMarqueeList = [];
         this.selectedList = [];
 
-        this.marqueeUseLayerFilter = false;
-        this.marqueeAllowedLayers = ["background"];
-
         this.isPointerDown = false;
         this.marqueeActive = false;
 
@@ -30,21 +27,15 @@ export default class SelectionTool {
 
         this.pointerDownTime = 0;
         this.isLongPress = false;
-        this.LONG_PRESS_TIME = 10;
+        this.LONG_PRESS_TIME = 30;
 
         this.lastAutoPanTime = 0;
         this.autoPanVel = { x: 0, y: 0 };
         
         this.viewportInsets = { top: 0, left: 0, right: 0, bottom: 0 };
 
-        this.onExternalSelect = (list) => {
-            this.syncSelectionFromBus(list);
-        };
-
-        this.onUISelect = (ids) => {
-            this.handleUISelect(ids);
-        };
-
+        this.onExternalSelect = (list) => { this.syncSelectionFromBus(list); };
+        this.onUISelect = (ids) => { this.handleUISelect(ids); };
         this.onPrefabSelect = () => {
             this.selectedList = [];
             this.hovered = null;
@@ -62,9 +53,38 @@ export default class SelectionTool {
             if (!this.active) return;
             this.drawHover(shape, proj);
             this.drawSelected(shape, proj);
+            
             if (this.transform) this.transform.draw(shape, proj);
+            
             this.drawMarquee(shape, proj);
         };
+    }
+
+    _getTransform(e) {
+        return e.components && e.components.Transform;
+    }
+    
+    _isLocked(e) {
+        return e._editor && e._editor.locked;
+    }
+
+    _findEntityRecursive(id, entities) {
+        for (const e of entities) {
+            if ((e._id || e.id) === id) return e;
+            if (e.children && e.children.length > 0) {
+                const found = this._findEntityRecursive(id, e.children);
+                if (found) return found;
+            }
+        }
+        return null;
+    }
+
+    _findEntity(id) {
+        for (const layer of this.world.layers) {
+            const found = this._findEntityRecursive(id, layer.entities);
+            if (found) return found;
+        }
+        return null;
     }
 
     handleUISelect(ids) {
@@ -77,12 +97,9 @@ export default class SelectionTool {
         const realEntities = [];
         const idsToFind = Array.isArray(ids) ? ids : [ids];
 
-        for (const [layerId, ents] of this.world.layers) {
-            for (const e of ents) {
-                if (idsToFind.includes(e._id || e.id)) {
-                    realEntities.push(e);
-                }
-            }
+        for (const id of idsToFind) {
+            const e = this._findEntity(id);
+            if (e) realEntities.push(e);
         }
 
         if (realEntities.length > 0) {
@@ -98,12 +115,7 @@ export default class SelectionTool {
         }
         if (externalList === this.selectedList) return;
 
-        if (externalList[0]?.isAsset || externalList[0]?.isPrefabMaster) {
-            this.selectedList = [];
-            return;
-        }
-
-        if (externalList[0] && externalList[0].transform) {
+        if (externalList[0] && this._getTransform(externalList[0])) {
              this.selectedList = externalList;
         }
     }
@@ -112,22 +124,6 @@ export default class SelectionTool {
         bus.off("entity:selected", this.onExternalSelect);
         bus.off("ui:select-by-id", this.onUISelect);
         bus.off("prefab:selected", this.onPrefabSelect);
-    }
-
-    _findEntity(id) {
-        for (const [lid, ents] of this.world.layers) {
-            const found = ents.find(e => (e._id || e.id) === id);
-            if (found) return found;
-        }
-        return null;
-    }
-
-    _findChildren(parentId) {
-        let children = [];
-        for (const [lid, ents] of this.world.layers) {
-            children.push(...ents.filter(e => e.parentId === parentId && e.visible));
-        }
-        return children;
     }
 
     attachTransform(t) {
@@ -150,14 +146,16 @@ export default class SelectionTool {
     }
 
     getAABB(e) {
-        const t = e.transform;
+        const t = this._getTransform(e);
+        if (!t) return { x:0, y:0, w:0, h:0 };
+
         const r = t.rotation || 0;
         const sx = t.scaleX ?? 1;
         const sy = t.scaleY ?? 1;
         const px = t.pivotX ?? 0.5;
         const py = t.pivotY ?? 0.5;
 
-        const v = calculateQuadVertices(t.x, t.y, e.width, e.height, r, sx, sy, px, py);
+        const v = calculateQuadVertices(t.x, t.y, t.width, t.height, r, sx, sy, px, py);
         const xs = [v.tl.x, v.tr.x, v.bl.x, v.br.x];
         const ys = [v.tl.y, v.tr.y, v.bl.y, v.br.y];
 
@@ -226,7 +224,6 @@ export default class SelectionTool {
 
     updateHover(px, py) {
         this.hoverHandle = null;
-
         if (this.isPointerDown) return;
 
         if (this.transform && this.selectedList.length > 0) {
@@ -264,22 +261,13 @@ export default class SelectionTool {
         return (wx >= box.x && wx <= box.x + box.w && wy >= box.y && wy <= box.y + box.h);
     }
 
-    updateHoverMarquee() {
-        if (!this.marqueeActive) {
-            this.hoverMarqueeList = [];
-            return;
-        }
-
-        const box = this.getMarqueeWorld();
-        const list = [];
-
-        for (const layerId of this.world.layerOrder) {
-            if (!this.world.layerVisibility[layerId]) continue;
-            const ents = this.world.layers.get(layerId);
-            if (!ents) continue;
-
-            for (const e of ents) {
-                if (!e.visible) continue;
+    _checkMarqueeRecursive(entities, box, list) {
+        for (const e of entities) {
+            if (!e.visible) continue;
+            if (this._isLocked(e)) continue;
+            
+            const t = this._getTransform(e);
+            if (t) {
                 const b = this.getAABB(e);
                 const overlap = 
                     b.x < box.x + box.w &&
@@ -289,7 +277,27 @@ export default class SelectionTool {
 
                 if (overlap) list.push(e);
             }
+
+            if (e.children && e.children.length > 0) {
+                this._checkMarqueeRecursive(e.children, box, list);
+            }
         }
+    }
+
+    updateHoverMarquee() {
+        if (!this.marqueeActive) {
+            this.hoverMarqueeList = [];
+            return;
+        }
+
+        const box = this.getMarqueeWorld();
+        const list = [];
+
+        for (const layer of this.world.layers) {
+            if (!layer.visible || layer.locked) continue;
+            this._checkMarqueeRecursive(layer.entities, box, list);
+        }
+
         this.hoverMarqueeList = list;
     }
 
@@ -339,32 +347,8 @@ export default class SelectionTool {
         if (this.transform) this.transform.resetDrag();
 
         if (this.marqueeActive) {
-            let selectionSet = new Set(this.hoverMarqueeList);
-            let hasChanged = true;
-
-            while (hasChanged) {
-                hasChanged = false;
-                const parentIdsToCheck = new Set();
-                for (const e of selectionSet) {
-                    if (e.parentId) parentIdsToCheck.add(e.parentId);
-                }
-
-                for (const pid of parentIdsToCheck) {
-                    const parent = this._findEntity(pid);
-                    if (!parent || selectionSet.has(parent)) continue;
-
-                    const children = this._findChildren(pid);
-                    if (children.length === 0) continue;
-
-                    const allChildrenSelected = children.every(c => selectionSet.has(c));
-                    if (allChildrenSelected) {
-                        selectionSet.add(parent);
-                        hasChanged = true;
-                    }
-                }
-            }
-
-            this.selectedList = Array.from(selectionSet);
+            this.selectedList = [...this.hoverMarqueeList];
+            
             bus.emit("entity:selected", this.selectedList);
             
             this.marqueeActive = false;
@@ -381,42 +365,46 @@ export default class SelectionTool {
         }
     }
 
-    hit(wx, wy) {
-        const world = this.world;
-        for (let li = world.layerOrder.length - 1; li >= 0; li--) {
-            const layerId = world.layerOrder[li];
-            if (!world.layerVisibility[layerId]) continue;
+    _hitTestRecursive(entities, wx, wy) {
+        for (let i = entities.length - 1; i >= 0; i--) {
+            const e = entities[i];
+            if (!e.visible) continue;
+            if (this._isLocked(e)) continue;
 
-            const ents = world.layers.get(layerId);
-            if (!ents) continue;
-
-            let best = null;
-            let bestZ = -Infinity;
-
-            for (const e of ents) {
-                if (!e.visible) continue;
-                if (this.isPointInEntity(wx, wy, e)) {
-                    const z = e.transform.zIndex || 0;
-                    if (z >= bestZ) {
-                        bestZ = z;
-                        best = e;
-                    }
-                }
+            if (e.children && e.children.length > 0) {
+                const childHit = this._hitTestRecursive(e.children, wx, wy);
+                if (childHit) return childHit;
             }
-            if (best) return best;
+
+            if (this.isPointInEntity(wx, wy, e)) {
+                return e;
+            }
+        }
+        return null;
+    }
+
+    hit(wx, wy) {
+        for (let li = this.world.layers.length - 1; li >= 0; li--) {
+            const layer = this.world.layers[li];
+            if (!layer.visible || layer.locked) continue;
+
+            const found = this._hitTestRecursive(layer.entities, wx, wy);
+            if (found) return found;
         }
         return null;
     }
 
     isPointInEntity(wx, wy, e) {
-        const t = e.transform;
+        const t = this._getTransform(e);
+        if (!t) return false;
+
         const r = t.rotation || 0;
         const sx = t.scaleX ?? 1;
         const sy = t.scaleY ?? 1;
         const px = t.pivotX ?? 0.5;
         const py = t.pivotY ?? 0.5;
-        const w = e.width;
-        const h = e.height;
+        const w = t.width;
+        const h = t.height;
 
         let dx = wx - t.x;
         let dy = wy - t.y;
@@ -439,8 +427,13 @@ export default class SelectionTool {
         const minY = Math.min(top, bottom);
         const maxY = Math.max(top, bottom);
 
-        return (unscaledMouseX >= minX && unscaledMouseX <= maxX && 
-                unscaledMouseY >= minY && unscaledMouseY <= maxY);
+        // --- BUFFER SELECTION ---
+        // Tambahkan buffer (misal 5px di layar)
+        // Kita bagi dengan absolute scale agar konsisten saat di-zoom
+        const buffer = 5 / Math.abs(this.game.camera.scale || 1); 
+
+        return (unscaledMouseX >= minX - buffer && unscaledMouseX <= maxX + buffer && 
+                unscaledMouseY >= minY - buffer && unscaledMouseY <= maxY + buffer);
     }
 
     getMarqueeWorld() {
@@ -452,14 +445,16 @@ export default class SelectionTool {
     }
 
     drawObb(shape, e, color, proj) {
-        const t = e.transform;
+        const t = this._getTransform(e);
+        if (!t) return;
+
         const r = t.rotation || 0;
         const sx = t.scaleX ?? 1;
         const sy = t.scaleY ?? 1;
         const px = t.pivotX ?? 0.5;
         const py = t.pivotY ?? 0.5;
 
-        const v = calculateQuadVertices(t.x, t.y, e.width, e.height, r, sx, sy, px, py);
+        const v = calculateQuadVertices(t.x, t.y, t.width, t.height, r, sx, sy, px, py);
         const strokeT = 2 / this.game.camera.scale;
 
         shape.drawLine(v.tl.x, v.tl.y, v.tr.x, v.tr.y, color, strokeT, proj);

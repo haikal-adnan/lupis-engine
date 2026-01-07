@@ -83,7 +83,6 @@ export default class ShapeRenderer {
         this.index = i;
     }
 
-    // --- 1. DRAW FILLED RECTANGLE ---
     drawRect(x, y, w, h, color=[1,1,1,1], projection, rot=0, sx=1, sy=1, px=0, py=0, alpha=1) {
         if (projection !== this.currentProjection) {
             this.flush();
@@ -110,6 +109,7 @@ export default class ShapeRenderer {
             this.currentProjection = projection;
         }
 
+        // Logic stroke menggunakan 4 garis yang mengikuti rotasi/transform quad
         const v = calculateQuadVertices(x, y, w, h, rot, sx, sy, px, py);
         const c = [color[0], color[1], color[2], color[3] * alpha];
         

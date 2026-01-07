@@ -1,5 +1,12 @@
 import mongoose from 'mongoose';
 
+const LayerSchema = new mongoose.Schema({
+  _id: { type: String, required: true }, 
+  name: { type: String, required: true },
+  locked: { type: Boolean, default: false },
+  visible: { type: Boolean, default: true }
+}, { _id: false });
+
 const EditorStateSchema = new mongoose.Schema({
     locked: { type: Boolean, default: false },
     expanded: { type: Boolean, default: false },
@@ -43,6 +50,7 @@ const SceneSchema = new mongoose.Schema({
       height: { type: Number, default: 2000 } 
     }
   },
+  layers: [LayerSchema],
   entities: [EntitySchema]
 }, { 
   timestamps: true,

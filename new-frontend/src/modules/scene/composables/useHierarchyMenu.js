@@ -22,7 +22,7 @@ export function useHierarchyMenu(actions) {
     if (!node) {
       // --- MENU: CANVAS KOSONG ---
       items.push(
-        { label: 'New Layer', icon: Layers, action: actions.addLayer },
+        { label: 'New Layer', icon: Plus, action: actions.addLayer },
         { separator: true },
         { label: 'Refresh', icon: RefreshCw, action: actions.refresh }
       );
@@ -35,7 +35,7 @@ export function useHierarchyMenu(actions) {
         { label: 'Create Group', icon: FolderPlus },
         { label: 'Create Entity', icon: Plus, children: createSubMenu },
         { separator: true },
-        { label: 'Delete Layer', icon: Trash2, disabled: true }
+        { label: 'Delete Layer', icon: Trash2 }
       );
     } 
     else {

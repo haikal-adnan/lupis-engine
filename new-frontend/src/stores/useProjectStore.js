@@ -2,7 +2,7 @@ import { defineStore } from 'pinia';
 import { fetchProjectById, fetchProjectResources } from '@/services/api/project.js';
 import { normalizeProjectLoad } from '@/services/engine/Schema.js';
 import { useAssetStore } from './useAssetStore.js';
-import { useSceneStore } from './useSceneStore.js';
+import { useSceneStore } from './scene/useSceneStore.js';
 import { usePrefabStore } from './usePrefabStore.js';
 import { useEditorStore } from './useEditorStore.js';
 
@@ -41,23 +41,32 @@ export const useProjectStore = defineStore('project', {
           serverResources.prefabs
         );
 
-        // Set Project Data (sudah dinormalisasi menggunakan _id)
         this.project = normalizedData.project;
         
-        // Init stores
         sceneStore.initScenes(normalizedData.scenes);
         assetStore.initAssets(normalizedData.assets);
         prefabStore.initPrefabs(normalizedData.prefabs);
 
         editorStore.resetCanvas();
         editorStore.setTool('select');
-        editorStore.setProjectId(this.project._id); // Pastikan set project ID
+        editorStore.setProjectId(this.project._id); 
 
       } catch (err) {
         console.error("Project Load Failed:", err);
         this.error = err.message;
       } finally {
         this.isLoading = false;
+      }
+    },
+
+    addSceneToProject(sceneId) {
+      if (this.project) {
+        if (!this.project.scenes) {
+          this.project.scenes = [];
+        }
+        if (!this.project.scenes.includes(sceneId)) {
+          this.project.scenes.push(sceneId);
+        }
       }
     }
   }

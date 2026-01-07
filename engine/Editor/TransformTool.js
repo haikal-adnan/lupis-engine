@@ -33,6 +33,10 @@ export default class TransformTool {
         this.initialState = [];
     }
 
+    _getTransform(e) {
+        return e.components && e.components.Transform;
+    }
+
     toWorld(px, py) {
         return this.selection.toWorld(px, py);
     }
@@ -41,18 +45,12 @@ export default class TransformTool {
 
     _createSnapshot() {
         return this.selection.selectedList.map(e => {
-            const t = e.transform;
+            const t = this._getTransform(e);
             return {
-                _id: e._id, version: e.version, 
-                // Flatten data transform untuk snapshot
-                x: t.x, y: t.y, rotation: t.rotation, 
-                scaleX: t.scaleX, scaleY: t.scaleY, 
-                pivotX: t.pivotX, pivotY: t.pivotY,
-                zIndex: t.zIndex,
-                // Data root
-                width: e.width, height: e.height,
-                opacity: e.opacity ?? 100, visible: e.visible ?? true, tag: e.tag,
-                components: this._cleanComponents(e.components)
+                _id: e._id || e.id, 
+                components: this._cleanComponents(e.components),
+                active: e.active,
+                visible: e.visible
             };
         });
     }
@@ -60,28 +58,26 @@ export default class TransformTool {
     _applyState(list) {
         const world = this.world;
         const affected = [];
-        list.forEach(s => {
-            let ent = null;
-            for(const [lid, ents] of world.layers) {
-                const f = ents.find(e => e._id === s._id);
-                if(f) { ent = f; break; }
-            }
-            if(ent) {
-                const t = ent.transform;
-                t.x = s.x; t.y = s.y; 
-                t.rotation = s.rotation; t.scaleX = s.scaleX; t.scaleY = s.scaleY;
-                t.pivotX = s.pivotX; t.pivotY = s.pivotY;
-                t.zIndex = s.zIndex;
 
-                ent.width = s.width; ent.height = s.height;
-                ent.opacity = s.opacity; ent.visible = s.visible;
-                ent.tag = s.tag;
-                ent.components = s.components;
-                
+        const findEntity = (id) => {
+            for(const layer of world.layers) {
+                const found = layer.entities.find(e => (e._id || e.id) === id); 
+                if(found) return found;
+            }
+            return null;
+        };
+
+        list.forEach(s => {
+            const ent = findEntity(s._id);
+            if(ent) {
+                ent.components = JSON.parse(JSON.stringify(s.components));
+                ent.active = s.active;
+                ent.visible = s.visible;
                 ApplyResizeToEntity(ent, world);
                 affected.push(ent);
             }
         });
+
         if(affected.length) {
             this.selection.selectedList = affected;
             bus.emit("entity:modified", list);
@@ -98,14 +94,16 @@ export default class TransformTool {
 
         if (list.length === 1) {
             const e = list[0];
-            const t = e.transform;
+            const t = this._getTransform(e);
+            if (!t) return;
+
             const r = t.rotation || 0;
             const sx = t.scaleX ?? 1;
             const sy = t.scaleY ?? 1;
             const px = t.pivotX ?? 0.5;
             const py = t.pivotY ?? 0.5;
-
-            const v = calculateQuadVertices(t.x, t.y, e.width, e.height, r, sx, sy, px, py);
+            
+            const v = calculateQuadVertices(t.x, t.y, t.width, t.height, r, sx, sy, px, py);
 
             const nw = { type: "nw", x: v.tl.x, y: v.tl.y };
             const ne = { type: "ne", x: v.tr.x, y: v.tr.y };
@@ -214,11 +212,14 @@ export default class TransformTool {
         this.draggingRotate = false;
         this.startWorld = p;
 
-        this.moveStartData = list.map(e => ({
-            e,
-            x: e.transform.x, // Read from transform
-            y: e.transform.y
-        }));
+        this.moveStartData = list.map(e => {
+            const t = this._getTransform(e);
+            return {
+                e,
+                x: t.x, 
+                y: t.y
+            };
+        });
     }
 
     beginResize(handle, px, py) {
@@ -236,7 +237,7 @@ export default class TransformTool {
             this.draggingMove = false;
             
             const e = list[0];
-            const t = e.transform;
+            const t = this._getTransform(e);
             
             this.rotateCenter = { x: t.x, y: t.y };
             this.rotateStartAngle = Math.atan2(p.y - t.y, p.x - t.x);
@@ -250,17 +251,17 @@ export default class TransformTool {
             this.startWorld = p;
 
             this.resizeEntityStarts = list.map(e => {
-                const t = e.transform;
+                const t = this._getTransform(e);
                 return {
                     e,
-                    x: t.x, y: t.y, w: e.width, h: e.height,
-                    r: t.rotation || 0, sx: t.scaleX ?? 1, sy: t.scaleY ?? 1
+                    x: t.x, y: t.y, 
+                    w: t.width, h: t.height,
+                    r: t.rotation || 0, 
+                    sx: t.scaleX ?? 1, sy: t.scaleY ?? 1
                 };
             });
         }
     }
-
-// Ganti method resetDrag() dengan ini:
 
     resetDrag() {
         const wasInteracting = this.draggingMove || this.draggingResize || this.draggingRotate;
@@ -280,7 +281,6 @@ export default class TransformTool {
             const finalState = this._createSnapshot();
             const startState = this.initialState;
             
-            // Simpan ke history (Undo/Redo)
             const command = {
                 name: "Transform Entity",
                 undo: () => this._applyState(startState),
@@ -288,8 +288,6 @@ export default class TransformTool {
             };
             if (this.game.history) this.game.history.push(command);
             
-            // PERBAIKAN: Kirim Entity Asli (this.selection.selectedList)
-            // Agar SyncEntity menerima objek dengan properti lengkap (.transform, dll)
             if (this.selection.selectedList.length > 0) {
                 bus.emit("entity:modified", this.selection.selectedList);
             }
@@ -322,8 +320,9 @@ export default class TransformTool {
         if (dx === 0 && dy === 0) return;
 
         for (const item of this.moveStartData) {
-            item.e.transform.x = item.x + dx; // Write to transform
-            item.e.transform.y = item.y + dy;
+            const t = this._getTransform(item.e);
+            t.x = item.x + dx; 
+            t.y = item.y + dy;
         }
         bus.emit("entity:modified", this.selection.selectedList, true); 
     }
@@ -344,6 +343,7 @@ export default class TransformTool {
         if (list.length === 1) {
             const item = this.resizeEntityStarts[0];
             const e = item.e;
+            const t = this._getTransform(e);
 
             const c = Math.cos(-item.r);
             const s = Math.sin(-item.r);
@@ -353,8 +353,11 @@ export default class TransformTool {
             const signX = item.sx < 0 ? -1 : 1;
             const signY = item.sy < 0 ? -1 : 1;
 
-            const dX_Adjusted = localDx * signX;
-            const dY_Adjusted = localDy * signY;
+            const safeScaleX = Math.abs(item.sx) < 0.001 ? 0.001 : Math.abs(item.sx);
+            const safeScaleY = Math.abs(item.sy) < 0.001 ? 0.001 : Math.abs(item.sy);
+
+            const dX_Adjusted = (localDx * signX) / safeScaleX;
+            const dY_Adjusted = (localDy * signY) / safeScaleY;
 
             let dW = 0;
             let dH = 0;
@@ -362,43 +365,61 @@ export default class TransformTool {
             let anchorX = null; 
             let anchorY = null;
 
-            if (this.resizeType.length === 2) {
-                if (this.resizeType.includes('w')) { dW = -dX_Adjusted; anchorX = item.sx > 0 ? 1 : 0; }
-                if (this.resizeType.includes('e')) { dW = dX_Adjusted;  anchorX = item.sx > 0 ? 0 : 1; }
-                if (this.resizeType.includes('n')) { dH = -dY_Adjusted; anchorY = item.sy > 0 ? 1 : 0; }
-                if (this.resizeType.includes('s')) { dH = dY_Adjusted;  anchorY = item.sy > 0 ? 0 : 1; }
-            } 
-            else {
-                if (this.resizeType === 'w') { dW = -dX_Adjusted; anchorX = item.sx > 0 ? 1 : 0; }
-                if (this.resizeType === 'e') { dW = dX_Adjusted;  anchorX = item.sx > 0 ? 0 : 1; }
-                if (this.resizeType === 'n') { dH = -dY_Adjusted; anchorY = item.sy > 0 ? 1 : 0; }
-                if (this.resizeType === 's') { dH = dY_Adjusted;  anchorY = item.sy > 0 ? 0 : 1; }
-            }
+            if (this.resizeType.includes('w')) { dW = -dX_Adjusted; anchorX = item.sx > 0 ? 1 : 0; }
+            if (this.resizeType.includes('e')) { dW = dX_Adjusted;  anchorX = item.sx > 0 ? 0 : 1; }
+            if (this.resizeType.includes('n')) { dH = -dY_Adjusted; anchorY = item.sy > 0 ? 1 : 0; }
+            if (this.resizeType.includes('s')) { dH = dY_Adjusted;  anchorY = item.sy > 0 ? 0 : 1; }
 
-            let newW = Math.max(1, item.w + dW);
-            let newH = Math.max(1, item.h + dH);
+            const rawW = item.w + dW;
+            const rawH = item.h + dH;
 
-            e.width = newW;
-            e.height = newH;
+            const isFlippedX = rawW < 0;
+            const isFlippedY = rawH < 0;
+
+            const newScaleX = isFlippedX ? -item.sx : item.sx;
+            const newScaleY = isFlippedY ? -item.sy : item.sy;
+
+            const newW = Math.abs(rawW); 
+            const newH = Math.abs(rawH); 
+
+            t.width = newW;
+            t.height = newH;
+            t.scaleX = newScaleX;
+            t.scaleY = newScaleY;
 
             let shiftX = 0;
             let shiftY = 0;
 
             if (anchorX !== null) {
-                const ratioX = (e.transform.pivotX ?? 0.5) - anchorX;
+                const ratioX = (t.pivotX ?? 0.5) - anchorX;
                 shiftX = dW * ratioX; 
             }
             
             if (anchorY !== null) {
-                const ratioY = (e.transform.pivotY ?? 0.5) - anchorY;
+                const ratioY = (t.pivotY ?? 0.5) - anchorY;
                 shiftY = dH * ratioY;
+            }
+            
+            const dW_Visual = dW * safeScaleX;
+            const dH_Visual = dH * safeScaleY;
+
+            let shiftX_World = 0;
+            let shiftY_World = 0;
+
+            if (anchorX !== null) {
+                const ratioX = (t.pivotX ?? 0.5) - anchorX;
+                shiftX_World = dW_Visual * ratioX;
+            }
+            if (anchorY !== null) {
+                const ratioY = (t.pivotY ?? 0.5) - anchorY;
+                shiftY_World = dH_Visual * ratioY;
             }
 
             const wc = Math.cos(item.r);
             const ws = Math.sin(item.r);
 
-            e.transform.x = item.x + (shiftX * wc - shiftY * ws);
-            e.transform.y = item.y + (shiftX * ws + shiftY * wc);
+            t.x = item.x + (shiftX_World * wc - shiftY_World * ws);
+            t.y = item.y + (shiftX_World * ws + shiftY_World * wc);
             
             ApplyResizeToEntity(e, this.world);
         } 
@@ -412,6 +433,7 @@ export default class TransformTool {
 
         const p = this.toWorld(px, py);
         const e = list[0];
+        const t = this._getTransform(e);
 
         const currentAngle = Math.atan2(p.y - this.rotateCenter.y, p.x - this.rotateCenter.x);
         let deltaAngle = currentAngle - this.rotateStartAngle;
@@ -423,7 +445,7 @@ export default class TransformTool {
             newRotation = snap * (Math.PI / 180);
         }
 
-        e.transform.rotation = newRotation;
+        t.rotation = newRotation;
 
         bus.emit("entity:modified", list, true);
     }
@@ -440,7 +462,6 @@ export default class TransformTool {
         const t = 2 / scale;
         const c = this.selection.outlineColor;
         
-        // --- DRAW BOX ---
         const b = this.groupBounds;
         if (b) {
             if (b.type === 'obb') {
@@ -450,7 +471,6 @@ export default class TransformTool {
                 shape.drawLine(v.br.x, v.br.y, v.bl.x, v.bl.y, c, t, proj);
                 shape.drawLine(v.bl.x, v.bl.y, v.tl.x, v.tl.y, c, t, proj);
             } else {
-                // AABB (Multi Select)
                 shape.drawLine(b.x, b.y, b.x + b.w, b.y, c, t, proj);
                 shape.drawLine(b.x + b.w, b.y, b.x + b.w, b.y + b.h, c, t, proj);
                 shape.drawLine(b.x + b.w, b.y + b.h, b.x, b.y + b.h, c, t, proj);
@@ -458,7 +478,6 @@ export default class TransformTool {
             }
         }
 
-        // --- DRAW HANDLES ---
         const capLen = 24 / scale; 
         const capThick = 6 / scale;
         const rot = this.activeRotation || 0;

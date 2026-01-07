@@ -1,10 +1,11 @@
+import { HexToVec4 } from "../../Util/HexToVec4.js";
+
 export default class WorldRenderer {
     constructor(image, text, shape) {
         this.image = image;
         this.text = text;
         this.shape = shape;
-        this._colorCache = new Map();
-        this.TYPE_PRIORITY = { image: 0, shape: 1, text: 2 };
+        this.renderQueue = [];
     }
 
     render(world, proj) {
@@ -13,146 +14,229 @@ export default class WorldRenderer {
             this.shape.flush();
         }
 
-        const queue = [];
+        this.renderQueue.length = 0;
 
-        for (let li = 0; li < world.layerOrder.length; li++) {
-            const layerId = world.layerOrder[li];
-            if (!world.layerVisibility[layerId]) continue;
+        for (let li = 0; li < world.layers.length; li++) {
+            const layer = world.layers[li];
+            if (!layer.visible) continue;
 
-            const ents = world.layers.get(layerId);
-            if (!ents || !ents.length) continue;
-
-            for (const e of ents) {
-                if (!e.visible) continue;
-
-                const t = e.transform;
-                if (!t) continue; 
-
-                const baseZ = t.zIndex || 0;
-                const rawOpacity = (e.opacity !== undefined && e.opacity !== null) ? e.opacity : 100;
-                const normalizedOpacity = Math.max(0, Math.min(100, rawOpacity)) / 100;
-                const finalAlpha = normalizedOpacity * (e.alpha ?? 1);
-
-                if (finalAlpha <= 0) continue;
-
-                const renderData = {
-                    x: t.x, y: t.y,
-                    w: e.width, h: e.height,
-                    rot: t.rotation || 0,
-                    sx: t.scaleX ?? 1, sy: t.scaleY ?? 1,
-                    px: t.pivotX ?? 0.5, py: t.pivotY ?? 0.5,
-                    alpha: finalAlpha
-                };
-
-                const isSprite = (e.image || (e.components && e.components.SpriteRenderer));
-                
-                if (isSprite && e.frame) {
-                    queue.push({ type: "image", layerIndex: li, z: baseZ, e, renderData });
-                }
-
-                if (e.shape) {
-                    queue.push({ type: "shape", layerIndex: li, z: baseZ, e, renderData });
-                }
-
-                if (e.text) {
-                    queue.push({ type: "text", layerIndex: li, z: baseZ, e, renderData });
+            for (const e of layer.entities) {
+                if (!e.parentId) {
+                    this._processEntity(e, li, world);
                 }
             }
         }
 
-        queue.sort((a, b) => {
-            if (a.layerIndex !== b.layerIndex) return a.layerIndex - b.layerIndex;
-            if (a.z !== b.z) return a.z - b.z;
-            return this.TYPE_PRIORITY[a.type] - this.TYPE_PRIORITY[b.type];
-        });
-
-        let lastType = null;
-
-        for (const item of queue) {
-            if (item.type !== lastType) {
-                if (lastType === "image") this.image.flush();
-                else if (lastType === "shape") this.shape.flush();
-                else if (lastType === "text") this.text.flush();
-                lastType = item.type;
-            }
-
-            const e = item.e;
-            const r = item.renderData;
-
+        for (const item of this.renderQueue) {
             if (item.type === "image") {
-                const hasTexture = !!e.image;
                 this.image.draw(
-                    e.image, e.frame,
-                    r.x, r.y, r.w, r.h,
-                    r.rot, r.sx, r.sy, r.px, r.py,
-                    proj, e.pixelPerfect, r.alpha, !hasTexture
+                    item.texture,
+                    item.frame,
+                    item.transformData,
+                    item.options,
+                    proj
                 );
-            } 
-            else if (item.type === "shape") {
-                const c = this._getColorVec(e.shape.color);
-                const t = e.shape.thickness || 1;
+            } else if (item.type === "shape") {
+                const s = item.shapeOptions;
+                const t = item.transformData;
+                const c = s.colorVec4;
 
-                if (e.shape.type === "rectangle") {
-                    this.shape.drawRect(r.x, r.y, r.w, r.h, c, proj, r.rot, r.sx, r.sy, r.px, r.py, r.alpha);
-                } 
-                else if (e.shape.type === "rectStroke") {
-                    this.shape.drawRectStroke(r.x, r.y, r.w, r.h, c, t, proj, r.rot, r.sx, r.sy, r.px, r.py, r.alpha);
-                } 
-                else if (e.shape.type === "line") {
-                    const x1 = e.shape.x1 !== undefined ? e.shape.x1 : r.x;
-                    const y1 = e.shape.y1 !== undefined ? e.shape.y1 : r.y;
-                    this.shape.drawLine(x1, y1, e.shape.x2, e.shape.y2, c, t, proj);
+                if (s.type === "rectangle") {
+                    this.shape.drawRect(
+                        t.x, t.y, t.width, t.height,
+                        c, proj,
+                        t.rotation, t.scaleX, t.scaleY,
+                        t.pivotX, t.pivotY,
+                        s.opacity
+                    );
+                } else if (s.type === "rectStroke") {
+                    this.shape.drawRectStroke(
+                        t.x, t.y, t.width, t.height,
+                        c, s.thickness, proj,
+                        t.rotation, t.scaleX, t.scaleY,
+                        t.pivotX, t.pivotY,
+                        s.opacity
+                    );
+                } else if (s.type === "circle") {
+                    const avgScale =
+                        (Math.abs(t.scaleX) + Math.abs(t.scaleY)) / 2;
+                    const radius = (t.width / 2) * avgScale;
+
+                    this.shape.drawCircle(
+                        t.x, t.y, radius,
+                        c, 32, proj
+                    );
+                } else if (s.type === "line") {
+                    this.shape.drawLine(
+                        t.x, t.y,
+                        s.x2, s.y2,
+                        c, s.thickness, proj
+                    );
                 }
-            } 
-            else if (item.type === "text") {
-                const col = this._getColorVec(e.text.color); 
-                
-                // [VERSI INSTANCE - KODE LAMA]
-                // Mengirim string text, bukan object font
+            } else if (item.type === "text") {
+                const o = item.textOptions;
+                const t = item.transformData;
+
                 this.text.drawText(
-                    e.text.value,
-                    r.x, r.y, r.w, r.h,
-                    e.text.size, col, proj,
-                    r.rot, r.sx, r.sy, r.px, r.py, 
-                    r.alpha
+                    o.font,
+                    o.text,
+                    t.x, t.y, t.width, t.height,
+                    o.fontSize,
+                    o.colorVec4,
+                    proj,
+                    t.rotation, t.scaleX, t.scaleY,
+                    t.pivotX, t.pivotY,
+                    o.opacity
                 );
             }
         }
 
-        if (lastType === "image") this.image.flush();
-        else if (lastType === "shape") this.shape.flush();
-        else if (lastType === "text") this.text.flush();
+        this.image.flush();
+        this.shape.flush();
+        this.text.flush();
 
         if (world.selectionRenderer) {
-            world.selectionRenderer(this.image, this.shape, this.text, proj);
+            world.selectionRenderer(
+                this.image,
+                this.shape,
+                this.text,
+                proj
+            );
         }
     }
 
-    _getColorVec(hex) {
-        if (!hex) return [1, 1, 1, 1];
-        if (this._colorCache.has(hex)) return this._colorCache.get(hex);
-        
-        const clean = hex.replace("#", "");
-        let r = 1, g = 1, b = 1, a = 1;
+    _processEntity(e, layerIndex, world) {
+        if (!e.visible) return;
 
-        if (clean.length === 6) {
-            r = parseInt(clean.slice(0, 2), 16) / 255;
-            g = parseInt(clean.slice(2, 4), 16) / 255;
-            b = parseInt(clean.slice(4, 6), 16) / 255;
-        } else if (clean.length === 8) {
-            r = parseInt(clean.slice(0, 2), 16) / 255;
-            g = parseInt(clean.slice(2, 4), 16) / 255;
-            b = parseInt(clean.slice(4, 6), 16) / 255;
-            a = parseInt(clean.slice(6, 8), 16) / 255;
-        } else if (clean.length === 3) {
-            r = parseInt(clean[0] + clean[0], 16) / 255;
-            g = parseInt(clean[1] + clean[1], 16) / 255;
-            b = parseInt(clean[2] + clean[2], 16) / 255;
+        const comps = e.components;
+        if (!comps) return;
+
+        const t = comps.Transform;
+
+        const spriteComp = comps.SpriteRenderer;
+        if (spriteComp) {
+            const texture =
+                world.assets.textures[spriteComp.assetId];
+
+            const rawAlpha =
+                spriteComp.opacity ?? e.opacity ?? 1;
+            const finalAlpha =
+                Math.max(0, Math.min(1, rawAlpha));
+
+            if (finalAlpha > 0) {
+                const frame =
+                    spriteComp.source || { x: 0, y: 0, w: 0, h: 0 };
+
+                this.renderQueue.push({
+                    type: "image",
+                    layerIndex,
+                    texture,
+                    frame,
+                    transformData: {
+                        x: t.x,
+                        y: t.y,
+                        width: t.width,
+                        height: t.height,
+                        rotation: t.rotation,
+                        scaleX: t.scaleX,
+                        scaleY: t.scaleY,
+                        pivotX: t.pivotX,
+                        pivotY: t.pivotY
+                    },
+                    options: {
+                        flipX: spriteComp.flipX || false,
+                        flipY: spriteComp.flipY || false,
+                        opacity: finalAlpha
+                    }
+                });
+            }
         }
-        
-        const vec = [r, g, b, a];
-        if (this._colorCache.size > 1000) this._colorCache.clear();
-        this._colorCache.set(hex, vec);
-        return vec;
+
+        const shapeComp = comps.ShapeRenderer;
+        if (shapeComp) {
+            const rawAlpha = shapeComp.opacity ?? 1;
+            const finalAlpha =
+                Math.max(0, Math.min(1, rawAlpha));
+
+            if (finalAlpha > 0) {
+                this.renderQueue.push({
+                    type: "shape",
+                    layerIndex,
+                    transformData: {
+                        x: t.x,
+                        y: t.y,
+                        width: t.width,
+                        height: t.height,
+                        rotation: t.rotation,
+                        scaleX: t.scaleX,
+                        scaleY: t.scaleY,
+                        pivotX: t.pivotX,
+                        pivotY: t.pivotY
+                    },
+                    shapeOptions: {
+                        type: shapeComp.type || "rectangle",
+                        colorVec4: HexToVec4(
+                            shapeComp.color || "#FFFFFF"
+                        ),
+                        opacity: finalAlpha,
+                        thickness: shapeComp.thickness || 1,
+                        x2: shapeComp.x2 ?? (t.x + t.width),
+                        y2: shapeComp.y2 ?? (t.y + t.height)
+                    }
+                });
+            }
+        }
+
+        const textComp = comps.TextRenderer;
+        if (textComp) {
+            let font =
+                world.assets.fonts[textComp.assetId];
+
+            if (!font || !font.ready || !font.glTexture) {
+                font = world.assets.fonts["system_default"];
+            }
+
+            if (font && font.glTexture) {
+                const rawAlpha = textComp.opacity ?? 1;
+                const finalAlpha =
+                    Math.max(0, Math.min(1, rawAlpha));
+
+                if (finalAlpha > 0) {
+                    this.renderQueue.push({
+                        type: "text",
+                        layerIndex,
+                        transformData: {
+                            x: t.x,
+                            y: t.y,
+                            width: t.width,
+                            height: t.height,
+                            rotation: t.rotation,
+                            scaleX: t.scaleX,
+                            scaleY: t.scaleY,
+                            pivotX: t.pivotX,
+                            pivotY: t.pivotY
+                        },
+                        textOptions: {
+                            text:
+                                textComp.value ??
+                                "",
+                            fontSize:
+                                textComp.fontSize || 24,
+                            colorVec4: HexToVec4(
+                                textComp.color || "#FFFFFF"
+                            ),
+                            opacity: finalAlpha,
+                            font
+                        }
+                    });
+                }
+            }
+        }
+
+        if (e.children && e.children.length > 0) {
+            for (const child of e.children) {
+                this._processEntity(child, layerIndex, world);
+            }
+        }
     }
 }

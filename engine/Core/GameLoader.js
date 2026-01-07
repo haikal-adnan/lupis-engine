@@ -6,6 +6,13 @@ import GLImageResource from "../Renderer/Graphic/GLImageResource.js";
 import GLFontResource from "../Renderer/Graphic/GLFontResource.js";
 import AssetLoader from "../Loader/AssetLoader.js";
 import SceneLoader from "../Loader/SceneLoader.js"; 
+import GameLoop from "../Loop/GameLoop.js"
+import CameraController from "../Editor/CameraController.js"
+import PointerCoordinates from "../Editor/PointerCoordinates.js";
+import SelectionTool from "../Editor/SelectionTool.js";
+import TransformTool from "../Editor/TransformTool.js";
+import Grid from "../Editor/Grid.js";
+import Rulers from "../Editor/Rulers.js";
 
 export default class GameLoader {
     async initializeGame(game, canvas, mode = "runtime", payload = {}) {
@@ -42,9 +49,9 @@ export default class GameLoader {
             console.error("[GameLoader] Prefab Init Failed.", err);
         }
 
-        if (scene && scene.entities) {
+        if (scene) {
             try {
-                const sceneLoader = new SceneLoader(game.world);
+                const sceneLoader = new SceneLoader(game.world, mode);
                 sceneLoader.loadScene(scene);
             } catch (err) {
                 console.error("[GameLoader] Scene Load Failed.", err);
@@ -53,8 +60,17 @@ export default class GameLoader {
             console.warn("[GameLoader] No valid scene object found in payload.");
         }
 
-        console.log("🚀 Game Initialized Successfully!");
-        console.log(game.world);
+        if (mode === "editor") {
+            try { this._initializeEditorTools(game, canvas); } 
+            catch (e) { console.warn("Editor tools init partial fail."); }
+        }
+
+        console.log(game.world)
+
+        game.loop = new GameLoop({
+            update: dt => { try { game.update(dt); } catch(e) { } },
+            render: alpha => { try { game.render(alpha); } catch(e) { } },
+        });
     }
 
     _initMain(game, canvas, mode) {
@@ -66,14 +82,6 @@ export default class GameLoader {
 
     _initProject(game, project) {
         game._id = project._id;
-
-        game.world.layers = project.layers.map(layer => ({
-            _id: layer._id,
-            visible: layer.visible,
-            locked: layer.locked,
-            entities: []
-        }));
-
         Config.WIDTH = project.settings.width;
         Config.HEIGHT = project.settings.height;
         Config.BACKGROUND_COLOR = project.settings.backgroundColor;
@@ -98,5 +106,25 @@ export default class GameLoader {
         console.log(
             `[GameLoader] Registered ${Object.keys(world.prefabs).length} prefabs.`
         );
+    }
+
+    _initializeEditorTools(game, canvas) {
+        const { world, renderer, camera, input } = game;
+        const { EDITOR } = Config;
+
+        if (EDITOR.CAMERA_CONTROLLER) game.cameraController = new CameraController(camera, canvas, input);
+        if (EDITOR.GRID) game.grid = new Grid(world, game, canvas, renderer, camera, { color: "#ffffff", width: 50, height: 50, alpha: 0.5 });
+        
+        if (EDITOR.SELECTION) {
+            game.selection = new SelectionTool(world, game, canvas, renderer, input);
+        }
+
+        if (EDITOR.TRANSFORM) game.transform = new TransformTool(game.selection, world, game, canvas, renderer, input);
+        if (EDITOR.RULERS) game.rulers = new Rulers(renderer, camera);
+        if (EDITOR.POINTER) game.pointerCoords = new PointerCoordinates(game, renderer);
+    }
+
+    start(game) {
+        game.loop.start();
     }
 }

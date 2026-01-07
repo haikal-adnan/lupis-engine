@@ -1,5 +1,21 @@
 import { CDN_URL } from "@/services/api/project.js";
 
+/**
+ * Membuat object Layer baru sesuai Mongoose LayerSchema
+ * Field: _id, name, locked, visible
+ */
+export const createLayer = (data = {}) => {
+  return {
+    _id: data._id || `layer_${Date.now()}`,
+    name: data.name || "New Layer",
+    visible: data.visible ?? true,
+    locked: data.locked ?? false
+  };
+};
+
+/**
+ * Standardisasi komponen Transform
+ */
 export const createTransform = (data = {}) => {
   const tx = data.translate?.x ?? data.x ?? 0;
   const ty = data.translate?.y ?? data.y ?? 0;
@@ -21,43 +37,9 @@ export const createTransform = (data = {}) => {
   };
 };
 
-export const createEntity = (data = {}) => {
-  const cleanComponents = {};
-
-  if (data.components) {
-    for (const [key, val] of Object.entries(data.components)) {
-      cleanComponents[key] = createComponent(key, val);
-    }
-  }
-
-  const rawTransform = cleanComponents.Transform || data.transform || {};
-  cleanComponents.Transform = createTransform(rawTransform);
-
-  return {
-    _id: data._id,
-    name: data.name || "New Entity",
-    type: data.type || "entity",
-    tag: data.tag || "untagged",
-    parentId: data.parentId || null,
-    layerId: data.layerId || "layer_root",
-    prefabId: data.prefabId || null,
-
-    isActive: data.isActive ?? true,
-    isVisible: data.isVisible ?? true,
-
-    locked: data.locked ?? false,
-    _editor: {
-      expanded: data._editor?.expanded ?? false,
-      selected: false,
-      locked: data._editor?.locked ?? false,
-      hiddenInList: data._editor?.hiddenInList ?? false
-    },
-
-    components: cleanComponents,
-    _isDirty: false
-  };
-};
-
+/**
+ * Factory untuk membuat component data
+ */
 export const createComponent = (type, data = {}) => {
   switch (type) {
     case "SpriteRenderer":
@@ -66,15 +48,14 @@ export const createComponent = (type, data = {}) => {
         color: data.color || "#FFFFFF",
         flipX: data.flipX || false,
         flipY: data.flipY || false,
-        pixelPerfect: data.pixelPerfect ?? true,
-        source: data.source || null,
+        source: data.source || null, // { x, y, w, h }
         opacity: Number(data.opacity ?? 1),
         ...data
       };
 
     case "TextRenderer":
       return {
-        text: data.value || data.text || "New Text",
+        value: data.value || "New Text",
         fontSize: Number(data.fontSize || 12),
         color: data.color || "#FFFFFF",
         align: data.align || "left",
@@ -102,6 +83,57 @@ export const createComponent = (type, data = {}) => {
   }
 };
 
+/**
+ * Membuat object Entity baru sesuai Mongoose EntitySchema
+ */
+export const createEntity = (data = {}) => {
+  const cleanComponents = {};
+
+  // 1. Process Components
+  if (data.components) {
+    for (const [key, val] of Object.entries(data.components)) {
+      cleanComponents[key] = createComponent(key, val);
+    }
+  }
+
+  // 2. Ensure Transform exists
+  const rawTransform = cleanComponents.Transform || data.transform || {};
+  cleanComponents.Transform = createTransform(rawTransform);
+
+  // 3. Construct Object sesuai Schema
+  return {
+    _id: data._id || `ent_${Date.now()}`,
+    name: data.name || "New Entity",
+    type: data.type || "entity", // enum: ['entity', 'group']
+    tag: data.tag || "untagged",
+    
+    // Hierarchy References
+    parentId: data.parentId || null,
+    layerId: data.layerId || "layer_root",
+    prefabId: data.prefabId || null,
+
+    // States
+    isActive: data.isActive ?? true,
+    isVisible: data.isVisible ?? true,
+
+    // Editor State (Sesuai EditorStateSchema)
+    _editor: {
+      locked: data._editor?.locked ?? false,
+      expanded: data._editor?.expanded ?? false, // Untuk Group/Hierarchy
+      hiddenInList: data._editor?.hiddenInList ?? false,
+      selected: false // Runtime only (tidak disimpan di DB, tapi butuh di frontend)
+    },
+
+    components: cleanComponents,
+    
+    // Runtime flag
+    _isDirty: false 
+  };
+};
+
+/**
+ * Helper untuk menormalisasi data dari Backend ke Frontend Store
+ */
 export const normalizeProjectLoad = (
   rawProject,
   rawScenes,
@@ -110,41 +142,56 @@ export const normalizeProjectLoad = (
 ) => {
   const projectId = rawProject._id;
 
+  // 1. Normalize Project
   const cleanProject = {
     _id: projectId,
     name: rawProject?.name || "Untitled Project",
     ownerId: rawProject?.ownerId,
-    createdAt: rawProject?.created_at || rawProject?.createdAt,
+    description: rawProject?.description || "",
+    createdAt: rawProject?.createdAt || new Date().toISOString(),
+    thumbnailUrl: rawProject?.thumbnailUrl || null,
     settings: {
       width: Number(rawProject?.settings?.width || 1280),
-      height: Number(rawProject?.settings?.height || 720),
-      backgroundColor:
-        rawProject?.settings?.backgroundColor || "#222222",
-      pixelArt: rawProject?.settings?.pixelArt ?? true
+      height: Number(rawProject?.settings?.height || 720)
     },
-    layers:
-      rawProject?.layers || [{ _id: "layer_root", name: "Root", order: 0 }]
+    // Project model hanya menyimpan array of Scene ID strings
+    scenes: rawProject?.scenes || [] 
   };
 
+  // 2. Normalize Scenes
+  // Menggabungkan data Layers dan Entities menggunakan factory functions di atas
   const cleanScenes = Array.isArray(rawScenes)
     ? rawScenes.map(scene => ({
         _id: scene._id,
         projectId,
         name: scene.name || "Untitled Scene",
-        settings: scene.settings || {},
+        version: scene.version || 1,
+        settings: {
+          backgroundColor: scene.settings?.backgroundColor || "#222222",
+          gravity: scene.settings?.gravity || { x: 0, y: 9.8 },
+          worldBounds: scene.settings?.worldBounds || { x: 0, y: 0, width: 2000, height: 2000 }
+        },
+        // Mapping Layers (Sesuai LayerSchema: tanpa order)
+        layers: Array.isArray(scene.layers) 
+          ? scene.layers.map(l => createLayer(l))
+          : [createLayer({ _id: "layer_root", name: "Root" })],
+        // Mapping Entities
         entities: (scene.entities || []).map(createEntity)
       }))
     : [];
 
+  // 3. Normalize Assets
   const cleanAssets = Array.isArray(rawAssets)
     ? rawAssets.map(asset => {
         let baseUrl = asset.fileUrl || "";
         let isBlob = false;
 
+        // Handle Local Blob (saat upload sebelum sync)
         if (asset.localBlob) {
           baseUrl = URL.createObjectURL(asset.localBlob);
           isBlob = true;
         } else if (!baseUrl && asset.fileKey) {
+          // Construct CDN URL
           baseUrl = `${CDN_URL}/projects/${projectId}/${asset.fileKey}`;
         }
 
@@ -152,15 +199,16 @@ export const normalizeProjectLoad = (
         const extension = processedMeta.extension || "";
         let finalUrl = baseUrl;
 
+        // Logic khusus untuk Font & Texture URLs
         if (asset.type === "font") {
           if (isBlob) {
             if (extension === ".fnt" && processedMeta.imageBlob) {
-              processedMeta.textureUrl =
-                URL.createObjectURL(processedMeta.imageBlob);
+              processedMeta.textureUrl = URL.createObjectURL(processedMeta.imageBlob);
             }
           } else {
             finalUrl = `${baseUrl}${extension}`;
             if (extension === ".fnt") {
+              // Asumsi file texture font (.png) memiliki nama sama
               processedMeta.textureUrl = `${baseUrl}.png`;
             }
           }
@@ -173,7 +221,7 @@ export const normalizeProjectLoad = (
         return {
           _id: asset._id,
           name: asset.name,
-          type: asset.type,
+          type: asset.type, // 'texture', 'sound', 'font', etc.
           fileKey: asset.fileKey || "",
           meta: processedMeta,
           fileUrl: finalUrl,
@@ -184,28 +232,26 @@ export const normalizeProjectLoad = (
       })
     : [];
 
+  // 4. Normalize Prefabs
   const cleanPrefabs = Array.isArray(rawPrefabs)
     ? rawPrefabs.map(p => {
-        // 1. Normalisasi data menggunakan createEntity
+        // PrefabDataSchema mirip dengan EntitySchema
         const entityData = p.data ? createEntity(p.data) : {};
-
-        // 2. KONSISTENSI ID: Set ke NULL, jangan dihapus.
-        // Ini menandakan bahwa ini adalah "Cetakan" (Template), belum punya identitas.
+        
+        // Bersihkan ID entity instance di dalam prefab data template
         entityData._id = null; 
-
-        // 3. FIX NAMA: Ambil nama dari Root Prefab jika nama entity default
+        
         if (entityData.name === "New Entity") {
             entityData.name = p.name;
         }
 
-        // 4. PREFAB ID: Pastikan template tahu siapa 'induk'-nya
-        // Ini penting agar nanti saat di-save, engine tahu entity ini berasal dari prefab mana.
         entityData.prefabId = p._id; 
 
         return {
-          _id: p._id, // ROOT ID: Ini yang dipakai World sebagai Key
+          _id: p._id,
           name: p.name,
-          data: entityData // Data Template (_id: null)
+          thumbnailUrl: p.thumbnailUrl,
+          data: entityData
         };
       })
     : [];

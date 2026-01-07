@@ -1,65 +1,38 @@
-import { DEFAULT_FONT_XML, DEFAULT_FONT_TEXTURE_B64 } from "../../Assets/Fonts/DefaultAssets.js";
-
 export default class GLFontResource {
     constructor(gl) {
         this.gl = gl;
     }
 
     async loadFontFromAsset(asset) {
-        try {
-            const xmlUrl = asset.fileUrl; 
-            const texUrl = asset.meta?.textureUrl; 
+        const xmlUrl = asset.fileUrl;
+        const texUrl = asset.meta?.textureUrl;
 
-            if (!texUrl) throw new Error(`Texture URL not found in meta for asset: ${asset.name}`);
+        if (!texUrl) throw new Error(`[GLFontResource] Texture URL missing for: ${asset.name}`);
 
-            const [xmlRes, img] = await Promise.all([
-                fetch(xmlUrl),
-                this._loadImage(texUrl)
-            ]);
+        const [xmlRes, img] = await Promise.all([
+            fetch(xmlUrl),
+            this._loadImage(texUrl)
+        ]);
 
-            if (!xmlRes.ok) throw new Error(`Failed to fetch font data: ${xmlUrl}`);
-            const xmlText = await xmlRes.text();
+        if (!xmlRes.ok) throw new Error(`[GLFontResource] Failed to fetch XML: ${xmlUrl}`);
+        
+        const xmlText = await xmlRes.text();
+        const fontData = this._parseFontXML(xmlText);
 
-            const fontData = this._parseFontXML(xmlText);
-
-            const filterMode = asset.meta?.filterMode === 'linear' ? this.gl.LINEAR : this.gl.NEAREST;
-            const glTexture = this._uploadFontTexture(img, filterMode);
-
-            return {
-                _id: asset._id, // PERUBAHAN: id -> _id
-                fileurl: xmlUrl,
-                textureurl: texUrl,
-                glTexture: glTexture,
-                chars: fontData.chars,
-                common: fontData.common,
-                info: fontData.info, 
-                ready: true
-            };
-
-        } catch (e) {
-            console.warn(`[GLFontResource] Failed to load ${asset.name}. Using Fallback.`, e);
-            return await this._loadFallback(asset._id);
-        }
-    }
-
-    async _loadFallback(id) {
-        const img = await this._loadImage(DEFAULT_FONT_TEXTURE_B64);
-        const fontData = this._parseFontXML(DEFAULT_FONT_XML);
         const glTexture = this._uploadFontTexture(img, this.gl.LINEAR);
+
         return {
-            _id: id, // PERUBAHAN: id -> _id
-            fileurl: "fallback",
-            textureurl: "fallback",
+            _id: asset._id,
+            fileurl: xmlUrl,
+            textureurl: texUrl,
             glTexture: glTexture,
             chars: fontData.chars,
             common: fontData.common,
             info: fontData.info,
-            ready: true,
-            isFallback: true
+            ready: true
         };
     }
 
-    // ... method _loadImage, _uploadFontTexture, _parseFontXML tetap sama ...
     _loadImage(url) {
         return new Promise((resolve, reject) => {
             const img = new Image();
@@ -114,7 +87,7 @@ export default class GLFontResource {
             },
             info: {
                 size: +infoNode.getAttribute("size"),
-                distance: +(distNode?.getAttribute("distanceRange") ?? 4)
+                distance: +(distNode?.getAttribute("distanceRange") ?? 4) 
             }
         };
     }
