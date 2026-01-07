@@ -1,7 +1,7 @@
 import { toRaw } from "vue";
 import { useProjectStore } from "@/stores/useProjectStore.js";
 import { useAssetStore } from "@/stores/useAssetStore.js";
-import { useSceneStore } from "@/stores/useSceneStore.js";
+import { useSceneStore } from "@/stores/scene/useSceneStore.js";
 import { usePrefabStore } from "@/stores/usePrefabStore.js";
 import { useEditorStore } from "@/stores/useEditorStore.js";
 
@@ -15,7 +15,8 @@ export async function prepareEngineData() {
     const projectId = editorStore.activeProjectId;
     if (!projectId) throw new Error("No Active Project ID in EditorStore");
 
-    if (!projectStore.isProjectLoaded || projectStore.project?.id !== projectId) {
+    // UPDATE: Gunakan _id untuk konsistensi dengan MongoDB
+    if (!projectStore.isProjectLoaded || projectStore.project?._id !== projectId) {
         await projectStore.loadProject(projectId);
     }
 
@@ -25,7 +26,8 @@ export async function prepareEngineData() {
     
     if (!targetSceneId && sceneStore.scenes.length > 0) {
         const firstScene = sceneStore.scenes[0];
-        targetSceneId = firstScene._id || firstScene.id;
+        // Defensive check: handle _id atau id
+        targetSceneId = firstScene._id || firstScene.id; 
         sceneStore.setActiveScene(targetSceneId);
     }
     
@@ -42,7 +44,7 @@ export async function prepareEngineData() {
     return {
         project: toRaw(projectStore.project),
         assets: toRaw(assetStore.assets),
-        scene: currentSceneData,
+        scene: currentSceneData, // <-- Ini sekarang sudah membawa Layers di dalamnya
         prefabs: toRaw(prefabStore.prefabs)
     };
 }

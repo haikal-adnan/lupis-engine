@@ -18,8 +18,7 @@ const AssetSchema = new mongoose.Schema({
   meta: {
     extension: { type: String, required: true },
     size: { type: Number },
-    dimensions: { w: Number, h: Number },
-    filterMode: { type: String, enum: ['nearest', 'linear'], default: 'nearest' } 
+    dimensions: { w: Number, h: Number } 
   }
 }, { 
   timestamps: true,

@@ -1,11 +1,10 @@
 <template>
   <div class="flex flex-col h-full bg-background select-none" @click="closeMenu">
-    
     <HierarchyToolbar 
       v-model="searchQuery" 
       :is-refreshing="isRefreshing"
-      @add-layer="handleAddLayer"
-      @refresh="handleRefresh"
+      @add-layer="handlers.addLayer"
+      @refresh="handlers.refresh"
     />
 
     <div class="flex-1 min-h-0 relative w-full">
@@ -28,61 +27,69 @@
       :items="contextMenu.items"
       @close="closeMenu"
     />
-
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref } from 'vue'
+import { useSceneStore } from '@/stores/scene/useSceneStore.js'
 
-// --- Imports Atomic Components ---
-import BaseContextMenu from '@ui/overlay/BaseContextMenu.vue';
-import ScrollArea from '@ui/overlay/ScrollArea.vue'; // Menggunakan ScrollArea versi lama
+import BaseContextMenu from '@ui/overlay/BaseContextMenu.vue'
+import ScrollArea from '@ui/overlay/ScrollArea.vue'
+import HierarchyToolbar from './parts/HierarchyToolbar.vue'
+import SceneTree from './parts/SceneTree.vue'
 
-// --- Imports Internal Parts ---
-import HierarchyToolbar from './parts/HierarchyToolbar.vue';
-import SceneTree from './parts/SceneTree.vue';
+import { useHierarchyLogic } from '@/modules/scene/composables/useHierarchyLogic.js'
+import { useHierarchyFilter } from '@/modules/scene/composables/useHierarchyFilter.js'
+import { useHierarchyMenu } from '@/modules/scene/composables/useHierarchyMenu.js'
 
-// --- Composables ---
-import { useHierarchyLogic } from '@/modules/scene/composables/useHierarchyLogic.js';
-import { useHierarchyFilter } from '@/modules/scene/composables/useHierarchyFilter.js';
-import { useHierarchyMenu } from '@/modules/scene/composables/useHierarchyMenu.js';
+const sceneStore = useSceneStore()
+const { treeData, moveEntity } = useHierarchyLogic()
+const { searchQuery, filteredData } = useHierarchyFilter(treeData)
 
-// --- CORE LOGIC ---
-const { treeData, moveEntity } = useHierarchyLogic();
-const { searchQuery, filteredData } = useHierarchyFilter(treeData);
+const selectedIds = ref([])
+const isRefreshing = ref(false)
 
-const selectedIds = ref([]);
-const isRefreshing = ref(false);
+const handlers = {
+  addLayer: () => {
+    sceneStore.addLayer('New Layer')
+  },
+
+  deleteLayer: (layerId) => {
+    if (confirm('Are you sure you want to delete this layer and all its content?')) {
+      sceneStore.deleteLayer(layerId)
+    }
+  },
+
+  createEntity: (type, contextNode) => {
+    sceneStore.createEntity(type, contextNode)
+  },
+
+  deleteEntity: (entityId) => {
+    sceneStore.deleteEntity(entityId)
+  },
+
+  refresh: () => {
+    isRefreshing.value = true
+    setTimeout(() => (isRefreshing.value = false), 300)
+  }
+}
+
+const { contextMenu, openMenu, closeMenu } = useHierarchyMenu(handlers)
 
 const handleSelect = (idOrIds) => {
-  selectedIds.value = Array.isArray(idOrIds) ? idOrIds : [idOrIds];
-};
-
-const handleDrop = ({ draggedId, targetNode, position }) => {
-  moveEntity(draggedId, targetNode, position);
-};
-
-const handleAddLayer = () => {
-  console.log("Action: Add Layer");
-};
-
-const handleRefresh = () => {
-  isRefreshing.value = true;
-  setTimeout(() => isRefreshing.value = false, 500);
-};
-
-const { contextMenu, openMenu, closeMenu } = useHierarchyMenu({
-  addLayer: handleAddLayer,
-  refresh: handleRefresh,
-  deleteEntity: (id) => console.log("Delete", id),
-  createEntity: (type, parent) => console.log("Create", type, parent)
-});
+  selectedIds.value = Array.isArray(idOrIds) ? idOrIds : [idOrIds]
+  sceneStore.selectedEntityIds = selectedIds.value
+}
 
 const handleContextMenu = ({ event, node }) => {
-  if (node && !selectedIds.value.includes(node._id || node.id)) {
-    handleSelect(node._id || node.id);
+  if (node && !selectedIds.value.includes(node._id)) {
+    handleSelect(node._id)
   }
-  openMenu(event, node);
-};
+  openMenu(event, node)
+}
+
+const handleDrop = ({ draggedId, targetNode, position }) => {
+  moveEntity(draggedId, targetNode, position)
+}
 </script>

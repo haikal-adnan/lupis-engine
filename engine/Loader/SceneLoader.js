@@ -1,16 +1,30 @@
 import Entity from "../Core/Entity.js";
 
 export default class SceneLoader {
-    constructor(world) {
+    constructor(world, mode) {
         this.world = world;
+        this.mode = mode;
     }
 
     loadScene(sceneData) {
-        if (!sceneData || !Array.isArray(sceneData.entities)) return;
+        if (!sceneData) return;
+
+        if (Array.isArray(sceneData.layers)) {
+            this.world.layers = sceneData.layers.map(layer => ({
+                _id: layer._id,
+                name: layer.name,
+                visible: layer.visible ?? true,
+                locked: layer.locked ?? false,
+                entities: []
+            }));
+        } else {
+            this.world.layers = [{ _id: "layer_root", name: "Root", visible: true, locked: false, entities: [] }];
+        }
+
+        if (!Array.isArray(sceneData.entities)) return;
 
         this.world.entities = [];
-        this.world.layers.forEach(l => (l.entities = []));
-
+        
         const createdEntities = new Map();
 
         for (const entityData of sceneData.entities) {
@@ -54,6 +68,9 @@ export default class SceneLoader {
         entity.active = finalData.isActive;
         entity.visible = finalData.isVisible;
         entity.prefabId = finalData.prefabId;
+
+        if(this.mode == "editor") entity._editor = finalData._editor;
+
 
         for (const [key, val] of Object.entries(finalData.components)) {
             entity.addComponent(key, val);

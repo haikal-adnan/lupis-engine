@@ -11,7 +11,6 @@ export default class ImageRenderer {
         this.maxSprites = 20000;
         this.verticesPerQuad = 6;
         
-        // Layout: x, y, u, v, alpha, dimW, dimH
         this.floatsPerVertex = 7; 
         this.floatsPerQuad = this.verticesPerQuad * this.floatsPerVertex;
 
@@ -19,10 +18,8 @@ export default class ImageRenderer {
         this.bufferIndex = 0;
 
         this.currentTexture = null;
-        this.currentPixelPerfect = null;
         this.lastProjection = null;
 
-        // Texture Putih 1x1 (Untuk Fallback & Checkerboard Logic)
         this.whiteTexture = this._createWhiteTexture();
 
         this._createShader();
@@ -42,7 +39,6 @@ export default class ImageRenderer {
     _createShader() {
         const gl = this.gl;
         
-        // Vertex Shader: Pass aDimension ke Fragment
         const vs = this.isWebGL2 ? `#version 300 es
             layout(location=0) in vec2 aPos;
             layout(location=1) in vec2 aUV;
@@ -71,7 +67,6 @@ export default class ImageRenderer {
             }
         `;
 
-        // Fragment Shader: Logic Checkerboard
         const fs = this.isWebGL2 ? `#version 300 es
             precision mediump float;
             in vec2 vUV; in float vAlpha; in vec2 vDimension;
@@ -83,7 +78,7 @@ export default class ImageRenderer {
                     float size = 32.0;
                     vec2 cell = floor((vUV * vDimension) / size);
                     float isLight = mod(cell.x + cell.y, 2.0);
-                    vec3 col = mix(vec3(0.2), vec3(0.3), isLight); // Abu gelap vs terang
+                    vec3 col = mix(vec3(0.2), vec3(0.3), isLight);
                     c = vec4(col, 1.0);
                 } else {
                     c = texture(uTex, vUV);
@@ -145,26 +140,26 @@ export default class ImageRenderer {
         gl.bufferData(gl.ARRAY_BUFFER, this.bufferData, gl.DYNAMIC_DRAW);
 
         const stride = this.floatsPerVertex * 4;
-        gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, stride, 0); // Pos
-        gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 2, gl.FLOAT, false, stride, 8); // UV
-        gl.enableVertexAttribArray(2); gl.vertexAttribPointer(2, 1, gl.FLOAT, false, stride, 16); // Alpha
-        gl.enableVertexAttribArray(3); gl.vertexAttribPointer(3, 2, gl.FLOAT, false, stride, 20); // Dimension
+        gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, stride, 0); 
+        gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 2, gl.FLOAT, false, stride, 8); 
+        gl.enableVertexAttribArray(2); gl.vertexAttribPointer(2, 1, gl.FLOAT, false, stride, 16); 
+        gl.enableVertexAttribArray(3); gl.vertexAttribPointer(3, 2, gl.FLOAT, false, stride, 20); 
 
         gl.bindBuffer(gl.ARRAY_BUFFER, null);
         this.cache.bindVAO(null);
     }
 
-    draw(texRes, frame, x, y, w, h, rot, sx, sy, px, py, projection, pixelPerfect = false, alpha = 1, useCheckerboard = false) {
+    draw(texRes, source, transform, options, projection) {
         if (!projection) return;
         this.lastProjection = projection;
 
-        // --- SILENT FALLBACK LOGIC ---
+        const { x, y, width: w, height: h, rotation: rot, scaleX: sx = 1, scaleY: sy = 1, pivotX: px = 0.5, pivotY: py = 0.5 } = transform;
+        const { flipX = false, flipY = false, opacity = 1, useCheckerboard = false } = options || {};
+
         const isValidTexture = texRes && texRes.glTexture;
         const shouldChecker = useCheckerboard || !isValidTexture;
-
         const targetGLTexture = shouldChecker ? this.whiteTexture : texRes.glTexture;
         
-        // Logic Shader: Jika dimW/H > 0 -> Render Checkerboard. Jika 0 -> Render Texture Normal
         const dimW = shouldChecker ? w : 0;
         const dimH = shouldChecker ? h : 0;
 
@@ -173,34 +168,31 @@ export default class ImageRenderer {
             this.currentTexture = targetGLTexture;
         }
 
-        if (this.currentPixelPerfect !== pixelPerfect) {
-            this.flush();
-            this.currentPixelPerfect = pixelPerfect;
-        }
+        const finalSX = flipX ? -sx : sx;
+        const finalSY = flipY ? -sy : sy;
 
-        const v = calculateQuadVertices(x, y, w, h, rot, sx, sy, px, py);
+        const v = calculateQuadVertices(x, y, w, h, rot, finalSX, finalSY, px, py);
 
-        // UV Calculation
         let u0 = 0, v0 = 0, u1 = 1, v1 = 1;
         if (!shouldChecker && isValidTexture) {
             const tw = texRes.width || 1; 
             const th = texRes.height || 1;
-            u0 = frame.sx / tw; v0 = frame.sy / th;
-            u1 = (frame.sx + frame.sw) / tw; v1 = (frame.sy + frame.sh) / th;
+            u0 = source.x / tw; 
+            v0 = source.y / th;
+            u1 = (source.x + source.w) / tw; 
+            v1 = (source.y + source.h) / th;
         }
 
         const d = this.bufferData;
         let i = this.bufferIndex;
 
-        // Layout: x, y, u, v, alpha, dimW, dimH
-        // Tri 1
-        d[i++] = v.tl.x; d[i++] = v.tl.y; d[i++] = u0; d[i++] = v0; d[i++] = alpha; d[i++] = dimW; d[i++] = dimH;
-        d[i++] = v.tr.x; d[i++] = v.tr.y; d[i++] = u1; d[i++] = v0; d[i++] = alpha; d[i++] = dimW; d[i++] = dimH;
-        d[i++] = v.bl.x; d[i++] = v.bl.y; d[i++] = u0; d[i++] = v1; d[i++] = alpha; d[i++] = dimW; d[i++] = dimH;
-        // Tri 2
-        d[i++] = v.tr.x; d[i++] = v.tr.y; d[i++] = u1; d[i++] = v0; d[i++] = alpha; d[i++] = dimW; d[i++] = dimH;
-        d[i++] = v.br.x; d[i++] = v.br.y; d[i++] = u1; d[i++] = v1; d[i++] = alpha; d[i++] = dimW; d[i++] = dimH;
-        d[i++] = v.bl.x; d[i++] = v.bl.y; d[i++] = u0; d[i++] = v1; d[i++] = alpha; d[i++] = dimW; d[i++] = dimH;
+        d[i++] = v.tl.x; d[i++] = v.tl.y; d[i++] = u0; d[i++] = v0; d[i++] = opacity; d[i++] = dimW; d[i++] = dimH;
+        d[i++] = v.tr.x; d[i++] = v.tr.y; d[i++] = u1; d[i++] = v0; d[i++] = opacity; d[i++] = dimW; d[i++] = dimH;
+        d[i++] = v.bl.x; d[i++] = v.bl.y; d[i++] = u0; d[i++] = v1; d[i++] = opacity; d[i++] = dimW; d[i++] = dimH;
+        
+        d[i++] = v.tr.x; d[i++] = v.tr.y; d[i++] = u1; d[i++] = v0; d[i++] = opacity; d[i++] = dimW; d[i++] = dimH;
+        d[i++] = v.br.x; d[i++] = v.br.y; d[i++] = u1; d[i++] = v1; d[i++] = opacity; d[i++] = dimW; d[i++] = dimH;
+        d[i++] = v.bl.x; d[i++] = v.bl.y; d[i++] = u0; d[i++] = v1; d[i++] = opacity; d[i++] = dimW; d[i++] = dimH;
 
         this.bufferIndex = i;
         if (i >= this.bufferData.length) this.flush();
@@ -213,10 +205,6 @@ export default class ImageRenderer {
         this.cache.useProgram(this.program);
         this.cache.bindVAO(this.vao);
         this.cache.bindTexture(this.currentTexture);
-
-        const filter = this.currentPixelPerfect ? gl.NEAREST : gl.LINEAR;
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, filter);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, filter);
 
         gl.uniformMatrix4fv(this.uProjection, false, this.lastProjection);
         gl.uniform1i(this.uTex, 0);

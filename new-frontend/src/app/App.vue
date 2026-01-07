@@ -4,6 +4,9 @@ import { useAppInit } from '@/composables/useAppInit'
 
 import AppLoading from '@/commons/components/overlay/AppLoading.vue'
 import EditorView from '@/layouts/EditorView.vue'
+import BaseConfirm from '@ui/overlay/BaseConfirm.vue';
+import BasePrompt from '@ui/overlay/BasePrompt.vue';
+import BaseAlert from '@ui/overlay/BaseAlert.vue';
 
 useAppInit()
 const projectStore = useProjectStore()
@@ -28,5 +31,9 @@ const projectStore = useProjectStore()
         <AppLoading />
       </div>
     </transition>
+
+    <BaseConfirm />
+    <BasePrompt />
+    <BaseAlert />
   </div>
 </template>

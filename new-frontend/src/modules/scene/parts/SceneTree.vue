@@ -37,10 +37,7 @@ const handleDrop = (payload) => {
   emit('drop', payload);
 };
 
-// --- LOGIC ANTI-FLICKER ---
 const allowDrop = (e) => {
-  // Memaksa browser menganggap SELURUH area tree ini valid untuk drop.
-  // Jika mouse meleset 1px dari Node, fungsi ini yang akan menangkapnya.
   e.dataTransfer.dropEffect = 'move';
 };
 </script>
