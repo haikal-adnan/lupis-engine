@@ -53,7 +53,10 @@
       <component
         :is="getIcon"
         class="w-3.5 h-3.5 mr-2 shrink-0 pointer-events-none"
-        :class="isSelected ? 'text-white' : (node.type === 'layer' ? 'text-blue-500' : 'opacity-70')"
+        :class="[
+            isSelected ? 'text-white' : '',
+            node.type === 'layer' ? 'text-blue-500' : (node.type === 'group' ? 'text-yellow-500' : 'opacity-70')
+        ]"
       />
 
       <span class="truncate py-1 pointer-events-none" :class="{ 'font-bold': node.type === 'layer' }">
@@ -64,8 +67,9 @@
         class="flex items-center opacity-0 group-hover/node:opacity-100 transition-opacity ml-auto pl-2 pointer-events-none"
         :class="{ 'opacity-100': isSelected }"
       >
-        <Lock v-if="node._editor?.locked" class="w-3 h-3 mr-1" />
-        <Eye class="w-3 h-3" />
+        <Lock v-if="node.locked" class="w-3 h-3 mr-1" />
+        <Eye v-if="!node.visible" class="w-3 h-3 opacity-50" />
+        <Eye v-else class="w-3 h-3" />
       </div>
     </div>
 
@@ -79,9 +83,9 @@
 
     <div v-if="isOpen" class="relative">
       <div
-        v-if="hasChildren || node.type === 'group' || (node.type === 'layer' && node.children.length === 0)"
+        v-if="hasChildren"
         class="absolute top-0 bottom-0 w-[1px] z-0 pointer-events-none"
-        :class="isSelected ? 'bg-white/30' : 'bg-zinc-300 dark:bg-zinc-600'"
+        :class="isSelected ? 'bg-white/30' : 'bg-zinc-300 dark:bg-zinc-700'"
         :style="{ left: `${indentation + 6}px` }"
       ></div>
 
@@ -98,18 +102,7 @@
         />
       </template>
 
-      <div
-        v-else-if="(node.type === 'layer' || node.type === 'group') && node.children.length === 0"
-        class="relative py-1 pr-1 opacity-50 transition-opacity pointer-events-none"
-      >
-        <div
-          class="text-[10px] italic ml-2 text-muted-foreground pl-2 border-l border-dashed border-border whitespace-nowrap"
-          :style="{ marginLeft: `${indentation + 6}px` }"
-        >
-          Empty {{ node.type }}
-        </div>
       </div>
-    </div>
   </div>
 </template>
 
@@ -126,8 +119,10 @@ import {
   Image,
   Box,
   Lock,
-  Eye
+  Eye,
+  FileCode
 } from 'lucide-vue-next'
+import { useNodeDragDrop } from '@/modules/scene/composables/useNodeDragDrop.js' 
 
 defineOptions({ name: 'SceneNode' })
 
@@ -139,23 +134,31 @@ const props = defineProps({
 
 const emit = defineEmits(['select', 'contextmenu', 'node-drop'])
 
-const dragGhostRef = ref(null)
 const isOpen = ref(true)
-const isDragOver = ref(false)
-const dragPosition = ref(null)
-
 const indentation = computed(() => (props.depth * 16) + 12)
 const isSelected = computed(() =>
   props.selectedIds.some(id => String(id) === String(props.node._id || props.node.id))
 )
 const hasChildren = computed(() => props.node.children && props.node.children.length > 0)
 
+const {
+  dragGhostRef,
+  isDragOver,
+  dragPosition,
+  onDragStart,
+  onDragOver,
+  onDragLeave,
+  onDrop
+} = useNodeDragDrop(props, emit)
+
 const getIcon = computed(() => {
   if (props.node.type === 'layer') return Layers
   if (props.node.type === 'group') return isOpen.value ? FolderOpen : Folder
+  
   const name = (props.node.name || '').toLowerCase()
   if (name.includes('text')) return Type
   if (name.includes('sprite')) return Image
+  if (name.includes('script')) return FileCode
   if (name.includes('chest') || name.includes('box')) return Box
   return Cuboid
 })
@@ -163,70 +166,4 @@ const getIcon = computed(() => {
 const toggle = () => (isOpen.value = !isOpen.value)
 const handleSelect = () => emit('select', props.node._id || props.node.id)
 const handleContextMenu = (e) => emit('contextmenu', { event: e, node: props.node })
-
-const onDragStart = (e) => {
-  e.stopPropagation()
-  e.dataTransfer.effectAllowed = 'move'
-  e.dataTransfer.setData('nodeId', props.node._id || props.node.id)
-  e.dataTransfer.setData('nodeType', props.node.type)
-
-  if (props.node.type === 'layer') {
-    e.dataTransfer.setData('application/x-layer', 'true')
-  }
-
-  if (dragGhostRef.value) {
-    e.dataTransfer.setDragImage(dragGhostRef.value, 0, 0)
-  }
-}
-
-const onDragOver = (e) => {
-  const isDraggingLayer = e.dataTransfer.types.includes('application/x-layer')
-  const targetType = props.node.type
-
-  if (isDraggingLayer && targetType !== 'layer') return
-
-  e.preventDefault()
-  e.dataTransfer.dropEffect = 'move'
-
-  const rect = e.currentTarget.getBoundingClientRect()
-  const y = e.clientY - rect.top
-  const percentage = y / rect.height
-
-  isDragOver.value = true
-
-  if (isDraggingLayer) {
-    dragPosition.value = percentage < 0.5 ? 'top' : 'bottom'
-  } else {
-    if (targetType === 'layer') {
-      dragPosition.value = 'inside'
-    } else {
-      if (percentage < 0.3) dragPosition.value = 'top'
-      else if (percentage > 0.7) dragPosition.value = 'bottom'
-      else dragPosition.value = 'inside'
-    }
-  }
-}
-
-const onDragLeave = () => {
-  isDragOver.value = false
-  dragPosition.value = null
-}
-
-const onDrop = (e) => {
-  e.preventDefault()
-  e.stopPropagation()
-
-  const draggedId = e.dataTransfer.getData('nodeId')
-
-  if (draggedId) {
-    emit('node-drop', {
-      draggedId,
-      targetNode: props.node,
-      position: dragPosition.value
-    })
-  }
-
-  isDragOver.value = false
-  dragPosition.value = null
-}
 </script>

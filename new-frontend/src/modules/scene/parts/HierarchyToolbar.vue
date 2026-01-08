@@ -114,18 +114,13 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
-import { useSceneStore } from '@/stores/scene/useSceneStore.js'
-import { useConfirm } from '@/composables/useConfirm.js';
-import { usePrompt } from '@/composables/usePrompt';
-import { useAlert } from '@/composables/useAlert';
 import { 
   Search, X, RefreshCw, Layers, MoreVertical, 
   Plus, Trash2, Edit2, Copy 
 } from 'lucide-vue-next'
-
 import BaseSelect from '@ui/inputs/BaseSelect.vue'
 import BaseDropdown from '@ui/overlay/BaseDropdown.vue'
+import { useSceneActions } from '@/modules/scene/composables/useSceneActions.js' 
 
 const props = defineProps({
   modelValue: String, 
@@ -134,89 +129,12 @@ const props = defineProps({
 
 defineEmits(['update:modelValue', 'add-layer', 'refresh']);
 
-const sceneStore = useSceneStore();
-const { confirm } = useConfirm();
-const { prompt } = usePrompt();
-const { alert } = useAlert();
-const sceneOptions = computed(() => {
-  return sceneStore.scenes.map(scene => ({
-    label: scene.name,
-    value: scene._id
-  }));
-});
-
-const activeSceneId = computed({
-  get: () => sceneStore.activeSceneId,
-  set: (val) => {
-    if (sceneStore.activeSceneId !== val) {
-      sceneStore.activeSceneId = val; 
-    }
-  }
-});
-
-const handleCreate = async (closeMenu) => {
-  closeMenu();
-  
-  const name = await prompt({
-    title: 'Create New Scene',
-    message: 'Enter a name for the new scene:',
-    defaultValue: 'New Scene',
-    placeholder: 'Masukkan nama scene baru...',
-    confirmText: 'Create'
-  });
-
-  if (name) {
-    sceneStore.addScene({ name });
-  }
-};
-
-const handleRename = async (closeMenu) => {
-  closeMenu();
-  const currentName = sceneStore.activeScene?.name;
-  
-  const newName = await prompt({
-    title: 'Rename Scene',
-    defaultValue: currentName,
-    placeholder: 'Masukkan nama scene baru...',
-    confirmText: 'Rename'
-  });
-  
-  if (newName && newName.trim() !== "" && newName !== currentName) {
-    sceneStore.updateSceneName(sceneStore.activeSceneId, newName);
-  }
-};
-
-const handleDuplicate = (closeMenu) => {
-  closeMenu();
-  sceneStore.duplicateScene(sceneStore.activeSceneId);
-};
-
-const handleDelete = async (closeMenu) => {
-  closeMenu();
-
-  if (sceneStore.scenes.length <= 1) {
-    await alert({
-      title: 'Cannot Delete Scene',
-      message: 'You must have at least one scene in your project.',
-      type: 'warning', 
-      buttonText: 'Understood'
-    });
-    return;
-  }
-
-  const sceneName = sceneStore.activeScene?.name;
-  
-  // 2. Konfirmasi Hapus
-  const isConfirmed = await confirm({
-    title: 'Delete Scene?',
-    message: `Are you sure you want to delete "${sceneName}"? This action cannot be undone.`,
-    confirmText: 'Yes, Delete',
-    cancelText: 'Cancel',
-    type: 'danger'
-  });
-
-  if (isConfirmed) {
-    sceneStore.removeScene(sceneStore.activeSceneId);
-  }
-};
+const { 
+  sceneOptions, 
+  activeSceneId, 
+  handleCreate, 
+  handleRename, 
+  handleDuplicate, 
+  handleDelete 
+} = useSceneActions();
 </script>

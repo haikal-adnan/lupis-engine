@@ -10,7 +10,6 @@ export const normalizeProjectLoad = (
 ) => {
   const projectId = rawProject._id;
 
-  // 1. Normalize Project
   const cleanProject = {
     _id: projectId,
     name: rawProject?.name || "Untitled Project",
@@ -25,7 +24,6 @@ export const normalizeProjectLoad = (
     scenes: rawProject?.scenes || [] 
   };
 
-  // 2. Normalize Scenes
   const cleanScenes = Array.isArray(rawScenes)
     ? rawScenes.map(scene => ({
         _id: scene._id,
@@ -44,7 +42,6 @@ export const normalizeProjectLoad = (
       }))
     : [];
 
-  // 3. Normalize Assets
   const cleanAssets = Array.isArray(rawAssets)
     ? rawAssets.map(asset => {
         let baseUrl = asset.fileUrl || "";

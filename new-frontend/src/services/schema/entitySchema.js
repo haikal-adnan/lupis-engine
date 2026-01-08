@@ -3,18 +3,30 @@ import { createComponent, createTransform } from './componentSchema.js';
 export const createEntity = (data = {}) => {
   const cleanComponents = {};
 
-  // 1. Process Components
   if (data.components) {
     for (const [key, val] of Object.entries(data.components)) {
       cleanComponents[key] = createComponent(key, val);
     }
   }
 
-  // 2. Ensure Transform exists
-  const rawTransform = cleanComponents.Transform || data.transform || {};
-  cleanComponents.Transform = createTransform(rawTransform);
+  let defaultWidth = 100;
+  let defaultHeight = 100;
 
-  // 3. Construct Object
+  if (cleanComponents.TextRenderer) {
+    defaultWidth = 107;
+    defaultHeight = 23;
+  } else if (cleanComponents.SpriteRenderer || cleanComponents.ShapeRenderer) {
+    defaultWidth = 100;
+    defaultHeight = 100;
+  }
+
+  const rawTransform = cleanComponents.Transform || data.transform || {};
+  
+  cleanComponents.Transform = createTransform(rawTransform, { 
+    width: defaultWidth, 
+    height: defaultHeight 
+  });
+
   return {
     _id: data._id || `ent_${Date.now()}`,
     name: data.name || "New Entity",

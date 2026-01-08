@@ -17,8 +17,8 @@ export default class SelectionTool {
         this.selectedList = [];
 
         this.isPointerDown = false;
+        
         this.marqueeActive = false;
-
         this.marqueeStart = { x: 0, y: 0 };
         this.marqueeEnd = { x: 0, y: 0 };
 
@@ -27,11 +27,10 @@ export default class SelectionTool {
 
         this.pointerDownTime = 0;
         this.isLongPress = false;
-        this.LONG_PRESS_TIME = 30;
+        this.LONG_PRESS_TIME = 20;
 
         this.lastAutoPanTime = 0;
         this.autoPanVel = { x: 0, y: 0 };
-        
         this.viewportInsets = { top: 0, left: 0, right: 0, bottom: 0 };
 
         this.onExternalSelect = (list) => { this.syncSelectionFromBus(list); };
@@ -53,9 +52,7 @@ export default class SelectionTool {
             if (!this.active) return;
             this.drawHover(shape, proj);
             this.drawSelected(shape, proj);
-            
             if (this.transform) this.transform.draw(shape, proj);
-            
             this.drawMarquee(shape, proj);
         };
     }
@@ -68,75 +65,9 @@ export default class SelectionTool {
         return e._editor && e._editor.locked;
     }
 
-    _findEntityRecursive(id, entities) {
-        for (const e of entities) {
-            if ((e._id || e.id) === id) return e;
-            if (e.children && e.children.length > 0) {
-                const found = this._findEntityRecursive(id, e.children);
-                if (found) return found;
-            }
-        }
-        return null;
-    }
-
-    _findEntity(id) {
-        for (const layer of this.world.layers) {
-            const found = this._findEntityRecursive(id, layer.entities);
-            if (found) return found;
-        }
-        return null;
-    }
-
-    handleUISelect(ids) {
-        if (!ids || ids.length === 0) {
-            this.selectedList = [];
-            bus.emit("entity:deselected");
-            return;
-        }
-
-        const realEntities = [];
-        const idsToFind = Array.isArray(ids) ? ids : [ids];
-
-        for (const id of idsToFind) {
-            const e = this._findEntity(id);
-            if (e) realEntities.push(e);
-        }
-
-        if (realEntities.length > 0) {
-            this.selectedList = realEntities;
-            bus.emit("entity:selected", this.selectedList);
-        }
-    }
-
-    syncSelectionFromBus(externalList) {
-        if (!externalList || externalList.length === 0) {
-            this.selectedList = [];
-            return;
-        }
-        if (externalList === this.selectedList) return;
-
-        if (externalList[0] && this._getTransform(externalList[0])) {
-             this.selectedList = externalList;
-        }
-    }
-
-    destroy() {
-        bus.off("entity:selected", this.onExternalSelect);
-        bus.off("ui:select-by-id", this.onUISelect);
-        bus.off("prefab:selected", this.onPrefabSelect);
-    }
-
-    attachTransform(t) {
-        this.transform = t;
-    }
-
-    getPrimary() {
-        return this.selectedList.length ? this.selectedList[0] : null;
-    }
-
     toWorld(px, py) {
         const c = this.game.camera;
-        const s = c.scale;
+        const s = c.scale || 1;
         const W = this.canvas.width;
         const H = this.canvas.height;
         return {
@@ -167,217 +98,138 @@ export default class SelectionTool {
         return { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
     }
 
-    update() {
-        if (!this.active) return;
+    getMarqueeWorld() {
+        const x1 = Math.min(this.marqueeStart.x, this.marqueeEnd.x);
+        const y1 = Math.min(this.marqueeStart.y, this.marqueeEnd.y);
+        const x2 = Math.max(this.marqueeStart.x, this.marqueeEnd.x);
+        const y2 = Math.max(this.marqueeStart.y, this.marqueeEnd.y);
+        return { x: x1, y: y1, w: x2 - x1, h: y2 - y1 };
+    }
 
-        const p = this.input.getPointer();
-        const px = p.x;
-        const py = p.y;
+    destroy() {
+        bus.off("entity:selected", this.onExternalSelect);
+        bus.off("ui:select-by-id", this.onUISelect);
+        bus.off("prefab:selected", this.onPrefabSelect);
+    }
 
-        this.updateHover(px, py);
+    attachTransform(t) {
+        this.transform = t;
+    }
 
-        if (p.down && !this.isPointerDown) {
-            this.pointerDownTime = performance.now();
-            this.isLongPress = false;
-            this.pointerDown(px, py, p.isTouch);
-            this.isPointerDown = true;
+    syncSelectionFromBus(externalList) {
+        if (!externalList || externalList.length === 0) {
+            this.selectedList = [];
+            return;
+        }
+        if (externalList === this.selectedList) return;
+        this.selectedList = externalList;
+    }
+
+    handleUISelect(ids) {
+        if (!ids || ids.length === 0) {
+            this.selectedList = [];
+            bus.emit("entity:deselected");
+            return;
         }
 
-        const isDraggingResize = this.transform && (this.transform.draggingResize || this.transform.draggingMove || this.transform.draggingRotate);
+        const realEntities = [];
+        const idsToFind = Array.isArray(ids) ? ids : [ids];
 
-        if (p.down && this.isPointerDown && !this.isLongPress && !isDraggingResize) {
-            if (performance.now() - this.pointerDownTime >= this.LONG_PRESS_TIME) {
-                this.isLongPress = true;
-                const w = this.toWorld(px, py);
+        const findRecursive = (id, entities) => {
+             for (const e of entities) {
+                if ((e._id || e.id) === id) return e;
+                if (e.children && e.children.length > 0) {
+                    const found = findRecursive(id, e.children);
+                    if (found) return found;
+                }
+            }
+            return null;
+        };
+
+        for (const id of idsToFind) {
+            let found = null;
+            for(const layer of this.world.layers) {
+                if(layer.entities) {
+                    found = findRecursive(id, layer.entities);
+                    if(found) break;
+                }
+            }
+            if(found) realEntities.push(found);
+        }
+
+        if (realEntities.length > 0) {
+            this.selectedList = realEntities;
+            bus.emit("entity:selected", this.selectedList);
+        }
+    }
+
+    consolidateSelection(candidates) {
+        if (!candidates || candidates.length <= 1) return candidates;
+        
+        const finalSet = new Set(candidates);
+        let changed = true;
+        let safeCounter = 0;
+
+        while(changed && safeCounter < 10) {
+            changed = false;
+            safeCounter++;
+
+            const parentMap = new Map();
+
+            for (const e of finalSet) {
+                if (e.parentId) {
+                    if (!parentMap.has(e.parentId)) parentMap.set(e.parentId, []);
+                    parentMap.get(e.parentId).push(e);
+                }
+            }
+
+            for (const [parentId, childrenInSelection] of parentMap.entries()) {
+                let parentEntity = null;
+                const findRecursive = (id, list) => {
+                     for(const e of list) {
+                         if((e.id || e._id) === id) return e;
+                         if(e.children) {
+                             const f = findRecursive(id, e.children);
+                             if(f) return f;
+                         }
+                     }
+                     return null;
+                };
                 
-                if (this.selectedList.length > 1 && this.isInsideGroup(w.x, w.y)) {
-                      if (this.transform) this.transform.beginMove(px, py, false);
-                } else {
-                    const hit = this.hit(w.x, w.y);
-                    if (hit && this.transform) {
-                        if(!this.selectedList.includes(hit)) {
-                            this.selectedList = [hit];
-                            bus.emit("entity:selected", this.selectedList);
-                        }
-                        this.transform.beginMove(px, py, false);
+                for(const l of this.world.layers) {
+                    if(l.entities) {
+                        parentEntity = findRecursive(parentId, l.entities);
+                        if(parentEntity) break;
+                    }
+                }
+
+                if (parentEntity && parentEntity.children) {
+                    if (childrenInSelection.length === parentEntity.children.length) {
+                        childrenInSelection.forEach(child => finalSet.delete(child));
+                        finalSet.add(parentEntity);
+                        changed = true;
                     }
                 }
             }
         }
 
-        if (!p.isTouch && p.down && this.marqueeActive) {
-            const w = this.toWorld(px, py);
-            this.marqueeEnd.x = w.x;
-            this.marqueeEnd.y = w.y;
-
-            this.updateHoverMarquee();
-            this.applyMarqueeAutoPan(px, py);
-        }
-
-        if (!p.down && this.isPointerDown) {
-            this.pointerUp(px, py);
-            this.isPointerDown = false;
-        }
-
-        this.updateAutoPan();
-    }
-
-    updateHover(px, py) {
-        this.hoverHandle = null;
-        if (this.isPointerDown) return;
-
-        if (this.transform && this.selectedList.length > 0) {
-            this.transform.computeHandles();
-            this.hoverHandle = this.transform.getHoverHandle(px, py);
-            if (this.hoverHandle) {
-                this.canvas.style.cursor = this.transform.getCursor(this.hoverHandle);
-                this.hovered = null;
-                return;
-            }
-        }
-
-        const w = this.toWorld(px, py);
-
-        if (this.selectedList.length > 1 && this.isInsideGroup(w.x, w.y)) {
-            this.canvas.style.cursor = "move";
-            this.hovered = null;
-            return;
-        }
-
-        this.hovered = this.hit(w.x, w.y);
-
-        if (this.hovered) {
-            const isSelected = this.selectedList.includes(this.hovered);
-            this.canvas.style.cursor = isSelected ? "move" : "pointer";
-        } else {
-            this.canvas.style.cursor = "default";
-        }
-    }
-
-    isInsideGroup(wx, wy) {
-        if (this.selectedList.length <= 1) return false;
-        const box = this.transform ? this.transform.computeGroupBounds() : null;
-        if (!box) return false;
-        return (wx >= box.x && wx <= box.x + box.w && wy >= box.y && wy <= box.y + box.h);
-    }
-
-    _checkMarqueeRecursive(entities, box, list) {
-        for (const e of entities) {
-            if (!e.visible) continue;
-            if (this._isLocked(e)) continue;
-            
-            const t = this._getTransform(e);
-            if (t) {
-                const b = this.getAABB(e);
-                const overlap = 
-                    b.x < box.x + box.w &&
-                    b.x + b.w > box.x &&
-                    b.y < box.y + box.h &&
-                    b.y + b.h > box.y;
-
-                if (overlap) list.push(e);
-            }
-
-            if (e.children && e.children.length > 0) {
-                this._checkMarqueeRecursive(e.children, box, list);
-            }
-        }
-    }
-
-    updateHoverMarquee() {
-        if (!this.marqueeActive) {
-            this.hoverMarqueeList = [];
-            return;
-        }
-
-        const box = this.getMarqueeWorld();
-        const list = [];
-
-        for (const layer of this.world.layers) {
-            if (!layer.visible || layer.locked) continue;
-            this._checkMarqueeRecursive(layer.entities, box, list);
-        }
-
-        this.hoverMarqueeList = list;
-    }
-
-    pointerDown(px, py, isTouch) {
-        const w = this.toWorld(px, py);
-        
-        if (this.transform && this.hoverHandle) {
-            this.transform.beginResize(this.hoverHandle, px, py);
-            return;
-        }
-
-        const ctrl = this.input.keyboard.ctrl || this.input.keyboard.shift || this.input.keyboard.meta;
-        const hit = this.hit(w.x, w.y);
-        
-        if (hit) {
-            const inside = this.selectedList.includes(hit);
-
-            if (ctrl) {
-                this.selectedList = inside
-                    ? this.selectedList.filter(a => a !== hit)
-                    : [...this.selectedList, hit];
-            } else {
-                if (!inside) {
-                    this.selectedList = [hit];
-                }
-            }
-            bus.emit("entity:selected", this.selectedList);
-            return;
-        }
-
-        if (!isTouch && !hit) {
-            this.calculateViewportInsets();
-            this.marqueeActive = true;
-            this.selectedList = [];
-            bus.emit("entity:deselected");
-
-            this.marqueeStart.x = w.x;
-            this.marqueeStart.y = w.y;
-            this.marqueeEnd.x = w.x;
-            this.marqueeEnd.y = w.y;
-            
-            this.updateHoverMarquee();
-        }
-    }
-
-    pointerUp(px, py) {
-        if (this.transform) this.transform.resetDrag();
-
-        if (this.marqueeActive) {
-            this.selectedList = [...this.hoverMarqueeList];
-            
-            bus.emit("entity:selected", this.selectedList);
-            
-            this.marqueeActive = false;
-            this.hoverMarqueeList = [];
-            return;
-        }
-
-        if (!this.isLongPress && !this.marqueeActive) {
-            const w = this.toWorld(px, py);
-            if (!this.hit(w.x, w.y)) {
-                this.selectedList = [];
-                bus.emit("entity:deselected");
-            }
-        }
+        return Array.from(finalSet);
     }
 
     _hitTestRecursive(entities, wx, wy) {
         for (let i = entities.length - 1; i >= 0; i--) {
             const e = entities[i];
-            if (!e.visible) continue;
-            if (this._isLocked(e)) continue;
+            if (!e.visible || this._isLocked(e)) continue;
 
             if (e.children && e.children.length > 0) {
                 const childHit = this._hitTestRecursive(e.children, wx, wy);
                 if (childHit) return childHit;
             }
 
-            if (this.isPointInEntity(wx, wy, e)) {
-                return e;
+            if (e.type !== 'group') {
+                if (this.isPointInEntity(wx, wy, e)) {
+                    return e;
+                }
             }
         }
         return null;
@@ -427,21 +279,223 @@ export default class SelectionTool {
         const minY = Math.min(top, bottom);
         const maxY = Math.max(top, bottom);
 
-        // --- BUFFER SELECTION ---
-        // Tambahkan buffer (misal 5px di layar)
-        // Kita bagi dengan absolute scale agar konsisten saat di-zoom
         const buffer = 5 / Math.abs(this.game.camera.scale || 1); 
 
-        return (unscaledMouseX >= minX - buffer && unscaledMouseX <= maxX + buffer && 
-                unscaledMouseY >= minY - buffer && unscaledMouseY <= maxY + buffer);
+        return (
+            unscaledMouseX >= minX - buffer &&
+            unscaledMouseX <= maxX + buffer &&
+            unscaledMouseY >= minY - buffer &&
+            unscaledMouseY <= maxY + buffer
+        );
     }
 
-    getMarqueeWorld() {
-        const x1 = Math.min(this.marqueeStart.x, this.marqueeEnd.x);
-        const y1 = Math.min(this.marqueeStart.y, this.marqueeEnd.y);
-        const x2 = Math.max(this.marqueeStart.x, this.marqueeEnd.x);
-        const y2 = Math.max(this.marqueeStart.y, this.marqueeEnd.y);
-        return { x: x1, y: y1, w: x2 - x1, h: y2 - y1 };
+    isInsideGroup(wx, wy) {
+        if (this.selectedList.length <= 1) return false;
+        const box = this.transform ? this.transform.computeGroupBounds() : null;
+        if (!box) return false;
+        return wx >= box.x && wx <= box.x + box.w && wy >= box.y && wy <= box.y + box.h;
+    }
+
+    _checkMarqueeRecursive(entities, box, list) {
+        for (const e of entities) {
+            if (!e.visible || this._isLocked(e)) continue;
+            
+            if (e.type === 'group') {
+                if (e.children?.length) this._checkMarqueeRecursive(e.children, box, list);
+                continue;
+            }
+
+            const t = this._getTransform(e);
+            if (t) {
+                const b = this.getAABB(e);
+                const overlap =
+                    b.x < box.x + box.w &&
+                    b.x + b.w > box.x &&
+                    b.y < box.y + box.h &&
+                    b.y + b.h > box.y;
+                if (overlap) list.push(e);
+            }
+
+            if (e.children?.length) this._checkMarqueeRecursive(e.children, box, list);
+        }
+    }
+
+    updateHoverMarquee() {
+        if (!this.marqueeActive) {
+            this.hoverMarqueeList = [];
+            return;
+        }
+
+        const box = this.getMarqueeWorld();
+        const list = [];
+
+        for (const layer of this.world.layers) {
+            if (!layer.visible || layer.locked) continue;
+            this._checkMarqueeRecursive(layer.entities, box, list);
+        }
+
+        this.hoverMarqueeList = list;
+    }
+
+    update() {
+        if (!this.active) return;
+
+        const p = this.input.getPointer();
+        const px = p.x;
+        const py = p.y;
+        const w = this.toWorld(px, py);
+
+        this.updateHover(px, py);
+
+        if (p.down && !this.isPointerDown) {
+            this.pointerDownTime = performance.now();
+            this.isLongPress = false;
+            this.pointerDown(px, py, p.isTouch);
+            this.isPointerDown = true;
+        }
+
+        const isDraggingResize =
+            this.transform &&
+            (this.transform.draggingResize ||
+             this.transform.draggingMove ||
+             this.transform.draggingRotate);
+
+        if (p.down && this.isPointerDown && !this.isLongPress && !isDraggingResize) {
+            if (performance.now() - this.pointerDownTime >= this.LONG_PRESS_TIME) {
+                this.isLongPress = true;
+                
+                if (this.selectedList.length > 1 && this.isInsideGroup(w.x, w.y)) {
+                    if (this.transform) this.transform.beginMove(px, py, false);
+                } else {
+                    const hit = this.hit(w.x, w.y);
+                    if (hit && this.transform) {
+                        if(!this.selectedList.includes(hit)) {
+                            this.selectedList = [hit];
+                            bus.emit("entity:selected", this.selectedList);
+                        }
+                        this.transform.beginMove(px, py, false);
+                    }
+                }
+            }
+        }
+
+        if (!p.isTouch && p.down && this.marqueeActive) {
+            this.marqueeEnd.x = w.x;
+            this.marqueeEnd.y = w.y;
+            this.updateHoverMarquee();
+            this.applyMarqueeAutoPan(px, py);
+        }
+
+        if (!p.down && this.isPointerDown) {
+            this.pointerUp(px, py);
+            this.isPointerDown = false;
+        }
+
+        this.updateAutoPan();
+    }
+
+    updateHover(px, py) {
+        this.hoverHandle = null;
+        if (this.isPointerDown) return;
+
+        if (this.transform && this.selectedList.length > 0) {
+            this.transform.computeHandles();
+            this.hoverHandle = this.transform.getHoverHandle(px, py);
+            if (this.hoverHandle) {
+                this.canvas.style.cursor = this.transform.getCursor(this.hoverHandle);
+                this.hovered = null;
+                return;
+            }
+        }
+
+        const w = this.toWorld(px, py);
+
+        if (this.selectedList.length > 1 && this.isInsideGroup(w.x, w.y)) {
+            this.canvas.style.cursor = "move";
+            this.hovered = null;
+            return;
+        }
+
+        this.hovered = this.hit(w.x, w.y);
+
+        if (this.hovered) {
+            const isSelected = this.selectedList.includes(this.hovered);
+            this.canvas.style.cursor = isSelected ? "move" : "pointer";
+        } else {
+            this.canvas.style.cursor = "default";
+        }
+    }
+
+    pointerDown(px, py, isTouch) {
+        const w = this.toWorld(px, py);
+        
+        if (this.transform && this.hoverHandle) {
+            this.transform.beginResize(this.hoverHandle, px, py);
+            return;
+        }
+
+        const ctrl =
+            this.input.keyboard.ctrl ||
+            this.input.keyboard.shift ||
+            this.input.keyboard.meta;
+
+        const hit = this.hit(w.x, w.y);
+        
+        if (hit) {
+            const inside = this.selectedList.includes(hit);
+
+            if (ctrl) {
+                let newList = inside
+                    ? this.selectedList.filter(a => a !== hit)
+                    : [...this.selectedList, hit];
+                
+                newList = this.consolidateSelection(newList);
+                this.selectedList = newList;
+            } else {
+                if (!inside) {
+                    this.selectedList = [hit];
+                }
+            }
+
+            bus.emit("entity:selected", this.selectedList);
+            return;
+        }
+
+        if (!isTouch && !hit) {
+            this.calculateViewportInsets();
+            this.marqueeActive = true;
+            this.selectedList = [];
+            bus.emit("entity:deselected");
+
+            this.marqueeStart.x = w.x;
+            this.marqueeStart.y = w.y;
+            this.marqueeEnd.x = w.x;
+            this.marqueeEnd.y = w.y;
+            
+            this.updateHoverMarquee();
+        }
+    }
+
+    pointerUp(px, py) {
+        if (this.transform) this.transform.resetDrag();
+
+        if (this.marqueeActive) {
+            let results = [...this.hoverMarqueeList];
+            results = this.consolidateSelection(results);
+            this.selectedList = results;
+            bus.emit("entity:selected", this.selectedList);
+            this.marqueeActive = false;
+            this.hoverMarqueeList = [];
+            return;
+        }
+
+        if (!this.isLongPress && !this.marqueeActive) {
+            const w = this.toWorld(px, py);
+            if (!this.hit(w.x, w.y)) {
+                this.selectedList = [];
+                bus.emit("entity:deselected");
+            }
+        }
     }
 
     drawObb(shape, e, color, proj) {
@@ -467,34 +521,57 @@ export default class SelectionTool {
         if (!this.selectedList.length) return;
         const c = this.outlineColor;
         for (const e of this.selectedList) {
+            if (e.type === 'group') continue;
             this.drawObb(shape, e, c, proj);
         }
     }
 
     drawHover(shape, proj) {
-        const c = [this.outlineColor[0], this.outlineColor[1], this.outlineColor[2], 0.5];
+        const c = [
+            this.outlineColor[0],
+            this.outlineColor[1],
+            this.outlineColor[2],
+            0.5
+        ];
+        
         if (this.hovered && !this.selectedList.includes(this.hovered)) {
-            this.drawObb(shape, this.hovered, c, proj);
+            if (this.hovered.type !== 'group') {
+                this.drawObb(shape, this.hovered, c, proj);
+            }
         }
+
         for (const e of this.hoverMarqueeList) {
-            this.drawObb(shape, e, c, proj);
+            if (e.type !== 'group') {
+                this.drawObb(shape, e, c, proj);
+            }
         }
     }
 
     drawMarquee(shape, proj) {
         if (!this.marqueeActive) return;
         const b = this.getMarqueeWorld();
-        const t = 1 / this.game.camera.scale;
+        
+        const camScale = this.game.camera.scale || 1;
+        const thickness = 1 / camScale;
         const c = this.outlineColor;
         const fill = [c[0], c[1], c[2], 0.1];
 
         shape.drawRect(b.x, b.y, b.w, b.h, fill, proj);
-        shape.drawLine(b.x, b.y, b.x+b.w, b.y, c, t, proj);
-        shape.drawLine(b.x+b.w, b.y, b.x+b.w, b.y+b.h, c, t, proj);
-        shape.drawLine(b.x+b.w, b.y+b.h, b.x, b.y+b.h, c, t, proj);
-        shape.drawLine(b.x, b.y+b.h, b.x, b.y, c, t, proj);
+        
+        if (shape.drawRectStroke) {
+            shape.drawRectStroke(
+                b.x, b.y, b.w, b.h, 
+                c, thickness, proj, 
+                0, 1, 1, 0, 0, 1
+            );
+        } else {
+            shape.drawLine(b.x, b.y, b.x+b.w, b.y, c, thickness, proj);
+            shape.drawLine(b.x+b.w, b.y, b.x+b.w, b.y+b.h, c, thickness, proj);
+            shape.drawLine(b.x+b.w, b.y+b.h, b.x, b.y+b.h, c, thickness, proj);
+            shape.drawLine(b.x, b.y+b.h, b.x, b.y, c, thickness, proj);
+        }
     }
-    
+
     calculateViewportInsets() {
         const topEl = document.getElementById("editor-topbar");
         const leftEl = document.getElementById("editor-sidebar-left");
@@ -511,31 +588,65 @@ export default class SelectionTool {
         const now = performance.now();
         const dt = (now - this.lastAutoPanTime) / 1000;
         this.lastAutoPanTime = now;
-        if (Math.abs(this.autoPanVel.x) < 0.01 && Math.abs(this.autoPanVel.y) < 0.01) return;
+
+        if (
+            Math.abs(this.autoPanVel.x) < 0.01 &&
+            Math.abs(this.autoPanVel.y) < 0.01
+        ) return;
+
         const cam = this.game.camera;
         const scale = Math.max(0.001, cam.scale);
+
         cam.x += (this.autoPanVel.x / scale) * dt;
         cam.y += (this.autoPanVel.y / scale) * dt;
-        this.autoPanVel.x *= 0.85; this.autoPanVel.y *= 0.85;
+
+        this.autoPanVel.x *= 0.85;
+        this.autoPanVel.y *= 0.85;
     }
 
     applyPointerAutoPan(px, py) {
         const rect = this.canvas.getBoundingClientRect();
-        const W = rect.width; const H = rect.height;
-        const scaleX = this.canvas.width / W; const scaleY = this.canvas.height / H;
-        const cssX = px / scaleX; const cssY = py / scaleY;
-        const margin = 50; const maxSpeed = 600; 
-        let vx = 0; let vy = 0;
-        const getSpeed = (dist) => dist <= 0 ? 0 : maxSpeed * Math.min(1.5, dist/margin)**2;
-        
-        const distLeft = (this.viewportInsets.left + margin) - cssX; if(distLeft>0) vx=-getSpeed(distLeft);
-        const distRight = cssX - (W - this.viewportInsets.right - margin); if(distRight>0) vx=getSpeed(distRight);
-        const distTop = (this.viewportInsets.top + margin) - cssY; if(distTop>0) vy=-getSpeed(distTop);
-        const distBottom = cssY - (H - this.viewportInsets.bottom - margin); if(distBottom>0) vy=getSpeed(distBottom);
+        if(!rect) return;
 
-        this.autoPanVel.x = Math.min(maxSpeed, Math.max(-maxSpeed, this.autoPanVel.x + vx));
-        this.autoPanVel.y = Math.min(maxSpeed, Math.max(-maxSpeed, this.autoPanVel.y + vy));
+        const W = rect.width;
+        const H = rect.height;
+        const scaleX = this.canvas.width / W;
+        const scaleY = this.canvas.height / H;
+        const cssX = px / scaleX;
+        const cssY = py / scaleY;
+
+        const margin = 50;
+        const maxSpeed = 600;
+
+        let vx = 0;
+        let vy = 0;
+
+        const getSpeed = (dist) =>
+            dist <= 0 ? 0 : maxSpeed * Math.min(1.5, dist / margin) ** 2;
+        
+        const distLeft = (this.viewportInsets.left + margin) - cssX;
+        if (distLeft > 0) vx = -getSpeed(distLeft);
+
+        const distRight = cssX - (W - this.viewportInsets.right - margin);
+        if (distRight > 0) vx = getSpeed(distRight);
+
+        const distTop = (this.viewportInsets.top + margin) - cssY;
+        if (distTop > 0) vy = -getSpeed(distTop);
+
+        const distBottom = cssY - (H - this.viewportInsets.bottom - margin);
+        if (distBottom > 0) vy = getSpeed(distBottom);
+
+        this.autoPanVel.x = Math.min(
+            maxSpeed,
+            Math.max(-maxSpeed, this.autoPanVel.x + vx)
+        );
+        this.autoPanVel.y = Math.min(
+            maxSpeed,
+            Math.max(-maxSpeed, this.autoPanVel.y + vy)
+        );
     }
 
-    applyMarqueeAutoPan(px, py) { this.applyPointerAutoPan(px, py); }
+    applyMarqueeAutoPan(px, py) {
+        this.applyPointerAutoPan(px, py);
+    }
 }

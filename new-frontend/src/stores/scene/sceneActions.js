@@ -17,6 +17,7 @@ export const useSceneActions = (scenes, activeSceneId, selectedEntityIds) => {
 
     projectStore.addSceneToProject(newScene._id);
 
+    // Return newScene (sudah benar)
     return newScene;
   }
 
@@ -24,7 +25,7 @@ export const useSceneActions = (scenes, activeSceneId, selectedEntityIds) => {
     const projectStore = useProjectStore();
     const originalScene = scenes.value.find(s => s._id === sceneId);
 
-    if (!originalScene) return;
+    if (!originalScene) return null;
 
     const newScene = JSON.parse(JSON.stringify(originalScene));
 
@@ -44,6 +45,7 @@ export const useSceneActions = (scenes, activeSceneId, selectedEntityIds) => {
     const index = scenes.value.findIndex(s => s._id === sceneId)
     if (index !== -1) {
       scenes.value.splice(index, 1)
+      // Reset active scene jika yang dihapus adalah yang aktif
       if (activeSceneId.value === sceneId) {
         activeSceneId.value = scenes.value.length > 0 ? scenes.value[0]._id : null
         selectedEntityIds.value = []

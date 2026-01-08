@@ -1,4 +1,4 @@
-export const createTransform = (data = {}) => {
+export const createTransform = (data = {}, defaults = { width: 100, height: 100 }) => {
   const tx = data.translate?.x ?? data.x ?? 0;
   const ty = data.translate?.y ?? data.y ?? 0;
   const sx = data.scale?.x ?? data.scaleX ?? 1;
@@ -14,8 +14,8 @@ export const createTransform = (data = {}) => {
     scaleY: Number(sy),
     pivotX: Number(px),
     pivotY: Number(py),
-    width: Number(data.width ?? 0),
-    height: Number(data.height ?? 0)
+    width: Number(data.width ?? defaults.width),
+    height: Number(data.height ?? defaults.height)
   };
 };
 
@@ -35,7 +35,7 @@ export const createComponent = (type, data = {}) => {
     case "TextRenderer":
       return {
         value: data.value || "New Text",
-        fontSize: Number(data.fontSize || 12),
+        fontSize: Number(data.fontSize || 24),
         color: data.color || "#FFFFFF",
         align: data.align || "left",
         assetId: data.assetId || null,
