@@ -2,14 +2,34 @@ import { CDN_URL } from "@/services/api/project.js";
 import { createLayer } from './layerSchema.js';
 import { createEntity } from './entitySchema.js';
 
+// --- Folder Schema ---
+export const createFolder = (data = {}) => ({
+  _id: data._id || `fld_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+  name: data.name || "New Folder",
+  projectId: data.projectId || null,
+  parentId: data.parentId || null, // null = Root
+  type: 'folder',
+  
+  // Property khusus Editor (UI State)
+  _editor: {
+    expanded: false, // Default tertutup
+    selected: false,
+    isRenaming: false,
+    ...(data._editor || {})
+  }
+});
+
+// --- Main Normalizer ---
 export const normalizeProjectLoad = (
   rawProject,
   rawScenes,
   rawAssets,
-  rawPrefabs
+  rawPrefabs,
+  rawFolders = [] // Tambahkan parameter ini
 ) => {
-  const projectId = rawProject._id;
+  const projectId = rawProject?._id;
 
+  // 1. Normalize Project
   const cleanProject = {
     _id: projectId,
     name: rawProject?.name || "Untitled Project",
@@ -24,6 +44,7 @@ export const normalizeProjectLoad = (
     scenes: rawProject?.scenes || [] 
   };
 
+  // 2. Normalize Scenes
   const cleanScenes = Array.isArray(rawScenes)
     ? rawScenes.map(scene => ({
         _id: scene._id,
@@ -42,6 +63,7 @@ export const normalizeProjectLoad = (
       }))
     : [];
 
+  // 3. Normalize Assets
   const cleanAssets = Array.isArray(rawAssets)
     ? rawAssets.map(asset => {
         let baseUrl = asset.fileUrl || "";
@@ -82,7 +104,7 @@ export const normalizeProjectLoad = (
           fileKey: asset.fileKey || "",
           meta: processedMeta,
           fileUrl: finalUrl,
-          folderId: asset.folderId || null,
+          folderId: asset.folderId || null, // Pastikan ini terhubung ke Folder ID
           isSynced: asset.isSynced ?? true,
           localBlob: asset.localBlob || null
         };
@@ -106,10 +128,16 @@ export const normalizeProjectLoad = (
       })
     : [];
 
+  // 5. Normalize Folders (BARU)
+  const cleanFolders = Array.isArray(rawFolders)
+    ? rawFolders.map(f => createFolder(f))
+    : [];
+
   return {
     project: cleanProject,
     scenes: cleanScenes,
     assets: cleanAssets,
-    prefabs: cleanPrefabs
+    prefabs: cleanPrefabs,
+    folders: cleanFolders // Return folders yang sudah bersih
   };
 };

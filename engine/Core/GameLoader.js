@@ -37,14 +37,14 @@ export default class GameLoader {
         const textureLoader = new GLImageResource(game.renderer.gl);
         const fontLoader = new GLFontResource(game.renderer.gl);
         const assetLoader = new AssetLoader(textureLoader, fontLoader);
-
+        
         try {
             await this._initAsset(assetLoader, game.world, assets);
         } catch (err) {
             console.error("[GameLoader] Asset Init Failed.", err);
             return;
         }
-
+        game.assetLoader = assetLoader;
         try {
             this._initPrefabLibrary(game.world, prefabs);
         } catch (err) {
@@ -128,7 +128,7 @@ export default class GameLoader {
         // --- TAMBAHKAN INI ---
         // Inisialisasi Sync System secara otomatis saat mode Editor
         console.log("[GameLoader] Initializing Sync System...");
-        game.syncSystem = new SyncComponent(world, bus);
+        game.syncSystem = new SyncComponent(world, bus, game.assetLoader);
     }
 
     start(game) {

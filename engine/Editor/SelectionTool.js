@@ -27,7 +27,7 @@ export default class SelectionTool {
 
         this.pointerDownTime = 0;
         this.isLongPress = false;
-        this.LONG_PRESS_TIME = 20;
+        this.LONG_PRESS_TIME = 1;
 
         this.lastAutoPanTime = 0;
         this.autoPanVel = { x: 0, y: 0 };

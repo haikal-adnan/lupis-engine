@@ -93,10 +93,40 @@ export function useEntityActions(activeScene, selectedEntityIds) {
     }
   };
 
+  const updateComponentProp = (entityId, componentName, path, value) => {
+    if (!activeScene.value) return;
+
+    const entity = activeScene.value.entities.find(e => e._id === entityId);
+    if (!entity || !entity.components[componentName]) return;
+
+    const keys = path.split('.');
+    let target = entity.components[componentName];
+    
+    for (let i = 0; i < keys.length - 1; i++) {
+      if (!target[keys[i]]) target[keys[i]] = {};
+      target = target[keys[i]];
+    }
+    
+    target[keys[keys.length - 1]] = value;
+    
+    return { entityId, componentName, path, value };
+  };
+
+  const updateEntityProp = (entityId, propName, value) => {
+    if (!activeScene.value) return;
+    const entity = activeScene.value.entities.find(e => e._id === entityId);
+    if (entity) {
+      entity[propName] = value;
+      return { entityId, propName, value };
+    }
+  };
+
   return { 
     createEntity, 
     updateEntityName, 
     deleteEntity, 
-    moveEntity 
+    moveEntity,
+    updateComponentProp,
+    updateEntityProp
   };
 }

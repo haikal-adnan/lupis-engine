@@ -2,18 +2,13 @@
   <div class="h-full flex flex-col bg-background text-foreground">
     
     <ScrollArea v-if="hasSelection" class="flex-1">
-      
       <div class="p-2 space-y-1">
         <EditorObject />
         <EditorTransform />
         <EditorSprite />
         <EditorShape />
         <EditorText />
-
-        <template v-if="selectedEntity && selectedEntity.components">
-           </template>
       </div>
-      
     </ScrollArea>
 
     <div v-else class="flex-1 flex flex-col items-center justify-center text-muted-foreground p-4 text-center">
@@ -26,8 +21,8 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
 import { BoxSelect } from 'lucide-vue-next'
+import { useInspectorLogic } from "@/modules/properties/composables/useInspectorLogic.js";
 
 // Atomic Components
 import ScrollArea from '@/commons/components/overlay/ScrollArea.vue'
@@ -39,10 +34,5 @@ import EditorSprite from '@modules/properties/components/EditorSprite.vue'
 import EditorShape from '@modules/properties/components/EditorShape.vue'
 import EditorText from '@modules/properties/components/EditorText.vue'
 
-const hasSelection = ref(true) 
-const selectedEntity = ref({}) 
+const { hasSelection } = useInspectorLogic();
 </script>
-
-<style scoped>
-/* Styling spesifik PropertyInspector jika ada, tapi scrollbar logic sudah dipindah */
-</style>

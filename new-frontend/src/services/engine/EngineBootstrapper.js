@@ -15,7 +15,6 @@ export async function prepareEngineData() {
     const projectId = editorStore.activeProjectId;
     if (!projectId) throw new Error("No Active Project ID in EditorStore");
 
-    // UPDATE: Gunakan _id untuk konsistensi dengan MongoDB
     if (!projectStore.isProjectLoaded || projectStore.project?._id !== projectId) {
         await projectStore.loadProject(projectId);
     }
@@ -44,7 +43,7 @@ export async function prepareEngineData() {
     return {
         project: toRaw(projectStore.project),
         assets: toRaw(assetStore.assets),
-        scene: currentSceneData, // <-- Ini sekarang sudah membawa Layers di dalamnya
+        scene: currentSceneData,
         prefabs: toRaw(prefabStore.prefabs)
     };
 }

@@ -39,7 +39,7 @@
       <input
         :id="id"
         ref="inputRef"
-        v-model="model"
+        v-model="displayValue"
         type="text" 
         class="w-full h-full bg-transparent border-none outline-none text-sm text-foreground placeholder:text-muted-foreground/40
                focus:ring-0 px-2"
@@ -49,7 +49,8 @@
         }"
         @keydown.up.prevent="increment(step)"
         @keydown.down.prevent="increment(-step)"
-        @blur="formatOnBlur"
+        @blur="handleBlur"
+        @change="handleChange"
       />
       
       <div 
@@ -63,35 +64,82 @@
 </template>
 
 <script setup>
-import { ref, useId } from 'vue'
+import { ref, useId, computed, watch } from 'vue'
 
-const { 
-  label, 
-  prefix, 
-  suffix,
-  placeholder = '', 
-  radius = '0.375rem', 
-  height = '2rem',
-  paddingX = '0.75rem',
-  step = 1, 
-  min = -Infinity,
-  max = Infinity
-} = defineProps({
+const props = defineProps({
   label: String,
   prefix: String,
   suffix: String,
   placeholder: String,
-  radius: String,
-  height: String,
-  paddingX: String,
-  step: Number,
-  min: Number,
-  max: Number
+  radius: { type: String, default: '0.375rem' },
+  height: { type: String, default: '2rem' },
+  paddingX: { type: String, default: '0.75rem' },
+  step: { type: Number, default: 1 },
+  // Batas Range
+  min: { type: Number, default: -Infinity },
+  max: { type: Number, default: Infinity },
+  // Fitur 1: Mematikan batasan sepenuhnya (Unlock)
+  ignoreRange: { type: Boolean, default: false },
+  // Fitur 2: Jika true, nilai akan berputar (Wrap) alih-alih mentok (Clamp)
+  cyclic: { type: Boolean, default: false }
 })
 
 const model = defineModel({ type: [Number, String] })
 const id = useId()
 const inputRef = ref(null)
+
+// Local state untuk display agar responsif saat mengetik
+const localInput = ref(model.value)
+
+const displayValue = computed({
+  get: () => localInput.value,
+  set: (val) => { localInput.value = val }
+})
+
+watch(() => model.value, (newVal) => {
+  if (!isDragging.value) {
+    localInput.value = newVal
+  }
+})
+
+// --- Logic Inti: Normalize (Clamp vs Wrap) ---
+
+function normalizeValue(val) {
+  // 1. Jika range diabaikan (Unlock), kembalikan apa adanya
+  if (props.ignoreRange) return val
+  
+  // 2. Jika Cyclic (Wrap) aktif
+  // Rumus: min + (val - min) % range
+  if (props.cyclic) {
+    // Hitung lebar rentang. 
+    // Untuk 0-359 dengan step 1, lebarnya adalah 360 (max - min + step)
+    const rangeSpan = (props.max - props.min) + (Number.isInteger(props.step) ? props.step : 0)
+    
+    // Logika Modulo yang menangani nilai negatif dengan benar di JS
+    const wrapped = ((val - props.min) % rangeSpan + rangeSpan) % rangeSpan + props.min
+    
+    // Tangani edge case floating point precision (opsional)
+    return parseFloat(wrapped.toFixed(2))
+  }
+
+  // 3. Default: Clamping (Mentok)
+  let clamped = val
+  if (clamped < props.min) clamped = props.min
+  if (clamped > props.max) clamped = props.max
+  return clamped
+}
+
+function updateModel(val) {
+  const num = parseFloat(val)
+  if (isNaN(num)) return
+
+  const finalVal = normalizeValue(num)
+  
+  model.value = finalVal
+  localInput.value = finalVal 
+}
+
+// --- Scrubbing Logic ---
 
 const isDragging = ref(false)
 let startX = 0
@@ -119,19 +167,21 @@ function onMouseMove(event) {
   if (event.shiftKey) multiplier = 10   
   if (event.altKey) multiplier = 0.1   
 
-  const change = deltaX * step * multiplier
+  const change = deltaX * props.step * multiplier
   let newValue = startValue + change
 
-  if (Number.isInteger(step) && !event.altKey && Number.isInteger(startValue)) {
+  // Pembulatan desimal vs integer
+  if (Number.isInteger(props.step) && !event.altKey && Number.isInteger(startValue)) {
      newValue = Math.round(newValue)
   } else {
      newValue = parseFloat(newValue.toFixed(2))
   }
 
-  if (newValue < min) newValue = min
-  if (newValue > max) newValue = max
+  // Terapkan Wrap atau Clamp
+  newValue = normalizeValue(newValue)
 
   model.value = newValue
+  localInput.value = newValue
 }
 
 function stopScrub() {
@@ -142,29 +192,31 @@ function stopScrub() {
   window.removeEventListener('mouseup', stopScrub)
 }
 
+// --- Input & Keyboard Logic ---
+
 function increment(val) {
   const current = parseFloat(model.value) || 0
   let newValue = current + val
   
-  if (newValue < min) newValue = min
-  if (newValue > max) newValue = max
+  newValue = normalizeValue(newValue)
+  
+  if (!Number.isInteger(props.step)) {
+    newValue = parseFloat(newValue.toFixed(2))
+  }
 
-  model.value = parseFloat(newValue.toFixed(2))
+  updateModel(newValue)
 }
 
-function formatOnBlur() {
-    let val = parseFloat(model.value)
-    if (isNaN(val)) return 
-    
-    if (val < min) val = min
-    if (val > max) val = max
-    
-    model.value = val
+function handleBlur() {
+   updateModel(localInput.value)
+}
+
+function handleChange() {
+   updateModel(localInput.value)
 }
 </script>
 
 <style scoped>
-/* Hilangkan spinner default browser */
 input::-webkit-outer-spin-button,
 input::-webkit-inner-spin-button {
   -webkit-appearance: none;

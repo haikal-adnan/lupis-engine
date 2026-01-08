@@ -39,6 +39,7 @@ export default class ImageRenderer {
     _createShader() {
         const gl = this.gl;
         
+        // --- VERTEX SHADER ---
         const vs = this.isWebGL2 ? `#version 300 es
             layout(location=0) in vec2 aPos;
             layout(location=1) in vec2 aUV;
@@ -67,6 +68,7 @@ export default class ImageRenderer {
             }
         `;
 
+        // --- FRAGMENT SHADER (UPDATED) ---
         const fs = this.isWebGL2 ? `#version 300 es
             precision mediump float;
             in vec2 vUV; in float vAlpha; in vec2 vDimension;
@@ -75,13 +77,20 @@ export default class ImageRenderer {
             void main(){
                 vec4 c;
                 if (vDimension.x > 0.0) {
+                    // Logic Checkerboard (untuk placeholder/white texture)
                     float size = 32.0;
                     vec2 cell = floor((vUV * vDimension) / size);
                     float isLight = mod(cell.x + cell.y, 2.0);
                     vec3 col = mix(vec3(0.2), vec3(0.3), isLight);
                     c = vec4(col, 1.0);
                 } else {
-                    c = texture(uTex, vUV);
+                    // Logic Texture Normal
+                    // Jika UV di luar 0.0 - 1.0, buat transparan
+                    if (vUV.x < 0.0 || vUV.x > 1.0 || vUV.y < 0.0 || vUV.y > 1.0) {
+                        c = vec4(0.0, 0.0, 0.0, 0.0);
+                    } else {
+                        c = texture(uTex, vUV);
+                    }
                 }
                 c.a *= vAlpha;
                 outColor = c;
@@ -93,13 +102,20 @@ export default class ImageRenderer {
             void main(){
                 vec4 c;
                 if (vDimension.x > 0.0) {
+                    // Logic Checkerboard
                     float size = 32.0;
                     vec2 cell = floor((vUV * vDimension) / size);
                     float isLight = mod(cell.x + cell.y, 2.0);
                     vec3 col = mix(vec3(0.2), vec3(0.3), isLight);
                     c = vec4(col, 1.0);
                 } else {
-                    c = texture2D(uTex, vUV);
+                    // Logic Texture Normal
+                    // Jika UV di luar 0.0 - 1.0, buat transparan
+                    if (vUV.x < 0.0 || vUV.x > 1.0 || vUV.y < 0.0 || vUV.y > 1.0) {
+                        c = vec4(0.0, 0.0, 0.0, 0.0);
+                    } else {
+                        c = texture2D(uTex, vUV);
+                    }
                 }
                 c.a *= vAlpha;
                 gl_FragColor = c;

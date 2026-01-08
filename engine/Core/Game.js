@@ -18,11 +18,6 @@ export default class Game {
             update: dt => this.update(dt),
             render: a  => this.render(a),
         });
-
-        bus.on("entity:modified", (entities) => {
-            ///
-        });
-
     }
 
     start() {
@@ -40,6 +35,7 @@ export default class Game {
     
     render(alpha) {
         const cam = this.camera.getInterpolated(alpha);
+        console.log(this.world)
         this.history?.update();
         if(this.cameraController) this.cameraController.update();
         if (this.selection) this.selection.update();

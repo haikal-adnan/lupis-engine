@@ -1,33 +1,15 @@
 <template>
   <PropertySection title="Sprite Renderer" :icon="Image" v-if="hasComponent">
     
-    <template #header-extra>
-      <div class="ml-auto"></div>
-    </template>
-
     <template #menu="{ close }">
-      <div class="p-1 space-y-0.5">
-        <button @click="close" class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-accent hover:text-accent-foreground transition-colors">
-          Move Up
-        </button>
-        <button @click="close" class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-accent hover:text-accent-foreground transition-colors">
-          Move Down
-        </button>
-        <div class="h-px bg-border my-1" />
-        <button 
-          @click="removeComponent('SpriteRenderer'); close()" 
-          class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-destructive hover:text-destructive-foreground text-destructive font-medium transition-colors"
-        >
-          <Trash2 class="w-3 h-3 mr-2" />
-          Remove Component
-        </button>
-      </div>
-    </template>
+      </template>
 
-<div class="flex gap-2.5 mb-1 pt-1">
+    <div class="flex gap-2.5 mb-1 pt-1">
+      
       <BaseThumbnail 
-        :src="dummyImageUrl"
+        :src="currentTextureUrl"
         :rect="currentRect" 
+        fallback-text="No Tex"
         sizeClass="w-[52px] h-[52px] bg-muted/20 border-border/60 shrink-0"
       />
 
@@ -46,14 +28,13 @@
             title="Click to select asset"
           >
             <span class="flex-1 px-2 text-[11px] font-mono text-muted-foreground/90 truncate select-none group-hover:text-foreground transition-colors">
-              Hero_Sheet.png
+              {{ assetId || 'None' }}
             </span>
 
             <div class="px-2 h-full flex items-center justify-center border-l border-border bg-muted/10 text-muted-foreground/50 group-hover:text-primary group-hover:bg-primary/5 transition-colors">
               <FolderSearch class="w-3 h-3" />
             </div>
           </button>
-
         </PropertyRow>
       </div>
     </div>
@@ -65,41 +46,48 @@
           <BaseNumber v-model="sourceRaw.w.value" prefix="W" :min="0" :scrubbable="true" class="font-mono" />
           <BaseNumber v-model="sourceRaw.h.value" prefix="H" :min="0" :scrubbable="true" class="font-mono" />
         </div>
-      </PropertyRow>
+    </PropertyRow>
 
     <BaseCollapse title="Advanced" v-model="isAdvancedOpen">
-        <div class="space-y-1">
-            <BaseCheckbox 
+      <div class="space-y-1">
+          <BaseCheckbox 
             v-model="autoResetRect" 
             label="Reset Rect on Texture Change" 
-            />
-        </div>
+          />
+      </div>
     </BaseCollapse>
-
-  </PropertySection>
+    
+    </PropertySection>
 </template>
 
 <script setup>
 import { computed, ref } from "vue";
 import { Image, Trash2, FolderSearch } from "lucide-vue-next"; 
-
-// Import Logic
 import { useInspectorLogic } from "@/modules/properties/composables/useInspectorLogic.js"; 
 
 // Atomic Components
 import PropertySection from "@/modules/properties/parts/PropertySection.vue";
 import PropertyRow from "@/modules/properties/parts/PropertyRow.vue";
-import BaseThumbnail from "@ui/display/BaseThumbnail.vue";
-import BaseInput from "@ui/inputs/BaseInput.vue";
-import BaseNumber from "@ui/inputs/BaseNumber.vue";
-import BaseCheckbox from "@ui/inputs/BaseCheckbox.vue"; // Atomic Baru
-import BaseCollapse from "@ui/display/BaseCollapse.vue"; // Atomic Baru
+import BaseThumbnail from "@/commons/components/display/BaseThumbnail.vue"; // Sesuaikan path
+import BaseNumber from "@/commons/components/inputs/BaseNumber.vue";
+import BaseCheckbox from "@/commons/components/inputs/BaseCheckbox.vue"; 
+import BaseCollapse from "@/commons/components/display/BaseCollapse.vue"; 
 
-const { selectedEntity, removeComponent, bindNestedProp } = useInspectorLogic();
+// Ambil logic dari composable
+const { 
+  selectedEntity, 
+  removeComponent, 
+  bindNestedProp,
+  bindComponentProp,
+  currentTextureUrl // Ambil URL dinamis di sini
+} = useInspectorLogic();
 
 const hasComponent = computed(() => !!selectedEntity.value?.components?.SpriteRenderer);
 
-// Binding Data (Mock)
+// Kita juga bind assetId untuk ditampilkan di tombol (bukan untuk diedit langsung di text, tapi via selector nanti)
+const assetId = bindComponentProp('SpriteRenderer', 'assetId');
+
+// Binding Source Rect
 const sourceRaw = {
     x: bindNestedProp('SpriteRenderer', 'source', 'x'),
     y: bindNestedProp('SpriteRenderer', 'source', 'y'),
@@ -115,11 +103,9 @@ const currentRect = computed(() => ({
 }));
 
 const isAdvancedOpen = ref(false);
-const autoResetRect = ref(false); // Local ref untuk checkbox
-const dummyImageUrl = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/25.png";
+const autoResetRect = ref(false); 
 
 function openAssetSelector() {
   console.log("Open Asset Panel triggered!");
-  // TODO: Emit event atau panggil composable untuk membuka panel aset
 }
 </script>
