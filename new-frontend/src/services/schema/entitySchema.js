@@ -43,8 +43,6 @@ export const createEntity = (data = {}) => {
     _editor: {
       locked: data._editor?.locked ?? false,
       expanded: data._editor?.expanded ?? false,
-      hiddenInList: data._editor?.hiddenInList ?? false,
-      selected: false
     },
 
     components: cleanComponents,

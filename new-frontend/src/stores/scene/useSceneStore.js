@@ -39,14 +39,11 @@ export const useSceneStore = defineStore('scene', () => {
     }
   };
 
-  // --- COMPOSING ACTIONS ---
-  // Kita inject state ke dalam composables
   const sceneActions = useSceneActions(scenes, activeSceneId, selectedEntityIds);
   const layerActions = useLayerActions(activeScene);
   const entityActions = useEntityActions(activeScene, selectedEntityIds);
 
   return {
-    // State
     scenes,
     activeSceneId,
     selectedEntityIds,
@@ -57,12 +54,9 @@ export const useSceneStore = defineStore('scene', () => {
     activeEntities,
     activeLayers,
 
-    // Actions
     initScenes,
     setActiveScene,
 
-    // Spread actions agar menjadi top-level actions di store
-    // Ini memungkinkan $onAction mendeteksi: sceneStore.createEntity(...)
     ...sceneActions,
     ...layerActions,
     ...entityActions

@@ -126,15 +126,12 @@ const resolveParentSelection = (nodes, currentSelectedIds) => {
         allKidsSelected = false
     }
 
-    // LOGIC PERBAIKAN:
     if (hasChildren && allKidsSelected) {
-      // 1. Jika GROUP: Roll-up (Sembunyikan anak, pilih parent)
       if (node.type === 'group') {
         if (!validIds.has(nodeId)) validIds.add(nodeId)
         return true 
       } 
-      // 2. Jika ENTITY: JANGAN Roll-up otomatis. 
-      // Parent hanya terpilih jika memang ada di validIds (diklik user).
+
       return validIds.has(nodeId)
     }
 
@@ -165,8 +162,7 @@ const handleSelect = (idOrIds) => {
     }
   })
 
-  // Lalu filter dengan resolveParentSelection (Bottom-Up Logic)
-  // Logic ini akan menjaga agar jika Parent Entity tidak diklik (cuma child), dia tidak ikut terpilih.
+
   const resolvedIds = resolveParentSelection(
     treeData.value,
     Array.from(newSelection)

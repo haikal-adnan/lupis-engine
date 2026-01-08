@@ -10,7 +10,6 @@ const LayerSchema = new mongoose.Schema({
 const EditorStateSchema = new mongoose.Schema({
     locked: { type: Boolean, default: false },
     expanded: { type: Boolean, default: false },
-    hiddenInList: { type: Boolean, default: false }
 }, { _id: false });
 
 const EntitySchema = new mongoose.Schema({

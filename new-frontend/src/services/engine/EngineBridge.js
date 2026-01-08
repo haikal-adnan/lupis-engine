@@ -63,5 +63,26 @@ export const EngineBridge = {
   reorderLayer(payload) {
     if (!engineInstance) return;
     engineInstance.bus.emit("editor:layer:reorder", payload);
-  }
+  },
+
+  updateComponentProp(payload) {
+    if (!engineInstance) return;
+    engineInstance.bus.emit("editor:entity:update-component", payload);
+  },
+
+  updateEntityProp(payload) {
+    if (!engineInstance) return;
+    engineInstance.bus.emit("editor:entity:update-prop", payload);
+  },
+
+  createAsset(assetData) {
+    if (!engineInstance) return;
+    // Emit event: engine akan menangkap ini dan memproses blob/url menjadi Texture
+    engineInstance.bus.emit("editor:asset:create", assetData);
+  },
+
+  deleteAsset(assetId) {
+    if (!engineInstance) return;
+    engineInstance.bus.emit("editor:asset:delete", assetId);
+  },
 };

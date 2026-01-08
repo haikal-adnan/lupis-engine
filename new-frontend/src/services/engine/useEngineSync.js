@@ -1,9 +1,11 @@
 // src/modules/engine/composables/useEngineSync.js
 import { useSceneStore } from '@/stores/scene/useSceneStore.js';
+import { useAssetStore } from '@/stores/useAssetStore.js';
 import { EngineBridge } from "@/services/engine/EngineBridge.js";
 
 export function useEngineSync() {
   const sceneStore = useSceneStore();
+  const assetStore = useAssetStore();
 
   const initSync = () => {
     // Listener untuk setiap Action di SceneStore
@@ -53,7 +55,31 @@ export function useEngineSync() {
                 position: args[2] 
              });
              break;
+
+          case 'updateComponentProp':
+            if (result) EngineBridge.updateComponentProp(result);
+            break;
+
+          case 'updateEntityProp':
+            if (result) EngineBridge.updateEntityProp(result);
+            break;
         }
+      });
+
+      assetStore.$onAction(({ name, args, after }) => {
+        after((result) => {
+          switch (name) {
+            case 'addAsset':
+              // args[0] adalah object asset yang baru dibuat
+              // result biasanya void jika push array, jadi pakai args[0]
+              if (args[0]) EngineBridge.createAsset(args[0]);
+              break;
+              
+            case 'removeAsset':
+              EngineBridge.deleteAsset(args[0]);
+              break;
+          }
+        });
       });
 
       onError((error) => {

@@ -3,7 +3,6 @@ import mongoose from 'mongoose';
 const EditorStateSchema = new mongoose.Schema({
     locked: { type: Boolean, default: false },
     expanded: { type: Boolean, default: false },
-    hiddenInList: { type: Boolean, default: false }
 }, { _id: false });
 
 const PrefabDataSchema = new mongoose.Schema({
