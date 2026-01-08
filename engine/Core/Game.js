@@ -3,7 +3,6 @@ import World from "./World.js";
 import Camera from "../Util/Camera.js";
 import Config from "./Config.js";
 import { bus } from "../Util/EventBus.js";
-import { SyncEntityComponents } from "../Util/SyncEntity.js";
 
 import GLImageResource from "../Renderer/Graphic/GLImageResource.js";
 import TextureUtil from "../Util/TextureUtil.js";
@@ -21,9 +20,7 @@ export default class Game {
         });
 
         bus.on("entity:modified", (entities) => {
-            if (Array.isArray(entities)) {
-                entities.forEach(entity => SyncEntityComponents(entity, this));
-            }
+            ///
         });
 
     }

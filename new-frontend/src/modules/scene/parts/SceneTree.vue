@@ -16,14 +16,20 @@
     />
     
     <div 
-      class="flex-1 min-h-[50px] w-full"
+      class="flex-1 min-h-[50px] w-full transition-colors"
+      :class="{ 'bg-blue-500/10': isDragOverEmpty }"
       @click.self="$emit('select', [])"
       @contextmenu.prevent="$emit('contextmenu', { event: $event, node: null })"
+      @dragenter.prevent="isDragOverEmpty = true"
+      @dragover.prevent="allowDrop"
+      @dragleave.prevent="isDragOverEmpty = false"
+      @drop.prevent="handleEmptyDrop"
     ></div>
   </div>
 </template>
 
 <script setup>
+import { ref } from 'vue';
 import SceneNode from './SceneNode.vue';
 
 defineProps({
@@ -32,9 +38,22 @@ defineProps({
 });
 
 const emit = defineEmits(['select', 'contextmenu', 'drop']);
+const isDragOverEmpty = ref(false); 
 
 const handleDrop = (payload) => {
   emit('drop', payload);
+};
+
+const handleEmptyDrop = (e) => {
+  isDragOverEmpty.value = false;
+  const draggedId = e.dataTransfer.getData('nodeId');
+  if (draggedId) {
+    emit('drop', {
+      draggedId,
+      targetNode: null,
+      position: 'root'
+    });
+  }
 };
 
 const allowDrop = (e) => {

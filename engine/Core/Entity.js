@@ -31,8 +31,25 @@ export default class Entity {
     
     // Helper untuk manajemen child (Runtime)
     addChild(entity) {
+        // Mencegah duplikasi
+        if (this.children.some(c => c.id === entity.id)) return;
         if (entity.id === this.id) return;
+
         entity.parentId = this.id;
         this.children.push(entity);
+    }
+
+    // --- TAMBAHKAN FUNGSI INI ---
+    removeChild(childId) {
+        // Cari index child berdasarkan ID
+        const index = this.children.findIndex(c => c.id === childId);
+        
+        if (index !== -1) {
+            // Set parentId child menjadi null (opsional, tergantung logic engine)
+            // this.children[index].parentId = null; 
+            
+            // Hapus dari array children
+            this.children.splice(index, 1);
+        }
     }
 }

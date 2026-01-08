@@ -13,7 +13,6 @@ export function useHierarchyFilter(treeData) {
         const matches = node.name.toLowerCase().includes(query);
         const filteredChildren = node.children ? filterNodes(node.children) : [];
         
-        // Simpan jika nama match ATAU punya anak yang match
         if (matches || filteredChildren.length > 0) {
           acc.push({ ...node, children: filteredChildren });
         }

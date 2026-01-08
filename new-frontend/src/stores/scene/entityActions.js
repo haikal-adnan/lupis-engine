@@ -1,11 +1,10 @@
-import { createEntity as createEntitySchema } from '@/services/schema/schema.js'; // Import Schema
+import { createEntity as createEntitySchema } from '@/services/schema/schema.js'; 
 
 export function useEntityActions(activeScene, selectedEntityIds) {
 
   const createEntity = (type, contextNode) => {
-    if (!activeScene.value) return;
+    if (!activeScene.value) return null;
 
-    // Logic penentuan Parent & Layer tetap di sini
     let parentId = null;
     let layerId = null;
 
@@ -16,19 +15,18 @@ export function useEntityActions(activeScene, selectedEntityIds) {
       layerId = contextNode.layerId;
       parentId = contextNode._id;
     }
+    console.log(type)
 
-    // Persiapan Data Komponen Spesifik
     const components = {};
     if (type === 'sprite') {
       components.SpriteRenderer = { assetId: null, color: '#FFFFFF' };
+    } else if (type === 'shape') {
+      components.ShapeRenderer = { type: 'rectangle', color: '#FF0000' };
     } else if (type === 'text') {
       components.TextRenderer = { value: 'New Text', fontSize: 24, color: '#FFFFFF' };
     }
 
-    // GUNAKAN SCHEMA FACTORY
     const newEntity = createEntitySchema({
-      // ID bisa digenerate di sini atau di schema, 
-      // tapi lebih aman generate di sini untuk memastikan unique client-side timestamp
       _id: `ent_${Date.now()}`, 
       name: `New ${type.charAt(0).toUpperCase() + type.slice(1)}`,
       type: type === 'group' ? 'group' : 'entity',
@@ -39,11 +37,23 @@ export function useEntityActions(activeScene, selectedEntityIds) {
 
     activeScene.value.entities.push(newEntity);
     selectedEntityIds.value = [newEntity._id];
+
+    // PENTING: Return objek agar bisa ditangkap oleh onAction.after()
+    return newEntity; 
   };
 
-  // ... deleteEntity & moveEntity tetap sama ...
+  const updateEntityName = (entityId, newName) => {
+    if (!activeScene.value) return;
+    
+    const entity = activeScene.value.entities.find(e => e._id === entityId);
+    if (entity) {
+      entity.name = newName;
+    }
+  };
+
   const deleteEntity = (entityId) => {
     if (!activeScene.value) return;
+    
     const getDescendants = (parentId) => {
       const children = activeScene.value.entities.filter(e => e.parentId === parentId);
       let ids = children.map(c => c._id);
@@ -52,6 +62,7 @@ export function useEntityActions(activeScene, selectedEntityIds) {
       });
       return ids;
     };
+
     const idsToDelete = [entityId, ...getDescendants(entityId)];
     activeScene.value.entities = activeScene.value.entities.filter(e => !idsToDelete.includes(e._id));
     selectedEntityIds.value = [];
@@ -61,10 +72,14 @@ export function useEntityActions(activeScene, selectedEntityIds) {
     if (!activeScene.value) return;
     const entities = activeScene.value.entities;
     const draggedIndex = entities.findIndex(e => e._id === draggedId);
+    
     if (draggedIndex === -1) return;
+    
     const [draggedItem] = entities.splice(draggedIndex, 1);
+    
     draggedItem.parentId = targetContext.newParentId;
     draggedItem.layerId = targetContext.newLayerId;
+    
     if (targetContext.insertionType === 'append') {
       entities.push(draggedItem);
     } else {
@@ -78,5 +93,10 @@ export function useEntityActions(activeScene, selectedEntityIds) {
     }
   };
 
-  return { createEntity, deleteEntity, moveEntity };
+  return { 
+    createEntity, 
+    updateEntityName, 
+    deleteEntity, 
+    moveEntity 
+  };
 }

@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { fetchProjectById, fetchProjectResources } from '@/services/api/project.js';
-import { normalizeProjectLoad } from '@/services/engine/Schema.js';
+import { normalizeProjectLoad } from '@/services/schema/schema.js';
 import { useAssetStore } from './useAssetStore.js';
 import { useSceneStore } from './scene/useSceneStore.js';
 import { usePrefabStore } from './usePrefabStore.js';

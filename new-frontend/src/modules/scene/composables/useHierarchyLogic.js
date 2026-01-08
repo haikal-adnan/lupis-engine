@@ -7,13 +7,20 @@ export function useHierarchyLogic() {
   const entities = computed(() => sceneStore.activeEntities);
   const layers = computed(() => sceneStore.activeLayers);
 
-  // --- TREE BUILDER (Sama seperti sebelumnya) ---
   const treeData = computed(() => {
     if (!entities.value || !layers.value) return [];
     
     const entityMap = {};
+    
     const nodes = entities.value.map(e => {
-      const node = { ...e, children: [] };
+      const type = e.type || 'entity'; 
+      
+      const node = { 
+        ...e, 
+        children: [],
+        type: type, 
+        isContainer: true 
+      };
       entityMap[e._id] = node;
       return node;
     });
@@ -32,7 +39,8 @@ export function useHierarchyLogic() {
         type: 'layer',
         visible: layer.visible,
         locked: layer.locked,
-        children: layerChildren
+        children: layerChildren,
+        isContainer: true
       };
     });
   });
@@ -47,29 +55,33 @@ export function useHierarchyLogic() {
     return false;
   };
 
-  // --- MAIN DRAG DROP LOGIC ---
-  const moveNode = (draggedId, targetNode, position) => {
-    if (!draggedId || !targetNode) return;
+  const moveEntity = (draggedId, targetNode, position) => {
+    if (!draggedId) return;
+
+    if (!targetNode && position === 'root') {
+      const draggedEntity = entities.value.find(e => e._id === draggedId);
+      if (!draggedEntity) return;
+
+      sceneStore.moveEntity(draggedId, {
+        newParentId: null, 
+        newLayerId: draggedEntity.layerId, 
+        insertionType: 'append' 
+      });
+      return;
+    }
+
+    if (!targetNode) return;
     const targetId = targetNode._id;
     if (draggedId === targetId) return;
 
-    // 1. CEK APAKAH YANG DI DRAG ADALAH LAYER
     const isLayer = layers.value.some(l => l._id === draggedId);
 
     if (isLayer) {
-        // --- LOGIC MOVE LAYER ---
-        // Layer hanya boleh didrop ke Layer lain (untuk reorder)
         if (targetNode.type !== 'layer') return; 
-
-        // Panggil Store Action khusus Layer
         sceneStore.reorderLayer(draggedId, targetId, position);
     } 
     else {
-        // --- LOGIC MOVE ENTITY ---
-        
-        // Validasi: Jangan masukkan parent ke anak sendiri
         if (targetNode.type !== 'layer' && isAncestor(draggedId, targetId)) {
-            console.warn("🚫 Blocked: Cannot move parent into child.");
             return; 
         }
 
@@ -82,7 +94,7 @@ export function useHierarchyLogic() {
 
         if (targetNode.type === 'layer') {
             context.newLayerId = targetNode._id;
-            context.newParentId = null;
+            context.newParentId = null; 
             context.insertionType = 'append';
         } 
         else {
@@ -98,13 +110,12 @@ export function useHierarchyLogic() {
             }
         }
 
-        // Panggil Store Action khusus Entity
         sceneStore.moveEntity(draggedId, context);
     }
   };
 
   return {
     treeData,
-    moveEntity: moveNode // Ekspor dengan nama moveEntity agar kompatibel dengan kode UI kamu
+    moveEntity
   };
 }

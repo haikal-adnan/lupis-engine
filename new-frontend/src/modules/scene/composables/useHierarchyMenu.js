@@ -1,55 +1,67 @@
 import { ref } from 'vue';
 import { 
-  Layers, RefreshCw, Plus, Trash2, Edit2, 
-  Copy, FolderPlus, Cuboid, Image, Type, Scissors, Clipboard 
+  Plus, Trash2, Edit2, Copy, FolderPlus, 
+  Cuboid, Image, Type, Scissors, Clipboard, 
+  Folder, RefreshCw, Square
 } from 'lucide-vue-next';
 
-export function useHierarchyMenu(actions) {
-  // actions: object berisi fungsi { addLayer, refresh, deleteEntity, dll }
-  
+export function useHierarchyMenu(handlers) {
   const contextMenu = ref({ visible: false, x: 0, y: 0, items: [] });
 
-  const openMenu = (event, node, isSelected) => {
-    // Helper untuk submenu
-    const createSubMenu = [
-        { label: 'Empty Entity', icon: Cuboid, action: () => actions.createEntity('empty', node) },
-        { label: 'Sprite', icon: Image, action: () => actions.createEntity('sprite', node) },
-        { label: 'Text', icon: Type, action: () => actions.createEntity('text', node) },
+  const openMenu = (event, node) => {
+    const createEntitySubMenu = [
+        { label: 'Empty Entity', icon: Cuboid, action: () => handlers.createEntity('empty', node) },
+        { label: 'Sprite', icon: Image, action: () => handlers.createEntity('sprite', node) },
+        { label: 'Shape', icon: Square, action: () => handlers.createEntity('shape', node) },
+        { label: 'Text', icon: Type, action: () => handlers.createEntity('text', node) },
+        { separator: true },
+        { label: 'Group', icon: Folder, action: () => handlers.createEntity('group', node) }
     ];
 
     const items = [];
 
     if (!node) {
-      // --- MENU: CANVAS KOSONG ---
       items.push(
-        { label: 'New Layer', icon: Plus, action: actions.addLayer },
+        { label: 'New Layer', icon: Plus, action: handlers.addLayer },
         { separator: true },
-        { label: 'Refresh', icon: RefreshCw, action: actions.refresh }
+        { label: 'Refresh Tree', icon: RefreshCw, action: handlers.refresh }
       );
     } 
     else if (node.type === 'layer') {
-      // --- MENU: LAYER ---
       items.push(
-        { label: 'Rename Layer', icon: Edit2, shortcut: 'F2' },
+        { label: 'Rename Layer', icon: Edit2, shortcut: 'F2', action: () => handlers.renameLayer(node._id) },
         { separator: true },
-        { label: 'Create Group', icon: FolderPlus },
-        { label: 'Create Entity', icon: Plus, children: createSubMenu },
+        { label: 'Create Inside Layer', icon: Plus, children: createEntitySubMenu },
         { separator: true },
-        { label: 'Delete Layer', icon: Trash2 }
+        { label: 'Delete Layer', icon: Trash2, action: () => handlers.deleteLayer(node._id) }
       );
     } 
-    else {
-      // --- MENU: ENTITY/GROUP ---
+    else if (node.type === 'group') {
       items.push(
-        { label: 'Rename', icon: Edit2, shortcut: 'F2' },
+        { label: 'Rename Group', icon: Edit2, shortcut: 'F2', action: () => handlers.renameEntity(node._id) },
+        { separator: true },
+        { label: 'Add Child to Group', icon: FolderPlus, children: createEntitySubMenu },
         { separator: true },
         { label: 'Cut', icon: Scissors, shortcut: 'Ctrl+X' },
         { label: 'Copy', icon: Copy, shortcut: 'Ctrl+C' },
         { label: 'Paste', icon: Clipboard, shortcut: 'Ctrl+V' },
+        { label: 'Duplicate', icon: Copy, shortcut: 'Ctrl+D', action: () => handlers.duplicateEntity(node._id) },
         { separator: true },
-        { label: 'Add Child', icon: Plus, children: createSubMenu },
+        { label: 'Delete Group', icon: Trash2, shortcut: 'Del', action: () => handlers.deleteEntity(node._id) }
+      );
+    }
+    else {
+      items.push(
+        { label: 'Rename Entity', icon: Edit2, shortcut: 'F2', action: () => handlers.renameEntity(node._id) },
         { separator: true },
-        { label: 'Delete', icon: Trash2, shortcut: 'Del', action: () => actions.deleteEntity(node._id) }
+        { label: 'Add Child', icon: Plus, children: createEntitySubMenu }, 
+        { separator: true },
+        { label: 'Cut', icon: Scissors, shortcut: 'Ctrl+X' },
+        { label: 'Copy', icon: Copy, shortcut: 'Ctrl+C' },
+        { label: 'Paste', icon: Clipboard, shortcut: 'Ctrl+V' },
+        { label: 'Duplicate', icon: Copy, shortcut: 'Ctrl+D', action: () => handlers.duplicateEntity(node._id) },
+        { separator: true },
+        { label: 'Delete Entity', icon: Trash2, shortcut: 'Del', action: () => handlers.deleteEntity(node._id) }
       );
     }
 

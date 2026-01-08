@@ -11,8 +11,10 @@ import CameraController from "../Editor/CameraController.js"
 import PointerCoordinates from "../Editor/PointerCoordinates.js";
 import SelectionTool from "../Editor/SelectionTool.js";
 import TransformTool from "../Editor/TransformTool.js";
+import SyncComponent from "../Editor/SyncComponent.js";
 import Grid from "../Editor/Grid.js";
 import Rulers from "../Editor/Rulers.js";
+import { bus } from "../Util/EventBus.js";
 
 export default class GameLoader {
     async initializeGame(game, canvas, mode = "runtime", payload = {}) {
@@ -109,7 +111,7 @@ export default class GameLoader {
     }
 
     _initializeEditorTools(game, canvas) {
-        const { world, renderer, camera, input } = game;
+        const { world, renderer, camera, input } = game; // Pastikan 'bus' ada di object game
         const { EDITOR } = Config;
 
         if (EDITOR.CAMERA_CONTROLLER) game.cameraController = new CameraController(camera, canvas, input);
@@ -122,6 +124,11 @@ export default class GameLoader {
         if (EDITOR.TRANSFORM) game.transform = new TransformTool(game.selection, world, game, canvas, renderer, input);
         if (EDITOR.RULERS) game.rulers = new Rulers(renderer, camera);
         if (EDITOR.POINTER) game.pointerCoords = new PointerCoordinates(game, renderer);
+
+        // --- TAMBAHKAN INI ---
+        // Inisialisasi Sync System secara otomatis saat mode Editor
+        console.log("[GameLoader] Initializing Sync System...");
+        game.syncSystem = new SyncComponent(world, bus);
     }
 
     start(game) {
