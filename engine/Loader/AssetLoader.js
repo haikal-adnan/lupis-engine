@@ -52,8 +52,6 @@ export default class AssetLoader {
             world.addFont(defaultAsset._id, fontResult);
 
             URL.revokeObjectURL(xmlUrl);
-
-            console.log("[AssetLoader] System Default Font loaded.");
         } catch (e) {
             console.error(
                 "[AssetLoader] CRITICAL: Failed to load System Default Font.",

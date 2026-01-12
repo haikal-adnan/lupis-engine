@@ -3,15 +3,12 @@ import { ref } from 'vue'
 export function useLayoutState() {
   const layoutRef = ref(null)
   
-  // Sidebar States
   const isLeftSidebarCollapsed = ref(false)
   const isRightSidebarCollapsed = ref(false)
   
-  // Bottom Panel States
   const activeBottomTab = ref(null)
-  const lastActiveBottomTab = ref('assets') // default tab
+  const lastActiveBottomTab = ref('assets')
 
-  // Actions
   const toggleLeftSidebar = () => {
     isLeftSidebarCollapsed.value = !isLeftSidebarCollapsed.value
   }
@@ -22,11 +19,9 @@ export function useLayoutState() {
 
   const toggleBottomTab = (tabId) => {
     if (activeBottomTab.value === tabId) {
-      // Close
       activeBottomTab.value = null
       layoutRef.value?.setBottomPanel(false)
     } else {
-      // Open
       activeBottomTab.value = tabId
       lastActiveBottomTab.value = tabId
       layoutRef.value?.setBottomPanel(true)
@@ -34,7 +29,6 @@ export function useLayoutState() {
   }
 
   const handleDragOpen = () => {
-    // Jika panel ditarik manual dari bawah, aktifkan tab terakhir
     if (!activeBottomTab.value) {
       activeBottomTab.value = lastActiveBottomTab.value || 'assets'
     }

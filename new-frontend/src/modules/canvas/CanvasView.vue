@@ -51,8 +51,6 @@ const initializeCanvas = async () => {
             
             engineBus = engineInstance.bus;
             engineBus.on("entity:modified", handleEntityModified);
-
-            console.log("[CanvasView] Engine initialized & Bridge connected");
         }
 
     } catch (err) {

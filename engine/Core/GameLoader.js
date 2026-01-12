@@ -66,7 +66,7 @@ export default class GameLoader {
             try { this._initializeEditorTools(game, canvas); } 
             catch (e) { console.warn("Editor tools init partial fail."); }
         }
-
+        console.log("[GameLoader] Initialization complete.");
         console.log(game.world)
 
         game.loop = new GameLoop({
@@ -104,10 +104,6 @@ export default class GameLoader {
             };
             return map;
         }, {});
-
-        console.log(
-            `[GameLoader] Registered ${Object.keys(world.prefabs).length} prefabs.`
-        );
     }
 
     _initializeEditorTools(game, canvas) {
@@ -125,9 +121,6 @@ export default class GameLoader {
         if (EDITOR.RULERS) game.rulers = new Rulers(renderer, camera);
         if (EDITOR.POINTER) game.pointerCoords = new PointerCoordinates(game, renderer);
 
-        // --- TAMBAHKAN INI ---
-        // Inisialisasi Sync System secara otomatis saat mode Editor
-        console.log("[GameLoader] Initializing Sync System...");
         game.syncSystem = new SyncComponent(world, bus, game.assetLoader);
     }
 

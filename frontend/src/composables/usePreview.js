@@ -31,8 +31,6 @@ export function usePreview() {
         await saveLocal(currentScene.value._id);
     }
 
-    // 2. Ambil Data Project & Assets dari IndexedDB
-    // Kita gunakan Promise.all agar parallel dan cepat
     const [localProject, localAssets] = await Promise.all([
         db.projects.get(activeProjectId.value),
         db.assets.where('projectId').equals(activeProjectId.value).toArray()

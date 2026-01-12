@@ -37,8 +37,6 @@ export async function startEngine(canvasSource, mode = "editor", initialData = {
     const loader = new GameLoader();
 
     try {
-        console.log(`🚀 [Main] Starting Engine in '${mode}' mode...`);
-        
         await loader.initializeGame(game, canvas, mode, initialData);
         
         loader.start(game);

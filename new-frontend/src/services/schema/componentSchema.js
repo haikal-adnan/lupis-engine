@@ -54,6 +54,22 @@ export const createComponent = (type, data = {}) => {
         ...data
       };
 
+    case "Tilemap":
+      const mapW = Number(data.width || 20);
+      const mapH = Number(data.height || 15);
+      
+      return {
+        tileWidth: Number(data.tileWidth || 32),
+        tileHeight: Number(data.tileHeight || 32),
+        width: mapW,
+        height: mapH,
+        tilesetId: data.tilesetId || null,
+        opacity: Number(data.opacity ?? 1),
+        isSolid: Boolean(data.isSolid ?? false),
+        data: data.data || new Array(mapW * mapH).fill(0),
+        ...data
+      };
+
     case "Transform":
       return createTransform(data);
 
