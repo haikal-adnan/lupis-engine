@@ -1,25 +1,30 @@
 // src/modules/engine/EngineBridge.js
 
 let engineInstance = null;
+let onNativeEntityModified = null;
 
 export const EngineBridge = {
-  /**
-   * Set instance engine saat startEngine berhasil
-   * @param {Object} instance - Instance dari Lupis Engine
-   */
   setInstance(instance) {
     engineInstance = instance;
-    console.log("[EngineBridge] Connected to Engine");
+
+    engineInstance.bus.on("entity:modified", (entities, isTransient) => {
+       if (onNativeEntityModified) {
+         onNativeEntityModified(entities);
+       }
+    });
   },
 
-  /**
-   * Bersihkan referensi saat unmount
-   */
+  onEntityModified(callback) {
+    onNativeEntityModified = callback;
+  },
+
   disconnect() {
+    if (engineInstance) {
+        engineInstance.bus.off("entity:modified");
+    }
     engineInstance = null;
+    onNativeEntityModified = null;
   },
-
-  // --- ENTITY ACTIONS ---
 
   createEntity(entityData) {
     if (!engineInstance) return;
@@ -39,11 +44,8 @@ export const EngineBridge = {
 
   moveEntity(payload) {
     if (!engineInstance) return;
-    // Payload: { id, context: { newParentId, newLayerId, ... } }
     engineInstance.bus.emit("editor:entity:move", payload);
   },
-
-  // --- LAYER ACTIONS ---
 
   addLayer(layerData) {
     if (!engineInstance) return;

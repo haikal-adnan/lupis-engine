@@ -35,7 +35,6 @@ export default class Game {
     
     render(alpha) {
         const cam = this.camera.getInterpolated(alpha);
-        console.log(this.world)
         this.history?.update();
         if(this.cameraController) this.cameraController.update();
         if (this.selection) this.selection.update();

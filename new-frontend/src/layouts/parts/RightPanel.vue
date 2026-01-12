@@ -1,78 +1,82 @@
+<script setup>
+import IconButton from '@ui/buttons/IconButton.vue'
+import { PanelRightClose, PanelRightOpen } from 'lucide-vue-next'
+
+const props = defineProps({
+  collapsed: {
+    type: Boolean,
+    default: false
+  },
+  title: {
+    type: String,
+    default: 'Inspector' // Default title
+  }
+})
+
+defineEmits(['toggle'])
+</script>
+
 <template>
-  <div class="h-full flex flex-col bg-editor-sidebar overflow-hidden border-l border-border">
-    <!-- Header (Expanded) -->
+  <div class="h-full flex flex-col bg-editor-sidebar overflow-hidden border-l border-border transition-all duration-300">
+    
     <div
       v-if="!collapsed"
       class="h-10 shrink-0 flex items-center justify-between px-2 border-b border-border bg-muted/40 backdrop-blur-sm"
     >
-      <h3 class="pl-2 text-xs font-bold uppercase tracking-wider text-foreground/90 select-none">
-        Property Inspector
+      <h3 class="pl-2 text-xs font-bold uppercase tracking-wider text-foreground/90 select-none truncate">
+        {{ title }}
       </h3>
 
       <IconButton
         ghost
-        tooltip="Collapse Inspector"
+        tooltip="Collapse Panel"
         @click="$emit('toggle')"
       >
         <PanelRightClose
-          class="w-4 h-4 text-muted-foreground"
+          class="w-4 h-4 text-muted-foreground hover:text-foreground transition-colors"
           :stroke-width="1.5"
         />
       </IconButton>
     </div>
 
-    <!-- Header (Collapsed) -->
     <div
       v-else
       class="h-10 shrink-0 flex items-center justify-center border-b border-border bg-muted/40"
     >
       <IconButton
         ghost
-        tooltip="Expand Inspector"
+        tooltip="Expand Panel"
         @click="$emit('toggle')"
       >
         <PanelRightOpen
-          class="w-4 h-4 text-muted-foreground"
+          class="w-4 h-4 text-muted-foreground hover:text-foreground transition-colors"
           :stroke-width="1.5"
         />
       </IconButton>
     </div>
 
-    <!-- Content (Expanded) -->
     <div
-      v-if="!collapsed"
-      class="flex-1 overflow-y-auto scrollbar-thin bg-editor-sidebar"
+      v-show="!collapsed"
+      class="flex-1 overflow-y-auto scrollbar-thin bg-editor-sidebar relative"
     >
-      <PropertyPanel />
+      <slot />
     </div>
 
-    <!-- Content (Collapsed) -->
     <div
-      v-else
-      class="flex-1 py-4 flex items-center justify-center bg-background cursor-pointer hover:bg-muted/20 transition-colors"
-      title="Expand Inspector"
+      v-if="collapsed"
+      class="flex-1 py-4 flex items-center justify-center bg-background cursor-pointer hover:bg-secondary/30 transition-colors group"
+      :title="'Expand ' + title"
       @click="$emit('toggle')"
     >
       <div
-        class="writing-vertical-lr text-[10px] font-bold text-muted-foreground tracking-widest uppercase opacity-70 select-none"
+        class="writing-vertical-lr text-[10px] font-bold text-muted-foreground tracking-widest uppercase opacity-70 group-hover:opacity-100 group-hover:text-primary transition-all select-none whitespace-nowrap"
       >
-        Inspector
+        {{ title }}
       </div>
     </div>
+
   </div>
 </template>
-
-<script setup>
-import IconButton from '@ui/buttons/IconButton.vue'
-import { PanelRightClose, PanelRightOpen } from 'lucide-vue-next'
-import PropertyPanel from '@modules/properties/PropertyPanel.vue'
-
-defineProps({
-  collapsed: Boolean
-})
-
-defineEmits(['toggle'])
-</script>
 
 <style scoped>
 .writing-vertical-lr {

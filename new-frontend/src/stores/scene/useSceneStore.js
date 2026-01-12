@@ -39,6 +39,16 @@ export const useSceneStore = defineStore('scene', () => {
     }
   };
 
+  const syncTransformFromEngine = (entityId, transformData) => {
+    const scene = activeScene.value;
+    if (!scene) return;
+
+    const entity = scene.entities.find(e => e._id === entityId);
+    if (entity && entity.components && entity.components.Transform) {
+      Object.assign(entity.components.Transform, transformData);
+    }
+  };
+
   const sceneActions = useSceneActions(scenes, activeSceneId, selectedEntityIds);
   const layerActions = useLayerActions(activeScene);
   const entityActions = useEntityActions(activeScene, selectedEntityIds);
@@ -56,6 +66,7 @@ export const useSceneStore = defineStore('scene', () => {
 
     initScenes,
     setActiveScene,
+    syncTransformFromEngine,
 
     ...sceneActions,
     ...layerActions,

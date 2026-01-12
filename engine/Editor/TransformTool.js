@@ -321,8 +321,10 @@ export default class TransformTool {
 
         for (const item of this.moveStartData) {
             const t = this._getTransform(item.e);
-            t.x = item.x + dx; 
-            t.y = item.y + dy;
+            
+            // MODIFIKASI: Gunakan Math.round agar posisi snap ke integer terdekat
+            t.x = Math.round(item.x + dx); 
+            t.y = Math.round(item.y + dy);
         }
         bus.emit("entity:modified", this.selection.selectedList, true); 
     }
@@ -379,8 +381,9 @@ export default class TransformTool {
             const newScaleX = isFlippedX ? -item.sx : item.sx;
             const newScaleY = isFlippedY ? -item.sy : item.sy;
 
-            const newW = Math.abs(rawW); 
-            const newH = Math.abs(rawH); 
+            // MODIFIKASI: Bulatkan Size (Width & Height)
+            const newW = Math.round(Math.abs(rawW)); 
+            const newH = Math.round(Math.abs(rawH)); 
 
             t.width = newW;
             t.height = newH;
@@ -390,6 +393,10 @@ export default class TransformTool {
             let shiftX = 0;
             let shiftY = 0;
 
+            // Kita perlu menghitung ulang dW/dH berdasarkan nilai integer baru
+            // agar pergeseran pivot akurat secara visual pixel-perfect
+            // (Opsional: bisa pakai dW lama, tapi pivot mungkin lari 0.something pixel)
+            
             if (anchorX !== null) {
                 const ratioX = (t.pivotX ?? 0.5) - anchorX;
                 shiftX = dW * ratioX; 
@@ -418,8 +425,9 @@ export default class TransformTool {
             const wc = Math.cos(item.r);
             const ws = Math.sin(item.r);
 
-            t.x = item.x + (shiftX_World * wc - shiftY_World * ws);
-            t.y = item.y + (shiftX_World * ws + shiftY_World * wc);
+            // MODIFIKASI: Bulatkan Posisi (X & Y) hasil kalkulasi pivot
+            t.x = Math.round(item.x + (shiftX_World * wc - shiftY_World * ws));
+            t.y = Math.round(item.y + (shiftX_World * ws + shiftY_World * wc));
             
             ApplyResizeToEntity(e, this.world);
         } 

@@ -2,7 +2,7 @@ import { ref } from 'vue';
 import { 
   Plus, Trash2, Edit2, Copy, FolderPlus, 
   Cuboid, Image, Type, Scissors, Clipboard, 
-  Folder, RefreshCw, Square
+  Folder, RefreshCw, Square, InspectionPanel
 } from 'lucide-vue-next';
 
 export function useHierarchyMenu(handlers) {
@@ -14,6 +14,8 @@ export function useHierarchyMenu(handlers) {
         { label: 'Sprite', icon: Image, action: () => handlers.createEntity('sprite', node) },
         { label: 'Shape', icon: Square, action: () => handlers.createEntity('shape', node) },
         { label: 'Text', icon: Type, action: () => handlers.createEntity('text', node) },
+        { separator: true },
+        { label: 'Tilemap', icon: InspectionPanel, action: () => handlers.createEntity('tilemap', node) },
         { separator: true },
         { label: 'Group', icon: Folder, action: () => handlers.createEntity('group', node) }
     ];

@@ -92,12 +92,13 @@
           view-mode="grid"
           :active="selectedId === asset._id"
           @click="handleSelect(asset._id)"
+          @dblclick="handleAssetDblClick(asset)" 
           @contextmenu="handleContextMenu($event, { ...asset, type: 'asset' })"
         />
       </div>
 
       <div v-else class="flex flex-col gap-0.5">
-         <AssetItem 
+        <AssetItem 
           v-for="folder in visibleFolders" 
           :key="folder._id" 
           :data="{ 
@@ -127,6 +128,7 @@
           view-mode="list"
           :active="selectedId === asset._id"
           @click="handleSelect(asset._id)"
+          @dblclick="handleAssetDblClick(asset)"
           @contextmenu="handleContextMenu($event, { ...asset, type: 'asset' })"
         />
       </div>
@@ -161,6 +163,7 @@ import {
 import { useAssetStore } from '@/stores/useAssetStore'
 import { useFolderStore } from '@/stores/useFolderStore'
 import { useAssetActions } from '@/stores/scene/assetActions.js';
+import { useSceneStore } from '@/stores/scene/useSceneStore.js'; // <-- BARU
 
 // Components
 import BaseSearchInput from '@/commons/components/inputs/BaseSearchInput.vue'
@@ -170,6 +173,7 @@ import AssetItem from './parts/AssetItem.vue'
 // --- Stores & Actions ---
 const assetStore = useAssetStore()
 const folderStore = useFolderStore()
+const sceneStore = useSceneStore() // <-- BARU
 const { createNewFolder, importAsset, deleteAsset, deleteFolder } = useAssetActions()
 
 // --- State ---
@@ -213,6 +217,43 @@ const navigateTo = (folder) => {
 
 const handleSelect = (id) => { 
   selectedId.value = id 
+}
+
+// --- LOGIC BARU: Handle Double Click Asset ---
+const handleAssetDblClick = (asset) => {
+  // 1. Cek apakah ada entity yang dipilih
+  if (sceneStore.selectedEntityIds.length === 0) {
+    console.log('[AssetPanel] No entity selected.');
+    return;
+  }
+
+  // 2. Ambil entity pertama
+  const entityId = sceneStore.selectedEntityIds[0];
+  const scene = sceneStore.activeScene;
+  if (!scene) return;
+  
+  const entity = scene.entities.find(e => e._id === entityId);
+  if (!entity) return;
+
+  // 3. Cek Tipe Asset dan Apply ke Component
+  
+  // Jika Asset adalah TEXTURE/IMAGE
+  if (['texture', 'sprite', 'image', 'png', 'jpg'].includes(asset.type)) {
+    // Cek apakah entity punya SpriteRenderer
+    if (entity.components && entity.components.SpriteRenderer) {
+      // Update store (akan otomatis sync ke engine via EngineBridge)
+      sceneStore.updateComponentProp(entityId, 'SpriteRenderer', 'assetId', asset._id);
+      console.log(`[AssetPanel] Applied texture ${asset.name} to entity ${entity.name}`);
+    } else {
+        console.warn(`[AssetPanel] Entity ${entity.name} does not have SpriteRenderer component.`);
+    }
+  }
+  // Jika Asset adalah FONT (Opsional, jika nanti implementasi TextRenderer)
+  else if (asset.type === 'font' || asset.type === 'ttf') {
+    if (entity.components && entity.components.TextRenderer) {
+       sceneStore.updateComponentProp(entityId, 'TextRenderer', 'fontAssetId', asset._id);
+    }
+  }
 }
 
 const triggerUpload = () => { fileInput.value?.click() }

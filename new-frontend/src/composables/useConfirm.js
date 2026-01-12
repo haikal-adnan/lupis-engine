@@ -1,6 +1,5 @@
 import { ref } from 'vue';
 
-// State Global (Singleton)
 const state = ref({
   isOpen: false,
   title: '',
@@ -10,7 +9,6 @@ const state = ref({
   type: 'info' // 'info' | 'danger' | 'warning'
 });
 
-// Resolver Promise
 let resolvePromise = null;
 
 export function useConfirm() {
@@ -22,7 +20,6 @@ export function useConfirm() {
     cancelText = 'Cancel',
     type = 'info'
   }) => {
-    // Set content
     state.value = {
       isOpen: true,
       title,
@@ -32,7 +29,6 @@ export function useConfirm() {
       type
     };
 
-    // Return new Promise yang akan di-resolve nanti oleh tombol di UI
     return new Promise((resolve) => {
       resolvePromise = resolve;
     });

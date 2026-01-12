@@ -7,12 +7,11 @@ export const createFolder = (data = {}) => ({
   _id: data._id || `fld_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
   name: data.name || "New Folder",
   projectId: data.projectId || null,
-  parentId: data.parentId || null, // null = Root
+  parentId: data.parentId || null,
   type: 'folder',
-  
-  // Property khusus Editor (UI State)
+
   _editor: {
-    expanded: false, // Default tertutup
+    expanded: false,
     selected: false,
     isRenaming: false,
     ...(data._editor || {})
@@ -25,7 +24,7 @@ export const normalizeProjectLoad = (
   rawScenes,
   rawAssets,
   rawPrefabs,
-  rawFolders = [] // Tambahkan parameter ini
+  rawFolders = [] 
 ) => {
   const projectId = rawProject?._id;
 
