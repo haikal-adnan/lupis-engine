@@ -1,9 +1,9 @@
-// engine/Renderer/UIRenderer.js
 export default class UIRenderer {
-    constructor(image, shape, text) {
+    constructor(image, shape, text, game) {
         this.image = image;
         this.shape = shape;
         this.text = text;
+        this.game = game;
         this.projection = null;
     }
 
@@ -20,10 +20,16 @@ export default class UIRenderer {
     }
 
     drawImage(tex, x, y, w, h) {
+        if (!tex) {
+            this.fillRect(x, y, w, h, [1, 1, 1, 1]);
+            return;
+        }
+
         this.image.draw(
             tex,
-            { sx:0, sy:0, sw:tex.width, sh:tex.height },
-            x, y, w, h,
+            { sx: 0, sy: 0, sw: tex.width, sh: tex.height },
+            { x, y, width: w, height: h },
+            null,
             this.projection
         );
     }
@@ -33,14 +39,34 @@ export default class UIRenderer {
     }
 
     strokeRect(x, y, w, h, color, t=1) {
-        this.shape.drawLine(x, y, x+w, y, color, t, this.projection);
-        this.shape.drawLine(x+w, y, x+w, y+h, color, t, this.projection);
-        this.shape.drawLine(x+w, y+h, x, y+h, color, t, this.projection);
-        this.shape.drawLine(x, y+h, x, y, color, t, this.projection);
+        this.shape.drawRectStroke(x, y, w, h, color, t, this.projection);
     }
 
-    drawText(str, x, y, size, color) {
-        this.text.drawText(str, x, y, size, color, this.projection);
+    // UPDATE: Tambahkan parameter rotation (default 0)
+    drawText(str, x, y, size, color, font = null, rotation = 0) {
+        let targetFont = font;
+
+        if (!targetFont) {
+            targetFont = this.game.assetLoader?.fontLoader?.defaultFont;
+        }
+
+        if (!targetFont && this.game.world?.assets?.fonts) {
+            targetFont = this.game.world.assets.fonts["system_default"];
+        }
+
+        if (!targetFont || !targetFont.glTexture) return;
+
+        // Panggil TextRenderer dengan rotasi
+        this.text.drawText(
+            targetFont,
+            str,
+            x, y,
+            0, 0,
+            size,
+            color,
+            this.projection,
+            rotation // Masukkan nilai rotasi ke sini
+        );
     }
 
     drawCircle(x, y, r, color) {
@@ -50,5 +76,4 @@ export default class UIRenderer {
     strokeCircle(x, y, r, color, t=2) {
         this.shape.drawCircleOutline(x, y, r, color, t, 32, this.projection);
     }
-
 }

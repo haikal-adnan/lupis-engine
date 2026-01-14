@@ -8,7 +8,7 @@ class Configs {
 
     this.EDITOR = {
       CAMERA_CONTROLLER: true,
-      RULERS: false,             
+      RULERS: true,             
       SELECTION: true,
       POINTER: true,
       MOVE: true,

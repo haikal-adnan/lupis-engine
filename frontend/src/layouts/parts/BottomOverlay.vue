@@ -1,0 +1,106 @@
+<template>
+  <div 
+    v-if="overlayConfig"
+    class="absolute left-0 right-0 pointer-events-none flex items-center justify-center z-50 transition-all duration-300 ease-out"
+    :class="{ 'translate-y-10 opacity-0': !overlayConfig.showGrid && !overlayConfig.showPlay }"
+  >
+    
+    <div class="flex items-center p-1 bg-background/80 backdrop-blur-sm rounded-xl border border-border shadow-lg pointer-events-auto gap-1">
+      
+      <div 
+        v-if="overlayConfig.showCoords"
+        class="flex items-center gap-3 px-3 mr-1"
+      >
+        <span class="font-mono text-[10px] font-bold flex items-center gap-1 text-muted-foreground">
+          <span class="text-emerald-500">X</span> {{ coords.x.toFixed(0) }}
+        </span>
+        <span class="font-mono text-[10px] font-bold flex items-center gap-1 text-muted-foreground">
+          <span class="text-rose-500">Y</span> {{ coords.y.toFixed(0) }}
+        </span>
+      </div>
+
+      <div v-if="overlayConfig.showCoords" class="h-4 w-[1px] bg-border"></div>
+
+      <IconButton 
+        v-if="overlayConfig.showGrid"
+        @click="editorStore.toggleMagnet()"
+        :active="editorStore.gridContext.magnet"
+        :tooltip="editorStore.gridContext.magnet ? 'Snap On (Ctrl to disable)' : 'Snap Off (Ctrl to enable)'"
+        class="w-8 h-8"
+      >
+        <Magnet class="w-4 h-4" />
+      </IconButton>
+
+      <IconButton 
+        v-if="overlayConfig.showGrid"
+        @click="editorStore.toggleGrid()"
+        :active="editorStore.gridContext.display"
+        tooltip="Toggle Grid Display"
+        class="w-8 h-8"
+      >
+        <Grid3X3 class="w-4 h-4" />
+      </IconButton>
+
+      <div v-if="overlayConfig.showPlay" class="h-4 w-[1px] bg-border mx-1"></div>
+
+      <BaseButton 
+        v-if="overlayConfig.showPlay"
+        @click="openOrUpdatePreview"
+        class="h-8 rounded-full px-4 gap-2 text-xs font-bold transition-all shadow-sm border-0"
+        :class="isPreviewing 
+          ? 'bg-amber-500 hover:bg-amber-600 text-white' 
+          : 'bg-primary text-primary-foreground hover:bg-primary/90'"
+      >
+        <RefreshCw v-if="isPreviewing" class="w-3.5 h-3.5 animate-spin-slow" />
+        <Play v-else class="w-3.5 h-3.5 fill-current" />
+        
+        <span>{{ isPreviewing ? 'Update' : 'Play' }}</span>
+      </BaseButton>
+
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, onMounted, onBeforeUnmount, computed } from 'vue';
+import { Magnet, Grid3X3, Play, RefreshCw } from 'lucide-vue-next';
+import { bus } from "@engines/Util/EventBus.js";
+import { usePreview } from "@/composables/usePreview.js";
+import { useTab } from "@/composables/useTab.js"; 
+import { useEditorStore } from "@/stores/useEditorStore.js";
+
+// Components
+import IconButton from '@/commons/components/buttons/IconButton.vue';
+import BaseButton from '@/commons/components/buttons/BaseButton.vue';
+
+const { isPreviewing, openOrUpdatePreview } = usePreview();
+const { currentLayout } = useTab();
+const editorStore = useEditorStore();
+
+const overlayConfig = computed(() => currentLayout.value.overlay || null);
+const coords = ref({ x: 0, y: 0 });
+
+function updateCoords(pos) {
+  if (overlayConfig.value?.showCoords) {
+    coords.value = pos;
+  }
+}
+
+onMounted(() => {
+  bus.on("pointer:coords", updateCoords);
+});
+
+onBeforeUnmount(() => {
+  bus.off("pointer:coords", updateCoords);
+});
+</script>
+
+<style scoped>
+.animate-spin-slow {
+  animation: spin 3s linear infinite;
+}
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+</style>

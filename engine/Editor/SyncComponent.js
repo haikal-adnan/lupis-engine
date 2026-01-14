@@ -9,21 +9,62 @@ export default class SyncComponent {
     }
 
     bindEvents() {
+        // --- Entity Events ---
         this.bus.on("editor:entity:create", (data) => this.onCreateEntity(data));
         this.bus.on("editor:entity:delete", (id) => this.onDeleteEntity(id));
         this.bus.on("editor:entity:update-name", (p) => this.onUpdateEntityName(p));
         this.bus.on("editor:entity:move", (p) => this.onMoveEntity(p));
+        this.bus.on("editor:entity:update-component", (p) => this.onUpdateComponent(p));
+        this.bus.on("editor:entity:update-prop", (p) => this.onUpdateEntityProp(p));
 
+        // --- Layer Events ---
         this.bus.on("editor:layer:create", (data) => this.onCreateLayer(data));
         this.bus.on("editor:layer:delete", (id) => this.onDeleteLayer(id));
         this.bus.on("editor:layer:update-name", (p) => this.onUpdateLayerName(p));
 
-        this.bus.on("editor:entity:update-component", (p) => this.onUpdateComponent(p));
-        this.bus.on("editor:entity:update-prop", (p) => this.onUpdateEntityProp(p));
-
+        // --- Asset Events ---
         this.bus.on("editor:asset:create", (asset) => this.onAssetCreate(asset));
         this.bus.on("editor:asset:delete", (id) => this.onAssetDelete(id));
+
+        // --- Editor State Sync (NEW) ---
+        this.bus.on("editor:store:update", (payload) => this.onUpdateEditorStore(payload));
     }
+
+    // --------------------------------------------------------------------------
+    // MAIN LOGIC: UPDATE EDITOR STATE
+    // --------------------------------------------------------------------------
+    onUpdateEditorStore(payload) {
+        if (!payload) return;
+
+        if (!this.world._editors) {
+            this.world._editors = {
+                activeTool: null,
+                activeTabId: null,
+                tilemapContext: {},
+                gridContext: { display: true, width: 50, height: 50, magnet: true } // Default
+            };
+        }
+
+        // Destructure gridContext juga
+        const { tilemapContext, gridContext, ...others } = payload;
+
+        Object.assign(this.world._editors, others);
+
+        if (tilemapContext) {
+            if (!this.world._editors.tilemapContext) this.world._editors.tilemapContext = {};
+            Object.assign(this.world._editors.tilemapContext, tilemapContext);
+        }
+
+        // Merge Grid Context
+        if (gridContext) {
+            if (!this.world._editors.gridContext) this.world._editors.gridContext = {};
+            Object.assign(this.world._editors.gridContext, gridContext);
+        }
+    }
+
+    // --------------------------------------------------------------------------
+    // STANDARD HANDLERS (Tidak Berubah)
+    // --------------------------------------------------------------------------
 
     onCreateEntity(entityData) {
         const entity = this._createEntityInstance(entityData);
@@ -69,9 +110,7 @@ export default class SyncComponent {
         entity.parentId = context.newParentId;
 
         if (context.newParentId) {
-            const newParent = this.world.entities.find(
-                (e) => e.id === context.newParentId
-            );
+            const newParent = this.world.entities.find((e) => e.id === context.newParentId);
             if (newParent) newParent.addChild(entity);
         }
     }
@@ -107,7 +146,6 @@ export default class SyncComponent {
 
     _createEntityInstance(data) {
         const entity = new Entity(data._id);
-
         entity.name = data.name;
         entity.type = data.type;
         entity.tag = data.tag;
@@ -122,7 +160,6 @@ export default class SyncComponent {
                 entity.addComponent(key, val);
             }
         }
-
         return entity;
     }
 
@@ -130,30 +167,19 @@ export default class SyncComponent {
         const entity = this.world.entities.find((e) => e.id === entityId);
         if (!entity) return;
 
-        // Pastikan component ada di instance entity
-        // Catatan: Di engine, structure mungkin berbeda, sesuaikan jika perlu.
-        // Asumsi: entity.components['SpriteRenderer'] akses langsung atau via getter
-        
-        // Jika Engine menggunakan sistem ECS murni (Array components), logika pencarian beda.
-        // Jika Entity adalah Object container (seperti mock anda):
-        let comp = entity.components[componentName] || entity[componentName]; // Coba akses direct properti jika komponen di-attach sebagai properti
-        
-        // Fallback logic tergantung struktur engine anda:
+        let comp = entity.components[componentName] || entity[componentName];
         if (!comp && entity.getComponent) {
             comp = entity.getComponent(componentName);
         }
-
         if (!comp) return;
 
-        // Update nested value
         const keys = path.split('.');
         let target = comp;
         for (let i = 0; i < keys.length - 1; i++) {
             target = target[keys[i]];
         }
         target[keys[keys.length - 1]] = value;
-        
-        // Opsional: Tandai dirty agar re-render
+
         if (entity.isDirty !== undefined) entity.isDirty = true;
     }
 
@@ -165,30 +191,13 @@ export default class SyncComponent {
     }
 
     async onAssetCreate(asset) {
-        console.log("[Sync] Loading new asset to engine:", asset.name);
-        
-        if (!this.assetLoader) {
-            console.warn("[Sync] AssetLoader not found in SyncComponent");
-            return;
-        }
-
-        // Gunakan assetLoader untuk memuat single asset ini
-        // Karena loadAsset menerima array, kita bungkus dalam array
+        if (!this.assetLoader) return;
         await this.assetLoader.loadAsset(this.world, [asset]);
-        
-        // Trigger re-render jika perlu (biasanya otomatis via game loop)
     }
 
     onAssetDelete(id) {
-        // Hapus dari world.assets.textures atau world.assets.fonts
         if (this.world.assets.textures[id]) {
-            // Optional: Destroy WebGL texture untuk free memory
-            // const gl = this.gl; // butuh akses gl context
-            // gl.deleteTexture(this.world.assets.textures[id].glTexture);
-            
             delete this.world.assets.textures[id];
-            console.log("[Sync] Texture deleted:", id);
         }
-        // Handle Font delete logic similar...
     }
 }

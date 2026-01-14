@@ -1,6 +1,3 @@
-// engine/Editor/Grid.js
-import { bus } from "../Util/EventBus.js";
-
 export default class Grid {
     constructor(world, game, canvas, renderer, camera, opt = {}) {
         this.world = world;
@@ -9,55 +6,85 @@ export default class Grid {
         this.renderer = renderer;
         this.camera = camera;
 
-        this.color = opt.color || "#ffffff";
-        this.alpha = opt.alpha || 0.15;
+        // Default properties
         this.width = opt.width || 50;
         this.height = opt.height || 50;
+        this.offsetX = 0;
+        this.offsetY = 0;
+        this.color = opt.color || "#ffffff";
+        this.alpha = opt.alpha || 0.15;
 
-        this.enabled = true;
-
-        bus.on("editor:grid:toggle", () => {
-            this.enabled = !this.enabled;
-        });
-
+        // Binding renderer ke world
         world.gridRenderer = (shape, projection) => {
             this.render(shape, projection);
         };
     }
 
+    update() {
+        const editors = this.world._editors;
+        if (!editors) return;
+
+        const ctx = editors.gridContext;
+        const isVisible = ctx ? ctx.display : true;
+
+        if (!isVisible) {
+            this.enabled = false;
+            return;
+        }
+        this.enabled = true;
+
+        this.width = ctx ? ctx.width : 50;
+        this.height = ctx ? ctx.height : 50;
+        
+        // Offset kita set default 0 (karena tidak lagi menempel pada Transform entity)
+        this.offsetX = 0;
+        this.offsetY = 0;
+    }
+
     render(shape, projection) {
+        this.update();
         if (!this.enabled) return;
 
         const cam = this.camera;
         const w = this.width;
         const h = this.height;
+        const ox = this.offsetX; 
+        const oy = this.offsetY;
 
+        // Safety check untuk mencegah infinite loop jika width/height 0 atau null
+        if (!w || !h || w <= 0 || h <= 0) return;
+
+        // Hitung batas layar (View Bounds) agar hanya merender garis yang terlihat
         const rectW = this.canvas.width / cam.scale;
         const rectH = this.canvas.height / cam.scale;
-
         const left = cam.x - rectW * 0.5;
         const right = cam.x + rectW * 0.5;
         const top = cam.y - rectH * 0.5;
         const bottom = cam.y + rectH * 0.5;
 
-        const startX = Math.floor(left / w) * w;
-        const endX   = Math.ceil(right / w) * w;
-
-        const startY = Math.floor(top / h) * h;
-        const endY   = Math.ceil(bottom / h) * h;
+        // Snap logic agar garis grid tetap statis saat kamera bergerak
+        const startX = ox + Math.floor((left - ox) / w) * w;
+        const endX   = ox + Math.ceil((right - ox) / w) * w;
+        const startY = oy + Math.floor((top - oy) / h) * h;
+        const endY   = oy + Math.ceil((bottom - oy) / h) * h;
 
         const rgba = this._hexToRGBA(this.color, this.alpha);
 
+        // Draw Vertical Lines
         for (let x = startX; x <= endX; x += w) {
             shape.drawLine(x, top, x, bottom, rgba, 1 / cam.scale, projection);
         }
 
+        // Draw Horizontal Lines
         for (let y = startY; y <= endY; y += h) {
             shape.drawLine(left, y, right, y, rgba, 1 / cam.scale, projection);
         }
     }
-
+    
     _hexToRGBA(hex, alpha) {
+        // Fallback jika hex undefined
+        if (!hex) return [1, 1, 1, alpha];
+        
         const h = hex.replace("#", "");
         const r = parseInt(h.slice(0,2),16) / 255;
         const g = parseInt(h.slice(2,4),16) / 255;

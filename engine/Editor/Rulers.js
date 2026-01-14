@@ -1,159 +1,119 @@
-import { bus } from "../Util/EventBus.js";
-import Config from "../Core/Config.js";
+import { HexToVec4 } from "../Util/HexToVec4.js";
 
 export default class Rulers {
-  constructor(glRenderer, camera) {
-    this.glRenderer = glRenderer;
-    this.gl = glRenderer.gl;
-    this.camera = camera;
-    this.canvas = glRenderer.canvas;
-
-    this.active = Config.ENGINE_MODE === "editor";
-    this.scale = camera.scale ?? 1;
-    this.offsetX = camera.x;
-    this.offsetY = camera.y;
-
-    // Gaya tampilan
-    this.rulerThickness = 20;
-    this.tickLength = 6; 
-    this.margin = 4;
-    this.font = "10px monospace";
-    this.color = "rgba(255,255,255,0.8)";
-    this.bgColor = "rgba(0,0,0,0.45)";
-    this.lineColor = "rgba(255,255,255,0.25)";
-    this.originColor = "rgba(255,80,80,0.9)";
-
-    if (this.active) {
-      this._createOverlay();
-      this._bindCameraEvents();
-      this.render();
-    }
-  }
-
-  _createOverlay() {
-    this.overlay = document.createElement("canvas");
-    this.overlay.width = this.canvas.width;
-    this.overlay.height = this.canvas.height;
-    Object.assign(this.overlay.style, {
-      position: "absolute",
-      left: "0",
-      top: "0",
-      pointerEvents: "none",
-      zIndex: "10",
-    });
-    this.canvas.parentElement.appendChild(this.overlay);
-    this.ctx = this.overlay.getContext("2d");
-  }
-
-  _bindCameraEvents() {
-    bus.on("camera:zoom", ({ scale }) => {
-      this.scale = scale;
-      this.render();
-    });
-    bus.on("camera:pan", ({ x, y }) => {
-      this.offsetX = x;
-      this.offsetY = y;
-      this.render();
-    });
-  }
-
-  _getInterval(scale) {
-    const base = 50;
-    const steps = [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000];
-    const est = base / scale;
-    let best = steps[0];
-    for (let s of steps) if (Math.abs(s - est) < Math.abs(best - est)) best = s;
-    return best;
-  }
-
-  render() {
-    const ctx = this.ctx;
-    const w = (this.overlay.width = this.canvas.width);
-    const h = (this.overlay.height = this.canvas.height);
-    ctx.clearRect(0, 0, w, h);
-
-    ctx.fillStyle = this.bgColor;
-    ctx.fillRect(0, 0, w, this.rulerThickness);
-    ctx.fillRect(0, 0, this.rulerThickness, h);
-
-    const scale = this.scale;
-    const interval = this._getInterval(scale);
-
-    ctx.font = this.font;
-    ctx.fillStyle = this.color;
-
-    const worldStartX = this.offsetX - w / (2 * scale);
-    const worldEndX = this.offsetX + w / (2 * scale);
-    const worldStartY = this.offsetY - h / (2 * scale);
-    const worldEndY = this.offsetY + h / (2 * scale);
-
-    const startX = Math.floor(worldStartX / interval) * interval;
-    const endX = Math.ceil(worldEndX / interval) * interval;
-
-    for (let x = startX; x <= endX; x += interval) {
-      const screenX = (x - this.offsetX) * scale + w / 2;
-
-      ctx.strokeStyle = this.lineColor;
-      ctx.beginPath();
-      ctx.moveTo(screenX, this.rulerThickness - this.tickLength);
-      ctx.lineTo(screenX, this.rulerThickness);
-      ctx.stroke();
-
-      const label = x.toString();
-      const textWidth = ctx.measureText(label).width;
-      ctx.textAlign = "left";
-      ctx.textBaseline = "top";
-
-      const textX = screenX - textWidth / 2;
-      const textY = 2;
-      if (textX + textWidth > this.margin && textX < w - this.margin) {
-        ctx.fillText(label, textX, textY);
-      }
+    constructor(game) {
+        this.game = game;
+        
+        // Config Tampilan ala Figma
+        this.thickness = 20; // Sedikit lebih tipis agar elegan
+        
+        // Warna
+        this.bgColor = HexToVec4("#1e1e1e");   // Gelap (Background)
+        this.lineColor = HexToVec4("#88888869"); // Abu-abu (Tick marks)
+        this.textColor = HexToVec4("#888888"); // Teks agak redup
+        
+        this.fontSize = 9;
+        this.tickSize = 15; // Panjang garis strip
     }
 
-    const startY = Math.floor(worldStartY / interval) * interval;
-    const endY = Math.ceil(worldEndY / interval) * interval;
+    render(ui) {
+        const cam = this.game.camera;
+        const width = this.game.renderer.canvas.width;
+        const height = this.game.renderer.canvas.height;
+        
+        // 1. Gambar Background Bars
+        ui.fillRect(0, 0, width, this.thickness, this.bgColor);         // Top
+        ui.fillRect(0, 0, this.thickness, height, this.bgColor);        // Left
+        ui.fillRect(0, 0, this.thickness, this.thickness, this.bgColor); // Corner
 
-    for (let y = startY; y <= endY; y += interval) {
-      const screenY = (y - this.offsetY) * scale + h / 2;
+        const rectW = width / cam.scale;
+        const rectH = height / cam.scale;
+        
+        const viewWorldLeft = cam.x - rectW * 0.5;
+        const viewWorldTop = cam.y - rectH * 0.5;
 
-      const lineOffset = 0;
-      ctx.strokeStyle = this.lineColor;
-      ctx.beginPath();
-      ctx.moveTo(this.rulerThickness - this.tickLength + lineOffset, screenY);
-      ctx.lineTo(this.rulerThickness + lineOffset, screenY);
-      ctx.stroke();
+        const step = this._calculateStep(cam.scale);
 
-      const label = y.toString();
-      ctx.textAlign = "right";
-      ctx.textBaseline = "middle";
+        // --- TOP RULER (X Axis) ---
+        const startX = Math.floor(viewWorldLeft / step) * step;
+        const endX = viewWorldLeft + rectW; 
 
-      const textOffset = 0;
-      const textX =
-        this.rulerThickness - this.tickLength + lineOffset + textOffset;
-      const textY = screenY;
+        for (let wx = startX; wx <= endX; wx += step) {
+            const screenX = (wx - viewWorldLeft) * cam.scale;
 
-      if (textY > this.margin && textY < h - this.margin) {
-        ctx.fillText(label, textX, textY);
-      }
+            if (screenX < this.thickness) continue;
+
+            // Tick (Strip): Posisi di bawah (menempel ke canvas)
+            // Dari y = thickness - tickSize sampai y = thickness
+            ui.fillRect(
+                screenX, 
+                this.thickness - this.tickSize, 
+                1, 
+                this.tickSize, 
+                this.lineColor
+            );
+
+            // Angka: Di atas strip
+            ui.drawText(
+                Math.round(wx).toString(), 
+                screenX + 3, // Sedikit geser kanan dari strip
+                4,           // Padding atas
+                this.fontSize, 
+                this.textColor
+            );
+        }
+
+        // --- LEFT RULER (Y Axis) ---
+        const startY = Math.floor(viewWorldTop / step) * step;
+        const endY = viewWorldTop + rectH;
+
+        // Rotasi -90 derajat (dalam radian)
+        const rotation = -Math.PI / 2;
+
+        for (let wy = startY; wy <= endY; wy += step) {
+            const screenY = (wy - viewWorldTop) * cam.scale;
+
+            if (screenY < this.thickness) continue;
+
+            // Tick (Strip): Posisi di kanan (menempel ke canvas)
+            // Dari x = thickness - tickSize sampai x = thickness
+            ui.fillRect(
+                this.thickness - this.tickSize, 
+                screenY, 
+                this.tickSize, 
+                1, 
+                this.lineColor
+            );
+
+            // Angka: ROTATE -90 Derajat
+            // x: di tengah ruler secara horizontal
+            // y: sejajar dengan strip (nanti diputar)
+            ui.drawText(
+                Math.round(wy).toString(), 
+                this.thickness / 2 - 2, // Posisi X (agak kiri dikit biar centered vertikal pas muter)
+                screenY + 3,            // Posisi Y (geser bawah dikit karena rotasi pivot)
+                this.fontSize, 
+                this.textColor,
+                null,       // font (default)
+                rotation    // ROTASI DI SINI
+            );
+        }
+        
+        // Garis Pembatas Halus (Border dengan Canvas)
+        ui.fillRect(0, this.thickness, width, 1, this.lineColor);      // Horizontal line
+        ui.fillRect(this.thickness, 0, 1, height, this.lineColor);     // Vertical line
     }
 
-    const originX = (0 - this.offsetX) * scale + w / 2;
-    const originY = (0 - this.offsetY) * scale + h / 2;
+    _calculateStep(scale) {
+        // Step logic tetap sama, sudah oke
+        const screenStep = 100;
+        const worldStep = screenStep / scale;
+        const magnitude = Math.pow(10, Math.floor(Math.log10(worldStep)));
+        const residual = worldStep / magnitude;
 
-    ctx.strokeStyle = this.originColor;
-    ctx.beginPath();
-    ctx.moveTo(originX, 0);
-    ctx.lineTo(originX, this.rulerThickness);
-    ctx.moveTo(0, originY);
-    ctx.lineTo(this.rulerThickness, originY);
-    ctx.stroke();
-
-    ctx.fillStyle = "rgba(255,255,255,0.08)";
-    ctx.fillRect(0, 0, this.rulerThickness, this.rulerThickness);
-  }
-
-  resize() {
-    this.render();
-  }
+        if (residual > 5) return 10 * magnitude;
+        if (residual > 2) return 5 * magnitude;
+        if (residual > 1) return 2 * magnitude;
+        return magnitude;
+    }
 }
