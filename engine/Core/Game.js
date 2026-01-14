@@ -2,10 +2,6 @@ import GameLoop from "../Loop/GameLoop.js";
 import World from "./World.js";
 import Camera from "../Util/Camera.js";
 import Config from "./Config.js";
-import { bus } from "../Util/EventBus.js";
-
-import GLImageResource from "../Renderer/Graphic/GLImageResource.js";
-import TextureUtil from "../Util/TextureUtil.js";
 
 export default class Game {
     constructor() {
@@ -13,6 +9,13 @@ export default class Game {
         this.camera = new Camera(0, 0);
         this.camera.scale = 1;
         this.renderer = null;
+
+        this.rulers = null; 
+        this.grid = null;
+        this.selection = null;
+        this.transform = null;
+        this.cameraController = null;
+        this.pointerCoords = null;
 
         this.loop = new GameLoop({
             update: dt => this.update(dt),
@@ -35,6 +38,7 @@ export default class Game {
     
     render(alpha) {
         const cam = this.camera.getInterpolated(alpha);
+
         this.history?.update();
         if(this.cameraController) this.cameraController.update();
         if (this.selection) this.selection.update();

@@ -1,4 +1,4 @@
-import { db } from "@/db/index.js";
+import { db } from "@/services/db/index.js";
 
 const TYPE_MAPPING = {
     '.png': 'texture', '.jpg': 'texture', '.jpeg': 'texture', '.webp': 'texture',
@@ -14,7 +14,7 @@ export async function addLocalAsset(file, projectId, folderId) {
     
     const nameWithoutExt = file.name.replace(/\.[^/.]+$/, ""); 
     
-    console.log(`Original: ${file.name}, Saved as: ${nameWithoutExt}`);
+    console.log(`[AssetService] Processing: ${file.name} -> ${nameWithoutExt}`);
 
     let dimensions = { w: 0, h: 0 };
     if (type === 'texture') {
@@ -24,7 +24,7 @@ export async function addLocalAsset(file, projectId, folderId) {
                 const url = URL.createObjectURL(file);
                 img.onload = () => {
                     resolve({ w: img.naturalWidth, h: img.naturalHeight });
-                    URL.revokeObjectURL(url); // Clean up memory
+                    URL.revokeObjectURL(url);
                 };
                 img.onerror = () => resolve({ w: 0, h: 0 });
                 img.src = url;
@@ -40,8 +40,8 @@ export async function addLocalAsset(file, projectId, folderId) {
         folderId: folderId || null,
         name: nameWithoutExt, 
         type: type,
-        localBlob: file, 
-        fileUrl: null,
+        localBlob: file, // Blob disimpan di DB untuk persistensi offline
+        fileUrl: null,   // Akan di-hydrate saat load
         isSynced: false,
         meta: {
             extension: ext, 

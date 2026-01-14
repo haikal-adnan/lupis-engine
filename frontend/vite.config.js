@@ -5,9 +5,15 @@ import vue from '@vitejs/plugin-vue';
 import vueDevTools from 'vite-plugin-vue-devtools';
 import svgLoader from 'vite-svg-loader';
 
+// --- TAMBAHKAN BARIS INI (DEFINISI __dirname) ---
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+// ------------------------------------------------
+
 export default defineConfig({
   server: {
     host: '0.0.0.0',
+    appType: 'mpa',
     port: 6500,
     allowedHosts: [
       'lupis.calk.cloud',
@@ -16,17 +22,13 @@ export default defineConfig({
     hmr: {
       overlay: true,
     },
-
-    // ✅ HANYA IZINKAN FOLDER KODE/LOGIC YANG DIBUTUHKAN UNTUK BUILD
-    // Folder data seperti '../projects' atau '../backend' dihapus dari sini demi keamanan
     fs: {
       allow: [
         searchForWorkspaceRoot(process.cwd()),
-        'src',               // Folder frontend sendiri
-        '../engine',         // Logic core engine
-        '../utils',          // Fungsi helper bersama
-        '../schemas',        // Skema data/validasi bersama
-        'node_modules',      // Dependensi
+        'src',            
+        '../engine',   
+        './',             
+        'node_modules',   
       ],
     },
   },
@@ -55,25 +57,31 @@ export default defineConfig({
 
   resolve: {
     alias: {
-      // === Alias untuk folder src (Frontend) ===
       '@': fileURLToPath(new URL('./src', import.meta.url)),
-
-      // === Alias untuk LOGIC (Boleh diakses Vite untuk kompilasi) ===
-      '@engine': path.resolve(__dirname, '../engine'),
-      '@utils': path.resolve(__dirname, '../utils'),
-      '@schemas': path.resolve(__dirname, '../schemas'),
+      '@commons': fileURLToPath(new URL('./src/commons', import.meta.url)),
+      '@modules': fileURLToPath(new URL('./src/modules', import.meta.url)),
+      '@services': fileURLToPath(new URL('./src/services', import.meta.url)),
+      '@layouts': fileURLToPath(new URL('./src/layouts', import.meta.url)),
+      '@composables': fileURLToPath(new URL('./src/composables', import.meta.url)),
+      '@ui': fileURLToPath(new URL('./src/commons/components', import.meta.url)),
+      '@engines': path.resolve(__dirname, '../engine'),
+      '/engine': path.resolve(__dirname, '../engine'),
       'vue': 'vue/dist/vue.esm-bundler.js',
-      // ❌ ALIAS UNTUK DATA SEPERTI @projects DIHAPUS
-      // Data sekarang diakses via CDN_URL melalui HTTP, bukan via filesystem alias
     },
   },
 
-  // Menangani build agar tetap rapi jika ada file di luar root
   build: {
     outDir: 'dist',
     emptyOutDir: true,
     commonjsOptions: {
       include: [/engine/, /node_modules/],
     },
+    rollupOptions: {
+      input: {
+        main: path.resolve(__dirname, 'index.html'), 
+        // Sekarang __dirname sudah valid, path ini akan akurat
+        preview: path.resolve(__dirname, 'preview/index.html') 
+      }
+    }
   },
 });

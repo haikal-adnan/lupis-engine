@@ -35,12 +35,14 @@ const seedDatabase = async () => {
 
     const prefabChestId = "prefab_chest_001";
 
+    // Entity IDs
     const entBgId = "ent_background_map";
     const entGroupId = "ent_group_dungeon";
     const entItemId = "ent_item_inner";
     const entTextId = "ent_ui_text_label";
     const entChestStdId = "ent_chest_std";
     const entChestBigId = "ent_chest_big";
+    const entTilemapId = "ent_main_tilemap";
 
     await Project.create({
       _id: projectId,
@@ -87,15 +89,8 @@ const seedDatabase = async () => {
         layerId: "layer_hero",
         components: {
           Transform: {
-            x: 0,
-            y: 0,
-            scaleX: 2,
-            scaleY: 2,
-            rotation: 0,
-            width: 50,
-            height: 50,
-            pivotX: 0.5,
-            pivotY: 0.5
+            x: 0, y: 0, scaleX: 2, scaleY: 2, rotation: 0,
+            width: 50, height: 50, pivotX: 0.5, pivotY: 0.5
           },
           SpriteRenderer: {
             assetId: assetDungeonId,
@@ -126,14 +121,45 @@ const seedDatabase = async () => {
         { _id: "layer_ui", name: "UI" }
       ],
       entities: [
+        // 1. TILEMAP ENTITY (New)
+        {
+            _id: entTilemapId,
+            type: "entity",
+            name: "Level Terrain",
+            tag: "ground",
+            layerId: "layer_root",
+            parentId: null,
+            isActive: true,
+            isVisible: true,
+            components: {
+                Transform: {
+                    // 40 columns * 16px = 640 width
+                    // 30 rows * 16px = 480 height
+                    x: 0, y: 0, width: 640, height: 480, rotation: 0, scaleX: 1, scaleY: 1
+                },
+                Tilemap: {
+                    tileWidth: 16,
+                    tileHeight: 16,
+                    width: 40,      
+                    height: 30,     
+                    assetId: assetDungeonId,
+                    opacity: 1,
+                    isSolid: true,
+                    // Membuat Array size 1200 (40*30).
+                    // Logic map inline: Jika index >= 1120 (2 baris bawah), isi tile ID 45, sisanya 0.
+                    data: Array(1200).fill(0).map((_, i) => i >= 1120 ? 45 : 0)
+                }
+            }
+        },
+        // 2. BACKGROUND (Reverted to Active)
         {
           _id: entBgId,
           type: "entity",
-          name: "Background Map",
+          name: "Background Image",
           tag: "background",
           layerId: "layer_root",
           parentId: null,
-          isActive: true,
+          isActive: true, 
           isVisible: true,
           components: {
             Transform: {
@@ -159,12 +185,7 @@ const seedDatabase = async () => {
           isVisible: true,
           _editor: { expanded: true },
           components: {
-            Transform: {
-              x: 100,
-              y: 100,
-              scaleX: 1,
-              scaleY: 1
-            }
+            Transform: { x: 100, y: 100, scaleX: 1, scaleY: 1 }
           }
         },
         {
@@ -176,21 +197,8 @@ const seedDatabase = async () => {
           isActive: true,
           isVisible: true,
           components: {
-            Transform: {
-              x: 50,
-              y: 50,
-              width: 64,
-              height: 64,
-              pivotX: 0.5,
-              pivotY: 1.0
-            },
-            ShapeRenderer: {
-              type: "rectangle",
-              color: "#FF0000",
-              width: 100,
-              height: 100,
-              opacity: 0.8
-            }
+            Transform: { x: 50, y: 50, width: 64, height: 64, pivotX: 0.5, pivotY: 1.0 },
+            ShapeRenderer: { type: "rectangle", color: "#FF0000", width: 100, height: 100, opacity: 1 }
           }
         },
         {
@@ -203,12 +211,7 @@ const seedDatabase = async () => {
           isActive: true,
           isVisible: true,
           components: {
-            Transform: {
-              x: 200,
-              y: 0,
-              width: 50, 
-              height: 50  
-            }
+            Transform: { x: 200, y: 0, width: 50, height: 50 }
           }
         },
         {
@@ -221,14 +224,7 @@ const seedDatabase = async () => {
           isActive: true,
           isVisible: true,
           components: {
-            Transform: {
-              x: 400,
-              y: 0,
-              scaleX: 3,
-              scaleY: 3,
-              width: 50, 
-              height: 50 
-            },
+            Transform: { x: 400, y: 0, scaleX: 3, scaleY: 3, width: 50, height: 50 },
             SpriteRenderer: {
               assetId: assetDungeonId,
               source: { x: 128, y: 0, w: 32, h: 32 },
@@ -246,14 +242,7 @@ const seedDatabase = async () => {
           isActive: true,
           isVisible: true,
           components: {
-            Transform: {
-              x: 640,
-              y: 100,
-              width: 300,
-              height: 42,
-              pivotX: 0.5,
-              pivotY: 0.5
-            },
+            Transform: { x: 640, y: 100, width: 300, height: 42, pivotX: 0.5, pivotY: 0.5 },
             TextRenderer: {
               value: "LUPIS ENGINE",
               fontSize: 64,

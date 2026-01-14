@@ -7,6 +7,22 @@ export default class World {
             fonts: {} 
         };
         this.prefabs = {};
+        
+        this._editors = {
+            activeTool: null,
+            activeTabId: null,
+            tilemapContext: {
+                showOthers: true,  
+                opacity: 0.3  
+            },
+            gridContext: {
+                display: true,
+                width: 50,
+                height: 50,
+                magnet: true 
+            },
+            tabs: []
+        };
     }
 
     addEntity(entity) {
