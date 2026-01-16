@@ -15,7 +15,6 @@ export function useEntityActions(activeScene, selectedEntityIds) {
       layerId = contextNode.layerId;
       parentId = contextNode._id;
     }
-    console.log(type)
 
     const components = {};
     if (type === 'sprite') {
@@ -24,7 +23,7 @@ export function useEntityActions(activeScene, selectedEntityIds) {
       components.ShapeRenderer = { type: 'rectangle', color: '#FF0000' };
     } else if (type === 'text') {
       components.TextRenderer = { value: 'New Text', fontSize: 24, color: '#FFFFFF' };
-    }else if (type === 'tilemap') {
+    } else if (type === 'tilemap') {
       const defaultW = 40; 
       const defaultH = 30;
 
@@ -36,13 +35,16 @@ export function useEntityActions(activeScene, selectedEntityIds) {
          tilesetId: null,
          opacity: 1,
          isSolid: false,
-         
          data: new Array(defaultW * defaultH).fill(0)
       };
     }
 
+    const timestamp = Date.now();
+    const scriptId = `${type}_${timestamp}`;
+
     const newEntity = createEntitySchema({
-      _id: `ent_${Date.now()}`, 
+      _id: `ent_${timestamp}`, 
+      scriptId: scriptId,
       name: `New ${type.charAt(0).toUpperCase() + type.slice(1)}`,
       type: type === 'group' ? 'group' : 'entity',
       layerId,
@@ -53,7 +55,6 @@ export function useEntityActions(activeScene, selectedEntityIds) {
     activeScene.value.entities.push(newEntity);
     selectedEntityIds.value = [newEntity._id];
 
-    // PENTING: Return objek agar bisa ditangkap oleh onAction.after()
     return newEntity; 
   };
 
@@ -63,6 +64,18 @@ export function useEntityActions(activeScene, selectedEntityIds) {
     const entity = activeScene.value.entities.find(e => e._id === entityId);
     if (entity) {
       entity.name = newName;
+    }
+  };
+
+  const updateEntityScriptId = (entityId, newScriptId) => {
+    if (!activeScene.value) return;
+
+    const sanitizedId = newScriptId.replace(/[^a-zA-Z0-9_]/g, "_");
+
+    const entity = activeScene.value.entities.find(e => e._id === entityId);
+    if (entity) {
+      entity.scriptId = sanitizedId;
+      return { entityId, scriptId: sanitizedId };
     }
   };
 
@@ -136,12 +149,24 @@ export function useEntityActions(activeScene, selectedEntityIds) {
     }
   };
 
+  const syncTilemapDataFromEngine = (entityId, newData) => {
+    if (!activeScene.value) return;
+    
+    const entity = activeScene.value.entities.find(e => e._id === entityId);
+    
+    if (entity && entity.components && entity.components.Tilemap) {
+      entity.components.Tilemap.data = newData;
+    }
+  };
+
   return { 
     createEntity, 
     updateEntityName, 
+    updateEntityScriptId,
     deleteEntity, 
     moveEntity,
     updateComponentProp,
-    updateEntityProp
+    updateEntityProp,
+    syncTilemapDataFromEngine
   };
 }

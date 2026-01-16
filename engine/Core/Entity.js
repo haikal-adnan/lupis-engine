@@ -1,6 +1,7 @@
 export default class Entity {
     constructor(id) {
         this.id = id;
+        this.scriptId = null;
         
         this.active = true; 
         this.visible = true;

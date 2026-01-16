@@ -2,6 +2,7 @@
 
 let engineInstance = null;
 let onNativeEntityModified = null;
+let onNativeTilemapUpdate = null;
 
 export const EngineBridge = {
   setInstance(instance) {
@@ -12,18 +13,35 @@ export const EngineBridge = {
          onNativeEntityModified(entities);
        }
     });
+
+    engineInstance.bus.on("editor:tilemap:update-data", (payload) => {
+        console.log()
+
+        if (onNativeTilemapUpdate) {
+          
+            onNativeTilemapUpdate(payload);
+        }
+    });
   },
 
   onEntityModified(callback) {
     onNativeEntityModified = callback;
   },
 
+  onTilemapDataUpdated(callback) {
+      onNativeTilemapUpdate = callback;
+  },
+
   disconnect() {
     if (engineInstance) {
         engineInstance.bus.off("entity:modified");
     }
+    if (engineInstance) {
+          engineInstance.bus.off("editor:tilemap:update-data");
+      }
     engineInstance = null;
     onNativeEntityModified = null;
+    onNativeTilemapUpdate = null;
   },
 
   createEntity(entityData) {
@@ -94,10 +112,4 @@ export const EngineBridge = {
     engineInstance.bus.emit("editor:store:update", payload);
   },
 
-  onTilemapResized(callback) {
-    if (!engineInstance) return;
-    engineInstance.bus.on("editor:tilemap:resize", (data) => {
-        callback(data);
-    });
-  },
 };

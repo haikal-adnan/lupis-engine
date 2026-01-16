@@ -37,6 +37,8 @@
         :style="{
           paddingLeft: prefix ? '0px' : paddingX
         }"
+        @blur="$emit('blur', $event)"
+        @keydown.enter="$event.target.blur()"
       />
       
       <div 
@@ -72,6 +74,7 @@ const {
   paddingX: String
 })
 
+const emit = defineEmits(['blur'])
 const model = defineModel()
 const id = useId()
 </script>

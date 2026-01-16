@@ -121,9 +121,9 @@ const seedDatabase = async () => {
         { _id: "layer_ui", name: "UI" }
       ],
       entities: [
-        // 1. TILEMAP ENTITY (New)
         {
             _id: entTilemapId,
+            scriptId: "level_ground",
             type: "entity",
             name: "Level Terrain",
             tag: "ground",
@@ -133,8 +133,6 @@ const seedDatabase = async () => {
             isVisible: true,
             components: {
                 Transform: {
-                    // 40 columns * 16px = 640 width
-                    // 30 rows * 16px = 480 height
                     x: 0, y: 0, width: 640, height: 480, rotation: 0, scaleX: 1, scaleY: 1
                 },
                 Tilemap: {
@@ -145,8 +143,6 @@ const seedDatabase = async () => {
                     assetId: assetDungeonId,
                     opacity: 1,
                     isSolid: true,
-                    // Membuat Array size 1200 (40*30).
-                    // Logic map inline: Jika index >= 1120 (2 baris bawah), isi tile ID 45, sisanya 0.
                     data: Array(1200).fill(0).map((_, i) => i >= 1120 ? 45 : 0)
                 }
             }
@@ -154,6 +150,7 @@ const seedDatabase = async () => {
         // 2. BACKGROUND (Reverted to Active)
         {
           _id: entBgId,
+          scriptId: "bg_main",
           type: "entity",
           name: "Background Image",
           tag: "background",
@@ -177,6 +174,7 @@ const seedDatabase = async () => {
         },
         {
           _id: entGroupId,
+          scriptId: "room_group",
           type: "group",
           name: "Dungeon Room",
           layerId: "layer_hero",
@@ -190,6 +188,7 @@ const seedDatabase = async () => {
         },
         {
           _id: entItemId,
+          scriptId: "inner_item_debug",
           type: "entity",
           name: "Inner Item",
           parentId: entBgId,
@@ -203,6 +202,7 @@ const seedDatabase = async () => {
         },
         {
           _id: entChestStdId,
+          scriptId: "chest_std_01",
           type: "entity",
           name: "Chest 1 (Standard)",
           prefabId: prefabChestId,
@@ -216,6 +216,7 @@ const seedDatabase = async () => {
         },
         {
           _id: entChestBigId,
+          scriptId: "chest_boss_01",
           type: "entity",
           name: "Chest 2 (Big Ghost)",
           prefabId: prefabChestId,
@@ -235,6 +236,7 @@ const seedDatabase = async () => {
         },
         {
           _id: entTextId,
+          scriptId: "ui_title_label",
           type: "entity",
           name: "Title Label",
           layerId: "layer_ui",

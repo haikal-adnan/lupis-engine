@@ -2,6 +2,10 @@ import mongoose from 'mongoose';
 
 const LayerSchema = new mongoose.Schema({
   _id: { type: String, required: true }, 
+  
+  // === UPDATE: Script ID untuk Layer ===
+  scriptId: { type: String, required: true, default: 'unnamed_layer' },
+  
   name: { type: String, required: true },
   locked: { type: Boolean, default: false },
   visible: { type: Boolean, default: true }
@@ -14,6 +18,7 @@ const EditorStateSchema = new mongoose.Schema({
 
 const EntitySchema = new mongoose.Schema({
   _id: { type: String, required: true },
+  scriptId: { type: String, required: true, default: 'unnamed_var' },
   type: { 
     type: String, 
     enum: ['entity', 'group'], 
@@ -34,6 +39,11 @@ const EntitySchema = new mongoose.Schema({
 const SceneSchema = new mongoose.Schema({
   _id: { type: String, required: true },
   projectId: { type: String, ref: 'Project', required: true },
+  
+  // === UPDATE: Script ID untuk Scene ===
+  // Penting agar Logic 'Change Scene' bisa merujuk ke ID yang stabil (misal: "level_1")
+  scriptId: { type: String, required: true, default: 'unnamed_scene' },
+  
   name: { type: String, required: true },
   version: { type: Number, default: 1 },
   settings: {

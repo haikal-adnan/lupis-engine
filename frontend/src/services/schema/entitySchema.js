@@ -3,7 +3,7 @@ import { createComponent, createTransform } from './componentSchema.js';
 export const createEntity = (data = {}) => {
   const cleanComponents = {};
 
-  // 1. Clean semua components dulu agar datanya siap (termasuk Tilemap)
+  // 1. Clean semua components dulu agar datanya siap
   if (data.components) {
     for (const [key, val] of Object.entries(data.components)) {
       cleanComponents[key] = createComponent(key, val);
@@ -26,7 +26,7 @@ export const createEntity = (data = {}) => {
     defaultHeight = 100;
   }
 
-  // 3. Buat Transform dengan default size yang sudah dikalkulasi di atas
+  // 3. Buat Transform dengan default size
   const rawTransform = cleanComponents.Transform || data.transform || {};
   
   cleanComponents.Transform = createTransform(rawTransform, { 
@@ -34,10 +34,18 @@ export const createEntity = (data = {}) => {
     height: defaultHeight 
   });
 
+  const timestamp = Date.now();
+  const type = data.type || "entity";
+
   return {
-    _id: data._id || `ent_${Date.now()}`,
+    _id: data._id || `ent_${timestamp}`,
+    
+    // === UPDATE: Script ID ===
+    // Jika data tidak punya scriptId (project lama), generate baru
+    scriptId: data.scriptId || `${type}_${timestamp}`,
+
     name: data.name || "New Entity",
-    type: data.type || "entity",
+    type: type,
     tag: data.tag || "untagged",
     
     parentId: data.parentId || null,

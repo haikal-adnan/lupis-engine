@@ -109,6 +109,12 @@ export function useEditorToEngine(sceneStore, assetStore, editorStore) {
                 gridContext: { ...editorStore.gridContext }
              });
              break;
+          case 'setTileSelection':
+          case 'clearTileSelection':
+            EngineBridge.updateEditorState({
+              tileSelection: editorStore.tileSelection
+            });
+            break;
         }
       });
     });

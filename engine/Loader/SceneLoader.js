@@ -9,6 +9,7 @@ export default class SceneLoader {
     loadScene(sceneData) {
         if (!sceneData) return;
 
+        // ... (Bagian Layers tetap sama) ...
         if (Array.isArray(sceneData.layers)) {
             this.world.layers = sceneData.layers.map(layer => ({
                 _id: layer._id,
@@ -25,6 +26,9 @@ export default class SceneLoader {
 
         this.world.entities = [];
         
+        // OPTIONAL: Reset Map Script ID di World (untuk pencarian cepat)
+        if (this.world.scriptIdMap) this.world.scriptIdMap.clear();
+
         const createdEntities = new Map();
 
         for (const entityData of sceneData.entities) {
@@ -33,8 +37,14 @@ export default class SceneLoader {
 
             createdEntities.set(entity.id, entity);
             this.world.addEntity(entity);
+            
+            // OPTIONAL: Simpan ke Map khusus untuk performa logic
+            if (this.world.scriptIdMap && entity.scriptId) {
+                this.world.scriptIdMap.set(entity.scriptId, entity);
+            }
         }
 
+        // ... (Bagian Parent-Child linking tetap sama) ...
         for (const entity of createdEntities.values()) {
             if (!entity.parentId) continue;
 
@@ -59,6 +69,9 @@ export default class SceneLoader {
 
         const entity = new Entity(finalData._id);
 
+        // === 1. SIMPAN SCRIPT ID DI SINI ===
+        entity.scriptId = finalData.scriptId; 
+        
         entity.name = finalData.name;
         entity.type = finalData.type;
         entity.tag = finalData.tag;
@@ -71,7 +84,6 @@ export default class SceneLoader {
 
         if(this.mode == "editor") entity._editor = finalData._editor;
 
-
         for (const [key, val] of Object.entries(finalData.components)) {
             entity.addComponent(key, val);
         }
@@ -82,7 +94,11 @@ export default class SceneLoader {
     _mergePrefabData(template, instance) {
         const merged = structuredClone(template);
 
+        // === 2. PASTIKAN INSTANCE MENG-OVERRIDE SCRIPT ID PREFAB ===
+        // Karena scriptId harus unik per scene, kita pakai yang dari instance
         merged._id = instance._id;
+        merged.scriptId = instance.scriptId; // <--- Penting!
+        
         merged.name = instance.name;
         merged.parentId = instance.parentId;
         merged.layerId = instance.layerId;

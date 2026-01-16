@@ -28,6 +28,8 @@ export default class SyncComponent {
 
         // --- Editor State Sync (NEW) ---
         this.bus.on("editor:store:update", (payload) => this.onUpdateEditorStore(payload));
+
+        
     }
 
     // --------------------------------------------------------------------------
@@ -46,7 +48,7 @@ export default class SyncComponent {
         }
 
         // Destructure gridContext juga
-        const { tilemapContext, gridContext, ...others } = payload;
+        const { tilemapContext, gridContext, tileSelection, ...others } = payload;
 
         Object.assign(this.world._editors, others);
 
@@ -59,6 +61,11 @@ export default class SyncComponent {
         if (gridContext) {
             if (!this.world._editors.gridContext) this.world._editors.gridContext = {};
             Object.assign(this.world._editors.gridContext, gridContext);
+        }
+
+            // Simpan Tile Selection
+        if (tileSelection !== undefined) {
+            this.world._editors.tileSelection = tileSelection;
         }
     }
 
