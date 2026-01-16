@@ -2,7 +2,6 @@
   <PropertySection title="Tile Palette" :icon="Grid" :showMenu="false">
     
     <div class="flex gap-1 p-1 border-b border-border bg-muted/10">
-      
       <IconButton 
         :active="effectiveMode === 'select'" 
         tooltip="Select Tool (V)"
@@ -18,8 +17,7 @@
       >
         <Hand class="w-4 h-4" />
       </IconButton>
-
-      </div>
+    </div>
 
     <div 
       ref="viewportRef"
@@ -36,7 +34,7 @@
       <div class="absolute inset-0 opacity-20 pointer-events-none" style="background-image: radial-gradient(#444 1px, transparent 1px); background-size: 10px 10px;"></div>
 
       <div class="absolute origin-top-left pixel-art-layer" :style="containerStyle">
-        <img v-if="currentTextureUrl" :src="currentTextureUrl" class="block max-w-none select-none pointer-events-none" @load="onImageLoad" />
+        <img v-if="currentTextureUrl" :src="currentTextureUrl" class="block max-w-none select-none pointer-events-none" @load="resetView" />
         <div v-else class="flex items-center justify-center w-64 h-64 text-xs text-muted-foreground">No Texture</div>
 
         <div 
@@ -66,21 +64,27 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
-import { Grid, Hand, MousePointer2 } from 'lucide-vue-next'; // Import Icons
+import { Grid, Hand, MousePointer2 } from 'lucide-vue-next';
 import { useTilemapLogic } from '@/modules/tilemap/composables/useTilemapLogic.js';
+import { useTilemapNavigation } from '@/modules/tilemap/composables/useTilemapNavigation.js'; // Import Composable Baru
+import { useEditorStore } from '@/stores/useEditorStore.js';
 
 // Components
 import PropertySection from "@ui/display/PropertySection.vue";
 import PropertyRow from "@ui/display/PropertyRow.vue";
 import BaseButton from "@/commons/components/buttons/BaseButton.vue";
-import IconButton from '@/commons/components/buttons/IconButton.vue'; // Import IconButton
+import IconButton from '@/commons/components/buttons/IconButton.vue';
 
 const { currentTextureUrl, tileWidth, tileHeight } = useTilemapLogic();
+const editorStore = useEditorStore();
 
-// --- STATE ---
-const viewX = ref(0);
-const viewY = ref(0);
-const viewScale = ref(1);
+// --- GUNAKAN COMPOSABLE NAVIGATION ---
+const { 
+  viewportRef, viewScale, isPanning, containerStyle,
+  resetView, handleWheel, getGridPos, startPan, updatePan, endPan
+} = useTilemapNavigation();
+
+// --- UI STATE LOCAL ---
 const activeMode = ref('select');
 const isSpacePressed = ref(false);
 const isHovering = ref(false);
@@ -91,15 +95,6 @@ const selectionStart = ref({ x: 0, y: 0 });
 const selectionEnd = ref({ x: 0, y: 0 });
 const hasSelection = ref(false);
 
-// Pointer State
-const isPanning = ref(false);
-const lastPtrX = ref(0);
-const lastPtrY = ref(0);
-const startPtrX = ref(0);
-const startPtrY = ref(0);
-
-const viewportRef = ref(null);
-
 // --- COMPUTED ---
 const effectiveMode = computed(() => isSpacePressed.value ? 'pan' : activeMode.value);
 
@@ -109,11 +104,6 @@ const cursorClass = computed(() => {
   return 'default'; 
 });
 
-const containerStyle = computed(() => ({
-  transform: `translate(${Math.floor(viewX.value)}px, ${Math.floor(viewY.value)}px) scale(${viewScale.value})`
-}));
-
-// Marquee Math
 const selectionRect = computed(() => {
   const x1 = Math.min(selectionStart.value.x, selectionEnd.value.x);
   const y1 = Math.min(selectionStart.value.y, selectionEnd.value.y);
@@ -142,78 +132,88 @@ const gridOverlayStyle = computed(() => {
   };
 });
 
-// --- HELPER ---
-function getGridPos(clientX, clientY) {
-  if (!viewportRef.value) return { x: 0, y: 0 };
-  const rect = viewportRef.value.getBoundingClientRect();
-  const mouseX = clientX - rect.left;
-  const mouseY = clientY - rect.top;
-  const worldX = (mouseX - viewX.value) / viewScale.value;
-  const worldY = (mouseY - viewY.value) / viewScale.value;
-  const tw = tileWidth.value || 32;
-  const th = tileHeight.value || 32;
-  return { x: Math.floor(worldX / tw), y: Math.floor(worldY / th) };
-}
+// --- POINTER EVENTS ---
 
-// --- POINTER EVENTS (Pan + Marquee) ---
 function onPointerDown(e) {
   viewportRef.value?.setPointerCapture(e.pointerId);
-  lastPtrX.value = e.clientX; lastPtrY.value = e.clientY;
-  startPtrX.value = e.clientX; startPtrY.value = e.clientY;
 
   const isMiddleClick = e.button === 1;
   const isLeftClick = e.button === 0;
 
-  // Pan
+  // 1. Pan Logic (Delegasi ke Composable)
   if (isMiddleClick || (isLeftClick && effectiveMode.value === 'pan')) {
-    isPanning.value = true;
+    startPan(e.clientX, e.clientY);
     e.preventDefault();
     return;
   }
 
-  // Selection
+  // 2. Selection Logic (Lokal Component)
   if (isLeftClick && effectiveMode.value === 'select') {
     isSelecting.value = true;
     hasSelection.value = true;
-    const gridPos = getGridPos(e.clientX, e.clientY);
-    if (gridPos.x < 0 || gridPos.y < 0) { hasSelection.value = false; isSelecting.value = false; return; }
+    const gridPos = getGridPos(e.clientX, e.clientY, tileWidth.value, tileHeight.value);
+    
+    // Bounds check sederhana (asumsi 0,0 adalah top left)
+    if (gridPos.x < 0 || gridPos.y < 0) { 
+      hasSelection.value = false; 
+      isSelecting.value = false; 
+      return; 
+    }
+    
     selectionStart.value = { ...gridPos };
     selectionEnd.value = { ...gridPos };
   }
 }
 
 function onPointerMove(e) {
+  // Update Pan
   if (isPanning.value) {
-    viewX.value += e.clientX - lastPtrX.value;
-    viewY.value += e.clientY - lastPtrY.value;
-    lastPtrX.value = e.clientX; lastPtrY.value = e.clientY;
+    updatePan(e.clientX, e.clientY);
     return;
   }
+  
+  // Update Selection
   if (isSelecting.value) {
-    const gridPos = getGridPos(e.clientX, e.clientY);
-    if (gridPos.x >= 0 && gridPos.y >= 0) selectionEnd.value = { ...gridPos };
+    const gridPos = getGridPos(e.clientX, e.clientY, tileWidth.value, tileHeight.value);
+    if (gridPos.x >= 0 && gridPos.y >= 0) {
+       selectionEnd.value = { ...gridPos };
+    }
   }
 }
 
 function onPointerUp(e) {
   viewportRef.value?.releasePointerCapture(e.pointerId);
-  isPanning.value = false;
+  
+  // Stop Pan
+  endPan();
+  
+  // Finish Selection
   if (isSelecting.value) {
     isSelecting.value = false;
-    // Emit selection data here if needed
+    
+    const rect = selectionRect.value;
+    if (rect.w > 0 && rect.h > 0) {
+        editorStore.setTileSelection(rect);
+        editorStore.setTool('brush'); 
+    }
   }
 }
 
-function onPointerLeave() { isPanning.value = false; isSelecting.value = false; }
+function onPointerLeave() {
+  endPan();
+  isSelecting.value = false;
+}
 
-// --- KEYBOARD ---
+// --- SHORTCUTS ---
 function onGlobalKeyDown(e) {
   if (isHovering.value && e.code === 'Space') {
     e.preventDefault(); e.stopPropagation();
     isSpacePressed.value = true;
   }
 }
-function onGlobalKeyUp(e) { if (e.code === 'Space') isSpacePressed.value = false; }
+function onGlobalKeyUp(e) { 
+  if (e.code === 'Space') isSpacePressed.value = false; 
+}
 
 onMounted(() => {
   window.addEventListener('keydown', onGlobalKeyDown, { passive: false });
@@ -224,24 +224,7 @@ onUnmounted(() => {
   window.removeEventListener('keyup', onGlobalKeyUp);
 });
 
-// --- ZOOM & CONTROLS ---
 function setMode(mode) { activeMode.value = mode; }
-function handleWheel(e) {
-  if (!viewportRef.value) return;
-  const rect = viewportRef.value.getBoundingClientRect();
-  const mouseX = e.clientX - rect.left;
-  const mouseY = e.clientY - rect.top;
-  const delta = e.deltaY > 0 ? -1 : 1;
-  let newScale = viewScale.value * (delta < 0 ? 0.9 : 1.1);
-  newScale = Math.max(0.25, Math.min(10, newScale));
-  const worldX = (mouseX - viewX.value) / viewScale.value;
-  const worldY = (mouseY - viewY.value) / viewScale.value;
-  viewScale.value = newScale;
-  viewX.value = mouseX - (worldX * newScale);
-  viewY.value = mouseY - (worldY * newScale);
-}
-function resetView() { viewScale.value = 1; viewX.value = 20; viewY.value = 20; }
-function onImageLoad() { resetView(); }
 </script>
 
 <style scoped>

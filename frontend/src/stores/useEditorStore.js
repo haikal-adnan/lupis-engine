@@ -9,7 +9,7 @@ export const useEditorStore = defineStore('editor', {
     },
     
     activeTool: 'select', 
-
+    tileSelection: null,
     canvas: {
       zoom: 1,
     },
@@ -26,6 +26,8 @@ export const useEditorStore = defineStore('editor', {
       showOthers: true,  
       opacity: 0.3  
     },
+
+    
     
     isResizeModalOpen: false, 
     isPlayMode: false,
@@ -35,8 +37,8 @@ export const useEditorStore = defineStore('editor', {
     tabs: [
       { id: 'scene', name: 'Main Scene', type: 'scene', fixed: true },
       { id: 'ent_main_tilemap', name: 'Tilemap', type: 'tilemap', fixed: false },
-      // { id: 'player-script', name: 'Player.js', type: 'script', fixed: false },
-      // { id: 'ai-behavior', name: 'Graph Node', type: 'diagram', fixed: false }
+      { id: 'player-script', name: 'Player.js', type: 'script', fixed: false },
+      { id: 'ai-behavior', name: 'Graph Node', type: 'diagram', fixed: false }
     ]
   }),
 
@@ -131,5 +133,18 @@ export const useEditorStore = defineStore('editor', {
         this.gridContext.width = size;
         this.gridContext.height = size;
     },
+
+    setTileSelection(rect) {
+      this.tileSelection = rect;
+      
+      if (rect) {
+        this.activeTool = 'brush';
+      }
+    },
+    
+    clearTileSelection() {
+      this.tileSelection = null;
+      this.activeTool = 'select';
+    }
   }
 });

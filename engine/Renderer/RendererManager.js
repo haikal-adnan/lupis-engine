@@ -7,7 +7,7 @@ import ShapeRenderer from "./Entity/ShapeRenderer.js";
 import TextRenderer from "./Entity/TextRenderer.js";
 
 import WorldRenderer from "./Scene/WorldRenderer.js";
-import TilemapRenderer from "./Scene/TilemapRenderer.js"; // <--- IMPORT BARU
+import TilemapRenderer from "./Scene/TilemapRenderer.js"; 
 import UIRenderer from "./Scene/UIRenderer.js";
 
 import Mat4 from "../Util/Mat4.js";
@@ -25,17 +25,18 @@ export default class RendererManager {
         this.shape = new ShapeRenderer(this.ctx, this.cache);
         this.text = new TextRenderer(this.ctx, this.cache);
 
-        this.worldRenderer = new WorldRenderer(
-            this.image,
-            this.text,
-            this.shape,
-            this.game
-        );
-
         this.tilemapRenderer = new TilemapRenderer(
             this.image,
             this.shape,
             this.game
+        );
+
+        this.worldRenderer = new WorldRenderer(
+            this.image,
+            this.text,
+            this.shape,
+            this.game,
+            this.tilemapRenderer
         );
 
         this.uiRenderer = new UIRenderer(
@@ -112,22 +113,19 @@ export default class RendererManager {
             const editors = world._editors;
             const activeId = editors.activeTabId;
             const tabs = editors.tabs || [];
-
             const currentTab = tabs.find(t => t.id === activeId);
-            console.log(activeId)
 
             if (activeId === "scene") { 
                 game.selection.active = true;
                 game.transform.active = true;
-                this.worldRenderer.render(world, pWorld);
-                
             } else if (currentTab && currentTab.type === "tilemap") {
                 game.selection.active = false;
                 game.transform.active = false; 
-                this.tilemapRenderer.render(world, pWorld);
             }
+
+            this.worldRenderer.render(world, pWorld);
+
         } else {
-            // Mode Game (Play Mode) biasanya pakai worldRenderer default
             this.worldRenderer.render(world, pWorld);
         }
 
@@ -135,7 +133,6 @@ export default class RendererManager {
         this.uiRenderer.setProjection(pUI);
         this.uiRenderer.render(world.ui);
 
-        // Flush global (safety measure)
         this.image.flush();
         this.shape.flush();
         this.text.flush();

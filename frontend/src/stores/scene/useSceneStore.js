@@ -2,7 +2,7 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 
 import { useLayerActions } from './layerActions';
-import { useEntityActions } from './entityActions';
+import { useEntityActions } from './entityActions'; // Pastikan ini mengarah ke file yang baru diedit
 import { useSceneActions } from './sceneActions';
 
 export const useSceneStore = defineStore('scene', () => {
@@ -34,6 +34,7 @@ export const useSceneStore = defineStore('scene', () => {
     }
   };
 
+  // Sync Transform (Gizmo)
   const syncTransformFromEngine = (entityId, transformData) => {
     const scene = activeScene.value;
     if (!scene) return;
@@ -46,6 +47,8 @@ export const useSceneStore = defineStore('scene', () => {
 
   const sceneActions = useSceneActions(scenes, activeSceneId, selectedEntityIds);
   const layerActions = useLayerActions(activeScene);
+  
+  // Ini akan memuat syncTilemapDataFromEngine yang baru dibuat
   const entityActions = useEntityActions(activeScene, selectedEntityIds);
 
   return {
@@ -64,6 +67,6 @@ export const useSceneStore = defineStore('scene', () => {
 
     ...sceneActions,
     ...layerActions,
-    ...entityActions
+    ...entityActions // syncTilemapDataFromEngine sekarang bisa diakses via store
   };
 });

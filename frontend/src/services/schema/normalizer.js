@@ -2,7 +2,6 @@ import { CDN_URL } from "@/services/api/project.js";
 import { createLayer } from './layerSchema.js';
 import { createEntity } from './entitySchema.js';
 
-// --- Folder Schema ---
 export const createFolder = (data = {}) => ({
   _id: data._id || `fld_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
   name: data.name || "New Folder",
@@ -18,7 +17,6 @@ export const createFolder = (data = {}) => ({
   }
 });
 
-// --- Main Normalizer ---
 export const normalizeProjectLoad = (
   rawProject,
   rawScenes,
@@ -28,7 +26,6 @@ export const normalizeProjectLoad = (
 ) => {
   const projectId = rawProject?._id;
 
-  // 1. Normalize Project
   const cleanProject = {
     _id: projectId,
     name: rawProject?.name || "Untitled Project",
@@ -58,6 +55,7 @@ export const normalizeProjectLoad = (
         layers: Array.isArray(scene.layers) 
           ? scene.layers.map(l => createLayer(l))
           : [createLayer({ _id: "layer_root", name: "Root" })],
+        // createEntity akan otomatis mengisi scriptId jika data mentah tidak memilikinya
         entities: (scene.entities || []).map(createEntity)
       }))
     : [];
@@ -103,7 +101,7 @@ export const normalizeProjectLoad = (
           fileKey: asset.fileKey || "",
           meta: processedMeta,
           fileUrl: finalUrl,
-          folderId: asset.folderId || null, // Pastikan ini terhubung ke Folder ID
+          folderId: asset.folderId || null, 
           isSynced: asset.isSynced ?? true,
           localBlob: asset.localBlob || null
         };
@@ -127,7 +125,7 @@ export const normalizeProjectLoad = (
       })
     : [];
 
-  // 5. Normalize Folders (BARU)
+  // 5. Normalize Folders
   const cleanFolders = Array.isArray(rawFolders)
     ? rawFolders.map(f => createFolder(f))
     : [];
@@ -137,6 +135,6 @@ export const normalizeProjectLoad = (
     scenes: cleanScenes,
     assets: cleanAssets,
     prefabs: cleanPrefabs,
-    folders: cleanFolders // Return folders yang sudah bersih
+    folders: cleanFolders 
   };
 };

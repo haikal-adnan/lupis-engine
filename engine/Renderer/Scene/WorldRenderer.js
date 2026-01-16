@@ -1,20 +1,24 @@
 import { HexToVec4 } from "../../Util/HexToVec4.js";
 
 export default class WorldRenderer {
-    constructor(image, text, shape, game) {
+    constructor(image, text, shape, game, tilemapRenderer) {
         this.game = game;
         this.image = image;
         this.text = text;
         this.shape = shape;
+        this.tilemapRenderer = tilemapRenderer;
         this.renderQueue = [];
     }
 
     render(world, proj) {
         const editors = world._editors || {};
-        const activeTabId = editors.activeTabId;
+        const activeId = editors.activeTabId;
         const tabs = editors.tabs || [];
+        const activeTab = tabs.find(t => t.id === activeId);
         
-        if (world.gridRenderer) {
+        const isIsolationMode = (activeTab && activeTab.type === "tilemap");
+        
+        if (world.gridRenderer && !isIsolationMode) {
             world.gridRenderer(this.shape, proj);
             this.shape.flush();
         }
@@ -22,15 +26,19 @@ export default class WorldRenderer {
         this.renderQueue.length = 0;
 
         for (let li = 0; li < world.layers.length; li++) {
-                const layer = world.layers[li];
-                if (!layer.visible) continue;
+            const layer = world.layers[li];
+            if (!layer.visible) continue;
 
-                for (const e of layer.entities) {
-                    if (!e.parentId) {
-                        this._processEntity(e, li, world);
-                    }
+            for (const e of layer.entities) {
+                if (isIsolationMode) {
+                    if (e.id !== activeId) continue;
+                }
+
+                if (!e.parentId) {
+                    this._processEntity(e, li, world, proj);
                 }
             }
+        }
 
         for (const item of this.renderQueue) {
             if (item.type === "image") {
@@ -75,7 +83,7 @@ export default class WorldRenderer {
         this.shape.flush();
         this.text.flush();
 
-        if (world.selectionRenderer && this.game.selection.active) {
+        if (!isIsolationMode && world.selectionRenderer && this.game.selection.active) {
             world.selectionRenderer(this.image, this.shape, this.text, proj);
         }
     }
@@ -89,11 +97,19 @@ export default class WorldRenderer {
         return null;
     }
 
-    _processEntity(e, layerIndex, world) {
+    _processEntity(e, layerIndex, world, proj) {
         if (!e.visible) return;
 
         const comps = e.components;
         if (!comps) return;
+
+        if (comps.Tilemap) {
+            if (this.tilemapRenderer) {
+                this.image.flush(); 
+                this.tilemapRenderer.renderEntity(e, world, proj);
+            }
+            return;
+        }
 
         const t = comps.Transform;
         const entityOpacity = e.opacity ?? 1;
@@ -180,7 +196,7 @@ export default class WorldRenderer {
 
         if (e.children && e.children.length > 0) {
             for (const child of e.children) {
-                this._processEntity(child, layerIndex, world);
+                this._processEntity(child, layerIndex, world, proj);
             }
         }
     }

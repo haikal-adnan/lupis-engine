@@ -10,6 +10,7 @@ import GameLoop from "../Loop/GameLoop.js";
 import CameraController from "../Editor/CameraController.js";
 import PointerCoordinates from "../Editor/PointerCoordinates.js";
 import SelectionTool from "../Editor/SelectionTool.js";
+import TilemapTool from "../Editor/TilemapTool.js";
 import TransformTool from "../Editor/TransformTool.js";
 import SyncComponent from "../Editor/SyncComponent.js";
 import Grid from "../Editor/Grid.js";
@@ -136,6 +137,8 @@ export default class GameLoader {
                 color: "#ffffff", width: 50, height: 50, alpha: 0.5 
             });
         }
+
+        game.tilemapTool = new TilemapTool(game);
         
         if (EDITOR.SELECTION) {
             game.selection = new SelectionTool(world, game, canvas, renderer, input);

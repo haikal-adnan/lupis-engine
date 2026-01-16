@@ -8,7 +8,16 @@
     </template>
 
     <template #menu="{ close }">
-       </template>
+    </template>
+
+    <PropertyRow label="ID">
+      <BaseInput 
+        v-model="localScriptId" 
+        placeholder="unique_id_name" 
+        :error="hasIdError"
+        @blur="commitScriptId"
+      />
+    </PropertyRow>
 
     <PropertyRow label="Name">
       <BaseInput v-model="name" placeholder="ObjectName" />
@@ -58,10 +67,11 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { Eye, EyeOff, Lock, Unlock, Power } from 'lucide-vue-next'
 import { useInspectorLogic } from "@/modules/properties/composables/useInspectorLogic.js";
 import { useSceneStore } from '@/stores/scene/useSceneStore.js';
+import { useAlert } from '@/composables/useAlert';
 
 // Components
 import PropertySection from "@ui/display/PropertySection.vue";
@@ -73,21 +83,95 @@ import IconButton from '@/commons/components/buttons/IconButton.vue'
 
 const { bindEntityProp, selectedEntity } = useInspectorLogic();
 const sceneStore = useSceneStore();
+const { alert } = useAlert();
 
-// Binding Direct Properties
+const hasIdError = ref(false);
+const localScriptId = ref(''); 
+const isProcessing = ref(false); // Flag anti-conflict
+
 const name = bindEntityProp('name');
 const tag = bindEntityProp('tag');
 const active = bindEntityProp('active');
 const visible = bindEntityProp('visible');
 
-// Binding Manual untuk Nested Object (_editor.locked)
-// Karena bindEntityProp biasanya hanya level 1, kita buat manual computed setter-nya
+// Sync saat ganti object
+watch(
+  () => selectedEntity.value,
+  (newEntity) => {
+    if (newEntity) {
+      localScriptId.value = newEntity.scriptId || '';
+      hasIdError.value = false;
+      isProcessing.value = false;
+    }
+  },
+  { immediate: true, deep: true }
+);
+
+// Logic Validasi
+const commitScriptId = async () => {
+  if (!selectedEntity.value || isProcessing.value) return;
+
+  isProcessing.value = true;
+
+  const originalId = selectedEntity.value.scriptId;
+  const rawInput = localScriptId.value;
+
+  // 1. Sanitasi
+  const newId = rawInput.trim().replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+  localScriptId.value = newId;
+
+  // 2. Cek Perubahan
+  if (!newId || newId === originalId) {
+    localScriptId.value = originalId; 
+    hasIdError.value = false;
+    isProcessing.value = false;
+    return;
+  }
+
+  // 3. Cek Duplikat
+  const activeEntities = sceneStore.activeScene?.entities || [];
+  const isDuplicate = activeEntities.some(e => 
+    e.scriptId === newId && 
+    e._id !== selectedEntity.value._id 
+  );
+
+  if (isDuplicate) {
+    hasIdError.value = true;
+    
+    // Kembalikan nilai ke original segera agar UI tidak "bohong"
+    localScriptId.value = originalId;
+
+    // Delay alert sedikit agar event blur browser selesai dulu
+    setTimeout(async () => {
+      await alert({
+        title: 'Duplicate ID',
+        message: `The ID "${newId}" is already used. IDs must be unique.`,
+        type: 'warning',
+        buttonText: 'OK'
+      });
+      
+      hasIdError.value = false;
+      isProcessing.value = false; // Buka kunci setelah alert tutup
+    }, 100);
+
+  } else {
+    // Sukses
+    hasIdError.value = false;
+    
+    if (sceneStore.updateEntityScriptId) {
+      sceneStore.updateEntityScriptId(selectedEntity.value._id, newId);
+    } else {
+      sceneStore.updateEntityProp(selectedEntity.value._id, 'scriptId', newId);
+    }
+    
+    isProcessing.value = false;
+  }
+};
+
 const locked = computed({
   get: () => selectedEntity.value?._editor?.locked || false,
   set: (val) => {
     if (!selectedEntity.value) return;
-    // Kita update properti '_editor' secara utuh atau buat logic update nested di store
-    // Untuk safety, kita ambil object lama dan update key locked
     const currentEditor = selectedEntity.value._editor || {};
     sceneStore.updateEntityProp(selectedEntity.value._id, '_editor', { ...currentEditor, locked: val });
   }

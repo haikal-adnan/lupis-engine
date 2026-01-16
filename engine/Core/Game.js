@@ -41,6 +41,7 @@ export default class Game {
 
         this.history?.update();
         if(this.cameraController) this.cameraController.update();
+        if (this.tilemapTool) this.tilemapTool.update();
         if (this.selection) this.selection.update();
         if (this.transform) this.transform.update();
         if (this.pointerCoords) this.pointerCoords.update();
