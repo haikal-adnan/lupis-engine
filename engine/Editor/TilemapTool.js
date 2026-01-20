@@ -87,10 +87,8 @@ export default class TilemapTool {
         }
 
         if (isChanged) {
-            // 1. Update lokal (biar visual di engine langsung berubah)
             tm.data = newData; 
             entity.isDirty = true; 
-            console.log(tm.data)
 
             // 2. Emit via Standalone Bus
             bus.emit("editor:tilemap:update-data", {

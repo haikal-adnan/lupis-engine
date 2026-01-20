@@ -9,24 +9,39 @@ export default class SceneLoader {
     loadScene(sceneData) {
         if (!sceneData) return;
 
-        // ... (Bagian Layers tetap sama) ...
+        // === 1. LOAD SCENE SCRIPT ID ===
+        // Simpan ID scene ini di world agar Logic Node 'RestartScene' tahu ID-nya
+        if (this.world) {
+            this.world.currentSceneScriptId = sceneData.scriptId;
+        }
+
+        // === 2. LOAD LAYERS DENGAN SCRIPT ID ===
         if (Array.isArray(sceneData.layers)) {
             this.world.layers = sceneData.layers.map(layer => ({
                 _id: layer._id,
+                scriptId: layer.scriptId, // <--- PENTING: Disimpan untuk Logic 'Move to Layer'
                 name: layer.name,
                 visible: layer.visible ?? true,
                 locked: layer.locked ?? false,
                 entities: []
             }));
         } else {
-            this.world.layers = [{ _id: "layer_root", name: "Root", visible: true, locked: false, entities: [] }];
+            // Fallback jika tidak ada layer
+            this.world.layers = [{ 
+                _id: "layer_root", 
+                scriptId: "root", 
+                name: "Root", 
+                visible: true, 
+                locked: false, 
+                entities: [] 
+            }];
         }
 
         if (!Array.isArray(sceneData.entities)) return;
 
         this.world.entities = [];
         
-        // OPTIONAL: Reset Map Script ID di World (untuk pencarian cepat)
+        // Reset Map Script ID di World
         if (this.world.scriptIdMap) this.world.scriptIdMap.clear();
 
         const createdEntities = new Map();
@@ -38,13 +53,13 @@ export default class SceneLoader {
             createdEntities.set(entity.id, entity);
             this.world.addEntity(entity);
             
-            // OPTIONAL: Simpan ke Map khusus untuk performa logic
+            // Simpan ke Map khusus untuk performa logic lookup
             if (this.world.scriptIdMap && entity.scriptId) {
                 this.world.scriptIdMap.set(entity.scriptId, entity);
             }
         }
 
-        // ... (Bagian Parent-Child linking tetap sama) ...
+        // Parent-Child Linking
         for (const entity of createdEntities.values()) {
             if (!entity.parentId) continue;
 
@@ -69,7 +84,7 @@ export default class SceneLoader {
 
         const entity = new Entity(finalData._id);
 
-        // === 1. SIMPAN SCRIPT ID DI SINI ===
+        // Simpan scriptId Entity
         entity.scriptId = finalData.scriptId; 
         
         entity.name = finalData.name;
@@ -94,10 +109,9 @@ export default class SceneLoader {
     _mergePrefabData(template, instance) {
         const merged = structuredClone(template);
 
-        // === 2. PASTIKAN INSTANCE MENG-OVERRIDE SCRIPT ID PREFAB ===
-        // Karena scriptId harus unik per scene, kita pakai yang dari instance
+        // Instance override scriptId prefab
         merged._id = instance._id;
-        merged.scriptId = instance.scriptId; // <--- Penting!
+        merged.scriptId = instance.scriptId; 
         
         merged.name = instance.name;
         merged.parentId = instance.parentId;

@@ -158,7 +158,7 @@ export class TransformOperator {
 
         t.x = Math.round(item.x + (shiftX_World * wc - shiftY_World * ws));
         t.y = Math.round(item.y + (shiftX_World * ws + shiftY_World * wc));
-
+        
         ApplyResizeToEntity(e, this.world);
         bus.emit("entity:modified", selectedList, true);
     }

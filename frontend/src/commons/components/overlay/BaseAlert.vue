@@ -59,7 +59,6 @@ import { AlertCircle, CheckCircle, Info, XCircle } from 'lucide-vue-next';
 const { state, handleClose } = useAlert();
 const okButtonRef = ref(null);
 
-// Mapping Icon berdasarkan tipe
 const iconMap = {
   info: Info,
   success: CheckCircle,
@@ -67,7 +66,6 @@ const iconMap = {
   error: XCircle
 };
 
-// Mapping Warna Icon
 const colorMap = {
   info: 'text-blue-500',
   success: 'text-green-500',
@@ -75,7 +73,6 @@ const colorMap = {
   error: 'text-red-500'
 };
 
-// Auto focus tombol OK saat muncul
 watch(() => state.value.isOpen, async (isOpen) => {
   if (isOpen) {
     await nextTick();

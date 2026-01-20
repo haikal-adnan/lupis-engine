@@ -5,7 +5,6 @@ const props = defineProps({
   isLeftCollapsed: { type: Boolean, default: false },
   isRightCollapsed: { type: Boolean, default: false },
   
-  // --- PROPS BARU UNTUK MENYEMBUNYIKAN PANEL ---
   hideLeft: { type: Boolean, default: false },
   hideRight: { type: Boolean, default: false },
   hideBottom: { type: Boolean, default: false }
@@ -27,13 +26,10 @@ const CONFIG = {
   OVERLAY_MARGIN: 48 
 }
 
-// --- Logic Resizing Panel Kiri & Kanan (UPDATED) ---
-// Kita butuh akses ke 'side' (left/right) untuk cek props hide yang sesuai
 const usePanelResize = (side, defaultWidth, collapsedProp, updateCollapsed, isHiddenProp) => {
   const width = ref(defaultWidth)
   const isResizing = ref(false)
   
-  // LOGIC BARU: Jika hidden, activeWidth paksa jadi 0
   const activeWidth = computed(() => {
     if (isHiddenProp.value) return 0
     return isResizing.value || !collapsedProp.value ? width.value : CONFIG.COLLAPSED_WIDTH
@@ -44,7 +40,6 @@ const usePanelResize = (side, defaultWidth, collapsedProp, updateCollapsed, isHi
     transition: isResizing.value ? 'none' : `width ${CONFIG.TRANSITION}`
   }))
 
-  // ... (Sisa logic resizing sama seperti sebelumnya) ...
   watch(collapsedProp, (isCollapsed) => {
     if (isResizing.value) return
     if (!isCollapsed && width.value < CONFIG.MIN_WIDTH) {
@@ -71,7 +66,7 @@ const usePanelResize = (side, defaultWidth, collapsedProp, updateCollapsed, isHi
   }
 
   const start = () => {
-    if (isHiddenProp.value) return // Cegah resize jika hidden
+    if (isHiddenProp.value) return 
     if (collapsedProp.value) width.value = CONFIG.COLLAPSED_WIDTH
     isResizing.value = true
     document.addEventListener('mousemove', handleMove)
@@ -101,13 +96,12 @@ const usePanelResize = (side, defaultWidth, collapsedProp, updateCollapsed, isHi
   return { width, activeWidth, isResizing, start, panelStyle }
 }
 
-// Pass computed props untuk isHidden
 const left = usePanelResize(
   'left', 
   CONFIG.DEFAULT_LEFT, 
   computed(() => props.isLeftCollapsed), 
   (val) => emit('update:isLeftCollapsed', val),
-  computed(() => props.hideLeft) // <--- Pass Hide Prop
+  computed(() => props.hideLeft)
 )
 
 const right = usePanelResize(
@@ -115,27 +109,22 @@ const right = usePanelResize(
   CONFIG.DEFAULT_RIGHT, 
   computed(() => props.isRightCollapsed), 
   (val) => emit('update:isRightCollapsed', val),
-  computed(() => props.hideRight) // <--- Pass Hide Prop
+  computed(() => props.hideRight)
 )
 
-// --- Logic Resizing Panel Bawah (UPDATED) ---
 const bottomHeight = ref(0)
 const isBottomResizing = ref(false)
 const lastOpenHeight = ref(250)
 
 const currentBottomHeight = computed(() => {
-  // Jika BottomBar disembunyikan total, panel konten bawah juga 0
   if (props.hideBottom) return 0 
   return isBottomResizing.value ? bottomHeight.value : bottomHeight.value
 })
 
-// Hitung tinggi Bottom Bar (apakah 40px atau 0px)
 const actualBottomBarHeight = computed(() => props.hideBottom ? 0 : CONFIG.BOTTOM_BAR_HEIGHT)
 
-// Style Overlay
 const overlayBottomStyle = computed(() => {
   const h = currentBottomHeight.value > 0 ? currentBottomHeight.value : 0
-  // Gunakan actualBottomBarHeight
   const totalBottom = h + actualBottomBarHeight.value + CONFIG.OVERLAY_MARGIN
   return { 
     bottom: `${totalBottom}px`, 
@@ -143,7 +132,6 @@ const overlayBottomStyle = computed(() => {
   }
 })
 
-// ... (Function startBottomResize, handleBottomMove, dll sama) ...
 const startBottomResize = () => {
     if (props.hideBottom) return
     if (bottomHeight.value === 0) {
@@ -185,11 +173,9 @@ defineExpose({
     bottomHeight
 })
 
-// Style dinamis untuk canvas (UPDATED)
 const canvasStyle = computed(() => ({
   '--left-width': `${left.activeWidth.value}px`,
   '--right-width': `${right.activeWidth.value}px`,
-  // Update perhitungan bottom
   bottom: `${actualBottomBarHeight.value + currentBottomHeight.value}px`, 
   transition: (left.isResizing.value || right.isResizing.value || isBottomResizing.value) 
     ? 'none' 

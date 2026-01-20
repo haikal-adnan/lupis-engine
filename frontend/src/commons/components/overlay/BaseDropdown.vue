@@ -10,7 +10,7 @@
     <transition name="fade-scale">
       <div
         v-if="isOpen"
-        class="absolute z-50 min-w-[240px] origin-top-left rounded-md border border-border bg-popover text-popover-foreground shadow-lg focus:outline-none flex flex-col overflow-hidden py-1"
+        class="absolute z-50 w-auto whitespace-nowrap origin-top-left rounded-md border border-border bg-popover text-popover-foreground shadow-lg focus:outline-none flex flex-col overflow-hidden py-1"
         :class="[
           align === 'right' ? 'right-0 left-auto origin-top-right mt-1.5 mr-1' : 'left-0 origin-top-left mt-1.5 ml-1'
         ]"
@@ -40,14 +40,13 @@ function close() {
   isOpen.value = false
 }
 
-// Expose fungsi ke parent (TopBar)
+// Expose fungsi ke parent
 defineExpose({ close, open: toggle })
 
 // Custom Directive: v-click-outside
 const vClickOutside = {
   mounted(el, binding) {
     el.clickOutsideEvent = function(event) {
-      // Cek apakah klik terjadi di luar element ini
       if (!(el === event.target || el.contains(event.target))) {
         binding.value(event)
       }

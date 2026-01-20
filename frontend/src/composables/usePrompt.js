@@ -39,12 +39,12 @@ export function usePrompt() {
 
   const handleConfirm = () => {
     state.value.isOpen = false;
-    if (resolvePromise) resolvePromise(state.value.inputValue); // Return String
+    if (resolvePromise) resolvePromise(state.value.inputValue);
   };
 
   const handleCancel = () => {
     state.value.isOpen = false;
-    if (resolvePromise) resolvePromise(null); // Return Null
+    if (resolvePromise) resolvePromise(null); 
   };
 
   return {

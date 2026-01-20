@@ -47,6 +47,7 @@ export function ApplyResizeToEntity(ent, world) {
             }
         }
     }
+    console.log(world)
 
     ent.hitX = t.x;
     ent.hitY = t.y;

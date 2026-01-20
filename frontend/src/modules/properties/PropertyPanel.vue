@@ -9,6 +9,7 @@
         <EditorShape />
         <EditorText />
         <EditorTilemap />
+        <EditorScript />
       </div>
     </ScrollArea>
 
@@ -35,6 +36,7 @@ import EditorSprite from '@modules/properties/components/EditorSprite.vue'
 import EditorShape from '@modules/properties/components/EditorShape.vue'
 import EditorText from '@modules/properties/components/EditorText.vue'
 import EditorTilemap from '@modules/properties/components/EditorTilemap.vue'
+import EditorScript from '@modules/properties/components/EditorScript.vue'
 
 const { hasSelection } = useInspectorLogic();
 </script>

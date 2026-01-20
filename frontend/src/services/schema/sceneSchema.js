@@ -1,9 +1,18 @@
-export const createScene = (data = {}) => {
+import { createLayer } from '@schemas/sceneSchema/layerSchema.js';
+import { createEntity } from '@schemas/sceneSchema/entitySchema.js';
+import { GenerateUUID } from '@/commons/utils/generateUUID.js'; 
+
+export const createScene = (data = {}, projectId = null) => {
+  const sceneId = data._id || `scene_${GenerateUUID()}`;
+  const scriptId = data.scriptId || `script_${GenerateUUID()}`;
+
   return {
-    _id: data._id || `scene_${Date.now()}`, 
-    projectId: data.projectId,
-    name: data.name || "New Scene",
-    version: 1,
+    _id: sceneId,
+    projectId: projectId || data.projectId,
+    scriptId: scriptId,
+    
+    name: data.name || "Untitled Scene",
+    version: data.version || 1,
     
     settings: {
       backgroundColor: data.settings?.backgroundColor || '#222222',
@@ -19,13 +28,12 @@ export const createScene = (data = {}) => {
       }
     },
 
-    layers: [{
-      _id: 'layer_root', 
-      name: 'Default Layer', 
-      locked: false, 
-      visible: true 
-    }],
+    layers: Array.isArray(data.layers) 
+      ? data.layers.map(l => createLayer(l))
+      : [createLayer({ _id: 'layer_root', scriptId: 'root', name: 'Root' })],
 
-    entities: [] 
+    entities: Array.isArray(data.entities) 
+      ? data.entities.map(e => createEntity(e)) 
+      : []
   };
 };

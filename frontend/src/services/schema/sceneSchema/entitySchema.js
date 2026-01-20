@@ -1,23 +1,21 @@
-import { createComponent, createTransform } from './componentSchema.js';
+import { createComponent, createTransform } from '@schemas/sceneSchema/componentSchema.js';
+import { GenerateUUID } from '@/commons/utils/generateUUID.js';
 
 export const createEntity = (data = {}) => {
   const cleanComponents = {};
 
-  // 1. Clean semua components dulu agar datanya siap
   if (data.components) {
     for (const [key, val] of Object.entries(data.components)) {
       cleanComponents[key] = createComponent(key, val);
     }
   }
 
-  // 2. Tentukan Default Width & Height berdasarkan Tipe Component
   let defaultWidth = 100;
   let defaultHeight = 100;
 
   if (cleanComponents.Tilemap) {
     defaultWidth = cleanComponents.Tilemap.width * cleanComponents.Tilemap.tileWidth;
     defaultHeight = cleanComponents.Tilemap.height * cleanComponents.Tilemap.tileHeight;
-    
   } else if (cleanComponents.TextRenderer) {
     defaultWidth = 107;
     defaultHeight = 23;
@@ -26,7 +24,6 @@ export const createEntity = (data = {}) => {
     defaultHeight = 100;
   }
 
-  // 3. Buat Transform dengan default size
   const rawTransform = cleanComponents.Transform || data.transform || {};
   
   cleanComponents.Transform = createTransform(rawTransform, { 
@@ -34,15 +31,12 @@ export const createEntity = (data = {}) => {
     height: defaultHeight 
   });
 
-  const timestamp = Date.now();
   const type = data.type || "entity";
 
   return {
-    _id: data._id || `ent_${timestamp}`,
-    
-    // === UPDATE: Script ID ===
-    // Jika data tidak punya scriptId (project lama), generate baru
-    scriptId: data.scriptId || `${type}_${timestamp}`,
+    _id: data._id || `${GenerateUUID()}`,
+
+    scriptId: data.scriptId || `${type}_${GenerateUUID()}`,
 
     name: data.name || "New Entity",
     type: type,

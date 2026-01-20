@@ -62,6 +62,7 @@ export default defineConfig({
       '@modules': fileURLToPath(new URL('./src/modules', import.meta.url)),
       '@services': fileURLToPath(new URL('./src/services', import.meta.url)),
       '@layouts': fileURLToPath(new URL('./src/layouts', import.meta.url)),
+      '@schemas': fileURLToPath(new URL('./src/services/schema', import.meta.url)),
       '@composables': fileURLToPath(new URL('./src/composables', import.meta.url)),
       '@ui': fileURLToPath(new URL('./src/commons/components', import.meta.url)),
       '@engines': path.resolve(__dirname, '../engine'),

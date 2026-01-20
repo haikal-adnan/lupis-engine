@@ -14,31 +14,27 @@ export const useEditorStore = defineStore('editor', {
       zoom: 1,
     },
 
-    // NEW: Context untuk Grid & Magnet
     gridContext: {
-        display: true, // Show/Hide Grid
-        width: 50,     // Default Width
-        height: 50,    // Default Height
-        magnet: true   // Snap Enabled
+        display: true, 
+        width: 50,   
+        height: 50,
+        magnet: true 
     },
 
     tilemapContext: {
       showOthers: true,  
       opacity: 0.3  
     },
-
-    
     
     isResizeModalOpen: false, 
     isPlayMode: false,
     isPaused: false,
 
-    activeTabId: 'ent_main_tilemap',
+    activeTabId: 'script_all_types_demo',
     tabs: [
-      { id: 'scene', name: 'Main Scene', type: 'scene', fixed: true },
-      { id: 'ent_main_tilemap', name: 'Tilemap', type: 'tilemap', fixed: false },
-      { id: 'player-script', name: 'Player.js', type: 'script', fixed: false },
-      { id: 'ai-behavior', name: 'Graph Node', type: 'diagram', fixed: false }
+    { id: 'scene', name: 'Main Scene', type: 'scene', fixed: true },
+      // { id: 'player-script', name: 'Player.js', type: 'ide', fixed: false },
+      { id: 'script_all_types_demo', name: 'NPC Logic', type: 'diagram', fixed: false }
     ]
   }),
 
@@ -59,7 +55,6 @@ export const useEditorStore = defineStore('editor', {
     
     setTool(toolName) {
       this.activeTool = toolName;
-      // Sinkronisasi ditangani oleh useEditorToEngine
     },
     
     setZoom(value) {
