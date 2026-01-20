@@ -62,7 +62,6 @@ export default class HistoryManager {
     }
 
     undo() {
-        console.log("jalan")
         if (this.undoStack.length === 0) return;
 
         const cmd = this.undoStack.pop();

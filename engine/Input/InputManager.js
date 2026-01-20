@@ -17,6 +17,7 @@ export default class InputManager {
     }
 
     getPointer() {
+
         if (this.touch.active && this.touch.touches.length === 1) {
             return {
                 x: this.touch.touches[0].x,

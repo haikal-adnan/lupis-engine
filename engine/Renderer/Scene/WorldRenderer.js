@@ -3,201 +3,208 @@ import { HexToVec4 } from "../../Util/HexToVec4.js";
 export default class WorldRenderer {
     constructor(image, text, shape, game, tilemapRenderer) {
         this.game = game;
-        this.image = image;
-        this.text = text;
-        this.shape = shape;
+        // Grouping renderer agar code lebih rapi
+        this.renderer = { image, text, shape }; 
         this.tilemapRenderer = tilemapRenderer;
+        
+        // Antrian render
         this.renderQueue = [];
     }
 
     render(world, proj) {
-        const editors = world._editors || {};
-        const activeId = editors.activeTabId;
-        const tabs = editors.tabs || [];
-        const activeTab = tabs.find(t => t.id === activeId);
+        const { activeTabId, tabs } = world._editors || {};
+        const activeTab = tabs?.find(t => t.id === activeTabId);
+        const isIsolationMode = (activeTab?.type === "tilemap");
         
-        const isIsolationMode = (activeTab && activeTab.type === "tilemap");
-        
+        // 1. Render Grid (Background) - Selalu paling awal
         if (world.gridRenderer && !isIsolationMode) {
-            world.gridRenderer(this.shape, proj);
-            this.shape.flush();
+            this._flushAll();
+            world.gridRenderer(this.renderer.shape, proj);
+            this.renderer.shape.flush();
         }
 
+        // 2. Reset Queue
         this.renderQueue.length = 0;
 
+        // 3. PENGUMPULAN DATA (Strict Traversal / Painter's Algorithm)
+        // Kita percaya bahwa SyncComponent sudah menyusun Array dengan benar.
+        // Jadi kita hanya perlu loop dan gambar sesuai urutan. Tanpa Sorting.
+        this._collectRenderables(world, activeTabId, isIsolationMode, proj);
+
+        // 4. EKSEKUSI RENDER QUEUE
+        this._executeRenderQueue(proj);
+
+        // 5. Render Selection Overlay (Foreground) - Selalu paling atas
+        if (!isIsolationMode && world.selectionRenderer && this.game.selection.active) {
+            this._flushAll(); 
+            world.selectionRenderer(this.renderer.image, this.renderer.shape, this.renderer.text, proj);
+        }
+    }
+
+    // --- Core Logic Helpers ---
+
+    _collectRenderables(world, activeTabId, isIsolationMode, proj) {
+        // Loop Layer (Bawah ke Atas)
         for (let li = 0; li < world.layers.length; li++) {
             const layer = world.layers[li];
             if (!layer.visible) continue;
 
+            // Loop Entity sesuai urutan Array (WYSIWYG dari Frontend)
             for (const e of layer.entities) {
-                if (isIsolationMode) {
-                    if (e.id !== activeId) continue;
-                }
-
+                if (isIsolationMode && e.id !== activeTabId) continue;
+                
+                // Hanya proses root entity, children akan diproses rekursif
                 if (!e.parentId) {
-                    this._processEntity(e, li, world, proj);
+                    this._processEntityRecursive(e, world, proj);
                 }
             }
         }
-
-        for (const item of this.renderQueue) {
-            if (item.type === "image") {
-                this.image.draw(
-                    item.texture, item.frame, item.transformData,
-                    item.options, proj
-                );
-            } else if (item.type === "shape") {
-                const s = item.shapeOptions;
-                const t = item.transformData;
-                const c = s.colorVec4;
-
-                if (s.type === "rectangle") {
-                    this.shape.drawRect(
-                        t.x, t.y, t.width, t.height, c, proj,
-                        t.rotation, t.scaleX, t.scaleY, t.pivotX, t.pivotY, s.opacity
-                    );
-                } else if (s.type === "rectStroke") {
-                    this.shape.drawRectStroke(
-                        t.x, t.y, t.width, t.height, c, s.thickness, proj,
-                        t.rotation, t.scaleX, t.scaleY, t.pivotX, t.pivotY, s.opacity
-                    );
-                } else if (s.type === "circle") {
-                    const avgScale = (Math.abs(t.scaleX) + Math.abs(t.scaleY)) / 2;
-                    const radius = (t.width / 2) * avgScale;
-                    this.shape.drawCircle(t.x, t.y, radius, c, 32, proj);
-                } else if (s.type === "line") {
-                    this.shape.drawLine(t.x, t.y, s.x2, s.y2, c, s.thickness, proj);
-                }
-            } else if (item.type === "text") {
-                const o = item.textOptions;
-                const t = item.transformData;
-                this.text.drawText(
-                    o.font, o.text, t.x, t.y, t.width, t.height,
-                    o.fontSize, o.colorVec4, proj,
-                    t.rotation, t.scaleX, t.scaleY, t.pivotX, t.pivotY, o.opacity
-                );
-            }
-        }
-
-        this.image.flush();
-        this.shape.flush();
-        this.text.flush();
-
-        if (!isIsolationMode && world.selectionRenderer && this.game.selection.active) {
-            world.selectionRenderer(this.image, this.shape, this.text, proj);
-        }
     }
 
-    _findEntityById(world, id) {
-        for (const layer of world.layers) {
-            for (const entity of layer.entities) {
-                if (entity.id === id) return entity;
-            }
-        }
-        return null;
-    }
-
-    _processEntity(e, layerIndex, world, proj) {
+    _processEntityRecursive(e, world, proj) {
         if (!e.visible) return;
 
         const comps = e.components;
         if (!comps) return;
 
-        if (comps.Tilemap) {
-            if (this.tilemapRenderer) {
-                this.image.flush(); 
-                this.tilemapRenderer.renderEntity(e, world, proj);
-            }
+        // Special Case: Tilemap (Direct Render)
+        // Flush antrian sebelumnya agar tilemap berada di tumpukan yang benar
+        if (comps.Tilemap && this.tilemapRenderer) {
+            this._executeRenderQueue(proj); // Render antrian sebelumnya
+            this.renderQueue.length = 0;    // Reset queue
+            
+            this.tilemapRenderer.renderEntity(e, world, proj);
             return;
         }
 
+        // --- PREPARE DATA ---
         const t = comps.Transform;
-        const entityOpacity = e.opacity ?? 1;
+        const opacity = e.opacity ?? 1;
 
-        const spriteComp = comps.SpriteRenderer;
-        if (spriteComp) {
-            const texture = world.assets.textures[spriteComp.assetId];
-            const finalAlpha = (spriteComp.opacity ?? 1) * entityOpacity;
+        // Helper Data Transform
+        const trans = {
+            x: t.x, y: t.y, width: t.width, height: t.height,
+            rotation: t.rotation, scaleX: t.scaleX, scaleY: t.scaleY,
+            pivotX: t.pivotX, pivotY: t.pivotY
+        };
 
-            if (finalAlpha > 0) {
-                const frame = spriteComp.source || { x: 0, y: 0, w: 0, h: 0 };
+        // --- PUSH TO QUEUE (Sesuai urutan kedatangan) ---
+        
+        // 1. Image Component
+        if (comps.SpriteRenderer) {
+            const s = comps.SpriteRenderer;
+            const alpha = (s.opacity ?? 1) * opacity;
+            if (alpha > 0) {
                 this.renderQueue.push({
                     type: "image",
-                    layerIndex,
-                    texture,
-                    frame,
-                    transformData: {
-                        x: t.x, y: t.y, width: t.width, height: t.height,
-                        rotation: t.rotation, scaleX: t.scaleX, scaleY: t.scaleY,
-                        pivotX: t.pivotX, pivotY: t.pivotY
-                    },
-                    options: {
-                        flipX: spriteComp.flipX || false,
-                        flipY: spriteComp.flipY || false,
-                        opacity: finalAlpha
-                    }
+                    texture: world.assets.textures[s.assetId],
+                    frame: s.source || { x: 0, y: 0, w: 0, h: 0 },
+                    transformData: trans,
+                    options: { flipX: s.flipX, flipY: s.flipY, opacity: alpha }
                 });
             }
         }
 
-        const shapeComp = comps.ShapeRenderer;
-        if (shapeComp) {
-            const finalAlpha = (shapeComp.opacity ?? 1) * entityOpacity;
-            if (finalAlpha > 0) {
+        // 2. Shape Component
+        if (comps.ShapeRenderer) {
+            const s = comps.ShapeRenderer;
+            const alpha = (s.opacity ?? 1) * opacity;
+            if (alpha > 0) {
                 this.renderQueue.push({
                     type: "shape",
-                    layerIndex,
-                    transformData: {
-                        x: t.x, y: t.y, width: t.width, height: t.height,
-                        rotation: t.rotation, scaleX: t.scaleX, scaleY: t.scaleY,
-                        pivotX: t.pivotX, pivotY: t.pivotY
-                    },
+                    transformData: trans,
                     shapeOptions: {
-                        type: shapeComp.type || "rectangle",
-                        colorVec4: HexToVec4(shapeComp.color || "#FFFFFF"),
-                        opacity: finalAlpha,
-                        thickness: shapeComp.thickness || 1,
-                        x2: shapeComp.x2 ?? (t.x + t.width),
-                        y2: shapeComp.y2 ?? (t.y + t.height)
+                        type: s.type || "rectangle",
+                        color: HexToVec4(s.color || "#FFFFFF"),
+                        thickness: s.thickness || 1,
+                        x2: s.x2 ?? (t.x + t.width), y2: s.y2 ?? (t.y + t.height),
+                        opacity: alpha
                     }
                 });
             }
         }
 
-        const textComp = comps.TextRenderer;
-        if (textComp) {
-            let font = world.assets.fonts[textComp.assetId];
-            if (!font || !font.ready || !font.glTexture) {
-                font = world.assets.fonts["system_default"];
-            }
+        // 3. Text Component
+        if (comps.TextRenderer) {
+            const tx = comps.TextRenderer;
+            const alpha = (tx.opacity ?? 1) * opacity;
+            let font = world.assets.fonts[tx.assetId];
+            if (!font?.ready) font = world.assets.fonts["system_default"];
 
-            if (font && font.glTexture) {
-                const finalAlpha = (textComp.opacity ?? 1) * entityOpacity;
-                if (finalAlpha > 0) {
-                    this.renderQueue.push({
-                        type: "text",
-                        layerIndex,
-                        transformData: {
-                            x: t.x, y: t.y, width: t.width, height: t.height,
-                            rotation: t.rotation, scaleX: t.scaleX, scaleY: t.scaleY,
-                            pivotX: t.pivotX, pivotY: t.pivotY
-                        },
-                        textOptions: {
-                            text: textComp.value ?? "",
-                            fontSize: textComp.fontSize || 24,
-                            colorVec4: HexToVec4(textComp.color || "#FFFFFF"),
-                            opacity: finalAlpha,
-                            font
-                        }
-                    });
-                }
+            if (alpha > 0 && font) {
+                this.renderQueue.push({
+                    type: "text",
+                    transformData: trans,
+                    textOptions: {
+                        text: tx.value ?? "", fontSize: tx.fontSize || 24,
+                        color: HexToVec4(tx.color || "#FFFFFF"),
+                        font, opacity: alpha
+                    }
+                });
             }
         }
 
+        // --- RECURSION (CHILDREN) ---
+        // Anak digambar setelah (di atas) orang tua
         if (e.children && e.children.length > 0) {
             for (const child of e.children) {
-                this._processEntity(child, layerIndex, world, proj);
+                this._processEntityRecursive(child, world, proj);
             }
         }
+    }
+
+    _executeRenderQueue(proj) {
+        if (this.renderQueue.length === 0) return;
+
+        let currentType = null;
+
+        for (const item of this.renderQueue) {
+            // Smart Batching: Flush jika tipe renderer berubah
+            if (currentType && currentType !== item.type) {
+                this.renderer[currentType].flush();
+            }
+            currentType = item.type;
+
+            // Execute Draw
+            if (item.type === "image") {
+                this.renderer.image.draw(item.texture, item.frame, item.transformData, item.options, proj);
+            } 
+            else if (item.type === "shape") {
+                this._drawShape(item.shapeOptions, item.transformData, proj);
+            } 
+            else if (item.type === "text") {
+                const { text, font, fontSize, color, opacity } = item.textOptions;
+                const t = item.transformData;
+                this.renderer.text.drawText(
+                    font, text, t.x, t.y, t.width, t.height, fontSize, color, proj,
+                    t.rotation, t.scaleX, t.scaleY, t.pivotX, t.pivotY, opacity
+                );
+            }
+        }
+
+        // Flush sisa terakhir
+        if (currentType) {
+            this.renderer[currentType].flush();
+        }
+    }
+
+    _drawShape(opt, t, proj) {
+        const shape = this.renderer.shape;
+        if (opt.type === "rectangle") {
+            shape.drawRect(t.x, t.y, t.width, t.height, opt.color, proj, t.rotation, t.scaleX, t.scaleY, t.pivotX, t.pivotY, opt.opacity);
+        } else if (opt.type === "rectStroke") {
+            shape.drawRectStroke(t.x, t.y, t.width, t.height, opt.color, opt.thickness, proj, t.rotation, t.scaleX, t.scaleY, t.pivotX, t.pivotY, opt.opacity);
+        } else if (opt.type === "circle") {
+            const radius = (t.width / 2) * ((Math.abs(t.scaleX) + Math.abs(t.scaleY)) / 2);
+            shape.drawCircle(t.x, t.y, radius, opt.color, 32, proj);
+        } else if (opt.type === "line") {
+            shape.drawLine(t.x, t.y, opt.x2, opt.y2, opt.color, opt.thickness, proj);
+        }
+    }
+
+    _flushAll() {
+        this.renderer.image.flush();
+        this.renderer.shape.flush();
+        this.renderer.text.flush();
     }
 }

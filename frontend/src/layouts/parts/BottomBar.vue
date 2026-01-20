@@ -41,11 +41,12 @@
 
 <script setup>
 import { ref, markRaw } from 'vue'
-import { FolderOpen, Terminal, Library } from 'lucide-vue-next'
+import { FolderOpen, Terminal, Library, ScrollText } from 'lucide-vue-next'
 
 import AssetPanel from '@/modules/assets/AssetPanel.vue'
 import ConsolePanel from '@/modules/console/ConsolePanel.vue'
 import LibraryPanel from '@/modules/prefab/LibraryPanel.vue'
+import ScriptPanel from '@/modules/scripts/ScriptPanel.vue'
 
 const props = defineProps({
   isOpen: { type: Boolean, default: false }
@@ -55,6 +56,7 @@ const emit = defineEmits(['update:component', 'toggle'])
 
 const tabs = [
   { id: 'assets', label: 'Assets', icon: FolderOpen, component: markRaw(AssetPanel) },
+  { id: 'scripts', label: 'Scripts', icon: ScrollText, component: markRaw(ScriptPanel) },
   { id: 'console', label: 'Console', icon: Terminal, component: markRaw(ConsolePanel) },
   { id: 'library', label: 'Library', icon: Library, component: markRaw(LibraryPanel) },
 ]

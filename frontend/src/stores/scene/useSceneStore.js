@@ -9,7 +9,7 @@ export const useSceneStore = defineStore('scene', () => {
 
   const scenes = ref([]);
   const activeSceneId = ref(null);
-  const selectedEntityIds = ref(["ent_main_tilemap"]);
+  const selectedEntityIds = ref([]);
 
   const activeScene = computed(() => scenes.value.find(s => s._id === activeSceneId.value));
   
@@ -34,7 +34,6 @@ export const useSceneStore = defineStore('scene', () => {
     }
   };
 
-  // Sync Transform (Gizmo)
   const syncTransformFromEngine = (entityId, transformData) => {
     const scene = activeScene.value;
     if (!scene) return;

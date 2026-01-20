@@ -8,11 +8,12 @@ export async function fetchProjectById(projectId) {
 }
 
 export async function fetchProjectResources(projectId) {
-  const [scenesMetaRes, assetsRes, prefabsRes, foldersRes] = await Promise.all([
+  const [scenesMetaRes, assetsRes, prefabsRes, foldersRes, scriptsRes] = await Promise.all([
     fetch(`${API_URL}/scenes/project/${projectId}`),
     fetch(`${API_URL}/assets/${projectId}`),
     fetch(`${API_URL}/prefabs/${projectId}`),
-    fetch(`${API_URL}/folders/${projectId}`)
+    fetch(`${API_URL}/folders/${projectId}`),
+    fetch(`${API_URL}/scripts/${projectId}`)
   ])
 
   const scenesMeta = await scenesMetaRes.json()
@@ -30,6 +31,7 @@ export async function fetchProjectResources(projectId) {
     scenes: fullScenes,
     assets: await assetsRes.json(),
     prefabs: await prefabsRes.json(),
-    folders: await foldersRes.json()
+    folders: await foldersRes.json(),
+    scripts: await scriptsRes.json()
   }
 }

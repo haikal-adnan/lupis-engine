@@ -1,4 +1,5 @@
 import { createEntity as createEntitySchema } from '@/services/schema/schema.js'; 
+import { GenerateUUID } from '@/commons/utils/generateUUID';
 
 export function useEntityActions(activeScene, selectedEntityIds) {
 
@@ -26,7 +27,6 @@ export function useEntityActions(activeScene, selectedEntityIds) {
     } else if (type === 'tilemap') {
       const defaultW = 40; 
       const defaultH = 30;
-
       components.Tilemap = {  
          tileWidth: 16,
          tileHeight: 16,
@@ -39,13 +39,30 @@ export function useEntityActions(activeScene, selectedEntityIds) {
       };
     }
 
-    const timestamp = Date.now();
-    const scriptId = `${type}_${timestamp}`;
+    
+    const existingEntities = activeScene.value.entities;
 
+    const regex = new RegExp(`^${type}_(\\d+)$`);
+
+    let maxIndex = 0;
+
+    existingEntities.forEach(ent => {
+        const match = ent.scriptId ? ent.scriptId.match(regex) : null;
+        if (match) {
+            const num = parseInt(match[1], 10);
+            if (num > maxIndex) {
+                maxIndex = num;
+            }
+        }
+    });
+
+    const nextIndex = maxIndex + 1;
+    const scriptId = `${type}_${nextIndex}`;
+    
     const newEntity = createEntitySchema({
-      _id: `ent_${timestamp}`, 
-      scriptId: scriptId,
-      name: `New ${type.charAt(0).toUpperCase() + type.slice(1)}`,
+      _id: `${GenerateUUID()}`, 
+      scriptId: scriptId, // Gunakan ID yang sudah di-increment
+      name: `${type.charAt(0).toUpperCase() + type.slice(1)} ${nextIndex}`, // Opsional: Nama juga mengikuti (misal "Sprite 1")
       type: type === 'group' ? 'group' : 'entity',
       layerId,
       parentId,

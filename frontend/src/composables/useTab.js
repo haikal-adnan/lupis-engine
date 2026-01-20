@@ -6,8 +6,10 @@ import SceneHierarchy from '@/modules/scene/SceneHierarchy.vue'
 import PropertyPanel from '@/modules/properties/PropertyPanel.vue'
 import CanvasView from '@/modules/canvas/CanvasView.vue'
 import TilemapPanel from '@/modules/tilemap/TilemapPanel.vue'
-import ScriptPanel from '@/modules/script/ScriptPanel.vue'
+import IdePanel from '@/modules/ide/IdePanel.vue'
 import GraphPanel from '@/modules/graph/GraphPanel.vue'
+import NodePanel from '@/modules/node/NodePanel.vue'
+import VariabelPanel from '@/modules/variable/VariablePanel.vue'
 
 const LAYOUT_CONFIG = {
   scene: {
@@ -37,18 +39,19 @@ const LAYOUT_CONFIG = {
     }
   },
 
-  script: {
+  ide: {
     left: markRaw(SceneHierarchy),
     leftTitle: 'Explorer',
     right: null,
-    center: markRaw(ScriptPanel),
+    center: markRaw(IdePanel),
     showBottom: true,
     overlay: null
   },
 
   diagram: {
-    left: null,
-    right: markRaw(PropertyPanel),
+    rightTitle: 'Library Nodes',
+    left: markRaw(VariabelPanel),
+    right: markRaw(NodePanel),
     rightTitle: 'Node Settings',
     center: markRaw(GraphPanel),
     showBottom: false,
@@ -63,7 +66,7 @@ const LAYOUT_CONFIG = {
 const TYPE_ICONS = {
     scene: { icon: markRaw(Box), color: 'text-primary' },
     tilemap: { icon: markRaw(Grid), color: 'text-emerald-500' },
-    script: { icon: markRaw(FileCode2), color: 'text-yellow-500' },
+    ide: { icon: markRaw(FileCode2), color: 'text-yellow-500' },
     diagram: { icon: markRaw(Network), color: 'text-blue-500' }
 }
 

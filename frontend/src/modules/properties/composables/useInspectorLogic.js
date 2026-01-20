@@ -1,10 +1,12 @@
 import { computed } from 'vue';
 import { useSceneStore } from '@/stores/scene/useSceneStore.js';
 import { useAssetStore } from '@/stores/useAssetStore';
+import { useScriptStore } from '@/stores/useScriptStore.js';
 
 export function useInspectorLogic() {
   const sceneStore = useSceneStore();
   const assetStore = useAssetStore();
+  const scriptStore = useScriptStore();
 
   const selectedEntity = computed(() => {
     const id = sceneStore.selectedEntityIds[0];
@@ -19,11 +21,7 @@ export function useInspectorLogic() {
       get: () => selectedEntity.value ? selectedEntity.value[propName] : '',
       set: (val) => {
         if (selectedEntity.value) {
-          sceneStore.updateEntityProp(
-            selectedEntity.value._id,
-            propName,
-            val
-          );
+          sceneStore.updateEntityProp(selectedEntity.value._id, propName, val);
         }
       }
     });
@@ -31,16 +29,10 @@ export function useInspectorLogic() {
 
   function bindComponentProp(compName, propName) {
     return computed({
-      get: () =>
-        selectedEntity.value?.components?.[compName]?.[propName],
+      get: () => selectedEntity.value?.components?.[compName]?.[propName],
       set: (val) => {
         if (selectedEntity.value) {
-          sceneStore.updateComponentProp(
-            selectedEntity.value._id,
-            compName,
-            propName,
-            val
-          );
+          sceneStore.updateComponentProp(selectedEntity.value._id, compName, propName, val);
         }
       }
     });
@@ -48,40 +40,79 @@ export function useInspectorLogic() {
 
   function bindNestedProp(compName, parentProp, childProp) {
     return computed({
-      get: () =>
-        selectedEntity.value?.components?.[compName]?.[parentProp]?.[childProp],
+      get: () => selectedEntity.value?.components?.[compName]?.[parentProp]?.[childProp],
       set: (val) => {
         if (selectedEntity.value) {
           const path = `${parentProp}.${childProp}`;
-          sceneStore.updateComponentProp(
-            selectedEntity.value._id,
-            compName,
-            path,
-            val
-          );
+          sceneStore.updateComponentProp(selectedEntity.value._id, compName, path, val);
         }
       }
     });
   }
 
+  const scriptsData = computed(() => {
+    return selectedEntity.value?.components?.ScriptController?.data || [];
+  });
+
+  function addScript(assetId) {
+    if (!selectedEntity.value) return;
+
+    const newInstance = {
+      _id: `inst_${crypto.randomUUID().split('-')[0]}`,
+      assetId: assetId,
+      isActive: true,
+      variables: {}
+    };
+
+    const currentList = [...scriptsData.value];
+    currentList.push(newInstance);
+
+    sceneStore.updateComponentProp(
+      selectedEntity.value._id, 
+      'ScriptController', 
+      'data', 
+      currentList
+    );
+  }
+
+  function removeScript(index) {
+    if (!selectedEntity.value) return;
+
+    const currentList = [...scriptsData.value];
+    currentList.splice(index, 1);
+
+    sceneStore.updateComponentProp(
+      selectedEntity.value._id, 
+      'ScriptController', 
+      'data', 
+      currentList
+    );
+  }
+
+  function updateScriptInstance(index, fieldPath, value) {
+    if (!selectedEntity.value) return;
+    
+    const fullPath = `data.${index}.${fieldPath}`;
+    
+    sceneStore.updateComponentProp(
+      selectedEntity.value._id,
+      'ScriptController',
+      fullPath,
+      value
+    );
+  }
+
   const currentTextureUrl = computed(() => {
     if (!selectedEntity.value) return null;
-
-    const spriteComp =
-      selectedEntity.value.components?.SpriteRenderer ||
-      selectedEntity.value.components?.Tilemap ;
-
+    const spriteComp = selectedEntity.value.components?.SpriteRenderer || selectedEntity.value.components?.Tilemap;
     if (!spriteComp || !spriteComp.assetId) return null;
-
     const asset = assetStore.getAssetById(spriteComp.assetId);
     return asset ? asset.fileUrl : null;
   });
 
   function removeComponent(compName) {
     if (!selectedEntity.value) return;
-    console.warn(
-      'Harap implementasikan removeComponent di entityActions.js'
-    );
+    sceneStore.removeComponent(selectedEntity.value._id, compName); 
   }
 
   function resetTransform() {
@@ -97,7 +128,6 @@ export function useInspectorLogic() {
     sceneStore.updateComponentProp(id, 'Transform', 'pivotY', 0.5);
   }
 
-  // --- IMPLEMENTASI SMART PIVOT (Kompensasi Posisi) ---
   function updatePivot({ x: newPx, y: newPy }) {
     if (!selectedEntity.value) return;
     
@@ -105,45 +135,35 @@ export function useInspectorLogic() {
     const t = ent.components.Transform;
     const id = ent._id;
 
-    // 1. Ambil state saat ini
     const oldPx = t.pivotX ?? 0.5;
     const oldPy = t.pivotY ?? 0.5;
     const currentX = t.x || 0;
     const currentY = t.y || 0;
     
-    // Dimensi & Transformasi
     const w = t.width || 0;
     const h = t.height || 0;
     const sx = t.scaleX ?? 1;
     const sy = t.scaleY ?? 1;
-    const rotation = t.rotation || 0; // Asumsi: Radians
+    const rotation = t.rotation || 0; 
 
-    // 2. Hitung selisih pivot (Local Space 0-1)
     const dPx = newPx - oldPx;
     const dPy = newPy - oldPy;
 
-    // 3. Konversi ke Pixel (Unrotated)
     const localDx = dPx * w * sx;
     const localDy = dPy * h * sy;
 
-    // 4. Rotasi Vector Offset (Local -> World)
-    // Agar pergeseran mengikuti orientasi entity
     const cos = Math.cos(rotation);
     const sin = Math.sin(rotation);
 
     const worldDx = localDx * cos - localDy * sin;
     const worldDy = localDx * sin + localDy * cos;
 
-    // 5. Hitung Posisi Baru
-    // Geser titik X,Y entity agar visual gambar tetap di tempat
     const newX = currentX + worldDx;
     const newY = currentY + worldDy;
 
-    // 6. Update Store (Pivot Baru + Posisi Baru)
     sceneStore.updateComponentProp(id, 'Transform', 'pivotX', newPx);
     sceneStore.updateComponentProp(id, 'Transform', 'pivotY', newPy);
     
-    // Kita gunakan nilai presisi tinggi (float) agar visual akurat
     sceneStore.updateComponentProp(id, 'Transform', 'x', newX);
     sceneStore.updateComponentProp(id, 'Transform', 'y', newY);
   }
@@ -155,6 +175,10 @@ export function useInspectorLogic() {
     bindEntityProp,
     bindComponentProp,
     bindNestedProp,
+    scriptsData,
+    addScript,
+    removeScript,
+    updateScriptInstance,
     removeComponent,
     resetTransform,
     updatePivot

@@ -57,6 +57,5 @@
 <script setup>
 import { useConfirm } from '@/composables/useConfirm';
 
-// Mengambil state dan method dari composable
 const { state, handleConfirm, handleCancel } = useConfirm();
 </script>

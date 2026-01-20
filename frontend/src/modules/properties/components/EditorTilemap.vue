@@ -20,7 +20,7 @@
         />
 
         <BaseButton 
-          @click="openTilemapEditor"
+          @click="openTilemapEditor" 
           class="flex-1 h-9 text-xs gap-2 justify-center"
           variant="outline" 
         >
@@ -61,9 +61,7 @@
 <script setup>
 import { computed } from "vue";
 import { Grid3X3, Brush } from "lucide-vue-next"; 
-import { useInspectorLogic } from "@/modules/properties/composables/useInspectorLogic.js"; 
-import { useAssetStore } from '@/stores/useAssetStore';
-import { useEditorStore } from '@/stores/useEditorStore'; // 1. Import Store Editor
+import { useTilemapLogic } from "@/modules/tilemap/composables/useTilemapLogic.js"; // Import path yang benar
 
 // Atomic Components
 import PropertySection from "@ui/display/PropertySection.vue";
@@ -73,53 +71,25 @@ import BaseNumber from "@/commons/components/inputs/BaseNumber.vue";
 import BaseCheckbox from "@/commons/components/inputs/BaseCheckbox.vue"; 
 import BaseButton from "@/commons/components/buttons/BaseButton.vue"; 
 
+// Gunakan Composable
 const { 
   selectedEntity, 
-  bindComponentProp,
-  currentTextureUrl
-} = useInspectorLogic();
+  hasTilemap, 
+  currentTextureUrl, 
+  bindComponentProp, 
+  openTilemapEditor 
+} = useTilemapLogic();
 
-const assetStore = useAssetStore();
-const editorStore = useEditorStore(); // 2. Inisialisasi Store
+const hasComponent = hasTilemap;
 
-// Cek keberadaan komponen
-const hasComponent = computed(() => !!selectedEntity.value?.components?.Tilemap);
-
-// ---------------------------------------
-// BINDINGS
-// ---------------------------------------
-
-// 1. Grid Settings (Read-Only)
+// Bindings
 const tileWidth = bindComponentProp('Tilemap', 'tileWidth');
 const tileHeight = bindComponentProp('Tilemap', 'tileHeight');
 const mapWidth = bindComponentProp('Tilemap', 'width');
 const mapHeight = bindComponentProp('Tilemap', 'height');
-
-// 2. Settings (Editable)
 const opacity = bindComponentProp('Tilemap', 'opacity');
 const isSolid = bindComponentProp('Tilemap', 'isSolid');
 
-// Computed Total Size for Header Extra
 const totalWidth = computed(() => (tileWidth.value || 0) * (mapWidth.value || 0));
 const totalHeight = computed(() => (tileHeight.value || 0) * (mapHeight.value || 0));
-
-// 3. Implementasi Logika Buka Tab
-function openTilemapEditor() {
-    const entity = selectedEntity.value;
-    
-    if (!entity) {
-        console.warn("No entity selected");
-        return;
-    }
-
-    console.log("Opening Tilemap Editor for entity:", entity._id);
-
-    // Panggil action openTab dari store
-    editorStore.openTab({
-        id: entity._id,                 // ID dari Entity
-        name: entity.name || 'Tilemap', // Nama Entity (Fallback ke 'Tilemap' jika kosong)
-        type: 'tilemap',                // Tipe Tab
-        fixed: false                    // Sesuai request: fixed false
-    });
-}
 </script>

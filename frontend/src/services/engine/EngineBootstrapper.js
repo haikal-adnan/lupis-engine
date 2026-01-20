@@ -4,6 +4,7 @@ import { useAssetStore } from "@/stores/useAssetStore.js";
 import { useSceneStore } from "@/stores/scene/useSceneStore.js";
 import { usePrefabStore } from "@/stores/usePrefabStore.js";
 import { useEditorStore } from "@/stores/useEditorStore.js";
+import { useScriptStore } from "@/stores/useScriptStore.js"; 
 
 export async function prepareEngineData() {
     const projectStore = useProjectStore();
@@ -11,6 +12,7 @@ export async function prepareEngineData() {
     const sceneStore = useSceneStore();
     const prefabStore = usePrefabStore();
     const editorStore = useEditorStore();
+    const scriptStore = useScriptStore(); 
     
     const projectId = editorStore.activeProjectId;
     if (!projectId) throw new Error("No Active Project ID in EditorStore");
@@ -46,6 +48,7 @@ export async function prepareEngineData() {
         assets: toRaw(assetStore.assets),
         scene: currentSceneData,
         prefabs: toRaw(prefabStore.prefabs),
+        scripts: toRaw(scriptStore.scripts), 
         editorConfig: editorConfig
     };
 }

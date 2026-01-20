@@ -26,7 +26,13 @@ export default class GameLoader {
             return;
         }
 
-        const { project, assets, scene, prefabs, editorConfig } = payload;
+        const { 
+            project, 
+            assets, 
+            scene, 
+            prefabs, 
+            scripts, 
+            editorConfig } = payload;
 
         if(mode === "editor" && editorConfig) {
             game.world._editors = {
@@ -65,6 +71,12 @@ export default class GameLoader {
             this._initPrefabLibrary(game.world, prefabs);
         } catch (err) {
             console.error(err);
+        }
+
+        try {
+            this._initScriptLibrary(game.world, scripts);
+        } catch (err) {
+            console.error("Failed to load scripts:", err);
         }
 
         if (scene) {
@@ -111,6 +123,27 @@ export default class GameLoader {
 
     _initAsset(assetLoader, world, assets) {
         return assetLoader.loadAsset(world, assets);
+    }
+
+    _initScriptLibrary(world, scripts) {
+        if (!Array.isArray(scripts)) {
+            world.scripts = {}; 
+            return;
+        }
+
+        world.scripts = scripts.reduce((map, scriptItem) => {
+            map[scriptItem._id] = {
+                _id: scriptItem._id,
+                name: scriptItem.name,
+                type: scriptItem.type,
+                variables: scriptItem.exposedVariables || [],
+                nodes: scriptItem.nodes || [],
+                edges: scriptItem.edges || []
+            };
+            return map;
+        }, {});
+
+        console.log(`[GameLoader] Loaded ${Object.keys(world.scripts).length} scripts into library.`);
     }
 
     _initPrefabLibrary(world, prefabs) {
