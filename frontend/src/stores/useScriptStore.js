@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia';
+import { toRaw } from 'vue';
 import { 
   createScript, 
   createScriptNode, 
@@ -43,9 +44,7 @@ export const useScriptStore = defineStore('script', {
       this.error = null;
       try {
         console.log(`[Mock] Fetching scripts for project: ${projectId}`);
-        // TODO: Ganti dengan API Call real
-        // const res = await api.getScripts(projectId)
-        // this.initScripts(res.data)
+        // API Call implementation
       } catch (err) {
         this.error = err.message;
       } finally {
@@ -80,7 +79,7 @@ export const useScriptStore = defineStore('script', {
     },
 
     addScript(script) {
-      this.scripts.push(script);
+      this.scripts.push(structuredClone(toRaw(script)));
     },
 
     removeScript(scriptId) {
@@ -92,8 +91,7 @@ export const useScriptStore = defineStore('script', {
     },
 
     setActiveScript(scriptData) {
-      // Deep copy untuk safety editing agar tidak memutasi list langsung sebelum save
-      this.activeScript = JSON.parse(JSON.stringify(scriptData));
+      this.activeScript = structuredClone(toRaw(scriptData));
       this.selectedNodeId = null; 
     },
 
@@ -103,14 +101,17 @@ export const useScriptStore = defineStore('script', {
 
     updateScriptInList(scriptId, updates) {
       const index = this.scripts.findIndex(s => s._id === scriptId);
+      
       if (index !== -1) {
-        // Update di list utama (Source of Truth)
-        this.scripts[index] = { ...this.scripts[index], ...updates };
+        const currentData = this.scripts[index];
+        this.scripts[index] = { ...currentData, ...updates };
       }
 
-      // Sinkronisasi jika script yang diupdate sedang dibuka di editor
       if (this.activeScript && this.activeScript._id === scriptId) {
-         Object.assign(this.activeScript, updates);
+         const isSelfUpdate = updates.nodes === this.activeScript.nodes;
+         if (!isSelfUpdate) {
+             Object.assign(this.activeScript, updates);
+         }
       }
     },
 
@@ -121,12 +122,9 @@ export const useScriptStore = defineStore('script', {
     addNodeToActive(rawNodeData) {
       if (!this.activeScript) return;
       
-      // Menggunakan schema factory untuk memastikan struktur data valid
       const newNode = createScriptNode(rawNodeData);
       
       this.activeScript.nodes.push(newNode);
-      
-      // Auto-select node yang baru dibuat/didupilkat
       this.selectedNodeId = newNode._id;
 
       this.saveActiveScript(); 
@@ -138,7 +136,6 @@ export const useScriptStore = defineStore('script', {
       const node = this.activeScript.nodes.find(n => n._id === nodeId);
       if (!node) return;
 
-      // Merge deep objects (data & settings) agar tidak menimpa field lain
       if (updates.data) {
         node.data = { ...node.data, ...updates.data };
         delete updates.data; 
@@ -151,22 +148,18 @@ export const useScriptStore = defineStore('script', {
 
       Object.assign(node, updates);
 
-      // Trigger save (Debounce sebaiknya dilakukan di UI untuk event drag)
       this.saveActiveScript();
     },
 
     removeNodeFromActive(nodeId) {
       if (!this.activeScript) return;
 
-      // 1. Hapus Node
       this.activeScript.nodes = this.activeScript.nodes.filter(n => n._id !== nodeId);
       
-      // 2. CLEANUP: Hapus semua edge yang terhubung ke node ini
       this.activeScript.edges = this.activeScript.edges.filter(edge => 
         edge.source !== nodeId && edge.target !== nodeId
       );
       
-      // 3. Reset seleksi jika node yang dihapus sedang aktif
       if (this.selectedNodeId === nodeId) {
         this.selectedNodeId = null;
       }
@@ -177,10 +170,8 @@ export const useScriptStore = defineStore('script', {
     addEdgeToActive(rawEdgeData) {
       if (!this.activeScript) return;
 
-      // Mencegah koneksi ke diri sendiri
       if (rawEdgeData.source === rawEdgeData.target) return;
 
-      // Mencegah duplikasi edge yang sama persis
       const exists = this.activeScript.edges.find(e => 
         e.source === rawEdgeData.source && 
         e.target === rawEdgeData.target &&
@@ -210,16 +201,19 @@ export const useScriptStore = defineStore('script', {
     saveActiveScript() {
       if (!this.activeScript) return;
       
-      // Update data di list utama agar sinkron
-      this.updateScriptInList(this.activeScript._id, {
-        nodes: this.activeScript.nodes,
-        edges: this.activeScript.edges,
-        exposedVariables: this.activeScript.exposedVariables
-      });
-      
-      console.log("[ScriptStore] Auto-saved active script changes.");
-      
-      // Disini bisa ditambahkan trigger ke backend API jika perlu (autosave ke server)
+      try {
+        const cleanScript = structuredClone(toRaw(this.activeScript));
+
+        this.updateScriptInList(cleanScript._id, {
+            nodes: cleanScript.nodes,
+            edges: cleanScript.edges,
+            exposedVariables: cleanScript.exposedVariables
+        });
+
+        console.log("[ScriptStore] Saved clean data using structuredClone.");
+      } catch (err) {
+        console.error("[ScriptStore] FAILED to sanitize active script!", err);
+      }
     }
   }
 });

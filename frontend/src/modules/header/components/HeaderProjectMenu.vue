@@ -6,7 +6,7 @@
         :class="{ 'bg-secondary': isOpen }"
       >
         <div 
-          class="w-2.5 h-2.5 rounded-full transition-colors duration-300 shadow-sm ring-1 ring-background/20" 
+          class="w-2.5 h-2.5 rounded-full transition-all duration-300 shadow-sm ring-1 ring-background/20" 
           :class="[indicatorColor, { 'animate-pulse': projectStore.isLoading }]"
           :title="statusTooltip"
         ></div>
@@ -24,8 +24,9 @@
     </template>
 
     <template #default>
-        <div class="px-3 py-2 text-xs text-muted-foreground font-medium uppercase tracking-wider">
-          Project Actions
+        <div class="px-3 py-2 text-xs text-muted-foreground font-medium uppercase tracking-wider flex justify-between items-center">
+          <span>Project Actions</span>
+          <span class="text-[10px] bg-muted px-1.5 rounded">{{ projectStore.syncStatus }}</span>
         </div>
         <div class="h-px bg-border my-1"></div>
         
@@ -35,16 +36,30 @@
         </button>
 
         <button 
-          @click="handleSave" 
+          @click="handleSaveLocal" 
           :disabled="projectStore.isLoading" 
           class="w-full text-left px-3 py-2 text-sm hover:bg-secondary transition-colors flex justify-between items-center group disabled:cursor-not-allowed disabled:opacity-50 outline-none"
         >
           <span class="flex items-center gap-2">
-            <Save class="w-3.5 h-3.5 text-muted-foreground" /> 
-            Save Project <span class="text-xs text-muted-foreground ml-1">(Ctrl+S)</span>
+            <HardDrive class="w-3.5 h-3.5 text-blue-500" /> 
+            Save Local <span class="text-xs text-muted-foreground ml-1">(Ctrl+S)</span>
           </span>
           <span v-if="projectStore.isLoading" class="loading loading-spinner loading-xs scale-75"></span>
           <span v-else class="text-[10px] font-mono border border-border px-1.5 py-0.5 rounded bg-muted/50 text-muted-foreground group-hover:bg-background group-hover:text-foreground transition-colors">
+            IDB
+          </span>
+        </button>
+
+        <button 
+          @click="handleSaveServer" 
+          :disabled="projectStore.isLoading" 
+          class="w-full text-left px-3 py-2 text-sm hover:bg-secondary transition-colors flex justify-between items-center group disabled:cursor-not-allowed disabled:opacity-50 outline-none"
+        >
+          <span class="flex items-center gap-2">
+            <CloudUpload class="w-3.5 h-3.5 text-emerald-500" /> 
+            Save to Cloud <span class="text-xs text-muted-foreground ml-1">(Ctrl+Shift+S)</span>
+          </span>
+           <span class="text-[10px] font-mono border border-border px-1.5 py-0.5 rounded bg-muted/50 text-muted-foreground group-hover:bg-background group-hover:text-foreground transition-colors">
             API
           </span>
         </button>
@@ -60,42 +75,75 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useProjectStore } from "@/stores/useProjectStore";
 import BaseDropdown from "@ui/overlay/BaseDropdown.vue";
-import { ChevronDown, FolderOpen, Save, LogOut } from 'lucide-vue-next';
+import { ChevronDown, FolderOpen, Save, LogOut, CloudUpload, HardDrive } from 'lucide-vue-next';
 
 const projectStore = useProjectStore();
 const projectMenuDropdown = ref(null);
 
+// Logika Warna Indikator
 const indicatorColor = computed(() => {
   if (projectStore.error) return 'bg-destructive';
   if (projectStore.isLoading) return 'bg-yellow-400';
-  if (projectStore.isProjectLoaded) return 'bg-emerald-500';
-  return 'bg-slate-400';
+  
+  // Logic Prioritas Status
+  switch (projectStore.syncStatus) {
+    case 'dirty': return 'bg-red-500 shadow-red-500/50';    // Ada perubahan di RAM
+    case 'local': return 'bg-blue-500 shadow-blue-500/50';  // Tersimpan di IDB
+    case 'synced': return 'bg-emerald-500 shadow-emerald-500/50'; // Tersimpan di Server
+    default: return 'bg-slate-400';
+  }
 });
 
 const statusTooltip = computed(() => {
   if (projectStore.error) return `Error: ${projectStore.error}`;
   if (projectStore.isLoading) return "Working...";
-  return "System Ready";
+  
+  const map = {
+    'dirty': 'Unsaved Changes (RAM)',
+    'local': 'Saved Locally (IndexedDB)',
+    'synced': 'Synced with Server'
+  };
+  return map[projectStore.syncStatus] || "System Ready";
 });
 
 function closeMenu() { 
   projectMenuDropdown.value?.close(); 
 }
 
-async function handleSave() { 
-  await projectStore.saveProject(); 
+// Handler Save Local (IDB)
+async function handleSaveLocal() { 
+  await projectStore.saveProject(); // Ini save ke IDB (sesuai setup sebelumnya)
   closeMenu(); 
 }
 
+// Handler Save Server (API)
+async function handleSaveServer() {
+  await projectStore.saveProjectToServer(); // Kita akan buat action ini di store
+  closeMenu();
+}
+
+// Keyboard Shortcuts
+const handleKeydown = (e) => {
+  // Save Local: Ctrl + S
+  if ((e.ctrlKey || e.metaKey) && e.key === 's' && !e.shiftKey) { 
+    e.preventDefault(); 
+    handleSaveLocal(); 
+  }
+  // Save Server: Ctrl + Shift + S
+  if ((e.ctrlKey || e.metaKey) && e.key === 's' && e.shiftKey) {
+    e.preventDefault();
+    handleSaveServer();
+  }
+};
+
 onMounted(() => {
-  window.addEventListener('keydown', (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 's') { 
-      e.preventDefault(); 
-      handleSave(); 
-    }
-  });
+  window.addEventListener('keydown', handleKeydown);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeydown);
 });
 </script>
