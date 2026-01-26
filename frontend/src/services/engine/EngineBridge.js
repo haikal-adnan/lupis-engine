@@ -90,6 +90,11 @@ export const EngineBridge = {
     engineInstance.bus.emit("editor:entity:update-component", payload);
   },
 
+  patchComponent(payload) {
+    if (!engineInstance) return;
+    engineInstance.bus.emit("editor:entity:patch-component", payload);
+  },
+
   updateEntityProp(payload) {
     if (!engineInstance) return;
     engineInstance.bus.emit("editor:entity:update-prop", payload);
@@ -110,6 +115,31 @@ export const EngineBridge = {
     if (!engineInstance) return;
     
     engineInstance.bus.emit("editor:store:update", payload);
+  },
+
+  addComponent(payload) {
+    if (!engineInstance) return;
+    engineInstance.bus.emit("editor:entity:add-component", payload);
+  },
+
+  removeComponent(payload) {
+    if (!engineInstance) return;
+    engineInstance.bus.emit("editor:entity:remove-component", payload);
+  },
+
+  createScript(scriptData) {
+    if (!engineInstance) return;
+    engineInstance.bus.emit("editor:script:create", scriptData);
+  },
+
+  updateScript(scriptId, updates) {
+    if (!engineInstance) return;
+    engineInstance.bus.emit("editor:script:update", { id: scriptId, updates });
+  },
+
+  deleteScript(scriptId) {
+    if (!engineInstance) return;
+    engineInstance.bus.emit("editor:script:delete", scriptId);
   },
 
 };

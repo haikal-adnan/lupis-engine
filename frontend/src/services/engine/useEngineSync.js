@@ -2,6 +2,7 @@
 import { useSceneStore } from '@/stores/scene/useSceneStore.js';
 import { useAssetStore } from '@/stores/useAssetStore.js';
 import { useEditorStore } from '@/stores/useEditorStore.js';
+import { useScriptStore } from '@/stores/useScriptStore.js';
 
 // Import sub-modules
 import { useEditorToEngine } from './sync/useEditorToEngine.js';
@@ -11,8 +12,10 @@ export function useEngineSync() {
   const sceneStore = useSceneStore();
   const assetStore = useAssetStore();
   const editorStore = useEditorStore();
+  const scriptStore = useScriptStore();
 
-  const outgoing = useEditorToEngine(sceneStore, assetStore, editorStore);
+
+  const outgoing = useEditorToEngine(sceneStore, assetStore, editorStore, scriptStore);
   const incoming = useEngineToEditor(sceneStore);
 
   const initSync = () => {

@@ -56,9 +56,9 @@ const LAYOUT_CONFIG = {
     center: markRaw(GraphPanel),
     showBottom: false,
     overlay: {
-      showCoords: false,
-      showGrid: true,
-      showPlay: false
+      showCoords: true,
+      showGrid: false,
+      showPlay: true
     }
   }
 }

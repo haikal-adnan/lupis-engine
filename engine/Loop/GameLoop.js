@@ -15,15 +15,15 @@ export default class GameLoop {
     this.lastTime = now;
     
     if (delta > 1000) delta = this.interval;
-
+    
     if (Config.ENGINE_MODE === "editor") {
         this.game.update(delta / 1000); 
         this.game.render(1); 
-    } 
-    else {
+    }else {
+      
         this.accumulator += delta;
-
         while (this.accumulator >= this.interval) {
+            
             this.game.update(this.interval / 1000);
             this.accumulator -= this.interval;
         }

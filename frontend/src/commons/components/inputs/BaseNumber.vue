@@ -10,8 +10,8 @@
 
     <div
       class="group relative flex items-center w-full transition-all duration-200 border rounded-md bg-background 
-             focus-within:border-primary focus-within:ring-1 focus-within:ring-primary
-             hover:border-muted-foreground/50 border-input overflow-hidden"
+              focus-within:border-primary focus-within:ring-1 focus-within:ring-primary
+              hover:border-muted-foreground/50 border-input overflow-hidden"
       :class="{ 'cursor-ew-resize': isDragging }"
       :style="{
         borderRadius: radius,
@@ -22,7 +22,7 @@
         v-if="prefix"
         @mousedown.prevent="startScrub"
         class="h-full flex items-center justify-center pl-3 pr-2 select-none border-r border-transparent 
-               bg-muted/20 transition-colors relative z-10 cursor-ew-resize hover:bg-muted/40 hover:text-primary"
+                bg-muted/20 transition-colors relative z-10 cursor-ew-resize hover:bg-muted/40 hover:text-primary"
         :class="[
           isDragging ? '!bg-primary/20 !text-primary border-primary/20' : 'group-focus-within:border-border/50'
         ]"
@@ -40,13 +40,15 @@
         :id="id"
         ref="inputRef"
         v-model="displayValue"
-        type="text" 
+        type="text"
+        inputmode="decimal" 
         class="w-full h-full bg-transparent border-none outline-none text-sm text-foreground placeholder:text-muted-foreground/40
-               focus:ring-0 px-2"
+                focus:ring-0 px-2"
         :placeholder="placeholder"
         :style="{
           paddingLeft: prefix ? '0px' : paddingX
         }"
+        @input="validateInput"
         @keydown.up.prevent="increment(step)"
         @keydown.down.prevent="increment(-step)"
         @blur="handleBlur"
@@ -79,9 +81,6 @@ const props = defineProps({
   max: { type: Number, default: Infinity },
   ignoreRange: { type: Boolean, default: false },
   cyclic: { type: Boolean, default: false },
-  
-  // FITUR BARU: Mengontrol sensitivitas scrubbing
-  // Default 1 (Normal). Set < 1 untuk lebih halus, > 1 untuk lebih cepat.
   scrubSensitivity: { type: Number, default: 1 } 
 })
 
@@ -102,6 +101,43 @@ watch(() => model.value, (newVal) => {
   }
 })
 
+// --- RESTRICTION LOGIC ---
+function validateInput(event) {
+  let value = event.target.value;
+  
+  // Regex: 
+  // ^-?           -> Boleh ada minus di awal (opsional)
+  // \d* -> Diikuti angka 0 atau lebih
+  // (\.\d*)?      -> Boleh ada titik desimal diikuti angka (opsional group)
+  // $             -> Akhir string
+  // Logic: Hapus karakter yg tidak sesuai dengan pola angka umum
+  
+  // Strategi sederhana: Hapus semua karakter selain angka, minus, dan titik
+  // Lalu pastikan minus hanya di depan dan titik hanya satu.
+  
+  // 1. Filter karakter illegal (huruf, simbol aneh)
+  let clean = value.replace(/[^0-9.-]/g, '');
+
+  // 2. Fix Minus (Hanya boleh di index 0)
+  if (clean.lastIndexOf('-') > 0) {
+      clean = clean.replace(/-/g, ''); // Hapus semua minus dulu
+      clean = '-' + clean; // Tambah lagi di depan (opsional logic, atau reject aja)
+  }
+
+  // 3. Fix Titik (Hanya boleh satu)
+  const parts = clean.split('.');
+  if (parts.length > 2) {
+      clean = parts[0] + '.' + parts.slice(1).join('');
+  }
+
+  // Jika hasil cleaning beda dengan input user, paksa update value input
+  if (value !== clean) {
+     localInput.value = clean;
+     // Hack untuk memaksa render update jika v-model tidak mendeteksi perubahan drastis
+     event.target.value = clean; 
+  }
+}
+
 // --- Logic Inti: Normalize ---
 function normalizeValue(val) {
   if (props.ignoreRange) return val
@@ -119,11 +155,22 @@ function normalizeValue(val) {
 }
 
 function updateModel(val) {
+  // Handle empty string atau hanya "-" atau "."
+  if (val === '' || val === '-' || val === '.') {
+      return; // Jangan update model dgn NaN, biarkan user ngetik
+  }
+
   const num = parseFloat(val)
-  if (isNaN(num)) return
+  if (isNaN(num)) return // Safety check
+
   const finalVal = normalizeValue(num)
   model.value = finalVal
-  localInput.value = finalVal 
+  
+  // Update tampilan jika hasil normalisasi berbeda (misal kena clamp min/max)
+  // Tapi jika user mengetik "1.0", jangan ubah jadi "1" dulu agar user bisa ngetik "1.05"
+  if (finalVal !== num) {
+      localInput.value = finalVal 
+  }
 }
 
 // --- Scrubbing Logic Updated ---
@@ -153,8 +200,6 @@ function onMouseMove(event) {
   if (event.shiftKey) multiplier = 10   
   if (event.altKey) multiplier = 0.1   
 
-  // PERBAIKAN DI SINI:
-  // Kita kalikan dengan props.scrubSensitivity
   const change = deltaX * props.step * multiplier * props.scrubSensitivity
   
   let newValue = startValue + change
@@ -162,7 +207,6 @@ function onMouseMove(event) {
   if (Number.isInteger(props.step) && !event.altKey && Number.isInteger(startValue) && Number.isInteger(props.scrubSensitivity)) {
      newValue = Math.round(newValue)
   } else {
-     // Gunakan presisi yang sedikit lebih tinggi saat kalkulasi agar mulus
      newValue = parseFloat(newValue.toFixed(2))
   }
 
@@ -189,10 +233,16 @@ function increment(val) {
     newValue = parseFloat(newValue.toFixed(2))
   }
   updateModel(newValue)
+  localInput.value = newValue // Force update display
 }
 
 function handleBlur() {
+   // Saat blur (user selesai ngetik), baru kita paksa format ulang
+   // Misal user ngetik "10." -> jadi "10"
+   // Atau "007" -> jadi "7"
    updateModel(localInput.value)
+   // Sync display dengan model akhir
+   localInput.value = model.value 
 }
 
 function handleChange() {

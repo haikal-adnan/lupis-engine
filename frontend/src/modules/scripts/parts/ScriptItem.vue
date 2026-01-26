@@ -7,13 +7,12 @@
         ? 'bg-blue-500/10 border-blue-500/50 shadow-sm shadow-blue-500/5' 
         : 'border-transparent hover:bg-secondary/60 hover:border-border/50'
     ]"
-    @click="$emit('click', data)"
+    @click="$emit('select', data)"
+    @dblclick="$emit('open', data)"
   >
     <div 
       class="flex items-center justify-center rounded-md overflow-hidden bg-secondary/30 border border-white/5 shrink-0"
-      :class="[
-        viewMode === 'grid' ? 'w-12 h-12 mb-2' : 'w-8 h-8 mr-3'
-      ]"
+      :class="[viewMode === 'grid' ? 'w-12 h-12 mb-2' : 'w-8 h-8 mr-3']"
     >
       <component 
         :is="data.type === 'scene_logic' ? Workflow : FileCode2"
@@ -33,15 +32,8 @@
         >
         {{ data.name }}
         </span>
-        <span v-if="viewMode === 'list'" class="text-[9px] text-muted-foreground/50 truncate capitalize">
-            {{ data.type || 'Component' }}
-        </span>
     </div>
-
-    <div class="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity" v-if="viewMode === 'grid'">
-       <div class="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-sm shadow-blue-500/50"></div>
     </div>
-  </div>
 </template>
 
 <script setup>
@@ -49,12 +41,13 @@ import { computed } from 'vue'
 import { FileCode2, Workflow } from 'lucide-vue-next'
 
 const props = defineProps({
-  data: { type: Object, required: true }, // { name, type, ... }
+  data: { type: Object, required: true }, 
   viewMode: { type: String, default: 'grid' },
   active: { type: Boolean, default: false }
 })
 
-defineEmits(['click'])
+// Mengubah emit agar lebih spesifik
+defineEmits(['select', 'open'])
 
 const containerClass = computed(() => {
   return props.viewMode === 'grid'

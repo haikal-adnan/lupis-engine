@@ -16,6 +16,10 @@ export function useInspectorLogic() {
 
   const hasSelection = computed(() => !!selectedEntity.value);
 
+  const isLocked = computed(() => {
+    return selectedEntity.value?._editor?.locked || false;
+  });
+
   function bindEntityProp(propName) {
     return computed({
       get: () => selectedEntity.value ? selectedEntity.value[propName] : '',
@@ -168,6 +172,11 @@ export function useInspectorLogic() {
     sceneStore.updateComponentProp(id, 'Transform', 'y', newY);
   }
 
+  function addComponentToSelection(componentName) {
+    if (!selectedEntity.value) return;
+    sceneStore.addComponent(selectedEntity.value._id, componentName);
+  }
+
   return {
     selectedEntity,
     hasSelection,
@@ -181,6 +190,7 @@ export function useInspectorLogic() {
     updateScriptInstance,
     removeComponent,
     resetTransform,
-    updatePivot
+    updatePivot,
+    addComponentToSelection
   };
 }

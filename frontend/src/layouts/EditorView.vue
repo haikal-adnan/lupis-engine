@@ -1,16 +1,13 @@
 <script setup>
 import { ref, shallowRef, computed, watch } from 'vue'
 
-// --- COMPOSABLES ---
 import { useLayoutState } from '@/composables/useLayoutState.js'
 import { useTab } from '@/composables/useTab.js' 
 
-// --- STORES ---
 import { useEditorStore } from '@/stores/useEditorStore'
 import { useScriptStore } from '@/stores/useScriptStore'
 import { useSceneStore } from '@/stores/scene/useSceneStore'
 
-// --- LAYOUT PARTS ---
 import EditorLayout from '@/layouts/EditorLayout.vue'
 import TopBar from '@/layouts/parts/TopBar.vue'
 import LeftPanel from '@/layouts/parts/LeftPanel.vue'
@@ -18,10 +15,8 @@ import RightPanel from '@/layouts/parts/RightPanel.vue'
 import BottomBar from '@/layouts/parts/BottomBar.vue'
 import BottomOverlay from '@/layouts/parts/BottomOverlay.vue'
 
-// --- MODULES ---
 import AssetPanel from '@/modules/assets/AssetPanel.vue'
 
-// 1. INIT STATE & COMPOSABLES
 const {
   layoutRef,
   isLeftSidebarCollapsed,
@@ -30,107 +25,93 @@ const {
   toggleRightSidebar
 } = useLayoutState()
 
-const { currentLayout } = useTab() // Mengatur konten Center/Left/Right berdasarkan tipe Tab
+const { currentLayout } = useTab()
 
-// 2. BOTTOM PANEL STATE
 const currentBottomComponent = shallowRef(AssetPanel) 
-const isBottomPanelOpen = ref(false) 
+// Hapus isBottomPanelOpen lokal, kita gunakan store
 
-// Computed Visibility (Berdasarkan konfigurasi Tab saat ini)
 const isLeftHidden = computed(() => !currentLayout.value.left)
 const isRightHidden = computed(() => !currentLayout.value.right)
 const isBottomHidden = computed(() => !currentLayout.value.showBottom)
 
-// 3. STORE SYNC LOGIC (THE BRIDGE)
 const editorStore = useEditorStore()
 const scriptStore = useScriptStore()
 const sceneStore = useSceneStore()
 
+// --- LOGIKA TOP BAR TAB (Script/Scene switching) ---
 watch(
   () => editorStore.activeTabId, 
   (newTabId) => {
-    const currentTab = editorStore.activeTab;
-    
-    // Safety check
-    if (!currentTab) return;
+    const currentTab = editorStore.activeTab
+    if (!currentTab) return
 
-    // --- CASE A: GRAPH NODE EDITOR (Script) ---
     if (currentTab.type === 'diagram') {
-      const targetScript = scriptStore.getScriptById(newTabId);
-
+      const targetScript = scriptStore.getScriptById(newTabId)
       if (targetScript) {
-        scriptStore.setActiveScript(targetScript);
-        scriptStore.setSelectedNode(null); // Reset seleksi node
-        console.log(`[Editor] Switched to Script: ${targetScript.name}`);
+        scriptStore.setActiveScript(targetScript)
+        scriptStore.setSelectedNode(null)
       } else {
-        console.warn(`[Editor] Script ID ${newTabId} not found.`);
-        scriptStore.setActiveScript(null);
+        scriptStore.setActiveScript(null)
       }
     } 
-    
-    // --- CASE B: TILEMAP EDITOR (Entity) ---
     else if (currentTab.type === 'tilemap') {
-      // ID Tab = ID Entity
-      const entityId = newTabId; 
-
-      // Sinkronisasi seleksi di Scene agar Property Inspector Tilemap aktif
-      // Cek apakah entity ini sudah terpilih, jika belum, pilih dia.
+      const entityId = newTabId
       if (!sceneStore.selectedEntityIds.includes(entityId)) {
-         sceneStore.setSelectedEntities([entityId]);
+         sceneStore.setSelectedEntities([entityId])
       }
-      
-      // Matikan active script agar tidak tumpang tindih state
-      scriptStore.setActiveScript(null);
-      console.log(`[Editor] Switched to Tilemap Entity: ${entityId}`);
+      scriptStore.setActiveScript(null)
     }
-
-    // --- CASE C: SCENE EDITOR (Default) ---
     else if (currentTab.type === 'scene') {
-      // Bersihkan state script active karena kita kembali ke Scene View
-      scriptStore.setActiveScript(null);
-      console.log(`[Editor] Switched to Main Scene`);
+      scriptStore.setActiveScript(null)
     }
   },
   { immediate: true }
-);
+)
 
-// 4. BOTTOM PANEL HANDLERS
+// --- LOGIKA BOTTOM BAR (Store Sync) ---
+
+// Menerima komponen dari BottomBar berdasarkan Tab ID yang aktif
 const handleComponentUpdate = (component) => {
   currentBottomComponent.value = component
 }
 
-const handleToggleRequest = (shouldOpen) => {
-  isBottomPanelOpen.value = shouldOpen
-  layoutRef.value?.setBottomPanel(shouldOpen)
-}
+// Sinkronisasi Layout dengan Store: Ketika Store berubah, buka/tutup Layout
+watch(
+  () => editorStore.isBottomBarOpen,
+  (isOpen) => {
+    // Panggil method di EditorLayout untuk animasi buka/tutup
+    layoutRef.value?.setBottomPanel(isOpen)
+  }
+)
 
+// Sinkronisasi Layout ke Store: Ketika user menutup manual (drag handle)
 const onLayoutClosePanel = () => {
-  isBottomPanelOpen.value = false
+  if (editorStore.isBottomBarOpen) {
+    editorStore.toggleBottomBar() // atau set false
+  }
 }
 
+// Sinkronisasi Layout ke Store: Ketika user membuka manual (drag handle)
 const onLayoutDragOpen = () => {
-  isBottomPanelOpen.value = true
+  if (!editorStore.isBottomBarOpen) {
+    editorStore.toggleBottomBar() // atau set true
+  }
 }
 </script>
 
 <template>
   <EditorLayout 
     ref="layoutRef"
-    
     :is-left-collapsed="isLeftSidebarCollapsed"
     @update:is-left-collapsed="val => isLeftSidebarCollapsed = val"
-    
     :is-right-collapsed="isRightSidebarCollapsed"
     @update:is-right-collapsed="val => isRightSidebarCollapsed = val"
-    
     :hide-left="isLeftHidden"
     :hide-right="isRightHidden"
     :hide-bottom="isBottomHidden"
-
     @close="onLayoutClosePanel"
     @drag-open="onLayoutDragOpen"
   >
-    
     <template #canvas>
       <KeepAlive>
         <component :is="currentLayout.center" />
@@ -177,15 +158,12 @@ const onLayoutDragOpen = () => {
     <template #bottom-bar>
       <BottomBar 
         v-if="!isBottomHidden"
-        :is-open="isBottomPanelOpen"
         @update:component="handleComponentUpdate"
-        @toggle="handleToggleRequest"
       />
     </template>
 
     <template #overlays>
       <BottomOverlay v-if="currentLayout.overlay" />
     </template>
-
   </EditorLayout>
 </template>

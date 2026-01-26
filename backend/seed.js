@@ -16,8 +16,10 @@ const seedDatabase = async () => {
       throw new Error("MONGO_URI is missing in .env file");
     }
 
+    console.log("Connecting to MongoDB...");
     await mongoose.connect(process.env.MONGO_URI);
     
+    console.log("Clearing existing data...");
     await Project.deleteMany({});
     await Folder.deleteMany({});
     await Asset.deleteMany({});
@@ -36,26 +38,37 @@ const seedDatabase = async () => {
     const assetFontId = "gaegu";
     
     const scriptPlayerMoveId = "script_player_movement_001";
-    const scriptNpcId = "script_all_types_demo";
+    const varSpeedId = "var_speed_001";
     
     const prefabChestId = "prefab_chest_001";
     const entTilemapId = "ent_main_tilemap";
     const entItemId = "ent_item_inner";
 
+    // --- 1. PROJECT ---
+    console.log("Seeding Project...");
     await Project.create({
       _id: projectId,
       ownerId: "dev_2025",
       name: "Dungeon Project",
       settings: { width: 1280, height: 720 },
-      scenes: [sceneId]
+      scenes: [sceneId],
+      globalVariables: [
+        { _id: "gvar_score_001", name: "GlobalScore", type: "Number", defaultValue: 0 },
+        { _id: "gvar_night_mode_001", name: "IsNightMode", type: "Boolean", defaultValue: false }
+      ],
+      tags: ['Untagged', 'Player', 'Enemy'],
     });
 
+    // --- 2. FOLDERS ---
+    console.log("Seeding Folders...");
     await Folder.create([
       { _id: fSpritesId, projectId, name: "Sprites" },
       { _id: fFontsId, projectId, name: "Fonts" },
       { _id: fScriptsId, projectId, name: "Scripts" }
     ]);
 
+    // --- 3. ASSETS ---
+    console.log("Seeding Assets...");
     await Asset.create({
       _id: assetDungeonId,
       projectId,
@@ -78,158 +91,169 @@ const seedDatabase = async () => {
       meta: { extension: ".fnt" }
     });
 
+    // --- 4. SCRIPTS ---
+    console.log("Seeding Scripts...");
+
     await Script.create({
       _id: scriptPlayerMoveId,
       projectId,
       name: "Player Movement",
       type: "component",
       exposedVariables: [
-        { name: "Speed", type: "Number", defaultValue: 10 }
+        { _id: varSpeedId, name: "Speed", type: "Number", defaultValue: 10 }
       ],
       nodes: [
+        // 1. KEYBOARD INPUT
         {
-          _id: "node_event_right",
+          _id: "node_input",
           type: "event_key_press",
-          position: { x: 100, y: 100 },
-          settings: { 
-            headerTitle: "On Key Press", 
-            headerColor: "#4CAF50", 
-            category: "Events",
-            description: "Triggers when arrow key is pressed", 
-            visibleDataFields: ["key"] 
-          },
+          position: { x: 50, y: 50 },
+          settings: { headerTitle: 'Keyboard Input', headerColor: '#C2185B', category: 'Events' },
+          data: { key: 'Space' },
           inputs: [],
-          outputs: [{ _id: "port_exec_out", label: "Flow", type: "execution", dataType: "execution", color: "#ffffff", enabled: true }],
-          data: { key: "ArrowRight" }
+          outputs: [{ _id: 'out', label: 'Pressed', dataType: 'execution', color: '#fff' }]
+        },
+        // 2. GET SPEED
+        {
+          _id: "node_get_speed",
+          type: "variable_get", 
+          position: { x: 50, y: 200 },
+          settings: { headerTitle: 'Get Speed', headerColor: '#00C853', category: 'Variables' },
+          data: { variableId: varSpeedId },
+          inputs: [],
+          outputs: [{ _id: 'val', label: 'Value', dataType: 'number', color: '#B2FF59' }]
+        },
+        // 3. GET TRANSFORM (Target: String ID)
+        {
+          _id: "node_get_trans",
+          type: "get_transform",
+          position: { x: 50, y: 350 },
+          settings: { headerTitle: 'Get Transform', headerColor: '#2E7D32', category: 'Game Object' },
+          inputs: [
+             // UPDATE: DataType 'string', Color '#E040FB'
+            { _id: 'target', label: 'Target ID (Self)', dataType: 'string', color: '#E040FB' }
+          ],
+          outputs: [
+            { _id: 'x', label: 'X', dataType: 'number', color: '#69F0AE' },
+            { _id: 'y', label: 'Y', dataType: 'number', color: '#69F0AE' },
+            { _id: 'rotation', label: 'Rotation', dataType: 'number', color: '#B2FF59' },
+            { _id: 'width', label: 'Width', dataType: 'number', color: '#40C4FF' },
+            { _id: 'height', label: 'Height', dataType: 'number', color: '#40C4FF' },
+            { _id: 'pivotX', label: 'Pivot X', dataType: 'number', color: '#FFB74D' },
+            { _id: 'pivotY', label: 'Pivot Y', dataType: 'number', color: '#FFB74D' }
+          ]
+        },
+        // 4. ADD
+        {
+          _id: "node_add",
+          type: "math_add",
+          position: { x: 350, y: 200 },
+          settings: { headerTitle: 'Add', headerColor: '#00796B', category: 'Math' },
+          inputs: [
+            { _id: 'in', label: 'In', dataType: 'execution', color: '#fff' },
+            { _id: 'a', label: 'A', dataType: 'number', color: '#B2FF59' },
+            { _id: 'b', label: 'B', dataType: 'number', color: '#B2FF59' }
+          ],
+          outputs: [
+            { _id: 'out', label: 'Trigger', dataType: 'execution', color: '#fff' },
+            { _id: 'res', label: 'Result', dataType: 'number', color: '#B2FF59' }
+          ]
         },
         {
-          _id: "node_move_right",
-          type: "action_translate",
-          position: { x: 400, y: 100 },
-          settings: { 
-            headerTitle: "Move Entity", 
-            headerColor: "#2196F3", 
-            category: "Physics",
-            description: "Moves the entity by X/Y", 
-            visibleDataFields: ["x", "y"] 
+          _id: "node_set_trans",
+          type: "set_transform",
+          position: { x: 600, y: 200 },
+          settings: { headerTitle: 'Set Transform', headerColor: '#2E7D32', category: 'Game Object' },
+          inputs: [
+            { _id: 'in', label: 'In', dataType: 'execution', color: '#fff' },
+            { _id: 'target', label: 'Target ID (Self)', dataType: 'string', color: '#E040FB' },
+            
+            { _id: 'x', label: 'X', dataType: 'number', color: '#69F0AE' },
+            { _id: 'y', label: 'Y', dataType: 'number', color: '#69F0AE' },
+            { _id: 'rotation', label: 'Rotation', dataType: 'number', color: '#B2FF59' },
+            { _id: 'width', label: 'Width', dataType: 'number', color: '#40C4FF' },
+            { _id: 'height', label: 'Height', dataType: 'number', color: '#40C4FF' },
+            { _id: 'pivotX', label: 'Pivot X', dataType: 'number', color: '#FFB74D' },
+            { _id: 'pivotY', label: 'Pivot Y', dataType: 'number', color: '#FFB74D' }
+          ],
+          outputs: [
+            { _id: 'out', label: 'Out', dataType: 'execution', color: '#fff' },
+            // UPDATED: Menambahkan output lengkap agar bisa di-chain ke Format String
+            { _id: 'x', label: 'X', dataType: 'number', color: '#69F0AE' },
+            { _id: 'y', label: 'Y', dataType: 'number', color: '#69F0AE' },
+            { _id: 'rotation', label: 'Rotation', dataType: 'number', color: '#B2FF59' },
+            { _id: 'width', label: 'Width', dataType: 'number', color: '#40C4FF' },
+            { _id: 'height', label: 'Height', dataType: 'number', color: '#40C4FF' },
+            { _id: 'pivotX', label: 'Pivot X', dataType: 'number', color: '#FFB74D' },
+            { _id: 'pivotY', label: 'Pivot Y', dataType: 'number', color: '#FFB74D' }
+          ]
+        },
+        // 6. FORMAT STRING
+        {
+          _id: "node_fmt_string",
+          type: "format_string",
+          position: { x: 900, y: 400 },
+          settings: { headerTitle: 'Format String', headerColor: '#F57C00', category: 'String' },
+          data: { 
+            format: 'Pos: {0}, {1} | Rot: {2}',
+            allowDynamicInputs: true
           },
-          inputs: [{ _id: "port_exec_in", label: "In", type: "execution", dataType: "execution", color: "#ffffff", enabled: true }],
-          outputs: [{ _id: "port_exec_next", label: "Next", type: "execution", dataType: "execution", color: "#ffffff", enabled: true }],
-          data: { x: 10, y: 0 }
+          inputs: [
+            { _id: '0', label: '{0}', dataType: 'any', color: '#fff' },
+            { _id: '1', label: '{1}', dataType: 'any', color: '#fff' },
+            { _id: '2', label: '{2}', dataType: 'any', color: '#fff' },
+            { _id: '3', label: '{3}', dataType: 'any', color: '#fff' },
+            { _id: '4', label: '{4}', dataType: 'any', color: '#fff' },
+            { _id: '5', label: '{5}', dataType: 'any', color: '#fff' },
+            { _id: '6', label: '{6}', dataType: 'any', color: '#fff' }
+          ],
+          outputs: [
+            { _id: 'out', label: 'Result', dataType: 'string', color: '#FFB74D' }
+          ]
+        },
+        // 7. NOTIFICATION
+        {
+          _id: "node_notification",
+          type: "ui_notification",
+          position: { x: 1200, y: 200 },
+          settings: { headerTitle: 'Notification', headerColor: '#37474F', category: 'UI' },
+          data: { message: '' },
+          inputs: [
+            { _id: 'in', label: 'In', dataType: 'execution', color: '#fff' },
+            { _id: 'msg', label: 'Message', dataType: 'string', color: '#E040FB' }
+          ],
+          outputs: [
+            { _id: 'out', label: 'Out', dataType: 'execution', color: '#fff' }
+          ]
         }
       ],
       edges: [
-        { _id: "edge_1", source: "node_event_right", sourceHandle: "port_exec_out", target: "node_move_right", targetHandle: "port_exec_in" }
+        // Execution
+        { _id: "e1", source: "node_input", sourceHandle: "out", target: "node_add", targetHandle: "in" },
+        { _id: "e2", source: "node_add", sourceHandle: "out", target: "node_set_trans", targetHandle: "in" },
+        { _id: "e3", source: "node_set_trans", sourceHandle: "out", target: "node_notification", targetHandle: "in" },
+
+        // Logic
+        { _id: "d1", source: "node_get_speed", sourceHandle: "val", target: "node_add", targetHandle: "a" },
+        { _id: "d2", source: "node_get_trans", sourceHandle: "x", target: "node_add", targetHandle: "b" },
+        { _id: "d3", source: "node_add", sourceHandle: "res", target: "node_set_trans", targetHandle: "x" },
+
+        // Format String
+        { _id: "f0", source: "node_set_trans", sourceHandle: "x", target: "node_fmt_string", targetHandle: "0" },
+        { _id: "f1", source: "node_set_trans", sourceHandle: "y", target: "node_fmt_string", targetHandle: "1" },
+        { _id: "f2", source: "node_set_trans", sourceHandle: "rotation", target: "node_fmt_string", targetHandle: "2" },
+        { _id: "f3", source: "node_set_trans", sourceHandle: "width", target: "node_fmt_string", targetHandle: "3" },
+        { _id: "f4", source: "node_set_trans", sourceHandle: "height", target: "node_fmt_string", targetHandle: "4" },
+        { _id: "f5", source: "node_set_trans", sourceHandle: "pivotX", target: "node_fmt_string", targetHandle: "5" },
+        { _id: "f6", source: "node_set_trans", sourceHandle: "pivotY", target: "node_fmt_string", targetHandle: "6" },
+
+        // Notification
+        { _id: "msg1", source: "node_fmt_string", sourceHandle: "out", target: "node_notification", targetHandle: "msg" }
       ]
     });
 
-    await Script.create({
-      _id: scriptNpcId,
-      projectId: projectId,
-      name: "NPC Dialogue System (All Types)",
-      type: "scene_logic",
-      exposedVariables: [],
-      nodes: [
-        {
-          _id: "n1_interact",
-          type: "event_on_interact",
-          position: { x: 50, y: 300 },
-          settings: { headerTitle: "On Interact NPC", headerColor: "#E91E63", category: "Events" },
-          inputs: [],
-          outputs: [{ _id: "out_exec", label: "Start", type: "execution", dataType: "execution", color: "#ffffff" }],
-          data: {}
-        },
-        {
-          _id: "n2_player_data",
-          type: "data_player_info",
-          position: { x: 300, y: 100 },
-          settings: { headerTitle: "Get Player Info", headerColor: "#9C27B0", category: "Data", description: "Provides player stats" },
-          inputs: [],
-          outputs: [
-            { _id: "out_name", label: "Player Name", type: "string", dataType: "string", color: "#9c27b0" },
-            { _id: "out_has_quest", label: "Is Quest Done?", type: "boolean", dataType: "boolean", color: "#f44336" }
-          ],
-          data: { debugName: "Hero_01" }
-        },
-        {
-          _id: "n3_branch",
-          type: "logic_branch",
-          position: { x: 350, y: 300 },
-          settings: { headerTitle: "Check Quest State", headerColor: "#FF9800", category: "Logic" },
-          inputs: [
-            { _id: "in_exec", label: "In", color: "#ffffff", dataType: "execution" },
-            { _id: "in_cond", label: "Condition", color: "#f44336", dataType: "boolean" }
-          ],
-          outputs: [
-            { _id: "out_true", label: "True (Done)", type: "execution", dataType: "execution", color: "#ffffff" },
-            { _id: "out_false", label: "False (Not Yet)", type: "execution", dataType: "execution", color: "#ffffff" }
-          ],
-          data: {}
-        },
-        {
-          _id: "n4_world_data",
-          type: "data_world_info",
-          position: { x: 300, y: 550 },
-          settings: { headerTitle: "Get NPC & Reward Info", headerColor: "#2196F3", category: "Data" },
-          inputs: [],
-          outputs: [
-            { _id: "out_npc_pos", label: "NPC Look Pos", type: "vector", dataType: "vector", color: "#FFC107" },
-            { _id: "out_reward_item", label: "Reward Item Ref", type: "object", dataType: "object", color: "#2196f3" }
-          ],
-          data: { rewardId: "sword_epic_01" }
-        },
-        {
-          _id: "n5_calc_exp",
-          type: "math_formula",
-          position: { x: 700, y: 100 },
-          settings: { headerTitle: "Calc EXP Reward", headerColor: "#009688", category: "Math", visibleDataFields: ["base", "bonus"] },
-          inputs: [],
-          outputs: [{ _id: "out_total_exp", label: "Total Exp", type: "number", dataType: "number", color: "#00e676" }],
-          data: { base: 500, bonus: 1.2 }
-        },
-        {
-          _id: "n6_show_dialogue",
-          type: "ui_show_advanced_dialogue",
-          position: { x: 1000, y: 250 },
-          settings: { headerTitle: "Show Final Dialogue", headerColor: "#607D8B", category: "UI", description: "Displays complex UI with all data types.", visibleDataFields: ["message"] },
-          inputs: [
-            { _id: "in_exec", label: "Show", type: "execution", dataType: "execution", color: "#ffffff" },
-            { _id: "in_name", label: "Target Name", type: "string", dataType: "string", color: "#9c27b0" },
-            { _id: "in_cond", label: "Is Happy?", type: "boolean", dataType: "boolean", color: "#f44336" },
-            { _id: "in_exp", label: "Exp Amount", type: "number", dataType: "number", color: "#00e676" },
-            { _id: "in_look", label: "Look At", type: "vector", dataType: "vector", color: "#FFC107" },
-            { _id: "in_item", label: "Give Item", type: "object", dataType: "object", color: "#2196f3" }
-          ],
-          outputs: [{ _id: "out_done", label: "On Closed", type: "execution", dataType: "execution", color: "#ffffff" }],
-          data: { message: "Thanks for helping, {name}! Here is {exp} exp and a {item}." }
-        },
-        {
-          _id: "n7_simple_dialogue",
-          type: "ui_message",
-          position: { x: 700, y: 450 },
-          settings: { headerTitle: "Simple Message", headerColor: "#607D8B", category: "UI" },
-          inputs: [
-            { _id: "in_exec", label: "Show", color: "#ffffff", dataType: "execution" },
-            { _id: "in_name", label: "Name", color: "#9c27b0", dataType: "string" }
-          ],
-          outputs: [],
-          data: { msg: "Please finish the quest first, {name}." }
-        }
-      ],
-      edges: [
-        { _id: "e1", source: "n1_interact", sourceHandle: "out_exec", target: "n3_branch", targetHandle: "in_exec" },
-        { _id: "e2", source: "n2_player_data", sourceHandle: "out_has_quest", target: "n3_branch", targetHandle: "in_cond" },
-        { _id: "e3", source: "n3_branch", sourceHandle: "out_true", target: "n6_show_dialogue", targetHandle: "in_exec" },
-        { _id: "e4", source: "n2_player_data", sourceHandle: "out_name", target: "n6_show_dialogue", targetHandle: "in_name" },
-        { _id: "e5", source: "n2_player_data", sourceHandle: "out_has_quest", target: "n6_show_dialogue", targetHandle: "in_cond" },
-        { _id: "e6", source: "n5_calc_exp", sourceHandle: "out_total_exp", target: "n6_show_dialogue", targetHandle: "in_exp" },
-        { _id: "e7", source: "n4_world_data", sourceHandle: "out_npc_pos", target: "n6_show_dialogue", targetHandle: "in_look" },
-        { _id: "e8", source: "n4_world_data", sourceHandle: "out_reward_item", target: "n6_show_dialogue", targetHandle: "in_item" },
-        { _id: "e9", source: "n3_branch", sourceHandle: "out_false", target: "n7_simple_dialogue", targetHandle: "in_exec" },
-        { _id: "e10", source: "n2_player_data", sourceHandle: "out_name", target: "n7_simple_dialogue", targetHandle: "in_name" },
-      ]
-    });
-
+    // --- 5. PREFABS ---
+    console.log("Seeding Prefabs...");
     await Prefab.create({
       _id: prefabChestId,
       projectId,
@@ -246,6 +270,8 @@ const seedDatabase = async () => {
       }
     });
 
+    // --- 6. SCENES ---
+    console.log("Seeding Scenes...");
     await Scene.create({
       _id: sceneId,
       projectId,
@@ -300,17 +326,11 @@ const seedDatabase = async () => {
             ScriptController: {
               data: [
                 {
-                  _id: "inst_player_move_001",
-                  assetId: scriptPlayerMoveId,
+                  _id: "inst_player_move_001", 
+                  assetId: scriptPlayerMoveId, 
                   isActive: true,
-                  variables: { "Speed": 20 }
-                },
-                {
-                  _id: "npc_behavior_001",
-                  assetId: scriptNpcId, 
-                  isActive: true,
-                  variables: {  }
-                },
+                  variables: { [varSpeedId]: 50 } 
+                }
               ]
             }
           }
@@ -320,10 +340,11 @@ const seedDatabase = async () => {
 
     console.log("Database seeded successfully!");
   } catch (err) {
-    console.error(err);
+    console.error("Seeding Failed:", err);
     process.exit(1);
   } finally {
     await mongoose.disconnect();
+    console.log("Disconnected from MongoDB.");
     process.exit(0);
   }
 };

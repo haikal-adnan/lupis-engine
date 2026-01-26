@@ -3,11 +3,9 @@ import { HexToVec4 } from "../../Util/HexToVec4.js";
 export default class WorldRenderer {
     constructor(image, text, shape, game, tilemapRenderer) {
         this.game = game;
-        // Grouping renderer agar code lebih rapi
         this.renderer = { image, text, shape }; 
         this.tilemapRenderer = tilemapRenderer;
         
-        // Antrian render
         this.renderQueue = [];
     }
 
@@ -16,44 +14,33 @@ export default class WorldRenderer {
         const activeTab = tabs?.find(t => t.id === activeTabId);
         const isIsolationMode = (activeTab?.type === "tilemap");
         
-        // 1. Render Grid (Background) - Selalu paling awal
         if (world.gridRenderer && !isIsolationMode) {
             this._flushAll();
             world.gridRenderer(this.renderer.shape, proj);
             this.renderer.shape.flush();
         }
 
-        // 2. Reset Queue
         this.renderQueue.length = 0;
 
-        // 3. PENGUMPULAN DATA (Strict Traversal / Painter's Algorithm)
-        // Kita percaya bahwa SyncComponent sudah menyusun Array dengan benar.
-        // Jadi kita hanya perlu loop dan gambar sesuai urutan. Tanpa Sorting.
         this._collectRenderables(world, activeTabId, isIsolationMode, proj);
 
-        // 4. EKSEKUSI RENDER QUEUE
         this._executeRenderQueue(proj);
 
-        // 5. Render Selection Overlay (Foreground) - Selalu paling atas
         if (!isIsolationMode && world.selectionRenderer && this.game.selection.active) {
             this._flushAll(); 
             world.selectionRenderer(this.renderer.image, this.renderer.shape, this.renderer.text, proj);
         }
     }
 
-    // --- Core Logic Helpers ---
-
     _collectRenderables(world, activeTabId, isIsolationMode, proj) {
-        // Loop Layer (Bawah ke Atas)
         for (let li = 0; li < world.layers.length; li++) {
             const layer = world.layers[li];
-            if (!layer.visible) continue;
+            
+            if (layer.visible === false) continue;
 
-            // Loop Entity sesuai urutan Array (WYSIWYG dari Frontend)
             for (const e of layer.entities) {
                 if (isIsolationMode && e.id !== activeTabId) continue;
                 
-                // Hanya proses root entity, children akan diproses rekursif
                 if (!e.parentId) {
                     this._processEntityRecursive(e, world, proj);
                 }
@@ -62,35 +49,29 @@ export default class WorldRenderer {
     }
 
     _processEntityRecursive(e, world, proj) {
-        if (!e.visible) return;
+        if (e.active === false) return;
+        if (e.visible === false) return;
 
         const comps = e.components;
         if (!comps) return;
 
-        // Special Case: Tilemap (Direct Render)
-        // Flush antrian sebelumnya agar tilemap berada di tumpukan yang benar
         if (comps.Tilemap && this.tilemapRenderer) {
-            this._executeRenderQueue(proj); // Render antrian sebelumnya
-            this.renderQueue.length = 0;    // Reset queue
+            this._executeRenderQueue(proj);
+            this.renderQueue.length = 0;
             
             this.tilemapRenderer.renderEntity(e, world, proj);
             return;
         }
 
-        // --- PREPARE DATA ---
         const t = comps.Transform;
         const opacity = e.opacity ?? 1;
 
-        // Helper Data Transform
         const trans = {
             x: t.x, y: t.y, width: t.width, height: t.height,
             rotation: t.rotation, scaleX: t.scaleX, scaleY: t.scaleY,
             pivotX: t.pivotX, pivotY: t.pivotY
         };
 
-        // --- PUSH TO QUEUE (Sesuai urutan kedatangan) ---
-        
-        // 1. Image Component
         if (comps.SpriteRenderer) {
             const s = comps.SpriteRenderer;
             const alpha = (s.opacity ?? 1) * opacity;
@@ -105,7 +86,6 @@ export default class WorldRenderer {
             }
         }
 
-        // 2. Shape Component
         if (comps.ShapeRenderer) {
             const s = comps.ShapeRenderer;
             const alpha = (s.opacity ?? 1) * opacity;
@@ -124,7 +104,6 @@ export default class WorldRenderer {
             }
         }
 
-        // 3. Text Component
         if (comps.TextRenderer) {
             const tx = comps.TextRenderer;
             const alpha = (tx.opacity ?? 1) * opacity;
@@ -144,8 +123,6 @@ export default class WorldRenderer {
             }
         }
 
-        // --- RECURSION (CHILDREN) ---
-        // Anak digambar setelah (di atas) orang tua
         if (e.children && e.children.length > 0) {
             for (const child of e.children) {
                 this._processEntityRecursive(child, world, proj);
@@ -159,13 +136,11 @@ export default class WorldRenderer {
         let currentType = null;
 
         for (const item of this.renderQueue) {
-            // Smart Batching: Flush jika tipe renderer berubah
             if (currentType && currentType !== item.type) {
                 this.renderer[currentType].flush();
             }
             currentType = item.type;
 
-            // Execute Draw
             if (item.type === "image") {
                 this.renderer.image.draw(item.texture, item.frame, item.transformData, item.options, proj);
             } 
@@ -182,7 +157,6 @@ export default class WorldRenderer {
             }
         }
 
-        // Flush sisa terakhir
         if (currentType) {
             this.renderer[currentType].flush();
         }

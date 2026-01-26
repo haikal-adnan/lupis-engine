@@ -15,6 +15,7 @@ export default class Keyboard {
         window.addEventListener("keydown", this._onDown);
         window.addEventListener("keyup", this._onUp);
 
+        // Mencegah menu browser saat Alt ditekan
         this._blockAltDown = e => {
             if (e.key === "Alt") {
                 e.preventDefault();
@@ -32,7 +33,10 @@ export default class Keyboard {
     }
 
     _down(e) {
-        const k = e.key.toLowerCase();
+        let k = e.key.toLowerCase();
+
+        // FIX: Mapping karakter spasi kosong " " menjadi string "space"
+        if (k === " ") k = "space";
 
         if (!this.keys.has(k)) this.pressed.add(k);
 
@@ -45,7 +49,10 @@ export default class Keyboard {
     }
 
     _up(e) {
-        const k = e.key.toLowerCase();
+        let k = e.key.toLowerCase();
+
+        // FIX: Mapping karakter spasi kosong " " menjadi string "space"
+        if (k === " ") k = "space";
 
         this.keys.delete(k);
         this.released.add(k);

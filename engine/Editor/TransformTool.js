@@ -39,12 +39,19 @@ export default class TransformTool {
         return e.components && e.components.Transform;
     }
 
+    _isInteractive(e) {
+        if (e.active === false) return false;
+        if (e._editor && e._editor.locked === true) return false;
+        return true;
+    }
+
     toWorld(px, py) {
         return this.selection.toWorld(px, py);
     }
 
     computeHandles() {
-        this.geometry.computeHandles(this.selection.selectedList);
+        const interactables = this.selection.selectedList.filter(e => this._isInteractive(e));
+        this.geometry.computeHandles(interactables);
     }
 
     computeGroupBounds() {
@@ -67,7 +74,8 @@ export default class TransformTool {
                 _id: e._id || e.id,
                 components: JSON.parse(JSON.stringify(e.components)),
                 active: e.active,
-                visible: e.visible
+                visible: e.visible,
+                _editor: e._editor ? JSON.parse(JSON.stringify(e._editor)) : {}
             };
         });
     }
@@ -89,6 +97,8 @@ export default class TransformTool {
                 ent.components = JSON.parse(JSON.stringify(s.components));
                 ent.active = s.active;
                 ent.visible = s.visible;
+                if(s._editor) ent._editor = JSON.parse(JSON.stringify(s._editor));
+                
                 ApplyResizeToEntity(ent, world);
                 affected.push(ent);
             }
@@ -101,8 +111,9 @@ export default class TransformTool {
     }
 
     beginMove(px, py, isTouch) {
-        const list = this.selection.selectedList;
-        if (!list.length) return;
+        const validEntities = this.selection.selectedList.filter(e => this._isInteractive(e));
+        
+        if (!validEntities.length) return;
 
         this.initialState = this._createSnapshot();
         if (this.selection.calculateViewportInsets) this.selection.calculateViewportInsets();
@@ -114,7 +125,7 @@ export default class TransformTool {
         this.draggingResize = false;
         this.draggingRotate = false;
 
-        this.moveStartData = list.map(e => {
+        this.moveStartData = validEntities.map(e => {
             const t = this._getTransform(e);
             return {
                 e,
@@ -125,8 +136,9 @@ export default class TransformTool {
     }
 
     beginResize(handle, px, py) {
-        const list = this.selection.selectedList;
-        if (!list.length) return;
+        const validEntities = this.selection.selectedList.filter(e => this._isInteractive(e));
+        
+        if (!validEntities.length) return;
 
         this.initialState = this._createSnapshot();
         if (this.selection.calculateViewportInsets) this.selection.calculateViewportInsets();
@@ -138,8 +150,9 @@ export default class TransformTool {
             this.draggingResize = false;
             this.draggingMove = false;
 
-            const e = list[0];
+            const e = validEntities[0];
             const t = this._getTransform(e);
+            
             this.rotateCenter = { x: t.x, y: t.y };
             this.rotateStartAngle = Math.atan2(p.y - t.y, p.x - t.x);
             this.entityStartRotation = t.rotation || 0;
@@ -150,7 +163,7 @@ export default class TransformTool {
             this.resizeType = handle.type;
             this.startWorld = p;
 
-            this.resizeEntityStarts = list.map(e => {
+            this.resizeEntityStarts = validEntities.map(e => {
                 const t = this._getTransform(e);
                 return {
                     e,
@@ -182,21 +195,26 @@ export default class TransformTool {
             const finalState = this._createSnapshot();
             const startState = this.initialState;
 
-            const command = {
-                name: "Transform Entity",
-                undo: () => this._applyState(startState),
-                redo: () => this._applyState(finalState)
-            };
-            if (this.game.history) this.game.history.push(command);
+            const hasChanged = JSON.stringify(finalState) !== JSON.stringify(startState);
 
-            if (this.selection.selectedList.length > 0) {
-                bus.emit("entity:modified", this.selection.selectedList);
+            if (hasChanged) {
+                const command = {
+                    name: "Transform Entity",
+                    undo: () => this._applyState(startState),
+                    redo: () => this._applyState(finalState)
+                };
+                if (this.game.history) this.game.history.push(command);
+
+                if (this.selection.selectedList.length > 0) {
+                    bus.emit("entity:modified", this.selection.selectedList);
+                }
             }
         }
     }
 
     update() {
         if (!this.active) return;
+        
         const list = this.selection.selectedList;
         if (!list.length) return;
 
@@ -207,14 +225,15 @@ export default class TransformTool {
             this.selection.applyPointerAutoPan(p.x, p.y);
         }
 
-        if (this.draggingMove) {
-            this.operator.move(worldP, this.startWorld, this.moveStartData, list);
+        if (this.draggingMove && this.moveStartData) {
+            this.operator.move(worldP, this.startWorld, this.moveStartData);
         } 
-        else if (this.draggingResize) {
-            this.operator.resize(worldP, this.startWorld, this.resizeType, this.resizeEntityStarts, list);
+        else if (this.draggingResize && this.resizeEntityStarts) {
+            this.operator.resize(worldP, this.startWorld, this.resizeType, this.resizeEntityStarts);
         } 
         else if (this.draggingRotate) {
-            this.operator.rotate(worldP, this.rotateCenter, this.rotateStartAngle, this.entityStartRotation, list);
+            const validList = list.filter(e => this._isInteractive(e));
+            this.operator.rotate(worldP, this.rotateCenter, this.rotateStartAngle, this.entityStartRotation, validList);
         }
 
         if (this.selection.updateAutoPan) this.selection.updateAutoPan();
@@ -223,7 +242,8 @@ export default class TransformTool {
 
     draw(shape, proj) {
         if (!this.active) return;
-        this.geometry.computeHandles(this.selection.selectedList);
+        
+        this.computeHandles();
         this.drawer.draw(shape, proj, this.geometry);
     }
 }

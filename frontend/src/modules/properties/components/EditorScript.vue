@@ -7,13 +7,11 @@
     <div class="flex items-end gap-1.5 mb-3">
       
       <div class="flex-1 min-w-0">
-        
         <div class="mb-1 text-[10px] font-bold text-muted-foreground uppercase flex justify-between items-center">
             <span>Script</span>
         </div>
         
         <BaseDropdown class="w-full">
-          
           <template #trigger="{ isOpen }">
             <button 
               type="button"
@@ -36,7 +34,6 @@
 
           <template #default="{ close }">
             <div class="w-[220px] flex flex-col py-1">
-              
               <div v-if="scriptsData.length === 0" class="px-3 py-2 text-[10px] text-muted-foreground text-center italic">
                 List is empty.
               </div>
@@ -54,11 +51,7 @@
                    <div class="w-1 h-1 rounded-full" :class="idx === selectedIndex ? 'bg-primary' : 'bg-transparent'"></div>
                    <span class="truncate">{{ getScriptName(script.assetId) }}</span>
                 </div>
-
-                <Check 
-                  v-if="script.isActive" 
-                  class="w-3.5 h-3.5 text-blue-500 ml-2" 
-                />
+                <Check v-if="script.isActive" class="w-3.5 h-3.5 text-blue-500 ml-2" />
               </button>
             </div>
           </template>
@@ -77,50 +70,23 @@
         </template>
 
         <template #default="{ close }">
-          <div class="flex flex-col text-xs min-w-[160px]">
+          <div class="flex flex-col text-xs min-w-[160px] py-1">
             
-            <div class="px-2 py-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-              Script Actions
-            </div>
-
-            <BaseDropdown placement="left-start" :offset="10" class="w-full">
-               <template #trigger>
-                  <button class="w-full flex items-center px-2 py-1.5 mx-1 rounded-sm hover:bg-accent hover:text-accent-foreground text-left transition-colors">
-                     <Plus class="w-3.5 h-3.5 mr-2 text-muted-foreground" />
-                     <span>Add Script...</span>
-                  </button>
-               </template>
-               <template #default="{ close: closeSub }">
-                  <div class="w-[200px] flex flex-col">
-                     <div class="p-2 border-b border-border bg-muted/20">
-                        <input v-model="addSearchQuery" type="text" placeholder="Search..." class="w-full h-6 text-[10px] bg-background border border-input rounded px-2" autoFocus />
-                     </div>
-                     <div class="max-h-[200px] overflow-y-auto py-1">
-                        <button v-for="s in filteredAvailableScripts" :key="s._id" @click="handleAddScript(s._id); closeSub(); close();" class="w-full text-left px-2 py-1.5 text-xs hover:bg-accent truncate">
-                           {{ s.name }}
-                        </button>
-                     </div>
-                  </div>
-               </template>
-            </BaseDropdown>
+            <button 
+              @click="openScriptBottomBar(); close()"
+              class="flex items-center px-2 py-1.5 mx-1 rounded-sm hover:bg-accent hover:text-accent-foreground text-left transition-colors"
+            >
+              <Plus class="w-3.5 h-3.5 mr-2 text-muted-foreground" />
+              <span>Add Script...</span>
+            </button>
 
             <button 
               v-if="currentScript"
               @click="handleRemoveCurrent(); close()"
-              class="flex items-center px-2 py-1.5 mx-1 rounded-sm hover:bg-accent hover:text-accent-foreground text-left transition-colors"
-            >
-              <Trash2 class="w-3.5 h-3.5 mr-2 text-muted-foreground" />
-              <span>Remove Current</span>
-            </button>
-
-            <div class="h-[1px] bg-border my-1"></div>
-
-            <button 
-              @click="removeComponent('ScriptController'); close()"
               class="flex items-center px-2 py-1.5 mx-1 rounded-sm hover:bg-destructive/10 text-destructive hover:text-destructive text-left transition-colors"
             >
-              <AlertOctagon class="w-3.5 h-3.5 mr-2" />
-              <span>Remove All</span>
+              <Trash2 class="w-3.5 h-3.5 mr-2" />
+              <span>Remove Current</span>
             </button>
 
           </div>
@@ -129,7 +95,6 @@
     </div>
 
     <div v-if="currentScript" class="flex flex-col gap-2">
-       
        <PropertyRow label="Active Status">
           <BaseButton 
              :active="currentIsActive"
@@ -185,7 +150,7 @@
     </div>
 
     <div v-else class="text-xs text-muted-foreground text-center py-4 border border-dashed border-border rounded">
-       Select "Add Script" from menu to start.
+        Select "Add Script" from menu to start.
     </div>
 
   </PropertySection>
@@ -194,15 +159,14 @@
 <script setup>
 import { ref, computed, watch } from 'vue';
 import { 
-  FileCode2, MoreVertical, Plus, Trash2, AlertOctagon, 
-  ChevronDown, Check, Power, RotateCcw // Hapus 'Workflow' jika tidak dipakai
+  FileCode2, MoreVertical, Plus, Trash2, 
+  ChevronDown, Check, Power, RotateCcw 
 } from 'lucide-vue-next';
 import { useInspectorLogic } from "@/modules/properties/composables/useInspectorLogic.js";
-
-// --- STORES ---
 import { useScriptStore } from '@/stores/useScriptStore.js';
-import { useEditorStore } from '@/stores/useEditorStore.js'; // 1. Import Editor Store
+import { useEditorStore } from '@/stores/useEditorStore.js';
 
+// UI Components
 import PropertySection from "@ui/display/PropertySection.vue";
 import PropertyRow from "@ui/display/PropertyRow.vue";
 import BaseDropdown from '@ui/overlay/BaseDropdown.vue';
@@ -212,44 +176,26 @@ import BaseInput from '@/commons/components/inputs/BaseInput.vue';
 import BaseButton from '@/commons/components/buttons/BaseButton.vue';
 
 const scriptStore = useScriptStore();
-const editorStore = useEditorStore(); // 2. Init Editor Store
+const editorStore = useEditorStore();
 
 const { 
-  selectedEntity, removeComponent, scriptsData,       
-  addScript, removeScript, updateScriptInstance
+  selectedEntity, scriptsData,       
+  removeScript, updateScriptInstance
 } = useInspectorLogic();
 
 const hasComponent = computed(() => !!selectedEntity.value?.components?.ScriptController);
 
-// --- SEARCH & ADD ---
-const addSearchQuery = ref('');
-const filteredAvailableScripts = computed(() => {
-  const query = addSearchQuery.value.toLowerCase();
-  const all = scriptStore.scripts || [];
-  if (!query) return all;
-  return all.filter(s => s.name.toLowerCase().includes(query));
-});
-
 // --- SELECTION STATE ---
 const selectedIndex = ref(0);
-
-// Safeguard index
 watch(() => selectedEntity.value?._id, () => { selectedIndex.value = 0; });
-watch(scriptsData, (newVal) => {
-   if (selectedIndex.value >= newVal.length) selectedIndex.value = Math.max(0, newVal.length - 1);
-}, { deep: true });
 
 // --- HELPERS ---
 const currentScript = computed(() => scriptsData.value[selectedIndex.value]);
-
 function getScriptName(assetId) {
    const def = scriptStore.getScriptById(assetId);
    return def ? def.name : 'Unknown Script';
 }
-
-const currentScriptName = computed(() => {
-   return currentScript.value ? getScriptName(currentScript.value.assetId) : '';
-});
+const currentScriptName = computed(() => currentScript.value ? getScriptName(currentScript.value.assetId) : '');
 
 // --- BINDINGS ---
 const currentIsActive = computed({
@@ -261,18 +207,35 @@ const currentVariables = computed(() => {
    if (!currentScript.value) return [];
    const def = scriptStore.getScriptById(currentScript.value.assetId);
    if (!def) return [];
-   
    const overrides = currentScript.value.variables || {};
+
    return (def.exposedVariables || []).map(d => {
-      const isOverridden = Object.prototype.hasOwnProperty.call(overrides, d.name);
+      const variableId = d._id; 
+      const isOverridden = Object.prototype.hasOwnProperty.call(overrides, variableId);
+      
       return {
-         name: d.name, type: d.type, isOverridden,
+         name: d.name, 
+         type: d.type, 
+         isOverridden,
          model: computed({
-            get: () => isOverridden ? overrides[d.name] : d.defaultValue,
-            set: (val) => updateScriptInstance(selectedIndex.value, `variables.${d.name}`, val)
+            get: () => isOverridden ? overrides[variableId] : d.defaultValue,
+            set: (val) => {
+                let finalVal = val;
+                if (d.type === 'Number') finalVal = Number(val); 
+                else if (d.type === 'Boolean') finalVal = Boolean(val);
+
+                const newVariables = { ...overrides };
+                if (finalVal === d.defaultValue) {
+                    delete newVariables[variableId];
+                } else {
+                    newVariables[variableId] = finalVal;
+                }
+                updateScriptInstance(selectedIndex.value, 'variables', newVariables);
+            }
          }),
          reset: () => {
-            const n = { ...overrides }; delete n[d.name];
+            const n = { ...overrides }; 
+            delete n[variableId];
             updateScriptInstance(selectedIndex.value, 'variables', n);
          }
       };
@@ -285,37 +248,31 @@ function selectIndex(idx, close) {
    if(close) close();
 }
 
-function handleAddScript(assetId) {
-   addScript(assetId);
-   selectedIndex.value = scriptsData.value.length; 
-   addSearchQuery.value = '';
+// Membuka tab scripts di bagian bawah (Bottom Bar)
+function openScriptBottomBar() {
+  editorStore.setActiveBottomTab('scripts');
 }
 
 function handleRemoveCurrent() {
-   if(confirm(`Remove ${currentScriptName.value}?`)) removeScript(selectedIndex.value);
+   if(confirm(`Remove ${currentScriptName.value}?`)) {
+     removeScript(selectedIndex.value);
+     selectedIndex.value = 0;
+   }
 }
 
-// 3. FUNGSI UTAMA: Open Script Editor
 function openScriptEditor() {
    if (!currentScript.value) return;
-
-   // Ambil definisi script lengkap berdasarkan ID
    const assetId = currentScript.value.assetId;
    const scriptDef = scriptStore.getScriptById(assetId);
 
    if (scriptDef) {
-      // A. Simpan Data ke Script Store (agar Graph View tahu apa yang harus dirender)
       scriptStore.setActiveScript(scriptDef);
-
-      // B. Tambahkan Tab ke Editor Store & Langsung Buka
       editorStore.openTab({
-         id: scriptDef._id,      // Gunakan ID Script sebagai ID Tab
-         name: scriptDef.name,   // Nama Script sebagai Nama Tab
-         type: 'diagram',        // Tipe Tab (sesuai layout anda: 'diagram'/'graph')
-         fixed: false            // Bisa di-close
+          id: scriptDef._id,
+          name: scriptDef.name,
+          type: 'diagram',
+          fixed: false
       });
-   } else {
-      console.warn("Script definition not found for ID:", assetId);
    }
 }
 </script>

@@ -48,6 +48,7 @@ export const createEntity = (data = {}) => {
 
     isActive: data.isActive ?? true,
     isVisible: data.isVisible ?? true,
+    isLocked: data.isLocked ?? false,
 
     _editor: {
       locked: data._editor?.locked ?? false,

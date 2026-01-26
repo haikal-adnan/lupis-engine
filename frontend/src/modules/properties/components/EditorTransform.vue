@@ -14,8 +14,8 @@
 
     <PropertyRow label="Position">
       <div class="grid grid-cols-2 gap-2">
-        <BaseNumber v-model="x" prefix="X" :step="1" class="font-mono" />
-        <BaseNumber v-model="y" prefix="Y" :step="1" class="font-mono" />
+        <BaseNumber v-model="x" prefix="X" :step="1" class="font-mono" :disabled="isLocked" />
+        <BaseNumber v-model="y" prefix="Y" :step="1" class="font-mono" :disabled="isLocked" />
       </div>
     </PropertyRow>
 
@@ -27,6 +27,7 @@
             prefix="R" suffix="°" :step="1" 
             class="font-mono flex-grow"
             :min="0" :max="359" :cyclic="true"
+            :disabled="isLocked" 
           />
         </PropertyRow>
       </div>
@@ -34,6 +35,7 @@
       <PivotControl 
         :x="pivotX" 
         :y="pivotY" 
+        :disabled="isLocked"
         @update="updatePivot" 
       />
     </div>
@@ -41,14 +43,15 @@
     <PropertyRow label="Size (px)">
       <div class="flex items-center gap-2">
         <div class="grid grid-cols-2 gap-2 flex-grow">
-          <BaseNumber v-model="width" prefix="W" :min="0" :step="1" class="font-mono" />
-          <BaseNumber v-model="height" prefix="H" :min="0" :step="1" class="font-mono" />
+          <BaseNumber v-model="width" prefix="W" :min="0" :step="1" class="font-mono" :disabled="isLocked" />
+          <BaseNumber v-model="height" prefix="H" :min="0" :step="1" class="font-mono" :disabled="isLocked" />
         </div>
 
         <IconButton 
           :active="isRatioLocked" 
           @click="isRatioLocked = !isRatioLocked"
           :tooltip="isRatioLocked ? 'Unlock Ratio' : 'Lock Ratio'"
+          :disabled="isLocked"
         >
           <Lock v-if="isRatioLocked" class="w-3.5 h-3.5" />
           <Unlock v-else class="w-3.5 h-3.5 opacity-50" />
@@ -62,6 +65,7 @@
           :active="flipX"
           @click="flipX = !flipX"
           class="h-7 text-xs gap-2" ghost
+          :disabled="isLocked"
         >
           <FlipHorizontal class="w-3.5 h-3.5" /> <span>Horz</span>
         </BaseButton>
@@ -70,6 +74,7 @@
           :active="flipY"
           @click="flipY = !flipY"
           class="h-7 text-xs gap-2" ghost
+          :disabled="isLocked"
         >
           <FlipVertical class="w-3.5 h-3.5" /> <span>Vert</span>
         </BaseButton>
@@ -91,7 +96,7 @@ import BaseNumber from '@/commons/components/inputs/BaseNumber.vue'
 import IconButton from '@/commons/components/buttons/IconButton.vue'
 import BaseButton from '@/commons/components/buttons/BaseButton.vue' 
 
-const { selectedEntity, resetTransform, updatePivot, bindComponentProp } = useInspectorLogic();
+const { selectedEntity, resetTransform, updatePivot, bindComponentProp, isLocked } = useInspectorLogic();
 
 // BINDINGS (Sangat Penting: Harus individual)
 const x = bindComponentProp('Transform', 'x');

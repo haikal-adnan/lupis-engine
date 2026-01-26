@@ -1,5 +1,5 @@
 <template>
-  <PropertySection title="Node Settings" :icon="Settings2" v-if="selectedNode">
+  <PropertySection title="Header" :icon="Settings2" v-if="selectedNode">
     
     <template #header-extra>
       <div 

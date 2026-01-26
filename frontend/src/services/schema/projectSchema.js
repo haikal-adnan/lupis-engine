@@ -1,4 +1,4 @@
-// src/services/schema/projectSchema.js (atau lokasi file helper project kamu)
+import { GenerateUUID } from '@/commons/utils/generateUUID.js';
 
 export const createProject = (data = {}) => {
   return {
@@ -14,14 +14,30 @@ export const createProject = (data = {}) => {
       height: Number(data.settings?.height || 720)
     },
 
+    // 1. Global Variables (Existing)
     globalVariables: Array.isArray(data.globalVariables) 
       ? data.globalVariables.map(v => ({
+          _id: v._id || GenerateUUID(),
           name: v.name || "NewGlobalVar",
           type: v.type || "String",
           defaultValue: v.defaultValue ?? null
         }))
       : [],
     
+    // 2. Global Events (NEW)
+    // Menyiapkan struktur untuk Custom Event Global
+    globalEvents: Array.isArray(data.globalEvents)
+      ? data.globalEvents.map(e => ({
+          _id: e._id || GenerateUUID(),
+          name: e.name || "NewEvent",
+          description: e.description || ""
+        }))
+      : [],
+
+    tags: Array.isArray(data.tags) && data.tags.length > 0 
+      ? data.tags 
+      : ['Untagged', 'Player', 'Enemy'],
+
     scenes: data.scenes || [] 
   };
 };

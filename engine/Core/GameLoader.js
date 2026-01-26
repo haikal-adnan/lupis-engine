@@ -7,6 +7,8 @@ import GLFontResource from "../Renderer/Graphic/GLFontResource.js";
 import AssetLoader from "../Loader/AssetLoader.js";
 import SceneLoader from "../Loader/SceneLoader.js"; 
 import GameLoop from "../Loop/GameLoop.js";
+import ScriptLoader from "../Loader/ScriptLoader.js"; 
+
 import CameraController from "../Editor/CameraController.js";
 import PointerCoordinates from "../Editor/PointerCoordinates.js";
 import SelectionTool from "../Editor/SelectionTool.js";
@@ -25,6 +27,7 @@ export default class GameLoader {
             console.error(err);
             return;
         }
+        console.log("Mode:", mode);
 
         const { 
             project, 
@@ -50,6 +53,7 @@ export default class GameLoader {
 
         try {
             this._initProject(game, project);
+            ScriptLoader.load(game, payload);
         } catch (err) {
             console.error(err);
             return;
@@ -69,14 +73,9 @@ export default class GameLoader {
         
         try {
             this._initPrefabLibrary(game.world, prefabs);
-        } catch (err) {
-            console.error(err);
-        }
-
-        try {
             this._initScriptLibrary(game.world, scripts);
         } catch (err) {
-            console.error("Failed to load scripts:", err);
+            console.error("Failed to load libraries:", err);
         }
 
         if (scene) {
@@ -90,6 +89,14 @@ export default class GameLoader {
             console.warn("No valid scene object found.");
         }
 
+        if (mode === "runtime") {
+            try {
+                this._initializeEntityScripts(game);
+            } catch (err) {
+                console.error("Failed to initialize entity scripts:", err);
+            }
+        }
+
         if (mode === "editor") {
             try { 
                 this._initializeEditorTools(game, canvas); 
@@ -98,7 +105,7 @@ export default class GameLoader {
             }
         }
 
-        console.log(game.world)
+        console.log("Game World Initialized:", game.world);
         
         game.loop = new GameLoop({
             update: dt => { try { game.update(dt); } catch(e) { } },
@@ -113,14 +120,15 @@ export default class GameLoader {
         game.world.ui = [];
         game.renderer = new RendererManager(canvas, game);
     }
-
+    
     _initProject(game, project) {
+        if (!project) return;
         game._id = project._id;
-        Config.WIDTH = project.settings.width;
-        Config.HEIGHT = project.settings.height;
-        Config.BACKGROUND_COLOR = project.settings.backgroundColor;
+        Config.WIDTH = project.settings?.width || 1280;
+        Config.HEIGHT = project.settings?.height || 720;
+        Config.BACKGROUND_COLOR = project.settings?.backgroundColor || "#000000";
     }
-
+    
     _initAsset(assetLoader, world, assets) {
         return assetLoader.loadAsset(world, assets);
     }
@@ -130,25 +138,21 @@ export default class GameLoader {
             world.scripts = {}; 
             return;
         }
-
         world.scripts = scripts.reduce((map, scriptItem) => {
             map[scriptItem._id] = {
                 _id: scriptItem._id,
                 name: scriptItem.name,
                 type: scriptItem.type,
-                variables: scriptItem.exposedVariables || [],
+                variables: scriptItem.exposedVariables || [], 
                 nodes: scriptItem.nodes || [],
                 edges: scriptItem.edges || []
             };
             return map;
         }, {});
-
-        console.log(`[GameLoader] Loaded ${Object.keys(world.scripts).length} scripts into library.`);
     }
 
     _initPrefabLibrary(world, prefabs) {
         if (!Array.isArray(prefabs)) return;
-
         world.prefabs = prefabs.reduce((map, item) => {
             map[item._id] = {
                 _id: item._id,
@@ -159,37 +163,72 @@ export default class GameLoader {
         }, {});
     }
 
+    _initializeEntityScripts(game) {
+        console.log("[GameLoader] Initializing Entity Scripts...");
+        let count = 0;
+
+        game.world.entities.forEach(entity => {
+            if (!entity.components || !entity.components.ScriptController) return;
+
+            const controller = entity.components.ScriptController;
+            
+            if (Array.isArray(controller.data)) {
+                controller.data.forEach(scriptInstance => {
+                    const scriptAssetId = scriptInstance.assetId;
+                    const scriptAsset = game.world.scripts[scriptAssetId];
+
+                    if (scriptAsset) {
+                        const runtimeScriptData = {
+                            ...scriptAsset,
+                            variables: this._mergeVariables(scriptAsset.variables, scriptInstance.variables)
+                        };
+
+                        game.scriptSystem.add(runtimeScriptData, entity);
+                        count++;
+                    } else {
+                        console.warn(`[GameLoader] Script asset '${scriptAssetId}' not found for entity '${entity.name}'`);
+                    }
+                });
+            }
+        });
+
+        console.log(`[GameLoader] attached ${count} script instances to entities.`);
+    }
+
+    _mergeVariables(assetVars, instanceVars) {
+        if (!assetVars) return [];
+        if (!instanceVars) return assetVars;
+
+        return assetVars.map(v => ({
+            ...v,
+            defaultValue: instanceVars[v._id] !== undefined ? instanceVars[v._id] : v.defaultValue
+        }));
+    }
+
     _initializeEditorTools(game, canvas) {
         const { world, renderer, camera, input } = game;
         const { EDITOR } = Config;
 
         if (EDITOR.CAMERA_CONTROLLER) game.cameraController = new CameraController(camera, canvas, input);
-        
         if (EDITOR.GRID) {
             game.grid = new Grid(world, game, canvas, renderer, camera, { 
                 color: "#ffffff", width: 50, height: 50, alpha: 0.5 
             });
         }
-
         game.tilemapTool = new TilemapTool(game);
-        
         if (EDITOR.SELECTION) {
             game.selection = new SelectionTool(world, game, canvas, renderer, input);
         }
-
         if (EDITOR.TRANSFORM) {
             game.transform = new TransformTool(game.selection, world, game, canvas, renderer, input);
         }
-
         if (EDITOR.RULERS) {
             game.rulers = new Rulers(game);
             world.ui.push((ui) => {
                 game.rulers.render(ui);
             });
         }
-
         if (EDITOR.POINTER) game.pointerCoords = new PointerCoordinates(game, renderer);
-
         game.syncSystem = new SyncComponent(world, bus, game.assetLoader);
     }
 

@@ -8,20 +8,20 @@
         @click="handleTabClick(tab)"
         class="group relative flex items-center gap-2 px-4 h-full text-xs font-medium border-x border-t transition-all duration-200 outline-none focus:outline-none"
         :class="[
-          activeTabId === tab.id && isOpen
+          isActive(tab.id) && editorStore.isBottomBarOpen
             ? 'bg-background border-border border-t-transparent text-primary z-20' 
             : 'bg-transparent border-transparent text-muted-foreground hover:text-foreground hover:bg-secondary/30'
         ]"
       >
         <div 
-          v-if="activeTabId === tab.id && isOpen" 
+          v-if="isActive(tab.id) && editorStore.isBottomBarOpen" 
           class="absolute -top-px left-0 right-0 h-[1px] bg-background"
         ></div>
 
         <component 
           :is="tab.icon" 
           class="w-3.5 h-3.5 transition-colors"
-          :class="activeTabId === tab.id && isOpen ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'" 
+          :class="isActive(tab.id) && editorStore.isBottomBarOpen ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'" 
         />
         {{ tab.label }}
       </button>
@@ -40,19 +40,17 @@
 </template>
 
 <script setup>
-import { ref, markRaw } from 'vue'
+import { markRaw, watch } from 'vue'
 import { FolderOpen, Terminal, Library, ScrollText } from 'lucide-vue-next'
+import { useEditorStore } from '@/stores/useEditorStore'
 
 import AssetPanel from '@/modules/assets/AssetPanel.vue'
 import ConsolePanel from '@/modules/console/ConsolePanel.vue'
 import LibraryPanel from '@/modules/prefab/LibraryPanel.vue'
 import ScriptPanel from '@/modules/scripts/ScriptPanel.vue'
 
-const props = defineProps({
-  isOpen: { type: Boolean, default: false }
-})
-
-const emit = defineEmits(['update:component', 'toggle'])
+const emit = defineEmits(['update:component'])
+const editorStore = useEditorStore()
 
 const tabs = [
   { id: 'assets', label: 'Assets', icon: FolderOpen, component: markRaw(AssetPanel) },
@@ -61,22 +59,31 @@ const tabs = [
   { id: 'library', label: 'Library', icon: Library, component: markRaw(LibraryPanel) },
 ]
 
-const activeTabId = ref('assets')
+// Helper untuk mengecek active tab dari store
+const isActive = (id) => editorStore.activeBottomTabId === id
 
 const handleTabClick = (tab) => {
-  if (!props.isOpen) {
-    activeTabId.value = tab.id
-    emit('update:component', tab.component)
-    emit('toggle', true)
+  // Jika tab yang diklik sama dengan yang aktif DAN panel sedang terbuka
+  if (isActive(tab.id) && editorStore.isBottomBarOpen) {
+    // Tutup panel (toggle di store)
+    editorStore.toggleBottomBar()
     return
   }
 
-  if (activeTabId.value === tab.id) {
-    emit('toggle', false)
-    return
-  }
-
-  activeTabId.value = tab.id
-  emit('update:component', tab.component)
+  // Jika berbeda atau panel tertutup, set aktif (store otomatis set isBottomBarOpen = true)
+  editorStore.setActiveBottomTab(tab.id)
 }
+
+// Watch perubahan ID di store (baik dari klik di sini, atau diubah dari tempat lain)
+// untuk meng-emit komponen yang benar ke EditorView
+watch(
+  () => editorStore.activeBottomTabId,
+  (newId) => {
+    const foundTab = tabs.find(t => t.id === newId)
+    if (foundTab) {
+      emit('update:component', foundTab.component)
+    }
+  },
+  { immediate: true } // Jalankan saat mount agar komponen awal ter-set
+)
 </script>
