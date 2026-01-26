@@ -62,7 +62,7 @@ export function useNodeTemplate() {
           defaultData: {
             settings: { 
               headerTitle: `Trigger ${evt.name}`, 
-              333333333: '#9C27B0', 
+              headerColor: '#9C27B0', 
               category: 'Global Event' 
             },
             data: { eventId: evt._id, eventName: evt.name },

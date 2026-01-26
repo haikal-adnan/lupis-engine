@@ -24,11 +24,9 @@ const ProjectSchema = new mongoose.Schema({
     height: { type: Number, default: 720 }
   },
   
-  // Array of objects dengan ID
   globalVariables: [VariableSchema],
   globalEvents: [EventSchema], 
 
-  // --- UPDATE: Menambahkan Tags ---
   tags: { 
     type: [String], 
     default: ['Untagged', 'Player', 'Enemy', 'Terrain', 'UI'] 
