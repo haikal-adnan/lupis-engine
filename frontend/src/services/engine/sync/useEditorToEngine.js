@@ -1,16 +1,10 @@
 import { EngineBridge } from "@/services/engine/EngineBridge.js";
 
-/**
- * Menangani update DARI Editor (Pinia) KE Engine
- * Menggunakan format Partial Object Payload agar efisien.
- */
-export function useEditorToEngine(sceneStore, assetStore, editorStore) {
+export function useEditorToEngine(sceneStore, assetStore, editorStore, scriptStore) {
 
   const listen = () => {
-    // --- SCENE STORE LISTENER ---
     sceneStore.$onAction(({ name, args, after, onError }) => {
       after((result) => {
-        // PERINGATAN: Jangan masukkan 'syncTransformFromEngine' disini
         switch (name) {
           case 'createEntity':
             if (result) EngineBridge.createEntity(result);
@@ -42,12 +36,32 @@ export function useEditorToEngine(sceneStore, assetStore, editorStore) {
           case 'updateEntityProp':
             if (result) EngineBridge.updateEntityProp(result);
             break;
+          case 'addComponent':
+            if (result) {
+              EngineBridge.addComponent(result);
+            }
+            break;
+          case 'removeComponent':
+          EngineBridge.removeComponent({ 
+            entityId: args[0], 
+            componentName: args[1] 
+          });
+
+          case 'patchComponent':
+            // args: [entityId, componentName, updates]
+            EngineBridge.patchComponent({
+              entityId: args[0],
+              componentName: args[1],
+              updates: args[2]
+            });
+            break;
+          break;
+        
         }
       });
       onError((error) => console.error(`[Sync-Outgoing] Error on ${name}:`, error));
     });
 
-    // --- ASSET STORE LISTENER ---
     assetStore.$onAction(({ name, args, after }) => {
       after(() => {
         switch (name) {
@@ -61,11 +75,9 @@ export function useEditorToEngine(sceneStore, assetStore, editorStore) {
       });
     });
 
-    // --- EDITOR STORE LISTENER (UPDATED) ---
     editorStore.$onAction(({ name, args, after }) => {
       after(() => {
         switch (name) {
-          // 1. Kirim Active Tab sebagai object { activeTabId: ... }
           case 'setActiveTab':
             console.log("ini halan")
             EngineBridge.updateEditorState({ 
@@ -73,26 +85,20 @@ export function useEditorToEngine(sceneStore, assetStore, editorStore) {
             });
             break;
 
-
-          // 2. Kirim Active Tool sebagai object { activeTool: ... }
           case 'setTool':
             EngineBridge.updateEditorState({ 
                 activeTool: args[0] 
             });
             break;
 
-          // 3. Kirim Tilemap Opacity sebagai Nested Object
-          // Payload: { tilemapContext: { opacity: 0.5 } }
           case 'setContextOpacity':
             EngineBridge.updateEditorState({
               tilemapContext: { 
-                opacity: args[0] // Nilai opacity baru
+                opacity: args[0]
               }
             });
             break;
 
-          // 4. Kirim Visibility sebagai Nested Object
-          // Karena ini toggle (tidak ada args), kita ambil value dari store state
           case 'toggleContextVisibility':
             EngineBridge.updateEditorState({
               tilemapContext: {
@@ -104,7 +110,6 @@ export function useEditorToEngine(sceneStore, assetStore, editorStore) {
           case 'toggleGrid':
           case 'toggleMagnet':
           case 'setGridSize':
-             // Kirim seluruh object gridContext agar sinkron
              EngineBridge.updateEditorState({
                 gridContext: { ...editorStore.gridContext }
              });
@@ -118,6 +123,39 @@ export function useEditorToEngine(sceneStore, assetStore, editorStore) {
         }
       });
     });
+
+    scriptStore.$onAction(({ name, args, after }) => {
+      after((result) => {
+        switch (name) {
+          case 'createScript':
+             // result adalah object script baru yang direturn action
+            if (result) EngineBridge.createScript(result);
+            break;
+
+          case 'updateScript': 
+          // Action wrapper di store: updateScript(id, updates)
+            EngineBridge.updateScript(args[0], args[1]);
+            break;
+
+          case 'deleteScript':
+            EngineBridge.deleteScript(args[0]);
+            break;
+            
+          case 'saveActiveScript':
+             // Jika saveActiveScript memperbarui data, kita kirim update penuh
+             if (scriptStore.activeScript) {
+                 EngineBridge.updateScript(scriptStore.activeScript._id, {
+                     nodes: scriptStore.activeScript.nodes,
+                     edges: scriptStore.activeScript.edges,
+                     exposedVariables: scriptStore.activeScript.exposedVariables
+                 });
+             }
+             break;
+        }
+      });
+    });
+
+
   };
 
   return { listen };

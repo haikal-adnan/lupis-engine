@@ -30,12 +30,15 @@ export const useEditorStore = defineStore('editor', {
     isPlayMode: false,
     isPaused: false,
 
-    activeTabId: 'script_all_types_demo',
+    // --- TABS STATE ---
+    activeTabId: 'scene',
     tabs: [
-    { id: 'scene', name: 'Main Scene', type: 'scene', fixed: true },
-      // { id: 'player-script', name: 'Player.js', type: 'ide', fixed: false },
-      { id: 'script_all_types_demo', name: 'NPC Logic', type: 'diagram', fixed: false }
-    ]
+      { id: 'scene', name: 'Main Scene', type: 'scene', fixed: true },
+    ],
+
+    // --- BOTTOM BAR STATE ---
+    activeBottomTabId: 'asset', 
+    isBottomBarOpen: false,
   }),
 
   getters: {
@@ -45,7 +48,9 @@ export const useEditorStore = defineStore('editor', {
     },
     activeTab: (state) => {
         return state.tabs.find(t => t.id === state.activeTabId) || state.tabs[0];
-    }
+    },
+    // Getter untuk mengecek tab bawah yang aktif
+    currentBottomTab: (state) => state.activeBottomTabId
   },
 
   actions: {
@@ -65,6 +70,16 @@ export const useEditorStore = defineStore('editor', {
       this.canvas.zoom = 1;
       this.canvas.offsetX = 0;
       this.canvas.offsetY = 0;
+    },
+
+    // --- BOTTOM BAR ACTIONS ---
+    setActiveBottomTab(id) {
+      this.activeBottomTabId = id;
+      this.isBottomBarOpen = true; // Paksa buka saat tab diganti
+    },
+
+    toggleBottomBar() {
+      this.isBottomBarOpen = !this.isBottomBarOpen;
     },
 
     toggleContextVisibility() {

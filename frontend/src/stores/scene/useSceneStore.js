@@ -2,7 +2,7 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 
 import { useLayerActions } from './layerActions';
-import { useEntityActions } from './entityActions'; // Pastikan ini mengarah ke file yang baru diedit
+import { useEntityActions } from './entityActions';
 import { useSceneActions } from './sceneActions';
 
 export const useSceneStore = defineStore('scene', () => {
@@ -34,6 +34,18 @@ export const useSceneStore = defineStore('scene', () => {
     }
   };
 
+  // Action untuk update parsial (Hanya update value yang dikirim)
+  const patchComponent = (entityId, componentName, updates) => {
+    const scene = activeScene.value;
+    if (!scene) return;
+
+    const entity = scene.entities.find(e => e._id === entityId);
+    if (entity && entity.components && entity.components[componentName]) {
+      // Object.assign akan menimpa hanya key yang ada di 'updates', sisanya tetap
+      Object.assign(entity.components[componentName], updates);
+    }
+  };
+
   const syncTransformFromEngine = (entityId, transformData) => {
     const scene = activeScene.value;
     if (!scene) return;
@@ -46,8 +58,6 @@ export const useSceneStore = defineStore('scene', () => {
 
   const sceneActions = useSceneActions(scenes, activeSceneId, selectedEntityIds);
   const layerActions = useLayerActions(activeScene);
-  
-  // Ini akan memuat syncTilemapDataFromEngine yang baru dibuat
   const entityActions = useEntityActions(activeScene, selectedEntityIds);
 
   return {
@@ -63,9 +73,10 @@ export const useSceneStore = defineStore('scene', () => {
     initScenes,
     setActiveScene,
     syncTransformFromEngine,
+    patchComponent, // <--- BARU: Digunakan oleh executeTransform
 
     ...sceneActions,
     ...layerActions,
-    ...entityActions // syncTilemapDataFromEngine sekarang bisa diakses via store
+    ...entityActions 
   };
 });

@@ -27,6 +27,7 @@ const EntitySchema = new mongoose.Schema({
   prefabId: { type: String, ref: 'Prefab', default: null },
   isActive: { type: Boolean, default: true },
   isVisible: { type: Boolean, default: true },
+  isLocked: {type: Boolean, default: false},
   layerId: { type: String, default: 'layer_root' },
   parentId: { type: String, default: null },
   _editor: { type: EditorStateSchema, default: () => ({}) },

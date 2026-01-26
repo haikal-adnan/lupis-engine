@@ -18,17 +18,21 @@
       <div 
         v-for="(v, idx) in variables" 
         :key="idx"
-        class="group flex flex-col gap-1.5 p-2 rounded border border-border bg-muted/20 hover:bg-muted/40 transition-all"
+        
+        draggable="true"
+        @dragstart="onDragStart($event, v)"
+        
+        class="
+            group flex flex-col gap-1.5 p-2 rounded border border-border bg-muted/20 
+            hover:bg-accent hover:border-primary/30 transition-all cursor-grab active:cursor-grabbing
+        "
       >
         
         <div class="flex items-center gap-2 h-6">
           
           <div 
-            class="h-full aspect-square flex items-center justify-center rounded cursor-grab active:cursor-grabbing shadow-sm shrink-0"
+            class="h-full aspect-square flex items-center justify-center rounded shadow-sm shrink-0"
             :style="{ backgroundColor: getTypeColor(v.type) }"
-            draggable="true"
-            @dragstart="onDragStart($event, v)"
-            title="Drag to Graph"
           >
             <Type v-if="v.type === 'String'" class="w-3.5 h-3.5 text-white" />
             <Hash v-else-if="v.type === 'Number'" class="w-3.5 h-3.5 text-white" />
@@ -38,7 +42,8 @@
           <input 
             :value="v.name"
             @change="e => updateVariable(idx, 'name', e.target.value)"
-            class="flex-1 bg-transparent border-none outline-none p-0 text-xs font-bold text-foreground truncate hover:underline decoration-dashed underline-offset-4 decoration-muted-foreground/30 focus:underline h-full"
+            @mousedown.stop
+            class="flex-1 bg-transparent border-none outline-none p-0 text-xs font-bold text-foreground truncate hover:underline decoration-dashed underline-offset-4 decoration-muted-foreground/30 focus:underline h-full cursor-text"
             placeholder="Var Name"
           />
 
@@ -51,7 +56,20 @@
               </template>
 
               <template #default="{ close }">
-                <div class="w-auto whitespace-nowrap flex flex-col py-1 text-xs">
+                <div class="w-auto whitespace-nowrap flex flex-col py-1 text-xs min-w-[140px]">
+                  
+                  <div class="px-2 py-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                    Actions
+                  </div>
+                  <button @click="addNodeToCanvas(v, 'Get'); close()" class="flex items-center px-2 py-1.5 hover:bg-accent hover:text-accent-foreground text-left">
+                     <ArrowRightFromLine class="w-3.5 h-3.5 mr-2 text-primary" /> Add "Get" Node
+                  </button>
+                  <button @click="addNodeToCanvas(v, 'Set'); close()" class="flex items-center px-2 py-1.5 hover:bg-accent hover:text-accent-foreground text-left">
+                     <ArrowLeftToLine class="w-3.5 h-3.5 mr-2 text-orange-500" /> Add "Set" Node
+                  </button>
+
+                  <div class="h-px bg-border my-1"></div>
+
                   <div class="px-2 py-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                     Change Type
                   </div>
@@ -65,7 +83,9 @@
                     <div class="w-2 h-2 rounded-full mr-2" :style="{ backgroundColor: getTypeColor(t) }"></div>
                     {{ t }}
                   </button>
+                  
                   <div class="h-px bg-border my-1"></div>
+                  
                   <button @click="duplicateVariable(idx); close()" class="flex items-center px-2 py-1.5 hover:bg-accent hover:text-accent-foreground text-left">
                     <Copy class="w-3.5 h-3.5 mr-2 text-muted-foreground" /> Duplicate
                   </button>
@@ -78,7 +98,7 @@
           </div>
         </div>
 
-        <div class="w-full">
+        <div class="w-full" @mousedown.stop>
             
             <BaseSelect 
               v-if="v.type === 'Boolean'"
@@ -115,7 +135,10 @@
 </template>
 
 <script setup>
-import { Plus, Trash2, MoreVertical, Copy, Type, Hash, ToggleLeft } from 'lucide-vue-next';
+import { 
+  Plus, Trash2, MoreVertical, Copy, Type, Hash, ToggleLeft, 
+  ArrowRightFromLine, ArrowLeftToLine 
+} from 'lucide-vue-next'; // Tambah icon arrow untuk Get/Set
 import { useVariableLogic } from '@/modules/variable/composables/useVariableLogic.js';
 import PropertySection from "@ui/display/PropertySection.vue";
 import BaseDropdown from '@/commons/components/overlay/BaseDropdown.vue';
@@ -130,7 +153,8 @@ const props = defineProps({
 });
 
 const { 
-  variables, addVariable, updateVariable, duplicateVariable, deleteVariable, onDragStart, getTypeColor 
+  variables, addVariable, updateVariable, duplicateVariable, deleteVariable, 
+  onDragStart, getTypeColor, addNodeToCanvas 
 } = useVariableLogic(props.scope);
 
 const boolOptions = [

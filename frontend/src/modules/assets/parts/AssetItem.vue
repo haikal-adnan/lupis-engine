@@ -7,7 +7,6 @@
       !isSynced ? 'opacity-70 cursor-wait' : ''
     ]"
     @click.stop="$emit('click', data)" 
-    @dblclick.stop="$emit('dblclick', data)"
     @contextmenu.prevent.stop="$emit('contextmenu', $event, data)"
   >
     <div v-if="!isSynced" class="absolute inset-0 z-20 striped-loading rounded-md border border-primary/30 pointer-events-none"></div>
@@ -36,8 +35,7 @@
         <img 
           v-if="data.fileUrl" 
           :src="data.fileUrl" 
-          class="max-w-full max-h-full object-contain"
-          style="image-rendering: pixelated;" 
+          class="max-w-full max-h-full object-contain pixelated"
           loading="lazy"
           draggable="false"
         />
@@ -52,15 +50,14 @@
          <img 
           v-if="hasFontPreview" 
           :src="data.meta.textureUrl" 
-          class="max-w-full max-h-full object-contain filter grayscale invert opacity-80"
-          style="image-rendering: pixelated;" 
+          class="max-w-full max-h-full object-contain filter grayscale invert opacity-80 pixelated"
           loading="lazy"
           draggable="false"
         />
         <Type v-else class="text-blue-400" :class="iconSizeClass" />
       </div>
 
-      <Music v-else-if="assetType === 'audio' || assetType === 'sound'" class="text-emerald-500" :class="iconSizeClass" />
+      <Music v-else-if="['audio', 'sound'].includes(assetType)" class="text-emerald-500" :class="iconSizeClass" />
 
       <FileCode v-else-if="assetType === 'script'" class="text-yellow-500" :class="iconSizeClass" />
 
@@ -77,7 +74,6 @@
     >
       {{ data.name }}
     </span>
-
   </div>
 </template>
 
@@ -91,10 +87,9 @@ const props = defineProps({
   active: { type: Boolean, default: false }
 })
 
-defineEmits(['click', 'dblclick', 'contextmenu'])
+defineEmits(['click', 'contextmenu'])
 
-// --- Computed Logic ---
-
+// --- Local Item Logic ---
 const isFolder = computed(() => props.data.type === 'folder' || props.data.isFolder)
 
 const assetType = computed(() => {
@@ -102,18 +97,13 @@ const assetType = computed(() => {
   return props.data.type || 'file'
 })
 
-// Cek status sync (default true jika undefined)
-const isSynced = computed(() => {
-  return props.data.isSynced !== false
-})
+const isSynced = computed(() => props.data.isSynced !== false)
 
-// Cek Preview Font
 const hasFontPreview = computed(() => {
   return assetType.value === 'font' && props.data.meta?.textureUrl
 })
 
-// --- Styling ---
-
+// --- Styling Logic ---
 const containerClass = computed(() => {
   return props.viewMode === 'grid'
     ? 'flex flex-col items-center p-2 min-h-[80px]'
@@ -126,6 +116,8 @@ const iconSizeClass = computed(() => {
 </script>
 
 <style scoped>
+.pixelated { image-rendering: pixelated; }
+
 .bg-checkerboard {
   background-image: 
     linear-gradient(45deg, #2a2a2a 25%, transparent 25%), 
@@ -139,14 +131,8 @@ const iconSizeClass = computed(() => {
 .striped-loading {
   background-size: 30px 30px;
   background-image: linear-gradient(
-    45deg,
-    rgba(255, 255, 255, 0.05) 25%,
-    transparent 25%,
-    transparent 50%,
-    rgba(255, 255, 255, 0.05) 50%,
-    rgba(255, 255, 255, 0.05) 75%,
-    transparent 75%,
-    transparent
+    45deg, rgba(255, 255, 255, 0.05) 25%, transparent 25%, transparent 50%,
+    rgba(255, 255, 255, 0.05) 50%, rgba(255, 255, 255, 0.05) 75%, transparent 75%, transparent
   );
   animation: stripe-move 1s linear infinite;
 }

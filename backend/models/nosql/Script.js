@@ -11,7 +11,7 @@ const PortSchema = new mongoose.Schema({
   },
   color: { type: String, default: '#555' },
   enabled: { type: Boolean, default: true }
-});
+}, { _id: false });
 
 const NodeSchema = new mongoose.Schema({
   _id: { type: String, required: true },
@@ -27,10 +27,10 @@ const NodeSchema = new mongoose.Schema({
     category: { type: String, default: 'General' },
     visibleDataFields: { type: [String], default: [] }
   },
-  inputs: [PortSchema],
-  outputs: [PortSchema],
+  inputs: { type: [PortSchema], default: [] },
+  outputs: { type: [PortSchema], default: [] },
   data: { type: mongoose.Schema.Types.Mixed, default: {} }
-}); 
+}, { _id: false }); 
 
 const EdgeSchema = new mongoose.Schema({
   _id: { type: String, required: true },
@@ -38,7 +38,7 @@ const EdgeSchema = new mongoose.Schema({
   sourceHandle: { type: String, default: null }, 
   target: { type: String, required: true },
   targetHandle: { type: String, default: null }  
-});
+}, { _id: false });
 
 const ScriptSchema = new mongoose.Schema({
   _id: { type: String, required: true },
@@ -49,13 +49,23 @@ const ScriptSchema = new mongoose.Schema({
     enum: ['component', 'scene_logic'], 
     default: 'component' 
   },
-  exposedVariables: [{
-    name: String,
-    type: { type: String, default: 'String' },
-    defaultValue: mongoose.Schema.Types.Mixed
-  }],
-  nodes: [NodeSchema],
-  edges: [EdgeSchema]
+  exposedVariables: {
+    type: [{
+      _id: { type: String, required: true },
+      name: String,
+      type: { type: String, default: 'String' },
+      defaultValue: mongoose.Schema.Types.Mixed
+    }],
+    default: []
+  },
+  nodes: {
+    type: [NodeSchema],
+    default: []
+  },
+  edges: {
+    type: [EdgeSchema],
+    default: []
+  }
 }, { 
   timestamps: true,
   _id: false 

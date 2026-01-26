@@ -9,26 +9,31 @@ export default class SyncComponent {
     }
 
     bindEvents() {
-        // --- Entity Events ---
         this.bus.on("editor:entity:create", (data) => this.onCreateEntity(data));
         this.bus.on("editor:entity:delete", (id) => this.onDeleteEntity(id));
         this.bus.on("editor:entity:update-name", (p) => this.onUpdateEntityName(p));
         this.bus.on("editor:entity:move", (p) => this.onMoveEntity(p)); 
         this.bus.on("editor:entity:update-component", (p) => this.onUpdateComponent(p));
         this.bus.on("editor:entity:update-prop", (p) => this.onUpdateEntityProp(p));
+        this.bus.on("editor:entity:patch-component", (p) => this.onPatchComponent(p));
 
-        // --- Layer Events ---
+        this.bus.on("editor:entity:add-component", (p) => this.onAddComponent(p));
+        this.bus.on("editor:entity:remove-component", (p) => this.onRemoveComponent(p));
+
         this.bus.on("editor:layer:create", (data) => this.onCreateLayer(data));
         this.bus.on("editor:layer:delete", (id) => this.onDeleteLayer(id));
         this.bus.on("editor:layer:update-name", (p) => this.onUpdateLayerName(p));
         this.bus.on("editor:layer:reorder", (p) => this.onReorderLayer(p)); 
 
-        // --- Asset Events ---
         this.bus.on("editor:asset:create", (asset) => this.onAssetCreate(asset));
         this.bus.on("editor:asset:delete", (id) => this.onAssetDelete(id));
 
-        // --- Editor State Sync ---
         this.bus.on("editor:store:update", (payload) => this.onUpdateEditorStore(payload));
+
+
+        this.bus.on("editor:script:create", (s) => this.onScriptCreate(s));
+        this.bus.on("editor:script:update", (p) => this.onScriptUpdate(p));
+        this.bus.on("editor:script:delete", (id) => this.onScriptDelete(id));
     }
 
     onUpdateEditorStore(payload) {
@@ -56,10 +61,6 @@ export default class SyncComponent {
             this.world._editors.tileSelection = tileSelection;
         }
     }
-
-    // --------------------------------------------------------------------------
-    // LAYER HANDLERS
-    // --------------------------------------------------------------------------
 
     onCreateLayer(layerData) {
         this.world.layers.push({
@@ -96,20 +97,14 @@ export default class SyncComponent {
         layers.splice(targetIndex, 0, movedLayer);
     }
 
-    // --------------------------------------------------------------------------
-    // ENTITY HANDLERS
-    // --------------------------------------------------------------------------
-
     onCreateEntity(entityData) {
         const entity = this._createEntityInstance(entityData);
         
-        // Masukkan ke Layer yang sesuai
         const layer = this.world.layers.find(l => l._id === entity.layerId);
         if (layer) {
             layer.entities.push(entity);
         }
 
-        // Jika punya Parent, masukkan ke Children Parent juga
         if (entity.parentId) {
             const parent = this._findEntityById(entity.parentId);
             if (parent) {
@@ -140,13 +135,12 @@ export default class SyncComponent {
         deleteRecursive(id);
     }
 
-    // Helper: Mencegah Loop Circular (Bapak jadi anak dari anaknya)
     _isCircular(parentId, childId) {
         if (!parentId) return false;
         if (parentId === childId) return true;
         
         const parent = this._findEntityById(parentId);
-        if (!parent) return false; // Parent tidak ketemu, aman (atau error lain)
+        if (!parent) return false;
         
         return this._isCircular(parent.parentId, childId);
     }
@@ -155,13 +149,11 @@ export default class SyncComponent {
         const entity = this._findEntityById(id);
         if (!entity) return;
 
-        // [SAFETY] Cek Circular Reference sebelum memindahkan
         if (context.newParentId && this._isCircular(context.newParentId, id)) {
             console.warn(`[Sync] Blocked circular move: ${id} to ${context.newParentId}`);
             return;
         }
 
-        // 1. DETACH: Hapus dari lokasi lama
         if (entity.parentId) {
             const oldParent = this._findEntityById(entity.parentId);
             if (oldParent && oldParent.children) {
@@ -176,11 +168,9 @@ export default class SyncComponent {
             }
         }
 
-        // 2. UPDATE INFO
         entity.layerId = context.newLayerId;
         entity.parentId = context.newParentId;
 
-        // 3. TARGET ARRAY: Tentukan array tujuan
         let targetArray = null;
 
         if (context.newParentId) {
@@ -198,14 +188,12 @@ export default class SyncComponent {
 
         if (!targetArray) return;
 
-        // 4. ATTACH: Masukkan ke posisi baru (Splicing)
         if (context.insertionType === 'append') {
             targetArray.push(entity);
         } else {
             const siblingIndex = targetArray.findIndex(e => (e._id || e.id) === context.referenceId);
             
             if (siblingIndex !== -1) {
-                // after = index + 1, before = index
                 const insertIndex = context.insertionType === 'after' ? siblingIndex + 1 : siblingIndex;
                 targetArray.splice(insertIndex, 0, entity);
             } else {
@@ -256,7 +244,7 @@ export default class SyncComponent {
         target[keys[keys.length - 1]] = value;
     }
 
-    onUpdateEntityProp({ entityId, propName, value }) {
+    onUpdateEntityProp({ entityId, propName, value }) { 
         const entity = this._findEntityById(entityId);
         if (entity) entity[propName] = value;
     }
@@ -285,5 +273,101 @@ export default class SyncComponent {
             }
         }
         return entity;
+    }
+
+    onAddComponent({ entityId, componentName, data }) {
+        const entity = this._findEntityById(entityId);
+        if (!entity) return;
+
+        if (typeof entity.addComponent === 'function') {
+            entity.addComponent(componentName, data);
+        } else {
+            if (!entity.components) entity.components = {};
+            entity.components[componentName] = data;
+        }
+    }
+
+    onRemoveComponent({ entityId, componentName }) {
+        const entity = this._findEntityById(entityId);
+        if (!entity) return;
+
+        if (typeof entity.removeComponent === 'function') {
+            entity.removeComponent(componentName);
+        } else {
+            if (entity.components && entity.components[componentName]) {
+                delete entity.components[componentName];
+            }
+        }
+    }
+
+    onScriptCreate(scriptData) {
+        if (!this.world.scripts) this.world.scripts = {};
+        
+        // Simpan definisi script ke world
+        this.world.scripts[scriptData._id] = {
+            _id: scriptData._id,
+            name: scriptData.name,
+            type: scriptData.type,
+            variables: scriptData.exposedVariables || [],
+            nodes: scriptData.nodes || [],
+            edges: scriptData.edges || []
+        };
+        console.log(`[Sync] Script created in engine: ${scriptData.name}`);
+    }
+
+    onScriptUpdate({ id, updates }) {
+        if (!this.world.scripts || !this.world.scripts[id]) return;
+        
+        // Merge updates
+        Object.assign(this.world.scripts[id], updates);
+        
+        // Opsi Tambahan: Jika engine sedang mode Runtime dan mendukung Hot Reload, 
+        // panggil scriptSystem.reload(id) di sini.
+    }
+
+    onScriptDelete(id) {
+        if (this.world.scripts && this.world.scripts[id]) {
+            delete this.world.scripts[id];
+        }
+    }
+
+    onUpdateComponentProp({ entityId, componentName, path, value }) {
+        const entity = this._findEntityById(entityId);
+        if (!entity || !entity.components[componentName]) return;
+
+        const keys = path.split('.');
+        let target = entity.components[componentName];
+        
+        for (let i = 0; i < keys.length - 1; i++) {
+             // Proteksi jika path belum ada
+            if (!target[keys[i]]) target[keys[i]] = {};
+            target = target[keys[i]];
+        }
+        target[keys[keys.length - 1]] = value;
+    }
+
+    onPatchComponent({ entityId, componentName, updates }) {
+        const entity = this._findEntityById(entityId);
+        if (!entity) return;
+
+        // Pastikan komponen ada
+        if (!entity.components) entity.components = {};
+        if (!entity.components[componentName]) {
+            // Jika belum ada, buat baru
+            entity.addComponent(componentName, updates);
+        } else {
+            // Jika sudah ada, merge updates
+            const component = entity.components[componentName];
+            
+            // Khusus ScriptController, jika updates berisi 'data' (array instance script)
+            // Kita replace arraynya agar sinkron dengan editor
+            if (updates.data && Array.isArray(updates.data)) {
+                 component.data = [...updates.data];
+                 // console.log(`[Sync] Updated script instances for ${entity.name}`, component.data);
+            } else {
+                // Default merge
+                Object.assign(component, updates);
+            }
+        }
     }
 }

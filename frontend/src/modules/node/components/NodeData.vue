@@ -7,24 +7,34 @@
         v-if="shouldShowField(key)" 
         :label="formatLabel(key)"
       >
-        <BaseCheckbox 
-          v-if="typeof value === 'boolean'"
-          :model-value="value"
-          @update:model-value="updateData(key, $event)"
-        />
+        <div 
+          v-if="isInputConnected(key)" 
+          class="flex items-center gap-2 w-full p-1.5 bg-secondary/30 rounded border border-dashed border-primary/40 text-xs text-muted-foreground"
+        >
+          <Zap class="w-3 h-3 text-primary" />
+          <span class="italic">Value from connection</span>
+        </div>
 
-        <BaseNumber 
-          v-else-if="typeof value === 'number'"
-          :model-value="value"
-          @update:model-value="updateData(key, $event)"
-          class="font-mono"
-        />
+        <template v-else>
+          <BaseCheckbox 
+            v-if="typeof value === 'boolean'"
+            :model-value="value"
+            @update:model-value="updateData(key, $event)"
+          />
 
-        <BaseInput 
-          v-else
-          :model-value="value"
-          @update:model-value="updateData(key, $event)"
-        />
+          <BaseNumber 
+            v-else-if="typeof value === 'number'"
+            :model-value="value"
+            @update:model-value="updateData(key, $event)"
+            class="font-mono"
+          />
+
+          <BaseInput 
+            v-else
+            :model-value="value"
+            @update:model-value="updateData(key, $event)"
+          />
+        </template>
 
       </PropertyRow>
     </div>
@@ -38,7 +48,7 @@
 
 <script setup>
 import { computed } from 'vue';
-import { Sliders } from 'lucide-vue-next';
+import { Sliders, Zap } from 'lucide-vue-next'; // Tambah icon Zap
 import { useNodeLogic } from '@/modules/node/composables/useNodeLogic.js';
 
 // Atomic Components
@@ -48,12 +58,10 @@ import BaseInput from '@/commons/components/inputs/BaseInput.vue';
 import BaseNumber from '@/commons/components/inputs/BaseNumber.vue';
 import BaseCheckbox from '@/commons/components/inputs/BaseCheckbox.vue';
 
-const { selectedNode, scriptStore } = useNodeLogic();
+// Ambil isInputConnected dari composable
+const { selectedNode, scriptStore, isInputConnected } = useNodeLogic();
 
 const hasData = computed(() => Object.keys(selectedNode.value?.data || {}).length > 0);
-
-// Helper untuk mengecek visibleDataFields (jika ada di settings)
-// Jika array kosong/undefined, tampilkan semua data.
 const hasVisibleData = computed(() => {
     const fields = selectedNode.value?.settings?.visibleDataFields;
     if (fields && fields.length > 0) return true;
@@ -62,21 +70,20 @@ const hasVisibleData = computed(() => {
 
 function shouldShowField(key) {
     const fields = selectedNode.value?.settings?.visibleDataFields;
-    // Jika visibleDataFields didefinisikan, hanya tampilkan yg ada di list
     if (Array.isArray(fields) && fields.length > 0) {
         return fields.includes(key);
     }
-    return true; // Default tampilkan semua
+    return true; 
 }
 
 function formatLabel(key) {
-    // camelCase to Normal Case
     return key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
 }
 
 function updateData(key, value) {
+    // Kita kirim object partial saja, Store yang akan handle merging
     scriptStore.updateNodeInActive(selectedNode.value._id, {
-        [`data.${key}`]: value
+        data: { [key]: value }
     });
 }
 </script>

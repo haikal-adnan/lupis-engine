@@ -1,20 +1,19 @@
 <template>
   <div 
-    class="node-container absolute w-[200px] bg-[#252526] rounded-lg shadow-xl flex flex-col select-none transition-all duration-300"
+    class="node-container absolute w-[200px] bg-[#252526] rounded-lg flex flex-col select-none border-2" 
     :class="[
-      // 1. Style SELECTED
+      /* LOGIKA UTAMA: Matikan transisi jika sedang di-drag */
+      isDragging ? 'transition-none' : 'transition-all duration-300 ease-in-out',
+      
       isSelected 
-        ? 'border-2 border-blue-500 ring-2 ring-blue-500/30 z-50 shadow-[0_0_20px_rgba(59,130,246,0.6)]' 
-        : 'border border-[#3f3f46] hover:border-[#52525b] z-10',
-
-      // 2. Style DIMMED
-      // HAPUS 'pointer-events-none' DI SINI
+        ? 'border-blue-500 ring-4 ring-blue-500/20 z-50 shadow-[0_0_20px_rgba(59,130,246,0.4)]' 
+        : 'border-[#3f3f46] hover:border-[#52525b] z-10 ring-0 ring-transparent shadow-xl',
       isDimmed 
-        ? 'opacity-20 grayscale filter' 
+        ? 'opacity-30 grayscale filter' 
         : 'opacity-100'
     ]"
     :style="{ 
-       transform: `translate(${data.position.x}px, ${data.position.y}px)`
+        transform: `translate(${Math.round(position.x)}px, ${Math.round(position.y)}px) translateZ(0)`
     }"
     @mousedown="$emit('drag-start', $event)"
     @mouseenter="$emit('node-hover', data._id)"
@@ -22,7 +21,7 @@
   >
     
     <div 
-      class="h-8 px-3 flex items-center gap-2 border-b border-white/5 rounded-t-[6px] shrink-0"
+      class="h-8 px-3 flex items-center gap-2 border-b border-white/5 rounded-t-[4px] shrink-0"
       :style="{ backgroundColor: headerBackground }"
     >
        <div class="w-2 h-2 rounded-full bg-white/50 shadow-sm"></div>
@@ -35,7 +34,6 @@
       class="relative"
       :style="{ height: minBodyHeight + 'px' }"
     >
-      
       <div class="absolute w-full px-3 py-2 flex flex-col gap-1 z-20" :style="{ top: (maxPorts * 24) + 'px' }">
          <div v-for="fieldKey in visibleFields" :key="fieldKey" class="n-field-row" @mousedown.stop>
             <span class="n-label capitalize truncate flex-1">{{ fieldKey }}</span>
@@ -45,10 +43,10 @@
               @click="editValue(fieldKey)"
             >
               <span v-if="typeof data.data[fieldKey] === 'boolean'">
-                 {{ data.data[fieldKey] ? '✔' : '✖' }}
+                  {{ data.data[fieldKey] ? '✔' : '✖' }}
               </span>
               <span v-else>
-                 {{ data.data[fieldKey] }}
+                  {{ data.data[fieldKey] }}
               </span>
             </div>
          </div>
@@ -93,21 +91,24 @@
           ></div>
         </div>
       </div>
-
     </div>
   </div>
 </template>
 
 <script setup>
-// Script sama seperti sebelumnya
 import { computed } from 'vue'
 import { usePrompt } from '@/composables/usePrompt.js'
 
 const props = defineProps({ 
   data: Object, 
+  position: { type: Object, default: () => ({ x: 0, y: 0 }) },
   isSelected: Boolean, 
-  isDimmed: Boolean 
+  isDimmed: Boolean,
+  isDragging: Boolean // Prop baru untuk mendeteksi drag
 })
+
+defineEmits(['drag-start', 'node-hover', 'connect-start', 'connect-end'])
+
 const { prompt } = usePrompt()
 
 const headerBackground = computed(() => (props.data.settings?.headerColor || '#333') + 'CC')
@@ -145,5 +146,10 @@ const editValue = async (key) => {
 }
 .n-value-box {
   @apply font-mono font-bold transition-colors select-none text-[9px];
+}
+
+/* Memastikan class transition-none Tailwind benar-benar mengoverride */
+.transition-none {
+  transition: none !important;
 }
 </style>

@@ -1,4 +1,5 @@
 import { createEntity as createEntitySchema } from '@/services/schema/schema.js'; 
+import { createComponent } from '@/services/schema/sceneSchema/componentSchema.js';
 import { GenerateUUID } from '@/commons/utils/generateUUID';
 
 export function useEntityActions(activeScene, selectedEntityIds) {
@@ -176,6 +177,32 @@ export function useEntityActions(activeScene, selectedEntityIds) {
     }
   };
 
+  const addComponent = (entityId, componentName) => {
+    if (!activeScene.value) return;
+
+    const entity = activeScene.value.entities.find(e => e._id === entityId);
+    if (!entity) return;
+
+    // Cek jika komponen sudah ada
+    if (entity.components && entity.components[componentName]) {
+      console.warn(`Component ${componentName} already exists on entity ${entityId}`);
+      return;
+    }
+
+    // Buat object component default
+    const newComponentData = createComponent(componentName);
+
+    // Pastikan object components ada
+    if (!entity.components) {
+      entity.components = {};
+    }
+
+    // Reactivity: Assign komponen baru
+    entity.components[componentName] = newComponentData;
+    
+    return { entityId, componentName, data: newComponentData };
+  };
+
   return { 
     createEntity, 
     updateEntityName, 
@@ -184,6 +211,7 @@ export function useEntityActions(activeScene, selectedEntityIds) {
     moveEntity,
     updateComponentProp,
     updateEntityProp,
-    syncTilemapDataFromEngine
+    syncTilemapDataFromEngine,
+    addComponent
   };
 }

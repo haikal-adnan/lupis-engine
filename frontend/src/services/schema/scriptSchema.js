@@ -1,5 +1,7 @@
+import { GenerateUUID } from '@/commons/utils/generateUUID.js';
+
 export const createScriptPort = (data = {}) => ({
-  _id: data._id || null,
+  _id: data._id || GenerateUUID(), 
   label: data.label || "",
   type: data.type || "any",
   dataType: data.dataType || "any",
@@ -8,14 +10,21 @@ export const createScriptPort = (data = {}) => ({
 });
 
 export const createScriptVariable = (data = {}) => ({
+  _id: data._id || GenerateUUID(),
   name: data.name || "NewVariable",
   type: data.type || "String",
   defaultValue: data.defaultValue ?? null
 });
 
 export const createScriptNode = (data = {}) => ({
-  _id: data._id,
+  _id: data._id || GenerateUUID(),
   type: data.type || "unknown_node",
+  
+  // --- PERBAIKAN DISINI ---
+  // Masukkan properti ini agar tidak hilang saat node dibuat via schema
+  allowDynamicInputs: data.allowDynamicInputs ?? false, 
+  // ------------------------
+
   position: {
     x: data.position?.x ?? 0,
     y: data.position?.y ?? 0
@@ -39,7 +48,7 @@ export const createScriptNode = (data = {}) => ({
 });
 
 export const createScriptEdge = (data = {}) => ({
-  _id: data._id,
+  _id: data._id || GenerateUUID(),
   source: data.source,
   sourceHandle: data.sourceHandle || null,
   target: data.target,
@@ -48,7 +57,7 @@ export const createScriptEdge = (data = {}) => ({
 
 export const createScript = (data = {}) => {
   return {
-    _id: data._id,
+    _id: data._id || GenerateUUID(),
     projectId: data.projectId || null,
     name: data.name || "Untitled Script",
     type: data.type || "component",

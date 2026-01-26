@@ -1,15 +1,17 @@
 import mongoose from 'mongoose';
 
-// Schema kecil untuk Variable agar konsisten dengan Script.js
 const VariableSchema = new mongoose.Schema({
+  _id: { type: String, required: true }, 
   name: { type: String, required: true },
-  type: { 
-    type: String, 
-    enum: ['String', 'Number', 'Boolean', 'Vector'], 
-    default: 'String' 
-  },
+  type: { type: String, default: 'String' },
   defaultValue: mongoose.Schema.Types.Mixed
-}, { _id: false }); // _id false karena kita biasanya cari by name
+}); 
+
+const EventSchema = new mongoose.Schema({
+  _id: { type: String, required: true },
+  name: { type: String, required: true }, 
+  description: { type: String, default: '' }
+});
 
 const ProjectSchema = new mongoose.Schema({
   _id: { type: String, required: true },
@@ -22,9 +24,15 @@ const ProjectSchema = new mongoose.Schema({
     height: { type: Number, default: 720 }
   },
   
-  // --- UPDATE BARU: Global Variables ---
-  // Menyimpan data yang bisa diakses oleh semua script (Get/Set Global)
+  // Array of objects dengan ID
   globalVariables: [VariableSchema],
+  globalEvents: [EventSchema], 
+
+  // --- UPDATE: Menambahkan Tags ---
+  tags: { 
+    type: [String], 
+    default: ['Untagged', 'Player', 'Enemy', 'Terrain', 'UI'] 
+  },
 
   scenes: [{ type: String, ref: 'Scene' }],
   thumbnailUrl: { type: String }

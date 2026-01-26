@@ -33,7 +33,7 @@
 
       <input 
         type="file" 
-        ref="fileInput" 
+        ref="fileInputRef" 
         class="hidden" 
         multiple
         @change="handleFileUpload"
@@ -59,7 +59,8 @@
       @dragover.prevent
       @drop.prevent="handleDrop"
     >
-      <div v-if="viewMode === 'grid'" class="grid grid-cols-[repeat(auto-fill,minmax(90px,1fr))] gap-2">
+      <div :class="viewMode === 'grid' ? 'grid grid-cols-[repeat(auto-fill,minmax(90px,1fr))] gap-2' : 'flex flex-col gap-0.5'">
+        
         <AssetItem 
           v-for="folder in visibleFolders" 
           :key="folder._id" 
@@ -69,7 +70,7 @@
              type: 'folder', 
              isFolder: true 
           }" 
-          view-mode="grid"
+          :view-mode="viewMode"
           :active="selectedId === folder._id"
           @click="handleSelect(folder._id)"
           @dblclick="navigateTo(folder)"
@@ -87,46 +88,9 @@
             meta: asset.meta,
             isSynced: asset.isSynced
           }"
-          view-mode="grid"
+          :view-mode="viewMode"
           :active="selectedId === asset._id"
           @click="handleSelect(asset._id)"
-          @dblclick="handleAssetDblClick(asset)" 
-          @contextmenu="handleContextMenu($event, { ...asset, type: 'asset' })"
-        />
-      </div>
-
-      <div v-else class="flex flex-col gap-0.5">
-        <AssetItem 
-          v-for="folder in visibleFolders" 
-          :key="folder._id" 
-          :data="{ 
-             id: folder._id, 
-             name: folder.name, 
-             type: 'folder', 
-             isFolder: true 
-          }" 
-          view-mode="list"
-          :active="selectedId === folder._id"
-          @click="handleSelect(folder._id)"
-          @dblclick="navigateTo(folder)"
-          @contextmenu="handleContextMenu($event, { ...folder, type: 'folder' })"
-        />
-
-        <AssetItem 
-          v-for="asset in visibleAssets" 
-          :key="asset._id" 
-          :data="{
-            id: asset._id,
-            name: asset.name,
-            type: asset.type,
-            fileUrl: asset.fileUrl,
-            meta: asset.meta,
-            isSynced: asset.isSynced
-          }"
-          view-mode="list"
-          :active="selectedId === asset._id"
-          @click="handleSelect(asset._id)"
-          @dblclick="handleAssetDblClick(asset)"
           @contextmenu="handleContextMenu($event, { ...asset, type: 'asset' })"
         />
       </div>
@@ -150,152 +114,38 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import { 
-  LayoutGrid, List, ChevronRight, Plus, 
-  Edit2, Copy, Trash2, FolderPlus, Download, RefreshCw 
-} from 'lucide-vue-next'
-
-import { useAssetStore } from '@/stores/useAssetStore'
-import { useFolderStore } from '@/stores/useFolderStore'
-import { useAssetActions } from '@/stores/scene/assetActions.js'
-import { useSceneStore } from '@/stores/scene/useSceneStore.js'
+import { LayoutGrid, List, ChevronRight, Plus, FolderPlus } from 'lucide-vue-next'
 
 import BaseSearchInput from '@/commons/components/inputs/BaseSearchInput.vue'
 import BaseContextMenu from '@/commons/components/overlay/BaseContextMenu.vue'
-import AssetItem from './parts/AssetItem.vue'
+import AssetItem from '@/modules/assets/parts/AssetItem.vue'
 
-const assetStore = useAssetStore()
-const folderStore = useFolderStore()
-const sceneStore = useSceneStore()
-const { createNewFolder, importAsset, deleteAsset, deleteFolder } = useAssetActions()
+// Import Refactored Logic
+import { useAssetLogic } from '@/modules/assets/composables/useAssetLogic.js'
+import { useAssetMenu } from '@/modules/assets/composables/useAssetMenu.js'
 
-const viewMode = ref('grid')
-const searchQuery = ref('')
-const selectedId = ref(null)
-const fileInput = ref(null)
-const menu = ref({ visible: false, x: 0, y: 0, item: null })
+// Initialize Logic
+const {
+  viewMode,
+  searchQuery,
+  selectedId,
+  fileInputRef,
+  currentFolder,
+  visibleFolders,
+  visibleAssets,
+  toggleViewMode,
+  navigateTo,
+  handleSelect,
+  triggerUpload,
+  handleFileUpload,
+  handleDrop
+} = useAssetLogic()
 
-const currentFolderId = computed(() => folderStore.activeFolderId)
-const currentFolder = computed(() => folderStore.getFolderById(currentFolderId.value))
-
-const visibleFolders = computed(() => {
-  let folders = folderStore.folders.filter(f => f.parentId === currentFolderId.value)
-  if (searchQuery.value) {
-    folders = folders.filter(f => f.name.toLowerCase().includes(searchQuery.value.toLowerCase()))
-  }
-  return folders
-})
-
-const visibleAssets = computed(() => {
-  let assets = assetStore.assets.filter(a => a.folderId === currentFolderId.value)
-  if (searchQuery.value) {
-    assets = assets.filter(a => a.name.toLowerCase().includes(searchQuery.value.toLowerCase()))
-  }
-  return assets
-})
-
-const toggleViewMode = () => {
-  viewMode.value = viewMode.value === 'grid' ? 'list' : 'grid'
-}
-
-const navigateTo = (folder) => {
-  folderStore.setActiveFolder(folder ? folder._id : null)
-  selectedId.value = null
-  searchQuery.value = ''
-}
-
-const handleSelect = (id) => {
-  selectedId.value = id
-}
-
-const handleAssetDblClick = (asset) => {
-  if (sceneStore.selectedEntityIds.length === 0) return
-
-  const entityId = sceneStore.selectedEntityIds[0]
-  const scene = sceneStore.activeScene
-  if (!scene) return
-  
-  const entity = scene.entities.find(e => e._id === entityId)
-  if (!entity) return
-
-  if (['texture', 'sprite', 'image', 'png', 'jpg'].includes(asset.type)) {
-    if (entity.components) {
-      if(entity.components.SpriteRenderer){
-        sceneStore.updateComponentProp(entityId, 'SpriteRenderer', 'assetId', asset._id)
-      }
-      else if(entity.components.Tilemap){
-        sceneStore.updateComponentProp(entityId, 'Tilemap', 'assetId', asset._id)
-      }
-    }
-  } else if (asset.type === 'font' || asset.type === 'ttf') {
-    if (entity.components && entity.components.TextRenderer) {
-      sceneStore.updateComponentProp(entityId, 'TextRenderer', 'fontAssetId', asset._id)
-    }
-  }
-}
-
-const triggerUpload = () => {
-  fileInput.value?.click()
-}
-
-const handleFileUpload = async (e) => {
-  const files = Array.from(e.target.files || [])
-  for (const file of files) {
-    await importAsset(file)
-  }
-  e.target.value = ''
-}
-
-const handleDrop = async (e) => {
-  const files = Array.from(e.dataTransfer.files)
-  for (const file of files) {
-    await importAsset(file)
-  }
-}
-
-const handleContextMenu = (e, item) => {
-  if (item) selectedId.value = item.id || item._id
-  
-  menu.value = {
-    visible: true,
-    x: e.clientX,
-    y: e.clientY,
-    item: item
-  }
-}
-
-const closeMenu = () => {
-  menu.value.visible = false
-}
-
-const contextMenuItems = computed(() => {
-  const targetItem = menu.value.item
-
-  if (targetItem) {
-    const isFolder = targetItem.type === 'folder'
-    return [
-      { label: targetItem.name, disabled: true, icon: null },
-      { separator: true },
-      { label: 'Rename', icon: Edit2, shortcut: 'F2', action: () => {} },
-      { separator: true },
-      { 
-        label: 'Delete', 
-        icon: Trash2, 
-        shortcut: 'Del',
-        action: () => {
-          if (isFolder) deleteFolder(targetItem.id || targetItem._id)
-          else deleteAsset(targetItem.id || targetItem._id)
-        }
-      }
-    ]
-  }
-
-  return [
-    { label: 'New Folder', icon: FolderPlus, action: () => createNewFolder('New Folder') },
-    { label: 'Import Assets...', icon: Download, action: triggerUpload },
-    { separator: true },
-    { label: 'Refresh', icon: RefreshCw, shortcut: 'F5', action: () => {} }
-  ]
-})
+// Initialize Menu (Pass dependencies needed by menu)
+const {
+  menu,
+  handleContextMenu,
+  closeMenu,
+  contextMenuItems
+} = useAssetMenu(selectedId, triggerUpload)
 </script>

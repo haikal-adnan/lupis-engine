@@ -2,6 +2,10 @@ import GameLoop from "../Loop/GameLoop.js";
 import World from "./World.js";
 import Camera from "../Util/Camera.js";
 import Config from "./Config.js";
+// Import Manager
+import VariableManager from "../Script/VariableManager.js";
+import EventManager from "../Script/EventManager.js";
+import ScriptSystem from "../Script/ScriptSystem.js"; // <--- TAMBAHKAN INI
 
 export default class Game {
     constructor() {
@@ -9,6 +13,10 @@ export default class Game {
         this.camera = new Camera(0, 0);
         this.camera.scale = 1;
         this.renderer = null;
+
+        this.variables = new VariableManager();
+        this.events = new EventManager();
+        this.scriptSystem = new ScriptSystem(this); 
 
         this.rulers = null; 
         this.grid = null;
@@ -28,12 +36,20 @@ export default class Game {
     }
 
     update(dt) {
+        
         if (Config.ENGINE_MODE !== "editor") {
             if (this.world.player) {
                 this.camera.updateFollow(this.world.player, dt);
             }
         }
-        this.world.update(dt);
+        
+        // this.world.update(dt);
+        
+        // Pastikan update script berjalan di runtime
+        if (Config.ENGINE_MODE === "runtime") {
+            
+             this.scriptSystem.update(dt);
+        }
     }
     
     render(alpha) {
