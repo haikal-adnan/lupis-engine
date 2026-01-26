@@ -1,8 +1,5 @@
 import { ref, computed } from 'vue'
-import { 
-  FolderPlus, Download, RefreshCw, Edit2, Trash2, 
-  Stamp // Icon Stamp untuk Apply Texture
-} from 'lucide-vue-next'
+import { FolderPlus, Download, RefreshCw, Edit2, Trash2, Stamp } from 'lucide-vue-next'
 import { useAssetActions } from '@/stores/scene/assetActions'
 import { useSceneStore } from '@/stores/scene/useSceneStore'
 
@@ -19,7 +16,6 @@ export function useAssetMenu(selectedIdRef, triggerUploadCb) {
 
   const closeMenu = () => { menu.value.visible = false }
 
-  // --- Helper: Get Selected Entity ---
   const getSelectedEntity = () => {
     if (sceneStore.selectedEntityIds.length === 0) return null
     const scene = sceneStore.activeScene
@@ -27,17 +23,14 @@ export function useAssetMenu(selectedIdRef, triggerUploadCb) {
     return scene.entities.find(e => e._id === sceneStore.selectedEntityIds[0])
   }
 
-  // --- Action Handlers ---
   const applyTexture = (asset, entityId, componentName) => {
     sceneStore.updateComponentProp(entityId, componentName, 'assetId', asset._id)
     closeMenu()
   }
 
-  // --- Menu Computed ---
   const contextMenuItems = computed(() => {
     const targetItem = menu.value.item
     
-    // 1. Context Menu untuk Item (Asset/Folder)
     if (targetItem) {
       const isFolder = targetItem.type === 'folder'
       const items = [
@@ -45,17 +38,12 @@ export function useAssetMenu(selectedIdRef, triggerUploadCb) {
         { separator: true }
       ]
 
-      // --- LOGIC APPLY TEXTURE ONLY ---
       const entity = getSelectedEntity()
 
-      // Hanya jalan jika bukan folder, ada entity terpilih, dan entity punya komponen
       if (!isFolder && entity && entity.components) {
-        
-        // Cek apakah item yang diklik adalah Texture/Image
-        const isTexture = ['texture', 'sprite', 'image', 'png', 'jpg'].includes(targetItem.type)
+        const isTexture = ['asset','texture', 'sprite', 'image', 'png', 'jpg'].includes(targetItem.type)
         
         if (isTexture) {
-          // Opsi 1: Apply ke SpriteRenderer
           if (entity.components.SpriteRenderer) {
             items.push({ 
               label: 'Apply to SpriteRenderer', 
@@ -64,24 +52,20 @@ export function useAssetMenu(selectedIdRef, triggerUploadCb) {
             })
           }
           
-          // Opsi 2: Apply ke Tilemap
           if (entity.components.Tilemap) {
-             items.push({ 
+            items.push({ 
               label: 'Apply to Tilemap', 
               icon: Stamp, 
               action: () => applyTexture(targetItem, entity._id, 'Tilemap') 
             })
           }
 
-          // Tambahkan separator jika ada menu Apply yang muncul
           if (items.length > 2) { 
-             items.push({ separator: true })
+            items.push({ separator: true })
           }
         }
       }
-      // -------------------------------
 
-      // Menu Standard (Rename & Delete)
       items.push(
         { label: 'Rename', icon: Edit2, shortcut: 'F2', action: () => {} },
         { separator: true },
@@ -96,7 +80,6 @@ export function useAssetMenu(selectedIdRef, triggerUploadCb) {
       return items
     }
 
-    // 2. Context Menu untuk Area Kosong (Panel)
     return [
       { label: 'New Folder', icon: FolderPlus, action: () => createNewFolder('New Folder') },
       { label: 'Import Assets...', icon: Download, action: triggerUploadCb },

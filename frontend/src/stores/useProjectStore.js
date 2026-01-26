@@ -2,7 +2,6 @@ import { defineStore } from 'pinia';
 import { fetchProjectById, fetchProjectResources } from '@/services/api/project.js';
 import { normalizeProjectLoad } from '@/services/schema/schema.js';
 
-// ... imports existing ...
 import { useAssetStore } from './useAssetStore.js';
 import { useSceneStore } from './scene/useSceneStore.js';
 import { usePrefabStore } from './usePrefabStore.js';
@@ -22,7 +21,6 @@ export const useProjectStore = defineStore('project', {
     projectName: (state) => state.project?.name || 'Untitled Project',
     activeProject: (state) => state.project,
     
-    // Helper getter untuk akses Tags dan Settings lebih mudah
     projectSettings: (state) => {
         if(!state.project) return {};
         return {
@@ -35,7 +33,6 @@ export const useProjectStore = defineStore('project', {
 
   actions: {
     async loadProject(projectId) {
-      // ... (kode loadProject sama persis seperti sebelumnya) ...
       this.isLoading = true;
       this.error = null;
 
@@ -81,7 +78,6 @@ export const useProjectStore = defineStore('project', {
     },
 
     addSceneToProject(sceneId) {
-       // ... existing code ...
        if (this.project) {
         if (!this.project.scenes) this.project.scenes = [];
         if (!this.project.scenes.includes(sceneId)) {
@@ -91,40 +87,33 @@ export const useProjectStore = defineStore('project', {
     },
 
     updateProject(projectId, updates) {
-       // ... existing code ...
        if (this.project && this.project._id === projectId) {
         Object.assign(this.project, updates);
       }
     },
 
-    // --- ACTIONS BARU UNTUK TAGS ---
     
     addTag(newTag) {
         if (!this.project) return;
         
-        // Inisialisasi jika array belum ada
         if (!this.project.tags) this.project.tags = ['Untagged'];
         
         const cleanTag = newTag.trim();
         if(!cleanTag) return;
 
-        // Cek duplikat (Case Insensitive)
         const exists = this.project.tags.some(t => t.toLowerCase() === cleanTag.toLowerCase());
         
         if (!exists) {
             this.project.tags.push(cleanTag);
-            // TODO: Panggil API updateProject di sini untuk save ke DB
         }
     },
 
     removeTag(tagToRemove) {
         if (!this.project || !this.project.tags) return;
         
-        // Jangan hapus tag default 'Untagged'
         if (tagToRemove === 'Untagged') return;
 
         this.project.tags = this.project.tags.filter(t => t !== tagToRemove);
-        // TODO: Panggil API updateProject di sini untuk save ke DB
     }
   }
 });

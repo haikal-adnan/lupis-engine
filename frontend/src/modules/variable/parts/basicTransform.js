@@ -6,7 +6,6 @@ export const basicTransform = {
   color: '#4CAF50',
   icon: Move,
   items: [
-    // ... (GET TRANSFORM tetap sama) ...
     { 
       type: 'get_transform', 
       label: 'Get Transform', 
@@ -28,9 +27,6 @@ export const basicTransform = {
       } 
     },
 
-    // ---------------------------------------------------------
-    // SET TRANSFORM (UPDATED)
-    // ---------------------------------------------------------
     { 
       type: 'set_transform', 
       label: 'Set Transform', 
@@ -45,7 +41,6 @@ export const basicTransform = {
           { _id: 'in', label: 'In', dataType: 'execution', color: '#fff' },
           { _id: 'target', label: 'Target ID (Self)', dataType: 'string', color: '#E040FB' },
           
-          // INPUTS
           { _id: 'x', label: 'X', dataType: 'number', color: '#69F0AE' },
           { _id: 'y', label: 'Y', dataType: 'number', color: '#69F0AE' },
           { _id: 'rotation', label: 'Rotation', dataType: 'number', color: '#B2FF59' },
@@ -57,7 +52,6 @@ export const basicTransform = {
         outputs: [
           { _id: 'out', label: 'Out', dataType: 'execution', color: '#fff' },
           
-          // OUTPUTS (Pass-through) - DITAMBAHKAN LENGKAP
           { _id: 'x', label: 'X', dataType: 'number', color: '#69F0AE' },
           { _id: 'y', label: 'Y', dataType: 'number', color: '#69F0AE' },
           { _id: 'rotation', label: 'Rotation', dataType: 'number', color: '#B2FF59' },

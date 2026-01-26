@@ -30,7 +30,7 @@ export const basicString = {
           { _id: '1', label: '{1}', dataType: 'any', color: '#fff' },
         ],
         outputs: [
-          { _id: 'out', label: 'Result', type: 'string', color: '#FFB74D' }
+          { _id: 'out', label: 'Result', dataType: 'string', color: '#FFB74D' }
         ]
       } 
     }

@@ -20,7 +20,6 @@ export async function fetchProjectResources(projectId) {
 
   const fullScenes = await Promise.all(
     scenesMeta.map(async (meta) => {
-      // HANYA AMBIL _id
       const sceneId = meta._id; 
       const res = await fetch(`${API_URL}/scenes/${sceneId}`)
       return await res.json()
