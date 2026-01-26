@@ -16,7 +16,7 @@ export const normalizeProjectLoad = (
   rawAssets = [],
   rawPrefabs = [],
   rawFolders = [],
-  rawScripts = [] // <--- 2. Tambahkan parameter rawScripts
+  rawScripts = [] 
 ) => {
   const projectId = rawProject?._id;
 

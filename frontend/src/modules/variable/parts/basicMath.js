@@ -1,4 +1,4 @@
-import { Calculator } from 'lucide-vue-next';
+import { Calculator, Equal, EqualNot, ChevronRight, ChevronLeft } from 'lucide-vue-next';
 
 export const basicMath = {
   id: 'math',
@@ -56,6 +56,6 @@ export const basicMath = {
           { _id: 'res', label: 'Result', dataType: 'number', color: '#B2FF59' }
         ]
       } 
-    }
+    },
   ]
 };

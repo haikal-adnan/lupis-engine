@@ -23,9 +23,7 @@ export const createProject = (data = {}) => {
           defaultValue: v.defaultValue ?? null
         }))
       : [],
-    
-    // 2. Global Events (NEW)
-    // Menyiapkan struktur untuk Custom Event Global
+
     globalEvents: Array.isArray(data.globalEvents)
       ? data.globalEvents.map(e => ({
           _id: e._id || GenerateUUID(),

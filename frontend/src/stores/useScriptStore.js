@@ -35,7 +35,7 @@ export const useScriptStore = defineStore('script', {
 
   actions: {
     // =========================================
-    // BARU: High Level / Async Actions (CRUD)
+    // HIGH LEVEL / ASYNC ACTIONS (CRUD Projects)
     // =========================================
 
     async fetchScripts(projectId) {
@@ -43,7 +43,9 @@ export const useScriptStore = defineStore('script', {
       this.error = null;
       try {
         console.log(`[Mock] Fetching scripts for project: ${projectId}`);
-        // Simulasi load data
+        // TODO: Ganti dengan API Call real
+        // const res = await api.getScripts(projectId)
+        // this.initScripts(res.data)
       } catch (err) {
         this.error = err.message;
       } finally {
@@ -90,7 +92,7 @@ export const useScriptStore = defineStore('script', {
     },
 
     setActiveScript(scriptData) {
-      // Deep copy untuk safety editing
+      // Deep copy untuk safety editing agar tidak memutasi list langsung sebelum save
       this.activeScript = JSON.parse(JSON.stringify(scriptData));
       this.selectedNodeId = null; 
     },
@@ -102,28 +104,31 @@ export const useScriptStore = defineStore('script', {
     updateScriptInList(scriptId, updates) {
       const index = this.scripts.findIndex(s => s._id === scriptId);
       if (index !== -1) {
-        // Update di list utama
+        // Update di list utama (Source of Truth)
         this.scripts[index] = { ...this.scripts[index], ...updates };
       }
 
-      // Sinkronisasi jika script yang diupdate sedang aktif
-      // (Agar UI tidak flickering/reset jika update datang dari luar)
+      // Sinkronisasi jika script yang diupdate sedang dibuka di editor
       if (this.activeScript && this.activeScript._id === scriptId) {
          Object.assign(this.activeScript, updates);
       }
     },
 
-    // --- PERBAIKAN UTAMA ADA DI BAWAH SINI ---
+    // =========================================
+    // NODE & EDGE MANIPULATION (Graph Editor)
+    // =========================================
 
     addNodeToActive(rawNodeData) {
       if (!this.activeScript) return;
       
+      // Menggunakan schema factory untuk memastikan struktur data valid
       const newNode = createScriptNode(rawNodeData);
+      
       this.activeScript.nodes.push(newNode);
       
+      // Auto-select node yang baru dibuat/didupilkat
       this.selectedNodeId = newNode._id;
 
-      // FIX: Trigger Save agar EngineBridge mendeteksi perubahan
       this.saveActiveScript(); 
     },
 
@@ -133,6 +138,7 @@ export const useScriptStore = defineStore('script', {
       const node = this.activeScript.nodes.find(n => n._id === nodeId);
       if (!node) return;
 
+      // Merge deep objects (data & settings) agar tidak menimpa field lain
       if (updates.data) {
         node.data = { ...node.data, ...updates.data };
         delete updates.data; 
@@ -145,35 +151,36 @@ export const useScriptStore = defineStore('script', {
 
       Object.assign(node, updates);
 
-      // FIX: Trigger Save
-      // (Catatan: Untuk posisi x,y saat drag, sebaiknya gunakan debounce di komponen UI,
-      // jangan panggil ini setiap pixel geser)
+      // Trigger save (Debounce sebaiknya dilakukan di UI untuk event drag)
       this.saveActiveScript();
     },
 
     removeNodeFromActive(nodeId) {
       if (!this.activeScript) return;
 
+      // 1. Hapus Node
       this.activeScript.nodes = this.activeScript.nodes.filter(n => n._id !== nodeId);
       
-      // Hapus edge yang terhubung
+      // 2. CLEANUP: Hapus semua edge yang terhubung ke node ini
       this.activeScript.edges = this.activeScript.edges.filter(edge => 
         edge.source !== nodeId && edge.target !== nodeId
       );
       
+      // 3. Reset seleksi jika node yang dihapus sedang aktif
       if (this.selectedNodeId === nodeId) {
         this.selectedNodeId = null;
       }
 
-      // FIX: Trigger Save
       this.saveActiveScript();
     },
 
     addEdgeToActive(rawEdgeData) {
       if (!this.activeScript) return;
 
+      // Mencegah koneksi ke diri sendiri
       if (rawEdgeData.source === rawEdgeData.target) return;
 
+      // Mencegah duplikasi edge yang sama persis
       const exists = this.activeScript.edges.find(e => 
         e.source === rawEdgeData.source && 
         e.target === rawEdgeData.target &&
@@ -185,7 +192,6 @@ export const useScriptStore = defineStore('script', {
         const newEdge = createScriptEdge(rawEdgeData);
         this.activeScript.edges.push(newEdge);
         
-        // FIX: Trigger Save
         this.saveActiveScript();
       }
     },
@@ -194,15 +200,17 @@ export const useScriptStore = defineStore('script', {
       if (!this.activeScript) return;
       this.activeScript.edges = this.activeScript.edges.filter(e => e._id !== edgeId);
 
-      // FIX: Trigger Save
       this.saveActiveScript();
     },
 
-    // Action ini yang ditangkap oleh useEditorToEngine
+    // =========================================
+    // AUTO SAVE LOGIC
+    // =========================================
+    
     saveActiveScript() {
       if (!this.activeScript) return;
       
-      // Update data di list utama (source of truth)
+      // Update data di list utama agar sinkron
       this.updateScriptInList(this.activeScript._id, {
         nodes: this.activeScript.nodes,
         edges: this.activeScript.edges,
@@ -210,6 +218,8 @@ export const useScriptStore = defineStore('script', {
       });
       
       console.log("[ScriptStore] Auto-saved active script changes.");
+      
+      // Disini bisa ditambahkan trigger ke backend API jika perlu (autosave ke server)
     }
   }
 });

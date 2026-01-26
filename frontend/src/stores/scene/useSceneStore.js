@@ -73,7 +73,7 @@ export const useSceneStore = defineStore('scene', () => {
     initScenes,
     setActiveScene,
     syncTransformFromEngine,
-    patchComponent, // <--- BARU: Digunakan oleh executeTransform
+    patchComponent,
 
     ...sceneActions,
     ...layerActions,

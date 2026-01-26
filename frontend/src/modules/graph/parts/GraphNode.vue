@@ -2,12 +2,15 @@
   <div 
     class="node-container absolute w-[200px] bg-[#252526] rounded-lg flex flex-col select-none border-2" 
     :class="[
-      /* LOGIKA UTAMA: Matikan transisi jika sedang di-drag */
+      /* Matikan transisi saat drag agar responsif */
       isDragging ? 'transition-none' : 'transition-all duration-300 ease-in-out',
       
+      /* Efek Seleksi */
       isSelected 
         ? 'border-blue-500 ring-4 ring-blue-500/20 z-50 shadow-[0_0_20px_rgba(59,130,246,0.4)]' 
         : 'border-[#3f3f46] hover:border-[#52525b] z-10 ring-0 ring-transparent shadow-xl',
+      
+      /* Efek Dimming (Fokus) */
       isDimmed 
         ? 'opacity-30 grayscale filter' 
         : 'opacity-100'
@@ -18,6 +21,8 @@
     @mousedown="$emit('drag-start', $event)"
     @mouseenter="$emit('node-hover', data._id)"
     @mouseleave="$emit('node-hover', null)"
+    
+    @contextmenu.stop.prevent="$emit('node-contextmenu', $event, data)"
   >
     
     <div 
@@ -63,6 +68,8 @@
             class="relative -left-1.5 w-3 h-3 rounded-full border-2 border-[#18181b] transition-transform hover:scale-125 cursor-crosshair pointer-events-auto z-30"
             :style="{ backgroundColor: input.color }" 
             :title="input.label"
+            
+            @mousedown.stop="$emit('connect-start', $event, input._id, 'input')" 
             @mouseup="$emit('connect-end', input._id)"
           ></div>
           
@@ -87,7 +94,8 @@
             class="relative -right-1.5 w-3 h-3 rounded-full border-2 border-[#18181b] transition-transform hover:scale-125 cursor-crosshair pointer-events-auto z-30"
             :style="{ backgroundColor: output.color }" 
             :title="output.label"
-            @mousedown.stop="$emit('connect-start', $event, output._id)"
+            
+            @mousedown.stop="$emit('connect-start', $event, output._id, 'output')"
           ></div>
         </div>
       </div>
@@ -104,10 +112,11 @@ const props = defineProps({
   position: { type: Object, default: () => ({ x: 0, y: 0 }) },
   isSelected: Boolean, 
   isDimmed: Boolean,
-  isDragging: Boolean // Prop baru untuk mendeteksi drag
+  isDragging: Boolean
 })
 
-defineEmits(['drag-start', 'node-hover', 'connect-start', 'connect-end'])
+// Pastikan 'node-contextmenu' terdaftar
+defineEmits(['drag-start', 'node-hover', 'connect-start', 'connect-end', 'node-contextmenu'])
 
 const { prompt } = usePrompt()
 
@@ -148,7 +157,6 @@ const editValue = async (key) => {
   @apply font-mono font-bold transition-colors select-none text-[9px];
 }
 
-/* Memastikan class transition-none Tailwind benar-benar mengoverride */
 .transition-none {
   transition: none !important;
 }
