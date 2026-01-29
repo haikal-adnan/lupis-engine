@@ -6,7 +6,6 @@ export default class Grid {
         this.renderer = renderer;
         this.camera = camera;
 
-        // Default properties
         this.width = opt.width || 50;
         this.height = opt.height || 50;
         this.offsetX = 0;
@@ -14,7 +13,6 @@ export default class Grid {
         this.color = opt.color || "#ffffff";
         this.alpha = opt.alpha || 0.15;
 
-        // Binding renderer ke world
         world.gridRenderer = (shape, projection) => {
             this.render(shape, projection);
         };
@@ -36,7 +34,6 @@ export default class Grid {
         this.width = ctx ? ctx.width : 50;
         this.height = ctx ? ctx.height : 50;
         
-        // Offset kita set default 0 (karena tidak lagi menempel pada Transform entity)
         this.offsetX = 0;
         this.offsetY = 0;
     }
@@ -51,10 +48,8 @@ export default class Grid {
         const ox = this.offsetX; 
         const oy = this.offsetY;
 
-        // Safety check untuk mencegah infinite loop jika width/height 0 atau null
         if (!w || !h || w <= 0 || h <= 0) return;
 
-        // Hitung batas layar (View Bounds) agar hanya merender garis yang terlihat
         const rectW = this.canvas.width / cam.scale;
         const rectH = this.canvas.height / cam.scale;
         const left = cam.x - rectW * 0.5;
@@ -62,7 +57,6 @@ export default class Grid {
         const top = cam.y - rectH * 0.5;
         const bottom = cam.y + rectH * 0.5;
 
-        // Snap logic agar garis grid tetap statis saat kamera bergerak
         const startX = ox + Math.floor((left - ox) / w) * w;
         const endX   = ox + Math.ceil((right - ox) / w) * w;
         const startY = oy + Math.floor((top - oy) / h) * h;
@@ -70,19 +64,16 @@ export default class Grid {
 
         const rgba = this._hexToRGBA(this.color, this.alpha);
 
-        // Draw Vertical Lines
         for (let x = startX; x <= endX; x += w) {
             shape.drawLine(x, top, x, bottom, rgba, 1 / cam.scale, projection);
         }
 
-        // Draw Horizontal Lines
         for (let y = startY; y <= endY; y += h) {
             shape.drawLine(left, y, right, y, rgba, 1 / cam.scale, projection);
         }
     }
     
     _hexToRGBA(hex, alpha) {
-        // Fallback jika hex undefined
         if (!hex) return [1, 1, 1, alpha];
         
         const h = hex.replace("#", "");

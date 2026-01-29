@@ -1,5 +1,6 @@
 export default class Keyboard {
-    constructor() {
+    constructor(eventManager) {
+        this.eventManager = eventManager; 
         this.keys = new Set();
         this.pressed = new Set();
         this.released = new Set();
@@ -15,52 +16,53 @@ export default class Keyboard {
         window.addEventListener("keydown", this._onDown);
         window.addEventListener("keyup", this._onUp);
 
-        // Mencegah menu browser saat Alt ditekan
         this._blockAltDown = e => {
-            if (e.key === "Alt") {
-                e.preventDefault();
-            }
+            if (e.key === "Alt") e.preventDefault();
         };
-
         this._blockAltUp = e => {
-            if (e.key === "Alt") {
-                e.preventDefault();
-            }
+            if (e.key === "Alt") e.preventDefault();
         };
 
         window.addEventListener("keydown", this._blockAltDown, { capture: true });
-        window.addEventListener("keyup",   this._blockAltUp,   { capture: true });
+        window.addEventListener("keyup", this._blockAltUp, { capture: true });
     }
 
     _down(e) {
-        let k = e.key.toLowerCase();
+        if (e.repeat) return; 
 
-        // FIX: Mapping karakter spasi kosong " " menjadi string "space"
+        let k = e.key.toLowerCase();
         if (k === " ") k = "space";
 
-        if (!this.keys.has(k)) this.pressed.add(k);
+        if (!this.keys.has(k)) {
+            this.pressed.add(k);
+            if (this.eventManager) {
+                this.eventManager.emit("input:keydown", k);
+            }
+        }
 
         this.keys.add(k);
-
         this.shift = e.shiftKey;
-        this.alt   = e.altKey;
-        this.ctrl  = e.ctrlKey;
-        this.meta  = e.metaKey;
+        this.alt = e.altKey;
+        this.ctrl = e.ctrlKey;
+        this.meta = e.metaKey;
     }
 
     _up(e) {
         let k = e.key.toLowerCase();
-
-        // FIX: Mapping karakter spasi kosong " " menjadi string "space"
         if (k === " ") k = "space";
 
         this.keys.delete(k);
         this.released.add(k);
 
+        // 🔥 Emit event ke Event Bus untuk pemicu node Release
+        if (this.eventManager) {
+            this.eventManager.emit("input:keyup", k);
+        }
+
         this.shift = e.shiftKey;
-        this.alt   = e.altKey;
-        this.ctrl  = e.ctrlKey;
-        this.meta  = e.metaKey;
+        this.alt = e.altKey;
+        this.ctrl = e.ctrlKey;
+        this.meta = e.metaKey;
     }
 
     isDown(k) {
@@ -71,10 +73,6 @@ export default class Keyboard {
         return this.pressed.has(k.toLowerCase());
     }
 
-    isReleased(k) {
-        return this.released.has(k.toLowerCase());
-    }
-
     endFrame() {
         this.pressed.clear();
         this.released.clear();
@@ -83,8 +81,7 @@ export default class Keyboard {
     destroy() {
         window.removeEventListener("keydown", this._onDown);
         window.removeEventListener("keyup", this._onUp);
-
         window.removeEventListener("keydown", this._blockAltDown, { capture: true });
-        window.removeEventListener("keyup",   this._blockAltUp,   { capture: true });
+        window.removeEventListener("keyup", this._blockAltUp, { capture: true });
     }
 }

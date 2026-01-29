@@ -42,7 +42,6 @@ export default class UIRenderer {
         this.shape.drawRectStroke(x, y, w, h, color, t, this.projection);
     }
 
-    // UPDATE: Tambahkan parameter rotation (default 0)
     drawText(str, x, y, size, color, font = null, rotation = 0) {
         let targetFont = font;
 
@@ -56,7 +55,6 @@ export default class UIRenderer {
 
         if (!targetFont || !targetFont.glTexture) return;
 
-        // Panggil TextRenderer dengan rotasi
         this.text.drawText(
             targetFont,
             str,
@@ -65,7 +63,7 @@ export default class UIRenderer {
             size,
             color,
             this.projection,
-            rotation // Masukkan nilai rotasi ke sini
+            rotation
         );
     }
 

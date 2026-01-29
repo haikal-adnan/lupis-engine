@@ -5,7 +5,6 @@ import { useProjectWatcher } from '@/composables/useProjectWatcher'
 export function useAppInit() {
   const projectStore = useProjectStore()
   
-  // Panggil composable watcher
   const { initWatchers } = useProjectWatcher()
 
   const handleKeydown = async (event) => {

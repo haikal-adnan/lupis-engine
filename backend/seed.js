@@ -44,7 +44,6 @@ const seedDatabase = async () => {
     const entTilemapId = "ent_main_tilemap";
     const entItemId = "ent_item_inner";
 
-    // --- 1. PROJECT ---
     console.log("Seeding Project...");
     await Project.create({
       _id: projectId,
@@ -59,7 +58,6 @@ const seedDatabase = async () => {
       tags: ['Untagged', 'Player', 'Enemy'],
     });
 
-    // --- 2. FOLDERS ---
     console.log("Seeding Folders...");
     await Folder.create([
       { _id: fSpritesId, projectId, name: "Sprites" },
@@ -67,7 +65,6 @@ const seedDatabase = async () => {
       { _id: fScriptsId, projectId, name: "Scripts" }
     ]);
 
-    // --- 3. ASSETS ---
     console.log("Seeding Assets...");
     await Asset.create({
       _id: assetDungeonId,
@@ -91,168 +88,224 @@ const seedDatabase = async () => {
       meta: { extension: ".fnt" }
     });
 
-    // --- 4. SCRIPTS ---
     console.log("Seeding Scripts...");
-
     await Script.create({
       _id: scriptPlayerMoveId,
       projectId,
-      name: "Player Movement",
+      name: "Player Movement (WASD)",
       type: "component",
       exposedVariables: [
-        { _id: varSpeedId, name: "Speed", type: "Number", defaultValue: 10 }
+        { _id: varSpeedId, name: "Speed", type: "number", defaultValue: 5 }
       ],
       nodes: [
-        // 1. KEYBOARD INPUT
         {
-          _id: "node_input",
-          type: "event_key_press",
+          _id: "node_input_wasd",
+          type: "event_advanced_key",
           position: { x: 50, y: 50 },
-          settings: { headerTitle: 'Keyboard Input', headerColor: '#C2185B', category: 'Events' },
-          data: { key: 'Space' },
+          settings: { headerTitle: 'Input Mapper', headerColor: '#C2185B', category: 'Keyboard Events' },
+          data: {
+            mappings: [
+              { _id: "move_up", key: "W", trigger: "hold", threshold: 0, repeat: true },
+              { _id: "move_left", key: "A", trigger: "hold", threshold: 0, repeat: true },
+              { _id: "move_down", key: "S", trigger: "hold", threshold: 0, repeat: true },
+              { _id: "move_right", key: "D", trigger: "hold", threshold: 0, repeat: true }
+            ]
+          },
           inputs: [],
-          outputs: [{ _id: 'out', label: 'Pressed', dataType: 'execution', color: '#fff' }]
+          outputs: [
+            { _id: "out_move_up", label: "W (Up)", dataType: "execution", color: "#FFEB3B" },
+            { _id: "out_move_left", label: "A (Left)", dataType: "execution", color: "#FFEB3B" },
+            { _id: "out_move_down", label: "S (Down)", dataType: "execution", color: "#FFEB3B" },
+            { _id: "out_move_right", label: "D (Right)", dataType: "execution", color: "#FFEB3B" }
+          ]
         },
-        // 2. GET SPEED
+
         {
           _id: "node_get_speed",
-          type: "variable_get", 
-          position: { x: 50, y: 200 },
+          type: "variable_get",
+          position: { x: 50, y: 300 },
           settings: { headerTitle: 'Get Speed', headerColor: '#00C853', category: 'Variables' },
           data: { variableId: varSpeedId },
           inputs: [],
-          outputs: [{ _id: 'val', label: 'Value', dataType: 'number', color: '#B2FF59' }]
+          outputs: [
+            { _id: "val", label: "Value", dataType: "number", color: "#B2FF59" }
+          ]
         },
-        // 3. GET TRANSFORM (Target: String ID)
+
         {
           _id: "node_get_trans",
           type: "get_transform",
-          position: { x: 50, y: 350 },
-          settings: { headerTitle: 'Get Transform', headerColor: '#2E7D32', category: 'Game Object' },
-          inputs: [
-             // UPDATE: DataType 'string', Color '#E040FB'
-            { _id: 'target', label: 'Target ID (Self)', dataType: 'string', color: '#E040FB' }
-          ],
-          outputs: [
-            { _id: 'x', label: 'X', dataType: 'number', color: '#69F0AE' },
-            { _id: 'y', label: 'Y', dataType: 'number', color: '#69F0AE' },
-            { _id: 'rotation', label: 'Rotation', dataType: 'number', color: '#B2FF59' },
-            { _id: 'width', label: 'Width', dataType: 'number', color: '#40C4FF' },
-            { _id: 'height', label: 'Height', dataType: 'number', color: '#40C4FF' },
-            { _id: 'pivotX', label: 'Pivot X', dataType: 'number', color: '#FFB74D' },
-            { _id: 'pivotY', label: 'Pivot Y', dataType: 'number', color: '#FFB74D' }
-          ]
-        },
-        // 4. ADD
-        {
-          _id: "node_add",
-          type: "math_add",
-          position: { x: 350, y: 200 },
-          settings: { headerTitle: 'Add', headerColor: '#00796B', category: 'Math' },
-          inputs: [
-            { _id: 'in', label: 'In', dataType: 'execution', color: '#fff' },
-            { _id: 'a', label: 'A', dataType: 'number', color: '#B2FF59' },
-            { _id: 'b', label: 'B', dataType: 'number', color: '#B2FF59' }
-          ],
-          outputs: [
-            { _id: 'out', label: 'Trigger', dataType: 'execution', color: '#fff' },
-            { _id: 'res', label: 'Result', dataType: 'number', color: '#B2FF59' }
-          ]
-        },
-        {
-          _id: "node_set_trans",
-          type: "set_transform",
-          position: { x: 600, y: 200 },
-          settings: { headerTitle: 'Set Transform', headerColor: '#2E7D32', category: 'Game Object' },
-          inputs: [
-            { _id: 'in', label: 'In', dataType: 'execution', color: '#fff' },
-            { _id: 'target', label: 'Target ID (Self)', dataType: 'string', color: '#E040FB' },
-            
-            { _id: 'x', label: 'X', dataType: 'number', color: '#69F0AE' },
-            { _id: 'y', label: 'Y', dataType: 'number', color: '#69F0AE' },
-            { _id: 'rotation', label: 'Rotation', dataType: 'number', color: '#B2FF59' },
-            { _id: 'width', label: 'Width', dataType: 'number', color: '#40C4FF' },
-            { _id: 'height', label: 'Height', dataType: 'number', color: '#40C4FF' },
-            { _id: 'pivotX', label: 'Pivot X', dataType: 'number', color: '#FFB74D' },
-            { _id: 'pivotY', label: 'Pivot Y', dataType: 'number', color: '#FFB74D' }
-          ],
-          outputs: [
-            { _id: 'out', label: 'Out', dataType: 'execution', color: '#fff' },
-            // UPDATED: Menambahkan output lengkap agar bisa di-chain ke Format String
-            { _id: 'x', label: 'X', dataType: 'number', color: '#69F0AE' },
-            { _id: 'y', label: 'Y', dataType: 'number', color: '#69F0AE' },
-            { _id: 'rotation', label: 'Rotation', dataType: 'number', color: '#B2FF59' },
-            { _id: 'width', label: 'Width', dataType: 'number', color: '#40C4FF' },
-            { _id: 'height', label: 'Height', dataType: 'number', color: '#40C4FF' },
-            { _id: 'pivotX', label: 'Pivot X', dataType: 'number', color: '#FFB74D' },
-            { _id: 'pivotY', label: 'Pivot Y', dataType: 'number', color: '#FFB74D' }
-          ]
-        },
-        // 6. FORMAT STRING
-        {
-          _id: "node_fmt_string",
-          type: "format_string",
-          position: { x: 900, y: 400 },
-          settings: { headerTitle: 'Format String', headerColor: '#F57C00', category: 'String' },
-          data: { 
-            format: 'Pos: {0}, {1} | Rot: {2}',
-            allowDynamicInputs: true
+          position: { x: 50, y: 450 },
+          settings: { headerTitle: 'Get Transform', headerColor: '#2E7D32', category: 'Transform' },
+          data: {
+             propertyOptions: [
+                { value: 'x', label: 'Position X', type: 'number', color: '#69F0AE' },
+                { value: 'y', label: 'Position Y', type: 'number', color: '#69F0AE' }
+             ]
           },
           inputs: [
-            { _id: '0', label: '{0}', dataType: 'any', color: '#fff' },
-            { _id: '1', label: '{1}', dataType: 'any', color: '#fff' },
-            { _id: '2', label: '{2}', dataType: 'any', color: '#fff' },
-            { _id: '3', label: '{3}', dataType: 'any', color: '#fff' },
-            { _id: '4', label: '{4}', dataType: 'any', color: '#fff' },
-            { _id: '5', label: '{5}', dataType: 'any', color: '#fff' },
-            { _id: '6', label: '{6}', dataType: 'any', color: '#fff' }
+            { _id: "in_target", label: "Target ID (Self)", dataType: "string", color: "#E040FB" }
           ],
           outputs: [
-            { _id: 'out', label: 'Result', dataType: 'string', color: '#FFB74D' }
+            { _id: "x", label: "Position X", dataType: "number", color: "#69F0AE" },
+            { _id: "y", label: "Position Y", dataType: "number", color: "#69F0AE" }
           ]
         },
-        // 7. NOTIFICATION
         {
-          _id: "node_notification",
-          type: "ui_notification",
-          position: { x: 1200, y: 200 },
-          settings: { headerTitle: 'Notification', headerColor: '#37474F', category: 'UI' },
-          data: { message: '' },
+          _id: "node_add_x",
+          type: "math_add",
+          position: { x: 400, y: 50 },
+          settings: { headerTitle: 'Calc Right (+X)', headerColor: '#00796B', category: 'Math' },
+          data: {},
           inputs: [
-            { _id: 'in', label: 'In', dataType: 'execution', color: '#fff' },
-            { _id: 'msg', label: 'Message', dataType: 'string', color: '#E040FB' }
+            { _id: "in", label: "In", dataType: "execution", color: "#fff" },
+            { _id: "a", label: "Current X", dataType: "number", color: "#B2FF59" },
+            { _id: "b", label: "Speed", dataType: "number", color: "#B2FF59" }
           ],
           outputs: [
-            { _id: 'out', label: 'Out', dataType: 'execution', color: '#fff' }
+            { _id: "out", label: "Trigger", dataType: "execution", color: "#fff" },
+            { _id: "res", label: "Result", dataType: "number", color: "#B2FF59" }
           ]
+        },
+
+        {
+          _id: "node_sub_x",
+          type: "math_subtract",
+          position: { x: 400, y: 250 },
+          settings: { headerTitle: 'Calc Left (-X)', headerColor: '#00796B', category: 'Math' },
+          data: {},
+          inputs: [
+            { _id: "in", label: "In", dataType: "execution", color: "#fff" },
+            { _id: "a", label: "Current X", dataType: "number", color: "#B2FF59" },
+            { _id: "b", label: "Speed", dataType: "number", color: "#B2FF59" }
+          ],
+          outputs: [
+            { _id: "out", label: "Trigger", dataType: "execution", color: "#fff" },
+            { _id: "res", label: "Result", dataType: "number", color: "#B2FF59" }
+          ]
+        },
+
+        {
+          _id: "node_add_y",
+          type: "math_add",
+          position: { x: 400, y: 450 },
+          settings: { headerTitle: 'Calc Down (+Y)', headerColor: '#00796B', category: 'Math' },
+          data: {},
+          inputs: [
+            { _id: "in", label: "In", dataType: "execution", color: "#fff" },
+            { _id: "a", label: "Current Y", dataType: "number", color: "#B2FF59" },
+            { _id: "b", label: "Speed", dataType: "number", color: "#B2FF59" }
+          ],
+          outputs: [
+            { _id: "out", label: "Trigger", dataType: "execution", color: "#fff" },
+            { _id: "res", label: "Result", dataType: "number", color: "#B2FF59" }
+          ]
+        },
+
+        {
+          _id: "node_sub_y",
+          type: "math_subtract",
+          position: { x: 400, y: 650 },
+          settings: { headerTitle: 'Calc Up (-Y)', headerColor: '#00796B', category: 'Math' },
+          data: {},
+          inputs: [
+            { _id: "in", label: "In", dataType: "execution", color: "#fff" },
+            { _id: "a", label: "Current Y", dataType: "number", color: "#B2FF59" },
+            { _id: "b", label: "Speed", dataType: "number", color: "#B2FF59" }
+          ],
+          outputs: [
+            { _id: "out", label: "Trigger", dataType: "execution", color: "#fff" },
+            { _id: "res", label: "Result", dataType: "number", color: "#B2FF59" }
+          ]
+        },
+
+        {
+          _id: "node_set_right",
+          type: "set_transform",
+          position: { x: 800, y: 50 },
+          settings: { headerTitle: 'Set Right', headerColor: '#2E7D32', category: 'Transform' },
+          data: { propertyOptions: [{ value: 'x', label: 'X' }] },
+          inputs: [
+            { _id: "exec_in", label: "In", dataType: "execution", color: "#ffffff" },
+            { _id: "in_target", label: "Target", dataType: "string", color: "#E040FB" },
+            { _id: "x", label: "Position X", dataType: "number", color: "#69F0AE" }
+          ],
+          outputs: [{ _id: "exec_out", label: "Out", dataType: "execution", color: "#ffffff" }]
+        },
+
+        {
+          _id: "node_set_left",
+          type: "set_transform",
+          position: { x: 800, y: 250 },
+          settings: { headerTitle: 'Set Left', headerColor: '#2E7D32', category: 'Transform' },
+          data: { propertyOptions: [{ value: 'x', label: 'X' }] },
+          inputs: [
+            { _id: "exec_in", label: "In", dataType: "execution", color: "#ffffff" },
+            { _id: "in_target", label: "Target", dataType: "string", color: "#E040FB" },
+            { _id: "x", label: "Position X", dataType: "number", color: "#69F0AE" }
+          ],
+          outputs: [{ _id: "exec_out", label: "Out", dataType: "execution", color: "#ffffff" }]
+        },
+
+        {
+          _id: "node_set_down",
+          type: "set_transform",
+          position: { x: 800, y: 450 },
+          settings: { headerTitle: 'Set Down', headerColor: '#2E7D32', category: 'Transform' },
+          data: { propertyOptions: [{ value: 'y', label: 'Y' }] },
+          inputs: [
+            { _id: "exec_in", label: "In", dataType: "execution", color: "#ffffff" },
+            { _id: "in_target", label: "Target", dataType: "string", color: "#E040FB" },
+            { _id: "y", label: "Position Y", dataType: "number", color: "#69F0AE" }
+          ],
+          outputs: [{ _id: "exec_out", label: "Out", dataType: "execution", color: "#ffffff" }]
+        },
+
+        {
+          _id: "node_set_up",
+          type: "set_transform",
+          position: { x: 800, y: 650 },
+          settings: { headerTitle: 'Set Up', headerColor: '#2E7D32', category: 'Transform' },
+          data: { propertyOptions: [{ value: 'y', label: 'Y' }] },
+          inputs: [
+            { _id: "exec_in", label: "In", dataType: "execution", color: "#ffffff" },
+            { _id: "in_target", label: "Target", dataType: "string", color: "#E040FB" },
+            { _id: "y", label: "Position Y", dataType: "number", color: "#69F0AE" }
+          ],
+          outputs: [{ _id: "exec_out", label: "Out", dataType: "execution", color: "#ffffff" }]
         }
       ],
+
       edges: [
-        // Execution
-        { _id: "e1", source: "node_input", sourceHandle: "out", target: "node_add", targetHandle: "in" },
-        { _id: "e2", source: "node_add", sourceHandle: "out", target: "node_set_trans", targetHandle: "in" },
-        { _id: "e3", source: "node_set_trans", sourceHandle: "out", target: "node_notification", targetHandle: "in" },
+        { _id: "d1", source: "node_get_speed", sourceHandle: "val", target: "node_add_x", targetHandle: "b" },
+        { _id: "d2", source: "node_get_speed", sourceHandle: "val", target: "node_sub_x", targetHandle: "b" },
+        { _id: "d3", source: "node_get_speed", sourceHandle: "val", target: "node_add_y", targetHandle: "b" },
+        { _id: "d4", source: "node_get_speed", sourceHandle: "val", target: "node_sub_y", targetHandle: "b" },
 
-        // Logic
-        { _id: "d1", source: "node_get_speed", sourceHandle: "val", target: "node_add", targetHandle: "a" },
-        { _id: "d2", source: "node_get_trans", sourceHandle: "x", target: "node_add", targetHandle: "b" },
-        { _id: "d3", source: "node_add", sourceHandle: "res", target: "node_set_trans", targetHandle: "x" },
+        { _id: "d5", source: "node_get_trans", sourceHandle: "x", target: "node_add_x", targetHandle: "a" },
+        { _id: "d6", source: "node_get_trans", sourceHandle: "x", target: "node_sub_x", targetHandle: "a" },
 
-        // Format String
-        { _id: "f0", source: "node_set_trans", sourceHandle: "x", target: "node_fmt_string", targetHandle: "0" },
-        { _id: "f1", source: "node_set_trans", sourceHandle: "y", target: "node_fmt_string", targetHandle: "1" },
-        { _id: "f2", source: "node_set_trans", sourceHandle: "rotation", target: "node_fmt_string", targetHandle: "2" },
-        { _id: "f3", source: "node_set_trans", sourceHandle: "width", target: "node_fmt_string", targetHandle: "3" },
-        { _id: "f4", source: "node_set_trans", sourceHandle: "height", target: "node_fmt_string", targetHandle: "4" },
-        { _id: "f5", source: "node_set_trans", sourceHandle: "pivotX", target: "node_fmt_string", targetHandle: "5" },
-        { _id: "f6", source: "node_set_trans", sourceHandle: "pivotY", target: "node_fmt_string", targetHandle: "6" },
+        { _id: "d7", source: "node_get_trans", sourceHandle: "y", target: "node_add_y", targetHandle: "a" },
+        { _id: "d8", source: "node_get_trans", sourceHandle: "y", target: "node_sub_y", targetHandle: "a" },
 
-        // Notification
-        { _id: "msg1", source: "node_fmt_string", sourceHandle: "out", target: "node_notification", targetHandle: "msg" }
+        { _id: "e1", source: "node_input_wasd", sourceHandle: "out_move_right", target: "node_add_x", targetHandle: "in" },
+        { _id: "e2", source: "node_add_x", sourceHandle: "out", target: "node_set_right", targetHandle: "exec_in" },
+        { _id: "r1", source: "node_add_x", sourceHandle: "res", target: "node_set_right", targetHandle: "x" },
+
+        { _id: "e3", source: "node_input_wasd", sourceHandle: "out_move_left", target: "node_sub_x", targetHandle: "in" },
+        { _id: "e4", source: "node_sub_x", sourceHandle: "out", target: "node_set_left", targetHandle: "exec_in" },
+        { _id: "r2", source: "node_sub_x", sourceHandle: "res", target: "node_set_left", targetHandle: "x" },
+
+        { _id: "e5", source: "node_input_wasd", sourceHandle: "out_move_down", target: "node_add_y", targetHandle: "in" },
+        { _id: "e6", source: "node_add_y", sourceHandle: "out", target: "node_set_down", targetHandle: "exec_in" },
+        { _id: "r3", source: "node_add_y", sourceHandle: "res", target: "node_set_down", targetHandle: "y" },
+
+        { _id: "e7", source: "node_input_wasd", sourceHandle: "out_move_up", target: "node_sub_y", targetHandle: "in" },
+        { _id: "e8", source: "node_sub_y", sourceHandle: "out", target: "node_set_up", targetHandle: "exec_in" },
+        { _id: "r4", source: "node_sub_y", sourceHandle: "res", target: "node_set_up", targetHandle: "y" }
       ]
     });
 
-    // --- 5. PREFABS ---
     console.log("Seeding Prefabs...");
     await Prefab.create({
       _id: prefabChestId,
@@ -270,7 +323,6 @@ const seedDatabase = async () => {
       }
     });
 
-    // --- 6. SCENES ---
     console.log("Seeding Scenes...");
     await Scene.create({
       _id: sceneId,
@@ -321,15 +373,15 @@ const seedDatabase = async () => {
           isActive: true,
           isVisible: true,
           components: {
-            Transform: { x: 50, y: 50, width: 64, height: 64, pivotX: 0.5, pivotY: 1.0 },
-            ShapeRenderer: { type: "rectangle", color: "#FF0000", width: 100, height: 100, opacity: 1 },
+            Transform: { x: 300, y: 300, width: 64, height: 64, pivotX: 0.5, pivotY: 0.5 },
+            ShapeRenderer: { type: "rectangle", color: "#FF0000", width: 64, height: 64, opacity: 1 },
             ScriptController: {
               data: [
                 {
                   _id: "inst_player_move_001", 
                   assetId: scriptPlayerMoveId, 
                   isActive: true,
-                  variables: { [varSpeedId]: 50 } 
+                  variables: { [varSpeedId]: 5 } 
                 }
               ]
             }

@@ -1,10 +1,9 @@
 import { defineStore } from 'pinia'
-// import { toRaw } from 'vue' // <-- Kita tidak pakai toRaw lagi untuk save
+// import { toRaw } from 'vue' 
 import { fetchProjectById, fetchProjectResources } from '@/services/api/project.js'
 import { normalizeProjectLoad } from '@/services/schema/schema.js'
 import { getProjectFromLocalDB, saveProjectToLocalDB } from '@/services/db/index.js'
 
-// Import stores
 import { useAssetStore } from './useAssetStore.js'
 import { useSceneStore } from './scene/useSceneStore.js'
 import { usePrefabStore } from './usePrefabStore.js'
@@ -15,7 +14,8 @@ import { useScriptStore } from './useScriptStore.js'
 export const useProjectStore = defineStore('project', {
   state: () => ({
     project: null,
-    isLoading: false,
+    isLoading: false, 
+    isSaving: false,
     error: null,
     syncStatus: 'synced'
   }),
@@ -36,7 +36,7 @@ export const useProjectStore = defineStore('project', {
 
   actions: {
     markAsDirty() {
-      if (this.isProjectLoaded && this.syncStatus !== 'dirty' && !this.isLoading) {
+      if (this.isProjectLoaded && this.syncStatus !== 'dirty' && !this.isLoading && !this.isSaving) {
         this.syncStatus = 'dirty'
       }
     },
@@ -101,7 +101,7 @@ export const useProjectStore = defineStore('project', {
     async saveProject() {
       if (!this.project) return
 
-      this.isLoading = true
+      this.isSaving = true 
 
       try {
         const assetStore = useAssetStore()
@@ -109,10 +109,6 @@ export const useProjectStore = defineStore('project', {
         const prefabStore = usePrefabStore()
         const folderStore = useFolderStore()
         const scriptStore = useScriptStore()
-
-        // [FIX] Gunakan metode Deep Clone JSON untuk membersihkan semua Reactivity
-        // Ini memastikan data yang masuk ke IndexedDB adalah Plain Object murni
-        // persis seperti fungsi prepareEngineData()
         
         const cleanPayload = {
             project: JSON.parse(JSON.stringify(this.project)),
@@ -132,9 +128,7 @@ export const useProjectStore = defineStore('project', {
             folders: folderStore.folders 
                 ? JSON.parse(JSON.stringify(folderStore.folders)) 
                 : [],
-            
-            // Script ini yang sebelumnya paling sering menyebabkan crash
-            // karena struktur graph yang kompleks dan reactive
+
             scripts: scriptStore.scripts 
                 ? JSON.parse(JSON.stringify(scriptStore.scripts)) 
                 : []
@@ -146,22 +140,21 @@ export const useProjectStore = defineStore('project', {
         console.error("SAVE FAILED:", err);
         this.error = 'Failed to save locally'
       } finally {
-        this.isLoading = false
+        this.isSaving = false 
       }
     },
 
     async saveProjectToServer() {
       if (!this.project) return
 
-      this.isLoading = true
+      this.isSaving = true 
       try {
-        // TODO: Implementasi Sync ke API Server
         await new Promise(resolve => setTimeout(resolve, 800))
         this.syncStatus = 'synced'
       } catch (err) {
         this.error = 'Failed to sync to server'
       } finally {
-        this.isLoading = false
+        this.isSaving = false 
       }
     },
 

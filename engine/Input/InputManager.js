@@ -1,12 +1,12 @@
-// InputManager.js
 import Mouse from "./Mouse.js";
 import Touch from "./Touch.js";
 import Keyboard from "./Keyboard.js";
 
 export default class InputManager {
-    constructor(canvas) {
-        this.keyboard = new Keyboard();
-        this.mouse    = new Mouse(canvas);
+    constructor(canvas, eventManager) {
+        this.eventManager = eventManager;
+        this.keyboard = new Keyboard(this.eventManager); //
+        this.mouse    = new Mouse(canvas, this.eventManager); //
         this.touch    = new Touch(canvas);
     }
 
@@ -17,7 +17,6 @@ export default class InputManager {
     }
 
     getPointer() {
-
         if (this.touch.active && this.touch.touches.length === 1) {
             return {
                 x: this.touch.touches[0].x,
@@ -26,8 +25,6 @@ export default class InputManager {
                 isTouch: true
             };
         }
-
-        // Mouse default
         return {
             x: this.mouse.x,
             y: this.mouse.y,

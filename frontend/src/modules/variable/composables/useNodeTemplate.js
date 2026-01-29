@@ -2,26 +2,33 @@ import { ref, computed } from 'vue';
 import { useProjectStore } from '@/stores/useProjectStore';
 import { Radio } from 'lucide-vue-next'; 
 
-import { basicEvent } from '@/modules/variable/parts/basicEvent.js';
+// Import parts yang sudah diperbarui (termasuk basicTransform yang dinamis tadi)
+import { basicLifecycle } from '@/modules/variable/parts/basicLifecycle.js';
+import { basicKeyboard } from '@/modules/variable/parts/basicKeyboard.js';
 import { basicTransform } from '@/modules/variable/parts/basicTransform.js';
 import { basicMath } from '@/modules/variable/parts/basicMath.js';
-import { basicUI } from '@/modules/variable/parts/basicUI.js';
+import { basicSystem } from '@/modules/variable/parts/basicSystem.js';
 import { basicString } from '@/modules/variable/parts/basicString.js';
 import { basicObject } from '@/modules/variable/parts/basicObject.js';
 import { basicProgramming } from '@/modules/variable/parts/basicProgramming.js';
 import { basicBoolean } from '@/modules/variable/parts/basicBoolean.js';
 import { basicComparison } from '@/modules/variable/parts/basicComparison.js';
+import { basicPointer } from '@/modules/variable/parts/basicPointer.js';
+import { basicCamera } from '@/modules/variable/parts/basicCamera.js';
 
 export const STATIC_NODE_GROUPS = [
+  basicLifecycle,
   basicProgramming,
   basicBoolean,
   basicComparison,
-  basicEvent,        
+  basicKeyboard,        
+  basicPointer,        
   basicTransform,    
   basicMath,         
-  basicUI,
+  basicSystem,
   basicString,
-  basicObject
+  basicObject,
+  basicCamera
 ];
 
 export function useNodeTemplate() {
@@ -37,10 +44,12 @@ export function useNodeTemplate() {
       const globalItems = [];
 
       globalEvents.forEach(evt => {
+        // Event Listener: Muncul saat event dipanggil
         globalItems.push({
           type: 'event_global_listener',
           label: `On ${evt.name}`,
           description: `Wait for ${evt.name}`,
+          // FIXED: dataType menggantikan type pada socket
           defaultData: {
             settings: { 
               headerTitle: `On ${evt.name}`, 
@@ -49,16 +58,18 @@ export function useNodeTemplate() {
             },
             data: { eventId: evt._id, eventName: evt.name },
             outputs: [
-              { _id: 'out', label: 'Trigger', type: 'execution', color: '#fff' }
+              { _id: 'out', label: 'Trigger', dataType: 'execution', color: '#fff' }
             ],
             inputs: [] 
           }
         });
 
+        // Action Trigger: Memanggil event
         globalItems.push({
           type: 'action_trigger_global',
           label: `Trigger ${evt.name}`,
           description: `Broadcast ${evt.name}`,
+          // FIXED: dataType menggantikan type pada socket
           defaultData: {
             settings: { 
               headerTitle: `Trigger ${evt.name}`, 
@@ -67,17 +78,18 @@ export function useNodeTemplate() {
             },
             data: { eventId: evt._id, eventName: evt.name },
             inputs: [
-              { _id: 'in', label: 'In', type: 'execution', color: '#fff' }
+              { _id: 'in', label: 'In', dataType: 'execution', color: '#fff' }
             ],
             outputs: [
-              { _id: 'out', label: 'Out', type: 'execution', color: '#fff' }
+              { _id: 'out', label: 'Out', dataType: 'execution', color: '#fff' }
             ]
           }
         });
       });
 
+      // Insert Global Events group di posisi ke-1 (setelah programming)
       groups.splice(1, 0, {
-        id: 'global_events',
+        _id: 'global_events', // id -> _id biar konsisten
         label: 'Global Events',
         color: '#9C27B0',
         icon: Radio,

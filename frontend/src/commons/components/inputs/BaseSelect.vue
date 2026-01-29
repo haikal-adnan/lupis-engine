@@ -1,12 +1,12 @@
 <template>
   <div 
-    class="flex flex-col w-full space-y-1.5"
+    class="flex flex-col space-y-1.5 relative inline-block w-full"
     v-click-outside="close"
   >
     <label
       v-if="label"
       :for="id"
-      class="text-xs font-medium text-muted-foreground select-none"
+      class="text-xs font-medium text-muted-foreground select-none block text-left"
     >
       {{ label }}
     </label>
@@ -16,9 +16,9 @@
         :id="id"
         type="button"
         @click="toggle"
-        class="flex items-center justify-between w-full px-3 text-sm text-left transition-all duration-200 border rounded-md bg-background 
+        class="flex items-center justify-between w-full px-3 text-sm transition-all duration-200 border rounded-md bg-background 
                focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary
-               disabled:cursor-not-allowed disabled:opacity-50 select-none"
+               disabled:cursor-not-allowed disabled:opacity-50 select-none whitespace-nowrap"
         :class="[
           isOpen 
             ? 'border-primary ring-1 ring-primary' 
@@ -27,7 +27,10 @@
         ]"
         :style="{ height: height, borderRadius: radius }"
       >
-        <span class="truncate block" :class="{ 'text-muted-foreground/70': !model }">
+        <span 
+          class="truncate block flex-1 text-left" 
+          :class="{ 'text-muted-foreground/70': !model }"
+        >
           {{ selectedLabel || placeholder }}
         </span>
         
@@ -44,8 +47,13 @@
       <transition name="fade-scale">
         <div
           v-if="isOpen"
-          class="absolute z-50 w-full mt-1 overflow-hidden border rounded-md shadow-md bg-popover border-border text-popover-foreground"
+          class="absolute z-50 mt-1 overflow-hidden border rounded-md shadow-md bg-popover border-border text-popover-foreground min-w-full w-max max-w-[300px]"
           :style="{ top: '100%', borderRadius: radius }"
+          :class="{
+              'left-0': align === 'left',
+              'right-0': align === 'right',
+              'left-1/2 -translate-x-1/2': align === 'center'
+          }"
         >
           <ul class="max-h-60 overflow-y-auto py-1 custom-scrollbar">
             
@@ -60,6 +68,7 @@
               </svg>
               {{ actionLabel }}
             </li>
+
             <li
               v-for="option in options"
               :key="option.value"
@@ -68,7 +77,7 @@
                      hover:bg-accent hover:text-accent-foreground data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground"
               :data-selected="model === option.value"
             >
-              <span class="truncate pr-8 flex-1">{{ option.label }}</span>
+              <span class="truncate pr-8 flex-1 block text-left">{{ option.label }}</span>
               
               <span v-if="model === option.value" class="absolute right-2 flex items-center justify-center h-full text-primary">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -86,7 +95,6 @@
                   <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
                 </svg>
               </button>
-
             </li>
             
             <li v-if="options.length === 0" class="px-3 py-2.5 text-xs text-muted-foreground text-center">
@@ -108,12 +116,16 @@ const props = defineProps({
   placeholder: { type: String, default: 'Select...' },
   height: { type: String, default: '2rem' }, 
   radius: { type: String, default: '0.375rem' },
-  // Props Baru
   editable: { type: Boolean, default: false },
-  actionLabel: { type: String, default: 'Add New...' }
+  actionLabel: { type: String, default: 'Add New...' },
+  align: { 
+    type: String, 
+    default: 'left',
+    validator: (value) => ['left', 'center', 'right'].includes(value)
+  }
 })
 
-const emit = defineEmits(['action', 'delete']) // Event baru
+const emit = defineEmits(['action', 'delete'])
 const model = defineModel()
 const id = useId()
 const isOpen = ref(false)
@@ -136,17 +148,13 @@ function select(option) {
   close()
 }
 
-// Handler untuk tombol Add (Index 0)
 function triggerAction() {
   emit('action');
   close();
 }
 
-// Handler untuk tombol Delete
 function triggerDelete(option) {
   emit('delete', option.value);
-  // Jangan close dropdown agar user bisa hapus multiple jika perlu, 
-  // atau close jika ingin strict. Disini saya biarkan open.
 }
 
 const vClickOutside = {
@@ -165,7 +173,6 @@ const vClickOutside = {
 </script>
 
 <style scoped>
-/* CSS sama seperti sebelumnya */
 .fade-scale-enter-active,
 .fade-scale-leave-active {
   transition: opacity 0.1s ease, transform 0.1s ease;

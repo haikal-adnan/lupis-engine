@@ -1,7 +1,7 @@
-import { Box } from 'lucide-vue-next';
+import { Box, Scan } from 'lucide-vue-next';
 
 export const basicObject = {
-  id: 'game_object_basic',
+  _id: 'game_object_basic', // FIXED: id -> _id
   label: 'Basic Entity',
   color: '#607D8B',
   icon: Box,
@@ -10,6 +10,9 @@ export const basicObject = {
       type: 'get_entity_info', 
       label: 'Get Entity Info', 
       description: 'Get basic information of an entity like ID and Tag', 
+      icon: Scan, 
+      allowDynamicInputs: false, 
+      allowDynamicOutputs: false,
       defaultData: { 
         settings: { 
           headerTitle: 'Object Info', 

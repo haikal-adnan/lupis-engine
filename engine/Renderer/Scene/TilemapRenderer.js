@@ -39,7 +39,6 @@ export default class TilemapRenderer {
         let renderScaleY = 1;
         let renderRotation = 0;
 
-        // Logic Scale/Resize (Scene Mode vs Editor Mode)
         if (isEditingThisMap) {
             renderScaleX = 1; renderScaleY = 1; renderRotation = 0;
         } else {
@@ -57,7 +56,6 @@ export default class TilemapRenderer {
         const pX = tf.pivotX ?? 0;
         const pY = tf.pivotY ?? 0;
 
-        // Logic Start Drawing Position (Pivot Aware)
         const startDrawX = tf.x - (currentWidth * pX);
         const startDrawY = tf.y - (currentHeight * pY);
 
@@ -151,7 +149,6 @@ export default class TilemapRenderer {
         const loopStartY = Math.max(0, startRow);
         const loopEndY   = Math.min(rData.rows, endRow);
 
-        // 1. Grid Vertical
         for (let i = loopStartX; i <= loopEndX; i++) {
             const xPos = rData.startX + (i * rData.tileW);
             this.renderQueue.push({
@@ -159,7 +156,6 @@ export default class TilemapRenderer {
                 color: this.colors.grid
             });
         }
-        // 2. Grid Horizontal
         for (let j = loopStartY; j <= loopEndY; j++) {
             const yPos = rData.startY + (j * rData.tileH);
             this.renderQueue.push({
@@ -168,20 +164,17 @@ export default class TilemapRenderer {
             });
         }
 
-        // 3. Border Luar
         this.renderQueue.push({
             type: "rectStroke", 
             x: rData.startX, y: rData.startY, w: rData.totalW, h: rData.totalH,
             color: this.colors.border, thickness: 2
         });
 
-        // 4. Ghost Preview
         const asset = world.assets.textures[tm.assetId];
         if (editors.activeTool === 'brush' && editors.tileSelection && asset) {
              this._renderGhost(rData, tm, asset, editors.tileSelection, proj);
         }
 
-        // Execute Queue
         for (const item of this.renderQueue) {
             if (item.type === "line") {
                 this.shape.drawLine(item.x1, item.y1, item.x2, item.y2, item.color, 1, proj);

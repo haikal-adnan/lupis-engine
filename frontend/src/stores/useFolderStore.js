@@ -20,16 +20,12 @@ export const useFolderStore = defineStore('folder', () => {
   }
 
   function createFolder(folder) {
-    // Pastikan ID ada
     if (!folder._id) folder._id = `folder_${Date.now()}`;
     folders.value.push(folder);
-    // Opsional: langsung masuk ke folder baru
-    // setActiveFolder(folder._id); 
   }
 
   function deleteFolder(folderId) {
     folders.value = folders.value.filter(f => f._id !== folderId);
-    // Hapus juga sub-folder jika perlu (recursive logic bisa ditambahkan di sini)
     if (activeFolderId.value === folderId) {
       activeFolderId.value = null;
     }
@@ -40,14 +36,13 @@ export const useFolderStore = defineStore('folder', () => {
     if (folder) folder.name = newName;
   }
 
-  // [BARU] Action untuk duplicate folder
   function duplicateFolder(folderId) {
     const original = folders.value.find(f => f._id === folderId);
     if (!original) return;
 
     const newFolder = {
       ...original,
-      _id: `folder_${Date.now()}_copy`, // Generate new ID
+      _id: `folder_${Date.now()}_copy`, 
       name: `${original.name} (Copy)`
     };
     folders.value.push(newFolder);
@@ -63,6 +58,6 @@ export const useFolderStore = defineStore('folder', () => {
     createFolder,
     deleteFolder,
     updateFolderName,
-    duplicateFolder // Export function baru
+    duplicateFolder
   };
 });

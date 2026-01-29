@@ -1,23 +1,24 @@
 export const transformNode = {
     'set_transform': {
         execute: (runner, node) => {
-            const targetId = runner.getInputValue(node, 'target')
-            const entity = runner.resolveEntity(targetId)
+            const targetId = runner.getInputValue(node, 'target');
+            const entity = runner.resolveEntity(targetId);
             
-            if (!entity?.components?.Transform) return
+            if (!entity?.components?.Transform) return;
+            const t = entity.components.Transform;
 
-            const t = entity.components.Transform
-            const props = ['x', 'y', 'rotation', 'width', 'height', 'pivotX', 'pivotY']
-            
+            // Sebelum update, sinkronkan prev dengan posisi sekarang
+            t.prevX = t.x;
+            t.prevY = t.y;
+
+            const props = ['x', 'y', 'rotation', 'width', 'height', 'pivotX', 'pivotY'];
             props.forEach(prop => {
-                const val = runner.getInputValue(node, prop)
-                if (val !== undefined && val !== null) t[prop] = Number(val)
-            })
+                const val = runner.getInputValue(node, prop);
+                if (val !== undefined && val !== null) t[prop] = Number(val);
+            });
             
-            // Lanjut ke node berikutnya
-            runner.executeFlow(node._id, 'out')
+            runner.executeFlow(node._id, 'out');
         },
-        // TAMBAHAN: Agar node ini bisa memberikan output data ke String Format
         getOutput: (runner, node, outputKey) => {
             const targetId = runner.getInputValue(node, 'target')
             const entity = runner.resolveEntity(targetId)
@@ -34,5 +35,31 @@ export const transformNode = {
             
             return entity.components.Transform[outputKey] || 0
         }
-    }
+    },
+    'translate': {
+        execute: (runner, node) => {
+            const targetId = runner.getInputValue(node, 'in_target');
+            const entity = runner.resolveEntity(targetId);
+            
+            if (!entity?.components?.Transform) {
+                runner.executeFlow(node._id, 'exec_out');
+                return;
+            }
+
+            const t = entity.components.Transform;
+
+            t.prevX = t.x;
+            t.prevY = t.y;
+
+            const dt = runner.currentDt || 0.016; 
+            const speedX = Number(runner.getInputValue(node, 'dx')) || 0;
+            const speedY = Number(runner.getInputValue(node, 'dy')) || 0;
+
+            t.x += speedX * dt;
+            t.y += speedY * dt;
+
+            runner.executeFlow(node._id, 'exec_out');
+        }
+    },
+
 }

@@ -3,17 +3,16 @@ import { HexToVec4 } from "../../Util/HexToVec4.js";
 export default class WorldRenderer {
     constructor(image, text, shape, game, tilemapRenderer) {
         this.game = game;
-        this.renderer = { image, text, shape }; 
+        this.renderer = { image, text, shape };
         this.tilemapRenderer = tilemapRenderer;
-        
         this.renderQueue = [];
     }
 
-    render(world, proj) {
+    render(world, proj, alpha = 1.0) {
         const { activeTabId, tabs } = world._editors || {};
         const activeTab = tabs?.find(t => t.id === activeTabId);
-        const isIsolationMode = (activeTab?.type === "tilemap");
-        
+        const isIsolationMode = activeTab?.type === "tilemap";
+
         if (world.gridRenderer && !isIsolationMode) {
             this._flushAll();
             world.gridRenderer(this.renderer.shape, proj);
@@ -22,33 +21,31 @@ export default class WorldRenderer {
 
         this.renderQueue.length = 0;
 
-        this._collectRenderables(world, activeTabId, isIsolationMode, proj);
+        this._collectRenderables(world, activeTabId, isIsolationMode, proj, alpha);
 
         this._executeRenderQueue(proj);
 
         if (!isIsolationMode && world.selectionRenderer && this.game.selection.active) {
-            this._flushAll(); 
+            this._flushAll();
             world.selectionRenderer(this.renderer.image, this.renderer.shape, this.renderer.text, proj);
         }
     }
 
-    _collectRenderables(world, activeTabId, isIsolationMode, proj) {
+    _collectRenderables(world, activeTabId, isIsolationMode, proj, alpha) {
         for (let li = 0; li < world.layers.length; li++) {
             const layer = world.layers[li];
-            
             if (layer.visible === false) continue;
 
             for (const e of layer.entities) {
                 if (isIsolationMode && e.id !== activeTabId) continue;
-                
                 if (!e.parentId) {
-                    this._processEntityRecursive(e, world, proj);
+                    this._processEntityRecursive(e, world, proj, alpha);
                 }
             }
         }
     }
 
-    _processEntityRecursive(e, world, proj) {
+    _processEntityRecursive(e, world, proj, alpha) {
         if (e.active === false) return;
         if (e.visible === false) return;
 
@@ -58,7 +55,6 @@ export default class WorldRenderer {
         if (comps.Tilemap && this.tilemapRenderer) {
             this._executeRenderQueue(proj);
             this.renderQueue.length = 0;
-            
             this.tilemapRenderer.renderEntity(e, world, proj);
             return;
         }
@@ -66,30 +62,39 @@ export default class WorldRenderer {
         const t = comps.Transform;
         const opacity = e.opacity ?? 1;
 
+        const drawX = t.prevX !== undefined ? t.prevX + (t.x - t.prevX) * alpha : t.x;
+        const drawY = t.prevY !== undefined ? t.prevY + (t.y - t.prevY) * alpha : t.y;
+
         const trans = {
-            x: t.x, y: t.y, width: t.width, height: t.height,
-            rotation: t.rotation, scaleX: t.scaleX, scaleY: t.scaleY,
-            pivotX: t.pivotX, pivotY: t.pivotY
+            x: drawX,
+            y: drawY,
+            width: t.width,
+            height: t.height,
+            rotation: t.rotation,
+            scaleX: t.scaleX,
+            scaleY: t.scaleY,
+            pivotX: t.pivotX,
+            pivotY: t.pivotY
         };
 
         if (comps.SpriteRenderer) {
             const s = comps.SpriteRenderer;
-            const alpha = (s.opacity ?? 1) * opacity;
-            if (alpha > 0) {
+            const a = (s.opacity ?? 1) * opacity;
+            if (a > 0) {
                 this.renderQueue.push({
                     type: "image",
                     texture: world.assets.textures[s.assetId],
                     frame: s.source || { x: 0, y: 0, w: 0, h: 0 },
                     transformData: trans,
-                    options: { flipX: s.flipX, flipY: s.flipY, opacity: alpha }
+                    options: { flipX: s.flipX, flipY: s.flipY, opacity: a }
                 });
             }
         }
 
         if (comps.ShapeRenderer) {
             const s = comps.ShapeRenderer;
-            const alpha = (s.opacity ?? 1) * opacity;
-            if (alpha > 0) {
+            const a = (s.opacity ?? 1) * opacity;
+            if (a > 0) {
                 this.renderQueue.push({
                     type: "shape",
                     transformData: trans,
@@ -97,8 +102,9 @@ export default class WorldRenderer {
                         type: s.type || "rectangle",
                         color: HexToVec4(s.color || "#FFFFFF"),
                         thickness: s.thickness || 1,
-                        x2: s.x2 ?? (t.x + t.width), y2: s.y2 ?? (t.y + t.height),
-                        opacity: alpha
+                        x2: s.x2 ?? (drawX + t.width),
+                        y2: s.y2 ?? (drawY + t.height),
+                        opacity: a
                     }
                 });
             }
@@ -106,18 +112,20 @@ export default class WorldRenderer {
 
         if (comps.TextRenderer) {
             const tx = comps.TextRenderer;
-            const alpha = (tx.opacity ?? 1) * opacity;
+            const a = (tx.opacity ?? 1) * opacity;
             let font = world.assets.fonts[tx.assetId];
             if (!font?.ready) font = world.assets.fonts["system_default"];
 
-            if (alpha > 0 && font) {
+            if (a > 0 && font) {
                 this.renderQueue.push({
                     type: "text",
                     transformData: trans,
                     textOptions: {
-                        text: tx.value ?? "", fontSize: tx.fontSize || 24,
+                        text: tx.value ?? "",
+                        fontSize: tx.fontSize || 24,
                         color: HexToVec4(tx.color || "#FFFFFF"),
-                        font, opacity: alpha
+                        font,
+                        opacity: a
                     }
                 });
             }
@@ -125,7 +133,7 @@ export default class WorldRenderer {
 
         if (e.children && e.children.length > 0) {
             for (const child of e.children) {
-                this._processEntityRecursive(child, world, proj);
+                this._processEntityRecursive(child, world, proj, alpha);
             }
         }
     }
@@ -143,11 +151,9 @@ export default class WorldRenderer {
 
             if (item.type === "image") {
                 this.renderer.image.draw(item.texture, item.frame, item.transformData, item.options, proj);
-            } 
-            else if (item.type === "shape") {
+            } else if (item.type === "shape") {
                 this._drawShape(item.shapeOptions, item.transformData, proj);
-            } 
-            else if (item.type === "text") {
+            } else if (item.type === "text") {
                 const { text, font, fontSize, color, opacity } = item.textOptions;
                 const t = item.transformData;
                 this.renderer.text.drawText(

@@ -46,7 +46,6 @@ export const EngineBridge = {
 
   createEntity(entityData) {
     if (!engineInstance) return;
-    // Emit event ke EventBus engine
     engineInstance.bus.emit("editor:entity:create", entityData);
   },
 

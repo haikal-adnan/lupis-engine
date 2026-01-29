@@ -6,17 +6,17 @@ export default class ScriptSystem {
         this.runners = [];
     }
 
-    /**
-     * Menambahkan script instance baru untuk dijalankan
-     */
     add(scriptData, ownerEntity = null) {
         const runner = new GraphRunner(this.game, scriptData, ownerEntity);
         this.runners.push(runner);
     }
 
+    startAll() {
+        console.log(`[ScriptSystem] Starting ${this.runners.length} scripts...`);
+        this.runners.forEach(runner => runner.start());
+    }
+
     update(dt) {
-        // Loop terbalik kadang lebih aman jika ada runner yang menghapus dirinya sendiri
-        // Tapi forEach standar cukup untuk sekarang
         this.runners.forEach(runner => runner.update(dt));
     }
     

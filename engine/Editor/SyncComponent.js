@@ -1,3 +1,4 @@
+// File: SyncComponent.js
 import Entity from "../Core/Entity.js";
 
 export default class SyncComponent {
@@ -12,25 +13,19 @@ export default class SyncComponent {
         this.bus.on("editor:entity:create", (data) => this.onCreateEntity(data));
         this.bus.on("editor:entity:delete", (id) => this.onDeleteEntity(id));
         this.bus.on("editor:entity:update-name", (p) => this.onUpdateEntityName(p));
-        this.bus.on("editor:entity:move", (p) => this.onMoveEntity(p)); 
+        this.bus.on("editor:entity:move", (p) => this.onMoveEntity(p));
         this.bus.on("editor:entity:update-component", (p) => this.onUpdateComponent(p));
         this.bus.on("editor:entity:update-prop", (p) => this.onUpdateEntityProp(p));
         this.bus.on("editor:entity:patch-component", (p) => this.onPatchComponent(p));
-
         this.bus.on("editor:entity:add-component", (p) => this.onAddComponent(p));
         this.bus.on("editor:entity:remove-component", (p) => this.onRemoveComponent(p));
-
         this.bus.on("editor:layer:create", (data) => this.onCreateLayer(data));
         this.bus.on("editor:layer:delete", (id) => this.onDeleteLayer(id));
         this.bus.on("editor:layer:update-name", (p) => this.onUpdateLayerName(p));
-        this.bus.on("editor:layer:reorder", (p) => this.onReorderLayer(p)); 
-
+        this.bus.on("editor:layer:reorder", (p) => this.onReorderLayer(p));
         this.bus.on("editor:asset:create", (asset) => this.onAssetCreate(asset));
         this.bus.on("editor:asset:delete", (id) => this.onAssetDelete(id));
-
         this.bus.on("editor:store:update", (payload) => this.onUpdateEditorStore(payload));
-
-
         this.bus.on("editor:script:create", (s) => this.onScriptCreate(s));
         this.bus.on("editor:script:update", (p) => this.onScriptUpdate(p));
         this.bus.on("editor:script:delete", (id) => this.onScriptDelete(id));
@@ -68,7 +63,7 @@ export default class SyncComponent {
             name: layerData.name,
             visible: true,
             locked: false,
-            entities: [] 
+            entities: []
         });
     }
 
@@ -99,7 +94,6 @@ export default class SyncComponent {
 
     onCreateEntity(entityData) {
         const entity = this._createEntityInstance(entityData);
-        
         const layer = this.world.layers.find(l => l._id === entity.layerId);
         if (layer) {
             layer.entities.push(entity);
@@ -108,7 +102,7 @@ export default class SyncComponent {
         if (entity.parentId) {
             const parent = this._findEntityById(entity.parentId);
             if (parent) {
-                if(!parent.children) parent.children = [];
+                if (!parent.children) parent.children = [];
                 parent.children.push(entity);
             }
         }
@@ -138,10 +132,10 @@ export default class SyncComponent {
     _isCircular(parentId, childId) {
         if (!parentId) return false;
         if (parentId === childId) return true;
-        
+
         const parent = this._findEntityById(parentId);
         if (!parent) return false;
-        
+
         return this._isCircular(parent.parentId, childId);
     }
 
@@ -192,7 +186,6 @@ export default class SyncComponent {
             targetArray.push(entity);
         } else {
             const siblingIndex = targetArray.findIndex(e => (e._id || e.id) === context.referenceId);
-            
             if (siblingIndex !== -1) {
                 const insertIndex = context.insertionType === 'after' ? siblingIndex + 1 : siblingIndex;
                 targetArray.splice(insertIndex, 0, entity);
@@ -206,7 +199,6 @@ export default class SyncComponent {
         for (const layer of this.world.layers) {
             for (const entity of layer.entities) {
                 if (entity.id === id || entity._id === id) return entity;
-                
                 const found = this._findEntityRecursive(entity, id);
                 if (found) return found;
             }
@@ -224,12 +216,13 @@ export default class SyncComponent {
         return null;
     }
 
-    onUpdateEntityName({ id, name }) {
+    onUpdateEntityName({ id, name }) {asi
         const entity = this._findEntityById(id);
         if (entity) entity.name = name;
     }
 
     onUpdateComponent({ entityId, componentName, path, value }) {
+
         const entity = this._findEntityById(entityId);
         if (!entity) return;
 
@@ -244,7 +237,7 @@ export default class SyncComponent {
         target[keys[keys.length - 1]] = value;
     }
 
-    onUpdateEntityProp({ entityId, propName, value }) { 
+    onUpdateEntityProp({ entityId, propName, value }) {
         const entity = this._findEntityById(entityId);
         if (entity) entity[propName] = value;
     }
@@ -265,8 +258,8 @@ export default class SyncComponent {
         entity.parentId = data.parentId;
         entity.active = data.isActive;
         entity.visible = data.isVisible;
-        entity.children = []; 
-        
+        entity.children = [];
+
         if (data.components) {
             for (const [key, val] of Object.entries(data.components)) {
                 entity.addComponent(key, val);
@@ -302,8 +295,7 @@ export default class SyncComponent {
 
     onScriptCreate(scriptData) {
         if (!this.world.scripts) this.world.scripts = {};
-        
-        // Simpan definisi script ke world
+
         this.world.scripts[scriptData._id] = {
             _id: scriptData._id,
             name: scriptData.name,
@@ -317,12 +309,7 @@ export default class SyncComponent {
 
     onScriptUpdate({ id, updates }) {
         if (!this.world.scripts || !this.world.scripts[id]) return;
-        
-        // Merge updates
         Object.assign(this.world.scripts[id], updates);
-        
-        // Opsi Tambahan: Jika engine sedang mode Runtime dan mendukung Hot Reload, 
-        // panggil scriptSystem.reload(id) di sini.
     }
 
     onScriptDelete(id) {
@@ -337,9 +324,8 @@ export default class SyncComponent {
 
         const keys = path.split('.');
         let target = entity.components[componentName];
-        
+
         for (let i = 0; i < keys.length - 1; i++) {
-             // Proteksi jika path belum ada
             if (!target[keys[i]]) target[keys[i]] = {};
             target = target[keys[i]];
         }
@@ -350,22 +336,14 @@ export default class SyncComponent {
         const entity = this._findEntityById(entityId);
         if (!entity) return;
 
-        // Pastikan komponen ada
         if (!entity.components) entity.components = {};
         if (!entity.components[componentName]) {
-            // Jika belum ada, buat baru
             entity.addComponent(componentName, updates);
         } else {
-            // Jika sudah ada, merge updates
             const component = entity.components[componentName];
-            
-            // Khusus ScriptController, jika updates berisi 'data' (array instance script)
-            // Kita replace arraynya agar sinkron dengan editor
             if (updates.data && Array.isArray(updates.data)) {
-                 component.data = [...updates.data];
-                 // console.log(`[Sync] Updated script instances for ${entity.name}`, component.data);
+                component.data = [...updates.data];
             } else {
-                // Default merge
                 Object.assign(component, updates);
             }
         }

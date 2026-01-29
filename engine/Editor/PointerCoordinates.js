@@ -1,4 +1,3 @@
-// engine/ui/PointerCoordinates.js
 import { bus } from "../Util/EventBus.js";
 
 export default class PointerCoordinates {

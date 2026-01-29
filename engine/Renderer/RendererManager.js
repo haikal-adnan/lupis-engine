@@ -16,41 +16,34 @@ export default class RendererManager {
         this.canvas = canvas;
         this.game = game;
         
-        // Init Context
         this.ctx = new GLContext(canvas);
         this.gl = this.ctx.gl;
         this.cache = new GLStateCache(this.gl, this.ctx.bindVAO);
 
-        // Init Core Renderers
         this.image = new ImageRenderer(this.ctx, this.cache);
         this.shape = new ShapeRenderer(this.ctx, this.cache);
         this.text = new TextRenderer(this.ctx, this.cache);
 
-        // Init Scene Renderers
         this.tilemapRenderer = new TilemapRenderer(this.image, this.shape, this.game);
         this.worldRenderer = new WorldRenderer(this.image, this.text, this.shape, this.game, this.tilemapRenderer);
         this.uiRenderer = new UIRenderer(this.image, this.shape, this.text, this.game);
 
-        // Matrices
         this.projWorld = Mat4.create();
         this.projUI = Mat4.create();
     }
 
-    render(world, camera, game) {
-        // 1. Setup Frame
+    render(world, camera, game, alpha = 1.0) {
         this._handleResize();
         this._beginFrame();
 
-        // 2. Render World (Scene)
         const pWorld = this._updateWorldProjection(camera);
         
         if (Config.ENGINE_MODE === "editor") {
             this._handleEditorGizmos(world, game);
         }
 
-        this.worldRenderer.render(world, pWorld);
+        this.worldRenderer.render(world, pWorld, alpha);
 
-        // 3. Render UI (Overlay)
         const pUI = this._updateUIProjection();
         this.uiRenderer.setProjection(pUI);
         this.uiRenderer.render(world.ui);
@@ -78,7 +71,6 @@ export default class RendererManager {
         const { activeTabId } = world._editors || {};
         const isSceneMode = activeTabId === "scene";
 
-        // Aktifkan gizmo hanya di tab Scene
         game.selection.active = isSceneMode;
         game.transform.active = isSceneMode;
     }

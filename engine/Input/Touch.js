@@ -6,42 +6,35 @@ export default class Touch {
 
         this.touches = [];
         this.active = false;
-
-        // apakah sedang lock scroll
         this.lockScroll = false;
 
-        // GLOBAL handler - tapi hanya active jika lockScroll = true
         this._globalBlocker = e => {
             if (this.lockScroll) {
-                e.preventDefault();   // block scroll hanya saat mode aktif
+                e.preventDefault();
             }
         };
         document.addEventListener("touchmove", this._globalBlocker, { passive:false });
 
-        // ==== CANVAS EVENTS ====
         this._start = e => {
-            // Jika sentuhan dimulai dari canvas → aktifkan lock scroll
             this.lockScroll = true;
             this.active = true;
-
-            e.preventDefault(); // block gesture browser
+            e.preventDefault();
             this._updateTouches(e);
         };
 
         this._move = e => {
             if (this.lockScroll) {
-                e.preventDefault(); // block only when started on canvas
+                e.preventDefault();
             }
             this._updateTouches(e);
         };
 
         this._end = e => {
             if (this.lockScroll) e.preventDefault();
-
             this._updateTouches(e);
             if (e.touches.length === 0) {
                 this.active = false;
-                this.lockScroll = false; // ==== sangat penting
+                this.lockScroll = false;
             }
         };
 
@@ -50,7 +43,6 @@ export default class Touch {
         canvas.addEventListener("touchend",    this._end,    { passive:false });
         canvas.addEventListener("touchcancel", this._end,    { passive:false });
 
-        // ONLY prevent pull-to-refresh when touching canvas
         this._blockPTR = e => {
             if (this.lockScroll && window.scrollY === 0) {
                 e.preventDefault();
@@ -58,7 +50,6 @@ export default class Touch {
         };
         window.addEventListener("touchmove", this._blockPTR, { passive:false });
 
-        // canvas-only gesture control
         this.canvas.style.touchAction = "none";
     }
 

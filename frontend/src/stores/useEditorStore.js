@@ -30,13 +30,11 @@ export const useEditorStore = defineStore('editor', {
     isPlayMode: false,
     isPaused: false,
 
-    // --- TABS STATE ---
     activeTabId: 'scene',
     tabs: [
       { id: 'scene', name: 'Main Scene', type: 'scene', fixed: true },
     ],
 
-    // --- BOTTOM BAR STATE ---
     activeBottomTabId: 'asset', 
     isBottomBarOpen: false,
   }),
@@ -49,7 +47,6 @@ export const useEditorStore = defineStore('editor', {
     activeTab: (state) => {
         return state.tabs.find(t => t.id === state.activeTabId) || state.tabs[0];
     },
-    // Getter untuk mengecek tab bawah yang aktif
     currentBottomTab: (state) => state.activeBottomTabId
   },
 
@@ -72,10 +69,9 @@ export const useEditorStore = defineStore('editor', {
       this.canvas.offsetY = 0;
     },
 
-    // --- BOTTOM BAR ACTIONS ---
     setActiveBottomTab(id) {
       this.activeBottomTabId = id;
-      this.isBottomBarOpen = true; // Paksa buka saat tab diganti
+      this.isBottomBarOpen = true; 
     },
 
     toggleBottomBar() {
@@ -129,6 +125,8 @@ export const useEditorStore = defineStore('editor', {
         });
         this.setActiveTab(tabData.id);
       }
+
+      console.log(this.tabs)
     },
 
     toggleGrid() {

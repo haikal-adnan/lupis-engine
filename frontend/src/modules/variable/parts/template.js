@@ -1,35 +1,56 @@
-import { HelpCircle } from 'lucide-vue-next';
+import { Boxes } from 'lucide-vue-next';
 
-export const newCategoryTemplate = {
-  id: 'category_id',
-  label: 'Category Name',
-  color: '#9C27B0',
-  icon: HelpCircle,
+export const universalCategoryTemplate = {
+  _id: 'unique_category_id',
+  label: 'Category Display Name',
+  color: '#HEX_COLOR',
+  icon: Boxes,
   items: [
     {
-      type: 'node_unique_type',
-      label: 'Node Display Name',
-      description: 'Brief explanation of what this node does',
-      icon: HelpCircle,
+      type: 'unique_node_type',
+      label: 'Node Name',
+      description: 'Human readable description',
+      icon: Boxes,
+      
+      allowDynamicInputs: false,
+      allowDynamicOutputs: true,
+      
       defaultData: {
-        allowDynamicInputs: false,
         settings: {
-          headerTitle: 'Header Label',
-          headerColor: '#7B1FA2',
+          headerTitle: 'Display Title',
+          headerColor: '#HEX_COLOR',
           category: 'Category Name'
         },
-        data: {
-          myInternalValue: 'default_text',
-          someOption: 10
-        },
-        inputs: [
-          { _id: 'in', label: 'In', dataType: 'execution', color: '#fff' },
-          { _id: 'input_1', label: 'Input A', dataType: 'string', color: '#E040FB' },
-          { _id: 'input_2', label: 'Input B', dataType: 'number', color: '#B2FF59' }
+
+        data: [
+          { 
+            _id: 'row_1',
+            field_A: 'value_1',
+            field_B: 100
+          },
+          { 
+            _id: 'row_2',
+            field_A: 'value_2',
+            field_B: 100
+          },
         ],
+
+        inputs: [
+          { 
+            _id: 'main_exec',
+            label: 'In',
+            dataType: 'execution',
+            color: '#ffffff'
+          }
+        ],
+
         outputs: [
-          { _id: 'out', label: 'Out', dataType: 'execution', color: '#fff' },
-          { _id: 'res', label: 'Result', dataType: 'boolean', color: '#4CAF50' }
+          { 
+            _id: 'row_1',
+            label: 'Output 1',
+            dataType: 'execution',
+            color: '#ffffff'
+          }
         ]
       }
     }

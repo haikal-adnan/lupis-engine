@@ -3,27 +3,27 @@ import { GenerateUUID } from '@/commons/utils/generateUUID.js';
 export const createScriptPort = (data = {}) => ({
   _id: data._id || GenerateUUID(), 
   label: data.label || "",
-  type: data.type || "any",
-  dataType: data.dataType || "any",
+  // type: "any" -> DIHAPUS, karena sudah digantikan oleh dataType
+  dataType: data.dataType || "any", // 'execution', 'string', 'number', 'boolean', 'any'
   color: data.color || "#555",
-  enabled: data.enabled ?? true
+  enabled: data.enabled ?? true,
+  // DITAMBAHKAN: Untuk menyimpan nilai default jika tidak ada koneksi (misal input angka manual)
+  defaultValue: data.defaultValue ?? null 
 });
 
 export const createScriptVariable = (data = {}) => ({
   _id: data._id || GenerateUUID(),
   name: data.name || "NewVariable",
-  type: data.type || "String",
-  defaultValue: data.defaultValue ?? null
+  type: data.type || "number",
+  defaultValue: data.defaultValue ?? 0
 });
 
 export const createScriptNode = (data = {}) => ({
   _id: data._id || GenerateUUID(),
   type: data.type || "unknown_node",
-  
-  // --- PERBAIKAN DISINI ---
-  // Masukkan properti ini agar tidak hilang saat node dibuat via schema
+
   allowDynamicInputs: data.allowDynamicInputs ?? false, 
-  // ------------------------
+  allowDynamicOutputs: data.allowDynamicOutputs ?? false, 
 
   position: {
     x: data.position?.x ?? 0,
@@ -32,7 +32,7 @@ export const createScriptNode = (data = {}) => ({
   settings: {
     headerTitle: data.settings?.headerTitle || "Node",
     description: data.settings?.description || "",
-    headerColor: data.settings?.headerColor || "#fff",
+    headerColor: data.settings?.headerColor || "#424242",
     category: data.settings?.category || "General",
     visibleDataFields: Array.isArray(data.settings?.visibleDataFields)
       ? [...data.settings.visibleDataFields]
@@ -44,6 +44,8 @@ export const createScriptNode = (data = {}) => ({
   outputs: Array.isArray(data.outputs)
     ? data.outputs.map(createScriptPort)
     : [],
+  
+  // Data mixed (menyimpan config seperti 'format', 'key', 'propertyOptions')
   data: data.data || {}
 });
 
@@ -60,7 +62,7 @@ export const createScript = (data = {}) => {
     _id: data._id || GenerateUUID(),
     projectId: data.projectId || null,
     name: data.name || "Untitled Script",
-    type: data.type || "component",
+    type: data.type || "component", // 'component' | 'scene_logic'
     exposedVariables: Array.isArray(data.exposedVariables)
       ? data.exposedVariables.map(createScriptVariable)
       : [],
@@ -70,7 +72,7 @@ export const createScript = (data = {}) => {
     edges: Array.isArray(data.edges)
       ? data.edges.map(createScriptEdge)
       : [],
-    createdAt: data.createdAt || null,
-    updatedAt: data.updatedAt || null
+    createdAt: data.createdAt || new Date().toISOString(),
+    updatedAt: data.updatedAt || new Date().toISOString()
   };
 };
