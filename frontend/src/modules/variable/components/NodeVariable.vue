@@ -32,7 +32,7 @@
           
           <div 
             class="h-full aspect-square flex items-center justify-center rounded shadow-sm shrink-0"
-            :style="{ backgroundColor: getTypeColor(v.type) }"
+            :style="{ backgroundColor: getVarColor(v.type) }"
           >
             <Type v-if="v.type === 'String'" class="w-3.5 h-3.5 text-white" />
             <Hash v-else-if="v.type === 'Number'" class="w-3.5 h-3.5 text-white" />
@@ -80,7 +80,7 @@
                     class="flex items-center px-2 py-1.5 hover:bg-accent hover:text-accent-foreground text-left"
                     :class="v.type === t ? 'text-primary font-medium' : ''"
                   >
-                    <div class="w-2 h-2 rounded-full mr-2" :style="{ backgroundColor: getTypeColor(t) }"></div>
+                    <div class="w-2 h-2 rounded-full mr-2" :style="{ backgroundColor: getVarColor(t) }"></div>
                     {{ t }}
                   </button>
                   
@@ -154,7 +154,7 @@ const props = defineProps({
 
 const { 
   variables, addVariable, updateVariable, duplicateVariable, deleteVariable, 
-  onDragStart, getTypeColor, addNodeToCanvas 
+  onDragStart, getVarColor, addNodeToCanvas 
 } = useVariableLogic(props.scope);
 
 const boolOptions = [

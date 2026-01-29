@@ -48,7 +48,6 @@ class EngineConsole {
       const match = caller.match(regex);
 
       if (match) {
-        // Hasil misalnya: ["main.js", "22", "10"]
         const file = match[1].split("/").pop();
         const line = match[2] ? `:${match[2]}` : "";
         return `${file}${line}`;

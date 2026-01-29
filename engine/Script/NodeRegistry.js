@@ -5,8 +5,11 @@ import { variableNode } from './Node/variableNode.js'
 import { transformNode } from './Node/transformNode.js'
 import { stringNode } from './Node/stringNode.js'
 import { debugNode } from './Node/debugNode.js'
+import { cameraNode } from './Node/cameraNode.js'
+import { lifecycleNode } from './Node/lifecycleNode.js'
 
 export const NodeRegistry = {
+    ...lifecycleNode,
     ...mathNode,
     ...logicNode,
     ...entityNode,
@@ -14,8 +17,8 @@ export const NodeRegistry = {
     ...transformNode,
     ...stringNode,
     ...debugNode,
+    ...cameraNode,
 
-    // Fallback default
     'default': {
         execute: (runner, node) => runner.executeFlow(node._id, 'out'),
         getOutput: () => null

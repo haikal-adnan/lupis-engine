@@ -1,36 +1,82 @@
-import { FileText } from 'lucide-vue-next';
+import { FileText, Type, Hash, Plus } from 'lucide-vue-next';
 
 export const basicString = {
-  id: 'basic_string',
+  _id: 'basic_string',
   label: 'String Utils',
   color: '#FF9800', 
   icon: FileText,
   items: [
     { 
-      type: 'format_string', 
+      type: 'string_format', 
       label: 'Format String', 
-      description: 'Combine text like "Pos: {0}, {1}"', 
-      // HAPUS DARI SINI
-      // allowDynamicInputs: true, 
-      
+      description: 'Combine text using placeholders like {0}, {1}', 
+      icon: FileText,
+      allowDynamicInputs: true,
+      allowDynamicOutputs: false,
       defaultData: { 
-        // PINDAHKAN KESINI (Agar otomatis ikut ke-spread saat onDrop)
-        allowDynamicInputs: true, 
-
         settings: { 
           headerTitle: 'Format String', 
           headerColor: '#F57C00', 
-          category: 'String',
+          category: 'String' 
         },
         data: { 
-          format: '' 
+            format: 'Score: {0} / {1}' 
         },
         inputs: [
-          { _id: '0', label: '{0}', dataType: 'any', color: '#fff' },
-          { _id: '1', label: '{1}', dataType: 'any', color: '#fff' },
+          { _id: '0', label: '{0}', dataType: 'any', color: '#ffffff' },
+          { _id: '1', label: '{1}', dataType: 'any', color: '#ffffff' },
         ],
         outputs: [
-          { _id: 'out', label: 'Result', dataType: 'string', color: '#FFB74D' }
+          { _id: 'res', label: 'Result', dataType: 'string', color: '#FFB74D' }
+        ]
+      } 
+    },
+
+    { 
+      type: 'string_join', 
+      label: 'Join Strings', 
+      description: 'Join multiple strings with a separator', 
+      icon: Plus,
+      allowDynamicInputs: true, 
+      allowDynamicOutputs: false,
+      defaultData: { 
+        settings: { 
+          headerTitle: 'Join Strings', 
+          headerColor: '#F57C00', 
+          category: 'String' 
+        },
+        data: { 
+            separator: ', ' 
+        },
+        inputs: [
+          { _id: 'a', label: 'A', dataType: 'string', color: '#FFB74D' },
+          { _id: 'b', label: 'B', dataType: 'string', color: '#FFB74D' },
+        ],
+        outputs: [
+          { _id: 'res', label: 'Result', dataType: 'string', color: '#FFB74D' }
+        ]
+      } 
+    },
+
+    { 
+      type: 'string_length', 
+      label: 'String Length', 
+      description: 'Get the number of characters in a string', 
+      icon: Hash,
+      allowDynamicInputs: false,
+      allowDynamicOutputs: false,
+      defaultData: { 
+        settings: { 
+          headerTitle: 'Length', 
+          headerColor: '#F57C00', 
+          category: 'String' 
+        },
+        data: {}, 
+        inputs: [
+          { _id: 'str_in', label: 'String', dataType: 'string', color: '#FFB74D' }
+        ],
+        outputs: [
+          { _id: 'len_out', label: 'Length', dataType: 'number', color: '#B2FF59' }
         ]
       } 
     }

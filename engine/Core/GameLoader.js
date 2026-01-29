@@ -2,12 +2,13 @@ import Config from "./Config.js";
 import RendererManager from "../Renderer/RendererManager.js";
 import World from "./World.js";
 import InputManager from "../Input/InputManager.js";
+import EventManager from "../Script/EventManager.js";
 import GLImageResource from "../Renderer/Graphic/GLImageResource.js";
 import GLFontResource from "../Renderer/Graphic/GLFontResource.js";
 import AssetLoader from "../Loader/AssetLoader.js";
-import SceneLoader from "../Loader/SceneLoader.js"; 
+import SceneLoader from "../Loader/SceneLoader.js";
 import GameLoop from "../Loop/GameLoop.js";
-import ScriptLoader from "../Loader/ScriptLoader.js"; 
+import ScriptLoader from "../Loader/ScriptLoader.js";
 
 import CameraController from "../Editor/CameraController.js";
 import PointerCoordinates from "../Editor/PointerCoordinates.js";
@@ -27,17 +28,19 @@ export default class GameLoader {
             console.error(err);
             return;
         }
+
         console.log("Mode:", mode);
 
-        const { 
-            project, 
-            assets, 
-            scene, 
-            prefabs, 
-            scripts, 
-            editorConfig } = payload;
+        const {
+            project,
+            assets,
+            scene,
+            prefabs,
+            scripts,
+            editorConfig
+        } = payload;
 
-        if(mode === "editor" && editorConfig) {
+        if (mode === "editor" && editorConfig) {
             game.world._editors = {
                 activeTool: editorConfig.activeTool,
                 activeTabId: editorConfig.activeTabId,
@@ -62,15 +65,16 @@ export default class GameLoader {
         const textureLoader = new GLImageResource(game.renderer.gl);
         const fontLoader = new GLFontResource(game.renderer.gl);
         const assetLoader = new AssetLoader(textureLoader, fontLoader);
-        
+
         try {
             await this._initAsset(assetLoader, game.world, assets);
         } catch (err) {
             console.error(err);
             return;
         }
+
         game.assetLoader = assetLoader;
-        
+
         try {
             this._initPrefabLibrary(game.world, prefabs);
             this._initScriptLibrary(game.world, scripts);
@@ -92,35 +96,37 @@ export default class GameLoader {
         if (mode === "runtime") {
             try {
                 this._initializeEntityScripts(game);
+                game.scriptSystem.startAll();
             } catch (err) {
                 console.error("Failed to initialize entity scripts:", err);
             }
         }
 
         if (mode === "editor") {
-            try { 
-                this._initializeEditorTools(game, canvas); 
-            } catch (e) { 
-                console.warn(e); 
+            try {
+                this._initializeEditorTools(game, canvas);
+            } catch (e) {
+                console.warn(e);
             }
         }
 
         console.log("Game World Initialized:", game.world);
-        
+
         game.loop = new GameLoop({
-            update: dt => { try { game.update(dt); } catch(e) { } },
-            render: alpha => { try { game.render(alpha); } catch(e) { } },
+            update: dt => { try { game.update(dt); } catch (e) {} },
+            render: alpha => { try { game.render(alpha); } catch (e) {} }
         });
     }
 
     _initMain(game, canvas, mode) {
         Config.ENGINE_MODE = mode;
-        game.input = new InputManager(canvas);
+        game.events = new EventManager();
+        game.input = new InputManager(canvas, game.events);
         game.world = new World();
         game.world.ui = [];
         game.renderer = new RendererManager(canvas, game);
     }
-    
+
     _initProject(game, project) {
         if (!project) return;
         game._id = project._id;
@@ -128,14 +134,14 @@ export default class GameLoader {
         Config.HEIGHT = project.settings?.height || 720;
         Config.BACKGROUND_COLOR = project.settings?.backgroundColor || "#000000";
     }
-    
+
     _initAsset(assetLoader, world, assets) {
         return assetLoader.loadAsset(world, assets);
     }
 
     _initScriptLibrary(world, scripts) {
         if (!Array.isArray(scripts)) {
-            world.scripts = {}; 
+            world.scripts = {};
             return;
         }
         world.scripts = scripts.reduce((map, scriptItem) => {
@@ -143,7 +149,7 @@ export default class GameLoader {
                 _id: scriptItem._id,
                 name: scriptItem.name,
                 type: scriptItem.type,
-                variables: scriptItem.exposedVariables || [], 
+                variables: scriptItem.exposedVariables || [],
                 nodes: scriptItem.nodes || [],
                 edges: scriptItem.edges || []
             };
@@ -171,7 +177,7 @@ export default class GameLoader {
             if (!entity.components || !entity.components.ScriptController) return;
 
             const controller = entity.components.ScriptController;
-            
+
             if (Array.isArray(controller.data)) {
                 controller.data.forEach(scriptInstance => {
                     const scriptAssetId = scriptInstance.assetId;
@@ -180,13 +186,18 @@ export default class GameLoader {
                     if (scriptAsset) {
                         const runtimeScriptData = {
                             ...scriptAsset,
-                            variables: this._mergeVariables(scriptAsset.variables, scriptInstance.variables)
+                            variables: this._mergeVariables(
+                                scriptAsset.variables,
+                                scriptInstance.variables
+                            )
                         };
 
                         game.scriptSystem.add(runtimeScriptData, entity);
                         count++;
                     } else {
-                        console.warn(`[GameLoader] Script asset '${scriptAssetId}' not found for entity '${entity.name}'`);
+                        console.warn(
+                            `[GameLoader] Script asset '${scriptAssetId}' not found for entity '${entity.name}'`
+                        );
                     }
                 });
             }
@@ -201,7 +212,10 @@ export default class GameLoader {
 
         return assetVars.map(v => ({
             ...v,
-            defaultValue: instanceVars[v._id] !== undefined ? instanceVars[v._id] : v.defaultValue
+            defaultValue:
+                instanceVars[v._id] !== undefined
+                    ? instanceVars[v._id]
+                    : v.defaultValue
         }));
     }
 
@@ -209,26 +223,45 @@ export default class GameLoader {
         const { world, renderer, camera, input } = game;
         const { EDITOR } = Config;
 
-        if (EDITOR.CAMERA_CONTROLLER) game.cameraController = new CameraController(camera, canvas, input);
+        if (EDITOR.CAMERA_CONTROLLER)
+            game.cameraController = new CameraController(camera, canvas, input);
+
         if (EDITOR.GRID) {
-            game.grid = new Grid(world, game, canvas, renderer, camera, { 
-                color: "#ffffff", width: 50, height: 50, alpha: 0.5 
+            game.grid = new Grid(world, game, canvas, renderer, camera, {
+                color: "#ffffff",
+                width: 50,
+                height: 50,
+                alpha: 0.5
             });
         }
+
         game.tilemapTool = new TilemapTool(game);
+
         if (EDITOR.SELECTION) {
             game.selection = new SelectionTool(world, game, canvas, renderer, input);
         }
+
         if (EDITOR.TRANSFORM) {
-            game.transform = new TransformTool(game.selection, world, game, canvas, renderer, input);
+            game.transform = new TransformTool(
+                game.selection,
+                world,
+                game,
+                canvas,
+                renderer,
+                input
+            );
         }
+
         if (EDITOR.RULERS) {
             game.rulers = new Rulers(game);
-            world.ui.push((ui) => {
+            world.ui.push(ui => {
                 game.rulers.render(ui);
             });
         }
-        if (EDITOR.POINTER) game.pointerCoords = new PointerCoordinates(game, renderer);
+
+        if (EDITOR.POINTER)
+            game.pointerCoords = new PointerCoordinates(game, renderer);
+
         game.syncSystem = new SyncComponent(world, bus, game.assetLoader);
     }
 

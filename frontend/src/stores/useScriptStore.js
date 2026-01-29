@@ -3,7 +3,8 @@ import { toRaw } from 'vue';
 import { 
   createScript, 
   createScriptNode, 
-  createScriptEdge 
+  createScriptEdge,
+  createScriptPort 
 } from '@/services/schema/scriptSchema';
 
 export const useScriptStore = defineStore('script', {
@@ -19,15 +20,12 @@ export const useScriptStore = defineStore('script', {
     getScriptById: (state) => (id) => {
       return state.scripts.find(s => s._id === id);
     },
-
     componentScripts: (state) => {
       return state.scripts.filter(s => s.type === 'component');
     },
-
     logicScripts: (state) => {
       return state.scripts.filter(s => s.type === 'scene_logic');
     },
-    
     selectedNode: (state) => {
       if (!state.activeScript || !state.selectedNodeId) return null;
       return state.activeScript.nodes.find(n => n._id === state.selectedNodeId);
@@ -35,16 +33,11 @@ export const useScriptStore = defineStore('script', {
   },
 
   actions: {
-    // =========================================
-    // HIGH LEVEL / ASYNC ACTIONS (CRUD Projects)
-    // =========================================
-
     async fetchScripts(projectId) {
       this.isLoading = true;
       this.error = null;
       try {
         console.log(`[Mock] Fetching scripts for project: ${projectId}`);
-        // API Call implementation
       } catch (err) {
         this.error = err.message;
       } finally {
@@ -70,16 +63,12 @@ export const useScriptStore = defineStore('script', {
       this.removeScript(scriptId);
     },
 
-    // =========================================
-    // STATE MUTATION & EDITOR LOGIC
-    // =========================================
-
     initScripts(scriptList) {
       this.scripts = scriptList.map(s => createScript(s)); 
     },
 
     addScript(script) {
-      this.scripts.push(structuredClone(toRaw(script)));
+      this.scripts.push(JSON.parse(JSON.stringify(toRaw(script))));
     },
 
     removeScript(scriptId) {
@@ -91,7 +80,7 @@ export const useScriptStore = defineStore('script', {
     },
 
     setActiveScript(scriptData) {
-      this.activeScript = structuredClone(toRaw(scriptData));
+      this.activeScript = JSON.parse(JSON.stringify(toRaw(scriptData)));
       this.selectedNodeId = null; 
     },
 
@@ -114,10 +103,6 @@ export const useScriptStore = defineStore('script', {
          }
       }
     },
-
-    // =========================================
-    // NODE & EDGE MANIPULATION (Graph Editor)
-    // =========================================
 
     addNodeToActive(rawNodeData) {
       if (!this.activeScript) return;
@@ -155,7 +140,6 @@ export const useScriptStore = defineStore('script', {
       if (!this.activeScript) return;
 
       this.activeScript.nodes = this.activeScript.nodes.filter(n => n._id !== nodeId);
-      
       this.activeScript.edges = this.activeScript.edges.filter(edge => 
         edge.source !== nodeId && edge.target !== nodeId
       );
@@ -167,9 +151,51 @@ export const useScriptStore = defineStore('script', {
       this.saveActiveScript();
     },
 
-    addEdgeToActive(rawEdgeData) {
+    addNodePort(nodeId, type, portData) {
+      if (!this.activeScript) return;
+      
+      const node = this.activeScript.nodes.find(n => n._id === nodeId);
+      if (!node) return;
+
+      if (type === 'input' && !node.allowDynamicInputs) return;
+      if (type === 'output' && !node.allowDynamicOutputs) return;
+
+      const newPort = createScriptPort(portData);
+
+      if (type === 'input') {
+        if (node.inputs.some(p => p._id === newPort._id)) return;
+        node.inputs.push(newPort);
+      } else {
+        if (node.outputs.some(p => p._id === newPort._id)) return;
+        node.outputs.push(newPort);
+      }
+
+      this.saveActiveScript();
+    },
+
+    removeNodePort(nodeId, type, portId) {
       if (!this.activeScript) return;
 
+      const node = this.activeScript.nodes.find(n => n._id === nodeId);
+      if (!node) return;
+
+      if (type === 'input') {
+        node.inputs = node.inputs.filter(p => p._id !== portId);
+        this.activeScript.edges = this.activeScript.edges.filter(e => 
+          !(e.target === nodeId && e.targetHandle === portId)
+        );
+      } else {
+        node.outputs = node.outputs.filter(p => p._id !== portId);
+        this.activeScript.edges = this.activeScript.edges.filter(e => 
+          !(e.source === nodeId && e.sourceHandle === portId)
+        );
+      }
+
+      this.saveActiveScript();
+    },
+
+    addEdgeToActive(rawEdgeData) {
+      if (!this.activeScript) return;
       if (rawEdgeData.source === rawEdgeData.target) return;
 
       const exists = this.activeScript.edges.find(e => 
@@ -182,7 +208,6 @@ export const useScriptStore = defineStore('script', {
       if (!exists) {
         const newEdge = createScriptEdge(rawEdgeData);
         this.activeScript.edges.push(newEdge);
-        
         this.saveActiveScript();
       }
     },
@@ -190,29 +215,20 @@ export const useScriptStore = defineStore('script', {
     removeEdgeFromActive(edgeId) {
       if (!this.activeScript) return;
       this.activeScript.edges = this.activeScript.edges.filter(e => e._id !== edgeId);
-
       this.saveActiveScript();
     },
 
-    // =========================================
-    // AUTO SAVE LOGIC
-    // =========================================
-    
     saveActiveScript() {
       if (!this.activeScript) return;
-      
       try {
-        const cleanScript = structuredClone(toRaw(this.activeScript));
-
+        const cleanScript = JSON.parse(JSON.stringify(toRaw(this.activeScript)));
         this.updateScriptInList(cleanScript._id, {
             nodes: cleanScript.nodes,
             edges: cleanScript.edges,
             exposedVariables: cleanScript.exposedVariables
         });
-
-        console.log("[ScriptStore] Saved clean data using structuredClone.");
       } catch (err) {
-        console.error("[ScriptStore] FAILED to sanitize active script!", err);
+        console.error("[ScriptStore] FAILED to save", err);
       }
     }
   }

@@ -79,9 +79,15 @@ export function useEditorToEngine(sceneStore, assetStore, editorStore, scriptSto
       after(() => {
         switch (name) {
           case 'setActiveTab':
-            console.log("ini halan")
             EngineBridge.updateEditorState({ 
                 activeTabId: args[0] 
+            });
+            break;
+
+          case 'openTab':
+          case 'closeTab':
+            EngineBridge.updateEditorState({ 
+                tabs: JSON.parse(JSON.stringify(editorStore.tabs)) 
             });
             break;
 

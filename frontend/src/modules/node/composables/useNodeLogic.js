@@ -1,138 +1,168 @@
-// src/modules/node/composables/useNodeLogic.js
-
-import { computed } from 'vue';
+import { ref, computed } from 'vue';
 import { useScriptStore } from '@/stores/useScriptStore.js';
+import { usePrompt } from '@/composables/usePrompt.js'; // Asumsi helper prompt ada
 
 export function useNodeLogic() {
   const scriptStore = useScriptStore();
+  const { prompt } = usePrompt();
 
-  // 1. Mendapatkan Node yang sedang diseleksi
+  // State untuk melacak apakah Dropdown sedang aktif di sisi Input atau Output
+  // Value: null | 'input' | 'output'
+  const activeDropdownTarget = ref(null);
+
   const selectedNode = computed(() => {
     if (!scriptStore.activeScript || !scriptStore.selectedNodeId) return null;
     return scriptStore.activeScript.nodes.find(n => n._id === scriptStore.selectedNodeId);
   });
 
-  console.log(selectedNode)
+  // --- DATA BINDING HELPERS ---
 
-  // 2. Helper untuk v-model binding ke properti node yang dalam (nested)
-  // Contoh penggunaan: const myVal = bindNodeProp('data.settings.headerTitle')
   function bindNodeProp(path) {
     return computed({
       get: () => {
         if (!selectedNode.value) return undefined;
-        // Mengambil value dari path string, misal "data.variableId"
         return path.split('.').reduce((o, i) => o?.[i], selectedNode.value);
       },
       set: (val) => {
         if (!selectedNode.value) return;
-        
-        // Membangun object nested untuk update parsial
         const keys = path.split('.');
         const lastKey = keys.pop();
         const deepObj = keys.reduceRight((obj, key) => ({ [key]: obj }), { [lastKey]: val });
-        
-        // Update ke store
         scriptStore.updateNodeInActive(selectedNode.value._id, deepObj);
       }
     });
   }
 
-  // 3. Menghapus Node yang sedang aktif
   function deleteSelectedNode() {
     if (selectedNode.value && confirm('Delete this node?')) {
-        scriptStore.removeNodeFromActive(selectedNode.value._id);
-        scriptStore.selectedNodeId = null; 
+      scriptStore.removeNodeFromActive(selectedNode.value._id);
+      scriptStore.selectedNodeId = null;
     }
   }
 
-  // 4. Cek apakah input port tertentu sudah terhubung kabel
   function isInputConnected(inputKey) {
     if (!selectedNode.value || !scriptStore.activeScript) return false;
-    
-    return scriptStore.activeScript.edges.some(edge => 
-      edge.target === selectedNode.value._id && 
+    return scriptStore.activeScript.edges.some(edge =>
+      edge.target === selectedNode.value._id &&
       edge.targetHandle === inputKey
     );
   }
 
-  // =========================================================
-  // LOGIC BARU: DYNAMIC INPUTS
-  // Digunakan untuk node seperti Format String, Sequence, dll
-  // =========================================================
+  // --- DYNAMIC PORT LOGIC ---
 
-  const addDynamicInput = () => {
-    if (!selectedNode.value) return;
-
-    // Clone array inputs agar aman (immutability)
-    const currentInputs = [...(selectedNode.value.inputs || [])];
+  // 1. Computed Options untuk Dropdown (Transform Node)
+  // Memfilter opsi yang sudah dipakai agar tidak muncul lagi di dropdown
+  const availableOptions = computed(() => {
+    if (!selectedNode.value) return [];
     
-    // Tentukan Index berikutnya (0, 1, 2...)
-    const nextIndex = currentInputs.length;
-    const newId = String(nextIndex);
+    // Ambil daftar opsi mentah dari data node
+    const options = selectedNode.value.data?.propertyOptions || [];
+    
+    // Gabungkan semua port yang sudah ada (input & output)
+    const existingPorts = [
+       ...(selectedNode.value.inputs || []), 
+       ...(selectedNode.value.outputs || [])
+    ];
+    
+    // Return hanya opsi yang BELUM ada di port
+    return options.filter(opt => !existingPorts.some(p => p._id === opt.value));
+  });
 
-    // Buat definisi Input baru
-    const newInput = {
-      _id: newId,
-      label: `{${nextIndex}}`, // Label otomatis {0}, {1}, dst
-      type: 'any',             // Type default
-      dataType: 'any',         // Konsistensi nama properti
-      color: '#fff'            // Warna putih (netral/any)
-    };
+  // 2. Handler Utama saat tombol "+" diklik
+  const handleAddPort = async (type = 'input') => {
+    if (!selectedNode.value) return;
+    const node = selectedNode.value;
 
-    // Update Node di Store
-    scriptStore.updateNodeInActive(selectedNode.value._id, { 
-      inputs: [...currentInputs, newInput] 
+    // A. KASUS TRANSFORM: Buka Dropdown
+    if (node.type === 'get_transform' || node.type === 'set_transform') {
+       activeDropdownTarget.value = activeDropdownTarget.value === type ? null : type;
+       return; 
+    }
+
+    // B. KASUS SWITCH: Prompt User Input
+    if (node.type === 'compare_switch') {
+       const res = await prompt({ 
+         title: 'Add Case', 
+         message: 'Enter value to compare (string/number):',
+         defaultValue: '' 
+       });
+       
+       if (res === null || res.trim() === '') return;
+       
+       scriptStore.addNodePort(node._id, 'output', {
+          _id: `case_${res}`,
+          label: `Case ${res}`,
+          dataType: 'execution',
+          color: '#ffffff'
+       });
+       return;
+    }
+
+    // C. KASUS MATH / STRING / LOGIC: Auto-Generate Label
+    const currentPorts = type === 'input' ? node.inputs : node.outputs;
+    const nextIndex = currentPorts.length;
+    
+    let newLabel = `{${nextIndex}}`;
+    let newDataType = 'any';
+
+    if (node.type.startsWith('math_')) {
+        // Generate A, B, C, D...
+        newLabel = String.fromCharCode(65 + nextIndex); // 65 = 'A'
+        newDataType = 'number';
+    } else if (node.type === 'string_join') {
+        newLabel = `Str ${nextIndex + 1}`;
+        newDataType = 'string';
+    } else if (node.type === 'logic_and' || node.type === 'logic_or') {
+        newLabel = `In ${nextIndex + 1}`;
+        newDataType = 'boolean';
+    }
+
+    scriptStore.addNodePort(node._id, type, {
+      _id: String(nextIndex), // ID simpel 0, 1, 2...
+      label: newLabel,
+      dataType: newDataType,
+      color: '#fff'
     });
   };
 
-  const removeDynamicInput = (inputId) => {
+  // 3. Callback saat user memilih item dari Dropdown (Transform)
+  const addFromDropdown = (optionValue) => {
+     if (!selectedNode.value || !activeDropdownTarget.value) return;
+     
+     const type = activeDropdownTarget.value; // 'input' atau 'output'
+     const options = selectedNode.value.data?.propertyOptions || [];
+     const selectedOpt = options.find(o => o.value === optionValue);
+
+     if (selectedOpt) {
+        scriptStore.addNodePort(selectedNode.value._id, type, {
+           _id: selectedOpt.value,
+           label: selectedOpt.label,
+           dataType: selectedOpt.type || 'number',
+           color: selectedOpt.color || '#fff'
+        });
+     }
+     
+     // Reset dropdown state
+     activeDropdownTarget.value = null;
+  };
+
+  const removeDynamicInput = (portId, type = 'input') => {
     if (!selectedNode.value) return;
-    
-    const currentInputs = [...(selectedNode.value.inputs || [])];
-    
-    // Safety: Jangan hapus jika sisa input tinggal 2 (opsional)
-    if (currentInputs.length <= 2) {
-        // Bisa diganti dengan toast notification
-        console.warn("Minimum 2 inputs required."); 
-        return;
-    }
-
-    // Cari index input yang akan dihapus
-    const indexToRemove = currentInputs.findIndex(i => i._id === inputId);
-    if (indexToRemove === -1) return;
-
-    // Hapus dari array
-    currentInputs.splice(indexToRemove, 1);
-
-    // RE-INDEXING (Penting!)
-    // Agar urutan label kembali rapi ({0}, {1}, {2}) setelah ada yang dihapus.
-    // Tanpa ini, urutan akan lompat (misal: {0}, {2}) dan merusak logic format string.
-    const reindexedInputs = currentInputs.map((inp, idx) => ({
-        ...inp,
-        _id: String(idx), // Reset ID sesuai urutan array baru
-        label: `{${idx}}` // Reset Label sesuai urutan array baru
-    }));
-    
-    // Catatan: Re-indexing akan memutus koneksi kabel pada port yang bergeser.
-    // Jika ingin lebih canggih, logic update edges harus ditambahkan di store.
-    
-    // Update Node di Store
-    scriptStore.updateNodeInActive(selectedNode.value._id, { 
-      inputs: reindexedInputs 
-    });
+    scriptStore.removeNodePort(selectedNode.value._id, type, portId);
   };
 
   return {
     selectedNode,
     scriptStore,
-    
-    // Existing Helpers
     bindNodeProp,
     deleteSelectedNode,
     isInputConnected,
-
-    // New Dynamic Logic
-    addDynamicInput,
+    
+    // Dynamic Port API
+    activeDropdownTarget,
+    availableOptions,
+    handleAddPort,
+    addFromDropdown,
     removeDynamicInput
   };
 }

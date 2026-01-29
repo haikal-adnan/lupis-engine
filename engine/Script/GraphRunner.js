@@ -1,166 +1,186 @@
-import { NodeRegistry } from './NodeRegistry'
+import { NodeRegistry } from './NodeRegistry.js';
 
 export default class GraphRunner {
     constructor(game, scriptData, ownerEntity = null) {
-        this.game = game
-        this.data = scriptData
-        this.owner = ownerEntity // Entity tempat script ini menempel
-
-        // 1. Map Nodes agar akses cepat
-        this.nodeMap = new Map()
+        this.game = game;
+        this.data = scriptData;
+        this.owner = ownerEntity;
+        this.currentDt;
+        this.nodeMap = new Map();
         if (this.data.nodes) {
-            this.data.nodes.forEach(node => this.nodeMap.set(node._id, node))
+            this.data.nodes.forEach(node => this.nodeMap.set(node._id, node));
         }
+        this.edges = this.data.edges || [];
+        this.localVariables = new Map();
+        this._holdNodes = [];
+        this._dragNodes = [];
+        this._lastPointer = { x: 0, y: 0 };
+        this._keyStates = {};
+        this._initVariables();
+        this._setupEventListeners();
+    }
 
-        // 2. Simpan Edges (Kabel)
-        this.edges = this.data.edges || []
-
-        // 3. Inisialisasi Variable Lokal
-        this.localVariables = new Map()
-        this._initVariables()
-
-        // 4. Input State (untuk trigger events)
-        this._keyStates = {}
-        this._tempLoopIndex = 0 // Helper untuk loop
+    _isScriptActive() {
+        if (!this.owner) return true;
+        if (this.owner.components?.ScriptController) {
+            const scriptInstance = this.owner.components.ScriptController.data
+                .find(s => s.assetId === this.data._id);
+            if (scriptInstance && scriptInstance.isActive === false) {
+                return false;
+            }
+        }
+        return true;
     }
 
     _initVariables() {
-        const source = this.data.variables || this.data.exposedVariables || []
+        const source = this.data.variables || this.data.exposedVariables || [];
         source.forEach(v => {
-            // Priority: Default Value dari graph
-            this.localVariables.set(v._id, v.defaultValue)
-        })
+            this.localVariables.set(v._id, v.defaultValue);
+        });
     }
 
-    /**
-     * Dipanggil setiap frame oleh Game Loop utama
-     */
+    start() {
+        if (!this._isScriptActive()) return;
+        if (!this.data.nodes) return;
+        this.data.nodes
+            .filter(n => n.type === 'event_game_start')
+            .forEach(node => {
+                this.executeFlow(node._id, 'out');
+            });
+    }
+
+    _setupEventListeners() {
+        if (!this.data.nodes) return;
+        this.data.nodes.forEach(node => {
+            if (node.type === 'event_simple_key') {
+                const keyTarget = node.data?.key?.toLowerCase();
+                this.game.events.on('input:keydown', (k) => {
+                    if (!this._isScriptActive()) return;
+                    if (k === keyTarget) this.executeFlow(node._id, 'sk_main');
+                });
+            } else if (node.type === 'event_pointer_click') {
+                const config = Array.isArray(node.data) ? node.data[0] : node.data;
+                const btnTarget = config?.button || 'left';
+                this.game.events.on('input:pointerdown', (e) => {
+                    if (!this._isScriptActive()) return;
+                    if (e.button === btnTarget) {
+                        node._tempData = { pos_x: e.x, pos_y: e.y };
+                        this.executeFlow(node._id, config._id || 'ptr_click_main');
+                    }
+                });
+            } else if (node.type === 'event_advanced_key') {
+                const mappings = node.data?.mappings || [];
+                mappings.forEach(map => {
+                    const outputId = `out_${map._id}`;
+                    const keyTarget = map.key.toLowerCase();
+                    if (map.trigger === 'press') {
+                        this.game.events.on('input:keydown', (k) => {
+                            if (!this._isScriptActive()) return;
+                            if (k === keyTarget) this.executeFlow(node._id, outputId);
+                        });
+                    } else if (map.trigger === 'release') {
+                        this.game.events.on('input:keyup', (k) => {
+                            if (!this._isScriptActive()) return;
+                            if (k === keyTarget) this.executeFlow(node._id, outputId);
+                        });
+                    } else if (map.trigger === 'hold') {
+                        this._holdNodes.push({ node, map, outputId });
+                    }
+                });
+            } else if (node.type === 'event_pointer_drag') {
+                this._dragNodes.push(node);
+            }
+        });
+    }
+
     update(dt) {
-        if (!this.data.nodes) return
-        
-        // Scan Event Nodes (Trigger Awal)
-        for (const node of this.data.nodes) {
-            if (node.type === 'event_key_press') {
-                this._processKeyPress(node)
+        if (!this._isScriptActive()) return;
+        this.currentDt = dt;
+        if (this.owner && this.owner.components && this.owner.components.Transform) {
+            const t = this.owner.components.Transform;
+            t.prevX = t.x;
+            t.prevY = t.y;
+        }
+        this.data.nodes.filter(n => n.type === 'event_tick').forEach(n => {
+            this.executeFlow(n._id, 'out');
+        });
+        this._holdNodes.forEach(item => {
+            if (this.game.input.keyboard.isDown(item.map.key)) {
+                this.executeFlow(item.node._id, item.outputId);
             }
-            else if (node.type === 'event_on_interact') {
-                // Implementasi logika interaksi (misal diklik mouse) disini
-                // atau dipanggil dari luar via public method triggerEvent()
+        });
+        if (this._dragNodes.length > 0) {
+            const pointer = this.game.input.getPointer();
+            if (pointer.down) {
+                const dx = pointer.x - this._lastPointer.x;
+                const dy = pointer.y - this._lastPointer.y;
+                this._dragNodes.forEach(node => {
+                    node._tempData = { delta_x: dx, delta_y: dy, pos_x: pointer.x, pos_y: pointer.y };
+                    this.executeFlow(node._id, 'drag_active');
+                });
             }
+            this._lastPointer = { x: pointer.x, y: pointer.y };
         }
     }
 
-    /**
-     * Menjalankan aliran dari satu node ke node berikutnya
-     */
     executeFlow(sourceNodeId, sourcePortName) {
-        // Cari kabel yang keluar dari port ini
-        const edge = this.edges.find(e => 
-            e.source === sourceNodeId && 
-            e.sourceHandle === sourcePortName
-        )
-        if (!edge) return // Ujung jalan (Dead end)
-
-        const targetNode = this.nodeMap.get(edge.target)
+        const edge = this.edges.find(e =>
+            e.source === sourceNodeId && e.sourceHandle === sourcePortName
+        );
+        if (!edge) return;
+        const targetNode = this.nodeMap.get(edge.target);
         if (targetNode) {
-            this._executeNodeLogic(targetNode)
+            this._executeNodeLogic(targetNode);
         }
     }
 
-    /**
-     * Mencari logika node di Registry dan menjalankannya
-     */
     _executeNodeLogic(node) {
         try {
-            const processor = NodeRegistry[node.type] || NodeRegistry['default']
-            
-            // Cek apakah node ini punya logika 'execute'
+            const processor = NodeRegistry[node.type] || NodeRegistry['default'];
             if (processor && typeof processor.execute === 'function') {
-                processor.execute(this, node) 
+                processor.execute(this, node);
             } else {
-                // Jika node data (seperti Math Add) masuk ke jalur eksekusi,
-                // biasanya kita hanya pass-through atau log warning.
-                // Disini kita pass-through (lanjut ke 'out') jika ada.
-                this.executeFlow(node._id, 'out')
+                this.executeFlow(node._id, 'out');
             }
         } catch (err) {
-            console.error(`[GraphRunner] Error at node '${node.type}':`, err)
+            console.error(`[GraphRunner] Error at node '${node.type}':`, err);
         }
     }
 
-    /**
-     * Mengambil data input. Jika ada kabel, ambil dari node sebelumnya.
-     * Jika tidak, ambil dari data manual (input field).
-     */
     getInputValue(node, inputKey) {
-        const edge = this.edges.find(e => 
-            e.target === node._id && 
-            e.targetHandle === inputKey
-        )
-
+        const edge = this.edges.find(e => e.target === node._id && e.targetHandle === inputKey);
         if (edge) {
-            const sourceNode = this.nodeMap.get(edge.source)
-            // Rekursif: minta output value dari node sumber
-            return this._getNodeOutputValue(sourceNode, edge.sourceHandle)
+            const sourceNode = this.nodeMap.get(edge.source);
+            return this._getNodeOutputValue(sourceNode, edge.sourceHandle);
         }
-        
-        // Fallback ke nilai manual yang diketik user
-        return node.data?.[inputKey]
+        return node.data?.[inputKey];
     }
 
     _getNodeOutputValue(node, outputKey) {
-        const processor = NodeRegistry[node.type]
-        
-        if (processor && typeof processor.getOutput === 'function') {
-            return processor.getOutput(this, node, outputKey)
+        if (node._tempData && outputKey in node._tempData) {
+            return node._tempData[outputKey];
         }
-        return null
+        const processor = NodeRegistry[node.type];
+        if (processor && typeof processor.getOutput === 'function') {
+            return processor.getOutput(this, node, outputKey);
+        }
+        return node.data?.[outputKey] ?? null;
     }
 
-    // --- HELPER FUNCTIONS (API untuk Modules) ---
-
     resolveEntity(targetId) {
-        // Jika ID valid string dan tidak kosong, cari di world
         if (targetId && typeof targetId === 'string' && targetId.trim() !== '') {
-            // Asumsi game.world.entities adalah array
-            const found = this.game.world.entities.find(e => e.id === targetId || e._id === targetId)
-            if (found) return found
-            
-            // console.warn(`Entity '${targetId}' not found.`)
-            return null
+            return this.game.world.entities.find(e => e.id === targetId || e._id === targetId) || null;
         }
-        // Jika kosong, kembalikan pemilik script (Self)
-        return this.owner
+        return this.owner;
     }
 
     setVariable(varId, value) {
         if (this.localVariables.has(varId)) {
-            this.localVariables.set(varId, value)
-        } else {
-            // Opsional: Set ke Global Variables game jika ada
-             console.log(`Set Global Var ${varId} to ${value}`)
+            this.localVariables.set(varId, value);
         }
     }
 
     getVariable(varId) {
-        if (this.localVariables.has(varId)) {
-            return this.localVariables.get(varId)
-        }
-        return null // Atau default value 0
-    }
-
-    // --- EVENT HANDLERS ---
-
-    _processKeyPress(node) {
-        const key = node.data?.key || 'Space'
-        // Asumsi engine input system: isDown(key)
-        const isDown = this.game.input?.keyboard?.isDown(key) || false
-        const wasDown = this._keyStates[key] || false
-
-        // Trigger hanya pada frame pertama ditekan (Just Pressed)
-        if (isDown && !wasDown) {
-            this.executeFlow(node._id, 'out')
-        }
-        this._keyStates[key] = isDown
+        return this.localVariables.get(varId) || null;
     }
 }

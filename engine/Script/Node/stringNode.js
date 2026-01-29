@@ -1,19 +1,15 @@
 export const stringNode = {
     'format_string': {
-        // format_string biasanya tidak butuh execute flow kecuali dia punya input/output flow
         execute: (runner, node) => {
             runner.executeFlow(node._id, 'out');
         },
         
         getOutput: (runner, node, outputKey) => {
-            // Kadang outputKey bernama 'res', 'out', atau 'value'. Sesuaikan dengan sistem handle Anda.
             
             let rawFormat = node.data?.format;
             let formatStr = (rawFormat !== undefined && rawFormat !== null) ? String(rawFormat) : "";
             
-            // Gunakan fungsi pembantu untuk mengambil nilai dari slot 0-9
             const getVal = (idx) => {
-                // Pastikan inputKey ini (String(idx)) sesuai dengan targetHandle di JSON edges
                 return runner.getInputValue(node, String(idx));
             };
 

@@ -34,16 +34,14 @@ export const useAssetStore = defineStore('asset', {
       }
     },
 
-    // [BARU] Action untuk duplicate asset
     duplicateAsset(assetId) {
       const original = this.assets.find(a => a._id === assetId);
       if (!original) return;
 
-      // Clone object asset
       const newAsset = JSON.parse(JSON.stringify(original));
-      newAsset._id = `asset_${Date.now()}_copy`; // ID Baru
-      newAsset.name = `${original.name} (Copy)`; // Nama default duplicate
-      newAsset.isSynced = true; // Asumsi duplikat langsung synced
+      newAsset._id = `asset_${Date.now()}_copy`;
+      newAsset.name = `${original.name} (Copy)`; 
+      newAsset.isSynced = true;
       
       this.assets.push(newAsset);
     }

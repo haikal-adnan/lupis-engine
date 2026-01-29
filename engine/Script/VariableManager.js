@@ -1,9 +1,7 @@
 export default class VariableManager {
     constructor() {
-        // Map<ID, Value>
         this.globals = new Map();
         
-        // Map<ScriptID, SchemaObject>
         this.scriptSchemas = new Map();
     }
 
@@ -11,14 +9,11 @@ export default class VariableManager {
         this.globals.clear();
         if (Array.isArray(globalVarsArray)) {
             globalVarsArray.forEach(v => {
-                // PENTING: Gunakan _id sebagai key agar GraphRunner bisa menemukannya
                 this.globals.set(v._id, v.defaultValue);
             });
             console.log(`[VariableManager] Loaded ${this.globals.size} Global Variables.`);
         }
     }
-
-    // --- Runtime Access Methods ---
 
     getGlobal(id) {
         return this.globals.get(id);
@@ -35,8 +30,6 @@ export default class VariableManager {
     hasGlobal(id) {
         return this.globals.has(id);
     }
-
-    // --- Editor/Schema Support ---
 
     registerScriptSchema(scriptId, variablesArray) {
         if (!variablesArray) return;

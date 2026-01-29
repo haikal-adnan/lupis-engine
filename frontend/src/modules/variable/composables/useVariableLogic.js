@@ -2,20 +2,11 @@ import { computed } from 'vue';
 import { useScriptStore } from '@/stores/useScriptStore';
 import { useProjectStore } from '@/stores/useProjectStore';
 import { GenerateUUID } from '@/commons/utils/generateUUID.js';
+import { getVarColor } from '@/modules/variable/parts/VariableConfig.js';
 
 export function useVariableLogic(scopeProps) {
   const scriptStore = useScriptStore();
   const projectStore = useProjectStore();
-
-  const getTypeColor = (type) => {
-    switch (type) {
-      case 'String': return '#9c27b0';
-      case 'Number': return '#00e676';
-      case 'Boolean': return '#f44336';
-      case 'Vector': return '#FFC107';
-      default: return '#777';
-    }
-  };
 
   const variables = computed(() => {
     if (scopeProps === 'Global') {
@@ -30,6 +21,50 @@ export function useVariableLogic(scopeProps) {
     } else {
       scriptStore.updateScriptInList(scriptStore.activeScript._id, { exposedVariables: newList });
     }
+  };
+
+  const syncNodesWithVariable = (updatedVar) => {
+    if (!scriptStore.activeScript) return;
+
+    const { _id, name, type } = updatedVar;
+    const newColor = getVarColor(type);
+    const newDataType = type.toLowerCase();
+
+    const nodes = scriptStore.activeScript.nodes;
+    const relatedNodes = nodes.filter(n => n.data?.variableId === _id);
+
+    if (relatedNodes.length === 0) return;
+
+    relatedNodes.forEach(node => {
+      const isSetter = node.type === 'variable_set';
+      const newTitle = isSetter ? `Set ${name}` : `Get ${name}`;
+
+      node.label = newTitle;
+      if (node.settings) {
+        node.settings.headerTitle = newTitle;
+        node.settings.headerColor = newColor;
+      }
+
+      if (node.inputs) {
+        node.inputs.forEach(inp => {
+          if (inp.dataType !== 'execution') {
+            inp.dataType = newDataType;
+            inp.color = newColor;
+          }
+        });
+      }
+
+      if (node.outputs) {
+        node.outputs.forEach(out => {
+          if (out.dataType !== 'execution') {
+            out.dataType = newDataType;
+            out.color = newColor;
+          }
+        });
+      }
+    });
+
+    scriptStore.saveActiveScript();
   };
 
   const addVariable = () => {
@@ -47,16 +82,21 @@ export function useVariableLogic(scopeProps) {
 
   const updateVariable = (index, key, value) => {
     const newList = JSON.parse(JSON.stringify(variables.value));
+    const targetVar = newList[index];
 
-    if (key === 'type' && newList[index].type !== value) {
-      if (value === 'Boolean') newList[index].defaultValue = false;
-      else if (value === 'Number') newList[index].defaultValue = 0;
-      else if (value === 'Vector') newList[index].defaultValue = { x: 0, y: 0 };
-      else newList[index].defaultValue = '';
+    if (key === 'type' && targetVar.type !== value) {
+      if (value === 'Boolean') targetVar.defaultValue = false;
+      else if (value === 'Number') targetVar.defaultValue = 0;
+      else if (value === 'Vector') targetVar.defaultValue = { x: 0, y: 0 };
+      else targetVar.defaultValue = '';
     }
 
-    newList[index][key] = value;
+    targetVar[key] = value;
     saveList(newList);
+
+    if (key === 'name' || key === 'type') {
+      syncNodesWithVariable(targetVar);
+    }
   };
 
   const duplicateVariable = (index) => {
@@ -64,13 +104,13 @@ export function useVariableLogic(scopeProps) {
     const copy = JSON.parse(JSON.stringify(item));
     copy._id = GenerateUUID();
     copy.name = `${copy.name}_copy`;
+
     const newList = [...variables.value];
     newList.splice(index + 1, 0, copy);
     saveList(newList);
   };
 
   const deleteVariable = (index) => {
-    if (!confirm('Delete variable?')) return;
     const newList = [...variables.value];
     newList.splice(index, 1);
     saveList(newList);
@@ -86,39 +126,31 @@ export function useVariableLogic(scopeProps) {
     if (!scriptStore.activeScript) return;
 
     const isSetter = mode === 'Set';
-    const defaultPos = { x: 100 + (Math.random() * 50), y: 100 + (Math.random() * 50) };
+    const varType = variable.type.toLowerCase();
+    const varColor = getVarColor(variable.type);
 
     const newNodePayload = {
       _id: GenerateUUID(),
       type: isSetter ? 'variable_set' : 'variable_get',
       label: isSetter ? `Set ${variable.name}` : `Get ${variable.name}`,
-      position: defaultPos,
-      data: {
-        variableId: variable._id,
-        scope: scopeProps
-      },
+      position: { x: 100, y: 100 },
+      data: { variableId: variable._id, scope: scopeProps },
       settings: {
         headerTitle: isSetter ? `Set ${variable.name}` : `Get ${variable.name}`,
-        headerColor: getTypeColor(variable.type),
+        headerColor: varColor,
         category: 'Variable'
-      }
-    };
-
-    if (isSetter) {
-      newNodePayload.inputs = [
+      },
+      inputs: isSetter ? [
         { _id: 'exec_in', label: 'In', dataType: 'execution', color: '#fff' },
-        { _id: 'val_in', label: 'Value', dataType: variable.type.toLowerCase(), color: getTypeColor(variable.type) }
-      ];
-      newNodePayload.outputs = [
+        { _id: 'val_in', label: 'Value', dataType: varType, color: varColor }
+      ] : [],
+      outputs: isSetter ? [
         { _id: 'exec_out', label: 'Out', dataType: 'execution', color: '#fff' },
-        { _id: 'val_out', label: 'Value', dataType: variable.type.toLowerCase(), color: getTypeColor(variable.type) }
-      ];
-    } else {
-      newNodePayload.inputs = [];
-      newNodePayload.outputs = [
-        { _id: 'val_out', label: 'Value', dataType: variable.type.toLowerCase(), color: getTypeColor(variable.type) }
-      ];
-    }
+        { _id: 'val_out', label: 'Value', dataType: varType, color: varColor }
+      ] : [
+        { _id: 'val_out', label: 'Value', dataType: varType, color: varColor }
+      ]
+    };
 
     scriptStore.addNodeToActive(newNodePayload);
   };
@@ -130,7 +162,7 @@ export function useVariableLogic(scopeProps) {
     duplicateVariable,
     deleteVariable,
     onDragStart,
-    getTypeColor,
-    addNodeToCanvas
+    addNodeToCanvas,
+    getVarColor
   };
 }
