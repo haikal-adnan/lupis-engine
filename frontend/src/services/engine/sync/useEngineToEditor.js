@@ -4,7 +4,6 @@ import { EngineBridge } from "@/services/engine/EngineBridge.js";
 export function useEngineToEditor(sceneStore) {
   
   const listen = () => {
-    // 1. Listen Transform Changes
     EngineBridge.onEntityModified((engineEntities) => {
       if (!Array.isArray(engineEntities)) return;
       engineEntities.forEach((engEnt) => {
@@ -23,10 +22,7 @@ export function useEngineToEditor(sceneStore) {
       });
     });
 
-    // 2. Listen Tilemap Data Changes (Painting)
-    // Langsung register callbacknya
     EngineBridge.onTilemapDataUpdated((payload) => {
-        // Payload dari TilemapTool: { entityId, newData }
         if(payload && payload.entityId && payload.newData) {
             sceneStore.syncTilemapDataFromEngine(payload.entityId, payload.newData);
         }

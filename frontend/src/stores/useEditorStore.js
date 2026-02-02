@@ -30,9 +30,10 @@ export const useEditorStore = defineStore('editor', {
     isPlayMode: false,
     isPaused: false,
 
-    activeTabId: 'scene',
+    activeTabId: 'ent_main_tilemap',
     tabs: [
       { id: 'scene', name: 'Main Scene', type: 'scene', fixed: true },
+      { id: 'ent_main_tilemap', name: 'Tile', type: 'tilemap', fixed: true },
     ],
 
     activeBottomTabId: 'asset', 

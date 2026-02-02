@@ -1,5 +1,5 @@
 <template>
-  <PropertySection title="Tile Palette" :showMenu="false">
+  <PropertySection title="Tile Tool" :showMenu="false">
     
     <div class="p-2">
       <div class="grid grid-cols-3 gap-1">
@@ -55,7 +55,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { computed, onMounted, onUnmounted } from 'vue'; 
 import { storeToRefs } from 'pinia';
 import { 
   Hand, 
@@ -68,10 +68,8 @@ import {
   EyeOff 
 } from 'lucide-vue-next';
 
-// Stores
 import { useEditorStore } from '@/stores/useEditorStore.js';
 
-// Components
 import PropertySection from "@ui/display/PropertySection.vue";
 import PropertyRow from "@ui/display/PropertyRow.vue";
 import BaseNumber from "@/commons/components/inputs/BaseNumber.vue";
@@ -80,7 +78,6 @@ import BaseButton from "@/commons/components/buttons/BaseButton.vue";
 const editorStore = useEditorStore();
 const { activeTool, tilemapContext: context } = storeToRefs(editorStore);
 
-// Konfigurasi Tool
 const tools = [
   { id: 'hand',       icon: Hand,           label: 'Pan Tool (Space)' },
   { id: 'select',     icon: MousePointer2,  label: 'Select / Move (V)' },
@@ -93,5 +90,43 @@ const tools = [
 const activeToolLabel = computed(() => {
   const t = tools.find(t => t.id === activeTool.value);
   return t ? t.label.split('(')[0].trim() : 'Unknown';
+});
+
+const shortcutMap = {
+  ' ': 'hand',    
+  'v': 'select',
+  'b': 'brush',
+  'e': 'eraser',
+  'g': 'bucket',
+  'i': 'eyedropper'
+};
+
+const handleKeydown = (event) => {
+  const tagName = event.target.tagName;
+  if (tagName === 'INPUT' || tagName === 'TEXTAREA' || event.target.isContentEditable) {
+    return;
+  }
+
+  if (editorStore.activeTab?.type !== 'tilemap') {
+    return;
+  }
+
+  const key = event.key.toLowerCase();
+
+  if (shortcutMap[key]) {
+    if (key === ' ') {
+      event.preventDefault();
+    }
+    
+    editorStore.setTool(shortcutMap[key]);
+  }
+};
+
+onMounted(() => {
+  window.addEventListener('keydown', handleKeydown);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeydown);
 });
 </script>

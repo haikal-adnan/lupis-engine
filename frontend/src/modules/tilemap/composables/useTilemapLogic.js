@@ -10,7 +10,6 @@ export function useTilemapLogic() {
   const editorStore = useEditorStore();
 
   const selectedEntity = computed(() => {
-    // Pastikan activeScene ada sebelum akses entities
     if (!sceneStore.activeScene) return null;
 
     const id = sceneStore.selectedEntityIds[0];
@@ -19,7 +18,6 @@ export function useTilemapLogic() {
     return sceneStore.activeScene.entities.find(e => e._id === id) || null;
   });
 
-  // Safety check: Pastikan entity dan komponen Tilemap ada
   const hasTilemap = computed(() => !!selectedEntity.value?.components?.Tilemap);
 
   function bindComponentProp(compName, propName) {
@@ -45,14 +43,12 @@ export function useTilemapLogic() {
     if (!entity) return null;
 
     const tilemapComp = entity.components?.Tilemap;
-    // Tambahkan optional chaining ?.assetId
     if (!tilemapComp?.assetId) return null;
 
     const asset = assetStore.getAssetById(tilemapComp.assetId);
     return asset ? asset.fileUrl : null;
   });
 
-  // FIX: Pastikan ini aman diakses meski entity null (akan return undefined, bukan crash)
   const assetId = bindComponentProp('Tilemap', 'assetId');
   const tileWidth = bindComponentProp('Tilemap', 'tileWidth');
   const tileHeight = bindComponentProp('Tilemap', 'tileHeight');

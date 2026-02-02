@@ -5,8 +5,8 @@ import Keyboard from "./Keyboard.js";
 export default class InputManager {
     constructor(canvas, eventManager) {
         this.eventManager = eventManager;
-        this.keyboard = new Keyboard(this.eventManager); //
-        this.mouse    = new Mouse(canvas, this.eventManager); //
+        this.keyboard = new Keyboard(this.eventManager);
+        this.mouse    = new Mouse(canvas, this.eventManager);
         this.touch    = new Touch(canvas);
     }
 
@@ -36,6 +36,4 @@ export default class InputManager {
     isPinching() {
         return this.touch.active && this.touch.touches.length >= 2;
     }
-
-
 }

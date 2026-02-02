@@ -3,6 +3,7 @@
 let engineInstance = null;
 let onNativeEntityModified = null;
 let onNativeTilemapUpdate = null;
+let onNativeToolPickup = null;
 
 export const EngineBridge = {
   setInstance(instance) {
@@ -12,6 +13,12 @@ export const EngineBridge = {
        if (onNativeEntityModified) {
          onNativeEntityModified(entities);
        }
+    });
+    
+    engineInstance.bus.on("editor:tool:pickup", (data) => {
+        if (onNativeToolPickup) {
+            onNativeToolPickup(data);
+        }
     });
 
     engineInstance.bus.on("editor:tilemap:update-data", (payload) => {
@@ -32,13 +39,20 @@ export const EngineBridge = {
       onNativeTilemapUpdate = callback;
   },
 
+  onToolPickup(callback) {
+    onNativeToolPickup = callback;
+  },
+
   disconnect() {
     if (engineInstance) {
         engineInstance.bus.off("entity:modified");
     }
     if (engineInstance) {
-          engineInstance.bus.off("editor:tilemap:update-data");
+        engineInstance.bus.off("editor:tilemap:update-data");
       }
+    if (engineInstance) {
+        engineInstance.bus.off("editor:tool:pickup"); 
+    }
     engineInstance = null;
     onNativeEntityModified = null;
     onNativeTilemapUpdate = null;

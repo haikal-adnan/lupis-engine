@@ -99,10 +99,6 @@
              class="w-full h-7 text-xs gap-2 justify-start px-3 border border-border/50 bg-background/50 hover:bg-accent transition-all"
              ghost
            >
-             <Power 
-               class="w-3.5 h-3.5 transition-colors duration-300" 
-               :class="currentIsActive ? 'text-primary drop-shadow-[0_0_3px_rgba(var(--primary),0.5)]' : 'text-muted-foreground'" 
-             />
              <span :class="currentIsActive ? 'text-foreground' : 'text-muted-foreground'">
                {{ currentIsActive ? 'Active' : 'Inactive' }}
              </span>
