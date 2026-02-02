@@ -4,7 +4,7 @@
     <div class="flex gap-1 p-1 border-b border-border bg-muted/10">
       <IconButton 
         :active="effectiveMode === 'select'" 
-        tooltip="Select Tool (V)"
+        tooltip="Select Tile (V)"
         @click="setMode('select')"
       >
         <MousePointer2 class="w-4 h-4" />
@@ -12,7 +12,7 @@
 
       <IconButton 
         :active="effectiveMode === 'pan'" 
-        tooltip="Pan Tool (Space)"
+        tooltip="Pan View (Space)"
         @click="setMode('pan')"
       >
         <Hand class="w-4 h-4" />
@@ -21,7 +21,7 @@
 
     <div 
       ref="viewportRef"
-      class="relative w-full h-64 bg-muted/20 border-b border-border overflow-hidden outline-none touch-none"
+      class="relative w-full aspect-square bg-muted/20 border-b border-border overflow-hidden outline-none touch-none"
       :class="cursorClass"
       @wheel.prevent="handleWheel"
       @pointerdown="onPointerDown"
@@ -34,12 +34,19 @@
       <div class="absolute inset-0 opacity-20 pointer-events-none" style="background-image: radial-gradient(#444 1px, transparent 1px); background-size: 10px 10px;"></div>
 
       <div class="absolute origin-top-left pixel-art-layer" :style="containerStyle">
-        <img v-if="currentTextureUrl" :src="currentTextureUrl" class="block max-w-none select-none pointer-events-none" @load="resetView" />
-        <div v-else class="flex items-center justify-center w-64 h-64 text-xs text-muted-foreground">No Texture</div>
+        <img 
+          v-if="currentTextureUrl" 
+          :src="currentTextureUrl" 
+          class="block max-w-none select-none pointer-events-none" 
+          @load="resetView" 
+        />
+        <div v-else class="flex items-center justify-center w-full h-full text-xs text-muted-foreground">
+          No Texture Selected
+        </div>
 
         <div 
           v-if="hasSelection"
-          class="absolute border-2 border-blue-500 bg-blue-500/20 z-10 pointer-events-none"
+          class="absolute border-2 border-blue-500 bg-blue-500/20 z-10 pointer-events-none transition-all duration-75"
           :style="selectionStyle"
         >
            <div class="absolute -top-4 left-0 bg-blue-600 text-white text-[9px] px-1 rounded shadow select-none whitespace-nowrap z-20">
@@ -56,7 +63,7 @@
     </div>
 
     <PropertyRow label="View Control">
-       <BaseButton variant="outline" class="h-6 text-[10px] w-full" @click="resetView">Reset View</BaseButton>
+        <BaseButton variant="outline" class="h-6 text-[10px] w-full" @click="resetView">Reset View</BaseButton>
     </PropertyRow>
 
   </PropertySection>
@@ -66,8 +73,9 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { Grid, Hand, MousePointer2 } from 'lucide-vue-next';
 import { useTilemapLogic } from '@/modules/tilemap/composables/useTilemapLogic.js';
-import { useTilemapNavigation } from '@/modules/tilemap/composables/useTilemapNavigation.js'; // Import Composable Baru
+import { useTilemapNavigation } from '@/modules/tilemap/composables/useTilemapNavigation.js';
 import { useEditorStore } from '@/stores/useEditorStore.js';
+import { EngineBridge } from '@/services/engine/EngineBridge.js'; // PASTIKAN PATH BENAR
 
 // Components
 import PropertySection from "@ui/display/PropertySection.vue";
@@ -78,22 +86,24 @@ import IconButton from '@/commons/components/buttons/IconButton.vue';
 const { currentTextureUrl, tileWidth, tileHeight } = useTilemapLogic();
 const editorStore = useEditorStore();
 
-// --- GUNAKAN COMPOSABLE NAVIGATION ---
+// Navigasi Logic (Pan/Zoom di dalam Palette)
 const { 
   viewportRef, viewScale, isPanning, containerStyle,
-  resetView, handleWheel, getGridPos, startPan, updatePan, endPan
+  resetView, handleWheel, getGridPos, startPan, updatePan, endPan, panOffset
 } = useTilemapNavigation();
 
-// --- UI STATE LOCAL ---
+// --- STATE ---
 const activeMode = ref('select');
 const isSpacePressed = ref(false);
 const isHovering = ref(false);
-
-// Selection State
 const isSelecting = ref(false);
 const selectionStart = ref({ x: 0, y: 0 });
 const selectionEnd = ref({ x: 0, y: 0 });
 const hasSelection = ref(false);
+
+// Resize Observer
+let resizeObserver = null;
+const lastSize = { w: 0, h: 0 };
 
 // --- COMPUTED ---
 const effectiveMode = computed(() => isSpacePressed.value ? 'pan' : activeMode.value);
@@ -132,47 +142,75 @@ const gridOverlayStyle = computed(() => {
   };
 });
 
-// --- POINTER EVENTS ---
+// --- LISTENER ENGINE (EYEDROPPER) ---
+// Fungsi ini dipanggil ketika EngineBridge menerima event 'editor:tool:pickup'
+function handleToolPickupFromEngine(data) {
+  if (!data) return;
+  const { x, y, w, h } = data;
 
+  // 1. Update State Visual Lokal
+  selectionStart.value = { x, y };
+  selectionEnd.value = { x: x + w - 1, y: y + h - 1 };
+  hasSelection.value = true;
+
+  // 2. Update Global Store (Agar brush tahu tile mana yang dipakai)
+  const rect = selectionRect.value;
+  editorStore.setTileSelection(rect);
+
+  // 3. Otomatis ganti tool user kembali ke BRUSH untuk siap gambar
+  editorStore.setTool('brush');
+}
+
+// --- LOGIKA RESIZE ---
+function handleResize(entries) {
+  for (let entry of entries) {
+    const { width, height } = entry.contentRect;
+    if (lastSize.w !== 0 && (lastSize.w !== width || lastSize.h !== height)) {
+      const dx = (width - lastSize.w) / 2;
+      const dy = (height - lastSize.h) / 2;
+      if (panOffset.value) {
+        panOffset.value.x += dx;
+        panOffset.value.y += dy;
+      }
+    }
+    lastSize.w = width;
+    lastSize.h = height;
+  }
+}
+
+// --- POINTER EVENTS (Interaksi Mouse UI) ---
 function onPointerDown(e) {
   viewportRef.value?.setPointerCapture(e.pointerId);
-
   const isMiddleClick = e.button === 1;
   const isLeftClick = e.button === 0;
 
-  // 1. Pan Logic (Delegasi ke Composable)
   if (isMiddleClick || (isLeftClick && effectiveMode.value === 'pan')) {
     startPan(e.clientX, e.clientY);
-    e.preventDefault();
     return;
   }
 
-  // 2. Selection Logic (Lokal Component)
+  // Marquee Select pada Tileset (Palette)
   if (isLeftClick && effectiveMode.value === 'select') {
     isSelecting.value = true;
     hasSelection.value = true;
     const gridPos = getGridPos(e.clientX, e.clientY, tileWidth.value, tileHeight.value);
     
-    // Bounds check sederhana (asumsi 0,0 adalah top left)
+    // Klik di luar area
     if (gridPos.x < 0 || gridPos.y < 0) { 
       hasSelection.value = false; 
       isSelecting.value = false; 
       return; 
     }
-    
     selectionStart.value = { ...gridPos };
     selectionEnd.value = { ...gridPos };
   }
 }
 
 function onPointerMove(e) {
-  // Update Pan
   if (isPanning.value) {
     updatePan(e.clientX, e.clientY);
     return;
   }
-  
-  // Update Selection
   if (isSelecting.value) {
     const gridPos = getGridPos(e.clientX, e.clientY, tileWidth.value, tileHeight.value);
     if (gridPos.x >= 0 && gridPos.y >= 0) {
@@ -183,17 +221,15 @@ function onPointerMove(e) {
 
 function onPointerUp(e) {
   viewportRef.value?.releasePointerCapture(e.pointerId);
-  
-  // Stop Pan
   endPan();
   
-  // Finish Selection
   if (isSelecting.value) {
     isSelecting.value = false;
-    
     const rect = selectionRect.value;
+    // Commit selection ke Editor Store
     if (rect.w > 0 && rect.h > 0) {
         editorStore.setTileSelection(rect);
+        // Jika user manual select di palette, otomatis set brush
         editorStore.setTool('brush'); 
     }
   }
@@ -204,10 +240,10 @@ function onPointerLeave() {
   isSelecting.value = false;
 }
 
-// --- SHORTCUTS ---
+// --- LIFECYCLE & KEYBOARD ---
 function onGlobalKeyDown(e) {
   if (isHovering.value && e.code === 'Space') {
-    e.preventDefault(); e.stopPropagation();
+    e.preventDefault();
     isSpacePressed.value = true;
   }
 }
@@ -218,10 +254,21 @@ function onGlobalKeyUp(e) {
 onMounted(() => {
   window.addEventListener('keydown', onGlobalKeyDown, { passive: false });
   window.addEventListener('keyup', onGlobalKeyUp);
+  
+  resizeObserver = new ResizeObserver(handleResize);
+  if (viewportRef.value) resizeObserver.observe(viewportRef.value);
+
+  // [PENTING] Register Listener Eyedropper
+  EngineBridge.onToolPickup(handleToolPickupFromEngine);
 });
+
 onUnmounted(() => {
   window.removeEventListener('keydown', onGlobalKeyDown);
   window.removeEventListener('keyup', onGlobalKeyUp);
+  resizeObserver?.disconnect();
+
+  // Cleanup Listener
+  EngineBridge.onToolPickup(null);
 });
 
 function setMode(mode) { activeMode.value = mode; }

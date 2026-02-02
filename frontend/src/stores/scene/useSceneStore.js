@@ -9,7 +9,7 @@ export const useSceneStore = defineStore('scene', () => {
 
   const scenes = ref([]);
   const activeSceneId = ref(null);
-  const selectedEntityIds = ref([]);
+  const selectedEntityIds = ref(['ent_main_tilemap']);
 
   const activeScene = computed(() => scenes.value.find(s => s._id === activeSceneId.value));
   
@@ -46,6 +46,18 @@ export const useSceneStore = defineStore('scene', () => {
     }
   };
 
+  const syncTilemapDataFromEngine = (entityId, newData) => {
+    const scene = activeScene.value;
+    if (!scene) return;
+
+    const entity = scene.entities.find(e => e._id === entityId);
+    if (entity && entity.components && entity.components.Tilemap) {
+      // Update reaktif agar Vue merender ulang canvas jika perlu
+      entity.components.Tilemap.data = [...newData];
+      console.log(`[Store] Tilemap data synced for ${entityId}`);
+    }
+  };
+
   const syncTransformFromEngine = (entityId, transformData) => {
     const scene = activeScene.value;
     if (!scene) return;
@@ -64,6 +76,7 @@ export const useSceneStore = defineStore('scene', () => {
     scenes,
     activeSceneId,
     selectedEntityIds,
+    syncTilemapDataFromEngine,
     
     activeScene,
     getSceneById,

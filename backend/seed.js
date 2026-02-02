@@ -95,36 +95,38 @@ const seedDatabase = async () => {
       name: "Player Movement (WASD)",
       type: "component",
       exposedVariables: [
-        { _id: varSpeedId, name: "Speed", type: "number", defaultValue: 5 }
+        { _id: varSpeedId, name: "Speed", type: "number", defaultValue: 300 }
       ],
       nodes: [
+        // ==========================================================
+        // GROUP 1: POSITIVE MOVEMENT (Right & Down)
+        // ==========================================================
+        
+        // 1. INPUT MAPPER (D & S)
         {
-          _id: "node_input_wasd",
+          _id: "node_input_pos",
           type: "event_advanced_key",
           position: { x: 50, y: 50 },
-          settings: { headerTitle: 'Input Mapper', headerColor: '#C2185B', category: 'Keyboard Events' },
+          settings: { headerTitle: 'POSITIVE MOVEMENT', headerColor: '#C2185B', category: 'Keyboard Events' },
           data: {
             mappings: [
-              { _id: "move_up", key: "W", trigger: "hold", threshold: 0, repeat: true },
-              { _id: "move_left", key: "A", trigger: "hold", threshold: 0, repeat: true },
-              { _id: "move_down", key: "S", trigger: "hold", threshold: 0, repeat: true },
-              { _id: "move_right", key: "D", trigger: "hold", threshold: 0, repeat: true }
+              { _id: "move_right", key: "D", trigger: "hold", threshold: 0, repeat: true },
+              { _id: "move_down", key: "S", trigger: "hold", threshold: 0, repeat: true }
             ]
           },
           inputs: [],
           outputs: [
-            { _id: "out_move_up", label: "W (Up)", dataType: "execution", color: "#FFEB3B" },
-            { _id: "out_move_left", label: "A (Left)", dataType: "execution", color: "#FFEB3B" },
-            { _id: "out_move_down", label: "S (Down)", dataType: "execution", color: "#FFEB3B" },
-            { _id: "out_move_right", label: "D (Right)", dataType: "execution", color: "#FFEB3B" }
+            { _id: "out_move_right", label: "D (Right)", dataType: "execution", color: "#FFEB3B" },
+            { _id: "out_move_down", label: "S (Down)", dataType: "execution", color: "#FFEB3B" }
           ]
         },
 
+        // 2. GET SPEED (Positive)
         {
-          _id: "node_get_speed",
+          _id: "node_speed_pos",
           type: "variable_get",
           position: { x: 50, y: 300 },
-          settings: { headerTitle: 'Get Speed', headerColor: '#00C853', category: 'Variables' },
+          settings: { headerTitle: 'GET SPEED', headerColor: '#424242', category: 'Variables' },
           data: { variableId: varSpeedId },
           inputs: [],
           outputs: [
@@ -132,35 +134,88 @@ const seedDatabase = async () => {
           ]
         },
 
+        // 3. TRANSLATE RIGHT (+X)
         {
-          _id: "node_get_trans",
-          type: "get_transform",
-          position: { x: 50, y: 450 },
-          settings: { headerTitle: 'Get Transform', headerColor: '#2E7D32', category: 'Transform' },
+          _id: "node_trans_right",
+          type: "translate",
+          position: { x: 500, y: 50 },
+          settings: { headerTitle: 'TRANSLATE', headerColor: '#2E7D32', category: 'Transform' },
+          data: {},
+          inputs: [
+            { _id: "exec_in", label: "In", dataType: "execution", color: "#ffffff" },
+            { _id: "in_target", label: "Target ID (Self)", dataType: "string", color: "#E040FB" },
+            { _id: "dx", label: "Delta X", dataType: "number", color: "#69F0AE", defaultValue: 0 },
+            { _id: "dy", label: "Delta Y", dataType: "number", color: "#69F0AE", defaultValue: 0 }
+          ],
+          outputs: [
+            { _id: "exec_out", label: "Out", dataType: "execution", color: "#ffffff" }
+          ]
+        },
+
+        // 4. TRANSLATE DOWN (+Y)
+        {
+          _id: "node_trans_down",
+          type: "translate",
+          position: { x: 500, y: 250 },
+          settings: { headerTitle: 'TRANSLATE', headerColor: '#2E7D32', category: 'Transform' },
+          data: {},
+          inputs: [
+            { _id: "exec_in", label: "In", dataType: "execution", color: "#ffffff" },
+            { _id: "in_target", label: "Target ID (Self)", dataType: "string", color: "#E040FB" },
+            { _id: "dx", label: "Delta X", dataType: "number", color: "#69F0AE", defaultValue: 0 },
+            { _id: "dy", label: "Delta Y", dataType: "number", color: "#69F0AE", defaultValue: 0 }
+          ],
+          outputs: [
+            { _id: "exec_out", label: "Out", dataType: "execution", color: "#ffffff" }
+          ]
+        },
+
+        // ==========================================================
+        // GROUP 2: NEGATIVE MOVEMENT (Up & Left)
+        // ==========================================================
+
+        // 5. INPUT MAPPER (W & A)
+        {
+          _id: "node_input_neg",
+          type: "event_advanced_key",
+          position: { x: 50, y: 500 },
+          settings: { headerTitle: 'NEGATIVE MOVEMENT', headerColor: '#C2185B', category: 'Keyboard Events' },
           data: {
-             propertyOptions: [
-                { value: 'x', label: 'Position X', type: 'number', color: '#69F0AE' },
-                { value: 'y', label: 'Position Y', type: 'number', color: '#69F0AE' }
-             ]
+            mappings: [
+              { _id: "move_up", key: "W", trigger: "hold", threshold: 0, repeat: true },
+              { _id: "move_left", key: "A", trigger: "hold", threshold: 0, repeat: true }
+            ]
           },
-          inputs: [
-            { _id: "in_target", label: "Target ID (Self)", dataType: "string", color: "#E040FB" }
-          ],
+          inputs: [],
           outputs: [
-            { _id: "x", label: "Position X", dataType: "number", color: "#69F0AE" },
-            { _id: "y", label: "Position Y", dataType: "number", color: "#69F0AE" }
+            { _id: "out_move_up", label: "W (Up)", dataType: "execution", color: "#FFEB3B" },
+            { _id: "out_move_left", label: "A (Left)", dataType: "execution", color: "#FFEB3B" }
           ]
         },
+
+        // 6. GET SPEED (Negative)
         {
-          _id: "node_add_x",
-          type: "math_add",
-          position: { x: 400, y: 50 },
-          settings: { headerTitle: 'Calc Right (+X)', headerColor: '#00796B', category: 'Math' },
+          _id: "node_speed_neg",
+          type: "variable_get",
+          position: { x: 50, y: 750 },
+          settings: { headerTitle: 'GET SPEED', headerColor: '#424242', category: 'Variables' },
+          data: { variableId: varSpeedId },
+          inputs: [],
+          outputs: [
+            { _id: "val", label: "Value", dataType: "number", color: "#B2FF59" }
+          ]
+        },
+
+        // 7. NEGATE (For Left)
+        {
+          _id: "node_neg_left",
+          type: "math_negate",
+          position: { x: 350, y: 550 },
+          settings: { headerTitle: 'NEGATE', headerColor: '#00796B', category: 'Math' },
           data: {},
           inputs: [
             { _id: "in", label: "In", dataType: "execution", color: "#fff" },
-            { _id: "a", label: "Current X", dataType: "number", color: "#B2FF59" },
-            { _id: "b", label: "Speed", dataType: "number", color: "#B2FF59" }
+            { _id: "a", label: "A", dataType: "number", color: "#B2FF59" }
           ],
           outputs: [
             { _id: "out", label: "Trigger", dataType: "execution", color: "#fff" },
@@ -168,16 +223,16 @@ const seedDatabase = async () => {
           ]
         },
 
+        // 8. NEGATE (For Up)
         {
-          _id: "node_sub_x",
-          type: "math_subtract",
-          position: { x: 400, y: 250 },
-          settings: { headerTitle: 'Calc Left (-X)', headerColor: '#00796B', category: 'Math' },
+          _id: "node_neg_up",
+          type: "math_negate",
+          position: { x: 350, y: 750 },
+          settings: { headerTitle: 'NEGATE', headerColor: '#00796B', category: 'Math' },
           data: {},
           inputs: [
             { _id: "in", label: "In", dataType: "execution", color: "#fff" },
-            { _id: "a", label: "Current X", dataType: "number", color: "#B2FF59" },
-            { _id: "b", label: "Speed", dataType: "number", color: "#B2FF59" }
+            { _id: "a", label: "A", dataType: "number", color: "#B2FF59" }
           ],
           outputs: [
             { _id: "out", label: "Trigger", dataType: "execution", color: "#fff" },
@@ -185,124 +240,70 @@ const seedDatabase = async () => {
           ]
         },
 
+        // 9. TRANSLATE LEFT (-X)
         {
-          _id: "node_add_y",
-          type: "math_add",
-          position: { x: 400, y: 450 },
-          settings: { headerTitle: 'Calc Down (+Y)', headerColor: '#00796B', category: 'Math' },
+          _id: "node_trans_left",
+          type: "translate",
+          position: { x: 650, y: 500 },
+          settings: { headerTitle: 'TRANSLATE', headerColor: '#2E7D32', category: 'Transform' },
           data: {},
           inputs: [
-            { _id: "in", label: "In", dataType: "execution", color: "#fff" },
-            { _id: "a", label: "Current Y", dataType: "number", color: "#B2FF59" },
-            { _id: "b", label: "Speed", dataType: "number", color: "#B2FF59" }
+            { _id: "exec_in", label: "In", dataType: "execution", color: "#ffffff" },
+            { _id: "in_target", label: "Target ID (Self)", dataType: "string", color: "#E040FB" },
+            { _id: "dx", label: "Delta X", dataType: "number", color: "#69F0AE", defaultValue: 0 },
+            { _id: "dy", label: "Delta Y", dataType: "number", color: "#69F0AE", defaultValue: 0 }
           ],
           outputs: [
-            { _id: "out", label: "Trigger", dataType: "execution", color: "#fff" },
-            { _id: "res", label: "Result", dataType: "number", color: "#B2FF59" }
+            { _id: "exec_out", label: "Out", dataType: "execution", color: "#ffffff" }
           ]
         },
 
+        // 10. TRANSLATE UP (-Y)
         {
-          _id: "node_sub_y",
-          type: "math_subtract",
-          position: { x: 400, y: 650 },
-          settings: { headerTitle: 'Calc Up (-Y)', headerColor: '#00796B', category: 'Math' },
+          _id: "node_trans_up",
+          type: "translate",
+          position: { x: 650, y: 700 },
+          settings: { headerTitle: 'TRANSLATE', headerColor: '#2E7D32', category: 'Transform' },
           data: {},
           inputs: [
-            { _id: "in", label: "In", dataType: "execution", color: "#fff" },
-            { _id: "a", label: "Current Y", dataType: "number", color: "#B2FF59" },
-            { _id: "b", label: "Speed", dataType: "number", color: "#B2FF59" }
+            { _id: "exec_in", label: "In", dataType: "execution", color: "#ffffff" },
+            { _id: "in_target", label: "Target ID (Self)", dataType: "string", color: "#E040FB" },
+            { _id: "dx", label: "Delta X", dataType: "number", color: "#69F0AE", defaultValue: 0 },
+            { _id: "dy", label: "Delta Y", dataType: "number", color: "#69F0AE", defaultValue: 0 }
           ],
           outputs: [
-            { _id: "out", label: "Trigger", dataType: "execution", color: "#fff" },
-            { _id: "res", label: "Result", dataType: "number", color: "#B2FF59" }
+            { _id: "exec_out", label: "Out", dataType: "execution", color: "#ffffff" }
           ]
-        },
-
-        {
-          _id: "node_set_right",
-          type: "set_transform",
-          position: { x: 800, y: 50 },
-          settings: { headerTitle: 'Set Right', headerColor: '#2E7D32', category: 'Transform' },
-          data: { propertyOptions: [{ value: 'x', label: 'X' }] },
-          inputs: [
-            { _id: "exec_in", label: "In", dataType: "execution", color: "#ffffff" },
-            { _id: "in_target", label: "Target", dataType: "string", color: "#E040FB" },
-            { _id: "x", label: "Position X", dataType: "number", color: "#69F0AE" }
-          ],
-          outputs: [{ _id: "exec_out", label: "Out", dataType: "execution", color: "#ffffff" }]
-        },
-
-        {
-          _id: "node_set_left",
-          type: "set_transform",
-          position: { x: 800, y: 250 },
-          settings: { headerTitle: 'Set Left', headerColor: '#2E7D32', category: 'Transform' },
-          data: { propertyOptions: [{ value: 'x', label: 'X' }] },
-          inputs: [
-            { _id: "exec_in", label: "In", dataType: "execution", color: "#ffffff" },
-            { _id: "in_target", label: "Target", dataType: "string", color: "#E040FB" },
-            { _id: "x", label: "Position X", dataType: "number", color: "#69F0AE" }
-          ],
-          outputs: [{ _id: "exec_out", label: "Out", dataType: "execution", color: "#ffffff" }]
-        },
-
-        {
-          _id: "node_set_down",
-          type: "set_transform",
-          position: { x: 800, y: 450 },
-          settings: { headerTitle: 'Set Down', headerColor: '#2E7D32', category: 'Transform' },
-          data: { propertyOptions: [{ value: 'y', label: 'Y' }] },
-          inputs: [
-            { _id: "exec_in", label: "In", dataType: "execution", color: "#ffffff" },
-            { _id: "in_target", label: "Target", dataType: "string", color: "#E040FB" },
-            { _id: "y", label: "Position Y", dataType: "number", color: "#69F0AE" }
-          ],
-          outputs: [{ _id: "exec_out", label: "Out", dataType: "execution", color: "#ffffff" }]
-        },
-
-        {
-          _id: "node_set_up",
-          type: "set_transform",
-          position: { x: 800, y: 650 },
-          settings: { headerTitle: 'Set Up', headerColor: '#2E7D32', category: 'Transform' },
-          data: { propertyOptions: [{ value: 'y', label: 'Y' }] },
-          inputs: [
-            { _id: "exec_in", label: "In", dataType: "execution", color: "#ffffff" },
-            { _id: "in_target", label: "Target", dataType: "string", color: "#E040FB" },
-            { _id: "y", label: "Position Y", dataType: "number", color: "#69F0AE" }
-          ],
-          outputs: [{ _id: "exec_out", label: "Out", dataType: "execution", color: "#ffffff" }]
         }
       ],
 
       edges: [
-        { _id: "d1", source: "node_get_speed", sourceHandle: "val", target: "node_add_x", targetHandle: "b" },
-        { _id: "d2", source: "node_get_speed", sourceHandle: "val", target: "node_sub_x", targetHandle: "b" },
-        { _id: "d3", source: "node_get_speed", sourceHandle: "val", target: "node_add_y", targetHandle: "b" },
-        { _id: "d4", source: "node_get_speed", sourceHandle: "val", target: "node_sub_y", targetHandle: "b" },
+        // --- POSITIVE GROUP EDGES ---
+        
+        // 1. D (Right) -> Translate Right
+        { _id: "e_pos_1", source: "node_input_pos", sourceHandle: "out_move_right", target: "node_trans_right", targetHandle: "exec_in" },
+        { _id: "e_pos_2", source: "node_speed_pos", sourceHandle: "val", target: "node_trans_right", targetHandle: "dx" },
 
-        { _id: "d5", source: "node_get_trans", sourceHandle: "x", target: "node_add_x", targetHandle: "a" },
-        { _id: "d6", source: "node_get_trans", sourceHandle: "x", target: "node_sub_x", targetHandle: "a" },
+        // 2. S (Down) -> Translate Down
+        { _id: "e_pos_3", source: "node_input_pos", sourceHandle: "out_move_down", target: "node_trans_down", targetHandle: "exec_in" },
+        { _id: "e_pos_4", source: "node_speed_pos", sourceHandle: "val", target: "node_trans_down", targetHandle: "dy" },
 
-        { _id: "d7", source: "node_get_trans", sourceHandle: "y", target: "node_add_y", targetHandle: "a" },
-        { _id: "d8", source: "node_get_trans", sourceHandle: "y", target: "node_sub_y", targetHandle: "a" },
 
-        { _id: "e1", source: "node_input_wasd", sourceHandle: "out_move_right", target: "node_add_x", targetHandle: "in" },
-        { _id: "e2", source: "node_add_x", sourceHandle: "out", target: "node_set_right", targetHandle: "exec_in" },
-        { _id: "r1", source: "node_add_x", sourceHandle: "res", target: "node_set_right", targetHandle: "x" },
+        // --- NEGATIVE GROUP EDGES ---
 
-        { _id: "e3", source: "node_input_wasd", sourceHandle: "out_move_left", target: "node_sub_x", targetHandle: "in" },
-        { _id: "e4", source: "node_sub_x", sourceHandle: "out", target: "node_set_left", targetHandle: "exec_in" },
-        { _id: "r2", source: "node_sub_x", sourceHandle: "res", target: "node_set_left", targetHandle: "x" },
+        // 3. A (Left) -> Negate -> Translate Left
+        { _id: "e_neg_1", source: "node_input_neg", sourceHandle: "out_move_left", target: "node_neg_left", targetHandle: "in" },
+        { _id: "e_neg_2", source: "node_speed_neg", sourceHandle: "val", target: "node_neg_left", targetHandle: "a" },
+        
+        { _id: "e_neg_3", source: "node_neg_left", sourceHandle: "out", target: "node_trans_left", targetHandle: "exec_in" },
+        { _id: "e_neg_4", source: "node_neg_left", sourceHandle: "res", target: "node_trans_left", targetHandle: "dx" },
 
-        { _id: "e5", source: "node_input_wasd", sourceHandle: "out_move_down", target: "node_add_y", targetHandle: "in" },
-        { _id: "e6", source: "node_add_y", sourceHandle: "out", target: "node_set_down", targetHandle: "exec_in" },
-        { _id: "r3", source: "node_add_y", sourceHandle: "res", target: "node_set_down", targetHandle: "y" },
+        // 4. W (Up) -> Negate -> Translate Up
+        { _id: "e_neg_5", source: "node_input_neg", sourceHandle: "out_move_up", target: "node_neg_up", targetHandle: "in" },
+        { _id: "e_neg_6", source: "node_speed_neg", sourceHandle: "val", target: "node_neg_up", targetHandle: "a" },
 
-        { _id: "e7", source: "node_input_wasd", sourceHandle: "out_move_up", target: "node_sub_y", targetHandle: "in" },
-        { _id: "e8", source: "node_sub_y", sourceHandle: "out", target: "node_set_up", targetHandle: "exec_in" },
-        { _id: "r4", source: "node_sub_y", sourceHandle: "res", target: "node_set_up", targetHandle: "y" }
+        { _id: "e_neg_7", source: "node_neg_up", sourceHandle: "out", target: "node_trans_up", targetHandle: "exec_in" },
+        { _id: "e_neg_8", source: "node_neg_up", sourceHandle: "res", target: "node_trans_up", targetHandle: "dy" },
       ]
     });
 
@@ -381,7 +382,7 @@ const seedDatabase = async () => {
                   _id: "inst_player_move_001", 
                   assetId: scriptPlayerMoveId, 
                   isActive: true,
-                  variables: { [varSpeedId]: 5 } 
+                  variables: { [varSpeedId]: 300 } 
                 }
               ]
             }
