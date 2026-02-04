@@ -3,13 +3,16 @@ import GLStateCache from "./Graphic/GLStateCache.js";
 import Config from "../Core/Config.js";
 import Mat4 from "../Util/Mat4.js";
 
+import { HexToVec4 } from "../Util/HexToVec4.js";
+
 import ImageRenderer from "./Entity/ImageRenderer.js";
 import ShapeRenderer from "./Entity/ShapeRenderer.js";
 import TextRenderer from "./Entity/TextRenderer.js";
 
 import WorldRenderer from "./Scene/WorldRenderer.js";
 import TilemapRenderer from "./Scene/TilemapRenderer.js"; 
-import UIRenderer from "./Scene/UIRenderer.js";
+import EditorRenderer from "./Scene/EditorRenderer.js"; 
+import UIRenderer from "./Scene/UIRenderer.js"; 
 
 export default class RendererManager {
     constructor(canvas, game) {
@@ -26,10 +29,11 @@ export default class RendererManager {
 
         this.tilemapRenderer = new TilemapRenderer(this.image, this.shape, this.game);
         this.worldRenderer = new WorldRenderer(this.image, this.text, this.shape, this.game, this.tilemapRenderer);
+        this.editorRenderer = new EditorRenderer(this.image, this.shape, this.text, this.game);
         this.uiRenderer = new UIRenderer(this.image, this.shape, this.text, this.game);
 
         this.projWorld = Mat4.create();
-        this.projUI = Mat4.create();
+        this.projEditor = Mat4.create(); 
     }
 
     render(world, camera, game, alpha = 1.0) {
@@ -38,22 +42,88 @@ export default class RendererManager {
 
         const pWorld = this._updateWorldProjection(camera);
         
+        const { activeTabId, tabs } = world._editors || {};
+        const activeTab = tabs?.find(t => t.id === activeTabId);
+        const isUIMode = activeTab?.type === 'ui';
+        const isSceneMode = activeTabId === "scene" || !activeTabId;
+
         if (Config.ENGINE_MODE === "editor") {
-            this._handleEditorGizmos(world, game);
+            this._handleEditorGizmos(world, game, isUIMode);
         }
 
-        this.worldRenderer.render(world, pWorld, alpha);
+        this.worldRenderer.render(world, pWorld, alpha, isUIMode);
 
-        const pUI = this._updateUIProjection();
-        this.uiRenderer.setProjection(pUI);
-        this.uiRenderer.render(world.ui);
+        if (isUIMode) {
+            this.uiRenderer.render(world, pWorld, false);
+        } else if (isSceneMode) {
+            this.uiRenderer.render(world, pWorld, true);
+        }
+
+        this._renderSelection(world, pWorld);
+
+        const pEditor = this._updateEditorProjection();
+        this.editorRenderer.setProjection(pEditor);
+
+        const wasDepthEnabled = this.gl.isEnabled(this.gl.DEPTH_TEST);
+        this.gl.disable(this.gl.DEPTH_TEST);
+
+        this.editorRenderer.render(world.ui); 
+
+        this._flushAll(); 
+
+        if (wasDepthEnabled) {
+            this.gl.enable(this.gl.DEPTH_TEST);
+        }
+    }
+
+    _beginFrame() {
+        this.cache.reset();
+        
+        const sceneSettings = this.game.world.settings;
+        const bgColorHex = sceneSettings?.backgroundColor || "#222222";
+        const bgColor = HexToVec4(bgColorHex);
+        
+        this.gl.clearColor(bgColor[0], bgColor[1], bgColor[2], bgColor[3]);
+        this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
+    }
+
+    _renderSelection(world, proj) {
+        if (world.selectionRenderer && this.game.selection.active) {
+            this._flushAll();
+            world.selectionRenderer(this.image, this.shape, this.text, proj);
+            this._flushAll();
+        }
+    }
+
+    _flushAll() {
+        this.image.flush();
+        this.shape.flush();
+        this.text.flush();
+    }
+
+    _handleEditorGizmos(world, game, isUIMode) {
+        const { activeTabId } = world._editors || {};
+        const isSceneMode = activeTabId === "scene" || !activeTabId; 
+
+        const isUILayer = (layer) => layer && (layer.scriptId === 'ui' || layer.name === 'UI');
+
+        if (isUIMode) {
+            game.selection.active = true;
+            game.transform.active = true;
+            game.selection.filter = (entity, layer) => isUILayer(layer);
+        } else if (isSceneMode) {
+            game.selection.active = true;
+            game.transform.active = true;
+            game.selection.filter = (entity, layer) => !isUILayer(layer);
+        } else {
+            game.selection.filter = null;
+        }
     }
 
     _handleResize() {
         const dpr = window.devicePixelRatio || 1;
         const dw = Math.floor(this.canvas.clientWidth * dpr);
         const dh = Math.floor(this.canvas.clientHeight * dpr);
-
         if (this.canvas.width !== dw || this.canvas.height !== dh) {
             this.canvas.width = dw;
             this.canvas.height = dh;
@@ -61,32 +131,17 @@ export default class RendererManager {
         }
     }
 
-    _beginFrame() {
-        this.cache.reset();
-        this.gl.clearColor(0.05, 0.05, 0.06, 1);
-        this.gl.clear(this.gl.COLOR_BUFFER_BIT);
-    }
-
-    _handleEditorGizmos(world, game) {
-        const { activeTabId } = world._editors || {};
-        const isSceneMode = activeTabId === "scene";
-
-        game.selection.active = isSceneMode;
-        game.transform.active = isSceneMode;
-    }
-
     _updateWorldProjection(camera) {
         const viewW = this.canvas.width / camera.scale;
         const viewH = this.canvas.height / camera.scale;
         const hw = viewW * 0.5;
         const hh = viewH * 0.5;
-
         Mat4.ortho(this.projWorld, camera.x - hw, camera.x + hw, camera.y + hh, camera.y - hh, -1, 1);
         return this.projWorld;
     }
 
-    _updateUIProjection() {
-        Mat4.ortho(this.projUI, 0, this.canvas.width, this.canvas.height, 0, -1, 1);
-        return this.projUI;
+    _updateEditorProjection() {
+        Mat4.ortho(this.projEditor, 0, this.canvas.width, this.canvas.height, 0, -1, 1);
+        return this.projEditor;
     }
 }

@@ -78,13 +78,15 @@ export class HitTester {
         );
     }
 
-    _hitTestRecursive(entities, wx, wy) {
+    _hitTestRecursive(entities, wx, wy, layer, filter) {
         for (let i = entities.length - 1; i >= 0; i--) {
             const e = entities[i];
             if (!e.visible || this.isLocked(e)) continue;
 
+            if (filter && !filter(e, layer)) continue;
+
             if (e.children && e.children.length > 0) {
-                const childHit = this._hitTestRecursive(e.children, wx, wy);
+                const childHit = this._hitTestRecursive(e.children, wx, wy, layer, filter);
                 if (childHit) return childHit;
             }
 
@@ -97,23 +99,35 @@ export class HitTester {
         return null;
     }
 
-    hit(world, wx, wy) {
+    hit(world, wx, wy, px, py) {
+        const filter = this.game.selection?.filter;
+        const dpr = window.devicePixelRatio || 1;
+        const screenX = px * dpr;
+        const screenY = py * dpr;
+
         for (let li = world.layers.length - 1; li >= 0; li--) {
             const layer = world.layers[li];
             if (!layer.visible || layer.locked) continue;
 
-            const found = this._hitTestRecursive(layer.entities, wx, wy);
+            const isUILayer = layer.scriptId === 'ui' || layer.name === 'UI';
+            
+            const targetX = isUILayer ? screenX : wx;
+            const targetY = isUILayer ? screenY : wy;
+
+            const found = this._hitTestRecursive(layer.entities, targetX, targetY, layer, filter);
             if (found) return found;
         }
         return null;
     }
 
-    _checkMarqueeRecursive(entities, box, list) {
+    _checkMarqueeRecursive(entities, box, list, layer, filter) {
         for (const e of entities) {
             if (!e.visible || this.isLocked(e)) continue;
 
+            if (filter && !filter(e, layer)) continue;
+
             if (e.type === 'group') {
-                if (e.children?.length) this._checkMarqueeRecursive(e.children, box, list);
+                if (e.children?.length) this._checkMarqueeRecursive(e.children, box, list, layer, filter);
                 continue;
             }
 
@@ -128,15 +142,16 @@ export class HitTester {
                 if (overlap) list.push(e);
             }
 
-            if (e.children?.length) this._checkMarqueeRecursive(e.children, box, list);
+            if (e.children?.length) this._checkMarqueeRecursive(e.children, box, list, layer, filter);
         }
     }
 
     checkMarquee(world, box) {
+        const filter = this.game.selection?.filter;
         const list = [];
         for (const layer of world.layers) {
             if (!layer.visible || layer.locked) continue;
-            this._checkMarqueeRecursive(layer.entities, box, list);
+            this._checkMarqueeRecursive(layer.entities, box, list, layer, filter);
         }
         return list;
     }

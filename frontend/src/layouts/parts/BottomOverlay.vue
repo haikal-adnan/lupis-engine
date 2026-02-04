@@ -4,13 +4,9 @@
     class="absolute left-0 right-0 pointer-events-none flex items-center justify-center z-50 transition-all duration-300 ease-out"
     :class="{ 'translate-y-10 opacity-0': !overlayConfig.showGrid && !overlayConfig.showPlay }"
   >
-    
     <div class="flex items-center p-1 bg-background/80 backdrop-blur-sm rounded-xl border border-border shadow-lg pointer-events-auto gap-1">
       
-      <div 
-        v-if="overlayConfig.showCoords"
-        class="flex items-center gap-3 px-3 mr-1"
-      >
+      <div v-if="overlayConfig.showCoords" class="flex items-center gap-3 px-3 mr-1">
         <span class="font-mono text-[10px] font-bold flex items-center gap-1 text-muted-foreground">
           <span class="text-emerald-500">X</span> {{ coords.x.toFixed(0) }}
         </span>
@@ -22,20 +18,20 @@
       <div v-if="overlayConfig.showCoords" class="h-4 w-[1px] bg-border"></div>
 
       <IconButton 
-        v-if="overlayConfig.showGrid"
-        @click="editorStore.toggleMagnet()"
-        :active="editorStore.gridContext.magnet"
-        :tooltip="editorStore.gridContext.magnet ? 'Snap On (Ctrl to disable)' : 'Snap Off (Ctrl to enable)'"
+        v-if="overlayConfig.showGrid && sceneStore.activeScene"
+        @click="sceneStore.toggleMagnet()"
+        :active="sceneStore.activeScene.settings.grid.snap"
+        :tooltip="sceneStore.activeScene.settings.grid.snap ? 'Snap On' : 'Snap Off'"
         class="w-8 h-8"
       >
         <Magnet class="w-4 h-4" />
       </IconButton>
 
       <IconButton 
-        v-if="overlayConfig.showGrid"
-        @click="editorStore.toggleGrid()"
-        :active="editorStore.gridContext.display"
-        tooltip="Toggle Grid Display"
+        v-if="overlayConfig.showGrid && sceneStore.activeScene"
+        @click="sceneStore.toggleGrid()"
+        :active="sceneStore.activeScene.settings.grid.visible"
+        tooltip="Toggle Grid"
         class="w-8 h-8"
       >
         <Grid3X3 class="w-4 h-4" />
@@ -53,7 +49,6 @@
       >
         <RefreshCw v-if="isPreviewing" class="w-3.5 h-3.5 animate-spin-slow" />
         <Play v-else class="w-3.5 h-3.5 fill-current" />
-        
         <span>{{ isPreviewing ? 'Update' : 'Play' }}</span>
       </BaseButton>
 
@@ -68,14 +63,15 @@ import { bus } from "@engines/Util/EventBus.js";
 import { usePreview } from "@/composables/usePreview.js";
 import { useTab } from "@/composables/useTab.js"; 
 import { useEditorStore } from "@/stores/useEditorStore.js";
+import { useSceneStore } from "@/stores/scene/useSceneStore.js";
 
-// Components
 import IconButton from '@/commons/components/buttons/IconButton.vue';
 import BaseButton from '@/commons/components/buttons/BaseButton.vue';
 
 const { isPreviewing, openOrUpdatePreview } = usePreview();
 const { currentLayout } = useTab();
 const editorStore = useEditorStore();
+const sceneStore = useSceneStore();
 
 const overlayConfig = computed(() => currentLayout.value.overlay || null);
 const coords = ref({ x: 0, y: 0 });
@@ -94,13 +90,3 @@ onBeforeUnmount(() => {
   bus.off("pointer:coords", updateCoords);
 });
 </script>
-
-<style scoped>
-.animate-spin-slow {
-  animation: spin 3s linear infinite;
-}
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-</style>

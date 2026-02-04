@@ -42,7 +42,44 @@ export default class TransformTool {
     _isInteractive(e) {
         if (e.active === false) return false;
         if (e._editor && e._editor.locked === true) return false;
+
+        const { activeTabId, tabs } = this.world._editors || {};
+        const activeTab = tabs?.find(t => t.id === activeTabId);
+        
+        const isUIMode = activeTab?.type === 'ui';
+        const isSceneMode = activeTabId === 'scene' || !activeTabId;
+
+        const isEntityUI = this._isEntityInUILayer(e);
+
+        if (isUIMode) {
+            if (!isEntityUI) return false; 
+        } 
+        else if (isSceneMode) {
+            if (isEntityUI) return false;
+        }
+
         return true;
+    }
+
+    _isEntityInUILayer(targetEntity) {
+        const uiLayers = this.world.layers.filter(l => l.scriptId === 'ui' || l.name === 'UI');
+        
+        const findInList = (list) => {
+            for (const e of list) {
+                if (e === targetEntity) return true;
+                if ((e._id || e.id) === (targetEntity._id || targetEntity.id)) return true;
+                
+                if (e.children && e.children.length > 0) {
+                    if (findInList(e.children)) return true;
+                }
+            }
+            return false;
+        };
+
+        for (const layer of uiLayers) {
+            if (findInList(layer.entities)) return true;
+        }
+        return false;
     }
 
     toWorld(px, py) {
@@ -69,7 +106,9 @@ export default class TransformTool {
     }
 
     _createSnapshot() {
-        return this.selection.selectedList.map(e => {
+        const validList = this.selection.selectedList.filter(e => this._isInteractive(e));
+        
+        return validList.map(e => {
             return {
                 _id: e._id || e.id,
                 components: JSON.parse(JSON.stringify(e.components)),
@@ -113,7 +152,7 @@ export default class TransformTool {
     beginMove(px, py, isTouch) {
         const validEntities = this.selection.selectedList.filter(e => this._isInteractive(e));
         
-        if (!validEntities.length) return;
+        if (!validEntities.length) return; 
 
         this.initialState = this._createSnapshot();
         if (this.selection.calculateViewportInsets) this.selection.calculateViewportInsets();
@@ -218,6 +257,10 @@ export default class TransformTool {
         const list = this.selection.selectedList;
         if (!list.length) return;
 
+        const { activeTabId, tabs } = this.world._editors || {};
+        const activeTab = tabs?.find(t => t.id === activeTabId);
+        const isUIMode = activeTab?.type === 'ui';
+
         const p = this.input.getPointer();
         const worldP = this.toWorld(p.x, p.y);
 
@@ -226,14 +269,14 @@ export default class TransformTool {
         }
 
         if (this.draggingMove && this.moveStartData) {
-            this.operator.move(worldP, this.startWorld, this.moveStartData);
+            this.operator.move(worldP, this.startWorld, this.moveStartData, list, isUIMode);
         } 
         else if (this.draggingResize && this.resizeEntityStarts) {
-            this.operator.resize(worldP, this.startWorld, this.resizeType, this.resizeEntityStarts);
+            this.operator.resize(worldP, this.startWorld, this.resizeType, this.resizeEntityStarts, list, isUIMode);
         } 
         else if (this.draggingRotate) {
             const validList = list.filter(e => this._isInteractive(e));
-            this.operator.rotate(worldP, this.rotateCenter, this.rotateStartAngle, this.entityStartRotation, validList);
+            this.operator.rotate(worldP, this.rotateCenter, this.rotateStartAngle, this.entityStartRotation, validList, isUIMode);
         }
 
         if (this.selection.updateAutoPan) this.selection.updateAutoPan();

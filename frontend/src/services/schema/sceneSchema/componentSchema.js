@@ -1,3 +1,4 @@
+// Helper untuk Transform standar (World Space)
 export const createTransform = (data = {}, defaults = { width: 100, height: 100 }) => {
   return {
     x: Number(data.x ?? 0),
@@ -12,9 +13,46 @@ export const createTransform = (data = {}, defaults = { width: 100, height: 100 
   };
 };
 
-// Parameter diganti jadi 'inputData' biar tidak rancu dengan properti 'data' di ScriptController
+// Helper khusus untuk UI Transform (Screen Space)
+export const createUITransform = (data = {}) => {
+  return {
+    ...createTransform(data, { width: 160, height: 40 }), // Default size lebih pas untuk UI
+    /**
+     * Anchor menentukan posisi relatif terhadap layar/parent.
+     * Pilihan: 'top-left', 'top-center', 'top-right', 
+     * 'center-left', 'center', 'center-right',
+     * 'bottom-left', 'bottom-center', 'bottom-right'
+     */
+    anchor: data.anchor || "center",
+    // Margin/Padding jika diperlukan untuk offset dari anchor
+    marginLeft: Number(data.marginLeft ?? 0),
+    marginTop: Number(data.marginTop ?? 0)
+  };
+};
+
 export const createComponent = (type, inputData = {}) => {
   switch (type) {
+    // --- UI COMPONENTS ---
+    
+    case "UITransform":
+      return createUITransform(inputData);
+
+    case "UIButton":
+      return {
+        text: inputData.text || "Button",
+        fontSize: Number(inputData.fontSize || 14),
+        textColor: inputData.textColor || "#FFFFFF",
+        normalColor: inputData.normalColor || "#3b82f6",
+        hoverColor: inputData.hoverColor || "#2563eb",
+        pressedColor: inputData.pressedColor || "#1d4ed8",
+        interactable: Boolean(inputData.interactable ?? true),
+        // Nama event yang akan dipicu di visual scripting/engine
+        onClickEvent: inputData.onClickEvent || null, 
+        ...inputData
+      };
+
+    // --- WORLD COMPONENTS ---
+
     case "SpriteRenderer":
       return {
         assetId: inputData.assetId || null,
@@ -51,7 +89,6 @@ export const createComponent = (type, inputData = {}) => {
     case "Tilemap":
       const mapW = Number(inputData.width || 40);
       const mapH = Number(inputData.height || 30);
-
       return {
         tileWidth: Number(inputData.tileWidth || 16),
         tileHeight: Number(inputData.tileHeight || 16),

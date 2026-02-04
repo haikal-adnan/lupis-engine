@@ -6,33 +6,41 @@ export default class Grid {
         this.renderer = renderer;
         this.camera = camera;
 
-        this.width = opt.width || 50;
-        this.height = opt.height || 50;
+        // Inisialisasi awal (jika belum ada di settings)
+        this.width = opt.width || 32;
+        this.height = opt.height || 32;
         this.offsetX = 0;
         this.offsetY = 0;
         this.color = opt.color || "#ffffff";
-        this.alpha = opt.alpha || 0.15;
+        this.alpha = opt.alpha || 0.1;
 
+        // Daftarkan renderer ke world pipeline
         world.gridRenderer = (shape, projection) => {
             this.render(shape, projection);
         };
     }
 
     update() {
-        const editors = this.world._editors;
-        if (!editors) return;
+        // [UPDATE] Membaca dari world.settings.grid (Source of Truth baru)
+        const gridSettings = this.world.settings?.grid;
+        
+        // Fallback ke default jika settings belum siap
+        if (!gridSettings) return;
 
-        const ctx = editors.gridContext;
-        const isVisible = ctx ? ctx.display : true;
-
-        if (!isVisible) {
+        // 1. Cek Visibility
+        if (!gridSettings.visible) {
             this.enabled = false;
             return;
         }
         this.enabled = true;
 
-        this.width = ctx ? ctx.width : 50;
-        this.height = ctx ? ctx.height : 50;
+        // 2. Update Properti Grid dari Settings
+        this.width = gridSettings.width || 32;
+        this.height = gridSettings.height || 32;
+        this.color = gridSettings.color || "#ffffff";
+        this.alpha = gridSettings.opacity || 0.1;
+
+        console.log(gridSettings.opacity)
         
         this.offsetX = 0;
         this.offsetY = 0;
@@ -64,6 +72,7 @@ export default class Grid {
 
         const rgba = this._hexToRGBA(this.color, this.alpha);
 
+        // Batch Draw Lines
         for (let x = startX; x <= endX; x += w) {
             shape.drawLine(x, top, x, bottom, rgba, 1 / cam.scale, projection);
         }

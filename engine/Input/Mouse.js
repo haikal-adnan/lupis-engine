@@ -9,7 +9,6 @@ export default class Mouse {
         this.buttons = new Set();
         this.wheel = 0;
 
-        // Handler Move (Tetap di canvas agar koordinat akurat relatif canvas)
         this._move = e => {
             const p = MapToCanvasPixels(e, this.canvas);
             this.x = p.px;
@@ -20,7 +19,6 @@ export default class Mouse {
             }
         };
 
-        // Handler Down (Tetap di canvas)
         this._down = e => {
             this.buttons.add(e.button);
             const p = MapToCanvasPixels(e, this.canvas);
@@ -35,10 +33,7 @@ export default class Mouse {
             }
         };
 
-        // Handler Up (DIPINDAHKAN ke Window)
-        // Agar jika mouse dilepas di luar canvas, status klik tetap terhapus
         this._up = e => {
-            // Cek apakah tombol memang sedang ditekan sebelumnya
             if (this.buttons.has(e.button)) {
                 this.buttons.delete(e.button);
                 const p = MapToCanvasPixels(e, this.canvas);
@@ -58,15 +53,11 @@ export default class Mouse {
             this.wheel += e.deltaY;
         };
 
-        // Event listener setup
         this.canvas.addEventListener("mousemove", this._move);
         this.canvas.addEventListener("mousedown", this._down);
         this.canvas.addEventListener("wheel", this._wheel, { passive: false });
-        
-        // PENTING: Listen mouseup di window
         window.addEventListener("mouseup", this._up);
         
-        // Tambahan: Reset jika window kehilangan fokus (Alt-Tab)
         this._blur = () => {
             this.buttons.clear();
         };
@@ -87,8 +78,6 @@ export default class Mouse {
         this.canvas.removeEventListener("mousemove", this._move);
         this.canvas.removeEventListener("mousedown", this._down);
         this.canvas.removeEventListener("wheel", this._wheel);
-        
-        // Bersihkan listener window
         window.removeEventListener("mouseup", this._up);
         window.removeEventListener("blur", this._blur);
     }

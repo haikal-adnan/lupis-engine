@@ -4,19 +4,16 @@ import { ref, computed } from 'vue';
 import { useLayerActions } from './layerActions';
 import { useEntityActions } from './entityActions';
 import { useSceneActions } from './sceneActions';
+import { useSettingActions } from './settingActions'; // Import baru
 
 export const useSceneStore = defineStore('scene', () => {
-
   const scenes = ref([]);
   const activeSceneId = ref(null);
-  const selectedEntityIds = ref(['ent_main_tilemap']);
+  const selectedEntityIds = ref([]);
 
   const activeScene = computed(() => scenes.value.find(s => s._id === activeSceneId.value));
-  
   const getSceneById = computed(() => (id) => scenes.value.find(s => s._id === id));
-  
   const activeEntities = computed(() => activeScene.value ? activeScene.value.entities : []);
-  
   const activeLayers = computed(() => activeScene.value ? activeScene.value.layers : []);
 
   const initScenes = (sceneList) => {
@@ -24,6 +21,10 @@ export const useSceneStore = defineStore('scene', () => {
     if (scenes.value.length > 0 && !activeSceneId.value) {
       activeSceneId.value = scenes.value[0]._id;
     }
+  };
+
+  const clearSelection = () => {
+    selectedEntityIds.value = [];
   };
 
   const setActiveScene = (sceneId) => {
@@ -34,14 +35,12 @@ export const useSceneStore = defineStore('scene', () => {
     }
   };
 
-  // Action untuk update parsial (Hanya update value yang dikirim)
+  // Helpers untuk sinkronisasi engine (tetap di sini atau bisa dipisah jika mau)
   const patchComponent = (entityId, componentName, updates) => {
     const scene = activeScene.value;
     if (!scene) return;
-
     const entity = scene.entities.find(e => e._id === entityId);
-    if (entity && entity.components && entity.components[componentName]) {
-      // Object.assign akan menimpa hanya key yang ada di 'updates', sisanya tetap
+    if (entity?.components?.[componentName]) {
       Object.assign(entity.components[componentName], updates);
     }
   };
@@ -49,35 +48,31 @@ export const useSceneStore = defineStore('scene', () => {
   const syncTilemapDataFromEngine = (entityId, newData) => {
     const scene = activeScene.value;
     if (!scene) return;
-
     const entity = scene.entities.find(e => e._id === entityId);
-    if (entity && entity.components && entity.components.Tilemap) {
-      // Update reaktif agar Vue merender ulang canvas jika perlu
+    if (entity?.components?.Tilemap) {
       entity.components.Tilemap.data = [...newData];
-      console.log(`[Store] Tilemap data synced for ${entityId}`);
     }
   };
 
   const syncTransformFromEngine = (entityId, transformData) => {
     const scene = activeScene.value;
     if (!scene) return;
-
     const entity = scene.entities.find(e => e._id === entityId);
-    if (entity && entity.components && entity.components.Transform) {
+    if (entity?.components?.Transform) {
       Object.assign(entity.components.Transform, transformData);
     }
   };
 
+  // --- Composables Initialization ---
   const sceneActions = useSceneActions(scenes, activeSceneId, selectedEntityIds);
   const layerActions = useLayerActions(activeScene);
   const entityActions = useEntityActions(activeScene, selectedEntityIds);
+  const settingActions = useSettingActions(activeScene); // Inisialisasi Settings
 
   return {
     scenes,
     activeSceneId,
     selectedEntityIds,
-    syncTilemapDataFromEngine,
-    
     activeScene,
     getSceneById,
     activeEntities,
@@ -85,11 +80,16 @@ export const useSceneStore = defineStore('scene', () => {
 
     initScenes,
     setActiveScene,
+    clearSelection,
+    
+    syncTilemapDataFromEngine,
     syncTransformFromEngine,
     patchComponent,
 
+    // Spread semua actions agar bisa diakses langsung: sceneStore.toggleGrid()
     ...sceneActions,
     ...layerActions,
-    ...entityActions 
+    ...entityActions,
+    ...settingActions 
   };
 });

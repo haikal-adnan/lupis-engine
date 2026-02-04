@@ -7,10 +7,8 @@ export const transformNode = {
             if (!entity?.components?.Transform) return;
             const t = entity.components.Transform;
 
-            // Sebelum update, sinkronkan prev dengan posisi sekarang
-            t.prevX = t.x;
-            t.prevY = t.y;
-
+            // [HAPUS] t.prevX = t.x; -> Sudah dihandle oleh Game._captureState()
+            
             const props = ['x', 'y', 'rotation', 'width', 'height', 'pivotX', 'pivotY'];
             props.forEach(prop => {
                 const val = runner.getInputValue(node, prop);
@@ -48,9 +46,6 @@ export const transformNode = {
 
             const t = entity.components.Transform;
 
-            t.prevX = t.x;
-            t.prevY = t.y;
-
             const dt = runner.currentDt || 0.016; 
             const speedX = Number(runner.getInputValue(node, 'dx')) || 0;
             const speedY = Number(runner.getInputValue(node, 'dy')) || 0;
@@ -61,5 +56,4 @@ export const transformNode = {
             runner.executeFlow(node._id, 'exec_out');
         }
     },
-
 }

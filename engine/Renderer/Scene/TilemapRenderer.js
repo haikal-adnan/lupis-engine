@@ -5,8 +5,7 @@ export default class TilemapRenderer {
         this.game = game;
         this.image = image;
         this.shape = shape;
-        this.renderQueue = [];
-
+        
         this.colors = {
             grid: HexToVec4("#ffffff14"),
             border: HexToVec4("#00ffff"),
@@ -17,10 +16,7 @@ export default class TilemapRenderer {
         };
     }
 
-    renderEntity(entity, world, proj) {
-        const tm = entity.components.Tilemap;
-        if (!tm) return;
-
+    _calculateRenderData(entity, tm, world) {
         const tf = entity.components.Transform || { x: 0, y: 0, width: 0, height: 0, scaleX: 1, scaleY: 1, rotation: 0, pivotX: 0, pivotY: 0 };
         const tileW = Number(tm.tileWidth) || 32;
         const tileH = Number(tm.tileHeight) || 32;
@@ -49,28 +45,49 @@ export default class TilemapRenderer {
         const startDrawX = tf.x - (currentWidth * (tf.pivotX ?? 0));
         const startDrawY = tf.y - (currentHeight * (tf.pivotY ?? 0));
 
-        const renderData = {
+        return {
             startX: startDrawX, startY: startDrawY,
             scaleX: renderScaleX, scaleY: renderScaleY, rotation: renderRotation,
             tileW, tileH, cols, rows, naturalW, naturalH,
-            totalW: currentWidth, totalH: currentHeight
+            totalW: currentWidth, totalH: currentHeight,
+            isEditing: isEditingThisMap
         };
+    }
 
-        this._drawTiles(entity, tm, renderData, world, proj, editors);
+    renderEntity(entity, world, proj, opacity = 1.0) {
+        const tm = entity.components.Tilemap;
+        if (!tm) return;
 
-        if (isEditingThisMap) {
-            this._drawEditorGizmos(entity, tm, renderData, world, proj, editors);
+        const renderData = this._calculateRenderData(entity, tm, world);
+
+        this._drawTiles(entity, tm, renderData, world, proj, world._editors, opacity);
+
+        if (renderData.isEditing && !world._editors?.isIsolationMode) {
+            this._drawEditorGizmos(entity, tm, renderData, world, proj, world._editors);
         }
     }
 
-    _drawTiles(entity, tm, rData, world, proj, editors) {
+    renderOnlyGizmos(entity, world, proj) {
+        const tm = entity.components.Tilemap;
+        if (!tm) return;
+
+        const renderData = this._calculateRenderData(entity, tm, world);
+        const editors = world._editors || {};
+
+        this._drawEditorGizmos(entity, tm, renderData, world, proj, editors);
+        
+        this.image.flush();
+        this.shape.flush();
+    }
+
+    _drawTiles(entity, tm, rData, world, proj, editors, externalOpacity = 1.0) {
         const asset = world.assets.textures[tm.assetId];
         if (!asset || !tm.data) return;
 
         const textureWidth = asset.width;
         const tilesetCols = Math.floor(textureWidth / rData.tileW);
-        const baseOpacity = (tm.opacity ?? 1) * (entity.opacity ?? 1);
-        const dragState = editors.dragState;
+        const baseOpacity = (tm.opacity ?? 1) * (entity.opacity ?? 1) * externalOpacity;
+        const dragState = editors?.dragState;
 
         const cam = this.game.camera;
         const canvas = this.game.renderer.canvas;
@@ -87,6 +104,8 @@ export default class TilemapRenderer {
         const loopStartY = Math.max(0, startRow);
         const loopEndY = Math.min(rData.rows, endRow);
 
+        const overlapFix = 0.4; 
+
         for (let y = loopStartY; y < loopEndY; y++) {
             for (let x = loopStartX; x < loopEndX; x++) {
                 const index = y * rData.cols + x;
@@ -95,28 +114,35 @@ export default class TilemapRenderer {
                 const tileId = tm.data[index];
                 if (tileId > 0) {
                     let currentOpacity = baseOpacity;
-                    
                     if (dragState) {
                         const isInSource = x >= dragState.sourceX && x < dragState.sourceX + dragState.w &&
                                            y >= dragState.sourceY && y < dragState.sourceY + dragState.h;
-                        if (isInSource) {
-                            currentOpacity *= 0.4;
-                        }
+                        if (isInSource) currentOpacity *= 0.4;
                     }
 
                     const actualIndex = tileId - 1;
                     const srcX = (actualIndex % tilesetCols) * rData.tileW;
                     const srcY = Math.floor(actualIndex / tilesetCols) * rData.tileH;
+                    
                     const dstX = rData.startX + (x * rData.tileW);
                     const dstY = rData.startY + (y * rData.tileH);
 
                     this.image.draw(
                         asset,
+                        // Source (Crop) tetap akurat
                         { x: srcX, y: srcY, w: rData.tileW, h: rData.tileH },
-                        {
-                            x: dstX, y: dstY, width: rData.tileW, height: rData.tileH,
-                            rotation: rData.rotation, scaleX: 1, scaleY: 1,
-                            pivotX: 0, pivotY: 0
+                        
+                        // Destination (Layar) kita "mekarkan" sedikit (overlapFix)
+                        { 
+                            x: dstX, 
+                            y: dstY, 
+                            width: rData.tileW + overlapFix,  // Ditambah sedikit
+                            height: rData.tileH + overlapFix, // Ditambah sedikit
+                            rotation: rData.rotation, 
+                            scaleX: 1, 
+                            scaleY: 1, 
+                            pivotX: 0, 
+                            pivotY: 0 
                         },
                         { opacity: currentOpacity },
                         proj
@@ -128,6 +154,8 @@ export default class TilemapRenderer {
     }
 
     _drawEditorGizmos(entity, tm, rData, world, proj, editors) {
+        if (!editors) return;
+
         const cam = this.game.camera;
         const canvas = this.game.renderer.canvas;
         const viewW = canvas.width / cam.scale;
@@ -175,7 +203,6 @@ export default class TilemapRenderer {
         if (editors.dragState && isHoverValid && asset) {
             const ds = editors.dragState;
             const tilesetCols = Math.floor(asset.width / rData.tileW);
-            
             const drawGridX = gridX - (ds.offX || 0);
             const drawGridY = gridY - (ds.offY || 0);
 
@@ -183,24 +210,15 @@ export default class TilemapRenderer {
                 for (let dx = 0; dx < ds.w; dx++) {
                     const tileId = ds.data[dy * ds.w + dx];
                     if (tileId === 0) continue;
-
                     const tx = drawGridX + dx;
                     const ty = drawGridY + dy;
-
                     if (tx >= 0 && tx < rData.cols && ty >= 0 && ty < rData.rows) {
                         const actualIndex = tileId - 1;
                         const srcX = (actualIndex % tilesetCols) * rData.tileW;
                         const srcY = Math.floor(actualIndex / tilesetCols) * rData.tileH;
                         const dstX = rData.startX + (tx * rData.tileW);
                         const dstY = rData.startY + (ty * rData.tileH);
-
-                        this.image.draw(
-                            asset,
-                            { x: srcX, y: srcY, w: rData.tileW, h: rData.tileH },
-                            { x: dstX, y: dstY, width: rData.tileW, height: rData.tileH },
-                            { opacity: 0.8 },
-                            proj
-                        );
+                        this.image.draw(asset, { x: srcX, y: srcY, w: rData.tileW, h: rData.tileH }, { x: dstX, y: dstY, width: rData.tileW, height: rData.tileH }, { opacity: 0.8 }, proj);
                     }
                 }
             }
@@ -219,7 +237,6 @@ export default class TilemapRenderer {
                 }
             }
         }
-
         this.shape.flush();
     }
 
@@ -234,14 +251,7 @@ export default class TilemapRenderer {
                     const dstY = rData.startY + (ty * rData.tileH);
                     const srcX = (selection.x + dx) * rData.tileW;
                     const srcY = (selection.y + dy) * rData.tileH;
-
-                    this.image.draw(
-                        asset,
-                        { x: srcX, y: srcY, w: rData.tileW, h: rData.tileH },
-                        { x: dstX, y: dstY, width: rData.tileW, height: rData.tileH },
-                        { opacity: 0.6 },
-                        proj
-                    );
+                    this.image.draw(asset, { x: srcX, y: srcY, w: rData.tileW, h: rData.tileH }, { x: dstX, y: dstY, width: rData.tileW, height: rData.tileH }, { opacity: 0.6 }, proj);
                 }
             }
         }

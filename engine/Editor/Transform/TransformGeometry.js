@@ -17,7 +17,11 @@ export class TransformGeometry {
     }
 
     computeHandles(selectedList) {
-        if (!selectedList.length) return;
+        if (!selectedList || !selectedList.length) {
+            this.handles = [];
+            this.groupBounds = null;
+            return;
+        }
 
         if (selectedList.length === 1) {
             const e = selectedList[0];
@@ -103,10 +107,66 @@ export class TransformGeometry {
         return null;
     }
 
-    getHoverHandle(wx, wy) {
+    getHandleSizes() {
         const scale = this.game.camera.scale || 1;
-        const resizeRadius = 10 / scale;
-        const rotateRadius = 25 / scale;
+        
+        const baseResizeRad = 10;
+        const baseRotateRad = 30;
+        const baseCapLen = 24;
+        const baseCapThick = 6;
+        const baseCornerRad = 5;
+
+        let rResize = baseResizeRad / scale;
+        let rRotate = baseRotateRad / scale;
+        let capLen = baseCapLen / scale;
+        let capThick = baseCapThick / scale;
+        let rCorner = baseCornerRad / scale;
+
+        if (this.groupBounds) {
+            let objW = 100, objH = 100;
+
+            if (this.groupBounds.type === 'aabb') {
+                objW = this.groupBounds.w;
+                objH = this.groupBounds.h;
+            } else if (this.groupBounds.v) {
+                const v = this.groupBounds.v;
+                const dx1 = v.tr.x - v.tl.x;
+                const dy1 = v.tr.y - v.tl.y;
+                objW = Math.sqrt(dx1*dx1 + dy1*dy1);
+
+                const dx2 = v.bl.x - v.tl.x;
+                const dy2 = v.bl.y - v.tl.y;
+                objH = Math.sqrt(dx2*dx2 + dy2*dy2);
+            }
+
+            const minSide = Math.min(objW, objH);
+            
+            const maxResizeRad = minSide * 0.35;
+            if (rResize > maxResizeRad) {
+                const ratio = maxResizeRad / rResize;
+                rResize = maxResizeRad;
+                capLen *= ratio;
+                capThick *= ratio;
+                rCorner *= ratio;
+            }
+
+            const maxRotateRad = minSide * 0.45;
+            if (rRotate > maxRotateRad) {
+                rRotate = maxRotateRad;
+            }
+
+            if (rRotate < rResize) {
+                rRotate = rResize * 1.1; 
+            }
+        }
+
+        return { rResize, rRotate, capLen, capThick, rCorner };
+    }
+
+    getHoverHandle(wx, wy) {
+        const sizes = this.getHandleSizes();
+        const resizeRadius = sizes.rResize;
+        const rotateRadius = sizes.rRotate; 
 
         for (const h of this.handles) {
             const dx = wx - h.x;
