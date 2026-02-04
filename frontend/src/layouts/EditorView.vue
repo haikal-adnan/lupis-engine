@@ -56,13 +56,21 @@ watch(
     } 
     else if (currentTab.type === 'tilemap') {
       const entityId = newTabId
+
       if (!sceneStore.selectedEntityIds.includes(entityId)) {
-         sceneStore.setSelectedEntities([entityId])
+         sceneStore.selectedEntityIds = [entityId] 
       }
+      
       scriptStore.setActiveScript(null)
     }
     else if (currentTab.type === 'scene') {
       scriptStore.setActiveScript(null)
+    }
+    
+    // Tambahkan logika handle UI jika perlu
+    else if (currentTab.type === 'ui') {
+        scriptStore.setActiveScript(null)
+        // Opsional: Select entity UI-nya jika newTabId merepresentasikan entity ID
     }
   },
   { immediate: true }

@@ -3,14 +3,22 @@ import Config from "../Core/Config.js";
 export default class GameLoop {
     constructor(game) {
         this.game = game;
-        this.fps = Math.max(1, Config.TICK_RATE || 60);
+        
+        this.fps = Math.max(1, this.game.world.settings.tickRate || 60);
         this.interval = 1000 / this.fps;
+        
         this.lastTime = performance.now();
         this.accumulator = 0;
         this.rafId = null;
     }
 
     loop(now) {
+        const currentTickRate = Math.max(1, this.game.world.settings.tickRate || 60);
+        if (this.fps !== currentTickRate) {
+            this.fps = currentTickRate;
+            this.interval = 1000 / this.fps;
+        }
+
         let delta = now - this.lastTime;
         this.lastTime = now;
 

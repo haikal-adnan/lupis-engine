@@ -42,16 +42,24 @@ const SceneSchema = new mongoose.Schema({
   version: { type: Number, default: 1 },
   settings: {
     backgroundColor: { type: String, default: '#222222' },
-    gravity: { 
-      x: { type: Number, default: 0 }, 
-      y: { type: Number, default: 9.8 } 
-    },
+    tickRate: { type: Number, default: 60 },
     worldBounds: { 
-      x: { type: Number, default: 0 }, 
-      y: { type: Number, default: 0 }, 
-      width: { type: Number, default: 2000 }, 
-      height: { type: Number, default: 2000 } 
-    }
+      x1: { type: Number, default: -1920 }, 
+      x2: { type: Number, default: 1920 }, 
+      y1: { type: Number, default: -1080 }, 
+      y2: { type: Number, default: 1080 },
+      active: { type: Boolean, default: true}
+    },
+    grid: {
+      width: { type: Number, default: 32 },
+      height: { type: Number, default: 32 },
+      color: { type: String, default: '#ffffff' },
+      opacity: { type: Number, default: 0.1 },
+      visible: { type: Boolean, default: true }, 
+      snap: { type: Boolean, default: true }    
+    },
+
+    showRulers: { type: Boolean, default: true }
   },
   layers: [LayerSchema],
   entities: [EntitySchema]

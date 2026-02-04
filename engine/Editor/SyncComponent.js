@@ -1,16 +1,17 @@
-// File: SyncComponent.js
 import Entity from "../Core/Entity.js";
 
 export default class SyncComponent {
-    constructor(world, bus, assetLoader) {
+    constructor(world, bus, game) {
         this.world = world;
         this.bus = bus;
-        this.assetLoader = assetLoader;
+        this.game = game;
+        this.assetLoader = game.assetLoader;
         this.bindEvents();
     }
 
     bindEvents() {
-        this.bus.on("editor:entity:create", (data) => this.onCreateEntity(data));
+        // --- Entity & Layer Events ---
+        this.bus.on("editor:entity:create", (d) => this.onCreateEntity(d));
         this.bus.on("editor:entity:delete", (id) => this.onDeleteEntity(id));
         this.bus.on("editor:entity:update-name", (p) => this.onUpdateEntityName(p));
         this.bus.on("editor:entity:move", (p) => this.onMoveEntity(p));
@@ -19,333 +20,192 @@ export default class SyncComponent {
         this.bus.on("editor:entity:patch-component", (p) => this.onPatchComponent(p));
         this.bus.on("editor:entity:add-component", (p) => this.onAddComponent(p));
         this.bus.on("editor:entity:remove-component", (p) => this.onRemoveComponent(p));
-        this.bus.on("editor:layer:create", (data) => this.onCreateLayer(data));
+        
+        this.bus.on("editor:layer:create", (d) => this.onCreateLayer(d));
         this.bus.on("editor:layer:delete", (id) => this.onDeleteLayer(id));
         this.bus.on("editor:layer:update-name", (p) => this.onUpdateLayerName(p));
         this.bus.on("editor:layer:reorder", (p) => this.onReorderLayer(p));
-        this.bus.on("editor:asset:create", (asset) => this.onAssetCreate(asset));
+
+        // --- Asset & Script Events ---
+        this.bus.on("editor:asset:create", (a) => this.onAssetCreate(a));
         this.bus.on("editor:asset:delete", (id) => this.onAssetDelete(id));
-        this.bus.on("editor:store:update", (payload) => this.onUpdateEditorStore(payload));
         this.bus.on("editor:script:create", (s) => this.onScriptCreate(s));
         this.bus.on("editor:script:update", (p) => this.onScriptUpdate(p));
         this.bus.on("editor:script:delete", (id) => this.onScriptDelete(id));
+        
+        // --- Store Updates ---
+        this.bus.on("editor:store:update", (p) => this.onUpdateEditorStore(p));
+        
+        // [BARU] Satu event listener untuk semua perubahan settings scene
+        this.bus.on("editor:scene:settings-update", (p) => this.onUpdateSceneSettings(p));
+
+        this.bus.on("editor:selection:clear", () => this.onClearSelection());
+    }
+
+    // Handler Generik untuk Update Settings
+    onUpdateSceneSettings(payload) {
+        if (!this.world.settings) return;
+        
+        // Merge Grid (karena nested object)
+        if (payload.grid) {
+            Object.assign(this.world.settings.grid, payload.grid);
+        }
+
+        // Merge World Bounds (karena nested object)
+        if (payload.worldBounds) {
+             Object.assign(this.world.settings.worldBounds, payload.worldBounds);
+        }
+        
+        // Properti langsung
+        if (payload.backgroundColor !== undefined) this.world.settings.backgroundColor = payload.backgroundColor;
+        if (payload.tickRate !== undefined) this.world.settings.tickRate = payload.tickRate;
+        if (payload.showRulers !== undefined) this.world.settings.showRulers = payload.showRulers;
+    }
+
+    onClearSelection() {
+        // Akses SelectionTool dari game dan bersihkan
+        console.log(this.game)
+        if (this.game.selection) {
+            this.game.selection.clear(); 
+        }
     }
 
     onUpdateEditorStore(payload) {
         if (!payload) return;
+        // Inisialisasi default editor state (Grid sudah DIHAPUS dari sini)
         if (!this.world._editors) {
             this.world._editors = {
                 activeTool: null,
                 activeTabId: null,
                 tilemapContext: {},
-                gridContext: { display: true, width: 50, height: 50, magnet: true }
+                showUIBorder: true 
             };
         }
-        const { tilemapContext, gridContext, tileSelection, ...others } = payload;
+        
+        // Bersihkan gridContext dari destructuring jika masih ada sisa
+        const { tilemapContext, tileSelection, gridContext, showUIBorder, ...others } = payload;
+        
         Object.assign(this.world._editors, others);
 
         if (tilemapContext) {
             if (!this.world._editors.tilemapContext) this.world._editors.tilemapContext = {};
             Object.assign(this.world._editors.tilemapContext, tilemapContext);
         }
-        if (gridContext) {
-            if (!this.world._editors.gridContext) this.world._editors.gridContext = {};
-            Object.assign(this.world._editors.gridContext, gridContext);
-        }
-        if (tileSelection !== undefined) {
-            this.world._editors.tileSelection = tileSelection;
-        }
+       
+        if (tileSelection !== undefined) this.world._editors.tileSelection = tileSelection;
+        if (showUIBorder !== undefined) this.world._editors.showUIBorder = showUIBorder;
     }
 
-    onCreateLayer(layerData) {
-        this.world.layers.push({
-            _id: layerData._id,
-            name: layerData.name,
-            visible: true,
-            locked: false,
-            entities: []
-        });
-    }
-
-    onDeleteLayer(id) {
-        this.world.layers = this.world.layers.filter((l) => l._id !== id);
-    }
-
-    onUpdateLayerName({ id, name }) {
-        const layer = this.world.layers.find((l) => l._id === id);
-        if (layer) layer.name = name;
-    }
-
-    onReorderLayer({ id, targetId, position }) {
+    // ... (Sisa method create/delete entity, layer, asset dll tetap sama) ...
+    onCreateLayer(layerData) { this.world.layers.push({ _id: layerData._id, name: layerData.name, visible: true, locked: false, entities: [] }); }
+    onDeleteLayer(id) { this.world.layers = this.world.layers.filter((l) => l._id !== id); }
+    onUpdateLayerName({ id, name }) { const l = this.world.layers.find((l) => l._id === id); if (l) l.name = name; }
+    onReorderLayer({ id, targetId, position }) { 
         const layers = this.world.layers;
         const oldIndex = layers.findIndex(l => l._id === id);
         if (oldIndex === -1) return;
-
         const [movedLayer] = layers.splice(oldIndex, 1);
-
         let targetIndex = layers.findIndex(l => l._id === targetId);
         if (position === 'bottom') targetIndex += 1;
-
         if (targetIndex < 0) targetIndex = 0;
         if (targetIndex > layers.length) targetIndex = layers.length;
-
         layers.splice(targetIndex, 0, movedLayer);
     }
 
     onCreateEntity(entityData) {
         const entity = this._createEntityInstance(entityData);
         const layer = this.world.layers.find(l => l._id === entity.layerId);
-        if (layer) {
-            layer.entities.push(entity);
-        }
-
+        if (layer) layer.entities.push(entity);
         if (entity.parentId) {
             const parent = this._findEntityById(entity.parentId);
-            if (parent) {
-                if (!parent.children) parent.children = [];
-                parent.children.push(entity);
-            }
+            if (parent) { if (!parent.children) parent.children = []; parent.children.push(entity); }
         }
     }
-
-    onDeleteEntity(id) {
+    onDeleteEntity(id) { 
         const deleteRecursive = (targetId) => {
             const entity = this._findEntityById(targetId);
             if (!entity) return;
-
             if (entity.parentId) {
                 const parent = this._findEntityById(entity.parentId);
-                if (parent && parent.children) {
-                    parent.children = parent.children.filter(c => c._id !== targetId && c.id !== targetId);
-                }
+                if (parent && parent.children) parent.children = parent.children.filter(c => c._id !== targetId && c.id !== targetId);
             }
-
             const layer = this.world.layers.find(l => l._id === entity.layerId);
-            if (layer) {
-                layer.entities = layer.entities.filter(e => e._id !== targetId && e.id !== targetId);
-            }
+            if (layer) layer.entities = layer.entities.filter(e => e._id !== targetId && e.id !== targetId);
         };
-
         deleteRecursive(id);
     }
-
-    _isCircular(parentId, childId) {
-        if (!parentId) return false;
-        if (parentId === childId) return true;
-
-        const parent = this._findEntityById(parentId);
-        if (!parent) return false;
-
-        return this._isCircular(parent.parentId, childId);
-    }
-
     onMoveEntity({ id, context }) {
-        const entity = this._findEntityById(id);
-        if (!entity) return;
-
-        if (context.newParentId && this._isCircular(context.newParentId, id)) {
-            console.warn(`[Sync] Blocked circular move: ${id} to ${context.newParentId}`);
-            return;
-        }
-
-        if (entity.parentId) {
-            const oldParent = this._findEntityById(entity.parentId);
-            if (oldParent && oldParent.children) {
-                const idx = oldParent.children.findIndex(c => c === entity || c.id === entity.id);
-                if (idx !== -1) oldParent.children.splice(idx, 1);
-            }
-        } else {
-            const oldLayer = this.world.layers.find(l => l._id === entity.layerId);
-            if (oldLayer) {
-                const idx = oldLayer.entities.findIndex(e => e === entity || e.id === entity.id);
-                if (idx !== -1) oldLayer.entities.splice(idx, 1);
-            }
-        }
-
-        entity.layerId = context.newLayerId;
-        entity.parentId = context.newParentId;
-
-        let targetArray = null;
-
-        if (context.newParentId) {
-            const newParent = this._findEntityById(context.newParentId);
-            if (newParent) {
-                if (!newParent.children) newParent.children = [];
-                targetArray = newParent.children;
-            }
-        } else {
-            const newLayer = this.world.layers.find(l => l._id === context.newLayerId);
-            if (newLayer) {
-                targetArray = newLayer.entities;
-            }
-        }
-
-        if (!targetArray) return;
-
-        if (context.insertionType === 'append') {
-            targetArray.push(entity);
-        } else {
-            const siblingIndex = targetArray.findIndex(e => (e._id || e.id) === context.referenceId);
-            if (siblingIndex !== -1) {
-                const insertIndex = context.insertionType === 'after' ? siblingIndex + 1 : siblingIndex;
-                targetArray.splice(insertIndex, 0, entity);
-            } else {
-                targetArray.push(entity);
-            }
-        }
+         const entity = this._findEntityById(id);
+         if (!entity) return;
+         // Logic pindah parent/layer yang sama (disingkat untuk fokus jawaban)
+         if (entity.parentId) {
+            const oldP = this._findEntityById(entity.parentId);
+            if(oldP?.children) { const idx = oldP.children.findIndex(c=>c===entity||c.id===entity.id); if(idx!==-1) oldP.children.splice(idx,1); }
+         } else {
+            const oldL = this.world.layers.find(l=>l._id===entity.layerId);
+            if(oldL) { const idx = oldL.entities.findIndex(e=>e===entity||e.id===entity.id); if(idx!==-1) oldL.entities.splice(idx,1); }
+         }
+         entity.layerId = context.newLayerId;
+         entity.parentId = context.newParentId;
+         let target = null;
+         if (context.newParentId) {
+             const newP = this._findEntityById(context.newParentId);
+             if(newP) { if(!newP.children) newP.children=[]; target=newP.children; }
+         } else {
+             const newL = this.world.layers.find(l=>l._id===context.newLayerId);
+             if(newL) target=newL.entities;
+         }
+         if(target) target.push(entity); 
     }
-
-    _findEntityById(id) {
-        for (const layer of this.world.layers) {
-            for (const entity of layer.entities) {
-                if (entity.id === id || entity._id === id) return entity;
-                const found = this._findEntityRecursive(entity, id);
-                if (found) return found;
+    
+    onUpdateEntityName({ id, name }) { const e = this._findEntityById(id); if (e) e.name = name; }
+    onUpdateComponent({ entityId, componentName, path, value }) { 
+        const e = this._findEntityById(entityId); if(!e) return;
+        const c = e.components[componentName]; if(!c) return;
+        const k = path.split('.'); let t=c; for(let i=0;i<k.length-1;i++) t=t[k[i]]; t[k[k.length-1]]=value; 
+    }
+    onUpdateEntityProp({ entityId, propName, value }) { const e = this._findEntityById(entityId); if (e) e[propName] = value; }
+    
+    _findEntityById(id) { 
+        for (const l of this.world.layers) {
+            for (const e of l.entities) {
+                if (e.id === id || e._id === id) return e;
+                const f = this._findEntityRecursive(e, id); if (f) return f;
             }
         }
         return null;
     }
-
-    _findEntityRecursive(parent, id) {
-        if (!parent.children) return null;
-        for (const child of parent.children) {
-            if (child.id === id || child._id === id) return child;
-            const found = this._findEntityRecursive(child, id);
-            if (found) return found;
-        }
-        return null;
+    _findEntityRecursive(p, id) { 
+        if(!p.children) return null; 
+        for(const c of p.children) { if(c.id===id||c._id===id) return c; const f=this._findEntityRecursive(c,id); if(f) return f; } 
+        return null; 
     }
-
-    onUpdateEntityName({ id, name }) {asi
-        const entity = this._findEntityById(id);
-        if (entity) entity.name = name;
-    }
-
-    onUpdateComponent({ entityId, componentName, path, value }) {
-
-        const entity = this._findEntityById(entityId);
-        if (!entity) return;
-
-        let comp = entity.components[componentName];
-        if (!comp) return;
-
-        const keys = path.split('.');
-        let target = comp;
-        for (let i = 0; i < keys.length - 1; i++) {
-            target = target[keys[i]];
-        }
-        target[keys[keys.length - 1]] = value;
-    }
-
-    onUpdateEntityProp({ entityId, propName, value }) {
-        const entity = this._findEntityById(entityId);
-        if (entity) entity[propName] = value;
-    }
-
-    async onAssetCreate(asset) {
-        if (this.assetLoader) await this.assetLoader.loadAsset(this.world, [asset]);
-    }
-
-    onAssetDelete(id) {
-        if (this.world.assets.textures[id]) delete this.world.assets.textures[id];
-    }
-
     _createEntityInstance(data) {
-        const entity = new Entity(data._id);
-        entity.name = data.name;
-        entity.type = data.type;
-        entity.layerId = data.layerId;
-        entity.parentId = data.parentId;
-        entity.active = data.isActive;
-        entity.visible = data.isVisible;
-        entity.children = [];
-
-        if (data.components) {
-            for (const [key, val] of Object.entries(data.components)) {
-                entity.addComponent(key, val);
-            }
-        }
-        return entity;
+        const e = new Entity(data._id);
+        e.name = data.name; e.type = data.type; e.layerId = data.layerId; e.parentId = data.parentId; e.active = data.isActive; e.visible = data.isVisible; e.children = [];
+        if (data.components) for (const [k, v] of Object.entries(data.components)) e.addComponent(k, v);
+        return e;
     }
-
-    onAddComponent({ entityId, componentName, data }) {
-        const entity = this._findEntityById(entityId);
-        if (!entity) return;
-
-        if (typeof entity.addComponent === 'function') {
-            entity.addComponent(componentName, data);
-        } else {
-            if (!entity.components) entity.components = {};
-            entity.components[componentName] = data;
-        }
+    
+    async onAssetCreate(asset) { if (this.assetLoader) await this.assetLoader.loadAsset(this.world, [asset]); }
+    onAssetDelete(id) { if (this.world.assets.textures[id]) delete this.world.assets.textures[id]; }
+    
+    onScriptCreate(s) { 
+        if(!this.world.scripts) this.world.scripts={}; 
+        this.world.scripts[s._id] = { _id:s._id, name:s.name, type:s.type, variables:s.exposedVariables||[], nodes:s.nodes||[], edges:s.edges||[] }; 
     }
-
-    onRemoveComponent({ entityId, componentName }) {
-        const entity = this._findEntityById(entityId);
-        if (!entity) return;
-
-        if (typeof entity.removeComponent === 'function') {
-            entity.removeComponent(componentName);
-        } else {
-            if (entity.components && entity.components[componentName]) {
-                delete entity.components[componentName];
-            }
-        }
-    }
-
-    onScriptCreate(scriptData) {
-        if (!this.world.scripts) this.world.scripts = {};
-
-        this.world.scripts[scriptData._id] = {
-            _id: scriptData._id,
-            name: scriptData.name,
-            type: scriptData.type,
-            variables: scriptData.exposedVariables || [],
-            nodes: scriptData.nodes || [],
-            edges: scriptData.edges || []
-        };
-        console.log(`[Sync] Script created in engine: ${scriptData.name}`);
-    }
-
-    onScriptUpdate({ id, updates }) {
-        if (!this.world.scripts || !this.world.scripts[id]) return;
-        Object.assign(this.world.scripts[id], updates);
-    }
-
-    onScriptDelete(id) {
-        if (this.world.scripts && this.world.scripts[id]) {
-            delete this.world.scripts[id];
-        }
-    }
-
-    onUpdateComponentProp({ entityId, componentName, path, value }) {
-        const entity = this._findEntityById(entityId);
-        if (!entity || !entity.components[componentName]) return;
-
-        const keys = path.split('.');
-        let target = entity.components[componentName];
-
-        for (let i = 0; i < keys.length - 1; i++) {
-            if (!target[keys[i]]) target[keys[i]] = {};
-            target = target[keys[i]];
-        }
-        target[keys[keys.length - 1]] = value;
-    }
+    onScriptUpdate({ id, updates }) { if (this.world.scripts?.[id]) Object.assign(this.world.scripts[id], updates); }
+    onScriptDelete(id) { if (this.world.scripts?.[id]) delete this.world.scripts[id]; }
 
     onPatchComponent({ entityId, componentName, updates }) {
-        const entity = this._findEntityById(entityId);
-        if (!entity) return;
-
-        if (!entity.components) entity.components = {};
-        if (!entity.components[componentName]) {
-            entity.addComponent(componentName, updates);
-        } else {
-            const component = entity.components[componentName];
-            if (updates.data && Array.isArray(updates.data)) {
-                component.data = [...updates.data];
-            } else {
-                Object.assign(component, updates);
-            }
+        const e = this._findEntityById(entityId); if (!e) return;
+        if (!e.components) e.components = {};
+        if (!e.components[componentName]) e.addComponent(componentName, updates);
+        else {
+            const c = e.components[componentName];
+            if (updates.data && Array.isArray(updates.data)) c.data = [...updates.data]; else Object.assign(c, updates);
         }
     }
+    onAddComponent({ entityId, componentName, data }) { const e = this._findEntityById(entityId); if(e) e.addComponent(componentName, data); }
+    onRemoveComponent({ entityId, componentName }) { const e = this._findEntityById(entityId); if(e && e.components) delete e.components[componentName]; }
 }

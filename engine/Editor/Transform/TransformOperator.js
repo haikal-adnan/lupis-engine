@@ -12,21 +12,32 @@ export class TransformOperator {
         return e.components && e.components.Transform;
     }
 
-    getSnapSettings() {
-        const gridCtx = this.world._editors?.gridContext;
-        const globalMagnet = gridCtx ? gridCtx.magnet : true;
+    getSnapSettings(isUIMode = false) {
+        if (isUIMode) {
+            return { shouldSnap: false, gridSize: 1 };
+        }
+
+        // --- UPDATE: Membaca dari world.settings.grid ---
+        const gridSettings = this.world.settings?.grid || { snap: true, width: 32 };
+        
+        const globalMagnet = gridSettings.snap;
         const isCtrlHeld = this.input.keyboard.isDown("Control");
+        
+        // Logika magnet: Jika aktif, Ctrl mematikan. Jika mati, Ctrl menyalakan.
         const shouldSnap = globalMagnet ? !isCtrlHeld : isCtrlHeld;
-        const gridSize = (this.game.grid && this.game.grid.width) ? this.game.grid.width : 50;
+        
+        const gridSize = gridSettings.width || 32;
+
         return { shouldSnap, gridSize };
     }
 
-    move(nowPos, startPos, startData, selectedList) {
+    move(nowPos, startPos, startData, selectedList, isUIMode = false) {
         if (!startData || startData.length === 0) return;
 
         const dx = nowPos.x - startPos.x;
         const dy = nowPos.y - startPos.y;
-        const { shouldSnap, gridSize } = this.getSnapSettings();
+        
+        const { shouldSnap, gridSize } = this.getSnapSettings(isUIMode);
 
         let finalDx = dx;
         let finalDy = dy;
@@ -62,7 +73,7 @@ export class TransformOperator {
         }
     }
 
-    rotate(nowPos, rotateCenter, rotateStartAngle, entityStartRotation, selectedList) {
+    rotate(nowPos, rotateCenter, rotateStartAngle, entityStartRotation, selectedList, isUIMode = false) {
         const t = this._getTransform(selectedList[0]);
         if (!t) return;
 
@@ -70,7 +81,7 @@ export class TransformOperator {
         let deltaAngle = currentAngle - rotateStartAngle;
         let newRotation = entityStartRotation + deltaAngle;
 
-        const { shouldSnap } = this.getSnapSettings();
+        const { shouldSnap } = this.getSnapSettings(isUIMode);
 
         if (shouldSnap) {
             const deg = newRotation * (180 / Math.PI);
@@ -83,12 +94,12 @@ export class TransformOperator {
         bus.emit("entity:modified", selectedList, true);
     }
 
-    resize(nowPos, startPos, resizeType, startData, selectedList) {
+    resize(nowPos, startPos, resizeType, startData, selectedList, isUIMode = false) {
         const dx = nowPos.x - startPos.x;
         const dy = nowPos.y - startPos.y;
         if (dx === 0 && dy === 0) return;
 
-        const { shouldSnap, gridSize } = this.getSnapSettings();
+        const { shouldSnap, gridSize } = this.getSnapSettings(isUIMode);
 
         const item = startData[0];
         const e = item.e;

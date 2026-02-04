@@ -9,7 +9,7 @@ import ScriptSystem from "../Script/ScriptSystem.js";
 export default class Game {
     constructor() {
         this.world = new World();
-        this.camera = new Camera(0, 0);
+        this.camera = new Camera(-200, 0);
         this.camera.scale = 1;
         this.renderer = null;
         this.variables = new VariableManager();
@@ -25,26 +25,31 @@ export default class Game {
         this.syncSystem = null;
         this.isPaused = false;
         this.isRunning = false;
+        this.loop = null;
+    }
+
+    initLoop() {
         this.loop = new GameLoop(this);
     }
 
     start() {
-        console.log("[Game] Starting Game Loop...");
+        if (!this.loop) return;
         this.loop.start();
     }
+
 
     update(dt) {
         if (Config.ENGINE_MODE === "runtime") {
             this.scriptSystem.update(dt);
-            this.camera.update(dt);
-        }
-
-        if (Config.ENGINE_MODE === "editor") {
+            
+            if (this.camera && this.renderer) {
+                this.camera.update(dt, this.world, this.renderer.gl.canvas);
+            }
         }
     }
 
     render(alpha) {
-        const cam = this.camera.getInterpolated(alpha);
+        const cam = this.camera; 
 
         if (this.cameraController) this.cameraController.update();
 
@@ -61,23 +66,8 @@ export default class Game {
         }
     }
 
-    pauseGame() {
-        this.isPaused = true;
-        console.log("[Game] Paused");
-    }
-
-    resumeGame() {
-        this.isPaused = false;
-        console.log("[Game] Resumed");
-    }
-
-    togglePause() {
-        if (this.isPaused) this.resumeGame();
-        else this.pauseGame();
-    }
-
-    quitGame() {
-        console.log("[Game] Quitting...");
-        this.loop.stop();
-    }
+    pauseGame() { this.isPaused = true; }
+    resumeGame() { this.isPaused = false; }
+    togglePause() { if (this.isPaused) this.resumeGame(); else this.pauseGame(); }
+    quitGame() { if (this.loop) this.loop.stop(); }
 }

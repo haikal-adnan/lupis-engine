@@ -98,11 +98,6 @@ const seedDatabase = async () => {
         { _id: varSpeedId, name: "Speed", type: "number", defaultValue: 300 }
       ],
       nodes: [
-        // ==========================================================
-        // GROUP 1: POSITIVE MOVEMENT (Right & Down)
-        // ==========================================================
-        
-        // 1. INPUT MAPPER (D & S)
         {
           _id: "node_input_pos",
           type: "event_advanced_key",
@@ -121,7 +116,6 @@ const seedDatabase = async () => {
           ]
         },
 
-        // 2. GET SPEED (Positive)
         {
           _id: "node_speed_pos",
           type: "variable_get",
@@ -134,7 +128,6 @@ const seedDatabase = async () => {
           ]
         },
 
-        // 3. TRANSLATE RIGHT (+X)
         {
           _id: "node_trans_right",
           type: "translate",
@@ -152,7 +145,6 @@ const seedDatabase = async () => {
           ]
         },
 
-        // 4. TRANSLATE DOWN (+Y)
         {
           _id: "node_trans_down",
           type: "translate",
@@ -170,11 +162,6 @@ const seedDatabase = async () => {
           ]
         },
 
-        // ==========================================================
-        // GROUP 2: NEGATIVE MOVEMENT (Up & Left)
-        // ==========================================================
-
-        // 5. INPUT MAPPER (W & A)
         {
           _id: "node_input_neg",
           type: "event_advanced_key",
@@ -193,7 +180,6 @@ const seedDatabase = async () => {
           ]
         },
 
-        // 6. GET SPEED (Negative)
         {
           _id: "node_speed_neg",
           type: "variable_get",
@@ -206,7 +192,6 @@ const seedDatabase = async () => {
           ]
         },
 
-        // 7. NEGATE (For Left)
         {
           _id: "node_neg_left",
           type: "math_negate",
@@ -223,7 +208,6 @@ const seedDatabase = async () => {
           ]
         },
 
-        // 8. NEGATE (For Up)
         {
           _id: "node_neg_up",
           type: "math_negate",
@@ -240,7 +224,6 @@ const seedDatabase = async () => {
           ]
         },
 
-        // 9. TRANSLATE LEFT (-X)
         {
           _id: "node_trans_left",
           type: "translate",
@@ -332,12 +315,28 @@ const seedDatabase = async () => {
       name: "Level 1 Demo",
       settings: {
         backgroundColor: "#222222",
-        worldBounds: { x: 0, y: 0, width: 2000, height: 2000 }
+        tickRate: 60,
+        worldBounds: { 
+          x1: -1920, 
+          x2: 1920, 
+          y1: -1080, 
+          y2: 1080,
+          active: true
+        },
+        grid: {
+          width: 32,
+          height: 32,
+          color: "#ffffff",
+          opacity: 0.1,
+          visible: true,
+          snap: true
+        },
+        showRulers: true
       },
       layers: [
-        { _id: "layer_ui", scriptId: "ui", name: "UI" },
         { _id: "layer_root", scriptId: "root", name: "Root" },
-        { _id: "layer_hero", scriptId: "hero", name: "Hero" }
+        { _id: "layer_hero", scriptId: "hero", name: "Hero" },
+        { _id: "layer_ui", scriptId: "ui", name: "UI" }
       ],
       entities: [
         {

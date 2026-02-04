@@ -22,7 +22,7 @@
       </div>
     </div>
 
-    <PropertyRow label="Opacity">
+    <PropertyRow label="Scene Opacity">
       <div class="grid grid-cols-1 gap-2">
         <BaseNumber 
             prefix="%"

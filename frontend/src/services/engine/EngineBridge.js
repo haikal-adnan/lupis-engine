@@ -9,48 +9,27 @@ export const EngineBridge = {
   setInstance(instance) {
     engineInstance = instance;
 
-    engineInstance.bus.on("entity:modified", (entities, isTransient) => {
-       if (onNativeEntityModified) {
-         onNativeEntityModified(entities);
-       }
+    engineInstance.bus.on("entity:modified", (entities) => {
+       if (onNativeEntityModified) onNativeEntityModified(entities);
     });
     
     engineInstance.bus.on("editor:tool:pickup", (data) => {
-        if (onNativeToolPickup) {
-            onNativeToolPickup(data);
-        }
+        if (onNativeToolPickup) onNativeToolPickup(data);
     });
 
     engineInstance.bus.on("editor:tilemap:update-data", (payload) => {
-        console.log()
-
-        if (onNativeTilemapUpdate) {
-          
-            onNativeTilemapUpdate(payload);
-        }
+        if (onNativeTilemapUpdate) onNativeTilemapUpdate(payload);
     });
   },
 
-  onEntityModified(callback) {
-    onNativeEntityModified = callback;
-  },
-
-  onTilemapDataUpdated(callback) {
-      onNativeTilemapUpdate = callback;
-  },
-
-  onToolPickup(callback) {
-    onNativeToolPickup = callback;
-  },
+  onEntityModified(cb) { onNativeEntityModified = cb; },
+  onTilemapDataUpdated(cb) { onNativeTilemapUpdate = cb; },
+  onToolPickup(cb) { onNativeToolPickup = cb; },
 
   disconnect() {
     if (engineInstance) {
         engineInstance.bus.off("entity:modified");
-    }
-    if (engineInstance) {
         engineInstance.bus.off("editor:tilemap:update-data");
-      }
-    if (engineInstance) {
         engineInstance.bus.off("editor:tool:pickup"); 
     }
     engineInstance = null;
@@ -58,101 +37,40 @@ export const EngineBridge = {
     onNativeTilemapUpdate = null;
   },
 
-  createEntity(entityData) {
-    if (!engineInstance) return;
-    engineInstance.bus.emit("editor:entity:create", entityData);
+  clearSelection() {
+    if (engineInstance) {
+        engineInstance.bus.emit("editor:selection:clear");
+    }
   },
 
-  updateEntityName(entityId, newName) {
-    if (!engineInstance) return;
-    engineInstance.bus.emit("editor:entity:update-name", { id: entityId, name: newName });
-  },
-
-  deleteEntity(entityId) {
-    if (!engineInstance) return;
-    engineInstance.bus.emit("editor:entity:delete", entityId);
-  },
-
-  moveEntity(payload) {
-    if (!engineInstance) return;
-    engineInstance.bus.emit("editor:entity:move", payload);
-  },
-
-  addLayer(layerData) {
-    if (!engineInstance) return;
-    engineInstance.bus.emit("editor:layer:create", layerData);
-  },
-
-  updateLayerName(layerId, newName) {
-    if (!engineInstance) return;
-    engineInstance.bus.emit("editor:layer:update-name", { id: layerId, name: newName });
-  },
-
-  deleteLayer(layerId) {
-    if (!engineInstance) return;
-    engineInstance.bus.emit("editor:layer:delete", layerId);
-  },
-
-  reorderLayer(payload) {
-    if (!engineInstance) return;
-    engineInstance.bus.emit("editor:layer:reorder", payload);
-  },
-
-  updateComponentProp(payload) {
-    if (!engineInstance) return;
-    engineInstance.bus.emit("editor:entity:update-component", payload);
-  },
-
-  patchComponent(payload) {
-    if (!engineInstance) return;
-    engineInstance.bus.emit("editor:entity:patch-component", payload);
-  },
-
-  updateEntityProp(payload) {
-    if (!engineInstance) return;
-    engineInstance.bus.emit("editor:entity:update-prop", payload);
-  },
-
-  createAsset(assetData) {
-    if (!engineInstance) return;
-    // Emit event: engine akan menangkap ini dan memproses blob/url menjadi Texture
-    engineInstance.bus.emit("editor:asset:create", assetData);
-  },
-
-  deleteAsset(assetId) {
-    if (!engineInstance) return;
-    engineInstance.bus.emit("editor:asset:delete", assetId);
+  updateSceneSettings(payload) {
+    if (engineInstance) engineInstance.bus.emit("editor:scene:settings-update", payload);
   },
 
   updateEditorState(payload) {
-    if (!engineInstance) return;
-    
-    engineInstance.bus.emit("editor:store:update", payload);
+    if (engineInstance) engineInstance.bus.emit("editor:store:update", payload);
   },
 
-  addComponent(payload) {
-    if (!engineInstance) return;
-    engineInstance.bus.emit("editor:entity:add-component", payload);
-  },
+  // --- Entity, Layer, Asset, Script Proxies (Tetap ada) ---
+  createEntity(d) { if(engineInstance) engineInstance.bus.emit("editor:entity:create", d); },
+  updateEntityName(id, name) { if(engineInstance) engineInstance.bus.emit("editor:entity:update-name", { id, name }); },
+  deleteEntity(id) { if(engineInstance) engineInstance.bus.emit("editor:entity:delete", id); },
+  moveEntity(p) { if(engineInstance) engineInstance.bus.emit("editor:entity:move", p); },
+  updateComponentProp(p) { if(engineInstance) engineInstance.bus.emit("editor:entity:update-component", p); },
+  patchComponent(p) { if(engineInstance) engineInstance.bus.emit("editor:entity:patch-component", p); },
+  updateEntityProp(p) { if(engineInstance) engineInstance.bus.emit("editor:entity:update-prop", p); },
+  addComponent(p) { if(engineInstance) engineInstance.bus.emit("editor:entity:add-component", p); },
+  removeComponent(p) { if(engineInstance) engineInstance.bus.emit("editor:entity:remove-component", p); },
 
-  removeComponent(payload) {
-    if (!engineInstance) return;
-    engineInstance.bus.emit("editor:entity:remove-component", payload);
-  },
+  addLayer(d) { if(engineInstance) engineInstance.bus.emit("editor:layer:create", d); },
+  updateLayerName(id, name) { if(engineInstance) engineInstance.bus.emit("editor:layer:update-name", { id, name }); },
+  deleteLayer(id) { if(engineInstance) engineInstance.bus.emit("editor:layer:delete", id); },
+  reorderLayer(p) { if(engineInstance) engineInstance.bus.emit("editor:layer:reorder", p); },
 
-  createScript(scriptData) {
-    if (!engineInstance) return;
-    engineInstance.bus.emit("editor:script:create", scriptData);
-  },
-
-  updateScript(scriptId, updates) {
-    if (!engineInstance) return;
-    engineInstance.bus.emit("editor:script:update", { id: scriptId, updates });
-  },
-
-  deleteScript(scriptId) {
-    if (!engineInstance) return;
-    engineInstance.bus.emit("editor:script:delete", scriptId);
-  },
-
+  createAsset(d) { if(engineInstance) engineInstance.bus.emit("editor:asset:create", d); },
+  deleteAsset(id) { if(engineInstance) engineInstance.bus.emit("editor:asset:delete", id); },
+  
+  createScript(d) { if(engineInstance) engineInstance.bus.emit("editor:script:create", d); },
+  updateScript(id, updates) { if(engineInstance) engineInstance.bus.emit("editor:script:update", { id, updates }); },
+  deleteScript(id) { if(engineInstance) engineInstance.bus.emit("editor:script:delete", id); },
 };

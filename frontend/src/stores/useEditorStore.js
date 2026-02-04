@@ -14,26 +14,19 @@ export const useEditorStore = defineStore('editor', {
       zoom: 1,
     },
 
-    gridContext: {
-        display: true, 
-        width: 50,   
-        height: 50,
-        magnet: true 
-    },
-
     tilemapContext: {
       showOthers: true,  
       opacity: 0.3  
     },
-    
+
+    showUIBorder: true,
     isResizeModalOpen: false, 
     isPlayMode: false,
     isPaused: false,
 
-    activeTabId: 'ent_main_tilemap',
+    activeTabId: 'scene',
     tabs: [
-      { id: 'scene', name: 'Main Scene', type: 'scene', fixed: true },
-      { id: 'ent_main_tilemap', name: 'Tile', type: 'tilemap', fixed: true },
+      { id: 'scene', name: 'Scene - Level 1 Demo', type: 'scene', fixed: true },
     ],
 
     activeBottomTabId: 'asset', 
@@ -66,13 +59,15 @@ export const useEditorStore = defineStore('editor', {
     
     resetCanvas() {
       this.canvas.zoom = 1;
-      this.canvas.offsetX = 0;
-      this.canvas.offsetY = 0;
     },
 
     setActiveBottomTab(id) {
       this.activeBottomTabId = id;
       this.isBottomBarOpen = true; 
+    },
+
+    toggleUIBorder() {
+        this.showUIBorder = !this.showUIBorder;
     },
 
     toggleBottomBar() {
@@ -84,8 +79,7 @@ export const useEditorStore = defineStore('editor', {
     },
 
     setContextOpacity(val) {
-      const opacity = Math.max(0, Math.min(val, 1));
-      this.tilemapContext.opacity = opacity;
+      this.tilemapContext.opacity = Math.max(0, Math.min(val, 1));
     },
 
     openResizeModal() {
@@ -102,7 +96,6 @@ export const useEditorStore = defineStore('editor', {
   
     closeTab(id) {
       const index = this.tabs.findIndex(t => t.id === id);
-  
       if (index !== -1 && !this.tabs[index].fixed) {
         if (this.activeTabId === id) {
           const nextTab = this.tabs[index - 1] || this.tabs[index + 1] || this.tabs[0];
@@ -114,7 +107,6 @@ export const useEditorStore = defineStore('editor', {
   
     openTab(tabData) {
       const existing = this.tabs.find(t => t.id === tabData.id);
-  
       if (existing) {
         this.setActiveTab(existing.id);
       } else {
@@ -126,29 +118,11 @@ export const useEditorStore = defineStore('editor', {
         });
         this.setActiveTab(tabData.id);
       }
-
-      console.log(this.tabs)
-    },
-
-    toggleGrid() {
-      this.gridContext.display = !this.gridContext.display;
-    },
-
-    toggleMagnet() {
-      this.gridContext.magnet = !this.gridContext.magnet;
-    },
-
-    setGridSize(size) {
-        this.gridContext.width = size;
-        this.gridContext.height = size;
     },
 
     setTileSelection(rect) {
       this.tileSelection = rect;
-      
-      if (rect) {
-        this.activeTool = 'brush';
-      }
+      if (rect) this.activeTool = 'brush';
     },
     
     clearTileSelection() {

@@ -1,6 +1,5 @@
 <template>
   <PropertySection title="Object" :icon="Box" v-if="selectedEntity">
-    
     <template #header-extra>
       <div class="px-2 py-0.5 rounded text-[10px] font-medium bg-secondary text-secondary-foreground border border-border truncate max-w-[120px]">
         {{ name || 'Entity' }}
@@ -42,21 +41,20 @@
           <Power class="w-3.5 h-3.5" :class="active ? 'text-primary' : 'text-muted-foreground'" />
           <span>{{ active ? 'Active' : 'Inactive' }}</span>
         </BaseButton>
-        
+
         <div class="w-px h-4 bg-border mx-1"></div>
-        
+
         <IconButton :active="visible" @click="visible = !visible" :tooltip="visible ? 'Hide Object' : 'Show Object'">
           <Eye v-if="visible" class="w-4 h-4" />
           <EyeOff v-else class="w-4 h-4 text-muted-foreground" />
         </IconButton>
-        
+
         <IconButton :active="locked" @click="locked = !locked" :tooltip="locked ? 'Unlock Object' : 'Lock Object'">
           <Lock v-if="locked" class="w-3.5 h-3.5 text-primary" />
           <Unlock v-else class="w-3.5 h-3.5" />
         </IconButton>
       </div>
     </PropertyRow>
-
   </PropertySection>
 </template>
 
@@ -96,31 +94,19 @@ const isProcessing = ref(false)
 
 const name = bindEntityProp('name')
 
-// --- ACTIVE LOGIC (FIXED) ---
 const active = computed({
   get: () => selectedEntity.value?.active ?? true, 
   set: (val) => {
-    if (!selectedEntity.value) return;
-    
-    const id = selectedEntity.value._id;
-
-    // 1. Update Data Properti (Engine akan menerima data active=false)
-    sceneStore.updateEntityProp(id, 'active', val);
-
-    // 2. Trigger Refresh di Engine
-    // Kita TETAP mengirim ID entity yang sama (bukan array kosong).
-    // Tujuannya: Memaksa 'SelectionTool' dan 'TransformTool' di engine untuk mengecek ulang
-    // status active entity tersebut. 
-    // Karena active=false, TransformTool akan otomatis menghapus handle Gizmo,
-    // tapi SelectionTool TETAP menyimpan entity di memory (sehingga Inspector tidak close).
+    if (!selectedEntity.value) return
+    const id = selectedEntity.value._id
+    sceneStore.updateEntityProp(id, 'active', val)
     setTimeout(() => {
-        const bridge = EngineBridge.engineInstance ? EngineBridge.engineInstance.bus : bus;
-        bridge.emit('ui:select-by-id', [id]);
-    }, 10);
+      const bridge = EngineBridge.engineInstance ? EngineBridge.engineInstance.bus : bus
+      bridge.emit('ui:select-by-id', [id])
+    }, 10)
   }
 })
 
-// --- VISIBLE LOGIC ---
 const visible = computed({
   get: () => selectedEntity.value?.visible ?? true,
   set: (val) => {
@@ -130,18 +116,16 @@ const visible = computed({
   }
 })
 
-// --- LOCKED LOGIC ---
 const locked = computed({
   get: () => selectedEntity.value?._editor?.locked || false,
   set: (val) => {
     if (!selectedEntity.value) return
     const currentEditor = selectedEntity.value._editor || {}
     sceneStore.updateEntityProp(selectedEntity.value._id, '_editor', { ...currentEditor, locked: val })
-    
     setTimeout(() => {
-       const bridge = EngineBridge.engineInstance ? EngineBridge.engineInstance.bus : bus;
-       bridge.emit('ui:select-by-id', [selectedEntity.value._id]);
-    }, 10);
+      const bridge = EngineBridge.engineInstance ? EngineBridge.engineInstance.bus : bus
+      bridge.emit('ui:select-by-id', [selectedEntity.value._id])
+    }, 10)
   }
 })
 
@@ -167,7 +151,6 @@ const handleAddTag = async () => {
   if (!newTag) return
   const cleanTag = newTag.trim()
   if (!cleanTag) return
-
   const currentTags = projectStore.project?.tags || []
   if (currentTags.some(t => t.toLowerCase() === cleanTag.toLowerCase())) {
     await alert({ title: 'Tag Exists', message: `Tag "${cleanTag}" already in use.`, type: 'warning' })
@@ -205,7 +188,8 @@ const commitScriptId = async () => {
 
   if (!newId || newId === originalId) {
     localScriptId.value = originalId
-    hasIdError.value = false; isProcessing.value = false
+    hasIdError.value = false
+    isProcessing.value = false
     return
   }
 
@@ -215,7 +199,8 @@ const commitScriptId = async () => {
     localScriptId.value = originalId
     setTimeout(async () => {
       await alert({ title: 'Duplicate ID', message: `ID "${newId}" exists.`, type: 'warning' })
-      hasIdError.value = false; isProcessing.value = false
+      hasIdError.value = false
+      isProcessing.value = false
     }, 100)
   } else {
     hasIdError.value = false

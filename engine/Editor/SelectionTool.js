@@ -30,7 +30,7 @@ export default class SelectionTool {
         this.hoverHandle = null;
         this.pointerDownTime = 0;
         this.isLongPress = false;
-        this.LONG_PRESS_TIME = 30;
+        this.LONG_PRESS_TIME = 1;
 
         this.onExternalSelect = (list) => { this.syncSelectionFromBus(list); };
         this.onUISelect = (ids) => { this.handleUISelect(ids); };
@@ -64,6 +64,13 @@ export default class SelectionTool {
 
             this.drawer.draw(shape, proj, drawableSelection, drawableHover, marqueeBox, this.transform);
         };
+    }
+
+    // [BARU] Method untuk membersihkan seleksi secara paksa (dipanggil dari SyncComponent/Escape Key)
+    clear() {
+        console.log("jalan")
+        this.setSelection([], "internal");
+        bus.emit("entity:deselected");
     }
 
     _isClickable(e) {
@@ -157,7 +164,7 @@ export default class SelectionTool {
         }
 
         const activeEntities = realEntities.filter(e => e.active !== false);
-        this.setSelection(activeEntities, "ui");
+        this.setSelection(activeEntities, "internal");
     }
 
     consolidateSelection(candidates) {
@@ -224,8 +231,28 @@ export default class SelectionTool {
         return wx >= box.x && wx <= box.x + box.w && wy >= box.y && wy <= box.y + box.h;
     }
 
+    _updateSelectionFilter() {
+        const { activeTabId, tabs } = this.world._editors || {};
+        const activeTab = tabs?.find(t => t.id === activeTabId);
+        const isUIMode = activeTab?.type === 'ui';
+
+        if (!this.game.selection) this.game.selection = {};
+
+        this.game.selection.filter = (entity, layer) => {
+            const isUILayer = layer.scriptId === 'ui' || layer.name === 'UI';
+            
+            if (isUIMode) {
+                return isUILayer;
+            } else {
+                return !isUILayer;
+            }
+        };
+    }
+
     update() {
         if (!this.active) return;
+
+        this._updateSelectionFilter();
 
         if (this.transform) {
             this.transform.update(); 
@@ -258,7 +285,7 @@ export default class SelectionTool {
                 if (this.selectedList.length > 1 && this.isInsideGroup(w.x, w.y)) {
                     if (this.transform) this.transform.beginMove(px, py, false);
                 } else {
-                    const hit = this.hitTester.hit(this.world, w.x, w.y);
+                    const hit = this.hitTester.hit(this.world, w.x, w.y, px, py);
                     
                     if (hit && this._isClickable(hit) && this.transform) {
                         if (!this.selectedList.includes(hit)) {
@@ -309,7 +336,7 @@ export default class SelectionTool {
             return;
         }
 
-        const hit = this.hitTester.hit(this.world, w.x, w.y);
+        const hit = this.hitTester.hit(this.world, w.x, w.y, px, py);
         
         if (hit && this._isClickable(hit)) {
             this.hovered = hit;
@@ -336,7 +363,7 @@ export default class SelectionTool {
             this.input.keyboard.shift ||
             this.input.keyboard.meta;
 
-        const hit = this.hitTester.hit(this.world, w.x, w.y);
+        const hit = this.hitTester.hit(this.world, w.x, w.y, px, py);
         
         if (hit && this._isClickable(hit)) {
             const inside = this.selectedList.includes(hit);
@@ -385,7 +412,7 @@ export default class SelectionTool {
 
         if (!this.isLongPress && !this.marqueeActive) {
             const w = this.toWorld(px, py);
-            const hit = this.hitTester.hit(this.world, w.x, w.y);
+            const hit = this.hitTester.hit(this.world, w.x, w.y, px, py);
             
             if (!hit || !this._isClickable(hit)) {
                 this.setSelection([], "internal");

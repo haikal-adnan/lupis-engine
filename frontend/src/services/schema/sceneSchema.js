@@ -16,16 +16,25 @@ export const createScene = (data = {}, projectId = null) => {
     
     settings: {
       backgroundColor: data.settings?.backgroundColor || '#222222',
-      gravity: {
-        x: data.settings?.gravity?.x ?? 0,
-        y: data.settings?.gravity?.y ?? 9.8
-      },
+      tickRate: data.settings?.tickRate || 60,
       worldBounds: {
-        x: data.settings?.worldBounds?.x ?? 0,
-        y: data.settings?.worldBounds?.y ?? 0,
-        width: data.settings?.worldBounds?.width ?? 2000,
-        height: data.settings?.worldBounds?.height ?? 2000
-      }
+        x1: data.settings?.worldBounds?.x1 ?? -1920,
+        x2: data.settings?.worldBounds?.x2 ?? 1920,
+        y1: data.settings?.worldBounds?.y1 ?? -1080,
+        y2: data.settings?.worldBounds?.y2 ?? 1080,
+        active: data.settings?.worldBounds?.active ?? true,
+      },
+
+      grid: {
+        width: data.settings?.grid?.width ?? 32,
+        height: data.settings?.grid?.height ?? 32,
+        color: data.settings?.grid?.color || '#ffffff',
+        opacity: data.settings?.grid?.opacity ?? 0.1,
+        visible: data.settings?.grid?.visible ?? true,
+        snap: data.settings?.grid?.snap ?? true       
+      },
+
+      showRulers: data.settings?.showRulers ?? true
     },
 
     layers: Array.isArray(data.layers) 

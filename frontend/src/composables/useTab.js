@@ -1,6 +1,7 @@
 import { computed, markRaw } from 'vue'
 import { useEditorStore } from '@/stores/useEditorStore'
-import { Box, Grid, FileCode2, Network } from 'lucide-vue-next'
+// Tambahkan LayoutTemplate untuk ikon UI
+import { Box, Grid, FileCode2, Network, LayoutTemplate } from 'lucide-vue-next'
 
 import SceneHierarchy from '@/modules/scene/SceneHierarchy.vue'
 import PropertyPanel from '@/modules/properties/PropertyPanel.vue'
@@ -25,6 +26,22 @@ const LAYOUT_CONFIG = {
       showPlay: true
     }
   },
+  
+  // --- TAMBAHAN KONFIGURASI UI ---
+  ui: {
+    left: markRaw(SceneHierarchy), // Bisa diganti UIHierarchy jika ada file khusus
+    leftTitle: 'UI Structure',
+    right: markRaw(PropertyPanel), // Inspector properti UI
+    rightTitle: 'UI Inspector',
+    center: markRaw(CanvasView),   // Canvas fokus mode UI
+    showBottom: true,
+    overlay: {
+      showCoords: true,
+      showGrid: false, // Grid biasanya dimatikan untuk UI pixel perfect
+      showPlay: true
+    }
+  },
+  // ------------------------------
 
   tilemap: {
     left: null,
@@ -65,6 +82,7 @@ const LAYOUT_CONFIG = {
 
 const TYPE_ICONS = {
     scene: { icon: markRaw(Box), color: 'text-primary' },
+    ui: { icon: markRaw(LayoutTemplate), color: 'text-purple-500' }, 
     tilemap: { icon: markRaw(Grid), color: 'text-emerald-500' },
     ide: { icon: markRaw(FileCode2), color: 'text-yellow-500' },
     diagram: { icon: markRaw(Network), color: 'text-blue-500' }
