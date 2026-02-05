@@ -9,7 +9,7 @@ import ScriptSystem from "../Script/ScriptSystem.js";
 export default class Game {
     constructor() {
         this.world = new World();
-        this.camera = new Camera(-200, 0);
+        this.camera = new Camera(0, 0);
         this.camera.scale = 1;
         this.renderer = null;
         this.variables = new VariableManager();

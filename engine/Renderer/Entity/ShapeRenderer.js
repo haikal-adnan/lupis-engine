@@ -109,7 +109,6 @@ export default class ShapeRenderer {
             this.currentProjection = projection;
         }
 
-        // Logic stroke menggunakan 4 garis yang mengikuti rotasi/transform quad
         const v = calculateQuadVertices(x, y, w, h, rot, sx, sy, px, py);
         const c = [color[0], color[1], color[2], color[3] * alpha];
         

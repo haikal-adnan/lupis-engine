@@ -1,19 +1,43 @@
 import { calculateQuadVertices } from "../../Util/calculateQuadVertices.js";
 
 export class TransformGeometry {
-    constructor(game) {
+    constructor(game, world) {
         this.game = game;
+        this.world = world; 
         this.handles = [];
         this.groupBounds = null;
         this.activeRotation = 0;
     }
 
     _getTransform(e) {
-        return e.components && e.components.Transform;
+        return e.components && (e.components.UITransform || e.components.Transform);
     }
 
     _mid(p1, p2) {
         return { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
+    }
+
+    calculateAbsolutePosition(e) {
+        const t = this._getTransform(e);
+        if (!t) return { x: 0, y: 0 };
+
+        if (!e.components.UITransform) {
+            return { x: t.x, y: t.y };
+        }
+
+        const uiSettings = this.world.settings?.ui || { referenceWidth: 1920, referenceHeight: 1080 };
+        const parentBounds = { x: 0, y: 0, width: uiSettings.referenceWidth, height: uiSettings.referenceHeight };
+
+        const anchorX = t.anchorX ?? 0.5;
+        const anchorY = t.anchorY ?? 0.5;
+
+        const anchorPointX = parentBounds.x + (parentBounds.width * anchorX);
+        const anchorPointY = parentBounds.y + (parentBounds.height * anchorY);
+
+        return { 
+            x: anchorPointX + (t.x || 0), 
+            y: anchorPointY + (t.y || 0) 
+        };
     }
 
     computeHandles(selectedList) {
@@ -23,18 +47,25 @@ export class TransformGeometry {
             return;
         }
 
+        // --- Single Selection ---
         if (selectedList.length === 1) {
             const e = selectedList[0];
             const t = this._getTransform(e);
             if (!t) return;
 
-            const r = t.rotation || 0;
+            const absPos = this.calculateAbsolutePosition(e);
+
+            // [FIX] Konversi Derajat ke Radian untuk perhitungan Geometri
+            const rDeg = t.rotation || 0;
+            const rRad = rDeg * (Math.PI / 180);
+            
             const sx = t.scaleX ?? 1;
             const sy = t.scaleY ?? 1;
             const px = t.pivotX ?? 0.5;
             const py = t.pivotY ?? 0.5;
 
-            const v = calculateQuadVertices(t.x, t.y, t.width, t.height, r, sx, sy, px, py);
+            // calculateQuadVertices mengharapkan Radian
+            const v = calculateQuadVertices(absPos.x, absPos.y, t.width, t.height, rRad, sx, sy, px, py);
 
             const nw = { type: "nw", x: v.tl.x, y: v.tl.y };
             const ne = { type: "ne", x: v.tr.x, y: v.tr.y };
@@ -47,11 +78,14 @@ export class TransformGeometry {
             const w = { type: "w", ...this._mid(nw, sw) };
 
             this.handles = [nw, ne, sw, se, n, e_side, s, w];
-            this.activeRotation = r;
+            
+            // Simpan Radian agar renderer bisa menggambar handle miring
+            this.activeRotation = rRad; 
             this.groupBounds = { type: 'obb', v };
             return;
         }
 
+        // --- Multi Selection ---
         let minX = Infinity, minY = Infinity;
         let maxX = -Infinity, maxY = -Infinity;
 
@@ -59,13 +93,17 @@ export class TransformGeometry {
             const t = this._getTransform(e);
             if (!t) continue;
             
-            const r = t.rotation || 0;
+            const absPos = this.calculateAbsolutePosition(e);
+
+            // [FIX] Konversi Derajat ke Radian
+            const rRad = (t.rotation || 0) * (Math.PI / 180);
+            
             const sx = t.scaleX ?? 1;
             const sy = t.scaleY ?? 1;
             const px = t.pivotX ?? 0.5;
             const py = t.pivotY ?? 0.5;
 
-            const v = calculateQuadVertices(t.x, t.y, t.width, t.height, r, sx, sy, px, py);
+            const v = calculateQuadVertices(absPos.x, absPos.y, t.width, t.height, rRad, sx, sy, px, py);
             const xs = [v.tl.x, v.tr.x, v.bl.x, v.br.x];
             const ys = [v.tl.y, v.tr.y, v.bl.y, v.br.y];
 
@@ -88,7 +126,7 @@ export class TransformGeometry {
         const w = { type: "w", ...this._mid(nw, sw) };
 
         this.handles = [nw, ne, sw, se, n, e_side, s, w];
-        this.activeRotation = 0;
+        this.activeRotation = 0; // AABB selalu 0 rotasi
     }
 
     computeGroupBounds() {
@@ -174,10 +212,10 @@ export class TransformGeometry {
             const dist = Math.sqrt(dx * dx + dy * dy);
 
             if (dist <= resizeRadius) {
-                return { ...h, mode: 'resize' };
+                return { ...h, mode: 'resize', type: h.type };
             }
             if (h.type.length === 2 && dist <= rotateRadius) {
-                return { ...h, mode: 'rotate' };
+                return { ...h, mode: 'rotate', type: h.type };
             }
         }
         return null;

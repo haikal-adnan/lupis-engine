@@ -51,6 +51,16 @@ export const EngineBridge = {
     if (engineInstance) engineInstance.bus.emit("editor:store:update", payload);
   },
 
+  getCameraPosition() {
+    if (engineInstance.game && engineInstance.game.camera) {
+        return { 
+            x: engineInstance.game.camera.x, 
+            y: engineInstance.game.camera.y 
+        };
+    }
+    return { x: 0, y: 0 };
+  },
+
   // --- Entity, Layer, Asset, Script Proxies (Tetap ada) ---
   createEntity(d) { if(engineInstance) engineInstance.bus.emit("editor:entity:create", d); },
   updateEntityName(id, name) { if(engineInstance) engineInstance.bus.emit("editor:entity:update-name", { id, name }); },

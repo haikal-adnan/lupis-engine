@@ -122,7 +122,6 @@ export default class TextRenderer {
     }
 
     measureText(font, str, size) {
-        // Safety check agar tidak error akses property of undefined
         if (!font || !font.chars || !font.info || !str) {
             return { width: 0, height: 0, xMin: 0, yMin: 0, xMax: 0, yMax: 0 };
         }
@@ -156,7 +155,6 @@ export default class TextRenderer {
     }
 
     drawText(font, str, x, y, w, h, size, color, projection, rot = 0, sx = 1, sy = 1, px = 0, py = 0, alpha = 1) {
-        // Guard paling penting: Pastikan texture valid sebelum lanjut
         if (!font || !font.glTexture || !str || str.trim() === "") return;
 
         const measurement = this.measureText(font, str, size);

@@ -81,7 +81,9 @@ const props = defineProps({
   max: { type: Number, default: Infinity },
   ignoreRange: { type: Boolean, default: false },
   cyclic: { type: Boolean, default: false },
-  scrubSensitivity: { type: Number, default: 1 } 
+  scrubSensitivity: { type: Number, default: 1 },
+  // [ADDED] Precision prop (opsional, default null berarti perilaku lama)
+  precision: { type: Number, default: null }
 })
 
 const model = defineModel({ type: [Number, String] })
@@ -97,45 +99,42 @@ const displayValue = computed({
 
 watch(() => model.value, (newVal) => {
   if (!isDragging.value) {
-    localInput.value = newVal
+    // Jika ada precision, format tampilan saat value berubah dari luar
+    if (props.precision !== null && typeof newVal === 'number') {
+        localInput.value = parseFloat(newVal.toFixed(props.precision));
+    } else {
+        localInput.value = newVal
+    }
   }
 })
 
 // --- RESTRICTION LOGIC ---
 function validateInput(event) {
   let value = event.target.value;
-  
-  // Regex: 
-  // ^-?           -> Boleh ada minus di awal (opsional)
-  // \d* -> Diikuti angka 0 atau lebih
-  // (\.\d*)?      -> Boleh ada titik desimal diikuti angka (opsional group)
-  // $             -> Akhir string
-  // Logic: Hapus karakter yg tidak sesuai dengan pola angka umum
-  
-  // Strategi sederhana: Hapus semua karakter selain angka, minus, dan titik
-  // Lalu pastikan minus hanya di depan dan titik hanya satu.
-  
-  // 1. Filter karakter illegal (huruf, simbol aneh)
   let clean = value.replace(/[^0-9.-]/g, '');
 
-  // 2. Fix Minus (Hanya boleh di index 0)
   if (clean.lastIndexOf('-') > 0) {
-      clean = clean.replace(/-/g, ''); // Hapus semua minus dulu
-      clean = '-' + clean; // Tambah lagi di depan (opsional logic, atau reject aja)
+      clean = clean.replace(/-/g, ''); 
+      clean = '-' + clean; 
   }
 
-  // 3. Fix Titik (Hanya boleh satu)
   const parts = clean.split('.');
   if (parts.length > 2) {
       clean = parts[0] + '.' + parts.slice(1).join('');
   }
 
-  // Jika hasil cleaning beda dengan input user, paksa update value input
   if (value !== clean) {
      localInput.value = clean;
-     // Hack untuk memaksa render update jika v-model tidak mendeteksi perubahan drastis
      event.target.value = clean; 
   }
+}
+
+// Helper untuk membulatkan sesuai precision
+function applyPrecision(val) {
+    if (props.precision !== null) {
+        return parseFloat(val.toFixed(props.precision));
+    }
+    return val;
 }
 
 // --- Logic Inti: Normalize ---
@@ -145,7 +144,8 @@ function normalizeValue(val) {
   if (props.cyclic) {
     const rangeSpan = (props.max - props.min) + (Number.isInteger(props.step) ? props.step : 0)
     const wrapped = ((val - props.min) % rangeSpan + rangeSpan) % rangeSpan + props.min
-    return parseFloat(wrapped.toFixed(2))
+    // Cyclic biasanya butuh float fix juga
+    return parseFloat(wrapped.toFixed(props.precision !== null ? props.precision : 2))
   }
 
   let clamped = val
@@ -155,19 +155,21 @@ function normalizeValue(val) {
 }
 
 function updateModel(val) {
-  // Handle empty string atau hanya "-" atau "."
   if (val === '' || val === '-' || val === '.') {
-      return; // Jangan update model dgn NaN, biarkan user ngetik
+      return; 
   }
 
-  const num = parseFloat(val)
-  if (isNaN(num)) return // Safety check
+  let num = parseFloat(val)
+  if (isNaN(num)) return 
 
+  // 1. Apply Precision
+  num = applyPrecision(num);
+
+  // 2. Normalize (Clamp/Cycle)
   const finalVal = normalizeValue(num)
+  
   model.value = finalVal
   
-  // Update tampilan jika hasil normalisasi berbeda (misal kena clamp min/max)
-  // Tapi jika user mengetik "1.0", jangan ubah jadi "1" dulu agar user bisa ngetik "1.05"
   if (finalVal !== num) {
       localInput.value = finalVal 
   }
@@ -204,10 +206,17 @@ function onMouseMove(event) {
   
   let newValue = startValue + change
 
-  if (Number.isInteger(props.step) && !event.altKey && Number.isInteger(startValue) && Number.isInteger(props.scrubSensitivity)) {
-     newValue = Math.round(newValue)
+  // [MODIFIED] Logic pembulatan saat scrubbing
+  if (props.precision !== null) {
+      // Jika precision di-set, paksa ikuti precision tersebut
+      newValue = parseFloat(newValue.toFixed(props.precision));
   } else {
-     newValue = parseFloat(newValue.toFixed(2))
+      // Fallback perilaku lama
+      if (Number.isInteger(props.step) && !event.altKey && Number.isInteger(startValue) && Number.isInteger(props.scrubSensitivity)) {
+         newValue = Math.round(newValue)
+      } else {
+         newValue = parseFloat(newValue.toFixed(2))
+      }
   }
 
   newValue = normalizeValue(newValue)
@@ -222,27 +231,43 @@ function stopScrub() {
   document.body.style.userSelect = ''
   window.removeEventListener('mousemove', onMouseMove)
   window.removeEventListener('mouseup', stopScrub)
+  
+  // Final sync saat lepas mouse agar tampilan bersih
+  if (props.precision !== null) {
+      localInput.value = parseFloat((parseFloat(model.value) || 0).toFixed(props.precision));
+  }
 }
 
 // --- Input & Keyboard Logic ---
 function increment(val) {
   const current = parseFloat(model.value) || 0
   let newValue = current + val
+  
+  // Apply precision sebelum normalize
+  newValue = applyPrecision(newValue);
   newValue = normalizeValue(newValue)
-  if (!Number.isInteger(props.step)) {
+
+  if (props.precision === null && !Number.isInteger(props.step)) {
     newValue = parseFloat(newValue.toFixed(2))
   }
+  
   updateModel(newValue)
-  localInput.value = newValue // Force update display
+  localInput.value = newValue 
 }
 
 function handleBlur() {
-   // Saat blur (user selesai ngetik), baru kita paksa format ulang
-   // Misal user ngetik "10." -> jadi "10"
-   // Atau "007" -> jadi "7"
    updateModel(localInput.value)
-   // Sync display dengan model akhir
-   localInput.value = model.value 
+   
+   // Paksa format tampilan saat blur sesuai precision
+   if (props.precision !== null && !isNaN(parseFloat(model.value))) {
+       localInput.value = parseFloat(model.value).toFixed(props.precision);
+       // Hapus trailing zeros jika diinginkan, atau biarkan fixed string (misal "10.00")
+       // Di sini saya gunakan parseFloat lagi agar "10.00" jadi "10" untuk hemat tempat,
+       // Hapus parseFloat pembungkus jika ingin strict "10.00"
+       localInput.value = parseFloat(localInput.value); 
+   } else {
+       localInput.value = model.value 
+   }
 }
 
 function handleChange() {

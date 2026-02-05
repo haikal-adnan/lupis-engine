@@ -14,7 +14,7 @@ export default class SelectionTool {
 
         this.active = Config.EDITOR.SELECTION;
 
-        this.hitTester = new HitTester(game);
+        this.hitTester = new HitTester(game, canvas);
         this.drawer = new SelectionRenderer(game);
         this.panner = new AutoPanner(game, canvas);
 
@@ -30,7 +30,7 @@ export default class SelectionTool {
         this.hoverHandle = null;
         this.pointerDownTime = 0;
         this.isLongPress = false;
-        this.LONG_PRESS_TIME = 1;
+        this.LONG_PRESS_TIME = 30;
 
         this.onExternalSelect = (list) => { this.syncSelectionFromBus(list); };
         this.onUISelect = (ids) => { this.handleUISelect(ids); };
@@ -59,16 +59,18 @@ export default class SelectionTool {
                  }
             }
 
-            const drawableSelection = this.selectedList.filter(e => e.active !== false);
+            const drawableSelection = this.selectedList;
             const drawableHover = (this.hovered && this._isClickable(this.hovered)) ? this.hovered : null;
 
             this.drawer.draw(shape, proj, drawableSelection, drawableHover, marqueeBox, this.transform);
+
+            if (this.transform && this.selectedList.length > 0) {
+                this.transform.draw(shape, proj);
+            }
         };
     }
 
-    // [BARU] Method untuk membersihkan seleksi secara paksa (dipanggil dari SyncComponent/Escape Key)
     clear() {
-        console.log("jalan")
         this.setSelection([], "internal");
         bus.emit("entity:deselected");
     }
@@ -162,9 +164,8 @@ export default class SelectionTool {
             }
             if (found) realEntities.push(found);
         }
-
-        const activeEntities = realEntities.filter(e => e.active !== false);
-        this.setSelection(activeEntities, "internal");
+        
+        this.setSelection(realEntities, "internal");
     }
 
     consolidateSelection(candidates) {
@@ -244,7 +245,7 @@ export default class SelectionTool {
             if (isUIMode) {
                 return isUILayer;
             } else {
-                return !isUILayer;
+                return true; 
             }
         };
     }

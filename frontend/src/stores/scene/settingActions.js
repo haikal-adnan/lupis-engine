@@ -20,7 +20,7 @@ export const useSettingActions = (activeScene) => {
     const s = _getSettings();
     if (s) {
       s.grid.width = width;
-      s.grid.height = height || width; // Jika height kosong, samakan dengan width
+      s.grid.height = height || width; 
     }
   };
 
@@ -45,11 +45,20 @@ export const useSettingActions = (activeScene) => {
     if (s) s.tickRate = rate;
   };
 
+  // --- World Bounds ---
   // Menerima partial updates, misal: { width: 4000 } atau { x: -100, y: -100 }
   const updateWorldBounds = (updates) => {
     const s = _getSettings();
     if (s && s.worldBounds) {
       Object.assign(s.worldBounds, updates);
+    }
+  };
+
+  // --- UI System Settings (BARU) ---
+  const updateUISettings = (updates) => {
+    const s = _getSettings();
+    if (s && s.ui) {
+      Object.assign(s.ui, updates);
     }
   };
 
@@ -68,6 +77,7 @@ export const useSettingActions = (activeScene) => {
     setBackgroundColor,
     setTickRate,
     updateWorldBounds,
+    updateUISettings, // <--- Pastikan ini di-export
     toggleRulers
   };
 };

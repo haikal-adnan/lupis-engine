@@ -6,24 +6,67 @@ export class HitTester {
     }
 
     getTransform(e) {
-        return e.components && e.components.Transform;
+        return e.components && (e.components.UITransform || e.components.Transform);
     }
 
     isLocked(e) {
         return e._editor && e._editor.locked;
     }
 
-    getAABB(e) {
+    _calculateAbsolutePosition(e, parentBounds) {
         const t = this.getTransform(e);
-        if (!t) return { x: 0, y: 0, w: 0, h: 0 };
+        if (!t) return { x: 0, y: 0 };
 
-        const r = t.rotation || 0;
+        if (!e.components.UITransform) {
+            return { x: t.x, y: t.y };
+        }
+
+        if (!parentBounds) {
+            const uiSettings = this.game.world.settings?.ui || { referenceWidth: 1920, referenceHeight: 1080 };
+            parentBounds = { x: 0, y: 0, width: uiSettings.referenceWidth, height: uiSettings.referenceHeight };
+        }
+
+        const anchorX = t.anchorX ?? 0.5;
+        const anchorY = t.anchorY ?? 0.5;
+
+        const anchorPointX = parentBounds.x + (parentBounds.width * anchorX);
+        const anchorPointY = parentBounds.y + (parentBounds.height * anchorY);
+
+        const finalX = anchorPointX + (t.x || 0);
+        const finalY = anchorPointY + (t.y || 0);
+
+        return { x: finalX, y: finalY };
+    }
+
+    _calculateEntityBounds(e, absPos) {
+        const t = this.getTransform(e);
+        if (!t) return { x: 0, y: 0, width: 0, height: 0 };
+
+        const pX = t.pivotX ?? 0.5;
+        const pY = t.pivotY ?? 0.5;
+        const sX = t.scaleX ?? 1;
+        const sY = t.scaleY ?? 1;
+
+        return {
+            x: absPos.x - (t.width * pX * sX),
+            y: absPos.y - (t.height * pY * sY),
+            width: t.width * sX,
+            height: t.height * sY
+        };
+    }
+
+    getAABB(e) {
+        const absPos = this._calculateAbsolutePosition(e, null); 
+        
+        const t = this.getTransform(e);
+        // [MODIFIED] Konversi Derajat ke Radian
+        const r = (t.rotation || 0) * (Math.PI / 180);
         const sx = t.scaleX ?? 1;
         const sy = t.scaleY ?? 1;
         const px = t.pivotX ?? 0.5;
         const py = t.pivotY ?? 0.5;
 
-        const v = calculateQuadVertices(t.x, t.y, t.width, t.height, r, sx, sy, px, py);
+        const v = calculateQuadVertices(absPos.x, absPos.y, t.width, t.height, r, sx, sy, px, py);
         const xs = [v.tl.x, v.tr.x, v.bl.x, v.br.x];
         const ys = [v.tl.y, v.tr.y, v.bl.y, v.br.y];
 
@@ -35,11 +78,14 @@ export class HitTester {
         return { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
     }
 
-    isPointInEntity(wx, wy, e) {
+    isPointInEntity(wx, wy, e, parentBounds) {
         const t = this.getTransform(e);
         if (!t) return false;
 
-        const r = t.rotation || 0;
+        const absPos = this._calculateAbsolutePosition(e, parentBounds);
+
+        // [MODIFIED] Konversi Derajat ke Radian
+        const r = (t.rotation || 0) * (Math.PI / 180);
         const sx = t.scaleX ?? 1;
         const sy = t.scaleY ?? 1;
         const px = t.pivotX ?? 0.5;
@@ -47,8 +93,8 @@ export class HitTester {
         const w = t.width;
         const h = t.height;
 
-        let dx = wx - t.x;
-        let dy = wy - t.y;
+        let dx = wx - absPos.x;
+        let dy = wy - absPos.y;
 
         const c = Math.cos(-r);
         const s = Math.sin(-r);
@@ -68,7 +114,8 @@ export class HitTester {
         const minY = Math.min(top, bottom);
         const maxY = Math.max(top, bottom);
 
-        const buffer = 5 / Math.abs(this.game.camera.scale || 1);
+        const scaleFactor = Math.abs(this.game.camera.scale || 1);
+        const buffer = 5 / scaleFactor;
 
         return (
             unscaledMouseX >= minX - buffer &&
@@ -78,20 +125,23 @@ export class HitTester {
         );
     }
 
-    _hitTestRecursive(entities, wx, wy, layer, filter) {
+    _hitTestRecursive(entities, wx, wy, layer, filter, parentBounds) {
         for (let i = entities.length - 1; i >= 0; i--) {
             const e = entities[i];
             if (!e.visible || this.isLocked(e)) continue;
 
             if (filter && !filter(e, layer)) continue;
 
+            const absPos = this._calculateAbsolutePosition(e, parentBounds);
+            const myBoundsForChildren = this._calculateEntityBounds(e, absPos);
+
             if (e.children && e.children.length > 0) {
-                const childHit = this._hitTestRecursive(e.children, wx, wy, layer, filter);
+                const childHit = this._hitTestRecursive(e.children, wx, wy, layer, filter, myBoundsForChildren);
                 if (childHit) return childHit;
             }
 
             if (e.type !== 'group') {
-                if (this.isPointInEntity(wx, wy, e)) {
+                if (this.isPointInEntity(wx, wy, e, parentBounds)) {
                     return e;
                 }
             }
@@ -101,57 +151,87 @@ export class HitTester {
 
     hit(world, wx, wy, px, py) {
         const filter = this.game.selection?.filter;
-        const dpr = window.devicePixelRatio || 1;
-        const screenX = px * dpr;
-        const screenY = py * dpr;
+        
+        const uiSettings = world.settings?.ui || { referenceWidth: 1920, referenceHeight: 1080 };
+        const uiRootBounds = {
+            x: 0, y: 0,
+            width: uiSettings.referenceWidth,
+            height: uiSettings.referenceHeight
+        };
 
         for (let li = world.layers.length - 1; li >= 0; li--) {
             const layer = world.layers[li];
             if (!layer.visible || layer.locked) continue;
 
             const isUILayer = layer.scriptId === 'ui' || layer.name === 'UI';
-            
-            const targetX = isUILayer ? screenX : wx;
-            const targetY = isUILayer ? screenY : wy;
+            const rootBounds = isUILayer ? uiRootBounds : null;
 
-            const found = this._hitTestRecursive(layer.entities, targetX, targetY, layer, filter);
+            const found = this._hitTestRecursive(layer.entities, wx, wy, layer, filter, rootBounds);
+            
             if (found) return found;
         }
         return null;
     }
 
-    _checkMarqueeRecursive(entities, box, list, layer, filter) {
+    _checkMarqueeRecursive(entities, box, list, layer, filter, parentBounds) {
         for (const e of entities) {
             if (!e.visible || this.isLocked(e)) continue;
-
             if (filter && !filter(e, layer)) continue;
 
+            const absPos = this._calculateAbsolutePosition(e, parentBounds);
+            const myBoundsForChildren = this._calculateEntityBounds(e, absPos);
+
             if (e.type === 'group') {
-                if (e.children?.length) this._checkMarqueeRecursive(e.children, box, list, layer, filter);
+                if (e.children?.length) this._checkMarqueeRecursive(e.children, box, list, layer, filter, myBoundsForChildren);
                 continue;
             }
 
             const t = this.getTransform(e);
             if (t) {
-                const b = this.getAABB(e);
+                // [MODIFIED] Konversi Derajat ke Radian
+                const r = (t.rotation || 0) * (Math.PI / 180);
+                const sx = t.scaleX ?? 1;
+                const sy = t.scaleY ?? 1;
+                const px = t.pivotX ?? 0.5;
+                const py = t.pivotY ?? 0.5;
+
+                const v = calculateQuadVertices(absPos.x, absPos.y, t.width, t.height, r, sx, sy, px, py);
+                const xs = [v.tl.x, v.tr.x, v.bl.x, v.br.x];
+                const ys = [v.tl.y, v.tr.y, v.bl.y, v.br.y];
+                
+                const b = { 
+                    x: Math.min(...xs), y: Math.min(...ys), 
+                    w: Math.max(...xs) - Math.min(...xs), 
+                    h: Math.max(...ys) - Math.min(...ys) 
+                };
+
                 const overlap =
                     b.x < box.x + box.w &&
                     b.x + b.w > box.x &&
                     b.y < box.y + box.h &&
                     b.y + b.h > box.y;
+                
                 if (overlap) list.push(e);
             }
 
-            if (e.children?.length) this._checkMarqueeRecursive(e.children, box, list, layer, filter);
+            if (e.children?.length) this._checkMarqueeRecursive(e.children, box, list, layer, filter, myBoundsForChildren);
         }
     }
 
     checkMarquee(world, box) {
         const filter = this.game.selection?.filter;
         const list = [];
+        
+        const uiSettings = world.settings?.ui || { referenceWidth: 1920, referenceHeight: 1080 };
+        const uiRootBounds = { x: 0, y: 0, width: uiSettings.referenceWidth, height: uiSettings.referenceHeight };
+
         for (const layer of world.layers) {
             if (!layer.visible || layer.locked) continue;
-            this._checkMarqueeRecursive(layer.entities, box, list, layer, filter);
+            
+            const isUILayer = layer.scriptId === 'ui' || layer.name === 'UI';
+            const rootBounds = isUILayer ? uiRootBounds : null;
+
+            this._checkMarqueeRecursive(layer.entities, box, list, layer, filter, rootBounds);
         }
         return list;
     }

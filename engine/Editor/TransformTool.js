@@ -16,7 +16,7 @@ export default class TransformTool {
 
         this.active = Config.EDITOR.TRANSFORM;
 
-        this.geometry = new TransformGeometry(game);
+        this.geometry = new TransformGeometry(game, world);
         this.drawer = new TransformRenderer(game, selectionTool);
         this.operator = new TransformOperator(world, game, input);
 
@@ -36,7 +36,7 @@ export default class TransformTool {
     }
 
     _getTransform(e) {
-        return e.components && e.components.Transform;
+        return e.components && (e.components.UITransform || e.components.Transform);
     }
 
     _isInteractive(e) {
@@ -192,8 +192,11 @@ export default class TransformTool {
             const e = validEntities[0];
             const t = this._getTransform(e);
             
-            this.rotateCenter = { x: t.x, y: t.y };
-            this.rotateStartAngle = Math.atan2(p.y - t.y, p.x - t.x);
+            const absPos = this.geometry.calculateAbsolutePosition(e);
+            
+            this.rotateCenter = { x: absPos.x, y: absPos.y };
+            this.rotateStartAngle = Math.atan2(p.y - absPos.y, p.x - absPos.x);
+            // Simpan sebagai Derajat
             this.entityStartRotation = t.rotation || 0;
         } else {
             this.draggingResize = true;
@@ -208,6 +211,7 @@ export default class TransformTool {
                     e,
                     x: t.x, y: t.y,
                     w: t.width, h: t.height,
+                    // Simpan sebagai Derajat
                     r: t.rotation || 0,
                     sx: t.scaleX ?? 1, sy: t.scaleY ?? 1
                 };

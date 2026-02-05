@@ -1,70 +1,128 @@
+// src/modules/editor/composables/useEntityActions.js
+
 import { createEntity as createEntitySchema } from '@/services/schema/schema.js'; 
 import { createComponent } from '@/services/schema/sceneSchema/componentSchema.js';
 import { GenerateUUID } from '@/commons/utils/generateUUID';
+import { EngineBridge } from "@/services/engine/EngineBridge.js";
+
+const round = (num, decimals = 2) => {
+  const factor = Math.pow(10, decimals);
+  return Math.round(num * factor) / factor;
+};
 
 export function useEntityActions(activeScene, selectedEntityIds) {
 
+  /**
+   * Membuat Entity baru dengan koordinat yang menyesuaikan posisi kamera saat ini
+   */
   const createEntity = (type, contextNode) => {
     if (!activeScene.value) return null;
+
+    // Ambil posisi kamera saat ini dari Engine via Bridge
+    const camPos = EngineBridge.getCameraPosition();
+    const worldTransform = { 
+        x: Math.round(camPos.x), 
+        y: Math.round(camPos.y) 
+    };
 
     let parentId = null;
     let layerId = null;
 
-    if (contextNode.type === 'layer') {
-      layerId = contextNode._id;
-      parentId = null;
+    if (contextNode) {
+        if (contextNode.type === 'layer') {
+          layerId = contextNode._id;
+          parentId = null;
+        } else {
+          layerId = contextNode.layerId;
+          parentId = contextNode._id;
+        }
     } else {
-      layerId = contextNode.layerId;
-      parentId = contextNode._id;
+        layerId = activeScene.value.layers[0]?._id;
     }
 
     const components = {};
+
+    // Inisialisasi komponen berdasarkan tipe entity
     if (type === 'sprite') {
       components.SpriteRenderer = { assetId: null, color: '#FFFFFF' };
+      components.Transform = worldTransform; // Gunakan posisi kamera
     } else if (type === 'shape') {
       components.ShapeRenderer = { type: 'rectangle', color: '#FF0000' };
+      components.Transform = worldTransform;
     } else if (type === 'text') {
       components.TextRenderer = { value: 'New Text', fontSize: 24, color: '#FFFFFF' };
+      components.Transform = { 
+        ...worldTransform, 
+        width: 107, 
+        height: 23 
+      };
     } else if (type === 'tilemap') {
       const defaultW = 40; 
       const defaultH = 30;
       components.Tilemap = {  
-         tileWidth: 16,
-         tileHeight: 16,
-         width: defaultW,
-         height: defaultH,
-         tilesetId: null,
-         opacity: 1,
-         isSolid: false,
+         tileWidth: 16, tileHeight: 16, width: defaultW, height: defaultH,
+         tilesetId: null, opacity: 1, isSolid: false,
          data: new Array(defaultW * defaultH).fill(0)
       };
+      components.Transform = worldTransform;
+    } else if (type === 'ui_empty') {
+      components.UITransform = { 
+          width: 100, height: 100, anchorX: 0.5, anchorY: 0.5,
+          isRatioLocked: false 
+      };
+    } else if (type === 'ui_panel') {
+      components.UITransform = { 
+          width: 300, height: 200, anchorX: 0.5, anchorY: 0.5,
+          isRatioLocked: false 
+      };
+      components.ShapeRenderer = { type: 'rectangle', color: '#2d2d2d', opacity: 0.8 };
+    } else if (type === 'ui_button') {
+      components.UITransform = { 
+          width: 140, height: 40, anchorX: 0.5, anchorY: 0.5,
+          isRatioLocked: false 
+      };
+      components.ShapeRenderer = { type: 'rectangle', color: '#3498db' };
+      components.TextRenderer = { value: 'Button', fontSize: 16, align: 'center', color: '#FFFFFF' };
+      components.ScriptController = { data: [] }; 
+    } else if (type === 'ui_text') {
+      components.UITransform = { 
+          width: 107, height: 23, anchorX: 0.5, anchorY: 0.5,
+          isRatioLocked: false 
+      };
+      components.TextRenderer = { value: 'New Text', fontSize: 24, align: 'left', color: '#FFFFFF' };
+    } else if (type === 'ui_image') {
+      components.UITransform = { 
+          width: 100, height: 100, anchorX: 0.5, anchorY: 0.5,
+          isRatioLocked: false 
+      };
+      components.SpriteRenderer = { assetId: null, color: '#FFFFFF' };
     }
 
-    
+    // Penamaan otomatis (Incremental Index)
     const existingEntities = activeScene.value.entities;
-
+    const displayType = type.startsWith('ui_') ? type.replace('ui_', '') : type;
+    const namePrefix = displayType.charAt(0).toUpperCase() + displayType.slice(1);
     const regex = new RegExp(`^${type}_(\\d+)$`);
 
     let maxIndex = 0;
-
     existingEntities.forEach(ent => {
         const match = ent.scriptId ? ent.scriptId.match(regex) : null;
         if (match) {
             const num = parseInt(match[1], 10);
-            if (num > maxIndex) {
-                maxIndex = num;
-            }
+            if (num > maxIndex) maxIndex = num;
         }
     });
 
     const nextIndex = maxIndex + 1;
     const scriptId = `${type}_${nextIndex}`;
-    
+    const entityType = type.startsWith('ui_') ? 'ui' : 'entity';
+
+    // Buat entity melalui schema (Transform akan otomatis terisi dari worldTransform di atas)
     const newEntity = createEntitySchema({
       _id: `${GenerateUUID()}`, 
-      scriptId: scriptId, // Gunakan ID yang sudah di-increment
-      name: `${type.charAt(0).toUpperCase() + type.slice(1)} ${nextIndex}`, // Opsional: Nama juga mengikuti (misal "Sprite 1")
-      type: type === 'group' ? 'group' : 'entity',
+      scriptId: scriptId, 
+      name: `${namePrefix} ${nextIndex}`, 
+      type: type === 'group' ? 'group' : entityType,
       layerId,
       parentId,
       components
@@ -73,23 +131,21 @@ export function useEntityActions(activeScene, selectedEntityIds) {
     activeScene.value.entities.push(newEntity);
     selectedEntityIds.value = [newEntity._id];
 
+    // Beritahu Engine untuk melakukan instansiasi object secara realtime
+    EngineBridge.createEntity(newEntity);
+
     return newEntity; 
   };
 
   const updateEntityName = (entityId, newName) => {
     if (!activeScene.value) return;
-    
     const entity = activeScene.value.entities.find(e => e._id === entityId);
-    if (entity) {
-      entity.name = newName;
-    }
+    if (entity) entity.name = newName;
   };
 
   const updateEntityScriptId = (entityId, newScriptId) => {
     if (!activeScene.value) return;
-
     const sanitizedId = newScriptId.replace(/[^a-zA-Z0-9_]/g, "_");
-
     const entity = activeScene.value.entities.find(e => e._id === entityId);
     if (entity) {
       entity.scriptId = sanitizedId;
@@ -112,17 +168,17 @@ export function useEntityActions(activeScene, selectedEntityIds) {
     const idsToDelete = [entityId, ...getDescendants(entityId)];
     activeScene.value.entities = activeScene.value.entities.filter(e => !idsToDelete.includes(e._id));
     selectedEntityIds.value = [];
+    
+    EngineBridge.deleteEntity(entityId);
   };
 
   const moveEntity = (draggedId, targetContext) => {
     if (!activeScene.value) return;
     const entities = activeScene.value.entities;
     const draggedIndex = entities.findIndex(e => e._id === draggedId);
-    
     if (draggedIndex === -1) return;
     
     const [draggedItem] = entities.splice(draggedIndex, 1);
-    
     draggedItem.parentId = targetContext.newParentId;
     draggedItem.layerId = targetContext.newLayerId;
     
@@ -137,6 +193,12 @@ export function useEntityActions(activeScene, selectedEntityIds) {
         entities.push(draggedItem);
       }
     }
+    
+    EngineBridge.moveEntity({ 
+      id: draggedId, 
+      parentId: targetContext.newParentId, 
+      layerId: targetContext.newLayerId 
+    });
   };
 
   const updateComponentProp = (entityId, componentName, path, value) => {
@@ -145,16 +207,34 @@ export function useEntityActions(activeScene, selectedEntityIds) {
     const entity = activeScene.value.entities.find(e => e._id === entityId);
     if (!entity || !entity.components[componentName]) return;
 
+    const comp = entity.components[componentName];
+
+    // Handle Aspect Ratio Lock untuk Transform
+    if ((componentName === 'Transform' || componentName === 'UITransform') && comp.isRatioLocked) {
+        const numValue = Number(value);
+        if (!isNaN(numValue) && comp.width > 0 && comp.height > 0) {
+            const ratio = comp.width / comp.height;
+            if (path === 'width') {
+                const newHeight = round(numValue / ratio);
+                comp.height = newHeight; 
+                EngineBridge.updateComponentProp({ entityId, componentName, path: 'height', value: newHeight }); 
+            } else if (path === 'height') {
+                const newWidth = round(numValue * ratio);
+                comp.width = newWidth; 
+                EngineBridge.updateComponentProp({ entityId, componentName, path: 'width', value: newWidth }); 
+            }
+        }
+    }
+
     const keys = path.split('.');
-    let target = entity.components[componentName];
-    
+    let target = comp;
     for (let i = 0; i < keys.length - 1; i++) {
       if (!target[keys[i]]) target[keys[i]] = {};
       target = target[keys[i]];
     }
-    
     target[keys[keys.length - 1]] = value;
-    
+
+    EngineBridge.updateComponentProp({ entityId, componentName, path, value });
     return { entityId, componentName, path, value };
   };
 
@@ -163,15 +243,14 @@ export function useEntityActions(activeScene, selectedEntityIds) {
     const entity = activeScene.value.entities.find(e => e._id === entityId);
     if (entity) {
       entity[propName] = value;
+      EngineBridge.updateEntityProp({ id: entityId, prop: propName, value });
       return { entityId, propName, value };
     }
   };
 
   const syncTilemapDataFromEngine = (entityId, newData) => {
     if (!activeScene.value) return;
-    
     const entity = activeScene.value.entities.find(e => e._id === entityId);
-    
     if (entity && entity.components && entity.components.Tilemap) {
       entity.components.Tilemap.data = newData;
     }
@@ -179,27 +258,16 @@ export function useEntityActions(activeScene, selectedEntityIds) {
 
   const addComponent = (entityId, componentName) => {
     if (!activeScene.value) return;
-
     const entity = activeScene.value.entities.find(e => e._id === entityId);
     if (!entity) return;
 
-    // Cek jika komponen sudah ada
-    if (entity.components && entity.components[componentName]) {
-      console.warn(`Component ${componentName} already exists on entity ${entityId}`);
-      return;
-    }
+    if (entity.components && entity.components[componentName]) return;
 
-    // Buat object component default
     const newComponentData = createComponent(componentName);
-
-    // Pastikan object components ada
-    if (!entity.components) {
-      entity.components = {};
-    }
-
-    // Reactivity: Assign komponen baru
+    if (!entity.components) entity.components = {};
     entity.components[componentName] = newComponentData;
     
+    EngineBridge.addComponent({ entityId, componentName, data: newComponentData });
     return { entityId, componentName, data: newComponentData };
   };
 

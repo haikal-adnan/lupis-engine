@@ -52,6 +52,11 @@ export function useEditorToEngine(sceneStore, assetStore, editorStore, scriptSto
              EngineBridge.clearSelection();
              break;
 
+          case 'updateUISettings':
+             // args[0] berisi objek update partial, misal: { referenceWidth: 1280 }
+             EngineBridge.updateSceneSettings({ ui: args[0] });
+            break;
+
           // --- KELOMPOK ENTITY & LAYER (Standar) ---
           case 'createEntity': if (result) EngineBridge.createEntity(result); break;
           case 'deleteEntity': EngineBridge.deleteEntity(args[0]); break;

@@ -18,7 +18,7 @@ const EntitySchema = new mongoose.Schema({
   scriptId: { type: String, required: true },
   type: { 
     type: String, 
-    enum: ['entity', 'group'], 
+    enum: ['entity', 'group', 'ui'], 
     default: 'entity',
     required: true 
   },
@@ -40,9 +40,11 @@ const SceneSchema = new mongoose.Schema({
   scriptId: { type: String, required: true, default: 'unnamed_scene' },
   name: { type: String, required: true },
   version: { type: Number, default: 1 },
+  
   settings: {
     backgroundColor: { type: String, default: '#222222' },
     tickRate: { type: Number, default: 60 },
+    
     worldBounds: { 
       x1: { type: Number, default: -1920 }, 
       x2: { type: Number, default: 1920 }, 
@@ -50,6 +52,15 @@ const SceneSchema = new mongoose.Schema({
       y2: { type: Number, default: 1080 },
       active: { type: Boolean, default: true}
     },
+
+    ui: {
+      referenceWidth: { type: Number, default: 1920 },
+      referenceHeight: { type: Number, default: 1080 },
+      scaleMode: { type: String, default: 'constant' }, // 'constant' | 'scale_with_screen'
+      showUIBorder: { type: Boolean, default: true },
+      active: { type: Boolean, default: true }
+    },
+
     grid: {
       width: { type: Number, default: 32 },
       height: { type: Number, default: 32 },
@@ -61,6 +72,7 @@ const SceneSchema = new mongoose.Schema({
 
     showRulers: { type: Boolean, default: true }
   },
+  
   layers: [LayerSchema],
   entities: [EntitySchema]
 }, { 

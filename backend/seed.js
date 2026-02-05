@@ -241,7 +241,6 @@ const seedDatabase = async () => {
           ]
         },
 
-        // 10. TRANSLATE UP (-Y)
         {
           _id: "node_trans_up",
           type: "translate",
@@ -261,27 +260,18 @@ const seedDatabase = async () => {
       ],
 
       edges: [
-        // --- POSITIVE GROUP EDGES ---
-        
-        // 1. D (Right) -> Translate Right
         { _id: "e_pos_1", source: "node_input_pos", sourceHandle: "out_move_right", target: "node_trans_right", targetHandle: "exec_in" },
         { _id: "e_pos_2", source: "node_speed_pos", sourceHandle: "val", target: "node_trans_right", targetHandle: "dx" },
 
-        // 2. S (Down) -> Translate Down
         { _id: "e_pos_3", source: "node_input_pos", sourceHandle: "out_move_down", target: "node_trans_down", targetHandle: "exec_in" },
         { _id: "e_pos_4", source: "node_speed_pos", sourceHandle: "val", target: "node_trans_down", targetHandle: "dy" },
 
-
-        // --- NEGATIVE GROUP EDGES ---
-
-        // 3. A (Left) -> Negate -> Translate Left
         { _id: "e_neg_1", source: "node_input_neg", sourceHandle: "out_move_left", target: "node_neg_left", targetHandle: "in" },
         { _id: "e_neg_2", source: "node_speed_neg", sourceHandle: "val", target: "node_neg_left", targetHandle: "a" },
         
         { _id: "e_neg_3", source: "node_neg_left", sourceHandle: "out", target: "node_trans_left", targetHandle: "exec_in" },
         { _id: "e_neg_4", source: "node_neg_left", sourceHandle: "res", target: "node_trans_left", targetHandle: "dx" },
 
-        // 4. W (Up) -> Negate -> Translate Up
         { _id: "e_neg_5", source: "node_input_neg", sourceHandle: "out_move_up", target: "node_neg_up", targetHandle: "in" },
         { _id: "e_neg_6", source: "node_speed_neg", sourceHandle: "val", target: "node_neg_up", targetHandle: "a" },
 
@@ -300,7 +290,10 @@ const seedDatabase = async () => {
         tag: "interactable",
         layerId: "layer_hero",
         components: {
-          Transform: { x: 0, y: 0, scaleX: 2, scaleY: 2, rotation: 0, width: 50, height: 50 },
+          Transform: { 
+            x: 0, y: 0, scaleX: 2, scaleY: 2, rotation: 0, width: 50, height: 50,
+            isRatioLocked: false // [ADDED]
+          },
           SpriteRenderer: { assetId: assetDungeonId, source: { x: 128, y: 0, w: 32, h: 32 }, color: "#FFFFFF", opacity: 1 },
           BoxCollider: { isTrigger: false, offset: { x: 0, y: 0 }, size: { x: 32, y: 32 } }
         }
@@ -317,10 +310,17 @@ const seedDatabase = async () => {
         backgroundColor: "#222222",
         tickRate: 60,
         worldBounds: { 
-          x1: -1920, 
-          x2: 1920, 
-          y1: -1080, 
-          y2: 1080,
+          x1: -960, 
+          x2: 2880, 
+          y1: -540, 
+          y2: 1620,
+          active: true
+        },
+        ui: {
+          referenceWidth: 1920,
+          referenceHeight: 1080,
+          scaleMode: "constant",
+          showUIBorder: true,
           active: true
         },
         grid: {
@@ -350,7 +350,10 @@ const seedDatabase = async () => {
           isActive: true,
           isVisible: true,
           components: {
-            Transform: { x: 0, y: 0, width: 640, height: 480, rotation: 0, scaleX: 1, scaleY: 1 },
+            Transform: { 
+              x: 0, y: 0, width: 640, height: 480, rotation: 0, scaleX: 1, scaleY: 1,
+              isRatioLocked: false // [ADDED]
+            },
             Tilemap: {
               tileWidth: 16,
               tileHeight: 16,
@@ -373,11 +376,14 @@ const seedDatabase = async () => {
           isActive: true,
           isVisible: true,
           components: {
-            Transform: { x: 300, y: 300, width: 64, height: 64, pivotX: 0.5, pivotY: 0.5 },
+            Transform: { 
+              x: 300, y: 300, width: 64, height: 64, pivotX: 0.5, pivotY: 0.5,
+              isRatioLocked: false // [ADDED]
+            },
             ShapeRenderer: { type: "rectangle", color: "#FF0000", width: 64, height: 64, opacity: 1 },
             ScriptController: {
               data: [
-                {
+                { 
                   _id: "inst_player_move_001", 
                   assetId: scriptPlayerMoveId, 
                   isActive: true,

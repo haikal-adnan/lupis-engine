@@ -57,9 +57,11 @@ export default class WorldRenderer {
             if (layer.visible === false) continue;
 
             const isUILayer = layer.scriptId === 'ui' || layer.name === 'UI';
-            if (isUIMode && isUILayer) continue;
+            if (isUILayer) continue;
 
             for (const e of layer.entities) {
+                if (e.type === 'ui_entity') continue;
+
                 let entityVisualOpacity = 1.0;
 
                 if (isIsolationMode && e.id !== activeTabId) {
@@ -76,7 +78,6 @@ export default class WorldRenderer {
         }
     }
 
-    // [MODIFIKASI] Hapus parameter interpolationAlpha
     _processEntityRecursive(e, world, proj, parentOpacity = 1.0) {
         if (e.active === false) return;
         if (e.visible === false) return;
@@ -94,8 +95,8 @@ export default class WorldRenderer {
         }
 
         const t = comps.Transform;
+        if (!t) return;
         
-        // [SIMPLIFIED] Langsung gunakan t.x dan t.y
         const drawX = t.x;
         const drawY = t.y;
 
@@ -104,20 +105,25 @@ export default class WorldRenderer {
             y: drawY,
             width: t.width,
             height: t.height,
-            rotation: t.rotation,
+            // [MODIFIED] Konversi Derajat ke Radian di sini
+            rotation: (t.rotation || 0) * (Math.PI / 180),
             scaleX: t.scaleX,
             scaleY: t.scaleY,
             pivotX: t.pivotX,
             pivotY: t.pivotY
         };
 
+
         if (comps.SpriteRenderer) {
             const s = comps.SpriteRenderer;
             const a = (s.opacity ?? 1) * currentOpacity;
+
             if (a > 0) {
+                const texture = world.assets.textures[s.assetId];
+
                 this.renderQueue.push({
                     type: "image",
-                    texture: world.assets.textures[s.assetId],
+                    texture: texture, 
                     frame: s.source || { x: 0, y: 0, w: 0, h: 0 },
                     transformData: trans,
                     options: { flipX: s.flipX, flipY: s.flipY, opacity: a }
@@ -125,7 +131,6 @@ export default class WorldRenderer {
             }
         }
         
-        // ... (Sisa shape renderer, text renderer sama)
         if (comps.ShapeRenderer) {
             const s = comps.ShapeRenderer;
             const a = (s.opacity ?? 1) * currentOpacity;
@@ -172,7 +177,6 @@ export default class WorldRenderer {
         }
     }
 
-    // ... (Sisa methods _executeRenderQueue, _drawShape, _renderWorldBounds sama)
     _renderWorldBounds(world, proj) {
         const bounds = world.settings?.worldBounds;
         if (!bounds || !bounds.active) return;

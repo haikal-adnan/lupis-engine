@@ -8,7 +8,6 @@ export function useInspectorLogic() {
   const assetStore = useAssetStore();
   const scriptStore = useScriptStore();
 
-  // --- Core Selection Logic ---
   const selectedEntity = computed(() => {
     const id = sceneStore.selectedEntityIds[0];
     if (!id || !sceneStore.activeScene) return null;
@@ -21,7 +20,6 @@ export function useInspectorLogic() {
     return selectedEntity.value?._editor?.locked || false;
   });
 
-  // Hotkey: ESC untuk clear selection
   const handleKeydown = (e) => {
     if (e.key === "Escape" && hasSelection.value) {
       sceneStore.clearSelection(); 
@@ -31,7 +29,6 @@ export function useInspectorLogic() {
   onMounted(() => window.addEventListener("keydown", handleKeydown));
   onBeforeUnmount(() => window.removeEventListener("keydown", handleKeydown));
 
-  // --- 1. Binding Scene Settings (Global) ---
   function bindSettingProp(category, propName) {
     return computed({
       get: () => {
@@ -42,11 +39,12 @@ export function useInspectorLogic() {
       set: (val) => {
         if (!sceneStore.activeScene) return;
 
-        // Kategori: World Bounds
-        if (category === 'worldBounds') {
+        if (category === 'ui') {
+          sceneStore.updateUISettings({ [propName]: val });
+        }
+        else if (category === 'worldBounds') {
           sceneStore.updateWorldBounds({ [propName]: val });
         } 
-        // Kategori: Grid
         else if (category === 'grid') {
           const grid = sceneStore.activeScene.settings.grid;
           if (propName === 'width') sceneStore.setGridSize(val, grid.height);
@@ -56,7 +54,6 @@ export function useInspectorLogic() {
           else if (propName === 'visible' && val !== grid.visible) sceneStore.toggleGrid();
           else if (propName === 'snap' && val !== grid.snap) sceneStore.toggleMagnet();
         } 
-        // Root Settings (Tanpa Kategori)
         else if (!category) {
           if (propName === 'backgroundColor') sceneStore.setBackgroundColor(val);
           else if (propName === 'tickRate') sceneStore.setTickRate(val);
@@ -68,7 +65,6 @@ export function useInspectorLogic() {
     });
   }
 
-  // --- 2. Binding Entity Properties (Name, Tag, etc.) ---
   function bindEntityProp(propName) {
     return computed({
       get: () => selectedEntity.value ? selectedEntity.value[propName] : '',
@@ -80,19 +76,22 @@ export function useInspectorLogic() {
     });
   }
 
-  // --- 3. Binding Component Properties (Sprite, Shape, etc.) ---
-  function bindComponentProp(compName, propName) {
+  function bindComponentProp(compName, propName, precision = null) {
     return computed({
       get: () => selectedEntity.value?.components?.[compName]?.[propName],
       set: (val) => {
         if (selectedEntity.value) {
-          sceneStore.updateComponentProp(selectedEntity.value._id, compName, propName, val);
+          let finalVal = val;
+          if (precision !== null && typeof val === 'number') {
+             const factor = Math.pow(10, precision);
+             finalVal = Math.round(val * factor) / factor;
+          }
+          sceneStore.updateComponentProp(selectedEntity.value._id, compName, propName, finalVal);
         }
       }
     });
   }
 
-  // --- 4. Binding Nested Properties (e.g. Transform.scale.x) ---
   function bindNestedProp(compName, parentProp, childProp) {
     return computed({
       get: () => selectedEntity.value?.components?.[compName]?.[parentProp]?.[childProp],
@@ -105,7 +104,6 @@ export function useInspectorLogic() {
     });
   }
 
-  // --- Component Management ---
   function addComponentToSelection(componentName) {
     if (!selectedEntity.value) return;
     sceneStore.addComponent(selectedEntity.value._id, componentName);
@@ -116,7 +114,6 @@ export function useInspectorLogic() {
     sceneStore.removeComponent(selectedEntity.value._id, compName); 
   }
 
-  // --- Transform Specific Helpers ---
   function resetTransform() {
     if (!selectedEntity.value) return;
     const id = selectedEntity.value._id;
@@ -125,6 +122,13 @@ export function useInspectorLogic() {
     Object.entries(updates).forEach(([prop, val]) => {
       sceneStore.updateComponentProp(id, 'Transform', prop, val);
     });
+  }
+
+  function resetTextRatio() {
+    if (!selectedEntity.value) return;
+    const tr = selectedEntity.value.components.TextRenderer;
+    if (!tr) return;
+    sceneStore.updateComponentProp(selectedEntity.value._id, 'TextRenderer', 'fontSize', tr.fontSize);
   }
 
   function updatePivot({ x: newPx, y: newPy }) {
@@ -162,7 +166,19 @@ export function useInspectorLogic() {
     sceneStore.updateComponentProp(id, 'Transform', 'y', currentY + worldDy);
   }
 
-  // --- Scripting Helpers ---
+  function updateScriptInstance(index, fieldPath, value) {
+    if (!selectedEntity.value) return;
+    
+    const fullPath = `data.${index}.${fieldPath}`;
+    
+    sceneStore.updateComponentProp(
+      selectedEntity.value._id,
+      'ScriptController',
+      fullPath,
+      value
+    );
+  }
+
   const scriptsData = computed(() => {
     return selectedEntity.value?.components?.ScriptController?.data || [];
   });
@@ -186,7 +202,6 @@ export function useInspectorLogic() {
     sceneStore.updateComponentProp(selectedEntity.value._id, 'ScriptController', 'data', currentList);
   }
 
-  // --- Asset Helpers ---
   const currentTextureUrl = computed(() => {
     if (!selectedEntity.value) return null;
     const comp = selectedEntity.value.components?.SpriteRenderer || selectedEntity.value.components?.Tilemap;
@@ -195,25 +210,24 @@ export function useInspectorLogic() {
   });
 
   return {
-    // States
     selectedEntity,
     hasSelection,
     isLocked,
     currentTextureUrl,
     scriptsData,
 
-    // Binding Methods
     bindSettingProp,
     bindEntityProp,
     bindComponentProp,
     bindNestedProp,
 
-    // Action Methods
+    updateScriptInstance,
     addComponentToSelection,
     removeComponent,
     resetTransform,
     updatePivot,
     addScript,
-    removeScript
+    removeScript,
+    resetTextRatio
   };
 }

@@ -9,7 +9,7 @@ export class TransformOperator {
     }
 
     _getTransform(e) {
-        return e.components && e.components.Transform;
+        return e.components && (e.components.UITransform || e.components.Transform);
     }
 
     getSnapSettings(isUIMode = false) {
@@ -17,15 +17,10 @@ export class TransformOperator {
             return { shouldSnap: false, gridSize: 1 };
         }
 
-        // --- UPDATE: Membaca dari world.settings.grid ---
         const gridSettings = this.world.settings?.grid || { snap: true, width: 32 };
-        
         const globalMagnet = gridSettings.snap;
         const isCtrlHeld = this.input.keyboard.isDown("Control");
-        
-        // Logika magnet: Jika aktif, Ctrl mematikan. Jika mati, Ctrl menyalakan.
         const shouldSnap = globalMagnet ? !isCtrlHeld : isCtrlHeld;
-        
         const gridSize = gridSettings.width || 32;
 
         return { shouldSnap, gridSize };
@@ -60,6 +55,7 @@ export class TransformOperator {
             if (t) {
                 const newX = Math.round(item.x + finalDx);
                 const newY = Math.round(item.y + finalDy);
+                
                 if (t.x !== newX || t.y !== newY) {
                     t.x = newX;
                     t.y = newY;
@@ -74,27 +70,42 @@ export class TransformOperator {
     }
 
     rotate(nowPos, rotateCenter, rotateStartAngle, entityStartRotation, selectedList, isUIMode = false) {
+        if (!selectedList || selectedList.length === 0) return;
+
         const t = this._getTransform(selectedList[0]);
         if (!t) return;
 
+        // Mouse angle sekarang (Radian)
         const currentAngle = Math.atan2(nowPos.y - rotateCenter.y, nowPos.x - rotateCenter.x);
+        
+        // Selisih rotasi (Radian)
         let deltaAngle = currentAngle - rotateStartAngle;
-        let newRotation = entityStartRotation + deltaAngle;
+
+        // [FIX] Konversi entityStartRotation (Derajat) ke Radian untuk perhitungan
+        const startRad = entityStartRotation * (Math.PI / 180);
+        let newRad = startRad + deltaAngle;
+
+        // [FIX] Konversi hasil Radian kembali ke Derajat
+        let newDeg = newRad * (180 / Math.PI);
+
+        // Normalize 0-360
+        newDeg = (newDeg % 360 + 360) % 360;
 
         const { shouldSnap } = this.getSnapSettings(isUIMode);
 
         if (shouldSnap) {
-            const deg = newRotation * (180 / Math.PI);
             const snapInterval = 15;
-            const snappedDeg = Math.round(deg / snapInterval) * snapInterval;
-            newRotation = snappedDeg * (Math.PI / 180);
+            newDeg = Math.round(newDeg / snapInterval) * snapInterval;
         }
 
-        t.rotation = newRotation;
+        // Simpan sebagai Derajat
+        t.rotation = Math.round(newDeg);
         bus.emit("entity:modified", selectedList, true);
     }
 
     resize(nowPos, startPos, resizeType, startData, selectedList, isUIMode = false) {
+        if (!startData || startData.length === 0) return;
+
         const dx = nowPos.x - startPos.x;
         const dy = nowPos.y - startPos.y;
         if (dx === 0 && dy === 0) return;
@@ -104,9 +115,14 @@ export class TransformOperator {
         const item = startData[0];
         const e = item.e;
         const t = this._getTransform(e);
+        
+        if (!t) return;
 
-        const c = Math.cos(-item.r);
-        const s = Math.sin(-item.r);
+        // [FIX] item.r adalah Derajat, konversi ke Radian untuk Math.cos/sin
+        const rRad = item.r * (Math.PI / 180);
+
+        const c = Math.cos(-rRad);
+        const s = Math.sin(-rRad);
         const localDx = dx * c - dy * s;
         const localDy = dx * s + dy * c;
 
@@ -142,6 +158,17 @@ export class TransformOperator {
             }
         }
 
+        if (t.isRatioLocked && item.w !== 0 && item.h !== 0) {
+            if (resizeType.length === 2 || resizeType === 'e' || resizeType === 'w') {
+                rawH = (rawW / item.w) * item.h; 
+                dH = rawH - item.h;
+            } 
+            else if (resizeType === 'n' || resizeType === 's') {
+                rawW = (rawH / item.h) * item.w;
+                dW = rawW - item.w;
+            }
+        }
+
         const newW = Math.round(Math.abs(rawW));
         const newH = Math.round(Math.abs(rawH));
 
@@ -154,6 +181,7 @@ export class TransformOperator {
 
         t.width = newW;
         t.height = newH;
+        
         t.scaleX = (rawW < 0) ? -item.sx : item.sx;
         t.scaleY = (rawH < 0) ? -item.sy : item.sy;
 
@@ -164,8 +192,8 @@ export class TransformOperator {
         if (anchorX !== null) shiftX_World = dW_Visual * ((t.pivotX ?? 0.5) - anchorX);
         if (anchorY !== null) shiftY_World = dH_Visual * ((t.pivotY ?? 0.5) - anchorY);
 
-        const wc = Math.cos(item.r);
-        const ws = Math.sin(item.r);
+        const wc = Math.cos(rRad);
+        const ws = Math.sin(rRad);
 
         t.x = Math.round(item.x + (shiftX_World * wc - shiftY_World * ws));
         t.y = Math.round(item.y + (shiftX_World * ws + shiftY_World * wc));

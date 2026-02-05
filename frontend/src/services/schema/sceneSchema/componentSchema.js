@@ -1,4 +1,3 @@
-// Helper untuk Transform standar (World Space)
 export const createTransform = (data = {}, defaults = { width: 100, height: 100 }) => {
   return {
     x: Number(data.x ?? 0),
@@ -9,50 +8,23 @@ export const createTransform = (data = {}, defaults = { width: 100, height: 100 
     pivotX: Number(data.pivotX ?? 0.5),
     pivotY: Number(data.pivotY ?? 0.5),
     width: Number(data.width ?? defaults.width),
-    height: Number(data.height ?? defaults.height)
+    height: Number(data.height ?? defaults.height),
+    isRatioLocked: Boolean(data.isRatioLocked ?? false)
   };
 };
 
-// Helper khusus untuk UI Transform (Screen Space)
-export const createUITransform = (data = {}) => {
+export const createUITransform = (data = {}, defaults = { width: 160, height: 40 }) => {
+  const base = createTransform(data, defaults);
+
   return {
-    ...createTransform(data, { width: 160, height: 40 }), // Default size lebih pas untuk UI
-    /**
-     * Anchor menentukan posisi relatif terhadap layar/parent.
-     * Pilihan: 'top-left', 'top-center', 'top-right', 
-     * 'center-left', 'center', 'center-right',
-     * 'bottom-left', 'bottom-center', 'bottom-right'
-     */
-    anchor: data.anchor || "center",
-    // Margin/Padding jika diperlukan untuk offset dari anchor
-    marginLeft: Number(data.marginLeft ?? 0),
-    marginTop: Number(data.marginTop ?? 0)
+    ...base,
+    anchorX: Number(data.anchorX ?? 0.5),
+    anchorY: Number(data.anchorY ?? 0.5)
   };
 };
 
 export const createComponent = (type, inputData = {}) => {
   switch (type) {
-    // --- UI COMPONENTS ---
-    
-    case "UITransform":
-      return createUITransform(inputData);
-
-    case "UIButton":
-      return {
-        text: inputData.text || "Button",
-        fontSize: Number(inputData.fontSize || 14),
-        textColor: inputData.textColor || "#FFFFFF",
-        normalColor: inputData.normalColor || "#3b82f6",
-        hoverColor: inputData.hoverColor || "#2563eb",
-        pressedColor: inputData.pressedColor || "#1d4ed8",
-        interactable: Boolean(inputData.interactable ?? true),
-        // Nama event yang akan dipicu di visual scripting/engine
-        onClickEvent: inputData.onClickEvent || null, 
-        ...inputData
-      };
-
-    // --- WORLD COMPONENTS ---
-
     case "SpriteRenderer":
       return {
         assetId: inputData.assetId || null,
@@ -109,7 +81,12 @@ export const createComponent = (type, inputData = {}) => {
     case "Transform":
       return createTransform(inputData);
 
+    case "UITransform":
+      return createUITransform(inputData);
+
     default:
       return { ...inputData };
   }
 };
+
+

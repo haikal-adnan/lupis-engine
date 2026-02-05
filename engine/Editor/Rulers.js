@@ -4,7 +4,7 @@ export default class Rulers {
     constructor(game) {
         this.game = game;
         this.thickness = 20;
-        this.bgColor = HexToVec4("#1e1e1e");
+        this.bgColor = HexToVec4("#131720");
         this.lineColor = HexToVec4("#88888869");
         this.textColor = HexToVec4("#888888");
         this.fontSize = 9;

@@ -1,8 +1,10 @@
 import { computed } from 'vue';
 import { useSceneStore } from '@/stores/scene/useSceneStore';
+import { usePopAlert } from '@/composables/usePopAlert';
 
 export function useHierarchyLogic() {
   const sceneStore = useSceneStore();
+  const { showPop } = usePopAlert();
 
   const entities = computed(() => sceneStore.activeEntities);
   const layers = computed(() => sceneStore.activeLayers);
@@ -11,10 +13,8 @@ export function useHierarchyLogic() {
     if (!entities.value || !layers.value) return [];
     
     const entityMap = {};
-    
     const nodes = entities.value.map(e => {
       const type = e.type || 'entity'; 
-      
       const node = { 
         ...e, 
         children: [],
@@ -31,12 +31,15 @@ export function useHierarchyLogic() {
       }
     });
 
-    return layers.value.map(layer => {
+    const sortedLayers = [...layers.value].sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0));
+
+    return sortedLayers.map(layer => {
       const layerChildren = nodes.filter(n => n.layerId === layer._id && !n.parentId);
       return {
         _id: layer._id,
         name: layer.name,
         type: 'layer',
+        scriptId: layer.scriptId,
         visible: layer.visible,
         locked: layer.locked,
         children: layerChildren,
@@ -55,34 +58,147 @@ export function useHierarchyLogic() {
     return false;
   };
 
+  const getLayerById = (id) => layers.value.find(l => l._id === id);
+  const getEntityById = (id) => entities.value.find(e => e._id === id);
+
+  const containsType = (entityId, typeToCheck) => {
+    const entity = getEntityById(entityId);
+    if (!entity) return false;
+
+    const isUI = entity.type && entity.type.startsWith('ui_'); 
+    
+    if (typeToCheck === 'ui' && isUI) return true;
+    if (typeToCheck === 'world' && !isUI && entity.type !== 'group') return true;
+
+    const children = entities.value.filter(e => e.parentId === entityId);
+    for (const child of children) {
+      if (containsType(child._id, typeToCheck)) return true;
+    }
+    return false;
+  };
+
+  const isEmptyGroup = (entityId) => {
+     const children = entities.value.filter(e => e.parentId === entityId);
+     return children.length === 0;
+  }
+
   const moveEntity = (draggedId, targetNode, position) => {
     if (!draggedId) return;
 
-    if (!targetNode && position === 'root') {
-      const draggedEntity = entities.value.find(e => e._id === draggedId);
-      if (!draggedEntity) return;
+    const draggedLayer = getLayerById(draggedId);
+    const draggedEntity = getEntityById(draggedId);
+    
+    if (draggedLayer) {
+        if (!targetNode || targetNode.type !== 'layer') return;
+        
+        if (draggedLayer.scriptId === 'ui' || draggedLayer.name === 'UI') {
+             showPop({
+                title: 'Action Denied',
+                message: 'UI Layer position is fixed and cannot be moved.',
+                type: 'error',
+                duration: 3000
+             });
+             return;
+        }
 
-      sceneStore.moveEntity(draggedId, {
-        newParentId: null, 
-        newLayerId: draggedEntity.layerId, 
-        insertionType: 'append' 
-      });
-      return;
+        if (targetNode.scriptId === 'ui' || targetNode.name === 'UI') {
+             showPop({
+                title: 'Action Denied',
+                message: 'Cannot reorder relative to UI Layer.',
+                type: 'error',
+                duration: 3000
+             });
+             return;
+        }
+
+        sceneStore.reorderLayer(draggedId, targetNode._id, position);
+        return;
     }
 
-    if (!targetNode) return;
-    const targetId = targetNode._id;
-    if (draggedId === targetId) return;
+    if (draggedEntity) {
+        if (!targetNode) {
+             sceneStore.moveEntity(draggedId, {
+                newParentId: null, 
+                newLayerId: draggedEntity.layerId, 
+                insertionType: 'append' 
+             });
+             return;
+        }
 
-    const isLayer = layers.value.some(l => l._id === draggedId);
+        const targetId = targetNode._id;
+        if (draggedId === targetId) return;
+        if (targetNode.type !== 'layer' && isAncestor(draggedId, targetId)) return;
 
-    if (isLayer) {
-        if (targetNode.type !== 'layer') return; 
-        sceneStore.reorderLayer(draggedId, targetId, position);
-    } 
-    else {
-        if (targetNode.type !== 'layer' && isAncestor(draggedId, targetId)) {
-            return; 
+        let targetLayerId = null;
+        let isTargetUI = false;
+
+        if (targetNode.type === 'layer') {
+            targetLayerId = targetNode._id;
+            isTargetUI = targetNode.scriptId === 'ui' || targetNode.name === 'UI';
+        } else {
+            targetLayerId = targetNode.layerId;
+            const rootLayer = getLayerById(targetLayerId);
+            isTargetUI = rootLayer ? (rootLayer.scriptId === 'ui' || rootLayer.name === 'UI') : false;
+        }
+
+        const isDraggedUI = draggedEntity.type && draggedEntity.type.startsWith('ui_');
+        const isGroup = draggedEntity.type === 'group';
+
+        if (isGroup) {
+            if (isTargetUI) {
+                if (containsType(draggedId, 'world')) {
+                     showPop({
+                        title: 'Invalid Move',
+                        message: 'Cannot move Group containing World Entities into UI Layer.',
+                        type: 'error',
+                        duration: 3000
+                     });
+                     return;
+                }
+                if (!isEmptyGroup(draggedId)) {
+                     showPop({
+                        title: 'Invalid Move',
+                        message: 'Group must be empty to move into UI Layer.',
+                        type: 'error',
+                        duration: 3000
+                     });
+                     return;
+                }
+
+            } else {
+                const oldLayer = getLayerById(draggedEntity.layerId);
+                const wasUI = oldLayer ? (oldLayer.scriptId === 'ui' || oldLayer.name === 'UI') : false;
+
+                if (wasUI && !isTargetUI && !isEmptyGroup(draggedId)) {
+                     showPop({
+                        title: 'Invalid Move',
+                        message: 'Group must be empty to move from UI to World Layer.',
+                        type: 'error',
+                        duration: 3000
+                     });
+                     return;
+                }
+            }
+        }
+        else {
+            if (isDraggedUI && !isTargetUI) {
+                showPop({
+                    title: 'Invalid Move',
+                    message: 'UI Entities cannot be placed in World Layer.',
+                    type: 'error',
+                    duration: 3000
+                });
+                return;
+            }
+            if (!isDraggedUI && isTargetUI) {
+                showPop({
+                    title: 'Invalid Move',
+                    message: 'World Entities cannot be placed in UI Layer.',
+                    type: 'error',
+                    duration: 3000
+                });
+                return;
+            }
         }
 
         const context = {
@@ -96,8 +212,7 @@ export function useHierarchyLogic() {
             context.newLayerId = targetNode._id;
             context.newParentId = null; 
             context.insertionType = 'append';
-        } 
-        else {
+        } else {
             if (position === 'inside') {
                 context.newParentId = targetNode._id;
                 context.newLayerId = targetNode.layerId;
