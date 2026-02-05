@@ -1,7 +1,8 @@
 <template>
   <div 
     ref="panelRef"
-    class="w-full h-screen bg-[#1e1e1e] relative overflow-hidden font-sans select-none"
+    class="w-full h-screen relative overflow-hidden font-sans select-none transition-colors duration-300"
+    :class="isDark ? 'bg-[#1e1e1e]' : 'bg-gray-50'"
     @mousedown.middle="startPan" 
     @mousedown.left="handleCanvasClick" 
     @wheel.prevent="handleWheel"
@@ -14,7 +15,10 @@
       class="absolute inset-0 pointer-events-none transition-opacity duration-500 ease-out" 
       :class="interaction.hoveredId || selectedNodeId ? 'opacity-5' : 'opacity-10'"
       :style="{
-        backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)',
+        /* Jika dark mode gunakan kode lama (#ffffff), jika light mode gunakan kode baru (var) */
+        backgroundImage: isDark 
+          ? 'radial-gradient(#ffffff 1px, transparent 1px)' 
+          : 'radial-gradient(#232323 1px, transparent 1px)',
         backgroundSize: `${GRID_SIZE * camera.scale}px ${GRID_SIZE * camera.scale}px`,
         backgroundPosition: `${camera.x}px ${camera.y}px`
       }"
@@ -47,9 +51,11 @@
             class="pointer-events-none transition-colors duration-200"
             :class="[
               interaction.mode === 'drag' ? 'transition-none' : '',
-              edge.sourceHandle.includes('exec') ? 'stroke-slate-400' : 'stroke-emerald-500',
+              edge.sourceHandle.includes('exec') 
+                ? (isDark ? 'stroke-slate-400' : 'stroke-slate-500')
+                : (isDark ? 'stroke-emerald-500' : 'stroke-emerald-600'),
               interaction.hoveredId === edge._id 
-                ? 'stroke-white opacity-100 shadow-glow filter drop-shadow(0 0 2px white)' 
+                ? (isDark ? 'stroke-white shadow-glow filter drop-shadow(0 0 2px white)' : 'stroke-black shadow-none')
                 : (isRelated(edge._id) ? 'opacity-100' : 'opacity-20 grayscale')
             ]"
           />
@@ -64,7 +70,6 @@
             fill="none" 
             class="pointer-events-none opacity-80" 
           />
-            
           <circle 
             v-if="interaction.candidate"
             :cx="interaction.tempParams.p2.x" 
@@ -98,7 +103,12 @@
     </div>
 
     <div class="absolute bottom-5 right-5 flex gap-2 pointer-events-none">
-      <div class="px-3 py-1 bg-black/50 text-slate-300 text-xs rounded border border-white/10 backdrop-blur font-mono tabular-nums">
+      <div 
+        class="px-3 py-1 text-[10px] rounded border backdrop-blur font-mono tabular-nums shadow-sm transition-all"
+        :class="isDark 
+          ? 'bg-black/50 text-slate-300 border-white/10' 
+          : 'bg-white/80 text-slate-600 border-black/10'"
+      >
         X: {{ camera.x.toFixed(0) }} Y: {{ camera.y.toFixed(0) }} | Zoom: {{ (camera.scale * 100).toFixed(0) }}%
       </div>
     </div>
@@ -118,9 +128,9 @@ import GraphNode from './parts/GraphNode.vue'
 import BaseContextMenu from '@ui/overlay/BaseContextMenu.vue' 
 import { useGraphEditor } from './composables/useGraphEditor.js'
 import { useNodeMenu } from './composables/useNodeMenu.js'
-import { useScriptStore } from '@/stores/useScriptStore'
+import { useTheme } from '@/commons/composables/useTheme.js' // Import useTheme
 
-const store = useScriptStore()
+const { isDark } = useTheme() // Ambil status isDark
 
 const {
   panelRef, camera, nodes, edges, interaction, selectedNodeId,
@@ -154,11 +164,14 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+.grid-dots {
+  --grid-dot-color: rgba(0, 0, 0, 0.3); /* Warna titik light mode */
+}
+
 .gpu-layer {
   transform-origin: 0 0;
   backface-visibility: hidden;
   -webkit-font-smoothing: antialiased; 
-  -moz-osx-font-smoothing: grayscale;
 }
 
 .gpu-layer.is-interacting {

@@ -4,7 +4,7 @@ import { ref, computed } from 'vue';
 import { useLayerActions } from './layerActions';
 import { useEntityActions } from './entityActions';
 import { useSceneActions } from './sceneActions';
-import { useSettingActions } from './settingActions'; // Import baru
+import { useSettingActions } from './settingActions'; 
 
 export const useSceneStore = defineStore('scene', () => {
   const scenes = ref([]);
@@ -35,7 +35,6 @@ export const useSceneStore = defineStore('scene', () => {
     }
   };
 
-  // Helpers untuk sinkronisasi engine (tetap di sini atau bisa dipisah jika mau)
   const patchComponent = (entityId, componentName, updates) => {
     const scene = activeScene.value;
     if (!scene) return;
@@ -63,11 +62,10 @@ export const useSceneStore = defineStore('scene', () => {
     }
   };
 
-  // --- Composables Initialization ---
   const sceneActions = useSceneActions(scenes, activeSceneId, selectedEntityIds);
   const layerActions = useLayerActions(activeScene);
   const entityActions = useEntityActions(activeScene, selectedEntityIds);
-  const settingActions = useSettingActions(activeScene); // Inisialisasi Settings
+  const settingActions = useSettingActions(activeScene); 
 
   return {
     scenes,
@@ -86,7 +84,6 @@ export const useSceneStore = defineStore('scene', () => {
     syncTransformFromEngine,
     patchComponent,
 
-    // Spread semua actions agar bisa diakses langsung: sceneStore.toggleGrid()
     ...sceneActions,
     ...layerActions,
     ...entityActions,

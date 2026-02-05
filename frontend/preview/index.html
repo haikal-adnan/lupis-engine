@@ -4,27 +4,46 @@
   <meta charset="UTF-8" />
   <title>Lupis Engine Preview</title>
   
-  <script>
-    // Jika window.name BUKAN "LupisPreview", berarti user akses manual / direct link.
-    // Kita "pura-pura" jadi 404.
-    // if (window.name !== "LupisPreview") {
-    //   document.title = "404 Not Found";
-    //   document.body.style.backgroundColor = "white";
-    //   document.body.innerHTML = `
-    //     <div style="font-family: sans-serif; text-align: center; margin-top: 50px;">
-    //         <h1>404 Not Found</h1>
-    //         <p>nginx/1.18.0 (Ubuntu)</p>
-    //     </div>
-    //   `;
-    //   // Hentikan eksekusi script selanjutnya
-    //   throw new Error("Direct Access Denied: 404 Simulation"); 
-    // }
-  </script>
-
   <style>
-    html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; }
-    #lp_canvas_preview { position: absolute; inset: 0; width: 100%; height: 100%; display: block; outline: none; }
-    #loading { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #888; font-family: sans-serif; background: #111; z-index: 10; }
+    html, body { 
+        margin: 0; 
+        padding: 0; 
+        width: 100%; 
+        height: 100%; 
+        overflow: hidden; 
+        background: #000; /* Warna Pillarbox/Letterbox (Hitam) */
+        
+        /* [ADD] Flexbox untuk centering Canvas */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    #lp_canvas_preview { 
+        /* [UPDATE] Hapus position absolute/inset agar mengikuti flow flexbox */
+        display: block; 
+        outline: none; 
+        background: #111;
+        box-shadow: 0 0 50px rgba(0,0,0,0.5); /* Efek sinematik */
+        
+        /* Ukuran akan diatur via JS */
+        max-width: 100%;
+        max-height: 100%;
+    }
+
+    #loading { 
+        position: absolute; 
+        inset: 0; 
+        display: flex; 
+        flex-direction: column; 
+        align-items: center; 
+        justify-content: center; 
+        color: #888; 
+        font-family: sans-serif; 
+        background: #111; 
+        z-index: 10; 
+    }
+    
     .hidden { display: none !important; }
   </style>
 
@@ -39,6 +58,7 @@
 </head>
 <body>
   <div id="loading">Connecting...</div>
+  
   <canvas id="lp_canvas_preview" tabindex="0"></canvas>
 
   <script type="module">
@@ -50,11 +70,54 @@
     const canvasEl = document.getElementById("lp_canvas_preview");
     const channel = new BroadcastChannel(CHANNEL_NAME);
 
+    // [ADD] Fungsi untuk menjaga Aspect Ratio
+    function setupCanvasResponsiveness(refWidth, refHeight) {
+        // 1. Set Resolusi Internal (Pixel Buffer) agar tajam
+        canvasEl.width = refWidth;
+        canvasEl.height = refHeight;
+
+        // 2. Fungsi hitung CSS Size (Tampilan)
+        const onResize = () => {
+            const winW = window.innerWidth;
+            const winH = window.innerHeight;
+            const targetRatio = refWidth / refHeight;
+            const winRatio = winW / winH;
+
+            let finalW, finalH;
+
+            if (winRatio > targetRatio) {
+                // Window lebih lebar -> Batasi berdasarkan Tinggi (Pillarbox)
+                finalH = winH;
+                finalW = finalH * targetRatio;
+            } else {
+                // Window lebih tinggi -> Batasi berdasarkan Lebar (Letterbox)
+                finalW = winW;
+                finalH = finalW / targetRatio;
+            }
+
+            canvasEl.style.width = `${finalW}px`;
+            canvasEl.style.height = `${finalH}px`;
+        };
+
+        // Jalankan saat init & saat window di-resize
+        window.addEventListener('resize', onResize);
+        onResize(); 
+    }
+
     async function runGame(payload) {
         try {
             loadingEl.classList.remove("hidden");
             loadingEl.innerText = "Starting Engine...";
             
+            // [ADD] Ambil Resolusi dari Payload Settings
+            const settings = payload.scene.settings?.ui || {};
+            const refW = settings.referenceWidth || 1920; // Default HD
+            const refH = settings.referenceHeight || 1080;
+
+
+            // [ADD] Setup Canvas sebelum engine start
+            setupCanvasResponsiveness(refW, refH);
+
             await startEngine(canvasEl, "runtime", payload);
 
             loadingEl.classList.add("hidden");

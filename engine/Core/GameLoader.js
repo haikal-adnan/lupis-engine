@@ -1,6 +1,6 @@
-import Config from "./Config.js";
+import Config from "../Core/Config.js";
 import RendererManager from "../Renderer/RendererManager.js";
-import World from "./World.js";
+import World from "../Core/World.js";
 import InputManager from "../Input/InputManager.js";
 import EventManager from "../Script/EventManager.js";
 import GLImageResource from "../Renderer/Graphic/GLImageResource.js";
@@ -21,76 +21,56 @@ import { bus } from "../Util/EventBus.js";
 
 export default class GameLoader {
     async initializeGame(game, canvas, mode = "runtime", payload = {}) {
-        try {
-            this._initMain(game, canvas, mode);
-        } catch (err) {
-            console.error(err);
-            return;
-        }
-
         const { project, assets, scene, prefabs, scripts, editorConfig } = payload;
 
-        if (scene?.settings) {
-            game.world.settings = {
-                tickRate: scene.settings.tickRate ?? 60,
-                backgroundColor: scene.settings.backgroundColor ?? "#222222",
-                worldBounds: scene.settings.worldBounds ?? game.world.settings.worldBounds,
-                grid: scene.settings.grid ?? game.world.settings.grid,
-                showRulers: scene.settings.showRulers ?? true
-            };
-        }
-
-        if (mode === "editor" && editorConfig) {
-            game.world._editors = {
-                activeTool: editorConfig.activeTool || 'select',
-                activeTabId: editorConfig.activeTabId || 'scene',
-                tabs: editorConfig.tabs || [],
-                tilemapContext: {
-                    showOthers: editorConfig.tilemapContext?.showOthers ?? true,
-                    opacity: editorConfig.tilemapContext?.opacity ?? 0.5
-                }
-            };
-        }
-
         try {
+            // 1. Basic System Initialization
+            this._initMain(game, canvas, mode);
+            
+            // 2. Data & Settings Setup
             if (project) game._id = project._id;
+            this._setupWorldSettings(game, scene?.settings);
+            
+            if (mode === "editor") {
+                this._setupEditorState(game, editorConfig);
+            }
+
+            // 3. Asset & Library Loading
             ScriptLoader.load(game, payload);
             
             const assetLoader = new AssetLoader(
-                new GLImageResource(game.renderer.gl), 
+                new GLImageResource(game.renderer.gl),
                 new GLFontResource(game.renderer.gl)
             );
             
-            await assetLoader.loadAsset(game.world, assets);
             game.assetLoader = assetLoader;
+            await assetLoader.loadAsset(game.world, assets);
 
             this._initPrefabLibrary(game.world, prefabs);
             this._initScriptLibrary(game.world, scripts);
 
+            // 4. Scene Loading
             if (scene) {
                 new SceneLoader(game.world, mode).loadScene(scene);
             }
-        } catch (err) {
-            console.error("Initialization error:", err);
-        }
 
-        if (mode === "editor") {
-            try {
+            // 5. System Hooks (Editor vs Runtime)
+            if (mode === "editor") {
                 this._initializeEditorTools(game, canvas);
-            } catch (e) {
-                console.warn(e);
+            } else {
+                this._initializeRuntimeSystems(game);
             }
-        } else {
-            try {
-                this._initializeEntityScripts(game);
-                game.scriptSystem.startAll();
-            } catch (err) {
-                console.error("Failed to initialize entity scripts:", err);
-            }
-        }
 
-        game.initLoop();
-        this.start(game);
+            // 6. Camera Setup & Finalize
+            this._setupCamera(game, scene?.camera, mode);
+            
+            game.initLoop();
+            this.start(game);
+
+            console.log(`[LupisEngine] ${mode.toUpperCase()} initialized successfully.`);
+        } catch (err) {
+            console.error("[GameLoader] Critical initialization failure:", err);
+        }
     }
 
     _initMain(game, canvas, mode) {
@@ -101,59 +81,100 @@ export default class GameLoader {
         game.renderer = new RendererManager(canvas, game);
     }
 
-    _initScriptLibrary(world, scripts) {
-        if (!Array.isArray(scripts)) {
-            world.scripts = {};
-            return;
+    _setupWorldSettings(game, settings = {}) {
+        const ws = game.world.settings;
+        game.world.settings = {
+            tickRate: settings.tickRate ?? 60,
+            backgroundColor: settings.backgroundColor ?? "#222222",
+            worldBounds: settings.worldBounds ?? ws.worldBounds,
+            grid: settings.grid ?? ws.grid,
+            showRulers: settings.showRulers ?? true,
+            ui: {
+                referenceWidth: settings.ui?.referenceWidth ?? 1920,
+                referenceHeight: settings.ui?.referenceHeight ?? 1080,
+                scaleMode: settings.ui?.scaleMode ?? "constant",
+                showUIBorder: settings.ui?.showUIBorder ?? true,
+                active: settings.ui?.active ?? true
+            }
+        };
+    }
+
+    _setupEditorState(game, config = {}) {
+        game.world._editors = {
+            activeTool: config.activeTool || "select",
+            activeTabId: config.activeTabId || "scene",
+            tabs: config.tabs || [],
+            tilemapContext: {
+                showOthers: config.tilemapContext?.showOthers ?? true,
+                opacity: config.tilemapContext?.opacity ?? 0.5
+            },
+            showUIBorder: game.world.settings.ui.showUIBorder
+        };
+    }
+
+    _setupCamera(game, savedCamera, mode) {
+        const { referenceWidth: rw, referenceHeight: rh } = game.world.settings.ui;
+
+        if (savedCamera?.x !== undefined) {
+            game.camera.x = savedCamera.x;
+            game.camera.y = savedCamera.y;
+            game.camera.scale = savedCamera.scale || 1;
+        } else {
+            game.camera.x = rw / 2;
+            game.camera.y = rh / 2;
+            game.camera.scale = (mode === "editor") ? 0.5 : 1;
         }
-        world.scripts = scripts.reduce((map, scriptItem) => {
-            map[scriptItem._id] = {
-                _id: scriptItem._id,
-                name: scriptItem.name,
-                type: scriptItem.type,
-                variables: scriptItem.exposedVariables || [],
-                nodes: scriptItem.nodes || [],
-                edges: scriptItem.edges || []
-            };
-            return map;
-        }, {});
+    }
+
+    _initializeRuntimeSystems(game) {
+        try {
+            this._initializeEntityScripts(game);
+            game.scriptSystem.startAll();
+        } catch (err) {
+            console.error("Failed to initialize entity scripts:", err);
+        }
+    }
+
+    _initScriptLibrary(world, scripts) {
+        world.scripts = Array.isArray(scripts) 
+            ? Object.fromEntries(scripts.map(s => [s._id, {
+                _id: s._id,
+                name: s.name,
+                type: s.type,
+                variables: s.exposedVariables || [],
+                nodes: s.nodes || [],
+                edges: s.edges || []
+            }]))
+            : {};
     }
 
     _initPrefabLibrary(world, prefabs) {
         if (!Array.isArray(prefabs)) return;
-        world.prefabs = prefabs.reduce((map, item) => {
-            map[item._id] = {
-                _id: item._id,
-                name: item.name,
-                data: item.data
-            };
-            return map;
-        }, {});
+        world.prefabs = Object.fromEntries(prefabs.map(p => [p._id, {
+            _id: p._id,
+            name: p.name,
+            data: p.data
+        }]));
     }
 
     _initializeEntityScripts(game) {
         game.world.entities.forEach(entity => {
-            if (!entity.components || !entity.components.ScriptController) return;
-            const controller = entity.components.ScriptController;
-            if (Array.isArray(controller.data)) {
-                controller.data.forEach(scriptInstance => {
-                    const scriptAssetId = scriptInstance.assetId;
-                    const scriptAsset = game.world.scripts[scriptAssetId];
-                    if (scriptAsset) {
-                        const runtimeScriptData = {
-                            ...scriptAsset,
-                            variables: this._mergeVariables(scriptAsset.variables, scriptInstance.variables)
-                        };
-                        game.scriptSystem.add(runtimeScriptData, entity);
-                    }
-                });
-            }
+            const controller = entity.components?.ScriptController;
+            if (!Array.isArray(controller?.data)) return;
+
+            controller.data.forEach(instance => {
+                const asset = game.world.scripts[instance.assetId];
+                if (asset) {
+                    game.scriptSystem.add({
+                        ...asset,
+                        variables: this._mergeVariables(asset.variables, instance.variables)
+                    }, entity);
+                }
+            });
         });
     }
 
-    _mergeVariables(assetVars, instanceVars) {
-        if (!assetVars) return [];
-        if (!instanceVars) return assetVars;
+    _mergeVariables(assetVars = [], instanceVars = {}) {
         return assetVars.map(v => ({
             ...v,
             defaultValue: instanceVars[v._id] !== undefined ? instanceVars[v._id] : v.defaultValue
@@ -163,18 +184,14 @@ export default class GameLoader {
     _initializeEditorTools(game, canvas) {
         const { world, renderer, camera, input } = game;
         const { EDITOR } = Config;
-        const settings = world.settings;
 
-        if (EDITOR.CAMERA_CONTROLLER)
+        if (EDITOR.CAMERA_CONTROLLER) 
             game.cameraController = new CameraController(camera, canvas, input);
 
         if (EDITOR.GRID) {
             game.grid = new Grid(world, game, canvas, renderer, camera);
-
             world.gridRenderer = (shape, proj) => {
-                if (world.settings.grid && world.settings.grid.visible) {
-                    game.grid.render(shape, proj);
-                }
+                if (world.settings.grid?.visible) game.grid.render(shape, proj);
             };
         }
 
@@ -189,7 +206,7 @@ export default class GameLoader {
         }
 
         if (EDITOR.POINTER) game.pointerCoords = new PointerCoordinates(game, renderer);
-        
+
         game.tilemapTool = new TilemapTool(game);
         game.syncSystem = new SyncComponent(world, bus, game);
     }

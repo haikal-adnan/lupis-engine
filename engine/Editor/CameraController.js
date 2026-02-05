@@ -19,8 +19,8 @@ export default class CameraController {
         this.startPinchDist = 0;
         this.startPinchScale = 1;
 
-        this.minZoom = 0.25;
-        this.maxZoom = 99999;
+        this.minZoom = 0.125;
+        this.maxZoom = 8;
         this.zoomSpeed = 0.1;
         this.fastZoomMultiplier = 2;
     }

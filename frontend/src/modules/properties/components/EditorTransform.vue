@@ -14,8 +14,8 @@
 
     <PropertyRow label="Position">
       <div class="grid grid-cols-2 gap-2">
-        <BaseNumber v-model="x" prefix="X" :step="1" class="font-mono" :disabled="isLocked" />
-        <BaseNumber v-model="y" prefix="Y" :step="1" class="font-mono" :disabled="isLocked" />
+        <BaseNumber v-model="x" prefix="X" :step="1" :precision="2" class="font-mono" :disabled="isLocked" />
+        <BaseNumber v-model="y" prefix="Y" :step="1" :precision="2" class="font-mono" :disabled="isLocked" />
       </div>
     </PropertyRow>
 
@@ -24,7 +24,7 @@
         <PropertyRow label="Rotation">
           <BaseNumber 
             v-model="rotation" 
-            prefix="R" suffix="°" :step="1" 
+            prefix="R" suffix="°" :step="1" :precision="2"
             class="font-mono flex-grow"
             :min="0" :max="359" :cyclic="true"
             :disabled="isLocked" 
@@ -43,8 +43,8 @@
     <PropertyRow label="Size (px)">
       <div class="flex items-center gap-2">
         <div class="grid grid-cols-2 gap-2 flex-grow">
-          <BaseNumber v-model="width" prefix="W" :min="0" :step="1" class="font-mono" :disabled="isLocked" />
-          <BaseNumber v-model="height" prefix="H" :min="0" :step="1" class="font-mono" :disabled="isLocked" />
+          <BaseNumber v-model="width" prefix="W" :min="1" :step="1" :precision="2" class="font-mono" :disabled="isLocked" />
+          <BaseNumber v-model="height" prefix="H" :min="1" :step="1" :precision="2" class="font-mono" :disabled="isLocked" />
         </div>
 
         <IconButton 
@@ -85,10 +85,9 @@
 </template>
 
 <script setup>
-import { BoxSelect, Lock, Unlock, FlipHorizontal, FlipVertical, Trash2 } from 'lucide-vue-next'
+import { BoxSelect, Lock, Unlock, FlipHorizontal, FlipVertical } from 'lucide-vue-next'
 import { useInspectorLogic } from "@/modules/properties/composables/useInspectorLogic.js";
 
-// Components
 import PropertySection from "@ui/display/PropertySection.vue";
 import PropertyRow from "@ui/display/PropertyRow.vue";
 import PivotControl from '@ui/inputs/PivotControl.vue'
@@ -98,17 +97,17 @@ import BaseButton from '@/commons/components/buttons/BaseButton.vue'
 
 const { selectedEntity, resetTransform, updatePivot, bindComponentProp, isLocked } = useInspectorLogic();
 
-// BINDINGS (Sangat Penting: Harus individual)
-const x = bindComponentProp('Transform', 'x');
-const y = bindComponentProp('Transform', 'y');
-const rotation = bindComponentProp('Transform', 'rotation');
-const width = bindComponentProp('Transform', 'width');
-const height = bindComponentProp('Transform', 'height');
+// BINDINGS: Tambahkan argumen ke-3 yaitu precision (2 desimal)
+const x = bindComponentProp('Transform', 'x', 2);
+const y = bindComponentProp('Transform', 'y', 2);
+const rotation = bindComponentProp('Transform', 'rotation', 2);
+const width = bindComponentProp('Transform', 'width', 2);
+const height = bindComponentProp('Transform', 'height', 2);
+
 const flipX = bindComponentProp('Transform', 'flipX');
 const flipY = bindComponentProp('Transform', 'flipY');
 const isRatioLocked = bindComponentProp('Transform', 'isRatioLocked');
 
-// Pivot (Read-only untuk display, update via event updatePivot)
 const pivotX = bindComponentProp('Transform', 'pivotX');
 const pivotY = bindComponentProp('Transform', 'pivotY');
 </script>

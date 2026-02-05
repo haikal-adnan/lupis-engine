@@ -1,5 +1,5 @@
 <template>
-  <PropertySection title="Scene Configuration" :icon="Settings2" :default-open="true">
+  <PropertySection title="Scene Configuration" :icon="Settings2" :default-open="false">
     
     <PropertyRow label="Background">
       <BaseColor 

@@ -1,5 +1,5 @@
 <template>
-  <PropertySection title="Grid System" :icon="Grid3X3" :default-open="true">
+  <PropertySection title="Grid System" :icon="Grid3X3" :default-open="false">
     
     <div class="flex items-center gap-4 mb-3 pt-1 px-1">
       <BaseCheckbox 

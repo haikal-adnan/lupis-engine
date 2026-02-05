@@ -33,10 +33,13 @@ export default class TilemapRenderer {
         if (isEditingThisMap) {
             renderScaleX = 1; renderScaleY = 1; renderRotation = 0;
         } else {
+            // Kalkulasi scale berdasarkan width/height transform vs natural size
             if (tf.width && tf.width !== naturalW && naturalW > 0) renderScaleX = tf.width / naturalW;
             else renderScaleX = tf.scaleX || 1;
+            
             if (tf.height && tf.height !== naturalH && naturalH > 0) renderScaleY = tf.height / naturalH;
             else renderScaleY = tf.scaleY || 1;
+            
             renderRotation = tf.rotation || 0;
         }
 
@@ -89,22 +92,31 @@ export default class TilemapRenderer {
         const baseOpacity = (tm.opacity ?? 1) * (entity.opacity ?? 1) * externalOpacity;
         const dragState = editors?.dragState;
 
+        // [FIX] Hitung ukuran tile visual (setelah scale)
+        const scaledTileW = rData.tileW * rData.scaleX;
+        const scaledTileH = rData.tileH * rData.scaleY;
+
         const cam = this.game.camera;
         const canvas = this.game.renderer.canvas;
-        const viewW = (canvas.width / cam.scale) + rData.tileW * 2;
-        const viewH = (canvas.height / cam.scale) + rData.tileH * 2;
+        
+        // View size disesuaikan dengan scaled tile
+        const viewW = (canvas.width / cam.scale) + scaledTileW * 2;
+        const viewH = (canvas.height / cam.scale) + scaledTileH * 2;
 
-        const startCol = Math.floor(((cam.x - viewW / 2) - rData.startX) / rData.tileW);
-        const endCol = Math.ceil(((cam.x + viewW / 2) - rData.startX) / rData.tileW);
-        const startRow = Math.floor(((cam.y - viewH / 2) - rData.startY) / rData.tileH);
-        const endRow = Math.ceil(((cam.y + viewH / 2) - rData.startY) / rData.tileH);
+        // Culling calculation menggunakan scaledTileW/H
+        const startCol = Math.floor(((cam.x - viewW / 2) - rData.startX) / scaledTileW);
+        const endCol = Math.ceil(((cam.x + viewW / 2) - rData.startX) / scaledTileW);
+        const startRow = Math.floor(((cam.y - viewH / 2) - rData.startY) / scaledTileH);
+        const endRow = Math.ceil(((cam.y + viewH / 2) - rData.startY) / scaledTileH);
 
         const loopStartX = Math.max(0, startCol);
         const loopEndX = Math.min(rData.cols, endCol);
         const loopStartY = Math.max(0, startRow);
         const loopEndY = Math.min(rData.rows, endRow);
 
-        const overlapFix = 0.4; 
+        // Overlap fix disesuaikan scale agar tidak ada celah antar tile saat di-stretch
+        const overlapFixX = 0.4 * Math.abs(rData.scaleX);
+        const overlapFixY = 0.4 * Math.abs(rData.scaleY);
 
         for (let y = loopStartY; y < loopEndY; y++) {
             for (let x = loopStartX; x < loopEndX; x++) {
@@ -124,22 +136,23 @@ export default class TilemapRenderer {
                     const srcX = (actualIndex % tilesetCols) * rData.tileW;
                     const srcY = Math.floor(actualIndex / tilesetCols) * rData.tileH;
                     
-                    const dstX = rData.startX + (x * rData.tileW);
-                    const dstY = rData.startY + (y * rData.tileH);
+                    // [FIX] Gunakan scaledTileW/H untuk posisi tujuan
+                    const dstX = rData.startX + (x * scaledTileW);
+                    const dstY = rData.startY + (y * scaledTileH);
 
                     this.image.draw(
                         asset,
-                        // Source (Crop) tetap akurat
+                        // Source tetap menggunakan ukuran asli (tileW)
                         { x: srcX, y: srcY, w: rData.tileW, h: rData.tileH },
                         
-                        // Destination (Layar) kita "mekarkan" sedikit (overlapFix)
+                        // Destination menggunakan ukuran scaled
                         { 
                             x: dstX, 
                             y: dstY, 
-                            width: rData.tileW + overlapFix,  // Ditambah sedikit
-                            height: rData.tileH + overlapFix, // Ditambah sedikit
+                            width: scaledTileW + overlapFixX, 
+                            height: scaledTileH + overlapFixY, 
                             rotation: rData.rotation, 
-                            scaleX: 1, 
+                            scaleX: 1, // Scale sudah di-apply ke width/height
                             scaleY: 1, 
                             pivotX: 0, 
                             pivotY: 0 
@@ -156,27 +169,32 @@ export default class TilemapRenderer {
     _drawEditorGizmos(entity, tm, rData, world, proj, editors) {
         if (!editors) return;
 
+        // [FIX] Hitung ukuran tile visual
+        const scaledTileW = rData.tileW * rData.scaleX;
+        const scaledTileH = rData.tileH * rData.scaleY;
+
         const cam = this.game.camera;
         const canvas = this.game.renderer.canvas;
         const viewW = canvas.width / cam.scale;
         const viewH = canvas.height / cam.scale;
 
-        const startCol = Math.floor((cam.x - (viewW / 2) - rData.startX) / rData.tileW);
-        const endCol = Math.ceil((cam.x + (viewW / 2) - rData.startX) / rData.tileW);
-        const startRow = Math.floor((cam.y - (viewH / 2) - rData.startY) / rData.tileH);
-        const endRow = Math.ceil((cam.y + (viewH / 2) - rData.startY) / rData.tileH);
+        const startCol = Math.floor((cam.x - (viewW / 2) - rData.startX) / scaledTileW);
+        const endCol = Math.ceil((cam.x + (viewW / 2) - rData.startX) / scaledTileW);
+        const startRow = Math.floor((cam.y - (viewH / 2) - rData.startY) / scaledTileH);
+        const endRow = Math.ceil((cam.y + (viewH / 2) - rData.startY) / scaledTileH);
 
         const loopStartX = Math.max(0, startCol);
         const loopEndX = Math.min(rData.cols, endCol);
         const loopStartY = Math.max(0, startRow);
         const loopEndY = Math.min(rData.rows, endRow);
 
+        // [FIX] Gambar Grid mengikuti scaled size
         for (let i = loopStartX; i <= loopEndX; i++) {
-            const xPos = rData.startX + (i * rData.tileW);
+            const xPos = rData.startX + (i * scaledTileW);
             this.shape.drawLine(xPos, rData.startY, xPos, rData.startY + rData.totalH, this.colors.grid, 1, proj);
         }
         for (let j = loopStartY; j <= loopEndY; j++) {
-            const yPos = rData.startY + (j * rData.tileH);
+            const yPos = rData.startY + (j * scaledTileH);
             this.shape.drawLine(rData.startX, yPos, rData.startX + rData.totalW, yPos, this.colors.grid, 1, proj);
         }
 
@@ -186,8 +204,10 @@ export default class TilemapRenderer {
         const my = this.game.input?.mouse?.y || 0;
         const worldX = (mx - canvas.width / 2) / cam.scale + cam.x;
         const worldY = (my - canvas.height / 2) / cam.scale + cam.y;
-        const gridX = Math.floor((worldX - rData.startX) / rData.tileW);
-        const gridY = Math.floor((worldY - rData.startY) / rData.tileH);
+        
+        // [FIX] Kalkulasi Mouse Selection menggunakan scaledTileW/H
+        const gridX = Math.floor((worldX - rData.startX) / scaledTileW);
+        const gridY = Math.floor((worldY - rData.startY) / scaledTileH);
 
         const isHoverValid = (gridX >= 0 && gridX < rData.cols && gridY >= 0 && gridY < rData.rows);
         const activeTool = editors.activeTool;
@@ -216,9 +236,18 @@ export default class TilemapRenderer {
                         const actualIndex = tileId - 1;
                         const srcX = (actualIndex % tilesetCols) * rData.tileW;
                         const srcY = Math.floor(actualIndex / tilesetCols) * rData.tileH;
-                        const dstX = rData.startX + (tx * rData.tileW);
-                        const dstY = rData.startY + (ty * rData.tileH);
-                        this.image.draw(asset, { x: srcX, y: srcY, w: rData.tileW, h: rData.tileH }, { x: dstX, y: dstY, width: rData.tileW, height: rData.tileH }, { opacity: 0.8 }, proj);
+                        
+                        // [FIX] Drag preview position
+                        const dstX = rData.startX + (tx * scaledTileW);
+                        const dstY = rData.startY + (ty * scaledTileH);
+                        
+                        this.image.draw(
+                            asset, 
+                            { x: srcX, y: srcY, w: rData.tileW, h: rData.tileH }, 
+                            { x: dstX, y: dstY, width: scaledTileW, height: scaledTileH }, // scaled dimensions
+                            { opacity: 0.8 }, 
+                            proj
+                        );
                     }
                 }
             }
@@ -241,17 +270,28 @@ export default class TilemapRenderer {
     }
 
     _renderGhost(rData, tm, asset, selection, proj, gridX, gridY) {
+        // [FIX] Local variables untuk scaled size
+        const scaledTileW = rData.tileW * rData.scaleX;
+        const scaledTileH = rData.tileH * rData.scaleY;
+
         const tilesetCols = Math.floor(asset.width / rData.tileW);
         for (let dy = 0; dy < selection.h; dy++) {
             for (let dx = 0; dx < selection.w; dx++) {
                 const tx = gridX + dx;
                 const ty = gridY + dy;
                 if (tx >= 0 && tx < rData.cols && ty >= 0 && ty < rData.rows) {
-                    const dstX = rData.startX + (tx * rData.tileW);
-                    const dstY = rData.startY + (ty * rData.tileH);
+                    const dstX = rData.startX + (tx * scaledTileW);
+                    const dstY = rData.startY + (ty * scaledTileH);
                     const srcX = (selection.x + dx) * rData.tileW;
                     const srcY = (selection.y + dy) * rData.tileH;
-                    this.image.draw(asset, { x: srcX, y: srcY, w: rData.tileW, h: rData.tileH }, { x: dstX, y: dstY, width: rData.tileW, height: rData.tileH }, { opacity: 0.6 }, proj);
+                    
+                    this.image.draw(
+                        asset, 
+                        { x: srcX, y: srcY, w: rData.tileW, h: rData.tileH }, 
+                        { x: dstX, y: dstY, width: scaledTileW, height: scaledTileH }, 
+                        { opacity: 0.6 }, 
+                        proj
+                    );
                 }
             }
         }
@@ -260,10 +300,14 @@ export default class TilemapRenderer {
     }
 
     _renderHighlightRect(rData, gridX, gridY, w, h, color, proj, thickness = 2) {
-        const dstX = rData.startX + (gridX * rData.tileW);
-        const dstY = rData.startY + (gridY * rData.tileH);
-        const dstW = w * rData.tileW;
-        const dstH = h * rData.tileH;
+        // [FIX] Highlight rect harus mengikuti skala tile
+        const scaledTileW = rData.tileW * rData.scaleX;
+        const scaledTileH = rData.tileH * rData.scaleY;
+
+        const dstX = rData.startX + (gridX * scaledTileW);
+        const dstY = rData.startY + (gridY * scaledTileH);
+        const dstW = w * scaledTileW;
+        const dstH = h * scaledTileH;
         this.shape.drawRectStroke(dstX, dstY, dstW, dstH, color, thickness, proj);
     }
 }

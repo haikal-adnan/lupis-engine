@@ -1,5 +1,6 @@
 import { ref, onMounted, onUnmounted } from "vue";
 import { prepareEngineData } from "@/services/engine/EngineBootstrapper.js";
+import { useSceneStore } from '@/stores/scene/useSceneStore.js'; // [ADD] Import Store
 
 const BROADCAST_CHANNEL_NAME = "lupis_engine_preview_channel";
 
@@ -8,6 +9,9 @@ export function usePreview() {
   const previewWindow = ref(null);
   let channel = null;
   let checkWindowInterval = null;
+  
+  // [ADD] Init Store
+  const sceneStore = useSceneStore();
 
   const initChannel = () => {
     if (channel) return;
@@ -43,10 +47,17 @@ export function usePreview() {
       await sendDataToPreview();
       previewWindow.value.focus();
     } else {
+      // [UPDATE] Ambil resolusi dari Scene Settings
+      const uiSettings = sceneStore.activeScene?.settings?.ui || {};
+      console.log(uiSettings.referenceWidth)
+      const width = uiSettings.referenceWidth || 1280;   // Default jika setting kosong
+      const height = uiSettings.referenceHeight || 720;  // Default jika setting kosong
+
+      // [UPDATE] Masukkan variabel width dan height ke window features
       previewWindow.value = window.open(
         "/preview/index.html", 
         "LupisPreview",
-        "width=1280,height=720,resizable=yes"
+        `width=${width},height=${height},resizable=yes`
       );
       
       isPreviewing.value = true;

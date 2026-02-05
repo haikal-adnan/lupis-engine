@@ -17,12 +17,21 @@ export const createScene = (data = {}, projectId = null) => {
     settings: {
       backgroundColor: data.settings?.backgroundColor || '#222222',
       tickRate: data.settings?.tickRate || 60,
+      
       worldBounds: {
         x1: data.settings?.worldBounds?.x1 ?? -1920,
         x2: data.settings?.worldBounds?.x2 ?? 1920,
         y1: data.settings?.worldBounds?.y1 ?? -1080,
         y2: data.settings?.worldBounds?.y2 ?? 1080,
         active: data.settings?.worldBounds?.active ?? true,
+      },
+
+      ui: {
+        referenceWidth: data.settings?.ui?.referenceWidth ?? 1920,
+        referenceHeight: data.settings?.ui?.referenceHeight ?? 1080,
+        scaleMode: data.settings?.ui?.scaleMode || 'constant',
+        showUIBorder: data.settings?.ui?.showUIBorder ?? true,
+        active: data.settings?.ui?.active ?? true
       },
 
       grid: {

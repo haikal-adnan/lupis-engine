@@ -3,84 +3,74 @@ import { calculateQuadVertices } from "../../Util/calculateQuadVertices.js";
 export class SelectionRenderer {
     constructor(game) {
         this.game = game;
-        this.outlineColor = [0, 0.55, 1, 1];
     }
 
-    getTransform(e) {
-        return e.components && e.components.Transform;
+    _calculateAbsolutePosition(e) {
+        const t = e.components.UITransform || e.components.Transform;
+        if (!t) return { x: 0, y: 0 };
+
+        if (!e.components.UITransform) {
+            return { x: t.x, y: t.y };
+        }
+
+        const uiSettings = this.game.world.settings?.ui || { referenceWidth: 1920, referenceHeight: 1080 };
+        const parentBounds = { x: 0, y: 0, width: uiSettings.referenceWidth, height: uiSettings.referenceHeight };
+
+        const anchorX = t.anchorX ?? 0.5;
+        const anchorY = t.anchorY ?? 0.5;
+
+        const anchorPointX = parentBounds.x + (parentBounds.width * anchorX);
+        const anchorPointY = parentBounds.y + (parentBounds.height * anchorY);
+
+        return { 
+            x: anchorPointX + (t.x || 0), 
+            y: anchorPointY + (t.y || 0) 
+        };
     }
 
-    draw(shape, proj, selectedList, hovered, marqueeBox, transformTool) {
-        this.drawHover(shape, proj, hovered, selectedList, transformTool);
-        this.drawSelected(shape, proj, selectedList);
+    draw(shape, proj, selectedList, hoveredEntity, marqueeBox, transformTool) {
+        const scale = this.game.camera.scale || 1;
+        const lineThick = 2 / scale;
+
+        if (hoveredEntity && !selectedList.includes(hoveredEntity)) {
+            const hoverColor = [1, 1, 1, 0.5]; 
+            this.drawObb(shape, hoveredEntity, hoverColor, proj, 1 / scale);
+        }
+
+        const selectColor = [0, 0.6, 1, 1]; 
         
-        if (transformTool) transformTool.draw(shape, proj);
-        
-        if (marqueeBox) this.drawMarquee(shape, proj, marqueeBox);
+        for (const e of selectedList) {
+            this.drawObb(shape, e, selectColor, proj, lineThick);
+        }
+
+        if (marqueeBox) {
+            const mc = [0, 0.6, 1, 0.2]; 
+            const mb = [0, 0.6, 1, 0.8]; 
+            shape.drawRect(marqueeBox.x, marqueeBox.y, marqueeBox.w, marqueeBox.h, mc, proj);
+            shape.drawRectStroke(marqueeBox.x, marqueeBox.y, marqueeBox.w, marqueeBox.h, mb, lineThick, proj);
+        }
     }
 
-    drawObb(shape, e, color, proj) {
-        const t = this.getTransform(e);
+    drawObb(shape, e, color, proj, thickness = 2) {
+        if (!e.visible) return;
+        
+        const t = e.components.UITransform || e.components.Transform;
         if (!t) return;
 
-        const r = t.rotation || 0;
+        const absPos = this._calculateAbsolutePosition(e);
+
+        // [MODIFIED] Konversi Derajat ke Radian
+        const r = (t.rotation || 0) * (Math.PI / 180);
         const sx = t.scaleX ?? 1;
         const sy = t.scaleY ?? 1;
         const px = t.pivotX ?? 0.5;
         const py = t.pivotY ?? 0.5;
 
-        const v = calculateQuadVertices(t.x, t.y, t.width, t.height, r, sx, sy, px, py);
-        const strokeT = 2 / this.game.camera.scale;
+        const v = calculateQuadVertices(absPos.x, absPos.y, t.width, t.height, r, sx, sy, px, py);
 
-        shape.drawLine(v.tl.x, v.tl.y, v.tr.x, v.tr.y, color, strokeT, proj);
-        shape.drawLine(v.tr.x, v.tr.y, v.br.x, v.br.y, color, strokeT, proj);
-        shape.drawLine(v.br.x, v.br.y, v.bl.x, v.bl.y, color, strokeT, proj);
-        shape.drawLine(v.bl.x, v.bl.y, v.tl.x, v.tl.y, color, strokeT, proj);
-    }
-
-    drawSelected(shape, proj, list) {
-        if (!list.length) return;
-        const c = this.outlineColor;
-        for (const e of list) {
-            if (e.type === 'group') continue;
-            this.drawObb(shape, e, c, proj);
-        }
-    }
-
-    drawHover(shape, proj, hovered, selectedList, transformTool) {
-        const c = [
-            this.outlineColor[0],
-            this.outlineColor[1],
-            this.outlineColor[2],
-            0.5
-        ];
-
-        if (hovered && !selectedList.includes(hovered)) {
-            if (hovered.type !== 'group') {
-                this.drawObb(shape, hovered, c, proj);
-            }
-        }
-    }
-
-    drawMarquee(shape, proj, b) {
-        const camScale = this.game.camera.scale || 1;
-        const thickness = 1 / camScale;
-        const c = this.outlineColor;
-        const fill = [c[0], c[1], c[2], 0.1];
-
-        shape.drawRect(b.x, b.y, b.w, b.h, fill, proj);
-
-        if (shape.drawRectStroke) {
-            shape.drawRectStroke(
-                b.x, b.y, b.w, b.h,
-                c, thickness, proj,
-                0, 1, 1, 0, 0, 1
-            );
-        } else {
-            shape.drawLine(b.x, b.y, b.x + b.w, b.y, c, thickness, proj);
-            shape.drawLine(b.x + b.w, b.y, b.x + b.w, b.y + b.h, c, thickness, proj);
-            shape.drawLine(b.x + b.w, b.y + b.h, b.x, b.y + b.h, c, thickness, proj);
-            shape.drawLine(b.x, b.y + b.h, b.x, b.y, c, thickness, proj);
-        }
+        shape.drawLine(v.tl.x, v.tl.y, v.tr.x, v.tr.y, color, thickness, proj);
+        shape.drawLine(v.tr.x, v.tr.y, v.br.x, v.br.y, color, thickness, proj);
+        shape.drawLine(v.br.x, v.br.y, v.bl.x, v.bl.y, color, thickness, proj);
+        shape.drawLine(v.bl.x, v.bl.y, v.tl.x, v.tl.y, color, thickness, proj);
     }
 }

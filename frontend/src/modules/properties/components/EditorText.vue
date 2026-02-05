@@ -41,7 +41,21 @@
     </PropertyRow>
 
     <PropertyRow label="Font Size">
-      <BaseNumber v-model="fontSize" prefix="PX" :min="1" class="w-full" />
+      <div class="flex items-center gap-2">
+        <BaseNumber 
+          v-model="fontSize" 
+          prefix="PX" 
+          :min="1" 
+          class="flex-grow font-mono" 
+        />
+        
+        <IconButton 
+          @click="resetTextRatio"
+          tooltip="Reset / Auto-fit Size"
+        >
+          <RefreshCcw class="w-3.5 h-3.5" />
+        </IconButton>
+      </div>
     </PropertyRow>
 
     <PropertyRow label="Text Color">
@@ -68,21 +82,29 @@
 
 <script setup>
 import { computed } from "vue";
-import { Type, Trash2, AlignLeft, AlignCenter, AlignRight, FolderSearch } from "lucide-vue-next"; 
+import { 
+  Type, Trash2, AlignLeft, AlignCenter, AlignRight, 
+  FolderSearch, RefreshCcw 
+} from "lucide-vue-next"; 
 import { useInspectorLogic } from "@/modules/properties/composables/useInspectorLogic.js"; 
 
-// Components
 import PropertySection from "@ui/display/PropertySection.vue";
 import PropertyRow from "@ui/display/PropertyRow.vue";
 import BaseNumber from "@/commons/components/inputs/BaseNumber.vue";
 import BaseTextArea from "@/commons/components/inputs/BaseTextArea.vue";
 import BaseColor from "@/commons/components/inputs/BaseColor.vue";
 import BaseButton from "@/commons/components/buttons/BaseButton.vue";
+import IconButton from "@/commons/components/buttons/IconButton.vue";
 
-const { selectedEntity, removeComponent, bindComponentProp } = useInspectorLogic();
+const { 
+  selectedEntity, 
+  removeComponent, 
+  bindComponentProp,
+  resetTextRatio 
+} = useInspectorLogic();
+
 const hasComponent = computed(() => !!selectedEntity.value?.components?.TextRenderer);
 
-// BINDINGS
 const textValue = bindComponentProp('TextRenderer', 'value');
 const fontSize = bindComponentProp('TextRenderer', 'fontSize');
 const color = bindComponentProp('TextRenderer', 'color');

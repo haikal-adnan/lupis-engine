@@ -1,4 +1,5 @@
 import Entity from "../Core/Entity.js";
+import { ApplyResizeToEntity } from "../Util/ApplyResizeToEntity.js";
 
 export default class SyncComponent {
     constructor(world, bus, game) {
@@ -10,7 +11,6 @@ export default class SyncComponent {
     }
 
     bindEvents() {
-        // --- Entity & Layer Events ---
         this.bus.on("editor:entity:create", (d) => this.onCreateEntity(d));
         this.bus.on("editor:entity:delete", (id) => this.onDeleteEntity(id));
         this.bus.on("editor:entity:update-name", (p) => this.onUpdateEntityName(p));
@@ -26,53 +26,47 @@ export default class SyncComponent {
         this.bus.on("editor:layer:update-name", (p) => this.onUpdateLayerName(p));
         this.bus.on("editor:layer:reorder", (p) => this.onReorderLayer(p));
 
-        // --- Asset & Script Events ---
         this.bus.on("editor:asset:create", (a) => this.onAssetCreate(a));
         this.bus.on("editor:asset:delete", (id) => this.onAssetDelete(id));
         this.bus.on("editor:script:create", (s) => this.onScriptCreate(s));
         this.bus.on("editor:script:update", (p) => this.onScriptUpdate(p));
         this.bus.on("editor:script:delete", (id) => this.onScriptDelete(id));
         
-        // --- Store Updates ---
         this.bus.on("editor:store:update", (p) => this.onUpdateEditorStore(p));
-        
-        // [BARU] Satu event listener untuk semua perubahan settings scene
         this.bus.on("editor:scene:settings-update", (p) => this.onUpdateSceneSettings(p));
-
         this.bus.on("editor:selection:clear", () => this.onClearSelection());
     }
 
-    // Handler Generik untuk Update Settings
     onUpdateSceneSettings(payload) {
         if (!this.world.settings) return;
         
-        // Merge Grid (karena nested object)
-        if (payload.grid) {
-            Object.assign(this.world.settings.grid, payload.grid);
-        }
+        if (payload.grid) Object.assign(this.world.settings.grid, payload.grid);
+        if (payload.worldBounds) Object.assign(this.world.settings.worldBounds, payload.worldBounds);
 
-        // Merge World Bounds (karena nested object)
-        if (payload.worldBounds) {
-             Object.assign(this.world.settings.worldBounds, payload.worldBounds);
+        if (payload.ui) {
+            if (!this.world.settings.ui) {
+                this.world.settings.ui = { 
+                    active: true, 
+                    referenceWidth: 1920, 
+                    referenceHeight: 1080,
+                    scaleMode: 'constant',
+                    showUIBorder: true
+                };
+            }
+            Object.assign(this.world.settings.ui, payload.ui);
         }
         
-        // Properti langsung
         if (payload.backgroundColor !== undefined) this.world.settings.backgroundColor = payload.backgroundColor;
         if (payload.tickRate !== undefined) this.world.settings.tickRate = payload.tickRate;
         if (payload.showRulers !== undefined) this.world.settings.showRulers = payload.showRulers;
     }
 
     onClearSelection() {
-        // Akses SelectionTool dari game dan bersihkan
-        console.log(this.game)
-        if (this.game.selection) {
-            this.game.selection.clear(); 
-        }
+        if (this.game.selection) this.game.selection.clear(); 
     }
 
     onUpdateEditorStore(payload) {
         if (!payload) return;
-        // Inisialisasi default editor state (Grid sudah DIHAPUS dari sini)
         if (!this.world._editors) {
             this.world._editors = {
                 activeTool: null,
@@ -82,9 +76,7 @@ export default class SyncComponent {
             };
         }
         
-        // Bersihkan gridContext dari destructuring jika masih ada sisa
         const { tilemapContext, tileSelection, gridContext, showUIBorder, ...others } = payload;
-        
         Object.assign(this.world._editors, others);
 
         if (tilemapContext) {
@@ -96,7 +88,6 @@ export default class SyncComponent {
         if (showUIBorder !== undefined) this.world._editors.showUIBorder = showUIBorder;
     }
 
-    // ... (Sisa method create/delete entity, layer, asset dll tetap sama) ...
     onCreateLayer(layerData) { this.world.layers.push({ _id: layerData._id, name: layerData.name, visible: true, locked: false, entities: [] }); }
     onDeleteLayer(id) { this.world.layers = this.world.layers.filter((l) => l._id !== id); }
     onUpdateLayerName({ id, name }) { const l = this.world.layers.find((l) => l._id === id); if (l) l.name = name; }
@@ -121,6 +112,7 @@ export default class SyncComponent {
             if (parent) { if (!parent.children) parent.children = []; parent.children.push(entity); }
         }
     }
+
     onDeleteEntity(id) { 
         const deleteRecursive = (targetId) => {
             const entity = this._findEntityById(targetId);
@@ -134,10 +126,10 @@ export default class SyncComponent {
         };
         deleteRecursive(id);
     }
+
     onMoveEntity({ id, context }) {
          const entity = this._findEntityById(id);
          if (!entity) return;
-         // Logic pindah parent/layer yang sama (disingkat untuk fokus jawaban)
          if (entity.parentId) {
             const oldP = this._findEntityById(entity.parentId);
             if(oldP?.children) { const idx = oldP.children.findIndex(c=>c===entity||c.id===entity.id); if(idx!==-1) oldP.children.splice(idx,1); }
@@ -159,11 +151,35 @@ export default class SyncComponent {
     }
     
     onUpdateEntityName({ id, name }) { const e = this._findEntityById(id); if (e) e.name = name; }
+
     onUpdateComponent({ entityId, componentName, path, value }) { 
-        const e = this._findEntityById(entityId); if(!e) return;
-        const c = e.components[componentName]; if(!c) return;
-        const k = path.split('.'); let t=c; for(let i=0;i<k.length-1;i++) t=t[k[i]]; t[k[k.length-1]]=value; 
+        const e = this._findEntityById(entityId); 
+        if (!e) return;
+
+        const c = e.components[componentName]; 
+        if (!c) return;
+
+        // 1. Update Property di World
+        const k = path.split('.'); 
+        let t = c; 
+        for (let i = 0; i < k.length - 1; i++) {
+            if (!t[k[i]]) t[k[i]] = {}; 
+            t = t[k[i]]; 
+        }
+        t[k[k.length - 1]] = value; 
+
+        // 2. Logika Khusus Text Renderer
+        if (componentName === 'TextRenderer') {
+            if (['fontSize', 'value', 'assetId', 'lockRatio'].includes(path)) {
+                // FORCE = true agar Reset tetap jalan walau value sama
+                ApplyResizeToEntity(e, this.world, true);
+                
+                // Emit event bahwa entity berubah (agar gizmo di editor update)
+                this.bus.emit("entity:modified", [e]);
+            }
+        }
     }
+
     onUpdateEntityProp({ entityId, propName, value }) { const e = this._findEntityById(entityId); if (e) e[propName] = value; }
     
     _findEntityById(id) { 
@@ -175,14 +191,22 @@ export default class SyncComponent {
         }
         return null;
     }
+
     _findEntityRecursive(p, id) { 
         if(!p.children) return null; 
         for(const c of p.children) { if(c.id===id||c._id===id) return c; const f=this._findEntityRecursive(c,id); if(f) return f; } 
         return null; 
     }
+
     _createEntityInstance(data) {
         const e = new Entity(data._id);
-        e.name = data.name; e.type = data.type; e.layerId = data.layerId; e.parentId = data.parentId; e.active = data.isActive; e.visible = data.isVisible; e.children = [];
+        e.name = data.name;
+        e.type = data.type;
+        e.layerId = data.layerId;
+        e.parentId = data.parentId;
+        e.active = data.isActive;
+        e.visible = data.isVisible;
+        e.children = [];
         if (data.components) for (const [k, v] of Object.entries(data.components)) e.addComponent(k, v);
         return e;
     }
@@ -203,9 +227,11 @@ export default class SyncComponent {
         if (!e.components[componentName]) e.addComponent(componentName, updates);
         else {
             const c = e.components[componentName];
-            if (updates.data && Array.isArray(updates.data)) c.data = [...updates.data]; else Object.assign(c, updates);
+            if (updates.data && Array.isArray(updates.data)) c.data = [...updates.data];
+            else Object.assign(c, updates);
         }
     }
+
     onAddComponent({ entityId, componentName, data }) { const e = this._findEntityById(entityId); if(e) e.addComponent(componentName, data); }
     onRemoveComponent({ entityId, componentName }) { const e = this._findEntityById(entityId); if(e && e.components) delete e.components[componentName]; }
 }

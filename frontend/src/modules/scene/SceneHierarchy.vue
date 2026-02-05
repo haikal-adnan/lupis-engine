@@ -85,10 +85,9 @@ const handlers = {
 const { contextMenu, openMenu, closeMenu } = useHierarchyMenu(handlers)
 
 const handleSelect = (idOrIds) => {
-  
   const ids = Array.isArray(idOrIds) ? idOrIds : [idOrIds]
   sceneStore.selectedEntityIds = ids
-
+  
   if (EngineBridge.engineInstance) {
     EngineBridge.engineInstance.bus.emit('ui:select-by-id', ids)
   } else {
@@ -102,17 +101,32 @@ const onExternalSelect = (entities) => {
     return
   }
   const ids = entities.map(e => e.id || e._id)
+  
+  // Cek apakah ID-nya sama persis untuk menghindari loop re-render
   const isSame = ids.length === sceneStore.selectedEntityIds.length &&
                  ids.every(id => sceneStore.selectedEntityIds.includes(id))
+  
   if (!isSame) {
     sceneStore.selectedEntityIds = ids
   }
 }
 
 const onExternalDeselect = () => {
-  if (sceneStore.selectedEntityIds.length > 0) {
-    sceneStore.selectedEntityIds = []
+  if (sceneStore.selectedEntityIds.length === 0) return;
+
+  const currentId = sceneStore.selectedEntityIds[0];
+  const entity = sceneStore.activeEntities.find(e => e._id === currentId);
+
+  if (entity) {
+    const isInactive = (entity.isActive === false) || (entity.isVisible === false);
+    
+    if (isInactive) {
+      console.log(`[Hierarchy] Mencegah deselect untuk entity non-aktif: ${entity.name}`);
+      return; 
+    }
   }
+
+  sceneStore.selectedEntityIds = [];
 }
 
 onMounted(() => {

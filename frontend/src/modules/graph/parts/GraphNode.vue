@@ -1,14 +1,15 @@
 <template>
   <div 
-    class="node-container absolute w-[200px] bg-[#252526] rounded-lg flex flex-col select-none border-2" 
+    ref="nodeRef"
+    class="node-container absolute w-[200px] flex flex-col select-none border-2 rounded-lg transition-all duration-300 ease-in-out" 
     :class="[
-      isDragging ? 'transition-none' : 'transition-all duration-300 ease-in-out',
+      isDragging ? 'transition-none' : '',
+      /* Menggabungkan logic bg dan border agar tidak duplikat */
+      'bg-white dark:bg-[#252526]',
       isSelected 
         ? 'border-blue-500 ring-4 ring-blue-500/20 z-50 shadow-[0_0_20px_rgba(59,130,246,0.4)]' 
-        : 'border-[#3f3f46] hover:border-[#52525b] z-10 ring-0 ring-transparent shadow-xl',
-      isDimmed 
-        ? 'opacity-30 grayscale filter' 
-        : 'opacity-100'
+        : 'border-slate-200 dark:border-[#3f3f46] hover:border-slate-300 dark:hover:border-[#52525b] z-10 ring-0 ring-transparent shadow-lg dark:shadow-xl',
+      isDimmed ? 'opacity-30 grayscale filter' : 'opacity-100'
     ]"
     :style="{ 
         transform: `translate(${Math.round(position.x)}px, ${Math.round(position.y)}px) translateZ(0)`
@@ -20,7 +21,7 @@
   >
     
     <div 
-      class="h-8 px-3 flex items-center gap-2 border-b border-white/5 rounded-t-[4px] shrink-0"
+      class="h-8 px-3 flex items-center gap-2 border-b rounded-t-[4px] shrink-0 border-black/5 dark:border-white/5"
       :style="{ backgroundColor: headerBackground }"
     >
        <div class="w-2 h-2 rounded-full bg-white/50 shadow-sm"></div>
@@ -37,8 +38,10 @@
          <div v-for="fieldKey in visibleFields" :key="fieldKey" class="n-field-row" @mousedown.stop>
             <span class="n-label capitalize truncate flex-1">{{ fieldKey }}</span>
             <div 
-              class="n-value-box cursor-pointer hover:bg-white/10 truncate max-w-[80px] text-right"
-              :class="typeof data.data[fieldKey] === 'boolean' ? 'text-red-400' : 'text-blue-300'"
+              class="n-value-box cursor-pointer hover:bg-black/5 dark:hover:bg-white/10 truncate max-w-[80px] text-right"
+              :class="typeof data.data[fieldKey] === 'boolean' 
+                ? 'text-red-500 dark:text-red-400' 
+                : 'text-blue-600 dark:text-blue-300'"
               @click="editValue(fieldKey)"
             >
               <span v-if="typeof data.data[fieldKey] === 'boolean'">
@@ -59,17 +62,15 @@
           :style="{ top: (12 + (index * 24) - 6) + 'px' }" 
         >
           <div 
-            class="relative -left-1.5 w-3 h-3 rounded-full border-2 border-[#18181b] transition-transform hover:scale-125 cursor-crosshair pointer-events-auto z-30"
+            class="relative -left-1.5 w-3 h-3 rounded-full border-2 transition-transform hover:scale-125 cursor-crosshair pointer-events-auto z-30 border-white dark:border-[#18181b]"
             :style="{ backgroundColor: input.color }" 
-            
             @mousedown.stop="$emit('connect-start', $event, input._id, 'input')" 
             @mouseup="$emit('connect-end', input._id)"
-            
             @mouseenter="showTooltip($event, input.dataType)" 
             @mouseleave="hideTooltip"
           ></div>
           
-          <span class="ml-2 text-[10px] font-medium text-slate-300 truncate opacity-90">
+          <span class="ml-2 text-[10px] font-medium truncate opacity-90 text-slate-600 dark:text-slate-300">
             {{ input.label }}
           </span>
         </div>
@@ -82,16 +83,14 @@
           class="absolute right-0 w-full h-[24px] flex items-center justify-end"
           :style="{ top: (12 + (index * 24) - 6) + 'px' }"
         >
-          <span class="mr-2 text-[10px] font-medium text-slate-300 truncate opacity-90 text-right">
+          <span class="mr-2 text-[10px] font-medium truncate opacity-90 text-right text-slate-600 dark:text-slate-300">
             {{ output.label }}
           </span>
 
           <div 
-            class="relative -right-1.5 w-3 h-3 rounded-full border-2 border-[#18181b] transition-transform hover:scale-125 cursor-crosshair pointer-events-auto z-30"
+            class="relative -right-1.5 w-3 h-3 rounded-full border-2 transition-transform hover:scale-125 cursor-crosshair pointer-events-auto z-30 border-white dark:border-[#18181b]"
             :style="{ backgroundColor: output.color }" 
-            
             @mousedown.stop="$emit('connect-start', $event, output._id, 'output')"
-            
             @mouseenter="showTooltip($event, output.dataType)"
             @mouseleave="hideTooltip"
           ></div>
@@ -102,7 +101,7 @@
     <Teleport to="body">
         <div 
             v-if="tooltip.visible"
-            class="fixed z-[9999] px-2 py-1 text-[10px] font-mono text-white bg-black/80 rounded border border-white/10 pointer-events-none transform -translate-x-1/2 -translate-y-full mt-[-8px] shadow-lg capitalize"
+            class="fixed z-[9999] px-2 py-1 text-[10px] font-mono rounded border pointer-events-none transform -translate-x-1/2 -translate-y-full mt-[-8px] shadow-lg capitalize bg-white/95 text-slate-800 border-slate-200 shadow-xl dark:bg-black/80 dark:text-white dark:border-white/10"
             :style="{ left: tooltip.x + 'px', top: tooltip.y + 'px' }"
         >
             {{ tooltip.text }}
@@ -150,10 +149,11 @@ const editValue = async (key) => {
     return
   }
   const res = await prompt({ title: `Edit ${key}`, defaultValue: current })
-  if (res !== null) props.data.data[key] = isNaN(Number(res)) ? res : Number(res)
+  if (res !== null) {
+    props.data.data[key] = isNaN(Number(res)) ? res : Number(res)
+  }
 }
 
-// Tooltip State & Logic
 const tooltip = reactive({
     visible: false,
     text: '',
@@ -176,17 +176,26 @@ const hideTooltip = () => {
 </script>
 
 <style scoped>
-/* ... style existing ... */
 .n-field-row {
-  @apply flex justify-between items-center text-xs bg-black/40 rounded px-2 py-1 border border-white/5 h-[26px];
+  @apply flex justify-between items-center text-xs rounded px-2 py-1 h-[26px] border transition-colors;
+  @apply bg-slate-50 border-slate-200 dark:bg-black/40 dark:border-white/5;
 }
+
 .n-label {
-  @apply text-slate-400 font-medium text-[9px];
+  @apply font-medium text-[9px] flex-1;
+  @apply text-slate-500 dark:text-slate-400;
 }
+
 .n-value-box {
   @apply font-mono font-bold transition-colors select-none text-[9px];
 }
+
 .transition-none {
   transition: none !important;
+}
+
+.node-container {
+  backface-visibility: hidden;
+  transform-style: preserve-3d;
 }
 </style>

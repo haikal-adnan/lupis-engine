@@ -1,4 +1,4 @@
-import { createComponent, createTransform } from '@schemas/sceneSchema/componentSchema.js';
+import { createComponent, createTransform, createUITransform } from '@schemas/sceneSchema/componentSchema.js';
 import { GenerateUUID } from '@/commons/utils/generateUUID.js';
 
 export const createEntity = (data = {}) => {
@@ -10,26 +10,28 @@ export const createEntity = (data = {}) => {
     }
   }
 
-  let defaultWidth = 100;
-  let defaultHeight = 100;
+  if (!cleanComponents.UITransform) {
+      let defaultWidth = 100;
+      let defaultHeight = 100;
 
-  if (cleanComponents.Tilemap) {
-    defaultWidth = cleanComponents.Tilemap.width * cleanComponents.Tilemap.tileWidth;
-    defaultHeight = cleanComponents.Tilemap.height * cleanComponents.Tilemap.tileHeight;
-  } else if (cleanComponents.TextRenderer) {
-    defaultWidth = 107;
-    defaultHeight = 23;
-  } else if (cleanComponents.SpriteRenderer || cleanComponents.ShapeRenderer) {
-    defaultWidth = 100;
-    defaultHeight = 100;
+      if (cleanComponents.Tilemap) {
+        defaultWidth = cleanComponents.Tilemap.width * cleanComponents.Tilemap.tileWidth;
+        defaultHeight = cleanComponents.Tilemap.height * cleanComponents.Tilemap.tileHeight;
+      } else if (cleanComponents.TextRenderer) {
+        defaultWidth = 107;
+        defaultHeight = 23;
+      } else if (cleanComponents.SpriteRenderer || cleanComponents.ShapeRenderer) {
+        defaultWidth = 100;
+        defaultHeight = 100;
+      }
+
+      const rawTransform = cleanComponents.Transform || data.transform || {};
+      
+      cleanComponents.Transform = createTransform(rawTransform, { 
+        width: defaultWidth, 
+        height: defaultHeight 
+      });
   }
-
-  const rawTransform = cleanComponents.Transform || data.transform || {};
-  
-  cleanComponents.Transform = createTransform(rawTransform, { 
-    width: defaultWidth, 
-    height: defaultHeight 
-  });
 
   const type = data.type || "entity";
 

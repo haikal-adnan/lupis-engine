@@ -4,7 +4,8 @@ import {
   Plus, Trash2, Edit2, Copy, FolderPlus, 
   Cuboid, Image, Type, Scissors, Clipboard, 
   Folder, RefreshCw, Square, InspectionPanel,
-  LayoutTemplate, MousePointerClick, AppWindow 
+  LayoutTemplate, MousePointerClick, AppWindow,
+  Maximize // [FIX] Tambahkan import ini
 } from 'lucide-vue-next';
 
 export function useHierarchyMenu(handlers) {
@@ -30,9 +31,13 @@ export function useHierarchyMenu(handlers) {
 
     // Sub-menu khusus Layer UI
     const createUiSubMenu = [
+        { label: 'Empty UI', icon: Maximize, action: () => handlers.createEntity('ui_empty', node) },
+        { separator: true },
         { label: 'UI Button', icon: MousePointerClick, action: () => handlers.createEntity('ui_button', node) },
-        { label: 'UI Panel', icon: Square, action: () => handlers.createEntity('ui_panel', node) },
         { label: 'UI Text', icon: Type, action: () => handlers.createEntity('ui_text', node) },
+        { label: 'UI Panel', icon: Square, action: () => handlers.createEntity('ui_panel', node) },
+        // [FIX] Ganti ImageIcon menjadi Image
+        { label: 'UI Image', icon: Image, action: () => handlers.createEntity('ui_image', node) },
     ];
 
     const handleOpenUIEditor = () => {

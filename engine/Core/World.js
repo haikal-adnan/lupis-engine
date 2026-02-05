@@ -8,10 +8,8 @@ export default class World {
         };
         this.prefabs = {};
         
-        // UI Layer khusus untuk Editor (Rulers, Gizmos, dsb)
         this.ui = []; 
 
-        // 1. Scene Settings (Data dari Database / Seeder)
         this.settings = {
             tickRate: 60,
             backgroundColor: "#222222",
@@ -24,10 +22,16 @@ export default class World {
                 visible: true,
                 snap: true
             },
+            ui: {
+                referenceWidth: 1920,
+                referenceHeight: 1080,
+                scaleMode: "constant",
+                showUIBorder: true,
+                active: true
+            },
             showRulers: true
         };
         
-        // 2. Editor UI State (Sesi Editor - Tidak disimpan ke DB Scene)
         this._editors = {
             activeTool: 'select',
             activeTabId: null,
