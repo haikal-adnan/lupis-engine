@@ -9,17 +9,14 @@ export default class SceneLoader {
     loadScene(sceneData) {
         if (!sceneData) return;
 
-        // === 1. LOAD SCENE SCRIPT ID ===
-        // Simpan ID scene ini di world agar Logic Node 'RestartScene' tahu ID-nya
         if (this.world) {
             this.world.currentSceneScriptId = sceneData.scriptId;
         }
 
-        // === 2. LOAD LAYERS DENGAN SCRIPT ID ===
         if (Array.isArray(sceneData.layers)) {
             this.world.layers = sceneData.layers.map(layer => ({
                 _id: layer._id,
-                scriptId: layer.scriptId, // <--- PENTING: Disimpan untuk Logic 'Move to Layer'
+                scriptId: layer.scriptId, 
                 name: layer.name,
                 visible: layer.visible ?? true,
                 locked: layer.locked ?? false,

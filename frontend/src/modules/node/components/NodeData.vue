@@ -79,6 +79,7 @@ const { getInspector } = useNodeRegistry(); // ✅ Gunakan composable registry
 // Cek apakah ada Custom Component untuk tipe node ini
 const CustomComponent = computed(() => {
   if (!selectedNode.value) return null;
+  console.log(selectedNode.value.type)
   return getInspector(selectedNode.value.type);
 });
 

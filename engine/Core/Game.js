@@ -5,6 +5,7 @@ import Config from "./Config.js";
 import VariableManager from "../Script/VariableManager.js";
 import EventManager from "../Script/EventManager.js";
 import ScriptSystem from "../Script/ScriptSystem.js";
+import ColliderSystem from "../System/ColliderSystem.js";
 
 export default class Game {
     constructor() {
@@ -12,6 +13,7 @@ export default class Game {
         this.camera = new Camera(0, 0);
         this.camera.scale = 1;
         this.renderer = null;
+        this.colliderSystem = new ColliderSystem(this);
         this.variables = new VariableManager();
         this.scriptSystem = new ScriptSystem(this);
         this.cameraController = null;
@@ -39,7 +41,9 @@ export default class Game {
 
 
     update(dt) {
+        // [NOTE] Pastikan engine mode dalam keadaan runtime agar script berjalan
         if (Config.ENGINE_MODE === "runtime") {
+            // [UPDATED] Update Script System -> Trigger 'On Tick'
             this.scriptSystem.update(dt);
             
             if (this.camera && this.renderer) {

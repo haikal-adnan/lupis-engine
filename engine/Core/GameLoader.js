@@ -63,7 +63,7 @@ export default class GameLoader {
 
             // 6. Camera Setup & Finalize
             this._setupCamera(game, scene?.camera, mode);
-            
+            console.log(game.world)
             game.initLoop();
             this.start(game);
 

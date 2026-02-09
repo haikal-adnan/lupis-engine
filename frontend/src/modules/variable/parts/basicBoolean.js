@@ -64,26 +64,5 @@ export const basicBoolean = {
         ]
       } 
     },
-
-    { 
-      type: 'logic_branch', 
-      label: 'Branch', 
-      description: 'Directs flow based on a boolean condition',
-      icon: GitFork,
-      allowDynamicInputs: false,
-      allowDynamicOutputs: false,
-      defaultData: { 
-        settings: { headerTitle: 'Branch', headerColor: '#2E7D32', category: 'Boolean Logic' },
-        data: [], 
-        inputs: [
-          { _id: 'exec_in', label: 'In', dataType: 'execution', color: '#ffffff' },
-          { _id: 'condition', label: 'Condition', dataType: 'boolean', color: '#4CAF50' }
-        ], 
-        outputs: [
-          { _id: 'true_branch', label: 'True', dataType: 'execution', color: '#4CAF50' },
-          { _id: 'false_branch', label: 'False', dataType: 'execution', color: '#F44336' }
-        ]
-      } 
-    }
   ]
 };

@@ -12,8 +12,9 @@
         <EditorSprite v-if="selectedEntity.components.SpriteRenderer" />
         <EditorShape v-if="selectedEntity.components.ShapeRenderer" />
         <EditorText v-if="selectedEntity.components.TextRenderer" />
-        
         <EditorTilemap v-if="selectedEntity.components.Tilemap" />
+        
+        <EditorCollider v-if="selectedEntity.components.Collider" />
         
         <EditorScript v-if="selectedEntity.components.ScriptController" />
 
@@ -45,23 +46,19 @@
 import { computed } from 'vue';
 import { useInspectorLogic } from "@/modules/properties/composables/useInspectorLogic.js";
 
-// Atomic Components
 import ScrollArea from '@/commons/components/overlay/ScrollArea.vue'
 import BaseSelect from "@/commons/components/inputs/BaseSelect.vue"; 
 
-// Entity Editors
 import EditorObject from '@/modules/properties/components/EditorObject.vue'
 import EditorTransform from '@/modules/properties/components/EditorTransform.vue'
-// [BARU] Import Editor UI Transform dari folder ui
 import EditorUITransform from '@/modules/properties/components/ui/EditorUITransform.vue'
-
 import EditorSprite from '@/modules/properties/components/EditorSprite.vue'
 import EditorShape from '@/modules/properties/components/EditorShape.vue'
 import EditorText from '@/modules/properties/components/EditorText.vue'
 import EditorTilemap from '@/modules/properties/components/EditorTilemap.vue'
 import EditorScript from '@/modules/properties/components/EditorScript.vue'
+import EditorCollider from '@/modules/properties/components/EditorCollider.vue'
 
-// Scene Editors
 import EditorScene from '@/modules/properties/components/settings/EditorScene.vue'
 import EditorGrid from '@/modules/properties/components/settings/EditorGrid.vue'
 import EditorUI from '@/modules/properties/components/settings/EditorUI.vue'
@@ -76,20 +73,20 @@ const availableComponentOptions = computed(() => {
   const comps = selectedEntity.value.components;
   const hasRenderer = RENDERER_GROUP.some(r => !!comps[r]);
   
-  // Cek apakah ini UI Entity (punya UITransform)
   const isUIEntity = !!comps.UITransform;
 
-  // Daftar opsi dasar
   let allOptions = [
-    { label: 'Sprite Renderer', value: 'SpriteRenderer', isRenderer: true }, // Bisa untuk UI Image
-    { label: 'Shape Renderer', value: 'ShapeRenderer', isRenderer: true },   // Bisa untuk UI Panel/Button
-    { label: 'Text Renderer', value: 'TextRenderer', isRenderer: true },     // Bisa untuk UI Text
+    { label: 'Sprite Renderer', value: 'SpriteRenderer', isRenderer: true },
+    { label: 'Shape Renderer', value: 'ShapeRenderer', isRenderer: true },  
+    { label: 'Text Renderer', value: 'TextRenderer', isRenderer: true },    
     { label: 'Tilemap', value: 'Tilemap', isRenderer: true },
+    
+    // Opsi Collider Baru
+    { label: 'Collider', value: 'Collider', isRenderer: false },
+    
     { label: 'Script Controller', value: 'ScriptController', isRenderer: false },
   ];
 
-  // [LOGIC OPTION BERBEDA]
-  // Jika UI Entity, buang opsi 'Tilemap' karena tidak relevan
   if (isUIEntity) {
     allOptions = allOptions.filter(opt => opt.value !== 'Tilemap');
   }
@@ -98,12 +95,10 @@ const availableComponentOptions = computed(() => {
     let disabled = false;
     let label = opt.label;
     
-    // Cek duplikasi
     if (comps[opt.value]) { 
         disabled = true; 
         label += ' (Added)'; 
     } 
-    // Cek konflik renderer (hanya boleh satu renderer per entity)
     else if (opt.isRenderer && hasRenderer) { 
         disabled = true; 
         label += ' (Conflict)'; 
