@@ -8,6 +8,9 @@ export default class WorldRenderer {
         this.tilemapRenderer = tilemapRenderer;
         this.renderQueue = [];
         this.boundsColor = [0.7, 0, 1, 0.6]; 
+        // Warna Debug Collider: Hijau untuk Solid, Kuning untuk Trigger
+        this.colliderColorSolid = [0, 1, 0, 0.8]; 
+        this.colliderColorTrigger = [1, 1, 0, 0.8];
     }
 
     render(world, proj, alpha = 1.0, isUIMode = false) {
@@ -29,6 +32,7 @@ export default class WorldRenderer {
         this._collectRenderables(world, activeTabId, isIsolationMode, isUIMode, tilemapContext, proj);
         this._executeRenderQueue(proj);
 
+        // ... (Logic Gizmo Tilemap tetap sama) ...
         if (isIsolationMode) {
             const activeEntity = this._findEntityById(world, activeTabId);
             if (activeEntity && activeEntity.components.Tilemap) {
@@ -42,6 +46,7 @@ export default class WorldRenderer {
         }
     }
 
+    // ... (_findEntityById & _collectRenderables TETAP SAMA) ...
     _findEntityById(world, id) {
         for (const layer of world.layers) {
             for (const e of layer.entities) {
@@ -105,7 +110,6 @@ export default class WorldRenderer {
             y: drawY,
             width: t.width,
             height: t.height,
-            // [MODIFIED] Konversi Derajat ke Radian di sini
             rotation: (t.rotation || 0) * (Math.PI / 180),
             scaleX: t.scaleX,
             scaleY: t.scaleY,
@@ -113,14 +117,13 @@ export default class WorldRenderer {
             pivotY: t.pivotY
         };
 
-
+        // 1. RENDER SPRITE
         if (comps.SpriteRenderer) {
             const s = comps.SpriteRenderer;
             const a = (s.opacity ?? 1) * currentOpacity;
 
             if (a > 0) {
                 const texture = world.assets.textures[s.assetId];
-
                 this.renderQueue.push({
                     type: "image",
                     texture: texture, 
@@ -131,6 +134,7 @@ export default class WorldRenderer {
             }
         }
         
+        // 2. RENDER SHAPE
         if (comps.ShapeRenderer) {
             const s = comps.ShapeRenderer;
             const a = (s.opacity ?? 1) * currentOpacity;
@@ -150,6 +154,52 @@ export default class WorldRenderer {
             }
         }
 
+        // 3. RENDER COLLIDER DEBUG (NEW FEATURE)
+        // Hanya render jika di Editor Mode dan komponen Collider aktif
+        if (Config.ENGINE_MODE === 'editor' && comps.Collider && comps.Collider.enabled) {
+            const c = comps.Collider;
+            
+            // LOGIKA MATEMATIKA: 
+            // Ini harus SAMA PERSIS dengan getBounds() di ColliderSystem.js
+            // Agar apa yang kita lihat = apa yang dihitung physics.
+            
+            const pivotOffsetX = (t.width * t.scaleX) * (t.pivotX ?? 0.5);
+            const pivotOffsetY = (t.height * t.scaleY) * (t.pivotY ?? 0.5);
+
+            // Posisi Top-Left Collider sesungguhnya
+            const colliderX = t.x - pivotOffsetX + c.offsetX;
+            const colliderY = t.y - pivotOffsetY + c.offsetY;
+            const colliderW = c.width * Math.abs(t.scaleX);
+            const colliderH = c.height * Math.abs(t.scaleY);
+
+            // Kita render sebagai kotak kosong (stroke) tanpa rotasi (AABB)
+            // Karena AABB tidak berotasi, kita set rotation 0 untuk debug box ini.
+            const debugTrans = { 
+                ...trans, 
+                x: colliderX, 
+                y: colliderY, 
+                width: colliderW, 
+                height: colliderH,
+                rotation: 0, // AABB selalu axis-aligned
+                pivotX: 0,   // Reset pivot karena kita menggambar dari top-left kalkulasi
+                pivotY: 0,
+                scaleX: 1,   // Scale sudah dikali diatas
+                scaleY: 1
+            };
+
+            this.renderQueue.push({
+                type: "shape",
+                transformData: debugTrans,
+                shapeOptions: {
+                    type: "rectStroke",
+                    color: c.type === 'trigger' ? this.colliderColorTrigger : this.colliderColorSolid,
+                    thickness: 2, // Lebih tebal biar kelihatan
+                    opacity: 1.0
+                }
+            });
+        }
+
+        // 4. RENDER TEXT
         if (comps.TextRenderer) {
             const tx = comps.TextRenderer;
             const a = (tx.opacity ?? 1) * currentOpacity;
@@ -177,6 +227,7 @@ export default class WorldRenderer {
         }
     }
 
+    // ... (_renderWorldBounds, _drawDashedLine, _executeRenderQueue, _drawShape, _flushAll TETAP SAMA) ...
     _renderWorldBounds(world, proj) {
         const bounds = world.settings?.worldBounds;
         if (!bounds || !bounds.active) return;

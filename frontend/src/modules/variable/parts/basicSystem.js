@@ -19,12 +19,15 @@ export const basicSystem = {
           headerColor: '#37474F', 
           category: 'Interface' 
         },
-        data: [
-          { _id: 'notif_cfg', message: 'Hello World', duration: 3.0 }
-        ], 
+        // Data default jika tidak ada kabel
+        data: { 
+            message: 'Hello World', // [FIX] Gunakan struktur data object, bukan array
+            duration: 3.0 
+        }, 
         inputs: [
           { _id: 'exec_in', label: 'In', dataType: 'execution', color: '#ffffff' },
-          { _id: 'in_msg', label: 'Message', dataType: 'string', color: '#FFB74D' }
+          // ID ini harus sama persis dengan yang dipanggil di logic
+          { _id: 'in_msg', label: 'Message', dataType: 'string', color: '#FFB74D', value: 'Hello World' }
         ],
         outputs: [
           { _id: 'exec_out', label: 'Out', dataType: 'execution', color: '#ffffff' }
@@ -45,9 +48,7 @@ export const basicSystem = {
           headerColor: '#37474F', 
           category: 'Interface' 
         },
-        data: [
-          { _id: 'log_cfg', prefix: 'LOG: ' }
-        ], 
+        data: { prefix: 'LOG: ' }, // [FIX] Object bukan Array
         inputs: [
           { _id: 'exec_in', label: 'In', dataType: 'execution', color: '#ffffff' },
           { _id: 'in_value', label: 'Value', dataType: 'any', color: '#ffffff' }

@@ -1,4 +1,4 @@
-import { Move, Axis3d } from 'lucide-vue-next';
+import { Move, Axis3d, Footprints } from 'lucide-vue-next'; // Tambahkan Footprints jika ada, atau pakai Move
 
 export const basicTransform = {
   _id: 'game_transform',
@@ -77,8 +77,8 @@ export const basicTransform = {
     { 
       type: 'translate', 
       label: 'Translate', 
-      description: 'Move object relative to current position (Delta)', 
-      icon: Move,
+      description: 'Move object relative (Delta) with optional collision.', 
+      icon: Footprints, 
       allowDynamicInputs: false, 
       allowDynamicOutputs: false,
       defaultData: { 
@@ -87,11 +87,22 @@ export const basicTransform = {
           headerColor: '#2E7D32', 
           category: 'Transform' 
         },
+        // DATA UNTUK INSPECTOR & DEFAULT VALUES
+        data: {
+            dx: 0,
+            dy: 0,
+            sweep: true
+        },
+        // PORT DEFINITION
         inputs: [
           { _id: 'exec_in', label: 'In', dataType: 'execution', color: '#ffffff' },
           { _id: 'in_target', label: 'Target ID (Self)', dataType: 'string', color: '#E040FB' },
-          { _id: 'dx', label: 'Delta X', dataType: 'number', color: '#69F0AE', defaultValue: 0 },
-          { _id: 'dy', label: 'Delta Y', dataType: 'number', color: '#69F0AE', defaultValue: 0 }
+          
+          // Port input untuk variabel eksternal
+          // Inspector akan mensinkronkan 'value' disini dengan 'data.dx/dy'
+          { _id: 'dx', label: 'Speed X', dataType: 'number', color: '#69F0AE', value: 0 },
+          { _id: 'dy', label: 'Speed Y', dataType: 'number', color: '#69F0AE', value: 0 },
+          { _id: 'sweep', label: 'Solid Collision?', dataType: 'boolean', color: '#FF5252', value: true }
         ],
         outputs: [
           { _id: 'exec_out', label: 'Out', dataType: 'execution', color: '#ffffff' }

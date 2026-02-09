@@ -15,6 +15,7 @@ import { basicBoolean } from '@/modules/variable/parts/basicBoolean.js';
 import { basicComparison } from '@/modules/variable/parts/basicComparison.js';
 import { basicPointer } from '@/modules/variable/parts/basicPointer.js';
 import { basicCamera } from '@/modules/variable/parts/basicCamera.js';
+import { basicCollider } from '@/modules/variable/parts/basicCollider.js'
 
 export const STATIC_NODE_GROUPS = [
   basicLifecycle,
@@ -28,7 +29,8 @@ export const STATIC_NODE_GROUPS = [
   basicSystem,
   basicString,
   basicObject,
-  basicCamera
+  basicCamera,
+  basicCollider
 ];
 
 export function useNodeTemplate() {

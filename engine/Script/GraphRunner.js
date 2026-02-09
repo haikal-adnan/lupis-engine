@@ -14,6 +14,7 @@ export default class GraphRunner {
         this.localVariables = new Map();
         this._holdNodes = [];
         this._dragNodes = [];
+        this._tickNodes = []; // [ADDED] Simpan referensi tick nodes agar cepat
         this._lastPointer = { x: 0, y: 0 };
         this._keyStates = {};
         this._initVariables();
@@ -51,6 +52,12 @@ export default class GraphRunner {
 
     _setupEventListeners() {
         if (!this.data.nodes) return;
+        
+        // Reset list
+        this._tickNodes = [];
+        this._holdNodes = [];
+        this._dragNodes = [];
+
         this.data.nodes.forEach(node => {
             if (node.type === 'event_simple_key') {
                 const keyTarget = node.data?.key?.toLowerCase();
@@ -89,6 +96,10 @@ export default class GraphRunner {
                 });
             } else if (node.type === 'event_pointer_drag') {
                 this._dragNodes.push(node);
+            } 
+            // [ADDED] Optimasi: Kumpulkan node tick saat inisialisasi
+            else if (node.type === 'event_tick') {
+                this._tickNodes.push(node);
             }
         });
     }
@@ -96,19 +107,27 @@ export default class GraphRunner {
     update(dt) {
         if (!this._isScriptActive()) return;
         this.currentDt = dt;
+        
+        // Simpan posisi sebelumnya untuk physics interpolation (opsional)
         if (this.owner && this.owner.components && this.owner.components.Transform) {
             const t = this.owner.components.Transform;
             t.prevX = t.x;
             t.prevY = t.y;
         }
-        this.data.nodes.filter(n => n.type === 'event_tick').forEach(n => {
-            this.executeFlow(n._id, 'out');
+
+        // [UPDATED] Gunakan list yang sudah di-cache agar lebih cepat daripada filter setiap frame
+        this._tickNodes.forEach(node => {
+            // Set data dt agar bisa diambil oleh output 'dt'
+            node._tempData = { dt: dt };
+            this.executeFlow(node._id, 'out');
         });
+
         this._holdNodes.forEach(item => {
             if (this.game.input.keyboard.isDown(item.map.key)) {
                 this.executeFlow(item.node._id, item.outputId);
             }
         });
+
         if (this._dragNodes.length > 0) {
             const pointer = this.game.input.getPointer();
             if (pointer.down) {

@@ -1,4 +1,4 @@
-import { Play, Pause, Square, Power, Flag } from 'lucide-vue-next';
+import { Play, Pause, Square, Power, Flag, Clock } from 'lucide-vue-next';
 
 export const basicLifecycle = {
   _id: 'category_game_flow',
@@ -6,6 +6,23 @@ export const basicLifecycle = {
   color: '#EF4444',
   icon: Power,
   items: [
+    {
+      type: 'event_tick',
+      label: 'On Tick',
+      description: 'Runs every frame. Use for continuous logic.',
+      icon: Clock, // Import dari lucide-vue-next
+      defaultData: {
+        settings: {
+          headerTitle: 'On Tick',
+          headerColor: '#3B82F6',
+          category: 'Events'
+        },
+        outputs: [
+          { _id: 'out', label: 'Update', dataType: 'execution', color: '#ffffff' },
+          { _id: 'dt', label: 'Delta Time', dataType: 'number', color: '#69F0AE' }
+        ]
+      }
+    },
     {
       type: 'event_game_start',
       label: 'On Game Start',

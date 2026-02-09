@@ -23,6 +23,18 @@ export const createUITransform = (data = {}, defaults = { width: 160, height: 40
   };
 };
 
+export const createCollider = (data = {}) => {
+  return {
+    type: data.type || "solid", 
+    enabled: Boolean(data.enabled ?? true),
+    offsetX: Number(data.offsetX ?? 0),
+    offsetY: Number(data.offsetY ?? 0),
+    width: Number(data.width ?? 32),
+    height: Number(data.height ?? 32),
+    ...data
+  };
+};
+
 export const createComponent = (type, inputData = {}) => {
   switch (type) {
     case "SpriteRenderer":
@@ -83,6 +95,9 @@ export const createComponent = (type, inputData = {}) => {
 
     case "UITransform":
       return createUITransform(inputData);
+
+    case "Collider":
+      return createCollider(inputData);
 
     default:
       return { ...inputData };

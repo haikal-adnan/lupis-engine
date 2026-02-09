@@ -5,6 +5,15 @@ export const lifecycleNode = {
         }
     },
 
+    'event_tick': {
+        getOutput: (runner, node, outputKey) => {
+            if (outputKey === 'dt') {
+                return node._tempData?.dt || 0.016; 
+            }
+            return 0;
+        }
+    },
+
     'action_game_pause': {
         execute: (runner, node) => {
             runner.game.pauseGame();

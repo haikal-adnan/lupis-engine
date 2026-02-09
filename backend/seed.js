@@ -98,160 +98,125 @@ const seedDatabase = async () => {
         { _id: varSpeedId, name: "Speed", type: "number", defaultValue: 300 }
       ],
       nodes: [
+        // ------------------------------------------------------------------
+        // 1. INPUT NODE (WASD Combined)
+        // ------------------------------------------------------------------
         {
-          _id: "node_input_pos",
+          _id: "node_input_wasd",
           type: "event_advanced_key",
-          position: { x: 50, y: 50 },
-          settings: { headerTitle: 'POSITIVE MOVEMENT', headerColor: '#C2185B', category: 'Keyboard Events' },
-          data: {
-            mappings: [
-              { _id: "move_right", key: "D", trigger: "hold", threshold: 0, repeat: true },
-              { _id: "move_down", key: "S", trigger: "hold", threshold: 0, repeat: true }
-            ]
-          },
-          inputs: [],
-          outputs: [
-            { _id: "out_move_right", label: "D (Right)", dataType: "execution", color: "#FFEB3B" },
-            { _id: "out_move_down", label: "S (Down)", dataType: "execution", color: "#FFEB3B" }
-          ]
-        },
-
-        {
-          _id: "node_speed_pos",
-          type: "variable_get",
           position: { x: 50, y: 300 },
-          settings: { headerTitle: 'GET SPEED', headerColor: '#424242', category: 'Variables' },
-          data: { variableId: varSpeedId },
-          inputs: [],
-          outputs: [
-            { _id: "val", label: "Value", dataType: "number", color: "#B2FF59" }
-          ]
-        },
-
-        {
-          _id: "node_trans_right",
-          type: "translate",
-          position: { x: 500, y: 50 },
-          settings: { headerTitle: 'TRANSLATE', headerColor: '#2E7D32', category: 'Transform' },
-          data: {},
-          inputs: [
-            { _id: "exec_in", label: "In", dataType: "execution", color: "#ffffff" },
-            { _id: "in_target", label: "Target ID (Self)", dataType: "string", color: "#E040FB" },
-            { _id: "dx", label: "Delta X", dataType: "number", color: "#69F0AE", defaultValue: 0 },
-            { _id: "dy", label: "Delta Y", dataType: "number", color: "#69F0AE", defaultValue: 0 }
-          ],
-          outputs: [
-            { _id: "exec_out", label: "Out", dataType: "execution", color: "#ffffff" }
-          ]
-        },
-
-        {
-          _id: "node_trans_down",
-          type: "translate",
-          position: { x: 500, y: 250 },
-          settings: { headerTitle: 'TRANSLATE', headerColor: '#2E7D32', category: 'Transform' },
-          data: {},
-          inputs: [
-            { _id: "exec_in", label: "In", dataType: "execution", color: "#ffffff" },
-            { _id: "in_target", label: "Target ID (Self)", dataType: "string", color: "#E040FB" },
-            { _id: "dx", label: "Delta X", dataType: "number", color: "#69F0AE", defaultValue: 0 },
-            { _id: "dy", label: "Delta Y", dataType: "number", color: "#69F0AE", defaultValue: 0 }
-          ],
-          outputs: [
-            { _id: "exec_out", label: "Out", dataType: "execution", color: "#ffffff" }
-          ]
-        },
-
-        {
-          _id: "node_input_neg",
-          type: "event_advanced_key",
-          position: { x: 50, y: 500 },
-          settings: { headerTitle: 'NEGATIVE MOVEMENT', headerColor: '#C2185B', category: 'Keyboard Events' },
+          settings: { headerTitle: 'WASD MOVEMENT', headerColor: '#C2185B', category: 'Keyboard Events' },
           data: {
             mappings: [
               { _id: "move_up", key: "W", trigger: "hold", threshold: 0, repeat: true },
-              { _id: "move_left", key: "A", trigger: "hold", threshold: 0, repeat: true }
+              { _id: "move_left", key: "A", trigger: "hold", threshold: 0, repeat: true },
+              { _id: "move_down", key: "S", trigger: "hold", threshold: 0, repeat: true },
+              { _id: "move_right", key: "D", trigger: "hold", threshold: 0, repeat: true }
             ]
           },
           inputs: [],
           outputs: [
-            { _id: "out_move_up", label: "W (Up)", dataType: "execution", color: "#FFEB3B" },
-            { _id: "out_move_left", label: "A (Left)", dataType: "execution", color: "#FFEB3B" }
+            { _id: "out_move_up", label: "W (Hold)", dataType: "execution", color: "#FFEB3B" },
+            { _id: "out_move_left", label: "A (Hold)", dataType: "execution", color: "#FFEB3B" },
+            { _id: "out_move_down", label: "S (Hold)", dataType: "execution", color: "#FFEB3B" },
+            { _id: "out_move_right", label: "D (Hold)", dataType: "execution", color: "#FFEB3B" }
           ]
         },
 
+        // ------------------------------------------------------------------
+        // 2. TRANSLATE UP (W) - DY: -300
+        // ------------------------------------------------------------------
         {
-          _id: "node_speed_neg",
-          type: "variable_get",
-          position: { x: 50, y: 750 },
-          settings: { headerTitle: 'GET SPEED', headerColor: '#424242', category: 'Variables' },
-          data: { variableId: varSpeedId },
-          inputs: [],
-          outputs: [
-            { _id: "val", label: "Value", dataType: "number", color: "#B2FF59" }
-          ]
-        },
-
-        {
-          _id: "node_neg_left",
-          type: "math_negate",
-          position: { x: 350, y: 550 },
-          settings: { headerTitle: 'NEGATE', headerColor: '#00796B', category: 'Math' },
-          data: {},
-          inputs: [
-            { _id: "in", label: "In", dataType: "execution", color: "#fff" },
-            { _id: "a", label: "A", dataType: "number", color: "#B2FF59" }
-          ],
-          outputs: [
-            { _id: "out", label: "Trigger", dataType: "execution", color: "#fff" },
-            { _id: "res", label: "Result", dataType: "number", color: "#B2FF59" }
-          ]
-        },
-
-        {
-          _id: "node_neg_up",
-          type: "math_negate",
-          position: { x: 350, y: 750 },
-          settings: { headerTitle: 'NEGATE', headerColor: '#00796B', category: 'Math' },
-          data: {},
-          inputs: [
-            { _id: "in", label: "In", dataType: "execution", color: "#fff" },
-            { _id: "a", label: "A", dataType: "number", color: "#B2FF59" }
-          ],
-          outputs: [
-            { _id: "out", label: "Trigger", dataType: "execution", color: "#fff" },
-            { _id: "res", label: "Result", dataType: "number", color: "#B2FF59" }
-          ]
-        },
-
-        {
-          _id: "node_trans_left",
+          _id: "node_trans_up",
           type: "translate",
-          position: { x: 650, y: 500 },
-          settings: { headerTitle: 'TRANSLATE', headerColor: '#2E7D32', category: 'Transform' },
-          data: {},
+          position: { x: 400, y: 50 },
+          settings: { headerTitle: 'MOVE UP', headerColor: '#2E7D32', category: 'Transform' },
+          data: {
+             dx: 0,
+             dy: -300, // Kecepatan Hardcoded disini
+             sweep: true
+          },
           inputs: [
             { _id: "exec_in", label: "In", dataType: "execution", color: "#ffffff" },
             { _id: "in_target", label: "Target ID (Self)", dataType: "string", color: "#E040FB" },
-            { _id: "dx", label: "Delta X", dataType: "number", color: "#69F0AE", defaultValue: 0 },
-            { _id: "dy", label: "Delta Y", dataType: "number", color: "#69F0AE", defaultValue: 0 }
+            { _id: "dx", label: "Delta X", dataType: "number", color: "#69F0AE", value: 0 },
+            { _id: "dy", label: "Delta Y", dataType: "number", color: "#69F0AE", value: -300 },
+            { _id: "sweep", label: "Solid Collision?", dataType: "boolean", color: "#FF5252", value: true }
           ],
           outputs: [
             { _id: "exec_out", label: "Out", dataType: "execution", color: "#ffffff" }
           ]
         },
 
+        // ------------------------------------------------------------------
+        // 3. TRANSLATE LEFT (A) - DX: -300
+        // ------------------------------------------------------------------
         {
-          _id: "node_trans_up",
+          _id: "node_trans_left",
           type: "translate",
-          position: { x: 650, y: 700 },
-          settings: { headerTitle: 'TRANSLATE', headerColor: '#2E7D32', category: 'Transform' },
-          data: {},
+          position: { x: 400, y: 250 },
+          settings: { headerTitle: 'MOVE LEFT', headerColor: '#2E7D32', category: 'Transform' },
+          data: {
+             dx: -300,
+             dy: 0,
+             sweep: true
+          },
           inputs: [
             { _id: "exec_in", label: "In", dataType: "execution", color: "#ffffff" },
             { _id: "in_target", label: "Target ID (Self)", dataType: "string", color: "#E040FB" },
-            { _id: "dx", label: "Delta X", dataType: "number", color: "#69F0AE", defaultValue: 0 },
-            { _id: "dy", label: "Delta Y", dataType: "number", color: "#69F0AE", defaultValue: 0 }
+            { _id: "dx", label: "Delta X", dataType: "number", color: "#69F0AE", value: -300 },
+            { _id: "dy", label: "Delta Y", dataType: "number", color: "#69F0AE", value: 0 },
+            { _id: "sweep", label: "Solid Collision?", dataType: "boolean", color: "#FF5252", value: true }
+          ],
+          outputs: [
+            { _id: "exec_out", label: "Out", dataType: "execution", color: "#ffffff" }
+          ]
+        },
+
+        // ------------------------------------------------------------------
+        // 4. TRANSLATE DOWN (S) - DY: 300
+        // ------------------------------------------------------------------
+        {
+          _id: "node_trans_down",
+          type: "translate",
+          position: { x: 400, y: 450 },
+          settings: { headerTitle: 'MOVE DOWN', headerColor: '#2E7D32', category: 'Transform' },
+          data: {
+             dx: 0,
+             dy: 300,
+             sweep: true
+          },
+          inputs: [
+            { _id: "exec_in", label: "In", dataType: "execution", color: "#ffffff" },
+            { _id: "in_target", label: "Target ID (Self)", dataType: "string", color: "#E040FB" },
+            { _id: "dx", label: "Delta X", dataType: "number", color: "#69F0AE", value: 0 },
+            { _id: "dy", label: "Delta Y", dataType: "number", color: "#69F0AE", value: 300 },
+            { _id: "sweep", label: "Solid Collision?", dataType: "boolean", color: "#FF5252", value: true }
+          ],
+          outputs: [
+            { _id: "exec_out", label: "Out", dataType: "execution", color: "#ffffff" }
+          ]
+        },
+
+        // ------------------------------------------------------------------
+        // 5. TRANSLATE RIGHT (D) - DX: 300
+        // ------------------------------------------------------------------
+        {
+          _id: "node_trans_right",
+          type: "translate",
+          position: { x: 400, y: 650 },
+          settings: { headerTitle: 'MOVE RIGHT', headerColor: '#2E7D32', category: 'Transform' },
+          data: {
+             dx: 300,
+             dy: 0,
+             sweep: true
+          },
+          inputs: [
+            { _id: "exec_in", label: "In", dataType: "execution", color: "#ffffff" },
+            { _id: "in_target", label: "Target ID (Self)", dataType: "string", color: "#E040FB" },
+            { _id: "dx", label: "Delta X", dataType: "number", color: "#69F0AE", value: 300 },
+            { _id: "dy", label: "Delta Y", dataType: "number", color: "#69F0AE", value: 0 },
+            { _id: "sweep", label: "Solid Collision?", dataType: "boolean", color: "#FF5252", value: true }
           ],
           outputs: [
             { _id: "exec_out", label: "Out", dataType: "execution", color: "#ffffff" }
@@ -259,24 +224,16 @@ const seedDatabase = async () => {
         }
       ],
 
+      // HANYA ADA 4 KONEKSI SEDERHANA
       edges: [
-        { _id: "e_pos_1", source: "node_input_pos", sourceHandle: "out_move_right", target: "node_trans_right", targetHandle: "exec_in" },
-        { _id: "e_pos_2", source: "node_speed_pos", sourceHandle: "val", target: "node_trans_right", targetHandle: "dx" },
-
-        { _id: "e_pos_3", source: "node_input_pos", sourceHandle: "out_move_down", target: "node_trans_down", targetHandle: "exec_in" },
-        { _id: "e_pos_4", source: "node_speed_pos", sourceHandle: "val", target: "node_trans_down", targetHandle: "dy" },
-
-        { _id: "e_neg_1", source: "node_input_neg", sourceHandle: "out_move_left", target: "node_neg_left", targetHandle: "in" },
-        { _id: "e_neg_2", source: "node_speed_neg", sourceHandle: "val", target: "node_neg_left", targetHandle: "a" },
-        
-        { _id: "e_neg_3", source: "node_neg_left", sourceHandle: "out", target: "node_trans_left", targetHandle: "exec_in" },
-        { _id: "e_neg_4", source: "node_neg_left", sourceHandle: "res", target: "node_trans_left", targetHandle: "dx" },
-
-        { _id: "e_neg_5", source: "node_input_neg", sourceHandle: "out_move_up", target: "node_neg_up", targetHandle: "in" },
-        { _id: "e_neg_6", source: "node_speed_neg", sourceHandle: "val", target: "node_neg_up", targetHandle: "a" },
-
-        { _id: "e_neg_7", source: "node_neg_up", sourceHandle: "out", target: "node_trans_up", targetHandle: "exec_in" },
-        { _id: "e_neg_8", source: "node_neg_up", sourceHandle: "res", target: "node_trans_up", targetHandle: "dy" },
+        // W -> Move Up
+        { _id: "e_up", source: "node_input_wasd", sourceHandle: "out_move_up", target: "node_trans_up", targetHandle: "exec_in" },
+        // A -> Move Left
+        { _id: "e_left", source: "node_input_wasd", sourceHandle: "out_move_left", target: "node_trans_left", targetHandle: "exec_in" },
+        // S -> Move Down
+        { _id: "e_down", source: "node_input_wasd", sourceHandle: "out_move_down", target: "node_trans_down", targetHandle: "exec_in" },
+        // D -> Move Right
+        { _id: "e_right", source: "node_input_wasd", sourceHandle: "out_move_right", target: "node_trans_right", targetHandle: "exec_in" }
       ]
     });
 
@@ -292,7 +249,7 @@ const seedDatabase = async () => {
         components: {
           Transform: { 
             x: 0, y: 0, scaleX: 2, scaleY: 2, rotation: 0, width: 50, height: 50,
-            isRatioLocked: false // [ADDED]
+            isRatioLocked: false
           },
           SpriteRenderer: { assetId: assetDungeonId, source: { x: 128, y: 0, w: 32, h: 32 }, color: "#FFFFFF", opacity: 1 },
           BoxCollider: { isTrigger: false, offset: { x: 0, y: 0 }, size: { x: 32, y: 32 } }
@@ -352,7 +309,7 @@ const seedDatabase = async () => {
           components: {
             Transform: { 
               x: 0, y: 0, width: 640, height: 480, rotation: 0, scaleX: 1, scaleY: 1,
-              isRatioLocked: false // [ADDED]
+              isRatioLocked: false 
             },
             Tilemap: {
               tileWidth: 16,
@@ -378,9 +335,23 @@ const seedDatabase = async () => {
           components: {
             Transform: { 
               x: 300, y: 300, width: 64, height: 64, pivotX: 0.5, pivotY: 0.5,
-              isRatioLocked: false // [ADDED]
+              isRatioLocked: false 
             },
-            ShapeRenderer: { type: "rectangle", color: "#FF0000", width: 64, height: 64, opacity: 1 },
+            ShapeRenderer: { 
+              type: "rectangle", 
+              color: "#FF0000", 
+              width: 64, 
+              height: 64, 
+              opacity: 1 
+            },
+            Collider: {
+              type: "solid",
+              enabled: true,
+              offsetX: 0,
+              offsetY: 0,
+              width: 64,
+              height: 64
+            },
             ScriptController: {
               data: [
                 { 

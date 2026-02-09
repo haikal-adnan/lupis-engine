@@ -29,6 +29,18 @@ export const useScriptStore = defineStore('script', {
     selectedNode: (state) => {
       if (!state.activeScript || !state.selectedNodeId) return null;
       return state.activeScript.nodes.find(n => n._id === state.selectedNodeId);
+    },
+    
+    /**
+     * Mengecek apakah input handle tertentu pada node memiliki koneksi kabel (Edge).
+     * Usage: store.isInputConnected(nodeId, handleId)
+     */
+    isInputConnected: (state) => (nodeId, handleId) => {
+      if (!state.activeScript || !state.activeScript.edges) return false;
+      
+      return state.activeScript.edges.some(edge => 
+        edge.target === nodeId && edge.targetHandle === handleId
+      );
     }
   },
 
@@ -97,12 +109,18 @@ export const useScriptStore = defineStore('script', {
       }
 
       if (this.activeScript && this.activeScript._id === scriptId) {
+         // Cek jika update bukan berasal dari self-update (seperti dragging node)
+         // agar tidak merusak referensi reaktif jika tidak perlu
          const isSelfUpdate = updates.nodes === this.activeScript.nodes;
          if (!isSelfUpdate) {
              Object.assign(this.activeScript, updates);
          }
       }
     },
+
+    // ------------------------------------------------------------------
+    // Node Operations (Active Script)
+    // ------------------------------------------------------------------
 
     addNodeToActive(rawNodeData) {
       if (!this.activeScript) return;
@@ -118,9 +136,11 @@ export const useScriptStore = defineStore('script', {
     updateNodeInActive(nodeId, updates) {
       if (!this.activeScript) return;
       
+      // Cari node referensi reaktif
       const node = this.activeScript.nodes.find(n => n._id === nodeId);
       if (!node) return;
 
+      // Merge nested objects manual agar tidak menimpa seluruh object
       if (updates.data) {
         node.data = { ...node.data, ...updates.data };
         delete updates.data; 
@@ -131,6 +151,7 @@ export const useScriptStore = defineStore('script', {
         delete updates.settings;
       }
 
+      // Assign sisanya (position, inputs, outputs, dll)
       Object.assign(node, updates);
 
       this.saveActiveScript();
@@ -140,6 +161,7 @@ export const useScriptStore = defineStore('script', {
       if (!this.activeScript) return;
 
       this.activeScript.nodes = this.activeScript.nodes.filter(n => n._id !== nodeId);
+      // Hapus edges yang terhubung
       this.activeScript.edges = this.activeScript.edges.filter(edge => 
         edge.source !== nodeId && edge.target !== nodeId
       );
@@ -150,6 +172,10 @@ export const useScriptStore = defineStore('script', {
 
       this.saveActiveScript();
     },
+
+    // ------------------------------------------------------------------
+    // Port Operations
+    // ------------------------------------------------------------------
 
     addNodePort(nodeId, type, portData) {
       if (!this.activeScript) return;
@@ -181,11 +207,13 @@ export const useScriptStore = defineStore('script', {
 
       if (type === 'input') {
         node.inputs = node.inputs.filter(p => p._id !== portId);
+        // Hapus edges yang masuk ke port ini
         this.activeScript.edges = this.activeScript.edges.filter(e => 
           !(e.target === nodeId && e.targetHandle === portId)
         );
       } else {
         node.outputs = node.outputs.filter(p => p._id !== portId);
+        // Hapus edges yang keluar dari port ini
         this.activeScript.edges = this.activeScript.edges.filter(e => 
           !(e.source === nodeId && e.sourceHandle === portId)
         );
@@ -194,10 +222,15 @@ export const useScriptStore = defineStore('script', {
       this.saveActiveScript();
     },
 
+    // ------------------------------------------------------------------
+    // Edge Operations
+    // ------------------------------------------------------------------
+
     addEdgeToActive(rawEdgeData) {
       if (!this.activeScript) return;
-      if (rawEdgeData.source === rawEdgeData.target) return;
+      if (rawEdgeData.source === rawEdgeData.target) return; // Prevent self-loop
 
+      // Cek duplikat
       const exists = this.activeScript.edges.find(e => 
         e.source === rawEdgeData.source && 
         e.target === rawEdgeData.target &&
@@ -218,15 +251,25 @@ export const useScriptStore = defineStore('script', {
       this.saveActiveScript();
     },
 
+    // ------------------------------------------------------------------
+    // Persistence
+    // ------------------------------------------------------------------
+
     saveActiveScript() {
       if (!this.activeScript) return;
       try {
         const cleanScript = JSON.parse(JSON.stringify(toRaw(this.activeScript)));
+        
+        // Update list utama
         this.updateScriptInList(cleanScript._id, {
             nodes: cleanScript.nodes,
             edges: cleanScript.edges,
             exposedVariables: cleanScript.exposedVariables
         });
+
+        // Di sini bisa tambahkan logic API Call ke Backend
+        // await api.updateScript(cleanScript._id, cleanScript);
+        
       } catch (err) {
         console.error("[ScriptStore] FAILED to save", err);
       }
