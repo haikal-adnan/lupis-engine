@@ -1,6 +1,6 @@
 import { ShieldCheck, CircleSlash, Rows, Columns, GitFork } from 'lucide-vue-next';
 
-export const basicBoolean = {
+export const BlueprintBoolean = {
   _id: 'boolean_logic',
   label: 'Boolean Logic',
   color: '#4CAF50',

@@ -1,27 +1,33 @@
-import { mathNode } from './Node/mathNode.js'
-import { logicNode } from './Node/logicNode.js'
-import { entityNode } from './Node/entityNode.js'
-import { variableNode } from './Node/variableNode.js'
-import { transformNode } from './Node/transformNode.js'
-import { stringNode } from './Node/stringNode.js'
-import { systemNode } from './Node/systemNode.js'
-import { cameraNode } from './Node/cameraNode.js'
-import { lifecycleNode } from './Node/lifecycleNode.js'
-import { colliderNode } from './Node/colliderNode.js'
+import { NodeMath } from './Node/NodeMath.js'
+import { NodeLogic } from './Node/NodeLogic.js'
+import { NodeObject } from './Node/NodeObject.js'
+import { NodeTransform } from './Node/NodeTransform.js'
+import { NodeString } from './Node/NodeString.js'
+import { NodeSystem } from './Node/NodeSystem.js'
+import { NodeCamera } from './Node/NodeCamera.js'
+import { NodeLifecycle } from './Node/NodeLifecycle.js'
+import { NodeCollider } from './Node/NodeCollider.js'
+import { NodePhysics } from './Node/NodePhysics.js'
+import { NodeRenderer } from './Node/NodeRenderer.js'
+import { NodeVariable } from './Node/NodeVariable';
+import { NodeComparison } from './Node/NodeComparison.js';
 
 export const NodeRegistry = {
-    ...lifecycleNode,
-    ...colliderNode,
-    ...mathNode,
-    ...logicNode,
-    ...entityNode,
-    ...variableNode,
-    ...transformNode,
-    ...stringNode,
-    ...systemNode,
-    ...cameraNode,
+    ...NodeVariable,
+    ...NodeLifecycle,
+    ...NodeCollider,
+    ...NodeMath,
+    ...NodeLogic,
+    ...NodeObject,
+    ...NodeTransform,
+    ...NodeString,
+    ...NodeSystem,
+    ...NodeCamera,
+    ...NodePhysics,
+    ...NodeRenderer,
 
-    'default': {
+
+    default: {
         execute: (runner, node) => runner.executeFlow(node._id, 'out'),
         getOutput: () => null
     }

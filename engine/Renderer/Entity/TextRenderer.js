@@ -6,6 +6,7 @@ function getShared(gl) {
     let s = _shared.get(gl);
     if (s) return s;
 
+    // ... (kode shader tetap sama)
     const isWebGL2 = gl instanceof WebGL2RenderingContext;
     const hasDeriv = isWebGL2 || !!gl.getExtension("OES_standard_derivatives");
 
@@ -122,6 +123,7 @@ export default class TextRenderer {
     }
 
     measureText(font, str, size) {
+        // ... (tetap sama)
         if (!font || !font.chars || !font.info || !str) {
             return { width: 0, height: 0, xMin: 0, yMin: 0, xMax: 0, yMax: 0 };
         }
@@ -154,7 +156,8 @@ export default class TextRenderer {
         };
     }
 
-    drawText(font, str, x, y, w, h, size, color, projection, rot = 0, sx = 1, sy = 1, px = 0, py = 0, alpha = 1) {
+    // UPDATED: Added flipX, flipY parameters
+    drawText(font, str, x, y, w, h, size, color, projection, rot = 0, sx = 1, sy = 1, px = 0, py = 0, alpha = 1, flipX = false, flipY = false) {
         if (!font || !font.glTexture || !str || str.trim() === "") return;
 
         const measurement = this.measureText(font, str, size);
@@ -173,12 +176,16 @@ export default class TextRenderer {
 
         const c = Math.cos(rot), s = Math.sin(rot);
         
-        const pivotOffsetX = -px * targetW * sx;
-        const pivotOffsetY = -py * targetH * sy;
+        // --- APPLY FLIP ---
+        const finalSX = flipX ? -sx : sx;
+        const finalSY = flipY ? -sy : sy;
+
+        const pivotOffsetX = -px * targetW * finalSX;
+        const pivotOffsetY = -py * targetH * finalSY;
         
         const transform = (lx, ly) => {
-            const fx = lx * ratioX * sx + pivotOffsetX;
-            const fy = ly * ratioY * sy + pivotOffsetY;
+            const fx = lx * ratioX * finalSX + pivotOffsetX;
+            const fy = ly * ratioY * finalSY + pivotOffsetY;
             return {
                 x: x + (fx * c - fy * s),
                 y: y + (fx * s + fy * c)

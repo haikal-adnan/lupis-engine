@@ -68,6 +68,10 @@ export default class UIRenderer {
         const t = comps.UITransform || comps.Transform;
         if (!t) return;
 
+        // [UPDATED] Extract Flip Info dari Transform
+        const flipX = t.flipX || false;
+        const flipY = t.flipY || false;
+
         const anchorX = t.anchorX ?? 0.5;
         const anchorY = t.anchorY ?? 0.5;
 
@@ -82,7 +86,6 @@ export default class UIRenderer {
             y: finalY,
             width: t.width || 0, 
             height: t.height || 0,
-            // [MODIFIED] Konversi Derajat ke Radian di sini
             rotation: (t.rotation || 0) * (Math.PI / 180),
             scaleX: t.scaleX ?? 1, 
             scaleY: t.scaleY ?? 1,
@@ -99,12 +102,21 @@ export default class UIRenderer {
             if (a > 0) {
                  const texture = world.assets.textures[s.assetId];
 
+                // [UPDATED] Menggunakan 4 kolom flat source properties
+                const frame = {
+                    x: s.sourceX ?? 0,
+                    y: s.sourceY ?? 0,
+                    w: s.sourceWidth ?? 0,
+                    h: s.sourceHeight ?? 0
+                };
+
                 this.renderQueue.push({
                     type: "image",
                     texture: texture,
-                    frame: s.source || { x: 0, y: 0, w: 0, h: 0 },
+                    frame: frame,
                     transformData: trans,
-                    options: { flipX: s.flipX, flipY: s.flipY, opacity: a }
+                    // Pass flipX/flipY dari Transform, bukan dari component sprite
+                    options: { flipX: flipX, flipY: flipY, opacity: a }
                 });
             }
         }
@@ -122,7 +134,10 @@ export default class UIRenderer {
                         thickness: s.thickness || 1,
                         x2: s.x2,
                         y2: s.y2,
-                        opacity: a
+                        opacity: a,
+                        // Pass Flip Info
+                        flipX: flipX,
+                        flipY: flipY
                     }
                 });
             }
@@ -142,7 +157,10 @@ export default class UIRenderer {
                         fontSize: tx.fontSize || 24,
                         color: HexToVec4(tx.color || "#FFFFFF"),
                         font,
-                        opacity: a
+                        opacity: a,
+                        // Pass Flip Info
+                        flipX: flipX,
+                        flipY: flipY
                     }
                 });
             }
@@ -183,9 +201,16 @@ export default class UIRenderer {
             } else if (item.type === "shape") {
                 this._drawShape(item.shapeOptions, item.transformData, proj);
             } else if (item.type === "text") {
-                const { text, font, fontSize, color, opacity } = item.textOptions;
+                const { text, font, fontSize, color, opacity, flipX, flipY } = item.textOptions;
                 const t = item.transformData;
-                this.renderer.text.drawText(font, text, t.x, t.y, t.width, t.height, fontSize, color, proj, t.rotation, t.scaleX, t.scaleY, t.pivotX, t.pivotY, opacity);
+                // [UPDATED] Pass flipX & flipY ke Text Renderer
+                this.renderer.text.drawText(
+                    font, text, t.x, t.y, t.width, t.height, 
+                    fontSize, color, proj, 
+                    t.rotation, t.scaleX, t.scaleY, 
+                    t.pivotX, t.pivotY, opacity,
+                    flipX, flipY
+                );
             }
         }
         if (currentType) this.renderer[currentType].flush();
@@ -193,10 +218,14 @@ export default class UIRenderer {
 
     _drawShape(opt, t, proj) {
         const shape = this.renderer.shape;
+        // [UPDATED] Pass flipX & flipY ke Shape Renderer
+        const fx = opt.flipX || false;
+        const fy = opt.flipY || false;
+
         if (opt.type === "rectangle") {
-             shape.drawRect(t.x, t.y, t.width, t.height, opt.color, proj, t.rotation, t.scaleX, t.scaleY, t.pivotX, t.pivotY, opt.opacity);
+             shape.drawRect(t.x, t.y, t.width, t.height, opt.color, proj, t.rotation, t.scaleX, t.scaleY, t.pivotX, t.pivotY, opt.opacity, fx, fy);
         } else if (opt.type === "rectStroke") {
-             shape.drawRectStroke(t.x, t.y, t.width, t.height, opt.color, opt.thickness, proj, t.rotation, t.scaleX, t.scaleY, t.pivotX, t.pivotY, opt.opacity);
+             shape.drawRectStroke(t.x, t.y, t.width, t.height, opt.color, opt.thickness, proj, t.rotation, t.scaleX, t.scaleY, t.pivotX, t.pivotY, opt.opacity, fx, fy);
         } else if (opt.type === "circle") {
              const radius = (t.width / 2) * ((Math.abs(t.scaleX) + Math.abs(t.scaleY)) / 2);
              shape.drawCircle(t.x, t.y, radius, opt.color, 32, proj);

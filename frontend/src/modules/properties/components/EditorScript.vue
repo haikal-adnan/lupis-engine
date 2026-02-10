@@ -92,7 +92,7 @@
     </div>
 
     <div v-if="currentScript" class="flex flex-col gap-2">
-       <PropertyRow label="Active Status">
+        <PropertyRow label="Active Status">
           <BaseButton 
              :active="currentIsActive"
              @click="currentIsActive = !currentIsActive"
@@ -103,9 +103,9 @@
                {{ currentIsActive ? 'Active' : 'Inactive' }}
              </span>
            </BaseButton>
-       </PropertyRow>
+        </PropertyRow>
 
-       <PropertyRow label="Source">
+        <PropertyRow label="Source">
           <BaseButton 
             @click="openScriptEditor"
             class="w-full h-7 text-xs gap-2 justify-center"
@@ -113,11 +113,11 @@
           >
             <span>Open Script</span>
           </BaseButton>
-       </PropertyRow>
+        </PropertyRow>
 
-       <div class="h-px bg-border my-1"></div>
+        <div class="h-px bg-border my-1"></div>
 
-       <div class="space-y-1">
+        <div class="space-y-1">
           <div v-if="currentVariables.length === 0" class="text-[10px] text-muted-foreground italic pl-2">
             No variables exposed.
           </div>
@@ -139,7 +139,7 @@
                <div v-else class="w-6"></div>
             </div>
           </PropertyRow>
-       </div>
+        </div>
     </div>
 
     <div v-else class="text-xs text-muted-foreground text-center py-4 border border-dashed border-border rounded">
@@ -152,11 +152,17 @@
 import { ref, computed, watch } from 'vue'
 import { 
   FileCode2, MoreVertical, Plus, Trash2, 
-  ChevronDown, Check, Power, RotateCcw 
+  ChevronDown, Check, RotateCcw 
 } from 'lucide-vue-next'
+
 import { useInspectorLogic } from "@/modules/properties/composables/useInspectorLogic.js"
 import { useScriptStore } from '@/stores/useScriptStore.js'
 import { useEditorStore } from '@/stores/useEditorStore.js'
+
+// Composables untuk Alert & Confirm
+import { useConfirm } from '@/composables/useConfirm.js'
+import { usePopAlert } from '@/composables/usePopAlert.js'
+
 import PropertySection from "@ui/display/PropertySection.vue"
 import PropertyRow from "@ui/display/PropertyRow.vue"
 import BaseDropdown from '@ui/overlay/BaseDropdown.vue'
@@ -167,6 +173,8 @@ import BaseButton from '@/commons/components/buttons/BaseButton.vue'
 
 const scriptStore = useScriptStore()
 const editorStore = useEditorStore()
+const { confirm } = useConfirm()
+const { showPop } = usePopAlert()
 
 const { 
   selectedEntity, scriptsData,       
@@ -179,10 +187,12 @@ const selectedIndex = ref(0)
 watch(() => selectedEntity.value?._id, () => { selectedIndex.value = 0 })
 
 const currentScript = computed(() => scriptsData.value[selectedIndex.value])
+
 function getScriptName(assetId) {
    const def = scriptStore.getScriptById(assetId)
    return def ? def.name : 'Unknown Script'
 }
+
 const currentScriptName = computed(() => currentScript.value ? getScriptName(currentScript.value.assetId) : '')
 
 const currentIsActive = computed({
@@ -238,10 +248,30 @@ function openScriptBottomBar() {
   editorStore.setActiveBottomTab('scripts')
 }
 
-function handleRemoveCurrent() {
-   if(confirm(`Remove ${currentScriptName.value}?`)) {
-     removeScript(selectedIndex.value)
-     selectedIndex.value = 0
+async function handleRemoveCurrent() {
+   if (!currentScript.value) return
+
+   const scriptName = currentScriptName.value
+   const entityName = selectedEntity.value?.name || 'Entity'
+
+   const isConfirmed = await confirm({
+     title: 'Detach Script?',
+     message: `Are you sure you want to remove "${scriptName}" from ${entityName}? This will reset all local variable overrides.`,
+     confirmText: 'Yes, Detach',
+     cancelText: 'Cancel',
+     type: 'danger'
+   })
+
+   if (isConfirmed) {
+      removeScript(selectedIndex.value)
+      selectedIndex.value = 0
+      
+      showPop({
+        title: 'Script Detached',
+        message: `Successfully removed "${scriptName}".`,
+        type: 'info',
+        duration: 2500
+      })
    }
 }
 

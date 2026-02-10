@@ -83,7 +83,8 @@ export default class ShapeRenderer {
         this.index = i;
     }
 
-    drawRect(x, y, w, h, color=[1,1,1,1], projection, rot=0, sx=1, sy=1, px=0, py=0, alpha=1) {
+    // UPDATED: Added flipX, flipY parameters
+    drawRect(x, y, w, h, color=[1,1,1,1], projection, rot=0, sx=1, sy=1, px=0, py=0, alpha=1, flipX=false, flipY=false) {
         if (projection !== this.currentProjection) {
             this.flush();
             this.currentProjection = projection;
@@ -92,7 +93,11 @@ export default class ShapeRenderer {
         const [r,g,b,ca] = color;
         const a = ca * alpha;
         
-        const v = calculateQuadVertices(x, y, w, h, rot, sx, sy, px, py);
+        // Apply Flip
+        const finalSX = flipX ? -sx : sx;
+        const finalSY = flipY ? -sy : sy;
+
+        const v = calculateQuadVertices(x, y, w, h, rot, finalSX, finalSY, px, py);
 
         this._push(v.tl.x, v.tl.y, r,g,b,a);
         this._push(v.tr.x, v.tr.y, r,g,b,a);
@@ -103,13 +108,18 @@ export default class ShapeRenderer {
         this._push(v.bl.x, v.bl.y, r,g,b,a);
     } 
     
-    drawRectStroke(x, y, w, h, color=[1,1,1,1], thickness=2, projection, rot=0, sx=1, sy=1, px=0, py=0, alpha=1) {
+    // UPDATED: Added flipX, flipY parameters
+    drawRectStroke(x, y, w, h, color=[1,1,1,1], thickness=2, projection, rot=0, sx=1, sy=1, px=0, py=0, alpha=1, flipX=false, flipY=false) {
         if (projection !== this.currentProjection) {
             this.flush();
             this.currentProjection = projection;
         }
 
-        const v = calculateQuadVertices(x, y, w, h, rot, sx, sy, px, py);
+        // Apply Flip
+        const finalSX = flipX ? -sx : sx;
+        const finalSY = flipY ? -sy : sy;
+
+        const v = calculateQuadVertices(x, y, w, h, rot, finalSX, finalSY, px, py);
         const c = [color[0], color[1], color[2], color[3] * alpha];
         
         this.drawLine(v.tl.x, v.tl.y, v.tr.x, v.tr.y, c, thickness, projection); 

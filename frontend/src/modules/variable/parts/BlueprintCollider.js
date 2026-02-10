@@ -1,6 +1,6 @@
 import { BoxSelect, ScanLine, Tag } from 'lucide-vue-next';
 
-export const basicCollider = {
+export const BlueprintCollider = {
   _id: 'game_physics',
   label: 'Collider System',
   color: '#FF9800',
@@ -9,7 +9,7 @@ export const basicCollider = {
     { 
       type: 'solid_collision', 
       label: 'Solid Collision', 
-      description: 'Check if an object is hitting a solid wall or obstacle.', // [NEW] Description
+      description: 'Check if an object is hitting a solid wall or obstacle.',
       icon: BoxSelect,
       defaultData: { 
         settings: { headerTitle: 'Solid Collision', headerColor: '#D32F2F', category: 'Physics' },
@@ -29,18 +29,16 @@ export const basicCollider = {
     { 
       type: 'trigger_zone', 
       label: 'Trigger Zone', 
-      description: 'Detects when an object enters, stays, or exits an area.', // [NEW] Description
+      description: 'Detects when an object enters, stays, or exits an area.', 
       icon: ScanLine,
       defaultData: { 
         settings: { headerTitle: 'Trigger Zone', headerColor: '#0097A7', category: 'Physics' },
         inputs: [
-          // [UPDATED] Mengganti 'Check (Tick)' menjadi 'In' standar
           { _id: 'exec_in', label: 'In', dataType: 'execution', color: '#ffffff' },
           { _id: 'target', label: 'Target', dataType: 'string' },
           { _id: 'filter_tag', label: 'Filter Tag', dataType: 'string', icon: Tag }
         ],
         outputs: [
-          // [NEW] Output Passthrough
           { _id: 'exec_out', label: 'Out', dataType: 'execution', color: '#ffffff' },
           
           { _id: 'on_enter', label: 'On Enter', dataType: 'execution', color: '#69F0AE' },

@@ -340,7 +340,7 @@ export function useGraphEditor() {
         const variable = JSON.parse(varJson)
         const isSetter = event.altKey
         const varType = variable.type.toLowerCase()
-        const varColor = '#777'
+        const varColor = '#777777'
 
         const newNodePayload = {
             _id: GenerateUUID(),

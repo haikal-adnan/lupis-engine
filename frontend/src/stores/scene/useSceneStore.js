@@ -12,12 +12,16 @@ export const useSceneStore = defineStore('scene', () => {
   const selectedEntityIds = ref([]);
 
   const activeScene = computed(() => scenes.value.find(s => s._id === activeSceneId.value));
+  
   const getSceneById = computed(() => (id) => scenes.value.find(s => s._id === id));
+  
   const activeEntities = computed(() => activeScene.value ? activeScene.value.entities : []);
+  
   const activeLayers = computed(() => activeScene.value ? activeScene.value.layers : []);
 
   const initScenes = (sceneList) => {
     scenes.value = Array.isArray(sceneList) ? sceneList : [];
+    
     if (scenes.value.length > 0 && !activeSceneId.value) {
       activeSceneId.value = scenes.value[0]._id;
     }
@@ -31,34 +35,68 @@ export const useSceneStore = defineStore('scene', () => {
     const scene = scenes.value.find(s => s._id === sceneId);
     if (scene) {
       activeSceneId.value = scene._id;
-      selectedEntityIds.value = [];
+      selectedEntityIds.value = []; 
     }
   };
 
   const patchComponent = (entityId, componentName, updates) => {
     const scene = activeScene.value;
     if (!scene) return;
-    const entity = scene.entities.find(e => e._id === entityId);
+    
+    const entity = scene.entities.find(e => String(e._id) === String(entityId));
     if (entity?.components?.[componentName]) {
       Object.assign(entity.components[componentName], updates);
     }
   };
 
+  const syncComponentFromEngine = (entityId, componentName, data) => {
+    const scene = activeScene.value;
+    if (!scene) return;
+    
+    const entity = scene.entities.find(e => String(e._id) === String(entityId));
+    if (!entity) return;
+
+    if (!entity.components[componentName]) {
+      entity.components[componentName] = {};
+    }
+
+    entity.components[componentName] = {
+      ...entity.components[componentName],
+      ...data
+    };
+  };
+
   const syncTilemapDataFromEngine = (entityId, newData) => {
     const scene = activeScene.value;
     if (!scene) return;
-    const entity = scene.entities.find(e => e._id === entityId);
+    
+    const entity = scene.entities.find(e => String(e._id) === String(entityId));
     if (entity?.components?.Tilemap) {
-      entity.components.Tilemap.data = [...newData];
+      entity.components.Tilemap = {
+        ...entity.components.Tilemap,
+        data: [...newData]
+      };
     }
   };
 
   const syncTransformFromEngine = (entityId, transformData) => {
     const scene = activeScene.value;
     if (!scene) return;
-    const entity = scene.entities.find(e => e._id === entityId);
-    if (entity?.components?.Transform) {
-      Object.assign(entity.components.Transform, transformData);
+    
+    const entity = scene.entities.find(e => String(e._id) === String(entityId));
+    if (!entity) return;
+
+    if (entity.components?.Transform) {
+      entity.components.Transform = {
+        ...entity.components.Transform,
+        ...transformData
+      };
+    } 
+    else if (entity.components?.UITransform) {
+      entity.components.UITransform = {
+        ...entity.components.UITransform,
+        ...transformData
+      };
     }
   };
 
@@ -82,6 +120,7 @@ export const useSceneStore = defineStore('scene', () => {
     
     syncTilemapDataFromEngine,
     syncTransformFromEngine,
+    syncComponentFromEngine,
     patchComponent,
 
     ...sceneActions,

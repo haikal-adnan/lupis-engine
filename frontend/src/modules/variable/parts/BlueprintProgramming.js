@@ -1,6 +1,6 @@
 import { GitBranch, Repeat, RefreshCcw, Timer } from 'lucide-vue-next';
 
-export const basicProgramming = {
+export const BlueprintProgramming = {
   _id: 'basic_programming',
   label: 'Programming',
   color: '#FF9800',

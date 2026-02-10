@@ -1,8 +1,8 @@
 // src/modules/editor/composables/useEntityActions.js
 
 import { createEntity as createEntitySchema } from '@/services/schema/schema.js'; 
-import { createComponent } from '@/services/schema/sceneSchema/componentSchema.js';
 import { GenerateUUID } from '@/commons/utils/generateUUID';
+import { createComponent } from '@/services/schema/sceneSchema/componentSchema.js';
 import { EngineBridge } from "@/services/engine/EngineBridge.js";
 
 const round = (num, decimals = 2) => {
@@ -12,19 +12,17 @@ const round = (num, decimals = 2) => {
 
 export function useEntityActions(activeScene, selectedEntityIds) {
 
-  /**
-   * Membuat Entity baru dengan koordinat yang menyesuaikan posisi kamera saat ini
-   */
   const createEntity = (type, contextNode) => {
     if (!activeScene.value) return null;
 
-    // Ambil posisi kamera saat ini dari Engine via Bridge
+    // 1. Ambil posisi kamera
     const camPos = EngineBridge.getCameraPosition();
-    const worldTransform = { 
+    const rawTransform = { 
         x: Math.round(camPos.x), 
         y: Math.round(camPos.y) 
     };
 
+    // 2. Tentukan Parent & Layer
     let parentId = null;
     let layerId = null;
 
@@ -40,65 +38,67 @@ export function useEntityActions(activeScene, selectedEntityIds) {
         layerId = activeScene.value.layers[0]?._id;
     }
 
+    // 3. Siapkan DATA MENTAH (Plain Object)
+    // Jangan panggil createComponent/createTransform disini. 
+    // Biarkan schema.js yang melakukan validasi dan pemberian nilai default.
     const components = {};
 
-    // Inisialisasi komponen berdasarkan tipe entity
     if (type === 'sprite') {
       components.SpriteRenderer = { assetId: null, color: '#FFFFFF' };
-      components.Transform = worldTransform; // Gunakan posisi kamera
-    } else if (type === 'shape') {
+      components.Transform = rawTransform;
+    } 
+    else if (type === 'shape') {
       components.ShapeRenderer = { type: 'rectangle', color: '#FF0000' };
-      components.Transform = worldTransform;
-    } else if (type === 'text') {
+      components.Transform = rawTransform;
+    } 
+    else if (type === 'text') {
       components.TextRenderer = { value: 'New Text', fontSize: 24, color: '#FFFFFF' };
-      components.Transform = { 
-        ...worldTransform, 
-        width: 107, 
-        height: 23 
-      };
-    } else if (type === 'tilemap') {
+      components.Transform = { ...rawTransform, width: 107, height: 23 };
+    } 
+    else if (type === 'tilemap') {
       const defaultW = 40; 
       const defaultH = 30;
-      components.Tilemap = {  
+      components.Tilemap = { 
          tileWidth: 16, tileHeight: 16, width: defaultW, height: defaultH,
          tilesetId: null, opacity: 1, isSolid: false,
          data: new Array(defaultW * defaultH).fill(0)
       };
-      components.Transform = worldTransform;
-    } else if (type === 'ui_empty') {
+      components.Transform = rawTransform;
+    } 
+    // --- UI TYPES ---
+    else if (type === 'ui_empty') {
       components.UITransform = { 
-          width: 100, height: 100, anchorX: 0.5, anchorY: 0.5,
-          isRatioLocked: false 
+          width: 100, height: 100, anchorX: 0.5, anchorY: 0.5 
       };
-    } else if (type === 'ui_panel') {
+    } 
+    else if (type === 'ui_panel') {
       components.UITransform = { 
-          width: 300, height: 200, anchorX: 0.5, anchorY: 0.5,
-          isRatioLocked: false 
+          width: 300, height: 200, anchorX: 0.5, anchorY: 0.5 
       };
       components.ShapeRenderer = { type: 'rectangle', color: '#2d2d2d', opacity: 0.8 };
-    } else if (type === 'ui_button') {
+    } 
+    else if (type === 'ui_button') {
       components.UITransform = { 
-          width: 140, height: 40, anchorX: 0.5, anchorY: 0.5,
-          isRatioLocked: false 
+          width: 140, height: 40, anchorX: 0.5, anchorY: 0.5 
       };
       components.ShapeRenderer = { type: 'rectangle', color: '#3498db' };
       components.TextRenderer = { value: 'Button', fontSize: 16, align: 'center', color: '#FFFFFF' };
       components.ScriptController = { data: [] }; 
-    } else if (type === 'ui_text') {
+    } 
+    else if (type === 'ui_text') {
       components.UITransform = { 
-          width: 107, height: 23, anchorX: 0.5, anchorY: 0.5,
-          isRatioLocked: false 
+          width: 107, height: 23, anchorX: 0.5, anchorY: 0.5 
       };
       components.TextRenderer = { value: 'New Text', fontSize: 24, align: 'left', color: '#FFFFFF' };
-    } else if (type === 'ui_image') {
+    } 
+    else if (type === 'ui_image') {
       components.UITransform = { 
-          width: 100, height: 100, anchorX: 0.5, anchorY: 0.5,
-          isRatioLocked: false 
+          width: 100, height: 100, anchorX: 0.5, anchorY: 0.5 
       };
       components.SpriteRenderer = { assetId: null, color: '#FFFFFF' };
     }
 
-    // Penamaan otomatis (Incremental Index)
+    // 4. Penamaan Otomatis
     const existingEntities = activeScene.value.entities;
     const displayType = type.startsWith('ui_') ? type.replace('ui_', '') : type;
     const namePrefix = displayType.charAt(0).toUpperCase() + displayType.slice(1);
@@ -117,7 +117,7 @@ export function useEntityActions(activeScene, selectedEntityIds) {
     const scriptId = `${type}_${nextIndex}`;
     const entityType = type.startsWith('ui_') ? 'ui' : 'entity';
 
-    // Buat entity melalui schema (Transform akan otomatis terisi dari worldTransform di atas)
+    // 5. Buat Entity via Schema (Disinilah komponen dibuat dengan benar)
     const newEntity = createEntitySchema({
       _id: `${GenerateUUID()}`, 
       scriptId: scriptId, 
@@ -125,22 +125,25 @@ export function useEntityActions(activeScene, selectedEntityIds) {
       type: type === 'group' ? 'group' : entityType,
       layerId,
       parentId,
-      components
+      components // Kirim raw object, schema akan mengubahnya jadi valid component
     });
 
+    // 6. Push ke State
     activeScene.value.entities.push(newEntity);
     selectedEntityIds.value = [newEntity._id];
 
-    // Beritahu Engine untuk melakukan instansiasi object secara realtime
+    // 7. Kirim ke Engine
     EngineBridge.createEntity(newEntity);
 
     return newEntity; 
   };
 
+  // ... (fungsi lain tetap sama: updateEntityName, dll) ...
   const updateEntityName = (entityId, newName) => {
     if (!activeScene.value) return;
     const entity = activeScene.value.entities.find(e => e._id === entityId);
     if (entity) entity.name = newName;
+    EngineBridge.updateEntityName(entityId, newName);
   };
 
   const updateEntityScriptId = (entityId, newScriptId) => {
@@ -155,7 +158,6 @@ export function useEntityActions(activeScene, selectedEntityIds) {
 
   const deleteEntity = (entityId) => {
     if (!activeScene.value) return;
-    
     const getDescendants = (parentId) => {
       const children = activeScene.value.entities.filter(e => e.parentId === parentId);
       let ids = children.map(c => c._id);
@@ -164,11 +166,9 @@ export function useEntityActions(activeScene, selectedEntityIds) {
       });
       return ids;
     };
-
     const idsToDelete = [entityId, ...getDescendants(entityId)];
     activeScene.value.entities = activeScene.value.entities.filter(e => !idsToDelete.includes(e._id));
     selectedEntityIds.value = [];
-    
     EngineBridge.deleteEntity(entityId);
   };
 
@@ -177,11 +177,9 @@ export function useEntityActions(activeScene, selectedEntityIds) {
     const entities = activeScene.value.entities;
     const draggedIndex = entities.findIndex(e => e._id === draggedId);
     if (draggedIndex === -1) return;
-    
     const [draggedItem] = entities.splice(draggedIndex, 1);
     draggedItem.parentId = targetContext.newParentId;
     draggedItem.layerId = targetContext.newLayerId;
-    
     if (targetContext.insertionType === 'append') {
       entities.push(draggedItem);
     } else {
@@ -193,23 +191,15 @@ export function useEntityActions(activeScene, selectedEntityIds) {
         entities.push(draggedItem);
       }
     }
-    
-    EngineBridge.moveEntity({ 
-      id: draggedId, 
-      parentId: targetContext.newParentId, 
-      layerId: targetContext.newLayerId 
-    });
+    EngineBridge.moveEntity({ id: draggedId, parentId: targetContext.newParentId, layerId: targetContext.newLayerId });
   };
 
   const updateComponentProp = (entityId, componentName, path, value) => {
     if (!activeScene.value) return;
-
     const entity = activeScene.value.entities.find(e => e._id === entityId);
     if (!entity || !entity.components[componentName]) return;
-
     const comp = entity.components[componentName];
-
-    // Handle Aspect Ratio Lock untuk Transform
+    
     if ((componentName === 'Transform' || componentName === 'UITransform') && comp.isRatioLocked) {
         const numValue = Number(value);
         if (!isNaN(numValue) && comp.width > 0 && comp.height > 0) {
@@ -233,7 +223,6 @@ export function useEntityActions(activeScene, selectedEntityIds) {
       target = target[keys[i]];
     }
     target[keys[keys.length - 1]] = value;
-
     EngineBridge.updateComponentProp({ entityId, componentName, path, value });
     return { entityId, componentName, path, value };
   };
@@ -272,14 +261,7 @@ export function useEntityActions(activeScene, selectedEntityIds) {
   };
 
   return { 
-    createEntity, 
-    updateEntityName, 
-    updateEntityScriptId,
-    deleteEntity, 
-    moveEntity,
-    updateComponentProp,
-    updateEntityProp,
-    syncTilemapDataFromEngine,
-    addComponent
+    createEntity, updateEntityName, updateEntityScriptId, deleteEntity, moveEntity,
+    updateComponentProp, updateEntityProp, syncTilemapDataFromEngine, addComponent
   };
 }

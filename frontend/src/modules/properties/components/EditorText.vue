@@ -16,7 +16,12 @@
     <div class="flex gap-2.5 mb-2 pt-1 items-center">
       <div class="w-[52px] h-[52px] shrink-0 bg-muted/20 border border-border rounded flex items-center justify-center overflow-hidden relative group">
          <div class="absolute inset-0 opacity-10 pointer-events-none" style="background-image: radial-gradient(#444 1px, transparent 1px); background-size: 4px 4px;"></div>
-         <span class="text-sm font-bold select-none" :style="{ color: color }">Aa</span>
+         <span 
+            class="text-sm font-bold select-none transition-all duration-200" 
+            :style="{ color: color, opacity: rawOpacity }"
+         >
+            Aa
+         </span>
       </div>
 
       <PropertyRow label="Font" :no-margin="true">
@@ -46,6 +51,7 @@
           v-model="fontSize" 
           prefix="PX" 
           :min="1" 
+          :scrubbable="true"
           class="flex-grow font-mono" 
         />
         
@@ -60,6 +66,16 @@
 
     <PropertyRow label="Text Color">
       <BaseColor v-model="color" :show-label="true" height="2rem" />
+    </PropertyRow>
+
+    <PropertyRow label="Opacity">
+        <BaseNumber 
+            prefix="%"
+            v-model="displayOpacity" 
+            :min="0" :max="100" :step="1" 
+            :scrubbable="true"
+            class="font-mono w-full" 
+        />
     </PropertyRow>
 
     <PropertyRow label="Alignment">
@@ -88,6 +104,7 @@ import {
 } from "lucide-vue-next"; 
 import { useInspectorLogic } from "@/modules/properties/composables/useInspectorLogic.js"; 
 
+// Atomic Components
 import PropertySection from "@ui/display/PropertySection.vue";
 import PropertyRow from "@ui/display/PropertyRow.vue";
 import BaseNumber from "@/commons/components/inputs/BaseNumber.vue";
@@ -105,10 +122,23 @@ const {
 
 const hasComponent = computed(() => !!selectedEntity.value?.components?.TextRenderer);
 
+// BINDINGS
 const textValue = bindComponentProp('TextRenderer', 'value');
 const fontSize = bindComponentProp('TextRenderer', 'fontSize');
 const color = bindComponentProp('TextRenderer', 'color');
 const align = bindComponentProp('TextRenderer', 'align');
+
+// OPACITY LOGIC (UX 0-100, Engine 0-1)
+const rawOpacity = bindComponentProp('TextRenderer', 'opacity');
+
+const displayOpacity = computed({
+  get: () => {
+    return Math.round((rawOpacity.value ?? 1) * 100);
+  },
+  set: (val) => {
+    rawOpacity.value = parseFloat((val / 100).toFixed(2));
+  }
+});
 
 const alignOptions = [
     { label: 'Left', value: 'left', icon: AlignLeft },

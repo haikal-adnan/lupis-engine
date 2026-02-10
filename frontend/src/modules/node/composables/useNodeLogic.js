@@ -1,21 +1,19 @@
 import { ref, computed } from 'vue';
 import { useScriptStore } from '@/stores/useScriptStore.js';
-import { usePrompt } from '@/composables/usePrompt.js'; // Asumsi helper prompt ada
+import { usePrompt } from '@/composables/usePrompt.js';
+import { usePopAlert } from '@/composables/usePopAlert';
 
 export function useNodeLogic() {
   const scriptStore = useScriptStore();
   const { prompt } = usePrompt();
+  const { showPop } = usePopAlert();
 
-  // State untuk melacak apakah Dropdown sedang aktif di sisi Input atau Output
-  // Value: null | 'input' | 'output'
   const activeDropdownTarget = ref(null);
 
   const selectedNode = computed(() => {
     if (!scriptStore.activeScript || !scriptStore.selectedNodeId) return null;
     return scriptStore.activeScript.nodes.find(n => n._id === scriptStore.selectedNodeId);
   });
-
-  // --- DATA BINDING HELPERS ---
 
   function bindNodeProp(path) {
     return computed({
@@ -48,106 +46,125 @@ export function useNodeLogic() {
     );
   }
 
-  // --- DYNAMIC PORT LOGIC ---
-
-  // 1. Computed Options untuk Dropdown (Transform Node)
-  // Memfilter opsi yang sudah dipakai agar tidak muncul lagi di dropdown
   const availableOptions = computed(() => {
     if (!selectedNode.value) return [];
-    
-    // Ambil daftar opsi mentah dari data node
     const options = selectedNode.value.data?.propertyOptions || [];
-    
-    // Gabungkan semua port yang sudah ada (input & output)
     const existingPorts = [
-       ...(selectedNode.value.inputs || []), 
-       ...(selectedNode.value.outputs || [])
+      ...(selectedNode.value.inputs || []),
+      ...(selectedNode.value.outputs || [])
     ];
-    
-    // Return hanya opsi yang BELUM ada di port
     return options.filter(opt => !existingPorts.some(p => p._id === opt.value));
   });
 
-  // 2. Handler Utama saat tombol "+" diklik
   const handleAddPort = async (type = 'input') => {
     if (!selectedNode.value) return;
     const node = selectedNode.value;
 
-    // A. KASUS TRANSFORM: Buka Dropdown
-    if (node.type === 'get_transform' || node.type === 'set_transform') {
-       activeDropdownTarget.value = activeDropdownTarget.value === type ? null : type;
-       return; 
+    const dynamicTypes = [
+      // General & Transform
+      'get_object', 'set_object',
+      'get_transform', 'set_transform', 
+      
+      // Physics
+      'get_physics', 'set_physics',
+
+      // Graphics: Sprite
+      'get_sprite', 'set_sprite',
+
+      // Graphics: Shape
+      'get_shape', 'set_shape',
+
+      // Graphics: Tilemap
+      'get_tilemap', 'set_tilemap',
+
+      // UI & Text
+      'get_text', 'set_text'
+    ];
+    if (dynamicTypes.includes(node.type)) {
+      activeDropdownTarget.value = activeDropdownTarget.value === type ? null : type;
+      return;
     }
 
-    // B. KASUS SWITCH: Prompt User Input
     if (node.type === 'compare_switch') {
-       const res = await prompt({ 
-         title: 'Add Case', 
-         message: 'Enter value to compare (string/number):',
-         defaultValue: '' 
-       });
-       
-       if (res === null || res.trim() === '') return;
-       
-       scriptStore.addNodePort(node._id, 'output', {
-          _id: `case_${res}`,
-          label: `Case ${res}`,
-          dataType: 'execution',
-          color: '#ffffff'
-       });
-       return;
+      const res = await prompt({
+        title: 'Add Case',
+        message: 'Enter value to compare (string/number):',
+        defaultValue: ''
+      });
+      if (res === null || res.trim() === '') return;
+      scriptStore.addNodePort(node._id, 'output', {
+        _id: `case_${res}`,
+        label: `Case ${res}`,
+        dataType: 'execution',
+        color: '#ffffff'
+      });
+      return;
     }
 
-    // C. KASUS MATH / STRING / LOGIC: Auto-Generate Label
     const currentPorts = type === 'input' ? node.inputs : node.outputs;
     const nextIndex = currentPorts.length;
-    
+
     let newLabel = `{${nextIndex}}`;
     let newDataType = 'any';
 
     if (node.type.startsWith('math_')) {
-        // Generate A, B, C, D...
-        newLabel = String.fromCharCode(65 + nextIndex); // 65 = 'A'
-        newDataType = 'number';
+      newLabel = String.fromCharCode(65 + nextIndex);
+      newDataType = 'number';
     } else if (node.type === 'string_join') {
-        newLabel = `Str ${nextIndex + 1}`;
-        newDataType = 'string';
+      newLabel = `Str ${nextIndex + 1}`;
+      newDataType = 'string';
     } else if (node.type === 'logic_and' || node.type === 'logic_or') {
-        newLabel = `In ${nextIndex + 1}`;
-        newDataType = 'boolean';
+      newLabel = `In ${nextIndex + 1}`;
+      newDataType = 'boolean';
     }
 
     scriptStore.addNodePort(node._id, type, {
-      _id: String(nextIndex), // ID simpel 0, 1, 2...
+      _id: String(nextIndex),
       label: newLabel,
       dataType: newDataType,
       color: '#fff'
     });
   };
 
-  // 3. Callback saat user memilih item dari Dropdown (Transform)
   const addFromDropdown = (optionValue) => {
-     if (!selectedNode.value || !activeDropdownTarget.value) return;
-     
-     const type = activeDropdownTarget.value; // 'input' atau 'output'
-     const options = selectedNode.value.data?.propertyOptions || [];
-     const selectedOpt = options.find(o => o.value === optionValue);
+    if (!selectedNode.value || !activeDropdownTarget.value) return;
+    const type = activeDropdownTarget.value;
+    const options = selectedNode.value.data?.propertyOptions || [];
+    const selectedOpt = options.find(o => o.value === optionValue);
 
-     if (selectedOpt) {
-        scriptStore.addNodePort(selectedNode.value._id, type, {
-           _id: selectedOpt.value,
-           label: selectedOpt.label,
-           dataType: selectedOpt.type || 'number',
-           color: selectedOpt.color || '#fff'
-        });
-     }
-     
-     // Reset dropdown state
-     activeDropdownTarget.value = null;
+    if (selectedOpt) {
+      scriptStore.addNodePort(selectedNode.value._id, type, {
+        _id: selectedOpt.value,
+        label: selectedOpt.label,
+        dataType: selectedOpt.type || 'number',
+        color: selectedOpt.color || '#fff'
+      });
+    }
+
+    activeDropdownTarget.value = null;
   };
 
   const removeDynamicInput = (portId, type = 'input') => {
     if (!selectedNode.value) return;
+
+    const permanentPorts = [
+      'exec_in', 
+      'exec_out', 
+      'in_target', 
+      'sk_main', 
+      'ptr_click_main'
+    ];
+
+    if (permanentPorts.includes(portId)) {
+      showPop({
+        title: 'Protected Port',
+        message: `The port "${portId}" is a core part of this node and cannot be removed.`,
+        type: 'warning',
+        duration: 3000
+      });
+      return;
+    }
+
     scriptStore.removeNodePort(selectedNode.value._id, type, portId);
   };
 
@@ -157,8 +174,6 @@ export function useNodeLogic() {
     bindNodeProp,
     deleteSelectedNode,
     isInputConnected,
-    
-    // Dynamic Port API
     activeDropdownTarget,
     availableOptions,
     handleAddPort,

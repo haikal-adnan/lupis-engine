@@ -1,3 +1,5 @@
+// src/services/schema/sceneSchema/componentSchema.js
+
 export const createTransform = (data = {}, defaults = { width: 100, height: 100 }) => {
   return {
     x: Number(data.x ?? 0),
@@ -7,6 +9,8 @@ export const createTransform = (data = {}, defaults = { width: 100, height: 100 
     scaleY: Number(data.scaleY ?? 1),
     pivotX: Number(data.pivotX ?? 0.5),
     pivotY: Number(data.pivotY ?? 0.5),
+    flipX: Boolean(data.flipX ?? false),
+    flipY: Boolean(data.flipY ?? false),
     width: Number(data.width ?? defaults.width),
     height: Number(data.height ?? defaults.height),
     isRatioLocked: Boolean(data.isRatioLocked ?? false)
@@ -35,15 +39,30 @@ export const createCollider = (data = {}) => {
   };
 };
 
+export const createPhysics = (data = {}) => {
+  return {
+    enabled: Boolean(data.enabled ?? true),
+    type: data.type || "dynamic", 
+    mass: Number(data.mass ?? 1.0),
+    gravityScale: Number(data.gravityScale ?? 1.0),
+    drag: Number(data.drag ?? 0.1),
+    velocityX: Number(data.velocityX ?? 0),
+    velocityY: Number(data.velocityY ?? 0),
+    isGrounded: Boolean(data.isGrounded ?? false),
+    ...data
+  };
+};
+
 export const createComponent = (type, inputData = {}) => {
   switch (type) {
     case "SpriteRenderer":
       return {
         assetId: inputData.assetId || null,
+        sourceX: Number(inputData.sourceX ?? 0),
+        sourceY: Number(inputData.sourceY ?? 0),
+        sourceWidth: Number(inputData.sourceWidth ?? 100),
+        sourceHeight: Number(inputData.sourceHeight ?? 100),
         color: inputData.color || "#FFFFFF",
-        flipX: inputData.flipX || false,
-        flipY: inputData.flipY || false,
-        source: inputData.source || { x: 0, y: 0, w: 100, h: 100 },
         opacity: Number(inputData.opacity ?? 1),
         ...inputData
       };
@@ -99,9 +118,10 @@ export const createComponent = (type, inputData = {}) => {
     case "Collider":
       return createCollider(inputData);
 
+    case "Physics":
+      return createPhysics(inputData);
+
     default:
       return { ...inputData };
   }
 };
-
-

@@ -1,8 +1,10 @@
-export const transformNode = {
+export const NodeTransform = {
     'set_transform': {
         execute: (runner, node) => {
+
             const targetId = runner.getInputValue(node, 'in_target');
             const entity = runner.resolveEntity(targetId);
+            console.log(targetId)
             
             if (!entity?.components?.Transform) {
                 runner.executeFlow(node._id, 'exec_out');
@@ -25,6 +27,7 @@ export const transformNode = {
             return entity.components.Transform[outputKey] || 0;
         }
     },
+
     'get_transform': {
         getOutput: (runner, node, outputKey) => {
             const targetId = runner.getInputValue(node, 'in_target');
@@ -33,8 +36,7 @@ export const transformNode = {
             return entity.components.Transform[outputKey] || 0;
         }
     },
-    
-    // --- LOGIC TRANSLATE YANG DIPERBARUI ---
+
     'translate': {
         execute: (runner, node) => {
             const targetId = runner.getInputValue(node, 'in_target');
@@ -45,33 +47,36 @@ export const transformNode = {
                 return;
             }
 
-            const dt = runner.currentDt || 0.016; 
+            const velX = Number(runner.getInputValue(node, 'vel_x')) || 0;
+            const velY = Number(runner.getInputValue(node, 'vel_y')) || 0;
 
-            // 1. Ambil Speed (DX/DY)
-            // getInputValue otomatis cek: Kabel -> Node Data -> Input Value
-            const speedX = Number(runner.getInputValue(node, 'dx')) || 0;
-            const speedY = Number(runner.getInputValue(node, 'dy')) || 0;
-            
-            // 2. Hitung jarak tempuh frame ini
-            const moveX = speedX * dt;
-            const moveY = speedY * dt;
+            const phys = entity.components.Physics;
+            const hasPhysics = phys && phys.enabled;
 
-            // 3. Cek Status Sweep (Solid Collision)
-            let isSweep = runner.getInputValue(node, 'sweep');
-            
-            // Fallback manual jika undefined (untuk safety)
-            if (isSweep === undefined || isSweep === null) {
-                isSweep = true; 
-            }
-
-            // 4. Eksekusi Gerakan
-            if (isSweep && runner.game.colliderSystem) {
-                // Gunakan physics system (Move & Slide)
-                runner.game.colliderSystem.moveAndSlide(entity, moveX, moveY);
+            if (hasPhysics) {
+                // LOGIC PENTING:
+                // Velocity X biasanya override (jalan kiri/kanan langsung responsif)
+                // Tapi kalau input 0, kita biarkan momentum drag bekerja (opsional)
+                if (velX !== 0) phys.velocityX = velX; 
+                
+                // Velocity Y (Lompat/Terbang)
+                // Hanya override jika ada input nilai (bukan 0). 
+                // Ini membiarkan gravitasi bekerja saat user tidak menekan apa-apa.
+                if (velY !== 0) {
+                    phys.velocityY = velY;
+                }
             } else {
-                // Gerakan raw (Tembus tembok / Ghost)
-                entity.components.Transform.x += moveX;
-                entity.components.Transform.y += moveY;
+                // Manual Movement (Ghost/Kinematic)
+                const dt = runner.currentDt || 0.016;
+                const moveX = velX * dt;
+                const moveY = velY * dt;
+
+                if (runner.game.colliderSystem) {
+                    runner.game.colliderSystem.moveAndSlide(entity, moveX, moveY);
+                } else {
+                    entity.components.Transform.x += moveX;
+                    entity.components.Transform.y += moveY;
+                }
             }
 
             runner.executeFlow(node._id, 'exec_out');

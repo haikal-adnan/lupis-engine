@@ -1,4 +1,4 @@
-export const newModuleNode = {
+export const newNodeModule = {
     'node_unique_type': {
         execute: (runner, node) => {
             const someData = runner.getInputValue(node, 'input_1')

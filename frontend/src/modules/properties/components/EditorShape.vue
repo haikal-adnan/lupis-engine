@@ -14,13 +14,12 @@
     </template>
 
     <div class="flex gap-2.5 mb-1 pt-1">
-      
       <div class="w-[52px] h-[52px] shrink-0 bg-muted/20 border border-border rounded flex items-center justify-center p-2 relative overflow-hidden">
         <div class="absolute inset-0 opacity-20" style="background-image: radial-gradient(#444 1px, transparent 1px); background-size: 6px 6px;"></div>
         
         <svg viewBox="0 0 24 24" class="w-full h-full relative z-10 drop-shadow-sm transition-all duration-300">
-          <circle v-if="type === 'circle'" cx="12" cy="12" r="10" :fill="color" />
-          <rect v-else x="2" y="2" width="20" height="20" rx="4" :fill="color" />
+          <circle v-if="type === 'circle'" cx="12" cy="12" r="10" :fill="color" :fill-opacity="rawOpacity" />
+          <rect v-else x="2" y="2" width="20" height="20" rx="4" :fill="color" :fill-opacity="rawOpacity" />
         </svg>
       </div>
 
@@ -35,11 +34,21 @@
       </div>
     </div>
 
-    <PropertyRow label="Fill Color" :no-margin="true">
+    <PropertyRow label="Fill Color">
       <BaseColor 
         v-model="color" 
         :show-label="false"
       />
+    </PropertyRow>
+
+    <PropertyRow label="Opacity">
+        <BaseNumber 
+            prefix="%"
+            v-model="displayOpacity" 
+            :min="0" :max="100" :step="1" 
+            :scrubbable="true"
+            class="font-mono w-full" 
+        />
     </PropertyRow>
 
   </PropertySection>
@@ -55,13 +64,26 @@ import PropertySection from "@ui/display/PropertySection.vue";
 import PropertyRow from "@ui/display/PropertyRow.vue";
 import BaseSelect from "@/commons/components/inputs/BaseSelect.vue";
 import BaseColor from "@/commons/components/inputs/BaseColor.vue";
+import BaseNumber from "@/commons/components/inputs/BaseNumber.vue";
 
 const { selectedEntity, removeComponent, bindComponentProp } = useInspectorLogic();
 const hasComponent = computed(() => !!selectedEntity.value?.components?.ShapeRenderer);
 
-// BINDING GRANULAR (Agar memicu action Pinia)
+// BINDINGS
 const type = bindComponentProp('ShapeRenderer', 'type');
 const color = bindComponentProp('ShapeRenderer', 'color');
+
+// OPACITY LOGIC (UX 0-100, Data 0-1)
+const rawOpacity = bindComponentProp('ShapeRenderer', 'opacity');
+
+const displayOpacity = computed({
+  get: () => {
+    return Math.round((rawOpacity.value ?? 1) * 100);
+  },
+  set: (val) => {
+    rawOpacity.value = parseFloat((val / 100).toFixed(2));
+  }
+});
 
 const shapeTypes = [
   { label: 'Rectangle', value: 'rectangle' },

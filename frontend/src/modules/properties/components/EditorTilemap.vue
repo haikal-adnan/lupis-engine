@@ -8,7 +8,7 @@
     </template>
 
     <template #menu="{ close }">
-       </template>
+      </template>
 
     <PropertyRow label="Source">
       <div class="flex gap-2 w-full">
@@ -40,8 +40,8 @@
     <PropertyRow label="Opacity">
         <BaseNumber 
             prefix="%"
-            v-model="opacity" 
-            :min="0" :max="1" :step="0.1" 
+            v-model="displayOpacity" 
+            :min="0" :max="100" :step="1" 
             class="font-mono w-full" 
         />
     </PropertyRow>
@@ -61,7 +61,7 @@
 <script setup>
 import { computed } from "vue";
 import { Grid3X3, Brush } from "lucide-vue-next"; 
-import { useTilemapLogic } from "@/modules/tilemap/composables/useTilemapLogic.js"; // Import path yang benar
+import { useTilemapLogic } from "@/modules/tilemap/composables/useTilemapLogic.js";
 
 // Atomic Components
 import PropertySection from "@ui/display/PropertySection.vue";
@@ -71,9 +71,7 @@ import BaseNumber from "@/commons/components/inputs/BaseNumber.vue";
 import BaseCheckbox from "@/commons/components/inputs/BaseCheckbox.vue"; 
 import BaseButton from "@/commons/components/buttons/BaseButton.vue"; 
 
-// Gunakan Composable
 const { 
-  selectedEntity, 
   hasTilemap, 
   currentTextureUrl, 
   bindComponentProp, 
@@ -82,14 +80,33 @@ const {
 
 const hasComponent = hasTilemap;
 
-// Bindings
+// Bindings Langsung ke Engine
 const tileWidth = bindComponentProp('Tilemap', 'tileWidth');
 const tileHeight = bindComponentProp('Tilemap', 'tileHeight');
 const mapWidth = bindComponentProp('Tilemap', 'width');
 const mapHeight = bindComponentProp('Tilemap', 'height');
-const opacity = bindComponentProp('Tilemap', 'opacity');
 const isSolid = bindComponentProp('Tilemap', 'isSolid');
 
+// Binding Original (0.0 - 1.0)
+const rawOpacity = bindComponentProp('Tilemap', 'opacity');
+
+/**
+ * Computed displayOpacity:
+ * Bridge antara Engine (0-1) dan User Interface (0-100).
+ */
+const displayOpacity = computed({
+  get: () => {
+    // Mengambil nilai 0.85 dari engine dan menampilkannya sebagai 85
+    return Math.round((rawOpacity.value ?? 1) * 100);
+  },
+  set: (newValue) => {
+    // Mengambil input 85 dari user dan menyimpannya sebagai 0.85 ke engine
+    // Gunakan parseFloat().toFixed(2) jika ingin menghindari angka floating point panjang
+    rawOpacity.value = parseFloat((newValue / 100).toFixed(2));
+  }
+});
+
+// Kalkulasi dimensi total map
 const totalWidth = computed(() => (tileWidth.value || 0) * (mapWidth.value || 0));
 const totalHeight = computed(() => (tileHeight.value || 0) * (mapHeight.value || 0));
 </script>

@@ -117,13 +117,19 @@ export function useInspectorLogic() {
   function resetTransform() {
     if (!selectedEntity.value) return;
     const id = selectedEntity.value._id;
-    const updates = { x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1, pivotX: 0.5, pivotY: 0.5 };
+    // Tambahkan flipX dan flipY ke reset object
+    const updates = { 
+        x: 0, y: 0, rotation: 0, 
+        scaleX: 1, scaleY: 1, 
+        pivotX: 0.5, pivotY: 0.5,
+        flipX: false, flipY: false 
+    };
     
     Object.entries(updates).forEach(([prop, val]) => {
       sceneStore.updateComponentProp(id, 'Transform', prop, val);
     });
   }
-
+  
   function resetTextRatio() {
     if (!selectedEntity.value) return;
     const tr = selectedEntity.value.components.TextRenderer;

@@ -1,4 +1,4 @@
-export const lifecycleNode = {
+export const NodeLifecycle = {
     'event_game_start': {
         execute: (runner, node) => {
             runner.executeFlow(node._id, 'out');

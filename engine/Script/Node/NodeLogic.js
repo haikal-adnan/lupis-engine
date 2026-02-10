@@ -1,4 +1,4 @@
-export const logicNode = {
+export const NodeLogic = {
     'logic_branch': {
         execute: (runner, node) => {
             const condition = runner.getInputValue(node, 'condition')

@@ -3,37 +3,42 @@ import { useProjectStore } from '@/stores/useProjectStore';
 import { Radio } from 'lucide-vue-next'; 
 
 // Import parts yang sudah diperbarui (termasuk basicTransform yang dinamis tadi)
-import { basicLifecycle } from '@/modules/variable/parts/basicLifecycle.js';
-import { basicKeyboard } from '@/modules/variable/parts/basicKeyboard.js';
-import { basicTransform } from '@/modules/variable/parts/basicTransform.js';
-import { basicMath } from '@/modules/variable/parts/basicMath.js';
-import { basicSystem } from '@/modules/variable/parts/basicSystem.js';
-import { basicString } from '@/modules/variable/parts/basicString.js';
-import { basicObject } from '@/modules/variable/parts/basicObject.js';
-import { basicProgramming } from '@/modules/variable/parts/basicProgramming.js';
-import { basicBoolean } from '@/modules/variable/parts/basicBoolean.js';
-import { basicComparison } from '@/modules/variable/parts/basicComparison.js';
-import { basicPointer } from '@/modules/variable/parts/basicPointer.js';
-import { basicCamera } from '@/modules/variable/parts/basicCamera.js';
-import { basicCollider } from '@/modules/variable/parts/basicCollider.js'
+import { BlueprintLifecycle } from '@/modules/variable/parts/BlueprintLifecycle.js'
+import { BlueprintKeyboard } from '@/modules/variable/parts/BlueprintKeyboard.js'
+import { BlueprintTransform } from '@/modules/variable/parts/BlueprintTransform.js'
+import { BlueprintMath } from '@/modules/variable/parts/BlueprintMath.js'
+import { BlueprintSystem } from '@/modules/variable/parts/BlueprintSystem.js'
+import { BlueprintString } from '@/modules/variable/parts/BlueprintString.js'
+import { BlueprintObject } from '@/modules/variable/parts/BlueprintObject.js'
+import { BlueprintProgramming } from '@/modules/variable/parts/BlueprintProgramming.js'
+import { BlueprintBoolean } from '@/modules/variable/parts/BlueprintBoolean.js'
+import { BlueprintComparison } from '@/modules/variable/parts/BlueprintComparison.js'
+import { BlueprintPointer } from '@/modules/variable/parts/BlueprintPointer.js'
+import { BlueprintCamera } from '@/modules/variable/parts/BlueprintCamera.js'
+import { BlueprintCollider } from '@/modules/variable/parts/BlueprintCollider.js'
+import { BlueprintPhysics } from '@/modules/variable/parts/BlueprintPhysics.js'
+import { BlueprintRenderer } from '@/modules/variable/parts/BlueprintRenderer';
 
 export const STATIC_NODE_GROUPS = [
-  basicLifecycle,
-  basicProgramming,
-  basicBoolean,
-  basicComparison,
-  basicKeyboard,        
-  basicPointer,        
-  basicTransform,    
-  basicMath,         
-  basicSystem,
-  basicString,
-  basicObject,
-  basicCamera,
-  basicCollider
-];
+  BlueprintRenderer,
+  BlueprintLifecycle,
+  BlueprintProgramming,
+  BlueprintBoolean,
+  BlueprintComparison,
+  BlueprintKeyboard,
+  BlueprintPointer,
+  BlueprintTransform,
+  BlueprintMath,
+  BlueprintSystem,
+  BlueprintString,
+  BlueprintObject,
+  BlueprintCamera,
+  BlueprintCollider,
+  BlueprintPhysics
+]
 
-export function useNodeTemplate() {
+
+export function useNodeBlueprint() {
   const projectStore = useProjectStore();
   const searchQuery = ref('');
 

@@ -2,7 +2,7 @@
   <PropertySection title="Sprite Renderer" :icon="Image" v-if="hasComponent">
     
     <template #menu="{ close }">
-      </template>
+       </template>
 
     <div class="flex gap-2.5 mb-1 pt-1">
       
@@ -41,11 +41,20 @@
 
     <PropertyRow label="Source Rect" :no-margin="true">
         <div class="grid grid-cols-2 gap-2">
-          <BaseNumber v-model="sourceRaw.x.value" prefix="X" :scrubbable="true" class="font-mono" />
-          <BaseNumber v-model="sourceRaw.y.value" prefix="Y" :scrubbable="true" class="font-mono" />
-          <BaseNumber v-model="sourceRaw.w.value" prefix="W" :min="0" :scrubbable="true" class="font-mono" />
-          <BaseNumber v-model="sourceRaw.h.value" prefix="H" :min="0" :scrubbable="true" class="font-mono" />
+          <BaseNumber v-model="sourceX" prefix="X" :scrubbable="true" class="font-mono" />
+          <BaseNumber v-model="sourceY" prefix="Y" :scrubbable="true" class="font-mono" />
+          <BaseNumber v-model="sourceW" prefix="W" :min="0" :scrubbable="true" class="font-mono" />
+          <BaseNumber v-model="sourceH" prefix="H" :min="0" :scrubbable="true" class="font-mono" />
         </div>
+    </PropertyRow>
+
+    <PropertyRow label="Opacity">
+        <BaseNumber 
+            prefix="%"
+            v-model="displayOpacity" 
+            :min="0" :max="100" :step="1" 
+            class="font-mono w-full" 
+        />
     </PropertyRow>
 
     <BaseCollapse title="Advanced" v-model="isAdvancedOpen">
@@ -57,49 +66,51 @@
       </div>
     </BaseCollapse>
     
-    </PropertySection>
+  </PropertySection>
 </template>
 
 <script setup>
 import { computed, ref } from "vue";
-import { Image, Trash2, FolderSearch } from "lucide-vue-next"; 
+import { Image, FolderSearch } from "lucide-vue-next"; 
 import { useInspectorLogic } from "@/modules/properties/composables/useInspectorLogic.js"; 
 
 // Atomic Components
 import PropertySection from "@ui/display/PropertySection.vue";
 import PropertyRow from "@ui/display/PropertyRow.vue";
-import BaseThumbnail from "@/commons/components/display/BaseThumbnail.vue"; // Sesuaikan path
+import BaseThumbnail from "@/commons/components/display/BaseThumbnail.vue"; 
 import BaseNumber from "@/commons/components/inputs/BaseNumber.vue";
 import BaseCheckbox from "@/commons/components/inputs/BaseCheckbox.vue"; 
 import BaseCollapse from "@/commons/components/display/BaseCollapse.vue"; 
 
-// Ambil logic dari composable
 const { 
   selectedEntity, 
-  removeComponent, 
-  bindNestedProp,
   bindComponentProp,
-  currentTextureUrl // Ambil URL dinamis di sini
+  currentTextureUrl 
 } = useInspectorLogic();
 
 const hasComponent = computed(() => !!selectedEntity.value?.components?.SpriteRenderer);
 
-// Kita juga bind assetId untuk ditampilkan di tombol (bukan untuk diedit langsung di text, tapi via selector nanti)
 const assetId = bindComponentProp('SpriteRenderer', 'assetId');
 
-// Binding Source Rect
-const sourceRaw = {
-    x: bindNestedProp('SpriteRenderer', 'source', 'x'),
-    y: bindNestedProp('SpriteRenderer', 'source', 'y'),
-    w: bindNestedProp('SpriteRenderer', 'source', 'w'),
-    h: bindNestedProp('SpriteRenderer', 'source', 'h'),
-};
+const rawOpacity = bindComponentProp('SpriteRenderer', 'opacity');
+
+const displayOpacity = computed({
+  get: () => Math.round((rawOpacity.value ?? 1) * 100),
+  set: (val) => {
+    rawOpacity.value = parseFloat((val / 100).toFixed(2));
+  }
+});
+
+const sourceX = bindComponentProp('SpriteRenderer', 'sourceX');
+const sourceY = bindComponentProp('SpriteRenderer', 'sourceY');
+const sourceW = bindComponentProp('SpriteRenderer', 'sourceWidth');
+const sourceH = bindComponentProp('SpriteRenderer', 'sourceHeight');
 
 const currentRect = computed(() => ({
-    x: sourceRaw.x.value || 0,
-    y: sourceRaw.y.value || 0,
-    w: sourceRaw.w.value || 0,
-    h: sourceRaw.h.value || 0
+    x: sourceX.value || 0,
+    y: sourceY.value || 0,
+    w: sourceW.value || 0,
+    h: sourceH.value || 0
 }));
 
 const isAdvancedOpen = ref(false);
@@ -107,5 +118,6 @@ const autoResetRect = ref(false);
 
 function openAssetSelector() {
   console.log("Open Asset Panel triggered!");
+  // Logika membuka modal asset manager
 }
 </script>

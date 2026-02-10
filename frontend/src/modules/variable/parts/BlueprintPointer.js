@@ -1,6 +1,6 @@
 import { MousePointer2, Move } from 'lucide-vue-next';
 
-export const basicPointer = {
+export const BlueprintPointer = {
   _id: 'pointer_events',
   label: 'Pointer & Touch',
   color: '#00BCD4',

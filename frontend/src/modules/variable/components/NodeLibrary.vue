@@ -81,9 +81,9 @@
 <script setup>
 import { Search, X, GripVertical } from 'lucide-vue-next';
 import PropertySection from "@ui/display/PropertySection.vue";
-import { useNodeTemplate } from '@/modules/variable/composables/useNodeTemplate.js';
+import { useNodeBlueprint } from '@/modules/variable/composables/useNodeBlueprint.js';
 import ScrollArea from '@/commons/components/overlay/ScrollArea.vue';
 
 // Logic dipindah ke composable
-const { searchQuery, filteredGroups, onDragNode } = useNodeTemplate();
+const { searchQuery, filteredGroups, onDragNode } = useNodeBlueprint();
 </script>

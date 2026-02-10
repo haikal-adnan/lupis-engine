@@ -1,4 +1,4 @@
-export const colliderNode = {
+export const NodeCollider = {
     // ------------------------------------------------------------------
     // Logic: SOLID COLLISION
     // ------------------------------------------------------------------
@@ -65,7 +65,6 @@ export const colliderNode = {
                 runner.executeFlow(node._id, 'exec_out');
                 return;
             }
-
             // [FIX] Validasi Tipe Collider
             // Node ini HANYA boleh jalan jika Collidernya tipe TRIGGER
             const collider = entity.components.Collider;
@@ -79,7 +78,7 @@ export const colliderNode = {
                 runner.executeFlow(node._id, 'exec_out');
                 return;
             }
-
+            // Inisialisasi state mesin     
             if (!node._triggerState) {
                 node._triggerState = { isOverlapping: false, lastId: null };
             }
