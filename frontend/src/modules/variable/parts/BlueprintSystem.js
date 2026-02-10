@@ -1,6 +1,6 @@
 import { MessageSquare, Terminal, Bell } from 'lucide-vue-next';
 
-export const basicSystem = {
+export const BlueprintSystem = {
   _id: 'system_interface',
   label: 'Interface',
   color: '#607D8B',
@@ -21,7 +21,7 @@ export const basicSystem = {
         },
         // Data default jika tidak ada kabel
         data: { 
-            message: 'Hello World', // [FIX] Gunakan struktur data object, bukan array
+            message: 'Hello World',
             duration: 3.0 
         }, 
         inputs: [

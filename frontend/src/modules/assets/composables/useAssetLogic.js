@@ -8,13 +8,11 @@ export function useAssetLogic() {
   const folderStore = useFolderStore()
   const { importAsset } = useAssetActions()
 
-  // --- State ---
   const viewMode = ref('grid')
   const searchQuery = ref('')
   const selectedId = ref(null)
   const fileInputRef = ref(null)
 
-  // --- Computed Data ---
   const currentFolderId = computed(() => folderStore.activeFolderId)
   const currentFolder = computed(() => folderStore.getFolderById(currentFolderId.value))
 

@@ -1,6 +1,6 @@
 import { Video, VideoOff, Camera } from 'lucide-vue-next';
 
-export const basicCamera = {
+export const BlueprintCamera = {
   _id: 'category_camera',
   label: 'Camera',
   color: '#F59E0B', 

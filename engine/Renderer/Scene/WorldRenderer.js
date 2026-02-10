@@ -1,15 +1,14 @@
 import { HexToVec4 } from "../../Util/HexToVec4.js";
 import Config from "../../Core/Config.js";
 
-export default class WorldRenderer {
+export default class WorldRenderer { 
     constructor(image, text, shape, game, tilemapRenderer) {
         this.game = game;
         this.renderer = { image, text, shape };
         this.tilemapRenderer = tilemapRenderer;
         this.renderQueue = [];
-        this.boundsColor = [0.7, 0, 1, 0.6]; 
-        // Warna Debug Collider: Hijau untuk Solid, Kuning untuk Trigger
-        this.colliderColorSolid = [0, 1, 0, 0.8]; 
+        this.boundsColor = [0.7, 0, 1, 0.6];
+        this.colliderColorSolid = [0, 1, 0, 0.8];
         this.colliderColorTrigger = [1, 1, 0, 0.8];
     }
 
@@ -32,7 +31,6 @@ export default class WorldRenderer {
         this._collectRenderables(world, activeTabId, isIsolationMode, isUIMode, tilemapContext, proj);
         this._executeRenderQueue(proj);
 
-        // ... (Logic Gizmo Tilemap tetap sama) ...
         if (isIsolationMode) {
             const activeEntity = this._findEntityById(world, activeTabId);
             if (activeEntity && activeEntity.components.Tilemap) {
@@ -46,7 +44,6 @@ export default class WorldRenderer {
         }
     }
 
-    // ... (_findEntityById & _collectRenderables TETAP SAMA) ...
     _findEntityById(world, id) {
         for (const layer of world.layers) {
             for (const e of layer.entities) {
@@ -101,9 +98,13 @@ export default class WorldRenderer {
 
         const t = comps.Transform;
         if (!t) return;
-        
+
         const drawX = t.x;
         const drawY = t.y;
+
+        // Ambil Flip dari Transform
+        const flipX = t.flipX || false;
+        const flipY = t.flipY || false;
 
         const trans = {
             x: drawX,
@@ -117,24 +118,31 @@ export default class WorldRenderer {
             pivotY: t.pivotY
         };
 
-        // 1. RENDER SPRITE
         if (comps.SpriteRenderer) {
             const s = comps.SpriteRenderer;
             const a = (s.opacity ?? 1) * currentOpacity;
 
             if (a > 0) {
                 const texture = world.assets.textures[s.assetId];
+                
+                // [UPDATED] Menggunakan 4 kolom data (flat properties)
+                const frame = {
+                    x: s.sourceX ?? 0,
+                    y: s.sourceY ?? 0,
+                    w: s.sourceWidth ?? 0,
+                    h: s.sourceHeight ?? 0
+                };
+
                 this.renderQueue.push({
                     type: "image",
-                    texture: texture, 
-                    frame: s.source || { x: 0, y: 0, w: 0, h: 0 },
+                    texture: texture,
+                    frame: frame,
                     transformData: trans,
-                    options: { flipX: s.flipX, flipY: s.flipY, opacity: a }
+                    options: { flipX: flipX, flipY: flipY, opacity: a }
                 });
             }
         }
-        
-        // 2. RENDER SHAPE
+
         if (comps.ShapeRenderer) {
             const s = comps.ShapeRenderer;
             const a = (s.opacity ?? 1) * currentOpacity;
@@ -148,42 +156,34 @@ export default class WorldRenderer {
                         thickness: s.thickness || 1,
                         x2: s.x2 ?? (drawX + t.width),
                         y2: s.y2 ?? (drawY + t.height),
-                        opacity: a
+                        opacity: a,
+                        flipX: flipX,
+                        flipY: flipY
                     }
                 });
             }
         }
 
-        // 3. RENDER COLLIDER DEBUG (NEW FEATURE)
-        // Hanya render jika di Editor Mode dan komponen Collider aktif
         if (Config.ENGINE_MODE === 'editor' && comps.Collider && comps.Collider.enabled) {
             const c = comps.Collider;
-            
-            // LOGIKA MATEMATIKA: 
-            // Ini harus SAMA PERSIS dengan getBounds() di ColliderSystem.js
-            // Agar apa yang kita lihat = apa yang dihitung physics.
-            
             const pivotOffsetX = (t.width * t.scaleX) * (t.pivotX ?? 0.5);
             const pivotOffsetY = (t.height * t.scaleY) * (t.pivotY ?? 0.5);
 
-            // Posisi Top-Left Collider sesungguhnya
             const colliderX = t.x - pivotOffsetX + c.offsetX;
             const colliderY = t.y - pivotOffsetY + c.offsetY;
             const colliderW = c.width * Math.abs(t.scaleX);
             const colliderH = c.height * Math.abs(t.scaleY);
 
-            // Kita render sebagai kotak kosong (stroke) tanpa rotasi (AABB)
-            // Karena AABB tidak berotasi, kita set rotation 0 untuk debug box ini.
-            const debugTrans = { 
-                ...trans, 
-                x: colliderX, 
-                y: colliderY, 
-                width: colliderW, 
+            const debugTrans = {
+                ...trans,
+                x: colliderX,
+                y: colliderY,
+                width: colliderW,
                 height: colliderH,
-                rotation: 0, // AABB selalu axis-aligned
-                pivotX: 0,   // Reset pivot karena kita menggambar dari top-left kalkulasi
+                rotation: 0,
+                pivotX: 0,
                 pivotY: 0,
-                scaleX: 1,   // Scale sudah dikali diatas
+                scaleX: 1,
                 scaleY: 1
             };
 
@@ -193,13 +193,14 @@ export default class WorldRenderer {
                 shapeOptions: {
                     type: "rectStroke",
                     color: c.type === 'trigger' ? this.colliderColorTrigger : this.colliderColorSolid,
-                    thickness: 2, // Lebih tebal biar kelihatan
-                    opacity: 1.0
+                    thickness: 2,
+                    opacity: 1.0,
+                    flipX: false, 
+                    flipY: false
                 }
             });
         }
 
-        // 4. RENDER TEXT
         if (comps.TextRenderer) {
             const tx = comps.TextRenderer;
             const a = (tx.opacity ?? 1) * currentOpacity;
@@ -214,7 +215,9 @@ export default class WorldRenderer {
                         fontSize: tx.fontSize || 24,
                         color: HexToVec4(tx.color || "#FFFFFF"),
                         font,
-                        opacity: a
+                        opacity: a,
+                        flipX: flipX,
+                        flipY: flipY
                     }
                 });
             }
@@ -227,22 +230,21 @@ export default class WorldRenderer {
         }
     }
 
-    // ... (_renderWorldBounds, _drawDashedLine, _executeRenderQueue, _drawShape, _flushAll TETAP SAMA) ...
     _renderWorldBounds(world, proj) {
         const bounds = world.settings?.worldBounds;
         if (!bounds || !bounds.active) return;
         const { x1, y1, x2, y2 } = bounds;
         const scale = this.game.camera.scale || 1;
-        const dashLen = 40 / scale; 
+        const dashLen = 40 / scale;
         const gapLen = 20 / scale;
         const thickness = 4 / scale;
-        this._drawDashedLine(x1, y1, x2, y1, dashLen, gapLen, thickness, proj); 
-        this._drawDashedLine(x2, y1, x2, y2, dashLen, gapLen, thickness, proj); 
-        this._drawDashedLine(x2, y2, x1, y2, dashLen, gapLen, thickness, proj); 
-        this._drawDashedLine(x1, y2, x1, y1, dashLen, gapLen, thickness, proj); 
+        this._drawDashedLine(x1, y1, x2, y1, dashLen, gapLen, thickness, proj);
+        this._drawDashedLine(x2, y1, x2, y2, dashLen, gapLen, thickness, proj);
+        this._drawDashedLine(x2, y2, x1, y2, dashLen, gapLen, thickness, proj);
+        this._drawDashedLine(x1, y2, x1, y1, dashLen, gapLen, thickness, proj);
         this.renderer.shape.flush();
     }
-    
+
     _drawDashedLine(x1, y1, x2, y2, dashLen, gapLen, thickness, proj) {
         const dx = x2 - x1;
         const dy = y2 - y1;
@@ -254,8 +256,8 @@ export default class WorldRenderer {
         while (dist < len) {
             const segmentLen = Math.min(dashLen, len - dist);
             this.renderer.shape.drawLine(
-                x1 + nx * dist, y1 + ny * dist, 
-                x1 + nx * (dist + segmentLen), y1 + ny * (dist + segmentLen), 
+                x1 + nx * dist, y1 + ny * dist,
+                x1 + nx * (dist + segmentLen), y1 + ny * (dist + segmentLen),
                 this.boundsColor, thickness, proj
             );
             dist += dashLen + gapLen;
@@ -275,9 +277,15 @@ export default class WorldRenderer {
             } else if (item.type === "shape") {
                 this._drawShape(item.shapeOptions, item.transformData, proj);
             } else if (item.type === "text") {
-                const { text, font, fontSize, color, opacity } = item.textOptions;
+                const { text, font, fontSize, color, opacity, flipX, flipY } = item.textOptions;
                 const t = item.transformData;
-                this.renderer.text.drawText(font, text, t.x, t.y, t.width, t.height, fontSize, color, proj, t.rotation, t.scaleX, t.scaleY, t.pivotX, t.pivotY, opacity);
+                this.renderer.text.drawText(
+                    font, text, t.x, t.y, t.width, t.height, 
+                    fontSize, color, proj, 
+                    t.rotation, t.scaleX, t.scaleY, 
+                    t.pivotX, t.pivotY, opacity, 
+                    flipX, flipY
+                );
             }
         }
         if (currentType) this.renderer[currentType].flush();
@@ -285,12 +293,22 @@ export default class WorldRenderer {
 
     _drawShape(opt, t, proj) {
         const shape = this.renderer.shape;
-        if (opt.type === "rectangle") shape.drawRect(t.x, t.y, t.width, t.height, opt.color, proj, t.rotation, t.scaleX, t.scaleY, t.pivotX, t.pivotY, opt.opacity);
-        else if (opt.type === "rectStroke") shape.drawRectStroke(t.x, t.y, t.width, t.height, opt.color, opt.thickness, proj, t.rotation, t.scaleX, t.scaleY, t.pivotX, t.pivotY, opt.opacity);
+        const fx = opt.flipX || false;
+        const fy = opt.flipY || false;
+
+        if (opt.type === "rectangle") {
+            shape.drawRect(t.x, t.y, t.width, t.height, opt.color, proj, t.rotation, t.scaleX, t.scaleY, t.pivotX, t.pivotY, opt.opacity, fx, fy);
+        }
+        else if (opt.type === "rectStroke") {
+            shape.drawRectStroke(t.x, t.y, t.width, t.height, opt.color, opt.thickness, proj, t.rotation, t.scaleX, t.scaleY, t.pivotX, t.pivotY, opt.opacity, fx, fy);
+        }
         else if (opt.type === "circle") {
             const radius = (t.width / 2) * ((Math.abs(t.scaleX) + Math.abs(t.scaleY)) / 2);
             shape.drawCircle(t.x, t.y, radius, opt.color, 32, proj);
-        } else if (opt.type === "line") shape.drawLine(t.x, t.y, opt.x2, opt.y2, opt.color, opt.thickness, proj);
+        } 
+        else if (opt.type === "line") {
+            shape.drawLine(t.x, t.y, opt.x2, opt.y2, opt.color, opt.thickness, proj);
+        }
     }
 
     _flushAll() {

@@ -20,14 +20,6 @@
       </div>
     </template>
 
-    <PropertyRow label="ID">
-      <BaseInput 
-        :model-value="selectedNode._id" 
-        :disabled="true" 
-        class="font-mono text-muted-foreground opacity-70"
-      />
-    </PropertyRow>
-
     <PropertyRow label="Title">
       <BaseInput v-model="title" placeholder="Node Title" />
     </PropertyRow>

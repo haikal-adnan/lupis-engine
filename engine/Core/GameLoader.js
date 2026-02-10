@@ -24,7 +24,6 @@ export default class GameLoader {
         const { project, assets, scene, prefabs, scripts, editorConfig } = payload;
 
         try {
-            // 1. Basic System Initialization
             this._initMain(game, canvas, mode);
             
             // 2. Data & Settings Setup
@@ -35,7 +34,6 @@ export default class GameLoader {
                 this._setupEditorState(game, editorConfig);
             }
 
-            // 3. Asset & Library Loading
             ScriptLoader.load(game, payload);
             
             const assetLoader = new AssetLoader(
@@ -49,19 +47,16 @@ export default class GameLoader {
             this._initPrefabLibrary(game.world, prefabs);
             this._initScriptLibrary(game.world, scripts);
 
-            // 4. Scene Loading
             if (scene) {
                 new SceneLoader(game.world, mode).loadScene(scene);
             }
 
-            // 5. System Hooks (Editor vs Runtime)
             if (mode === "editor") {
                 this._initializeEditorTools(game, canvas);
             } else {
                 this._initializeRuntimeSystems(game);
             }
 
-            // 6. Camera Setup & Finalize
             this._setupCamera(game, scene?.camera, mode);
             console.log(game.world)
             game.initLoop();

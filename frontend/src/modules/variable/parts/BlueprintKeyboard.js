@@ -1,6 +1,6 @@
 import { Zap, Keyboard, Move } from 'lucide-vue-next';
 
-export const basicKeyboard = {
+export const BlueprintKeyboard = {
   _id: 'keyboard_events',
   label: 'Keyboard Events',
   color: '#E91E63',

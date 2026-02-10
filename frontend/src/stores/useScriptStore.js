@@ -251,6 +251,22 @@ export const useScriptStore = defineStore('script', {
       this.saveActiveScript();
     },
 
+    removeEdge(edgeId) {
+      if (!this.activeScript) return;
+
+      const initialLength = this.activeScript.edges.length;
+
+      // Filter array edges: Pertahankan edge yang ID-nya BUKAN edgeId
+      this.activeScript.edges = this.activeScript.edges.filter(edge => 
+        edge.id !== edgeId && edge._id !== edgeId
+      );
+
+      // Simpan perubahan hanya jika ada data yang terhapus
+      if (this.activeScript.edges.length < initialLength) {
+        this.saveActiveScript();
+      }
+    },
+
     // ------------------------------------------------------------------
     // Persistence
     // ------------------------------------------------------------------

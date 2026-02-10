@@ -13,6 +13,8 @@
         <EditorShape v-if="selectedEntity.components.ShapeRenderer" />
         <EditorText v-if="selectedEntity.components.TextRenderer" />
         <EditorTilemap v-if="selectedEntity.components.Tilemap" />
+
+        <EditorPhysics v-if="selectedEntity.components.Physics" />
         
         <EditorCollider v-if="selectedEntity.components.Collider" />
         
@@ -58,6 +60,8 @@ import EditorText from '@/modules/properties/components/EditorText.vue'
 import EditorTilemap from '@/modules/properties/components/EditorTilemap.vue'
 import EditorScript from '@/modules/properties/components/EditorScript.vue'
 import EditorCollider from '@/modules/properties/components/EditorCollider.vue'
+import EditorPhysics from '@/modules/properties/components/EditorPhysics.vue'
+
 
 import EditorScene from '@/modules/properties/components/settings/EditorScene.vue'
 import EditorGrid from '@/modules/properties/components/settings/EditorGrid.vue'
@@ -82,6 +86,7 @@ const availableComponentOptions = computed(() => {
     { label: 'Tilemap', value: 'Tilemap', isRenderer: true },
     
     // Opsi Collider Baru
+    { label: 'Physics Body', value: 'Physics', isRenderer: false },
     { label: 'Collider', value: 'Collider', isRenderer: false },
     
     { label: 'Script Controller', value: 'ScriptController', isRenderer: false },

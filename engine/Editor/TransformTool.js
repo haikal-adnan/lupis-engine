@@ -185,19 +185,19 @@ export default class TransformTool {
         const p = this.toWorld(px, py);
 
         if (handle.mode === 'rotate') {
+            // ... (Kode rotate tetap sama) ...
             this.draggingRotate = true;
             this.draggingResize = false;
             this.draggingMove = false;
 
             const e = validEntities[0];
             const t = this._getTransform(e);
-            
             const absPos = this.geometry.calculateAbsolutePosition(e);
             
             this.rotateCenter = { x: absPos.x, y: absPos.y };
             this.rotateStartAngle = Math.atan2(p.y - absPos.y, p.x - absPos.x);
-            // Simpan sebagai Derajat
             this.entityStartRotation = t.rotation || 0;
+
         } else {
             this.draggingResize = true;
             this.draggingRotate = false;
@@ -207,13 +207,27 @@ export default class TransformTool {
 
             this.resizeEntityStarts = validEntities.map(e => {
                 const t = this._getTransform(e);
+                
+                // --- NORMALISASI DATA AWAL ---
+                // Pastikan kita menangkap Scale negatif (legacy) dan mengubahnya jadi Flip
+                let startScaleX = t.scaleX ?? 1;
+                let startScaleY = t.scaleY ?? 1;
+                let startFlipX = Boolean(t.flipX ?? false);
+                let startFlipY = Boolean(t.flipY ?? false);
+
+                // Jika scale negatif, ubah jadi positif dan toggle flip
+                if (startScaleX < 0) { startScaleX *= -1; startFlipX = !startFlipX; }
+                if (startScaleY < 0) { startScaleY *= -1; startFlipY = !startFlipY; }
+
                 return {
                     e,
                     x: t.x, y: t.y,
                     w: t.width, h: t.height,
-                    // Simpan sebagai Derajat
                     r: t.rotation || 0,
-                    sx: t.scaleX ?? 1, sy: t.scaleY ?? 1
+                    sx: startScaleX, // Simpan Scale yang sudah pasti POSITIF
+                    sy: startScaleY, // Simpan Scale yang sudah pasti POSITIF
+                    flipX: startFlipX, // Simpan state Flip awal yang sudah bersih
+                    flipY: startFlipY
                 };
             });
         }

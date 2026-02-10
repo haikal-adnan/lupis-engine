@@ -11,7 +11,8 @@ import { useSceneStore } from '@/stores/scene/useSceneStore.js';
 
 import { usePrompt } from '@/composables/usePrompt';
 import { useConfirm } from '@/composables/useConfirm';
-import { useAlert } from '@/composables/useAlert';
+// 1. Ganti import useAlert menjadi usePopAlert
+import { usePopAlert } from '@/composables/usePopAlert';
 
 const generateInstanceId = () => `inst_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 
@@ -22,7 +23,8 @@ export function useScriptPanel() {
   
   const { prompt } = usePrompt();
   const { confirm } = useConfirm();
-  const { alert } = useAlert();
+  // 2. Init PopAlert
+  const { showPop } = usePopAlert();
 
   const searchQuery = ref('');
   const viewMode = ref('grid');
@@ -48,6 +50,7 @@ export function useScriptPanel() {
 
     const entity = scene.entities.find(e => e._id === entityId);
     
+    // Cek apakah entity punya komponen ScriptController
     if (entity && entity.components && entity.components.ScriptController) {
       return entity;
     }
@@ -77,7 +80,11 @@ export function useScriptPanel() {
   const handleCreate = async (type = 'component') => {
     const projectId = editorStore.activeProjectId;
     if (!projectId) {
-      return alert({ title: 'Error', message: 'No active project found.', type: 'danger' });
+      return showPop({ 
+        title: 'Error', 
+        message: 'No active project found.', 
+        type: 'error' 
+      });
     }
 
     const defaultName = type === 'component' ? 'NewComponent' : 'NewSceneLogic';
@@ -95,8 +102,21 @@ export function useScriptPanel() {
           name: name.trim(),
           type
         });
+        
+        // [ALERT] Success Create
+        showPop({
+          title: 'Script Created',
+          message: `"${name}" has been created successfully.`,
+          type: 'success'
+        });
+
       } catch (err) {
-        await alert({ title: 'Failed', message: err.message, type: 'danger' });
+        // [ALERT] Error
+        showPop({ 
+          title: 'Failed', 
+          message: err.message, 
+          type: 'error' 
+        });
       }
     }
   };
@@ -113,6 +133,13 @@ export function useScriptPanel() {
     
     if (newName && newName.trim() && newName !== script.name) {
       await scriptStore.updateScript(scriptId, { name: newName.trim() });
+      
+      // [ALERT] Success Rename
+      showPop({
+        title: 'Renamed',
+        message: `Script renamed to "${newName}".`,
+        type: 'success'
+      });
     }
   };
 
@@ -127,6 +154,13 @@ export function useScriptPanel() {
         _id: null,
         name: `${script.name}_Copy`
       });
+
+      // [ALERT] Success Duplicate
+      showPop({
+        title: 'Duplicated',
+        message: `Script "${script.name}" copied.`,
+        type: 'success'
+      });
     }
   };
 
@@ -137,6 +171,13 @@ export function useScriptPanel() {
     if (await confirm({ title: 'Delete Script', message: `Are you sure you want to delete "${script.name}"?`, type: 'danger' })) {
       await scriptStore.deleteScript(scriptId);
       if (selectedId.value === scriptId) selectedId.value = null;
+
+      // [ALERT] Info Delete
+      showPop({
+        title: 'Deleted',
+        message: `Script "${script.name}" removed.`,
+        type: 'info'
+      });
     }
   };
 
@@ -144,6 +185,12 @@ export function useScriptPanel() {
     const projectId = editorStore.activeProjectId;
     if (projectId) {
       await scriptStore.fetchScripts(projectId);
+      showPop({
+        title: 'Refreshed',
+        message: 'Script list updated.',
+        type: 'success',
+        duration: 1500
+      });
     }
   };
 
@@ -152,6 +199,7 @@ export function useScriptPanel() {
 
     const controller = entity.components.ScriptController;
     
+    // Pastikan currentData adalah array
     const currentData = Array.isArray(controller.data) 
       ? [...controller.data] 
       : [];
@@ -159,10 +207,11 @@ export function useScriptPanel() {
     const isAlreadyAttached = currentData.some(inst => inst.assetId === script._id);
 
     if (isAlreadyAttached) {
-      await alert({
-        title: 'Already Attached',
+      // [ALERT] Warning jika sudah ada
+      showPop({
+        title: 'Script Exists',
         message: `Script "${script.name}" is already active on ${entity.name}.`,
-        type: 'info'
+        type: 'warning'
       });
     } else {
       const initialVars = {};
@@ -183,6 +232,13 @@ export function useScriptPanel() {
 
       sceneStore.patchComponent(entity._id, 'ScriptController', { 
         data: currentData 
+      });
+
+      // [ALERT] Success Attach
+      showPop({
+        title: 'Script Attached',
+        message: `Added "${script.name}" to ${entity.name}.`,
+        type: 'success'
       });
     }
 
@@ -219,12 +275,12 @@ export function useScriptPanel() {
 
       const entity = getEligibleEntity();
       if (entity) {
-         items.push({
-           label: `Add to ${entity.name}`,
-           icon: PlayCircle,
-           action: () => handleApplyToEntity(targetItem, entity)
-         });
-         items.push({ separator: true });
+          items.push({
+            label: `Add to ${entity.name}`,
+            icon: PlayCircle,
+            action: () => handleApplyToEntity(targetItem, entity)
+          });
+          items.push({ separator: true });
       }
 
       items.push(

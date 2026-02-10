@@ -1,6 +1,6 @@
 import { Play, Pause, Square, Power, Flag, Clock } from 'lucide-vue-next';
 
-export const basicLifecycle = {
+export const BlueprintLifecycle = {
   _id: 'category_game_flow',
   label: 'Game Lifecycle',
   color: '#EF4444',

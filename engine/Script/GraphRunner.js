@@ -5,27 +5,35 @@ export default class GraphRunner {
         this.game = game;
         this.data = scriptData;
         this.owner = ownerEntity;
-        this.currentDt;
+
+        this.currentDt = 0;
         this.nodeMap = new Map();
+        
         if (this.data.nodes) {
             this.data.nodes.forEach(node => this.nodeMap.set(node._id, node));
         }
+        
         this.edges = this.data.edges || [];
         this.localVariables = new Map();
+
         this._holdNodes = [];
         this._dragNodes = [];
-        this._tickNodes = []; // [ADDED] Simpan referensi tick nodes agar cepat
+        this._tickNodes = [];
+        
         this._lastPointer = { x: 0, y: 0 };
         this._keyStates = {};
+
         this._initVariables();
         this._setupEventListeners();
     }
 
     _isScriptActive() {
         if (!this.owner) return true;
+        
         if (this.owner.components?.ScriptController) {
             const scriptInstance = this.owner.components.ScriptController.data
                 .find(s => s.assetId === this.data._id);
+            
             if (scriptInstance && scriptInstance.isActive === false) {
                 return false;
             }
@@ -43,6 +51,7 @@ export default class GraphRunner {
     start() {
         if (!this._isScriptActive()) return;
         if (!this.data.nodes) return;
+
         this.data.nodes
             .filter(n => n.type === 'event_game_start')
             .forEach(node => {
@@ -53,7 +62,6 @@ export default class GraphRunner {
     _setupEventListeners() {
         if (!this.data.nodes) return;
         
-        // Reset list
         this._tickNodes = [];
         this._holdNodes = [];
         this._dragNodes = [];
@@ -65,9 +73,11 @@ export default class GraphRunner {
                     if (!this._isScriptActive()) return;
                     if (k === keyTarget) this.executeFlow(node._id, 'sk_main');
                 });
-            } else if (node.type === 'event_pointer_click') {
+            } 
+            else if (node.type === 'event_pointer_click') {
                 const config = Array.isArray(node.data) ? node.data[0] : node.data;
                 const btnTarget = config?.button || 'left';
+                
                 this.game.events.on('input:pointerdown', (e) => {
                     if (!this._isScriptActive()) return;
                     if (e.button === btnTarget) {
@@ -75,11 +85,14 @@ export default class GraphRunner {
                         this.executeFlow(node._id, config._id || 'ptr_click_main');
                     }
                 });
-            } else if (node.type === 'event_advanced_key') {
+            } 
+            else if (node.type === 'event_advanced_key') {
                 const mappings = node.data?.mappings || [];
+                
                 mappings.forEach(map => {
                     const outputId = `out_${map._id}`;
                     const keyTarget = map.key.toLowerCase();
+                    
                     if (map.trigger === 'press') {
                         this.game.events.on('input:keydown', (k) => {
                             if (!this._isScriptActive()) return;
@@ -94,10 +107,10 @@ export default class GraphRunner {
                         this._holdNodes.push({ node, map, outputId });
                     }
                 });
-            } else if (node.type === 'event_pointer_drag') {
+            } 
+            else if (node.type === 'event_pointer_drag') {
                 this._dragNodes.push(node);
             } 
-            // [ADDED] Optimasi: Kumpulkan node tick saat inisialisasi
             else if (node.type === 'event_tick') {
                 this._tickNodes.push(node);
             }
@@ -108,16 +121,13 @@ export default class GraphRunner {
         if (!this._isScriptActive()) return;
         this.currentDt = dt;
         
-        // Simpan posisi sebelumnya untuk physics interpolation (opsional)
         if (this.owner && this.owner.components && this.owner.components.Transform) {
             const t = this.owner.components.Transform;
             t.prevX = t.x;
             t.prevY = t.y;
         }
 
-        // [UPDATED] Gunakan list yang sudah di-cache agar lebih cepat daripada filter setiap frame
         this._tickNodes.forEach(node => {
-            // Set data dt agar bisa diambil oleh output 'dt'
             node._tempData = { dt: dt };
             this.executeFlow(node._id, 'out');
         });
@@ -130,11 +140,18 @@ export default class GraphRunner {
 
         if (this._dragNodes.length > 0) {
             const pointer = this.game.input.getPointer();
+            
             if (pointer.down) {
                 const dx = pointer.x - this._lastPointer.x;
                 const dy = pointer.y - this._lastPointer.y;
+                
                 this._dragNodes.forEach(node => {
-                    node._tempData = { delta_x: dx, delta_y: dy, pos_x: pointer.x, pos_y: pointer.y };
+                    node._tempData = { 
+                        delta_x: dx, 
+                        delta_y: dy, 
+                        pos_x: pointer.x, 
+                        pos_y: pointer.y 
+                    };
                     this.executeFlow(node._id, 'drag_active');
                 });
             }
@@ -146,7 +163,9 @@ export default class GraphRunner {
         const edge = this.edges.find(e =>
             e.source === sourceNodeId && e.sourceHandle === sourcePortName
         );
+
         if (!edge) return;
+
         const targetNode = this.nodeMap.get(edge.target);
         if (targetNode) {
             this._executeNodeLogic(targetNode);
@@ -156,50 +175,85 @@ export default class GraphRunner {
     _executeNodeLogic(node) {
         try {
             const processor = NodeRegistry[node.type] || NodeRegistry['default'];
+            
             if (processor && typeof processor.execute === 'function') {
                 processor.execute(this, node);
             } else {
                 this.executeFlow(node._id, 'out');
             }
         } catch (err) {
-            console.error(`[GraphRunner] Error at node '${node.type}':`, err);
+            console.error(`[GraphRunner] Error at node '${node.type}' (${node.label}):`, err);
         }
     }
 
     getInputValue(node, inputKey) {
         const edge = this.edges.find(e => e.target === node._id && e.targetHandle === inputKey);
+        
         if (edge) {
             const sourceNode = this.nodeMap.get(edge.source);
             return this._getNodeOutputValue(sourceNode, edge.sourceHandle);
         }
-        return node.data?.[inputKey];
+
+        if (node.data && node.data[inputKey] !== undefined) {
+            return node.data[inputKey];
+        }
+
+        if (node.inputs) {
+            const inputDef = node.inputs.find(i => i._id === inputKey);
+            if (inputDef && inputDef.value !== undefined) {
+                return inputDef.value;
+            }
+        }
+
+        return null;
     }
 
     _getNodeOutputValue(node, outputKey) {
         if (node._tempData && outputKey in node._tempData) {
             return node._tempData[outputKey];
         }
+
         const processor = NodeRegistry[node.type];
         if (processor && typeof processor.getOutput === 'function') {
             return processor.getOutput(this, node, outputKey);
         }
+
         return node.data?.[outputKey] ?? null;
     }
 
-    resolveEntity(targetId) {
-        if (targetId && typeof targetId === 'string' && targetId.trim() !== '') {
-            return this.game.world.entities.find(e => e.id === targetId || e._id === targetId) || null;
+    resolveEntity(targetScriptId) {
+        if (!targetScriptId || typeof targetScriptId !== 'string') {
+            return this.owner;
         }
-        return this.owner;
+
+        const foundEntity = this.game.world.entities.find(
+            e => e.scriptId === targetScriptId
+        );
+        
+        return foundEntity || null;
     }
 
-    setVariable(varId, value) {
-        if (this.localVariables.has(varId)) {
+    getVariableValue(varId, scope = 'Local') {
+        if (scope === 'Global') {
+            if (this.game.variables) {
+                return this.game.variables.getGlobal(varId);
+            }
+            console.warn('[GraphRunner] VariableManager not found on Game instance.');
+            return null;
+        } else {
+            return this.localVariables.get(varId);
+        }
+    }
+
+    setVariableValue(varId, value, scope = 'Local') {
+        if (scope === 'Global') {
+            if (this.game.variables) {
+                this.game.variables.setGlobal(varId, value);
+            } else {
+                console.warn('[GraphRunner] Cannot set global var: VariableManager missing.');
+            }
+        } else {
             this.localVariables.set(varId, value);
         }
-    }
-
-    getVariable(varId) {
-        return this.localVariables.get(varId) || null;
     }
 }

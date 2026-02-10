@@ -49,7 +49,6 @@ export function usePreview() {
     } else {
       // [UPDATE] Ambil resolusi dari Scene Settings
       const uiSettings = sceneStore.activeScene?.settings?.ui || {};
-      console.log(uiSettings.referenceWidth)
       const width = uiSettings.referenceWidth || 1280;   // Default jika setting kosong
       const height = uiSettings.referenceHeight || 720;  // Default jika setting kosong
 

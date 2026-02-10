@@ -11,7 +11,21 @@ const REGISTRY = {
     import('@/modules/node/components/inspectors/TranslateInspector.vue')
   ),
   
-  // (Collider dihapus dari sini agar kembali ke Generic Inspector)
+  'variable_get': defineAsyncComponent(() => 
+    import('@/modules/node/components/inspectors/VariableInspector.vue')
+  ),
+  
+  'variable_set': defineAsyncComponent(() => 
+    import('@/modules/node/components/inspectors/VariableInspector.vue')
+  ),
+
+  'math_chain': defineAsyncComponent(() => 
+    import('@/modules/node/components/inspectors/MathChainInspector.vue')
+  ),
+
+  'logic_compare': defineAsyncComponent(() => 
+    import('@/modules/node/components/inspectors/ComparisonChainInspector.vue')
+  ),
 };
 
 export function useNodeRegistry() {

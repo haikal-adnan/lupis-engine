@@ -11,6 +11,7 @@ export default class ImageRenderer {
         this.maxSprites = 20000;
         this.verticesPerQuad = 6;
         
+        // x, y, u, v, alpha, dimX, dimY
         this.floatsPerVertex = 7; 
         this.floatsPerQuad = this.verticesPerQuad * this.floatsPerVertex;
 
@@ -74,6 +75,7 @@ export default class ImageRenderer {
             uniform sampler2D uTex;
             void main(){
                 vec4 c;
+                // Jika dimensi > 0, gunakan pola checkerboard (untuk missing texture)
                 if (vDimension.x > 0.0) {
                     float size = 32.0;
                     vec2 cell = floor((vUV * vDimension) / size);
@@ -162,6 +164,8 @@ export default class ImageRenderer {
         this.lastProjection = projection;
 
         const { x, y, width: w, height: h, rotation: rot, scaleX: sx = 1, scaleY: sy = 1, pivotX: px = 0.5, pivotY: py = 0.5 } = transform;
+        
+        // Destructure options termasuk flipX dan flipY
         const { flipX = false, flipY = false, opacity = 1, useCheckerboard = false } = options || {};
 
         const isValidTexture = texRes && texRes.glTexture;
@@ -176,10 +180,13 @@ export default class ImageRenderer {
             this.currentTexture = targetGLTexture;
         }
 
+        // --- LOGIC FLIP DITERAPKAN DI SINI ---
+        // Jika flipX true, scale X dikalikan -1. 
+        // calculateQuadVertices akan menangani pergeseran vertexnya.
         const finalSX = flipX ? -sx : sx;
         const finalSY = flipY ? -sy : sy;
 
-        // rot disini diharapkan dalam Radian
+        // Pass final scale ke kalkulasi vertex
         const v = calculateQuadVertices(x, y, w, h, rot, finalSX, finalSY, px, py);
 
         let u0 = 0, v0 = 0, u1 = 1, v1 = 1;
@@ -195,12 +202,19 @@ export default class ImageRenderer {
         const d = this.bufferData;
         let i = this.bufferIndex;
 
+        // Push Vertices
+        // TL
         d[i++] = v.tl.x; d[i++] = v.tl.y; d[i++] = u0; d[i++] = v0; d[i++] = opacity; d[i++] = dimW; d[i++] = dimH;
+        // TR
         d[i++] = v.tr.x; d[i++] = v.tr.y; d[i++] = u1; d[i++] = v0; d[i++] = opacity; d[i++] = dimW; d[i++] = dimH;
+        // BL
         d[i++] = v.bl.x; d[i++] = v.bl.y; d[i++] = u0; d[i++] = v1; d[i++] = opacity; d[i++] = dimW; d[i++] = dimH;
         
+        // TR
         d[i++] = v.tr.x; d[i++] = v.tr.y; d[i++] = u1; d[i++] = v0; d[i++] = opacity; d[i++] = dimW; d[i++] = dimH;
+        // BR
         d[i++] = v.br.x; d[i++] = v.br.y; d[i++] = u1; d[i++] = v1; d[i++] = opacity; d[i++] = dimW; d[i++] = dimH;
+        // BL
         d[i++] = v.bl.x; d[i++] = v.bl.y; d[i++] = u0; d[i++] = v1; d[i++] = opacity; d[i++] = dimW; d[i++] = dimH;
 
         this.bufferIndex = i;
