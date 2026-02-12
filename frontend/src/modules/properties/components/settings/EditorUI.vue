@@ -102,7 +102,7 @@ import BaseSelect from '@/commons/components/inputs/BaseSelect.vue';
 import BaseCheckbox from '@/commons/components/inputs/BaseCheckbox.vue';
 import BaseDropdown from '@ui/overlay/BaseDropdown.vue';
 
-const { bindSettingProp } = useInspectorLogic();
+const { bindSettingProp, updateUISettingsBulk } = useInspectorLogic();
 
 // --- Bindings ---
 const active = bindSettingProp('ui', 'active');
@@ -123,14 +123,15 @@ const PRESETS = [
   { label: 'HD Ready (720p)', w: 1280, h: 720 },
   { label: '4K UHD', w: 3840, h: 2160 },
   { label: 'Mobile Portrait', w: 1080, h: 1920 },
-  { label: 'Mobile Landscape', w: 1920, h: 1080 },
   { label: 'iPad / Tablet', w: 2048, h: 1536 },
 ];
 
 // --- Logic ---
 const applyPreset = (p) => {
-  refWidth.value = p.w;
-  refHeight.value = p.h;
+  updateUISettingsBulk({ 
+    referenceWidth: p.w, 
+    referenceHeight: p.h 
+  });
 };
 
 const isCurrent = (p) => {

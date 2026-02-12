@@ -2,7 +2,6 @@
   <div class="px-2 py-2 border-b border-border bg-background space-y-2">
     
     <div class="flex items-center gap-1.5">
-      
       <div class="flex-1 min-w-0">
         <BaseSelect 
           v-model="activeSceneId" 
@@ -26,48 +25,22 @@
 
         <template #default="{ close }">
           <div class="flex flex-col text-xs min-w-[160px]">
-            
             <div class="px-2 py-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
               Scene Actions
             </div>
-
-            <button 
-              @click="handleCreate(close)" 
-              class="flex items-center px-2 py-1.5 mx-1 rounded-sm hover:bg-accent hover:text-accent-foreground text-left transition-colors"
-            >
-              <Plus class="w-3.5 h-3.5 mr-2 text-muted-foreground" />
-              <span>New Scene</span>
+            <button @click="handleCreate(close)" class="dropdown-item">
+              <Plus class="w-3.5 h-3.5 mr-2 text-muted-foreground" /> <span>New Scene</span>
             </button>
-
-            <button 
-              @click="handleRename(close)" 
-              :disabled="!activeSceneId"
-              class="flex items-center px-2 py-1.5 mx-1 rounded-sm hover:bg-accent hover:text-accent-foreground text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Edit2 class="w-3.5 h-3.5 mr-2 text-muted-foreground" />
-              <span>Rename Scene</span>
+            <button @click="handleRename(close)" :disabled="!activeSceneId" class="dropdown-item">
+              <Edit2 class="w-3.5 h-3.5 mr-2 text-muted-foreground" /> <span>Rename Scene</span>
             </button>
-
-            <button 
-              @click="handleDuplicate(close)" 
-              :disabled="!activeSceneId"
-              class="flex items-center px-2 py-1.5 mx-1 rounded-sm hover:bg-accent hover:text-accent-foreground text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Copy class="w-3.5 h-3.5 mr-2 text-muted-foreground" />
-              <span>Duplicate Scene</span>
+            <button @click="handleDuplicate(close)" :disabled="!activeSceneId" class="dropdown-item">
+              <Copy class="w-3.5 h-3.5 mr-2 text-muted-foreground" /> <span>Duplicate Scene</span>
             </button>
-
             <div class="h-[1px] bg-border my-1"></div>
-
-            <button 
-              @click="handleDelete(close)" 
-              :disabled="!activeSceneId"
-              class="flex items-center px-2 py-1.5 mx-1 rounded-sm hover:bg-destructive/10 text-destructive hover:text-destructive text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Trash2 class="w-3.5 h-3.5 mr-2" />
-              <span>Delete Scene</span>
+            <button @click="handleDelete(close)" :disabled="!activeSceneId" class="dropdown-item text-destructive hover:text-destructive hover:bg-destructive/10">
+              <Trash2 class="w-3.5 h-3.5 mr-2" /> <span>Delete Scene</span>
             </button>
-
           </div>
         </template>
       </BaseDropdown>
@@ -92,13 +65,27 @@
         </button>
       </div>
       
-      <button 
-        @click="$emit('add-layer')"
-        class="h-7 w-7 flex items-center justify-center rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors"
-        title="New Layer"
-      >
-        <Layers class="w-3.5 h-3.5" />
-      </button>
+      <BaseDropdown align="right">
+        <template #trigger="{ isOpen }">
+            <button 
+                class="h-7 w-7 flex items-center justify-center rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors"
+                :class="{ 'bg-accent text-accent-foreground': isOpen }"
+                title="Add Layer"
+            >
+                <Layers class="w-3.5 h-3.5" />
+            </button>
+        </template>
+        <template #default="{ close }">
+            <div class="flex flex-col text-xs min-w-[140px]">
+                <button @click="$emit('add-layer', 'world'); close()" class="dropdown-item">
+                    <Cuboid class="w-3.5 h-3.5 mr-2 text-blue-500" /> World Layer
+                </button>
+                <button @click="$emit('add-layer', 'ui'); close()" class="dropdown-item">
+                    <Maximize class="w-3.5 h-3.5 mr-2 text-orange-500" /> UI Layer
+                </button>
+            </div>
+        </template>
+      </BaseDropdown>
 
       <button 
         @click="$emit('refresh')"
@@ -116,7 +103,7 @@
 <script setup>
 import { 
   Search, X, RefreshCw, Layers, MoreVertical, 
-  Plus, Trash2, Edit2, Copy 
+  Plus, Trash2, Edit2, Copy, Cuboid, Maximize
 } from 'lucide-vue-next'
 import BaseSelect from '@ui/inputs/BaseSelect.vue'
 import BaseDropdown from '@ui/overlay/BaseDropdown.vue'
@@ -127,6 +114,7 @@ const props = defineProps({
   isRefreshing: Boolean
 });
 
+// [UPDATED] Emits 'add-layer' with type payload
 defineEmits(['update:modelValue', 'add-layer', 'refresh']);
 
 const { 
@@ -138,3 +126,9 @@ const {
   handleDelete 
 } = useSceneActions();
 </script>
+
+<style scoped>
+.dropdown-item {
+    @apply flex items-center px-2 py-1.5 mx-1 rounded-sm hover:bg-accent hover:text-accent-foreground text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+}
+</style>

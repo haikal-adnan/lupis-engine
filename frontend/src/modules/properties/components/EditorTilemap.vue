@@ -8,7 +8,16 @@
     </template>
 
     <template #menu="{ close }">
-      </template>
+      <div class="p-1 space-y-0.5">
+        <button 
+          @click="removeComponent('Tilemap'); close()" 
+          class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-destructive hover:text-destructive-foreground text-destructive font-medium transition-colors"
+        >
+          <Trash2 class="w-3 h-3 mr-2" />
+          Remove Tilemap
+        </button>
+      </div>
+    </template>
 
     <PropertyRow label="Source">
       <div class="flex gap-2 w-full">
@@ -60,8 +69,9 @@
 
 <script setup>
 import { computed } from "vue";
-import { Grid3X3, Brush } from "lucide-vue-next"; 
+import { Grid3X3, Brush, Trash2 } from "lucide-vue-next"; 
 import { useTilemapLogic } from "@/modules/tilemap/composables/useTilemapLogic.js";
+import { useInspectorLogic } from "@/modules/properties/composables/useInspectorLogic.js";
 
 // Atomic Components
 import PropertySection from "@ui/display/PropertySection.vue";
@@ -75,8 +85,12 @@ const {
   hasTilemap, 
   currentTextureUrl, 
   bindComponentProp, 
-  openTilemapEditor 
+  openTilemapEditor,
 } = useTilemapLogic();
+
+const { 
+  removeComponent, 
+} = useInspectorLogic();
 
 const hasComponent = hasTilemap;
 

@@ -30,6 +30,17 @@
       <BaseSelect v-model="safeTag" :options="tagOptions" :editable="true" action-label="Create New Tag..." placeholder="Select Tag" @action="handleAddTag" @delete="handleDeleteTag" />
     </PropertyRow>
 
+    <PropertyRow label="Z-Index">
+      <BaseNumber 
+        v-model="zIndex" 
+        :step="1" 
+        :precision="0" 
+        class="font-mono w-full" 
+        :disabled="locked"
+        placeholder="0"
+      />
+    </PropertyRow>
+
     <PropertyRow label="Appearance">
       <div class="flex gap-1 items-center w-full">
         <BaseButton 
@@ -78,6 +89,7 @@ import BaseInput from '@/commons/components/inputs/BaseInput.vue'
 import BaseSelect from '@/commons/components/inputs/BaseSelect.vue'
 import BaseButton from '@/commons/components/buttons/BaseButton.vue'
 import IconButton from '@/commons/components/buttons/IconButton.vue'
+import BaseNumber from '@/commons/components/inputs/BaseNumber.vue' // [NEW] Import BaseNumber
 
 const { bindEntityProp, selectedEntity } = useInspectorLogic()
 const { handleDeleteEntity, handleCopyId } = useEditorActions()
@@ -92,7 +104,10 @@ const hasIdError = ref(false)
 const localScriptId = ref('')
 const isProcessing = ref(false)
 
+// [NEW] Bind Z-Index
+// Karena zIndex adalah properti root entity (bukan di dalam components), kita pakai bindEntityProp
 const name = bindEntityProp('name')
+const zIndex = bindEntityProp('zIndex')
 
 const active = computed({
   get: () => selectedEntity.value?.active ?? true, 

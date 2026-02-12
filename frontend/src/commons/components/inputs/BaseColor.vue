@@ -19,7 +19,7 @@
     >
       <div
         class="relative h-full flex items-center justify-center px-2 border-r border-transparent 
-               bg-muted/20 group-focus-within:border-border transition-colors"
+                bg-muted/20 group-focus-within:border-border transition-colors"
       >
         <div 
           class="w-5 h-5 rounded-[2px] border border-border shadow-sm transition-transform active:scale-95"
@@ -28,7 +28,8 @@
 
         <input
           type="color"
-          v-model="model"
+          :value="model"
+          @input="onColorPickerChange"
           class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
           title="Choose color"
         />
@@ -36,37 +37,46 @@
 
       <input
         :id="id"
-        v-model="model"
+        v-model="localValue"
         type="text"
         maxlength="7"
         spellcheck="false"
         class="w-full h-full bg-transparent border-none outline-none text-sm text-foreground font-mono uppercase 
                placeholder:text-muted-foreground/40 focus:ring-0 px-3"
         placeholder="#000000"
-        @blur="validateHex"
+        @keydown.enter="validateAndSync"
+        @blur="validateAndSync"
       />
     </div>
   </div>
 </template>
 
 <script setup>
-import { useId } from 'vue'
+import { useId, ref, watch } from 'vue'
 
-const { 
-  label, 
-  radius = '0.375rem', 
-  height = '2rem' 
-} = defineProps({
+const props = defineProps({
   label: String,
-  radius: String,
-  height: String
+  radius: { type: String, default: '0.375rem' },
+  height: { type: String, default: '2rem' }
 })
 
 const model = defineModel({ default: '#000000' })
 const id = useId()
 
-function validateHex() {
-  let val = model.value.trim()
+const localValue = ref(model.value)
+
+watch(model, (newVal) => {
+  localValue.value = newVal
+})
+
+function onColorPickerChange(e) {
+  const val = e.target.value
+  localValue.value = val
+  model.value = val 
+}
+
+function validateAndSync() {
+  let val = localValue.value.trim()
   
   if (val.length > 0 && !val.startsWith('#')) {
     val = '#' + val
@@ -75,9 +85,11 @@ function validateHex() {
   const hexRegex = /^#([0-9A-F]{3}){1,2}$/i
   
   if (hexRegex.test(val)) {
-    model.value = val.toUpperCase()
+    const formatted = val.toUpperCase()
+    localValue.value = formatted
+    model.value = formatted
   } else {
-    model.value = '#000000' 
+    localValue.value = model.value
   }
 }
 </script>

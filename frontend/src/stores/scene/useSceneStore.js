@@ -17,7 +17,19 @@ export const useSceneStore = defineStore('scene', () => {
   
   const activeEntities = computed(() => activeScene.value ? activeScene.value.entities : []);
   
-  const activeLayers = computed(() => activeScene.value ? activeScene.value.layers : []);
+  const activeLayers = computed(() => {
+    if (!activeScene.value) return [];
+    
+    // Gabungkan layersWorld dan layersUI jika ada
+    const world = activeScene.value.layersWorld || [];
+    const ui = activeScene.value.layersUI || [];
+    
+    // Tandai tipe layer agar logic sorting nanti tahu (opsional tapi membantu)
+    const taggedWorld = world.map(l => ({ ...l, _section: 'world' }));
+    const taggedUI = ui.map(l => ({ ...l, _section: 'ui' }));
+
+    return [...taggedWorld, ...taggedUI];
+  });
 
   const initScenes = (sceneList) => {
     scenes.value = Array.isArray(sceneList) ? sceneList : [];
@@ -104,6 +116,7 @@ export const useSceneStore = defineStore('scene', () => {
   const layerActions = useLayerActions(activeScene);
   const entityActions = useEntityActions(activeScene, selectedEntityIds);
   const settingActions = useSettingActions(activeScene); 
+  
 
   return {
     scenes,

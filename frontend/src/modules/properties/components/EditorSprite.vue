@@ -2,7 +2,16 @@
   <PropertySection title="Sprite Renderer" :icon="Image" v-if="hasComponent">
     
     <template #menu="{ close }">
-       </template>
+      <div class="p-1 space-y-0.5">
+        <button 
+          @click="removeComponent('SpriteRenderer'); close()" 
+          class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-destructive hover:text-destructive-foreground text-destructive font-medium transition-colors"
+        >
+          <Trash2 class="w-3 h-3 mr-2" />
+          Remove Sprite Renderer
+        </button>
+      </div>
+    </template>
 
     <div class="flex gap-2.5 mb-1 pt-1">
       
@@ -71,7 +80,7 @@
 
 <script setup>
 import { computed, ref } from "vue";
-import { Image, FolderSearch } from "lucide-vue-next"; 
+import { Image, FolderSearch, Trash2 } from "lucide-vue-next"; 
 import { useInspectorLogic } from "@/modules/properties/composables/useInspectorLogic.js"; 
 
 // Atomic Components
@@ -85,7 +94,8 @@ import BaseCollapse from "@/commons/components/display/BaseCollapse.vue";
 const { 
   selectedEntity, 
   bindComponentProp,
-  currentTextureUrl 
+  currentTextureUrl,
+  removeComponent
 } = useInspectorLogic();
 
 const hasComponent = computed(() => !!selectedEntity.value?.components?.SpriteRenderer);

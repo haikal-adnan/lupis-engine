@@ -21,7 +21,7 @@ export function useSceneActions() {
     get: () => sceneStore.activeSceneId,
     set: (val) => {
       if (sceneStore.activeSceneId !== val) {
-        sceneStore.activeSceneId = val
+        sceneStore.setActiveScene(val) // Pastikan method ini ada di store
       }
     }
   })
@@ -33,12 +33,12 @@ export function useSceneActions() {
       title: 'Create New Scene',
       message: 'Enter a name for the new scene:',
       defaultValue: 'New Scene',
-      placeholder: 'Masukkan nama scene baru...',
+      placeholder: 'Scene Name...',
       confirmText: 'Create'
     })
 
     if (name) {
-      sceneStore.addScene({ name })
+      sceneStore.addScene({ name }) // Pastikan method ini ada di store
     }
   }
 
@@ -49,7 +49,7 @@ export function useSceneActions() {
     const newName = await prompt({
       title: 'Rename Scene',
       defaultValue: currentName,
-      placeholder: 'Masukkan nama scene baru...',
+      placeholder: 'Scene Name...',
       confirmText: 'Rename'
     })
     
@@ -80,7 +80,7 @@ export function useSceneActions() {
     
     const isConfirmed = await confirm({
       title: 'Delete Scene?',
-      message: `Are you sure you want to delete "${sceneName}"? This action cannot be undone.`,
+      message: `Are you sure you want to delete "${sceneName}"?`,
       confirmText: 'Yes, Delete',
       cancelText: 'Cancel',
       type: 'danger'

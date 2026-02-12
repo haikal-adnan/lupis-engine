@@ -46,10 +46,17 @@ export const createScene = (data = {}, projectId = null) => {
       showRulers: data.settings?.showRulers ?? true
     },
 
-    layers: Array.isArray(data.layers) 
-      ? data.layers.map(l => createLayer(l))
-      : [createLayer({ _id: 'layer_root', scriptId: 'root', name: 'Root' })],
+    // --- Layers Logic: World vs UI ---
+    layersWorld: Array.isArray(data.layersWorld) 
+      ? data.layersWorld.map(l => createLayer(l))
+      : [createLayer({ _id: 'layer_world_root', scriptId: 'world_root', name: 'World Root' })],
 
+    layersUI: Array.isArray(data.layersUI) 
+      ? data.layersUI.map(l => createLayer(l))
+      : [createLayer({ _id: 'layer_ui_root', scriptId: 'ui_root', name: 'UI Root' })],
+
+    // --- Entities Logic ---
+    // createEntity sekarang akan otomatis menyertakan zIndex
     entities: Array.isArray(data.entities) 
       ? data.entities.map(e => createEntity(e)) 
       : []

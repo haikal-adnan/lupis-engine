@@ -103,7 +103,6 @@ export default class GameLoader {
                 showOthers: config.tilemapContext?.showOthers ?? true,
                 opacity: config.tilemapContext?.opacity ?? 0.5
             },
-            showUIBorder: game.world.settings.ui.showUIBorder
         };
     }
 

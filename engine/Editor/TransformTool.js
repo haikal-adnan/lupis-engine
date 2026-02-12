@@ -41,7 +41,10 @@ export default class TransformTool {
 
     _isInteractive(e) {
         if (e.active === false) return false;
-        if (e._editor && e._editor.locked === true) return false;
+        
+        // Check penguncian entitas (mendukung property isLocked dan _editor.locked)
+        const isLocked = e.isLocked || (e._editor && e._editor.locked === true);
+        if (isLocked) return false;
 
         const { activeTabId, tabs } = this.world._editors || {};
         const activeTab = tabs?.find(t => t.id === activeTabId);
@@ -62,13 +65,17 @@ export default class TransformTool {
     }
 
     _isEntityInUILayer(targetEntity) {
-        const uiLayers = this.world.layers.filter(l => l.scriptId === 'ui' || l.name === 'UI');
+        // Menggunakan arsitektur layer UI yang baru
+        const uiLayers = this.world.layersUI || [];
         
         const findInList = (list) => {
+            if (!list) return false;
             for (const e of list) {
-                if (e === targetEntity) return true;
-                if ((e._id || e.id) === (targetEntity._id || targetEntity.id)) return true;
+                if (e === targetEntity || (e.id || e._id) === (targetEntity.id || targetEntity._id)) {
+                    return true;
+                }
                 
+                // Pencarian rekursif jika entitas berada di dalam group/parent
                 if (e.children && e.children.length > 0) {
                     if (findInList(e.children)) return true;
                 }
@@ -80,6 +87,29 @@ export default class TransformTool {
             if (findInList(layer.entities)) return true;
         }
         return false;
+    }
+
+    // Helper baru untuk mencari entitas di world/ui split dengan dukungan hierarchy
+    _findEntityInWorld(id) {
+        const allLayers = [...(this.world.layersWorld || []), ...(this.world.layersUI || [])];
+        
+        const search = (list) => {
+            if (!list) return null;
+            for (const e of list) {
+                if ((e.id || e._id) === id) return e;
+                if (e.children) {
+                    const found = search(e.children);
+                    if (found) return found;
+                }
+            }
+            return null;
+        };
+
+        for (const layer of allLayers) {
+            const found = search(layer.entities);
+            if (found) return found;
+        }
+        return null;
     }
 
     toWorld(px, py) {
@@ -122,16 +152,9 @@ export default class TransformTool {
     _applyState(list) {
         const world = this.world;
         const affected = [];
-        const findEntity = (id) => {
-            for (const layer of world.layers) {
-                const found = layer.entities.find(e => (e._id || e.id) === id);
-                if (found) return found;
-            }
-            return null;
-        };
 
         list.forEach(s => {
-            const ent = findEntity(s._id);
+            const ent = this._findEntityInWorld(s._id);
             if (ent) {
                 ent.components = JSON.parse(JSON.stringify(s.components));
                 ent.active = s.active;
@@ -185,7 +208,6 @@ export default class TransformTool {
         const p = this.toWorld(px, py);
 
         if (handle.mode === 'rotate') {
-            // ... (Kode rotate tetap sama) ...
             this.draggingRotate = true;
             this.draggingResize = false;
             this.draggingMove = false;
@@ -208,14 +230,11 @@ export default class TransformTool {
             this.resizeEntityStarts = validEntities.map(e => {
                 const t = this._getTransform(e);
                 
-                // --- NORMALISASI DATA AWAL ---
-                // Pastikan kita menangkap Scale negatif (legacy) dan mengubahnya jadi Flip
                 let startScaleX = t.scaleX ?? 1;
                 let startScaleY = t.scaleY ?? 1;
                 let startFlipX = Boolean(t.flipX ?? false);
                 let startFlipY = Boolean(t.flipY ?? false);
 
-                // Jika scale negatif, ubah jadi positif dan toggle flip
                 if (startScaleX < 0) { startScaleX *= -1; startFlipX = !startFlipX; }
                 if (startScaleY < 0) { startScaleY *= -1; startFlipY = !startFlipY; }
 
@@ -224,9 +243,9 @@ export default class TransformTool {
                     x: t.x, y: t.y,
                     w: t.width, h: t.height,
                     r: t.rotation || 0,
-                    sx: startScaleX, // Simpan Scale yang sudah pasti POSITIF
-                    sy: startScaleY, // Simpan Scale yang sudah pasti POSITIF
-                    flipX: startFlipX, // Simpan state Flip awal yang sudah bersih
+                    sx: startScaleX,
+                    sy: startScaleY,
+                    flipX: startFlipX,
                     flipY: startFlipY
                 };
             });

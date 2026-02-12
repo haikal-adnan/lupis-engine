@@ -2,10 +2,12 @@ import { ref, computed } from 'vue'
 import { FolderPlus, Download, RefreshCw, Edit2, Trash2, Stamp } from 'lucide-vue-next'
 import { useAssetActions } from '@/stores/scene/assetActions'
 import { useSceneStore } from '@/stores/scene/useSceneStore'
+import { usePopAlert } from '@/composables/usePopAlert' // <--- Import ini
 
 export function useAssetMenu(selectedIdRef, triggerUploadCb) {
   const { createNewFolder, deleteAsset, deleteFolder } = useAssetActions()
   const sceneStore = useSceneStore()
+  const { showPop } = usePopAlert() // <--- Inisialisasi pop alert
   
   const menu = ref({ visible: false, x: 0, y: 0, item: null })
 
@@ -23,9 +25,51 @@ export function useAssetMenu(selectedIdRef, triggerUploadCb) {
     return scene.entities.find(e => e._id === sceneStore.selectedEntityIds[0])
   }
 
+  // --- LOGIKA BARU APPLY TEXTURE ---
   const applyTexture = (asset, entityId, componentName) => {
-    sceneStore.updateComponentProp(entityId, componentName, 'assetId', asset._id)
-    closeMenu()
+    closeMenu() // Tutup menu dulu agar responsif
+
+    const scene = sceneStore.activeScene
+    if (!scene) return
+
+    const entity = scene.entities.find(e => e._id === entityId)
+    if (!entity || !entity.components[componentName]) {
+        showPop({
+            title: 'Error',
+            message: 'Target component not found.',
+            type: 'error'
+        })
+        return
+    }
+
+    // 1. Cek Info: Apakah asset yang mau di-apply SAMA dengan yang sudah ada?
+    const currentAssetId = entity.components[componentName].assetId
+    if (currentAssetId === asset._id) {
+        showPop({
+            title: 'Info',
+            message: `Texture "${asset.name}" is already applied.`,
+            type: 'info'
+        })
+        return
+    }
+
+    // 2. Coba Update (Sukses / Gagal)
+    try {
+        sceneStore.updateComponentProp(entityId, componentName, 'assetId', asset._id)
+        
+        showPop({
+            title: 'Success',
+            message: `Applied "${asset.name}" to ${componentName}.`,
+            type: 'success'
+        })
+    } catch (error) {
+        console.error(error)
+        showPop({
+            title: 'Failed',
+            message: `Failed to apply texture "${asset.name}".`,
+            type: 'error'
+        })
+    }
   }
 
   const contextMenuItems = computed(() => {
@@ -41,13 +85,15 @@ export function useAssetMenu(selectedIdRef, triggerUploadCb) {
       const entity = getSelectedEntity()
 
       if (!isFolder && entity && entity.components) {
-        const isTexture = ['asset','texture', 'sprite', 'image', 'png', 'jpg'].includes(targetItem.type)
+        // Cek tipe file gambar (sesuaikan dengan tipe data aset kamu)
+        const isTexture = ['asset', 'texture', 'sprite', 'image', 'png', 'jpg'].includes(targetItem.type)
         
         if (isTexture) {
           if (entity.components.SpriteRenderer) {
             items.push({ 
               label: 'Apply to SpriteRenderer', 
               icon: Stamp, 
+              // Panggil applyTexture yang baru
               action: () => applyTexture(targetItem, entity._id, 'SpriteRenderer') 
             })
           }
@@ -56,6 +102,7 @@ export function useAssetMenu(selectedIdRef, triggerUploadCb) {
             items.push({ 
               label: 'Apply to Tilemap', 
               icon: Stamp, 
+              // Panggil applyTexture yang baru
               action: () => applyTexture(targetItem, entity._id, 'Tilemap') 
             })
           }

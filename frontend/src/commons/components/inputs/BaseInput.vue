@@ -29,7 +29,7 @@
 
       <input
         :id="id"
-        v-model="model"
+        v-model="localValue"
         :type="type"
         class="w-full h-full bg-transparent border-none outline-none text-sm text-foreground placeholder:text-muted-foreground/40
                focus:ring-0 px-2"
@@ -37,8 +37,8 @@
         :style="{
           paddingLeft: prefix ? '0px' : paddingX
         }"
-        @blur="$emit('blur', $event)"
-        @keydown.enter="$event.target.blur()"
+        @blur="handleBlur"
+        @keydown.enter="handleEnter"
       />
       
       <div 
@@ -52,29 +52,41 @@
 </template>
 
 <script setup>
-import { useId } from 'vue'
+import { useId, ref, watch } from 'vue'
 
-const { 
-  label, 
-  prefix, 
-  suffix,
-  placeholder = '', 
-  type = 'text',
-  radius = '0.375rem', 
-  height = '2rem',
-  paddingX = '0.75rem'
-} = defineProps({
+const props = defineProps({
   label: String,
   prefix: String,
   suffix: String,
-  placeholder: String,
-  type: String,
-  radius: String,
-  height: String,
-  paddingX: String
+  placeholder: { type: String, default: '' },
+  type: { type: String, default: 'text' },
+  radius: { type: String, default: '0.375rem' },
+  height: { type: String, default: '2rem' },
+  paddingX: { type: String, default: '0.75rem' }
 })
 
-const emit = defineEmits(['blur'])
+const emit = defineEmits(['blur', 'change'])
 const model = defineModel()
 const id = useId()
+
+const localValue = ref(model.value)
+
+watch(() => model.value, (newVal) => {
+  localValue.value = newVal
+})
+
+const commitValue = () => {
+  if (model.value !== localValue.value) {
+    model.value = localValue.value
+  }
+}
+
+function handleBlur(event) {
+  commitValue()
+  emit('blur', event)
+}
+
+function handleEnter(event) {
+  event.target.blur() 
+}
 </script>

@@ -97,7 +97,6 @@ import BaseButton from '@/commons/components/buttons/BaseButton.vue'
 
 const { selectedEntity, resetTransform, updatePivot, bindComponentProp, isLocked } = useInspectorLogic();
 
-// BINDINGS: Tambahkan argumen ke-3 yaitu precision (2 desimal)
 const x = bindComponentProp('Transform', 'x', 2);
 const y = bindComponentProp('Transform', 'y', 2);
 const rotation = bindComponentProp('Transform', 'rotation', 2);

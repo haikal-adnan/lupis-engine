@@ -2,14 +2,12 @@ import { useAssetStore } from '@/stores/useAssetStore';
 import { useFolderStore } from '@/stores/useFolderStore';
 import { createAsset } from '@/services/schema/assetSchema.js';
 import { createFolder } from '@/services/schema/folderSchema.js';
-// 1. Import usePopAlert
 import { usePopAlert } from '@/composables/usePopAlert';
 
 export function useAssetActions() {
   const assetStore = useAssetStore();
   const folderStore = useFolderStore();
   
-  // 2. Inisialisasi pop alert
   const { showPop } = usePopAlert();
 
   const createNewFolder = (name, parentId = null) => {
@@ -26,7 +24,6 @@ export function useAssetActions() {
 
     folderStore.createFolder(newFolder);
 
-    // [ALERT] Success Create
     showPop({
       title: 'Folder Created',
       message: `Folder "${folderName}" has been created.`,
@@ -39,15 +36,13 @@ export function useAssetActions() {
   const deleteFolder = (folderId) => {
     folderStore.deleteFolder(folderId);
     
-    // Hapus juga asset di dalamnya
     const assetsInFolder = assetStore.assets.filter(a => a.folderId === folderId);
     assetsInFolder.forEach(a => assetStore.removeAsset(a._id));
 
-    // [ALERT] Info Delete
     showPop({
       title: 'Folder Deleted',
       message: 'Folder and its contents have been removed.',
-      type: 'info' // Menggunakan 'info' karena ini aksi destruktif yang berhasil
+      type: 'info'
     });
   };
 
@@ -80,7 +75,6 @@ export function useAssetActions() {
     assetStore.addAsset(newAsset);
 
     try {
-      // Simulasi upload delay
       await new Promise(resolve => setTimeout(resolve, 800));
 
       assetStore.updateAsset(newAsset._id, { 
@@ -89,7 +83,6 @@ export function useAssetActions() {
 
       console.log(`[AssetActions] Upload success: ${newAsset.name}`);
 
-      // [ALERT] Success Upload
       showPop({
         title: 'Upload Complete',
         message: `Asset "${newAsset.name}" uploaded successfully.`,
@@ -100,7 +93,6 @@ export function useAssetActions() {
       console.error("Upload failed", error);
       assetStore.removeAsset(newAsset._id);
 
-      // [ALERT] Error Upload
       showPop({
         title: 'Upload Failed',
         message: `Failed to upload "${file.name}".`,
@@ -112,12 +104,9 @@ export function useAssetActions() {
   };
 
   const deleteAsset = (assetId) => {
-    // Kita bisa ambil nama asset dulu untuk pesan alert yang lebih jelas (opsional)
-    // const asset = assetStore.assets.find(a => a._id === assetId);
-    
+
     assetStore.removeAsset(assetId);
 
-    // [ALERT] Info Delete Asset
     showPop({
       title: 'Asset Deleted',
       message: 'The asset has been removed permanently.',

@@ -10,17 +10,21 @@ export class HitTester {
     }
 
     isLocked(e) {
-        return e._editor && e._editor.locked;
+        return e.isLocked || (e._editor && e._editor.locked);
     }
+
+    // --- COORDINATE UTILS ---
 
     _calculateAbsolutePosition(e, parentBounds) {
         const t = this.getTransform(e);
         if (!t) return { x: 0, y: 0 };
 
+        // Jika bukan UI, gunakan World Coordinates standar
         if (!e.components.UITransform) {
             return { x: t.x, y: t.y };
         }
 
+        // Jika UI, perlu parent bounds (screen/panel)
         if (!parentBounds) {
             const uiSettings = this.game.world.settings?.ui || { referenceWidth: 1920, referenceHeight: 1080 };
             parentBounds = { x: 0, y: 0, width: uiSettings.referenceWidth, height: uiSettings.referenceHeight };
@@ -55,11 +59,12 @@ export class HitTester {
         };
     }
 
+    // --- GEOMETRY UTILS ---
+
     getAABB(e) {
         const absPos = this._calculateAbsolutePosition(e, null); 
         
         const t = this.getTransform(e);
-        // [MODIFIED] Konversi Derajat ke Radian
         const r = (t.rotation || 0) * (Math.PI / 180);
         const sx = t.scaleX ?? 1;
         const sy = t.scaleY ?? 1;
@@ -84,7 +89,7 @@ export class HitTester {
 
         const absPos = this._calculateAbsolutePosition(e, parentBounds);
 
-        // [MODIFIED] Konversi Derajat ke Radian
+        // Transform logic (Rotation, Scale, Pivot)
         const r = (t.rotation || 0) * (Math.PI / 180);
         const sx = t.scaleX ?? 1;
         const sy = t.scaleY ?? 1;
@@ -115,7 +120,7 @@ export class HitTester {
         const maxY = Math.max(top, bottom);
 
         const scaleFactor = Math.abs(this.game.camera.scale || 1);
-        const buffer = 5 / scaleFactor;
+        const buffer = 5 / scaleFactor; // Hit tolerance
 
         return (
             unscaledMouseX >= minX - buffer &&
@@ -125,21 +130,37 @@ export class HitTester {
         );
     }
 
-    _hitTestRecursive(entities, wx, wy, layer, filter, parentBounds) {
-        for (let i = entities.length - 1; i >= 0; i--) {
-            const e = entities[i];
-            if (!e.visible || this.isLocked(e)) continue;
+    // --- MAIN HIT TEST LOGIC ---
 
+    _hitTestRecursive(entities, wx, wy, layer, filter, parentBounds) {
+        // Iterate backwards (Top to Bottom visually)
+        // Entities terakhir di array digambar paling depan, jadi di-cek duluan.
+        
+        // Sorting internal (Temporary) untuk memastikan hit test akurat sesuai Z-Index
+        // Idealnya array entities sudah sorted, tapi kita sort lagi untuk safety di hit test
+        const sortedEntities = [...entities].sort((a, b) => {
+             const zA = a.zIndex ?? 0;
+             const zB = b.zIndex ?? 0;
+             if (zA !== zB) return zA - zB;
+             return (a.orderIndex ?? 0) - (b.orderIndex ?? 0);
+        });
+
+        for (let i = sortedEntities.length - 1; i >= 0; i--) {
+            const e = sortedEntities[i];
+            
+            if (!e.visible || this.isLocked(e)) continue;
             if (filter && !filter(e, layer)) continue;
 
             const absPos = this._calculateAbsolutePosition(e, parentBounds);
             const myBoundsForChildren = this._calculateEntityBounds(e, absPos);
 
+            // Cek Children dulu (biasanya di atas parent)
             if (e.children && e.children.length > 0) {
                 const childHit = this._hitTestRecursive(e.children, wx, wy, layer, filter, myBoundsForChildren);
                 if (childHit) return childHit;
             }
 
+            // Cek diri sendiri
             if (e.type !== 'group') {
                 if (this.isPointInEntity(wx, wy, e, parentBounds)) {
                     return e;
@@ -159,11 +180,24 @@ export class HitTester {
             height: uiSettings.referenceHeight
         };
 
-        for (let li = world.layers.length - 1; li >= 0; li--) {
-            const layer = world.layers[li];
-            if (!layer.visible || layer.locked) continue;
+        // Combine Layers
+        const allLayers = [...(world.layersUI || []), ...(world.layersWorld || [])];
+        
+        // Sort Layers (UI diatas World, High Z diatas Low Z)
+        // Hit test dari DEPAN ke BELAKANG -> Sort Descending
+        allLayers.sort((a, b) => {
+             const zA = a.zIndex ?? 0;
+             const zB = b.zIndex ?? 0;
+             if (zA !== zB) return zB - zA; // Descending
+             return (b.orderIndex ?? 0) - (a.orderIndex ?? 0); // Descending
+        });
 
-            const isUILayer = layer.scriptId === 'ui' || layer.name === 'UI';
+        for (let li = 0; li < allLayers.length; li++) {
+            const layer = allLayers[li];
+            
+            if (layer.visible === false || layer.locked) continue;
+
+            const isUILayer = layer.scriptId === 'ui' || layer.name === 'UI' || (layer._id && layer._id.includes('ui'));
             const rootBounds = isUILayer ? uiRootBounds : null;
 
             const found = this._hitTestRecursive(layer.entities, wx, wy, layer, filter, rootBounds);
@@ -188,7 +222,6 @@ export class HitTester {
 
             const t = this.getTransform(e);
             if (t) {
-                // [MODIFIED] Konversi Derajat ke Radian
                 const r = (t.rotation || 0) * (Math.PI / 180);
                 const sx = t.scaleX ?? 1;
                 const sy = t.scaleY ?? 1;
@@ -225,10 +258,12 @@ export class HitTester {
         const uiSettings = world.settings?.ui || { referenceWidth: 1920, referenceHeight: 1080 };
         const uiRootBounds = { x: 0, y: 0, width: uiSettings.referenceWidth, height: uiSettings.referenceHeight };
 
-        for (const layer of world.layers) {
-            if (!layer.visible || layer.locked) continue;
+        const allLayers = [...(world.layersWorld || []), ...(world.layersUI || [])];
+
+        for (const layer of allLayers) {
+            if (layer.visible === false || layer.locked) continue;
             
-            const isUILayer = layer.scriptId === 'ui' || layer.name === 'UI';
+            const isUILayer = layer.scriptId === 'ui' || layer.name === 'UI' || (layer._id && layer._id.includes('ui'));
             const rootBounds = isUILayer ? uiRootBounds : null;
 
             this._checkMarqueeRecursive(layer.entities, box, list, layer, filter, rootBounds);

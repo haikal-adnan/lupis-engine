@@ -8,7 +8,7 @@
           class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-destructive hover:text-destructive-foreground text-destructive font-medium transition-colors"
         >
           <Trash2 class="w-3 h-3 mr-2" />
-          Remove Component
+          Remove Text Renderer
         </button>
       </div>
     </template>

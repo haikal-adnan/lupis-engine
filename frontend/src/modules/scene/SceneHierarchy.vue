@@ -9,7 +9,7 @@
 
     <div class="flex-1 min-h-0 relative w-full">
       <ScrollArea>
-        <div class="px-1 py-2">
+        <div class="px-1 pt-2 pb-32"> 
           <SceneTree 
             :data="filteredData" 
             :selected-ids="sceneStore.selectedEntityIds"

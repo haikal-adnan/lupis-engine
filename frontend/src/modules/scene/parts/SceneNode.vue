@@ -60,38 +60,36 @@
       />
 
       <span 
-        class="truncate py-1 pointer-events-none mr-2 flex-grow" 
+        class="truncate py-1 pointer-events-none mr-2 flex-grow flex items-center gap-2" 
         :class="{ 
             'font-bold': node.type === 'layer',
-            'opacity-50': !isVisible || isInactive // Nama pudar jika hidden/inactive
+            'opacity-50': !isVisible || isInactive 
         }"
       >
         {{ node.name }}
+        
+        <span 
+          v-if="node.zIndex !== undefined && node.zIndex !== null" 
+          class="text-[9px] bg-white/10 px-1 rounded text-muted-foreground font-mono min-w-[14px] text-center"
+          title="Z-Index Layer"
+        >
+          {{ node.zIndex }}
+        </span>
       </span>
 
       <div 
         class="flex items-center gap-1 opacity-0 group-hover/node:opacity-100 transition-opacity"
         :class="{ 'opacity-100': isLocked || !isVisible }"
       >
-        <div 
-            class="p-1 rounded hover:bg-white/20 cursor-pointer"
-            @click.stop="toggleLock"
-            title="Toggle Lock"
-        >
+        <div class="p-1 rounded hover:bg-white/20 cursor-pointer" @click.stop="toggleLock" title="Toggle Lock">
             <Lock v-if="isLocked" class="w-3 h-3 text-amber-500" />
             <Unlock v-else class="w-3 h-3 text-muted-foreground opacity-50 hover:opacity-100" />
         </div>
-
-        <div 
-            class="p-1 rounded hover:bg-white/20 cursor-pointer"
-            @click.stop="toggleVisibility"
-            title="Toggle Visibility"
-        >
+        <div class="p-1 rounded hover:bg-white/20 cursor-pointer" @click.stop="toggleVisibility" title="Toggle Visibility">
             <EyeOff v-if="!isVisible" class="w-3.5 h-3.5 text-muted-foreground" />
             <Eye v-else class="w-3.5 h-3.5 text-muted-foreground opacity-50 hover:opacity-100" />
         </div>
       </div>
-
     </div>
 
     <div
@@ -112,7 +110,7 @@
 
       <template v-if="hasChildren">
         <SceneNode
-          v-for="child in node.children"
+          v-for="child in sortedChildren"
           :key="child._id || child.id"
           :node="child"
           :depth="depth + 1"
@@ -129,20 +127,8 @@
 <script setup>
 import { ref, computed } from 'vue'
 import {
-  ChevronRight,
-  ChevronDown,
-  Layers,
-  Folder,
-  FolderOpen,
-  Cuboid,
-  Type,
-  Image,
-  Box,
-  Lock,
-  Unlock,
-  Eye,
-  EyeOff,
-  FileCode
+  ChevronRight, ChevronDown, Layers, Folder, FolderOpen, Cuboid,
+  Type, Image, Box, Lock, Unlock, Eye, EyeOff, FileCode
 } from 'lucide-vue-next'
 import { useNodeDragDrop } from '@/modules/scene/composables/useNodeDragDrop.js'
 import { useSceneStore } from '@/stores/scene/useSceneStore.js'
@@ -162,26 +148,40 @@ const sceneStore = useSceneStore()
 
 const isOpen = ref(true)
 
+// --- STABILIZED SORTING (NEW) ---
+// Memastikan anak-anak entity selalu diurutkan berdasarkan zIndex dan orderIndex yang sama dengan Engine
+const sortedChildren = computed(() => {
+  if (!props.node.children) return []
+  return [...props.node.children].sort((a, b) => {
+    const zA = a.zIndex ?? 0
+    const zB = b.zIndex ?? 0
+    if (zA !== zB) return zA - zB
+    
+    const oA = a.orderIndex ?? 0
+    const oB = b.orderIndex ?? 0
+    if (oA !== oB) return oA - oB
+
+    // Fallback stabil jika index sama
+    const idA = a._id || a.id || ""
+    const idB = b._id || b.id || ""
+    return idA.localeCompare(idB)
+  })
+})
+
 // Helper Props
 const indentation = computed(() => (props.depth * 16) + 12)
 const isSelected = computed(() => props.selectedIds.some(id => String(id) === String(props.node._id || props.node.id)))
-const hasChildren = computed(() => props.node.children && props.node.children.length > 0)
+const hasChildren = computed(() => sortedChildren.value.length > 0)
 
 // Status Computed
-// Mengambil data nested _editor untuk lock
 const isLocked = computed(() => props.node._editor?.locked || props.node.locked || false)
 const isVisible = computed(() => props.node.visible !== false)
 const isInactive = computed(() => props.node.active === false)
 
 // Drag Drop Logic
 const {
-  dragGhostRef,
-  isDragOver,
-  dragPosition,
-  onDragStart,
-  onDragOver,
-  onDragLeave,
-  onDrop
+  dragGhostRef, isDragOver, dragPosition,
+  onDragStart, onDragOver, onDragLeave, onDrop
 } = useNodeDragDrop(props, emit)
 
 // Icons Logic
@@ -198,31 +198,24 @@ const getIcon = computed(() => {
 })
 
 // --- ACTIONS ---
-
 const toggle = () => (isOpen.value = !isOpen.value)
 const handleSelect = () => emit('select', props.node._id || props.node.id)
 const handleContextMenu = (e) => emit('contextmenu', { event: e, node: props.node })
 
-// Toggle Visible
 const toggleVisibility = () => {
     const id = props.node._id || props.node.id;
     sceneStore.updateEntityProp(id, 'visible', !isVisible.value);
 }
 
-// Toggle Lock
 const toggleLock = () => {
     const id = props.node._id || props.node.id;
     const currentEditor = props.node._editor || {};
-    const newVal = !isLocked.value;
-
-    // Update Store (Nested Object)
+    
     sceneStore.updateEntityProp(id, '_editor', { 
         ...currentEditor, 
-        locked: newVal 
+        locked: !isLocked.value 
     });
 
-    // Notify Engine secara instan agar Gizmo hilang/muncul (tergantung implementasi transform tool Anda)
-    // Walaupun biasanya Lock hanya mematikan interaksi, memberi sinyal update selalu baik.
     const bridge = EngineBridge.engineInstance ? EngineBridge.engineInstance.bus : bus;
     bridge.emit('editor:entity:prop-updated', id);
 }
