@@ -12,17 +12,25 @@ export default class Entity {
         this.layerId = "layer_root"; 
         this.prefabId = null;
 
+        // NEW: Sorting Properties
+        this.zIndex = 0;
+        this.orderIndex = 0;
+
         this.parentId = null; 
         this.children = []; 
 
         this.components = {};
 
         this.isDirty = false;
+        
+        // Editor metadata
+        this._editor = {}; 
     }
 
     addComponent(name, data) {
         this.components[name] = data;
-        if (name === 'Transform') this.isDirty = true;
+        // Flag dirty jika transform berubah agar renderer update matriks
+        if (name === 'Transform' || name === 'UITransform') this.isDirty = true;
     }
 
     getComponent(name) {
@@ -30,11 +38,15 @@ export default class Entity {
     }
     
     addChild(entity) {
+        // Prevent circular or duplicate adding
         if (this.children.some(c => c.id === entity.id)) return;
         if (entity.id === this.id) return;
 
         entity.parentId = this.id;
         this.children.push(entity);
+        
+        // Note: Sorting children usually happens in the Renderer or SceneLoader
+        // based on zIndex/orderIndex, not immediately upon push here.
     }
 
     removeChild(childId) {

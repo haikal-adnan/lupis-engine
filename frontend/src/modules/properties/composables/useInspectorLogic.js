@@ -1,12 +1,12 @@
 import { computed, onMounted, onBeforeUnmount } from 'vue';
 import { useSceneStore } from '@/stores/scene/useSceneStore.js';
 import { useAssetStore } from '@/stores/useAssetStore';
-import { useScriptStore } from '@/stores/useScriptStore.js';
+import { usePopAlert } from '@/composables/usePopAlert';
 
 export function useInspectorLogic() {
   const sceneStore = useSceneStore();
   const assetStore = useAssetStore();
-  const scriptStore = useScriptStore();
+  const { showPop } = usePopAlert();
 
   const selectedEntity = computed(() => {
     const id = sceneStore.selectedEntityIds[0];
@@ -106,7 +106,28 @@ export function useInspectorLogic() {
 
   function addComponentToSelection(componentName) {
     if (!selectedEntity.value) return;
+
+    const hasComponent = selectedEntity.value.components && 
+                         selectedEntity.value.components[componentName];
+    
+    if (hasComponent) {
+      // 3. Ganti console.warn dengan showPop
+      showPop({
+        title: 'Component Exists',
+        message: `Entity already has component: ${componentName}`,
+        type: 'warning'
+      });
+      return;
+    }
+
     sceneStore.addComponent(selectedEntity.value._id, componentName);
+    
+    // Opsional: Tambahkan feedback sukses jika berhasil menambah
+    showPop({
+      title: 'Success',
+      message: `Added ${componentName} to ${selectedEntity.value.name || 'Entity'}`,
+      type: 'success'
+    });
   }
 
   function removeComponent(compName) {
@@ -199,14 +220,20 @@ export function useInspectorLogic() {
     };
     const currentList = [...scriptsData.value, newInstance];
     sceneStore.updateComponentProp(selectedEntity.value._id, 'ScriptController', 'data', currentList);
-  }
+  };
 
   function removeScript(index) {
     if (!selectedEntity.value) return;
     const currentList = [...scriptsData.value];
     currentList.splice(index, 1);
     sceneStore.updateComponentProp(selectedEntity.value._id, 'ScriptController', 'data', currentList);
-  }
+  };
+
+  function updateUISettingsBulk(updates) {
+    if (sceneStore.activeScene) {
+      sceneStore.updateUISettings(updates);
+    }
+  };
 
   const currentTextureUrl = computed(() => {
     if (!selectedEntity.value) return null;
@@ -214,6 +241,7 @@ export function useInspectorLogic() {
     if (!comp?.assetId) return null;
     return assetStore.getAssetById(comp.assetId)?.fileUrl || null;
   });
+
 
   return {
     selectedEntity,
@@ -234,6 +262,7 @@ export function useInspectorLogic() {
     updatePivot,
     addScript,
     removeScript,
-    resetTextRatio
+    resetTextRatio,
+    updateUISettingsBulk
   };
 }

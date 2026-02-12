@@ -12,6 +12,22 @@ export default class WorldRenderer {
         this.colliderColorTrigger = [1, 1, 0, 0.8];
     }
 
+    _sortItems(items) {
+        return items.sort((a, b) => {
+            const zA = a.zIndex ?? 0;
+            const zB = b.zIndex ?? 0;
+            if (zA !== zB) return zA - zB;
+            
+            const oA = a.orderIndex ?? 0;
+            const oB = b.orderIndex ?? 0;
+            if (oA !== oB) return oA - oB;
+
+            const idA = a.id || a._id || "";
+            const idB = b.id || b._id || "";
+            return idA.localeCompare(idB);
+        });
+    }
+
     render(world, proj, alpha = 1.0, isUIMode = false) {
         const { activeTabId, tabs, tilemapContext } = world._editors || {};
         const activeTab = tabs?.find(t => t.id === activeTabId);
@@ -44,45 +60,35 @@ export default class WorldRenderer {
         }
     }
 
-    _findEntityById(world, id) {
-        for (const layer of world.layers) {
-            for (const e of layer.entities) {
-                if (e.id === id) return e;
-            }
-        }
-        return null;
-    }
-
     _collectRenderables(world, activeTabId, isIsolationMode, isUIMode, tilemapContext, proj) {
-        for (let li = 0; li < world.layers.length; li++) {
-            const layer = world.layers[li];
+        const layers = [...(world.layersWorld || []), ...(world.layersUI || [])]; 
+        this._sortItems(layers);
+
+        for (let li = 0; li < layers.length; li++) {
+            const layer = layers[li];
             if (layer.visible === false) continue;
+            if (!layer.entities) continue;
 
-            const isUILayer = layer.scriptId === 'ui' || layer.name === 'UI';
-            if (isUILayer) continue;
+            const rootEntities = layer.entities.filter(e => !e.parentId);
+            this._sortItems(rootEntities);
 
-            for (const e of layer.entities) {
-                if (e.type === 'ui_entity') continue;
+            for (const e of rootEntities) {
+                if (e.type === 'ui' || e.type === 'ui_entity') continue;
 
                 let entityVisualOpacity = 1.0;
-
                 if (isIsolationMode && e.id !== activeTabId) {
                     if (tilemapContext && !tilemapContext.showOthers) continue;
                     if (tilemapContext) entityVisualOpacity = tilemapContext.opacity;
                 }
+                if (isUIMode) entityVisualOpacity = 0.3;
 
-                if (isUIMode && !isUILayer) entityVisualOpacity = 0.3;
-
-                if (!e.parentId) {
-                    this._processEntityRecursive(e, world, proj, entityVisualOpacity);
-                }
+                this._processEntityRecursive(e, world, proj, entityVisualOpacity);
             }
         }
     }
 
     _processEntityRecursive(e, world, proj, parentOpacity = 1.0) {
-        if (e.active === false) return;
-        if (e.visible === false) return;
+        if (e.active === false || e.visible === false) return;
 
         const comps = e.components;
         if (!comps) return;
@@ -93,141 +99,101 @@ export default class WorldRenderer {
             this._executeRenderQueue(proj);
             this.renderQueue.length = 0;
             this.tilemapRenderer.renderEntity(e, world, proj, currentOpacity);
-            return;
-        }
-
-        const t = comps.Transform;
-        if (!t) return;
-
-        const drawX = t.x;
-        const drawY = t.y;
-
-        // Ambil Flip dari Transform
-        const flipX = t.flipX || false;
-        const flipY = t.flipY || false;
-
-        const trans = {
-            x: drawX,
-            y: drawY,
-            width: t.width,
-            height: t.height,
-            rotation: (t.rotation || 0) * (Math.PI / 180),
-            scaleX: t.scaleX,
-            scaleY: t.scaleY,
-            pivotX: t.pivotX,
-            pivotY: t.pivotY
-        };
-
-        if (comps.SpriteRenderer) {
-            const s = comps.SpriteRenderer;
-            const a = (s.opacity ?? 1) * currentOpacity;
-
-            if (a > 0) {
-                const texture = world.assets.textures[s.assetId];
-                
-                // [UPDATED] Menggunakan 4 kolom data (flat properties)
-                const frame = {
-                    x: s.sourceX ?? 0,
-                    y: s.sourceY ?? 0,
-                    w: s.sourceWidth ?? 0,
-                    h: s.sourceHeight ?? 0
+        } else {
+            const t = comps.Transform;
+            if (t) {
+                const trans = {
+                    x: t.x, y: t.y, width: t.width, height: t.height,
+                    rotation: (t.rotation || 0) * (Math.PI / 180),
+                    scaleX: t.scaleX ?? 1, scaleY: t.scaleY ?? 1,
+                    pivotX: t.pivotX ?? 0.5, pivotY: t.pivotY ?? 0.5
                 };
+                const flipX = t.flipX || false;
+                const flipY = t.flipY || false;
 
-                this.renderQueue.push({
-                    type: "image",
-                    texture: texture,
-                    frame: frame,
-                    transformData: trans,
-                    options: { flipX: flipX, flipY: flipY, opacity: a }
-                });
-            }
-        }
-
-        if (comps.ShapeRenderer) {
-            const s = comps.ShapeRenderer;
-            const a = (s.opacity ?? 1) * currentOpacity;
-            if (a > 0) {
-                this.renderQueue.push({
-                    type: "shape",
-                    transformData: trans,
-                    shapeOptions: {
-                        type: s.type || "rectangle",
-                        color: HexToVec4(s.color || "#FFFFFF"),
-                        thickness: s.thickness || 1,
-                        x2: s.x2 ?? (drawX + t.width),
-                        y2: s.y2 ?? (drawY + t.height),
-                        opacity: a,
-                        flipX: flipX,
-                        flipY: flipY
+                if (comps.SpriteRenderer) {
+                    const s = comps.SpriteRenderer;
+                    const a = (s.opacity ?? 1) * currentOpacity;
+                    if (a > 0) {
+                        const texture = world.assets.textures[s.assetId];
+                        this.renderQueue.push({
+                            type: "image",
+                            texture: texture,
+                            frame: { x: s.sourceX ?? 0, y: s.sourceY ?? 0, w: s.sourceWidth ?? 0, h: s.sourceHeight ?? 0 },
+                            transformData: trans,
+                            options: { flipX, flipY, opacity: a }
+                        });
                     }
-                });
-            }
-        }
-
-        if (Config.ENGINE_MODE === 'editor' && comps.Collider && comps.Collider.enabled) {
-            const c = comps.Collider;
-            const pivotOffsetX = (t.width * t.scaleX) * (t.pivotX ?? 0.5);
-            const pivotOffsetY = (t.height * t.scaleY) * (t.pivotY ?? 0.5);
-
-            const colliderX = t.x - pivotOffsetX + c.offsetX;
-            const colliderY = t.y - pivotOffsetY + c.offsetY;
-            const colliderW = c.width * Math.abs(t.scaleX);
-            const colliderH = c.height * Math.abs(t.scaleY);
-
-            const debugTrans = {
-                ...trans,
-                x: colliderX,
-                y: colliderY,
-                width: colliderW,
-                height: colliderH,
-                rotation: 0,
-                pivotX: 0,
-                pivotY: 0,
-                scaleX: 1,
-                scaleY: 1
-            };
-
-            this.renderQueue.push({
-                type: "shape",
-                transformData: debugTrans,
-                shapeOptions: {
-                    type: "rectStroke",
-                    color: c.type === 'trigger' ? this.colliderColorTrigger : this.colliderColorSolid,
-                    thickness: 2,
-                    opacity: 1.0,
-                    flipX: false, 
-                    flipY: false
                 }
-            });
-        }
 
-        if (comps.TextRenderer) {
-            const tx = comps.TextRenderer;
-            const a = (tx.opacity ?? 1) * currentOpacity;
-            let font = world.assets.fonts[tx.assetId];
-            if (!font?.ready) font = world.assets.fonts["system_default"];
-            if (a > 0 && font) {
-                this.renderQueue.push({
-                    type: "text",
-                    transformData: trans,
-                    textOptions: {
-                        text: tx.value ?? "",
-                        fontSize: tx.fontSize || 24,
-                        color: HexToVec4(tx.color || "#FFFFFF"),
-                        font,
-                        opacity: a,
-                        flipX: flipX,
-                        flipY: flipY
+                if (comps.ShapeRenderer) {
+                    const s = comps.ShapeRenderer;
+                    const a = (s.opacity ?? 1) * currentOpacity;
+                    if (a > 0) {
+                        this.renderQueue.push({
+                            type: "shape",
+                            transformData: trans,
+                            shapeOptions: {
+                                type: s.type || "rectangle",
+                                color: HexToVec4(s.color || "#FFFFFF"),
+                                thickness: s.thickness || 1,
+                                x2: s.x2, y2: s.y2, opacity: a, flipX, flipY
+                            }
+                        });
                     }
-                });
+                }
+
+                if (comps.TextRenderer) {
+                    const tx = comps.TextRenderer;
+                    const a = (tx.opacity ?? 1) * currentOpacity;
+                    let font = world.assets.fonts[tx.assetId];
+                    if (!font?.ready) font = world.assets.fonts["system_default"];
+                    if (a > 0 && font) {
+                        this.renderQueue.push({
+                            type: "text",
+                            transformData: trans,
+                            textOptions: {
+                                text: tx.value ?? "",
+                                fontSize: tx.fontSize || 24,
+                                color: HexToVec4(tx.color || "#FFFFFF"),
+                                font, opacity: a, flipX, flipY
+                            }
+                        });
+                    }
+                }
             }
         }
 
         if (e.children && e.children.length > 0) {
-            for (const child of e.children) {
+            const sortedChildren = [...e.children];
+            this._sortItems(sortedChildren);
+            for (const child of sortedChildren) {
                 this._processEntityRecursive(child, world, proj, currentOpacity);
             }
         }
+    }
+
+    _findEntityById(world, id) {
+        const allLayers = [...(world.layersWorld || []), ...(world.layersUI || [])];
+        for (const layer of allLayers) {
+            if (!layer.entities) continue;
+            for (const e of layer.entities) {
+                if (e.id === id) return e;
+                const found = this._findInChildren(e, id);
+                if (found) return found;
+            }
+        }
+        return null;
+    }
+
+    _findInChildren(entity, id) {
+        if (!entity.children) return null;
+        for (const child of entity.children) {
+            if (child.id === id) return child;
+            const found = this._findInChildren(child, id);
+            if (found) return found;
+        }
+        return null;
     }
 
     _renderWorldBounds(world, proj) {
@@ -281,10 +247,8 @@ export default class WorldRenderer {
                 const t = item.transformData;
                 this.renderer.text.drawText(
                     font, text, t.x, t.y, t.width, t.height, 
-                    fontSize, color, proj, 
-                    t.rotation, t.scaleX, t.scaleY, 
-                    t.pivotX, t.pivotY, opacity, 
-                    flipX, flipY
+                    fontSize, color, proj, t.rotation, t.scaleX, t.scaleY, 
+                    t.pivotX, t.pivotY, opacity, flipX, flipY
                 );
             }
         }
@@ -295,18 +259,14 @@ export default class WorldRenderer {
         const shape = this.renderer.shape;
         const fx = opt.flipX || false;
         const fy = opt.flipY || false;
-
         if (opt.type === "rectangle") {
             shape.drawRect(t.x, t.y, t.width, t.height, opt.color, proj, t.rotation, t.scaleX, t.scaleY, t.pivotX, t.pivotY, opt.opacity, fx, fy);
-        }
-        else if (opt.type === "rectStroke") {
+        } else if (opt.type === "rectStroke") {
             shape.drawRectStroke(t.x, t.y, t.width, t.height, opt.color, opt.thickness, proj, t.rotation, t.scaleX, t.scaleY, t.pivotX, t.pivotY, opt.opacity, fx, fy);
-        }
-        else if (opt.type === "circle") {
+        } else if (opt.type === "circle") {
             const radius = (t.width / 2) * ((Math.abs(t.scaleX) + Math.abs(t.scaleY)) / 2);
             shape.drawCircle(t.x, t.y, radius, opt.color, 32, proj);
-        } 
-        else if (opt.type === "line") {
+        } else if (opt.type === "line") {
             shape.drawLine(t.x, t.y, opt.x2, opt.y2, opt.color, opt.thickness, proj);
         }
     }

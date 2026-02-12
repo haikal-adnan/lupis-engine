@@ -4,6 +4,10 @@ const LayerSchema = new mongoose.Schema({
   _id: { type: String, required: true }, 
   scriptId: { type: String, required: true },
   name: { type: String, required: true },
+  
+  zIndex: { type: Number, default: 0 }, 
+  orderIndex: { type: Number, default: 0 },
+  
   locked: { type: Boolean, default: false },
   visible: { type: Boolean, default: true }
 }, { _id: false });
@@ -16,21 +20,30 @@ const EditorStateSchema = new mongoose.Schema({
 const EntitySchema = new mongoose.Schema({
   _id: { type: String, required: true },
   scriptId: { type: String, required: true },
+  
   type: { 
     type: String, 
     enum: ['entity', 'group', 'ui'], 
     default: 'entity',
     required: true 
   },
+  
   name: { type: String, required: true },
   tag: { type: String, default: 'untagged' },
+  
+  zIndex: { type: Number, default: 0 }, 
+  orderIndex: { type: Number, default: 0 },
+
   prefabId: { type: String, ref: 'Prefab', default: null },
   isActive: { type: Boolean, default: true },
   isVisible: { type: Boolean, default: true },
   isLocked: {type: Boolean, default: false},
-  layerId: { type: String, default: 'layer_root' },
+  
+  layerId: { type: String, required: true }, 
   parentId: { type: String, default: null },
+  
   _editor: { type: EditorStateSchema, default: () => ({}) },
+  
   components: { type: mongoose.Schema.Types.Mixed, default: {} }
 }, { _id: false });
 
@@ -56,7 +69,7 @@ const SceneSchema = new mongoose.Schema({
     ui: {
       referenceWidth: { type: Number, default: 1920 },
       referenceHeight: { type: Number, default: 1080 },
-      scaleMode: { type: String, default: 'constant' }, // 'constant' | 'scale_with_screen'
+      scaleMode: { type: String, default: 'constant' },
       showUIBorder: { type: Boolean, default: true },
       active: { type: Boolean, default: true }
     },
@@ -73,7 +86,9 @@ const SceneSchema = new mongoose.Schema({
     showRulers: { type: Boolean, default: true }
   },
   
-  layers: [LayerSchema],
+  layersWorld: [LayerSchema],
+  layersUI: [LayerSchema],
+  
   entities: [EntitySchema]
 }, { 
   timestamps: true,

@@ -339,9 +339,33 @@ export default class TilemapTool {
     }
 
     _findEntity(activeId) {
-        for (const layer of (this.world.layers || [])) {
-            for (const e of (layer.entities || [])) {
+        // Gabungkan kedua jenis layer untuk pencarian
+        const allLayers = [...(this.world.layersWorld || []), ...(this.world.layersUI || [])];
+
+        for (const layer of allLayers) {
+            if (!layer.entities) continue;
+
+            for (const e of layer.entities) {
                 if (e.id === activeId) return e;
+
+                // Support Hierarchy: Cek ke dalam children jika entity ada di dalam group
+                if (e.children && e.children.length > 0) {
+                    const found = this._findInChildren(e, activeId);
+                    if (found) return found;
+                }
+            }
+        }
+        return null;
+    }
+
+    // [NEW] Helper Recursive untuk mencari entity di kedalaman hierarchy
+    _findInChildren(entity, id) {
+        for (const child of entity.children) {
+            if (child.id === id) return child;
+
+            if (child.children && child.children.length > 0) {
+                const found = this._findInChildren(child, id);
+                if (found) return found;
             }
         }
         return null;

@@ -4,6 +4,18 @@
     :icon="FileCode2" 
     v-if="hasComponent"
   >
+
+    <template #menu="{ close }">
+      <div class="p-1 min-w-[140px]">
+        <button 
+          @click="removeComponent('ScriptController'); close()" 
+          class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-destructive hover:text-destructive-foreground text-destructive font-medium transition-colors"
+        >
+          <Trash2 class="w-3.5 h-3.5 mr-2" /> Remove Script
+        </button>
+      </div>
+    </template>
+  
     <div class="flex items-end gap-1.5 mb-3">
       <div class="flex-1 min-w-0">
         <div class="mb-1 text-[10px] font-bold text-muted-foreground uppercase flex justify-between items-center">
@@ -178,7 +190,8 @@ const { showPop } = usePopAlert()
 
 const { 
   selectedEntity, scriptsData,       
-  removeScript, updateScriptInstance
+  removeScript, updateScriptInstance,
+  removeComponent
 } = useInspectorLogic()
 
 const hasComponent = computed(() => !!selectedEntity.value?.components?.ScriptController)

@@ -12,6 +12,13 @@ export class TransformOperator {
         return e.components && (e.components.UITransform || e.components.Transform);
     }
 
+    // [BARU] Helper untuk cek mode
+    _isTilemapMode() {
+        const { activeTabId, tabs } = this.world._editors || {};
+        const activeTab = tabs?.find(t => t.id === activeTabId);
+        return activeTab?.type === 'tilemap';
+    }
+
     getSnapSettings(isUIMode = false) {
         if (isUIMode) {
             return { shouldSnap: false, gridSize: 1 };
@@ -27,6 +34,9 @@ export class TransformOperator {
     }
 
     move(nowPos, startPos, startData, selectedList, isUIMode = false) {
+        // [BARU] Cegah move jika di tilemap mode
+        if (this._isTilemapMode()) return;
+
         if (!startData || startData.length === 0) return;
 
         const dx = nowPos.x - startPos.x;
@@ -70,6 +80,9 @@ export class TransformOperator {
     }
 
     rotate(nowPos, rotateCenter, rotateStartAngle, entityStartRotation, selectedList, isUIMode = false) {
+        // [BARU] Cegah rotate jika di tilemap mode
+        if (this._isTilemapMode()) return;
+
         if (!selectedList || selectedList.length === 0) return;
 
         const t = this._getTransform(selectedList[0]);
@@ -81,11 +94,8 @@ export class TransformOperator {
         // Selisih rotasi (Radian)
         let deltaAngle = currentAngle - rotateStartAngle;
 
-        // [FIX] Konversi entityStartRotation (Derajat) ke Radian untuk perhitungan
         const startRad = entityStartRotation * (Math.PI / 180);
         let newRad = startRad + deltaAngle;
-
-        // [FIX] Konversi hasil Radian kembali ke Derajat
         let newDeg = newRad * (180 / Math.PI);
 
         // Normalize 0-360
@@ -98,12 +108,14 @@ export class TransformOperator {
             newDeg = Math.round(newDeg / snapInterval) * snapInterval;
         }
 
-        // Simpan sebagai Derajat
         t.rotation = Math.round(newDeg);
         bus.emit("entity:modified", selectedList, true);
     }
 
     resize(nowPos, startPos, resizeType, startData, selectedList, isUIMode = false) {
+        // [BARU] Cegah resize jika di tilemap mode
+        if (this._isTilemapMode()) return;
+
         if (!startData || startData.length === 0) return;
 
         const dx = nowPos.x - startPos.x;
@@ -119,42 +131,33 @@ export class TransformOperator {
         if (!t) return;
 
         const rRad = item.r * (Math.PI / 180);
-
         const c = Math.cos(-rRad);
         const s = Math.sin(-rRad);
         
-        // Hitung delta local
         const localDx = dx * c - dy * s;
         const localDy = dx * s + dy * c;
 
-        // Scale awal (sudah dinormalisasi jadi positif di TransformTool)
         const safeScaleX = Math.abs(item.sx) < 0.001 ? 0.001 : Math.abs(item.sx);
         const safeScaleY = Math.abs(item.sy) < 0.001 ? 0.001 : Math.abs(item.sy);
 
-        // Adjust delta berdasarkan scale objek
-        // Kita tidak perlu cek sign negatif lagi karena safeScaleX pasti positif
         let dX_Adjusted = localDx / safeScaleX;
         let dY_Adjusted = localDy / safeScaleY;
 
         let dW = 0, dH = 0;
         let anchorX = null, anchorY = null;
 
-        // Mapping Handle ke perubahan Width/Height
-        // Note: Karena ScaleX positif, 'w' selalu di kiri geometri, 'e' selalu di kanan geometri
-        if (resizeType.includes('w')) { dW = -dX_Adjusted; anchorX = 1; } // Anchor di Kanan (1)
-        if (resizeType.includes('e')) { dW = dX_Adjusted;  anchorX = 0; } // Anchor di Kiri (0)
-        if (resizeType.includes('n')) { dH = -dY_Adjusted; anchorY = 1; } // Anchor di Bawah (1)
-        if (resizeType.includes('s')) { dH = dY_Adjusted;  anchorY = 0; } // Anchor di Atas (0)
+        if (resizeType.includes('w')) { dW = -dX_Adjusted; anchorX = 1; } 
+        if (resizeType.includes('e')) { dW = dX_Adjusted;  anchorX = 0; } 
+        if (resizeType.includes('n')) { dH = -dY_Adjusted; anchorY = 1; } 
+        if (resizeType.includes('s')) { dH = dY_Adjusted;  anchorY = 0; } 
 
-        // Raw Dimensions (Bisa negatif jika ditarik melewati pivot)
         let rawW = item.w + dW;
         let rawH = item.h + dH;
 
-        // --- SNAPPING ---
         if (shouldSnap) {
             if (resizeType.includes('w') || resizeType.includes('e')) {
                 rawW = Math.round(rawW / gridSize) * gridSize;
-                if (Math.abs(rawW) < gridSize) rawW = gridSize * (rawW < 0 ? -1 : 1); // Prevent 0 width
+                if (Math.abs(rawW) < gridSize) rawW = gridSize * (rawW < 0 ? -1 : 1); 
                 dW = rawW - item.w;
             }
             if (resizeType.includes('n') || resizeType.includes('s')) {
@@ -164,9 +167,7 @@ export class TransformOperator {
             }
         }
 
-        // --- ASPECT RATIO LOCK ---
         if (t.isRatioLocked && item.w !== 0 && item.h !== 0) {
-            // Kalkulasi ulang H berdasarkan W, atau sebaliknya
             if (resizeType.length === 2 || resizeType === 'e' || resizeType === 'w') {
                 rawH = (rawW / item.w) * item.h; 
                 dH = rawH - item.h;
@@ -177,29 +178,21 @@ export class TransformOperator {
             }
         }
 
-        // --- UPDATE TRANSFORM PROPERTIES ---
-
-        // 1. Logic Flip Otomatis (Figma Style)
-        // Jika rawW negatif (melewati titik 0), balik status flip dari status AWAL.
-        // item.flipX ?? false mencegah error undefined
         const startFlipX = item.flipX ?? false;
         const startFlipY = item.flipY ?? false;
 
         t.flipX = (rawW < 0) ? !startFlipX : startFlipX;
         t.flipY = (rawH < 0) ? !startFlipY : startFlipY;
 
-        // 2. Set Width/Height (Harus Positif)
         const newW = Math.max(1, Math.round(Math.abs(rawW)));
         const newH = Math.max(1, Math.round(Math.abs(rawH)));
 
         t.width = newW;
         t.height = newH;
         
-        // 3. Set Scale (Selalu Positif, karena arah dihandle oleh flipX/Y)
         t.scaleX = safeScaleX;
         t.scaleY = safeScaleY;
 
-        // --- TILEMAP UPDATE ---
         if (e.components.Tilemap) {
             const tileSize = e.components.Tilemap.tileSize || 32;
             const newCols = Math.round(newW / tileSize);
@@ -207,11 +200,6 @@ export class TransformOperator {
             bus.emit("editor:tilemap:resize", { id: e.id, width: newCols, height: newRows });
         }
 
-        // --- UPDATE POSISI (Pivot Compensation) ---
-        // Kita menggunakan dW/dH "mentah" (yang bisa negatif) untuk menggeser posisi.
-        // Ini kuncinya: meskipun width jadi positif, dW yang negatif akan menggeser 
-        // posisi X ke kiri, seolah-olah objek tumbuh ke kiri (atau kanan tergantung anchor).
-        
         const dW_Visual = dW * safeScaleX;
         const dH_Visual = dH * safeScaleY;
 

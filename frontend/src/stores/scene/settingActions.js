@@ -1,11 +1,9 @@
-// src/stores/settingActions.js
+// src/stores/scene/settingActions.js
 
 export const useSettingActions = (activeScene) => {
   
-  // Helper internal untuk memastikan scene aktif dan settings ada
   const _getSettings = () => activeScene.value?.settings;
 
-  // --- Grid Actions ---
   const toggleGrid = () => {
     const s = _getSettings();
     if (s) s.grid.visible = !s.grid.visible;
@@ -34,7 +32,6 @@ export const useSettingActions = (activeScene) => {
     if (s) s.grid.opacity = opacity;
   };
 
-  // --- World & Engine Actions ---
   const setBackgroundColor = (color) => {
     const s = _getSettings();
     if (s) s.backgroundColor = color;
@@ -45,8 +42,6 @@ export const useSettingActions = (activeScene) => {
     if (s) s.tickRate = rate;
   };
 
-  // --- World Bounds ---
-  // Menerima partial updates, misal: { width: 4000 } atau { x: -100, y: -100 }
   const updateWorldBounds = (updates) => {
     const s = _getSettings();
     if (s && s.worldBounds) {
@@ -54,7 +49,8 @@ export const useSettingActions = (activeScene) => {
     }
   };
 
-  // --- UI System Settings (BARU) ---
+  // --- UI Settings ---
+  
   const updateUISettings = (updates) => {
     const s = _getSettings();
     if (s && s.ui) {
@@ -62,7 +58,14 @@ export const useSettingActions = (activeScene) => {
     }
   };
 
-  // --- Editor Visuals ---
+  // [NEW] Toggle UI Border Action
+  const toggleUIBorder = () => {
+    const s = _getSettings();
+    if (s && s.ui) {
+        s.ui.showUIBorder = !s.ui.showUIBorder;
+    }
+  };
+
   const toggleRulers = () => {
     const s = _getSettings();
     if (s) s.showRulers = !s.showRulers;
@@ -77,7 +80,8 @@ export const useSettingActions = (activeScene) => {
     setBackgroundColor,
     setTickRate,
     updateWorldBounds,
-    updateUISettings, // <--- Pastikan ini di-export
+    updateUISettings,
+    toggleUIBorder, // Exported
     toggleRulers
   };
-};
+}

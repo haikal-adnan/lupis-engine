@@ -72,12 +72,22 @@
             <li
               v-for="option in options"
               :key="option.value"
-              @click="select(option)"
-              class="relative flex items-center w-full px-3 py-1.5 text-sm cursor-pointer select-none outline-none transition-colors group
-                     hover:bg-accent hover:text-accent-foreground data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground"
+              @click="!option.disabled && select(option)"
+              class="relative flex items-center w-full px-3 py-1.5 text-sm select-none outline-none transition-colors group"
+              :class="[
+                option.disabled 
+                  ? 'opacity-40 cursor-not-allowed bg-muted/20' 
+                  : 'cursor-pointer hover:bg-accent hover:text-accent-foreground',
+                model === option.value ? 'bg-accent text-accent-foreground' : ''
+              ]"
               :data-selected="model === option.value"
             >
-              <span class="truncate pr-8 flex-1 block text-left">{{ option.label }}</span>
+              <span 
+                class="truncate pr-8 flex-1 block text-left"
+                :class="{ 'italic text-muted-foreground/60': option.disabled }"
+              >
+                {{ option.label }}
+              </span>
               
               <span v-if="model === option.value" class="absolute right-2 flex items-center justify-center h-full text-primary">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -86,7 +96,7 @@
               </span>
 
               <button 
-                v-if="editable && option.value !== 'untagged'"
+                v-if="editable && option.value !== 'untagged' && !option.disabled"
                 @click.stop="triggerDelete(option)"
                 class="absolute right-2 hidden group-hover:flex items-center justify-center h-6 w-6 rounded-sm hover:bg-destructive hover:text-destructive-foreground text-muted-foreground transition-colors"
                 title="Delete Tag"
@@ -144,6 +154,7 @@ function close() {
 }
 
 function select(option) {
+  if (option.disabled) return
   model.value = option.value
   close()
 }

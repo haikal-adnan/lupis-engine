@@ -11,10 +11,15 @@ export const createEntity = (data = {}) => {
     }
   }
 
-  // 2. Pastikan Transform Ada
-  if (!cleanComponents.UITransform) {
-      // Jika Transform sudah ada (dari langkah 1), JANGAN ditimpa/dibuat ulang.
-      // Cukup gunakan yang sudah ada. Jika belum ada, baru buat default.
+  // 2. Pastikan Transform/UITransform Ada
+  // Cek apakah ini Entity UI (punya UITransform) atau Entity World (butuh Transform)
+  if (data.type === 'ui' || cleanComponents.UITransform) {
+      // Logic khusus UI jika diperlukan validasi tambahan
+      if (!cleanComponents.UITransform) {
+          cleanComponents.UITransform = createUITransform({});
+      }
+  } else {
+      // Logic untuk Entity World
       if (!cleanComponents.Transform) {
           let defaultWidth = 100;
           let defaultHeight = 100;
@@ -30,18 +35,11 @@ export const createEntity = (data = {}) => {
             defaultHeight = 100;
           }
 
-          // Buat baru hanya jika tidak ada
+          // Buat Transform baru
           cleanComponents.Transform = createTransform({}, { 
             width: defaultWidth, 
             height: defaultHeight 
           });
-      }
-      // Jika cleanComponents.Transform SUDAH ADA, biarkan saja.
-      // createComponent('Transform', val) di langkah 1 sudah mengurus flipX, flipY, dll.
-  } else {
-      // Validasi UITransform jika perlu (biasanya sudah valid dari langkah 1)
-      if (!cleanComponents.UITransform.anchorX) {
-          cleanComponents.UITransform = createUITransform(cleanComponents.UITransform);
       }
   }
 
@@ -50,16 +48,27 @@ export const createEntity = (data = {}) => {
   return {
     _id: data._id || `${GenerateUUID()}`,
     scriptId: data.scriptId || `${type}_${GenerateUUID()}`,
+    
     name: data.name || "New Entity",
     type: type,
     tag: data.tag || "untagged",
+    
+    zIndex: Number(data.zIndex ?? 0), 
+    orderIndex: Number(data.orderIndex ?? 0),
+    
     parentId: data.parentId || null,
     layerId: data.layerId || "layer_root",
     prefabId: data.prefabId || null,
+    
     isActive: data.isActive ?? true,
     isVisible: data.isVisible ?? true,
     isLocked: data.isLocked ?? false,
-    _editor: { locked: data._editor?.locked ?? false, expanded: data._editor?.expanded ?? false },
+    
+    _editor: { 
+        locked: data._editor?.locked ?? false, 
+        expanded: data._editor?.expanded ?? false 
+    },
+    
     components: cleanComponents,
     _isDirty: false 
   };

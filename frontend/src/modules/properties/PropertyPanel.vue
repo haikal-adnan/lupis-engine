@@ -2,7 +2,7 @@
   <div class="h-full flex flex-col bg-background text-foreground">
     
     <ScrollArea v-if="hasSelection" class="flex-1">
-      <div class="p-2 space-y-1">
+      <div class="p-2 space-y-1 pb-20"> 
         
         <EditorObject />
 
@@ -15,42 +15,44 @@
         <EditorTilemap v-if="selectedEntity.components.Tilemap" />
 
         <EditorPhysics v-if="selectedEntity.components.Physics" />
-        
         <EditorCollider v-if="selectedEntity.components.Collider" />
-        
         <EditorScript v-if="selectedEntity.components.ScriptController" />
 
-        <div class="pt-4 px-1 pb-2">
-           <div class="relative">
-             <BaseSelect 
-               placeholder="Add Component..."
-               :options="availableComponentOptions"
-               :model-value="null" 
-               @update:model-value="handleAddComponent"
-             />
-           </div>
+        <div class="pt-6 px-1">
+            <div class="relative" ref="addComponentWrapper">
+              <div class="text-xs font-semibold text-muted-foreground mb-2 px-1">Actions</div>
+              <BaseSelect 
+                placeholder="Add Component..."
+                :options="availableComponentOptions"
+                :model-value="null" 
+                @update:model-value="handleAddComponent"
+                @click="scrollToBottom"
+              />
+            </div>
         </div>
+
+        <div class="h-20" aria-hidden="true"></div>
       </div>
     </ScrollArea>
 
     <ScrollArea v-else class="flex-1">
-       <div class="p-2 space-y-1">
-          <EditorScene />
-          <EditorUI />
-          <EditorGrid />
-       </div>
+        <div class="p-2 space-y-1 pb-10">
+            <EditorScene />
+            <EditorUI />
+            <EditorGrid />
+        </div>
     </ScrollArea>
 
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { computed, ref, nextTick } from 'vue';
 import { useInspectorLogic } from "@/modules/properties/composables/useInspectorLogic.js";
 
+// Import Components
 import ScrollArea from '@/commons/components/overlay/ScrollArea.vue'
 import BaseSelect from "@/commons/components/inputs/BaseSelect.vue"; 
-
 import EditorObject from '@/modules/properties/components/EditorObject.vue'
 import EditorTransform from '@/modules/properties/components/EditorTransform.vue'
 import EditorUITransform from '@/modules/properties/components/ui/EditorUITransform.vue'
@@ -61,22 +63,30 @@ import EditorTilemap from '@/modules/properties/components/EditorTilemap.vue'
 import EditorScript from '@/modules/properties/components/EditorScript.vue'
 import EditorCollider from '@/modules/properties/components/EditorCollider.vue'
 import EditorPhysics from '@/modules/properties/components/EditorPhysics.vue'
-
-
 import EditorScene from '@/modules/properties/components/settings/EditorScene.vue'
 import EditorGrid from '@/modules/properties/components/settings/EditorGrid.vue'
 import EditorUI from '@/modules/properties/components/settings/EditorUI.vue'
 
 const { hasSelection, selectedEntity, addComponentToSelection } = useInspectorLogic();
 
+const addComponentWrapper = ref(null);
 const RENDERER_GROUP = ['SpriteRenderer', 'ShapeRenderer', 'TextRenderer', 'Tilemap'];
+
+const scrollToBottom = async () => {
+  await nextTick();
+  if (addComponentWrapper.value) {
+    addComponentWrapper.value.scrollIntoView({ 
+      behavior: 'smooth', 
+      block: 'center' 
+    });
+  }
+};
 
 const availableComponentOptions = computed(() => {
   if (!selectedEntity.value || !selectedEntity.value.components) return [];
   
   const comps = selectedEntity.value.components;
   const hasRenderer = RENDERER_GROUP.some(r => !!comps[r]);
-  
   const isUIEntity = !!comps.UITransform;
 
   let allOptions = [
@@ -84,11 +94,8 @@ const availableComponentOptions = computed(() => {
     { label: 'Shape Renderer', value: 'ShapeRenderer', isRenderer: true },  
     { label: 'Text Renderer', value: 'TextRenderer', isRenderer: true },    
     { label: 'Tilemap', value: 'Tilemap', isRenderer: true },
-    
-    // Opsi Collider Baru
     { label: 'Physics Body', value: 'Physics', isRenderer: false },
     { label: 'Collider', value: 'Collider', isRenderer: false },
-    
     { label: 'Script Controller', value: 'ScriptController', isRenderer: false },
   ];
 
@@ -100,10 +107,12 @@ const availableComponentOptions = computed(() => {
     let disabled = false;
     let label = opt.label;
     
+    // Jika komponen sudah ada
     if (comps[opt.value]) { 
         disabled = true; 
         label += ' (Added)'; 
     } 
+    // Jika merupakan tipe renderer dan sudah ada renderer lain yang aktif
     else if (opt.isRenderer && hasRenderer) { 
         disabled = true; 
         label += ' (Conflict)'; 
@@ -114,6 +123,9 @@ const availableComponentOptions = computed(() => {
 });
 
 const handleAddComponent = (value) => {
-  if (value) addComponentToSelection(value);
+  if (value) {
+    addComponentToSelection(value);
+    setTimeout(scrollToBottom, 100);
+  }
 };
 </script>

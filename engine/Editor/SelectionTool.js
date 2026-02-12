@@ -14,7 +14,7 @@ export default class SelectionTool {
 
         this.active = Config.EDITOR.SELECTION;
 
-        this.hitTester = new HitTester(game, canvas);
+        this.hitTester = new HitTester(game);
         this.drawer = new SelectionRenderer(game);
         this.panner = new AutoPanner(game, canvas);
 
@@ -48,6 +48,11 @@ export default class SelectionTool {
         world.selectionRenderer = (image, shape, text, proj) => {
             if (!this.active) return;
 
+            // [LOGIC TAMBAHAN] Jangan render gizmo seleksi jika di mode tilemap
+            const { activeTabId, tabs } = this.world._editors || {};
+            const activeTab = tabs?.find(t => t.id === activeTabId);
+            if (activeTab?.type === 'tilemap') return;
+
             const marqueeBox = this.marqueeActive ? this.getMarqueeWorld() : null;
             
             if(this.marqueeActive && this.hoverMarqueeList.length > 0) {
@@ -70,6 +75,7 @@ export default class SelectionTool {
         };
     }
 
+    // ... (Metode clear, _isClickable, setSelection, dll TETAP SAMA) ...
     clear() {
         this.setSelection([], "internal");
         bus.emit("entity:deselected");
@@ -79,21 +85,21 @@ export default class SelectionTool {
         if (!e) return false;
         if (e.active === false) return false;
         if (e.visible === false) return false;
+        if (e.isLocked || (e._editor && e._editor.locked)) return false;
         return true;
     }
 
     setSelection(newList, source = "internal") {
         this.selectedList = newList;
-        
         if (this.transform) {
             this.transform.computeHandles();
         }
-
         if (source === "internal") {
             bus.emit("entity:selected", this.selectedList);
         }
     }
-
+    
+    // ... (Helper methods lain tetap sama) ...
     toWorld(px, py) {
         const c = this.game.camera;
         const s = c.scale || 1;
@@ -112,7 +118,8 @@ export default class SelectionTool {
         const y2 = Math.max(this.marqueeStart.y, this.marqueeEnd.y);
         return { x: x1, y: y1, w: x2 - x1, h: y2 - y1 };
     }
-
+    
+    // ... (destroy, attachTransform, syncSelectionFromBus, dll TETAP SAMA) ...
     destroy() {
         bus.off("entity:selected", this.onExternalSelect);
         bus.off("ui:select-by-id", this.onUISelect);
@@ -122,30 +129,28 @@ export default class SelectionTool {
     attachTransform(t) {
         this.transform = t;
     }
-
+    
     syncSelectionFromBus(externalList) {
         if (!externalList) externalList = [];
         if (externalList === this.selectedList) return;
-        
         this.selectedList = externalList;
         if (this.transform) this.transform.computeHandles();
     }
 
+    // ... (handleUISelect, consolidateSelection, isInsideGroup, _updateSelectionFilter TETAP SAMA) ...
     handleUISelect(ids) {
+        // ... (kode lama) ...
         if (!ids || ids.length === 0) {
             this.setSelection([], "ui");
             bus.emit("entity:deselected");
             return;
         }
-
         const idsToFind = Array.isArray(ids) ? ids : [ids];
         const realEntities = [];
-
         const findRecursive = (targetId, entities) => {
             for (const e of entities) {
                 const eId = String(e._id || e.id);
                 if (eId === String(targetId)) return e;
-                
                 if (e.children && e.children.length > 0) {
                     const found = findRecursive(targetId, e.children);
                     if (found) return found;
@@ -153,10 +158,10 @@ export default class SelectionTool {
             }
             return null;
         };
-
+        const allLayers = [...(this.world.layersWorld || []), ...(this.world.layersUI || [])];
         for (const id of idsToFind) {
             let found = null;
-            for (const layer of this.world.layers) {
+            for (const layer of allLayers) {
                 if (layer.entities) {
                     found = findRecursive(id, layer.entities);
                     if (found) break;
@@ -164,30 +169,26 @@ export default class SelectionTool {
             }
             if (found) realEntities.push(found);
         }
-        
         this.setSelection(realEntities, "internal");
     }
 
     consolidateSelection(candidates) {
+        // ... (kode lama - tidak berubah) ...
         if (!candidates || candidates.length <= 1) return candidates;
-
         const finalSet = new Set(candidates);
         let changed = true;
         let safeCounter = 0;
-
+        const allLayers = [...(this.world.layersWorld || []), ...(this.world.layersUI || [])];
         while (changed && safeCounter < 10) {
             changed = false;
             safeCounter++;
-
             const parentMap = new Map();
-
             for (const e of finalSet) {
                 if (e.parentId) {
                     if (!parentMap.has(e.parentId)) parentMap.set(e.parentId, []);
                     parentMap.get(e.parentId).push(e);
                 }
             }
-
             for (const [parentId, childrenInSelection] of parentMap.entries()) {
                 let parentEntity = null;
                 const findRecursive = (id, list) => {
@@ -200,14 +201,12 @@ export default class SelectionTool {
                     }
                     return null;
                 };
-
-                for (const l of this.world.layers) {
+                for (const l of allLayers) {
                     if (l.entities) {
                         parentEntity = findRecursive(parentId, l.entities);
                         if (parentEntity) break;
                     }
                 }
-
                 if (parentEntity && parentEntity.children) {
                     if (childrenInSelection.length === parentEntity.children.length) {
                         childrenInSelection.forEach(child => finalSet.delete(child));
@@ -217,16 +216,13 @@ export default class SelectionTool {
                 }
             }
         }
-
         return Array.from(finalSet);
     }
 
     isInsideGroup(wx, wy) {
         if (this.selectedList.length <= 1) return false;
-        
         const validMembers = this.selectedList.filter(e => this._isClickable(e));
         if (validMembers.length <= 1) return false;
-
         const box = this.transform ? this.transform.computeGroupBounds() : null;
         if (!box) return false;
         return wx >= box.x && wx <= box.x + box.w && wy >= box.y && wy <= box.y + box.h;
@@ -235,23 +231,42 @@ export default class SelectionTool {
     _updateSelectionFilter() {
         const { activeTabId, tabs } = this.world._editors || {};
         const activeTab = tabs?.find(t => t.id === activeTabId);
+        
         const isUIMode = activeTab?.type === 'ui';
+        const isSceneMode = activeTabId === 'scene' || !activeTabId;
 
         if (!this.game.selection) this.game.selection = {};
 
         this.game.selection.filter = (entity, layer) => {
-            const isUILayer = layer.scriptId === 'ui' || layer.name === 'UI';
-            
+            const isUILayer = layer.scriptId === 'ui' || layer.name === 'UI' || (layer._id && layer._id.includes('ui'));
             if (isUIMode) {
-                return isUILayer;
-            } else {
-                return true; 
+                return isUILayer; 
+            } else if (isSceneMode) {
+                return !isUILayer; 
             }
+            return true; 
         };
     }
 
     update() {
         if (!this.active) return;
+
+        // [BARU] Pengecekan Tab Tilemap
+        const { activeTabId, tabs } = this.world._editors || {};
+        const activeTab = tabs?.find(t => t.id === activeTabId);
+        
+        // Jika sedang di tab Tilemap (Isolation Mode)
+        if (activeTab && activeTab.type === 'tilemap') {
+            // Jika masih ada sisa seleksi dari tab sebelumnya, bersihkan
+            if (this.selectedList.length > 0) {
+                this.clear();
+            }
+            // Pastikan cursor tidak stuck di 'move' atau 'pointer'
+            this.canvas.style.cursor = "default";
+            
+            // Hentikan proses update agar tidak bisa select/marquee
+            return; 
+        }
 
         this._updateSelectionFilter();
 
@@ -266,6 +281,7 @@ export default class SelectionTool {
 
         this.updateHover(px, py, w);
 
+        // ... (Sisa logika update original TETAP SAMA) ...
         if (p.down && !this.isPointerDown) {
             this.pointerDownTime = performance.now();
             this.isLongPress = false;
@@ -287,7 +303,6 @@ export default class SelectionTool {
                     if (this.transform) this.transform.beginMove(px, py, false);
                 } else {
                     const hit = this.hitTester.hit(this.world, w.x, w.y, px, py);
-                    
                     if (hit && this._isClickable(hit) && this.transform) {
                         if (!this.selectedList.includes(hit)) {
                             this.setSelection([hit], "internal");
@@ -317,6 +332,7 @@ export default class SelectionTool {
         this.panner.update();
     }
 
+    // ... (updateHover, pointerDown, pointerUp TETAP SAMA) ...
     updateHover(px, py, w) {
         this.hoverHandle = null;
         if (this.isPointerDown) return;

@@ -10,16 +10,10 @@ export const useEditorStore = defineStore('editor', {
     
     activeTool: 'select', 
     tileSelection: null,
-    canvas: {
-      zoom: 1,
-    },
+    canvas: { zoom: 1 },
 
-    tilemapContext: {
-      showOthers: true,  
-      opacity: 0.3  
-    },
+    tilemapContext: { showOthers: true, opacity: 0.3 },
 
-    showUIBorder: true,
     isResizeModalOpen: false, 
     isPlayMode: false,
     isPaused: false,
@@ -41,7 +35,7 @@ export const useEditorStore = defineStore('editor', {
     activeTab: (state) => {
         return state.tabs.find(t => t.id === state.activeTabId) || state.tabs[0];
     },
-    currentBottomTab: (state) => state.activeBottomTabId
+    currentBottomTab: (state) => state.activeBottomTabId,
   },
 
   actions: {
@@ -64,10 +58,6 @@ export const useEditorStore = defineStore('editor', {
     setActiveBottomTab(id) {
       this.activeBottomTabId = id;
       this.isBottomBarOpen = true; 
-    },
-
-    toggleUIBorder() {
-        this.showUIBorder = !this.showUIBorder;
     },
 
     toggleBottomBar() {
