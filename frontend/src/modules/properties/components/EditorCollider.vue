@@ -1,18 +1,42 @@
 <template>
   <PropertySection title="Collider" :icon="Cuboid" v-if="hasComponent">
     
+    <template #header-extra>
+      <div 
+        v-if="prefabId"
+        class="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border select-none shrink-0"
+        :class="isOverridden 
+          ? 'bg-amber-500/10 text-amber-500 border-amber-500/30' 
+          : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30'"
+      >
+        {{ isOverridden ? 'Override' : 'Sync' }}
+      </div>
+    </template>
+
     <template #menu="{ close }">
-      <div class="p-1 space-y-0.5 min-w-[140px]">
-        <button 
-          @click="syncSizeToTransform(); close()" 
-          class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-accent hover:text-accent-foreground transition-colors"
-        >
+      <div class="p-1 space-y-0.5 min-w-[160px]">
+        
+        <template v-if="prefabId">
+          <button 
+            @click="syncComponent('Collider'); close()" 
+            :disabled="!isOverridden"
+            class="menu-item"
+          >
+            <RefreshCw class="w-3.5 h-3.5 mr-2 opacity-70" /> 
+            Sync Component
+          </button>
+          <div class="h-px bg-border my-1"></div>
+        </template>
+
+        <button @click="syncSizeToTransform(); close()" class="menu-item">
           <Maximize class="w-3.5 h-3.5 mr-2 opacity-70" /> Fit to Transform
         </button>
+
         <div class="h-px bg-border my-1"></div>
+
         <button 
           @click="removeComponent('Collider'); close()" 
-          class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-destructive hover:text-destructive-foreground text-destructive font-medium transition-colors"
+          class="menu-item text-destructive hover:bg-destructive hover:text-destructive-foreground font-medium"
         >
           <Trash2 class="w-3.5 h-3.5 mr-2" /> Remove Collider
         </button>
@@ -28,7 +52,7 @@
           ghost
         >
           <span :class="enabled ? 'text-foreground font-medium' : 'text-muted-foreground'">
-            {{ enabled ? 'Enable' : 'Disable' }}
+            {{ enabled ? 'Enabled' : 'Disabled' }}
           </span>
         </BaseButton>
       </PropertyRow>
@@ -62,7 +86,7 @@
 
 <script setup>
 import { computed } from 'vue'
-import { Cuboid, Trash2, Maximize } from 'lucide-vue-next'
+import { Cuboid, Trash2, Maximize, RefreshCw } from 'lucide-vue-next'
 import { useInspectorLogic } from "@/modules/properties/composables/useInspectorLogic.js"
 import { useSceneStore } from '@/stores/scene/useSceneStore.js'
 
@@ -72,12 +96,22 @@ import BaseNumber from '@/commons/components/inputs/BaseNumber.vue'
 import BaseSelect from '@/commons/components/inputs/BaseSelect.vue'
 import BaseButton from '@/commons/components/buttons/BaseButton.vue'
 
-const { bindComponentProp, removeComponent, selectedEntity } = useInspectorLogic()
+const { 
+  bindComponentProp, 
+  removeComponent, 
+  selectedEntity,
+  prefabId,
+  syncComponent,
+  getComponentOverrideStatus,
+  markAsOverridden 
+} = useInspectorLogic()
+
 const sceneStore = useSceneStore()
 
 const hasComponent = computed(() => !!selectedEntity.value?.components?.Collider)
+const isOverridden = getComponentOverrideStatus('Collider')
 
-// Bindings
+// Bindings (Otomatis memicu override via bindComponentProp)
 const type = bindComponentProp('Collider', 'type')
 const enabled = bindComponentProp('Collider', 'enabled')
 const offsetX = bindComponentProp('Collider', 'offsetX', 2)
@@ -87,7 +121,7 @@ const height = bindComponentProp('Collider', 'height', 2)
 
 const typeOptions = [
   { label: 'Solid (Physics)', value: 'solid' },
-{ label: 'Trigger (Zone)', value: 'trigger' }
+  { label: 'Trigger (Zone)', value: 'trigger' }
 ]
 
 const syncSizeToTransform = () => {
@@ -96,9 +130,21 @@ const syncSizeToTransform = () => {
   if (!transform) return
 
   const id = selectedEntity.value._id
+  
+  // Update properties
   sceneStore.updateComponentProp(id, 'Collider', 'width', transform.width)
   sceneStore.updateComponentProp(id, 'Collider', 'height', transform.height)
   sceneStore.updateComponentProp(id, 'Collider', 'offsetX', 0)
   sceneStore.updateComponentProp(id, 'Collider', 'offsetY', 0)
+  
+  // Manual trigger override karena fungsi ini mengupdate banyak field sekaligus
+  markAsOverridden()
+  sceneStore.updateComponentProp(id, 'Collider', 'isOverridden', true)
 }
 </script>
+
+<style scoped>
+.menu-item {
+  @apply relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-accent hover:text-accent-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+}
+</style>

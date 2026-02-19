@@ -37,6 +37,12 @@ export const EngineBridge = {
     onNativeTilemapUpdate = null;
   },
 
+  selectEntity(ids) { 
+    if (engineInstance) {
+        engineInstance.bus.emit("editor:selection:set", ids); 
+    }
+  },
+
   clearSelection() {
     if (engineInstance) {
         engineInstance.bus.emit("editor:selection:clear");
@@ -83,4 +89,21 @@ export const EngineBridge = {
   createScript(d) { if(engineInstance) engineInstance.bus.emit("editor:script:create", d); },
   updateScript(id, updates) { if(engineInstance) engineInstance.bus.emit("editor:script:update", { id, updates }); },
   deleteScript(id) { if(engineInstance) engineInstance.bus.emit("editor:script:delete", id); },
+
+  linkEntitiesToPrefab(entities) {
+    if (engineInstance) {
+        engineInstance.bus.emit("editor:entity:replace", entities);
+    }
+  },
+
+  updateEntity(entities) {
+     if (engineInstance) {
+        const data = Array.isArray(entities) ? entities : [entities];
+        engineInstance.bus.emit("editor:entity:replace", data);
+     }
+  },
+
+  createPrefab(d) { if(engineInstance) engineInstance.bus.emit("editor:prefab:create", d); },
+  updatePrefab(id, updates) { if(engineInstance) engineInstance.bus.emit("editor:prefab:update", { id, updates }); },
+  deletePrefab(id) { if(engineInstance) engineInstance.bus.emit("editor:prefab:delete", id); },
 };

@@ -1,6 +1,6 @@
 import { EngineBridge } from "@/services/engine/EngineBridge.js";
 
-export function useEditorToEngine(sceneStore, assetStore, editorStore, scriptStore) {
+export function useEditorToEngine(sceneStore, assetStore, editorStore, scriptStore, prefabStore) {
 
   const listen = () => {
     
@@ -38,6 +38,10 @@ export function useEditorToEngine(sceneStore, assetStore, editorStore, scriptSto
           
           case 'updateWorldBounds':
               EngineBridge.updateSceneSettings({ worldBounds: args[0] });
+              break;
+
+          case 'updatePhysicsSettings':
+              EngineBridge.updateSceneSettings({ physics: args[0] });
               break;
 
           case 'toggleRulers': 
@@ -134,6 +138,22 @@ export function useEditorToEngine(sceneStore, assetStore, editorStore, scriptSto
         }
       });
     });
+
+    prefabStore.$onAction(({ name, args, after }) => {
+      console.log(`%c[PrefabStore] Action: ${name}`, "color: #E91E63; font-weight: bold;", { args });
+      after(() => {
+        switch (name) {
+          case 'addPrefab': EngineBridge.createPrefab(args[0]); break;
+          case 'updatePrefab': EngineBridge.updatePrefab(args[0], args[1]); break;
+          case 'updateComponentProp': 
+              // Jika store mendukung updateComponentProp langsung
+              EngineBridge.updatePrefab(args[0], null); 
+              break;
+          case 'removePrefab': EngineBridge.deletePrefab(args[0]); break;
+        }
+      });
+    });
+
   };
 
   return { listen };

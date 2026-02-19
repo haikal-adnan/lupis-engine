@@ -27,17 +27,16 @@ const LAYOUT_CONFIG = {
     }
   },
   
-  // --- TAMBAHAN KONFIGURASI UI ---
   ui: {
-    left: markRaw(SceneHierarchy), // Bisa diganti UIHierarchy jika ada file khusus
+    left: markRaw(SceneHierarchy), 
     leftTitle: 'UI Structure',
-    right: markRaw(PropertyPanel), // Inspector properti UI
+    right: markRaw(PropertyPanel), 
     rightTitle: 'UI Inspector',
-    center: markRaw(CanvasView),   // Canvas fokus mode UI
+    center: markRaw(CanvasView), 
     showBottom: true,
     overlay: {
       showCoords: true,
-      showGrid: false, // Grid biasanya dimatikan untuk UI pixel perfect
+      showGrid: false, 
       showPlay: true
     }
   },

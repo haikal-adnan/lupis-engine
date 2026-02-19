@@ -17,7 +17,7 @@ export default class SceneLoader {
             }
         }
 
-        // 2. Load Layers (World & UI Split)
+        // 2. Load Layers
         const parseLayers = (layers, defaultName, defaultZ) => {
             if (Array.isArray(layers) && layers.length > 0) {
                 return layers.map((layer, index) => ({
@@ -26,7 +26,6 @@ export default class SceneLoader {
                     name: layer.name,
                     visible: layer.visible ?? true,
                     locked: layer.locked ?? false,
-                    // Load Sorting Props
                     zIndex: Number(layer.zIndex ?? defaultZ), 
                     orderIndex: Number(layer.orderIndex ?? index),
                     entities: []
@@ -85,27 +84,28 @@ export default class SceneLoader {
             }
         }
 
-        // Phase C: Initial Sort (Prevent visual popping)
+        // Phase C: Initial Sort
         this.world.allLayers.forEach(layer => {
             if(layer.entities.length > 0) {
                 layer.entities.sort((a, b) => {
-                     // Sort by Z-Index first
-                     if (a.zIndex !== b.zIndex) return a.zIndex - b.zIndex;
-                     // Then by Order Index
-                     return a.orderIndex - b.orderIndex;
+                    if (a.zIndex !== b.zIndex) return a.zIndex - b.zIndex;
+                    return a.orderIndex - b.orderIndex;
                 });
             }
         });
     }
 
-    _createEntityInstance(entityData) {
-        let finalData = entityData;
+    _createEntityInstance(instanceData) {
+        let finalData = instanceData;
 
-        // Merge Prefab Data
-        if (entityData.prefabId) {
-            const prefab = this.world.prefabs?.[entityData.prefabId];
+        // --- PREFAB MERGE LOGIC ---
+        // Jika entity memiliki prefabId, kita gabungkan data dari Master Prefab
+        if (instanceData.prefabId) {
+            const prefab = this.world.prefabs?.[instanceData.prefabId];
             if (prefab) {
-                finalData = this._mergePrefabData(prefab.data, entityData);
+                // instanceData adalah data yang tersimpan di Scene (berisi override)
+                // prefab.data adalah data Master (default)
+                finalData = this._mergePrefabData(prefab.data, instanceData);
             }
         }
 
@@ -118,13 +118,15 @@ export default class SceneLoader {
         entity.layerId = finalData.layerId;
         entity.parentId = finalData.parentId;
 
-        // NEW: Sorting Properties
         entity.zIndex = Number(finalData.zIndex ?? 0);
         entity.orderIndex = Number(finalData.orderIndex ?? 0);
 
         entity.active = finalData.isActive ?? true;
         entity.visible = finalData.isVisible ?? true;
         entity.prefabId = finalData.prefabId;
+        
+        // Simpan flag override agar editor tahu statusnya
+        entity.isOverridden = finalData.isOverridden ?? false;
 
         if(this.mode == "editor") entity._editor = finalData._editor;
 
@@ -147,20 +149,33 @@ export default class SceneLoader {
         merged.layerId = instance.layerId;
         merged.prefabId = instance.prefabId;
         
-        // Instance overrides Prefab zIndex/orderIndex
-        merged.zIndex = instance.zIndex ?? merged.zIndex;
-        merged.orderIndex = instance.orderIndex ?? merged.orderIndex;
+        const isRootOverridden = instance.isOverridden === true;
 
-        merged.isActive = instance.isActive;
-        merged.isVisible = instance.isVisible;
+        if (isRootOverridden) {
+            merged.tag = instance.tag;
+            merged.isActive = instance.isActive;
+            merged.zIndex = instance.zIndex ?? merged.zIndex;
+            merged.orderIndex = instance.orderIndex ?? merged.orderIndex;
+        } 
 
         merged.components ??= {};
+        const instanceComps = instance.components || {};
 
-        if (instance.components) {
-            for (const [key, val] of Object.entries(instance.components)) {
-                merged.components[key] = merged.components[key]
-                    ? { ...merged.components[key], ...val }
-                    : val;
+        for (const [key, compData] of Object.entries(instanceComps)) {
+            const isCompOverridden = compData.isOverridden === true;
+            
+            if (isCompOverridden) {
+                merged.components[key] = { ...compData }; 
+            } else {
+                if (merged.components[key]) {
+                    if (key === "Transform" || key === "UITransform") {
+                        if (compData.x !== undefined) merged.components[key].x = compData.x;
+                        if (compData.y !== undefined) merged.components[key].y = compData.y;
+                        if (compData.rotation !== undefined) merged.components[key].rotation = compData.rotation;
+                    }
+                } else {
+                    merged.components[key] = { ...compData };
+                }
             }
         }
 

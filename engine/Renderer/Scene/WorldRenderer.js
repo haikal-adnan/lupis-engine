@@ -7,9 +7,11 @@ export default class WorldRenderer {
         this.renderer = { image, text, shape };
         this.tilemapRenderer = tilemapRenderer;
         this.renderQueue = [];
+        
+        // Warna debug collider
         this.boundsColor = [0.7, 0, 1, 0.6];
-        this.colliderColorSolid = [0, 1, 0, 0.8];
-        this.colliderColorTrigger = [1, 1, 0, 0.8];
+        this.colliderColorSolid = [0, 1, 0, 0.8]; 
+        this.colliderColorTrigger = [1, 1, 0, 0.8]; 
     }
 
     _sortItems(items) {
@@ -61,6 +63,10 @@ export default class WorldRenderer {
     }
 
     _collectRenderables(world, activeTabId, isIsolationMode, isUIMode, tilemapContext, proj) {
+        // 1. Cek apakah kita sedang di Mode Editor
+        const isEditor = Config.ENGINE_MODE === 'editor';
+
+        // Gabungkan layer, tapi logic filter akan dilakukan di bawah
         const layers = [...(world.layersWorld || []), ...(world.layersUI || [])]; 
         this._sortItems(layers);
 
@@ -69,106 +75,177 @@ export default class WorldRenderer {
             if (layer.visible === false) continue;
             if (!layer.entities) continue;
 
-            const rootEntities = layer.entities.filter(e => !e.parentId);
-            this._sortItems(rootEntities);
+            const isUILayer = layer.scriptId === 'ui' || (layer.name && layer.name.includes('UI'));
 
-            for (const e of rootEntities) {
-                if (e.type === 'ui' || e.type === 'ui_entity') continue;
+            // [FIX UTAMA] Jika BUKAN Editor (sedang Runtime) DAN ini adalah Layer UI,
+            // maka skip rendering layer ini di WorldRenderer.
+            // Biarkan UIRenderer yang menangani ini.
+            if (!isEditor && isUILayer) continue;
+
+            // Ambil SEMUA entities di layer (Flat), lalu sort
+            const allEntities = [...layer.entities];
+            this._sortItems(allEntities);
+
+            for (const e of allEntities) {
+                // Cek apakah entity ini bersifat UI
+                const isEntityUI = e.type === 'ui' || e.type === 'ui_entity' || e.components.UITransform || isUILayer;
+
+                // [FIX KEDUA] Jika BUKAN Editor (Runtime) DAN entity ini tipe UI, skip.
+                // Ini menjaga agar entity UI yang tidak sengaja masuk ke layer World tidak ikut ter-render di Runtime.
+                if (!isEditor && isEntityUI) continue;
 
                 let entityVisualOpacity = 1.0;
+
+                // Logic Isolation Mode (Tilemap)
                 if (isIsolationMode && e.id !== activeTabId) {
                     if (tilemapContext && !tilemapContext.showOthers) continue;
                     if (tilemapContext) entityVisualOpacity = tilemapContext.opacity;
                 }
-                if (isUIMode) entityVisualOpacity = 0.3;
+                
+                // Logic UI Mode Dimming (Hanya relevan di Editor)
+                if (isEditor && isUIMode) {
+                    if (!isEntityUI) {
+                        entityVisualOpacity = 0.3;
+                    }
+                }
 
-                this._processEntityRecursive(e, world, proj, entityVisualOpacity);
+                this._processEntity(e, world, proj, entityVisualOpacity);
             }
         }
     }
-
-    _processEntityRecursive(e, world, proj, parentOpacity = 1.0) {
+    _processEntity(e, world, proj, parentOpacity = 1.0) {
         if (e.active === false || e.visible === false) return;
 
+        const currentOpacity = (e.opacity ?? 1) * parentOpacity;
         const comps = e.components;
+
         if (!comps) return;
 
-        const currentOpacity = (e.opacity ?? 1) * parentOpacity;
-
+        // Tilemap Special Case
         if (comps.Tilemap && this.tilemapRenderer) {
             this._executeRenderQueue(proj);
             this.renderQueue.length = 0;
             this.tilemapRenderer.renderEntity(e, world, proj, currentOpacity);
-        } else {
-            const t = comps.Transform;
-            if (t) {
-                const trans = {
-                    x: t.x, y: t.y, width: t.width, height: t.height,
-                    rotation: (t.rotation || 0) * (Math.PI / 180),
-                    scaleX: t.scaleX ?? 1, scaleY: t.scaleY ?? 1,
-                    pivotX: t.pivotX ?? 0.5, pivotY: t.pivotY ?? 0.5
-                };
-                const flipX = t.flipX || false;
-                const flipY = t.flipY || false;
-
-                if (comps.SpriteRenderer) {
-                    const s = comps.SpriteRenderer;
-                    const a = (s.opacity ?? 1) * currentOpacity;
-                    if (a > 0) {
-                        const texture = world.assets.textures[s.assetId];
-                        this.renderQueue.push({
-                            type: "image",
-                            texture: texture,
-                            frame: { x: s.sourceX ?? 0, y: s.sourceY ?? 0, w: s.sourceWidth ?? 0, h: s.sourceHeight ?? 0 },
-                            transformData: trans,
-                            options: { flipX, flipY, opacity: a }
-                        });
-                    }
-                }
-
-                if (comps.ShapeRenderer) {
-                    const s = comps.ShapeRenderer;
-                    const a = (s.opacity ?? 1) * currentOpacity;
-                    if (a > 0) {
-                        this.renderQueue.push({
-                            type: "shape",
-                            transformData: trans,
-                            shapeOptions: {
-                                type: s.type || "rectangle",
-                                color: HexToVec4(s.color || "#FFFFFF"),
-                                thickness: s.thickness || 1,
-                                x2: s.x2, y2: s.y2, opacity: a, flipX, flipY
-                            }
-                        });
-                    }
-                }
-
-                if (comps.TextRenderer) {
-                    const tx = comps.TextRenderer;
-                    const a = (tx.opacity ?? 1) * currentOpacity;
-                    let font = world.assets.fonts[tx.assetId];
-                    if (!font?.ready) font = world.assets.fonts["system_default"];
-                    if (a > 0 && font) {
-                        this.renderQueue.push({
-                            type: "text",
-                            transformData: trans,
-                            textOptions: {
-                                text: tx.value ?? "",
-                                fontSize: tx.fontSize || 24,
-                                color: HexToVec4(tx.color || "#FFFFFF"),
-                                font, opacity: a, flipX, flipY
-                            }
-                        });
-                    }
-                }
-            }
+            return;
         }
 
-        if (e.children && e.children.length > 0) {
-            const sortedChildren = [...e.children];
-            this._sortItems(sortedChildren);
-            for (const child of sortedChildren) {
-                this._processEntityRecursive(child, world, proj, currentOpacity);
+        // [FIX 3] Support UITransform & Hitung Posisi Absolut
+        const t = comps.UITransform || comps.Transform;
+        
+        if (t) {
+            // Hitung posisi visual (World or UI)
+            let drawX = t.x || 0;
+            let drawY = t.y || 0;
+
+            if (comps.UITransform) {
+                const uiSettings = world.settings?.ui || { referenceWidth: 1920, referenceHeight: 1080 };
+                // Karena flat rendering, anggap parent adalah Canvas root
+                const parentW = uiSettings.referenceWidth;
+                const parentH = uiSettings.referenceHeight;
+                
+                const anchorX = t.anchorX ?? 0.5;
+                const anchorY = t.anchorY ?? 0.5;
+
+                drawX = (parentW * anchorX) + (t.x || 0);
+                drawY = (parentH * anchorY) + (t.y || 0);
+            }
+
+            const trans = {
+                x: drawX, 
+                y: drawY, 
+                width: t.width, 
+                height: t.height,
+                rotation: (t.rotation || 0) * (Math.PI / 180),
+                scaleX: t.scaleX ?? 1, 
+                scaleY: t.scaleY ?? 1,
+                pivotX: t.pivotX ?? 0.5, 
+                pivotY: t.pivotY ?? 0.5
+            };
+
+            const flipX = t.flipX || false;
+            const flipY = t.flipY || false;
+
+            // 1. RENDER SPRITE
+            if (comps.SpriteRenderer) {
+                const s = comps.SpriteRenderer;
+                const a = (s.opacity ?? 1) * currentOpacity;
+                if (a > 0) {
+                    const texture = world.assets.textures[s.assetId];
+                    this.renderQueue.push({
+                        type: "image",
+                        texture: texture,
+                        frame: { x: s.sourceX ?? 0, y: s.sourceY ?? 0, w: s.sourceWidth ?? 0, h: s.sourceHeight ?? 0 },
+                        transformData: trans,
+                        options: { flipX, flipY, opacity: a }
+                    });
+                }
+            }
+
+            // 2. RENDER SHAPE
+            if (comps.ShapeRenderer) {
+                const s = comps.ShapeRenderer;
+                const a = (s.opacity ?? 1) * currentOpacity;
+                if (a > 0) {
+                    this.renderQueue.push({
+                        type: "shape",
+                        transformData: trans,
+                        shapeOptions: {
+                            type: s.type || "rectangle",
+                            color: HexToVec4(s.color || "#FFFFFF"),
+                            thickness: s.thickness || 1,
+                            x2: s.x2, y2: s.y2, opacity: a, flipX, flipY
+                        }
+                    });
+                }
+            }
+
+            // 3. RENDER DEBUG COLLIDER
+            if (Config.ENGINE_MODE === 'editor' && comps.Collider && comps.Collider.enabled) {
+                const c = comps.Collider;
+                
+                const pivotOffsetX = (t.width * (t.scaleX ?? 1)) * (t.pivotX ?? 0.5);
+                const pivotOffsetY = (t.height * (t.scaleY ?? 1)) * (t.pivotY ?? 0.5);
+
+                const colliderX = drawX - pivotOffsetX + (c.offsetX ?? 0);
+                const colliderY = drawY - pivotOffsetY + (c.offsetY ?? 0);
+                
+                const colliderW = c.width * Math.abs(t.scaleX ?? 1);
+                const colliderH = c.height * Math.abs(t.scaleY ?? 1);
+
+                const debugTrans = {
+                    x: colliderX, y: colliderY, width: colliderW, height: colliderH,
+                    rotation: 0, scaleX: 1, scaleY: 1, pivotX: 0, pivotY: 0
+                };
+
+                this.renderQueue.push({
+                    type: "shape",
+                    transformData: debugTrans,
+                    shapeOptions: {
+                        type: "rectStroke",
+                        color: c.type === 'trigger' ? this.colliderColorTrigger : this.colliderColorSolid,
+                        thickness: 2, opacity: 1.0, flipX: false, flipY: false
+                    }
+                });
+            }
+
+            // 4. RENDER TEXT
+            if (comps.TextRenderer) {
+                const tx = comps.TextRenderer;
+                const a = (tx.opacity ?? 1) * currentOpacity;
+                let font = world.assets.fonts[tx.assetId];
+                if (!font?.ready) font = world.assets.fonts["system_default"];
+                if (a > 0 && font) {
+                    this.renderQueue.push({
+                        type: "text",
+                        transformData: trans,
+                        textOptions: {
+                            text: tx.value ?? "",
+                            fontSize: tx.fontSize || 24,
+                            color: HexToVec4(tx.color || "#FFFFFF"),
+                            font, opacity: a, flipX, flipY
+                        }
+                    });
+                }
             }
         }
     }
@@ -177,20 +254,7 @@ export default class WorldRenderer {
         const allLayers = [...(world.layersWorld || []), ...(world.layersUI || [])];
         for (const layer of allLayers) {
             if (!layer.entities) continue;
-            for (const e of layer.entities) {
-                if (e.id === id) return e;
-                const found = this._findInChildren(e, id);
-                if (found) return found;
-            }
-        }
-        return null;
-    }
-
-    _findInChildren(entity, id) {
-        if (!entity.children) return null;
-        for (const child of entity.children) {
-            if (child.id === id) return child;
-            const found = this._findInChildren(child, id);
+            const found = layer.entities.find(e => e.id === id);
             if (found) return found;
         }
         return null;

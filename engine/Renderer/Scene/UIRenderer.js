@@ -48,21 +48,27 @@ export default class UIRenderer {
         this._executeRenderQueue(proj);
     }
 
+    // --- REFACTOR: Flat Collection ---
     _collectUIEntities(world, proj, rootBounds) {
         const layers = [...(world.layersUI || [])];
         this._sortItems(layers);
 
         for (const layer of layers) {
             if (!layer.visible || !layer.entities) continue;
-            const rootEntities = layer.entities.filter(e => !e.parentId);
-            this._sortItems(rootEntities);
-            for (const entity of rootEntities) {
-                this._processUIEntityRecursive(entity, world, proj, 1.0, rootBounds);
+            
+            // Ambil semua entity (flat) dan sort
+            const allEntities = [...layer.entities];
+            this._sortItems(allEntities);
+            
+            for (const entity of allEntities) {
+                // Semua entity anchor ke rootBounds (Layar), karena tidak ada parenting
+                this._processUIEntity(entity, world, proj, 1.0, rootBounds);
             }
         }
     }
 
-    _processUIEntityRecursive(e, world, proj, parentOpacity, parentBounds) {
+    // --- REFACTOR: Hapus Rekursif Children & Group Logic ---
+    _processUIEntity(e, world, proj, parentOpacity, parentBounds) {
         if (e.active === false || e.visible === false) return;
 
         const comps = e.components;
@@ -71,6 +77,7 @@ export default class UIRenderer {
         const t = comps.UITransform || comps.Transform;
         if (!t) return;
 
+        // Anchor logic (Flat: Relative to Screen/parentBounds passed from render())
         const anchorX = t.anchorX ?? 0.5;
         const anchorY = t.anchorY ?? 0.5;
         const anchorPointX = parentBounds.x + (parentBounds.width * anchorX);
@@ -92,6 +99,7 @@ export default class UIRenderer {
         const flipX = t.flipX || false;
         const flipY = t.flipY || false;
 
+        // Render Component Checks (Hapus check type != group, langsung check component saja)
         if (comps.SpriteRenderer) {
             const s = comps.SpriteRenderer;
             const a = (s.opacity ?? 1) * currentOpacity;
@@ -143,20 +151,7 @@ export default class UIRenderer {
             }
         }
 
-        const myBounds = {
-            x: trans.x - (trans.width * trans.pivotX * trans.scaleX),
-            y: trans.y - (trans.height * trans.pivotY * trans.scaleY),
-            width: trans.width * trans.scaleX,
-            height: trans.height * trans.scaleY
-        };
-
-        if (e.children?.length > 0) {
-            const sortedChildren = [...e.children];
-            this._sortItems(sortedChildren);
-            for (const child of sortedChildren) {
-                this._processUIEntityRecursive(child, world, proj, currentOpacity, myBounds);
-            }
-        }
+        // Logic Children Recursion dihapus sepenuhnya
     }
 
     _executeRenderQueue(proj) {

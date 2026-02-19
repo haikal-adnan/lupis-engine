@@ -2,10 +2,8 @@ import { createEntity as createEntitySchema } from '@/services/schema/schema.js'
 import { GenerateUUID } from '@/commons/utils/generateUUID';
 import { createComponent } from '@/services/schema/sceneSchema/componentSchema.js';
 import { EngineBridge } from "@/services/engine/EngineBridge.js";
-
-// Import Composables
 import { useConfirm } from '@/composables/useConfirm';
-import { usePopAlert } from '@/composables/usePopAlert'; // <--- Import Pop Alert
+import { usePopAlert } from '@/composables/usePopAlert';
 
 const round = (num, decimals = 2) => {
   const factor = Math.pow(10, decimals);
@@ -13,18 +11,82 @@ const round = (num, decimals = 2) => {
 };
 
 export function useEntityActions(activeScene, selectedEntityIds) {
-  // Inisialisasi Composable
   const { confirm } = useConfirm();
-  const { showPop } = usePopAlert(); // <--- Inisialisasi
+  const { showPop } = usePopAlert();
 
-  const createEntity = (type, contextNode) => {
+  const getHierarchyData = (entityId) => {
+    const entities = activeScene.value.entities;
+    const root = entities.find(e => e._id === entityId);
+    if (!root) return null;
+
+    const descendants = [];
+    const loopChildren = (parentId) => {
+        const children = entities.filter(e => e.parentId === parentId);
+        children.forEach(child => {
+            descendants.push(child);
+            loopChildren(child._id);
+        });
+    };
+    loopChildren(entityId);
+    return { root, descendants };
+  };
+
+  const createClones = (root, descendants, targetLayerId, targetParentId) => {
+     const idMap = {};
+     const newRootId = GenerateUUID();
+     idMap[root._id] = newRootId;
+
+     const clonedRoot = {
+        ...JSON.parse(JSON.stringify(root)),
+        _id: newRootId,
+        scriptId: `${root.scriptId}_${GenerateUUID().split('-')[0]}`,
+        name: `${root.name}`,
+        layerId: targetLayerId || root.layerId,
+        parentId: targetParentId !== undefined ? targetParentId : root.parentId,
+        orderIndex: (root.orderIndex || 0) + 1
+     };
+
+     const clonedDescendants = descendants.map(child => {
+        const newId = GenerateUUID();
+        idMap[child._id] = newId;
+        return {
+            ...JSON.parse(JSON.stringify(child)),
+            _id: newId,
+            scriptId: `${child.scriptId}_${GenerateUUID().split('-')[0]}`,
+            layerId: targetLayerId || root.layerId,
+        };
+     });
+
+     clonedDescendants.forEach(child => {
+        if (idMap[child.parentId]) {
+            child.parentId = idMap[child.parentId];
+        }
+     });
+
+     return [clonedRoot, ...clonedDescendants];
+  };
+
+  const createEntity = (type, contextNodeOrLayerId, overrides = {}) => {
     if (!activeScene.value) return null;
 
-    const camPos = EngineBridge.getCameraPosition ? EngineBridge.getCameraPosition() : { x: 0, y: 0 };
-    const rawTransform = { 
-        x: Math.round(camPos.x), 
-        y: Math.round(camPos.y) 
-    };
+    if (type === 'group') {
+        showPop({ title: 'Disabled', message: 'Group creation disabled.', type: 'info' });
+        return null; 
+    }
+
+    let posX = 0;
+    let posY = 0;
+
+    if (overrides.x !== undefined && overrides.y !== undefined) {
+        posX = Number(overrides.x);
+        posY = Number(overrides.y);
+    } else {
+        const camPos = EngineBridge.getCameraPosition ? EngineBridge.getCameraPosition() : { x: 0, y: 0 };
+        posX = Math.round(camPos.x);
+        posY = Math.round(camPos.y);
+    }
+
+    const rawTransform = { x: posX, y: posY };
 
     let parentId = null;
     let layerId = null;
@@ -32,15 +94,23 @@ export function useEntityActions(activeScene, selectedEntityIds) {
     const defaultWorldLayer = activeScene.value.layersWorld?.[0]?._id;
     const defaultUILayer = activeScene.value.layersUI?.[0]?._id;
 
-    if (contextNode) {
-        if (contextNode.type === 'layer') {
-          layerId = contextNode._id;
-          parentId = null;
+    // --- PERUBAHAN DISINI: Fleksibel menerima Object (Hierarchy) atau String (Canvas LayerId) ---
+    if (contextNodeOrLayerId) {
+        if (typeof contextNodeOrLayerId === 'string') {
+            // Jika yang dilempar adalah string (layerId) langsung dari Context Menu Canvas
+            layerId = contextNodeOrLayerId;
+            parentId = null;
+        } else if (contextNodeOrLayerId.type === 'layer') {
+            // Jika dari Hierarchy berupa Object Layer
+            layerId = contextNodeOrLayerId._id;
+            parentId = null;
         } else {
-          layerId = contextNode.layerId;
-          parentId = contextNode._id;
+            // Jika context node adalah entity lain (opsional jika ingin jadikan child di kemudian hari)
+            layerId = contextNodeOrLayerId.layerId;
+            parentId = null; 
         }
     } else {
+        // Fallback default jika tidak ada layer yang terpilih
         if (type.startsWith('ui_')) {
             layerId = defaultUILayer;
         } else {
@@ -59,13 +129,14 @@ export function useEntityActions(activeScene, selectedEntityIds) {
     const nextOrderIndex = maxOrder + 1;
     const components = {};
 
+    // --- SETUP KOMPONEN BERDASARKAN TYPE ---
     if (type === 'sprite') {
       components.SpriteRenderer = { assetId: null, color: '#FFFFFF' };
-      components.Transform = rawTransform;
+      components.Transform = { ...rawTransform };
     } 
     else if (type === 'shape') {
       components.ShapeRenderer = { type: 'rectangle', color: '#FF0000' };
-      components.Transform = rawTransform;
+      components.Transform = { ...rawTransform };
     } 
     else if (type === 'text') {
       components.TextRenderer = { value: 'New Text', fontSize: 24, color: '#FFFFFF' };
@@ -79,27 +150,27 @@ export function useEntityActions(activeScene, selectedEntityIds) {
          tilesetId: null, opacity: 1, isSolid: false,
          data: new Array(defaultW * defaultH).fill(0)
       };
-      components.Transform = rawTransform;
+      components.Transform = { ...rawTransform };
     } 
     else if (type === 'ui_empty') {
-      components.UITransform = { width: 100, height: 100, anchorX: 0.5, anchorY: 0.5 };
+      components.UITransform = { ...rawTransform, width: 100, height: 100, anchorX: 0.5, anchorY: 0.5 };
     } 
     else if (type === 'ui_panel') {
-      components.UITransform = { width: 300, height: 200, anchorX: 0.5, anchorY: 0.5 };
+      components.UITransform = { ...rawTransform, width: 300, height: 200, anchorX: 0.5, anchorY: 0.5 };
       components.ShapeRenderer = { type: 'rectangle', color: '#2d2d2d', opacity: 0.8 };
     } 
     else if (type === 'ui_button') {
-      components.UITransform = { width: 140, height: 40, anchorX: 0.5, anchorY: 0.5 };
+      components.UITransform = { ...rawTransform, width: 140, height: 40, anchorX: 0.5, anchorY: 0.5 };
       components.ShapeRenderer = { type: 'rectangle', color: '#3498db' };
       components.TextRenderer = { value: 'Button', fontSize: 16, align: 'center', color: '#FFFFFF' };
       components.ScriptController = { data: [] }; 
     } 
     else if (type === 'ui_text') {
-      components.UITransform = { width: 107, height: 23, anchorX: 0.5, anchorY: 0.5 };
+      components.UITransform = { ...rawTransform, width: 107, height: 23, anchorX: 0.5, anchorY: 0.5 };
       components.TextRenderer = { value: 'New Text', fontSize: 24, align: 'left', color: '#FFFFFF' };
     } 
     else if (type === 'ui_image') {
-      components.UITransform = { width: 100, height: 100, anchorX: 0.5, anchorY: 0.5 };
+      components.UITransform = { ...rawTransform, width: 100, height: 100, anchorX: 0.5, anchorY: 0.5 };
       components.SpriteRenderer = { assetId: null, color: '#FFFFFF' };
     }
 
@@ -125,18 +196,93 @@ export function useEntityActions(activeScene, selectedEntityIds) {
       _id: `${GenerateUUID()}`, 
       scriptId: scriptId, 
       name: `${namePrefix} ${nextIndex}`, 
-      type: type === 'group' ? 'group' : entityType,
+      type: entityType, 
       layerId,
       parentId,
       zIndex: 0, 
       orderIndex: nextOrderIndex,
-      components 
+      components,
+      x: posX,
+      y: posY
     });
 
     activeScene.value.entities.push(newEntity);
     selectedEntityIds.value = [newEntity._id];
 
+    if (EngineBridge.createEntity) {
+        EngineBridge.createEntity(newEntity);
+    }
+
+    EngineBridge.selectEntity([newEntity._id]);
+
     return newEntity; 
+  };
+
+  const duplicateEntity = (entityIds) => {
+    if (!activeScene.value) return;
+    const idsToDuplicate = Array.isArray(entityIds) ? entityIds : [entityIds];
+    if (idsToDuplicate.length === 0) return;
+
+    const allNewEntities = [];
+    const newRootIds = [];
+
+    console.log(entityIds);
+
+    idsToDuplicate.forEach(id => {
+        const data = getHierarchyData(id);
+        if (!data) return;
+        const clones = createClones(data.root, data.descendants);
+        allNewEntities.push(...clones);
+        if (clones.length > 0) newRootIds.push(clones[0]._id);
+    });
+
+    // 1. Update State Vue
+    activeScene.value.entities.push(...allNewEntities);
+    
+    // 2. Kirim BATCH ke Engine (Array) -> Perbaikan disini
+    EngineBridge.createEntity(allNewEntities); 
+    
+    EngineBridge.selectEntity(newRootIds);
+
+    return newRootIds;
+  };
+
+  
+
+  const getEntityDataForClipboard = (entityIds) => {
+      const ids = Array.isArray(entityIds) ? entityIds : [entityIds];
+      return ids.map(id => getHierarchyData(id)).filter(item => item !== null);
+  };
+
+  const pasteEntity = (clipboardDataArray, targetContext = {}) => {
+      if (!activeScene.value || !clipboardDataArray) return;
+      const dataItems = Array.isArray(clipboardDataArray) ? clipboardDataArray : [clipboardDataArray];
+
+      const allNewClones = [];
+      const newRootIds = [];
+
+      dataItems.forEach(item => {
+          const { root, descendants } = item;
+          let targetLayerId = root.layerId;
+          let targetParentId = root.parentId;
+
+          if (targetContext.parentId !== undefined) targetParentId = targetContext.parentId;
+          if (targetContext.layerId !== undefined) targetLayerId = targetContext.layerId;
+
+          const clones = createClones(root, descendants, targetLayerId, targetParentId);
+          allNewClones.push(...clones);
+          if (clones.length > 0) newRootIds.push(clones[0]._id);
+      });
+      
+      // 1. Update State Vue
+      activeScene.value.entities.push(...allNewClones);
+
+      // 2. Kirim BATCH ke Engine (Array) -> Perbaikan disini
+      EngineBridge.createEntity(allNewClones);
+
+      EngineBridge.selectEntity(newRootIds);
+
+      return newRootIds;
   };
 
   const updateEntityScriptId = (entityId, newScriptId) => {
@@ -151,7 +297,6 @@ export function useEntityActions(activeScene, selectedEntityIds) {
 
   const deleteEntity = (entityId) => {
     if (!activeScene.value) return;
-
     const getDescendants = (parentId) => {
       const children = activeScene.value.entities.filter(e => e.parentId === parentId);
       let ids = children.map(c => c._id);
@@ -160,12 +305,10 @@ export function useEntityActions(activeScene, selectedEntityIds) {
       });
       return ids;
     };
-
     const idsToDelete = [entityId, ...getDescendants(entityId)];
     activeScene.value.entities = activeScene.value.entities.filter(e => 
       !idsToDelete.includes(e._id)
     );
-
     selectedEntityIds.value = [];
     EngineBridge.clearSelection();
     EngineBridge.deleteEntity(entityId);
@@ -217,10 +360,8 @@ export function useEntityActions(activeScene, selectedEntityIds) {
 
   const updateComponentProp = (entityId, componentName, path, value) => {
     if (!activeScene.value) return;
-
     const entity = activeScene.value.entities.find(e => e._id === entityId);
     if (!entity || !entity.components[componentName]) return;
-
     const comp = entity.components[componentName];
     if ((componentName === 'Transform' || componentName === 'UITransform') && comp.isRatioLocked) {
         const numValue = Number(value);
@@ -237,7 +378,6 @@ export function useEntityActions(activeScene, selectedEntityIds) {
             }
         }
     }
-
     const keys = path.split('.');
     let target = comp;
     for (let i = 0; i < keys.length - 1; i++) {
@@ -245,17 +385,14 @@ export function useEntityActions(activeScene, selectedEntityIds) {
       target = target[keys[i]];
     }
     target[keys[keys.length - 1]] = value;
-
     return { entityId, componentName, path, value };
   };
 
   const updateEntityProp = (entityId, propName, value) => {
     if (!activeScene.value) return;
     const entity = activeScene.value.entities.find(e => e._id === entityId);
-    
     if (entity) {
       if (entity[propName] === value) return; 
-
       entity[propName] = value;
       return { id: entityId, prop: propName, value };
     }
@@ -271,75 +408,53 @@ export function useEntityActions(activeScene, selectedEntityIds) {
 
   const addComponent = (entityId, componentName) => {
     if (!activeScene.value) return;
-    
     const entity = activeScene.value.entities.find(e => e._id === entityId);
     if (!entity) return;
-
-    if (entity.components && entity.components[componentName]) return;
-
-    const newComponentData = createComponent(componentName);
-    
-    if (!entity.components) entity.components = {};
-    entity.components[componentName] = newComponentData;
-    
-    return { entityId, componentName, data: newComponentData };
-  };
-
-  // -------------------------------------------------------------------
-  // FUNGSI: removeComponent (Dengan Confirm + Alert Success/Fail)
-  // -------------------------------------------------------------------
-  const removeComponent = async (entityId, componentName) => {
-    if (!activeScene.value) return;
-
-    const entity = activeScene.value.entities.find(e => e._id === entityId);
-    
-    // Guard: Pastikan komponen ada
-    if (!entity || !entity.components[componentName]) {
+    if (entity.prefabId) {
         showPop({
-            title: 'Error',
-            message: 'Component not found or already removed.',
-            type: 'error'
+            title: 'Prefab Restriction',
+            message: 'Cannot add components to a Prefab instance. Please Unpack Prefab first.',
+            type: 'warning'
         });
         return;
     }
+    if (entity.components && entity.components[componentName]) return;
+    const newComponentData = createComponent(componentName);
+    if (!entity.components) entity.components = {};
+    entity.components[componentName] = newComponentData;
+    return { entityId, componentName, data: newComponentData };
+  };
 
-    // 1. Konfirmasi User
+  const removeComponent = async (entityId, componentName) => {
+    if (!activeScene.value) return;
+    const entity = activeScene.value.entities.find(e => e._id === entityId);
+    if (!entity || !entity.components[componentName]) {
+        showPop({ title: 'Error', message: 'Component not found.', type: 'error' });
+        return;
+    }
+    if (entity.prefabId) {
+        showPop({
+            title: 'Prefab Restriction',
+            message: 'Cannot remove components from a Prefab instance. Please Unpack Prefab first.',
+            type: 'warning'
+        });
+        return;
+    }
     const isConfirmed = await confirm({
       title: 'Remove Component',
-      message: `Are you sure you want to remove "${componentName}" from this entity?`,
+      message: `Are you sure you want to remove "${componentName}"?`,
       confirmText: 'Yes, Remove',
       cancelText: 'Cancel',
       type: 'warning'
     });
-
     if (!isConfirmed) return;
-
-    // 2. Eksekusi Hapus dengan Try-Catch
     try {
-        // Hapus dari state lokal
         delete entity.components[componentName];
-
-        // Sinkronisasi ke Engine
         EngineBridge.removeComponent({ entityId, componentName });
-
-        // Alert Sukses
-        showPop({
-            title: 'Success',
-            message: `Component "${componentName}" removed successfully.`,
-            type: 'success'
-        });
-
+        showPop({ title: 'Success', message: `Component removed.`, type: 'success' });
         return { entityId, componentName };
-
     } catch (error) {
-        console.error("Failed to remove component:", error);
-        
-        // Alert Gagal
-        showPop({
-            title: 'Failed',
-            message: `Could not remove component "${componentName}".`,
-            type: 'error'
-        });
+        showPop({ title: 'Failed', message: 'Could not remove component.', type: 'error' });
     }
   };
 
@@ -352,6 +467,9 @@ export function useEntityActions(activeScene, selectedEntityIds) {
     updateEntityProp,
     syncTilemapDataFromEngine,
     addComponent,
-    removeComponent // <--- Export fungsi baru
+    removeComponent,
+    duplicateEntity,
+    getEntityDataForClipboard,
+    pasteEntity
   };
 }

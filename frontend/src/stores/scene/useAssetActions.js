@@ -13,7 +13,6 @@ export function useAssetActions() {
   const createNewFolder = (name, parentId = null) => {
     const actualParentId = parentId !== undefined ? parentId : folderStore.activeFolderId;
     
-    // Fallback nama jika kosong agar user tahu folder dibuat
     const folderName = name || 'New Folder';
 
     const newFolder = createFolder({

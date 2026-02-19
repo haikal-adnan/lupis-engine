@@ -22,13 +22,15 @@ export default class InputManager {
                 x: this.touch.touches[0].x,
                 y: this.touch.touches[0].y,
                 down: true,
+                rightDown: false, // Touch biasanya tidak dianggap klik kanan standar
                 isTouch: true
             };
         }
         return {
             x: this.mouse.x,
             y: this.mouse.y,
-            down: this.mouse.isDown(0),
+            down: this.mouse.isDown(0),      // Tombol 0 = Kiri
+            rightDown: this.mouse.isDown(2), // Tombol 2 = Kanan
             isTouch: false
         };
     }

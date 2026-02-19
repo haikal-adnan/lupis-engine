@@ -3,6 +3,13 @@ import { defineStore } from 'pinia';
 export const useEditorStore = defineStore('editor', {
   state: () => ({
     activeProjectId: null,
+    clipboard: {
+      type: null, 
+      data: null, 
+      mode: null,
+      cutId: null,
+      originalZIndex: null
+    },
     config: {
       cdnUrl: import.meta.env.VITE_STORAGE_URL || '',
       isDebug: import.meta.env.VITE_GAME_DEBUG === 'true'
@@ -36,6 +43,7 @@ export const useEditorStore = defineStore('editor', {
         return state.tabs.find(t => t.id === state.activeTabId) || state.tabs[0];
     },
     currentBottomTab: (state) => state.activeBottomTabId,
+    hasClipboardData: (state) => !!state.clipboard.data,
   },
 
   actions: {
@@ -118,6 +126,18 @@ export const useEditorStore = defineStore('editor', {
     clearTileSelection() {
       this.tileSelection = null;
       this.activeTool = 'select';
+    },
+
+    setClipboard(type, data, mode = 'copy') {
+      this.clipboard = {
+        type,
+        data: JSON.parse(JSON.stringify(data)), 
+        mode
+      };
+    },
+
+    clearClipboard() {
+      this.clipboard = { type: null, data: null, mode: null };
     }
   }
 });

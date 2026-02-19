@@ -35,6 +35,10 @@
       </div>
     </ScrollArea>
 
+    <div v-else-if="isMultiSelection" class="flex-1 flex items-center justify-center text-muted-foreground text-sm">
+        Multiple objects selected
+    </div>
+
     <ScrollArea v-else class="flex-1">
         <div class="p-2 space-y-1 pb-10">
             <EditorScene />
@@ -67,7 +71,7 @@ import EditorScene from '@/modules/properties/components/settings/EditorScene.vu
 import EditorGrid from '@/modules/properties/components/settings/EditorGrid.vue'
 import EditorUI from '@/modules/properties/components/settings/EditorUI.vue'
 
-const { hasSelection, selectedEntity, addComponentToSelection } = useInspectorLogic();
+const { hasSelection, selectedEntity, addComponentToSelection, isMultiSelection } = useInspectorLogic();
 
 const addComponentWrapper = ref(null);
 const RENDERER_GROUP = ['SpriteRenderer', 'ShapeRenderer', 'TextRenderer', 'Tilemap'];

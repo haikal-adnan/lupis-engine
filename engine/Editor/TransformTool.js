@@ -12,6 +12,7 @@ export default class TransformTool {
 
         this.world = world;
         this.game = game;
+        this.canvas = canvas;
         this.input = input;
 
         this.active = Config.EDITOR.TRANSFORM;
@@ -24,12 +25,12 @@ export default class TransformTool {
         this.draggingResize = false;
         this.draggingRotate = false;
         this.resizeType = null;
-
+        
+        this.startWorld = { x: 0, y: 0 };
+        this.rotateCenter = { x: 0, y: 0 };
         this.rotateStartAngle = 0;
         this.entityStartRotation = 0;
-        this.rotateCenter = { x: 0, y: 0 };
-        this.startWorld = { x: 0, y: 0 };
-
+        
         this.moveStartData = null;
         this.resizeEntityStarts = null;
         this.initialState = [];
@@ -41,8 +42,6 @@ export default class TransformTool {
 
     _isInteractive(e) {
         if (e.active === false) return false;
-        
-        // Check penguncian entitas (mendukung property isLocked dan _editor.locked)
         const isLocked = e.isLocked || (e._editor && e._editor.locked === true);
         if (isLocked) return false;
 
@@ -54,60 +53,33 @@ export default class TransformTool {
 
         const isEntityUI = this._isEntityInUILayer(e);
 
-        if (isUIMode) {
+        if (isUIMode) { 
             if (!isEntityUI) return false; 
-        } 
-        else if (isSceneMode) {
-            if (isEntityUI) return false;
+        }
+        else if (isSceneMode) { 
+            if (isEntityUI) return false; 
         }
 
         return true;
     }
 
     _isEntityInUILayer(targetEntity) {
-        // Menggunakan arsitektur layer UI yang baru
         const uiLayers = this.world.layersUI || [];
-        
-        const findInList = (list) => {
-            if (!list) return false;
-            for (const e of list) {
-                if (e === targetEntity || (e.id || e._id) === (targetEntity.id || targetEntity._id)) {
-                    return true;
-                }
-                
-                // Pencarian rekursif jika entitas berada di dalam group/parent
-                if (e.children && e.children.length > 0) {
-                    if (findInList(e.children)) return true;
-                }
-            }
-            return false;
-        };
-
         for (const layer of uiLayers) {
-            if (findInList(layer.entities)) return true;
+            if (layer.entities && layer.entities.some(e => String(e._id || e.id) === String(targetEntity._id || targetEntity.id))) {
+                return true;
+            }
         }
         return false;
     }
 
-    // Helper baru untuk mencari entitas di world/ui split dengan dukungan hierarchy
     _findEntityInWorld(id) {
         const allLayers = [...(this.world.layersWorld || []), ...(this.world.layersUI || [])];
-        
-        const search = (list) => {
-            if (!list) return null;
-            for (const e of list) {
-                if ((e.id || e._id) === id) return e;
-                if (e.children) {
-                    const found = search(e.children);
-                    if (found) return found;
-                }
-            }
-            return null;
-        };
-
         for (const layer of allLayers) {
-            const found = search(layer.entities);
-            if (found) return found;
+            if (layer.entities) {
+                const found = layer.entities.find(e => String(e.id || e._id) === String(id));
+                if (found) return found;
+            }
         }
         return null;
     }
@@ -121,38 +93,26 @@ export default class TransformTool {
         this.geometry.computeHandles(interactables);
     }
 
-    computeGroupBounds() {
-        this.computeHandles();
-        return this.geometry.computeGroupBounds();
-    }
-
-    getHoverHandle(px, py) {
+    getHoverHandle(px, py) { 
         const w = this.toWorld(px, py);
-        return this.geometry.getHoverHandle(w.x, w.y);
+        return this.geometry.getHoverHandle(w.x, w.y); 
     }
 
-    getCursor(handle) {
-        return this.geometry.getCursor(handle);
-    }
+    getCursor(handle) { return this.geometry.getCursor(handle); }
 
     _createSnapshot() {
         const validList = this.selection.selectedList.filter(e => this._isInteractive(e));
-        
-        return validList.map(e => {
-            return {
-                _id: e._id || e.id,
-                components: JSON.parse(JSON.stringify(e.components)),
-                active: e.active,
-                visible: e.visible,
-                _editor: e._editor ? JSON.parse(JSON.stringify(e._editor)) : {}
-            };
-        });
+        return validList.map(e => ({
+            _id: e._id || e.id,
+            components: JSON.parse(JSON.stringify(e.components)),
+            active: e.active,
+            visible: e.visible,
+            _editor: e._editor ? JSON.parse(JSON.stringify(e._editor)) : {}
+        }));
     }
 
     _applyState(list) {
-        const world = this.world;
         const affected = [];
-
         list.forEach(s => {
             const ent = this._findEntityInWorld(s._id);
             if (ent) {
@@ -160,12 +120,10 @@ export default class TransformTool {
                 ent.active = s.active;
                 ent.visible = s.visible;
                 if(s._editor) ent._editor = JSON.parse(JSON.stringify(s._editor));
-                
-                ApplyResizeToEntity(ent, world);
+                ApplyResizeToEntity(ent, this.world);
                 affected.push(ent);
             }
         });
-
         if (affected.length) {
             this.selection.selectedList = affected;
             bus.emit("entity:modified", list);
@@ -174,79 +132,66 @@ export default class TransformTool {
 
     beginMove(px, py, isTouch) {
         const validEntities = this.selection.selectedList.filter(e => this._isInteractive(e));
-        
-        if (!validEntities.length) return; 
+        if (!validEntities.length) return;
 
         this.initialState = this._createSnapshot();
-        if (this.selection.calculateViewportInsets) this.selection.calculateViewportInsets();
-
-        const p = this.toWorld(px, py);
-        this.startWorld = p;
-
+        
+        this.startWorld = this.toWorld(px, py);
         this.draggingMove = true;
         this.draggingResize = false;
         this.draggingRotate = false;
 
         this.moveStartData = validEntities.map(e => {
             const t = this._getTransform(e);
-            return {
-                e,
-                x: t.x,
-                y: t.y
-            };
+            return { e, x: t.x, y: t.y };
         });
     }
 
     beginResize(handle, px, py) {
         const validEntities = this.selection.selectedList.filter(e => this._isInteractive(e));
-        
         if (!validEntities.length) return;
 
         this.initialState = this._createSnapshot();
-        if (this.selection.calculateViewportInsets) this.selection.calculateViewportInsets();
-
-        const p = this.toWorld(px, py);
+        this.startWorld = this.toWorld(px, py);
 
         if (handle.mode === 'rotate') {
             this.draggingRotate = true;
             this.draggingResize = false;
             this.draggingMove = false;
-
-            const e = validEntities[0];
-            const t = this._getTransform(e);
-            const absPos = this.geometry.calculateAbsolutePosition(e);
             
-            this.rotateCenter = { x: absPos.x, y: absPos.y };
-            this.rotateStartAngle = Math.atan2(p.y - absPos.y, p.x - absPos.x);
-            this.entityStartRotation = t.rotation || 0;
-
+            const bounds = this.geometry.computeGroupBounds(); 
+            const cx = bounds ? bounds.x + bounds.w / 2 : this.startWorld.x;
+            const cy = bounds ? bounds.y + bounds.h / 2 : this.startWorld.y;
+            
+            this.rotateCenter = { x: cx, y: cy };
+            this.rotateStartAngle = Math.atan2(this.startWorld.y - cy, this.startWorld.x - cx);
+            
+            if (validEntities.length === 1) {
+                const t = this._getTransform(validEntities[0]);
+                this.entityStartRotation = t.rotation || 0;
+            } else {
+                this.resizeEntityStarts = validEntities.map(e => {
+                     const t = this._getTransform(e);
+                     return { e, startRotation: t.rotation || 0, startX: t.x, startY: t.y };
+                });
+            }
         } else {
             this.draggingResize = true;
             this.draggingRotate = false;
             this.draggingMove = false;
             this.resizeType = handle.type;
-            this.startWorld = p;
 
             this.resizeEntityStarts = validEntities.map(e => {
                 const t = this._getTransform(e);
-                
-                let startScaleX = t.scaleX ?? 1;
-                let startScaleY = t.scaleY ?? 1;
-                let startFlipX = Boolean(t.flipX ?? false);
-                let startFlipY = Boolean(t.flipY ?? false);
+                let sx = t.scaleX ?? 1, sy = t.scaleY ?? 1;
+                let fx = Boolean(t.flipX), fy = Boolean(t.flipY);
 
-                if (startScaleX < 0) { startScaleX *= -1; startFlipX = !startFlipX; }
-                if (startScaleY < 0) { startScaleY *= -1; startFlipY = !startFlipY; }
+                if (sx < 0) { sx *= -1; fx = !fx; }
+                if (sy < 0) { sy *= -1; fy = !fy; }
 
                 return {
-                    e,
-                    x: t.x, y: t.y,
-                    w: t.width, h: t.height,
-                    r: t.rotation || 0,
-                    sx: startScaleX,
-                    sy: startScaleY,
-                    flipX: startFlipX,
-                    flipY: startFlipY
+                    e, x: t.x, y: t.y, w: t.width, h: t.height, r: t.rotation || 0,
+                    sx, sy, flipX: fx, flipY: fy
                 };
             });
         }
@@ -254,43 +199,31 @@ export default class TransformTool {
 
     resetDrag() {
         const wasInteracting = this.draggingMove || this.draggingResize || this.draggingRotate;
-
         this.draggingMove = false;
         this.draggingResize = false;
         this.draggingRotate = false;
         this.resizeType = null;
-
+        this.moveStartData = null;
+        this.resizeEntityStarts = null;
+        
         this.computeHandles();
-
-        if (this.selection.autoPanVel) {
-            this.selection.autoPanVel.x = 0;
-            this.selection.autoPanVel.y = 0;
-        }
-
+        
         if (wasInteracting) {
             const finalState = this._createSnapshot();
-            const startState = this.initialState;
-
-            const hasChanged = JSON.stringify(finalState) !== JSON.stringify(startState);
-
-            if (hasChanged) {
-                const command = {
+            if (JSON.stringify(finalState) !== JSON.stringify(this.initialState)) {
+                 const command = {
                     name: "Transform Entity",
-                    undo: () => this._applyState(startState),
+                    undo: () => this._applyState(this.initialState),
                     redo: () => this._applyState(finalState)
-                };
-                if (this.game.history) this.game.history.push(command);
-
-                if (this.selection.selectedList.length > 0) {
-                    bus.emit("entity:modified", this.selection.selectedList);
-                }
+                 };
+                 if (this.game.history) this.game.history.push(command);
+                 bus.emit("entity:modified", this.selection.selectedList);
             }
         }
     }
 
     update() {
         if (!this.active) return;
-        
         const list = this.selection.selectedList;
         if (!list.length) return;
 
@@ -301,10 +234,6 @@ export default class TransformTool {
         const p = this.input.getPointer();
         const worldP = this.toWorld(p.x, p.y);
 
-        if (this.selection.applyPointerAutoPan) {
-            this.selection.applyPointerAutoPan(p.x, p.y);
-        }
-
         if (this.draggingMove && this.moveStartData) {
             this.operator.move(worldP, this.startWorld, this.moveStartData, list, isUIMode);
         } 
@@ -312,17 +241,18 @@ export default class TransformTool {
             this.operator.resize(worldP, this.startWorld, this.resizeType, this.resizeEntityStarts, list, isUIMode);
         } 
         else if (this.draggingRotate) {
-            const validList = list.filter(e => this._isInteractive(e));
-            this.operator.rotate(worldP, this.rotateCenter, this.rotateStartAngle, this.entityStartRotation, validList, isUIMode);
+             if (this.resizeEntityStarts) {
+                 this.operator.rotateMulti(worldP, this.rotateCenter, this.rotateStartAngle, this.resizeEntityStarts, list, isUIMode);
+             } else {
+                 this.operator.rotateSingle(worldP, this.rotateCenter, this.rotateStartAngle, this.entityStartRotation, list, isUIMode);
+             }
         }
-
-        if (this.selection.updateAutoPan) this.selection.updateAutoPan();
+        
         if (!p.down) this.resetDrag();
     }
 
     draw(shape, proj) {
         if (!this.active) return;
-        
         this.computeHandles();
         this.drawer.draw(shape, proj, this.geometry);
     }

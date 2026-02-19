@@ -35,6 +35,9 @@ const EntitySchema = new mongoose.Schema({
   orderIndex: { type: Number, default: 0 },
 
   prefabId: { type: String, ref: 'Prefab', default: null },
+  
+  isOverridden: { type: Boolean, default: false },
+
   isActive: { type: Boolean, default: true },
   isVisible: { type: Boolean, default: true },
   isLocked: {type: Boolean, default: false},
@@ -57,6 +60,11 @@ const SceneSchema = new mongoose.Schema({
   settings: {
     backgroundColor: { type: String, default: '#222222' },
     tickRate: { type: Number, default: 60 },
+
+    physics: {
+        gravity: { type: Number, default: 1200 },
+        drag: { type: Number, default: 5 }
+    },
     
     worldBounds: { 
       x1: { type: Number, default: -1920 }, 

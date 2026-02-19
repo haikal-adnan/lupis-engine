@@ -5,7 +5,7 @@ export class HitTester {
         this.game = game;
     }
 
-    getTransform(e) {
+    _getTransform(e) {
         return e.components && (e.components.UITransform || e.components.Transform);
     }
 
@@ -13,83 +13,31 @@ export class HitTester {
         return e.isLocked || (e._editor && e._editor.locked);
     }
 
-    // --- COORDINATE UTILS ---
-
     _calculateAbsolutePosition(e, parentBounds) {
-        const t = this.getTransform(e);
+        const t = this._getTransform(e);
         if (!t) return { x: 0, y: 0 };
 
-        // Jika bukan UI, gunakan World Coordinates standar
-        if (!e.components.UITransform) {
-            return { x: t.x, y: t.y };
+        if (e.components.UITransform) {
+            if (!parentBounds) {
+                const uiSettings = this.game.world.settings?.ui || { referenceWidth: 1920, referenceHeight: 1080 };
+                parentBounds = { x: 0, y: 0, width: uiSettings.referenceWidth, height: uiSettings.referenceHeight };
+            }
+            const anchorX = t.anchorX ?? 0.5;
+            const anchorY = t.anchorY ?? 0.5;
+            return {
+                x: parentBounds.x + (parentBounds.width * anchorX) + (t.x || 0),
+                y: parentBounds.y + (parentBounds.height * anchorY) + (t.y || 0)
+            };
         }
-
-        // Jika UI, perlu parent bounds (screen/panel)
-        if (!parentBounds) {
-            const uiSettings = this.game.world.settings?.ui || { referenceWidth: 1920, referenceHeight: 1080 };
-            parentBounds = { x: 0, y: 0, width: uiSettings.referenceWidth, height: uiSettings.referenceHeight };
-        }
-
-        const anchorX = t.anchorX ?? 0.5;
-        const anchorY = t.anchorY ?? 0.5;
-
-        const anchorPointX = parentBounds.x + (parentBounds.width * anchorX);
-        const anchorPointY = parentBounds.y + (parentBounds.height * anchorY);
-
-        const finalX = anchorPointX + (t.x || 0);
-        const finalY = anchorPointY + (t.y || 0);
-
-        return { x: finalX, y: finalY };
+        return { x: t.x || 0, y: t.y || 0 };
     }
 
-    _calculateEntityBounds(e, absPos) {
-        const t = this.getTransform(e);
-        if (!t) return { x: 0, y: 0, width: 0, height: 0 };
-
-        const pX = t.pivotX ?? 0.5;
-        const pY = t.pivotY ?? 0.5;
-        const sX = t.scaleX ?? 1;
-        const sY = t.scaleY ?? 1;
-
-        return {
-            x: absPos.x - (t.width * pX * sX),
-            y: absPos.y - (t.height * pY * sY),
-            width: t.width * sX,
-            height: t.height * sY
-        };
-    }
-
-    // --- GEOMETRY UTILS ---
-
-    getAABB(e) {
-        const absPos = this._calculateAbsolutePosition(e, null); 
-        
-        const t = this.getTransform(e);
-        const r = (t.rotation || 0) * (Math.PI / 180);
-        const sx = t.scaleX ?? 1;
-        const sy = t.scaleY ?? 1;
-        const px = t.pivotX ?? 0.5;
-        const py = t.pivotY ?? 0.5;
-
-        const v = calculateQuadVertices(absPos.x, absPos.y, t.width, t.height, r, sx, sy, px, py);
-        const xs = [v.tl.x, v.tr.x, v.bl.x, v.br.x];
-        const ys = [v.tl.y, v.tr.y, v.bl.y, v.br.y];
-
-        const minX = Math.min(...xs);
-        const maxX = Math.max(...xs);
-        const minY = Math.min(...ys);
-        const maxY = Math.max(...ys);
-
-        return { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
-    }
-
-    isPointInEntity(wx, wy, e, parentBounds) {
-        const t = this.getTransform(e);
+    _isPointInEntity(wx, wy, e, parentBounds) {
+        const t = this._getTransform(e);
         if (!t) return false;
 
         const absPos = this._calculateAbsolutePosition(e, parentBounds);
 
-        // Transform logic (Rotation, Scale, Pivot)
         const r = (t.rotation || 0) * (Math.PI / 180);
         const sx = t.scaleX ?? 1;
         const sy = t.scaleY ?? 1;
@@ -119,8 +67,7 @@ export class HitTester {
         const minY = Math.min(top, bottom);
         const maxY = Math.max(top, bottom);
 
-        const scaleFactor = Math.abs(this.game.camera.scale || 1);
-        const buffer = 5 / scaleFactor; // Hit tolerance
+        const buffer = 5;
 
         return (
             unscaledMouseX >= minX - buffer &&
@@ -130,39 +77,43 @@ export class HitTester {
         );
     }
 
-    // --- MAIN HIT TEST LOGIC ---
-
-    _hitTestRecursive(entities, wx, wy, layer, filter, parentBounds) {
-        // Iterate backwards (Top to Bottom visually)
-        // Entities terakhir di array digambar paling depan, jadi di-cek duluan.
+    hit(world, wx, wy, px, py) {
+        const filter = this.game.selection?.filter;
         
-        // Sorting internal (Temporary) untuk memastikan hit test akurat sesuai Z-Index
-        // Idealnya array entities sudah sorted, tapi kita sort lagi untuk safety di hit test
-        const sortedEntities = [...entities].sort((a, b) => {
+        const uiSettings = world.settings?.ui || { referenceWidth: 1920, referenceHeight: 1080 };
+        const uiRootBounds = { x: 0, y: 0, width: uiSettings.referenceWidth, height: uiSettings.referenceHeight };
+
+        const layersWorld = world.layersWorld || [];
+        const layersUI = world.layersUI || [];
+        const allLayers = [...layersWorld, ...layersUI];
+        
+        allLayers.sort((a, b) => {
              const zA = a.zIndex ?? 0;
              const zB = b.zIndex ?? 0;
-             if (zA !== zB) return zA - zB;
-             return (a.orderIndex ?? 0) - (b.orderIndex ?? 0);
+             if (zA !== zB) return zB - zA; 
+             return (b.orderIndex ?? 0) - (a.orderIndex ?? 0);
         });
 
-        for (let i = sortedEntities.length - 1; i >= 0; i--) {
-            const e = sortedEntities[i];
+        for (const layer of allLayers) {
+            if (layer.visible === false || layer.locked) continue;
             
-            if (!e.visible || this.isLocked(e)) continue;
-            if (filter && !filter(e, layer)) continue;
+            const isUILayer = layersUI.includes(layer);
+            const rootBounds = isUILayer ? uiRootBounds : null;
 
-            const absPos = this._calculateAbsolutePosition(e, parentBounds);
-            const myBoundsForChildren = this._calculateEntityBounds(e, absPos);
+            if (!layer.entities) continue;
+            
+            const sortedEntities = [...layer.entities].sort((a, b) => {
+                const zA = a.zIndex ?? 0;
+                const zB = b.zIndex ?? 0;
+                if (zA !== zB) return zB - zA;
+                return (b.orderIndex ?? 0) - (a.orderIndex ?? 0);
+            });
 
-            // Cek Children dulu (biasanya di atas parent)
-            if (e.children && e.children.length > 0) {
-                const childHit = this._hitTestRecursive(e.children, wx, wy, layer, filter, myBoundsForChildren);
-                if (childHit) return childHit;
-            }
+            for (const e of sortedEntities) {
+                if (!e.visible || this.isLocked(e)) continue;
+                if (filter && !filter(e, layer)) continue;
 
-            // Cek diri sendiri
-            if (e.type !== 'group') {
-                if (this.isPointInEntity(wx, wy, e, parentBounds)) {
+                if (this._isPointInEntity(wx, wy, e, rootBounds)) {
                     return e;
                 }
             }
@@ -170,104 +121,88 @@ export class HitTester {
         return null;
     }
 
-    hit(world, wx, wy, px, py) {
-        const filter = this.game.selection?.filter;
-        
-        const uiSettings = world.settings?.ui || { referenceWidth: 1920, referenceHeight: 1080 };
-        const uiRootBounds = {
-            x: 0, y: 0,
-            width: uiSettings.referenceWidth,
-            height: uiSettings.referenceHeight
-        };
-
-        // Combine Layers
-        const allLayers = [...(world.layersUI || []), ...(world.layersWorld || [])];
-        
-        // Sort Layers (UI diatas World, High Z diatas Low Z)
-        // Hit test dari DEPAN ke BELAKANG -> Sort Descending
-        allLayers.sort((a, b) => {
-             const zA = a.zIndex ?? 0;
-             const zB = b.zIndex ?? 0;
-             if (zA !== zB) return zB - zA; // Descending
-             return (b.orderIndex ?? 0) - (a.orderIndex ?? 0); // Descending
-        });
-
-        for (let li = 0; li < allLayers.length; li++) {
-            const layer = allLayers[li];
-            
-            if (layer.visible === false || layer.locked) continue;
-
-            const isUILayer = layer.scriptId === 'ui' || layer.name === 'UI' || (layer._id && layer._id.includes('ui'));
-            const rootBounds = isUILayer ? uiRootBounds : null;
-
-            const found = this._hitTestRecursive(layer.entities, wx, wy, layer, filter, rootBounds);
-            
-            if (found) return found;
-        }
-        return null;
-    }
-
-    _checkMarqueeRecursive(entities, box, list, layer, filter, parentBounds) {
-        for (const e of entities) {
-            if (!e.visible || this.isLocked(e)) continue;
-            if (filter && !filter(e, layer)) continue;
-
-            const absPos = this._calculateAbsolutePosition(e, parentBounds);
-            const myBoundsForChildren = this._calculateEntityBounds(e, absPos);
-
-            if (e.type === 'group') {
-                if (e.children?.length) this._checkMarqueeRecursive(e.children, box, list, layer, filter, myBoundsForChildren);
-                continue;
-            }
-
-            const t = this.getTransform(e);
-            if (t) {
-                const r = (t.rotation || 0) * (Math.PI / 180);
-                const sx = t.scaleX ?? 1;
-                const sy = t.scaleY ?? 1;
-                const px = t.pivotX ?? 0.5;
-                const py = t.pivotY ?? 0.5;
-
-                const v = calculateQuadVertices(absPos.x, absPos.y, t.width, t.height, r, sx, sy, px, py);
-                const xs = [v.tl.x, v.tr.x, v.bl.x, v.br.x];
-                const ys = [v.tl.y, v.tr.y, v.bl.y, v.br.y];
-                
-                const b = { 
-                    x: Math.min(...xs), y: Math.min(...ys), 
-                    w: Math.max(...xs) - Math.min(...xs), 
-                    h: Math.max(...ys) - Math.min(...ys) 
-                };
-
-                const overlap =
-                    b.x < box.x + box.w &&
-                    b.x + b.w > box.x &&
-                    b.y < box.y + box.h &&
-                    b.y + b.h > box.y;
-                
-                if (overlap) list.push(e);
-            }
-
-            if (e.children?.length) this._checkMarqueeRecursive(e.children, box, list, layer, filter, myBoundsForChildren);
-        }
-    }
-
     checkMarquee(world, box) {
+        const results = [];
         const filter = this.game.selection?.filter;
-        const list = [];
         
         const uiSettings = world.settings?.ui || { referenceWidth: 1920, referenceHeight: 1080 };
         const uiRootBounds = { x: 0, y: 0, width: uiSettings.referenceWidth, height: uiSettings.referenceHeight };
 
-        const allLayers = [...(world.layersWorld || []), ...(world.layersUI || [])];
+        const layersWorld = world.layersWorld || [];
+        const layersUI = world.layersUI || [];
+        const allLayers = [...layersWorld, ...layersUI];
 
         for (const layer of allLayers) {
             if (layer.visible === false || layer.locked) continue;
             
-            const isUILayer = layer.scriptId === 'ui' || layer.name === 'UI' || (layer._id && layer._id.includes('ui'));
+            const isUILayer = layersUI.includes(layer);
             const rootBounds = isUILayer ? uiRootBounds : null;
 
-            this._checkMarqueeRecursive(layer.entities, box, list, layer, filter, rootBounds);
+            if (!layer.entities) continue;
+
+            for (const e of layer.entities) {
+                if (!e.visible || this.isLocked(e)) continue;
+                if (filter && !filter(e, layer)) continue;
+
+                const t = this._getTransform(e);
+                if (!t) continue;
+
+                // 1. Dapatkan posisi absolut
+                const absPos = this._calculateAbsolutePosition(e, rootBounds);
+
+                // 2. Ambil data transform (scale, ukuran asli, pivot, dan rotasi)
+                const sx = t.scaleX ?? 1;
+                const sy = t.scaleY ?? 1;
+                const w = (t.width || 0) * sx;
+                const h = (t.height || 0) * sy;
+                const px = t.pivotX ?? 0.5;
+                const py = t.pivotY ?? 0.5;
+                const r = (t.rotation || 0) * (Math.PI / 180);
+
+                // 3. Hitung keempat sudut entity berdasarkan pivot (titik acuan lokal)
+                const minX = -px * w;
+                const maxX = w - (px * w);
+                const minY = -py * h;
+                const maxY = h - (py * h);
+
+                const localCorners = [
+                    { x: minX, y: minY }, // Kiri atas
+                    { x: maxX, y: minY }, // Kanan atas
+                    { x: minX, y: maxY }, // Kiri bawah
+                    { x: maxX, y: maxY }  // Kanan bawah
+                ];
+
+                // 4. Transformasikan sudut tersebut dengan rotasi dan posisi absolut
+                let eLeft = Infinity, eRight = -Infinity;
+                let eTop = Infinity, eBottom = -Infinity;
+
+                const cosR = Math.cos(r);
+                const sinR = Math.sin(r);
+
+                for (const pt of localCorners) {
+                    const rotatedX = pt.x * cosR - pt.y * sinR + absPos.x;
+                    const rotatedY = pt.x * sinR + pt.y * cosR + absPos.y;
+
+                    eLeft = Math.min(eLeft, rotatedX);
+                    eRight = Math.max(eRight, rotatedX);
+                    eTop = Math.min(eTop, rotatedY);
+                    eBottom = Math.max(eBottom, rotatedY);
+                }
+
+                // 5. Cek AABB overlap: apakah kotak entity tumpang tindih dengan kotak marquee?
+                const isOverlapping = !(
+                    box.x + box.w < eLeft ||   // Marquee berada di kiri entity
+                    box.x > eRight ||          // Marquee berada di kanan entity
+                    box.y + box.h < eTop ||    // Marquee berada di atas entity
+                    box.y > eBottom            // Marquee berada di bawah entity
+                );
+
+                if (isOverlapping) {
+                    results.push(e);
+                }
+            }
         }
-        return list;
+        
+        return results; 
     }
 }

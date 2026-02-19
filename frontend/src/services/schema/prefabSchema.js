@@ -1,20 +1,29 @@
-import { createEntity } from '@schemas/sceneSchema/entitySchema.js';
+import { createEntity } from '@/services/schema/sceneSchema/entitySchema.js';
 
 export const createPrefab = (data = {}) => {
-  const entityData = data.data ? createEntity(data.data) : {};
+  const entityData = data.data ? createEntity(data.data) : createEntity({});
   
   entityData._id = null; 
-  
-  if (entityData.name === "New Entity") {
+  entityData.prefabId = null; 
+  entityData.parentId = null;
+  entityData.isOverridden = false;
+
+  if (entityData.components) {
+    for (const key in entityData.components) {
+      if (entityData.components[key]) {
+        entityData.components[key].isOverridden = false;
+      }
+    }
+  }
+
+  if (entityData.name === "New Entity" && data.name) {
     entityData.name = data.name;
   }
   
-  entityData.prefabId = data._id; 
-
   return {
     _id: data._id,
+    projectId: data.projectId || null,
     name: data.name || "New Prefab",
-    thumbnailUrl: data.thumbnailUrl || null,
     data: entityData
   };
 };

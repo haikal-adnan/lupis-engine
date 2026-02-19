@@ -31,12 +31,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useSceneStore } from '@/stores/scene/useSceneStore.js'
-import { useEditorStore } from '@/stores/useEditorStore.js'
 import { usePrompt } from '@/composables/usePrompt'
 
-import { EngineBridge } from '@/services/engine/EngineBridge.js'
 import { bus } from '@engines/Util/EventBus.js'
 
 import BaseContextMenu from '@ui/overlay/BaseContextMenu.vue'
@@ -47,13 +45,20 @@ import SceneTree from './parts/SceneTree.vue'
 import { useHierarchyLogic } from '@/modules/scene/composables/useHierarchyLogic.js'
 import { useHierarchyFilter } from '@/modules/scene/composables/useHierarchyFilter.js'
 import { useHierarchyMenu } from '@/modules/scene/composables/useHierarchyMenu.js'
+import { useClipboard } from '@/composables/useClipboard.js'
+import { useLayerActions } from '@/stores/scene/useLayerActions.js'
+
+import { EngineBridge } from '@/services/engine/EngineBridge.js'
 
 const sceneStore = useSceneStore()
-const editorStore = useEditorStore()
 const { prompt } = usePrompt() 
 
 const { treeData, moveEntity } = useHierarchyLogic()
 const { searchQuery, filteredData } = useHierarchyFilter(treeData)
+
+const activeScene = computed(() => sceneStore.activeScene)
+const { copy, cut, paste, duplicate, remove } = useClipboard()
+const { updateLayerZIndex } = useLayerActions(activeScene)
 
 const isRefreshing = ref(false)
 
@@ -68,6 +73,21 @@ const handlers = {
     const newName = await prompt({ title: 'Rename Layer', defaultValue: layer.name, confirmText: 'Rename' })
     if (newName?.trim()) sceneStore.updateLayerName(layerId, newName)
   },
+  changeZIndex: async (layerId) => {
+    const layer = sceneStore.activeLayers.find(l => l._id === layerId)
+    if (!layer) return
+
+    const newZ = await prompt({ 
+      title: 'Change Z-Index', 
+      message: `Current Z-Index: ${layer.zIndex}`,
+      defaultValue: layer.zIndex.toString(), 
+      confirmText: 'Update',
+    })
+    
+    if (newZ !== null && newZ !== undefined) {
+       updateLayerZIndex(layerId, newZ)
+    }
+  },
   createEntity: (type, contextNode) => sceneStore.createEntity(type, contextNode),
   renameEntity: async (entityId) => {
     const entity = sceneStore.activeEntities.find(e => e._id === entityId)
@@ -76,23 +96,38 @@ const handlers = {
     const newName = await prompt({ title, defaultValue: entity.name, confirmText: 'Rename' })
     if (newName?.trim()) sceneStore.updateEntityName(entityId, newName)
   },
-  deleteLayer: async (layerId) => { if (confirm('Delete layer?')) sceneStore.deleteLayer(layerId) },
-  deleteEntity: (entityId) => sceneStore.deleteEntity(entityId),
-  duplicateEntity: (entityId) => sceneStore.duplicateEntity(entityId),
+  
   refresh: () => { isRefreshing.value = true; setTimeout(() => (isRefreshing.value = false), 300) }
 }
 
 const { contextMenu, openMenu, closeMenu } = useHierarchyMenu(handlers)
 
-const handleSelect = (idOrIds) => {
-  const ids = Array.isArray(idOrIds) ? idOrIds : [idOrIds]
-  sceneStore.selectedEntityIds = ids
-  
-  if (EngineBridge.engineInstance) {
-    EngineBridge.engineInstance.bus.emit('ui:select-by-id', ids)
+const handleSelect = (payload) => {
+  const nodeId = typeof payload === 'object' && payload.id ? payload.id : payload;
+  const event = typeof payload === 'object' ? payload.event : null;
+
+  const allEntities = sceneStore.activeEntities || []; 
+  const descendantIds = getAllDescendantIds(nodeId, allEntities);
+  const targetIds = [nodeId, ...descendantIds];
+
+  let newSelection = [];
+
+  if (event && (event.ctrlKey || event.metaKey)) {
+    const currentSelection = [...sceneStore.selectedEntityIds];
+    const isAlreadySelected = currentSelection.includes(nodeId);
+
+    if (isAlreadySelected) {
+      newSelection = currentSelection.filter(id => !targetIds.includes(id));
+    } else {
+      const combined = [...currentSelection, ...targetIds];
+      newSelection = [...new Set(combined)];
+    }
   } else {
-    bus.emit('ui:select-by-id', ids)
+    newSelection = targetIds;
   }
+
+  sceneStore.selectedEntityIds = newSelection;
+  EngineBridge.selectEntity(newSelection);
 }
 
 const onExternalSelect = (entities) => {
@@ -101,8 +136,6 @@ const onExternalSelect = (entities) => {
     return
   }
   const ids = entities.map(e => e.id || e._id)
-  
-  // Cek apakah ID-nya sama persis untuk menghindari loop re-render
   const isSame = ids.length === sceneStore.selectedEntityIds.length &&
                  ids.every(id => sceneStore.selectedEntityIds.includes(id))
   
@@ -119,26 +152,53 @@ const onExternalDeselect = () => {
 
   if (entity) {
     const isInactive = (entity.isActive === false) || (entity.isVisible === false);
-    
-    if (isInactive) {
-      console.log(`[Hierarchy] Mencegah deselect untuk entity non-aktif: ${entity.name}`);
-      return; 
-    }
+    if (isInactive) return; 
   }
 
   sceneStore.selectedEntityIds = [];
+}
+
+const getAllDescendantIds = (parentId, allEntities) => {
+    let ids = [];
+    const children = allEntities.filter(e => e.parentId === parentId);
+    
+    for (const child of children) {
+        ids.push(child._id);
+        ids = [...ids, ...getAllDescendantIds(child._id, allEntities)];
+    }
+    return ids;
+};
+
+const handleKeyDown = (e) => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+  if (e.ctrlKey || e.metaKey) {
+    switch(e.key.toLowerCase()) {
+      case 'c': copy(); break;
+      case 'x': cut(); break;
+      case 'v': paste(); break;
+      case 'd': 
+        e.preventDefault();
+        duplicate();
+        break;
+    }
+  } else if (e.key === 'Delete') {
+      remove();
+  }
 }
 
 onMounted(() => {
   bus.on('entity:selected', onExternalSelect)
   bus.on('entity:deselected', onExternalDeselect)
   bus.on('entity:created', handlers.refresh)
+  window.addEventListener('keydown', handleKeyDown)
 })
 
 onBeforeUnmount(() => {
   bus.off('entity:selected', onExternalSelect)
   bus.off('entity:deselected', onExternalDeselect)
   bus.off('entity:created', handlers.refresh)
+  window.removeEventListener('keydown', handleKeyDown)
 })
 
 const handleContextMenu = ({ event, node }) => {

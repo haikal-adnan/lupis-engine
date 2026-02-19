@@ -46,7 +46,7 @@ import { useEditorStore } from '@/stores/useEditorStore'
 
 import AssetPanel from '@/modules/assets/AssetPanel.vue'
 import ConsolePanel from '@/modules/console/ConsolePanel.vue'
-import LibraryPanel from '@/modules/prefab/LibraryPanel.vue'
+import PrefabPanel from '@/modules/prefab/PrefabPanel.vue'
 import ScriptPanel from '@/modules/scripts/ScriptPanel.vue'
 
 const emit = defineEmits(['update:component'])
@@ -56,7 +56,7 @@ const tabs = [
   { id: 'assets', label: 'Assets', icon: FolderOpen, component: markRaw(AssetPanel) },
   { id: 'scripts', label: 'Scripts', icon: ScrollText, component: markRaw(ScriptPanel) },
   { id: 'console', label: 'Console', icon: Terminal, component: markRaw(ConsolePanel) },
-  { id: 'library', label: 'Library', icon: Library, component: markRaw(LibraryPanel) },
+  { id: 'prefabs', label: 'Prefabs', icon: Library, component: markRaw(PrefabPanel) },
 ]
 
 // Helper untuk mengecek active tab dari store

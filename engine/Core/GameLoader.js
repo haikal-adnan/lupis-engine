@@ -1,6 +1,5 @@
 import Config from "../Core/Config.js";
 import RendererManager from "../Renderer/RendererManager.js";
-import World from "../Core/World.js";
 import InputManager from "../Input/InputManager.js";
 import EventManager from "../Script/EventManager.js";
 import GLImageResource from "../Renderer/Graphic/GLImageResource.js";
@@ -34,7 +33,9 @@ export default class GameLoader {
                 this._setupEditorState(game, editorConfig);
             }
 
-            ScriptLoader.load(game, payload);
+            // 3. Load Libraries (Script & Prefab) BEFORE Scene
+            this._initPrefabLibrary(game.world, prefabs);
+            ScriptLoader.load(game, payload); // Init global script system
             
             const assetLoader = new AssetLoader(
                 new GLImageResource(game.renderer.gl),
@@ -44,10 +45,11 @@ export default class GameLoader {
             game.assetLoader = assetLoader;
             await assetLoader.loadAsset(game.world, assets);
 
-            this._initPrefabLibrary(game.world, prefabs);
             this._initScriptLibrary(game.world, scripts);
 
+            // 4. Load Scene (Now with access to Prefabs)
             if (scene) {
+                // Pass 'prefabs' map explicitly if needed, or rely on world.prefabs
                 new SceneLoader(game.world, mode).loadScene(scene);
             }
 
@@ -58,8 +60,11 @@ export default class GameLoader {
             }
 
             this._setupCamera(game, scene?.camera, mode);
-            console.log(game.world)
+            
             game.initLoop();
+
+            console.log(game)
+
             this.start(game);
 
             console.log(`[LupisEngine] ${mode.toUpperCase()} initialized successfully.`);
@@ -82,6 +87,10 @@ export default class GameLoader {
             tickRate: settings.tickRate ?? 60,
             backgroundColor: settings.backgroundColor ?? "#222222",
             worldBounds: settings.worldBounds ?? ws.worldBounds,
+            physics: {
+                gravity: settings.physics?.gravity ?? 2000,
+                drag: settings.physics?.drag ?? 5
+            },
             grid: settings.grid ?? ws.grid,
             showRulers: settings.showRulers ?? true,
             ui: {
@@ -144,10 +153,12 @@ export default class GameLoader {
 
     _initPrefabLibrary(world, prefabs) {
         if (!Array.isArray(prefabs)) return;
+        // Simpan data prefab ke world agar bisa diakses SceneLoader
         world.prefabs = Object.fromEntries(prefabs.map(p => [p._id, {
             _id: p._id,
             name: p.name,
-            data: p.data
+            // Penting: Simpan 'data' yang berisi komponen dan properti default
+            data: p.data 
         }]));
     }
 

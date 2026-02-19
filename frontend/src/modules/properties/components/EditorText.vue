@@ -1,14 +1,39 @@
 <template>
   <PropertySection title="Text Renderer" :icon="Type" v-if="hasComponent">
     
+    <template #header-extra>
+      <div 
+        v-if="prefabId"
+        class="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border select-none shrink-0"
+        :class="isOverridden 
+          ? 'bg-amber-500/10 text-amber-500 border-amber-500/30' 
+          : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30'"
+      >
+        {{ isOverridden ? 'Override' : 'Sync' }}
+      </div>
+    </template>
+
     <template #menu="{ close }">
-      <div class="p-1 space-y-0.5">
+      <div class="p-1 space-y-0.5 min-w-[160px]">
+        
+        <template v-if="prefabId">
+          <button 
+            @click="syncComponent('TextRenderer'); close()" 
+            :disabled="!isOverridden"
+            class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-accent hover:text-accent-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <RefreshCw class="w-3.5 h-3.5 mr-2 opacity-70" /> 
+            Sync Component
+          </button>
+          <div class="h-px bg-border my-1"></div>
+        </template>
+
         <button 
           @click="removeComponent('TextRenderer'); close()" 
           class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-destructive hover:text-destructive-foreground text-destructive font-medium transition-colors"
         >
-          <Trash2 class="w-3 h-3 mr-2" />
-          Remove Text Renderer
+          <Trash2 class="w-3.5 h-3.5 mr-2" />
+          Remove Component
         </button>
       </div>
     </template>
@@ -100,7 +125,7 @@
 import { computed } from "vue";
 import { 
   Type, Trash2, AlignLeft, AlignCenter, AlignRight, 
-  FolderSearch, RefreshCcw 
+  FolderSearch, RefreshCcw, RefreshCw
 } from "lucide-vue-next"; 
 import { useInspectorLogic } from "@/modules/properties/composables/useInspectorLogic.js"; 
 
@@ -117,24 +142,27 @@ const {
   selectedEntity, 
   removeComponent, 
   bindComponentProp,
-  resetTextRatio 
+  resetTextRatio,
+  prefabId,                   // [NEW]
+  syncComponent,              // [NEW]
+  getComponentOverrideStatus  // [NEW]
 } = useInspectorLogic();
 
 const hasComponent = computed(() => !!selectedEntity.value?.components?.TextRenderer);
 
-// BINDINGS
+// [NEW] Ambil status override khusus untuk komponen 'TextRenderer'
+const isOverridden = getComponentOverrideStatus('TextRenderer');
+
+// BINDINGS (Otomatis memicu override via bindComponentProp)
 const textValue = bindComponentProp('TextRenderer', 'value');
 const fontSize = bindComponentProp('TextRenderer', 'fontSize');
 const color = bindComponentProp('TextRenderer', 'color');
 const align = bindComponentProp('TextRenderer', 'align');
-
-// OPACITY LOGIC (UX 0-100, Engine 0-1)
 const rawOpacity = bindComponentProp('TextRenderer', 'opacity');
 
+// OPACITY LOGIC
 const displayOpacity = computed({
-  get: () => {
-    return Math.round((rawOpacity.value ?? 1) * 100);
-  },
+  get: () => Math.round((rawOpacity.value ?? 1) * 100),
   set: (val) => {
     rawOpacity.value = parseFloat((val / 100).toFixed(2));
   }
