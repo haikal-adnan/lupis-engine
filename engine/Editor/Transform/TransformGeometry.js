@@ -21,16 +21,17 @@ export class TransformGeometry {
         const t = this._getTransform(e);
         if (!t) return { x: 0, y: 0 };
 
+        // Flat: Transform biasa langsung pakai x,y
         if (!e.components.UITransform) {
             return { x: t.x, y: t.y };
         }
 
+        // Flat UI: Pakai anchor logic sederhana
         const uiSettings = this.world.settings?.ui || { referenceWidth: 1920, referenceHeight: 1080 };
         const parentBounds = { x: 0, y: 0, width: uiSettings.referenceWidth, height: uiSettings.referenceHeight };
 
         const anchorX = t.anchorX ?? 0.5;
         const anchorY = t.anchorY ?? 0.5;
-
         const anchorPointX = parentBounds.x + (parentBounds.width * anchorX);
         const anchorPointY = parentBounds.y + (parentBounds.height * anchorY);
 
@@ -47,25 +48,16 @@ export class TransformGeometry {
             return;
         }
 
-        // --- Single Selection ---
+        // --- Single Selection (OBB - Miring mengikuti rotasi) ---
         if (selectedList.length === 1) {
             const e = selectedList[0];
             const t = this._getTransform(e);
             if (!t) return;
 
             const absPos = this.calculateAbsolutePosition(e);
-
-            // [FIX] Konversi Derajat ke Radian untuk perhitungan Geometri
-            const rDeg = t.rotation || 0;
-            const rRad = rDeg * (Math.PI / 180);
+            const rRad = (t.rotation || 0) * (Math.PI / 180);
             
-            const sx = t.scaleX ?? 1;
-            const sy = t.scaleY ?? 1;
-            const px = t.pivotX ?? 0.5;
-            const py = t.pivotY ?? 0.5;
-
-            // calculateQuadVertices mengharapkan Radian
-            const v = calculateQuadVertices(absPos.x, absPos.y, t.width, t.height, rRad, sx, sy, px, py);
+            const v = calculateQuadVertices(absPos.x, absPos.y, t.width, t.height, rRad, t.scaleX??1, t.scaleY??1, t.pivotX??0.5, t.pivotY??0.5);
 
             const nw = { type: "nw", x: v.tl.x, y: v.tl.y };
             const ne = { type: "ne", x: v.tr.x, y: v.tr.y };
@@ -78,14 +70,12 @@ export class TransformGeometry {
             const w = { type: "w", ...this._mid(nw, sw) };
 
             this.handles = [nw, ne, sw, se, n, e_side, s, w];
-            
-            // Simpan Radian agar renderer bisa menggambar handle miring
             this.activeRotation = rRad; 
             this.groupBounds = { type: 'obb', v };
             return;
         }
 
-        // --- Multi Selection ---
+        // --- Multi Selection (AABB - Kotak tegak lurus) ---
         let minX = Infinity, minY = Infinity;
         let maxX = -Infinity, maxY = -Infinity;
 
@@ -94,16 +84,9 @@ export class TransformGeometry {
             if (!t) continue;
             
             const absPos = this.calculateAbsolutePosition(e);
-
-            // [FIX] Konversi Derajat ke Radian
             const rRad = (t.rotation || 0) * (Math.PI / 180);
+            const v = calculateQuadVertices(absPos.x, absPos.y, t.width, t.height, rRad, t.scaleX??1, t.scaleY??1, t.pivotX??0.5, t.pivotY??0.5);
             
-            const sx = t.scaleX ?? 1;
-            const sy = t.scaleY ?? 1;
-            const px = t.pivotX ?? 0.5;
-            const py = t.pivotY ?? 0.5;
-
-            const v = calculateQuadVertices(absPos.x, absPos.y, t.width, t.height, rRad, sx, sy, px, py);
             const xs = [v.tl.x, v.tr.x, v.bl.x, v.br.x];
             const ys = [v.tl.y, v.tr.y, v.bl.y, v.br.y];
 
@@ -126,7 +109,7 @@ export class TransformGeometry {
         const w = { type: "w", ...this._mid(nw, sw) };
 
         this.handles = [nw, ne, sw, se, n, e_side, s, w];
-        this.activeRotation = 0; // AABB selalu 0 rotasi
+        this.activeRotation = 0; 
     }
 
     computeGroupBounds() {
@@ -145,6 +128,7 @@ export class TransformGeometry {
         return null;
     }
 
+    // ... (getHandleSizes, getHoverHandle, getCursor sama seperti sebelumnya) ...
     getHandleSizes() {
         const scale = this.game.camera.scale || 1;
         
@@ -162,73 +146,44 @@ export class TransformGeometry {
 
         if (this.groupBounds) {
             let objW = 100, objH = 100;
-
             if (this.groupBounds.type === 'aabb') {
-                objW = this.groupBounds.w;
-                objH = this.groupBounds.h;
+                objW = this.groupBounds.w; objH = this.groupBounds.h;
             } else if (this.groupBounds.v) {
                 const v = this.groupBounds.v;
-                const dx1 = v.tr.x - v.tl.x;
-                const dy1 = v.tr.y - v.tl.y;
+                const dx1 = v.tr.x - v.tl.x; const dy1 = v.tr.y - v.tl.y;
                 objW = Math.sqrt(dx1*dx1 + dy1*dy1);
-
-                const dx2 = v.bl.x - v.tl.x;
-                const dy2 = v.bl.y - v.tl.y;
+                const dx2 = v.bl.x - v.tl.x; const dy2 = v.bl.y - v.tl.y;
                 objH = Math.sqrt(dx2*dx2 + dy2*dy2);
             }
-
             const minSide = Math.min(objW, objH);
-            
             const maxResizeRad = minSide * 0.35;
             if (rResize > maxResizeRad) {
                 const ratio = maxResizeRad / rResize;
                 rResize = maxResizeRad;
-                capLen *= ratio;
-                capThick *= ratio;
-                rCorner *= ratio;
+                capLen *= ratio; capThick *= ratio; rCorner *= ratio;
             }
-
             const maxRotateRad = minSide * 0.45;
-            if (rRotate > maxRotateRad) {
-                rRotate = maxRotateRad;
-            }
-
-            if (rRotate < rResize) {
-                rRotate = rResize * 1.1; 
-            }
+            if (rRotate > maxRotateRad) rRotate = maxRotateRad;
+            if (rRotate < rResize) rRotate = rResize * 1.1; 
         }
-
         return { rResize, rRotate, capLen, capThick, rCorner };
     }
 
     getHoverHandle(wx, wy) {
         const sizes = this.getHandleSizes();
-        const resizeRadius = sizes.rResize;
-        const rotateRadius = sizes.rRotate; 
-
         for (const h of this.handles) {
             const dx = wx - h.x;
             const dy = wy - h.y;
             const dist = Math.sqrt(dx * dx + dy * dy);
-
-            if (dist <= resizeRadius) {
-                return { ...h, mode: 'resize', type: h.type };
-            }
-            if (h.type.length === 2 && dist <= rotateRadius) {
-                return { ...h, mode: 'rotate', type: h.type };
-            }
+            if (dist <= sizes.rResize) return { ...h, mode: 'resize', type: h.type };
+            if (h.type.length === 2 && dist <= sizes.rRotate) return { ...h, mode: 'rotate', type: h.type };
         }
         return null;
     }
 
     getCursor(handle) {
-        if (handle.mode === 'rotate') {
-            return "url('data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"32\" height=\"32\" viewBox=\"0 0 32 32\" style=\"fill:white; stroke:black; stroke-width:1px; font-size:24px;\"><text x=\"50%\" y=\"55%\" dominant-baseline=\"middle\" text-anchor=\"middle\">↻</text></svg>') 16 16, alias";
-        }
-        const map = {
-            nw: "nwse-resize", ne: "nesw-resize", sw: "nesw-resize", se: "nwse-resize",
-            n: "ns-resize", s: "ns-resize", e: "ew-resize", w: "ew-resize"
-        };
+        if (handle.mode === 'rotate') return "url('data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"32\" height=\"32\" viewBox=\"0 0 32 32\" style=\"fill:white; stroke:black; stroke-width:1px; font-size:24px;\"><text x=\"50%\" y=\"55%\" dominant-baseline=\"middle\" text-anchor=\"middle\">↻</text></svg>') 16 16, alias";
+        const map = { nw: "nwse-resize", ne: "nesw-resize", sw: "nesw-resize", se: "nwse-resize", n: "ns-resize", s: "ns-resize", e: "ew-resize", w: "ew-resize" };
         return map[handle.type];
     }
 }

@@ -1,18 +1,46 @@
 <template>
   <PropertySection title="Object" :icon="Box" v-if="selectedEntity">
     <template #header-extra>
-      <div class="px-2 py-0.5 rounded text-[10px] font-medium bg-secondary text-secondary-foreground border border-border truncate max-w-[120px]">
-        {{ name || 'Entity' }}
+      <div class="flex items-center gap-2 max-w-[180px]">
+        <div 
+          v-if="prefabId"
+          class="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border select-none shrink-0"
+          :class="hasAnyOverride 
+            ? 'bg-amber-500/10 text-amber-500 border-amber-500/30' 
+            : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30'"
+        >
+          {{ hasAnyOverride ? 'Override' : 'Sync' }}
+        </div>
+
+        <div class="px-2 py-0.5 rounded text-[10px] font-medium bg-secondary text-secondary-foreground border border-border truncate flex-1 text-center">
+          {{ name || 'Entity' }}
+        </div>
       </div>
     </template>
 
     <template #menu="{ close }">
-      <div class="p-1 space-y-0.5 min-w-[140px]">
-        <button @click="onCopyId(); close()" class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-accent hover:text-accent-foreground transition-colors">
+      <div class="p-1 space-y-0.5 min-w-[160px]">
+        <template v-if="prefabId">
+          <div class="px-2 py-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-tight">Prefab Actions</div>
+          <button @click="onApplyToMaster(); close()" :disabled="!hasAnyOverride" class="menu-item text-emerald-500 font-medium">
+            <Upload class="w-3.5 h-3.5 mr-2" /> Apply to Master
+          </button>
+          <button @click="syncObject(); close()" :disabled="!hasAnyOverride" class="menu-item">
+            <RefreshCw class="w-3.5 h-3.5 mr-2 opacity-70" /> Revert to Sync
+          </button>
+          <button @click="syncAllComponents(); close()" class="menu-item">
+            <Layers2 class="w-3.5 h-3.5 mr-2 opacity-70" /> Sync All Components
+          </button>
+          <button @click="unpackPrefab(); close()" class="menu-item text-amber-500">
+            <PackageOpen class="w-3.5 h-3.5 mr-2" /> Unpack Prefab
+          </button>
+          <div class="h-px bg-border my-1"></div>
+        </template>
+        <button @click="onCopyId(); close()" class="menu-item">
           <Copy class="w-3.5 h-3.5 mr-2 opacity-70" /> Copy ID
         </button>
         <div class="h-px bg-border my-1"></div>
-        <button @click="onDelete(); close()" class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-destructive hover:text-destructive-foreground text-destructive font-medium transition-colors">
+        <button @click="onDelete(); close()" class="menu-item text-destructive hover:bg-destructive hover:text-destructive-foreground font-medium">
           <Trash2 class="w-3.5 h-3.5 mr-2" /> Delete Entity
         </button>
       </div>
@@ -20,6 +48,29 @@
 
     <PropertyRow label="ID">
       <BaseInput v-model="localScriptId" placeholder="unique_id_name" :error="hasIdError" @blur="commitScriptId" />
+    </PropertyRow>
+
+    <PropertyRow v-if="prefabId" label="Prefab">
+      <div class="flex items-center gap-1 w-full">
+        <div class="flex-1 flex items-center h-8 px-2 rounded-md border border-input bg-secondary/20 text-muted-foreground select-none overflow-hidden">
+          <div class="h-full flex items-center pr-2 border-r border-transparent opacity-50">
+            <Box class="w-3.5 h-3.5" />
+          </div>
+          
+          <span class="text-[11px] font-medium italic truncate">
+            {{ prefabName }}
+          </span>
+        </div>
+
+        <IconButton 
+          @click="openPrefabMaster" 
+          tooltip="Open Prefab Master"
+          variant="secondary"
+          class="h-8 w-8 border border-input bg-background hover:bg-accent"
+        >
+          <ExternalLink class="w-3.5 h-3.5" />
+        </IconButton>
+      </div>
     </PropertyRow>
 
     <PropertyRow label="Name">
@@ -31,35 +82,20 @@
     </PropertyRow>
 
     <PropertyRow label="Z-Index">
-      <BaseNumber 
-        v-model="zIndex" 
-        :step="1" 
-        :precision="0" 
-        class="font-mono w-full" 
-        :disabled="locked"
-        placeholder="0"
-      />
+      <BaseNumber v-model="zIndex" :step="1" :precision="0" class="font-mono w-full" :disabled="locked" placeholder="0" />
     </PropertyRow>
 
     <PropertyRow label="Appearance">
       <div class="flex gap-1 items-center w-full">
-        <BaseButton 
-          :active="active"
-          @click="active = !active"
-          class="flex-1 h-7 text-xs gap-2 justify-center"
-          ghost
-        >
+        <BaseButton :active="active" @click="toggleActive" class="flex-1 h-7 text-xs gap-2 justify-center" ghost>
           <Power class="w-3.5 h-3.5" :class="active ? 'text-primary' : 'text-muted-foreground'" />
           <span>{{ active ? 'Active' : 'Inactive' }}</span>
         </BaseButton>
-
         <div class="w-px h-4 bg-border mx-1"></div>
-
         <IconButton :active="visible" @click="visible = !visible" :tooltip="visible ? 'Hide Object' : 'Show Object'">
           <Eye v-if="visible" class="w-4 h-4" />
           <EyeOff v-else class="w-4 h-4 text-muted-foreground" />
         </IconButton>
-
         <IconButton :active="locked" @click="locked = !locked" :tooltip="locked ? 'Unlock Object' : 'Lock Object'">
           <Lock v-if="locked" class="w-3.5 h-3.5 text-primary" />
           <Unlock v-else class="w-3.5 h-3.5" />
@@ -71,31 +107,38 @@
 
 <script setup>
 import { computed, ref, watch } from 'vue'
-import { Eye, EyeOff, Lock, Unlock, Power, Box, Copy, Trash2 } from 'lucide-vue-next'
-
+import { 
+  Eye, EyeOff, Lock, Unlock, Power, Box, Copy, Trash2, 
+  RefreshCw, PackageOpen, Layers2, ExternalLink, Upload
+} from 'lucide-vue-next'
 import { EngineBridge } from '@/services/engine/EngineBridge.js'
 import { useInspectorLogic } from "@/modules/properties/composables/useInspectorLogic.js"
 import { useEditorActions } from "@/modules/properties/composables/useEditorActions.js"
+import { usePrefabActions } from '@/modules/prefab/composables/usePrefabActions.js'
 import { useSceneStore } from '@/stores/scene/useSceneStore.js'
 import { useProjectStore } from '@/stores/useProjectStore.js'
+import { usePrefabStore } from '@/stores/usePrefabStore.js'
 import { usePrompt } from '@/composables/usePrompt'
 import { useConfirm } from '@/composables/useConfirm'
 import { useAlert } from '@/composables/useAlert'
 import { bus } from '@engines/Util/EventBus.js'
-
 import PropertySection from "@ui/display/PropertySection.vue"
 import PropertyRow from "@ui/display/PropertyRow.vue"
 import BaseInput from '@/commons/components/inputs/BaseInput.vue'
 import BaseSelect from '@/commons/components/inputs/BaseSelect.vue'
 import BaseButton from '@/commons/components/buttons/BaseButton.vue'
 import IconButton from '@/commons/components/buttons/IconButton.vue'
-import BaseNumber from '@/commons/components/inputs/BaseNumber.vue' // [NEW] Import BaseNumber
+import BaseNumber from '@/commons/components/inputs/BaseNumber.vue'
 
-const { bindEntityProp, selectedEntity } = useInspectorLogic()
+const prefabStore = usePrefabStore()
+const { 
+  bindEntityProp, selectedEntity, prefabId,
+  syncObject, syncAllComponents, unpackPrefab, markAsOverridden
+} = useInspectorLogic()
 const { handleDeleteEntity, handleCopyId } = useEditorActions()
+const { applyToMasterPrefab } = usePrefabActions()
 const sceneStore = useSceneStore()
 const projectStore = useProjectStore()
-
 const { prompt } = usePrompt()
 const { confirm } = useConfirm()
 const { alert } = useAlert()
@@ -104,30 +147,43 @@ const hasIdError = ref(false)
 const localScriptId = ref('')
 const isProcessing = ref(false)
 
-// [NEW] Bind Z-Index
-// Karena zIndex adalah properti root entity (bukan di dalam components), kita pakai bindEntityProp
 const name = bindEntityProp('name')
 const zIndex = bindEntityProp('zIndex')
 
-const active = computed({
-  get: () => selectedEntity.value?.active ?? true, 
-  set: (val) => {
-    if (!selectedEntity.value) return
-    const id = selectedEntity.value._id
-    sceneStore.updateEntityProp(id, 'active', val)
-    setTimeout(() => {
-      const bridge = EngineBridge.engineInstance ? EngineBridge.engineInstance.bus : bus
-      bridge.emit('ui:select-by-id', [id])
-    }, 10)
-  }
+const hasAnyOverride = computed(() => {
+  if (!selectedEntity.value || !selectedEntity.value.components) return false
+  return Object.values(selectedEntity.value.components).some(comp => comp.isOverridden === true)
 })
+
+const onApplyToMaster = async () => {
+  if (selectedEntity.value && prefabId.value) {
+    await applyToMasterPrefab(selectedEntity.value._id)
+  }
+}
+
+const prefabName = computed(() => {
+  if (!prefabId.value) return ''
+  const master = prefabStore.getPrefabById(prefabId.value)
+  return master ? master.name : 'Unknown Prefab'
+})
+
+const openPrefabMaster = () => {
+  console.log("Opening Prefab Editor for:", prefabId.value)
+}
+
+const active = computed(() => selectedEntity.value?.active ?? true)
+const toggleActive = () => {
+  if (!selectedEntity.value) return
+  const newVal = !active.value
+  const id = selectedEntity.value._id
+  sceneStore.updateEntityProp(id, 'active', newVal)
+  markAsOverridden()
+}
 
 const visible = computed({
   get: () => selectedEntity.value?.visible ?? true,
   set: (val) => {
-    if (selectedEntity.value) {
-      sceneStore.updateEntityProp(selectedEntity.value._id, 'visible', val)
-    }
+    if (selectedEntity.value) sceneStore.updateEntityProp(selectedEntity.value._id, 'visible', val)
   }
 })
 
@@ -137,28 +193,22 @@ const locked = computed({
     if (!selectedEntity.value) return
     const currentEditor = selectedEntity.value._editor || {}
     sceneStore.updateEntityProp(selectedEntity.value._id, '_editor', { ...currentEditor, locked: val })
-    setTimeout(() => {
-      const bridge = EngineBridge.engineInstance ? EngineBridge.engineInstance.bus : bus
-      bridge.emit('ui:select-by-id', [selectedEntity.value._id])
-    }, 10)
   }
 })
 
 const tag = bindEntityProp('tag')
 const safeTag = computed({
   get: () => tag.value || 'Untagged',
-  set: (val) => tag.value = val
+  set: (val) => {
+    tag.value = val
+    markAsOverridden()
+  }
 })
 
 const tagOptions = computed(() => {
   const project = projectStore.project
-  if (!project || !project.tags) {
-    return [{ label: 'Untagged', value: 'Untagged' }]
-  }
-  return project.tags.map(t => ({
-    label: t,
-    value: t
-  }))
+  if (!project || !project.tags) return [{ label: 'Untagged', value: 'Untagged' }]
+  return project.tags.map(t => ({ label: t, value: t }))
 })
 
 const handleAddTag = async () => {
@@ -200,14 +250,12 @@ const commitScriptId = async () => {
   const originalId = selectedEntity.value.scriptId
   const newId = localScriptId.value.trim().replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '')
   localScriptId.value = newId
-
   if (!newId || newId === originalId) {
     localScriptId.value = originalId
     hasIdError.value = false
     isProcessing.value = false
     return
   }
-
   const isDuplicate = sceneStore.activeScene?.entities.some(e => e.scriptId === newId && e._id !== selectedEntity.value._id)
   if (isDuplicate) {
     hasIdError.value = true
@@ -221,7 +269,14 @@ const commitScriptId = async () => {
     hasIdError.value = false
     if (sceneStore.updateEntityScriptId) sceneStore.updateEntityScriptId(selectedEntity.value._id, newId)
     else sceneStore.updateEntityProp(selectedEntity.value._id, 'scriptId', newId)
+    markAsOverridden()
     isProcessing.value = false
   }
 }
 </script>
+
+<style scoped>
+.menu-item {
+  @apply relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-accent hover:text-accent-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+}
+</style>

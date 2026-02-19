@@ -26,7 +26,7 @@
           : ''
       ]"
       :style="{ paddingLeft: `${indentation}px` }"
-      @click.stop="handleSelect"
+      @click.stop="handleSelect($event)"
       @contextmenu.prevent="handleContextMenu"
       draggable="true"
       @dragstart="onDragStart"
@@ -148,8 +148,6 @@ const sceneStore = useSceneStore()
 
 const isOpen = ref(true)
 
-// --- STABILIZED SORTING (NEW) ---
-// Memastikan anak-anak entity selalu diurutkan berdasarkan zIndex dan orderIndex yang sama dengan Engine
 const sortedChildren = computed(() => {
   if (!props.node.children) return []
   return [...props.node.children].sort((a, b) => {
@@ -161,30 +159,25 @@ const sortedChildren = computed(() => {
     const oB = b.orderIndex ?? 0
     if (oA !== oB) return oA - oB
 
-    // Fallback stabil jika index sama
     const idA = a._id || a.id || ""
     const idB = b._id || b.id || ""
     return idA.localeCompare(idB)
   })
 })
 
-// Helper Props
 const indentation = computed(() => (props.depth * 16) + 12)
 const isSelected = computed(() => props.selectedIds.some(id => String(id) === String(props.node._id || props.node.id)))
 const hasChildren = computed(() => sortedChildren.value.length > 0)
 
-// Status Computed
 const isLocked = computed(() => props.node._editor?.locked || props.node.locked || false)
 const isVisible = computed(() => props.node.visible !== false)
 const isInactive = computed(() => props.node.active === false)
 
-// Drag Drop Logic
 const {
   dragGhostRef, isDragOver, dragPosition,
   onDragStart, onDragOver, onDragLeave, onDrop
 } = useNodeDragDrop(props, emit)
 
-// Icons Logic
 const getIcon = computed(() => {
   if (props.node.type === 'layer') return Layers
   if (props.node.type === 'group') return isOpen.value ? FolderOpen : Folder
@@ -197,9 +190,15 @@ const getIcon = computed(() => {
   return Cuboid
 })
 
-// --- ACTIONS ---
 const toggle = () => (isOpen.value = !isOpen.value)
-const handleSelect = () => emit('select', props.node._id || props.node.id)
+
+const handleSelect = (event) => {
+  emit('select', { 
+    id: props.node._id || props.node.id, 
+    event: event 
+  })
+}
+
 const handleContextMenu = (e) => emit('contextmenu', { event: e, node: props.node })
 
 const toggleVisibility = () => {

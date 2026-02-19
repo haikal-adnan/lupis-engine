@@ -1,6 +1,6 @@
 import { ref, computed } from 'vue'
 import { FolderPlus, Download, RefreshCw, Edit2, Trash2, Stamp } from 'lucide-vue-next'
-import { useAssetActions } from '@/stores/scene/assetActions'
+import { useAssetActions } from '@/stores/scene/useAssetActions'
 import { useSceneStore } from '@/stores/scene/useSceneStore'
 import { usePopAlert } from '@/composables/usePopAlert' // <--- Import ini
 

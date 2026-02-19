@@ -1,25 +1,35 @@
-import { createComponent, createTransform, createUITransform } from '@schemas/sceneSchema/componentSchema.js';
-import { GenerateUUID } from '@/commons/utils/generateUUID.js';
+import { createComponent } from '@/services/schema/sceneSchema/componentSchema.js'; 
+import { GenerateUUID } from '@/commons/utils/generateUUID.js'; 
 
 export const createEntity = (data = {}) => {
   const cleanComponents = {};
 
-  // 1. Buat Komponen dari data mentah
+  const initialX = data.x !== undefined ? Number(data.x) : 0;
+  const initialY = data.y !== undefined ? Number(data.y) : 0;
+
   if (data.components) {
     for (const [key, val] of Object.entries(data.components)) {
-      cleanComponents[key] = createComponent(key, val);
+      let componentData = val;
+      
+      if (key === 'Transform' || key === 'UITransform') {
+          componentData = { 
+              x: initialX, 
+              y: initialY, 
+              ...val
+          };
+      }
+      cleanComponents[key] = createComponent(key, componentData);
     }
   }
 
-  // 2. Pastikan Transform/UITransform Ada
-  // Cek apakah ini Entity UI (punya UITransform) atau Entity World (butuh Transform)
   if (data.type === 'ui' || cleanComponents.UITransform) {
-      // Logic khusus UI jika diperlukan validasi tambahan
       if (!cleanComponents.UITransform) {
-          cleanComponents.UITransform = createUITransform({});
+          cleanComponents.UITransform = createComponent("UITransform", {
+              x: initialX,
+              y: initialY
+          });
       }
   } else {
-      // Logic untuk Entity World
       if (!cleanComponents.Transform) {
           let defaultWidth = 100;
           let defaultHeight = 100;
@@ -35,10 +45,11 @@ export const createEntity = (data = {}) => {
             defaultHeight = 100;
           }
 
-          // Buat Transform baru
-          cleanComponents.Transform = createTransform({}, { 
+          cleanComponents.Transform = createComponent("Transform", { 
             width: defaultWidth, 
-            height: defaultHeight 
+            height: defaultHeight,
+            x: initialX,
+            y: initialY
           });
       }
   }
@@ -58,7 +69,9 @@ export const createEntity = (data = {}) => {
     
     parentId: data.parentId || null,
     layerId: data.layerId || "layer_root",
+    
     prefabId: data.prefabId || null,
+    isOverridden: Boolean(data.isOverridden ?? false), 
     
     isActive: data.isActive ?? true,
     isVisible: data.isVisible ?? true,

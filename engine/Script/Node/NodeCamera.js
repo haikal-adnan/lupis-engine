@@ -5,8 +5,6 @@ export const NodeCamera = {
             const speed = Number(runner.getInputValue(node, 'smooth_speed')) || 0.1;
             const offsetX = Number(runner.getInputValue(node, 'offset_x')) || 0;
             const offsetY = Number(runner.getInputValue(node, 'offset_y')) || 0;
-            console.log(targetId)
-
 
             const entity = targetId ? runner.resolveEntity(targetId) : runner.owner;
 

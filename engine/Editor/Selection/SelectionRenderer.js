@@ -10,7 +10,7 @@ export class SelectionRenderer {
         if (!t) return { x: 0, y: 0 };
 
         if (!e.components.UITransform) {
-            return { x: t.x, y: t.y };
+            return { x: t.x || 0, y: t.y || 0 };
         }
 
         const uiSettings = this.game.world.settings?.ui || { referenceWidth: 1920, referenceHeight: 1080 };
@@ -59,7 +59,6 @@ export class SelectionRenderer {
 
         const absPos = this._calculateAbsolutePosition(e);
 
-        // [MODIFIED] Konversi Derajat ke Radian
         const r = (t.rotation || 0) * (Math.PI / 180);
         const sx = t.scaleX ?? 1;
         const sy = t.scaleY ?? 1;

@@ -11,7 +11,6 @@ import { useSceneStore } from '@/stores/scene/useSceneStore.js';
 
 import { usePrompt } from '@/composables/usePrompt';
 import { useConfirm } from '@/composables/useConfirm';
-// 1. Ganti import useAlert menjadi usePopAlert
 import { usePopAlert } from '@/composables/usePopAlert';
 
 const generateInstanceId = () => `inst_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
@@ -23,7 +22,6 @@ export function useScriptPanel() {
   
   const { prompt } = usePrompt();
   const { confirm } = useConfirm();
-  // 2. Init PopAlert
   const { showPop } = usePopAlert();
 
   const searchQuery = ref('');
@@ -49,8 +47,6 @@ export function useScriptPanel() {
     if (!scene) return null;
 
     const entity = scene.entities.find(e => e._id === entityId);
-    
-    // Cek apakah entity punya komponen ScriptController
     if (entity && entity.components && entity.components.ScriptController) {
       return entity;
     }
@@ -103,7 +99,6 @@ export function useScriptPanel() {
           type
         });
         
-        // [ALERT] Success Create
         showPop({
           title: 'Script Created',
           message: `"${name}" has been created successfully.`,
@@ -111,7 +106,6 @@ export function useScriptPanel() {
         });
 
       } catch (err) {
-        // [ALERT] Error
         showPop({ 
           title: 'Failed', 
           message: err.message, 
@@ -134,7 +128,6 @@ export function useScriptPanel() {
     if (newName && newName.trim() && newName !== script.name) {
       await scriptStore.updateScript(scriptId, { name: newName.trim() });
       
-      // [ALERT] Success Rename
       showPop({
         title: 'Renamed',
         message: `Script renamed to "${newName}".`,
@@ -155,7 +148,6 @@ export function useScriptPanel() {
         name: `${script.name}_Copy`
       });
 
-      // [ALERT] Success Duplicate
       showPop({
         title: 'Duplicated',
         message: `Script "${script.name}" copied.`,
@@ -172,7 +164,6 @@ export function useScriptPanel() {
       await scriptStore.deleteScript(scriptId);
       if (selectedId.value === scriptId) selectedId.value = null;
 
-      // [ALERT] Info Delete
       showPop({
         title: 'Deleted',
         message: `Script "${script.name}" removed.`,
@@ -199,15 +190,13 @@ export function useScriptPanel() {
 
     const controller = entity.components.ScriptController;
     
-    // Pastikan currentData adalah array
     const currentData = Array.isArray(controller.data) 
-      ? [...controller.data] 
+      ? JSON.parse(JSON.stringify(controller.data)) 
       : [];
 
     const isAlreadyAttached = currentData.some(inst => inst.assetId === script._id);
 
     if (isAlreadyAttached) {
-      // [ALERT] Warning jika sudah ada
       showPop({
         title: 'Script Exists',
         message: `Script "${script.name}" is already active on ${entity.name}.`,
@@ -225,16 +214,22 @@ export function useScriptPanel() {
         _id: generateInstanceId(),
         assetId: script._id,
         isActive: true,
-        variables: initialVars
+        variables: initialVars 
       };
 
       currentData.push(newInstance);
 
-      sceneStore.patchComponent(entity._id, 'ScriptController', { 
+      const updatePayload = { 
         data: currentData 
-      });
+      };
 
-      // [ALERT] Success Attach
+      // [FIX] Hanya tandai komponen sebagai override, JANGAN root entity
+      if (entity.prefabId) {
+         updatePayload.isOverridden = true;
+      }
+
+      sceneStore.patchComponent(entity._id, 'ScriptController', updatePayload);
+
       showPop({
         title: 'Script Attached',
         message: `Added "${script.name}" to ${entity.name}.`,

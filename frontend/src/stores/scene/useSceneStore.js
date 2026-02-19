@@ -1,10 +1,10 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 
-import { useLayerActions } from './layerActions';
-import { useEntityActions } from './entityActions';
-import { useSceneActions } from './sceneActions';
-import { useSettingActions } from './settingActions'; 
+import { useLayerActions } from './useLayerActions';
+import { useEntityActions } from './useEntityActions';
+import { useSceneActions } from './useSceneActions';
+import { useSettingActions } from './useSettingActions'; 
 
 export const useSceneStore = defineStore('scene', () => {
   const scenes = ref([]);
@@ -20,11 +20,9 @@ export const useSceneStore = defineStore('scene', () => {
   const activeLayers = computed(() => {
     if (!activeScene.value) return [];
     
-    // Gabungkan layersWorld dan layersUI jika ada
     const world = activeScene.value.layersWorld || [];
     const ui = activeScene.value.layersUI || [];
     
-    // Tandai tipe layer agar logic sorting nanti tahu (opsional tapi membantu)
     const taggedWorld = world.map(l => ({ ...l, _section: 'world' }));
     const taggedUI = ui.map(l => ({ ...l, _section: 'ui' }));
 

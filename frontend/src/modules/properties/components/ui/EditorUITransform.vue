@@ -1,18 +1,43 @@
 <template>
   <PropertySection title="UI Transform" :icon="LayoutTemplate" v-if="selectedEntity">
     
+    <template #header-extra>
+      <div 
+        v-if="prefabId"
+        class="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border select-none shrink-0"
+        :class="isOverridden 
+          ? 'bg-amber-500/10 text-amber-500 border-amber-500/30' 
+          : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30'"
+      >
+        {{ isOverridden ? 'Override' : 'Sync' }}
+      </div>
+    </template>
+
     <template #menu="{ close }">
-      <div class="p-1 space-y-0.5 min-w-[140px]">
+      <div class="p-1 space-y-0.5 min-w-[150px]">
+        
+        <template v-if="prefabId">
+          <button 
+            @click="syncComponent(COMPONENT_NAME); close()" 
+            :disabled="!isOverridden"
+            class="menu-item"
+          >
+            <RefreshCw class="w-3.5 h-3.5 mr-2 opacity-70" /> 
+            Sync Component
+          </button>
+          <div class="h-px bg-border my-1"></div>
+        </template>
+
         <button 
           @click="handleReset(); close()" 
-          class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-accent hover:text-accent-foreground transition-colors"
+          class="menu-item"
         >
           <RotateCcw class="w-3.5 h-3.5 mr-2 opacity-70" /> Reset Position
         </button>
-        <div class="h-px bg-border my-1"></div>
+        
         <button 
           @click="centerAnchors(); close()" 
-          class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-accent hover:text-accent-foreground transition-colors"
+          class="menu-item"
         >
           <Crosshair class="w-3.5 h-3.5 mr-2 opacity-70" /> Center Anchors
         </button>
@@ -98,7 +123,9 @@
 </template>
 
 <script setup>
-import { LayoutTemplate, Lock, Unlock, RotateCcw, Crosshair } from 'lucide-vue-next'
+import { 
+  LayoutTemplate, Lock, Unlock, RotateCcw, Crosshair, RefreshCw 
+} from 'lucide-vue-next'
 import { useInspectorLogic } from "@/modules/properties/composables/useInspectorLogic.js";
 
 // Components
@@ -117,20 +144,23 @@ const {
   selectedEntity, 
   updatePivot, 
   bindComponentProp, 
-  isLocked 
+  isLocked,
+  prefabId,                   // Prefab Hook
+  syncComponent,              // Sync Hook
+  getComponentOverrideStatus, // Status Hook
+  markAsOverridden            // Mark Override Hook
 } = useInspectorLogic();
 
-// --- BINDINGS (Pass precision: 2) ---
-// Memastikan data yang dibaca dan ditulis melalui store juga dibulatkan
+const isOverridden = getComponentOverrideStatus(COMPONENT_NAME);
+
+// --- BINDINGS (Otomatis handle override via bindComponentProp) ---
 const x = bindComponentProp(COMPONENT_NAME, 'x', 2);
 const y = bindComponentProp(COMPONENT_NAME, 'y', 2);
 const width = bindComponentProp(COMPONENT_NAME, 'width', 2);
 const height = bindComponentProp(COMPONENT_NAME, 'height', 2);
 const rotation = bindComponentProp(COMPONENT_NAME, 'rotation', 2);
-
 const isRatioLocked = bindComponentProp(COMPONENT_NAME, 'isRatioLocked'); 
 
-// Anchor & Pivot (Read Only / Control managed)
 const anchorX = bindComponentProp(COMPONENT_NAME, 'anchorX');
 const anchorY = bindComponentProp(COMPONENT_NAME, 'anchorY');
 const pivotX = bindComponentProp(COMPONENT_NAME, 'pivotX');
@@ -141,6 +171,7 @@ const pivotY = bindComponentProp(COMPONENT_NAME, 'pivotY');
 const updateAnchorFromControl = ({ x, y }) => {
   anchorX.value = x;
   anchorY.value = y;
+  // bindComponentProp setter handles markAsOverridden
 };
 
 const handleReset = () => {
@@ -156,3 +187,9 @@ const centerAnchors = () => {
   y.value = 0;
 };
 </script>
+
+<style scoped>
+.menu-item {
+  @apply relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-accent hover:text-accent-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+}
+</style>

@@ -5,13 +5,37 @@
     v-if="hasComponent"
   >
 
+    <template #header-extra>
+      <div 
+        v-if="prefabId"
+        class="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border select-none shrink-0"
+        :class="isOverridden 
+          ? 'bg-amber-500/10 text-amber-500 border-amber-500/30' 
+          : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30'"
+      >
+        {{ isOverridden ? 'Override' : 'Sync' }}
+      </div>
+    </template>
+
     <template #menu="{ close }">
-      <div class="p-1 min-w-[140px]">
+      <div class="p-1 min-w-[160px] space-y-0.5">
+        <template v-if="prefabId">
+          <button 
+            @click="syncComponent('ScriptController'); close()" 
+            :disabled="!isOverridden"
+            class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-accent hover:text-accent-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <RefreshCw class="w-3.5 h-3.5 mr-2 opacity-70" /> 
+            Sync Component
+          </button>
+          <div class="h-px bg-border my-1"></div>
+        </template>
+
         <button 
           @click="removeComponent('ScriptController'); close()" 
           class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-destructive hover:text-destructive-foreground text-destructive font-medium transition-colors"
         >
-          <Trash2 class="w-3.5 h-3.5 mr-2" /> Remove Script
+          <Trash2 class="w-3.5 h-3.5 mr-2" /> Remove Component
         </button>
       </div>
     </template>
@@ -19,7 +43,7 @@
     <div class="flex items-end gap-1.5 mb-3">
       <div class="flex-1 min-w-0">
         <div class="mb-1 text-[10px] font-bold text-muted-foreground uppercase flex justify-between items-center">
-            <span>Script</span>
+            <span>Attached Scripts</span>
         </div>
         
         <BaseDropdown class="w-full">
@@ -107,7 +131,7 @@
         <PropertyRow label="Active Status">
           <BaseButton 
              :active="currentIsActive"
-             @click="currentIsActive = !currentIsActive"
+             @click="toggleScriptActive"
              class="w-full h-7 text-xs gap-2 justify-start px-3 border border-border/50 bg-background/50 hover:bg-accent transition-all"
              ghost
            >
@@ -123,7 +147,7 @@
             class="w-full h-7 text-xs gap-2 justify-center"
             variant="outline" 
           >
-            <span>Open Script</span>
+            <span>Open Visual Script</span>
           </BaseButton>
         </PropertyRow>
 
@@ -131,7 +155,7 @@
 
         <div class="space-y-1">
           <div v-if="currentVariables.length === 0" class="text-[10px] text-muted-foreground italic pl-2">
-            No variables exposed.
+            No variables exposed in this script.
           </div>
 
           <PropertyRow 
@@ -141,11 +165,28 @@
           >
             <div class="flex items-center gap-1 w-full">
                <div class="flex-1 min-w-0">
-                  <BaseNumber v-if="v.type === 'Number'" v-model="v.model.value" :scrubbable="true" class="w-full text-xs font-mono" :class="{ 'border-primary/50 text-primary': v.isOverridden }" />
+                  <BaseNumber 
+                    v-if="v.type === 'Number'" 
+                    v-model="v.model.value" 
+                    :scrubbable="true" 
+                    class="w-full text-xs font-mono" 
+                    :class="{ 'border-amber-500/50 text-amber-500 bg-amber-500/5': v.isOverridden }" 
+                  />
                   <BaseCheckbox v-else-if="v.type === 'Boolean'" v-model="v.model.value" />
-                  <BaseInput v-else v-model="v.model.value" class="w-full text-xs" :class="{ 'border-primary/50 text-primary': v.isOverridden }" />
+                  <BaseInput 
+                    v-else 
+                    v-model="v.model.value" 
+                    class="w-full text-xs" 
+                    :class="{ 'border-amber-500/50 text-amber-500 bg-amber-500/5': v.isOverridden }" 
+                  />
                </div>
-               <button v-if="v.isOverridden" @click="v.reset()" class="w-6 h-6 flex items-center justify-center hover:bg-muted rounded text-muted-foreground hover:text-foreground">
+               
+               <button 
+                 v-if="v.isOverridden" 
+                 @click="v.reset()" 
+                 title="Reset to default value"
+                 class="w-6 h-6 flex items-center justify-center hover:bg-amber-500/10 rounded text-amber-500 transition-colors"
+               >
                   <RotateCcw class="w-3 h-3" />
                </button>
                <div v-else class="w-6"></div>
@@ -164,14 +205,14 @@
 import { ref, computed, watch } from 'vue'
 import { 
   FileCode2, MoreVertical, Plus, Trash2, 
-  ChevronDown, Check, RotateCcw 
+  ChevronDown, Check, RotateCcw, RefreshCw 
 } from 'lucide-vue-next'
 
 import { useInspectorLogic } from "@/modules/properties/composables/useInspectorLogic.js"
 import { useScriptStore } from '@/stores/useScriptStore.js'
 import { useEditorStore } from '@/stores/useEditorStore.js'
+import { useSceneStore } from '@/stores/scene/useSceneStore.js' // Tambahkan ini
 
-// Composables untuk Alert & Confirm
 import { useConfirm } from '@/composables/useConfirm.js'
 import { usePopAlert } from '@/composables/usePopAlert.js'
 
@@ -185,16 +226,31 @@ import BaseButton from '@/commons/components/buttons/BaseButton.vue'
 
 const scriptStore = useScriptStore()
 const editorStore = useEditorStore()
+const sceneStore = useSceneStore() // Init Store
 const { confirm } = useConfirm()
 const { showPop } = usePopAlert()
-
 const { 
-  selectedEntity, scriptsData,       
-  removeScript, updateScriptInstance,
-  removeComponent
+  selectedEntity, 
+  scriptsData,       
+  removeScript, 
+  updateScriptInstance,
+  removeComponent,
+  prefabId,                   
+  syncComponent,              
+  getComponentOverrideStatus, 
+  // HAPUS atau JANGAN PAKAI markAsOverridden di sini untuk logic internal component
+  // markAsOverridden            
 } = useInspectorLogic()
 
+// Helper Lokal untuk Override Komponen Spesifik
+const markComponentAsOverridden = () => {
+  if (selectedEntity.value && prefabId.value) {
+     sceneStore.updateComponentProp(selectedEntity.value._id, 'ScriptController', 'isOverridden', true)
+  }
+}
+
 const hasComponent = computed(() => !!selectedEntity.value?.components?.ScriptController)
+const isOverridden = getComponentOverrideStatus('ScriptController')
 
 const selectedIndex = ref(0)
 watch(() => selectedEntity.value?._id, () => { selectedIndex.value = 0 })
@@ -208,10 +264,12 @@ function getScriptName(assetId) {
 
 const currentScriptName = computed(() => currentScript.value ? getScriptName(currentScript.value.assetId) : '')
 
-const currentIsActive = computed({
-  get: () => currentScript.value?.isActive ?? true,
-  set: (val) => { if (currentScript.value) updateScriptInstance(selectedIndex.value, 'isActive', val) }
-})
+const currentIsActive = computed(() => currentScript.value?.isActive ?? true)
+const toggleScriptActive = () => {
+  if (!currentScript.value) return
+  updateScriptInstance(selectedIndex.value, 'isActive', !currentIsActive.value)
+  markComponentAsOverridden() // [FIX] Hanya override komponen ini
+}
 
 const currentVariables = computed(() => {
    if (!currentScript.value) return []
@@ -221,32 +279,36 @@ const currentVariables = computed(() => {
 
    return (def.exposedVariables || []).map(d => {
       const variableId = d._id
-      const isOverridden = Object.prototype.hasOwnProperty.call(overrides, variableId)
+      const isVariableOverridden = Object.prototype.hasOwnProperty.call(overrides, variableId)
       
       return {
          name: d.name, 
          type: d.type, 
-         isOverridden,
+         isOverridden: isVariableOverridden,
          model: computed({
-            get: () => isOverridden ? overrides[variableId] : d.defaultValue,
+            get: () => isVariableOverridden ? overrides[variableId] : d.defaultValue,
             set: (val) => {
                 let finalVal = val
                 if (d.type === 'Number') finalVal = Number(val) 
                 else if (d.type === 'Boolean') finalVal = Boolean(val)
 
                 const newVariables = { ...overrides }
-                if (finalVal === d.defaultValue) {
-                    delete newVariables[variableId]
-                } else {
-                    newVariables[variableId] = finalVal
-                }
+                newVariables[variableId] = finalVal
+                
                 updateScriptInstance(selectedIndex.value, 'variables', newVariables)
+                markComponentAsOverridden() // [FIX] Hanya override komponen ini
             }
          }),
          reset: () => {
             const n = { ...overrides } 
-            delete n[variableId]
+            delete n[variableId] 
             updateScriptInstance(selectedIndex.value, 'variables', n)
+            
+            // Meskipun reset variabel ke default, komponen tetap dianggap 'modify'
+            // dari state awal prefab jika ada perubahan struktur array script.
+            // Namun jika kembali ke default murni, bisa jadi tidak override.
+            // Untuk amannya, setiap interaksi dianggap override manual sampai di-Sync.
+            markComponentAsOverridden() 
          }
       }
    })
@@ -265,26 +327,18 @@ async function handleRemoveCurrent() {
    if (!currentScript.value) return
 
    const scriptName = currentScriptName.value
-   const entityName = selectedEntity.value?.name || 'Entity'
-
    const isConfirmed = await confirm({
      title: 'Detach Script?',
-     message: `Are you sure you want to remove "${scriptName}" from ${entityName}? This will reset all local variable overrides.`,
+     message: `Are you sure you want to remove "${scriptName}"?`,
      confirmText: 'Yes, Detach',
-     cancelText: 'Cancel',
      type: 'danger'
    })
 
    if (isConfirmed) {
       removeScript(selectedIndex.value)
       selectedIndex.value = 0
-      
-      showPop({
-        title: 'Script Detached',
-        message: `Successfully removed "${scriptName}".`,
-        type: 'info',
-        duration: 2500
-      })
+      markComponentAsOverridden() // [FIX] Detach script = Component Override
+      showPop({ title: 'Script Detached', type: 'info' })
    }
 }
 

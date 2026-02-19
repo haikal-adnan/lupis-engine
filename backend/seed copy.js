@@ -27,7 +27,7 @@ const seedDatabase = async () => {
     await Prefab.deleteMany({});
     await Script.deleteMany({});
 
-    // --- ID CONSTANTS ---
+    // --- ID DEFINITIONS ---
     const projectId = "project_dungeon_demo_01";
     const sceneId = "scene_level_1_demo";
     
@@ -36,32 +36,40 @@ const seedDatabase = async () => {
     const fScriptsId = "folder_scripts_main";
     
     const assetDungeonId = "dungeon_sheet_fixed_key";
-    
-    const scriptPlayerMoveId = "script_player_physics_move";
+    const assetFontId = "gaegu";
+    const scriptPlayerMoveId = "script_player_movement_001";
     const varSpeedId = "var_speed_001";
+    const prefabChestId = "prefab_chest_001";
     
-    const entPlayerId = "ent_hero_player";
-    const entObstacleId = "ent_stone_wall"; 
-    const entTriggerId = "ent_trigger_zone"; 
+    const layerWorldBg = "layer_w_bg";      
+    const layerWorldMain = "layer_w_main";  
+    const layerUIHUD = "layer_ui_hud";      
+    const layerUIMenu = "layer_ui_menu";    
 
-    console.log("Seeding Project...");
+    const entTilemapId = "ent_main_tilemap";
+    const entGroundId = "ent_static_floor"; 
+    const entItemId = "ent_item_inner";
+    const entUITextId = "ent_ui_score_text";
+
+    // --- SEEDING PROJECT ---
+    console.log("Seeding Project & Folders...");
     await Project.create({
       _id: projectId,
       ownerId: "dev_2025",
-      name: "Collision Event Demo",
+      name: "Dungeon Project",
       settings: { width: 1280, height: 720 },
       scenes: [sceneId],
       globalVariables: [],
-      tags: ['Untagged', 'Player', 'Wall', 'Trigger'],
+      tags: ['Untagged', 'Player', 'Enemy', 'Ground', 'UI'], 
     });
 
-    console.log("Seeding Folders...");
     await Folder.create([
       { _id: fSpritesId, projectId, name: "Sprites" },
       { _id: fFontsId, projectId, name: "Fonts" },
       { _id: fScriptsId, projectId, name: "Scripts" }
     ]);
 
+    // --- SEEDING ASSETS ---
     console.log("Seeding Assets...");
     await Asset.create({
       _id: assetDungeonId,
@@ -74,312 +82,210 @@ const seedDatabase = async () => {
       meta: { extension: ".png", dimensions: { w: 352, h: 176 }, filterMode: "nearest" }
     });
 
-    // --- SCRIPT: PHYSICS MOVEMENT + COLLISION CHECK ---
-    console.log("Seeding Player Script...");
+    await Asset.create({
+      _id: assetFontId,
+      projectId,
+      folderId: fFontsId,
+      name: "gaegu_regular",
+      type: "font",
+      fileKey: "gaegu",
+      fileUrl: null,
+      meta: { extension: ".fnt" }
+    });
+
+    // --- SEEDING SCRIPTS ---
+    console.log("Seeding Scripts...");
     await Script.create({
       _id: scriptPlayerMoveId,
       projectId,
-      name: "Player Move & Check",
+      name: "Player Movement",
       type: "component",
-      exposedVariables: [
-        { _id: varSpeedId, name: "Speed", type: "number", defaultValue: 250 }
-      ],
-      nodes: [
-        // ... (Node Input & Variable Get tidak berubah) ...
-        {
-          _id: "node_input_pos",
-          type: "event_advanced_key",
-          position: { x: 50, y: 50 },
-          settings: { headerTitle: 'POSITIVE INPUT', headerColor: '#C2185B', category: 'Input' },
-          data: {
-            mappings: [
-              { _id: "move_right", key: "D", trigger: "hold", repeat: true },
-              { _id: "move_down", key: "S", trigger: "hold", repeat: true }
-            ]
-          },
-          inputs: [],
-          outputs: [
-            { _id: "out_move_right", label: "D (Right)", dataType: "execution", color: "#FFEB3B" },
-            { _id: "out_move_down", label: "S (Down)", dataType: "execution", color: "#FFEB3B" }
-          ]
-        },
-        {
-          _id: "node_input_neg",
-          type: "event_advanced_key",
-          position: { x: 50, y: 500 },
-          settings: { headerTitle: 'NEGATIVE INPUT', headerColor: '#C2185B', category: 'Input' },
-          data: {
-            mappings: [
-              { _id: "move_left", key: "A", trigger: "hold", repeat: true },
-              { _id: "move_up", key: "W", trigger: "hold", repeat: true }
-            ]
-          },
-          inputs: [],
-          outputs: [
-            { _id: "out_move_left", label: "A (Left)", dataType: "execution", color: "#FFEB3B" },
-            { _id: "out_move_up", label: "W (Up)", dataType: "execution", color: "#FFEB3B" }
-          ]
-        },
-        {
-          _id: "node_get_speed",
-          type: "variable_get",
-          position: { x: 50, y: 300 },
-          settings: { headerTitle: 'GET SPEED', headerColor: '#424242', category: 'Variables' },
-          data: { variableId: varSpeedId },
-          inputs: [],
-          outputs: [{ _id: "val", label: "Value", dataType: "number", color: "#B2FF59" }]
-        },
-        {
-          _id: "node_negate_val",
-          type: "math_negate",
-          position: { x: 300, y: 600 },
-          settings: { headerTitle: 'NEGATE', headerColor: '#00796B', category: 'Math' },
-          data: {},
-          inputs: [
-             { _id: "in", label: "In", dataType: "execution", color: "#fff" },
-             { _id: "a", label: "Value", dataType: "number", color: "#B2FF59" }
-          ],
-          outputs: [{ _id: "res", label: "Result", dataType: "number", color: "#B2FF59" }]
-        },
-
-        // ... (Node Physics Move tidak berubah) ...
-        {
-          _id: "node_phys_right",
-          type: "move_and_slide",
-          position: { x: 400, y: 50 },
-          settings: { headerTitle: 'MOVE RIGHT', headerColor: '#F57C00', category: 'Physics' },
-          data: {},
-          inputs: [
-            { _id: "exec_in", label: "In", dataType: "execution", color: "#ffffff" },
-            { _id: "target", label: "Target", dataType: "string", color: "#E040FB" },
-            { _id: "vel_x", label: "Vel X", dataType: "number", color: "#69F0AE", defaultValue: 0 },
-            { _id: "vel_y", label: "Vel Y", dataType: "number", color: "#69F0AE", defaultValue: 0 }
-          ],
-          outputs: [{ _id: "out", label: "Out", dataType: "execution", color: "#ffffff" }]
-        },
-        {
-          _id: "node_phys_down",
-          type: "move_and_slide",
-          position: { x: 400, y: 250 },
-          settings: { headerTitle: 'MOVE DOWN', headerColor: '#F57C00', category: 'Physics' },
-          data: {},
-          inputs: [
-            { _id: "exec_in", label: "In", dataType: "execution", color: "#ffffff" },
-            { _id: "target", label: "Target", dataType: "string", color: "#E040FB" },
-            { _id: "vel_x", label: "Vel X", dataType: "number", color: "#69F0AE", defaultValue: 0 },
-            { _id: "vel_y", label: "Vel Y", dataType: "number", color: "#69F0AE", defaultValue: 0 }
-          ],
-          outputs: [{ _id: "out", label: "Out", dataType: "execution", color: "#ffffff" }]
-        },
-        {
-          _id: "node_phys_left",
-          type: "move_and_slide",
-          position: { x: 600, y: 500 },
-          settings: { headerTitle: 'MOVE LEFT', headerColor: '#F57C00', category: 'Physics' },
-          data: {},
-          inputs: [
-            { _id: "exec_in", label: "In", dataType: "execution", color: "#ffffff" },
-            { _id: "target", label: "Target", dataType: "string", color: "#E040FB" },
-            { _id: "vel_x", label: "Vel X", dataType: "number", color: "#69F0AE", defaultValue: 0 },
-            { _id: "vel_y", label: "Vel Y", dataType: "number", color: "#69F0AE", defaultValue: 0 }
-          ],
-          outputs: [{ _id: "out", label: "Out", dataType: "execution", color: "#ffffff" }]
-        },
-        {
-          _id: "node_phys_up",
-          type: "move_and_slide",
-          position: { x: 600, y: 700 },
-          settings: { headerTitle: 'MOVE UP', headerColor: '#F57C00', category: 'Physics' },
-          data: {},
-          inputs: [
-            { _id: "exec_in", label: "In", dataType: "execution", color: "#ffffff" },
-            { _id: "target", label: "Target", dataType: "string", color: "#E040FB" },
-            { _id: "vel_x", label: "Vel X", dataType: "number", color: "#69F0AE", defaultValue: 0 },
-            { _id: "vel_y", label: "Vel Y", dataType: "number", color: "#69F0AE", defaultValue: 0 }
-          ],
-          outputs: [{ _id: "out", label: "Out", dataType: "execution", color: "#ffffff" }]
-        },
-
-        // --- COLLISION LOGIC ---
-        {
-          _id: "node_tick",
-          type: "event_tick",
-          position: { x: 800, y: 50 },
-          settings: { headerTitle: 'ON UPDATE', headerColor: '#2196F3', category: 'Events' },
-          data: {},
-          inputs: [],
-          outputs: [{ _id: "out", label: "Tick", dataType: "execution", color: "#ffffff" }]
-        },
-        
-        {
-          _id: "node_check_col",
-          type: "check_collision",
-          position: { x: 1000, y: 50 },
-          settings: { headerTitle: 'CHECK HIT', headerColor: '#E65100', category: 'Physics' },
-          data: {},
-          inputs: [
-             { _id: "target", label: "Target", dataType: "string", color: "#E040FB" }
-          ],
-          outputs: [
-             { _id: "is_colliding", label: "Is Hit?", dataType: "boolean", color: "#FF5252" },
-             { _id: "hit_id", label: "Hit ID", dataType: "string", color: "#E040FB" }
-          ]
-        },
-
-        {
-          _id: "node_branch",
-          type: "logic_branch",
-          position: { x: 1250, y: 50 },
-          settings: { headerTitle: 'IF HIT', headerColor: '#607D8B', category: 'Logic' },
-          data: {},
-          inputs: [
-             { _id: "exec_in", label: "In", dataType: "execution", color: "#ffffff" },
-             { _id: "condition", label: "Condition", dataType: "boolean", color: "#4CAF50" }
-          ],
-          outputs: [
-             { _id: "true", label: "True", dataType: "execution", color: "#4CAF50" },
-             { _id: "false", label: "False", dataType: "execution", color: "#F44336" }
-          ]
-        },
-
-        // -----------------------------------------------------------------------
-        // [UPDATED] NODE NOTIFICATION - Agar kompatibel dengan kode lama
-        // -----------------------------------------------------------------------
-        {
-          _id: "node_notif",
-          type: "ui_notification",
-          position: { x: 1450, y: 50 },
-          settings: { headerTitle: 'SHOW ALERT', headerColor: '#009688', category: 'Interface' },
-          
-          // [CHANGE 1] Data diset key 'msg' agar 'getInputValue(node, "msg")' punya fallback
-          data: { 
-             msg: 'You entered the Trigger Zone!', 
-             duration: 2.0 
-          }, 
-          
-          inputs: [
-             { _id: "exec_in", label: "In", dataType: "execution", color: "#ffffff" },
-             
-             // [CHANGE 2] ID Input diganti jadi 'msg' (sesuai kode getInputValue)
-             { _id: "msg", label: "Message", dataType: "string", color: "#FFB74D" } 
-          ],
-          outputs: [
-             // [CHANGE 3] ID Output diganti jadi 'out' (sesuai kode executeFlow)
-             { _id: "out", label: "Out", dataType: "execution", color: "#ffffff" }
-          ]
-        }
-      ],
-
-      edges: [
-        { _id: "e1", source: "node_input_pos", sourceHandle: "out_move_right", target: "node_phys_right", targetHandle: "exec_in" },
-        { _id: "e2", source: "node_get_speed", sourceHandle: "val", target: "node_phys_right", targetHandle: "vel_x" },
-        { _id: "e3", source: "node_input_pos", sourceHandle: "out_move_down", target: "node_phys_down", targetHandle: "exec_in" },
-        { _id: "e4", source: "node_get_speed", sourceHandle: "val", target: "node_phys_down", targetHandle: "vel_y" },
-        { _id: "e_neg_val", source: "node_get_speed", sourceHandle: "val", target: "node_negate_val", targetHandle: "a" },
-        { _id: "e5", source: "node_input_neg", sourceHandle: "out_move_left", target: "node_phys_left", targetHandle: "exec_in" },
-        { _id: "e6", source: "node_negate_val", sourceHandle: "res", target: "node_phys_left", targetHandle: "vel_x" },
-        { _id: "e7", source: "node_input_neg", sourceHandle: "out_move_up", target: "node_phys_up", targetHandle: "exec_in" },
-        { _id: "e8", source: "node_negate_val", sourceHandle: "res", target: "node_phys_up", targetHandle: "vel_y" },
-
-        // Logic Wiring
-        { _id: "e_tick_branch", source: "node_tick", sourceHandle: "out", target: "node_branch", targetHandle: "exec_in" },
-        { _id: "e_check_cond", source: "node_check_col", sourceHandle: "is_colliding", target: "node_branch", targetHandle: "condition" },
-        { _id: "e_branch_notif", source: "node_branch", sourceHandle: "true", target: "node_notif", targetHandle: "exec_in" }
-      ]
+      exposedVariables: [{ _id: varSpeedId, name: "Speed", type: "number", defaultValue: 300 }],
+      nodes: [], edges: [] 
     });
 
-    console.log("Seeding Scenes & Entities...");
+    // --- SEEDING PREFAB ---
+    console.log("Seeding Prefab...");
+    await Prefab.create({
+      _id: prefabChestId,
+      projectId,
+      name: "Wooden Chest",
+      thumbnailUrl: "",
+      data: {
+        scriptId: "prefab_script_chest",
+        tag: "interactable",
+        layerId: layerWorldMain, 
+        zIndex: 5, 
+        isOverridden: false, // Flag Level Entity
+        components: {
+          Transform: { 
+            x: 0, y: 0, scaleX: 2, scaleY: 2, width: 50, height: 50, flipX: false, flipY: false,
+            isOverridden: false 
+          },
+          SpriteRenderer: { 
+            assetId: assetDungeonId, sourceX: 128, sourceY: 0, sourceWidth: 32, sourceHeight: 32, color: "#FFFFFF", opacity: 1,
+            isOverridden: false
+          },
+          Collider: { 
+            type: "solid", width: 32, height: 32,
+            isOverridden: false
+          }
+        }
+      }
+    });
+
+    // --- SEEDING SCENE ---
+    console.log("Seeding Scene...");
     await Scene.create({
       _id: sceneId,
       projectId,
       scriptId: "level_1_demo",
-      name: "Collision Test Level",
+      name: "Level 1 Demo",
+      version: 1,
+      
       settings: {
         backgroundColor: "#222222",
         tickRate: 60,
-        worldBounds: { x1: -1000, x2: 1000, y1: -1000, y2: 1000, active: true },
-        ui: { referenceWidth: 1280, referenceHeight: 720, scaleMode: "constant", showUIBorder: true, active: true },
+        worldBounds: { x1: -960, x2: 2880, y1: -540, y2: 1620, active: true },
+        ui: { referenceWidth: 1920, referenceHeight: 1080, scaleMode: "constant", showUIBorder: true, active: true },
         grid: { width: 32, height: 32, color: "#ffffff", opacity: 0.1, visible: true, snap: true },
         showRulers: true
       },
-      layers: [
-        { _id: "layer_hero", scriptId: "hero", name: "Game Layer" }
+      
+      layersWorld: [
+        { _id: layerWorldBg, scriptId: "l_bg", name: "Background", zIndex: 0 }, 
+        { _id: layerWorldMain, scriptId: "l_main", name: "Gameplay", zIndex: 10 } 
       ],
+      
+      layersUI: [
+        { _id: layerUIHUD, scriptId: "l_hud", name: "HUD", zIndex: 0 },          
+        { _id: layerUIMenu, scriptId: "l_menu", name: "Menus", zIndex: 100 }     
+      ],
+
       entities: [
-        // 1. ENTITY: HERO PLAYER
+        // 1. TILEMAP ENTITY
         {
-          _id: entPlayerId,
-          scriptId: "hero_player_obj",
+          _id: entTilemapId,
+          scriptId: "level_ground",
           type: "entity",
-          name: "Hero Player",
-          layerId: "layer_hero",
+          name: "Level Terrain",
+          tag: "ground",
+          
+          layerId: layerWorldBg, 
+          zIndex: 0, 
+          
           parentId: null,
           isActive: true,
-          isVisible: true,
+          isOverridden: false,
           components: {
-            Transform: { x: 200, y: 360, width: 64, height: 64, isRatioLocked: false },
-            ShapeRenderer: { type: "rectangle", color: "#2196F3", width: 64, height: 64, opacity: 1 },
+            Transform: { 
+              x: 0, y: 0, width: 640, height: 480, scaleX: 1, scaleY: 1, flipX: false, flipY: false,
+              isOverridden: false
+            },
+            Tilemap: {
+              tileWidth: 16, tileHeight: 16, width: 40, height: 30,
+              assetId: assetDungeonId, isSolid: true,
+              data: Array(1200).fill(0).map((_, i) => i < 40 ? 8 : 0),
+              isOverridden: false
+            }
+          }
+        },
+
+        // 2. STATIC GROUND ENTITY
+        {
+            _id: entGroundId,
+            scriptId: "static_ground_001",
+            type: "entity",
+            name: "Static Floor",
+            tag: "ground",
+            
+            layerId: layerWorldMain,
+            zIndex: 0, 
+            
+            parentId: null,
+            isActive: true,
+            isOverridden: false,
+            components: {
+              Transform: { 
+                x: 300, y: 500, width: 800, height: 32, pivotX: 0.5, pivotY: 0.5, flipX: false, flipY: false,
+                isOverridden: false
+              },
+              ShapeRenderer: { 
+                type: "rectangle", color: "#4CAF50", width: 800, height: 32,
+                isOverridden: false
+              },
+              Collider: { 
+                type: "solid", width: 800, height: 32,
+                isOverridden: false
+              }
+            }
+        },
+
+        // 3. PLAYER ENTITY
+        {
+          _id: entItemId,
+          scriptId: "inner_item_debug",
+          type: "entity",
+          name: "Hero Player",
+          
+          layerId: layerWorldMain,
+          zIndex: 10,
+          
+          parentId: null,
+          isActive: true,
+          isOverridden: false,
+          components: {
+            Transform: { 
+              x: 300, y: 300, width: 64, height: 64, pivotX: 0.5, pivotY: 0.5, flipX: false, flipY: false,
+              isOverridden: false
+            },
+            ShapeRenderer: { 
+              type: "rectangle", color: "#FF0000", width: 64, height: 64,
+              isOverridden: false
+            },
             Collider: { 
-              type: "solid",
-              enabled: true,
-              offsetX: 0, offsetY: 0,
-              width: 64, height: 64
+              type: "solid", width: 64, height: 64,
+              isOverridden: false
+            },
+            Physics: { 
+              enabled: true, type: "dynamic", mass: 1, gravityScale: 2,
+              isOverridden: false
             },
             ScriptController: {
               data: [
-                { 
-                  _id: "inst_move", 
-                  assetId: scriptPlayerMoveId, 
-                  isActive: true, 
-                  variables: { [varSpeedId]: 300 } 
+                { _id: "inst_player_move_001", assetId: scriptPlayerMoveId, isActive: true, variables: { [varSpeedId]: 300 } }
+              ],
+              isOverridden: false
+            }
+          }
+        },
+
+        // 4. UI TEXT ENTITY
+        {
+            _id: entUITextId,
+            scriptId: "ui_score_text",
+            type: "ui",
+            name: "Score Text",
+            tag: "UI",
+            
+            layerId: layerUIHUD,
+            zIndex: 999,
+            
+            parentId: null,
+            isActive: true,
+            isOverridden: false,
+            components: {
+                UITransform: {
+                    x: 50, y: 50, width: 200, height: 50, scaleX: 1, scaleY: 1, rotation: 0,
+                    pivotX: 0, pivotY: 0, anchorX: 0, anchorY: 0, flipX: false, flipY: false,
+                    isOverridden: false
+                },
+                TextRenderer: {
+                    value: "Score: 0", fontSize: 32, color: "#FFFFFF", align: "left",
+                    assetId: assetFontId, opacity: 1,
+                    isOverridden: false
                 }
-              ]
             }
-          }
-        },
-
-        // 2. ENTITY: SOLID WALL
-        {
-          _id: entObstacleId,
-          scriptId: "obstacle_wall_01",
-          type: "entity",
-          name: "Solid Wall",
-          layerId: "layer_hero",
-          parentId: null,
-          isActive: true,
-          isVisible: true,
-          components: {
-            Transform: { x: 500, y: 200, width: 64, height: 300, isRatioLocked: false },
-            ShapeRenderer: { type: "rectangle", color: "#757575", width: 64, height: 300, opacity: 1 },
-            Collider: { 
-              type: "solid",
-              enabled: true,
-              offsetX: 0, offsetY: 0,
-              width: 64, height: 300
-            }
-          }
-        },
-
-        // 3. ENTITY: TRIGGER ZONE
-        {
-          _id: entTriggerId,
-          scriptId: "trigger_zone_01",
-          type: "entity",
-          name: "Trigger Zone",
-          layerId: "layer_hero",
-          parentId: null,
-          isActive: true,
-          isVisible: true,
-          components: {
-            Transform: { x: 800, y: 300, width: 200, height: 200, isRatioLocked: false },
-            ShapeRenderer: { type: "rectangle", color: "#FFEB3B", width: 200, height: 200, opacity: 0.3 },
-            Collider: { 
-              type: "trigger", // Menggunakan tipe trigger
-              enabled: true,
-              offsetX: 0, offsetY: 0,
-              width: 200, height: 200
-            }
-          }
         }
       ]
     });

@@ -1,13 +1,37 @@
 <template>
   <PropertySection title="Transform" :icon="BoxSelect" v-if="selectedEntity">
     
+    <template #header-extra>
+      <div 
+        v-if="prefabId"
+        class="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border select-none shrink-0"
+        :class="isOverridden 
+          ? 'bg-amber-500/10 text-amber-500 border-amber-500/30' 
+          : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30'"
+      >
+        {{ isOverridden ? 'Override' : 'Sync' }}
+      </div>
+    </template>
+
     <template #menu="{ close }">
-      <div class="p-1 space-y-0.5">
+      <div class="p-1 space-y-0.5 min-w-[150px]">
+        
+        <template v-if="prefabId">
+          <button 
+            @click="syncComponent('Transform'); close()" 
+            :disabled="!isOverridden"
+            class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-accent hover:text-accent-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <RefreshCw class="w-3.5 h-3.5 mr-2 opacity-70" /> Sync Transform
+          </button>
+          <div class="h-px bg-border my-1"></div>
+        </template>
+
         <button 
           @click="resetTransform(); close()" 
           class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-accent hover:text-accent-foreground transition-colors"
         >
-          Reset Transform
+          <RotateCcw class="w-3.5 h-3.5 mr-2 opacity-70" /> Reset Values
         </button>
       </div>
     </template>
@@ -85,7 +109,11 @@
 </template>
 
 <script setup>
-import { BoxSelect, Lock, Unlock, FlipHorizontal, FlipVertical } from 'lucide-vue-next'
+import { 
+  BoxSelect, Lock, Unlock, FlipHorizontal, FlipVertical, 
+  RotateCcw, RefreshCw 
+} from 'lucide-vue-next'
+
 import { useInspectorLogic } from "@/modules/properties/composables/useInspectorLogic.js";
 
 import PropertySection from "@ui/display/PropertySection.vue";
@@ -95,7 +123,19 @@ import BaseNumber from '@/commons/components/inputs/BaseNumber.vue'
 import IconButton from '@/commons/components/buttons/IconButton.vue'
 import BaseButton from '@/commons/components/buttons/BaseButton.vue' 
 
-const { selectedEntity, resetTransform, updatePivot, bindComponentProp, isLocked } = useInspectorLogic();
+const { 
+  selectedEntity, 
+  prefabId,           // [NEW] Cek jika prefab
+  resetTransform, 
+  updatePivot, 
+  bindComponentProp, 
+  isLocked,
+  syncComponent,       // [NEW] Fungsi Sync
+  getComponentOverrideStatus // [NEW] Status Override Komponen
+} = useInspectorLogic();
+
+// [NEW] Ambil status override khusus untuk komponen 'Transform'
+const isOverridden = getComponentOverrideStatus('Transform');
 
 const x = bindComponentProp('Transform', 'x', 2);
 const y = bindComponentProp('Transform', 'y', 2);
@@ -103,10 +143,12 @@ const rotation = bindComponentProp('Transform', 'rotation', 2);
 const width = bindComponentProp('Transform', 'width', 2);
 const height = bindComponentProp('Transform', 'height', 2);
 
+// [NOTE] bindComponentProp sekarang otomatis meng-handle isOverridden=true saat diset
 const flipX = bindComponentProp('Transform', 'flipX');
 const flipY = bindComponentProp('Transform', 'flipY');
 const isRatioLocked = bindComponentProp('Transform', 'isRatioLocked');
 
 const pivotX = bindComponentProp('Transform', 'pivotX');
 const pivotY = bindComponentProp('Transform', 'pivotY');
+
 </script>

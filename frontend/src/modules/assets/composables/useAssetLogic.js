@@ -1,7 +1,7 @@
 import { ref, computed } from 'vue'
 import { useAssetStore } from '@/stores/useAssetStore'
 import { useFolderStore } from '@/stores/useFolderStore'
-import { useAssetActions } from '@/stores/scene/assetActions'
+import { useAssetActions } from '@/stores/scene/useAssetActions'
 
 export function useAssetLogic() {
   const assetStore = useAssetStore()

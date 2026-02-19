@@ -10,6 +10,18 @@
     </PropertyRow>
 
     <div class="pt-2 pb-1 border-t border-border mt-2">
+       <div class="px-1 mb-2 text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+          <Wind class="w-3 h-3" /> Global Physics
+       </div>
+       <PropertyRow label="Gravity (Y)">
+          <BaseNumber v-model="gravity" class="font-mono" :step="10" />
+       </PropertyRow>
+       <PropertyRow label="Air Drag">
+          <BaseNumber v-model="drag" class="font-mono" :step="0.1" :min="0" />
+       </PropertyRow>
+    </div>
+
+    <div class="pt-2 pb-1 border-t border-border mt-2">
       <div class="px-1 mb-2 flex items-center justify-between">
         <div class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
           <MapPin class="w-3 h-3" />
@@ -63,7 +75,7 @@
 
 <script setup>
 import { computed } from 'vue';
-import { Settings2, MapPin } from 'lucide-vue-next';
+import { Settings2, MapPin, Wind } from 'lucide-vue-next';
 import { useInspectorLogic } from "@/modules/properties/composables/useInspectorLogic.js";
 
 // Atomic Components
@@ -76,6 +88,9 @@ import BaseCheckbox from '@/commons/components/inputs/BaseCheckbox.vue';
 const { bindSettingProp } = useInspectorLogic();
 
 // Root Settings
+const gravity = bindSettingProp('physics', 'gravity');
+const drag    = bindSettingProp('physics', 'drag');
+
 const backgroundColor = bindSettingProp(null, 'backgroundColor');
 const tickRate        = bindSettingProp(null, 'tickRate');
 const showRulers      = bindSettingProp(null, 'showRulers');

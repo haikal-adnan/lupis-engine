@@ -86,7 +86,7 @@ import { LayoutTemplate, AppWindow, Plus } from 'lucide-vue-next';
 import SceneNode from './SceneNode.vue';
 import PropertySection from "@ui/display/PropertySection.vue"; 
 import { useEditorStore } from '@/stores/useEditorStore';
-import { useLayerActions } from '@/stores/scene/layerActions';
+import { useLayerActions } from '@/stores/scene/useLayerActions';
 import { useSceneStore } from '@/stores/scene/useSceneStore';
 
 const props = defineProps({
@@ -101,7 +101,6 @@ const sceneStore = useSceneStore();
 const activeScene = computed(() => sceneStore.activeScene);
 const { addLayer } = useLayerActions(activeScene);
 
-// --- STABLE SORTING LOGIC ---
 const sortNodes = (nodes) => {
   return [...nodes].sort((a, b) => {
       const zA = a.zIndex ?? 0;
@@ -121,7 +120,6 @@ const sortNodes = (nodes) => {
 const worldTree = computed(() => sortNodes(props.data.worldTree || []));
 const uiTree = computed(() => sortNodes(props.data.uiTree || []));
 
-// --- Actions ---
 const isUIEditorActive = computed(() => editorStore.activeTab?.type === 'ui');
 const showUIBorder = computed(() => sceneStore.activeScene?.settings?.ui?.showUIBorder ?? true);
 
@@ -139,7 +137,6 @@ const openUIEditor = () => {
 const toggleUIBorder = () => sceneStore.toggleUIBorder();
 const handleAddLayer = (section) => addLayer("New Layer", section);
 
-// --- Drag Drop ---
 const handleDrop = (payload) => emit('drop', payload);
 const allowDrop = (e) => { e.dataTransfer.dropEffect = 'move'; };
 

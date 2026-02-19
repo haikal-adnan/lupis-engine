@@ -23,32 +23,24 @@ export default class SelectionTool {
         this.selectedList = [];
 
         this.isPointerDown = false;
+        this.dragStartPosition = { x: 0, y: 0 };
+        
         this.marqueeActive = false;
         this.marqueeStart = { x: 0, y: 0 };
         this.marqueeEnd = { x: 0, y: 0 };
 
         this.hoverHandle = null;
-        this.pointerDownTime = 0;
-        this.isLongPress = false;
-        this.LONG_PRESS_TIME = 30;
 
         this.onExternalSelect = (list) => { this.syncSelectionFromBus(list); };
-        this.onUISelect = (ids) => { this.handleUISelect(ids); };
-        this.onPrefabSelect = () => {
-            this.setSelection([], "prefab");
-        };
+        this.onEditorSelect = (ids) => { this.handleEditorSelect(ids); }; 
+        this.onPrefabSelect = () => { this.setSelection([], "prefab"); };
 
         bus.on("entity:selected", this.onExternalSelect);
-        bus.on("ui:select-by-id", this.onUISelect);
         bus.on("prefab:selected", this.onPrefabSelect);
-        bus.on("entity:deselected", () => {
-            this.setSelection([], "deselect");
-        });
+        bus.on("entity:deselected", () => { this.setSelection([], "deselect"); });
 
         world.selectionRenderer = (image, shape, text, proj) => {
             if (!this.active) return;
-
-            // [LOGIC TAMBAHAN] Jangan render gizmo seleksi jika di mode tilemap
             const { activeTabId, tabs } = this.world._editors || {};
             const activeTab = tabs?.find(t => t.id === activeTabId);
             if (activeTab?.type === 'tilemap') return;
@@ -58,7 +50,7 @@ export default class SelectionTool {
             if(this.marqueeActive && this.hoverMarqueeList.length > 0) {
                  const c = [0, 0.55, 1, 0.5];
                  for(const e of this.hoverMarqueeList) {
-                      if(this._isClickable(e) && e.type !== 'group') {
+                      if(this._isClickable(e)) {
                           this.drawer.drawObb(shape, e, c, proj);
                       }
                  }
@@ -75,7 +67,6 @@ export default class SelectionTool {
         };
     }
 
-    // ... (Metode clear, _isClickable, setSelection, dll TETAP SAMA) ...
     clear() {
         this.setSelection([], "internal");
         bus.emit("entity:deselected");
@@ -83,14 +74,13 @@ export default class SelectionTool {
 
     _isClickable(e) {
         if (!e) return false;
-        if (e.active === false) return false;
-        if (e.visible === false) return false;
+        if (e.active === false || e.visible === false) return false;
         if (e.isLocked || (e._editor && e._editor.locked)) return false;
         return true;
     }
 
     setSelection(newList, source = "internal") {
-        this.selectedList = newList;
+        this.selectedList = [...new Set(newList)];
         if (this.transform) {
             this.transform.computeHandles();
         }
@@ -99,7 +89,6 @@ export default class SelectionTool {
         }
     }
     
-    // ... (Helper methods lain tetap sama) ...
     toWorld(px, py) {
         const c = this.game.camera;
         const s = c.scale || 1;
@@ -118,11 +107,9 @@ export default class SelectionTool {
         const y2 = Math.max(this.marqueeStart.y, this.marqueeEnd.y);
         return { x: x1, y: y1, w: x2 - x1, h: y2 - y1 };
     }
-    
-    // ... (destroy, attachTransform, syncSelectionFromBus, dll TETAP SAMA) ...
+
     destroy() {
         bus.off("entity:selected", this.onExternalSelect);
-        bus.off("ui:select-by-id", this.onUISelect);
         bus.off("prefab:selected", this.onPrefabSelect);
     }
 
@@ -137,9 +124,7 @@ export default class SelectionTool {
         if (this.transform) this.transform.computeHandles();
     }
 
-    // ... (handleUISelect, consolidateSelection, isInsideGroup, _updateSelectionFilter TETAP SAMA) ...
-    handleUISelect(ids) {
-        // ... (kode lama) ...
+    handleEditorSelect(ids) {
         if (!ids || ids.length === 0) {
             this.setSelection([], "ui");
             bus.emit("entity:deselected");
@@ -147,85 +132,21 @@ export default class SelectionTool {
         }
         const idsToFind = Array.isArray(ids) ? ids : [ids];
         const realEntities = [];
-        const findRecursive = (targetId, entities) => {
-            for (const e of entities) {
-                const eId = String(e._id || e.id);
-                if (eId === String(targetId)) return e;
-                if (e.children && e.children.length > 0) {
-                    const found = findRecursive(targetId, e.children);
-                    if (found) return found;
-                }
-            }
-            return null;
-        };
         const allLayers = [...(this.world.layersWorld || []), ...(this.world.layersUI || [])];
+        
         for (const id of idsToFind) {
-            let found = null;
             for (const layer of allLayers) {
                 if (layer.entities) {
-                    found = findRecursive(id, layer.entities);
-                    if (found) break;
+                    const f = layer.entities.find(e => String(e._id || e.id) === String(id));
+                    if(f) { realEntities.push(f); break; }
                 }
             }
-            if (found) realEntities.push(found);
         }
         this.setSelection(realEntities, "internal");
     }
 
     consolidateSelection(candidates) {
-        // ... (kode lama - tidak berubah) ...
-        if (!candidates || candidates.length <= 1) return candidates;
-        const finalSet = new Set(candidates);
-        let changed = true;
-        let safeCounter = 0;
-        const allLayers = [...(this.world.layersWorld || []), ...(this.world.layersUI || [])];
-        while (changed && safeCounter < 10) {
-            changed = false;
-            safeCounter++;
-            const parentMap = new Map();
-            for (const e of finalSet) {
-                if (e.parentId) {
-                    if (!parentMap.has(e.parentId)) parentMap.set(e.parentId, []);
-                    parentMap.get(e.parentId).push(e);
-                }
-            }
-            for (const [parentId, childrenInSelection] of parentMap.entries()) {
-                let parentEntity = null;
-                const findRecursive = (id, list) => {
-                    for (const e of list) {
-                        if (String(e.id || e._id) === String(id)) return e;
-                        if (e.children) {
-                            const f = findRecursive(id, e.children);
-                            if (f) return f;
-                        }
-                    }
-                    return null;
-                };
-                for (const l of allLayers) {
-                    if (l.entities) {
-                        parentEntity = findRecursive(parentId, l.entities);
-                        if (parentEntity) break;
-                    }
-                }
-                if (parentEntity && parentEntity.children) {
-                    if (childrenInSelection.length === parentEntity.children.length) {
-                        childrenInSelection.forEach(child => finalSet.delete(child));
-                        finalSet.add(parentEntity);
-                        changed = true;
-                    }
-                }
-            }
-        }
-        return Array.from(finalSet);
-    }
-
-    isInsideGroup(wx, wy) {
-        if (this.selectedList.length <= 1) return false;
-        const validMembers = this.selectedList.filter(e => this._isClickable(e));
-        if (validMembers.length <= 1) return false;
-        const box = this.transform ? this.transform.computeGroupBounds() : null;
-        if (!box) return false;
-        return wx >= box.x && wx <= box.x + box.w && wy >= box.y && wy <= box.y + box.h;
+        return [...new Set(candidates)];
     }
 
     _updateSelectionFilter() {
@@ -238,41 +159,28 @@ export default class SelectionTool {
         if (!this.game.selection) this.game.selection = {};
 
         this.game.selection.filter = (entity, layer) => {
-            const isUILayer = layer.scriptId === 'ui' || layer.name === 'UI' || (layer._id && layer._id.includes('ui'));
-            if (isUIMode) {
-                return isUILayer; 
-            } else if (isSceneMode) {
-                return !isUILayer; 
-            }
+            const layersUI = this.world.layersUI || [];
+            const isUILayer = layersUI.includes(layer);
+
+            if (isUIMode) return isUILayer; 
+            if (isSceneMode) return true; 
             return true; 
         };
     }
 
     update() {
         if (!this.active) return;
-
-        // [BARU] Pengecekan Tab Tilemap
+        
         const { activeTabId, tabs } = this.world._editors || {};
         const activeTab = tabs?.find(t => t.id === activeTabId);
-        
-        // Jika sedang di tab Tilemap (Isolation Mode)
         if (activeTab && activeTab.type === 'tilemap') {
-            // Jika masih ada sisa seleksi dari tab sebelumnya, bersihkan
-            if (this.selectedList.length > 0) {
-                this.clear();
-            }
-            // Pastikan cursor tidak stuck di 'move' atau 'pointer'
+            if (this.selectedList.length > 0) this.clear();
             this.canvas.style.cursor = "default";
-            
-            // Hentikan proses update agar tidak bisa select/marquee
             return; 
         }
 
         this._updateSelectionFilter();
-
-        if (this.transform) {
-            this.transform.update(); 
-        }
+        if (this.transform) this.transform.update(); 
 
         const p = this.input.getPointer();
         const px = p.x;
@@ -281,58 +189,30 @@ export default class SelectionTool {
 
         this.updateHover(px, py, w);
 
-        // ... (Sisa logika update original TETAP SAMA) ...
-        if (p.down && !this.isPointerDown) {
-            this.pointerDownTime = performance.now();
-            this.isLongPress = false;
-            this.pointerDown(px, py, w, p.isTouch);
+        const isInputDown = p.down || p.rightDown;
+
+        if (isInputDown && !this.isPointerDown) {
             this.isPointerDown = true;
+            this.pointerDown(px, py, w, p.isTouch, p.rightDown);
         }
 
-        const isDraggingResize =
-            this.transform &&
-            (this.transform.draggingResize ||
-                this.transform.draggingMove ||
-                this.transform.draggingRotate);
-
-        if (p.down && this.isPointerDown && !this.isLongPress && !isDraggingResize) {
-            if (performance.now() - this.pointerDownTime >= this.LONG_PRESS_TIME) {
-                this.isLongPress = true;
-
-                if (this.selectedList.length > 1 && this.isInsideGroup(w.x, w.y)) {
-                    if (this.transform) this.transform.beginMove(px, py, false);
-                } else {
-                    const hit = this.hitTester.hit(this.world, w.x, w.y, px, py);
-                    if (hit && this._isClickable(hit) && this.transform) {
-                        if (!this.selectedList.includes(hit)) {
-                            this.setSelection([hit], "internal");
-                        }
-                        this.transform.beginMove(px, py, false);
-                    }
-                }
-            }
-        }
-
-        if (!p.isTouch && p.down && this.marqueeActive) {
+        if (!p.isTouch && p.down && !p.rightDown && this.marqueeActive) {
             this.marqueeEnd.x = w.x;
             this.marqueeEnd.y = w.y;
-            
             const box = this.getMarqueeWorld();
             const rawMarquee = this.hitTester.checkMarquee(this.world, box);
             this.hoverMarqueeList = rawMarquee.filter(e => this._isClickable(e));
-            
             this.panner.apply(px, py);
         }
 
-        if (!p.down && this.isPointerDown) {
+        if (!isInputDown && this.isPointerDown) {
             this.pointerUp(px, py);
             this.isPointerDown = false;
         }
-
+        
         this.panner.update();
     }
-
-    // ... (updateHover, pointerDown, pointerUp TETAP SAMA) ...
+    
     updateHover(px, py, w) {
         this.hoverHandle = null;
         if (this.isPointerDown) return;
@@ -347,55 +227,59 @@ export default class SelectionTool {
             }
         }
 
-        if (this.selectedList.length > 1 && this.isInsideGroup(w.x, w.y)) {
-            this.canvas.style.cursor = "move";
-            this.hovered = null;
-            return;
-        }
-
-        const hit = this.hitTester.hit(this.world, w.x, w.y, px, py);
+        let hit = this.hitTester.hit(this.world, w.x, w.y, px, py);
         
         if (hit && this._isClickable(hit)) {
+            const isSelected = this.selectedList.includes(hit);
+            this.canvas.style.cursor = isSelected ? "move" : "pointer";
             this.hovered = hit;
         } else {
             this.hovered = null;
-        }
-
-        if (this.hovered) {
-            const isSelected = this.selectedList.includes(this.hovered);
-            this.canvas.style.cursor = isSelected ? "move" : "pointer";
-        } else {
             this.canvas.style.cursor = "default";
         }
     }
 
-    pointerDown(px, py, w, isTouch) {
+    pointerDown(px, py, w, isTouch, isRightClick = false) {
+        this.dragStartPosition = { x: px, y: py }; 
+
+        if (isRightClick) {
+            let hit = this.hitTester.hit(this.world, w.x, w.y, px, py);
+            if (hit && this._isClickable(hit)) {
+                if (!this.selectedList.includes(hit)) {
+                    this.setSelection([hit], "internal");
+                }
+            } else {
+                this.setSelection([], "internal");
+                bus.emit("entity:deselected");
+            }
+            return;
+        }
+
         if (this.transform && this.hoverHandle) {
             this.transform.beginResize(this.hoverHandle, px, py);
             return;
         }
 
-        const ctrl =
-            this.input.keyboard.ctrl ||
-            this.input.keyboard.shift ||
-            this.input.keyboard.meta;
+        const isShift = this.input.keyboard.isDown("Shift") || this.input.keyboard.isDown("Control");
+        let hit = this.hitTester.hit(this.world, w.x, w.y, px, py);
 
-        const hit = this.hitTester.hit(this.world, w.x, w.y, px, py);
-        
         if (hit && this._isClickable(hit)) {
-            const inside = this.selectedList.includes(hit);
-
-            if (ctrl) {
-                let newList = inside
+            const alreadySelected = this.selectedList.includes(hit);
+            if (isShift) {
+                let newList = alreadySelected 
                     ? this.selectedList.filter(a => a !== hit)
                     : [...this.selectedList, hit];
-
                 newList = this.consolidateSelection(newList);
                 this.setSelection(newList, "internal");
-            } else {
-                if (!inside) {
+            } 
+            else {
+                if (!alreadySelected) {
                     this.setSelection([hit], "internal");
                 }
+            }
+
+            if (this.transform) {
+                this.transform.beginMove(px, py, isTouch);
             }
             return;
         }
@@ -403,14 +287,14 @@ export default class SelectionTool {
         if (!isTouch && (!hit || !this._isClickable(hit))) {
             this.panner.calculateInsets();
             this.marqueeActive = true;
-            this.setSelection([], "internal"); 
-            bus.emit("entity:deselected");
-
+            if (!isShift) {
+                this.setSelection([], "internal"); 
+                bus.emit("entity:deselected");
+            }
             this.marqueeStart.x = w.x;
             this.marqueeStart.y = w.y;
             this.marqueeEnd.x = w.x;
             this.marqueeEnd.y = w.y;
-
             this.hoverMarqueeList = [];
         }
     }
@@ -420,6 +304,10 @@ export default class SelectionTool {
 
         if (this.marqueeActive) {
             let results = [...this.hoverMarqueeList].filter(e => this._isClickable(e));
+            const isShift = this.input.keyboard.isDown("Shift") || this.input.keyboard.isDown("Control");
+            if (isShift) {
+                results = [...this.selectedList, ...results];
+            }
             results = this.consolidateSelection(results);
             this.setSelection(results, "internal");
             this.marqueeActive = false;
@@ -427,14 +315,18 @@ export default class SelectionTool {
             return;
         }
 
-        if (!this.isLongPress && !this.marqueeActive) {
-            const w = this.toWorld(px, py);
-            const hit = this.hitTester.hit(this.world, w.x, w.y, px, py);
-            
-            if (!hit || !this._isClickable(hit)) {
-                this.setSelection([], "internal");
-                bus.emit("entity:deselected");
-            }
+        const start = this.dragStartPosition || { x: px, y: py };
+        const dx = Math.abs(px - start.x);
+        const dy = Math.abs(py - start.y);
+        if (dx > 5 || dy > 5) return;
+
+        const w = this.toWorld(px, py);
+        let hit = this.hitTester.hit(this.world, w.x, w.y, px, py);
+        const isShift = this.input.keyboard.isDown("Shift") || this.input.keyboard.isDown("Control");
+
+        if (!hit && !isShift && this.input.mouse.isDown(0)) { 
+            this.setSelection([], "internal");
+            bus.emit("entity:deselected");
         }
     }
 }

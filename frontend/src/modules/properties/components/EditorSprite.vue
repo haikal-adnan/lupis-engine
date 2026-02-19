@@ -1,14 +1,39 @@
 <template>
   <PropertySection title="Sprite Renderer" :icon="Image" v-if="hasComponent">
     
+    <template #header-extra>
+      <div 
+        v-if="prefabId"
+        class="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border select-none shrink-0"
+        :class="isOverridden 
+          ? 'bg-amber-500/10 text-amber-500 border-amber-500/30' 
+          : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30'"
+      >
+        {{ isOverridden ? 'Override' : 'Sync' }}
+      </div>
+    </template>
+
     <template #menu="{ close }">
-      <div class="p-1 space-y-0.5">
+      <div class="p-1 space-y-0.5 min-w-[160px]">
+        
+        <template v-if="prefabId">
+          <button 
+            @click="syncComponent('SpriteRenderer'); close()" 
+            :disabled="!isOverridden"
+            class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-accent hover:text-accent-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <RefreshCw class="w-3.5 h-3.5 mr-2 opacity-70" /> 
+            Sync Component
+          </button>
+          <div class="h-px bg-border my-1"></div>
+        </template>
+
         <button 
           @click="removeComponent('SpriteRenderer'); close()" 
           class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-destructive hover:text-destructive-foreground text-destructive font-medium transition-colors"
         >
-          <Trash2 class="w-3 h-3 mr-2" />
-          Remove Sprite Renderer
+          <Trash2 class="w-3.5 h-3.5 mr-2" />
+          Remove Component
         </button>
       </div>
     </template>
@@ -80,7 +105,7 @@
 
 <script setup>
 import { computed, ref } from "vue";
-import { Image, FolderSearch, Trash2 } from "lucide-vue-next"; 
+import { Image, FolderSearch, Trash2, RefreshCw } from "lucide-vue-next"; 
 import { useInspectorLogic } from "@/modules/properties/composables/useInspectorLogic.js"; 
 
 // Atomic Components
@@ -95,13 +120,19 @@ const {
   selectedEntity, 
   bindComponentProp,
   currentTextureUrl,
-  removeComponent
+  removeComponent,
+  prefabId,                   // Hook Prefab
+  syncComponent,              // Hook Sync
+  getComponentOverrideStatus  // Hook Status
 } = useInspectorLogic();
 
 const hasComponent = computed(() => !!selectedEntity.value?.components?.SpriteRenderer);
 
-const assetId = bindComponentProp('SpriteRenderer', 'assetId');
+// Ambil status override khusus untuk badge
+const isOverridden = getComponentOverrideStatus('SpriteRenderer');
 
+// Bindings: Setter otomatis memicu flag isOverridden = true di logic hook
+const assetId = bindComponentProp('SpriteRenderer', 'assetId');
 const rawOpacity = bindComponentProp('SpriteRenderer', 'opacity');
 
 const displayOpacity = computed({
@@ -128,6 +159,6 @@ const autoResetRect = ref(false);
 
 function openAssetSelector() {
   console.log("Open Asset Panel triggered!");
-  // Logika membuka modal asset manager
+  // Logic untuk Asset Manager Modal
 }
 </script>

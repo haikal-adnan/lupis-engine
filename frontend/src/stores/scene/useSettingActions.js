@@ -1,5 +1,3 @@
-// src/stores/scene/settingActions.js
-
 export const useSettingActions = (activeScene) => {
   
   const _getSettings = () => activeScene.value?.settings;
@@ -49,6 +47,15 @@ export const useSettingActions = (activeScene) => {
     }
   };
 
+  const updatePhysicsSettings = (updates) => {
+    const s = _getSettings();
+    if (s) {
+        // Ensure object exists
+        if (!s.physics) s.physics = { gravity: 2000, drag: 5 };
+        Object.assign(s.physics, updates);
+    }
+  };
+
   // --- UI Settings ---
   
   const updateUISettings = (updates) => {
@@ -80,6 +87,7 @@ export const useSettingActions = (activeScene) => {
     setBackgroundColor,
     setTickRate,
     updateWorldBounds,
+    updatePhysicsSettings,
     updateUISettings,
     toggleUIBorder, // Exported
     toggleRulers

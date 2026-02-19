@@ -7,12 +7,13 @@
         ? 'bg-primary/10 border-primary shadow-sm shadow-primary/5' 
         : 'border-transparent hover:bg-secondary/60 hover:border-border/50'
     ]"
+    @click.stop="$emit('click', data)"
     @click="$emit('click', data)"
   >
     <div 
-      class="flex items-center justify-center rounded-md overflow-hidden bg-secondary/30 border border-white/5 shrink-0"
+      class="flex items-center justify-center rounded-md overflow-hidden bg-secondary/30 border border-white/5 shrink-0 text-muted-foreground"
       :class="[
-        viewMode === 'grid' ? 'w-12 h-12 mb-2' : 'w-8 h-8 mr-3'
+        viewMode === 'grid' ? 'w-10 h-10 mb-2' : 'w-7 h-7 mr-3'
       ]"
     >
       <img 
@@ -23,8 +24,8 @@
       />
       <Box 
         v-else 
-        class="text-pink-500/80 transition-colors group-hover:text-pink-500" 
-        :class="viewMode === 'grid' ? 'w-6 h-6' : 'w-4 h-4'" 
+        class="transition-colors group-hover:text-pink-500" 
+        :class="viewMode === 'grid' ? 'w-5 h-5' : 'w-4 h-4'" 
         :stroke-width="1.5"
       />
     </div>
@@ -50,7 +51,7 @@ import { computed } from 'vue'
 import { Box } from 'lucide-vue-next'
 
 const props = defineProps({
-  data: { type: Object, required: true }, // { name, thumbnailUrl, ... }
+  data: { type: Object, required: true }, // { id, name, thumbnailUrl... }
   viewMode: { type: String, default: 'grid' },
   active: { type: Boolean, default: false }
 })

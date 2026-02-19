@@ -1,12 +1,21 @@
+// src/systems/PhysicsSystem.js
+
 export default class PhysicsSystem {
     constructor(game) {
         this.game = game;
-        this.GRAVITY = 1200;
-        this.MAX_VELOCITY = 2000;
+        // Kita hapus hardcoded value disini, atau jadikan fallback saja
+        this.MAX_VELOCITY = 2500;
         this.MIN_MOVE_DISTANCE = 0.001;
     }
 
     update(dt) {
+        // Ambil settings dari scene, dengan fallback jika belum ada
+        const sceneSettings = this.game.world.settings.physics || { gravity: 1200, drag: 5 };
+        const GLOBAL_GRAVITY = sceneSettings.gravity;
+        const GLOBAL_DRAG = sceneSettings.drag;
+
+        console.log(GLOBAL_GRAVITY, GLOBAL_DRAG);
+
         const entities = this.game.world.entities;
 
         for (let i = 0; i < entities.length; i++) {
@@ -22,17 +31,26 @@ export default class PhysicsSystem {
             phys.collisionInfo = { hitSolid: null, hitTrigger: null, isGrounded: false };
 
             // 1. APPLY GRAVITY
+            // Rumus: Global Gravity * Entity Gravity Scale
             if (phys.gravityScale !== 0) {
-                phys.velocityY += this.GRAVITY * phys.gravityScale * dt;
+                phys.velocityY += GLOBAL_GRAVITY * phys.gravityScale * dt;
             }
 
-            // 2. APPLY DRAG (FIX BUG DRAG TINGGI)
+            // 2. APPLY DRAG
+            // Rumus: Global Drag * Entity Drag (sebagai multiplier)
+            // Jika entity.drag = 1, maka effectiveDrag = 5.
             if (phys.drag > 0) {
-                // Menggunakan Math.max(0, ...) mencegah velocity berbalik arah jika drag terlalu besar
-                phys.velocityX *= Math.max(0, 1 - (phys.drag * dt));
+                const effectiveDrag = GLOBAL_DRAG * phys.drag;
                 
-                // Opsional: Apply drag ke Y juga jika ingin "gesekan udara" saat jatuh
-                // phys.velocityY *= Math.max(0, 1 - (phys.drag * dt));
+                // Gunakan effectiveDrag untuk damping
+                const damping = Math.max(0, 1 - (effectiveDrag * dt));
+                
+                phys.velocityX *= damping;
+
+                // Opsional: Jika bukan platformer (Top Down), terapkan drag ke Y juga
+                if (phys.gravityScale === 0) {
+                     phys.velocityY *= damping;
+                }
             }
 
             // Clamp Terminal Velocity
@@ -42,7 +60,7 @@ export default class PhysicsSystem {
             const dx = phys.velocityX * dt;
             const dy = phys.velocityY * dt;
 
-            // 3. MOVE AND SLIDE
+            // ... (Kode selanjutnya sama persis: MOVE AND SLIDE, CHECK GROUND, dll)
             if (Math.abs(dx) > this.MIN_MOVE_DISTANCE || Math.abs(dy) > this.MIN_MOVE_DISTANCE) {
                 const hitObject = this.game.colliderSystem.moveAndSlide(entity, dx, dy);
                 if (hitObject) {
@@ -50,27 +68,20 @@ export default class PhysicsSystem {
                 }
             }
 
-            // 4. CHECK GROUND & TRIGGER (Setelah posisi update)
             this._checkGrounded(entity, phys);
             this._checkTriggers(entity, phys);
 
-            // Stop velocity jika menapak tanah
             if (phys.isGrounded && phys.velocityY > 0) {
                 phys.velocityY = 0;
             }
 
-            // Stop velocity jika kepala mentok atap
             if (phys.velocityY < 0 && phys.collisionInfo.hitSolid) {
-                const t = entity.components.Transform;
-                const hitT = phys.collisionInfo.hitSolid.components.Transform;
-                // Logika sederhana: jika collision di atas center y kita
-                if (hitT && hitT.y < t.y) {
-                    phys.velocityY = 0;
-                }
+                phys.velocityY = 0;
             }
         }
     }
 
+    // ... (Fungsi _checkGrounded, _checkTriggers, _aabbIntersect tetap sama)
     _checkGrounded(entity, physComponent) {
         const colliderSys = this.game.colliderSystem;
         const bounds = colliderSys.getBounds(entity);
@@ -78,42 +89,37 @@ export default class PhysicsSystem {
             physComponent.isGrounded = false;
             return;
         }
-
-        // Sensor dibuat sedikit lebih toleran
+        const margin = 2; 
         const sensor = {
-            x: bounds.x + 2, // Margin kiri
-            y: bounds.y + bounds.h, // Tepat di kaki
-            w: bounds.w - 4, // Margin kanan
-            h: 4 // Tebal sensor ke bawah
+            x: bounds.x + margin, 
+            y: bounds.y + bounds.h, 
+            w: bounds.w - (margin * 2), 
+            h: 4 
         };
-
         let isGrounded = false;
         const entities = this.game.world.entities;
-
         for (let i = 0; i < entities.length; i++) {
             const other = entities[i];
             if (other === entity) continue;
             if (!other.active && !other.isActive) continue;
-
             const col = other.components.Collider;
-            // Pastikan mengecek lantai yang SOLID
             if (!col || !col.enabled || col.type !== 'solid') continue;
-
             const otherBounds = colliderSys.getBounds(other);
             if (otherBounds && this._aabbIntersect(sensor, otherBounds)) {
                 isGrounded = true;
                 break;
             }
         }
-
         physComponent.isGrounded = isGrounded;
     }
 
-    // ... sisa method sama ...
     _checkTriggers(entity, physComponent) {
        const overlaps = this.game.colliderSystem._findAllCollisions(entity);
        if (overlaps && overlaps.length > 0) {
-           const triggerHit = overlaps.find(e => e.tag !== 'ground');
+           const triggerHit = overlaps.find(e => {
+                const c = e.components.Collider;
+                return c && c.type === 'trigger';
+           });
            if (triggerHit) physComponent.collisionInfo.hitTrigger = triggerHit;
        }
     }

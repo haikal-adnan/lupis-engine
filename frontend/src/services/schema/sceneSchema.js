@@ -1,3 +1,5 @@
+// src/schemas/sceneSchema/createScene.js
+
 import { createLayer } from '@schemas/sceneSchema/layerSchema.js';
 import { createEntity } from '@schemas/sceneSchema/entitySchema.js';
 import { GenerateUUID } from '@/commons/utils/generateUUID.js'; 
@@ -5,12 +7,12 @@ import { GenerateUUID } from '@/commons/utils/generateUUID.js';
 export const createScene = (data = {}, projectId = null) => {
   const sceneId = data._id || `scene_${GenerateUUID()}`;
   const scriptId = data.scriptId || `script_${GenerateUUID()}`;
+  console.log(data)
 
   return {
     _id: sceneId,
     projectId: projectId || data.projectId,
     scriptId: scriptId,
-    
     name: data.name || "Untitled Scene",
     version: data.version || 1,
     
@@ -18,6 +20,11 @@ export const createScene = (data = {}, projectId = null) => {
       backgroundColor: data.settings?.backgroundColor || '#222222',
       tickRate: data.settings?.tickRate || 60,
       
+      physics: {
+        gravity: data.settings?.physics?.gravity ?? 2000, 
+        drag: data.settings?.physics?.drag ?? 5,          
+      },
+
       worldBounds: {
         x1: data.settings?.worldBounds?.x1 ?? -1920,
         x2: data.settings?.worldBounds?.x2 ?? 1920,
@@ -46,7 +53,6 @@ export const createScene = (data = {}, projectId = null) => {
       showRulers: data.settings?.showRulers ?? true
     },
 
-    // --- Layers Logic: World vs UI ---
     layersWorld: Array.isArray(data.layersWorld) 
       ? data.layersWorld.map(l => createLayer(l))
       : [createLayer({ _id: 'layer_world_root', scriptId: 'world_root', name: 'World Root' })],
@@ -55,8 +61,6 @@ export const createScene = (data = {}, projectId = null) => {
       ? data.layersUI.map(l => createLayer(l))
       : [createLayer({ _id: 'layer_ui_root', scriptId: 'ui_root', name: 'UI Root' })],
 
-    // --- Entities Logic ---
-    // createEntity sekarang akan otomatis menyertakan zIndex
     entities: Array.isArray(data.entities) 
       ? data.entities.map(e => createEntity(e)) 
       : []

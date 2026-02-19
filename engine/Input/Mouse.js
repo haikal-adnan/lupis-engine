@@ -53,6 +53,8 @@ export default class Mouse {
             this.wheel += e.deltaY;
         };
 
+        this._contextMenu = e => e.preventDefault();
+        this.canvas.addEventListener("contextmenu", this._contextMenu);
         this.canvas.addEventListener("mousemove", this._move);
         this.canvas.addEventListener("mousedown", this._down);
         this.canvas.addEventListener("wheel", this._wheel, { passive: false });
@@ -78,6 +80,7 @@ export default class Mouse {
         this.canvas.removeEventListener("mousemove", this._move);
         this.canvas.removeEventListener("mousedown", this._down);
         this.canvas.removeEventListener("wheel", this._wheel);
+        this.canvas.removeEventListener("contextmenu", this._contextMenu);
         window.removeEventListener("mouseup", this._up);
         window.removeEventListener("blur", this._blur);
     }

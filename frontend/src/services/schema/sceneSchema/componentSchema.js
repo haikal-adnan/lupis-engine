@@ -13,17 +13,19 @@ export const createTransform = (data = {}, defaults = { width: 100, height: 100 
     flipY: Boolean(data.flipY ?? false),
     width: Number(data.width ?? defaults.width),
     height: Number(data.height ?? defaults.height),
-    isRatioLocked: Boolean(data.isRatioLocked ?? false)
+    isRatioLocked: Boolean(data.isRatioLocked ?? false),
+    // Flat Overridden Flag
+    isOverridden: Boolean(data.isOverridden ?? false)
   };
 };
 
 export const createUITransform = (data = {}, defaults = { width: 160, height: 40 }) => {
   const base = createTransform(data, defaults);
-
   return {
     ...base,
     anchorX: Number(data.anchorX ?? 0.5),
-    anchorY: Number(data.anchorY ?? 0.5)
+    anchorY: Number(data.anchorY ?? 0.5),
+    isOverridden: Boolean(data.isOverridden ?? false)
   };
 };
 
@@ -35,7 +37,8 @@ export const createCollider = (data = {}) => {
     offsetY: Number(data.offsetY ?? 0),
     width: Number(data.width ?? 32),
     height: Number(data.height ?? 32),
-    ...data
+    ...data,
+    isOverridden: Boolean(data.isOverridden ?? false)
   };
 };
 
@@ -45,18 +48,24 @@ export const createPhysics = (data = {}) => {
     type: data.type || "dynamic", 
     mass: Number(data.mass ?? 1.0),
     gravityScale: Number(data.gravityScale ?? 1.0),
-    drag: Number(data.drag ?? 0.1),
+    drag: Number(data.drag ?? 1.0),
     velocityX: Number(data.velocityX ?? 0),
     velocityY: Number(data.velocityY ?? 0),
     isGrounded: Boolean(data.isGrounded ?? false),
-    ...data
+    ...data,
+    isOverridden: Boolean(data.isOverridden ?? false)
   };
 };
 
+// --- Main Creator ---
+
 export const createComponent = (type, inputData = {}) => {
+  // 1. Generate Data Spesifik
+  let specificData = {};
+
   switch (type) {
     case "SpriteRenderer":
-      return {
+      specificData = {
         assetId: inputData.assetId || null,
         sourceX: Number(inputData.sourceX ?? 0),
         sourceY: Number(inputData.sourceY ?? 0),
@@ -66,9 +75,10 @@ export const createComponent = (type, inputData = {}) => {
         opacity: Number(inputData.opacity ?? 1),
         ...inputData
       };
+      break;
 
     case "TextRenderer":
-      return {
+      specificData = {
         value: inputData.value || "New Text",
         fontSize: Number(inputData.fontSize || 24),
         color: inputData.color || "#FFFFFF",
@@ -77,9 +87,10 @@ export const createComponent = (type, inputData = {}) => {
         opacity: Number(inputData.opacity ?? 1),
         ...inputData
       };
+      break;
 
     case "ShapeRenderer":
-      return {
+      specificData = {
         type: inputData.type || "rectangle",
         color: inputData.color || "#FF0000",
         width: Number(inputData.width || 100),
@@ -88,11 +99,12 @@ export const createComponent = (type, inputData = {}) => {
         opacity: Number(inputData.opacity ?? 1),
         ...inputData
       };
+      break;
 
     case "Tilemap":
       const mapW = Number(inputData.width || 40);
       const mapH = Number(inputData.height || 30);
-      return {
+      specificData = {
         tileWidth: Number(inputData.tileWidth || 16),
         tileHeight: Number(inputData.tileHeight || 16),
         width: mapW,
@@ -103,11 +115,13 @@ export const createComponent = (type, inputData = {}) => {
         data: inputData.data || new Array(mapW * mapH).fill(0),
         ...inputData
       };
+      break;
 
     case "ScriptController":
-      return {
+      specificData = {
         data: Array.isArray(inputData.data) ? inputData.data : []
       };
+      break;
 
     case "Transform":
       return createTransform(inputData);
@@ -122,6 +136,13 @@ export const createComponent = (type, inputData = {}) => {
       return createPhysics(inputData);
 
     default:
-      return { ...inputData };
+      specificData = { ...inputData };
+      break;
   }
+
+  // 2. Return Flat Object (Data + isOverridden)
+  return {
+    ...specificData,
+    isOverridden: Boolean(inputData.isOverridden ?? false)
+  };
 };

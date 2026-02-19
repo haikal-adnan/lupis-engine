@@ -135,7 +135,6 @@ export function useHierarchyLogic() {
     
     if (draggedLayer) {
         if (!targetNode || targetNode.type !== 'layer') return;
-        
         const draggedIsUI = draggedLayer._section === 'ui' || (draggedLayer.name && draggedLayer.name.includes('UI'));
         const targetIsUI = targetNode._section === 'ui' || (targetNode.name && targetNode.name.includes('UI'));
 
@@ -143,7 +142,6 @@ export function useHierarchyLogic() {
              showPop({ title: 'Invalid Move', message: 'Cannot move Layer between World and UI sections.', type: 'error' });
              return;
         }
-
         sceneStore.reorderLayer(draggedId, targetNode._id, position);
         return;
     }
@@ -160,8 +158,16 @@ export function useHierarchyLogic() {
 
         const targetId = targetNode._id;
         if (draggedId === targetId) return;
-        
         if (targetNode.type !== 'layer' && isAncestor(draggedId, targetId)) return;
+
+        if (position === 'inside' && targetNode.type !== 'layer') {
+            showPop({ 
+                title: 'Grouping Disabled', 
+                message: 'Grouping/Nesting entities is temporarily disabled due to stability issues.', 
+                type: 'warning' 
+            });
+            return;
+        }
 
         let targetLayerId = null;
         let isTargetUI = false;
@@ -179,19 +185,7 @@ export function useHierarchyLogic() {
         const isGroup = draggedEntity.type === 'group';
 
         if (isGroup) {
-            if (isTargetUI) {
-                if (containsType(draggedId, 'world')) {
-                     showPop({ title: 'Invalid Move', message: 'Group contains World Entities.', type: 'error' });
-                     return;
-                }
-            } else {
-                if (containsType(draggedId, 'ui')) {
-                     showPop({ title: 'Invalid Move', message: 'Group contains UI Entities.', type: 'error' });
-                     return;
-                }
-            }
-        }
-        else {
+        } else {
             if (isDraggedUI && !isTargetUI) {
                 showPop({ title: 'Invalid Move', message: 'UI Entity cannot go to World Layer.', type: 'error' });
                 return;
@@ -230,16 +224,10 @@ export function useHierarchyLogic() {
             context.newParentId = null; 
             context.insertionType = 'append';
         } else {
-            if (position === 'inside') {
-                context.newParentId = targetNode._id;
-                context.newLayerId = targetNode.layerId;
-                context.insertionType = 'append';
-            } else {
-                context.newParentId = targetNode.parentId || null;
-                context.newLayerId = targetNode.layerId;
-                context.referenceId = targetNode._id;
-                context.insertionType = position === 'top' ? 'before' : 'after';
-            }
+             context.newParentId = targetNode.parentId || null;
+             context.newLayerId = targetNode.layerId;
+             context.referenceId = targetNode._id;
+             context.insertionType = position === 'top' ? 'before' : 'after';
         }
 
         sceneStore.moveEntity(draggedId, context);
