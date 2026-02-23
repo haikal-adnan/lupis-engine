@@ -78,7 +78,6 @@ import { computed } from 'vue';
 import { Settings2, MapPin, Wind } from 'lucide-vue-next';
 import { useInspectorLogic } from "@/modules/properties/composables/useInspectorLogic.js";
 
-// Atomic Components
 import PropertySection from "@ui/display/PropertySection.vue";
 import PropertyRow from "@ui/display/PropertyRow.vue";
 import BaseColor from '@/commons/components/inputs/BaseColor.vue';
@@ -87,7 +86,6 @@ import BaseCheckbox from '@/commons/components/inputs/BaseCheckbox.vue';
 
 const { bindSettingProp } = useInspectorLogic();
 
-// Root Settings
 const gravity = bindSettingProp('physics', 'gravity');
 const drag    = bindSettingProp('physics', 'drag');
 
@@ -95,14 +93,12 @@ const backgroundColor = bindSettingProp(null, 'backgroundColor');
 const tickRate        = bindSettingProp(null, 'tickRate');
 const showRulers      = bindSettingProp(null, 'showRulers');
 
-// World Bounds Settings
 const boundsActive = bindSettingProp('worldBounds', 'active');
 const x1 = bindSettingProp('worldBounds', 'x1');
 const x2 = bindSettingProp('worldBounds', 'x2');
 const y1 = bindSettingProp('worldBounds', 'y1');
 const y2 = bindSettingProp('worldBounds', 'y2');
 
-// Visual FPS Info
 const tickInterval = computed(() => {
   const fps = tickRate.value || 60;
   return (1000 / fps).toFixed(2);

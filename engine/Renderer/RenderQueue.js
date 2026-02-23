@@ -1,4 +1,3 @@
-// engine/Renderer/RenderQueue.js
 export default class RenderQueue {
     constructor() {
         this.items = [];

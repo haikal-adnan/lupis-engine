@@ -14,13 +14,11 @@ export function useClipboard() {
   const layerActions = useLayerActions(activeScene);
   const entityActions = useEntityActions(activeScene, selectedEntityIds);
 
-  // Helper untuk menentukan target operasi
   const getTargets = (explicitId) => {
-    if (explicitId) return [explicitId]; // Prioritas 1: ID dari Context Menu
-    return [...sceneStore.selectedEntityIds]; // Prioritas 2: Seleksi Entity
+    if (explicitId) return [explicitId]; 
+    return [...sceneStore.selectedEntityIds];
   };
 
-  // Helper untuk cek apakah ID adalah Layer
   const isLayerId = (id) => {
     if (!activeScene.value) return false;
     return activeScene.value.layersWorld.some(l => l._id === id) || 
@@ -31,10 +29,7 @@ export function useClipboard() {
     const targets = getTargets(explicitId);
     if (targets.length === 0) return;
 
-    // Cek apakah target pertama adalah Layer
     if (isLayerId(targets[0])) {
-        // Layer hanya support single copy via context menu biasanya, 
-        // tapi logic ini aman untuk array 1 item
         const data = layerActions.getLayerData(targets[0]);
         if (data) editorStore.setClipboard('layer', data, 'copy');
     } else {
@@ -67,10 +62,8 @@ export function useClipboard() {
     if (targets.length === 0) return;
 
     if (isLayerId(targets[0])) {
-        // Duplicate Layer
         return layerActions.duplicateLayer(targets[0]);
     } else {
-        // Duplicate Entity
         return entityActions.duplicateEntity(targets);
     }
   };
@@ -106,8 +99,6 @@ export function useClipboard() {
             context.parentId = selectedEntity.parentId;
             context.layerId = selectedEntity.layerId;
         } else {
-             // Jika seleksi adalah layer (walaupun tidak bisa diselect secara visual, 
-             // logic ini jaga-jaga)
              const selectedLayer = activeScene.value.layersWorld.find(l => l._id === referenceId) ||
                                    activeScene.value.layersUI.find(l => l._id === referenceId);
              if (selectedLayer) {

@@ -27,7 +27,6 @@ const seedDatabase = async () => {
     await Prefab.deleteMany({});
     await Script.deleteMany({});
 
-    // --- ID DEFINITIONS ---
     const projectId = "project_dungeon_demo_01";
     const sceneId = "scene_level_1_demo";
     
@@ -51,7 +50,6 @@ const seedDatabase = async () => {
     const entItemId = "ent_item_inner";
     const entUITextId = "ent_ui_score_text";
 
-    // --- SEEDING PROJECT ---
     console.log("Seeding Project & Folders...");
     await Project.create({
       _id: projectId,
@@ -69,7 +67,6 @@ const seedDatabase = async () => {
       { _id: fScriptsId, projectId, name: "Scripts" }
     ]);
 
-    // --- SEEDING ASSETS ---
     console.log("Seeding Assets...");
     await Asset.create({
       _id: assetDungeonId,
@@ -93,7 +90,6 @@ const seedDatabase = async () => {
       meta: { extension: ".fnt" }
     });
 
-    // --- SEEDING SCRIPTS ---
     console.log("Seeding Scripts...");
     await Script.create({
       _id: scriptPlayerMoveId,
@@ -104,7 +100,6 @@ const seedDatabase = async () => {
       nodes: [], edges: [] 
     });
 
-    // --- SEEDING PREFAB ---
     console.log("Seeding Prefab...");
     await Prefab.create({
       _id: prefabChestId,
@@ -116,7 +111,7 @@ const seedDatabase = async () => {
         tag: "interactable",
         layerId: layerWorldMain, 
         zIndex: 5, 
-        isOverridden: false, // Flag Level Entity
+        isOverridden: false, 
         components: {
           Transform: { 
             x: 0, y: 0, scaleX: 2, scaleY: 2, width: 50, height: 50, flipX: false, flipY: false,
@@ -134,7 +129,6 @@ const seedDatabase = async () => {
       }
     });
 
-    // --- SEEDING SCENE ---
     console.log("Seeding Scene...");
     await Scene.create({
       _id: sceneId,
@@ -163,7 +157,6 @@ const seedDatabase = async () => {
       ],
 
       entities: [
-        // 1. TILEMAP ENTITY
         {
           _id: entTilemapId,
           scriptId: "level_ground",
@@ -191,7 +184,6 @@ const seedDatabase = async () => {
           }
         },
 
-        // 2. STATIC GROUND ENTITY
         {
             _id: entGroundId,
             scriptId: "static_ground_001",
@@ -221,7 +213,6 @@ const seedDatabase = async () => {
             }
         },
 
-        // 3. PLAYER ENTITY
         {
           _id: entItemId,
           scriptId: "inner_item_debug",
@@ -260,7 +251,6 @@ const seedDatabase = async () => {
           }
         },
 
-        // 4. UI TEXT ENTITY
         {
             _id: entUITextId,
             scriptId: "ui_score_text",

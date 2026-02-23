@@ -7,11 +7,6 @@ export default class GLImageResource {
 
     async loadTextureFromAsset(asset) {
         let src = asset.fileUrl;
-        // if (asset.localBlob) {
-        //     src = URL.createObjectURL(asset.localBlob);
-        // }
-
-        // if (!src) throw new Error("No source found for asset");
 
         const img = await this._loadImage(src);
 

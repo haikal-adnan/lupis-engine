@@ -1,6 +1,6 @@
 class Configs {
     constructor() {
-        this.ENGINE_MODE = "runtime"; // "runtime" | "editor"
+        this.ENGINE_MODE = "runtime"; 
 
         this.EDITOR = {
             CAMERA_CONTROLLER: true,

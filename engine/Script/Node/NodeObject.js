@@ -16,27 +16,21 @@ export const NodeObject = {
         }
     },
 
-    // --- TAMBAHAN BARU ---
     'set_object': {
         execute: (runner, node) => {
             const targetId = runner.getInputValue(node, 'target');
             const entity = runner.resolveEntity(targetId);
             
-            // Safety check: jika entity tidak ada, skip tapi flow tetap lanjut
             if (!entity) {
                 runner.executeFlow(node._id, 'exec_out');
                 return;
             }
 
-            // 1. Ambil nilai input
             const newName = runner.getInputValue(node, 'name');
             const newTag = runner.getInputValue(node, 'tag');
             const newActive = runner.getInputValue(node, 'active');
             const newVisible = runner.getInputValue(node, 'visible');
 
-            // 2. Logic Update Parsial
-            // Hanya update properti jika nilainya TIDAK undefined dan TIDAK null.
-            
             if (newName !== undefined && newName !== null) {
                 entity.name = String(newName);
             }
@@ -53,7 +47,6 @@ export const NodeObject = {
                 entity.visible = Boolean(newVisible);
             }
 
-            // 3. Lanjut ke node berikutnya
             runner.executeFlow(node._id, 'exec_out');
         }
     }

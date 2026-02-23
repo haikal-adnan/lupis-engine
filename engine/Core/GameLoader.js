@@ -25,7 +25,6 @@ export default class GameLoader {
         try {
             this._initMain(game, canvas, mode);
             
-            // 2. Data & Settings Setup
             if (project) game._id = project._id;
             this._setupWorldSettings(game, scene?.settings);
             
@@ -33,9 +32,8 @@ export default class GameLoader {
                 this._setupEditorState(game, editorConfig);
             }
 
-            // 3. Load Libraries (Script & Prefab) BEFORE Scene
             this._initPrefabLibrary(game.world, prefabs);
-            ScriptLoader.load(game, payload); // Init global script system
+            ScriptLoader.load(game, payload); 
             
             const assetLoader = new AssetLoader(
                 new GLImageResource(game.renderer.gl),
@@ -47,9 +45,7 @@ export default class GameLoader {
 
             this._initScriptLibrary(game.world, scripts);
 
-            // 4. Load Scene (Now with access to Prefabs)
             if (scene) {
-                // Pass 'prefabs' map explicitly if needed, or rely on world.prefabs
                 new SceneLoader(game.world, mode).loadScene(scene);
             }
 
@@ -153,11 +149,9 @@ export default class GameLoader {
 
     _initPrefabLibrary(world, prefabs) {
         if (!Array.isArray(prefabs)) return;
-        // Simpan data prefab ke world agar bisa diakses SceneLoader
         world.prefabs = Object.fromEntries(prefabs.map(p => [p._id, {
             _id: p._id,
             name: p.name,
-            // Penting: Simpan 'data' yang berisi komponen dan properti default
             data: p.data 
         }]));
     }

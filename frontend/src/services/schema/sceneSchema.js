@@ -1,5 +1,3 @@
-// src/schemas/sceneSchema/createScene.js
-
 import { createLayer } from '@schemas/sceneSchema/layerSchema.js';
 import { createEntity } from '@schemas/sceneSchema/entitySchema.js';
 import { GenerateUUID } from '@/commons/utils/generateUUID.js'; 
@@ -7,7 +5,6 @@ import { GenerateUUID } from '@/commons/utils/generateUUID.js';
 export const createScene = (data = {}, projectId = null) => {
   const sceneId = data._id || `scene_${GenerateUUID()}`;
   const scriptId = data.scriptId || `script_${GenerateUUID()}`;
-  console.log(data)
 
   return {
     _id: sceneId,

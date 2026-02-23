@@ -61,23 +61,12 @@ export function useNodeLogic() {
     const node = selectedNode.value;
 
     const dynamicTypes = [
-      // General & Transform
       'get_object', 'set_object',
       'get_transform', 'set_transform', 
-      
-      // Physics
       'get_physics', 'set_physics',
-
-      // Graphics: Sprite
       'get_sprite', 'set_sprite',
-
-      // Graphics: Shape
       'get_shape', 'set_shape',
-
-      // Graphics: Tilemap
       'get_tilemap', 'set_tilemap',
-
-      // UI & Text
       'get_text', 'set_text'
     ];
     if (dynamicTypes.includes(node.type)) {

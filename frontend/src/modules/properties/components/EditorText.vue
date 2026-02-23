@@ -89,6 +89,13 @@
       </div>
     </PropertyRow>
 
+    <div class="px-1 mb-2 mt-1">
+      <BaseCheckbox 
+        v-model="autoFit" 
+        label="Auto Fit Transform to Text" 
+      />
+    </div>
+
     <PropertyRow label="Text Color">
       <BaseColor v-model="color" :show-label="true" height="2rem" />
     </PropertyRow>
@@ -129,7 +136,6 @@ import {
 } from "lucide-vue-next"; 
 import { useInspectorLogic } from "@/modules/properties/composables/useInspectorLogic.js"; 
 
-// Atomic Components
 import PropertySection from "@ui/display/PropertySection.vue";
 import PropertyRow from "@ui/display/PropertyRow.vue";
 import BaseNumber from "@/commons/components/inputs/BaseNumber.vue";
@@ -137,30 +143,29 @@ import BaseTextArea from "@/commons/components/inputs/BaseTextArea.vue";
 import BaseColor from "@/commons/components/inputs/BaseColor.vue";
 import BaseButton from "@/commons/components/buttons/BaseButton.vue";
 import IconButton from "@/commons/components/buttons/IconButton.vue";
+import BaseCheckbox from "@/commons/components/inputs/BaseCheckbox.vue";
 
 const { 
   selectedEntity, 
   removeComponent, 
   bindComponentProp,
   resetTextRatio,
-  prefabId,                   // [NEW]
-  syncComponent,              // [NEW]
-  getComponentOverrideStatus  // [NEW]
+  prefabId,                 
+  syncComponent,              
+  getComponentOverrideStatus  
 } = useInspectorLogic();
 
 const hasComponent = computed(() => !!selectedEntity.value?.components?.TextRenderer);
 
-// [NEW] Ambil status override khusus untuk komponen 'TextRenderer'
 const isOverridden = getComponentOverrideStatus('TextRenderer');
 
-// BINDINGS (Otomatis memicu override via bindComponentProp)
 const textValue = bindComponentProp('TextRenderer', 'value');
 const fontSize = bindComponentProp('TextRenderer', 'fontSize');
 const color = bindComponentProp('TextRenderer', 'color');
 const align = bindComponentProp('TextRenderer', 'align');
 const rawOpacity = bindComponentProp('TextRenderer', 'opacity');
+const autoFit = bindComponentProp('TextRenderer', 'autoFit');
 
-// OPACITY LOGIC
 const displayOpacity = computed({
   get: () => Math.round((rawOpacity.value ?? 1) * 100),
   set: (val) => {

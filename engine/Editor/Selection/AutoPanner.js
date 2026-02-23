@@ -1,4 +1,3 @@
-// AutoPanner tetap sama
 export class AutoPanner {
     constructor(game, canvas) {
         this.game = game;

@@ -9,7 +9,6 @@ export default class SceneLoader {
     loadScene(sceneData) {
         if (!sceneData) return;
 
-        // 1. Load Global Settings
         if (this.world) {
             this.world.currentSceneScriptId = sceneData.scriptId;
             if (sceneData.settings) {
@@ -17,7 +16,6 @@ export default class SceneLoader {
             }
         }
 
-        // 2. Load Layers
         const parseLayers = (layers, defaultName, defaultZ) => {
             if (Array.isArray(layers) && layers.length > 0) {
                 return layers.map((layer, index) => ({
@@ -37,7 +35,6 @@ export default class SceneLoader {
         this.world.layersWorld = parseLayers(sceneData.layersWorld, "World Root", 0);
         this.world.layersUI = parseLayers(sceneData.layersUI, "UI Root", 100);
 
-        // Fallback: Create default layers if empty
         if (this.world.layersWorld.length === 0) {
             this.world.layersWorld.push({ 
                 _id: "layer_w_root", scriptId: "root_w", name: "World Root", 
@@ -51,7 +48,6 @@ export default class SceneLoader {
             });
         }
 
-        // 3. Load Entities
         if (!Array.isArray(sceneData.entities)) return;
 
         this.world.entities = [];
@@ -59,7 +55,6 @@ export default class SceneLoader {
 
         const createdEntities = new Map();
 
-        // Phase A: Instantiation
         for (const entityData of sceneData.entities) {
             const entity = this._createEntityInstance(entityData);
             if (!entity) continue;
@@ -72,7 +67,6 @@ export default class SceneLoader {
             }
         }
 
-        // Phase B: Hierarchy & Parenting
         for (const entity of createdEntities.values()) {
             if (!entity.parentId) continue;
 
@@ -80,11 +74,10 @@ export default class SceneLoader {
             if (parent) {
                 parent.addChild(entity);
             } else {
-                entity.parentId = null; // Orphaned
+                entity.parentId = null; 
             }
         }
 
-        // Phase C: Initial Sort
         this.world.allLayers.forEach(layer => {
             if(layer.entities.length > 0) {
                 layer.entities.sort((a, b) => {
@@ -98,13 +91,9 @@ export default class SceneLoader {
     _createEntityInstance(instanceData) {
         let finalData = instanceData;
 
-        // --- PREFAB MERGE LOGIC ---
-        // Jika entity memiliki prefabId, kita gabungkan data dari Master Prefab
         if (instanceData.prefabId) {
             const prefab = this.world.prefabs?.[instanceData.prefabId];
             if (prefab) {
-                // instanceData adalah data yang tersimpan di Scene (berisi override)
-                // prefab.data adalah data Master (default)
                 finalData = this._mergePrefabData(prefab.data, instanceData);
             }
         }
@@ -125,7 +114,6 @@ export default class SceneLoader {
         entity.visible = finalData.isVisible ?? true;
         entity.prefabId = finalData.prefabId;
         
-        // Simpan flag override agar editor tahu statusnya
         entity.isOverridden = finalData.isOverridden ?? false;
 
         if(this.mode == "editor") entity._editor = finalData._editor;

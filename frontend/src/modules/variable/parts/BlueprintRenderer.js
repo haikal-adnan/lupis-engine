@@ -11,10 +11,6 @@ export const BlueprintRenderer = {
   color: '#00ACC1',
   icon: ImageIcon,
   items: [
-    // =================================================================
-    // 1. SPRITE RENDERER
-    // Schema: assetId, sourceX/Y, sourceW/H, color, opacity
-    // =================================================================
     { 
       type: 'get_sprite', 
       label: 'Get Sprite', 
@@ -27,7 +23,7 @@ export const BlueprintRenderer = {
         data: {
           propertyOptions: [
             { value: 'assetId', label: 'Asset ID', type: 'string', color: '#FFF' },
-            { value: 'color', label: 'Tint Color', type: 'string', color: '#E91E63' }, // Added to match Schema
+            { value: 'color', label: 'Tint Color', type: 'string', color: '#E91E63' },
             { value: 'opacity', label: 'Opacity', type: 'number', color: '#00BCD4' },
             { value: 'sourceX', label: 'Source X', type: 'number', color: '#00BCD4' },
             { value: 'sourceY', label: 'Source Y', type: 'number', color: '#00BCD4' },
@@ -42,7 +38,6 @@ export const BlueprintRenderer = {
     { 
       type: 'set_sprite', 
       label: 'Set Sprite', 
-      description: 'Modify the Sprite Renderer', 
       icon: ImageIcon,
       allowDynamicInputs: true, 
       allowDynamicOutputs: false,
@@ -51,7 +46,7 @@ export const BlueprintRenderer = {
         data: {
           propertyOptions: [
             { value: 'assetId', label: 'Asset ID', type: 'string', color: '#FFF' },
-            { value: 'color', label: 'Tint Color', type: 'string', color: '#E91E63' }, // Added
+            { value: 'color', label: 'Tint Color', type: 'string', color: '#E91E63' },
             { value: 'opacity', label: 'Opacity', type: 'number', color: '#00BCD4' },
             { value: 'sourceX', label: 'Source X', type: 'number', color: '#00BCD4' },
             { value: 'sourceY', label: 'Source Y', type: 'number', color: '#00BCD4' },
@@ -66,11 +61,6 @@ export const BlueprintRenderer = {
         outputs: [{ _id: 'exec_out', label: 'Out', dataType: 'execution', color: '#ffffff' }]
       } 
     },
-
-    // =================================================================
-    // 2. TEXT RENDERER
-    // Schema: value, fontSize, color, align, assetId, opacity
-    // =================================================================
     { 
       type: 'get_text', 
       label: 'Get Text', 
@@ -85,8 +75,8 @@ export const BlueprintRenderer = {
             { value: 'fontSize', label: 'Font Size', type: 'number', color: '#FFC107' },
             { value: 'color', label: 'Color', type: 'string', color: '#FFC107' },
             { value: 'align', label: 'Align', type: 'string', color: '#FFC107' },
-            { value: 'assetId', label: 'Font Asset', type: 'string', color: '#FFF' }, // Added to match Schema
-            { value: 'opacity', label: 'Opacity', type: 'number', color: '#FFC107' },
+            { value: 'assetId', label: 'Font Asset', type: 'string', color: '#FFF' },
+            { value: 'opacity', label: 'Opacity', type: 'number', color: '#FFC107' }
           ]
         },
         inputs: [{ _id: 'target', label: 'Target ID (Self)', dataType: 'string', color: '#E040FB' }], 
@@ -107,8 +97,8 @@ export const BlueprintRenderer = {
             { value: 'fontSize', label: 'Font Size', type: 'number', color: '#FFC107' },
             { value: 'color', label: 'Color', type: 'string', color: '#FFC107' },
             { value: 'align', label: 'Align', type: 'string', color: '#FFC107' },
-            { value: 'assetId', label: 'Font Asset', type: 'string', color: '#FFF' }, // Added
-            { value: 'opacity', label: 'Opacity', type: 'number', color: '#FFC107' },
+            { value: 'assetId', label: 'Font Asset', type: 'string', color: '#FFF' },
+            { value: 'opacity', label: 'Opacity', type: 'number', color: '#FFC107' }
           ]
         },
         inputs: [
@@ -118,11 +108,6 @@ export const BlueprintRenderer = {
         outputs: [{ _id: 'exec_out', label: 'Out', dataType: 'execution', color: '#ffffff' }]
       } 
     },
-
-    // =================================================================
-    // 3. SHAPE RENDERER
-    // Schema: type, color, width, height, thickness, opacity
-    // =================================================================
     { 
       type: 'get_shape', 
       label: 'Get Shape', 
@@ -138,7 +123,7 @@ export const BlueprintRenderer = {
             { value: 'width', label: 'Width', type: 'number', color: '#F06292' },
             { value: 'height', label: 'Height', type: 'number', color: '#F06292' },
             { value: 'thickness', label: 'Line Thickness', type: 'number', color: '#F06292' },
-            { value: 'opacity', label: 'Opacity', type: 'number', color: '#F06292' }, // Added to match Schema
+            { value: 'opacity', label: 'Opacity', type: 'number', color: '#F06292' }
           ]
         },
         inputs: [{ _id: 'target', label: 'Target ID (Self)', dataType: 'string', color: '#E040FB' }], 
@@ -160,7 +145,7 @@ export const BlueprintRenderer = {
             { value: 'width', label: 'Width', type: 'number', color: '#F06292' },
             { value: 'height', label: 'Height', type: 'number', color: '#F06292' },
             { value: 'thickness', label: 'Line Thickness', type: 'number', color: '#F06292' },
-            { value: 'opacity', label: 'Opacity', type: 'number', color: '#F06292' }, // Added
+            { value: 'opacity', label: 'Opacity', type: 'number', color: '#F06292' }
           ]
         },
         inputs: [
@@ -170,11 +155,6 @@ export const BlueprintRenderer = {
         outputs: [{ _id: 'exec_out', label: 'Out', dataType: 'execution', color: '#ffffff' }]
       } 
     },
-
-    // =================================================================
-    // 4. TILEMAP
-    // Schema: tileWidth/Height, width/height (grid), assetId, opacity, isSolid
-    // =================================================================
     { 
       type: 'get_tilemap', 
       label: 'Get Tilemap', 
@@ -186,12 +166,12 @@ export const BlueprintRenderer = {
         data: {
           propertyOptions: [
             { value: 'assetId', label: 'Tileset Asset', type: 'string', color: '#FFF' },
-            { value: 'width', label: 'Map Width (Grid)', type: 'number', color: '#AED581' }, // Added
-            { value: 'height', label: 'Map Height (Grid)', type: 'number', color: '#AED581' }, // Added
+            { value: 'width', label: 'Map Width (Grid)', type: 'number', color: '#AED581' },
+            { value: 'height', label: 'Map Height (Grid)', type: 'number', color: '#AED581' },
             { value: 'tileWidth', label: 'Tile Width', type: 'number', color: '#AED581' },
             { value: 'tileHeight', label: 'Tile Height', type: 'number', color: '#AED581' },
             { value: 'isSolid', label: 'Is Solid', type: 'boolean', color: '#AED581' },
-            { value: 'opacity', label: 'Opacity', type: 'number', color: '#AED581' }, // Added
+            { value: 'opacity', label: 'Opacity', type: 'number', color: '#AED581' }
           ]
         },
         inputs: [{ _id: 'target', label: 'Target ID (Self)', dataType: 'string', color: '#E040FB' }], 
@@ -209,12 +189,12 @@ export const BlueprintRenderer = {
         data: {
           propertyOptions: [
             { value: 'assetId', label: 'Tileset Asset', type: 'string', color: '#FFF' },
-            { value: 'width', label: 'Map Width (Grid)', type: 'number', color: '#AED581' }, // Added
-            { value: 'height', label: 'Map Height (Grid)', type: 'number', color: '#AED581' }, // Added
-            { value: 'tileWidth', label: 'Tile Width', type: 'number', color: '#AED581' }, // Added (missing in previous set)
-            { value: 'tileHeight', label: 'Tile Height', type: 'number', color: '#AED581' }, // Added
+            { value: 'width', label: 'Map Width (Grid)', type: 'number', color: '#AED581' },
+            { value: 'height', label: 'Map Height (Grid)', type: 'number', color: '#AED581' },
+            { value: 'tileWidth', label: 'Tile Width', type: 'number', color: '#AED581' },
+            { value: 'tileHeight', label: 'Tile Height', type: 'number', color: '#AED581' },
             { value: 'isSolid', label: 'Is Solid', type: 'boolean', color: '#AED581' },
-            { value: 'opacity', label: 'Opacity', type: 'number', color: '#AED581' },
+            { value: 'opacity', label: 'Opacity', type: 'number', color: '#AED581' }
           ]
         },
         inputs: [

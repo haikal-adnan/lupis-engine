@@ -46,7 +46,6 @@ const props = defineProps({
   active: { type: Boolean, default: false }
 })
 
-// Mengubah emit agar lebih spesifik
 defineEmits(['select', 'open'])
 
 const containerClass = computed(() => {

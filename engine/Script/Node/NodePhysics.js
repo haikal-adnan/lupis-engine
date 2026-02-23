@@ -22,10 +22,8 @@ export const NodePhysics = {
             if (target && target.components.Physics) {
                 const phys = target.components.Physics;
                 
-                // Ambil daftar properti dinamis (misal: ['velocityX'])
                 const propsToUpdate = node.data?.dynamicInputs || []; 
                 propsToUpdate.forEach(prop => {
-                    // Ambil nilai. Jika kabel tidak colok, GraphRunner baru akan ambil value default (-200)
                     const val = runner.getInputValue(node, prop); 
                     if (val !== undefined && val !== null) {
                         phys[prop] = val;
@@ -40,7 +38,6 @@ export const NodePhysics = {
         execute(runner, node) {
             const target = runner.resolveEntity(runner.getInputValue(node, 'in_target'));
             if (target && target.components.Physics) {
-                // Default ke 0 jika tidak ada input
                 const fx = runner.getInputValue(node, 'forceX') || 0;
                 const fy = runner.getInputValue(node, 'forceY') || 0;
                 

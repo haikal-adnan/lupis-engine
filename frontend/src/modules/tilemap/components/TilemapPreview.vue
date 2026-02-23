@@ -83,13 +83,11 @@
 import { Grid3x3, FolderSearch } from "lucide-vue-next"; 
 import { useTilemapLogic } from "@/modules/tilemap/composables/useTilemapLogic.js"; 
 
-// Atomic Components (Sesuaikan path import Anda)
 import PropertySection from "@ui/display/PropertySection.vue";
 import PropertyRow from "@ui/display/PropertyRow.vue";
 import BaseThumbnail from "@/commons/components/display/BaseThumbnail.vue";
 import BaseNumber from "@/commons/components/inputs/BaseNumber.vue";
 
-// Init Logic
 const { 
   hasTilemap,
   currentTextureUrl,
@@ -100,9 +98,7 @@ const {
   height
 } = useTilemapLogic();
 
-// Actions
 function openAssetSelector() {
   console.log("Open Asset Selector Triggered for Tilemap. Current Asset:", assetId.value);
-  // TODO: Hubungkan dengan logic Modal/Panel Asset Selector Anda
 }
 </script>

@@ -77,7 +77,6 @@ import { Keyboard, Trash2, Plus } from 'lucide-vue-next';
 import { useScriptStore } from '@/stores/useScriptStore.js';
 import { GenerateUUID } from '@/commons/utils/generateUUID.js';
 
-// Atomic Components
 import PropertySection from "@ui/display/PropertySection.vue";
 import BaseInput from '@/commons/components/inputs/BaseInput.vue';
 import BaseSelect from '@/commons/components/inputs/BaseSelect.vue';

@@ -4,7 +4,6 @@ export function MapToCanvasPixels(e, canvas) {
     const cx = e.touches ? e.touches[0].clientX : e.clientX;
     const cy = e.touches ? e.touches[0].clientY : e.clientY;
 
-    // css pixel -> canvas pixel (independent of DPR)
     const scaleX = canvas.width  / rect.width;
     const scaleY = canvas.height / rect.height;
 

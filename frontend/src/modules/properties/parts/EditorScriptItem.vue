@@ -108,17 +108,14 @@ const emit = defineEmits(['remove']);
 const scriptStore = useScriptStore();
 const { updateScriptInstance } = useInspectorLogic();
 
-// 1. Definition Lookup
 const def = computed(() => scriptStore.getScriptById(props.data.assetId));
 const scriptName = computed(() => def.value?.name || 'Unknown Script');
 
-// 2. Active Toggle
 const isActive = computed({
   get: () => props.data.isActive,
   set: (val) => updateScriptInstance(props.index, 'isActive', val)
 });
 
-// 3. Variable Logic
 const variables = computed(() => {
   if (!def.value) return [];
   const overrides = props.data.variables || {};

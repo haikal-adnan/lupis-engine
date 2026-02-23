@@ -1,5 +1,3 @@
-// services/schema/folderSchema.js
-
 export const createFolder = (data = {}) => {
   return {
     _id: data._id || `folder_${Date.now()}`,

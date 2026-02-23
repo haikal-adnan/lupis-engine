@@ -1,13 +1,9 @@
-// postgres.js
 import pkg from "pg";
 const { Pool } = pkg;
 
-// Hapus "export const pool = new Pool(...)" yang langsung dieksekusi
-
-export let pool; // Deklarasi variabel kosong dulu
+export let pool;
 
 export const connectPostgres = async () => {
-  // Inisialisasi Pool DI SINI (saat fungsi dipanggil, env sudah siap)
   pool = new Pool({
     host: process.env.POSTGRES_HOST,
     port: process.env.POSTGRES_PORT,
@@ -18,9 +14,9 @@ export const connectPostgres = async () => {
 
   try {
     await pool.query("SELECT 1");
-    console.log("🐘 PostgreSQL connected");
+    console.log("PostgreSQL connected");
   } catch (error) {
-    console.error("❌ PostgreSQL connection error:", error.message);
+    console.error("PostgreSQL connection error:", error.message);
     process.exit(1);
   }
 };

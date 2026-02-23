@@ -69,7 +69,6 @@ const props = defineProps({
   showMenu: { type: Boolean, default: true }
 })
 
-// Jika tidak collapsible, paksa selalu terbuka
 const isOpen = ref(props.collapsible ? props.defaultOpen : true)
 
 function toggle() {

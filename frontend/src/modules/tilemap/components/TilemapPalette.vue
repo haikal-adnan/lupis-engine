@@ -75,9 +75,8 @@ import { Grid, Hand, MousePointer2 } from 'lucide-vue-next';
 import { useTilemapLogic } from '@/modules/tilemap/composables/useTilemapLogic.js';
 import { useTilemapNavigation } from '@/modules/tilemap/composables/useTilemapNavigation.js';
 import { useEditorStore } from '@/stores/useEditorStore.js';
-import { EngineBridge } from '@/services/engine/EngineBridge.js'; // PASTIKAN PATH BENAR
+import { EngineBridge } from '@/services/engine/EngineBridge.js'; 
 
-// Components
 import PropertySection from "@ui/display/PropertySection.vue";
 import PropertyRow from "@ui/display/PropertyRow.vue";
 import BaseButton from "@/commons/components/buttons/BaseButton.vue";
@@ -86,13 +85,11 @@ import IconButton from '@/commons/components/buttons/IconButton.vue';
 const { currentTextureUrl, tileWidth, tileHeight } = useTilemapLogic();
 const editorStore = useEditorStore();
 
-// Navigasi Logic (Pan/Zoom di dalam Palette)
 const { 
   viewportRef, viewScale, isPanning, containerStyle,
   resetView, handleWheel, getGridPos, startPan, updatePan, endPan, panOffset
 } = useTilemapNavigation();
 
-// --- STATE ---
 const activeMode = ref('select');
 const isSpacePressed = ref(false);
 const isHovering = ref(false);
@@ -101,11 +98,9 @@ const selectionStart = ref({ x: 0, y: 0 });
 const selectionEnd = ref({ x: 0, y: 0 });
 const hasSelection = ref(false);
 
-// Resize Observer
 let resizeObserver = null;
 const lastSize = { w: 0, h: 0 };
 
-// --- COMPUTED ---
 const effectiveMode = computed(() => isSpacePressed.value ? 'pan' : activeMode.value);
 
 const cursorClass = computed(() => {
@@ -142,26 +137,20 @@ const gridOverlayStyle = computed(() => {
   };
 });
 
-// --- LISTENER ENGINE (EYEDROPPER) ---
-// Fungsi ini dipanggil ketika EngineBridge menerima event 'editor:tool:pickup'
 function handleToolPickupFromEngine(data) {
   if (!data) return;
   const { x, y, w, h } = data;
 
-  // 1. Update State Visual Lokal
   selectionStart.value = { x, y };
   selectionEnd.value = { x: x + w - 1, y: y + h - 1 };
   hasSelection.value = true;
 
-  // 2. Update Global Store (Agar brush tahu tile mana yang dipakai)
   const rect = selectionRect.value;
   editorStore.setTileSelection(rect);
 
-  // 3. Otomatis ganti tool user kembali ke BRUSH untuk siap gambar
   editorStore.setTool('brush');
 }
 
-// --- LOGIKA RESIZE ---
 function handleResize(entries) {
   for (let entry of entries) {
     const { width, height } = entry.contentRect;
@@ -178,7 +167,6 @@ function handleResize(entries) {
   }
 }
 
-// --- POINTER EVENTS (Interaksi Mouse UI) ---
 function onPointerDown(e) {
   viewportRef.value?.setPointerCapture(e.pointerId);
   const isMiddleClick = e.button === 1;
@@ -189,13 +177,11 @@ function onPointerDown(e) {
     return;
   }
 
-  // Marquee Select pada Tileset (Palette)
   if (isLeftClick && effectiveMode.value === 'select') {
     isSelecting.value = true;
     hasSelection.value = true;
     const gridPos = getGridPos(e.clientX, e.clientY, tileWidth.value, tileHeight.value);
     
-    // Klik di luar area
     if (gridPos.x < 0 || gridPos.y < 0) { 
       hasSelection.value = false; 
       isSelecting.value = false; 
@@ -226,10 +212,8 @@ function onPointerUp(e) {
   if (isSelecting.value) {
     isSelecting.value = false;
     const rect = selectionRect.value;
-    // Commit selection ke Editor Store
     if (rect.w > 0 && rect.h > 0) {
         editorStore.setTileSelection(rect);
-        // Jika user manual select di palette, otomatis set brush
         editorStore.setTool('brush'); 
     }
   }
@@ -240,7 +224,6 @@ function onPointerLeave() {
   isSelecting.value = false;
 }
 
-// --- LIFECYCLE & KEYBOARD ---
 function onGlobalKeyDown(e) {
   if (isHovering.value && e.code === 'Space') {
     e.preventDefault();
@@ -258,7 +241,6 @@ onMounted(() => {
   resizeObserver = new ResizeObserver(handleResize);
   if (viewportRef.value) resizeObserver.observe(viewportRef.value);
 
-  // [PENTING] Register Listener Eyedropper
   EngineBridge.onToolPickup(handleToolPickupFromEngine);
 });
 
@@ -267,7 +249,6 @@ onUnmounted(() => {
   window.removeEventListener('keyup', onGlobalKeyUp);
   resizeObserver?.disconnect();
 
-  // Cleanup Listener
   EngineBridge.onToolPickup(null);
 });
 

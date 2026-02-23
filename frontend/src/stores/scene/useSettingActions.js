@@ -50,14 +50,11 @@ export const useSettingActions = (activeScene) => {
   const updatePhysicsSettings = (updates) => {
     const s = _getSettings();
     if (s) {
-        // Ensure object exists
         if (!s.physics) s.physics = { gravity: 2000, drag: 5 };
         Object.assign(s.physics, updates);
     }
   };
 
-  // --- UI Settings ---
-  
   const updateUISettings = (updates) => {
     const s = _getSettings();
     if (s && s.ui) {
@@ -65,7 +62,6 @@ export const useSettingActions = (activeScene) => {
     }
   };
 
-  // [NEW] Toggle UI Border Action
   const toggleUIBorder = () => {
     const s = _getSettings();
     if (s && s.ui) {
@@ -89,7 +85,7 @@ export const useSettingActions = (activeScene) => {
     updateWorldBounds,
     updatePhysicsSettings,
     updateUISettings,
-    toggleUIBorder, // Exported
+    toggleUIBorder, 
     toggleRulers
   };
 }

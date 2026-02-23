@@ -1,11 +1,9 @@
-// src/modules/engine/composables/useEngineSync.js
 import { useSceneStore } from '@/stores/scene/useSceneStore.js';
 import { useAssetStore } from '@/stores/useAssetStore.js';
 import { useEditorStore } from '@/stores/useEditorStore.js';
 import { useScriptStore } from '@/stores/useScriptStore.js';
 import { usePrefabStore } from '@/stores/usePrefabStore.js';
 
-// Import sub-modules
 import { useEditorToEngine } from './sync/useEditorToEngine.js';
 import { useEngineToEditor } from './sync/useEngineToEditor.js';
 

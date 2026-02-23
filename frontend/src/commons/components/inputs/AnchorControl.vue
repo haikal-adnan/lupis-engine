@@ -33,7 +33,6 @@ const props = defineProps({
 
 const emit = defineEmits(['update'])
 
-// Titik-titik standar Anchor (Top-Left sampai Bottom-Right)
 const anchorPoints = [
   { x: 0, y: 0 },   { x: 0.5, y: 0 },   { x: 1, y: 0 },
   { x: 0, y: 0.5 }, { x: 0.5, y: 0.5 }, { x: 1, y: 0.5 },
@@ -41,7 +40,6 @@ const anchorPoints = [
 ]
 
 function isActive(p) {
-  // Epsilon check untuk float precision
   return Math.abs(props.x - p.x) < 0.01 && Math.abs(props.y - p.y) < 0.01
 }
 

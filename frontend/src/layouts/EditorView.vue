@@ -28,7 +28,6 @@ const {
 const { currentLayout } = useTab()
 
 const currentBottomComponent = shallowRef(AssetPanel) 
-// Hapus isBottomPanelOpen lokal, kita gunakan store
 
 const isLeftHidden = computed(() => !currentLayout.value.left)
 const isRightHidden = computed(() => !currentLayout.value.right)
@@ -38,7 +37,6 @@ const editorStore = useEditorStore()
 const scriptStore = useScriptStore()
 const sceneStore = useSceneStore()
 
-// --- LOGIKA TOP BAR TAB (Script/Scene switching) ---
 watch(
   () => editorStore.activeTabId, 
   (newTabId) => {
@@ -67,42 +65,33 @@ watch(
       scriptStore.setActiveScript(null)
     }
     
-    // Tambahkan logika handle UI jika perlu
     else if (currentTab.type === 'ui') {
         scriptStore.setActiveScript(null)
-        // Opsional: Select entity UI-nya jika newTabId merepresentasikan entity ID
     }
   },
   { immediate: true }
 )
 
-// --- LOGIKA BOTTOM BAR (Store Sync) ---
-
-// Menerima komponen dari BottomBar berdasarkan Tab ID yang aktif
 const handleComponentUpdate = (component) => {
   currentBottomComponent.value = component
 }
 
-// Sinkronisasi Layout dengan Store: Ketika Store berubah, buka/tutup Layout
 watch(
   () => editorStore.isBottomBarOpen,
   (isOpen) => {
-    // Panggil method di EditorLayout untuk animasi buka/tutup
     layoutRef.value?.setBottomPanel(isOpen)
   }
 )
 
-// Sinkronisasi Layout ke Store: Ketika user menutup manual (drag handle)
 const onLayoutClosePanel = () => {
   if (editorStore.isBottomBarOpen) {
-    editorStore.toggleBottomBar() // atau set false
+    editorStore.toggleBottomBar()
   }
 }
 
-// Sinkronisasi Layout ke Store: Ketika user membuka manual (drag handle)
 const onLayoutDragOpen = () => {
   if (!editorStore.isBottomBarOpen) {
-    editorStore.toggleBottomBar() // atau set true
+    editorStore.toggleBottomBar() 
   }
 }
 </script>

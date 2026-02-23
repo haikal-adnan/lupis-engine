@@ -52,7 +52,6 @@ import { computed } from 'vue';
 import { Footprints, Move, Info } from 'lucide-vue-next';
 import { useScriptStore } from '@/stores/useScriptStore.js';
 
-// Atomic Components
 import PropertySection from "@ui/display/PropertySection.vue";
 import BaseNumber from '@/commons/components/inputs/BaseNumber.vue';
 

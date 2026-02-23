@@ -74,7 +74,6 @@ import { useScriptStore } from '@/stores/useScriptStore.js';
 import { useProjectStore } from '@/stores/useProjectStore.js';
 import { useVariableLogic } from '@/modules/variable/composables/useVariableLogic.js';
 
-// UI Components
 import PropertySection from "@ui/display/PropertySection.vue";
 import PropertyRow from "@ui/display/PropertyRow.vue";
 import BaseInput from '@/commons/components/inputs/BaseInput.vue';
@@ -92,7 +91,6 @@ const scriptStore = useScriptStore();
 const projectStore = useProjectStore();
 const nameError = ref(null);
 
-// --- 1. Scope Detection ---
 const currentScope = computed(() => {
   if (props.node.data?.scope) return props.node.data.scope;
   const varId = props.node.data?.variableId;
@@ -100,10 +98,8 @@ const currentScope = computed(() => {
   return isGlobal ? 'Global' : 'Local';
 });
 
-// --- 2. Init Logic ---
 const { variables, updateVariable } = useVariableLogic(currentScope.value);
 
-// --- 3. Helpers & Options ---
 const title = computed(() => props.node.type === 'variable_set' ? 'Set Variable' : 'Get Variable');
 
 const typeOptions = [
@@ -117,13 +113,11 @@ const boolOptions = [
   { label: 'True', value: true },
 ];
 
-// --- 4. Target Variable Resolution ---
 const targetVariable = computed(() => {
   if (!props.node.data?.variableId) return null;
   return variables.value.find(v => v._id === props.node.data.variableId);
 });
 
-// --- 5. Update Handler ---
 const handleUpdate = (key, value) => {
   if (!props.node.data?.variableId) return;
 

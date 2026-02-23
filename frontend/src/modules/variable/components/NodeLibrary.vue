@@ -84,6 +84,5 @@ import PropertySection from "@ui/display/PropertySection.vue";
 import { useNodeBlueprint } from '@/modules/variable/composables/useNodeBlueprint.js';
 import ScrollArea from '@/commons/components/overlay/ScrollArea.vue';
 
-// Logic dipindah ke composable
 const { searchQuery, filteredGroups, onDragNode } = useNodeBlueprint();
 </script>

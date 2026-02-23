@@ -1,5 +1,3 @@
-// engine/Util/calculateQuadVertices.js
-
 export function calculateQuadVertices(x, y, w, h, rot, sx, sy, px, py) {
     const finalW = w * sx;
     const finalH = h * sy;

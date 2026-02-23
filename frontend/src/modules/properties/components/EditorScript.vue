@@ -211,7 +211,7 @@ import {
 import { useInspectorLogic } from "@/modules/properties/composables/useInspectorLogic.js"
 import { useScriptStore } from '@/stores/useScriptStore.js'
 import { useEditorStore } from '@/stores/useEditorStore.js'
-import { useSceneStore } from '@/stores/scene/useSceneStore.js' // Tambahkan ini
+import { useSceneStore } from '@/stores/scene/useSceneStore.js' 
 
 import { useConfirm } from '@/composables/useConfirm.js'
 import { usePopAlert } from '@/composables/usePopAlert.js'
@@ -226,7 +226,7 @@ import BaseButton from '@/commons/components/buttons/BaseButton.vue'
 
 const scriptStore = useScriptStore()
 const editorStore = useEditorStore()
-const sceneStore = useSceneStore() // Init Store
+const sceneStore = useSceneStore()
 const { confirm } = useConfirm()
 const { showPop } = usePopAlert()
 const { 
@@ -238,11 +238,8 @@ const {
   prefabId,                   
   syncComponent,              
   getComponentOverrideStatus, 
-  // HAPUS atau JANGAN PAKAI markAsOverridden di sini untuk logic internal component
-  // markAsOverridden            
 } = useInspectorLogic()
 
-// Helper Lokal untuk Override Komponen Spesifik
 const markComponentAsOverridden = () => {
   if (selectedEntity.value && prefabId.value) {
      sceneStore.updateComponentProp(selectedEntity.value._id, 'ScriptController', 'isOverridden', true)
@@ -268,7 +265,7 @@ const currentIsActive = computed(() => currentScript.value?.isActive ?? true)
 const toggleScriptActive = () => {
   if (!currentScript.value) return
   updateScriptInstance(selectedIndex.value, 'isActive', !currentIsActive.value)
-  markComponentAsOverridden() // [FIX] Hanya override komponen ini
+  markComponentAsOverridden() 
 }
 
 const currentVariables = computed(() => {
@@ -296,7 +293,7 @@ const currentVariables = computed(() => {
                 newVariables[variableId] = finalVal
                 
                 updateScriptInstance(selectedIndex.value, 'variables', newVariables)
-                markComponentAsOverridden() // [FIX] Hanya override komponen ini
+                markComponentAsOverridden() 
             }
          }),
          reset: () => {
@@ -304,10 +301,6 @@ const currentVariables = computed(() => {
             delete n[variableId] 
             updateScriptInstance(selectedIndex.value, 'variables', n)
             
-            // Meskipun reset variabel ke default, komponen tetap dianggap 'modify'
-            // dari state awal prefab jika ada perubahan struktur array script.
-            // Namun jika kembali ke default murni, bisa jadi tidak override.
-            // Untuk amannya, setiap interaksi dianggap override manual sampai di-Sync.
             markComponentAsOverridden() 
          }
       }
@@ -337,7 +330,7 @@ async function handleRemoveCurrent() {
    if (isConfirmed) {
       removeScript(selectedIndex.value)
       selectedIndex.value = 0
-      markComponentAsOverridden() // [FIX] Detach script = Component Override
+      markComponentAsOverridden() 
       showPop({ title: 'Script Detached', type: 'info' })
    }
 }

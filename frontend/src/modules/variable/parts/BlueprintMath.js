@@ -6,13 +6,12 @@ export const BlueprintMath = {
   color: '#009688', 
   icon: Calculator,
   items: [
-    // --- NODE 1: CHAINED MATH ---
     { 
       type: 'math_chain', 
       label: 'Calculate', 
       description: 'Chain multiple math operations', 
       icon: Calculator,
-      allowDynamicInputs: true,  // Wajib true
+      allowDynamicInputs: true,  
       allowDynamicOutputs: false, 
       defaultData: { 
         settings: { 
@@ -21,13 +20,10 @@ export const BlueprintMath = {
             category: 'Math' 
         },
         data: {
-          // Array operator. Panjangnya harus selalu = (Jumlah Input Value - 1)
-          // Default awal: v0 [add] v1
           ops: ['add'] 
         },
         inputs: [
           { _id: 'in', label: 'In', dataType: 'execution', color: '#fff' },
-          // Input awal (Min 2 value agar ada 1 operator di tengah)
           { _id: 'v0', label: 'Val 1', dataType: 'number', color: '#B2FF59', value: 0 },
           { _id: 'v1', label: 'Val 2', dataType: 'number', color: '#B2FF59', value: 0 }
         ],
@@ -38,7 +34,6 @@ export const BlueprintMath = {
       } 
     },
 
-    // --- NODE 2: RANDOM (Sama) ---
     { 
       type: 'math_random', 
       label: 'Random Range', 
@@ -59,7 +54,6 @@ export const BlueprintMath = {
       } 
     },
 
-    // --- NODE 3: NEGATE (Sama) ---
     { 
       type: 'math_negate', 
       label: 'Negate', 

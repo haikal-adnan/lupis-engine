@@ -117,9 +117,8 @@ import { Scale, Zap } from 'lucide-vue-next';
 import { useScriptStore } from '@/stores/useScriptStore.js';
 import { usePopAlert } from '@/composables/usePopAlert';
 
-// Components
 import PropertySection from "@ui/display/PropertySection.vue";
-import PropertyRow from "@ui/display/PropertyRow.vue"; // Menggunakan PropertyRow
+import PropertyRow from "@ui/display/PropertyRow.vue";
 import BaseInput from '@/commons/components/inputs/BaseInput.vue';
 import BaseSelect from '@/commons/components/inputs/BaseSelect.vue';
 import BaseNumber from '@/commons/components/inputs/BaseNumber.vue';
@@ -128,7 +127,6 @@ const props = defineProps({ node: Object });
 const store = useScriptStore();
 const { showPop } = usePopAlert();
 
-// --- Options ---
 const operatorOptions = [
   { label: '== Equal', value: 'equal' },
   { label: '!= Not Equal', value: 'not_equal' },
@@ -146,7 +144,6 @@ const dataTypeOptions = [
 
 const op = computed(() => props.node.data?.op || 'equal');
 
-// --- Helpers ---
 const isConnected = (inputId) => store.isInputConnected(props.node._id, inputId);
 
 const getValue = (inputId) => {
@@ -154,14 +151,12 @@ const getValue = (inputId) => {
     return input?.value ?? '';
 };
 
-// Fallback logic for type
 const getType = (inputId) => {
     const input = props.node.inputs?.find(i => i._id === inputId);
     const type = input?.dataType || 'number'; 
     return (type === 'any') ? 'number' : type; 
 };
 
-// --- Logic ---
 const updateValue = (inputId, newValue) => {
   if (isConnected(inputId)) return;
   const currentInputs = props.node.inputs || [];
@@ -177,7 +172,6 @@ const updateValue = (inputId, newValue) => {
 const updateType = (inputId, newType) => {
   const currentInputs = props.node.inputs || [];
   
-  // Logic Disconnect
   const existingEdges = store.activeScript.edges.filter(e => 
     e.target === props.node._id && e.targetHandle === inputId
   );
@@ -203,14 +197,12 @@ const updateType = (inputId, newType) => {
       });
   }
 
-  // Update Color & Data Type
   const colorMap = {
       'string': '#9c27b0',
       'number': '#00e676',
       'boolean': '#f44336'
   };
 
-  // Reset defaults
   let defaultValue = '';
   if (newType === 'number') defaultValue = 0;
   if (newType === 'boolean') defaultValue = false;

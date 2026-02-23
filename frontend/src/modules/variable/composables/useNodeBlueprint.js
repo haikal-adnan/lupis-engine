@@ -2,7 +2,6 @@ import { ref, computed } from 'vue';
 import { useProjectStore } from '@/stores/useProjectStore';
 import { Radio } from 'lucide-vue-next'; 
 
-// Import parts yang sudah diperbarui (termasuk basicTransform yang dinamis tadi)
 import { BlueprintLifecycle } from '@/modules/variable/parts/BlueprintLifecycle.js'
 import { BlueprintKeyboard } from '@/modules/variable/parts/BlueprintKeyboard.js'
 import { BlueprintTransform } from '@/modules/variable/parts/BlueprintTransform.js'
@@ -51,12 +50,10 @@ export function useNodeBlueprint() {
       const globalItems = [];
 
       globalEvents.forEach(evt => {
-        // Event Listener: Muncul saat event dipanggil
         globalItems.push({
           type: 'event_global_listener',
           label: `On ${evt.name}`,
           description: `Wait for ${evt.name}`,
-          // FIXED: dataType menggantikan type pada socket
           defaultData: {
             settings: { 
               headerTitle: `On ${evt.name}`, 
@@ -71,12 +68,10 @@ export function useNodeBlueprint() {
           }
         });
 
-        // Action Trigger: Memanggil event
         globalItems.push({
           type: 'action_trigger_global',
           label: `Trigger ${evt.name}`,
           description: `Broadcast ${evt.name}`,
-          // FIXED: dataType menggantikan type pada socket
           defaultData: {
             settings: { 
               headerTitle: `Trigger ${evt.name}`, 
@@ -94,9 +89,8 @@ export function useNodeBlueprint() {
         });
       });
 
-      // Insert Global Events group di posisi ke-1 (setelah programming)
       groups.splice(1, 0, {
-        _id: 'global_events', // id -> _id biar konsisten
+        _id: 'global_events', 
         label: 'Global Events',
         color: '#9C27B0',
         icon: Radio,

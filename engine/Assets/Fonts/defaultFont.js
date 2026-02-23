@@ -1,6 +1,3 @@
-// src/services/engine/Renderer/Graphic/DefaultAssets.js
-
-// 1. Isi konten text dari file .fnt apa adanya (gunakan backtick ` `)
 export const DEFAULT_FONT_XML = `
 <font>
     <info face="1767337874091-inter" size="42" bold="0" italic="0" charset="" unicode="1" stretchH="100" smooth="1" aa="1" padding="4,4,4,4" spacing="0,0" outline="0"/>

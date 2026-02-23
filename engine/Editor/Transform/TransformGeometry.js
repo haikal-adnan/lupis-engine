@@ -21,12 +21,10 @@ export class TransformGeometry {
         const t = this._getTransform(e);
         if (!t) return { x: 0, y: 0 };
 
-        // Flat: Transform biasa langsung pakai x,y
         if (!e.components.UITransform) {
             return { x: t.x, y: t.y };
         }
 
-        // Flat UI: Pakai anchor logic sederhana
         const uiSettings = this.world.settings?.ui || { referenceWidth: 1920, referenceHeight: 1080 };
         const parentBounds = { x: 0, y: 0, width: uiSettings.referenceWidth, height: uiSettings.referenceHeight };
 
@@ -48,7 +46,6 @@ export class TransformGeometry {
             return;
         }
 
-        // --- Single Selection (OBB - Miring mengikuti rotasi) ---
         if (selectedList.length === 1) {
             const e = selectedList[0];
             const t = this._getTransform(e);
@@ -75,7 +72,6 @@ export class TransformGeometry {
             return;
         }
 
-        // --- Multi Selection (AABB - Kotak tegak lurus) ---
         let minX = Infinity, minY = Infinity;
         let maxX = -Infinity, maxY = -Infinity;
 
@@ -128,7 +124,6 @@ export class TransformGeometry {
         return null;
     }
 
-    // ... (getHandleSizes, getHoverHandle, getCursor sama seperti sebelumnya) ...
     getHandleSizes() {
         const scale = this.game.camera.scale || 1;
         

@@ -51,7 +51,7 @@ import { computed } from 'vue'
 import { Box } from 'lucide-vue-next'
 
 const props = defineProps({
-  data: { type: Object, required: true }, // { id, name, thumbnailUrl... }
+  data: { type: Object, required: true }, 
   viewMode: { type: String, default: 'grid' },
   active: { type: Boolean, default: false }
 })

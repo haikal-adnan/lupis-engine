@@ -1,5 +1,3 @@
-// src/services/schema/sceneSchema/componentSchema.js
-
 export const createTransform = (data = {}, defaults = { width: 100, height: 100 }) => {
   return {
     x: Number(data.x ?? 0),
@@ -14,7 +12,6 @@ export const createTransform = (data = {}, defaults = { width: 100, height: 100 
     width: Number(data.width ?? defaults.width),
     height: Number(data.height ?? defaults.height),
     isRatioLocked: Boolean(data.isRatioLocked ?? false),
-    // Flat Overridden Flag
     isOverridden: Boolean(data.isOverridden ?? false)
   };
 };
@@ -57,10 +54,7 @@ export const createPhysics = (data = {}) => {
   };
 };
 
-// --- Main Creator ---
-
 export const createComponent = (type, inputData = {}) => {
-  // 1. Generate Data Spesifik
   let specificData = {};
 
   switch (type) {
@@ -85,6 +79,7 @@ export const createComponent = (type, inputData = {}) => {
         align: inputData.align || "left",
         assetId: inputData.assetId || null,
         opacity: Number(inputData.opacity ?? 1),
+        autoFit: Boolean(inputData.autoFit ?? true),
         ...inputData
       };
       break;
@@ -140,7 +135,6 @@ export const createComponent = (type, inputData = {}) => {
       break;
   }
 
-  // 2. Return Flat Object (Data + isOverridden)
   return {
     ...specificData,
     isOverridden: Boolean(inputData.isOverridden ?? false)

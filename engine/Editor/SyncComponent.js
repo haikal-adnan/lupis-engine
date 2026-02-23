@@ -22,8 +22,6 @@ export default class SyncComponent {
         this.bus.on("editor:entity:add-component", p => this.onAddComponent(p));
         this.bus.on("editor:entity:remove-component", p => this.onRemoveComponent(p));
 
-        // --- TAMBAHAN BARU UNTUK PREFAB ---
-        // Menangani penggantian data entity secara utuh (saat Use As Prefab)
         this.bus.on("editor:entity:replace", p => this.onEntityReplace(p)); 
 
         this.bus.on("editor:layer:create", d => this.onCreateLayer(d));
@@ -191,7 +189,17 @@ export default class SyncComponent {
 
     async onAssetCreate(asset) {
         if (this.assetLoader) {
-            await this.assetLoader.loadAsset(this.world, [asset]);
+            console.log(`[SyncComponent] Memuat asset baru ke engine: ${asset.name}`);
+            try {
+                // Memanggil loadAsset dengan array berisi 1 asset baru
+                await this.assetLoader.loadAsset(this.world, [asset]);
+                
+                // Opsional: Kamu bisa emit event ini jika UI butuh tahu kapan asset 
+                // benar-benar selesai di-load ke WebGL context/memori engine.
+                this.bus.emit("engine:asset:loaded", asset._id);
+            } catch (error) {
+                console.error(`[SyncComponent] Gagal memuat asset ${asset.name}:`, error);
+            }
         }
     }
 
@@ -460,10 +468,8 @@ export default class SyncComponent {
 
     onCreateEntity(data) {
         if (Array.isArray(data)) {
-            // Jika data adalah Array, proses loop
             data.forEach(item => this._processSingleEntityCreation(item));
         } else {
-            // Jika single object
             this._processSingleEntityCreation(data);
         }
     }
@@ -472,7 +478,6 @@ export default class SyncComponent {
         const safeData = { ...entityData, parentId: null };
         const entity = this._createEntityInstance(safeData);
         
-        // Cek duplicate ID agar tidak crash
         if (this._findEntityById(entityData._id)) return;
 
         const layer =

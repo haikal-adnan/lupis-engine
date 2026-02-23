@@ -25,10 +25,8 @@
 import { Workflow } from 'lucide-vue-next';
 import { useNodeLogic } from '@/modules/node/composables/useNodeLogic.js';
 
-// Atomic Components
 import ScrollArea from '@/commons/components/overlay/ScrollArea.vue';
 
-// Inspector Parts
 import NodeHeader from '@/modules/node/components/NodeHeader.vue';
 import NodeData from '@/modules/node/components/NodeData.vue';
 import NodePorts from '@/modules/node/components/NodePorts.vue';

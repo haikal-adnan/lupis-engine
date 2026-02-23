@@ -223,7 +223,6 @@ export function useScriptPanel() {
         data: currentData 
       };
 
-      // [FIX] Hanya tandai komponen sebagai override, JANGAN root entity
       if (entity.prefabId) {
          updatePayload.isOverridden = true;
       }

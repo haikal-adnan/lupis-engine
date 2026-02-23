@@ -1,6 +1,5 @@
 import { defineStore } from 'pinia'
-// import { toRaw } from 'vue' 
-import { fetchProjectById, fetchProjectResources } from '@/services/api/project.js'
+import { fetchProjectById, fetchProjectResources } from '@/services/api/useFetchProjectById.js'
 import { normalizeProjectLoad } from '@/services/schema/schema.js'
 import { getProjectFromLocalDB, saveProjectToLocalDB } from '@/services/db/index.js'
 

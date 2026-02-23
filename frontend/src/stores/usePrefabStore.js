@@ -22,7 +22,6 @@ export const usePrefabStore = defineStore('prefab', {
 
   actions: {
     initPrefabs(prefabList) {
-      // Dipanggil oleh useProjectStore saat loadProject
       this.prefabs = prefabList || [];
     },
 

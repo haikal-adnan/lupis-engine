@@ -21,7 +21,7 @@ export function useSceneActions() {
     get: () => sceneStore.activeSceneId,
     set: (val) => {
       if (sceneStore.activeSceneId !== val) {
-        sceneStore.setActiveScene(val) // Pastikan method ini ada di store
+        sceneStore.setActiveScene(val) 
       }
     }
   })
@@ -38,7 +38,7 @@ export function useSceneActions() {
     })
 
     if (name) {
-      sceneStore.addScene({ name }) // Pastikan method ini ada di store
+      sceneStore.addScene({ name }) 
     }
   }
 

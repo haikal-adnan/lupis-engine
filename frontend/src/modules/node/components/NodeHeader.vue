@@ -43,7 +43,6 @@
 import { Settings2, Trash2 } from 'lucide-vue-next';
 import { useNodeLogic } from '@/modules/node/composables/useNodeLogic.js';
 
-// Atomic Components
 import PropertySection from "@ui/display/PropertySection.vue";
 import PropertyRow from "@ui/display/PropertyRow.vue";
 import BaseInput from '@/commons/components/inputs/BaseInput.vue';

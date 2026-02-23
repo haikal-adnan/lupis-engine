@@ -21,10 +21,9 @@
 </template>
 
 <script setup>
-import { useTab } from '@/composables/useTab.js' // Import composable
+import { useTab } from '@/composables/useTab.js'
 import BaseTab from "@commons/components/navigations/BaseTab.vue"; 
 
-// Gunakan destructuring dari composable
 const { tabs, activeTabId, setActiveTab, closeTab } = useTab()
 </script>
 

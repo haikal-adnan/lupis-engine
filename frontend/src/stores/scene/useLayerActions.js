@@ -1,10 +1,9 @@
 import { createLayer as createLayerSchema } from '@/services/schema/schema.js'; 
 import { EngineBridge } from '@/services/engine/EngineBridge.js'; 
 import { GenerateUUID } from '@/commons/utils/generateUUID.js';
-import { usePopAlert } from '@/composables/usePopAlert'; // Import PopAlert
+import { usePopAlert } from '@/composables/usePopAlert';
 
 export function useLayerActions(activeScene) {
-  // Inisialisasi PopAlert
   const { showPop } = usePopAlert();
 
   const addLayer = (name, section = 'world') => {
@@ -56,7 +55,6 @@ export function useLayerActions(activeScene) {
       const val = parseInt(newZIndex);
       if (!isNaN(val)) {
         layer.zIndex = val;
-        // EngineBridge.updateLayer(layerId, { zIndex: val }); 
       }
     }
   };
@@ -71,9 +69,6 @@ export function useLayerActions(activeScene) {
         isUILayer = activeScene.value.layersUI?.some(l => l._id === layerId);
     }
 
-    // --- REVISI: Menggunakan showPop menggantikan console.warn ---
-    
-    // Jika layer ada di World dan jumlah layer <= 1, tampilkan PopAlert
     if (isWorldLayer && activeScene.value.layersWorld.length <= 1) {
         showPop({ 
             title: 'Action Prevented', 
@@ -83,7 +78,6 @@ export function useLayerActions(activeScene) {
         return; 
     }
 
-    // Jika layer ada di UI dan jumlah layer <= 1, tampilkan PopAlert
     if (isUILayer && activeScene.value.layersUI.length <= 1) {
         showPop({ 
             title: 'Action Prevented', 
@@ -92,7 +86,6 @@ export function useLayerActions(activeScene) {
         });
         return;
     }
-    // -------------------------------------------------------------
     
     if (activeScene.value.entities) {
         const entitiesToDelete = activeScene.value.entities.filter(e => e.layerId === layerId);
@@ -184,7 +177,6 @@ export function useLayerActions(activeScene) {
     const mode = clipboardWrapper.mode; 
     const createdLayerIds = [];
 
-    // Flag untuk mendeteksi apakah ada error agar popalert tidak muncul berkali-kali dalam loop
     let hasSectionMismatch = false;
     let mismatchedDetails = { source: '', target: '' };
 
@@ -193,13 +185,11 @@ export function useLayerActions(activeScene) {
         
         if (!sourceLayer) return;
 
-        // --- REVISI: Cek mismatch section ---
         if (sourceSection !== targetSection) {
             hasSectionMismatch = true;
             mismatchedDetails = { source: sourceSection, target: targetSection };
-            return; // Skip item ini
+            return; 
         }
-        // ------------------------------------
 
         const collection = targetSection === 'ui' 
             ? activeScene.value.layersUI 
@@ -236,7 +226,6 @@ export function useLayerActions(activeScene) {
         }
     });
 
-    // Tampilkan PopAlert jika terjadi mismatch (diluar loop agar tidak spam alert)
     if (hasSectionMismatch) {
         showPop({ 
             title: 'Paste Failed', 

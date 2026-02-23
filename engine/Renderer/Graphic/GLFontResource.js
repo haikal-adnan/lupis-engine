@@ -7,6 +7,8 @@ export default class GLFontResource {
         const xmlUrl = asset.fileUrl;
         const texUrl = asset.meta?.textureUrl;
 
+        console.log(asset)
+
         if (!texUrl) throw new Error(`[GLFontResource] Texture URL missing for: ${asset.name}`);
 
         const [xmlRes, img] = await Promise.all([

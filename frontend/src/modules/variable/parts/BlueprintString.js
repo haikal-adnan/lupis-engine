@@ -6,7 +6,6 @@ export const BlueprintString = {
   color: '#FF9800', 
   icon: FileText,
   items: [
-    // ... (Item 1: string_format - Tetap sama seperti kodemu) ...
     { 
       type: 'string_format', 
       label: 'Format String', 
@@ -27,7 +26,6 @@ export const BlueprintString = {
       } 
     },
 
-    // ... (Item 2: string_join - Tetap sama seperti kodemu) ...
     { 
       type: 'string_join', 
       label: 'Join Strings', 
@@ -48,7 +46,6 @@ export const BlueprintString = {
       } 
     },
 
-    // ... (Item 3: string_length - Tetap sama seperti kodemu) ...
     { 
       type: 'string_length', 
       label: 'String Length', 
@@ -68,14 +65,11 @@ export const BlueprintString = {
       } 
     },
 
-    // =================================================================
-    // 4. NUMBER TO STRING (BARU)
-    // =================================================================
     { 
       type: 'number_to_string', 
       label: 'Number To String', 
       description: 'Convert a number to string with optional decimals', 
-      icon: ArrowRightLeft, // Atau icon Type
+      icon: ArrowRightLeft,
       allowDynamicInputs: false,
       allowDynamicOutputs: false,
       defaultData: { 
@@ -85,8 +79,6 @@ export const BlueprintString = {
           category: 'String' 
         },
         data: { 
-            // Opsi untuk mengatur jumlah desimal (misal 2 angka belakang koma)
-            // Jika null/kosong, berarti default (seadanya)
             propertyOptions: [
                 { value: 'decimals', label: 'Decimals', type: 'number', color: '#FFCC80' }
             ]

@@ -98,7 +98,6 @@ import { Grid3X3, Brush, Trash2, RefreshCw } from "lucide-vue-next";
 import { useTilemapLogic } from "@/modules/tilemap/composables/useTilemapLogic.js";
 import { useInspectorLogic } from "@/modules/properties/composables/useInspectorLogic.js";
 
-// Atomic Components
 import PropertySection from "@ui/display/PropertySection.vue";
 import PropertyRow from "@ui/display/PropertyRow.vue";
 import BaseThumbnail from "@/commons/components/display/BaseThumbnail.vue";
@@ -115,28 +114,20 @@ const {
 
 const { 
   removeComponent,
-  prefabId,                   // [NEW]
-  syncComponent,              // [NEW]
-  getComponentOverrideStatus  // [NEW]
+  prefabId,            
+  syncComponent,             
+  getComponentOverrideStatus
 } = useInspectorLogic();
 
 const hasComponent = hasTilemap;
 
-// [NEW] Status Override untuk komponen 'Tilemap'
 const isOverridden = getComponentOverrideStatus('Tilemap');
-
-// Bindings (Otomatis memicu override via logic hook)
 const tileWidth = bindComponentProp('Tilemap', 'tileWidth');
 const tileHeight = bindComponentProp('Tilemap', 'tileHeight');
 const mapWidth = bindComponentProp('Tilemap', 'width');
 const mapHeight = bindComponentProp('Tilemap', 'height');
 const isSolid = bindComponentProp('Tilemap', 'isSolid');
 const rawOpacity = bindComponentProp('Tilemap', 'opacity');
-
-/**
- * Computed displayOpacity:
- * Bridge antara Engine (0-1) dan User Interface (0-100).
- */
 const displayOpacity = computed({
   get: () => {
     return Math.round((rawOpacity.value ?? 1) * 100);
@@ -146,7 +137,6 @@ const displayOpacity = computed({
   }
 });
 
-// Kalkulasi dimensi total map
 const totalWidth = computed(() => (tileWidth.value || 0) * (mapWidth.value || 0));
 const totalHeight = computed(() => (tileHeight.value || 0) * (mapHeight.value || 0));
 </script>

@@ -6,7 +6,6 @@ export default class Grid {
         this.renderer = renderer;
         this.camera = camera;
 
-        // Inisialisasi awal (jika belum ada di settings)
         this.width = opt.width || 32;
         this.height = opt.height || 32;
         this.offsetX = 0;

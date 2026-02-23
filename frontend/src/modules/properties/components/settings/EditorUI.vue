@@ -94,7 +94,6 @@
 import { LayoutTemplate, Monitor, Check, ArrowRightLeft } from 'lucide-vue-next';
 import { useInspectorLogic } from "@/modules/properties/composables/useInspectorLogic.js";
 
-// Atomic Components
 import PropertySection from "@ui/display/PropertySection.vue";
 import PropertyRow from "@ui/display/PropertyRow.vue";
 import BaseNumber from '@/commons/components/inputs/BaseNumber.vue';
@@ -104,14 +103,12 @@ import BaseDropdown from '@ui/overlay/BaseDropdown.vue';
 
 const { bindSettingProp, updateUISettingsBulk } = useInspectorLogic();
 
-// --- Bindings ---
 const active = bindSettingProp('ui', 'active');
 const showBorder = bindSettingProp('ui', 'showUIBorder');
 const refWidth = bindSettingProp('ui', 'referenceWidth');
 const refHeight = bindSettingProp('ui', 'referenceHeight');
 const scaleMode = bindSettingProp('ui', 'scaleMode');
 
-// --- Data ---
 const scaleModeOptions = [
   { label: 'Constant Pixel Size', value: 'constant' },
   { label: 'Scale With Screen Size', value: 'scale_with_screen' },
@@ -126,7 +123,6 @@ const PRESETS = [
   { label: 'iPad / Tablet', w: 2048, h: 1536 },
 ];
 
-// --- Logic ---
 const applyPreset = (p) => {
   updateUISettingsBulk({ 
     referenceWidth: p.w, 

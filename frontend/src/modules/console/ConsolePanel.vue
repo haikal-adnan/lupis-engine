@@ -50,11 +50,10 @@
 <script setup>
 import { ref, computed, watch, nextTick } from 'vue'
 import { Trash2 } from 'lucide-vue-next'
-import { useConsole } from '@/modules/console/composables/useConsole.js' // Import composable
+import { useConsole } from '@/modules/console/composables/useConsole.js'
 import BaseSearchInput from '@/commons/components/inputs/BaseSearchInput.vue'
 import ConsoleItem from './parts/ConsoleItem.vue'
 
-// Gunakan Composable
 const { logs, triggerClear } = useConsole()
 
 const activeFilter = ref('all')
@@ -85,7 +84,6 @@ const filteredLogs = computed(() => {
   return result
 })
 
-// Auto Scroll ke bawah jika ada log baru
 watch(() => logs.value.length, async () => {
   if (scrollContainer.value && activeFilter.value === 'all' && !searchQuery.value) {
     await nextTick()

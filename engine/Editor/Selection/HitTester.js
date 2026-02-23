@@ -147,10 +147,8 @@ export class HitTester {
                 const t = this._getTransform(e);
                 if (!t) continue;
 
-                // 1. Dapatkan posisi absolut
                 const absPos = this._calculateAbsolutePosition(e, rootBounds);
 
-                // 2. Ambil data transform (scale, ukuran asli, pivot, dan rotasi)
                 const sx = t.scaleX ?? 1;
                 const sy = t.scaleY ?? 1;
                 const w = (t.width || 0) * sx;
@@ -159,20 +157,18 @@ export class HitTester {
                 const py = t.pivotY ?? 0.5;
                 const r = (t.rotation || 0) * (Math.PI / 180);
 
-                // 3. Hitung keempat sudut entity berdasarkan pivot (titik acuan lokal)
                 const minX = -px * w;
                 const maxX = w - (px * w);
                 const minY = -py * h;
                 const maxY = h - (py * h);
 
                 const localCorners = [
-                    { x: minX, y: minY }, // Kiri atas
-                    { x: maxX, y: minY }, // Kanan atas
-                    { x: minX, y: maxY }, // Kiri bawah
-                    { x: maxX, y: maxY }  // Kanan bawah
+                    { x: minX, y: minY },
+                    { x: maxX, y: minY }, 
+                    { x: minX, y: maxY },
+                    { x: maxX, y: maxY } 
                 ];
 
-                // 4. Transformasikan sudut tersebut dengan rotasi dan posisi absolut
                 let eLeft = Infinity, eRight = -Infinity;
                 let eTop = Infinity, eBottom = -Infinity;
 
@@ -189,12 +185,11 @@ export class HitTester {
                     eBottom = Math.max(eBottom, rotatedY);
                 }
 
-                // 5. Cek AABB overlap: apakah kotak entity tumpang tindih dengan kotak marquee?
                 const isOverlapping = !(
-                    box.x + box.w < eLeft ||   // Marquee berada di kiri entity
-                    box.x > eRight ||          // Marquee berada di kanan entity
-                    box.y + box.h < eTop ||    // Marquee berada di atas entity
-                    box.y > eBottom            // Marquee berada di bawah entity
+                    box.x + box.w < eLeft ||  
+                    box.x > eRight ||        
+                    box.y + box.h < eTop ||  
+                    box.y > eBottom         
                 );
 
                 if (isOverlapping) {

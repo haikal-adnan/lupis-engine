@@ -4,7 +4,6 @@ import { createPrefab as createPrefabSchema } from '@/services/schema/prefabSche
 import { GenerateUUID } from '@/commons/utils/generateUUID';
 import { EngineBridge } from "@/services/engine/EngineBridge.js";
 
-// Composables
 import { useConfirm } from '@/composables/useConfirm';
 import { usePopAlert } from '@/composables/usePopAlert';
 import { usePrompt } from '@/composables/usePrompt';
@@ -17,7 +16,6 @@ export function usePrefabActions() {
   const { showPop } = usePopAlert();
   const { prompt } = usePrompt();
 
-  // --- CREATE ---
   const createPrefab = (name = "New Prefab", sourceEntityData = null) => {
     try {
       let dataPayload = {};
@@ -50,7 +48,6 @@ export function usePrefabActions() {
     }
   };
   
-  // --- DELETE ---
   const deletePrefab = async (prefabId) => {
     const prefab = store.getPrefabById(prefabId);
     if (!prefab) return;
@@ -69,7 +66,6 @@ export function usePrefabActions() {
     }
   };
 
-  // --- RENAME ---
   const renamePrefab = async (prefabId) => {
     const prefab = store.getPrefabById(prefabId);
     if (!prefab) return;
@@ -88,7 +84,6 @@ export function usePrefabActions() {
     }
   };
 
-  // --- DUPLICATE ---
   const duplicatePrefab = (prefabId) => {
     const original = store.getPrefabById(prefabId);
     if (!original) return;
@@ -103,7 +98,6 @@ export function usePrefabActions() {
     return clone;
   };
 
-  // --- UPDATE DATA ---
   const updatePrefab = (prefabId, newData) => {
     const prefab = store.getPrefabById(prefabId);
     if (prefab) {
@@ -112,7 +106,6 @@ export function usePrefabActions() {
     }
   };
 
-  // --- LINK TO ENTITIES ---
   const linkPrefabToEntities = async (prefabId, entityIds) => {
     const prefab = store.getPrefabById(prefabId);
     if (!prefab || !entityIds || entityIds.length === 0) return;
@@ -172,12 +165,10 @@ export function usePrefabActions() {
     }
   };
 
-  // --- INSTANTIATE PREFAB (NEW) ---
   const instantiatePrefab = (prefabId, options = {}) => {
     const prefab = store.getPrefabById(prefabId);
     if (!prefab || !sceneStore.activeScene) return null;
 
-    // 1. Tentukan Posisi (Mouse drop vs Camera Center)
     let posX = 0;
     let posY = 0;
 
@@ -185,40 +176,34 @@ export function usePrefabActions() {
       posX = Number(options.x);
       posY = Number(options.y);
     } else {
-      // Sama persis seperti createEntity, ambil dari Camera
       const camPos = EngineBridge.getCameraPosition ? EngineBridge.getCameraPosition() : { x: 0, y: 0 };
       posX = Math.round(camPos.x);
       posY = Math.round(camPos.y);
     }
 
-    // 2. Tentukan Parent & Layer
     let parentId = null;
     let layerId = null;
 
     if (options.parentId) {
-      // Cek apakah options.parentId itu Layer atau Entity?
       const isLayer = sceneStore.activeLayers.some(l => l._id === options.parentId);
       if (isLayer) {
         layerId = options.parentId;
         parentId = null;
       } else {
-        // Jika drop ke dalam entitas/grup lain
         const parentEntity = sceneStore.activeScene.entities.find(e => e._id === options.parentId);
         if (parentEntity) {
           layerId = parentEntity.layerId;
           parentId = options.parentId;
         } else {
-          layerId = options.parentId; // Fallback darurat
+          layerId = options.parentId;
         }
       }
     } else {
-      // Fallback ke default layer sesuai tipe prefab
       const defaultWorldLayer = sceneStore.activeScene.layersWorld?.[0]?._id;
       const defaultUILayer = sceneStore.activeScene.layersUI?.[0]?._id;
       layerId = prefab.type === 'ui' ? defaultUILayer : defaultWorldLayer;
     }
 
-    // 3. Hitung Order Index tertinggi di parent/layer tersebut
     const siblings = sceneStore.activeScene.entities.filter(e => 
       e.parentId === parentId && e.layerId === layerId
     );
@@ -227,9 +212,7 @@ export function usePrefabActions() {
     );
     const nextOrderIndex = maxOrder + 1;
 
-    // 4. Auto-Increment Naming & ScriptID
     const existingEntities = sceneStore.activeScene.entities;
-    // Hapus spasi dari nama prefab untuk base ScriptID
     const baseName = prefab.name.replace(/[^a-zA-Z0-9_]/g, ''); 
     const regex = new RegExp(`^${baseName}_(\\d+)$`);
 
@@ -245,18 +228,16 @@ export function usePrefabActions() {
     const nextIndex = maxIndex + 1;
     const scriptId = `${baseName}_${nextIndex}`;
 
-    // 5. Clone dan Susun Data Entity Baru
     const newEntity = JSON.parse(JSON.stringify(prefab.data));
     
     newEntity._id = GenerateUUID();
     newEntity.prefabId = prefabId; 
-    newEntity.name = `${prefab.name} ${nextIndex}`; // cth: "Orc Enemy 1"
-    newEntity.scriptId = scriptId;                  // cth: "OrcEnemy_1"
+    newEntity.name = `${prefab.name} ${nextIndex}`;
+    newEntity.scriptId = scriptId;
     newEntity.layerId = layerId;
     newEntity.parentId = parentId;
     newEntity.orderIndex = nextOrderIndex;
 
-    // Set Posisi Transform
     if (newEntity.components?.Transform) {
       newEntity.components.Transform.x = posX;
       newEntity.components.Transform.y = posY;
@@ -265,10 +246,7 @@ export function usePrefabActions() {
       newEntity.components.UITransform.y = posY;
     }
 
-    // 6. Terapkan ke Vue Store & Engine
     sceneStore.activeScene.entities.push(newEntity);
-    
-    // Auto Select Entity yang baru dibuat
     sceneStore.selectedEntityIds = [newEntity._id];
 
     if (EngineBridge.createEntity) {
@@ -287,7 +265,6 @@ export function usePrefabActions() {
     return newEntity;
   };
 
-// --- APPLY TO MASTER PREFAB (COMPONENT-LEVEL) ---
   const applyToMasterPrefab = async (entityId) => {
     const entity = sceneStore.activeScene.entities.find(e => e._id === entityId);
     if (!entity || !entity.prefabId) return;
@@ -305,55 +282,44 @@ export function usePrefabActions() {
 
     if (!isConfirmed) return;
 
-    // 1. Ambil data komponen terbaru dari entitas sumber
     const newMasterComponents = JSON.parse(JSON.stringify(entity.components));
     
-    // Bersihkan isOverridden dari master (master tidak butuh flag ini)
     Object.values(newMasterComponents).forEach(comp => {
       delete comp.isOverridden;
     });
 
-    // 2. Update Master di Prefab Store
     const masterDataToSave = JSON.parse(JSON.stringify(entity));
     ['_id', 'parentId', 'layerId', 'orderIndex', 'prefabId', 'scriptId', 'name'].forEach(k => delete masterDataToSave[k]);
     masterDataToSave.components = newMasterComponents;
     
     store.updatePrefab(prefab._id, { data: masterDataToSave });
 
-    // 3. Sinkronisasi semua instance di scene
     const instancesToUpdate = [];
     const allInstances = sceneStore.activeScene.entities.filter(e => e.prefabId === prefab._id);
 
     allInstances.forEach(inst => {
       if (inst._id === entityId) {
-        // ENTITAS SUMBER: Karena ini sekarang adalah versi master, reset semua override komponennya jadi false
         Object.values(inst.components).forEach(comp => {
           comp.isOverridden = false;
         });
         instancesToUpdate.push(JSON.parse(JSON.stringify(inst)));
       } else {
-        // ENTITAS LAIN: Cek per komponen
         let hasChanges = false;
 
         Object.keys(newMasterComponents).forEach(compName => {
           const masterComp = newMasterComponents[compName];
           const instComp = inst.components[compName];
 
-          // Hanya update jika komponen di instance TIDAK di-override (atau belum ada)
           if (!instComp || instComp.isOverridden === false) {
-            
-            // Pertahankan posisi koordinat (Transform) agar objek tidak saling menumpuk
             let protectedX = 0, protectedY = 0;
             if (compName === 'Transform' || compName === 'UITransform') {
               protectedX = instComp ? instComp.x : (inst.x || 0);
               protectedY = instComp ? instComp.y : (inst.y || 0);
             }
 
-            // Copy data dari master ke instance
             inst.components[compName] = JSON.parse(JSON.stringify(masterComp));
             inst.components[compName].isOverridden = false;
 
-            // Kembalikan posisi koordinat
             if (compName === 'Transform' || compName === 'UITransform') {
               inst.components[compName].x = protectedX;
               inst.components[compName].y = protectedY;
@@ -369,7 +335,6 @@ export function usePrefabActions() {
       }
     });
 
-    // 4. Kirim data pembaruan ke Engine
     if (instancesToUpdate.length > 0) {
       EngineBridge.updateEntity(instancesToUpdate);
     }

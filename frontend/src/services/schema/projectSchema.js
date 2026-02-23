@@ -14,7 +14,6 @@ export const createProject = (data = {}) => {
       height: Number(data.settings?.height || 720)
     },
 
-    // 1. Global Variables (Existing)
     globalVariables: Array.isArray(data.globalVariables) 
       ? data.globalVariables.map(v => ({
           _id: v._id || GenerateUUID(),

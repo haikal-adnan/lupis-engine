@@ -1,6 +1,5 @@
 import { computed, markRaw } from 'vue'
 import { useEditorStore } from '@/stores/useEditorStore'
-// Tambahkan LayoutTemplate untuk ikon UI
 import { Box, Grid, FileCode2, Network, LayoutTemplate } from 'lucide-vue-next'
 
 import SceneHierarchy from '@/modules/scene/SceneHierarchy.vue'
@@ -40,7 +39,6 @@ const LAYOUT_CONFIG = {
       showPlay: true
     }
   },
-  // ------------------------------
 
   tilemap: {
     left: null,

@@ -83,16 +83,14 @@ import { ChevronDown, FolderOpen, Save, LogOut, CloudUpload, HardDrive } from 'l
 const projectStore = useProjectStore();
 const projectMenuDropdown = ref(null);
 
-// Logika Warna Indikator
 const indicatorColor = computed(() => {
   if (projectStore.error) return 'bg-destructive';
   if (projectStore.isLoading) return 'bg-yellow-400';
   
-  // Logic Prioritas Status
   switch (projectStore.syncStatus) {
-    case 'dirty': return 'bg-red-500 shadow-red-500/50';    // Ada perubahan di RAM
-    case 'local': return 'bg-blue-500 shadow-blue-500/50';  // Tersimpan di IDB
-    case 'synced': return 'bg-emerald-500 shadow-emerald-500/50'; // Tersimpan di Server
+    case 'dirty': return 'bg-red-500 shadow-red-500/50';   
+    case 'local': return 'bg-blue-500 shadow-blue-500/50';  
+    case 'synced': return 'bg-emerald-500 shadow-emerald-500/50'; 
     default: return 'bg-slate-400';
   }
 });
@@ -113,26 +111,21 @@ function closeMenu() {
   projectMenuDropdown.value?.close(); 
 }
 
-// Handler Save Local (IDB)
 async function handleSaveLocal() { 
-  await projectStore.saveProject(); // Ini save ke IDB (sesuai setup sebelumnya)
+  await projectStore.saveProject(); 
   closeMenu(); 
 }
 
-// Handler Save Server (API)
 async function handleSaveServer() {
-  await projectStore.saveProjectToServer(); // Kita akan buat action ini di store
+  await projectStore.saveProjectToServer();
   closeMenu();
 }
 
-// Keyboard Shortcuts
 const handleKeydown = (e) => {
-  // Save Local: Ctrl + S
   if ((e.ctrlKey || e.metaKey) && e.key === 's' && !e.shiftKey) { 
     e.preventDefault(); 
     handleSaveLocal(); 
   }
-  // Save Server: Ctrl + Shift + S
   if ((e.ctrlKey || e.metaKey) && e.key === 's' && e.shiftKey) {
     e.preventDefault();
     handleSaveServer();

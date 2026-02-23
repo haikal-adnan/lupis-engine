@@ -3,11 +3,9 @@ import { GenerateUUID } from '@/commons/utils/generateUUID.js';
 export const createScriptPort = (data = {}) => ({
   _id: data._id || GenerateUUID(), 
   label: data.label || "",
-  // type: "any" -> DIHAPUS, karena sudah digantikan oleh dataType
-  dataType: data.dataType || "any", // 'execution', 'string', 'number', 'boolean', 'any'
+  dataType: data.dataType || "any",
   color: data.color || "#555",
   enabled: data.enabled ?? true,
-  // DITAMBAHKAN: Untuk menyimpan nilai default jika tidak ada koneksi (misal input angka manual)
   defaultValue: data.defaultValue ?? null 
 });
 
@@ -45,7 +43,6 @@ export const createScriptNode = (data = {}) => ({
     ? data.outputs.map(createScriptPort)
     : [],
   
-  // Data mixed (menyimpan config seperti 'format', 'key', 'propertyOptions')
   data: data.data || {}
 });
 
@@ -62,7 +59,7 @@ export const createScript = (data = {}) => {
     _id: data._id || GenerateUUID(),
     projectId: data.projectId || null,
     name: data.name || "Untitled Script",
-    type: data.type || "component", // 'component' | 'scene_logic'
+    type: data.type || "component", 
     exposedVariables: Array.isArray(data.exposedVariables)
       ? data.exposedVariables.map(createScriptVariable)
       : [],

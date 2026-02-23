@@ -27,14 +27,12 @@ const seedDatabase = async () => {
     await Prefab.deleteMany({});
     await Script.deleteMany({});
 
-    // --- ID DEFINITIONS (Menggabungkan ID Seeder Baru & Lama) ---
     const projectId = "project_dungeon_demo_01";
     const sceneId = "scene_main_gameplay";
     
     const fSpritesId = "folder_sprites";
     const fFontsId = "folder_fonts";
     
-    // Menggunakan ID Asset dari seeder lama agar konsisten dengan fileKey
     const assetDungeonId = "dungeon_sheet_fixed_key"; 
     const assetFontId = "gaegu";
     
@@ -45,7 +43,6 @@ const seedDatabase = async () => {
     const entPlayerId = "ent_player_hero";
     const entScoreId = "ent_ui_score_label";
 
-    // --- SEEDING PROJECT ---
     console.log("Seeding Project & Folders...");
     await Project.create({
       _id: projectId,
@@ -62,7 +59,6 @@ const seedDatabase = async () => {
       { _id: fFontsId, projectId, name: "Fonts" },
     ]);
 
-    // --- SEEDING ASSETS (Diambil dari Seeder Lama) ---
     console.log("Seeding Assets...");
     await Asset.create([
       {
@@ -87,7 +83,6 @@ const seedDatabase = async () => {
       }
     ]);
 
-    // --- SEEDING SCENE (Tetap Menggunakan Logika Seeder Baru) ---
     console.log("Seeding Scene...");
     await Scene.create({
       _id: sceneId,

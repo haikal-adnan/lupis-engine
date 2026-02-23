@@ -2,12 +2,10 @@ import Game from "./Core/Game.js";
 import GameLoader from "./Core/GameLoader.js";
 import { bus } from "./Util/EventBus.js";
 
-// Hapus global export 'game' di sini agar tidak ada side-effect saat import.
-
 export async function startEngine(canvasSource, mode = "editor", initialData = {}) {
+
     let canvas;
 
-    // 1. Validasi Canvas
     if (typeof canvasSource === 'string') {
         canvas = document.getElementById(canvasSource);
     } else {
@@ -15,7 +13,7 @@ export async function startEngine(canvasSource, mode = "editor", initialData = {
     }
 
     if (!canvas) {
-        console.error(`❌ [Main] Canvas element not found.`);
+        console.error(`[Main] Canvas element not found.`);
         return null;
     }
     
@@ -44,8 +42,7 @@ export async function startEngine(canvasSource, mode = "editor", initialData = {
         return { game, bus };
         
     } catch (error) {
-        console.error("❌ [Main] Fatal Error: Failed to start engine.", error);
-        // game.destroy(); 
+        console.error("[Main] Fatal Error: Failed to start engine.", error);
         return null;
     }
 }

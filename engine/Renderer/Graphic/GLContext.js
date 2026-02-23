@@ -1,4 +1,3 @@
-// engine/Renderer/GLContext.js
 export default class GLContext {
     constructor(canvas) {
         const opts = {

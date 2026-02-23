@@ -6,7 +6,6 @@ function getShared(gl) {
     let s = _shared.get(gl);
     if (s) return s;
 
-    // ... (kode shader tetap sama)
     const isWebGL2 = gl instanceof WebGL2RenderingContext;
     const hasDeriv = isWebGL2 || !!gl.getExtension("OES_standard_derivatives");
 
@@ -123,7 +122,6 @@ export default class TextRenderer {
     }
 
     measureText(font, str, size) {
-        // ... (tetap sama)
         if (!font || !font.chars || !font.info || !str) {
             return { width: 0, height: 0, xMin: 0, yMin: 0, xMax: 0, yMax: 0 };
         }
@@ -156,7 +154,6 @@ export default class TextRenderer {
         };
     }
 
-    // UPDATED: Added flipX, flipY parameters
     drawText(font, str, x, y, w, h, size, color, projection, rot = 0, sx = 1, sy = 1, px = 0, py = 0, alpha = 1, flipX = false, flipY = false) {
         if (!font || !font.glTexture || !str || str.trim() === "") return;
 
@@ -176,7 +173,6 @@ export default class TextRenderer {
 
         const c = Math.cos(rot), s = Math.sin(rot);
         
-        // --- APPLY FLIP ---
         const finalSX = flipX ? -sx : sx;
         const finalSY = flipY ? -sy : sy;
 

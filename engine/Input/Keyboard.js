@@ -54,7 +54,6 @@ export default class Keyboard {
         this.keys.delete(k);
         this.released.add(k);
 
-        // 🔥 Emit event ke Event Bus untuk pemicu node Release
         if (this.eventManager) {
             this.eventManager.emit("input:keyup", k);
         }

@@ -133,22 +133,19 @@ const updateOp = (index, newOp) => {
 const syncStructure = (newOps) => {
     const currentInputs = props.node.inputs || [];
     
-    // v0 Label = Val 1
     const v0 = currentInputs.find(i => i._id === 'v0') || { 
         _id: 'v0', label: 'Val 1', dataType: 'number', color: '#B2FF59', value: 0 
     };
-    // Pastikan label v0 selalu update jika sebelumnya bukan 'Val 1'
     if(v0.label !== 'Val 1') v0.label = 'Val 1';
 
     const nextInputs = newOps.map((_, index) => {
         const id = `v${index + 1}`;
         const existing = currentInputs.find(i => i._id === id);
         
-        // Logic Label: index 0 -> Val 2, index 1 -> Val 3
         const correctLabel = `Val ${index + 2}`;
 
         if (existing) {
-             existing.label = correctLabel; // Update label existing port
+             existing.label = correctLabel; 
              return existing;
         }
         

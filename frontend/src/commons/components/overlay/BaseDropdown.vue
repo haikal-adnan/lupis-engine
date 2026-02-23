@@ -40,10 +40,8 @@ function close() {
   isOpen.value = false
 }
 
-// Expose fungsi ke parent
 defineExpose({ close, open: toggle })
 
-// Custom Directive: v-click-outside
 const vClickOutside = {
   mounted(el, binding) {
     el.clickOutsideEvent = function(event) {

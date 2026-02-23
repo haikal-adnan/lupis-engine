@@ -14,7 +14,7 @@ export function useSaveSystem() {
     
     isSavingLocal.value = true;
     try {
-      console.log('💾 [System] Saving changes to Local DB...');
+      console.log('[System] Saving changes to Local DB...');
       
       const currentScene = projectStore.currentScene;
       if (currentScene) {
@@ -26,7 +26,7 @@ export function useSaveSystem() {
       await new Promise(r => setTimeout(r, 500)); 
       
     } catch (error) {
-      console.error('❌ Failed to save local:', error);
+      console.error('Failed to save local:', error);
     } finally {
       isSavingLocal.value = false;
     }
@@ -35,7 +35,7 @@ export function useSaveSystem() {
   const syncCloud = async () => {
     isUploading.value = true;
     try {
-      console.log('☁️ [System] Syncing to Cloud...');
+      console.log('[System] Syncing to Cloud...');
 
       await new Promise(r => setTimeout(r, 1500));
 
@@ -43,10 +43,10 @@ export function useSaveSystem() {
         await markSceneAsSynced(projectStore.activeSceneId);
       }
       
-      console.log('✅ Cloud Sync Complete');
+      console.log('Cloud Sync Complete');
 
     } catch (error) {
-      console.error('❌ Cloud Sync Failed:', error);
+      console.error('Cloud Sync Failed:', error);
     } finally {
       isUploading.value = false;
     }

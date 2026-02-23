@@ -111,7 +111,6 @@ const sceneStore = useSceneStore()
 const hasComponent = computed(() => !!selectedEntity.value?.components?.Collider)
 const isOverridden = getComponentOverrideStatus('Collider')
 
-// Bindings (Otomatis memicu override via bindComponentProp)
 const type = bindComponentProp('Collider', 'type')
 const enabled = bindComponentProp('Collider', 'enabled')
 const offsetX = bindComponentProp('Collider', 'offsetX', 2)
@@ -131,13 +130,11 @@ const syncSizeToTransform = () => {
 
   const id = selectedEntity.value._id
   
-  // Update properties
   sceneStore.updateComponentProp(id, 'Collider', 'width', transform.width)
   sceneStore.updateComponentProp(id, 'Collider', 'height', transform.height)
   sceneStore.updateComponentProp(id, 'Collider', 'offsetX', 0)
   sceneStore.updateComponentProp(id, 'Collider', 'offsetY', 0)
   
-  // Manual trigger override karena fungsi ini mengupdate banyak field sekaligus
   markAsOverridden()
   sceneStore.updateComponentProp(id, 'Collider', 'isOverridden', true)
 }

@@ -128,13 +128,11 @@ import {
 } from 'lucide-vue-next'
 import { useInspectorLogic } from "@/modules/properties/composables/useInspectorLogic.js";
 
-// Components
 import PropertySection from "@ui/display/PropertySection.vue";
 import PropertyRow from "@ui/display/PropertyRow.vue";
 import BaseNumber from '@/commons/components/inputs/BaseNumber.vue'
 import IconButton from '@/commons/components/buttons/IconButton.vue'
 
-// Custom Controls
 import PivotControl from '@ui/inputs/PivotControl.vue'
 import AnchorControl from '@ui/inputs/AnchorControl.vue'
 
@@ -145,15 +143,14 @@ const {
   updatePivot, 
   bindComponentProp, 
   isLocked,
-  prefabId,                   // Prefab Hook
-  syncComponent,              // Sync Hook
-  getComponentOverrideStatus, // Status Hook
-  markAsOverridden            // Mark Override Hook
+  prefabId,                   
+  syncComponent,             
+  getComponentOverrideStatus,
+  markAsOverridden          
 } = useInspectorLogic();
 
 const isOverridden = getComponentOverrideStatus(COMPONENT_NAME);
 
-// --- BINDINGS (Otomatis handle override via bindComponentProp) ---
 const x = bindComponentProp(COMPONENT_NAME, 'x', 2);
 const y = bindComponentProp(COMPONENT_NAME, 'y', 2);
 const width = bindComponentProp(COMPONENT_NAME, 'width', 2);
@@ -166,12 +163,9 @@ const anchorY = bindComponentProp(COMPONENT_NAME, 'anchorY');
 const pivotX = bindComponentProp(COMPONENT_NAME, 'pivotX');
 const pivotY = bindComponentProp(COMPONENT_NAME, 'pivotY');
 
-// --- ACTIONS ---
-
 const updateAnchorFromControl = ({ x, y }) => {
   anchorX.value = x;
   anchorY.value = y;
-  // bindComponentProp setter handles markAsOverridden
 };
 
 const handleReset = () => {

@@ -8,7 +8,6 @@ export default class WorldRenderer {
         this.tilemapRenderer = tilemapRenderer;
         this.renderQueue = [];
         
-        // Warna debug collider
         this.boundsColor = [0.7, 0, 1, 0.6];
         this.colliderColorSolid = [0, 1, 0, 0.8]; 
         this.colliderColorTrigger = [1, 1, 0, 0.8]; 
@@ -63,10 +62,8 @@ export default class WorldRenderer {
     }
 
     _collectRenderables(world, activeTabId, isIsolationMode, isUIMode, tilemapContext, proj) {
-        // 1. Cek apakah kita sedang di Mode Editor
         const isEditor = Config.ENGINE_MODE === 'editor';
 
-        // Gabungkan layer, tapi logic filter akan dilakukan di bawah
         const layers = [...(world.layersWorld || []), ...(world.layersUI || [])]; 
         this._sortItems(layers);
 
@@ -77,32 +74,23 @@ export default class WorldRenderer {
 
             const isUILayer = layer.scriptId === 'ui' || (layer.name && layer.name.includes('UI'));
 
-            // [FIX UTAMA] Jika BUKAN Editor (sedang Runtime) DAN ini adalah Layer UI,
-            // maka skip rendering layer ini di WorldRenderer.
-            // Biarkan UIRenderer yang menangani ini.
             if (!isEditor && isUILayer) continue;
 
-            // Ambil SEMUA entities di layer (Flat), lalu sort
             const allEntities = [...layer.entities];
             this._sortItems(allEntities);
 
             for (const e of allEntities) {
-                // Cek apakah entity ini bersifat UI
                 const isEntityUI = e.type === 'ui' || e.type === 'ui_entity' || e.components.UITransform || isUILayer;
 
-                // [FIX KEDUA] Jika BUKAN Editor (Runtime) DAN entity ini tipe UI, skip.
-                // Ini menjaga agar entity UI yang tidak sengaja masuk ke layer World tidak ikut ter-render di Runtime.
                 if (!isEditor && isEntityUI) continue;
 
                 let entityVisualOpacity = 1.0;
 
-                // Logic Isolation Mode (Tilemap)
                 if (isIsolationMode && e.id !== activeTabId) {
                     if (tilemapContext && !tilemapContext.showOthers) continue;
                     if (tilemapContext) entityVisualOpacity = tilemapContext.opacity;
                 }
                 
-                // Logic UI Mode Dimming (Hanya relevan di Editor)
                 if (isEditor && isUIMode) {
                     if (!isEntityUI) {
                         entityVisualOpacity = 0.3;
@@ -121,7 +109,6 @@ export default class WorldRenderer {
 
         if (!comps) return;
 
-        // Tilemap Special Case
         if (comps.Tilemap && this.tilemapRenderer) {
             this._executeRenderQueue(proj);
             this.renderQueue.length = 0;
@@ -129,17 +116,14 @@ export default class WorldRenderer {
             return;
         }
 
-        // [FIX 3] Support UITransform & Hitung Posisi Absolut
         const t = comps.UITransform || comps.Transform;
         
         if (t) {
-            // Hitung posisi visual (World or UI)
             let drawX = t.x || 0;
             let drawY = t.y || 0;
 
             if (comps.UITransform) {
                 const uiSettings = world.settings?.ui || { referenceWidth: 1920, referenceHeight: 1080 };
-                // Karena flat rendering, anggap parent adalah Canvas root
                 const parentW = uiSettings.referenceWidth;
                 const parentH = uiSettings.referenceHeight;
                 
@@ -165,7 +149,6 @@ export default class WorldRenderer {
             const flipX = t.flipX || false;
             const flipY = t.flipY || false;
 
-            // 1. RENDER SPRITE
             if (comps.SpriteRenderer) {
                 const s = comps.SpriteRenderer;
                 const a = (s.opacity ?? 1) * currentOpacity;
@@ -181,7 +164,6 @@ export default class WorldRenderer {
                 }
             }
 
-            // 2. RENDER SHAPE
             if (comps.ShapeRenderer) {
                 const s = comps.ShapeRenderer;
                 const a = (s.opacity ?? 1) * currentOpacity;
@@ -199,7 +181,6 @@ export default class WorldRenderer {
                 }
             }
 
-            // 3. RENDER DEBUG COLLIDER
             if (Config.ENGINE_MODE === 'editor' && comps.Collider && comps.Collider.enabled) {
                 const c = comps.Collider;
                 
@@ -228,13 +209,30 @@ export default class WorldRenderer {
                 });
             }
 
-            // 4. RENDER TEXT
             if (comps.TextRenderer) {
                 const tx = comps.TextRenderer;
                 const a = (tx.opacity ?? 1) * currentOpacity;
                 let font = world.assets.fonts[tx.assetId];
                 if (!font?.ready) font = world.assets.fonts["system_default"];
+                
                 if (a > 0 && font) {
+                    // === LOGIKA AUTO FIT ===
+                    if (tx.autoFit) {
+                        // Ukur ukuran teks yang sebenarnya
+                        const measurement = this.renderer.text.measureText(font, tx.value ?? "", tx.fontSize || 24);
+                        
+                        // Jika ukuran berubah, update Transform komponen
+                        // Kita beri sedikit margin (misal +2) agar teks tidak terpotong (opsional)
+                        if (t.width !== measurement.boundsWidth || t.height !== measurement.boundsHeight) {
+                            t.width = measurement.boundsWidth;
+                            t.height = measurement.boundsHeight;
+                            
+                            // Update kembali objek 'trans' karena t.width & t.height baru saja berubah
+                            trans.width = t.width;
+                            trans.height = t.height;
+                        }
+                    }
+
                     this.renderQueue.push({
                         type: "text",
                         transformData: trans,

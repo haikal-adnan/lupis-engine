@@ -70,13 +70,10 @@
     const canvasEl = document.getElementById("lp_canvas_preview");
     const channel = new BroadcastChannel(CHANNEL_NAME);
 
-    // [ADD] Fungsi untuk menjaga Aspect Ratio
     function setupCanvasResponsiveness(refWidth, refHeight) {
-        // 1. Set Resolusi Internal (Pixel Buffer) agar tajam
         canvasEl.width = refWidth;
         canvasEl.height = refHeight;
 
-        // 2. Fungsi hitung CSS Size (Tampilan)
         const onResize = () => {
             const winW = window.innerWidth;
             const winH = window.innerHeight;
@@ -86,11 +83,9 @@
             let finalW, finalH;
 
             if (winRatio > targetRatio) {
-                // Window lebih lebar -> Batasi berdasarkan Tinggi (Pillarbox)
                 finalH = winH;
                 finalW = finalH * targetRatio;
             } else {
-                // Window lebih tinggi -> Batasi berdasarkan Lebar (Letterbox)
                 finalW = winW;
                 finalH = finalW / targetRatio;
             }
@@ -99,7 +94,6 @@
             canvasEl.style.height = `${finalH}px`;
         };
 
-        // Jalankan saat init & saat window di-resize
         window.addEventListener('resize', onResize);
         onResize(); 
     }
@@ -109,13 +103,10 @@
             loadingEl.classList.remove("hidden");
             loadingEl.innerText = "Starting Engine...";
             
-            // [ADD] Ambil Resolusi dari Payload Settings
             const settings = payload.scene.settings?.ui || {};
-            const refW = settings.referenceWidth || 1920; // Default HD
+            const refW = settings.referenceWidth || 1920;
             const refH = settings.referenceHeight || 1080;
 
-
-            // [ADD] Setup Canvas sebelum engine start
             setupCanvasResponsiveness(refW, refH);
 
             await startEngine(canvasEl, "runtime", payload);
@@ -128,7 +119,6 @@
         }
     }
 
-    // Logic Reload & Session Storage
     const savedData = sessionStorage.getItem(STORAGE_KEY);
     
     if (savedData) {

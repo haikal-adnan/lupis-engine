@@ -1,4 +1,3 @@
-// composables/useEditorState.js
 import { computed } from 'vue';
 import { useProjectStore } from '@/stores/useProjectStore';
 

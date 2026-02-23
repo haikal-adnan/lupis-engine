@@ -83,7 +83,6 @@ export default class ShapeRenderer {
         this.index = i;
     }
 
-    // UPDATED: Added flipX, flipY parameters
     drawRect(x, y, w, h, color=[1,1,1,1], projection, rot=0, sx=1, sy=1, px=0, py=0, alpha=1, flipX=false, flipY=false) {
         if (projection !== this.currentProjection) {
             this.flush();
@@ -93,7 +92,6 @@ export default class ShapeRenderer {
         const [r,g,b,ca] = color;
         const a = ca * alpha;
         
-        // Apply Flip
         const finalSX = flipX ? -sx : sx;
         const finalSY = flipY ? -sy : sy;
 
@@ -108,14 +106,12 @@ export default class ShapeRenderer {
         this._push(v.bl.x, v.bl.y, r,g,b,a);
     } 
     
-    // UPDATED: Added flipX, flipY parameters
     drawRectStroke(x, y, w, h, color=[1,1,1,1], thickness=2, projection, rot=0, sx=1, sy=1, px=0, py=0, alpha=1, flipX=false, flipY=false) {
         if (projection !== this.currentProjection) {
             this.flush();
             this.currentProjection = projection;
         }
 
-        // Apply Flip
         const finalSX = flipX ? -sx : sx;
         const finalSY = flipY ? -sy : sy;
 
