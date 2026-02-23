@@ -128,9 +128,9 @@ import GraphNode from './parts/GraphNode.vue'
 import BaseContextMenu from '@ui/overlay/BaseContextMenu.vue' 
 import { useGraphEditor } from './composables/useGraphEditor.js'
 import { useNodeMenu } from './composables/useNodeMenu.js'
-import { useTheme } from '@/commons/composables/useTheme.js' // Import useTheme
+import { useTheme } from '@/commons/composables/useTheme.js' 
 
-const { isDark } = useTheme() // Ambil status isDark
+const { isDark } = useTheme() 
 
 const {
   panelRef, camera, nodes, edges, interaction, selectedNodeId,

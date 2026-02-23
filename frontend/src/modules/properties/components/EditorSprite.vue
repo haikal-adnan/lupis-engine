@@ -108,7 +108,6 @@ import { computed, ref } from "vue";
 import { Image, FolderSearch, Trash2, RefreshCw } from "lucide-vue-next"; 
 import { useInspectorLogic } from "@/modules/properties/composables/useInspectorLogic.js"; 
 
-// Atomic Components
 import PropertySection from "@ui/display/PropertySection.vue";
 import PropertyRow from "@ui/display/PropertyRow.vue";
 import BaseThumbnail from "@/commons/components/display/BaseThumbnail.vue"; 
@@ -121,17 +120,15 @@ const {
   bindComponentProp,
   currentTextureUrl,
   removeComponent,
-  prefabId,                   // Hook Prefab
-  syncComponent,              // Hook Sync
-  getComponentOverrideStatus  // Hook Status
+  prefabId,           
+  syncComponent,            
+  getComponentOverrideStatus 
 } = useInspectorLogic();
 
 const hasComponent = computed(() => !!selectedEntity.value?.components?.SpriteRenderer);
 
-// Ambil status override khusus untuk badge
 const isOverridden = getComponentOverrideStatus('SpriteRenderer');
 
-// Bindings: Setter otomatis memicu flag isOverridden = true di logic hook
 const assetId = bindComponentProp('SpriteRenderer', 'assetId');
 const rawOpacity = bindComponentProp('SpriteRenderer', 'opacity');
 
@@ -159,6 +156,5 @@ const autoResetRect = ref(false);
 
 function openAssetSelector() {
   console.log("Open Asset Panel triggered!");
-  // Logic untuk Asset Manager Modal
 }
 </script>

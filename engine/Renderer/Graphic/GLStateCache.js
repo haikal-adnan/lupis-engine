@@ -4,7 +4,6 @@ export default class GLStateCache {
 
         this._bindVAO = bindVAOFunc;
 
-        // Cached states
         this.currentProgram = null;
         this.currentTexture = null;
         this.currentVAO = null;

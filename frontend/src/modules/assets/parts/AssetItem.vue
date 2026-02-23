@@ -6,6 +6,7 @@
       active ? 'bg-primary/10 border-primary/50' : 'hover:bg-secondary/80 hover:border-border/50',
       !isSynced ? 'opacity-70 cursor-wait' : ''
     ]"
+    :title="data.name" 
     @click.stop="$emit('click', data)" 
     @contextmenu.prevent.stop="$emit('contextmenu', $event, data)"
   >
@@ -45,16 +46,8 @@
       <div 
         v-else-if="assetType === 'font'"
         class="w-full h-full flex items-center justify-center rounded-sm overflow-hidden"
-        :class="hasFontPreview ? 'bg-checkerboard' : ''"
       >
-         <img 
-          v-if="hasFontPreview" 
-          :src="data.meta.textureUrl" 
-          class="max-w-full max-h-full object-contain filter grayscale invert opacity-80 pixelated"
-          loading="lazy"
-          draggable="false"
-        />
-        <Type v-else class="text-blue-400" :class="iconSizeClass" />
+        <Type class="text-blue-400" :class="iconSizeClass" />
       </div>
 
       <Music v-else-if="['audio', 'sound'].includes(assetType)" class="text-emerald-500" :class="iconSizeClass" />
@@ -70,7 +63,6 @@
         viewMode === 'grid' ? 'w-full text-center px-1' : 'flex-1',
         active ? 'text-foreground' : 'text-muted-foreground group-hover:text-foreground'
       ]"
-      :title="data.name"
     >
       {{ data.name }}
     </span>
@@ -89,7 +81,6 @@ const props = defineProps({
 
 defineEmits(['click', 'contextmenu'])
 
-// --- Local Item Logic ---
 const isFolder = computed(() => props.data.type === 'folder' || props.data.isFolder)
 
 const assetType = computed(() => {
@@ -99,11 +90,6 @@ const assetType = computed(() => {
 
 const isSynced = computed(() => props.data.isSynced !== false)
 
-const hasFontPreview = computed(() => {
-  return assetType.value === 'font' && props.data.meta?.textureUrl
-})
-
-// --- Styling Logic ---
 const containerClass = computed(() => {
   return props.viewMode === 'grid'
     ? 'flex flex-col items-center p-2 min-h-[80px]'

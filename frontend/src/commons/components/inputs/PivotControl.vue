@@ -34,7 +34,6 @@ const pivotPoints = [
 ]
 
 function isActive(p) {
-  // Menggunakan epsilon kecil untuk float comparison agar aman
   return Math.abs(props.x - p.x) < 0.01 && Math.abs(props.y - p.y) < 0.01
 }
 

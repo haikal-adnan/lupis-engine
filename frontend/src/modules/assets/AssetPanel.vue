@@ -1,9 +1,25 @@
 <template>
   <div 
-    class="h-full flex flex-col bg-background text-foreground select-none"
+    class="relative h-full flex flex-col bg-background text-foreground select-none overflow-hidden"
     @click="closeMenu"
     @contextmenu.prevent="handleContextMenu($event, null)"
   >
+    <div 
+      v-if="isUploading" 
+      class="absolute inset-0 z-[100] flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm cursor-wait transition-opacity"
+      style="pointer-events: all;"
+      @click.stop
+      @contextmenu.stop
+      @drop.prevent
+      @dragover.prevent
+    >
+      <svg class="animate-spin h-10 w-10 text-white mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+      </svg>
+      <span class="text-sm font-semibold text-white animate-pulse tracking-wide">Processing Asset...</span>
+    </div>
+
     <div class="flex items-center gap-2 px-3 h-10 border-b border-border shrink-0">
       <button 
         @click.stop="toggleViewMode"
@@ -37,16 +53,19 @@
         class="hidden" 
         multiple
         @change="handleFileUpload"
-        accept="image/*,.fnt,.json,.ttf"
+        accept=".jpg,.jpeg,.png,.ttf"
+        :disabled="isUploading"
       />
 
-      <BaseSearchInput v-model="searchQuery" placeholder="Search assets..." />
+      <BaseSearchInput v-model="searchQuery" placeholder="Search assets..." :disabled="isUploading" />
 
       <div class="w-px h-4 bg-border mx-1"></div>
       
       <button 
         @click.stop="triggerUpload"
         class="p-1.5 hover:bg-primary/10 text-muted-foreground hover:text-primary rounded-md transition-colors"
+        :class="{ 'opacity-50 cursor-not-allowed': isUploading }"
+        :disabled="isUploading"
         title="Import Asset"
       >
         <Plus class="w-4 h-4" />
@@ -82,8 +101,7 @@
           :key="asset._id" 
           :data="{
             id: asset._id,
-            name: asset.name,
-            type: asset.type,
+            name: asset.displayName || asset.name, type: asset.type,
             fileUrl: asset.fileUrl,
             meta: asset.meta,
             isSynced: asset.isSynced
@@ -91,7 +109,7 @@
           :view-mode="viewMode"
           :active="selectedId === asset._id"
           @click="handleSelect(asset._id)"
-          @contextmenu="handleContextMenu($event, { ...asset, type: 'asset' })"
+          @contextmenu="handleContextMenu($event, { ...asset, name: asset.displayName || asset.name })" 
         />
       </div>
 
@@ -120,12 +138,11 @@ import BaseSearchInput from '@/commons/components/inputs/BaseSearchInput.vue'
 import BaseContextMenu from '@/commons/components/overlay/BaseContextMenu.vue'
 import AssetItem from '@/modules/assets/parts/AssetItem.vue'
 
-// Import Refactored Logic
 import { useAssetLogic } from '@/modules/assets/composables/useAssetLogic.js'
 import { useAssetMenu } from '@/modules/assets/composables/useAssetMenu.js'
 
-// Initialize Logic
 const {
+  isUploading,
   viewMode,
   searchQuery,
   selectedId,
@@ -141,7 +158,6 @@ const {
   handleDrop
 } = useAssetLogic()
 
-// Initialize Menu (Pass dependencies needed by menu)
 const {
   menu,
   handleContextMenu,

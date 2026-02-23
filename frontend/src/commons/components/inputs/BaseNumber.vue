@@ -27,9 +27,10 @@
           isDragging ? '!bg-primary/20 !text-primary border-primary/20' : 'group-focus-within:border-border/50'
         ]"
       >
-        <span class="text-xs font-bold font-mono text-muted-foreground transition-colors"
+        <span
+          class="text-xs font-bold font-mono text-muted-foreground transition-colors"
           :class="[
-             isDragging ? '!text-primary' : 'group-focus-within:text-primary'
+            isDragging ? '!text-primary' : 'group-focus-within:text-primary'
           ]"
         >
           {{ prefix }}
@@ -82,7 +83,6 @@ const props = defineProps({
   ignoreRange: { type: Boolean, default: false },
   cyclic: { type: Boolean, default: false },
   scrubSensitivity: { type: Number, default: 1 },
-  // [ADDED] Precision prop (opsional, default null berarti perilaku lama)
   precision: { type: Number, default: null }
 })
 
@@ -99,52 +99,47 @@ const displayValue = computed({
 
 watch(() => model.value, (newVal) => {
   if (!isDragging.value) {
-    // Jika ada precision, format tampilan saat value berubah dari luar
     if (props.precision !== null && typeof newVal === 'number') {
-        localInput.value = parseFloat(newVal.toFixed(props.precision));
+      localInput.value = parseFloat(newVal.toFixed(props.precision));
     } else {
-        localInput.value = newVal
+      localInput.value = newVal
     }
   }
 })
 
-// --- RESTRICTION LOGIC ---
 function validateInput(event) {
   let value = event.target.value;
   let clean = value.replace(/[^0-9.-]/g, '');
 
   if (clean.lastIndexOf('-') > 0) {
-      clean = clean.replace(/-/g, ''); 
-      clean = '-' + clean; 
+    clean = clean.replace(/-/g, ''); 
+    clean = '-' + clean; 
   }
 
   const parts = clean.split('.');
   if (parts.length > 2) {
-      clean = parts[0] + '.' + parts.slice(1).join('');
+    clean = parts[0] + '.' + parts.slice(1).join('');
   }
 
   if (value !== clean) {
-     localInput.value = clean;
-     event.target.value = clean; 
+    localInput.value = clean;
+    event.target.value = clean; 
   }
 }
 
-// Helper untuk membulatkan sesuai precision
 function applyPrecision(val) {
-    if (props.precision !== null) {
-        return parseFloat(val.toFixed(props.precision));
-    }
-    return val;
+  if (props.precision !== null) {
+    return parseFloat(val.toFixed(props.precision));
+  }
+  return val;
 }
 
-// --- Logic Inti: Normalize ---
 function normalizeValue(val) {
   if (props.ignoreRange) return val
   
   if (props.cyclic) {
     const rangeSpan = (props.max - props.min) + (Number.isInteger(props.step) ? props.step : 0)
     const wrapped = ((val - props.min) % rangeSpan + rangeSpan) % rangeSpan + props.min
-    // Cyclic biasanya butuh float fix juga
     return parseFloat(wrapped.toFixed(props.precision !== null ? props.precision : 2))
   }
 
@@ -155,27 +150,21 @@ function normalizeValue(val) {
 }
 
 function updateModel(val) {
-  if (val === '' || val === '-' || val === '.') {
-      return; 
-  }
+  if (val === '' || val === '-' || val === '.') return;
 
   let num = parseFloat(val)
   if (isNaN(num)) return 
 
-  // 1. Apply Precision
   num = applyPrecision(num);
-
-  // 2. Normalize (Clamp/Cycle)
   const finalVal = normalizeValue(num)
   
   model.value = finalVal
   
   if (finalVal !== num) {
-      localInput.value = finalVal 
+    localInput.value = finalVal 
   }
 }
 
-// --- Scrubbing Logic Updated ---
 const isDragging = ref(false)
 let startX = 0
 let startValue = 0
@@ -203,20 +192,16 @@ function onMouseMove(event) {
   if (event.altKey) multiplier = 0.1   
 
   const change = deltaX * props.step * multiplier * props.scrubSensitivity
-  
   let newValue = startValue + change
 
-  // [MODIFIED] Logic pembulatan saat scrubbing
   if (props.precision !== null) {
-      // Jika precision di-set, paksa ikuti precision tersebut
-      newValue = parseFloat(newValue.toFixed(props.precision));
+    newValue = parseFloat(newValue.toFixed(props.precision));
   } else {
-      // Fallback perilaku lama
-      if (Number.isInteger(props.step) && !event.altKey && Number.isInteger(startValue) && Number.isInteger(props.scrubSensitivity)) {
-         newValue = Math.round(newValue)
-      } else {
-         newValue = parseFloat(newValue.toFixed(2))
-      }
+    if (Number.isInteger(props.step) && !event.altKey && Number.isInteger(startValue) && Number.isInteger(props.scrubSensitivity)) {
+      newValue = Math.round(newValue)
+    } else {
+      newValue = parseFloat(newValue.toFixed(2))
+    }
   }
 
   newValue = normalizeValue(newValue)
@@ -232,18 +217,15 @@ function stopScrub() {
   window.removeEventListener('mousemove', onMouseMove)
   window.removeEventListener('mouseup', stopScrub)
   
-  // Final sync saat lepas mouse agar tampilan bersih
   if (props.precision !== null) {
-      localInput.value = parseFloat((parseFloat(model.value) || 0).toFixed(props.precision));
+    localInput.value = parseFloat((parseFloat(model.value) || 0).toFixed(props.precision));
   }
 }
 
-// --- Input & Keyboard Logic ---
 function increment(val) {
   const current = parseFloat(model.value) || 0
   let newValue = current + val
   
-  // Apply precision sebelum normalize
   newValue = applyPrecision(newValue);
   newValue = normalizeValue(newValue)
 
@@ -256,22 +238,18 @@ function increment(val) {
 }
 
 function handleBlur() {
-   updateModel(localInput.value)
+  updateModel(localInput.value)
    
-   // Paksa format tampilan saat blur sesuai precision
-   if (props.precision !== null && !isNaN(parseFloat(model.value))) {
-       localInput.value = parseFloat(model.value).toFixed(props.precision);
-       // Hapus trailing zeros jika diinginkan, atau biarkan fixed string (misal "10.00")
-       // Di sini saya gunakan parseFloat lagi agar "10.00" jadi "10" untuk hemat tempat,
-       // Hapus parseFloat pembungkus jika ingin strict "10.00"
-       localInput.value = parseFloat(localInput.value); 
-   } else {
-       localInput.value = model.value 
-   }
+  if (props.precision !== null && !isNaN(parseFloat(model.value))) {
+    localInput.value = parseFloat(model.value).toFixed(props.precision);
+    localInput.value = parseFloat(localInput.value); 
+  } else {
+    localInput.value = model.value 
+  }
 }
 
 function handleChange() {
-   updateModel(localInput.value)
+  updateModel(localInput.value)
 }
 </script>
 

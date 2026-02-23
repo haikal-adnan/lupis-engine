@@ -4,7 +4,6 @@ import { usePrefabActions } from '@/modules/prefab/composables/usePrefabActions.
 
 export function usePrefabLogic() {
   const store = usePrefabStore();
-  // Action sudah mengandung popAlert dan Prompt
   const { createPrefab, deletePrefab, renamePrefab, duplicatePrefab } = usePrefabActions(); 
   
   const searchQuery = ref('');
@@ -38,9 +37,8 @@ export function usePrefabLogic() {
     duplicatePrefab(item.id);
   };
   
-  // UPDATE: Tidak perlu menerima newName di sini
   const handleRename = (item) => {
-      renamePrefab(item.id); // Action akan memanggil usePrompt
+      renamePrefab(item.id); 
   }
 
   return {

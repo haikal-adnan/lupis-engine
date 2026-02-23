@@ -65,7 +65,6 @@ const colorMap = {
   error: 'text-red-500'
 };
 
-// Opsional: Memberikan border kiri berwarna agar lebih jelas tipenya
 const borderClass = {
   info: 'border-l-4 border-l-blue-500',
   success: 'border-l-4 border-l-green-500',

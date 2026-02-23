@@ -4,10 +4,15 @@ export default class AssetLoader {
     constructor(imageResource, fontResource) {
         this.imageResource = imageResource;
         this.fontResource = fontResource;
+        this._isSystemDefaultLoaded = false;
     }
 
     async loadAsset(world, assets) {
-        await this._loadSystemDefault(world);
+        
+        if (!this._isSystemDefaultLoaded) {
+            await this._loadSystemDefault(world);
+            this._isSystemDefaultLoaded = true;
+        }
 
         for (const asset of assets) {
             try {

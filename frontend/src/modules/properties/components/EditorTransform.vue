@@ -125,16 +125,15 @@ import BaseButton from '@/commons/components/buttons/BaseButton.vue'
 
 const { 
   selectedEntity, 
-  prefabId,           // [NEW] Cek jika prefab
+  prefabId,         
   resetTransform, 
   updatePivot, 
   bindComponentProp, 
   isLocked,
-  syncComponent,       // [NEW] Fungsi Sync
-  getComponentOverrideStatus // [NEW] Status Override Komponen
+  syncComponent,      
+  getComponentOverrideStatus 
 } = useInspectorLogic();
 
-// [NEW] Ambil status override khusus untuk komponen 'Transform'
 const isOverridden = getComponentOverrideStatus('Transform');
 
 const x = bindComponentProp('Transform', 'x', 2);
@@ -143,7 +142,6 @@ const rotation = bindComponentProp('Transform', 'rotation', 2);
 const width = bindComponentProp('Transform', 'width', 2);
 const height = bindComponentProp('Transform', 'height', 2);
 
-// [NOTE] bindComponentProp sekarang otomatis meng-handle isOverridden=true saat diset
 const flipX = bindComponentProp('Transform', 'flipX');
 const flipY = bindComponentProp('Transform', 'flipY');
 const isRatioLocked = bindComponentProp('Transform', 'isRatioLocked');

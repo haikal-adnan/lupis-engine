@@ -48,7 +48,6 @@ export default class Camera {
         if (isNaN(this.x)) this.x = 0;
         if (isNaN(this.y)) this.y = 0;
 
-        // Logic Clamp
         if (world && canvas && world.settings?.worldBounds?.active) {
             this._applyClamp(world.settings.worldBounds, canvas);
         }

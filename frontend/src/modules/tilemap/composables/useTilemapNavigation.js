@@ -1,22 +1,16 @@
 import { ref, computed } from 'vue';
 
 export function useTilemapNavigation() {
-  // --- CONFIG ---
-  // Sesuaikan nilai ini agar pas dengan rasa mouse Anda (0.5 - 1.2 biasanya pas)
   const WHEEL_SENSITIVITY = 0.8; 
 
-  // --- STATE ---
   const viewX = ref(0);
   const viewY = ref(0);
   const viewScale = ref(1);
   const viewportRef = ref(null);
 
-  // Pointer State
   const isPanning = ref(false);
   const lastPtrX = ref(0);
   const lastPtrY = ref(0);
-
-  // --- ACTIONS ---
 
   const resetView = () => {
     viewScale.value = 1;
@@ -27,24 +21,18 @@ export function useTilemapNavigation() {
   const handleWheel = (e) => {
     if (!viewportRef.value) return;
 
-    // Hitung kecepatan pan yang dinamis berdasarkan Zoom Level
-    // Semakin besar zoom, semakin pelan gerakannya (agar presisi)
-    // Semakin kecil zoom, semakin cepat gerakannya
     const dynamicSpeed = (e.deltaY * WHEEL_SENSITIVITY) / viewScale.value;
 
-    // 1. Horizontal Pan (Shift)
     if (e.shiftKey) {
       viewX.value -= dynamicSpeed; 
       return;
     }
 
-    // 2. Vertical Pan (Alt)
     if (e.altKey) {
       viewY.value -= dynamicSpeed;
       return;
     }
 
-    // 3. Zoom Logic (Default)
     const rect = viewportRef.value.getBoundingClientRect();
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
@@ -90,11 +78,6 @@ export function useTilemapNavigation() {
   const updatePan = (clientX, clientY) => {
     if (!isPanning.value) return;
     
-    // Note: Untuk Drag Pan biasanya 1:1 dengan gerakan mouse terasa paling natural ("Paper Drag").
-    // Tapi jika ingin sensitivitas zoom juga diterapkan di sini, gunakan rumus di bawah:
-    // viewX.value += (clientX - lastPtrX.value) / viewScale.value; 
-    
-    // Saya sarankan tetap 1:1 untuk drag mouse:
     viewX.value += clientX - lastPtrX.value;
     viewY.value += clientY - lastPtrY.value;
     

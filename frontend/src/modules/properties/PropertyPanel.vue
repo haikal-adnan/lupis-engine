@@ -54,7 +54,6 @@
 import { computed, ref, nextTick } from 'vue';
 import { useInspectorLogic } from "@/modules/properties/composables/useInspectorLogic.js";
 
-// Import Components
 import ScrollArea from '@/commons/components/overlay/ScrollArea.vue'
 import BaseSelect from "@/commons/components/inputs/BaseSelect.vue"; 
 import EditorObject from '@/modules/properties/components/EditorObject.vue'
@@ -111,12 +110,10 @@ const availableComponentOptions = computed(() => {
     let disabled = false;
     let label = opt.label;
     
-    // Jika komponen sudah ada
     if (comps[opt.value]) { 
         disabled = true; 
         label += ' (Added)'; 
     } 
-    // Jika merupakan tipe renderer dan sudah ada renderer lain yang aktif
     else if (opt.isRenderer && hasRenderer) { 
         disabled = true; 
         label += ' (Conflict)'; 

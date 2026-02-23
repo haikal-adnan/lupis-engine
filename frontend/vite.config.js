@@ -5,10 +5,8 @@ import vue from '@vitejs/plugin-vue';
 import vueDevTools from 'vite-plugin-vue-devtools';
 import svgLoader from 'vite-svg-loader';
 
-// --- TAMBAHKAN BARIS INI (DEFINISI __dirname) ---
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-// ------------------------------------------------
 
 export default defineConfig({
   server: {
@@ -80,7 +78,6 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: path.resolve(__dirname, 'index.html'), 
-        // Sekarang __dirname sudah valid, path ini akan akurat
         preview: path.resolve(__dirname, 'preview/index.html') 
       }
     }

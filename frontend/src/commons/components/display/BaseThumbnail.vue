@@ -47,8 +47,9 @@
         </div>
 
         <div class="w-48 h-48 bg-muted/30 rounded border border-border/50 flex items-center justify-center overflow-hidden relative">
-          <div class="absolute inset-0 opacity-20" 
-               style="background-image: radial-gradient(#444 1px, transparent 1px); background-size: 8px 8px;">
+          <div 
+            class="absolute inset-0 opacity-20" 
+            style="background-image: radial-gradient(#444 1px, transparent 1px); background-size: 8px 8px;">
           </div>
           
           <img 
@@ -69,7 +70,6 @@ import TextureUtil from "@modules/properties/composables/TextureUtil.js"
 
 const props = defineProps({
   src: { type: String, default: null },
-  // Opsional: Rect untuk menampilkan potongan sprite {x, y, w, h}
   rect: { type: Object, default: () => ({ x: 0, y: 0, w: 0, h: 0 }) },
   sizeClass: { type: String, default: 'w-12 h-12' }
 })
@@ -81,27 +81,25 @@ const popupRef = ref(null)
 const imgMeta = reactive({ w: 0, h: 0 })
 const popupPosition = reactive({ top: '0px', left: '0px' })
 
-// 1. Fetch Image Size saat URL berubah
 watch(() => props.src, async (url) => {
   if (!url) {
-    imgMeta.w = 0; imgMeta.h = 0;
-    return;
+    imgMeta.w = 0
+    imgMeta.h = 0
+    return
   }
   try {
-    const size = await TextureUtil.fetchImageSize(url);
-    imgMeta.w = size.width;
-    imgMeta.h = size.height;
+    const size = await TextureUtil.fetchImageSize(url)
+    imgMeta.w = size.width
+    imgMeta.h = size.height
   } catch (e) {
-    console.error("Failed to load image size", e);
+    console.error("Failed to load image size", e)
   }
 }, { immediate: true })
 
-// 2. Hitung Style untuk Thumbnail (Slicing/Background Position)
 const thumbnailStyle = computed(() => {
-  if (!props.src || imgMeta.w === 0) return {};
+  if (!props.src || imgMeta.w === 0) return {}
   
-  // Jika rect kosong/nol, tampilkan full image (cover)
-  const isFullImage = !props.rect || (props.rect.w === 0 && props.rect.h === 0);
+  const isFullImage = !props.rect || (props.rect.w === 0 && props.rect.h === 0)
 
   if (isFullImage) {
     return {
@@ -110,72 +108,67 @@ const thumbnailStyle = computed(() => {
       backgroundPosition: 'center',
       backgroundRepeat: 'no-repeat',
       imageRendering: 'pixelated'
-    };
+    }
   }
 
-  // Gunakan Utility Engine untuk menghitung background-position sprite
   return TextureUtil.getThumbnailStyle(
     props.src, 
-    props.rect, // {x, y, w, h}
+    props.rect,
     { width: imgMeta.w, height: imgMeta.h }, 
-    48 // Estimasi base size
-  );
+    48
+  )
 })
 
-// 3. Popup Positioning Logic (Inspector-Aware: Muncul di kiri tombol)
 const updatePosition = () => {
-  if (!triggerRef.value) return;
+  if (!triggerRef.value) return
   
-  const rect = triggerRef.value.getBoundingClientRect();
-  const popupWidth = 210; // Estimasi lebar popup + padding
-  const gap = 12;
+  const rect = triggerRef.value.getBoundingClientRect()
+  const popupWidth = 210
+  const gap = 12
 
-  // Default: Muncul di sebelah kiri tombol (untuk Inspector kanan)
-  let leftPos = rect.left - popupWidth - gap;
+  let leftPos = rect.left - popupWidth - gap
   
-  // Jika tidak muat di kiri (misal Inspector di kiri), pindah ke kanan
   if (leftPos < 10) {
-    leftPos = rect.right + gap;
+    leftPos = rect.right + gap
   }
 
-  // Vertical Center terhadap tombol, tapi jepit di viewport 80vh agar tidak terlalu bawah
-  popupPosition.top = '80vh'; // Hardcoded sesuai preferensi UX sebelumnya
-  popupPosition.left = `${leftPos}px`;
+  popupPosition.top = '80vh'
+  popupPosition.left = `${leftPos}px`
   
-  isPositioned.value = true;
+  isPositioned.value = true
 }
 
 const togglePopup = async () => {
   if (isOpen.value) {
-    closePopup();
+    closePopup()
   } else {
-    isOpen.value = true;
-    isPositioned.value = false;
-    await nextTick();
-    updatePosition();
-    window.addEventListener('click', handleClickOutside);
-    window.addEventListener('resize', updatePosition);
+    isOpen.value = true
+    isPositioned.value = false
+    await nextTick()
+    updatePosition()
+    window.addEventListener('click', handleClickOutside)
+    window.addEventListener('resize', updatePosition)
   }
 }
 
 const closePopup = () => {
-  isOpen.value = false;
-  window.removeEventListener('click', handleClickOutside);
-  window.removeEventListener('resize', updatePosition);
+  isOpen.value = false
+  window.removeEventListener('click', handleClickOutside)
+  window.removeEventListener('resize', updatePosition)
 }
 
 const handleClickOutside = (e) => {
-  if (!isOpen.value) return;
-  // Cek apakah klik terjadi di luar popup DAN di luar trigger
-  const clickedInsidePopup = popupRef.value?.contains(e.target);
-  const clickedInsideTrigger = triggerRef.value?.contains(e.target);
+  if (!isOpen.value) return
+
+  const clickedInsidePopup = popupRef.value?.contains(e.target)
+  const clickedInsideTrigger = triggerRef.value?.contains(e.target)
 
   if (!clickedInsidePopup && !clickedInsideTrigger) {
-    closePopup();
+    closePopup()
   }
 }
 
 onBeforeUnmount(() => {
-  closePopup();
+  closePopup()
 })
 </script>

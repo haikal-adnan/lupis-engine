@@ -1,4 +1,3 @@
-// src/modules/tilemap/composables/useTilemapLogic.js
 import { computed } from 'vue';
 import { useSceneStore } from '@/stores/scene/useSceneStore.js';
 import { useAssetStore } from '@/stores/useAssetStore';

@@ -39,7 +39,6 @@ export class TransformOperator {
         let finalDx = dx;
         let finalDy = dy;
 
-        // Snapping Leader (Item pertama jadi acuan grid)
         if (shouldSnap && startData.length > 0) {
             const leader = startData[0];
             const targetX = leader.x + dx;
@@ -61,7 +60,7 @@ export class TransformOperator {
                 if (t.x !== newX || t.y !== newY) {
                     t.x = newX;
                     t.y = newY;
-                    t.isOverridden = true; // Set isOverridden saat digerakkan
+                    t.isOverridden = true; 
                     changed = true;
                 }
             }
@@ -71,8 +70,6 @@ export class TransformOperator {
             bus.emit("entity:modified", selectedList, true);
         }
     }
-
-    // --- ROTATION HANDLERS ---
 
     rotateSingle(nowPos, rotateCenter, rotateStartAngle, entityStartRotation, selectedList, isUIMode) {
         if (this._isTilemapMode()) return;
@@ -95,10 +92,9 @@ export class TransformOperator {
 
         const newRotation = Math.round(newDeg);
         
-        // Pengecekan perubahan agar isOverridden diset dengan benar
         if (t.rotation !== newRotation) {
             t.rotation = newRotation;
-            t.isOverridden = true; // Set isOverridden saat dirotasi
+            t.isOverridden = true; 
             bus.emit("entity:modified", selectedList, true);
         }
     }
@@ -119,12 +115,10 @@ export class TransformOperator {
             const t = this._getTransform(item.e);
             if (!t) continue;
 
-            // 1. Rotate Entity itself
             const startRad = item.startRotation * (Math.PI / 180);
             let newDeg = (startRad + deltaAngle) * (180 / Math.PI);
             const newRotation = Math.round((newDeg % 360 + 360) % 360);
 
-            // 2. Rotate Position around Center
             const dx = item.startX - rotateCenter.x;
             const dy = item.startY - rotateCenter.y;
             const cos = Math.cos(deltaAngle);
@@ -137,7 +131,7 @@ export class TransformOperator {
                 t.rotation = newRotation;
                 t.x = newX;
                 t.y = newY;
-                t.isOverridden = true; // Set isOverridden saat dirotasi
+                t.isOverridden = true; 
                 changed = true;
             }
         }
@@ -147,8 +141,6 @@ export class TransformOperator {
         }
     }
 
-    // --- RESIZE HANDLER ---
-    
     resize(nowPos, startPos, resizeType, startData, selectedList, isUIMode = false) {
         if (this._isTilemapMode()) return;
         if (!startData || startData.length === 0) return;
@@ -159,14 +151,11 @@ export class TransformOperator {
 
         const { shouldSnap, gridSize } = this.getSnapSettings(isUIMode);
 
-        // Ambil leader (item pertama yang di-klik handle-nya, atau group leader)
         const item = startData[0];
         const e = item.e;
         const t = this._getTransform(e);
         if (!t) return;
 
-        // Proyeksi Gerakan Mouse ke Local Axis Entity
-        // Ini memastikan resize mengikuti arah rotasi entity
         const rRad = item.r * (Math.PI / 180);
         const c = Math.cos(-rRad);
         const s = Math.sin(-rRad);
@@ -174,7 +163,6 @@ export class TransformOperator {
         const localDx = dx * c - dy * s;
         const localDy = dx * s + dy * c;
 
-        // Gunakan scale awal untuk normalisasi
         const safeScaleX = Math.abs(item.sx) < 0.001 ? 0.001 : Math.abs(item.sx);
         const safeScaleY = Math.abs(item.sy) < 0.001 ? 0.001 : Math.abs(item.sy);
 
@@ -182,7 +170,7 @@ export class TransformOperator {
         let dY_Adjusted = localDy / safeScaleY;
 
         let dW = 0, dH = 0;
-        let anchorX = null, anchorY = null; // 0 = kiri/atas, 1 = kanan/bawah
+        let anchorX = null, anchorY = null; 
 
         if (resizeType.includes('w')) { dW = -dX_Adjusted; anchorX = 1; } 
         if (resizeType.includes('e')) { dW = dX_Adjusted;  anchorX = 0; } 
@@ -193,7 +181,6 @@ export class TransformOperator {
         let rawH = item.h + dH;
 
         if (shouldSnap) {
-            // Snap width/height ke grid
             if (resizeType.includes('w') || resizeType.includes('e')) {
                 rawW = Math.round(rawW / gridSize) * gridSize;
                 if (Math.abs(rawW) < gridSize) rawW = gridSize * (rawW < 0 ? -1 : 1); 
@@ -209,15 +196,12 @@ export class TransformOperator {
         const startFlipX = item.flipX ?? false;
         const startFlipY = item.flipY ?? false;
 
-        // Auto Flip jika dimensi negatif
         const newFlipX = (rawW < 0) ? !startFlipX : startFlipX;
         const newFlipY = (rawH < 0) ? !startFlipY : startFlipY;
 
         const newW = Math.max(1, Math.round(Math.abs(rawW)));
         const newH = Math.max(1, Math.round(Math.abs(rawH)));
 
-        // Koreksi Posisi (Pivot Adjustment)
-        // Agar resize terlihat tumbuh dari sisi yang berlawanan dengan handle
         const dW_Visual = dW * safeScaleX;
         const dH_Visual = dH * safeScaleY;
 
@@ -228,11 +212,9 @@ export class TransformOperator {
         const wc = Math.cos(rRad);
         const ws = Math.sin(rRad);
 
-        // Rotasi vector shift kembali ke World Space
         const newX = Math.round(item.x + (shiftX_World * wc - shiftY_World * ws));
         const newY = Math.round(item.y + (shiftX_World * ws + shiftY_World * wc));
         
-        // Pengecekan perubahan agar isOverridden diset dengan benar
         if (t.width !== newW || t.height !== newH || t.x !== newX || t.y !== newY || t.flipX !== newFlipX || t.flipY !== newFlipY) {
             t.flipX = newFlipX;
             t.flipY = newFlipY;
@@ -242,9 +224,8 @@ export class TransformOperator {
             t.scaleY = safeScaleY;
             t.x = newX;
             t.y = newY;
-            t.isOverridden = true; // Set isOverridden saat di-resize
+            t.isOverridden = true; 
             
-            // Tilemap Resize Trigger
             if (e.components.Tilemap) {
                 const tileSize = e.components.Tilemap.tileSize || 32;
                 bus.emit("editor:tilemap:resize", { id: e.id, width: Math.round(newW/tileSize), height: Math.round(newH/tileSize) });

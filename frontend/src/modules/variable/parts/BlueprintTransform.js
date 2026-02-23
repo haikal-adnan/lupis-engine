@@ -1,4 +1,4 @@
-import { Move, Axis3d, Footprints } from 'lucide-vue-next'; // Tambahkan Footprints jika ada, atau pakai Move
+import { Move, Axis3d, Footprints } from 'lucide-vue-next';
 
 export const BlueprintTransform = {
   _id: 'game_transform',
@@ -92,14 +92,13 @@ export const BlueprintTransform = {
         data: {
             vel_x: 0,
             vel_y: 0,
-            use_physics: false, // Default OFF agar beginner friendly
+            use_physics: false,
             sweep: true
         },
         inputs: [
           { _id: 'exec_in', label: 'In', dataType: 'execution', color: '#ffffff' },
           { _id: 'in_target', label: 'Target ID (Self)', dataType: 'string', color: '#E040FB' },
           
-          // Penamaan variabel lebih deskriptif
           { _id: 'vel_x', label: 'Velocity X', dataType: 'number', color: '#69F0AE', value: 0 },
           { _id: 'vel_y', label: 'Velocity Y', dataType: 'number', color: '#69F0AE', value: 0 },
         ],

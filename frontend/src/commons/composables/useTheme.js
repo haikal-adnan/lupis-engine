@@ -1,4 +1,3 @@
-// src/commons/composables/useTheme.js
 import { ref, onMounted, watch } from 'vue'
 
 const isDark = ref(false)

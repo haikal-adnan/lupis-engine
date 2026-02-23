@@ -138,7 +138,7 @@
 import { 
   Plus, Trash2, MoreVertical, Copy, Type, Hash, ToggleLeft, 
   ArrowRightFromLine, ArrowLeftToLine 
-} from 'lucide-vue-next'; // Tambah icon arrow untuk Get/Set
+} from 'lucide-vue-next'; 
 import { useVariableLogic } from '@/modules/variable/composables/useVariableLogic.js';
 import PropertySection from "@ui/display/PropertySection.vue";
 import BaseDropdown from '@/commons/components/overlay/BaseDropdown.vue';

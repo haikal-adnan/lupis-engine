@@ -48,7 +48,6 @@ export default class UIRenderer {
         this._executeRenderQueue(proj);
     }
 
-    // --- REFACTOR: Flat Collection ---
     _collectUIEntities(world, proj, rootBounds) {
         const layers = [...(world.layersUI || [])];
         this._sortItems(layers);
@@ -56,18 +55,15 @@ export default class UIRenderer {
         for (const layer of layers) {
             if (!layer.visible || !layer.entities) continue;
             
-            // Ambil semua entity (flat) dan sort
             const allEntities = [...layer.entities];
             this._sortItems(allEntities);
             
             for (const entity of allEntities) {
-                // Semua entity anchor ke rootBounds (Layar), karena tidak ada parenting
                 this._processUIEntity(entity, world, proj, 1.0, rootBounds);
             }
         }
     }
 
-    // --- REFACTOR: Hapus Rekursif Children & Group Logic ---
     _processUIEntity(e, world, proj, parentOpacity, parentBounds) {
         if (e.active === false || e.visible === false) return;
 
@@ -77,7 +73,6 @@ export default class UIRenderer {
         const t = comps.UITransform || comps.Transform;
         if (!t) return;
 
-        // Anchor logic (Flat: Relative to Screen/parentBounds passed from render())
         const anchorX = t.anchorX ?? 0.5;
         const anchorY = t.anchorY ?? 0.5;
         const anchorPointX = parentBounds.x + (parentBounds.width * anchorX);
@@ -99,7 +94,6 @@ export default class UIRenderer {
         const flipX = t.flipX || false;
         const flipY = t.flipY || false;
 
-        // Render Component Checks (Hapus check type != group, langsung check component saja)
         if (comps.SpriteRenderer) {
             const s = comps.SpriteRenderer;
             const a = (s.opacity ?? 1) * currentOpacity;
@@ -137,7 +131,25 @@ export default class UIRenderer {
             const a = (tx.opacity ?? 1) * currentOpacity;
             let font = world.assets.fonts[tx.assetId];
             if (!font?.ready) font = world.assets.fonts["system_default"];
+            
             if (a > 0 && font) {
+                // === LOGIKA AUTO FIT ===
+                if (tx.autoFit) {
+                    // Ukur ukuran teks yang sebenarnya
+                    const measurement = this.renderer.text.measureText(font, tx.value ?? "", tx.fontSize || 24);
+                    
+                    // Jika ukuran berubah, update Transform komponen
+                    // Kita beri sedikit margin (misal +2) agar teks tidak terpotong (opsional)
+                    if (t.width !== measurement.boundsWidth || t.height !== measurement.boundsHeight) {
+                        t.width = measurement.boundsWidth;
+                        t.height = measurement.boundsHeight;
+                        
+                        // Update kembali objek 'trans' karena t.width & t.height baru saja berubah
+                        trans.width = t.width;
+                        trans.height = t.height;
+                    }
+                }
+
                 this.renderQueue.push({
                     type: "text",
                     transformData: trans,
@@ -150,8 +162,6 @@ export default class UIRenderer {
                 });
             }
         }
-
-        // Logic Children Recursion dihapus sepenuhnya
     }
 
     _executeRenderQueue(proj) {

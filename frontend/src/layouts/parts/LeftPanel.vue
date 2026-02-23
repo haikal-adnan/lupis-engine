@@ -9,7 +9,7 @@ const props = defineProps({
   },
   title: {
     type: String,
-    default: 'Explorer' // Default title jika tidak di-pass
+    default: 'Explorer' 
   }
 })
 

@@ -1,4 +1,3 @@
-// src/services/db/index.js
 import { openDB } from 'idb';
 
 const DB_NAME = 'LupisEngineDB';
@@ -13,8 +12,6 @@ export const STORES = {
   SCRIPTS: 'scripts'
 };
 
-// ... initDB dan saveProjectToLocalDB yang sudah ada ...
-
 export const initDB = async () => {
   return openDB(DB_NAME, DB_VERSION, {
     upgrade(db) {
@@ -24,7 +21,6 @@ export const initDB = async () => {
       storesWithIndex.forEach(storeName => {
         if (!db.objectStoreNames.contains(storeName)) {
           const store = db.createObjectStore(storeName, { keyPath: '_id' });
-          // Pastikan index projectId dibuat agar kita bisa query relasinya
           store.createIndex('projectId', 'projectId', { unique: false });
         }
       });
@@ -33,7 +29,6 @@ export const initDB = async () => {
 };
 
 export const saveProjectToLocalDB = async (fullPayload) => {
-    // ... kode save yang sebelumnya (biarkan sama) ...
     const db = await initDB();
     const tx = db.transaction(Object.values(STORES), 'readwrite');
     const { project, scenes, assets, prefabs, folders, scripts } = fullPayload;
@@ -54,18 +49,13 @@ export const saveProjectToLocalDB = async (fullPayload) => {
     await tx.done;
 };
 
-// --- TAMBAHAN BARU: LOAD FUNCTION ---
-
 export const getProjectFromLocalDB = async (projectId) => {
   const db = await initDB();
   
-  // 1. Cek apakah Project ada di store 'projects'
   const project = await db.get(STORES.PROJECT, projectId);
 
-  // Jika Project tidak ada, return null agar logic lanjut ke fetch API
   if (!project) return null;
 
-  // 2. Jika ada, ambil semua resources terkait menggunakan Index 'projectId'
   const [scenes, assets, prefabs, folders, scripts] = await Promise.all([
     db.getAllFromIndex(STORES.SCENES, 'projectId', projectId),
     db.getAllFromIndex(STORES.ASSETS, 'projectId', projectId),

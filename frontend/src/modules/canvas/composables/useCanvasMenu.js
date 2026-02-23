@@ -7,7 +7,7 @@ import {
   ArrowUpToLine, ArrowDownToLine, 
   Box, Lock, EyeOff, Power, Trash2,
   Plus, Cuboid, Image, Square, Type, InspectionPanel, Layers,
-  Layout, Pointer // Tambahan icon untuk UI Panel & UI Button
+  Layout, Pointer
 } from 'lucide-vue-next';
 
 export function useCanvasMenu(canvasHandlers) {
@@ -55,7 +55,6 @@ export function useCanvasMenu(canvasHandlers) {
   const openMenu = (screenX, screenY, worldX, worldY, isEntitySelected) => {
     const hasClipboard = editorStore.hasClipboardData;
     
-    // 1. Dapatkan tipe tab aktif dan tentukan section layer target
     const activeTabType = editorStore.activeTab?.type || 'scene';
     const targetLayerSection = activeTabType === 'scene' ? 'world' : 'ui';
 
@@ -88,7 +87,6 @@ export function useCanvasMenu(canvasHandlers) {
       );
 
     } else {
-      // 2. Buat helper untuk list entity sesuai target section
       const getEntityTypesForLayer = (layerId) => {
         if (targetLayerSection === 'ui') {
           return [
@@ -108,21 +106,18 @@ export function useCanvasMenu(canvasHandlers) {
         ];
       };
 
-      // 3. Filter layer aktif sesuai dengan section target (world / ui)
       const activeLayers = sceneStore.activeLayers || [];
       const filteredLayers = activeLayers.filter(layer => layer._section === targetLayerSection);
 
       let createItems = [];
 
       if (filteredLayers.length > 0) {
-        // Map layer yang difilter menjadi menu
         createItems = filteredLayers.map(layer => ({
           label: layer.name,
           icon: Layers,
           children: getEntityTypesForLayer(layer._id)
         }));
       } else {
-        // Fallback langsung ke entity list jika layer kosong di section tersebut
         createItems = getEntityTypesForLayer(null);
       }
 

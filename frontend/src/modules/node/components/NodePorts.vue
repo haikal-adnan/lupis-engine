@@ -142,17 +142,16 @@ import BaseSelect from '@/commons/components/inputs/BaseSelect.vue';
 
 const { 
   selectedNode, 
-  activeDropdownTarget, // State aktif: 'input', 'output', atau null
-  availableOptions,     // List opsi untuk dropdown
-  handleAddPort,        // Fungsi trigger (Auto vs Dropdown Mode)
-  addFromDropdown,      // Fungsi eksekusi dropdown
+  activeDropdownTarget,
+  availableOptions,   
+  handleAddPort,   
+  addFromDropdown,   
   removeDynamicInput 
 } = useNodeLogic();
 
 function getPortColor(port) {
    if (port.color) return port.color;
    
-   // Fallback color logic based on DataType
    const type = (port.dataType || port.type || 'any').toLowerCase();
    
    switch(type) {

@@ -3,8 +3,6 @@ import { EngineBridge } from "@/services/engine/EngineBridge.js";
 export function useEditorToEngine(sceneStore, assetStore, editorStore, scriptStore, prefabStore) {
 
   const listen = () => {
-    
-    // --- SCENE STORE ---
     sceneStore.$onAction(({ name, args, after, onError }) => {
       console.log(`%c[SceneStore] Action: ${name}`, "color: #4CAF50; font-weight: bold;", { args });
       
@@ -87,7 +85,6 @@ export function useEditorToEngine(sceneStore, assetStore, editorStore, scriptSto
       onError((err) => console.error(`[Sync] Error on ${name}:`, err));
     });
 
-    // --- ASSET STORE ---
     assetStore.$onAction(({ name, args, after }) => {
       console.log(`%c[AssetStore] Action: ${name}`, "color: #2196F3; font-weight: bold;", { args });
       
@@ -99,7 +96,6 @@ export function useEditorToEngine(sceneStore, assetStore, editorStore, scriptSto
       });
     });
 
-    // --- EDITOR STORE ---
     editorStore.$onAction(({ name, args, after }) => {
       console.log(`%c[EditorStore] Action: ${name}`, "color: #FF9800; font-weight: bold;", { args });
       
@@ -117,7 +113,6 @@ export function useEditorToEngine(sceneStore, assetStore, editorStore, scriptSto
       });
     });
 
-    // --- SCRIPT STORE ---
     scriptStore.$onAction(({ name, args, after }) => {
       console.log(`%c[ScriptStore] Action: ${name}`, "color: #9C27B0; font-weight: bold;", { args });
       
@@ -146,7 +141,6 @@ export function useEditorToEngine(sceneStore, assetStore, editorStore, scriptSto
           case 'addPrefab': EngineBridge.createPrefab(args[0]); break;
           case 'updatePrefab': EngineBridge.updatePrefab(args[0], args[1]); break;
           case 'updateComponentProp': 
-              // Jika store mendukung updateComponentProp langsung
               EngineBridge.updatePrefab(args[0], null); 
               break;
           case 'removePrefab': EngineBridge.deletePrefab(args[0]); break;

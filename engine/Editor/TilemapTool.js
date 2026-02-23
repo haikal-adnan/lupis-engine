@@ -339,7 +339,6 @@ export default class TilemapTool {
     }
 
     _findEntity(activeId) {
-        // Gabungkan kedua jenis layer untuk pencarian
         const allLayers = [...(this.world.layersWorld || []), ...(this.world.layersUI || [])];
 
         for (const layer of allLayers) {
@@ -348,7 +347,6 @@ export default class TilemapTool {
             for (const e of layer.entities) {
                 if (e.id === activeId) return e;
 
-                // Support Hierarchy: Cek ke dalam children jika entity ada di dalam group
                 if (e.children && e.children.length > 0) {
                     const found = this._findInChildren(e, activeId);
                     if (found) return found;
@@ -358,7 +356,6 @@ export default class TilemapTool {
         return null;
     }
 
-    // [NEW] Helper Recursive untuk mencari entity di kedalaman hierarchy
     _findInChildren(entity, id) {
         for (const child of entity.children) {
             if (child.id === id) return child;

@@ -40,8 +40,8 @@ export async function addLocalAsset(file, projectId, folderId) {
         folderId: folderId || null,
         name: nameWithoutExt, 
         type: type,
-        localBlob: file, // Blob disimpan di DB untuk persistensi offline
-        fileUrl: null,   // Akan di-hydrate saat load
+        localBlob: file,
+        fileUrl: null,  
         isSynced: false,
         meta: {
             extension: ext, 

@@ -4,7 +4,8 @@ export const useAssetStore = defineStore('asset', {
   state: () => ({
     assets: [],
     selectedAssetId: null,
-    searchQuery: ''
+    searchQuery: '',
+    isUploading: false
   }),
 
   getters: {
@@ -14,6 +15,11 @@ export const useAssetStore = defineStore('asset', {
   },
 
   actions: {
+
+    setUploading(status) {
+      this.isUploading = status;
+    },
+
     initAssets(assetList) {
       this.assets = assetList;
     },

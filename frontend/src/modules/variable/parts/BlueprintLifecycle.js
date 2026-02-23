@@ -10,7 +10,7 @@ export const BlueprintLifecycle = {
       type: 'event_tick',
       label: 'On Tick',
       description: 'Runs every frame. Use for continuous logic.',
-      icon: Clock, // Import dari lucide-vue-next
+      icon: Clock,
       defaultData: {
         settings: {
           headerTitle: 'On Tick',

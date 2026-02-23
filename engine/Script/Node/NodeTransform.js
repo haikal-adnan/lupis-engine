@@ -4,7 +4,6 @@ export const NodeTransform = {
 
             const targetId = runner.getInputValue(node, 'in_target');
             const entity = runner.resolveEntity(targetId);
-            console.log(targetId)
             
             if (!entity?.components?.Transform) {
                 runner.executeFlow(node._id, 'exec_out');
@@ -54,19 +53,12 @@ export const NodeTransform = {
             const hasPhysics = phys && phys.enabled;
 
             if (hasPhysics) {
-                // LOGIC PENTING:
-                // Velocity X biasanya override (jalan kiri/kanan langsung responsif)
-                // Tapi kalau input 0, kita biarkan momentum drag bekerja (opsional)
                 if (velX !== 0) phys.velocityX = velX; 
                 
-                // Velocity Y (Lompat/Terbang)
-                // Hanya override jika ada input nilai (bukan 0). 
-                // Ini membiarkan gravitasi bekerja saat user tidak menekan apa-apa.
                 if (velY !== 0) {
                     phys.velocityY = velY;
                 }
             } else {
-                // Manual Movement (Ghost/Kinematic)
                 const dt = runner.currentDt || 0.016;
                 const moveX = velX * dt;
                 const moveY = velY * dt;

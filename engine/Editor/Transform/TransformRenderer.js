@@ -35,7 +35,6 @@ export class TransformRenderer {
             }
         }
 
-        // Ini sudah Radian karena dikonversi di Geometry
         const rot = geometry.activeRotation || 0;
 
         for (const h of geometry.handles) {
@@ -54,7 +53,6 @@ export class TransformRenderer {
                     h_dim = capLen; 
                 }
 
-                // drawRect mengharapkan rot dalam Radian
                 shape.drawRect(h.x, h.y, w, h_dim, dotFill, proj, rot, 1, 1, 0.5, 0.5);
                 shape.drawRectStroke(h.x, h.y, w, h_dim, dotStroke, lineThick, proj, rot, 1, 1, 0.5, 0.5);
             }

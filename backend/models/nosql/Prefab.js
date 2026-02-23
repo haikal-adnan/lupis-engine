@@ -5,7 +5,6 @@ const EditorStateSchema = new mongoose.Schema({
   expanded: { type: Boolean, default: false },
 }, { _id: false });
 
-// Schema komponen flexible
 const PrefabDataSchema = new mongoose.Schema({
   scriptId: { type: String, default: '' },
   type: { type: String, enum: ['entity', 'group'], default: 'entity' },
@@ -28,7 +27,6 @@ const PrefabSchema = new mongoose.Schema({
   _id: { type: String, required: true },
   projectId: { type: String, ref: 'Project', required: true },
   name: { type: String, required: true },
-  // thumbnail dihapus, kita akan generate icon secara prosedural di frontend
   data: { type: PrefabDataSchema, default: () => ({}) }
 }, { 
   timestamps: true,

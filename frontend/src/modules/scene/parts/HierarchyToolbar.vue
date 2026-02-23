@@ -114,7 +114,6 @@ const props = defineProps({
   isRefreshing: Boolean
 });
 
-// [UPDATED] Emits 'add-layer' with type payload
 defineEmits(['update:modelValue', 'add-layer', 'refresh']);
 
 const { 

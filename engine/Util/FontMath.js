@@ -1,5 +1,3 @@
-// Util/FontMath.js
-
 export default class FontMath {
     static measureText(font, str, size) {
         if (!font || !font.chars || !font.info || !str) {

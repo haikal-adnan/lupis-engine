@@ -3,8 +3,8 @@ import { Scale, ArrowRightLeft } from 'lucide-vue-next';
 export const BlueprintComparison = {
   _id: 'comparison',
   label: 'Comparison',
-  color: '#3F51B5', // Indigo
-  icon: Scale, // Icon timbangan cocok untuk comparison
+  color: '#3F51B5', 
+  icon: Scale,
   items: [
     { 
       type: 'logic_compare', 
@@ -20,7 +20,7 @@ export const BlueprintComparison = {
             category: 'Logic' 
         },
         data: {
-            op: 'equal', // Default operator
+            op: 'equal',
         }, 
         inputs: [
           { _id: 'a', label: 'A', dataType: 'any', color: '#ffffff' },

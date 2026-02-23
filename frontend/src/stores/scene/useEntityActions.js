@@ -94,23 +94,18 @@ export function useEntityActions(activeScene, selectedEntityIds) {
     const defaultWorldLayer = activeScene.value.layersWorld?.[0]?._id;
     const defaultUILayer = activeScene.value.layersUI?.[0]?._id;
 
-    // --- PERUBAHAN DISINI: Fleksibel menerima Object (Hierarchy) atau String (Canvas LayerId) ---
     if (contextNodeOrLayerId) {
         if (typeof contextNodeOrLayerId === 'string') {
-            // Jika yang dilempar adalah string (layerId) langsung dari Context Menu Canvas
             layerId = contextNodeOrLayerId;
             parentId = null;
         } else if (contextNodeOrLayerId.type === 'layer') {
-            // Jika dari Hierarchy berupa Object Layer
             layerId = contextNodeOrLayerId._id;
             parentId = null;
         } else {
-            // Jika context node adalah entity lain (opsional jika ingin jadikan child di kemudian hari)
             layerId = contextNodeOrLayerId.layerId;
             parentId = null; 
         }
     } else {
-        // Fallback default jika tidak ada layer yang terpilih
         if (type.startsWith('ui_')) {
             layerId = defaultUILayer;
         } else {
@@ -129,7 +124,6 @@ export function useEntityActions(activeScene, selectedEntityIds) {
     const nextOrderIndex = maxOrder + 1;
     const components = {};
 
-    // --- SETUP KOMPONEN BERDASARKAN TYPE ---
     if (type === 'sprite') {
       components.SpriteRenderer = { assetId: null, color: '#FFFFFF' };
       components.Transform = { ...rawTransform };
@@ -226,8 +220,6 @@ export function useEntityActions(activeScene, selectedEntityIds) {
     const allNewEntities = [];
     const newRootIds = [];
 
-    console.log(entityIds);
-
     idsToDuplicate.forEach(id => {
         const data = getHierarchyData(id);
         if (!data) return;
@@ -236,10 +228,8 @@ export function useEntityActions(activeScene, selectedEntityIds) {
         if (clones.length > 0) newRootIds.push(clones[0]._id);
     });
 
-    // 1. Update State Vue
     activeScene.value.entities.push(...allNewEntities);
     
-    // 2. Kirim BATCH ke Engine (Array) -> Perbaikan disini
     EngineBridge.createEntity(allNewEntities); 
     
     EngineBridge.selectEntity(newRootIds);
@@ -274,10 +264,8 @@ export function useEntityActions(activeScene, selectedEntityIds) {
           if (clones.length > 0) newRootIds.push(clones[0]._id);
       });
       
-      // 1. Update State Vue
       activeScene.value.entities.push(...allNewClones);
 
-      // 2. Kirim BATCH ke Engine (Array) -> Perbaikan disini
       EngineBridge.createEntity(allNewClones);
 
       EngineBridge.selectEntity(newRootIds);

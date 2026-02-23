@@ -19,14 +19,12 @@ export const BlueprintSystem = {
           headerColor: '#37474F', 
           category: 'Interface' 
         },
-        // Data default jika tidak ada kabel
         data: { 
             message: 'Hello World',
             duration: 3.0 
         }, 
         inputs: [
           { _id: 'exec_in', label: 'In', dataType: 'execution', color: '#ffffff' },
-          // ID ini harus sama persis dengan yang dipanggil di logic
           { _id: 'in_msg', label: 'Message', dataType: 'string', color: '#FFB74D', value: 'Hello World' }
         ],
         outputs: [
@@ -48,7 +46,7 @@ export const BlueprintSystem = {
           headerColor: '#37474F', 
           category: 'Interface' 
         },
-        data: { prefix: 'LOG: ' }, // [FIX] Object bukan Array
+        data: { prefix: 'LOG: ' }, 
         inputs: [
           { _id: 'exec_in', label: 'In', dataType: 'execution', color: '#ffffff' },
           { _id: 'in_value', label: 'Value', dataType: 'any', color: '#ffffff' }

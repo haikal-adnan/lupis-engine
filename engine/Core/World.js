@@ -2,7 +2,6 @@ export default class World {
     constructor() {
         this.entities = []; 
         
-        // UPDATED: Split Layer Storage
         this.layersWorld = []; 
         this.layersUI = []; 
         
@@ -33,7 +32,6 @@ export default class World {
         };
     }
 
-    // Helper: Mendapatkan semua layer (penting untuk loop rendering)
     get allLayers() {
         return [...this.layersWorld, ...this.layersUI];
     }
@@ -41,20 +39,16 @@ export default class World {
     addEntity(entity) {
         this.entities.push(entity);
         
-        // Cari layer target di World
         let targetLayer = this.layersWorld.find(l => l._id === entity.layerId);
         
-        // Jika tidak ada, cari di UI
         if (!targetLayer) {
             targetLayer = this.layersUI.find(l => l._id === entity.layerId);
         }
 
-        // Masukkan entity ke dalam layer group untuk optimasi
         if (targetLayer) {
             if (!targetLayer.entities) targetLayer.entities = [];
             targetLayer.entities.push(entity);
         } else {
-            // Fallback: Masukkan ke layer pertama World jika orphan layer
             if (this.layersWorld.length > 0) {
                  if (!this.layersWorld[0].entities) this.layersWorld[0].entities = [];
                  this.layersWorld[0].entities.push(entity);
@@ -68,22 +62,19 @@ export default class World {
         
         const entity = this.entities[entityIndex];
         
-        // Recursive remove children
         if (entity.children) {
             [...entity.children].forEach(child => this.removeEntity(child.id));
         }
 
-        // Remove from main list
         this.entities.splice(entityIndex, 1);
 
-        // Remove from Layer list (Check both collections)
         const all = this.allLayers;
         for (const layer of all) {
             if (layer.entities) {
                 const idx = layer.entities.findIndex(e => e.id === entityId);
                 if (idx !== -1) {
                     layer.entities.splice(idx, 1);
-                    break; // Entity found and removed
+                    break;
                 }
             }
         }

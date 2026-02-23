@@ -45,7 +45,6 @@ const containerRef = ref(null)
 const viewportRef = ref(null)
 const contentRef = ref(null)
 
-// State
 const showScrollbar = ref(false)
 const thumbHeight = ref(0)
 const thumbTop = ref(0)
@@ -53,23 +52,19 @@ const isHovering = ref(false)
 const isScrolling = ref(false)
 const isDragging = ref(false)
 
-// Posisi Track di layar (Fixed coordinate)
 const trackPosition = reactive({ top: 0, left: 0, height: 0 })
 
 let scrollTimeout = null
 let resizeObserver = null
 
-// --- Core Logic: Update Posisi Track & Thumb ---
 const updateGeometry = () => {
   if (!viewportRef.value || !contentRef.value || !containerRef.value) return
 
-  // 1. Hitung Posisi Track (Menempel pada Container)
   const rect = containerRef.value.getBoundingClientRect()
   trackPosition.top = rect.top
-  trackPosition.left = rect.right - 8 // Geser dikit ke kiri agar masuk area
+  trackPosition.left = rect.right - 8 
   trackPosition.height = rect.height
 
-  // 2. Hitung Ukuran Thumb
   const viewportHeight = viewportRef.value.clientHeight
   const contentHeight = viewportRef.value.scrollHeight
 
@@ -81,12 +76,10 @@ const updateGeometry = () => {
 
   showScrollbar.value = true
 
-  // Rasio Thumb
   const ratio = viewportHeight / contentHeight
-  const height = Math.max(ratio * viewportHeight, 20) // Min height 20px
+  const height = Math.max(ratio * viewportHeight, 20) 
   thumbHeight.value = height
 
-  // 3. Hitung Posisi Thumb (Top offset)
   const maxScrollTop = contentHeight - viewportHeight
   const maxThumbTop = viewportHeight - thumbHeight.value
   const scrollRatio = viewportRef.value.scrollTop / maxScrollTop
@@ -109,7 +102,6 @@ const handleScroll = () => {
 const handleMouseEnter = () => { isHovering.value = true }
 const handleMouseLeave = () => { isHovering.value = false }
 
-// --- Dragging Logic ---
 let startY = 0
 let startScrollTop = 0
 
@@ -118,7 +110,7 @@ const handleDragStart = (e) => {
   e.stopPropagation()
   
   isDragging.value = true
-  isHovering.value = true // Keep visible
+  isHovering.value = true 
   startY = e.clientY
   startScrollTop = viewportRef.value.scrollTop
   
@@ -137,38 +129,32 @@ const handleDragMove = (e) => {
   const maxThumbTop = viewportHeight - thumbHeight.value
   const maxScrollTop = contentHeight - viewportHeight
   
-  // Konversi gerakan pixel mouse ke scroll position
   const scrollAmount = (deltaY / maxThumbTop) * maxScrollTop
   
   viewportRef.value.scrollTop = startScrollTop + scrollAmount
   
-  // Update visual thumb langsung agar smooth (bypass handleScroll saat drag)
   updateGeometry() 
 }
 
 const handleDragEnd = () => {
   isDragging.value = false
-  isHovering.value = false // Allow hide logic
+  isHovering.value = false 
   document.removeEventListener('mousemove', handleDragMove)
   document.removeEventListener('mouseup', handleDragEnd)
   document.body.style.userSelect = ''
 }
 
-// --- Lifecycle & Observers ---
 onMounted(() => {
-  // Update awal
   nextTick(updateGeometry)
 
-  // 1. Observe perubahan ukuran konten (isi bertambah/berkurang)
   resizeObserver = new ResizeObserver(() => {
     requestAnimationFrame(updateGeometry)
   })
   if (contentRef.value) resizeObserver.observe(contentRef.value)
   if (containerRef.value) resizeObserver.observe(containerRef.value)
 
-  // 2. Observe perubahan ukuran window/layar
   window.addEventListener('resize', updateGeometry)
-  window.addEventListener('scroll', updateGeometry, true) // Capture scroll lain yg mungkin menggeser container
+  window.addEventListener('scroll', updateGeometry, true)
 })
 
 onUnmounted(() => {

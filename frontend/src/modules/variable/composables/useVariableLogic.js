@@ -3,14 +3,11 @@ import { useScriptStore } from '@/stores/useScriptStore';
 import { useProjectStore } from '@/stores/useProjectStore';
 import { GenerateUUID } from '@/commons/utils/generateUUID.js';
 import { getVarColor } from '@/modules/variable/parts/VariableConfig.js';
-// 1. Import usePopAlert
 import { usePopAlert } from '@/composables/usePopAlert';
 
 export function useVariableLogic(scopeProps) {
   const scriptStore = useScriptStore();
   const projectStore = useProjectStore();
-  
-  // 2. Init PopAlert
   const { showPop } = usePopAlert();
 
   const variables = computed(() => {
@@ -73,7 +70,6 @@ export function useVariableLogic(scopeProps) {
   };
 
   const addVariable = () => {
-    // Generate unique name for new variable to avoid conflict immediately
     let baseName = 'NewVar';
     let counter = 1;
     let potentialName = baseName;
@@ -99,10 +95,7 @@ export function useVariableLogic(scopeProps) {
     const newList = JSON.parse(JSON.stringify(variables.value));
     const targetVar = newList[index];
 
-    // --- START VALIDATION LOGIC ---
     if (key === 'name') {
-      // 1. Cek Regex (Alphabet, Number, Underscore Only)
-      // ^ = start, [a-zA-Z0-9_] = allowed chars, + = minimal 1 char, $ = end
       const validPattern = /^[a-zA-Z0-9_]+$/;
       
       if (!value || value.trim() === '') {
@@ -112,7 +105,6 @@ export function useVariableLogic(scopeProps) {
            type: 'warning',
            duration: 3000
         });
-        // Force refresh UI manual jika diperlukan, tapi biasanya return saja cukup agar store tidak update
         return; 
       }
 
@@ -123,11 +115,9 @@ export function useVariableLogic(scopeProps) {
            type: 'warning',
            duration: 3000
         });
-        return; // Batalkan update
+        return;
       }
 
-      // 2. Cek Duplikat (Case Sensitive sesuai request, tapi string match === di JS sudah case sensitive)
-      // Cek apakah ada variable LAIN (bukan dirinya sendiri) yang namanya sama
       const isDuplicate = newList.some((v, i) => i !== index && v.name === value);
       
       if (isDuplicate) {
@@ -137,10 +127,9 @@ export function useVariableLogic(scopeProps) {
            type: 'error',
            duration: 3000
         });
-        return; // Batalkan update
+        return;
       }
     }
-    // --- END VALIDATION LOGIC ---
 
     if (key === 'type' && targetVar.type !== value) {
       if (value === 'Boolean') targetVar.defaultValue = false;
@@ -162,7 +151,6 @@ export function useVariableLogic(scopeProps) {
     const copy = JSON.parse(JSON.stringify(item));
     copy._id = GenerateUUID();
     
-    // Auto rename untuk menghindari duplikat saat duplicate
     let baseName = `${copy.name}_copy`;
     let potentialName = baseName;
     let counter = 1;

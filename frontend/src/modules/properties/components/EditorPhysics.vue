@@ -112,15 +112,14 @@ const {
   bindComponentProp, 
   removeComponent, 
   selectedEntity,
-  prefabId,                   // Prefab Hook
-  syncComponent,              // Sync Hook
-  getComponentOverrideStatus  // Status Hook
+  prefabId,                 
+  syncComponent,          
+  getComponentOverrideStatus 
 } = useInspectorLogic()
 
 const hasComponent = computed(() => !!selectedEntity.value?.components?.Physics)
 const isOverridden = getComponentOverrideStatus('Physics')
 
-// Bindings (Secara otomatis memicu isOverridden = true melalui bindComponentProp di logic hook)
 const enabled = bindComponentProp('Physics', 'enabled')
 const type = bindComponentProp('Physics', 'type')
 const mass = bindComponentProp('Physics', 'mass')

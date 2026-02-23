@@ -1,14 +1,11 @@
-// src/services/schema/schema.js
+import { CDN_URL } from "@/services/api/useFetchProjectById.js";
 
-import { CDN_URL } from "@/services/api/project.js";
-
-// Import semua schema creator
 import { createProject } from '@schemas/projectSchema.js';
 import { createScene } from '@schemas/sceneSchema.js'; 
 import { createAsset } from '@schemas/assetSchema.js';
 import { createPrefab } from '@schemas/prefabSchema.js';
 import { createFolder } from '@schemas/folderSchema.js';
-import { createScript } from '@schemas/scriptSchema.js'; // <--- 1. Import ini
+import { createScript } from '@schemas/scriptSchema.js'; 
 
 export const normalizeProjectLoad = (
   rawProject,

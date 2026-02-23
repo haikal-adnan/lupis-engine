@@ -84,7 +84,6 @@ import { computed } from "vue";
 import { Square, Trash2, RefreshCw } from "lucide-vue-next"; 
 import { useInspectorLogic } from "@/modules/properties/composables/useInspectorLogic.js"; 
 
-// Atomic Components
 import PropertySection from "@ui/display/PropertySection.vue";
 import PropertyRow from "@ui/display/PropertyRow.vue";
 import BaseSelect from "@/commons/components/inputs/BaseSelect.vue";
@@ -95,25 +94,19 @@ const {
   selectedEntity, 
   removeComponent, 
   bindComponentProp,
-  prefabId,                   // [NEW]
-  syncComponent,              // [NEW]
-  getComponentOverrideStatus  // [NEW]
+  prefabId,                  
+  syncComponent,             
+  getComponentOverrideStatus 
 } = useInspectorLogic();
 
 const hasComponent = computed(() => !!selectedEntity.value?.components?.ShapeRenderer);
 
-// [NEW] Status Override untuk badge & disable button
 const isOverridden = getComponentOverrideStatus('ShapeRenderer');
 
-// BINDINGS (Otomatis handle override saat diset)
 const type = bindComponentProp('ShapeRenderer', 'type');
 const color = bindComponentProp('ShapeRenderer', 'color');
 const rawOpacity = bindComponentProp('ShapeRenderer', 'opacity');
 
-// OPACITY LOGIC
-// Wrapper ini aman: saat `displayOpacity` diset, dia men-set `rawOpacity.value`.
-// Karena `rawOpacity` adalah hasil dari `bindComponentProp`, 
-// maka override flag akan otomatis menyala di logic hook.
 const displayOpacity = computed({
   get: () => {
     return Math.round((rawOpacity.value ?? 1) * 100);

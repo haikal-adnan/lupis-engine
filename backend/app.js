@@ -3,13 +3,14 @@ import cors from "cors";
 import { connectMongo } from "./config/mongo.js";
 import { connectPostgres, pool } from "./config/postgres.js";
 
-// --- MODELS ---
 import Project from "./models/nosql/Project.js";
 import Folder from "./models/nosql/Folder.js";
 import Asset from "./models/nosql/Asset.js";
 import Scene from "./models/nosql/Scene.js";
 import Prefab from "./models/nosql/Prefab.js";
-import Script from "./models/nosql/Script.js"; // <--- 1. Import Model Script ditambahkan
+import Script from "./models/nosql/Script.js"; 
+
+import uploadRoutes from "./routes/uploadRoutes.js";
 
 const app = express();
 
@@ -21,7 +22,7 @@ export async function initDatabase() {
   await connectPostgres();
 }
 
-// --- EXISTING ROUTES ---
+app.use("/assets", uploadRoutes);
 
 app.get("/projects", async (req, res) => {
   try {

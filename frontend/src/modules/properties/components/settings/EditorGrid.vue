@@ -70,7 +70,6 @@ import { ref } from 'vue';
 import { Grid3X3, Lock, Unlock } from 'lucide-vue-next';
 import { useInspectorLogic } from "@/modules/properties/composables/useInspectorLogic.js";
 
-// Atomic Components
 import PropertySection from "@ui/display/PropertySection.vue";
 import PropertyRow from "@ui/display/PropertyRow.vue";
 import BaseNumber from '@/commons/components/inputs/BaseNumber.vue';
@@ -80,7 +79,6 @@ import IconButton from '@/commons/components/buttons/IconButton.vue';
 
 const { bindSettingProp } = useInspectorLogic();
 
-// Binding ke Store
 const visible = bindSettingProp('grid', 'visible');
 const snap    = bindSettingProp('grid', 'snap');
 const width   = bindSettingProp('grid', 'width');
@@ -88,22 +86,19 @@ const height  = bindSettingProp('grid', 'height');
 const color   = bindSettingProp('grid', 'color');
 const opacity = bindSettingProp('grid', 'opacity');
 
-// State Lokal untuk Lock Ratio (Tidak perlu disimpan di DB Scene)
 const isRatioLocked = ref(true); 
 
-// Logic: Saat Width berubah
 const onWidthChange = (newVal) => {
-  width.value = newVal; // Update width di store
+  width.value = newVal;
   if (isRatioLocked.value) {
-    height.value = newVal; // Paksa height sama
+    height.value = newVal; 
   }
 };
 
-// Logic: Saat Height berubah
 const onHeightChange = (newVal) => {
-  height.value = newVal; // Update height di store
+  height.value = newVal; 
   if (isRatioLocked.value) {
-    width.value = newVal; // Paksa width sama
+    width.value = newVal; 
   }
 };
 </script>

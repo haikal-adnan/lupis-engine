@@ -59,23 +59,17 @@ const tabs = [
   { id: 'prefabs', label: 'Prefabs', icon: Library, component: markRaw(PrefabPanel) },
 ]
 
-// Helper untuk mengecek active tab dari store
 const isActive = (id) => editorStore.activeBottomTabId === id
 
 const handleTabClick = (tab) => {
-  // Jika tab yang diklik sama dengan yang aktif DAN panel sedang terbuka
   if (isActive(tab.id) && editorStore.isBottomBarOpen) {
-    // Tutup panel (toggle di store)
     editorStore.toggleBottomBar()
     return
   }
 
-  // Jika berbeda atau panel tertutup, set aktif (store otomatis set isBottomBarOpen = true)
   editorStore.setActiveBottomTab(tab.id)
 }
 
-// Watch perubahan ID di store (baik dari klik di sini, atau diubah dari tempat lain)
-// untuk meng-emit komponen yang benar ke EditorView
 watch(
   () => editorStore.activeBottomTabId,
   (newId) => {
@@ -84,6 +78,6 @@ watch(
       emit('update:component', foundTab.component)
     }
   },
-  { immediate: true } // Jalankan saat mount agar komponen awal ter-set
+  { immediate: true }
 )
 </script>

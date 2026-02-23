@@ -58,18 +58,14 @@ import BaseContextMenu from '@/commons/components/overlay/BaseContextMenu.vue'
 import ScriptItem from './parts/ScriptItem.vue'
 import { useScriptPanel } from './composables/useScriptPanel.js'
 
-// Semua logic diambil dari composable agar bersih
 const {
   searchQuery, 
   viewMode, 
   selectedId, 
   filteredScripts,
-  
-  // Menu System (State & Computed Items)
   menu, 
   contextMenuItems, 
   
-  // Actions
   toggleView, 
   selectScript, 
   handleOpenGraph,

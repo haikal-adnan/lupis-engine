@@ -1,5 +1,3 @@
-// src/modules/engine/EngineBridge.js
-
 let engineInstance = null;
 let onNativeEntityModified = null;
 let onNativeTilemapUpdate = null;
@@ -67,7 +65,6 @@ export const EngineBridge = {
     return { x: 0, y: 0 };
   },
 
-  // --- Entity, Layer, Asset, Script Proxies (Tetap ada) ---
   createEntity(d) { if(engineInstance) engineInstance.bus.emit("editor:entity:create", d); },
   updateEntityName(id, name) { if(engineInstance) engineInstance.bus.emit("editor:entity:update-name", { id, name }); },
   deleteEntity(id) { if(engineInstance) engineInstance.bus.emit("editor:entity:delete", id); },

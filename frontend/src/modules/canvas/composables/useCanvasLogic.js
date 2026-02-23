@@ -3,19 +3,18 @@ import { usePopAlert } from '@/composables/usePopAlert.js';
 import { useClipboard } from '@/composables/useClipboard.js';
 import { EngineBridge } from '@/services/engine/EngineBridge.js';
 import { usePrefabActions } from '@/modules/prefab/composables/usePrefabActions.js';
-import { usePrompt } from '@/composables/usePrompt.js'; // 1. Import usePrompt
+import { usePrompt } from '@/composables/usePrompt.js';
 
 export function useCanvasLogic() {
   const sceneStore = useSceneStore();
   const { showPop } = usePopAlert();
   const { paste } = useClipboard();
   const { createPrefab, linkPrefabToEntities } = usePrefabActions();
-  const { prompt } = usePrompt(); // 2. Inisialisasi prompt
+  const { prompt } = usePrompt(); 
 
   const getSelectedIds = () => sceneStore.selectedEntityIds;
 
   const createEntityAtPosition = (type, layerId, x, y) => {
-    // Parameter kedua sekarang menggunakan layerId, bukan null lagi
     sceneStore.createEntity(type, layerId, { x, y });
   };    
 
@@ -151,7 +150,6 @@ export function useCanvasLogic() {
       if(ids.length > 0) sceneStore.duplicateEntity(ids);
   };
 
-  // 3. Implementasi Use As Prefab dengan usePrompt
   const useAsPrefab = async () => {
     const id = getFirstId();
     if (!id) return;
@@ -159,7 +157,6 @@ export function useCanvasLogic() {
     const entity = sceneStore.activeScene.entities.find(e => e._id === id);
     if (!entity) return;
 
-    // Gunakan Custom Prompt
     const prefabName = await prompt({
         title: "Create Prefab",
         message: "Enter name for the new prefab:",
@@ -170,10 +167,8 @@ export function useCanvasLogic() {
 
     if (!prefabName || prefabName.trim() === "") return;
 
-    // Buat Prefab
     const newPrefab = createPrefab(prefabName, entity);
 
-    // Link Entity ke Prefab yang baru
     if (newPrefab) {
         await linkPrefabToEntities(newPrefab._id, [id]);
     }
