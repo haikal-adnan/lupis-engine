@@ -39,7 +39,7 @@ export async function prepareEngineData() {
         throw new Error(`Scene data for ID ${targetSceneId} not found in Store`);
     }
 
-    const editorConfig = editorStore.$state;
+    const { engine, ...cleanEditorConfig } = toRaw(editorStore.$state);
 
     const rawPayload = {
         project: toRaw(projectStore.project),
@@ -47,7 +47,7 @@ export async function prepareEngineData() {
         scene: toRaw(storeSceneRef), 
         prefabs: toRaw(prefabStore.prefabs),
         scripts: toRaw(scriptStore.scripts), 
-        editorConfig: toRaw(editorConfig)
+        editorConfig: cleanEditorConfig 
     };
 
     try {

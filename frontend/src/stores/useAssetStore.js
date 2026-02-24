@@ -1,4 +1,6 @@
 import { defineStore } from 'pinia';
+import { useEditorStore } from '@/stores/useEditorStore.js';
+import { useBackend } from '@/services/api/useBackend.js';
 
 export const useAssetStore = defineStore('asset', {
   state: () => ({
@@ -11,7 +13,30 @@ export const useAssetStore = defineStore('asset', {
   getters: {
     textures: (state) => state.assets.filter(a => ['texture', 'sprite', 'image'].includes(a.type)),
     fonts: (state) => state.assets.filter(a => a.type === 'font'),
-    getAssetById: (state) => (id) => state.assets.find(a => a._id === id)
+    getAssetById: (state) => (id) => state.assets.find(a => a._id === id),
+    getAssetUrlById: (state) => (id) => {
+      const asset = state.assets.find(a => a._id === id);
+      if (!asset) return null;
+
+      if (asset.fileKey) {
+        const { CDN_URL } = useBackend();
+        const editorStore = useEditorStore();
+        
+        const cleanCdnUrl = CDN_URL.replace(/\/$/, "");
+        const projectId = editorStore.activeProjectId;
+        
+        let extension = '';
+        if (asset.type === 'font') {
+          extension = '.png';
+        } else if (asset.type === 'texture') {
+          extension = asset.meta.extension;
+        }
+        
+        return `${cleanCdnUrl}/projects/${projectId}/${asset.fileKey}${extension}`;
+      }
+
+      return asset.fileUrl || null;
+    }
   },
 
   actions: {

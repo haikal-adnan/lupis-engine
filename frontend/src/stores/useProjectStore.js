@@ -15,7 +15,6 @@ export const useProjectStore = defineStore('project', {
     project: null,
     isLoading: false, 
     isSaving: false,
-    error: null,
     syncStatus: 'synced'
   }),
 
@@ -194,6 +193,63 @@ export const useProjectStore = defineStore('project', {
 
       this.project.tags = this.project.tags.filter(t => t !== tagToRemove)
       this.markAsDirty()
+    },
+
+    setTickRate(rate) {
+      if (this.project?.settings) {
+        this.project.settings.tickRate = rate;
+        this.markAsDirty();
+      }
+    },
+
+    toggleGrid() {
+      if (this.project?.settings?.grid) {
+        this.project.settings.grid.visible = !this.project.settings.grid.visible;
+        this.markAsDirty();
+      }
+    },
+
+    toggleMagnet() {
+      if (this.project?.settings?.grid) {
+        this.project.settings.grid.snap = !this.project.settings.grid.snap;
+        this.markAsDirty();
+      }
+    },
+
+    setGridSize(width, height) {
+      if (this.project?.settings?.grid) {
+        this.project.settings.grid.width = width;
+        this.project.settings.grid.height = height || width; 
+        this.markAsDirty();
+      }
+    },
+
+    setGridColor(color) {
+      if (this.project?.settings?.grid) {
+        this.project.settings.grid.color = color;
+        this.markAsDirty();
+      }
+    },
+
+    setGridOpacity(opacity) {
+      if (this.project?.settings?.grid) {
+        this.project.settings.grid.opacity = opacity;
+        this.markAsDirty();
+      }
+    },
+
+    updateUISettings(updates) {
+      if (this.project?.settings?.ui) {
+        Object.assign(this.project.settings.ui, updates);
+        this.markAsDirty();
+      }
+    },
+
+    toggleUIBorder() {
+      if (this.project?.settings?.ui) {
+        this.project.settings.ui.showUIBorder = !this.project.settings.ui.showUIBorder;
+        this.markAsDirty();
+      }
     }
   }
 })

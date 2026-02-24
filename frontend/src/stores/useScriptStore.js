@@ -13,7 +13,6 @@ export const useScriptStore = defineStore('script', {
     activeScript: null, 
     selectedNodeId: null,
     isLoading: false,
-    error: null,
   }),
 
   getters: {
@@ -22,9 +21,6 @@ export const useScriptStore = defineStore('script', {
     },
     componentScripts: (state) => {
       return state.scripts.filter(s => s.type === 'component');
-    },
-    logicScripts: (state) => {
-      return state.scripts.filter(s => s.type === 'scene_logic');
     },
     selectedNode: (state) => {
       if (!state.activeScript || !state.selectedNodeId) return null;
@@ -43,11 +39,10 @@ export const useScriptStore = defineStore('script', {
   actions: {
     async fetchScripts(projectId) {
       this.isLoading = true;
-      this.error = null;
       try {
         console.log(`[Mock] Fetching scripts for project: ${projectId}`);
       } catch (err) {
-        this.error = err.message;
+        console.log(`[Script Store] Failed to fetch scripts:`, err);
       } finally {
         this.isLoading = false;
       }

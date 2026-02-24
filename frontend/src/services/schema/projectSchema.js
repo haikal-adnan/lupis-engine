@@ -10,8 +10,23 @@ export const createProject = (data = {}) => {
     thumbnailUrl: data.thumbnailUrl || null,
     
     settings: {
-      width: Number(data.settings?.width || 1280),
-      height: Number(data.settings?.height || 720)
+      tickRate: Number(data.settings?.tickRate || 60),
+      
+      ui: {
+        width: Number(data.settings?.ui?.width ?? 1920),
+        height: Number(data.settings?.ui?.height ?? 1080),
+        showUIBorder: data.settings?.ui?.showUIBorder ?? true,
+        active: data.settings?.ui?.active ?? true
+      },
+
+      grid: {
+        width: Number(data.settings?.grid?.width ?? 32),
+        height: Number(data.settings?.grid?.height ?? 32),
+        color: data.settings?.grid?.color || '#ffffff',
+        opacity: Number(data.settings?.grid?.opacity ?? 0.1),
+        visible: data.settings?.grid?.visible ?? true,
+        snap: data.settings?.grid?.snap ?? true       
+      }
     },
 
     globalVariables: Array.isArray(data.globalVariables) 
@@ -20,14 +35,6 @@ export const createProject = (data = {}) => {
           name: v.name || "NewGlobalVar",
           type: v.type || "String",
           defaultValue: v.defaultValue ?? null
-        }))
-      : [],
-
-    globalEvents: Array.isArray(data.globalEvents)
-      ? data.globalEvents.map(e => ({
-          _id: e._id || GenerateUUID(),
-          name: e.name || "NewEvent",
-          description: e.description || ""
         }))
       : [],
 

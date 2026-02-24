@@ -13,8 +13,8 @@ export class SelectionRenderer {
             return { x: t.x || 0, y: t.y || 0 };
         }
 
-        const uiSettings = this.game.world.settings?.ui || { referenceWidth: 1920, referenceHeight: 1080 };
-        const parentBounds = { x: 0, y: 0, width: uiSettings.referenceWidth, height: uiSettings.referenceHeight };
+        const uiSettings = this.game.world.settings?.ui || { width: 1920, height: 1080 };
+        const parentBounds = { x: 0, y: 0, width: uiSettings.width, height: uiSettings.height };
 
         const anchorX = t.anchorX ?? 0.5;
         const anchorY = t.anchorY ?? 0.5;

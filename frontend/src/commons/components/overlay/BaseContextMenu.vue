@@ -67,7 +67,6 @@ const coords = ref({ x: 0, y: 0 });
 const activeSubmenuIndex = ref(null);
 const submenuPos = ref({ x: 0, y: 0 });
 
-// --- POSISI ROOT ---
 watch(() => props.position, async (newPos) => {
   if (newPos) {
     coords.value = { x: newPos.x, y: newPos.y };
@@ -93,7 +92,6 @@ const menuStyle = computed(() => ({
   top: `${coords.value.y}px`
 }));
 
-// --- LOGIC HOVER SUBMENU ---
 const onItemEnter = (index, event) => {
   activeSubmenuIndex.value = index;
   const itemEl = event.currentTarget;
@@ -121,21 +119,14 @@ const handleAction = (item) => {
   if (!item.children?.length) emit('close');
 };
 
-// --- HANDLERS GLOBAL ---
-
-// 1. Handle Click Outside
 const handleClickOutside = (event) => {
-  // Jika klik terjadi DI DALAM salah satu elemen context menu (baik parent/child), jangan tutup
   if (event.target.closest('.base-context-menu-fixed')) return;
   emit('close');
 };
 
-// 2. Handle Scroll (PERBAIKAN UTAMA DISINI)
 const handleScroll = (event) => {
-  // Jika event scroll berasal dari dalam menu (overflow div), JANGAN tutup.
   if (event.target.closest('.base-context-menu-fixed')) return;
   
-  // Jika scroll terjadi di body/canvas utama, baru tutup.
   emit('close');
 };
 
@@ -144,10 +135,8 @@ const handleResize = () => {
 };
 
 onMounted(() => {
-  // Timeout agar event click pemicu (mousedown awal) tidak langsung menutup menu
   setTimeout(() => {
     document.addEventListener('mousedown', handleClickOutside);
-    // Gunakan capture: true agar mendeteksi scroll, tapi difilter oleh handleScroll
     window.addEventListener('scroll', handleScroll, true);
     window.addEventListener('resize', handleResize);
   }, 50);

@@ -41,9 +41,8 @@
 
     <ScrollArea v-else class="flex-1">
         <div class="p-2 space-y-1 pb-10">
+            <EditorProject />
             <EditorScene />
-            <EditorUI />
-            <EditorGrid />
         </div>
     </ScrollArea>
 
@@ -67,8 +66,7 @@ import EditorScript from '@/modules/properties/components/EditorScript.vue'
 import EditorCollider from '@/modules/properties/components/EditorCollider.vue'
 import EditorPhysics from '@/modules/properties/components/EditorPhysics.vue'
 import EditorScene from '@/modules/properties/components/settings/EditorScene.vue'
-import EditorGrid from '@/modules/properties/components/settings/EditorGrid.vue'
-import EditorUI from '@/modules/properties/components/settings/EditorUI.vue'
+import EditorProject from '@/modules/properties/components/settings/EditorProject.vue'
 
 const { hasSelection, selectedEntity, addComponentToSelection, isMultiSelection } = useInspectorLogic();
 

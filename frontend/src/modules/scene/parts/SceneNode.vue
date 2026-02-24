@@ -132,8 +132,6 @@ import {
 } from 'lucide-vue-next'
 import { useNodeDragDrop } from '@/modules/scene/composables/useNodeDragDrop.js'
 import { useSceneStore } from '@/stores/scene/useSceneStore.js'
-import { EngineBridge } from '@/services/engine/EngineBridge.js'
-import { bus } from '@engines/Util/EventBus.js'
 
 defineOptions({ name: 'SceneNode' })
 
@@ -147,6 +145,8 @@ const emit = defineEmits(['select', 'contextmenu', 'node-drop'])
 const sceneStore = useSceneStore()
 
 const isOpen = ref(true)
+
+const isLayer = computed(() => props.node.type === 'layer')
 
 const sortedChildren = computed(() => {
   if (!props.node.children) return []
@@ -169,9 +169,17 @@ const indentation = computed(() => (props.depth * 16) + 12)
 const isSelected = computed(() => props.selectedIds.some(id => String(id) === String(props.node._id || props.node.id)))
 const hasChildren = computed(() => sortedChildren.value.length > 0)
 
-const isLocked = computed(() => props.node._editor?.locked || props.node.locked || false)
-const isVisible = computed(() => props.node.visible !== false)
-const isInactive = computed(() => props.node.active === false)
+const isLocked = computed(() => {
+    if (isLayer.value) return !!props.node.locked;
+    return props.node._editor?.locked || props.node.isLocked || false;
+})
+
+const isVisible = computed(() => {
+    if (isLayer.value) return props.node.visible !== false;
+    return props.node.isVisible !== false;
+})
+
+const isInactive = computed(() => props.node.isActive === false)
 
 const {
   dragGhostRef, isDragOver, dragPosition,
@@ -179,7 +187,7 @@ const {
 } = useNodeDragDrop(props, emit)
 
 const getIcon = computed(() => {
-  if (props.node.type === 'layer') return Layers
+  if (isLayer.value) return Layers
   if (props.node.type === 'group') return isOpen.value ? FolderOpen : Folder
   
   const name = (props.node.name || '').toLowerCase()
@@ -203,19 +211,23 @@ const handleContextMenu = (e) => emit('contextmenu', { event: e, node: props.nod
 
 const toggleVisibility = () => {
     const id = props.node._id || props.node.id;
-    sceneStore.updateEntityProp(id, 'visible', !isVisible.value);
+    const newVal = !isVisible.value;
+    
+    if (isLayer.value) {
+        sceneStore.updateLayerProp(id, 'visible', newVal);
+    } else {
+        sceneStore.updateEntityProp(id, 'isVisible', newVal); 
+    }
 }
 
 const toggleLock = () => {
     const id = props.node._id || props.node.id;
-    const currentEditor = props.node._editor || {};
+    const newVal = !isLocked.value;
     
-    sceneStore.updateEntityProp(id, '_editor', { 
-        ...currentEditor, 
-        locked: !isLocked.value 
-    });
-
-    const bridge = EngineBridge.engineInstance ? EngineBridge.engineInstance.bus : bus;
-    bridge.emit('editor:entity:prop-updated', id);
+    if (isLayer.value) {
+        sceneStore.updateLayerProp(id, 'locked', newVal);
+    } else {
+        sceneStore.updateEntityProp(id, 'isLocked', newVal);
+    }
 }
 </script>

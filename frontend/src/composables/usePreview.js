@@ -1,6 +1,8 @@
 import { ref, onMounted, onUnmounted } from "vue";
 import { prepareEngineData } from "@/services/engine/EngineBootstrapper.js";
-import { useSceneStore } from '@/stores/scene/useSceneStore.js'; 
+import { useProjectStore } from '@/stores/useProjectStore.js';
+import { useEditorStore } from "@/stores/useEditorStore.js";
+import { CDN_URL } from "@/services/api/useFetchProjectById.js";
 
 const BROADCAST_CHANNEL_NAME = "lupis_engine_preview_channel";
 
@@ -10,8 +12,8 @@ export function usePreview() {
   let channel = null;
   let checkWindowInterval = null;
   
-  const sceneStore = useSceneStore();
-
+  const projectStore = useProjectStore();
+  const editorStore = useEditorStore();
   const initChannel = () => {
     if (channel) return;
 
@@ -28,11 +30,15 @@ export function usePreview() {
   const sendDataToPreview = async () => {
     try {
       const rawData = await prepareEngineData();
-      const payload = JSON.parse(JSON.stringify(rawData));
+      
+      const currentProjectId = editorStore.activeProjectId;
+      
+      const fullBaseUrl = `${CDN_URL}/projects/${currentProjectId}/`
 
       channel.postMessage({
         type: "SCENE_UPDATE",
-        payload: payload,
+        payload: rawData,
+        cdnUrl: fullBaseUrl,
       });
     } catch (error) {
       console.error(error);
@@ -46,9 +52,9 @@ export function usePreview() {
       await sendDataToPreview();
       previewWindow.value.focus();
     } else {
-      const uiSettings = sceneStore.activeScene?.settings?.ui || {};
-      const width = uiSettings.referenceWidth || 1280;   
-      const height = uiSettings.referenceHeight || 720; 
+      const uiSettings = projectStore.project?.settings?.ui || {};
+      const width = uiSettings.width || 1280;   
+      const height = uiSettings.height || 720; 
 
       previewWindow.value = window.open(
         "/preview/index.html", 

@@ -9,7 +9,7 @@ export function useAssetMenu(selectedIdRef, triggerUploadCb) {
   const { createNewFolder, deleteAsset, deleteFolder, renameAsset, renameFolder } = useAssetActions()
   const sceneStore = useSceneStore()
   const { showPop } = usePopAlert() 
-  const { prompt } = usePrompt() // Gunakan usePrompt
+  const { prompt } = usePrompt()
   
   const menu = ref({ visible: false, x: 0, y: 0, item: null })
 
@@ -27,7 +27,6 @@ export function useAssetMenu(selectedIdRef, triggerUploadCb) {
     return scene.entities.find(e => e._id === sceneStore.selectedEntityIds[0])
   }
 
-  // Ubah penamaan fungsi agar lebih generik
   const applyAsset = (asset, entityId, componentName) => {
     closeMenu()
 
@@ -102,14 +101,11 @@ export function useAssetMenu(selectedIdRef, triggerUploadCb) {
         { label: targetItem.name, disabled: true, icon: null },
         { separator: true }
       ]
-      console.log(menu)
       const entity = getSelectedEntity()
 
       if (!isFolder && entity && entity.components) {
         const isTexture = ['texture'].includes(targetItem.type)
         const isFont = targetItem.type === 'font'
-        console.log(menu)
-        // Logika untuk image/texture
         if (isTexture) {
           if (entity.components.SpriteRenderer) {
             items.push({ 
@@ -127,7 +123,6 @@ export function useAssetMenu(selectedIdRef, triggerUploadCb) {
           }
         }
 
-        // Logika untuk text/font
         if (isFont) {
           if (entity.components.TextRenderer) {
             items.push({ 

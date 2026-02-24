@@ -16,6 +16,16 @@
     <template #menu="{ close }">
       <div class="p-1 space-y-0.5 min-w-[160px]">
         
+        <button 
+          @click="resetToOriginalSize(); close()" 
+          :disabled="!assetId"
+          class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-accent hover:text-accent-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <Maximize class="w-3.5 h-3.5 mr-2 opacity-70" /> 
+          Reset to Native Size
+        </button>
+        <div class="h-px bg-border my-1"></div>
+
         <template v-if="prefabId">
           <button 
             @click="syncComponent('SpriteRenderer'); close()" 
@@ -90,30 +100,20 @@
             class="font-mono w-full" 
         />
     </PropertyRow>
-
-    <BaseCollapse title="Advanced" v-model="isAdvancedOpen">
-      <div class="space-y-1">
-          <BaseCheckbox 
-            v-model="autoResetRect" 
-            label="Reset Rect on Texture Change" 
-          />
-      </div>
-    </BaseCollapse>
     
   </PropertySection>
 </template>
 
 <script setup>
 import { computed, ref } from "vue";
-import { Image, FolderSearch, Trash2, RefreshCw } from "lucide-vue-next"; 
+import { Image, FolderSearch, Trash2, RefreshCw, Maximize } from "lucide-vue-next"; 
 import { useInspectorLogic } from "@/modules/properties/composables/useInspectorLogic.js"; 
+import { useAssetStore } from "@/stores/useAssetStore"; 
 
 import PropertySection from "@ui/display/PropertySection.vue";
 import PropertyRow from "@ui/display/PropertyRow.vue";
 import BaseThumbnail from "@/commons/components/display/BaseThumbnail.vue"; 
 import BaseNumber from "@/commons/components/inputs/BaseNumber.vue";
-import BaseCheckbox from "@/commons/components/inputs/BaseCheckbox.vue"; 
-import BaseCollapse from "@/commons/components/display/BaseCollapse.vue"; 
 
 const { 
   selectedEntity, 
@@ -124,6 +124,8 @@ const {
   syncComponent,            
   getComponentOverrideStatus 
 } = useInspectorLogic();
+
+const assetStore = useAssetStore();
 
 const hasComponent = computed(() => !!selectedEntity.value?.components?.SpriteRenderer);
 
@@ -144,6 +146,9 @@ const sourceY = bindComponentProp('SpriteRenderer', 'sourceY');
 const sourceW = bindComponentProp('SpriteRenderer', 'sourceWidth');
 const sourceH = bindComponentProp('SpriteRenderer', 'sourceHeight');
 
+const transformW = bindComponentProp('Transform', 'width');
+const transformH = bindComponentProp('Transform', 'height');
+
 const currentRect = computed(() => ({
     x: sourceX.value || 0,
     y: sourceY.value || 0,
@@ -151,8 +156,23 @@ const currentRect = computed(() => ({
     h: sourceH.value || 0
 }));
 
-const isAdvancedOpen = ref(false);
-const autoResetRect = ref(false); 
+function resetToOriginalSize() {
+  if (!assetId.value) return;
+
+  const asset = assetStore.getAssetById(assetId.value);
+  
+  if (asset && asset.meta?.dimensions) {
+    const { w, h } = asset.meta.dimensions;
+
+    sourceX.value = 0;
+    sourceY.value = 0;
+    sourceW.value = w;
+    sourceH.value = h;
+
+    transformW.value = w;
+    transformH.value = h;
+  }
+}
 
 function openAssetSelector() {
   console.log("Open Asset Panel triggered!");

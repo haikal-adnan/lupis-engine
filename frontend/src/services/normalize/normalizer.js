@@ -25,8 +25,7 @@ export const normalizeProjectLoad = (
 
   const cleanAssets = Array.isArray(rawAssets)
     ? rawAssets.map(asset => {
-        const preparedData = prepareAssetData(asset, projectId);
-        return createAsset(preparedData);
+        return createAsset(asset);
       })
     : [];
 
@@ -49,42 +48,5 @@ export const normalizeProjectLoad = (
     prefabs: cleanPrefabs,
     folders: cleanFolders,
     scripts: cleanScripts
-  };
-};
-
-const prepareAssetData = (asset, projectId) => {
-  let baseUrl = asset.fileUrl || "";
-  let isBlob = false;
-
-  if (asset.localBlob) {
-    baseUrl = URL.createObjectURL(asset.localBlob);
-    isBlob = true;
-  } else if (!baseUrl && asset.fileKey) {
-    baseUrl = `${CDN_URL}/projects/${projectId}/${asset.fileKey}`;
-  }
-
-  const meta = { ...asset.meta };
-  const extension = meta.extension || "";
-  let finalUrl = baseUrl;
-
-  if (asset.type === "font") {
-    if (isBlob) {
-      if (extension === ".fnt" && meta.imageBlob) {
-        meta.textureUrl = URL.createObjectURL(meta.imageBlob);
-      }
-    } else {
-      finalUrl = `${baseUrl}${extension}`; 
-      if (extension === ".fnt") {
-        meta.textureUrl = `${baseUrl}.png`; 
-      }
-    }
-  } else if (asset.type === "texture" && !isBlob) {
-    finalUrl = `${baseUrl}${extension}`;
-  }
-
-  return {
-    ...asset,
-    fileUrl: finalUrl,
-    meta: meta
   };
 };

@@ -12,11 +12,6 @@ const LayerSchema = new mongoose.Schema({
   visible: { type: Boolean, default: true }
 }, { _id: false });
 
-const EditorStateSchema = new mongoose.Schema({
-    locked: { type: Boolean, default: false },
-    expanded: { type: Boolean, default: false },
-}, { _id: false });
-
 const EntitySchema = new mongoose.Schema({
   _id: { type: String, required: true },
   scriptId: { type: String, required: true },
@@ -45,8 +40,6 @@ const EntitySchema = new mongoose.Schema({
   layerId: { type: String, required: true }, 
   parentId: { type: String, default: null },
   
-  _editor: { type: EditorStateSchema, default: () => ({}) },
-  
   components: { type: mongoose.Schema.Types.Mixed, default: {} }
 }, { _id: false });
 
@@ -55,11 +48,9 @@ const SceneSchema = new mongoose.Schema({
   projectId: { type: String, ref: 'Project', required: true },
   scriptId: { type: String, required: true, default: 'unnamed_scene' },
   name: { type: String, required: true },
-  version: { type: Number, default: 1 },
   
   settings: {
     backgroundColor: { type: String, default: '#222222' },
-    tickRate: { type: Number, default: 60 },
 
     physics: {
         gravity: { type: Number, default: 1200 },
@@ -72,23 +63,6 @@ const SceneSchema = new mongoose.Schema({
       y1: { type: Number, default: -1080 }, 
       y2: { type: Number, default: 1080 },
       active: { type: Boolean, default: true}
-    },
-
-    ui: {
-      referenceWidth: { type: Number, default: 1920 },
-      referenceHeight: { type: Number, default: 1080 },
-      scaleMode: { type: String, default: 'constant' },
-      showUIBorder: { type: Boolean, default: true },
-      active: { type: Boolean, default: true }
-    },
-
-    grid: {
-      width: { type: Number, default: 32 },
-      height: { type: Number, default: 32 },
-      color: { type: String, default: '#ffffff' },
-      opacity: { type: Number, default: 0.1 },
-      visible: { type: Boolean, default: true }, 
-      snap: { type: Boolean, default: true }    
     },
 
     showRulers: { type: Boolean, default: true }

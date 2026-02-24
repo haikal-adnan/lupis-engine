@@ -3,11 +3,16 @@ export default class GLFontResource {
         this.gl = gl;
     }
 
-    async loadFontFromAsset(asset) {
-        const xmlUrl = asset.fileUrl;
-        const texUrl = asset.meta?.textureUrl;
+    async loadFontFromAsset(asset, baseURL, isSystemDefault = false) {
+        let xmlUrl, texUrl;
 
-        console.log(asset)
+        if (isSystemDefault) {
+            xmlUrl = asset.fileUrl;
+            texUrl = asset.meta?.textureUrl;
+        } else {
+             xmlUrl = `${baseURL}${asset.fileKey}.fnt`;
+             texUrl = `${baseURL}${asset.fileKey}.png`;
+        }
 
         if (!texUrl) throw new Error(`[GLFontResource] Texture URL missing for: ${asset.name}`);
 

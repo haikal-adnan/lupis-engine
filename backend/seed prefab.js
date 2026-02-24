@@ -68,7 +68,6 @@ const seedDatabase = async () => {
       name: "gaegu_regular",
       type: "font",
       fileKey: "gaegu",
-      fileUrl: null,
       meta: { extension: ".fnt" }
     });
 
@@ -110,7 +109,6 @@ const seedDatabase = async () => {
       projectId,
       scriptId: "scene_test_01",
       name: "Prefab Test Scene",
-      version: 1,
       
       settings: {
         backgroundColor: "#222222",
@@ -120,7 +118,7 @@ const seedDatabase = async () => {
             drag: 10
         },
         worldBounds: { x1: -960, x2: 2880, y1: -540, y2: 1620, active: true },
-        ui: { referenceWidth: 1920, referenceHeight: 1080, scaleMode: "constant", showUIBorder: true, active: true },
+        ui: { width: 1920, height: 1080, showUIBorder: true, active: true },
         grid: { width: 32, height: 32, color: "#ffffff", opacity: 0.1, visible: true, snap: true },
         showRulers: true
       },

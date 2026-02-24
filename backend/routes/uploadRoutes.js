@@ -43,27 +43,19 @@ router.post("/upload", (req, res) => {
     const projectFolder = path.join(STORAGE_BASE_PATH, projectId);
     if (!fs.existsSync(projectFolder)) return res.status(400).json({ success: false, error: "Project folder not found." });
 
-    // ==========================================
-    // LOGIKA PENAMAAN ACAK (RANDOM 16 DIGIT)
-    // ==========================================
     const ext = path.extname(file.originalname).toLowerCase();
     let label = ext === '.ttf' ? 'font_' : 'image_';
     
-    // crypto.randomBytes(8) menghasilkan 8 byte, yang jika di-toString('hex') menjadi 16 karakter
     const random16Digit = crypto.randomBytes(8).toString('hex'); 
     
-    const baseName = `${label}${random16Digit}`; // Contoh: image_1a2b3c4d5e6f7g8h
-    const savedName = `${baseName}${ext}`;       // Contoh: image_1a2b3c4d5e6f7g8h.png
+    const baseName = `${label}${random16Digit}`;
+    const savedName = `${baseName}${ext}`;      
     const filePath = path.join(projectFolder, savedName);
 
     try {
-      // Simpan file ke disk
       fs.writeFileSync(filePath, file.buffer);
       console.log(`[Upload] Menyimpan file fisik: ${savedName}`);
 
-      // ==========================================
-      // LOGIKA KHUSUS FONT (MSDF GENERATOR)
-      // ==========================================
       if (ext === '.ttf') {
         const outputPath = path.join(projectFolder, `${baseName}.fnt`); 
         console.log(`⚙️ Processing MSDF for: ${savedName}`);
@@ -82,7 +74,7 @@ router.post("/upload", (req, res) => {
                 projectId,
                 originalName: file.originalname,
                 savedName: savedName,
-                baseName: baseName, // Kirim basename untuk kemudahan frontend
+                baseName: baseName,
                 files: {
                   ttf: savedName,
                   png: `${baseName}.png`,
@@ -97,7 +89,6 @@ router.post("/upload", (req, res) => {
         });
 
       } else {
-        // Response untuk gambar
         res.json({
           success: true,
           data: {

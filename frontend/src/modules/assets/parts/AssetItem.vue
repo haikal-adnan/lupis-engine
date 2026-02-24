@@ -34,8 +34,8 @@
         class="w-full h-full flex items-center justify-center bg-checkerboard rounded-sm overflow-hidden"
       >
         <img 
-          v-if="data.fileUrl" 
-          :src="data.fileUrl" 
+          v-if="thumbnailUrl" 
+          :src="thumbnailUrl" 
           class="max-w-full max-h-full object-contain pixelated"
           loading="lazy"
           draggable="false"
@@ -72,6 +72,9 @@
 <script setup>
 import { computed } from 'vue'
 import { Folder, Image, Music, FileCode, File, Type } from 'lucide-vue-next'
+import { CDN_URL } from "@/services/api/useFetchProjectById.js"
+import { useEditorStore } from "@/stores/useEditorStore.js"
+import { useAssetStore } from '@/stores/useAssetStore.js';
 
 const props = defineProps({
   data: { type: Object, required: true }, 
@@ -80,6 +83,9 @@ const props = defineProps({
 })
 
 defineEmits(['click', 'contextmenu'])
+
+const editorStore = useEditorStore()
+const assetStore = useAssetStore();
 
 const isFolder = computed(() => props.data.type === 'folder' || props.data.isFolder)
 
@@ -99,6 +105,11 @@ const containerClass = computed(() => {
 const iconSizeClass = computed(() => {
   return props.viewMode === 'grid' ? 'w-8 h-8 stroke-1' : 'w-4 h-4'
 })
+
+const thumbnailUrl = computed(() => {
+  return assetStore.getAssetUrlById(props.data.id); 
+});
+
 </script>
 
 <style scoped>

@@ -2,7 +2,7 @@ import Game from "./Core/Game.js";
 import GameLoader from "./Core/GameLoader.js";
 import { bus } from "./Util/EventBus.js";
 
-export async function startEngine(canvasSource, mode = "editor", initialData = {}) {
+export async function startEngine(canvasSource, baseURL, mode = "editor", initialData = {}) {
 
     let canvas;
 
@@ -35,7 +35,7 @@ export async function startEngine(canvasSource, mode = "editor", initialData = {
     const loader = new GameLoader();
 
     try {
-        await loader.initializeGame(game, canvas, mode, initialData);
+        await loader.initializeGame(game, canvas, baseURL, mode, initialData);
         
         loader.start(game);
         

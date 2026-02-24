@@ -123,9 +123,9 @@ export default class WorldRenderer {
             let drawY = t.y || 0;
 
             if (comps.UITransform) {
-                const uiSettings = world.settings?.ui || { referenceWidth: 1920, referenceHeight: 1080 };
-                const parentW = uiSettings.referenceWidth;
-                const parentH = uiSettings.referenceHeight;
+                const uiSettings = world.settings?.ui || { width: 1920, height: 1080 };
+                const parentW = uiSettings.width;
+                const parentH = uiSettings.height;
                 
                 const anchorX = t.anchorX ?? 0.5;
                 const anchorY = t.anchorY ?? 0.5;
@@ -216,18 +216,13 @@ export default class WorldRenderer {
                 if (!font?.ready) font = world.assets.fonts["system_default"];
                 
                 if (a > 0 && font) {
-                    // === LOGIKA AUTO FIT ===
                     if (tx.autoFit) {
-                        // Ukur ukuran teks yang sebenarnya
                         const measurement = this.renderer.text.measureText(font, tx.value ?? "", tx.fontSize || 24);
                         
-                        // Jika ukuran berubah, update Transform komponen
-                        // Kita beri sedikit margin (misal +2) agar teks tidak terpotong (opsional)
                         if (t.width !== measurement.boundsWidth || t.height !== measurement.boundsHeight) {
                             t.width = measurement.boundsWidth;
                             t.height = measurement.boundsHeight;
                             
-                            // Update kembali objek 'trans' karena t.width & t.height baru saja berubah
                             trans.width = t.width;
                             trans.height = t.height;
                         }
