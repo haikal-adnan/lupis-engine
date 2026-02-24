@@ -310,6 +310,18 @@ export function useLayerActions(activeScene) {
     return createdLayerIds;
   };
 
+  const updateLayerProp = (layerId, propName, value) => {
+    if (!activeScene.value) return;
+    
+    const layer = activeScene.value.layersWorld.find(l => l._id === layerId) || 
+                  activeScene.value.layersUI.find(l => l._id === layerId);
+                  
+    if (layer) {
+        layer[propName] = value;
+        return { id: layerId, prop: propName, value };
+    }
+};
+
   return { 
     addLayer,
     updateLayerZIndex, 
@@ -318,6 +330,7 @@ export function useLayerActions(activeScene) {
     reorderLayer,
     getLayerData,
     pasteLayer,
-    duplicateLayer
+    duplicateLayer,
+    updateLayerProp
   };
 }

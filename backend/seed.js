@@ -48,7 +48,11 @@ const seedDatabase = async () => {
       _id: projectId,
       ownerId: "dev_2025",
       name: "Dungeon Visual Demo",
-      settings: { width: 1280, height: 720 },
+      settings: { 
+        tickRate: 60,
+        ui: { width: 1920, height: 1080, showUIBorder: true, active: true },
+        grid: { width: 32, height: 32, color: "#ffffff", opacity: 0.1, visible: true, snap: true }
+      },
       scenes: [sceneId],
       globalVariables: [],
       tags: ['Player', 'Environment', 'UI'], 
@@ -68,8 +72,12 @@ const seedDatabase = async () => {
         name: "dungeon_sheet",
         type: "texture",
         fileKey: "dungeon_sheet_fixed_key",
-        fileUrl: null,
-        meta: { extension: ".png", dimensions: { w: 352, h: 176 }, filterMode: "nearest" }
+        meta: { 
+          extension: ".png", 
+          size: 1024, 
+          dimensions: { w: 352, h: 176 }, 
+          filterMode: "nearest", 
+        }
       },
       {
         _id: assetFontId,
@@ -78,25 +86,24 @@ const seedDatabase = async () => {
         name: "gaegu_regular",
         type: "font",
         fileKey: "gaegu",
-        fileUrl: null,
-        meta: { extension: ".fnt" }
+        meta: { 
+          extension: ".fnt",
+          size: 512,
+          filterMode: "nearest", 
+        }
       }
     ]);
-
     console.log("Seeding Scene...");
     await Scene.create({
       _id: sceneId,
       projectId,
       scriptId: "scene_gameplay_logic",
       name: "Gameplay Scene",
-      version: 1,
       
       settings: {
         backgroundColor: "#222222",
-        tickRate: 60,
+        physics: { gravity: 1200, drag: 5 },
         worldBounds: { x1: -960, x2: 2880, y1: -540, y2: 1620, active: true },
-        ui: { referenceWidth: 1920, referenceHeight: 1080, scaleMode: "constant", showUIBorder: true, active: true },
-        grid: { width: 32, height: 32, color: "#ffffff", opacity: 0.1, visible: true, snap: true },
         showRulers: true
       },
       
@@ -116,23 +123,10 @@ const seedDatabase = async () => {
             name: "Ground Platform",
             tag: "Environment",
             layerId: layerWorld,
-            zIndex: 0, 
-            parentId: null,
-            isActive: true,
-            prefabId: null,
-            isOverridden: false,
+            zIndex: 0, parentId: null, isActive: true, prefabId: null, isOverridden: false,
             components: {
-              Transform: { 
-                x: 640, y: 600,
-                width: 800, height: 32, 
-                scaleX: 1, scaleY: 1, 
-                pivotX: 0.5, pivotY: 0.5, flipX: false, flipY: false,
-                isOverridden: false
-              },
-              ShapeRenderer: { 
-                type: "rectangle", color: "#4CAF50", width: 800, height: 32,
-                isOverridden: false
-              }
+              Transform: { x: 640, y: 600, width: 800, height: 32, scaleX: 1, scaleY: 1, pivotX: 0.5, pivotY: 0.5, flipX: false, flipY: false, isOverridden: false },
+              ShapeRenderer: { type: "rectangle", color: "#4CAF50", width: 800, height: 32, isOverridden: false }
             }
         },
         {
@@ -142,23 +136,10 @@ const seedDatabase = async () => {
           name: "Hero Player",
           tag: "Player",
           layerId: layerWorld,
-          zIndex: 10,
-          parentId: null,
-          isActive: true,
-          prefabId: null,
-          isOverridden: false,
+          zIndex: 10, parentId: null, isActive: true, prefabId: null, isOverridden: false,
           components: {
-            Transform: { 
-              x: 640, y: 500,
-              width: 64, height: 64, 
-              scaleX: 1, scaleY: 1,
-              pivotX: 0.5, pivotY: 0.5, flipX: false, flipY: false,
-              isOverridden: false
-            },
-            ShapeRenderer: { 
-              type: "rectangle", color: "#FF0000", width: 64, height: 64,
-              isOverridden: false
-            }
+            Transform: { x: 640, y: 500, width: 64, height: 64, scaleX: 1, scaleY: 1, pivotX: 0.5, pivotY: 0.5, flipX: false, flipY: false, isOverridden: false },
+            ShapeRenderer: { type: "rectangle", color: "#FF0000", width: 64, height: 64, isOverridden: false }
           }
         },
         {
@@ -168,22 +149,10 @@ const seedDatabase = async () => {
             name: "Score Label",
             tag: "UI",
             layerId: layerUI,
-            zIndex: 999,
-            parentId: null,
-            isActive: true,
-            prefabId: null,
-            isOverridden: false,
+            zIndex: 999, parentId: null, isActive: true, prefabId: null, isOverridden: false,
             components: {
-                UITransform: {
-                    x: 50, y: 50, width: 200, height: 50, scaleX: 1, scaleY: 1, rotation: 0,
-                    pivotX: 0, pivotY: 0, anchorX: 0, anchorY: 0, flipX: false, flipY: false,
-                    isOverridden: false
-                },
-                TextRenderer: {
-                    value: "Score: 0", fontSize: 32, color: "#FFFFFF", align: "left",
-                    assetId: assetFontId, opacity: 1,
-                    isOverridden: false
-                }
+                UITransform: { x: 50, y: 50, width: 200, height: 50, scaleX: 1, scaleY: 1, rotation: 0, pivotX: 0, pivotY: 0, anchorX: 0, anchorY: 0, flipX: false, flipY: false, isOverridden: false },
+                TextRenderer: { value: "Score: 0", fontSize: 32, color: "#FFFFFF", align: "left", assetId: assetFontId, opacity: 1, isOverridden: false }
             }
         }
       ]

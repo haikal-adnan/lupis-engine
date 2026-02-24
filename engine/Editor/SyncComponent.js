@@ -21,7 +21,7 @@ export default class SyncComponent {
         this.bus.on("editor:entity:patch-component", p => this.onPatchComponent(p));
         this.bus.on("editor:entity:add-component", p => this.onAddComponent(p));
         this.bus.on("editor:entity:remove-component", p => this.onRemoveComponent(p));
-
+        this.bus.on("editor:layer:update-prop", p => this.onUpdateLayerProp(p));
         this.bus.on("editor:entity:replace", p => this.onEntityReplace(p)); 
 
         this.bus.on("editor:layer:create", d => this.onCreateLayer(d));
@@ -36,13 +36,31 @@ export default class SyncComponent {
         this.bus.on("editor:script:delete", id => this.onScriptDelete(id));
 
         this.bus.on("editor:store:update", p => this.onUpdateEditorStore(p));
-        this.bus.on("editor:scene:settings-update", p => this.onUpdateSceneSettings(p));
+        this.bus.on("editor:project:settings-update", p => this.onUpdateProjectSettings(p));
+        this.bus.on("editor:scene:settings-update", p => this.onUpdateSceneSettings(p));    
         this.bus.on("editor:selection:clear", () => this.onClearSelection());
         this.bus.on("editor:selection:set", (ids) => {
              if (this.game.selection) {
                  this.game.selection.onEditorSelect(ids);
              }
         });
+    }
+
+    onUpdateProjectSettings(payload) {
+        if (!this.world.settings) return;
+
+        if (payload.grid) {
+            Object.assign(this.world.settings.grid, payload.grid);
+        }
+
+        if (payload.ui) {
+            if (!this.world.settings.ui) this.world.settings.ui = {};
+            Object.assign(this.world.settings.ui, payload.ui);
+        }
+
+        if (payload.tickRate !== undefined) {
+            this.world.settings.tickRate = payload.tickRate;
+        }
     }
 
     onEntityReplace(entitiesData) {
@@ -191,11 +209,8 @@ export default class SyncComponent {
         if (this.assetLoader) {
             console.log(`[SyncComponent] Memuat asset baru ke engine: ${asset.name}`);
             try {
-                // Memanggil loadAsset dengan array berisi 1 asset baru
-                await this.assetLoader.loadAsset(this.world, [asset]);
+                await this.assetLoader.loadAsset(this.world, [asset], this.game.baseURL);
                 
-                // Opsional: Kamu bisa emit event ini jika UI butuh tahu kapan asset 
-                // benar-benar selesai di-load ke WebGL context/memori engine.
                 this.bus.emit("engine:asset:loaded", asset._id);
             } catch (error) {
                 console.error(`[SyncComponent] Gagal memuat asset ${asset.name}:`, error);
@@ -293,11 +308,22 @@ export default class SyncComponent {
         }
     }
 
+    onUpdateLayerProp({ id, prop, value }) {
+        let layer = this.world.layersWorld.find(l => l._id === id) || 
+                    this.world.layersUI.find(l => l._id === id);
+        if (layer) {
+            layer[prop] = value;
+        }
+    }
+
     onUpdateEntityProp({ id, prop, value }) {
         const e = this._findEntityById(id);
         if (!e) return;
 
         e[prop] = value;
+
+        if (prop === "isVisible") e.visible = value;
+        if (prop === "isActive") e.active = value;
 
         if (prop === "zIndex" || prop === "orderIndex") {
             const container =
@@ -314,42 +340,15 @@ export default class SyncComponent {
         if (!this.world.settings) return;
 
         if (payload.physics) {
-            console.log("Updating physics settings:", payload.physics);
             Object.assign(this.world.settings.physics, payload.physics);
-        }
-
-        if (payload.grid) {
-            Object.assign(this.world.settings.grid, payload.grid);
         }
 
         if (payload.worldBounds) {
             Object.assign(this.world.settings.worldBounds, payload.worldBounds);
         }
 
-        if (payload.ui) {
-            if (!this.world.settings.ui) {
-                this.world.settings.ui = {
-                    active: true,
-                    referenceWidth: 1920,
-                    referenceHeight: 1080,
-                    scaleMode: "constant",
-                    showUIBorder: true
-                };
-            }
-
-            Object.assign(this.world.settings.ui, payload.ui);
-        }
-
-        if (payload.showUIBorder !== undefined && this.world.settings.ui) {
-            this.world.settings.ui.showUIBorder = payload.showUIBorder;
-        }
-
         if (payload.backgroundColor !== undefined) {
             this.world.settings.backgroundColor = payload.backgroundColor;
-        }
-
-        if (payload.tickRate !== undefined) {
-            this.world.settings.tickRate = payload.tickRate;
         }
 
         if (payload.showRulers !== undefined) {

@@ -20,12 +20,26 @@ const ProjectSchema = new mongoose.Schema({
   description: { type: String },
   
   settings: {
-    width: { type: Number, default: 1280 },
-    height: { type: Number, default: 720 }
+    tickRate: { type: Number, default: 60 },
+    
+    ui: {
+      width: { type: Number, default: 1920 },
+      height: { type: Number, default: 1080 },
+      showUIBorder: { type: Boolean, default: true },
+      active: { type: Boolean, default: true }
+    },
+
+    grid: {
+      width: { type: Number, default: 32 },
+      height: { type: Number, default: 32 },
+      color: { type: String, default: '#ffffff' },
+      opacity: { type: Number, default: 0.1 },
+      visible: { type: Boolean, default: true }, 
+      snap: { type: Boolean, default: true }    
+    }
   },
   
   globalVariables: [VariableSchema],
-  globalEvents: [EventSchema], 
 
   tags: { 
     type: [String], 

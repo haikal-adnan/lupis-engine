@@ -7,7 +7,7 @@ export default class AssetLoader {
         this._isSystemDefaultLoaded = false;
     }
 
-    async loadAsset(world, assets) {
+    async loadAsset(world, assets, baseURL) {
         
         if (!this._isSystemDefaultLoaded) {
             await this._loadSystemDefault(world);
@@ -18,10 +18,10 @@ export default class AssetLoader {
             try {
                 switch (asset.type) {
                     case "texture":
-                        await this.loadTexture(world, asset);
+                        await this.loadTexture(world, asset, baseURL);
                         break;
                     case "font":
-                        await this.loadFont(world, asset);
+                        await this.loadFont(world, asset, baseURL);
                         break;
                     default:
                         break;
@@ -45,14 +45,14 @@ export default class AssetLoader {
             const defaultAsset = {
                 _id: "system_default",
                 name: "System Default Font",
-                fileUrl: xmlUrl,
+                fileUrl: xmlUrl, 
                 meta: {
                     textureUrl: DEFAULT_FONT_TEXTURE_B64
                 }
             };
 
             const fontResult =
-                await this.fontResource.loadFontFromAsset(defaultAsset);
+                await this.fontResource.loadFontFromAsset(defaultAsset, null, true);
 
             world.addFont(defaultAsset._id, fontResult);
 
@@ -65,14 +65,14 @@ export default class AssetLoader {
         }
     }
 
-    async loadTexture(world, asset) {
+    async loadTexture(world, asset, baseURL) {
         const textureData =
-            await this.imageResource.loadTextureFromAsset(asset);
+            await this.imageResource.loadTextureFromAsset(asset, baseURL);
 
         const data = {
             _id: asset._id,
             glTexture: textureData.glTexture,
-            fileurl: asset.fileUrl,
+            fileurl: textureData.src, 
             width: textureData.width,
             height: textureData.height,
             filterMode: asset.meta?.filterMode || "nearest"
@@ -81,9 +81,9 @@ export default class AssetLoader {
         world.addTexture(asset._id, data);
     }
 
-    async loadFont(world, asset) {
+    async loadFont(world, asset, baseURL) {
         const fontResult =
-            await this.fontResource.loadFontFromAsset(asset);
+            await this.fontResource.loadFontFromAsset(asset, baseURL);
 
         if (fontResult) {
             world.addFont(asset._id, fontResult);

@@ -19,14 +19,15 @@ import Rulers from "../Editor/Rulers.js";
 import { bus } from "../Util/EventBus.js";
 
 export default class GameLoader {
-    async initializeGame(game, canvas, mode = "runtime", payload = {}) {
+    async initializeGame(game, canvas, baseURL, mode = "runtime", payload = {}) {
         const { project, assets, scene, prefabs, scripts, editorConfig } = payload;
 
         try {
+            game.baseURL = baseURL;
             this._initMain(game, canvas, mode);
             
             if (project) game._id = project._id;
-            this._setupWorldSettings(game, scene?.settings);
+            this._setupWorldSettings(game, project?.settings, scene?.settings);
             
             if (mode === "editor") {
                 this._setupEditorState(game, editorConfig);
@@ -41,7 +42,7 @@ export default class GameLoader {
             );
             
             game.assetLoader = assetLoader;
-            await assetLoader.loadAsset(game.world, assets);
+            await assetLoader.loadAsset(game.world, assets, baseURL);
 
             this._initScriptLibrary(game.world, scripts);
 
@@ -77,24 +78,22 @@ export default class GameLoader {
         game.renderer = new RendererManager(canvas, game);
     }
 
-    _setupWorldSettings(game, settings = {}) {
-        const ws = game.world.settings;
+    _setupWorldSettings(game, projSettings = {}, sceneSettings = {}) {
         game.world.settings = {
-            tickRate: settings.tickRate ?? 60,
-            backgroundColor: settings.backgroundColor ?? "#222222",
-            worldBounds: settings.worldBounds ?? ws.worldBounds,
+            tickRate: projSettings.tickRate ?? 60,
+            backgroundColor: sceneSettings.backgroundColor ?? "#222222",
+            worldBounds: sceneSettings.worldBounds ?? { x1: -1920, x2: 1920, y1: -1080, y2: 1080, active: true },
             physics: {
-                gravity: settings.physics?.gravity ?? 2000,
-                drag: settings.physics?.drag ?? 5
+                gravity: sceneSettings.physics?.gravity ?? 1200,
+                drag: sceneSettings.physics?.drag ?? 5
             },
-            grid: settings.grid ?? ws.grid,
-            showRulers: settings.showRulers ?? true,
-            ui: {
-                referenceWidth: settings.ui?.referenceWidth ?? 1920,
-                referenceHeight: settings.ui?.referenceHeight ?? 1080,
-                scaleMode: settings.ui?.scaleMode ?? "constant",
-                showUIBorder: settings.ui?.showUIBorder ?? true,
-                active: settings.ui?.active ?? true
+            grid: projSettings.grid ?? { width: 32, height: 32, color: "#ffffff", opacity: 0.1, visible: true, snap: true },
+            showRulers: sceneSettings.showRulers ?? true,
+            ui: projSettings.ui ?? {
+                width: 1920,
+                height: 1080,
+                showUIBorder: true,
+                active: true
             }
         };
     }
@@ -112,7 +111,7 @@ export default class GameLoader {
     }
 
     _setupCamera(game, savedCamera, mode) {
-        const { referenceWidth: rw, referenceHeight: rh } = game.world.settings.ui;
+        const { width: rw, height: rh } = game.world.settings.ui;
 
         if (savedCamera?.x !== undefined) {
             game.camera.x = savedCamera.x;

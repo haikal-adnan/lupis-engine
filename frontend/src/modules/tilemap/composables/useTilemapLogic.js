@@ -44,8 +44,7 @@ export function useTilemapLogic() {
     const tilemapComp = entity.components?.Tilemap;
     if (!tilemapComp?.assetId) return null;
 
-    const asset = assetStore.getAssetById(tilemapComp.assetId);
-    return asset ? asset.fileUrl : null;
+    return assetStore.getAssetUrlById(tilemapComp.assetId);
   });
 
   const assetId = bindComponentProp('Tilemap', 'assetId');

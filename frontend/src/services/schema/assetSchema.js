@@ -10,7 +10,6 @@ export const createAsset = (data = {}) => {
     type: data.type || "texture",
     
     fileKey: data.fileKey || "",
-    fileUrl: data.fileUrl || null,
 
     meta: {
       extension: meta.extension || "",
@@ -20,7 +19,6 @@ export const createAsset = (data = {}) => {
         h: meta.dimensions?.h || 0
       },
       filterMode: meta.filterMode || 'nearest',
-      textureUrl: meta.textureUrl || null, 
       ...meta
     },
 

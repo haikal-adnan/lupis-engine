@@ -15,7 +15,7 @@
       :class="[viewMode === 'grid' ? 'w-12 h-12 mb-2' : 'w-8 h-8 mr-3']"
     >
       <component 
-        :is="data.type === 'scene_logic' ? Workflow : FileCode2"
+        :is="FileCode2"
         class="text-blue-500/80 transition-colors group-hover:text-blue-500" 
         :class="viewMode === 'grid' ? 'w-6 h-6' : 'w-4 h-4'" 
         :stroke-width="1.5"

@@ -1,10 +1,5 @@
 import mongoose from 'mongoose';
 
-const EditorStateSchema = new mongoose.Schema({
-  locked: { type: Boolean, default: false },
-  expanded: { type: Boolean, default: false },
-}, { _id: false });
-
 const PrefabDataSchema = new mongoose.Schema({
   scriptId: { type: String, default: '' },
   type: { type: String, enum: ['entity', 'group'], default: 'entity' },
@@ -19,7 +14,6 @@ const PrefabDataSchema = new mongoose.Schema({
   isVisible: { type: Boolean, default: true },
   layerId: { type: String, default: 'layer_root' },
   parentId: { type: String, default: null },
-  _editor: { type: EditorStateSchema, default: () => ({}) },
   components: { type: mongoose.Schema.Types.Mixed, default: {} }
 }, { _id: false });
 

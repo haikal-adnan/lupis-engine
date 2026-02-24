@@ -1,60 +1,49 @@
 import { EngineBridge } from "@/services/engine/EngineBridge.js";
 
-export function useEditorToEngine(sceneStore, assetStore, editorStore, scriptStore, prefabStore) {
+export function useEditorToEngine(projectStore, sceneStore, assetStore, editorStore, scriptStore, prefabStore) {
 
   const listen = () => {
+    
+    projectStore.$onAction(({ name, args, after, onError }) => {
+      after(() => {
+        const s = projectStore.project?.settings;
+        if (!s) return;
+
+        switch (name) {
+          case 'toggleGrid': EngineBridge.updateProjectSettings({ grid: { visible: s.grid.visible } }); break;
+          case 'toggleMagnet': EngineBridge.updateProjectSettings({ grid: { snap: s.grid.snap } }); break;
+          case 'setGridSize': EngineBridge.updateProjectSettings({ grid: { width: s.grid.width, height: s.grid.height } }); break;
+          case 'setGridColor': EngineBridge.updateProjectSettings({ grid: { color: s.grid.color } }); break;
+          case 'setGridOpacity': EngineBridge.updateProjectSettings({ grid: { opacity: s.grid.opacity } }); break;
+          
+          case 'setTickRate': EngineBridge.updateProjectSettings({ tickRate: s.tickRate }); break;
+          
+          case 'toggleUIBorder': EngineBridge.updateProjectSettings({ ui: { showUIBorder: s.ui.showUIBorder } }); break;
+          case 'updateUISettings': EngineBridge.updateProjectSettings({ ui: args[0] }); break;
+        }
+      });
+      onError((err) => console.error(`[Sync] Error on ProjectStore ${name}:`, err));
+    });
+
     sceneStore.$onAction(({ name, args, after, onError }) => {
       console.log(`%c[SceneStore] Action: ${name}`, "color: #4CAF50; font-weight: bold;", { args });
       
       after((result) => {
         const s = sceneStore.activeScene?.settings;
-        if (!s) return;
-
+        
         switch (name) {
-          case 'toggleGrid': 
-              EngineBridge.updateSceneSettings({ grid: { visible: s.grid.visible } }); 
-              break;
-          case 'toggleMagnet': 
-              EngineBridge.updateSceneSettings({ grid: { snap: s.grid.snap } }); 
-              break;
-          case 'setGridSize': 
-              EngineBridge.updateSceneSettings({ grid: { width: s.grid.width, height: s.grid.height } }); 
-              break;
-          case 'setGridColor': 
-              EngineBridge.updateSceneSettings({ grid: { color: s.grid.color } }); 
-              break;
-          case 'setGridOpacity': 
-              EngineBridge.updateSceneSettings({ grid: { opacity: s.grid.opacity } }); 
-              break;
-
           case 'setBackgroundColor': 
-              EngineBridge.updateSceneSettings({ backgroundColor: s.backgroundColor }); 
-              break;
-          case 'setTickRate': 
-              EngineBridge.updateSceneSettings({ tickRate: s.tickRate }); 
-              break;
-          
+            if(s) EngineBridge.updateSceneSettings({ backgroundColor: s.backgroundColor }); 
+            break;
           case 'updateWorldBounds':
-              EngineBridge.updateSceneSettings({ worldBounds: args[0] });
-              break;
-
+            EngineBridge.updateSceneSettings({ worldBounds: args[0] });
+            break;
           case 'updatePhysicsSettings':
-              EngineBridge.updateSceneSettings({ physics: args[0] });
-              break;
-
+            EngineBridge.updateSceneSettings({ physics: args[0] });
+            break;
           case 'toggleRulers': 
-              EngineBridge.updateSceneSettings({ showRulers: s.showRulers }); 
-              break;
-
-          case 'toggleUIBorder':
-              if (s.ui) {
-                  EngineBridge.updateSceneSettings({ showUIBorder: s.ui.showUIBorder });
-              }
-              break;
-
-          case 'updateUISettings':
-              EngineBridge.updateSceneSettings({ ui: args[0] });
-              break;
+            if(s) EngineBridge.updateSceneSettings({ showRulers: s.showRulers }); 
+            break;
 
           case 'clearSelection':
               EngineBridge.clearSelection();
@@ -72,6 +61,7 @@ export function useEditorToEngine(sceneStore, assetStore, editorStore, scriptSto
             break;
           case 'updateComponentProp': if (result) EngineBridge.updateComponentProp(result); break;
           case 'updateEntityProp': if (result) EngineBridge.updateEntityProp(result); break;
+          case 'updateLayerProp': EngineBridge.updateLayerProp(args[0], args[1], args[2]); break;
           case 'addComponent': if (result) EngineBridge.addComponent(result); break;
           case 'removeComponent': EngineBridge.removeComponent({ entityId: args[0], componentName: args[1] }); break;
           case 'patchComponent': EngineBridge.patchComponent({ entityId: args[0], componentName: args[1], updates: args[2] }); break;
@@ -87,7 +77,6 @@ export function useEditorToEngine(sceneStore, assetStore, editorStore, scriptSto
 
     assetStore.$onAction(({ name, args, after }) => {
       console.log(`%c[AssetStore] Action: ${name}`, "color: #2196F3; font-weight: bold;", { args });
-      
       after(() => {
         switch (name) {
           case 'addAsset': if (args[0]) EngineBridge.createAsset(args[0]); break;
@@ -98,7 +87,6 @@ export function useEditorToEngine(sceneStore, assetStore, editorStore, scriptSto
 
     editorStore.$onAction(({ name, args, after }) => {
       console.log(`%c[EditorStore] Action: ${name}`, "color: #FF9800; font-weight: bold;", { args });
-      
       after(() => {
         switch (name) {
           case 'setActiveTab': EngineBridge.updateEditorState({ activeTabId: args[0] }); break;
@@ -115,7 +103,6 @@ export function useEditorToEngine(sceneStore, assetStore, editorStore, scriptSto
 
     scriptStore.$onAction(({ name, args, after }) => {
       console.log(`%c[ScriptStore] Action: ${name}`, "color: #9C27B0; font-weight: bold;", { args });
-      
       after((result) => {
         switch (name) {
           case 'createScript': if (result) EngineBridge.createScript(result); break;
@@ -140,9 +127,7 @@ export function useEditorToEngine(sceneStore, assetStore, editorStore, scriptSto
         switch (name) {
           case 'addPrefab': EngineBridge.createPrefab(args[0]); break;
           case 'updatePrefab': EngineBridge.updatePrefab(args[0], args[1]); break;
-          case 'updateComponentProp': 
-              EngineBridge.updatePrefab(args[0], null); 
-              break;
+          case 'updateComponentProp': EngineBridge.updatePrefab(args[0], null); break;
           case 'removePrefab': EngineBridge.deletePrefab(args[0]); break;
         }
       });

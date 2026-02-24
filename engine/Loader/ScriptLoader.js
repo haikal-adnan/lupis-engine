@@ -14,14 +14,6 @@ export default class LoadScript {
             game.variables.initGlobals(project.globalVariables);
         }
 
-        if (project && project.globalEvents) {
-            console.log(`[LoadScript] Found ${project.globalEvents.length} Global Events definition.`);
-            
-            if (game.events.registerGlobalDefinitions) {
-                game.events.registerGlobalDefinitions(project.globalEvents);
-            }
-        }
-
         if (Array.isArray(scripts)) {
             scripts.forEach(script => {
                 if (script.exposedVariables && script.exposedVariables.length > 0) {

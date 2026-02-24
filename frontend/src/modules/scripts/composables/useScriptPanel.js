@@ -308,16 +308,10 @@ export function useScriptPanel() {
 
     return [
       { 
-        label: 'New Component Script', 
+        label: 'New Script', 
         icon: FileCode2, 
         action: () => handleCreate('component')
       },
-      { 
-        label: 'New Scene Logic', 
-        icon: Workflow, 
-        action: () => handleCreate('scene_logic') 
-      },
-      { separator: true },
       { 
         label: 'Refresh', 
         icon: RefreshCw, 

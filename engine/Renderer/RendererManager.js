@@ -161,9 +161,9 @@ export default class RendererManager {
     }
 
     _updateUIProjection(world) {
-        const uiSettings = world.settings?.ui || { referenceWidth: 1920, referenceHeight: 1080 };
-        const refW = uiSettings.referenceWidth;
-        const refH = uiSettings.referenceHeight;
+        const uiSettings = world.settings?.ui || { width: 1920, height: 1080 };
+        const refW = uiSettings.width;
+        const refH = uiSettings.height;
 
         Mat4.ortho(this.projUI, 0, refW, refH, 0, -1, 1);
         

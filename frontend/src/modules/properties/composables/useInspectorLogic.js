@@ -1,13 +1,16 @@
 import { computed, onMounted, onBeforeUnmount } from 'vue';
 import { useSceneStore } from '@/stores/scene/useSceneStore.js';
+import { useProjectStore } from '@/stores/useProjectStore.js';
 import { useAssetStore } from '@/stores/useAssetStore';
 import { usePrefabStore } from '@/stores/usePrefabStore.js';
 import { useEditorStore } from '@/stores/useEditorStore.js';
 import { usePopAlert } from '@/composables/usePopAlert';
 import { EngineBridge } from '@/services/engine/EngineBridge.js';
+import { CDN_URL } from "@/services/api/useFetchProjectById.js";
 
 export function useInspectorLogic() {
   const sceneStore = useSceneStore();
+  const projectStore = useProjectStore();
   const assetStore = useAssetStore();
   const prefabStore = usePrefabStore();
   const editorStore = useEditorStore();
@@ -52,29 +55,45 @@ export function useInspectorLogic() {
   function bindSettingProp(category, propName) {
     return computed({
       get: () => {
+        if (category === 'ui' || category === 'grid') {
+            return projectStore.project?.settings?.[category]?.[propName];
+        }
+        if (!category && propName === 'tickRate') {
+            return projectStore.project?.settings?.[propName];
+        }
+
         const s = sceneStore.activeScene?.settings;
         if (!s) return undefined;
         return category ? s[category]?.[propName] : s[propName];
       },
       set: (val) => {
-        if (!sceneStore.activeScene) return;
         if (category === 'ui') {
-          sceneStore.updateUISettings({ [propName]: val });
-        } else if (category === 'worldBounds') {
+          projectStore.updateUISettings({ [propName]: val });
+          return;
+        } 
+        if (category === 'grid') {
+          const grid = projectStore.project.settings.grid;
+          if (propName === 'width') projectStore.setGridSize(val, grid.height);
+          else if (propName === 'height') projectStore.setGridSize(grid.width, val);
+          else if (propName === 'color') projectStore.setGridColor(val);
+          else if (propName === 'opacity') projectStore.setGridOpacity(val);
+          else if (propName === 'visible' && val !== grid.visible) projectStore.toggleGrid();
+          else if (propName === 'snap' && val !== grid.snap) projectStore.toggleMagnet();
+          return;
+        }
+        if (!category && propName === 'tickRate') {
+            projectStore.setTickRate(val);
+            return;
+        }
+
+        if (!sceneStore.activeScene) return;
+
+        if (category === 'worldBounds') {
           sceneStore.updateWorldBounds({ [propName]: val });
         } else if (category === 'physics') {
           sceneStore.updatePhysicsSettings({ [propName]: val });
-        } else if (category === 'grid') {
-          const grid = sceneStore.activeScene.settings.grid;
-          if (propName === 'width') sceneStore.setGridSize(val, grid.height);
-          else if (propName === 'height') sceneStore.setGridSize(grid.width, val);
-          else if (propName === 'color') sceneStore.setGridColor(val);
-          else if (propName === 'opacity') sceneStore.setGridOpacity(val);
-          else if (propName === 'visible' && val !== grid.visible) sceneStore.toggleGrid();
-          else if (propName === 'snap' && val !== grid.snap) sceneStore.toggleMagnet();
         } else if (!category) {
           if (propName === 'backgroundColor') sceneStore.setBackgroundColor(val);
-          else if (propName === 'tickRate') sceneStore.setTickRate(val);
           else if (propName === 'showRulers' && val !== sceneStore.activeScene.settings.showRulers) {
             sceneStore.toggleRulers();
           }
@@ -385,11 +404,12 @@ export function useInspectorLogic() {
     if (!selectedEntity.value) return null;
     const comp = selectedEntity.value.components?.SpriteRenderer || selectedEntity.value.components?.Tilemap;
     if (!comp?.assetId) return null;
-    return assetStore.getAssetById(comp.assetId)?.fileUrl || null;
+    
+    return assetStore.getAssetUrlById(comp.assetId);
   });
 
   function updateUISettingsBulk(updates) {
-    if (sceneStore.activeScene) sceneStore.updateUISettings(updates);
+    if (projectStore.project) projectStore.updateUISettings(updates);
   }
 
   return {

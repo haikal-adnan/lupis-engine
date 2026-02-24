@@ -8,7 +8,7 @@ const AssetSchema = new mongoose.Schema({
   name: { type: String, required: true },
   type: { 
     type: String, 
-    enum: ['texture', 'sound', 'font', 'script', 'video'], 
+    enum: ['texture', 'sound', 'font'], 
     required: true 
   },
   
@@ -18,7 +18,8 @@ const AssetSchema = new mongoose.Schema({
   meta: {
     extension: { type: String, required: true },
     size: { type: Number },
-    dimensions: { w: Number, h: Number } 
+    dimensions: { w: Number, h: Number },
+    filterMode: { type: String, default: 'linear' }, 
   }
 }, { 
   timestamps: true,

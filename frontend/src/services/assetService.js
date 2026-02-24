@@ -41,7 +41,6 @@ export async function addLocalAsset(file, projectId, folderId) {
         name: nameWithoutExt, 
         type: type,
         localBlob: file,
-        fileUrl: null,  
         isSynced: false,
         meta: {
             extension: ext, 
@@ -54,13 +53,6 @@ export async function addLocalAsset(file, projectId, folderId) {
 
     await db.assets.add(assetData);
     return assetData;
-}
-
-export function getAssetDisplayUrl(asset) {
-    if (asset.localBlob) {
-        return URL.createObjectURL(asset.localBlob);
-    }
-    return asset.fileUrl || '';
 }
 
 export async function getUnsyncedAssets() {

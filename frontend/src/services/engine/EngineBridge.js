@@ -1,21 +1,27 @@
-let engineInstance = null;
+import { useEditorStore } from '@/stores/useEditorStore.js'; 
+
 let onNativeEntityModified = null;
 let onNativeTilemapUpdate = null;
 let onNativeToolPickup = null;
 
 export const EngineBridge = {
-  setInstance(instance) {
-    engineInstance = instance;
+  get _instance() {
+    return useEditorStore().engine;
+  },
 
-    engineInstance.bus.on("entity:modified", (entities) => {
+  setupListeners() {
+    const engine = this._instance;
+    if (!engine) return;
+
+    engine.bus.on("entity:modified", (entities) => {
        if (onNativeEntityModified) onNativeEntityModified(entities);
     });
     
-    engineInstance.bus.on("editor:tool:pickup", (data) => {
+    engine.bus.on("editor:tool:pickup", (data) => {
         if (onNativeToolPickup) onNativeToolPickup(data);
     });
 
-    engineInstance.bus.on("editor:tilemap:update-data", (payload) => {
+    engine.bus.on("editor:tilemap:update-data", (payload) => {
         if (onNativeTilemapUpdate) onNativeTilemapUpdate(payload);
     });
   },
@@ -25,82 +31,87 @@ export const EngineBridge = {
   onToolPickup(cb) { onNativeToolPickup = cb; },
 
   disconnect() {
-    if (engineInstance) {
-        engineInstance.bus.off("entity:modified");
-        engineInstance.bus.off("editor:tilemap:update-data");
-        engineInstance.bus.off("editor:tool:pickup"); 
+    const engine = this._instance;
+    if (engine) {
+        engine.bus.off("entity:modified");
+        engine.bus.off("editor:tilemap:update-data");
+        engine.bus.off("editor:tool:pickup"); 
     }
-    engineInstance = null;
     onNativeEntityModified = null;
     onNativeTilemapUpdate = null;
+    onNativeToolPickup = null;
   },
 
   selectEntity(ids) { 
-    if (engineInstance) {
-        engineInstance.bus.emit("editor:selection:set", ids); 
-    }
+    if (this._instance) this._instance.bus.emit("editor:selection:set", ids); 
   },
 
   clearSelection() {
-    if (engineInstance) {
-        engineInstance.bus.emit("editor:selection:clear");
-    }
+    if (this._instance) this._instance.bus.emit("editor:selection:clear");
+  },
+
+  updateProjectSettings(payload) {
+    if (this._instance) this._instance.bus.emit("editor:project:settings-update", payload);
   },
 
   updateSceneSettings(payload) {
-    if (engineInstance) engineInstance.bus.emit("editor:scene:settings-update", payload);
+    if (this._instance) this._instance.bus.emit("editor:scene:settings-update", payload);
   },
 
   updateEditorState(payload) {
-    if (engineInstance) engineInstance.bus.emit("editor:store:update", payload);
+    if (this._instance) this._instance.bus.emit("editor:store:update", payload);
   },
 
   getCameraPosition() {
-    if (engineInstance.game && engineInstance.game.camera) {
+    const engine = this._instance;
+    if (engine && engine.game && engine.game.camera) {
         return { 
-            x: engineInstance.game.camera.x, 
-            y: engineInstance.game.camera.y 
+            x: engine.game.camera.x, 
+            y: engine.game.camera.y 
         };
     }
     return { x: 0, y: 0 };
   },
 
-  createEntity(d) { if(engineInstance) engineInstance.bus.emit("editor:entity:create", d); },
-  updateEntityName(id, name) { if(engineInstance) engineInstance.bus.emit("editor:entity:update-name", { id, name }); },
-  deleteEntity(id) { if(engineInstance) engineInstance.bus.emit("editor:entity:delete", id); },
-  moveEntity(p) { if(engineInstance) engineInstance.bus.emit("editor:entity:move", p); },
-  updateComponentProp(p) { if(engineInstance) engineInstance.bus.emit("editor:entity:update-component", p); },
-  patchComponent(p) { if(engineInstance) engineInstance.bus.emit("editor:entity:patch-component", p); },
-  updateEntityProp(p) { if(engineInstance) engineInstance.bus.emit("editor:entity:update-prop", p); },
-  addComponent(p) { if(engineInstance) engineInstance.bus.emit("editor:entity:add-component", p); },
-  removeComponent(p) { if(engineInstance) engineInstance.bus.emit("editor:entity:remove-component", p); },
+  createEntity(d) { if(this._instance) this._instance.bus.emit("editor:entity:create", d); },
+  updateEntityName(id, name) { if(this._instance) this._instance.bus.emit("editor:entity:update-name", { id, name }); },
+  deleteEntity(id) { if(this._instance) this._instance.bus.emit("editor:entity:delete", id); },
+  moveEntity(p) { if(this._instance) this._instance.bus.emit("editor:entity:move", p); },
+  updateComponentProp(p) { if(this._instance) this._instance.bus.emit("editor:entity:update-component", p); },
+  patchComponent(p) { if(this._instance) this._instance.bus.emit("editor:entity:patch-component", p); },
+  updateEntityProp(p) { if(this._instance) this._instance.bus.emit("editor:entity:update-prop", p); },
+  updateLayerProp(id, prop, value) { 
+    if(this._instance) this._instance.bus.emit("editor:layer:update-prop", { id, prop, value }); 
+  },
+  addComponent(p) { if(this._instance) this._instance.bus.emit("editor:entity:add-component", p); },
+  removeComponent(p) { if(this._instance) this._instance.bus.emit("editor:entity:remove-component", p); },
 
-  addLayer(d) { if(engineInstance) engineInstance.bus.emit("editor:layer:create", d); },
-  updateLayerName(id, name) { if(engineInstance) engineInstance.bus.emit("editor:layer:update-name", { id, name }); },
-  deleteLayer(id) { if(engineInstance) engineInstance.bus.emit("editor:layer:delete", id); },
-  reorderLayer(p) { if(engineInstance) engineInstance.bus.emit("editor:layer:reorder", p); },
+  addLayer(d) { if(this._instance) this._instance.bus.emit("editor:layer:create", d); },
+  updateLayerName(id, name) { if(this._instance) this._instance.bus.emit("editor:layer:update-name", { id, name }); },
+  deleteLayer(id) { if(this._instance) this._instance.bus.emit("editor:layer:delete", id); },
+  reorderLayer(p) { if(this._instance) this._instance.bus.emit("editor:layer:reorder", p); },
 
-  createAsset(d) { if(engineInstance) engineInstance.bus.emit("editor:asset:create", d); },
-  deleteAsset(id) { if(engineInstance) engineInstance.bus.emit("editor:asset:delete", id); },
+  createAsset(d) { if(this._instance) this._instance.bus.emit("editor:asset:create", d); },
+  deleteAsset(id) { if(this._instance) this._instance.bus.emit("editor:asset:delete", id); },
   
-  createScript(d) { if(engineInstance) engineInstance.bus.emit("editor:script:create", d); },
-  updateScript(id, updates) { if(engineInstance) engineInstance.bus.emit("editor:script:update", { id, updates }); },
-  deleteScript(id) { if(engineInstance) engineInstance.bus.emit("editor:script:delete", id); },
+  createScript(d) { if(this._instance) this._instance.bus.emit("editor:script:create", d); },
+  updateScript(id, updates) { if(this._instance) this._instance.bus.emit("editor:script:update", { id, updates }); },
+  deleteScript(id) { if(this._instance) this._instance.bus.emit("editor:script:delete", id); },
 
   linkEntitiesToPrefab(entities) {
-    if (engineInstance) {
-        engineInstance.bus.emit("editor:entity:replace", entities);
-    }
+    if (this._instance) this._instance.bus.emit("editor:entity:replace", entities);
   },
 
   updateEntity(entities) {
-     if (engineInstance) {
+     if (this._instance) {
         const data = Array.isArray(entities) ? entities : [entities];
-        engineInstance.bus.emit("editor:entity:replace", data);
+        this._instance.bus.emit("editor:entity:replace", data);
      }
   },
 
-  createPrefab(d) { if(engineInstance) engineInstance.bus.emit("editor:prefab:create", d); },
-  updatePrefab(id, updates) { if(engineInstance) engineInstance.bus.emit("editor:prefab:update", { id, updates }); },
-  deletePrefab(id) { if(engineInstance) engineInstance.bus.emit("editor:prefab:delete", id); },
+  
+
+  createPrefab(d) { if(this._instance) this._instance.bus.emit("editor:prefab:create", d); },
+  updatePrefab(id, updates) { if(this._instance) this._instance.bus.emit("editor:prefab:update", { id, updates }); },
+  deletePrefab(id) { if(this._instance) this._instance.bus.emit("editor:prefab:delete", id); },
 };

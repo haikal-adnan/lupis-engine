@@ -19,8 +19,8 @@ export class HitTester {
 
         if (e.components.UITransform) {
             if (!parentBounds) {
-                const uiSettings = this.game.world.settings?.ui || { referenceWidth: 1920, referenceHeight: 1080 };
-                parentBounds = { x: 0, y: 0, width: uiSettings.referenceWidth, height: uiSettings.referenceHeight };
+                const uiSettings = this.game.world.settings?.ui || { width: 1920, height: 1080 };
+                parentBounds = { x: 0, y: 0, width: uiSettings.width, height: uiSettings.height };
             }
             const anchorX = t.anchorX ?? 0.5;
             const anchorY = t.anchorY ?? 0.5;
@@ -80,8 +80,8 @@ export class HitTester {
     hit(world, wx, wy, px, py) {
         const filter = this.game.selection?.filter;
         
-        const uiSettings = world.settings?.ui || { referenceWidth: 1920, referenceHeight: 1080 };
-        const uiRootBounds = { x: 0, y: 0, width: uiSettings.referenceWidth, height: uiSettings.referenceHeight };
+        const uiSettings = world.settings?.ui || { width: 1920, height: 1080 };
+        const uiRootBounds = { x: 0, y: 0, width: uiSettings.width, height: uiSettings.height };
 
         const layersWorld = world.layersWorld || [];
         const layersUI = world.layersUI || [];
@@ -125,8 +125,8 @@ export class HitTester {
         const results = [];
         const filter = this.game.selection?.filter;
         
-        const uiSettings = world.settings?.ui || { referenceWidth: 1920, referenceHeight: 1080 };
-        const uiRootBounds = { x: 0, y: 0, width: uiSettings.referenceWidth, height: uiSettings.referenceHeight };
+        const uiSettings = world.settings?.ui || { width: 1920, height: 1080 };
+        const uiRootBounds = { x: 0, y: 0, width: uiSettings.width, height: uiSettings.height };
 
         const layersWorld = world.layersWorld || [];
         const layersUI = world.layersUI || [];

@@ -5,6 +5,7 @@ import { useProjectStore } from "@/stores/useProjectStore.js";
 import { useSceneStore } from "@/stores/scene/useSceneStore.js";
 import { startEngine } from "@engines/main.js"; 
 import { prepareEngineData } from "@/services/engine/EngineBootstrapper.js";
+import { CDN_URL } from "@/services/api/useFetchProjectById.js";
 
 import { EngineBridge } from "@/services/engine/EngineBridge.js";
 import { useEngineSync } from "@/services/engine/useEngineSync.js";
@@ -22,8 +23,6 @@ initSync();
 
 const gameCanvas = ref(null);
 const initError = ref(null);
-let engineBus = null;
-let engineInstance = null;
 let isInitializing = false; 
 
 const canvasLogic = useCanvasLogic();
@@ -33,15 +32,19 @@ const handleEntityModified = (updates) => {
 };
 
 const initializeCanvas = async () => {
-    if (isInitializing || engineInstance) return;
+    if (isInitializing || editorStore.isEngineReady) return;
     
     isInitializing = true;
     await nextTick();
 
-    if (!editorStore.activeProjectId) {
+    let currentProjectId = editorStore.activeProjectId;
+
+    if (!currentProjectId) {
         const devId = import.meta.env.VITE_DEV_PROJECT_ID;
-        if (devId) editorStore.setProjectId(devId);
-        else {
+        if (devId) {
+            editorStore.setProjectId(devId);
+            currentProjectId = devId;
+        } else {
             initError.value = "Project ID Missing";
             isInitializing = false;
             return;
@@ -50,16 +53,19 @@ const initializeCanvas = async () => {
 
     try {
         const enginePayload = await prepareEngineData();
-
         if (!gameCanvas.value) throw new Error("Canvas DOM Missing");
 
-        engineInstance = await startEngine(gameCanvas.value, "editor", enginePayload);
+        const cleanCdnUrl = CDN_URL.replace(/\/$/, ""); 
+        const fullBaseUrl = `${cleanCdnUrl}/projects/${currentProjectId}/`;
 
-        if (engineInstance) {
-            EngineBridge.setInstance(engineInstance);
+        const instance = await startEngine(gameCanvas.value, fullBaseUrl, "editor", enginePayload);
+
+        if (instance) {
+            editorStore.setEngine(instance);
             
-            engineBus = engineInstance.bus;
-            engineBus.on("entity:modified", handleEntityModified);
+            EngineBridge.setupListeners();
+            
+            editorStore.engine.bus.on("entity:modified", handleEntityModified);
         }
 
     } catch (err) {
@@ -71,11 +77,11 @@ const initializeCanvas = async () => {
 };
 
 const getWorldPosition = (pointerX, pointerY) => {
-    if (!gameCanvas.value || !engineInstance) return { x: 0, y: 0 };
+    const engine = editorStore.engine;
+    if (!gameCanvas.value || !engine) return { x: 0, y: 0 };
     
     const camPos = EngineBridge.getCameraPosition ? EngineBridge.getCameraPosition() : { x: 0, y: 0 };
-    
-    const scale = engineInstance.camera ? (engineInstance.camera.scale || 1) : 1;
+    const scale = engine.camera ? (engine.camera.scale || 1) : 1;
 
     const rect = gameCanvas.value.getBoundingClientRect();
     const centerX = rect.width / 2;
@@ -91,9 +97,10 @@ const getWorldPosition = (pointerX, pointerY) => {
 };
 
 const handleContextMenu = (e) => {
-    if (!engineInstance) return;
+    const engine = editorStore.engine;
+    if (!engine) return;
 
-    const gamePointer = engineInstance.game.input.getPointer();
+    const gamePointer = engine.game.input.getPointer();
     const pointerX = gamePointer.x;
     const pointerY = gamePointer.y;
 
@@ -117,21 +124,22 @@ onMounted(async () => {
 watch(
     () => projectStore.isLoading,
     async (loading) => {
-        if (!loading && !engineInstance) {
+        if (!loading && !editorStore.isEngineReady) {
             await initializeCanvas();
         }
     }
 );
 
 onUnmounted(() => {
-    if (engineBus) {
-        engineBus.off("entity:modified", handleEntityModified);
+    const engine = editorStore.engine;
+    
+    if (engine) {
+        engine.bus.off("entity:modified", handleEntityModified);
+        engine.destroy();
+        editorStore.setEngine(null);
     }
+    
     EngineBridge.disconnect();
-    if (engineInstance) {
-        engineInstance.destroy();
-        engineInstance = null;
-    }
 });
 </script>
 

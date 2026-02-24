@@ -101,8 +101,9 @@
           :key="asset._id" 
           :data="{
             id: asset._id,
-            name: asset.displayName || asset.name, type: asset.type,
-            fileUrl: asset.fileUrl,
+            name: asset.displayName || asset.name, 
+            type: asset.type,
+            fileKey: asset.fileKey,
             meta: asset.meta,
             isSynced: asset.isSynced
           }"

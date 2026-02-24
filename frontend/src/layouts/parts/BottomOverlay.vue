@@ -18,19 +18,19 @@
       <div v-if="overlayConfig.showCoords" class="h-4 w-[1px] bg-border"></div>
 
       <IconButton 
-        v-if="overlayConfig.showGrid && sceneStore.activeScene"
-        @click="sceneStore.toggleMagnet()"
-        :active="sceneStore.activeScene.settings.grid.snap"
-        :tooltip="sceneStore.activeScene.settings.grid.snap ? 'Snap On' : 'Snap Off'"
+        v-if="overlayConfig.showGrid && projectStore.project"
+        @click="projectStore.toggleMagnet()"
+        :active="projectStore.project.settings.grid.snap"
+        :tooltip="projectStore.project.settings.grid.snap ? 'Snap On' : 'Snap Off'"
         class="w-8 h-8"
       >
         <Magnet class="w-4 h-4" />
       </IconButton>
 
       <IconButton 
-        v-if="overlayConfig.showGrid && sceneStore.activeScene"
-        @click="sceneStore.toggleGrid()"
-        :active="sceneStore.activeScene.settings.grid.visible"
+        v-if="overlayConfig.showGrid && projectStore.project"
+        @click="projectStore.toggleGrid()"
+        :active="projectStore.project.settings.grid.visible"
         tooltip="Toggle Grid"
         class="w-8 h-8"
       >
@@ -63,7 +63,7 @@ import { bus } from "@engines/Util/EventBus.js";
 import { usePreview } from "@/composables/usePreview.js";
 import { useTab } from "@/composables/useTab.js"; 
 import { useEditorStore } from "@/stores/useEditorStore.js";
-import { useSceneStore } from "@/stores/scene/useSceneStore.js";
+import { useProjectStore } from "@/stores/useProjectStore.js"; 
 
 import IconButton from '@/commons/components/buttons/IconButton.vue';
 import BaseButton from '@/commons/components/buttons/BaseButton.vue';
@@ -71,7 +71,7 @@ import BaseButton from '@/commons/components/buttons/BaseButton.vue';
 const { isPreviewing, openOrUpdatePreview } = usePreview();
 const { currentLayout } = useTab();
 const editorStore = useEditorStore();
-const sceneStore = useSceneStore();
+const projectStore = useProjectStore(); 
 
 const overlayConfig = computed(() => currentLayout.value.overlay || null);
 const coords = ref({ x: 0, y: 0 });

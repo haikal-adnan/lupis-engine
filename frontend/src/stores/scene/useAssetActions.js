@@ -6,9 +6,11 @@ import { usePopAlert } from '@/composables/usePopAlert';
 import { useAssetBackend } from '@/services/api/backend/useAssetBackend.js';
 import { useBackend } from '@/services/api/useBackend.js'; 
 import { GenerateUUID } from '@/commons/utils/generateUUID.js';
+import { useEditorStore } from '@/stores/useEditorStore';
 
 export function useAssetActions() {
   const assetStore = useAssetStore();
+  const editorStore = useEditorStore();
   const folderStore = useFolderStore();
   const { showPop } = usePopAlert();
   const { uploadAssetToServer } = useAssetBackend();
@@ -59,8 +61,7 @@ export function useAssetActions() {
     assetStore.setUploading(true);
 
     try {
-      // Ganti dengan Project ID yang aktif nanti
-      const projectId = 'wtge'; 
+      const projectId = editorStore.activeProjectId
       
       const [serverData] = await Promise.all([
         uploadAssetToServer(file, projectId),
@@ -76,7 +77,6 @@ export function useAssetActions() {
         dimensions = await _getImageDimensions(file);
       }
 
-      // Logika Penamaan Tampilan (Display Name) Auto-Increment
       let finalDisplayName = file.name;
       const lastDotIndex = file.name.lastIndexOf('.');
       const originalBaseName = lastDotIndex !== -1 ? file.name.substring(0, lastDotIndex) : file.name;
@@ -93,19 +93,12 @@ export function useAssetActions() {
         counter++;
       }
 
-      // Format `fileKey` (tanpa ekstensi) dan `fileUrl` (CDN lengkap)
-      // Asumsi backend mengembalikan savedName seperti "image_1a2b3c.png"
       const serverExt = `.${serverData.savedName.split('.').pop()}`;
       const fileKey = serverData.savedName.replace(serverExt, '');
-      
-      // Sesuaikan struktur direktori CDN
-      const fileUrl = `${CDN_URL}/projects/${projectId}/${fileKey}.fnt`;
-      const textureUrl = `${CDN_URL}/projects/${projectId}/${fileKey}.png`;
 
       const newAsset = createAsset({
         _id: GenerateUUID(),
         fileKey: fileKey,
-        fileUrl: fileUrl,
         name: finalDisplayName,
         type: type,
         folderId: folderStore.activeFolderId,
@@ -114,7 +107,6 @@ export function useAssetActions() {
           extension: originalExt,
           size: file.size,
           dimensions,
-          textureUrl: textureUrl,
           filterMode: 'nearest',
         },
         isSynced: true

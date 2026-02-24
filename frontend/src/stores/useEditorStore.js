@@ -1,7 +1,10 @@
 import { defineStore } from 'pinia';
+import { markRaw } from 'vue'; 
 
 export const useEditorStore = defineStore('editor', {
   state: () => ({
+    engine: null, 
+    
     activeProjectId: null,
     clipboard: {
       type: null, 
@@ -35,6 +38,7 @@ export const useEditorStore = defineStore('editor', {
   }),
 
   getters: {
+    isEngineReady: (state) => state.engine !== null, 
     assetBaseUrl: (state) => {
         if (!state.activeProjectId) return '';
         return `${state.config.cdnUrl}/projects/${state.activeProjectId}/`;
@@ -47,6 +51,10 @@ export const useEditorStore = defineStore('editor', {
   },
 
   actions: {
+    setEngine(instance) {
+      this.engine = instance ? markRaw(instance) : null;
+    },
+
     setProjectId(id) {
         this.activeProjectId = id;
     },

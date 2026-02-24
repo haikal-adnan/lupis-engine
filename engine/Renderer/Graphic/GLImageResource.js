@@ -5,8 +5,14 @@ export default class GLImageResource {
         this.gl = gl;
     }
 
-    async loadTextureFromAsset(asset) {
-        let src = asset.fileUrl;
+    async loadTextureFromAsset(asset, baseURL) {
+
+        let src;
+        if (asset.fileKey && asset.meta.extension) {
+            src = `${baseURL}${asset.fileKey}${asset.meta.extension}`;
+        }
+
+        console.log(`${baseURL}${asset.fileKey}${asset.meta.extension}`)
 
         const img = await this._loadImage(src);
 

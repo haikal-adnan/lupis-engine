@@ -75,7 +75,6 @@ const seedDatabase = async () => {
       name: "dungeon_sheet",
       type: "texture",
       fileKey: "dungeon_sheet_fixed_key",
-      fileUrl: null,
       meta: { extension: ".png", dimensions: { w: 352, h: 176 }, filterMode: "nearest" }
     });
 
@@ -86,7 +85,6 @@ const seedDatabase = async () => {
       name: "gaegu_regular",
       type: "font",
       fileKey: "gaegu",
-      fileUrl: null,
       meta: { extension: ".fnt" }
     });
 
@@ -135,13 +133,12 @@ const seedDatabase = async () => {
       projectId,
       scriptId: "level_1_demo",
       name: "Level 1 Demo",
-      version: 1,
       
       settings: {
         backgroundColor: "#222222",
         tickRate: 60,
         worldBounds: { x1: -960, x2: 2880, y1: -540, y2: 1620, active: true },
-        ui: { referenceWidth: 1920, referenceHeight: 1080, scaleMode: "constant", showUIBorder: true, active: true },
+        ui: { width: 1920, height: 1080, showUIBorder: true, active: true },
         grid: { width: 32, height: 32, color: "#ffffff", opacity: 0.1, visible: true, snap: true },
         showRulers: true
       },

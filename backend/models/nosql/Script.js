@@ -43,11 +43,6 @@ const ScriptSchema = new mongoose.Schema({
   projectId: { type: String, ref: 'Project', required: true, index: true },
   name: { type: String, required: true },
   isActive: { type: Boolean, default: true }, 
-  type: { 
-    type: String, 
-    enum: ['component', 'scene_logic'], 
-    default: 'component' 
-  },
   exposedVariables: {
     type: [{
       _id: { type: String, required: true },
