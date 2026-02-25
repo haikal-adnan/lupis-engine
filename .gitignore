@@ -69,3 +69,10 @@ backup-*.zip
 
 # VPS or deployment scripts
 auto_commit.sh
+
+# Ignore storage
+/storage/*
+!/storage/.gitkeep
+
+/storage/projects/*
+!/storage/projects/.gitkeep
