@@ -1,52 +1,41 @@
-import { onMounted, onUnmounted } from 'vue'
+import { onMounted, onUnmounted, watch } from 'vue'
+import { useRoute } from 'vue-router';
 import { useProjectStore } from '@/stores/useProjectStore'
 import { useProjectWatcher } from '@/composables/useProjectWatcher'
+import { useEditorStore } from '@/stores/useEditorStore';
 
 export function useAppInit() {
   const projectStore = useProjectStore()
-  
+  const editorStore = useEditorStore()
   const { initWatchers } = useProjectWatcher()
+  const route = useRoute()
 
-  const handleKeydown = async (event) => {
-    if (event.ctrlKey || event.metaKey) {
-      
-      if (event.key === 's' && !event.shiftKey) {
-        event.preventDefault();
-        console.log('Shortcut: Save Local (IDB)');
-        await projectStore.saveProject();
+  const initApplication = async () => {
+    if (route.name !== 'Editor') return;
+
+    const projectId = route.params.idProject;
+
+    if (projectId) {
+      editorStore.setProjectId(projectId);
+
+      if (!projectStore.project || projectStore.project._id !== projectId) {
+        await projectStore.loadProject(projectId);
       }
       
-      if (event.key === 's' && event.shiftKey) {
-        event.preventDefault();
-        console.log('Shortcut: Save Server (API)');
-        await projectStore.saveProjectToServer();
-      }
+      initWatchers();
     }
   };
 
-  const initApplication = async () => {
-    const isDev = import.meta.env.DEV
-    const shouldAutoLoad = import.meta.env.VITE_DEV_AUTO_LOAD === 'true'
-
-    if (isDev && shouldAutoLoad) {
-      const projectId = import.meta.env.VITE_DEV_PROJECT_ID
-      if (projectId) {
-        await projectStore.loadProject(projectId)
+  watch(
+    () => route.params.idProject,
+    (newId) => {
+      if (newId && route.name === 'Editor') {
+        initApplication();
+      } else if (route.name !== 'Editor') {
+        editorStore.setProjectId(null); 
       }
     }
-
-    initWatchers();
-  }
-
-  onMounted(() => {
-    initApplication()
-    
-    window.addEventListener('keydown', handleKeydown)
-  })
-
-  onUnmounted(() => {
-    window.removeEventListener('keydown', handleKeydown)
-  })
+  );
 
   return {
     isLoading: projectStore.isLoading,

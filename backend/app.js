@@ -10,7 +10,9 @@ import Scene from "./models/nosql/Scene.js";
 import Prefab from "./models/nosql/Prefab.js";
 import Script from "./models/nosql/Script.js"; 
 
-import uploadRoutes from "./routes/uploadRoutes.js";
+import assetRoutes from "./routes/assetRoutes.js";
+import projectRoutes from "./routes/projectRoutes.js";
+import folderRoutes from "./routes/folderRoutes.js";
 
 const app = express();
 
@@ -22,7 +24,9 @@ export async function initDatabase() {
   await connectPostgres();
 }
 
-app.use("/assets", uploadRoutes);
+app.use("/assets", assetRoutes);
+app.use("/projects", projectRoutes);
+app.use("/folders", folderRoutes);
 
 app.get("/projects", async (req, res) => {
   try {

@@ -1,28 +1,19 @@
-import { computed } from 'vue';
 import { useEditorStore } from '@/stores/useEditorStore.js';
 import { useSceneStore } from '@/stores/scene/useSceneStore.js';
-import { useLayerActions } from '@/stores/scene/useLayerActions';
-import { useEntityActions } from '@/stores/scene/useEntityActions';
 
 export function useClipboard() {
   const editorStore = useEditorStore();
   const sceneStore = useSceneStore();
-  
-  const activeScene = computed(() => sceneStore.activeScene);
-  const selectedEntityIds = computed(() => sceneStore.selectedEntityIds);
-
-  const layerActions = useLayerActions(activeScene);
-  const entityActions = useEntityActions(activeScene, selectedEntityIds);
 
   const getTargets = (explicitId) => {
-    if (explicitId) return [explicitId]; 
+    if (explicitId) return [explicitId];
     return [...sceneStore.selectedEntityIds];
   };
 
   const isLayerId = (id) => {
-    if (!activeScene.value) return false;
-    return activeScene.value.layersWorld.some(l => l._id === id) || 
-           activeScene.value.layersUI.some(l => l._id === id);
+    if (!sceneStore.activeScene) return false;
+    return sceneStore.activeScene.layersWorld.some(l => l._id === id) || 
+           sceneStore.activeScene.layersUI.some(l => l._id === id);
   };
 
   const copy = (explicitId = null) => {
@@ -30,11 +21,11 @@ export function useClipboard() {
     if (targets.length === 0) return;
 
     if (isLayerId(targets[0])) {
-        const data = layerActions.getLayerData(targets[0]);
-        if (data) editorStore.setClipboard('layer', data, 'copy');
+      const data = sceneStore.getLayerData(targets[0]);
+      if (data) editorStore.setClipboard('layer', data, 'copy');
     } else {
-        const data = entityActions.getEntityDataForClipboard(targets);
-        if (data && data.length > 0) editorStore.setClipboard('entity', data, 'copy');
+      const data = sceneStore.getEntityDataForClipboard(targets);
+      if (data && data.length > 0) editorStore.setClipboard('entity', data, 'copy');
     }
   };
 
@@ -43,17 +34,17 @@ export function useClipboard() {
     if (targets.length === 0) return;
 
     if (isLayerId(targets[0])) {
-        const data = layerActions.getLayerData(targets[0]);
-        if (data) {
-            editorStore.setClipboard('layer', data, 'cut');
-            layerActions.deleteLayer(targets[0]);
-        }
+      const data = sceneStore.getLayerData(targets[0]);
+      if (data) {
+        editorStore.setClipboard('layer', data, 'cut');
+        sceneStore.deleteLayer(targets[0]);
+      }
     } else {
-        const data = entityActions.getEntityDataForClipboard(targets);
-        if (data && data.length > 0) {
-            editorStore.setClipboard('entity', data, 'cut');
-            targets.forEach(id => entityActions.deleteEntity(id));
-        }
+      const data = sceneStore.getEntityDataForClipboard(targets);
+      if (data && data.length > 0) {
+        editorStore.setClipboard('entity', data, 'cut');
+        targets.forEach(id => sceneStore.deleteEntity(id));
+      }
     }
   };
 
@@ -62,9 +53,9 @@ export function useClipboard() {
     if (targets.length === 0) return;
 
     if (isLayerId(targets[0])) {
-        return layerActions.duplicateLayer(targets[0]);
+      return sceneStore.duplicateLayer(targets[0]);
     } else {
-        return entityActions.duplicateEntity(targets);
+      return sceneStore.duplicateEntity(targets);
     }
   };
 
@@ -73,9 +64,9 @@ export function useClipboard() {
     if (targets.length === 0) return;
 
     if (isLayerId(targets[0])) {
-        layerActions.deleteLayer(targets[0]);
+      sceneStore.deleteLayer(targets[0]);
     } else {
-        targets.forEach(id => entityActions.deleteEntity(id));
+      targets.forEach(id => sceneStore.deleteEntity(id));
     }
   };
 
@@ -86,35 +77,34 @@ export function useClipboard() {
     let resultIds = [];
 
     if (type === 'layer') {
-      resultIds = layerActions.pasteLayer(editorStore.clipboard);
-    } 
-    else if (type === 'entity') {
+      resultIds = sceneStore.pasteLayer(editorStore.clipboard);
+    } else if (type === 'entity') {
       let context = {};
       const currentSelection = sceneStore.selectedEntityIds;
       const referenceId = currentSelection.length > 0 ? currentSelection[0] : null;
-      
+
       if (referenceId) {
         const selectedEntity = sceneStore.activeEntities.find(e => e._id === referenceId);
         if (selectedEntity) {
-            context.parentId = selectedEntity.parentId;
-            context.layerId = selectedEntity.layerId;
+          context.parentId = selectedEntity.parentId;
+          context.layerId = selectedEntity.layerId;
         } else {
-             const selectedLayer = activeScene.value.layersWorld.find(l => l._id === referenceId) ||
-                                   activeScene.value.layersUI.find(l => l._id === referenceId);
-             if (selectedLayer) {
-                 context.layerId = selectedLayer._id;
-                 context.parentId = null;
-             }
+          const selectedLayer = sceneStore.activeScene.layersWorld.find(l => l._id === referenceId) ||
+                               sceneStore.activeScene.layersUI.find(l => l._id === referenceId);
+          if (selectedLayer) {
+            context.layerId = selectedLayer._id;
+            context.parentId = null;
+          }
         }
       }
-      
-      resultIds = entityActions.pasteEntity(data, context);
+
+      resultIds = sceneStore.pasteEntity(data, context);
     }
 
     if (mode === 'cut') {
       editorStore.clearClipboard();
     }
-    
+
     return resultIds;
   };
 

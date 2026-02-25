@@ -22,7 +22,7 @@ export default class GameLoop {
         let delta = now - this.lastTime;
         this.lastTime = now;
 
-        if (delta > 1000) delta = this.interval;
+        if (delta > 100) delta = this.interval;
 
         if (Config.ENGINE_MODE === "editor") {
             this.game.update(delta / 1000);

@@ -19,8 +19,7 @@ const PrefabDataSchema = new mongoose.Schema({
 
 const PrefabSchema = new mongoose.Schema({
   _id: { type: String, required: true },
-  projectId: { type: String, ref: 'Project', required: true },
-  name: { type: String, required: true },
+  projectId: { type: String, ref: 'Project', required: true, index: true }, 
   data: { type: PrefabDataSchema, default: () => ({}) }
 }, { 
   timestamps: true,

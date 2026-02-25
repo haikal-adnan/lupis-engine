@@ -42,6 +42,12 @@ export const EngineBridge = {
     onNativeToolPickup = null;
   },
 
+  reloadScene(payload) {
+    if (this._instance) {
+      this._instance.bus.emit("editor:scene:reload", payload);
+    }
+  },
+
   selectEntity(ids) { 
     if (this._instance) this._instance.bus.emit("editor:selection:set", ids); 
   },
@@ -108,8 +114,6 @@ export const EngineBridge = {
         this._instance.bus.emit("editor:entity:replace", data);
      }
   },
-
-  
 
   createPrefab(d) { if(this._instance) this._instance.bus.emit("editor:prefab:create", d); },
   updatePrefab(id, updates) { if(this._instance) this._instance.bus.emit("editor:prefab:update", { id, updates }); },

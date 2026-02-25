@@ -1,36 +1,24 @@
-export const useSettingActions = (activeScene) => {
-  
-  const _getSettings = () => activeScene.value?.settings;
-
-  const setBackgroundColor = (color) => {
-    const s = _getSettings();
+export const settingActions = {
+  setBackgroundColor(color) {
+    const s = this.activeScene?.settings;
     if (s) s.backgroundColor = color;
-  };
+  },
 
-  const updateWorldBounds = (updates) => {
-    const s = _getSettings();
-    if (s && s.worldBounds) {
-      Object.assign(s.worldBounds, updates);
-    }
-  };
+  updateWorldBounds(updates) {
+    const s = this.activeScene?.settings;
+    if (s?.worldBounds) Object.assign(s.worldBounds, updates);
+  },
 
-  const updatePhysicsSettings = (updates) => {
-    const s = _getSettings();
+  updatePhysicsSettings(updates) {
+    const s = this.activeScene?.settings;
     if (s) {
         if (!s.physics) s.physics = { gravity: 1200, drag: 5 };
         Object.assign(s.physics, updates);
     }
-  };
+  },
 
-  const toggleRulers = () => {
-    const s = _getSettings();
+  toggleRulers() {
+    const s = this.activeScene?.settings;
     if (s) s.showRulers = !s.showRulers;
-  };
-
-  return {
-    setBackgroundColor,
-    updateWorldBounds,
-    updatePhysicsSettings,
-    toggleRulers
-  };
-}
+  }
+};

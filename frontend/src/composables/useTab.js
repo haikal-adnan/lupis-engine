@@ -2,14 +2,14 @@ import { computed, markRaw } from 'vue'
 import { useEditorStore } from '@/stores/useEditorStore'
 import { Box, Grid, FileCode2, Network, LayoutTemplate } from 'lucide-vue-next'
 
-import SceneHierarchy from '@/modules/scene/SceneHierarchy.vue'
-import PropertyPanel from '@/modules/properties/PropertyPanel.vue'
-import CanvasView from '@/modules/canvas/CanvasView.vue'
-import TilemapPanel from '@/modules/tilemap/TilemapPanel.vue'
-import IdePanel from '@/modules/ide/IdePanel.vue'
-import GraphPanel from '@/modules/graph/GraphPanel.vue'
-import NodePanel from '@/modules/node/NodePanel.vue'
-import VariabelPanel from '@/modules/variable/VariablePanel.vue'
+import SceneHierarchy from '@editors/scene/SceneHierarchy.vue'
+import PropertyPanel from '@editors/properties/PropertyPanel.vue'
+import CanvasView from '@editors/canvas/CanvasView.vue'
+import TilemapPanel from '@editors/tilemap/TilemapPanel.vue'
+import IdePanel from '@editors/ide/IdePanel.vue'
+import GraphPanel from '@editors/graph/GraphPanel.vue'
+import NodePanel from '@editors/node/NodePanel.vue'
+import VariabelPanel from '@editors/variable/VariablePanel.vue'
 
 const LAYOUT_CONFIG = {
   scene: {

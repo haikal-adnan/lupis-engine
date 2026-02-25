@@ -1,15 +1,11 @@
 import { computed } from 'vue';
-import { useProjectStore } from '@/stores/useProjectStore';
+import { useEditorStore } from '@/stores/useEditorStore';
 
 export function useEditorState() {
-    const projectStore = useProjectStore();
-
+    const editorStore = useEditorStore();
     const CDN_URL = import.meta.env.VITE_STORAGE_URL;
     
-    const activeProjectId = computed(() => {
-
-        return import.meta.env.VITE_DEV_PROJECT_ID; 
-    });
+    const activeProjectId = computed(() => editorStore.activeProjectId);
 
     return {
         CDN_URL,

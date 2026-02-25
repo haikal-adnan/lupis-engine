@@ -1,5 +1,5 @@
 import { createEntity as createEntitySchema } from '@/services/schema/schema.js'; 
-import { GenerateUUID } from '@/commons/utils/generateUUID';
+import { GenerateUUID } from '@/commons/utils/generateUUID.js';
 import { createComponent } from '@/services/schema/sceneSchema/componentSchema.js';
 import { EngineBridge } from "@/services/engine/EngineBridge.js";
 import { useConfirm } from '@/composables/useConfirm';
@@ -10,12 +10,12 @@ const round = (num, decimals = 2) => {
   return Math.round(num * factor) / factor;
 };
 
-export function useEntityActions(activeScene, selectedEntityIds) {
-  const { confirm } = useConfirm();
-  const { showPop } = usePopAlert();
+export const entityActions = {
 
-  const getHierarchyData = (entityId) => {
-    const entities = activeScene.value.entities;
+  getHierarchyData(entityId) {
+    const entities = this.activeScene?.entities;
+    if (!entities) return null;
+    
     const root = entities.find(e => e._id === entityId);
     if (!root) return null;
 
@@ -28,10 +28,11 @@ export function useEntityActions(activeScene, selectedEntityIds) {
         });
     };
     loopChildren(entityId);
+    
     return { root, descendants };
-  };
+  },
 
-  const createClones = (root, descendants, targetLayerId, targetParentId) => {
+  createClones(root, descendants, targetLayerId, targetParentId) {
      const idMap = {};
      const newRootId = GenerateUUID();
      idMap[root._id] = newRootId;
@@ -64,10 +65,13 @@ export function useEntityActions(activeScene, selectedEntityIds) {
      });
 
      return [clonedRoot, ...clonedDescendants];
-  };
+  },
 
-  const createEntity = (type, contextNodeOrLayerId, overrides = {}) => {
-    if (!activeScene.value) return null;
+  createEntity(type, contextNodeOrLayerId, overrides = {}) {
+    const scene = this.activeScene;
+    if (!scene) return null;
+
+    const { showPop } = usePopAlert();
 
     if (type === 'group') {
         showPop({ title: 'Disabled', message: 'Group creation disabled.', type: 'info' });
@@ -91,8 +95,8 @@ export function useEntityActions(activeScene, selectedEntityIds) {
     let parentId = null;
     let layerId = null;
     
-    const defaultWorldLayer = activeScene.value.layersWorld?.[0]?._id;
-    const defaultUILayer = activeScene.value.layersUI?.[0]?._id;
+    const defaultWorldLayer = scene.layersWorld?.[0]?._id;
+    const defaultUILayer = scene.layersUI?.[0]?._id;
 
     if (contextNodeOrLayerId) {
         if (typeof contextNodeOrLayerId === 'string') {
@@ -113,7 +117,7 @@ export function useEntityActions(activeScene, selectedEntityIds) {
         }
     }
 
-    const siblings = activeScene.value.entities.filter(e => 
+    const siblings = scene.entities.filter(e => 
         e.parentId === parentId && e.layerId === layerId
     );
 
@@ -168,7 +172,7 @@ export function useEntityActions(activeScene, selectedEntityIds) {
       components.SpriteRenderer = { assetId: null, color: '#FFFFFF' };
     }
 
-    const existingEntities = activeScene.value.entities;
+    const existingEntities = scene.entities;
     const displayType = type.startsWith('ui_') ? type.replace('ui_', '') : type;
     const namePrefix = displayType.charAt(0).toUpperCase() + displayType.slice(1);
     const regex = new RegExp(`^${type}_(\\d+)$`);
@@ -200,8 +204,8 @@ export function useEntityActions(activeScene, selectedEntityIds) {
       y: posY
     });
 
-    activeScene.value.entities.push(newEntity);
-    selectedEntityIds.value = [newEntity._id];
+    scene.entities.push(newEntity);
+    this.selectedEntityIds = [newEntity._id];
 
     if (EngineBridge.createEntity) {
         EngineBridge.createEntity(newEntity);
@@ -210,10 +214,11 @@ export function useEntityActions(activeScene, selectedEntityIds) {
     EngineBridge.selectEntity([newEntity._id]);
 
     return newEntity; 
-  };
+  },
 
-  const duplicateEntity = (entityIds) => {
-    if (!activeScene.value) return;
+  duplicateEntity(entityIds) {
+    if (!this.activeScene) return;
+
     const idsToDuplicate = Array.isArray(entityIds) ? entityIds : [entityIds];
     if (idsToDuplicate.length === 0) return;
 
@@ -221,33 +226,30 @@ export function useEntityActions(activeScene, selectedEntityIds) {
     const newRootIds = [];
 
     idsToDuplicate.forEach(id => {
-        const data = getHierarchyData(id);
+        const data = this.getHierarchyData(id);
         if (!data) return;
-        const clones = createClones(data.root, data.descendants);
+        const clones = this.createClones(data.root, data.descendants);
         allNewEntities.push(...clones);
         if (clones.length > 0) newRootIds.push(clones[0]._id);
     });
 
-    activeScene.value.entities.push(...allNewEntities);
+    this.activeScene.entities.push(...allNewEntities);
     
     EngineBridge.createEntity(allNewEntities); 
-    
     EngineBridge.selectEntity(newRootIds);
 
     return newRootIds;
-  };
+  },
 
-  
-
-  const getEntityDataForClipboard = (entityIds) => {
+  getEntityDataForClipboard(entityIds) {
       const ids = Array.isArray(entityIds) ? entityIds : [entityIds];
-      return ids.map(id => getHierarchyData(id)).filter(item => item !== null);
-  };
+      return ids.map(id => this.getHierarchyData(id)).filter(item => item !== null);
+  },
 
-  const pasteEntity = (clipboardDataArray, targetContext = {}) => {
-      if (!activeScene.value || !clipboardDataArray) return;
+  pasteEntity(clipboardDataArray, targetContext = {}) {
+      if (!this.activeScene || !clipboardDataArray) return;
+
       const dataItems = Array.isArray(clipboardDataArray) ? clipboardDataArray : [clipboardDataArray];
-
       const allNewClones = [];
       const newRootIds = [];
 
@@ -259,55 +261,62 @@ export function useEntityActions(activeScene, selectedEntityIds) {
           if (targetContext.parentId !== undefined) targetParentId = targetContext.parentId;
           if (targetContext.layerId !== undefined) targetLayerId = targetContext.layerId;
 
-          const clones = createClones(root, descendants, targetLayerId, targetParentId);
+          const clones = this.createClones(root, descendants, targetLayerId, targetParentId);
           allNewClones.push(...clones);
           if (clones.length > 0) newRootIds.push(clones[0]._id);
       });
       
-      activeScene.value.entities.push(...allNewClones);
+      this.activeScene.entities.push(...allNewClones);
 
       EngineBridge.createEntity(allNewClones);
-
       EngineBridge.selectEntity(newRootIds);
 
       return newRootIds;
-  };
+  },
 
-  const updateEntityScriptId = (entityId, newScriptId) => {
-    if (!activeScene.value) return;
+  updateEntityScriptId(entityId, newScriptId) {
+    if (!this.activeScene) return;
+
     const sanitizedId = newScriptId.replace(/[^a-zA-Z0-9_]/g, "_");
-    const entity = activeScene.value.entities.find(e => e._id === entityId);
+    const entity = this.activeScene.entities.find(e => e._id === entityId);
+    
     if (entity) {
       entity.scriptId = sanitizedId;
       return { id: entityId, prop: 'scriptId', value: sanitizedId };
     }
-  };
+  },
 
-  const deleteEntity = (entityId) => {
-    if (!activeScene.value) return;
+  deleteEntity(entityId) {
+    if (!this.activeScene) return;
+
     const getDescendants = (parentId) => {
-      const children = activeScene.value.entities.filter(e => e.parentId === parentId);
+      const children = this.activeScene.entities.filter(e => e.parentId === parentId);
       let ids = children.map(c => c._id);
       children.forEach(child => {
         ids = [...ids, ...getDescendants(child._id)];
       });
       return ids;
     };
+
     const idsToDelete = [entityId, ...getDescendants(entityId)];
-    activeScene.value.entities = activeScene.value.entities.filter(e => 
+    
+    this.activeScene.entities = this.activeScene.entities.filter(e => 
       !idsToDelete.includes(e._id)
     );
-    selectedEntityIds.value = [];
+    
+    this.selectedEntityIds = [];
+    
     EngineBridge.clearSelection();
     EngineBridge.deleteEntity(entityId);
-  };
+  },
 
-  const moveEntity = (draggedId, targetContext) => {
-    if (!activeScene.value) return;
+  moveEntity(draggedId, targetContext) {
+    if (!this.activeScene) return;
 
     const { newParentId, newLayerId, insertionType, referenceId } = targetContext;
-    const entities = activeScene.value.entities;
+    const entities = this.activeScene.entities;
     const entity = entities.find(e => e._id === draggedId);
+    
     if (!entity) return;
 
     entity.parentId = newParentId;
@@ -344,13 +353,16 @@ export function useEntityActions(activeScene, selectedEntityIds) {
             });
         }
     });
-  };
+  },
 
-  const updateComponentProp = (entityId, componentName, path, value) => {
-    if (!activeScene.value) return;
-    const entity = activeScene.value.entities.find(e => e._id === entityId);
+  updateComponentProp(entityId, componentName, path, value) {
+    if (!this.activeScene) return;
+
+    const entity = this.activeScene.entities.find(e => e._id === entityId);
     if (!entity || !entity.components[componentName]) return;
+    
     const comp = entity.components[componentName];
+    
     if ((componentName === 'Transform' || componentName === 'UITransform') && comp.isRatioLocked) {
         const numValue = Number(value);
         if (!isNaN(numValue) && comp.width > 0 && comp.height > 0) {
@@ -366,38 +378,46 @@ export function useEntityActions(activeScene, selectedEntityIds) {
             }
         }
     }
+    
     const keys = path.split('.');
     let target = comp;
+    
     for (let i = 0; i < keys.length - 1; i++) {
       if (!target[keys[i]]) target[keys[i]] = {};
       target = target[keys[i]];
     }
+    
     target[keys[keys.length - 1]] = value;
     return { entityId, componentName, path, value };
-  };
+  },
 
-  const updateEntityProp = (entityId, propName, value) => {
-    if (!activeScene.value) return;
-    const entity = activeScene.value.entities.find(e => e._id === entityId);
+  updateEntityProp(entityId, propName, value) {
+    if (!this.activeScene) return;
+
+    const entity = this.activeScene.entities.find(e => e._id === entityId);
     if (entity) {
       if (entity[propName] === value) return; 
       entity[propName] = value;
       return { id: entityId, prop: propName, value };
     }
-  };
+  },
 
-  const syncTilemapDataFromEngine = (entityId, newData) => {
-    if (!activeScene.value) return;
-    const entity = activeScene.value.entities.find(e => e._id === entityId);
+  syncTilemapDataFromEngine(entityId, newData) {
+    if (!this.activeScene) return;
+
+    const entity = this.activeScene.entities.find(e => e._id === entityId);
     if (entity?.components?.Tilemap) {
       entity.components.Tilemap.data = newData;
     }
-  };
+  },
 
-  const addComponent = (entityId, componentName) => {
-    if (!activeScene.value) return;
-    const entity = activeScene.value.entities.find(e => e._id === entityId);
+  addComponent(entityId, componentName) {
+    if (!this.activeScene) return;
+    const { showPop } = usePopAlert();
+
+    const entity = this.activeScene.entities.find(e => e._id === entityId);
     if (!entity) return;
+    
     if (entity.prefabId) {
         showPop({
             title: 'Prefab Restriction',
@@ -406,20 +426,28 @@ export function useEntityActions(activeScene, selectedEntityIds) {
         });
         return;
     }
+    
     if (entity.components && entity.components[componentName]) return;
+    
     const newComponentData = createComponent(componentName);
     if (!entity.components) entity.components = {};
+    
     entity.components[componentName] = newComponentData;
     return { entityId, componentName, data: newComponentData };
-  };
+  },
 
-  const removeComponent = async (entityId, componentName) => {
-    if (!activeScene.value) return;
-    const entity = activeScene.value.entities.find(e => e._id === entityId);
+  async removeComponent(entityId, componentName) {
+    if (!this.activeScene) return;
+    
+    const { showPop } = usePopAlert();
+    const { confirm } = useConfirm();
+
+    const entity = this.activeScene.entities.find(e => e._id === entityId);
     if (!entity || !entity.components[componentName]) {
         showPop({ title: 'Error', message: 'Component not found.', type: 'error' });
         return;
     }
+    
     if (entity.prefabId) {
         showPop({
             title: 'Prefab Restriction',
@@ -428,6 +456,7 @@ export function useEntityActions(activeScene, selectedEntityIds) {
         });
         return;
     }
+    
     const isConfirmed = await confirm({
       title: 'Remove Component',
       message: `Are you sure you want to remove "${componentName}"?`,
@@ -435,7 +464,9 @@ export function useEntityActions(activeScene, selectedEntityIds) {
       cancelText: 'Cancel',
       type: 'warning'
     });
+    
     if (!isConfirmed) return;
+    
     try {
         delete entity.components[componentName];
         EngineBridge.removeComponent({ entityId, componentName });
@@ -444,20 +475,6 @@ export function useEntityActions(activeScene, selectedEntityIds) {
     } catch (error) {
         showPop({ title: 'Failed', message: 'Could not remove component.', type: 'error' });
     }
-  };
+  }
 
-  return { 
-    createEntity,
-    updateEntityScriptId,
-    deleteEntity,
-    moveEntity,
-    updateComponentProp,
-    updateEntityProp,
-    syncTilemapDataFromEngine,
-    addComponent,
-    removeComponent,
-    duplicateEntity,
-    getEntityDataForClipboard,
-    pasteEntity
-  };
-}
+};

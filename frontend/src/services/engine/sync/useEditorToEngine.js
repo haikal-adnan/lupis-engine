@@ -1,5 +1,13 @@
 import { EngineBridge } from "@/services/engine/EngineBridge.js";
 
+const ENABLE_LOGGING = false;
+
+const log = (message, style, data = "") => {
+  if (ENABLE_LOGGING) {
+    console.log(message, style, data);
+  }
+};
+
 export function useEditorToEngine(projectStore, sceneStore, assetStore, editorStore, scriptStore, prefabStore) {
 
   const listen = () => {
@@ -26,7 +34,7 @@ export function useEditorToEngine(projectStore, sceneStore, assetStore, editorSt
     });
 
     sceneStore.$onAction(({ name, args, after, onError }) => {
-      console.log(`%c[SceneStore] Action: ${name}`, "color: #4CAF50; font-weight: bold;", { args });
+      log(`%c[SceneStore] Action: ${name}`, "color: #4CAF50; font-weight: bold;", { args });
       
       after((result) => {
         const s = sceneStore.activeScene?.settings;
@@ -76,7 +84,7 @@ export function useEditorToEngine(projectStore, sceneStore, assetStore, editorSt
     });
 
     assetStore.$onAction(({ name, args, after }) => {
-      console.log(`%c[AssetStore] Action: ${name}`, "color: #2196F3; font-weight: bold;", { args });
+      log(`%c[AssetStore] Action: ${name}`, "color: #2196F3; font-weight: bold;", { args });
       after(() => {
         switch (name) {
           case 'addAsset': if (args[0]) EngineBridge.createAsset(args[0]); break;
@@ -86,7 +94,7 @@ export function useEditorToEngine(projectStore, sceneStore, assetStore, editorSt
     });
 
     editorStore.$onAction(({ name, args, after }) => {
-      console.log(`%c[EditorStore] Action: ${name}`, "color: #FF9800; font-weight: bold;", { args });
+      log(`%c[EditorStore] Action: ${name}`, "color: #FF9800; font-weight: bold;", { args });
       after(() => {
         switch (name) {
           case 'setActiveTab': EngineBridge.updateEditorState({ activeTabId: args[0] }); break;
@@ -102,7 +110,7 @@ export function useEditorToEngine(projectStore, sceneStore, assetStore, editorSt
     });
 
     scriptStore.$onAction(({ name, args, after }) => {
-      console.log(`%c[ScriptStore] Action: ${name}`, "color: #9C27B0; font-weight: bold;", { args });
+      log(`%c[ScriptStore] Action: ${name}`, "color: #9C27B0; font-weight: bold;", { args });
       after((result) => {
         switch (name) {
           case 'createScript': if (result) EngineBridge.createScript(result); break;
@@ -122,7 +130,7 @@ export function useEditorToEngine(projectStore, sceneStore, assetStore, editorSt
     });
 
     prefabStore.$onAction(({ name, args, after }) => {
-      console.log(`%c[PrefabStore] Action: ${name}`, "color: #E91E63; font-weight: bold;", { args });
+      log(`%c[PrefabStore] Action: ${name}`, "color: #E91E63; font-weight: bold;", { args });
       after(() => {
         switch (name) {
           case 'addPrefab': EngineBridge.createPrefab(args[0]); break;

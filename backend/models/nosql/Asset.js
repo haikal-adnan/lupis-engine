@@ -2,8 +2,8 @@ import mongoose from 'mongoose';
 
 const AssetSchema = new mongoose.Schema({
   _id: { type: String, required: true },
-  projectId: { type: String, ref: 'Project', required: true },
-  folderId: { type: String, ref: 'Folder', default: null },
+  projectId: { type: String, ref: 'Project', required: true, index: true }, 
+  folderId: { type: String, ref: 'Folder', default: null, index: true },   
   
   name: { type: String, required: true },
   type: { 
@@ -12,7 +12,6 @@ const AssetSchema = new mongoose.Schema({
     required: true 
   },
   
-  fileUrl: { type: String, default: null },
   fileKey: { type: String, required: true },
   
   meta: {

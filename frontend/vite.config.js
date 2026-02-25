@@ -57,6 +57,8 @@ export default defineConfig({
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
       '@commons': fileURLToPath(new URL('./src/commons', import.meta.url)),
+      '@editors': fileURLToPath(new URL('./src/modules/editors', import.meta.url)),
+      '@dashboards' : fileURLToPath(new URL('./src/modules/dashboards', import.meta.url)),
       '@modules': fileURLToPath(new URL('./src/modules', import.meta.url)),
       '@services': fileURLToPath(new URL('./src/services', import.meta.url)),
       '@layouts': fileURLToPath(new URL('./src/layouts', import.meta.url)),

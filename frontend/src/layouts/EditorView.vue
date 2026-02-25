@@ -15,7 +15,7 @@ import RightPanel from '@/layouts/parts/RightPanel.vue'
 import BottomBar from '@/layouts/parts/BottomBar.vue'
 import BottomOverlay from '@/layouts/parts/BottomOverlay.vue'
 
-import AssetPanel from '@/modules/assets/AssetPanel.vue'
+import AssetPanel from '@editors/assets/AssetPanel.vue'
 
 const {
   layoutRef,
