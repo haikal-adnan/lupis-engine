@@ -1,5 +1,7 @@
 import Entity from "../Core/Entity.js";
 import { ApplyResizeToEntity } from "../Util/ApplyResizeToEntity.js";
+import SceneLoader from "../Loader/SceneLoader.js"; // IMPORT TAMBAHAN
+import ScriptLoader from "../Loader/ScriptLoader.js";
 
 export default class SyncComponent {
     constructor(world, bus, game) {
@@ -44,6 +46,8 @@ export default class SyncComponent {
                  this.game.selection.onEditorSelect(ids);
              }
         });
+
+        this.bus.on("editor:scene:reload", payload => this.onSceneReload(payload));
     }
 
     onUpdateProjectSettings(payload) {
@@ -511,6 +515,77 @@ export default class SyncComponent {
                 layer.entities.splice(idx, 1);
                 return;
             }
+        }
+    }
+
+    async onSceneReload(payload) {
+        if (!payload) return;
+        const { project, scene, prefabs, scripts, assets } = payload;
+
+        this.isInternalUpdate = true; 
+
+        try {
+            this.onClearSelection();
+            
+            if (this.world.layersWorld) this.world.layersWorld.length = 0;
+            if (this.world.layersUI) this.world.layersUI.length = 0;
+            if (this.world.entities) this.world.entities.length = 0;
+            if (this.world.ui) this.world.ui.length = 0;
+            
+            if (this.world.scriptIdMap) this.world.scriptIdMap.clear();
+
+            this.world.prefabs = {};
+            if (prefabs && Array.isArray(prefabs)) {
+                this.world.prefabs = Object.fromEntries(prefabs.map(p => [p._id, {
+                    _id: p._id,
+                    name: p.name,
+                    data: p.data 
+                }]));
+            }
+
+            this.world.scripts = {};
+            if (scripts && Array.isArray(scripts)) {
+                this.world.scripts = Object.fromEntries(scripts.map(s => [s._id, {
+                    _id: s._id,
+                    name: s.name,
+                    type: s.type,
+                    variables: s.exposedVariables || [],
+                    nodes: s.nodes || [],
+                    edges: s.edges || []
+                }]));
+                
+                ScriptLoader.load(this.game, payload);
+            }
+
+            if (assets && Array.isArray(assets) && this.assetLoader) {
+                await this.assetLoader.loadAsset(this.world, assets, this.game.baseURL);
+            }
+
+            if (scene) {
+                const sceneLoader = new SceneLoader(this.world, "editor");
+                sceneLoader.loadScene(scene);
+            } else {
+                console.warn("[SyncComponent] Scene data kosong/tidak ditemukan di payload saat reload.");
+            }
+
+            if (this.game.rulers) {
+                this.world.ui.push(ui => {
+                    if (this.world.settings?.showRulers) this.game.rulers.render(ui);
+                });
+            }
+            
+            if (this.game.grid) {
+                this.world.gridRenderer = (shape, proj) => {
+                    if (this.world.settings?.grid?.visible) this.game.grid.render(shape, proj);
+                };
+            }
+
+            console.log("[SyncComponent] Hard Reset selesai. Scene telah dimuat ulang.");
+
+        } catch (error) {
+            console.error("[SyncComponent] Kritis: Gagal melakukan onSceneReload:", error);
+        } finally {
+            this.isInternalUpdate = false;
         }
     }
 }

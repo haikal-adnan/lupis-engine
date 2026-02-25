@@ -21,9 +21,9 @@
 </template>
 
 <script setup>
-import HeaderProjectMenu from '@modules/header/components/HeaderProjectMenu.vue';
-import HeaderTabs from '@modules/header/components/HeaderTabs.vue';
-import HeaderActions from '@modules/header/components/HeaderActions.vue';
+import HeaderProjectMenu from '@editors/header/components/HeaderProjectMenu.vue';
+import HeaderTabs from '@editors/header/components/HeaderTabs.vue';
+import HeaderActions from '@editors/header/components/HeaderActions.vue';
 
 const onUndo = () => {
   console.log("Undo triggered");

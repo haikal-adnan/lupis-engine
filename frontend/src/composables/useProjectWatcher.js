@@ -18,6 +18,7 @@ export function useProjectWatcher() {
 
   const IGNORED_KEYS = [
     'isLoading',
+    'isSaving',
     'error',
     'selectedNodeId',
     'activeFolderId',
@@ -29,17 +30,10 @@ export function useProjectWatcher() {
   ]
 
   const initWatchers = () => {
-    projectStore.$subscribe((mutation, state) => {
-      if (state.isLoading) return
-      if (mutation.events && mutation.events.key === 'syncStatus') return
-      if (state.syncStatus !== 'dirty' && state.project) {
-        projectStore.markAsDirty()
-      }
-    })
 
     Object.entries(storesToWatch).forEach(([storeName, store]) => {
       store.$subscribe((mutation) => {
-        if (projectStore.isLoading || !projectStore.isProjectLoaded) return
+        if (projectStore.isLoading || projectStore.isSaving || !projectStore.isProjectLoaded) return
 
         const events = Array.isArray(mutation.events) ? mutation.events : [mutation.events]
         const shouldIgnore = events.every(event => {

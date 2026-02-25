@@ -174,4 +174,15 @@ export default class RendererManager {
         Mat4.ortho(this.projEditor, 0, this.canvas.width, this.canvas.height, 0, -1, 1);
         return this.projEditor;
     }
+
+    destroy() {
+        if (!this.gl) return;
+        
+        const loseCtx = this.gl.getExtension('WEBGL_lose_context');
+        if (loseCtx) loseCtx.loseContext();
+        
+        this.gl = null;
+        this.ctx = null;
+        this.canvas = null;
+    }
 }

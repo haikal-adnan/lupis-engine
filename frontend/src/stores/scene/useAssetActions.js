@@ -1,11 +1,9 @@
 import { useAssetStore } from '@/stores/useAssetStore';
 import { useFolderStore } from '@/stores/useFolderStore';
 import { createAsset } from '@/services/schema/assetSchema.js';
-import { createFolder } from '@/services/schema/folderSchema.js';
 import { usePopAlert } from '@/composables/usePopAlert';
 import { useAssetBackend } from '@/services/api/backend/useAssetBackend.js';
 import { useBackend } from '@/services/api/useBackend.js'; 
-import { GenerateUUID } from '@/commons/utils/generateUUID.js';
 import { useEditorStore } from '@/stores/useEditorStore';
 
 export function useAssetActions() {
@@ -13,47 +11,9 @@ export function useAssetActions() {
   const editorStore = useEditorStore();
   const folderStore = useFolderStore();
   const { showPop } = usePopAlert();
-  const { uploadAssetToServer } = useAssetBackend();
+  
+  const { createAssetToServer, updateAssetToServer, deleteAssetFromServer } = useAssetBackend();
   const { CDN_URL } = useBackend();
-
-  const createNewFolder = (name, parentId = null) => {
-    const actualParentId = parentId !== undefined ? parentId : folderStore.activeFolderId;
-    const folderName = name || 'New Folder';
-
-    const newFolder = createFolder({
-      _id: GenerateUUID(),
-      name: folderName,
-      parentId: actualParentId,
-      projectId: 'project_id_placeholder'
-    });
-
-    folderStore.createFolder(newFolder);
-
-    showPop({
-      title: 'Folder Created',
-      message: `Folder "${folderName}" has been created.`,
-      type: 'success'
-    });
-
-    return newFolder;
-  };
-
-  const deleteFolder = (folderId) => {
-    folderStore.deleteFolder(folderId);
-    
-    const assetsInFolder = assetStore.assets.filter(a => a.folderId === folderId);
-    assetsInFolder.forEach(a => assetStore.removeAsset(a._id));
-
-    showPop({
-      title: 'Folder Deleted',
-      message: 'Folder and its contents have been removed.',
-      type: 'info'
-    });
-  };
-
-  const renameFolder = (folderId, newName) => {
-    folderStore.updateFolder(folderId, { name: newName });
-  };
 
   const importAsset = async (file) => {
     if (!file) return;
@@ -61,12 +21,11 @@ export function useAssetActions() {
     assetStore.setUploading(true);
 
     try {
-      const projectId = editorStore.activeProjectId
+      const projectId = editorStore.activeProjectId;
+      const currentFolderId = folderStore.activeFolderId;
       
-      const [serverData] = await Promise.all([
-        uploadAssetToServer(file, projectId),
-        new Promise(resolve => setTimeout(resolve, 1000))
-      ]);
+      const lastDotIndex = file.name.lastIndexOf('.');
+      const pureName = lastDotIndex !== -1 ? file.name.substring(0, lastDotIndex) : file.name;
 
       let type = 'unknown';
       if (file.type.startsWith('image/')) type = 'texture';
@@ -77,44 +36,34 @@ export function useAssetActions() {
         dimensions = await _getImageDimensions(file);
       }
 
-      let finalDisplayName = file.name;
-      const lastDotIndex = file.name.lastIndexOf('.');
-      const originalBaseName = lastDotIndex !== -1 ? file.name.substring(0, lastDotIndex) : file.name;
-      const originalExt = lastDotIndex !== -1 ? file.name.substring(lastDotIndex) : '';
-
+      let finalName = pureName;
       let counter = 1;
-      while (
-        assetStore.assets.some(a => 
-          a.name === finalDisplayName && 
-          a.folderId === folderStore.activeFolderId
-        )
-      ) {
-        finalDisplayName = `${originalBaseName} (${counter})${originalExt}`;
+      while (assetStore.assets.some(a => a.name === finalName && a.folderId === currentFolderId)) {
+        finalName = `${pureName} (${counter})`;
         counter++;
       }
 
-      const serverExt = `.${serverData.savedName.split('.').pop()}`;
-      const fileKey = serverData.savedName.replace(serverExt, '');
+      const [serverData] = await Promise.all([
+        createAssetToServer(file, projectId, currentFolderId, dimensions, finalName),
+        new Promise(resolve => setTimeout(resolve, 1000))
+      ]);
+
+      const dbAsset = serverData.asset;
 
       const newAsset = createAsset({
-        _id: GenerateUUID(),
-        fileKey: fileKey,
-        name: finalDisplayName,
-        type: type,
-        folderId: folderStore.activeFolderId,
-        localBlob: file, 
-        meta: {
-          extension: originalExt,
-          size: file.size,
-          dimensions,
-          filterMode: 'nearest',
-        },
+        _id: dbAsset._id,               
+        projectId: dbAsset.projectId,
+        folderId: dbAsset.folderId,
+        name: dbAsset.name,
+        type: dbAsset.type,
+        fileKey: dbAsset.fileKey,       
+        localBlob: file,                
+        meta: dbAsset.meta,
         isSynced: true
       });
 
       assetStore.addAsset(newAsset);
 
-      console.log(`[AssetActions] Upload success: ${newAsset.name}`);
       showPop({
         title: 'Upload Complete',
         message: `Asset "${newAsset.name}" uploaded successfully.`,
@@ -124,7 +73,6 @@ export function useAssetActions() {
       return newAsset;
 
     } catch (error) {
-      console.error("Upload failed", error);
       showPop({
         title: 'Upload Failed',
         message: error.message || `Failed to upload "${file.name}".`,
@@ -135,22 +83,69 @@ export function useAssetActions() {
     }
   };
 
-  const deleteAsset = (assetId) => {
-    assetStore.removeAsset(assetId);
+  const deleteAsset = async (assetId) => {
+    try {
+      assetStore.updateAsset(assetId, { isSynced: false });
 
-    showPop({
-      title: 'Asset Deleted',
-      message: 'The asset has been removed permanently.',
-      type: 'info'
-    });
+      await deleteAssetFromServer(assetId);
+      
+      assetStore.removeAsset(assetId);
+
+      showPop({
+        title: 'Asset Deleted',
+        message: 'The asset has been removed permanently.',
+        type: 'info'
+      });
+    } catch (error) {
+      assetStore.updateAsset(assetId, { isSynced: true });
+      showPop({
+        title: 'Delete Failed',
+        message: error.message || 'Failed to delete the asset.',
+        type: 'error'
+      });
+    }
   };
 
-  const renameAsset = (assetId, newName) => {
-    const extension = `.${newName.split('.').pop()}`;
-    assetStore.updateAsset(assetId, { 
-      name: newName,
-      'meta.extension': extension 
-    });
+  const renameAsset = async (assetId, newName) => {
+    try {
+      const cleanName = newName.trim();
+      if (!cleanName) return;
+
+      assetStore.updateAsset(assetId, { isSynced: false });
+
+      await updateAssetToServer(assetId, { name: cleanName });
+      
+      assetStore.updateAsset(assetId, { 
+        name: cleanName, 
+        isSynced: true 
+      });
+
+      showPop({ 
+        title: 'Success', 
+        message: 'Asset renamed.', 
+        type: 'success' 
+      });
+    } catch (error) {
+      assetStore.updateAsset(assetId, { isSynced: true });
+      showPop({
+        title: 'Rename Failed',
+        message: error.message || 'Failed to rename the asset.',
+        type: 'error'
+      });
+    }
+  };
+  
+  const updateAssetProperty = async (assetId, updateData) => {
+    try {
+      await updateAssetToServer(assetId, updateData);
+      assetStore.updateAsset(assetId, updateData);
+    } catch (error) {
+      showPop({ 
+        title: 'Update Failed', 
+        message: error.message, 
+        type: 'error' 
+      });
+    }
   };
 
   const _getImageDimensions = (file) => {
@@ -163,11 +158,9 @@ export function useAssetActions() {
   };
 
   return {
-    createNewFolder,
-    deleteFolder,
-    renameFolder,
     importAsset,
     deleteAsset,
-    renameAsset
+    renameAsset,
+    updateAssetProperty
   };
 }

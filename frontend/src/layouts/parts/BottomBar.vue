@@ -44,10 +44,10 @@ import { markRaw, watch } from 'vue'
 import { FolderOpen, Terminal, Library, ScrollText } from 'lucide-vue-next'
 import { useEditorStore } from '@/stores/useEditorStore'
 
-import AssetPanel from '@/modules/assets/AssetPanel.vue'
-import ConsolePanel from '@/modules/console/ConsolePanel.vue'
-import PrefabPanel from '@/modules/prefab/PrefabPanel.vue'
-import ScriptPanel from '@/modules/scripts/ScriptPanel.vue'
+import AssetPanel from '@editors/assets/AssetPanel.vue'
+import ConsolePanel from '@editors/console/ConsolePanel.vue'
+import PrefabPanel from '@editors/prefab/PrefabPanel.vue'
+import ScriptPanel from '@editors/scripts/ScriptPanel.vue'
 
 const emit = defineEmits(['update:component'])
 const editorStore = useEditorStore()

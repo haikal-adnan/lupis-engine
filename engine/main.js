@@ -37,8 +37,6 @@ export async function startEngine(canvasSource, baseURL, mode = "editor", initia
     try {
         await loader.initializeGame(game, canvas, baseURL, mode, initialData);
         
-        loader.start(game);
-        
         return { game, bus };
         
     } catch (error) {

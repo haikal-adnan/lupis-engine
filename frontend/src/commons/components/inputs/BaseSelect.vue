@@ -13,6 +13,7 @@
 
     <div class="relative w-full">
       <button
+        ref="buttonRef"
         :id="id"
         type="button"
         @click="toggle"
@@ -44,81 +45,78 @@
         </svg>
       </button>
 
-      <transition name="fade-scale">
-        <div
-          v-if="isOpen"
-          class="absolute z-50 mt-1 overflow-hidden border rounded-md shadow-md bg-popover border-border text-popover-foreground min-w-full w-max max-w-[300px]"
-          :style="{ top: '100%', borderRadius: radius }"
-          :class="{
-              'left-0': align === 'left',
-              'right-0': align === 'right',
-              'left-1/2 -translate-x-1/2': align === 'center'
-          }"
-        >
-          <ul class="max-h-60 overflow-y-auto py-1 custom-scrollbar">
-            
-            <li 
-              v-if="editable"
-              @click="triggerAction"
-              class="relative flex items-center w-full px-3 py-2 text-sm cursor-pointer select-none outline-none transition-colors
-                     text-primary font-medium hover:bg-primary/10 border-b border-border mb-1"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
-                <path d="M5 12h14"/><path d="M12 5v14"/>
-              </svg>
-              {{ actionLabel }}
-            </li>
-
-            <li
-              v-for="option in options"
-              :key="option.value"
-              @click="!option.disabled && select(option)"
-              class="relative flex items-center w-full px-3 py-1.5 text-sm select-none outline-none transition-colors group"
-              :class="[
-                option.disabled 
-                  ? 'opacity-40 cursor-not-allowed bg-muted/20' 
-                  : 'cursor-pointer hover:bg-accent hover:text-accent-foreground',
-                model === option.value ? 'bg-accent text-accent-foreground' : ''
-              ]"
-              :data-selected="model === option.value"
-            >
-              <span 
-                class="truncate pr-8 flex-1 block text-left"
-                :class="{ 'italic text-muted-foreground/60': option.disabled }"
-              >
-                {{ option.label }}
-              </span>
+      <Teleport to="body">
+        <transition name="fade-scale">
+          <div
+            v-if="isOpen"
+            ref="dropdownRef"
+            class="fixed z-[9999] mt-1 overflow-hidden border rounded-md shadow-md bg-popover border-border text-popover-foreground w-max max-w-[300px]"
+            :style="[dropdownStyle, { borderRadius: radius }]"
+          >
+            <ul class="max-h-60 overflow-y-auto py-1 custom-scrollbar">
               
-              <span v-if="model === option.value" class="absolute right-2 flex items-center justify-center h-full text-primary">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="20 6 9 17 4 12"/>
-                </svg>
-              </span>
-
-              <button 
-                v-if="editable && option.value !== 'untagged' && !option.disabled"
-                @click.stop="triggerDelete(option)"
-                class="absolute right-2 hidden group-hover:flex items-center justify-center h-6 w-6 rounded-sm hover:bg-destructive hover:text-destructive-foreground text-muted-foreground transition-colors"
-                title="Delete Tag"
+              <li 
+                v-if="editable"
+                @click="triggerAction"
+                class="relative flex items-center w-full px-3 py-2 text-sm cursor-pointer select-none outline-none transition-colors
+                       text-primary font-medium hover:bg-primary/10 border-b border-border mb-1"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
+                  <path d="M5 12h14"/><path d="M12 5v14"/>
                 </svg>
-              </button>
-            </li>
-            
-            <li v-if="options.length === 0" class="px-3 py-2.5 text-xs text-muted-foreground text-center">
-              No options available
-            </li>
-          </ul>
-        </div>
-      </transition>
+                {{ actionLabel }}
+              </li>
+
+              <li
+                v-for="option in options"
+                :key="option.value"
+                @click="!option.disabled && select(option)"
+                class="relative flex items-center w-full px-3 py-1.5 text-sm select-none outline-none transition-colors group"
+                :class="[
+                  option.disabled 
+                    ? 'opacity-40 cursor-not-allowed bg-muted/20' 
+                    : 'cursor-pointer hover:bg-accent hover:text-accent-foreground',
+                  model === option.value ? 'bg-accent text-accent-foreground' : ''
+                ]"
+              >
+                <span 
+                  class="truncate pr-8 flex-1 block text-left"
+                  :class="{ 'italic text-muted-foreground/60': option.disabled }"
+                >
+                  {{ option.label }}
+                </span>
+                
+                <span v-if="model === option.value" class="absolute right-2 flex items-center justify-center h-full text-primary">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                </span>
+
+                <button 
+                  v-if="editable && option.value !== 'untagged' && !option.disabled"
+                  @click.stop="triggerDelete(option)"
+                  class="absolute right-2 hidden group-hover:flex items-center justify-center h-6 w-6 rounded-sm hover:bg-destructive hover:text-destructive-foreground text-muted-foreground transition-colors"
+                  title="Delete Tag"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+                  </svg>
+                </button>
+              </li>
+              
+              <li v-if="options.length === 0" class="px-3 py-2.5 text-xs text-muted-foreground text-center">
+                No options available
+              </li>
+            </ul>
+          </div>
+        </transition>
+      </Teleport>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, useId } from 'vue'
+import { ref, computed, useId, nextTick, onUnmounted } from 'vue'
 
 const props = defineProps({
   label: String,
@@ -138,19 +136,48 @@ const props = defineProps({
 const emit = defineEmits(['action', 'delete'])
 const model = defineModel()
 const id = useId()
+
 const isOpen = ref(false)
+const buttonRef = ref(null)
+const dropdownRef = ref(null)
+const dropdownStyle = ref({})
 
 const selectedLabel = computed(() => {
   const found = props.options.find(o => o.value === model.value)
   return found ? found.label : null
 })
 
+const updatePosition = () => {
+  if (!buttonRef.value || !isOpen.value) return
+  const rect = buttonRef.value.getBoundingClientRect()
+  dropdownStyle.value = {
+    top: `${rect.bottom}px`,
+    left: `${rect.left}px`,
+    minWidth: `${rect.width}px` 
+  }
+}
+
 function toggle() { 
   isOpen.value = !isOpen.value 
+  if (isOpen.value) {
+    nextTick(updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    window.addEventListener('resize', updatePosition)
+  } else {
+    removeListeners()
+  }
 }
 
 function close() { 
-  isOpen.value = false 
+  if (isOpen.value) {
+    isOpen.value = false 
+    removeListeners()
+  }
+}
+
+function removeListeners() {
+  window.removeEventListener('scroll', updatePosition, true)
+  window.removeEventListener('resize', updatePosition)
 }
 
 function select(option) {
@@ -171,16 +198,23 @@ function triggerDelete(option) {
 const vClickOutside = {
   mounted(el, binding) {
     el.clickOutsideEvent = function(event) {
-      if (!(el === event.target || el.contains(event.target))) {
+      const isInsideMain = el === event.target || el.contains(event.target)
+      const isInsideDropdown = dropdownRef.value && (dropdownRef.value === event.target || dropdownRef.value.contains(event.target))
+      
+      if (!isInsideMain && !isInsideDropdown) {
         binding.value(event)
       }
     }
-    document.body.addEventListener('click', el.clickOutsideEvent)
+    document.addEventListener('mousedown', el.clickOutsideEvent)
   },
   unmounted(el) {
-    document.body.removeEventListener('click', el.clickOutsideEvent)
+    document.removeEventListener('mousedown', el.clickOutsideEvent)
   }
 }
+
+onUnmounted(() => {
+  removeListeners()
+})
 </script>
 
 <style scoped>

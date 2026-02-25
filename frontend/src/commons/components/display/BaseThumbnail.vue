@@ -66,7 +66,7 @@
 <script setup>
 import { ref, reactive, computed, watch, nextTick, onBeforeUnmount } from 'vue'
 import { Maximize2 } from 'lucide-vue-next'
-import TextureUtil from "@modules/properties/composables/TextureUtil.js"
+import TextureUtil from "@editors/properties/composables/TextureUtil.js"
 
 const props = defineProps({
   src: { type: String, default: null },

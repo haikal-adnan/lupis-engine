@@ -1,142 +1,115 @@
 import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
+import { sceneActions } from './useSceneActions';
+import { layerActions } from './useLayerActions';
+import { entityActions } from './useEntityActions';
+import { settingActions } from './useSettingActions'; 
 
-import { useLayerActions } from './useLayerActions';
-import { useEntityActions } from './useEntityActions';
-import { useSceneActions } from './useSceneActions';
-import { useSettingActions } from './useSettingActions'; 
+export const useSceneStore = defineStore('scene', {
+  state: () => ({
+    scenes: [],
+    activeSceneId: null,
+    selectedEntityIds: []
+  }),
 
-export const useSceneStore = defineStore('scene', () => {
-  const scenes = ref([]);
-  const activeSceneId = ref(null);
-  const selectedEntityIds = ref([]);
-
-  const activeScene = computed(() => scenes.value.find(s => s._id === activeSceneId.value));
-  
-  const getSceneById = computed(() => (id) => scenes.value.find(s => s._id === id));
-  
-  const activeEntities = computed(() => activeScene.value ? activeScene.value.entities : []);
-  
-  const activeLayers = computed(() => {
-    if (!activeScene.value) return [];
+  getters: {
+    activeScene: (state) => state.scenes.find(s => s._id === state.activeSceneId),
     
-    const world = activeScene.value.layersWorld || [];
-    const ui = activeScene.value.layersUI || [];
+    getSceneById: (state) => (id) => state.scenes.find(s => s._id === id),
     
-    const taggedWorld = world.map(l => ({ ...l, _section: 'world' }));
-    const taggedUI = ui.map(l => ({ ...l, _section: 'ui' }));
+    sceneOptions: (state) => state.scenes.map(scene => ({
+      label: scene.name,
+      value: scene._id
+    })),
 
-    return [...taggedWorld, ...taggedUI];
-  });
-
-  const initScenes = (sceneList) => {
-    scenes.value = Array.isArray(sceneList) ? sceneList : [];
+    activeEntities: (state) => {
+      const scene = state.scenes.find(s => s._id === state.activeSceneId);
+      return scene ? scene.entities : [];
+    },
     
-    if (scenes.value.length > 0 && !activeSceneId.value) {
-      activeSceneId.value = scenes.value[0]._id;
+    activeLayers: (state) => {
+      const scene = state.scenes.find(s => s._id === state.activeSceneId);
+      if (!scene) return [];
+      
+      const world = scene.layersWorld || [];
+      const ui = scene.layersUI || [];
+      
+      const taggedWorld = world.map(l => ({ ...l, _section: 'world' }));
+      const taggedUI = ui.map(l => ({ ...l, _section: 'ui' }));
+
+      return [...taggedWorld, ...taggedUI];
     }
-  };
+  },
 
-  const clearSelection = () => {
-    selectedEntityIds.value = [];
-  };
-
-  const setActiveScene = (sceneId) => {
-    const scene = scenes.value.find(s => s._id === sceneId);
-    if (scene) {
-      activeSceneId.value = scene._id;
-      selectedEntityIds.value = []; 
-    }
-  };
-
-  const patchComponent = (entityId, componentName, updates) => {
-    const scene = activeScene.value;
-    if (!scene) return;
-    
-    const entity = scene.entities.find(e => String(e._id) === String(entityId));
-    if (entity?.components?.[componentName]) {
-      Object.assign(entity.components[componentName], updates);
-    }
-  };
-
-  const syncComponentFromEngine = (entityId, componentName, data) => {
-    const scene = activeScene.value;
-    if (!scene) return;
-    
-    const entity = scene.entities.find(e => String(e._id) === String(entityId));
-    if (!entity) return;
-
-    if (!entity.components[componentName]) {
-      entity.components[componentName] = {};
-    }
-
-    entity.components[componentName] = {
-      ...entity.components[componentName],
-      ...data
-    };
-  };
-
-  const syncTilemapDataFromEngine = (entityId, newData) => {
-    const scene = activeScene.value;
-    if (!scene) return;
-    
-    const entity = scene.entities.find(e => String(e._id) === String(entityId));
-    if (entity?.components?.Tilemap) {
-      entity.components.Tilemap = {
-        ...entity.components.Tilemap,
-        data: [...newData]
-      };
-    }
-  };
-
-  const syncTransformFromEngine = (entityId, transformData) => {
-    const scene = activeScene.value;
-    if (!scene) return;
-    
-    const entity = scene.entities.find(e => String(e._id) === String(entityId));
-    if (!entity) return;
-
-    if (entity.components?.Transform) {
-      entity.components.Transform = {
-        ...entity.components.Transform,
-        ...transformData
-      };
-    } 
-    else if (entity.components?.UITransform) {
-      entity.components.UITransform = {
-        ...entity.components.UITransform,
-        ...transformData
-      };
-    }
-  };
-
-  const sceneActions = useSceneActions(scenes, activeSceneId, selectedEntityIds);
-  const layerActions = useLayerActions(activeScene);
-  const entityActions = useEntityActions(activeScene, selectedEntityIds);
-  const settingActions = useSettingActions(activeScene); 
-  
-
-  return {
-    scenes,
-    activeSceneId,
-    selectedEntityIds,
-    activeScene,
-    getSceneById,
-    activeEntities,
-    activeLayers,
-
-    initScenes,
-    setActiveScene,
-    clearSelection,
-    
-    syncTilemapDataFromEngine,
-    syncTransformFromEngine,
-    syncComponentFromEngine,
-    patchComponent,
-
+  actions: {
     ...sceneActions,
     ...layerActions,
     ...entityActions,
-    ...settingActions 
-  };
+    ...settingActions,
+
+    initScenes(sceneList) {
+      this.scenes = Array.isArray(sceneList) ? sceneList : [];
+      if (this.scenes.length > 0 && !this.activeSceneId) {
+        this.activeSceneId = this.scenes[0]._id;
+      }
+    },
+
+    clearSelection() {
+      this.selectedEntityIds = [];
+    },
+
+    setActiveScene(sceneId) {
+      const scene = this.scenes.find(s => s._id === sceneId);
+      if (scene) {
+        this.activeSceneId = scene._id;
+        this.selectedEntityIds = []; 
+      }
+    },
+
+    patchComponent(entityId, componentName, updates) {
+      const scene = this.activeScene;
+      if (!scene) return;
+      
+      const entity = scene.entities.find(e => String(e._id) === String(entityId));
+      if (entity?.components?.[componentName]) {
+        Object.assign(entity.components[componentName], updates);
+      }
+    },
+
+    syncComponentFromEngine(entityId, componentName, data) {
+      const scene = this.activeScene;
+      if (!scene) return;
+      
+      const entity = scene.entities.find(e => String(e._id) === String(entityId));
+      if (!entity) return;
+
+      if (!entity.components[componentName]) {
+        entity.components[componentName] = {};
+      }
+
+      entity.components[componentName] = {
+        ...entity.components[componentName],
+        ...data
+      };
+    },
+
+    syncTransformFromEngine(entityId, transformData) {
+      const scene = this.activeScene;
+      if (!scene) return;
+      
+      const entity = scene.entities.find(e => String(e._id) === String(entityId));
+      if (!entity) return;
+
+      if (entity.components?.Transform) {
+        entity.components.Transform = {
+          ...entity.components.Transform,
+          ...transformData
+        };
+      } else if (entity.components?.UITransform) {
+        entity.components.UITransform = {
+          ...entity.components.UITransform,
+          ...transformData 
+        };
+      }
+    }
+  }
 });

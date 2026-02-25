@@ -11,7 +11,6 @@ export default class VariableManager {
             globalVarsArray.forEach(v => {
                 this.globals.set(v._id, v.defaultValue);
             });
-            console.log(`[VariableManager] Loaded ${this.globals.size} Global Variables.`);
         }
     }
 

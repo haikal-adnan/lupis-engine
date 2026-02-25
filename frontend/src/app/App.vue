@@ -3,7 +3,6 @@ import { useProjectStore } from '@/stores/useProjectStore'
 import { useAppInit } from '@/composables/useAppInit'
 
 import AppLoading from '@/commons/components/overlay/AppLoading.vue'
-import EditorView from '@/layouts/EditorView.vue'
 
 import BaseConfirm from '@ui/overlay/BaseConfirm.vue';
 import BasePrompt from '@ui/overlay/BasePrompt.vue';
@@ -16,19 +15,19 @@ const projectStore = useProjectStore()
 
 <template>
   <div class="relative w-full h-full">
-    <EditorView />
+    <router-view />
 
     <transition
       enter-active-class="transition duration-300 ease-out"
-      enter-from-class="opacity-0"
-      enter-to-class="opacity-100"
+      enter-from-class="opacity-0 scale-95"
+      enter-to-class="opacity-100 scale-100"
       leave-active-class="transition duration-200 ease-in"
-      leave-from-class="opacity-100"
-      leave-to-class="opacity-0"
+      leave-from-class="opacity-100 scale-100"
+      leave-to-class="opacity-0 scale-95"
     >
       <div 
         v-if="projectStore.isLoading" 
-        class="absolute inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+        class="absolute inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm"
       >
         <AppLoading />
       </div>

@@ -8,8 +8,6 @@ export default class LoadScript {
             return;
         }
 
-        console.group("LoadScript Analysis");
-
         if (project && project.globalVariables) {
             game.variables.initGlobals(project.globalVariables);
         }
@@ -20,9 +18,7 @@ export default class LoadScript {
                     game.variables.registerScriptSchema(script._id, script.exposedVariables);
                 }
             });
-            console.log(`[LoadScript] Processed schemas for ${scripts.length} scripts.`);
         }
 
-        console.groupEnd();
     }
 }

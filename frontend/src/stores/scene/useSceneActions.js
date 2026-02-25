@@ -1,9 +1,8 @@
 import { useProjectStore } from '@/stores/useProjectStore';
 import { createScene } from '@/services/schema/schema.js';
 
-export const useSceneActions = (scenes, activeSceneId, selectedEntityIds) => {
-  
-  const addScene = (sceneData = {}) => {
+export const sceneActions = {
+  addScene(sceneData = {}) {
     const projectStore = useProjectStore();
 
     const newScene = createScene({
@@ -11,18 +10,18 @@ export const useSceneActions = (scenes, activeSceneId, selectedEntityIds) => {
       ...sceneData
     });
 
-    scenes.value.push(newScene);
-    activeSceneId.value = newScene._id;
-    selectedEntityIds.value = [];
+    this.scenes.push(newScene);
+    this.activeSceneId = newScene._id;
+    this.selectedEntityIds = [];
 
     projectStore.addSceneToProject(newScene._id);
 
     return newScene;
-  }
+  },
 
-  const duplicateScene = (sceneId) => {
+  duplicateScene(sceneId) {
     const projectStore = useProjectStore();
-    const originalScene = scenes.value.find(s => s._id === sceneId);
+    const originalScene = this.scenes.find(s => s._id === sceneId);
 
     if (!originalScene) return null;
 
@@ -31,37 +30,34 @@ export const useSceneActions = (scenes, activeSceneId, selectedEntityIds) => {
     newScene._id = `scene_${Date.now()}`;
     newScene.name = `${originalScene.name} (Copy)`;
 
-    scenes.value.push(newScene);
-    activeSceneId.value = newScene._id;
-    selectedEntityIds.value = [];
+    this.scenes.push(newScene);
+    this.activeSceneId = newScene._id;
+    this.selectedEntityIds = [];
 
     projectStore.addSceneToProject(newScene._id);
 
     return newScene;
-  }
+  },
 
-  const removeScene = (sceneId) => {
-    const index = scenes.value.findIndex(s => s._id === sceneId)
+  removeScene(sceneId) {
+    if (this.scenes.length <= 1) {
+      throw new Error('MIN_SCENE_LIMIT');
+    }
+
+    const index = this.scenes.findIndex(s => s._id === sceneId);
     if (index !== -1) {
-      scenes.value.splice(index, 1)
-      if (activeSceneId.value === sceneId) {
-        activeSceneId.value = scenes.value.length > 0 ? scenes.value[0]._id : null
-        selectedEntityIds.value = []
+      this.scenes.splice(index, 1);
+      if (this.activeSceneId === sceneId) {
+        this.activeSceneId = this.scenes.length > 0 ? this.scenes[0]._id : null;
+        this.selectedEntityIds = [];
       }
     }
-  }
+  },
 
-  const updateSceneName = (sceneId, newName) => {
-    const scene = scenes.value.find(s => s._id === sceneId)
-    if (scene) {
-      scene.name = newName
+  updateSceneName(sceneId, newName) {
+    const scene = this.scenes.find(s => s._id === sceneId);
+    if (scene && newName && newName.trim() !== "") {
+      scene.name = newName.trim();
     }
   }
-
-  return {
-    addScene,
-    duplicateScene,
-    removeScene,
-    updateSceneName
-  }
-}
+};

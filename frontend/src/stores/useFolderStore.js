@@ -1,63 +1,44 @@
 import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
 
-export const useFolderStore = defineStore('folder', () => {
-  const folders = ref([]);
-  const activeFolderId = ref(null);
+export const useFolderStore = defineStore('folder', {
+  state: () => ({
+    folders: [],
+    activeFolderId: null
+  }),
 
-  const getFolderById = computed(() => (id) => {
-    return folders.value.find(f => f._id === id);
-  });
+  getters: {
+    getFolderById: (state) => (id) => state.folders.find(f => f._id === id),
+    projectFolders: (state) => state.folders
+  },
 
-  const projectFolders = computed(() => folders.value);
-
-  function initFolders(folderList) {
-    folders.value = folderList;
-  }
-
-  function setActiveFolder(folderId) {
-    activeFolderId.value = folderId;
-  }
-
-  function createFolder(folder) {
-    if (!folder._id) folder._id = `folder_${Date.now()}`;
-    folders.value.push(folder);
-  }
-
-  function deleteFolder(folderId) {
-    folders.value = folders.value.filter(f => f._id !== folderId);
-    if (activeFolderId.value === folderId) {
-      activeFolderId.value = null;
+  actions: {
+    initFolders(folderList) {
+      this.folders = folderList;
+    },
+    
+    setActiveFolder(folderId) {
+      this.activeFolderId = folderId;
+    },
+    
+    createFolder(folder) {
+      this.folders.push(folder);
+    },
+    
+    deleteFolder(folderId) {
+      this.folders = this.folders.filter(f => f._id !== folderId);
+      if (this.activeFolderId === folderId) {
+        this.activeFolderId = null;
+      }
+    },
+    
+    updateFolder(folderId, updates) {
+      const folderIndex = this.folders.findIndex(f => f._id === folderId);
+      if (folderIndex !== -1) {
+        this.folders[folderIndex] = {
+          ...this.folders[folderIndex],
+          ...updates
+        };
+      }
     }
   }
-
-  function updateFolderName(folderId, newName) {
-    const folder = folders.value.find(f => f._id === folderId);
-    if (folder) folder.name = newName;
-  }
-
-  function duplicateFolder(folderId) {
-    const original = folders.value.find(f => f._id === folderId);
-    if (!original) return;
-
-    const newFolder = {
-      ...original,
-      _id: `folder_${Date.now()}_copy`, 
-      name: `${original.name} (Copy)`
-    };
-    folders.value.push(newFolder);
-  }
-
-  return {
-    folders,
-    activeFolderId,
-    getFolderById,
-    projectFolders,
-    initFolders,
-    setActiveFolder,
-    createFolder,
-    deleteFolder,
-    updateFolderName,
-    duplicateFolder
-  };
 });

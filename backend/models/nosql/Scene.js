@@ -45,7 +45,7 @@ const EntitySchema = new mongoose.Schema({
 
 const SceneSchema = new mongoose.Schema({
   _id: { type: String, required: true },
-  projectId: { type: String, ref: 'Project', required: true },
+  projectId: { type: String, ref: 'Project', required: true, index: true },
   scriptId: { type: String, required: true, default: 'unnamed_scene' },
   name: { type: String, required: true },
   

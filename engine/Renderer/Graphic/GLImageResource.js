@@ -12,8 +12,6 @@ export default class GLImageResource {
             src = `${baseURL}${asset.fileKey}${asset.meta.extension}`;
         }
 
-        console.log(`${baseURL}${asset.fileKey}${asset.meta.extension}`)
-
         const img = await this._loadImage(src);
 
         const filterMode = (asset.meta?.filterMode === 'linear') 

@@ -42,6 +42,22 @@ export default class Game {
         this.loop.start();
     }
 
+    quitGame() { 
+        if (this.loop) this.loop.stop(); 
+    }
+
+    destroy() {
+        this.quitGame();
+        
+        if (this.renderer && typeof this.renderer.destroy === 'function') {
+            this.renderer.destroy();
+        }
+        
+        this.world = null;
+        this.renderer = null;
+        this.syncSystem = null;
+    }
+
 
     update(dt) {
         if (Config.ENGINE_MODE === "runtime") {
