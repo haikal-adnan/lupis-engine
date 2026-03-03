@@ -16,35 +16,45 @@ export const createScriptVariable = (data = {}) => ({
   defaultValue: data.defaultValue ?? 0
 });
 
-export const createScriptNode = (data = {}) => ({
-  _id: data._id || GenerateUUID(),
-  type: data.type || "unknown_node",
+export const createScriptNode = (data = {}) => {
+  // 1. Lakukan deep copy untuk menghindari mutasi referensi antar node
+  // 2. Pastikan properti 'values' selalu tersedia
+  const safeData = data.data ? JSON.parse(JSON.stringify(data.data)) : {};
+  if (!safeData.values) {
+    safeData.values = {};
+  }
 
-  allowDynamicInputs: data.allowDynamicInputs ?? false, 
-  allowDynamicOutputs: data.allowDynamicOutputs ?? false, 
+  return {
+    _id: data._id || GenerateUUID(),
+    type: data.type || "unknown_node",
 
-  position: {
-    x: data.position?.x ?? 0,
-    y: data.position?.y ?? 0
-  },
-  settings: {
-    headerTitle: data.settings?.headerTitle || "Node",
-    description: data.settings?.description || "",
-    headerColor: data.settings?.headerColor || "#424242",
-    category: data.settings?.category || "General",
-    visibleDataFields: Array.isArray(data.settings?.visibleDataFields)
-      ? [...data.settings.visibleDataFields]
-      : []
-  },
-  inputs: Array.isArray(data.inputs)
-    ? data.inputs.map(createScriptPort)
-    : [],
-  outputs: Array.isArray(data.outputs)
-    ? data.outputs.map(createScriptPort)
-    : [],
-  
-  data: data.data || {}
-});
+    allowDynamicInputs: data.allowDynamicInputs ?? false, 
+    allowDynamicOutputs: data.allowDynamicOutputs ?? false, 
+
+    position: {
+      x: data.position?.x ?? 0,
+      y: data.position?.y ?? 0
+    },
+    settings: {
+      headerTitle: data.settings?.headerTitle || "Node",
+      description: data.settings?.description || "",
+      headerColor: data.settings?.headerColor || "#424242",
+      category: data.settings?.category || "General",
+      visibleDataFields: Array.isArray(data.settings?.visibleDataFields)
+        ? [...data.settings.visibleDataFields]
+        : []
+    },
+    inputs: Array.isArray(data.inputs)
+      ? data.inputs.map(createScriptPort)
+      : [],
+    outputs: Array.isArray(data.outputs)
+      ? data.outputs.map(createScriptPort)
+      : [],
+    
+    // Gunakan safeData yang sudah diproses
+    data: safeData 
+  };
+};
 
 export const createScriptEdge = (data = {}) => ({
   _id: data._id || GenerateUUID(),

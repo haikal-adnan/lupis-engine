@@ -43,6 +43,7 @@ export class TransformRenderer {
                 shape.drawCircleOutline(h.x, h.y, rCorner, dotStroke, lineThick, 16, proj);
             } 
             else {
+                if (geometry.isSizeLocked) continue;
                 let w = 0, h_dim = 0;
                 
                 if (h.type === 'n' || h.type === 's') { 

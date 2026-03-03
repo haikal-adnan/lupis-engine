@@ -104,7 +104,15 @@ export default class GraphRunner {
                             if (k === keyTarget) this.executeFlow(node._id, outputId);
                         });
                     } else if (map.trigger === 'hold') {
-                        this._holdNodes.push({ node, map, outputId });
+                        // Tambahkan state tracking untuk fitur hold
+                        this._holdNodes.push({ 
+                            node, 
+                            map, 
+                            outputId, 
+                            keyTarget,
+                            currentHoldTime: 0, 
+                            hasFiredOnce: false 
+                        });
                     }
                 });
             } 
@@ -133,8 +141,26 @@ export default class GraphRunner {
         });
 
         this._holdNodes.forEach(item => {
-            if (this.game.input.keyboard.isDown(item.map.key)) {
-                this.executeFlow(item.node._id, item.outputId);
+            if (this.game.input.keyboard.isDown(item.keyTarget)) {
+                item.currentHoldTime += (dt * 1000); 
+
+                if (item.currentHoldTime >= item.map.threshold) {
+                    
+                    if (item.map.repeat) {
+                        // Jika repeat ON (Interval): Tembak, lalu reset waktu ke 0
+                        this.executeFlow(item.node._id, item.outputId);
+                        item.currentHoldTime = 0; 
+                    } else if (!item.hasFiredOnce) {
+                        // Jika repeat OFF (Single Shot): Tembak, lalu KUNCI
+                        this.executeFlow(item.node._id, item.outputId);
+                        item.hasFiredOnce = true;
+                    }
+                    
+                }
+            } else {
+                // Reset semua state saat tombol dilepaskan
+                item.currentHoldTime = 0;
+                item.hasFiredOnce = false;
             }
         });
 
@@ -187,6 +213,7 @@ export default class GraphRunner {
     }
 
     getInputValue(node, inputKey) {
+        // 1. Cek apakah ada node lain yang terhubung ke port ini
         const edge = this.edges.find(e => e.target === node._id && e.targetHandle === inputKey);
         
         if (edge) {
@@ -194,10 +221,17 @@ export default class GraphRunner {
             return this._getNodeOutputValue(sourceNode, edge.sourceHandle);
         }
 
+        // 2. Skema Baru: Cek nilai statis input manual dari node.data.values
+        if (node.data?.values && node.data.values[inputKey] !== undefined) {
+            return node.data.values[inputKey];
+        }
+
+        // 3. Backward Compatibility: Cek parameter reguler di node.data
         if (node.data && node.data[inputKey] !== undefined) {
             return node.data[inputKey];
         }
 
+        // 4. Backward Compatibility Skema Lama: Jaga-jaga untuk project lama
         if (node.inputs) {
             const inputDef = node.inputs.find(i => i._id === inputKey);
             if (inputDef && inputDef.value !== undefined) {

@@ -15,7 +15,6 @@
 
     <template #menu="{ close }">
       <div class="p-1 space-y-0.5 min-w-[150px]">
-        
         <template v-if="prefabId">
           <button 
             @click="syncComponent('Transform'); close()" 
@@ -64,24 +63,37 @@
       />
     </div>
 
-    <PropertyRow label="Size (px)">
-      <div class="flex items-center gap-2">
-        <div class="grid grid-cols-2 gap-2 flex-grow">
-          <BaseNumber v-model="width" prefix="W" :min="1" :step="1" :precision="2" class="font-mono" :disabled="isLocked" />
-          <BaseNumber v-model="height" prefix="H" :min="1" :step="1" :precision="2" class="font-mono" :disabled="isLocked" />
-        </div>
+    <div 
+      class="transition-all duration-300"
+      :class="{ 
+        'opacity-40 pointer-events-none filter grayscale cursor-not-allowed': isSizeLockedByText 
+      }"
+    >
+      <PropertyRow label="Size (px)">
+        <div class="flex items-center gap-2">
+          <div class="grid grid-cols-2 gap-2 flex-grow">
+            <BaseNumber v-model="width" prefix="W" :min="1" :step="1" :precision="2" class="font-mono" :disabled="isLocked" />
+            <BaseNumber v-model="height" prefix="H" :min="1" :step="1" :precision="2" class="font-mono" :disabled="isLocked" />
+          </div>
 
-        <IconButton 
-          :active="isRatioLocked" 
-          @click="isRatioLocked = !isRatioLocked"
-          :tooltip="isRatioLocked ? 'Unlock Ratio' : 'Lock Ratio'"
-          :disabled="isLocked"
-        >
-          <Lock v-if="isRatioLocked" class="w-3.5 h-3.5" />
-          <Unlock v-else class="w-3.5 h-3.5 opacity-50" />
-        </IconButton>
+          <IconButton 
+            :active="isRatioLocked" 
+            @click="isRatioLocked = !isRatioLocked"
+            :tooltip="isRatioLocked ? 'Unlock Ratio' : 'Lock Ratio'"
+            :disabled="isLocked"
+          >
+            <Lock v-if="isRatioLocked" class="w-3.5 h-3.5" />
+            <Unlock v-else class="w-3.5 h-3.5 opacity-50" />
+          </IconButton>
+        </div>
+      </PropertyRow>
+    </div>
+
+    <div v-if="isSizeLockedByText" class="px-1 mb-3 -mt-1">
+      <div class="text-[9px] text-amber-500/80 italic flex items-center gap-1">
+        <Info class="w-3 h-3" /> Size is controlled by Text Renderer Auto Fit
       </div>
-    </PropertyRow>
+    </div>
 
     <PropertyRow label="Flip">
       <div class="grid grid-cols-2 gap-2">
@@ -111,7 +123,7 @@
 <script setup>
 import { 
   BoxSelect, Lock, Unlock, FlipHorizontal, FlipVertical, 
-  RotateCcw, RefreshCw 
+  RotateCcw, RefreshCw, Info 
 } from 'lucide-vue-next'
 
 import { useInspectorLogic } from "@editors/properties/composables/useInspectorLogic.js";
@@ -130,6 +142,7 @@ const {
   updatePivot, 
   bindComponentProp, 
   isLocked,
+  isSizeLockedByText, // <-- State dari useInspectorLogic
   syncComponent,      
   getComponentOverrideStatus 
 } = useInspectorLogic();
@@ -148,5 +161,4 @@ const isRatioLocked = bindComponentProp('Transform', 'isRatioLocked');
 
 const pivotX = bindComponentProp('Transform', 'pivotX');
 const pivotY = bindComponentProp('Transform', 'pivotY');
-
 </script>

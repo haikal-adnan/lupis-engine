@@ -4,7 +4,8 @@
     <div class="flex items-center gap-1.5">
       <div class="flex-1 min-w-0">
         <BaseSelect 
-          v-model="sceneStore.activeSceneId" 
+          :modelValue="sceneStore.activeSceneId" 
+          @update:modelValue="handleSwitchScene"
           :options="sceneStore.sceneOptions"
           placeholder="Select Scene..."
           height="1.75rem"
@@ -65,33 +66,11 @@
         </button>
       </div>
       
-      <BaseDropdown align="right">
-        <template #trigger="{ isOpen }">
-            <button 
-                class="h-7 w-7 flex items-center justify-center rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors"
-                :class="{ 'bg-accent text-accent-foreground': isOpen }"
-                title="Add Layer"
-            >
-                <Layers class="w-3.5 h-3.5" />
-            </button>
-        </template>
-        <template #default="{ close }">
-            <div class="flex flex-col text-xs min-w-[140px]">
-                <button @click="$emit('add-layer', 'world'); close()" class="dropdown-item">
-                    <Cuboid class="w-3.5 h-3.5 mr-2 text-blue-500" /> World Layer
-                </button>
-                <button @click="$emit('add-layer', 'ui'); close()" class="dropdown-item">
-                    <Maximize class="w-3.5 h-3.5 mr-2 text-orange-500" /> UI Layer
-                </button>
-            </div>
-        </template>
-      </BaseDropdown>
-
       <button 
-        @click="$emit('refresh')"
+        @click="handleRefresh"
         class="h-7 w-7 flex items-center justify-center rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors"
         :class="{ 'animate-spin': isRefreshing }"
-        title="Refresh Tree"
+        title="Refresh Engine Scene"
       >
         <RefreshCw class="w-3.5 h-3.5" />
       </button>
@@ -102,57 +81,148 @@
 
 <script setup>
 import { 
-  Search, X, RefreshCw, Layers, MoreVertical, 
-  Plus, Trash2, Edit2, Copy, Cuboid, Maximize
+  Search, X, RefreshCw, MoreVertical, 
+  Plus, Trash2, Edit2, Copy
 } from 'lucide-vue-next'
 import BaseSelect from '@ui/inputs/BaseSelect.vue'
 import BaseDropdown from '@ui/overlay/BaseDropdown.vue'
+
+// Stores
+import { useProjectStore } from '@/stores/useProjectStore.js'
 import { useSceneStore } from '@/stores/scene/useSceneStore.js'
+import { useAssetStore } from '@/stores/useAssetStore.js'
+import { useScriptStore } from '@/stores/useScriptStore.js'
+import { usePrefabStore } from '@/stores/usePrefabStore.js'
+
+// Services
+import { EngineBridge } from '@/services/engine/EngineBridge.js'
+
+// Composables
 import { usePrompt } from '@/composables/usePrompt'
 import { useConfirm } from '@/composables/useConfirm'
 import { useAlert } from '@/composables/useAlert'
+import { usePopAlert } from '@/composables/usePopAlert'
 
 const props = defineProps({
   modelValue: String, 
   isRefreshing: Boolean
 });
 
-defineEmits(['update:modelValue', 'add-layer', 'refresh']);
+const emit = defineEmits(['update:modelValue', 'add-layer', 'refresh']);
 
+const projectStore = useProjectStore();
 const sceneStore = useSceneStore();
+const assetStore = useAssetStore();
+const scriptStore = useScriptStore();
+const prefabStore = usePrefabStore();
+
 const { prompt } = usePrompt();
 const { confirm } = useConfirm();
 const { alert } = useAlert();
+const { showPop } = usePopAlert();
+
+/**
+ * Fungsi Inti Sinkronisasi
+ * Mengumpulkan data dari semua store dan mengirimkannya ke EngineBridge
+ */
+const syncSceneWithEngine = () => {
+  const activeScene = sceneStore.activeScene;
+  if (!activeScene) return;
+
+  // Merakit payload lengkap sesuai kebutuhan SyncComponent.onSceneReload
+  const payload = {
+    project: projectStore.project,
+    scene: activeScene,
+    prefabs: Object.values(prefabStore.prefabs || {}), // Pastikan formatnya array jika engine memintanya demikian
+    scripts: Object.values(scriptStore.scripts || {}),
+    assets: assetStore.assets || []
+  };
+
+  // Kirim sinyal reload ke engine bus via Bridge
+  EngineBridge.reloadScene(payload);
+
+  // Update pengaturan scene (background, physics, bounds)
+  if (activeScene.settings) {
+    EngineBridge.updateSceneSettings(activeScene.settings);
+  }
+
+  // Clear UI Selection agar sinkron dengan engine yang baru di-reset
+  sceneStore.clearSelection();
+  EngineBridge.clearSelection();
+};
+
+const handleSwitchScene = (sceneId) => {
+  sceneStore.setActiveScene(sceneId);
+  syncSceneWithEngine();
+};
+
+const handleRefresh = () => {
+  emit('refresh');
+  syncSceneWithEngine();
+  showPop({ title: 'Refreshed', message: 'Engine scene has been reset.', type: 'success' });
+};
 
 const handleCreate = async (close) => {
-  const name = await prompt({ title: 'New Scene', message: 'Enter scene name:', defaultValue: 'New Scene' });
-  if (name) sceneStore.addScene({ name });
   close();
+  const name = await prompt({ title: 'New Scene', message: 'Enter scene name:', defaultValue: 'New Scene' });
+  
+  if (name) {
+    try {
+      sceneStore.addScene({ name });
+      syncSceneWithEngine();
+      showPop({ title: 'Success', message: `Scene "${name}" created.`, type: 'success' });
+    } catch (e) {
+      showPop({ title: 'Failed', message: 'Failed to create scene.', type: 'error' });
+    }
+  }
 };
 
 const handleRename = async (close) => {
+  close();
   const scene = sceneStore.activeScene;
   if (!scene) return;
+
   const name = await prompt({ title: 'Rename Scene', defaultValue: scene.name });
-  if (name) sceneStore.updateSceneName(scene._id, name);
-  close();
+  if (name && name !== scene.name) {
+    try {
+      sceneStore.updateSceneName(scene._id, name);
+      // Untuk rename, kita tidak perlu reload seluruh engine scene
+      showPop({ title: 'Renamed', message: 'Scene name updated.', type: 'success' });
+    } catch (e) {
+      showPop({ title: 'Error', message: 'Failed to rename scene.', type: 'error' });
+    }
+  }
 };
 
 const handleDuplicate = async (close) => {
-  if (sceneStore.activeSceneId) sceneStore.duplicateScene(sceneStore.activeSceneId);
   close();
+  if (sceneStore.activeSceneId) {
+    try {
+      sceneStore.duplicateScene(sceneStore.activeSceneId);
+      syncSceneWithEngine();
+      showPop({ title: 'Duplicated', message: 'Scene duplicated.', type: 'success' });
+    } catch (e) {
+      showPop({ title: 'Error', message: 'Failed to duplicate scene.', type: 'error' });
+    }
+  }
 };
 
 const handleDelete = async (close) => {
+  close();
+  
   if (sceneStore.scenes.length <= 1) {
-    await alert({ title: 'Cannot Delete Scene', message: 'You must have at least one scene in your project.', type: 'warning', buttonText: 'Understood' });
-    close();
+    await alert({ 
+      title: 'Cannot Delete', 
+      message: 'You must have at least one scene.', 
+      type: 'warning'
+    });
     return;
   }
 
+  const sceneName = sceneStore.activeScene?.name;
   const confirmed = await confirm({ 
     title: 'Delete Scene', 
-    message: `Are you sure you want to delete "${sceneStore.activeScene?.name}"?`,
+    message: `Are you sure you want to delete "${sceneName}"?`,
     confirmText: 'Yes, Delete',
     type: 'danger'
   });
@@ -160,11 +230,12 @@ const handleDelete = async (close) => {
   if (confirmed) {
     try {
       sceneStore.removeScene(sceneStore.activeSceneId);
+      syncSceneWithEngine();
+      showPop({ title: 'Deleted', message: `Scene "${sceneName}" removed.`, type: 'success' });
     } catch (e) {
-      console.error(e);
+      showPop({ title: 'Error', message: 'Failed to delete scene.', type: 'error' });
     }
   }
-  close();
 };
 </script>
 

@@ -20,12 +20,13 @@ export const BlueprintMath = {
             category: 'Math' 
         },
         data: {
-          ops: ['add'] 
+          ops: ['add'],
+          values: { v0: 0, v1: 0 } // Nilai default dipindah ke sini
         },
         inputs: [
           { _id: 'in', label: 'In', dataType: 'execution', color: '#fff' },
-          { _id: 'v0', label: 'Val 1', dataType: 'number', color: '#B2FF59', value: 0 },
-          { _id: 'v1', label: 'Val 2', dataType: 'number', color: '#B2FF59', value: 0 }
+          { _id: 'v0', label: 'Val 1', dataType: 'number', color: '#B2FF59' }, // value dihapus
+          { _id: 'v1', label: 'Val 2', dataType: 'number', color: '#B2FF59' }  // value dihapus
         ],
         outputs: [
           { _id: 'out', label: 'Trigger', dataType: 'execution', color: '#fff' },
@@ -42,6 +43,9 @@ export const BlueprintMath = {
       allowDynamicInputs: false, 
       defaultData: { 
         settings: { headerTitle: 'Random', headerColor: '#00695C', category: 'Math' },
+        data: {
+          values: { min: 0, max: 1 } 
+        },
         inputs: [
             { _id: 'in', label: 'In', dataType: 'execution', color: '#fff' },
             { _id: 'min', label: 'Min', dataType: 'number', color: '#B2FF59' },
@@ -62,6 +66,9 @@ export const BlueprintMath = {
       allowDynamicInputs: false, 
       defaultData: { 
         settings: { headerTitle: 'Negate', headerColor: '#00796B', category: 'Math' },
+        data: {
+          values: { a: 0 } 
+        },
         inputs: [
             { _id: 'in', label: 'In', dataType: 'execution', color: '#fff' },
             { _id: 'a', label: 'A', dataType: 'number', color: '#B2FF59' }

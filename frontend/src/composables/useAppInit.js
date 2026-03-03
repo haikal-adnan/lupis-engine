@@ -7,7 +7,8 @@ import { useEditorStore } from '@/stores/useEditorStore';
 export function useAppInit() {
   const projectStore = useProjectStore()
   const editorStore = useEditorStore()
-  const { initWatchers } = useProjectWatcher()
+  
+  const { initWatchers, destroyWatchers } = useProjectWatcher() 
   const route = useRoute()
 
   const initApplication = async () => {
@@ -20,9 +21,20 @@ export function useAppInit() {
 
       if (!projectStore.project || projectStore.project._id !== projectId) {
         await projectStore.loadProject(projectId);
+      } else {
+        projectStore.isLoading = false; 
       }
       
       initWatchers();
+    }
+  };
+
+  const cleanupApplication = () => {
+    editorStore.setProjectId(null);
+    projectStore.clearProjectData(); 
+    
+    if (typeof destroyWatchers === 'function') {
+      destroyWatchers();
     }
   };
 
@@ -32,10 +44,15 @@ export function useAppInit() {
       if (newId && route.name === 'Editor') {
         initApplication();
       } else if (route.name !== 'Editor') {
-        editorStore.setProjectId(null); 
+        cleanupApplication();
       }
-    }
+    },
+    { immediate: true } 
   );
+
+  onUnmounted(() => {
+    cleanupApplication();
+  });
 
   return {
     isLoading: projectStore.isLoading,

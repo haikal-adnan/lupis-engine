@@ -4,30 +4,37 @@ export default class ColliderSystem {
     }
 
     moveAndSlide(entity, dx, dy) {
-       if (!entity.components.Transform) return null;
-       const collider = entity.components.Collider;
-       if (!collider || !collider.enabled) {
-          entity.components.Transform.x += dx;
-          entity.components.Transform.y += dy;
-          return null;
-       }
-       const MAX_STEP_SIZE = 8;
-       const distance = Math.sqrt(dx*dx + dy*dy);
-       if (distance < 0.001) return null;
-       const steps = Math.ceil(distance / MAX_STEP_SIZE);
-       const stepX = dx / steps;
-       const stepY = dy / steps;
-       let finalHit = null;
-       for (let i = 0; i < steps; i++) {
-           const hit = this._moveSingleStep(entity, stepX, stepY);
-           if (hit) finalHit = hit;
-       }
-       return finalHit;
+        // Proteksi: Abaikan kalkulasi jika entity utama sedang tidak aktif
+        if (entity.active === false || entity.isActive === false) return null;
+        if (!entity.components.Transform) return null;
+        
+        const collider = entity.components.Collider;
+        if (!collider || !collider.enabled) {
+            entity.components.Transform.x += dx;
+            entity.components.Transform.y += dy;
+            return null;
+        }
+
+        const MAX_STEP_SIZE = 8;
+        const distance = Math.sqrt(dx*dx + dy*dy);
+        if (distance < 0.001) return null;
+
+        const steps = Math.ceil(distance / MAX_STEP_SIZE);
+        const stepX = dx / steps;
+        const stepY = dy / steps;
+        
+        let finalHit = null;
+        for (let i = 0; i < steps; i++) {
+            const hit = this._moveSingleStep(entity, stepX, stepY);
+            if (hit) finalHit = hit;
+        }
+        return finalHit;
     }
 
     _moveSingleStep(entity, dx, dy) {
         const transform = entity.components.Transform;
         let hitObject = null;
+        
         if (Math.abs(dx) > 0.0001) {
             transform.x += dx;
             const collisionX = this._findCollision(entity, 'solid');
@@ -36,6 +43,7 @@ export default class ColliderSystem {
                 hitObject = collisionX;
             }
         }
+        
         if (Math.abs(dy) > 0.0001) {
             transform.y += dy;
             const collisionY = this._findCollision(entity, 'solid');
@@ -52,12 +60,13 @@ export default class ColliderSystem {
     }
 
     checkOverlap(entity, targetTag = null) {
-        const overlaps = this._findAllCollisions(entity, null, targetTag);
+        // Proteksi: Abaikan jika entity utama sedang tidak aktif
+        if (entity.active === false || entity.isActive === false) return null;
 
+        const overlaps = this._findAllCollisions(entity, null, targetTag);
         if (overlaps.length === 0) return null;
 
         const dynamicEntity = overlaps.find(e => !e.components.Tilemap);
-
         if (dynamicEntity) {
             return dynamicEntity; 
         }
@@ -65,23 +74,50 @@ export default class ColliderSystem {
         return overlaps[0];
     }
 
+    // Helper untuk mengumpulkan semua ID layer yang sedang mati/hidden
+    _getInactiveLayers() {
+        const worldLayers = this.game.world.layersWorld || [];
+        const uiLayers = this.game.world.layersUI || [];
+        const allLayers = [...worldLayers, ...uiLayers];
+        
+        return new Set(
+            allLayers
+                .filter(l => l.visible === false || l.active === false)
+                .map(l => l._id)
+        );
+    }
+
     _findCollision(entity, requiredType = null, targetTag = null) {
         const boundsA = this.getBounds(entity);
         if (!boundsA) return null;
+
         const currentId = entity.id || entity._id;
         const entities = this.game.world.entities;
+        
+        // Cache layer yang tidak aktif
+        const inactiveLayers = this._getInactiveLayers();
+
         for (let i = 0; i < entities.length; i++) {
             const other = entities[i];
             const otherId = other.id || other._id;
+            
             if (otherId === currentId) continue;
-            if (!other.active && !other.isActive) continue;
+            
+            // 1. Cek status aktif dari entity target
+            if (other.active === false || other.isActive === false) continue;
+            
+            // 2. Cek status layer dari entity target
+            if (other.layerId && inactiveLayers.has(other.layerId)) continue;
+
             const col = other.components.Collider;
             if (!col || !col.enabled) continue;
             if (requiredType !== null && col.type !== requiredType) continue;
+            
             if (targetTag && targetTag.trim() !== "") {
                 const otherTag = other.tag || other.components?.Tags?.value;
                 if (otherTag !== targetTag) continue; 
             }
+            
             const boundsB = this.getBounds(other);
             if (boundsB && this._aabbIntersect(boundsA, boundsB)) return other;
         }
@@ -95,17 +131,22 @@ export default class ColliderSystem {
 
         const currentId = entity.id || entity._id;
         const entities = this.game.world.entities;
+        
+        // Cache layer yang tidak aktif
+        const inactiveLayers = this._getInactiveLayers();
 
         for (let i = 0; i < entities.length; i++) {
             const other = entities[i];
             const otherId = other.id || other._id;
 
             if (otherId === currentId) continue;
-            if (!other.active && !other.isActive) continue;
+            
+            if (other.active === false || other.isActive === false) continue;
+
+            if (other.layerId && inactiveLayers.has(other.layerId)) continue;
 
             const col = other.components.Collider;
             if (!col || !col.enabled) continue;
-
             if (requiredType !== null && col.type !== requiredType) continue;
 
             if (targetTag && targetTag.trim() !== "") {
@@ -125,14 +166,18 @@ export default class ColliderSystem {
         const t = entity.components.Transform;
         const c = entity.components.Collider;
         if (!t || !c) return null;
+
         const pX = t.pivotX ?? 0.5;
         const pY = t.pivotY ?? 0.5;
         const scaleX = t.scaleX || 1;
         const scaleY = t.scaleY || 1;
+        
         const visualWidth = t.width * Math.abs(scaleX);
         const visualHeight = t.height * Math.abs(scaleY);
+        
         const originX = t.x - (visualWidth * pX);
         const originY = t.y - (visualHeight * pY);
+        
         return {
             x: originX + (c.offsetX || 0),
             y: originY + (c.offsetY || 0),
@@ -155,6 +200,7 @@ export default class ColliderSystem {
         const boundsA = this.getBounds(entity);
         const boundsB = this.getBounds(other);
         const epsilon = 0.1; 
+
         if (axis === 'x') {
             if (speed > 0) { 
                 const overlap = (boundsA.x + boundsA.w) - boundsB.x;

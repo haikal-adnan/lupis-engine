@@ -93,9 +93,21 @@ const { contextMenu, openMenu, closeMenu } = useHierarchyMenu(handlers)
 const handleSelect = (payload) => {
   const nodeId = typeof payload === 'object' && payload.id ? payload.id : payload;
   const event = typeof payload === 'object' ? payload.event : null;
+  
+  const isLayer = sceneStore.activeLayers.some(l => l._id === nodeId);
+
+  if (isLayer) {
+    sceneStore.selectedEntityIds = [nodeId]; 
+    
+    EngineBridge.clearSelection(); 
+    EngineBridge.selectEntity([nodeId]); 
+    return;
+  }
+
   const allEntities = sceneStore.activeEntities || []; 
   const descendantIds = getAllDescendantIds(nodeId, allEntities);
   const targetIds = [nodeId, ...descendantIds];
+  
   let newSelection = [];
   if (event && (event.ctrlKey || event.metaKey)) {
     const currentSelection = [...sceneStore.selectedEntityIds];
@@ -103,12 +115,12 @@ const handleSelect = (payload) => {
     if (isAlreadySelected) {
       newSelection = currentSelection.filter(id => !targetIds.includes(id));
     } else {
-      const combined = [...currentSelection, ...targetIds];
-      newSelection = [...new Set(combined)];
+      newSelection = [...new Set([...currentSelection, ...targetIds])];
     }
   } else {
     newSelection = targetIds;
   }
+
   sceneStore.selectedEntityIds = newSelection;
   EngineBridge.selectEntity(newSelection);
 }

@@ -16,15 +16,15 @@ export const createScene = (data = {}, projectId = null) => {
       backgroundColor: data.settings?.backgroundColor || '#222222',
       
       physics: {
-        gravity: Number(data.settings?.physics?.gravity ?? 2000), 
+        gravity: Number(data.settings?.physics?.gravity ?? 1200), 
         drag: Number(data.settings?.physics?.drag ?? 5),          
       },
 
       worldBounds: {
-        x1: Number(data.settings?.worldBounds?.x1 ?? -1920),
-        x2: Number(data.settings?.worldBounds?.x2 ?? 1920),
-        y1: Number(data.settings?.worldBounds?.y1 ?? -1080),
-        y2: Number(data.settings?.worldBounds?.y2 ?? 1080),
+        x1: Number(data.settings?.worldBounds?.x1 ?? -960),
+        x2: Number(data.settings?.worldBounds?.x2 ?? 2880),
+        y1: Number(data.settings?.worldBounds?.y1 ?? -540),
+        y2: Number(data.settings?.worldBounds?.y2 ?? 1620),
         active: data.settings?.worldBounds?.active ?? true,
       },
 

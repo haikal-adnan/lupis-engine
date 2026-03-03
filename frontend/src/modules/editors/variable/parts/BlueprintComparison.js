@@ -21,6 +21,7 @@ export const BlueprintComparison = {
         },
         data: {
             op: 'equal',
+            values: { a: 0, b: 0 } // <-- TAMBAHKAN INI
         }, 
         inputs: [
           { _id: 'a', label: 'A', dataType: 'any', color: '#ffffff' },

@@ -144,15 +144,15 @@ export class TransformOperator {
     resize(nowPos, startPos, resizeType, startData, selectedList, isUIMode = false) {
         if (this._isTilemapMode()) return;
         if (!startData || startData.length === 0) return;
-
+        const item = startData[0];
+        const e = item.e;
+        if (e.components?.TextRenderer?.autoFit) return;
         const dx = nowPos.x - startPos.x;
         const dy = nowPos.y - startPos.y;
         if (dx === 0 && dy === 0) return;
 
         const { shouldSnap, gridSize } = this.getSnapSettings(isUIMode);
 
-        const item = startData[0];
-        const e = item.e;
         const t = this._getTransform(e);
         if (!t) return;
 

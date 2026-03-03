@@ -98,6 +98,10 @@ const handleContextMenu = (e) => {
     const engine = editorStore.engine;
     if (!engine) return;
 
+    if (editorStore.activeTab && editorStore.activeTab.type === 'tilemap') {
+        return;
+    }
+
     const gamePointer = engine.game.input.getPointer();
     const pointerX = gamePointer.x;
     const pointerY = gamePointer.y;

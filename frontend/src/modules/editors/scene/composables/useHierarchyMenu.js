@@ -16,6 +16,20 @@ export function useHierarchyMenu(handlers) {
   const editorStore = useEditorStore();
   const { copy, cut, paste, duplicate, remove } = useClipboard();
 
+  const closeMenu = () => {
+    contextMenu.value.visible = false;
+  };
+
+  /**
+   * Helper untuk menjalankan aksi:
+   * Menutup menu secara synchronous agar langsung hilang dari UI,
+   * baru menjalankan aksi (yang mungkin mengandung prompt/await).
+   */
+  const runAction = (action) => {
+    closeMenu();
+    if (action) action();
+  };
+
   const openMenu = (event, node, section = 'world') => {
     let isUIContext = false;
 
@@ -33,38 +47,38 @@ export function useHierarchyMenu(handlers) {
     }
 
     const createWorldItems = [
-      { label: 'Empty Entity', icon: Cuboid, action: () => handlers.createEntity('empty', node) },
-      { label: 'Sprite', icon: Image, action: () => handlers.createEntity('sprite', node) },
-      { label: 'Shape', icon: Square, action: () => handlers.createEntity('shape', node) },
-      { label: 'Text', icon: Type, action: () => handlers.createEntity('text', node) },
-      { label: 'Tilemap', icon: InspectionPanel, action: () => handlers.createEntity('tilemap', node) },
+      { label: 'Empty Entity', icon: Cuboid, action: () => runAction(() => handlers.createEntity('empty', node)) },
+      { label: 'Sprite', icon: Image, action: () => runAction(() => handlers.createEntity('sprite', node)) },
+      { label: 'Shape', icon: Square, action: () => runAction(() => handlers.createEntity('shape', node)) },
+      { label: 'Text', icon: Type, action: () => runAction(() => handlers.createEntity('text', node)) },
+      { label: 'Tilemap', icon: InspectionPanel, action: () => runAction(() => handlers.createEntity('tilemap', node)) },
       { separator: true },
-      { label: 'Group (Disabled)', icon: Folder, action: () => showPlaceholderAlert() } 
+      { label: 'Group (Disabled)', icon: Folder, action: () => runAction(showPlaceholderAlert) } 
     ];
 
     const createUiItems = [
-      { label: 'Empty UI', icon: Maximize, action: () => handlers.createEntity('ui_empty', node) },
+      { label: 'Empty UI', icon: Maximize, action: () => runAction(() => handlers.createEntity('ui_empty', node)) },
       { separator: true },
-      { label: 'UI Panel', icon: Square, action: () => handlers.createEntity('ui_panel', node) },
-      { label: 'UI Button', icon: MousePointerClick, action: () => handlers.createEntity('ui_button', node) },
-      { label: 'UI Text', icon: Type, action: () => handlers.createEntity('ui_text', node) },
-      { label: 'UI Image', icon: Image, action: () => handlers.createEntity('ui_image', node) },
+      { label: 'UI Panel', icon: Square, action: () => runAction(() => handlers.createEntity('ui_panel', node)) },
+      { label: 'UI Button', icon: MousePointerClick, action: () => runAction(() => handlers.createEntity('ui_button', node)) },
+      { label: 'UI Text', icon: Type, action: () => runAction(() => handlers.createEntity('ui_text', node)) },
+      { label: 'UI Image', icon: Image, action: () => runAction(() => handlers.createEntity('ui_image', node)) },
       { separator: true },
-      { label: 'Group (Disabled)', icon: Folder, action: () => showPlaceholderAlert() }
+      { label: 'Group (Disabled)', icon: Folder, action: () => runAction(showPlaceholderAlert) }
     ];
 
     const items = [];
     const hasClipboard = editorStore.hasClipboardData;
 
     if (!node) {
-      items.push({ label: 'Refresh Tree', icon: RefreshCw, action: handlers.refresh });
+      items.push({ label: 'Refresh Tree', icon: RefreshCw, action: () => runAction(handlers.refresh) });
       
       items.push({ separator: true });
       items.push({ 
         label: 'Paste', 
         icon: Clipboard, 
         disabled: !hasClipboard,
-        action: paste 
+        action: () => runAction(paste) 
       });
 
     } else {
@@ -88,44 +102,44 @@ export function useHierarchyMenu(handlers) {
 
       if (isLayer) {
         items.push(
-          { label: 'Duplicate', icon: Files, shortcut: 'Ctrl+D', action: () => duplicate(node._id) },
-          { label: 'Copy Layer', icon: Copy, action: () => copy(node._id) },
-          { label: 'Cut Layer', icon: Scissors, action: () => cut(node._id) }
+          { label: 'Duplicate', icon: Files, shortcut: 'Ctrl+D', action: () => runAction(() => duplicate(node._id)) },
+          { label: 'Copy Layer', icon: Copy, action: () => runAction(() => copy(node._id)) },
+          { label: 'Cut Layer', icon: Scissors, action: () => runAction(() => cut(node._id)) }
         );
 
         items.push({ 
             label: 'Paste', 
             icon: Clipboard, 
             disabled: !hasClipboard,
-            action: paste 
+            action: () => runAction(paste) 
         });
 
         items.push({ separator: true });
         items.push(
-          { label: 'Rename Layer', icon: Edit2, shortcut: 'F2', action: () => handlers.renameLayer(node._id) },
-          { label: 'Change Z-Index', icon: Layers, action: () => handlers.changeZIndex(node._id) },
+          { label: 'Rename Layer', icon: Edit2, shortcut: 'F2', action: () => runAction(() => handlers.renameLayer(node._id)) },
+          { label: 'Change Z-Index', icon: Layers, action: () => runAction(() => handlers.changeZIndex(node._id)) },
           { separator: true },
-          { label: 'Delete Layer', icon: Trash2, action: () => remove(node._id) }
+          { label: 'Delete Layer', icon: Trash2, action: () => runAction(() => remove(node._id)) }
         );
       } else {
         items.push(
-            { label: 'Duplicate', icon: Files, shortcut: 'Ctrl+D', action: duplicate },
-            { label: 'Copy', icon: Copy, shortcut: 'Ctrl+C', action: copy },
-            { label: 'Cut', icon: Scissors, shortcut: 'Ctrl+X', action: cut }
+            { label: 'Duplicate', icon: Files, shortcut: 'Ctrl+D', action: () => runAction(duplicate) },
+            { label: 'Copy', icon: Copy, shortcut: 'Ctrl+C', action: () => runAction(copy) },
+            { label: 'Cut', icon: Scissors, shortcut: 'Ctrl+X', action: () => runAction(cut) }
         );
 
         items.push({ 
             label: 'Paste', 
             icon: Clipboard, 
             disabled: !hasClipboard,
-            action: paste 
+            action: () => runAction(paste) 
         });
 
         items.push({ separator: true });
         items.push(
-          { label: 'Rename Entity', icon: Edit2, shortcut: 'F2', action: () => handlers.renameEntity(node._id) },
+          { label: 'Rename Entity', icon: Edit2, shortcut: 'F2', action: () => runAction(() => handlers.renameEntity(node._id)) },
           { separator: true },
-          { label: 'Delete Entity', icon: Trash2, shortcut: 'Del', action: remove }
+          { label: 'Delete Entity', icon: Trash2, shortcut: 'Del', action: () => runAction(remove) }
         );
       }
     }
@@ -136,10 +150,6 @@ export function useHierarchyMenu(handlers) {
       y: event.clientY,
       items
     };
-  };
-
-  const closeMenu = () => {
-    contextMenu.value.visible = false;
   };
 
   return {

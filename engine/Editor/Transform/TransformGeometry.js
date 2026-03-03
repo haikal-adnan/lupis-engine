@@ -46,6 +46,12 @@ export class TransformGeometry {
             return;
         }
 
+        this.isSizeLocked = false;
+        if (selectedList && selectedList.length > 0) {
+            // Jika ada satu saja entity yang punya text autoFit, lock resize untuk grup
+            this.isSizeLocked = selectedList.some(e => e.components?.TextRenderer?.autoFit);
+        }
+
         if (selectedList.length === 1) {
             const e = selectedList[0];
             const t = this._getTransform(e);
@@ -170,8 +176,13 @@ export class TransformGeometry {
             const dx = wx - h.x;
             const dy = wy - h.y;
             const dist = Math.sqrt(dx * dx + dy * dy);
-            if (dist <= sizes.rResize) return { ...h, mode: 'resize', type: h.type };
-            if (h.type.length === 2 && dist <= sizes.rRotate) return { ...h, mode: 'rotate', type: h.type };
+            
+            if (dist <= sizes.rResize && !this.isSizeLocked) {
+                return { ...h, mode: 'resize', type: h.type };
+            }
+            if (h.type.length === 2 && dist <= sizes.rRotate) {
+                return { ...h, mode: 'rotate', type: h.type };
+            }
         }
         return null;
     }
