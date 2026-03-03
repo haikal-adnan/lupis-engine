@@ -108,20 +108,22 @@ const ops = computed(() => props.node.data?.ops || []);
 const isConnected = (inputId) => store.isInputConnected(props.node._id, inputId);
 
 const getValue = (inputId) => {
-    const input = props.node.inputs?.find(i => i._id === inputId);
-    return input?.value ?? 0;
+  // Langsung ambil dari data.values yang baru
+  return props.node.data?.values?.[inputId] ?? 0;
 };
 
 const updateValue = (inputId, newValue) => {
   if (isConnected(inputId)) return;
-  const currentInputs = props.node.inputs || [];
-  const newInputs = currentInputs.map(input => {
-      if (input._id === inputId) {
-          return { ...input, value: newValue };
-      }
-      return input;
+  
+  const currentValues = props.node.data?.values || {};
+  
+  // Simpan langsung ke dalam objek data.values
+  store.updateNodeInActive(props.node._id, {
+    data: { 
+      ...props.node.data, 
+      values: { ...currentValues, [inputId]: newValue } 
+    }
   });
-  store.updateNodeInActive(props.node._id, { inputs: newInputs });
 };
 
 const updateOp = (index, newOp) => {
@@ -132,17 +134,27 @@ const updateOp = (index, newOp) => {
 
 const syncStructure = (newOps) => {
     const currentInputs = props.node.inputs || [];
+    const currentValues = props.node.data?.values || {};
+    
+    // Inisialisasi object values baru agar tidak merusak yang lama
+    const newValues = { ...currentValues };
     
     const v0 = currentInputs.find(i => i._id === 'v0') || { 
-        _id: 'v0', label: 'Val 1', dataType: 'number', color: '#B2FF59', value: 0 
+        _id: 'v0', label: 'Val 1', dataType: 'number', color: '#B2FF59' 
+        // value: 0 DIHAPUS
     };
-    if(v0.label !== 'Val 1') v0.label = 'Val 1';
+    if (v0.label !== 'Val 1') v0.label = 'Val 1';
+    
+    // Pastikan v0 ada di data.values
+    if (newValues['v0'] === undefined) newValues['v0'] = 0;
 
     const nextInputs = newOps.map((_, index) => {
         const id = `v${index + 1}`;
         const existing = currentInputs.find(i => i._id === id);
-        
         const correctLabel = `Val ${index + 2}`;
+
+        // Daftarkan nilai default ke data.values jika belum ada
+        if (newValues[id] === undefined) newValues[id] = 0;
 
         if (existing) {
              existing.label = correctLabel; 
@@ -153,17 +165,24 @@ const syncStructure = (newOps) => {
             _id: id,
             label: correctLabel,
             dataType: 'number',
-            color: '#B2FF59',
-            value: 0
+            color: '#B2FF59'
+            // value: 0 DIHAPUS
         };
     });
 
     const execIn = currentInputs.find(i => i._id === 'in') || { _id: 'in', label: 'In', dataType: 'execution', color: '#fff' };
-    
     const finalInputs = [execIn, v0, ...nextInputs];
 
+    // Hapus sisa-sisa kunci di data.values jika step dihapus (opsional tapi disarankan agar data bersih)
+    const validKeys = ['v0', ...nextInputs.map(i => i._id)];
+    Object.keys(newValues).forEach(key => {
+        if (!validKeys.includes(key)) {
+            delete newValues[key];
+        }
+    });
+
     store.updateNodeInActive(props.node._id, {
-        data: { ...props.node.data, ops: newOps },
+        data: { ...props.node.data, ops: newOps, values: newValues },
         inputs: finalInputs
     });
 };

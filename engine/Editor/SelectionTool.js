@@ -74,6 +74,8 @@ export default class SelectionTool {
 
     _isClickable(e) {
         if (!e) return false;
+        if (e.type === 'layer' || !e.components) return false; 
+        
         if (e.active === false || e.visible === false) return false;
         if (e.isLocked || (e._editor && e._editor.locked)) return false;
         return true;
@@ -130,21 +132,31 @@ export default class SelectionTool {
             bus.emit("entity:deselected");
             return;
         }
+
         const idsToFind = Array.isArray(ids) ? ids : [ids];
         const realEntities = [];
         const allLayers = [...(this.world.layersWorld || []), ...(this.world.layersUI || [])];
         
         for (const id of idsToFind) {
+            const layerMatch = allLayers.find(l => String(l._id || l.id) === String(id));
+            if (layerMatch) {
+                realEntities.push(layerMatch);
+                continue;
+            }
+
             for (const layer of allLayers) {
                 if (layer.entities) {
-                    const f = layer.entities.find(e => String(e._id || e.id) === String(id));
-                    if(f) { realEntities.push(f); break; }
+                    const entityMatch = layer.entities.find(e => String(e._id || e.id) === String(id));
+                    if (entityMatch) {
+                        realEntities.push(entityMatch);
+                        break;
+                    }
                 }
             }
         }
+
         this.setSelection(realEntities, "internal");
     }
-
     consolidateSelection(candidates) {
         return [...new Set(candidates)];
     }

@@ -149,7 +149,7 @@ async function handleBackToDashboard() {
   
   projectStore.clearProjectData();
   
-  router.push('/'); 
+  router.push('/dashboard'); 
 }
 
 function handleKeyDown(event) {

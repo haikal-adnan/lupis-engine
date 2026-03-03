@@ -6,7 +6,6 @@ import { usePrefabStore } from '@/stores/usePrefabStore.js';
 import { useEditorStore } from '@/stores/useEditorStore.js';
 import { usePopAlert } from '@/composables/usePopAlert';
 import { EngineBridge } from '@/services/engine/EngineBridge.js';
-import { CDN_URL } from "@/services/api/useFetchProjectById.js";
 
 export function useInspectorLogic() {
   const sceneStore = useSceneStore();
@@ -18,6 +17,16 @@ export function useInspectorLogic() {
 
   const isEditingMasterPrefab = computed(() => editorStore.activeTab?.type === 'prefab');
 
+  // --- TAMBAHKAN LOGIKA UNTUK LAYER DI SINI ---
+  const selectedLayerId = computed(() => {
+    if (isEditingMasterPrefab.value) return null;
+    if (sceneStore.selectedEntityIds.length !== 1) return null;
+    
+    const id = sceneStore.selectedEntityIds[0];
+    const isLayer = sceneStore.activeLayers?.some(l => l._id === id);
+    return isLayer ? id : null;
+  });
+
   const selectedEntity = computed(() => {
     if (isEditingMasterPrefab.value) {
       const prefabId = editorStore.activeTab.id;
@@ -26,16 +35,28 @@ export function useInspectorLogic() {
     }
 
     if (sceneStore.selectedEntityIds.length > 1) return null;
+    
+    // Jika yang di-select adalah layer, jangan kembalikan entity
+    if (selectedLayerId.value) return null; 
+
     const id = sceneStore.selectedEntityIds[0];
     if (!id || !sceneStore.activeScene) return null;
     return sceneStore.activeScene.entities.find(e => e._id === id);
   });
 
   const isMultiSelection = computed(() => !isEditingMasterPrefab.value && sceneStore.selectedEntityIds.length > 1);
-  const hasSelection = computed(() => !!selectedEntity.value);
+  
+  // --- UPDATE HAS SELECTION AGAR MENGENALI LAYER ---
+  const hasSelection = computed(() => !!selectedEntity.value || !!selectedLayerId.value);
+  
   const prefabId = computed(() => isEditingMasterPrefab.value ? null : selectedEntity.value?.prefabId);
   const isOverridden = computed(() => isEditingMasterPrefab.value ? false : (selectedEntity.value?.isOverridden || false));
   const isLocked = computed(() => selectedEntity.value?._editor?.locked || false);
+  const isSizeLockedByText = computed(() => {
+    if (!selectedEntity.value) return false;
+    const textComp = selectedEntity.value.components?.TextRenderer;
+    return !!(textComp && textComp.autoFit);
+  });
   const showSyncControls = computed(() => !isEditingMasterPrefab.value && !!prefabId.value);
 
   const getPrefabMaster = () => {
@@ -414,8 +435,10 @@ export function useInspectorLogic() {
 
   return {
     selectedEntity,
+    selectedLayerId,
     hasSelection,
     isLocked,
+    isSizeLockedByText,
     prefabId,
     isOverridden,
     currentTextureUrl,

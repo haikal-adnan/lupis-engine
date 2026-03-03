@@ -52,7 +52,7 @@ export class SelectionRenderer {
     }
 
     drawObb(shape, e, color, proj, thickness = 2) {
-        if (!e.visible) return;
+        if (!e.visible || e.type === 'layer' || !e.components) return;
         
         const t = e.components.UITransform || e.components.Transform;
         if (!t) return;

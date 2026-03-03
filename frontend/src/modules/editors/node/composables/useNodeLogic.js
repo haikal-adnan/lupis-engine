@@ -69,6 +69,7 @@ export function useNodeLogic() {
       'get_tilemap', 'set_tilemap',
       'get_text', 'set_text'
     ];
+    
     if (dynamicTypes.includes(node.type)) {
       activeDropdownTarget.value = activeDropdownTarget.value === type ? null : type;
       return;
@@ -113,6 +114,21 @@ export function useNodeLogic() {
       dataType: newDataType,
       color: '#fff'
     });
+
+    // DAFTARKAN NILAI DEFAULT KE data.values UNTUK INPUT BARU
+    if (type === 'input') {
+      const currentValues = node.data?.values || {};
+      const defaultVal = newDataType === 'number' ? 0 : newDataType === 'boolean' ? false : '';
+      
+      scriptStore.updateNodeInActive(node._id, {
+        data: { 
+          values: { 
+            ...currentValues, 
+            [String(nextIndex)]: defaultVal 
+          } 
+        }
+      });
+    }
   };
 
   const addFromDropdown = (optionValue) => {
@@ -128,6 +144,21 @@ export function useNodeLogic() {
         dataType: selectedOpt.type || 'number',
         color: selectedOpt.color || '#fff'
       });
+
+      // DAFTARKAN NILAI DEFAULT KE data.values DARI DROPDOWN
+      if (type === 'input') {
+        const currentValues = selectedNode.value.data?.values || {};
+        const defaultVal = selectedOpt.type === 'number' ? 0 : selectedOpt.type === 'boolean' ? false : '';
+        
+        scriptStore.updateNodeInActive(selectedNode.value._id, {
+          data: { 
+            values: { 
+              ...currentValues, 
+              [selectedOpt.value]: defaultVal 
+            } 
+          }
+        });
+      }
     }
 
     activeDropdownTarget.value = null;
@@ -155,6 +186,15 @@ export function useNodeLogic() {
     }
 
     scriptStore.removeNodePort(selectedNode.value._id, type, portId);
+    
+    // Opsional: Hapus kunci dari data.values agar tidak jadi 'sampah' di state
+    if (type === 'input') {
+       const currentValues = { ...(selectedNode.value.data?.values || {}) };
+       delete currentValues[portId];
+       scriptStore.updateNodeInActive(selectedNode.value._id, {
+          data: { values: currentValues }
+       });
+    }
   };
 
   return {

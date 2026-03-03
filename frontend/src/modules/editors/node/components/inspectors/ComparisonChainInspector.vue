@@ -146,91 +146,102 @@ const op = computed(() => props.node.data?.op || 'equal');
 
 const isConnected = (inputId) => store.isInputConnected(props.node._id, inputId);
 
+// AMBIL DARI data.values
 const getValue = (inputId) => {
-    const input = props.node.inputs?.find(i => i._id === inputId);
-    return input?.value ?? '';
+  return props.node.data?.values?.[inputId] ?? '';
 };
 
 const getType = (inputId) => {
-    const input = props.node.inputs?.find(i => i._id === inputId);
-    const type = input?.dataType || 'number'; 
-    return (type === 'any') ? 'number' : type; 
+  const input = props.node.inputs?.find(i => i._id === inputId);
+  const type = input?.dataType || 'number'; 
+  return (type === 'any') ? 'number' : type; 
 };
 
+// SIMPAN KE data.values
 const updateValue = (inputId, newValue) => {
   if (isConnected(inputId)) return;
-  const currentInputs = props.node.inputs || [];
-  const newInputs = currentInputs.map(input => {
-      if (input._id === inputId) {
-          return { ...input, value: newValue };
-      }
-      return input;
+  const currentValues = props.node.data?.values || {};
+  
+  store.updateNodeInActive(props.node._id, { 
+    data: { 
+      ...props.node.data, 
+      values: { ...currentValues, [inputId]: newValue } 
+    } 
   });
-  store.updateNodeInActive(props.node._id, { inputs: newInputs });
 };
 
 const updateType = (inputId, newType) => {
   const currentInputs = props.node.inputs || [];
   
+  // 1. Cek dan putuskan koneksi jika tipe tidak kompatibel
   const existingEdges = store.activeScript.edges.filter(e => 
     e.target === props.node._id && e.targetHandle === inputId
   );
 
   let disconnectedCount = 0;
   existingEdges.forEach(edge => {
-      const sourceNode = store.activeScript.nodes.find(n => n._id === edge.source);
-      if (!sourceNode) return;
-      const sourceOutput = sourceNode.outputs.find(o => o._id === edge.sourceHandle);
-      const sourceType = sourceOutput?.dataType || 'any';
+    const sourceNode = store.activeScript.nodes.find(n => n._id === edge.source);
+    if (!sourceNode) return;
+    const sourceOutput = sourceNode.outputs.find(o => o._id === edge.sourceHandle);
+    const sourceType = sourceOutput?.dataType || 'any';
 
-      if (sourceType !== 'any' && sourceType !== newType) {
-          store.removeEdge(edge.id);
-          disconnectedCount++;
-      }
+    if (sourceType !== 'any' && sourceType !== newType) {
+      store.removeEdge(edge.id);
+      disconnectedCount++;
+    }
   });
 
   if (disconnectedCount > 0) {
-      showPop({
-        title: 'Type Changed',
-        message: `Connection removed. Incompatible with ${newType}.`,
-        type: 'warning'
-      });
+    showPop({
+      title: 'Type Changed',
+      message: `Connection removed. Incompatible with ${newType}.`,
+      type: 'warning'
+    });
   }
 
+  // 2. Tentukan warna dan default value baru
   const colorMap = {
-      'string': '#9c27b0',
-      'number': '#00e676',
-      'boolean': '#f44336'
+    'string': '#9c27b0',
+    'number': '#00e676',
+    'boolean': '#f44336'
   };
 
-  let defaultValue = '';
-  if (newType === 'number') defaultValue = 0;
-  if (newType === 'boolean') defaultValue = false;
+  let defaultValue = (newType === 'number') ? 0 : (newType === 'boolean' ? false : '');
 
+  // 3. Update definisi Port (inputs)
   const newInputs = currentInputs.map(input => {
-      if (input._id === inputId) {
-          return { 
-              ...input, 
-              dataType: newType, 
-              color: colorMap[newType] || '#ffffff',
-              value: input.dataType !== newType ? defaultValue : input.value 
-          };
-      }
-      return input;
+    if (input._id === inputId) {
+      return { 
+        ...input, 
+        dataType: newType, 
+        color: colorMap[newType] || '#ffffff'
+      };
+    }
+    return input;
   });
 
-  store.updateNodeInActive(props.node._id, { inputs: newInputs });
+  // 4. Update data.values
+  const currentValues = props.node.data?.values || {};
+  const newValues = { ...currentValues, [inputId]: defaultValue };
+
+  store.updateNodeInActive(props.node._id, { 
+    inputs: newInputs,
+    data: { ...props.node.data, values: newValues }
+  });
 };
 
 const updateOp = (newOp) => {
-  store.updateNodeInActive(props.node._id, { data: { ...props.node.data, op: newOp } });
-  
   const labelMap = {
-      'equal': '==', 'not_equal': '!=', 'greater': '>', 
-      'less': '<', 'greater_equal': '>=', 'less_equal': '<='
+    'equal': '==', 'not_equal': '!=', 'greater': '>', 
+    'less': '<', 'greater_equal': '>=', 'less_equal': '<='
   };
-  store.updateNodeInActive(props.node._id, {
-      settings: { ...props.node.settings, headerTitle: `Compare (${labelMap[newOp]})` }
+
+  store.updateNodeInActive(props.node._id, { 
+    data: { ...props.node.data, op: newOp },
+    settings: { 
+      ...props.node.settings, 
+      headerTitle: `Compare (${labelMap[newOp]})` 
+    }
   });
 };
 </script>
