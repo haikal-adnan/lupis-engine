@@ -90,8 +90,7 @@ export function useCanvasMenu(canvasHandlers) {
       const getEntityTypesForLayer = (layerId) => {
         if (targetLayerSection === 'ui') {
           return [
-            { label: 'UI Panel', icon: Layout, action: () => canvasHandlers.createEntityAtPosition('ui_panel', layerId, worldX, worldY) },
-            { label: 'UI Button', icon: Pointer, action: () => canvasHandlers.createEntityAtPosition('ui_button', layerId, worldX, worldY) },
+            { label: 'UI Shape', icon: Layout, action: () => canvasHandlers.createEntityAtPosition('ui_shape', layerId, worldX, worldY) },
             { label: 'UI Text', icon: Type, action: () => canvasHandlers.createEntityAtPosition('ui_text', layerId, worldX, worldY) },
             { label: 'UI Image', icon: Image, action: () => canvasHandlers.createEntityAtPosition('ui_image', layerId, worldX, worldY) },
           ];

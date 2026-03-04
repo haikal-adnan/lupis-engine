@@ -95,7 +95,7 @@ export class HitTester {
         });
 
         for (const layer of allLayers) {
-            if (layer.visible === false || layer.locked) continue;
+            if (layer.active === false || layer.visible === false || layer.locked) continue;
             
             const isUILayer = layersUI.includes(layer);
             const rootBounds = isUILayer ? uiRootBounds : null;
@@ -133,7 +133,7 @@ export class HitTester {
         const allLayers = [...layersWorld, ...layersUI];
 
         for (const layer of allLayers) {
-            if (layer.visible === false || layer.locked) continue;
+            if (layer.active === false || layer.visible === false || layer.locked) continue;
             
             const isUILayer = layersUI.includes(layer);
             const rootBounds = isUILayer ? uiRootBounds : null;
@@ -199,5 +199,24 @@ export class HitTester {
         }
         
         return results; 
+    }
+
+    getGlobalPosition(e) {
+        const isUI = this.game.world.layersUI.some(l => l._id === e.layerId);
+        let rootBounds = null;
+
+        if (isUI) {
+            const uiSettings = this.game.world.settings?.ui || { width: 1920, height: 1080 };
+            rootBounds = { x: 0, y: 0, width: uiSettings.width, height: uiSettings.height };
+        }
+
+        return this._calculateAbsolutePosition(e, rootBounds);
+    }
+
+    solveLocalPosition(parentEntity, worldX, worldY) {
+        return {
+            x: worldX,
+            y: worldY
+        };
     }
 }

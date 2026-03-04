@@ -68,6 +68,7 @@ export const entityActions = {
   },
 
   createEntity(type, contextNodeOrLayerId, overrides = {}) {
+    console.log(overrides)
     const scene = this.activeScene;
     if (!scene) return null;
 
@@ -81,7 +82,7 @@ export const entityActions = {
     let posX = 0;
     let posY = 0;
 
-    if (overrides.x !== undefined && overrides.y !== undefined) {
+    if (overrides && overrides.x !== undefined && overrides.y !== undefined) {
         posX = Number(overrides.x);
         posY = Number(overrides.y);
     } else {
@@ -89,7 +90,6 @@ export const entityActions = {
         posX = Math.round(camPos.x);
         posY = Math.round(camPos.y);
     }
-
     const rawTransform = { x: posX, y: posY };
 
     let parentId = null;
@@ -153,15 +153,9 @@ export const entityActions = {
     else if (type === 'ui_empty') {
       components.UITransform = { ...rawTransform, width: 100, height: 100, anchorX: 0.5, anchorY: 0.5 };
     } 
-    else if (type === 'ui_panel') {
+    else if (type === 'ui_shape') {
       components.UITransform = { ...rawTransform, width: 300, height: 200, anchorX: 0.5, anchorY: 0.5 };
       components.ShapeRenderer = { type: 'rectangle', color: '#2d2d2d', opacity: 0.8 };
-    } 
-    else if (type === 'ui_button') {
-      components.UITransform = { ...rawTransform, width: 140, height: 40, anchorX: 0.5, anchorY: 0.5 };
-      components.ShapeRenderer = { type: 'rectangle', color: '#3498db' };
-      components.TextRenderer = { value: 'Button', fontSize: 16, align: 'center', color: '#FFFFFF' };
-      components.ScriptController = { data: [] }; 
     } 
     else if (type === 'ui_text') {
       components.UITransform = { ...rawTransform, width: 107, height: 23, anchorX: 0.5, anchorY: 0.5 };

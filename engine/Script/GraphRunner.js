@@ -104,7 +104,6 @@ export default class GraphRunner {
                             if (k === keyTarget) this.executeFlow(node._id, outputId);
                         });
                     } else if (map.trigger === 'hold') {
-                        // Tambahkan state tracking untuk fitur hold
                         this._holdNodes.push({ 
                             node, 
                             map, 
@@ -137,6 +136,7 @@ export default class GraphRunner {
 
         this._tickNodes.forEach(node => {
             node._tempData = { dt: dt };
+
             this.executeFlow(node._id, 'out');
         });
 
@@ -147,18 +147,15 @@ export default class GraphRunner {
                 if (item.currentHoldTime >= item.map.threshold) {
                     
                     if (item.map.repeat) {
-                        // Jika repeat ON (Interval): Tembak, lalu reset waktu ke 0
                         this.executeFlow(item.node._id, item.outputId);
                         item.currentHoldTime = 0; 
                     } else if (!item.hasFiredOnce) {
-                        // Jika repeat OFF (Single Shot): Tembak, lalu KUNCI
                         this.executeFlow(item.node._id, item.outputId);
                         item.hasFiredOnce = true;
                     }
                     
                 }
             } else {
-                // Reset semua state saat tombol dilepaskan
                 item.currentHoldTime = 0;
                 item.hasFiredOnce = false;
             }
@@ -213,7 +210,6 @@ export default class GraphRunner {
     }
 
     getInputValue(node, inputKey) {
-        // 1. Cek apakah ada node lain yang terhubung ke port ini
         const edge = this.edges.find(e => e.target === node._id && e.targetHandle === inputKey);
         
         if (edge) {
@@ -221,17 +217,14 @@ export default class GraphRunner {
             return this._getNodeOutputValue(sourceNode, edge.sourceHandle);
         }
 
-        // 2. Skema Baru: Cek nilai statis input manual dari node.data.values
         if (node.data?.values && node.data.values[inputKey] !== undefined) {
             return node.data.values[inputKey];
         }
 
-        // 3. Backward Compatibility: Cek parameter reguler di node.data
         if (node.data && node.data[inputKey] !== undefined) {
             return node.data[inputKey];
         }
 
-        // 4. Backward Compatibility Skema Lama: Jaga-jaga untuk project lama
         if (node.inputs) {
             const inputDef = node.inputs.find(i => i._id === inputKey);
             if (inputDef && inputDef.value !== undefined) {
@@ -265,6 +258,25 @@ export default class GraphRunner {
         );
         
         return foundEntity || null;
+    }
+
+    resolveLayer(targetScriptId) {
+        if (!targetScriptId || typeof targetScriptId !== 'string') {
+            if (this.owner && this.owner.layerId && this.game.world.allLayers) {
+                return this.game.world.allLayers.find(
+                    l => l._id === this.owner.layerId || l.scriptId === this.owner.layerId
+                ) || null;
+            }
+            return null;
+        }
+
+        if (!this.game.world.allLayers) return null;
+
+        const foundLayer = this.game.world.allLayers.find(
+            l => l.scriptId === targetScriptId
+        );
+        
+        return foundLayer || null;
     }
 
     getVariableValue(varId, scope = 'Local') {

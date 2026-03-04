@@ -6,61 +6,73 @@
     >
       <template v-if="targetVariable">
         
-        <PropertyRow label="Variable Name">
-          <BaseInput 
-            :model-value="targetVariable.name" 
-            @update:model-value="(val) => handleUpdate('name', val)"
-            placeholder="Enter variable name..."
-            :error="nameError"
-          />
-        </PropertyRow>
+        <div class="py-1">
+          <div class="flex items-center justify-between group">
+            <div class="flex items-center gap-2 overflow-hidden">
 
-        <PropertyRow label="Scope">
-          <BaseInput 
-            :model-value="currentScope" 
-            class="opacity-40 pointer-events-none filter grayscale" 
-          />
-        </PropertyRow>
-        
-        <PropertyRow label="Type">
-          <BaseSelect 
-            :model-value="targetVariable.type"
-            @update:model-value="(val) => handleUpdate('type', val)"
-            :options="typeOptions"
-            class="h-8 text-xs"
-          />
-        </PropertyRow>
+              <div class="flex flex-col min-w-0">
+                <span class="text-xs font-bold truncate">{{ targetVariable.name }}</span>
+                <span class="text-[10px] text-muted-foreground uppercase tracking-tight">
+                  {{ currentScope }} • {{ targetVariable.type }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
 
-        <PropertyRow label="Default Value">
+        <PropertyRow v-if="node.type === 'variable_set'" label="Assign Value">
           
-          <BaseSelect 
-            v-if="targetVariable.type === 'Boolean'"
-            :model-value="targetVariable.defaultValue"
-            @update:model-value="(val) => handleUpdate('defaultValue', val)"
-            :options="boolOptions"
-            class="h-8 text-xs"
-          />
+          <div class="relative w-full">
+            <div class="absolute -top-3 right-0 text-[9px] font-mono z-10 px-1 rounded bg-background/80 flex gap-1">
+              <span v-if="isValueLinked" class="text-green-400 animate-pulse font-bold">
+                LINKED
+              </span>
+              <span v-else-if="isNotSet(currentAssignValue)" class="text-red-500 font-bold uppercase tracking-tighter">
+                NOT SET
+              </span>
+            </div>
 
-          <BaseNumber 
-            v-else-if="targetVariable.type === 'Number'"
-            :model-value="targetVariable.defaultValue"
-            @update:model-value="(val) => handleUpdate('defaultValue', val)"
-            class="h-8 text-xs font-mono"
-          />
+            <div :class="{ 
+              'opacity-40 pointer-events-none filter grayscale transition-all': isValueLinked,
+              'border-red-500/20': !isValueLinked && isNotSet(currentAssignValue) 
+            }">
+              
+              <BaseSelect 
+                v-if="targetVariable.type?.toLowerCase() === 'boolean'"
+                :model-value="currentAssignValue"
+                @update:model-value="updateAssignValue"
+                :options="boolOptions"
+                class="h-8 text-xs w-full"
+                placeholder="Choose..."
+              />
 
-          <BaseInput 
-            v-else
-            :model-value="targetVariable.defaultValue"
-            @update:model-value="(val) => handleUpdate('defaultValue', val)"
-            placeholder="Value..."
-            class="h-8 text-xs"
-          />
+              <BaseNumber 
+                v-else-if="targetVariable.type?.toLowerCase() === 'number'"
+                :model-value="currentAssignValue"
+                @update:model-value="updateAssignValue"
+                class="h-8 text-xs font-mono w-full"
+                :placeholder="getPlaceholder('Number')"
+              />
+
+              <BaseInput 
+                v-else
+                :model-value="currentAssignValue"
+                @update:model-value="updateAssignValue"
+                class="h-8 text-xs w-full"
+                :placeholder="getPlaceholder('String')"
+              />
+            </div>
+          </div>
         </PropertyRow>
+
+        <div v-if="node.type === 'variable_get'" class="px-2 py-1 text-[10px] text-muted-foreground italic">
+          Reading value from {{ currentScope }} memory.
+        </div>
 
       </template>
       
-      <div v-else class="p-4 text-center text-xs text-muted-foreground">
-        Variable not found or deleted.
+      <div v-else class="p-4 text-center text-xs text-muted-foreground italic">
+        Variable reference missing.
       </div>
 
     </PropertySection>
@@ -68,8 +80,8 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue';
-import { Database } from 'lucide-vue-next';
+import { computed } from 'vue';
+import { Database, Type, Hash, ToggleLeft } from 'lucide-vue-next'; 
 import { useScriptStore } from '@/stores/useScriptStore.js';
 import { useProjectStore } from '@/stores/useProjectStore.js';
 import { useVariableLogic } from '@editors/variable/composables/useVariableLogic.js';
@@ -81,15 +93,12 @@ import BaseSelect from '@/commons/components/inputs/BaseSelect.vue';
 import BaseNumber from '@/commons/components/inputs/BaseNumber.vue'; 
 
 const props = defineProps({
-  node: {
-    type: Object,
-    required: true
-  }
+  node: { type: Object, required: true }
 });
 
 const scriptStore = useScriptStore();
 const projectStore = useProjectStore();
-const nameError = ref(null);
+const PORT_ID = 'val_in';
 
 const currentScope = computed(() => {
   if (props.node.data?.scope) return props.node.data.scope;
@@ -98,34 +107,33 @@ const currentScope = computed(() => {
   return isGlobal ? 'Global' : 'Local';
 });
 
-const { variables, updateVariable } = useVariableLogic(currentScope.value);
-
-const title = computed(() => props.node.type === 'variable_set' ? 'Set Variable' : 'Get Variable');
-
-const typeOptions = [
-  { label: 'String', value: 'String' },
-  { label: 'Number', value: 'Number' },
-  { label: 'Boolean', value: 'Boolean' }
-];
-
-const boolOptions = [
-  { label: 'False', value: false },
-  { label: 'True', value: true },
-];
+const { variables } = useVariableLogic(currentScope.value);
 
 const targetVariable = computed(() => {
   if (!props.node.data?.variableId) return null;
   return variables.value.find(v => v._id === props.node.data.variableId);
 });
 
-const handleUpdate = (key, value) => {
-  if (!props.node.data?.variableId) return;
+const getVariableIcon = computed(() => {
+  const type = targetVariable.value?.type?.toLowerCase();
+  if (type === 'number') return Hash;
+  if (type === 'boolean') return ToggleLeft;
+  return Type;
+});
 
-  const index = variables.value.findIndex(v => v._id === props.node.data.variableId);
+const isValueLinked = computed(() => scriptStore.isInputConnected(props.node._id, PORT_ID));
+const currentAssignValue = computed(() => props.node.data?.values?.[PORT_ID] ?? null);
 
-  if (index !== -1) {
-    updateVariable(index, key, value);
-    if (key === 'name') nameError.value = null;
-  }
-};
+const isNotSet = (val) => val === undefined || val === null || val === '';
+const getPlaceholder = (type) => isNotSet(currentAssignValue.value) ? `Empty ${type} (Active Value)...` : '';
+
+function updateAssignValue(val) {
+  const currentValues = props.node.data?.values || {};
+  scriptStore.updateNodeInActive(props.node._id, {
+    data: { values: { ...currentValues, [PORT_ID]: val } }
+  });
+}
+
+const title = computed(() => props.node.type === 'variable_set' ? 'Set Variable' : 'Get Variable');
+const boolOptions = [{ label: 'False', value: false }, { label: 'True', value: true }];
 </script>

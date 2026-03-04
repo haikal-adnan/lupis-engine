@@ -2,7 +2,6 @@ export const NodeMath = {
     'math_chain': {
         execute: (runner, node) => runner.executeFlow(node._id, 'out'),
         getOutput: (runner, node, outputKey) => {
-        // Baris 5: Inisialisasi awal (pastikan || 0, bukan || result)
         let result = Number(runner.getInputValue(node, 'v0')) || 0;
                 
         const ops = node.data?.ops || ['add'];
@@ -14,7 +13,7 @@ export const NodeMath = {
 
             switch (op) {
             case 'add': 
-                result += nextVal; // BENAR: langsung update, jangan pakai "let result = ..."
+                result += nextVal;
                 break;
             case 'subtract': 
                 result -= nextVal; 

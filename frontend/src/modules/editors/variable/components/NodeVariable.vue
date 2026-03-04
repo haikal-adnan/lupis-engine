@@ -61,11 +61,11 @@
                   <div class="px-2 py-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                     Actions
                   </div>
-                  <button @click="addNodeToCanvas(v, 'Get'); close()" class="flex items-center px-2 py-1.5 hover:bg-accent hover:text-accent-foreground text-left">
-                     <ArrowRightFromLine class="w-3.5 h-3.5 mr-2 text-primary" /> Add "Get" Node
+                  <button @click="handleAddNodeToCanvas(v, 'Get'); close()" class="flex items-center px-2 py-1.5 hover:bg-accent hover:text-accent-foreground text-left">
+                    <ArrowRightFromLine class="w-3.5 h-3.5 mr-2 text-primary" /> Add "Get" Node
                   </button>
-                  <button @click="addNodeToCanvas(v, 'Set'); close()" class="flex items-center px-2 py-1.5 hover:bg-accent hover:text-accent-foreground text-left">
-                     <ArrowLeftToLine class="w-3.5 h-3.5 mr-2 text-orange-500" /> Add "Set" Node
+                  <button @click="handleAddNodeToCanvas(v, 'Set'); close()" class="flex items-center px-2 py-1.5 hover:bg-accent hover:text-accent-foreground text-left">
+                    <ArrowLeftToLine class="w-3.5 h-3.5 mr-2 text-orange-500" /> Add "Set" Node
                   </button>
 
                   <div class="h-px bg-border my-1"></div>
@@ -145,6 +145,23 @@ import BaseDropdown from '@/commons/components/overlay/BaseDropdown.vue';
 import BaseInput from '@/commons/components/inputs/BaseInput.vue';
 import BaseNumber from '@/commons/components/inputs/BaseNumber.vue';
 import BaseSelect from '@/commons/components/inputs/BaseSelect.vue';
+import { useGraphEditor } from '@editors/graph/composables/useGraphEditor.js';
+
+const { getCenterPos } = useGraphEditor();
+
+const handleAddNodeToCanvas = (variable, mode) => {
+  const centerPos = getCenterPos();
+
+  const NODE_WIDTH = 200; 
+  const NODE_HEIGHT = 100; 
+  
+  const finalCenter = {
+    x: centerPos.x - (NODE_WIDTH / 2),
+    y: centerPos.y - (NODE_HEIGHT / 2)
+  };
+
+  addNodeToCanvas(variable, mode, finalCenter);
+};
 
 const props = defineProps({
   scope: { type: String, required: true },
@@ -156,6 +173,8 @@ const {
   variables, addVariable, updateVariable, duplicateVariable, deleteVariable, 
   onDragStart, getVarColor, addNodeToCanvas 
 } = useVariableLogic(props.scope);
+
+
 
 const boolOptions = [
   { label: 'False', value: false },

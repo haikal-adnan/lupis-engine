@@ -77,7 +77,7 @@ const handlers = {
        sceneStore.updateLayerZIndex(layerId, newZ)
     }
   },
-  createEntity: (type, contextNode) => sceneStore.createEntity(type, contextNode),
+  createEntity: (...args) => sceneStore.createEntity(...args),
   renameEntity: async (entityId) => {
     const entity = sceneStore.activeEntities.find(e => e._id === entityId)
     if (!entity) return

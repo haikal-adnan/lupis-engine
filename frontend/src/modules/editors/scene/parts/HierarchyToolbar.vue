@@ -87,17 +87,14 @@ import {
 import BaseSelect from '@ui/inputs/BaseSelect.vue'
 import BaseDropdown from '@ui/overlay/BaseDropdown.vue'
 
-// Stores
 import { useProjectStore } from '@/stores/useProjectStore.js'
 import { useSceneStore } from '@/stores/scene/useSceneStore.js'
 import { useAssetStore } from '@/stores/useAssetStore.js'
 import { useScriptStore } from '@/stores/useScriptStore.js'
 import { usePrefabStore } from '@/stores/usePrefabStore.js'
 
-// Services
 import { EngineBridge } from '@/services/engine/EngineBridge.js'
 
-// Composables
 import { usePrompt } from '@/composables/usePrompt'
 import { useConfirm } from '@/composables/useConfirm'
 import { useAlert } from '@/composables/useAlert'
@@ -121,32 +118,24 @@ const { confirm } = useConfirm();
 const { alert } = useAlert();
 const { showPop } = usePopAlert();
 
-/**
- * Fungsi Inti Sinkronisasi
- * Mengumpulkan data dari semua store dan mengirimkannya ke EngineBridge
- */
 const syncSceneWithEngine = () => {
   const activeScene = sceneStore.activeScene;
   if (!activeScene) return;
 
-  // Merakit payload lengkap sesuai kebutuhan SyncComponent.onSceneReload
   const payload = {
     project: projectStore.project,
     scene: activeScene,
-    prefabs: Object.values(prefabStore.prefabs || {}), // Pastikan formatnya array jika engine memintanya demikian
+    prefabs: Object.values(prefabStore.prefabs || {}), 
     scripts: Object.values(scriptStore.scripts || {}),
     assets: assetStore.assets || []
   };
 
-  // Kirim sinyal reload ke engine bus via Bridge
   EngineBridge.reloadScene(payload);
 
-  // Update pengaturan scene (background, physics, bounds)
   if (activeScene.settings) {
     EngineBridge.updateSceneSettings(activeScene.settings);
   }
 
-  // Clear UI Selection agar sinkron dengan engine yang baru di-reset
   sceneStore.clearSelection();
   EngineBridge.clearSelection();
 };
@@ -186,7 +175,6 @@ const handleRename = async (close) => {
   if (name && name !== scene.name) {
     try {
       sceneStore.updateSceneName(scene._id, name);
-      // Untuk rename, kita tidak perlu reload seluruh engine scene
       showPop({ title: 'Renamed', message: 'Scene name updated.', type: 'success' });
     } catch (e) {
       showPop({ title: 'Error', message: 'Failed to rename scene.', type: 'error' });

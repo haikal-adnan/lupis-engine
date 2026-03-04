@@ -20,14 +20,13 @@ import { bus } from "../Util/EventBus.js";
 
 export default class GameLoader {
     async initializeGame(game, canvas, baseURL, mode = "runtime", payload = {}) {
-        const { project, assets, scene, prefabs, scripts, editorConfig } = payload;
+        const { project, assets, scenes, prefabs, scripts, editorConfig } = payload;
 
         try {
             game.baseURL = baseURL;
             this._initMain(game, canvas, mode);
             
             if (project) game._id = project._id;
-            this._setupWorldSettings(game, project?.settings, scene?.settings);
             
             if (mode === "editor") {
                 this._setupEditorState(game, editorConfig);
@@ -40,31 +39,34 @@ export default class GameLoader {
                 new GLImageResource(game.renderer.gl),
                 new GLFontResource(game.renderer.gl)
             );
-            
             game.assetLoader = assetLoader;
             await assetLoader.loadAsset(game.world, assets, baseURL);
 
             this._initScriptLibrary(game.world, scripts);
 
-            if (scene) {
-                new SceneLoader(game.world, mode).loadScene(scene);
+            if (scenes && Array.isArray(scenes)) {
+                game.setSceneCache(scenes);
+            }
+
+            if (scenes && scenes.length > 0) {
+                const initialScene = scenes[0];
+                
+                this._setupWorldSettings(game, project?.settings, initialScene.settings);
+                
+                game.loadScene(initialScene._id);
+            } else {
+                console.warn("[GameLoader] Tidak ada scene untuk dimuat!");
+                this._setupWorldSettings(game, project?.settings, {});
             }
 
             if (mode === "editor") {
                 this._initializeEditorTools(game, canvas);
-            } else {
-                this._initializeRuntimeSystems(game);
             }
 
-            this._setupCamera(game, scene?.camera, mode);
-            
             game.initLoop();
-
-            console.log(game)
-
             this.start(game);
 
-            console.log(`[LupisEngine] ${mode.toUpperCase()} initialized successfully.`);
+            console.log(`[Lupis Engine] ${mode.toUpperCase()} initialized successfully.`);
         } catch (err) {
             console.error("[GameLoader] Critical initialization failure:", err);
         }
@@ -110,29 +112,6 @@ export default class GameLoader {
         };
     }
 
-    _setupCamera(game, savedCamera, mode) {
-        const { width: rw, height: rh } = game.world.settings.ui;
-
-        if (savedCamera?.x !== undefined) {
-            game.camera.x = savedCamera.x;
-            game.camera.y = savedCamera.y;
-            game.camera.scale = savedCamera.scale || 1;
-        } else {
-            game.camera.x = rw / 2;
-            game.camera.y = rh / 2;
-            game.camera.scale = (mode === "editor") ? 0.5 : 1;
-        }
-    }
-
-    _initializeRuntimeSystems(game) {
-        try {
-            this._initializeEntityScripts(game);
-            game.scriptSystem.startAll();
-        } catch (err) {
-            console.error("Failed to initialize entity scripts:", err);
-        }
-    }
-
     _initScriptLibrary(world, scripts) {
         world.scripts = Array.isArray(scripts) 
             ? Object.fromEntries(scripts.map(s => [s._id, {
@@ -153,30 +132,6 @@ export default class GameLoader {
             name: p.name,
             data: p.data 
         }]));
-    }
-
-    _initializeEntityScripts(game) {
-        game.world.entities.forEach(entity => {
-            const controller = entity.components?.ScriptController;
-            if (!Array.isArray(controller?.data)) return;
-
-            controller.data.forEach(instance => {
-                const asset = game.world.scripts[instance.assetId];
-                if (asset) {
-                    game.scriptSystem.add({
-                        ...asset,
-                        variables: this._mergeVariables(asset.variables, instance.variables)
-                    }, entity);
-                }
-            });
-        });
-    }
-
-    _mergeVariables(assetVars = [], instanceVars = {}) {
-        return assetVars.map(v => ({
-            ...v,
-            defaultValue: instanceVars[v._id] !== undefined ? instanceVars[v._id] : v.defaultValue
-        }));
     }
 
     _initializeEditorTools(game, canvas) {

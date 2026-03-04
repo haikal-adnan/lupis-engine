@@ -146,7 +146,6 @@ const op = computed(() => props.node.data?.op || 'equal');
 
 const isConnected = (inputId) => store.isInputConnected(props.node._id, inputId);
 
-// AMBIL DARI data.values
 const getValue = (inputId) => {
   return props.node.data?.values?.[inputId] ?? '';
 };
@@ -157,7 +156,6 @@ const getType = (inputId) => {
   return (type === 'any') ? 'number' : type; 
 };
 
-// SIMPAN KE data.values
 const updateValue = (inputId, newValue) => {
   if (isConnected(inputId)) return;
   const currentValues = props.node.data?.values || {};
@@ -173,7 +171,6 @@ const updateValue = (inputId, newValue) => {
 const updateType = (inputId, newType) => {
   const currentInputs = props.node.inputs || [];
   
-  // 1. Cek dan putuskan koneksi jika tipe tidak kompatibel
   const existingEdges = store.activeScript.edges.filter(e => 
     e.target === props.node._id && e.targetHandle === inputId
   );
@@ -199,7 +196,6 @@ const updateType = (inputId, newType) => {
     });
   }
 
-  // 2. Tentukan warna dan default value baru
   const colorMap = {
     'string': '#9c27b0',
     'number': '#00e676',
@@ -208,7 +204,6 @@ const updateType = (inputId, newType) => {
 
   let defaultValue = (newType === 'number') ? 0 : (newType === 'boolean' ? false : '');
 
-  // 3. Update definisi Port (inputs)
   const newInputs = currentInputs.map(input => {
     if (input._id === inputId) {
       return { 
@@ -220,7 +215,6 @@ const updateType = (inputId, newType) => {
     return input;
   });
 
-  // 4. Update data.values
   const currentValues = props.node.data?.values || {};
   const newValues = { ...currentValues, [inputId]: defaultValue };
 

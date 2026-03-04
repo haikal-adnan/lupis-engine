@@ -2,7 +2,6 @@
 import { onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 
-// 1. Import useTheme dari sistem Anda
 import { useTheme } from "@commons/composables/useTheme.js";
 
 import { 
@@ -22,7 +21,6 @@ import {
 
 const router = useRouter();
 
-// 2. Destructure initTheme
 const { initTheme } = useTheme();
 
 onMounted(() => {

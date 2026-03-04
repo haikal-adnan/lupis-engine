@@ -20,12 +20,13 @@ export const BlueprintSystem = {
           category: 'Interface' 
         },
         data: { 
-            message: 'Hello World',
-            duration: 3.0 
+          values: {
+            in_msg: 'Hello World'
+          }
         }, 
         inputs: [
           { _id: 'exec_in', label: 'In', dataType: 'execution', color: '#ffffff' },
-          { _id: 'in_msg', label: 'Message', dataType: 'string', color: '#FFB74D', value: 'Hello World' }
+          { _id: 'in_msg', label: 'Message', dataType: 'string', color: '#FFB74D' }
         ],
         outputs: [
           { _id: 'exec_out', label: 'Out', dataType: 'execution', color: '#ffffff' }
@@ -46,7 +47,12 @@ export const BlueprintSystem = {
           headerColor: '#37474F', 
           category: 'Interface' 
         },
-        data: { prefix: 'LOG: ' }, 
+        data: { 
+          prefix: 'LOG: ',
+          values: {
+            in_value: '' 
+          }
+        }, 
         inputs: [
           { _id: 'exec_in', label: 'In', dataType: 'execution', color: '#ffffff' },
           { _id: 'in_value', label: 'Value', dataType: 'any', color: '#ffffff' }

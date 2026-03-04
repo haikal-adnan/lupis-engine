@@ -53,7 +53,7 @@ export default class UIRenderer {
         this._sortItems(layers);
 
         for (const layer of layers) {
-            if (!layer.visible || !layer.entities) continue;
+            if (layer.active === false || !layer.visible || !layer.entities) continue;
             
             const allEntities = [...layer.entities];
             this._sortItems(allEntities);

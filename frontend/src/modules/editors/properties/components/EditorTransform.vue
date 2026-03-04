@@ -142,7 +142,7 @@ const {
   updatePivot, 
   bindComponentProp, 
   isLocked,
-  isSizeLockedByText, // <-- State dari useInspectorLogic
+  isSizeLockedByText,
   syncComponent,      
   getComponentOverrideStatus 
 } = useInspectorLogic();

@@ -17,7 +17,6 @@ export function useInspectorLogic() {
 
   const isEditingMasterPrefab = computed(() => editorStore.activeTab?.type === 'prefab');
 
-  // --- TAMBAHKAN LOGIKA UNTUK LAYER DI SINI ---
   const selectedLayerId = computed(() => {
     if (isEditingMasterPrefab.value) return null;
     if (sceneStore.selectedEntityIds.length !== 1) return null;
@@ -36,7 +35,6 @@ export function useInspectorLogic() {
 
     if (sceneStore.selectedEntityIds.length > 1) return null;
     
-    // Jika yang di-select adalah layer, jangan kembalikan entity
     if (selectedLayerId.value) return null; 
 
     const id = sceneStore.selectedEntityIds[0];
@@ -46,7 +44,6 @@ export function useInspectorLogic() {
 
   const isMultiSelection = computed(() => !isEditingMasterPrefab.value && sceneStore.selectedEntityIds.length > 1);
   
-  // --- UPDATE HAS SELECTION AGAR MENGENALI LAYER ---
   const hasSelection = computed(() => !!selectedEntity.value || !!selectedLayerId.value);
   
   const prefabId = computed(() => isEditingMasterPrefab.value ? null : selectedEntity.value?.prefabId);

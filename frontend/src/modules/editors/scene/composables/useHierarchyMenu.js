@@ -1,6 +1,8 @@
 import { ref } from 'vue';
 import { useEditorStore } from '@/stores/useEditorStore.js';
+import { useProjectStore } from '@/stores/useProjectStore.js';
 import { useClipboard } from '@/composables/useClipboard.js';
+
 import { 
   Plus, Trash2, Edit2, Folder, RefreshCw, 
   Cuboid, Image, Type, Square, InspectionPanel,
@@ -14,21 +16,18 @@ const showPlaceholderAlert = () => {
 export function useHierarchyMenu(handlers) {
   const contextMenu = ref({ visible: false, x: 0, y: 0, items: [] });
   const editorStore = useEditorStore();
+  const projectStore = useProjectStore();
   const { copy, cut, paste, duplicate, remove } = useClipboard();
 
   const closeMenu = () => {
     contextMenu.value.visible = false;
   };
 
-  /**
-   * Helper untuk menjalankan aksi:
-   * Menutup menu secara synchronous agar langsung hilang dari UI,
-   * baru menjalankan aksi (yang mungkin mengandung prompt/await).
-   */
   const runAction = (action) => {
     closeMenu();
     if (action) action();
   };
+
 
   const openMenu = (event, node, section = 'world') => {
     let isUIContext = false;
@@ -56,13 +55,15 @@ export function useHierarchyMenu(handlers) {
       { label: 'Group (Disabled)', icon: Folder, action: () => runAction(showPlaceholderAlert) } 
     ];
 
+    const worldX = 0;
+    const worldY = 0;
+
     const createUiItems = [
-      { label: 'Empty UI', icon: Maximize, action: () => runAction(() => handlers.createEntity('ui_empty', node)) },
+      { label: 'Empty UI', icon: Maximize, action: () => runAction(() => handlers.createEntity('ui_empty', node, { x: worldX, y: worldY })) },
       { separator: true },
-      { label: 'UI Panel', icon: Square, action: () => runAction(() => handlers.createEntity('ui_panel', node)) },
-      { label: 'UI Button', icon: MousePointerClick, action: () => runAction(() => handlers.createEntity('ui_button', node)) },
-      { label: 'UI Text', icon: Type, action: () => runAction(() => handlers.createEntity('ui_text', node)) },
-      { label: 'UI Image', icon: Image, action: () => runAction(() => handlers.createEntity('ui_image', node)) },
+      { label: 'UI Shape', icon: Square, action: () => runAction(() => handlers.createEntity('ui_shape', node, { x: worldX, y: worldY })) },
+      { label: 'UI Text', icon: Type, action: () => runAction(() => handlers.createEntity('ui_text', node, { x: worldX, y: worldY })) },
+      { label: 'UI Image', icon: Image, action: () => runAction(() => handlers.createEntity('ui_image', node, { x: worldX, y: worldY })) },
       { separator: true },
       { label: 'Group (Disabled)', icon: Folder, action: () => runAction(showPlaceholderAlert) }
     ];

@@ -23,20 +23,8 @@ export async function prepareEngineData() {
 
     if (!projectStore.project) throw new Error("Failed to load project metadata");
 
-    let targetSceneId = sceneStore.activeSceneId;
-    
-    if (!targetSceneId && sceneStore.scenes.length > 0) {
-        const firstScene = sceneStore.scenes[0];
-        targetSceneId = firstScene._id || firstScene.id; 
-        sceneStore.setActiveScene(targetSceneId);
-    }
-    
-    if (!targetSceneId) throw new Error("No scenes found in project");
-    
-    const storeSceneRef = sceneStore.getSceneById(targetSceneId);
-
-    if (!storeSceneRef) {
-        throw new Error(`Scene data for ID ${targetSceneId} not found in Store`);
+    if (!sceneStore.scenes || sceneStore.scenes.length === 0) {
+        throw new Error("No scenes found in project");
     }
 
     const { engine, ...cleanEditorConfig } = toRaw(editorStore.$state);
@@ -44,7 +32,7 @@ export async function prepareEngineData() {
     const rawPayload = {
         project: toRaw(projectStore.project),
         assets: toRaw(assetStore.assets),
-        scene: toRaw(storeSceneRef), 
+        scenes: toRaw(sceneStore.scenes), 
         prefabs: toRaw(prefabStore.prefabs),
         scripts: toRaw(scriptStore.scripts), 
         editorConfig: cleanEditorConfig 

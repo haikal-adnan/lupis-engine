@@ -117,15 +117,17 @@ export default class RendererManager {
         const { activeTabId } = world._editors || {};
         const isSceneMode = activeTabId === "scene" || !activeTabId; 
         const isUILayer = (layer) => layer && (layer.scriptId === 'ui' || layer.name === 'UI');
+        
+        const isLayerInteractable = (layer) => layer && layer.active !== false && layer.visible !== false;
 
         if (isUIMode) {
             game.selection.active = true;
             game.transform.active = true;
-            game.selection.filter = (entity, layer) => isUILayer(layer);
+            game.selection.filter = (entity, layer) => isUILayer(layer) && isLayerInteractable(layer);
         } else if (isSceneMode) {
             game.selection.active = true;
             game.transform.active = true;
-            game.selection.filter = (entity, layer) => !isUILayer(layer);
+            game.selection.filter = (entity, layer) => !isUILayer(layer) && isLayerInteractable(layer);
         } else {
             game.selection.filter = null;
         }

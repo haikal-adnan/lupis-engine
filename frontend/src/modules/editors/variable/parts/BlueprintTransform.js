@@ -81,7 +81,7 @@ export const BlueprintTransform = {
       label: 'Translate / Move', 
       description: 'Move object using Physics Velocity or Direct Translation.', 
       icon: Footprints, 
-      allowDynamicInputs: false, 
+      allowDynamicInputs: true,
       allowDynamicOutputs: false,
       defaultData: { 
         settings: { 
@@ -90,22 +90,21 @@ export const BlueprintTransform = {
           category: 'Physics' 
         },
         data: {
-            vel_x: 0,
-            vel_y: 0,
-            use_physics: false,
-            sweep: true
+          propertyOptions: [
+            { value: 'vel_x', label: 'Velocity X', type: 'number', color: '#69F0AE' },
+            { value: 'vel_y', label: 'Velocity Y', type: 'number', color: '#69F0AE' },
+            { value: 'use_physics', label: 'Use Physics', type: 'boolean', color: '#FF5252' },
+            { value: 'sweep', label: 'Sweep (Collide)', type: 'boolean', color: '#FF5252' }
+          ],
         },
         inputs: [
           { _id: 'exec_in', label: 'In', dataType: 'execution', color: '#ffffff' },
           { _id: 'in_target', label: 'Target ID (Self)', dataType: 'string', color: '#E040FB' },
-          
-          { _id: 'vel_x', label: 'Velocity X', dataType: 'number', color: '#69F0AE', value: 0 },
-          { _id: 'vel_y', label: 'Velocity Y', dataType: 'number', color: '#69F0AE', value: 0 },
         ],
         outputs: [
           { _id: 'exec_out', label: 'Out', dataType: 'execution', color: '#ffffff' }
         ]
       } 
-    },
+    }
   ]
 };

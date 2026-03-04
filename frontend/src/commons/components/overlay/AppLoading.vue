@@ -1,6 +1,6 @@
 <script setup>
 import { useProjectStore } from '@/stores/useProjectStore'
-import { Loader2 } from 'lucide-vue-next' // Kita gunakan icon Lucide untuk spinner yang lebih rapi
+import { Loader2 } from 'lucide-vue-next'
 
 const projectStore = useProjectStore()
 </script>

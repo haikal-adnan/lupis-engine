@@ -20,6 +20,8 @@ export const layerActions = {
       zIndex: 0
     });
 
+    newLayer.section = section;
+
     collection.push(newLayer);
     EngineBridge.addLayer(newLayer); 
 

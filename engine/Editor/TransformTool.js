@@ -45,6 +45,11 @@ export default class TransformTool {
         const isLocked = e.isLocked || (e._editor && e._editor.locked === true);
         if (isLocked) return false;
 
+        const parentLayer = this._findLayerOfEntity(e);
+        if (parentLayer && (parentLayer.active === false || parentLayer.visible === false || parentLayer.locked)) {
+            return false;
+        }
+
         const { activeTabId, tabs } = this.world._editors || {};
         const activeTab = tabs?.find(t => t.id === activeTabId);
         
@@ -61,6 +66,16 @@ export default class TransformTool {
         }
 
         return true;
+    }
+
+    _findLayerOfEntity(targetEntity) {
+        const allLayers = [...(this.world.layersWorld || []), ...(this.world.layersUI || [])];
+        for (const layer of allLayers) {
+            if (layer.entities && layer.entities.some(e => String(e._id || e.id) === String(targetEntity._id || targetEntity.id))) {
+                return layer;
+            }
+        }
+        return null;
     }
 
     _isEntityInUILayer(targetEntity) {

@@ -1,6 +1,6 @@
 import Entity from "../Core/Entity.js";
 import { ApplyResizeToEntity } from "../Util/ApplyResizeToEntity.js";
-import SceneLoader from "../Loader/SceneLoader.js"; // IMPORT TAMBAHAN
+import SceneLoader from "../Loader/SceneLoader.js"; 
 import ScriptLoader from "../Loader/ScriptLoader.js";
 
 export default class SyncComponent {
@@ -100,7 +100,7 @@ export default class SyncComponent {
         });
     }
 
-    onMoveEntity({ id, layerId }) {
+    onMoveEntity({ id, layerId, parentId }) { 
         if (this.isInternalUpdate) return;
 
         const entity = this._findEntityById(id);
@@ -124,12 +124,13 @@ export default class SyncComponent {
         this._removeEntityFromCurrentContainer(entity);
 
         entity.layerId = layerId;
-        entity.parentId = null;
+        entity.parentId = parentId !== undefined ? parentId : null; 
 
         targetContainer.push(entity);
 
         const t = entity.components.Transform || entity.components.UITransform;
-        if (t) {
+        
+        if (t && entity.type !== 'ui') {
             const resolvedLocal = hitTester.solveLocalPosition(
                 null,
                 oldWorldPos.x,
@@ -138,7 +139,6 @@ export default class SyncComponent {
 
             t.x = resolvedLocal.x;
             t.y = resolvedLocal.y;
-
             this.bus.emit("entity:modified", [entity]);
         }
 
@@ -414,9 +414,9 @@ export default class SyncComponent {
         };
 
         const isUI =
+            layerData.section === "ui" || 
             layerData.scriptId === "ui" ||
-            (layerData.name &&
-                layerData.name.toLowerCase().includes("ui"));
+            (layerData.name && layerData.name.toLowerCase().includes("ui"));
 
         if (isUI) {
             this.world.layersUI.push(newLayer);

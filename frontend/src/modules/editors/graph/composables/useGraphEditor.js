@@ -14,40 +14,55 @@ const MAX_ZOOM = 5.0
 const ZOOM_SPEED = 0.1
 const SNAP_THRESHOLD = 50
 
+let cachedRect = null
+const interaction = shallowReactive({
+  mode: null,
+  activeId: null,
+  activeHandle: null,
+  activeType: null, 
+  activeDataType: null, 
+  hoveredId: null,
+  startMouse: { x: 0, y: 0 },
+  startCam: { x: 0, y: 0 },
+  dragOffset: { x: 0, y: 0 },
+  tempParams: null,
+  dragPos: { x: 0, y: 0 },
+  candidate: null
+})
+
 export function useGraphEditor() {
   const panelRef = ref(null)
   const store = useScriptStore()
   const { showPop } = usePopAlert()
   
-  const { activeScript, selectedNodeId } = storeToRefs(store)
+  const { activeScript, selectedNodeId, camera } = storeToRefs(store)
 
   const nodes = computed(() => activeScript.value?.nodes || [])
   const edges = computed(() => activeScript.value?.edges || [])
-
-  const camera = shallowReactive({ x: 0, y: 0, scale: 1 })
-  let cachedRect = null
-
-  const interaction = shallowReactive({
-    mode: null,
-    activeId: null,
-    activeHandle: null,
-    activeType: null, 
-    activeDataType: null, 
-    hoveredId: null,
-    startMouse: { x: 0, y: 0 },
-    startCam: { x: 0, y: 0 },
-    dragOffset: { x: 0, y: 0 },
-    tempParams: null,
-    dragPos: { x: 0, y: 0 },
-    candidate: null
-  })
 
   const getClientPos = (e) => {
     if (!cachedRect && panelRef.value) cachedRect = panelRef.value.getBoundingClientRect()
     const r = cachedRect || { left: 0, top: 0 }
     return {
-      x: (e.clientX - r.left - camera.x) / camera.scale,
-      y: (e.clientY - r.top - camera.y) / camera.scale
+      x: (e.clientX - r.left - camera.value.x) / camera.value.scale,
+      y: (e.clientY - r.top - camera.value.y) / camera.value.scale
+    }
+  }
+
+  const getCenterPos = () => {
+    if (!cachedRect && panelRef.value) {
+      cachedRect = panelRef.value.getBoundingClientRect()
+    }
+    
+    const width = cachedRect ? cachedRect.width : window.innerWidth
+    const height = cachedRect ? cachedRect.height : window.innerHeight
+
+    const screenCenterX = width / 2
+    const screenCenterY = height / 2
+
+    return {
+      x: snap((screenCenterX - camera.value.x) / camera.value.scale),
+      y: snap((screenCenterY - camera.value.y) / camera.value.scale)
     }
   }
 
@@ -144,8 +159,10 @@ export function useGraphEditor() {
     e.preventDefault()
 
     if (interaction.mode === 'pan') {
-      camera.x = interaction.startCam.x + (e.clientX - interaction.startMouse.x)
-      camera.y = interaction.startCam.y + (e.clientY - interaction.startMouse.y)
+      store.updateCamera({
+        x: interaction.startCam.x + (e.clientX - interaction.startMouse.x),
+        y: interaction.startCam.y + (e.clientY - interaction.startMouse.y)
+      })
     } else if (interaction.mode === 'drag') {
       const world = getClientPos(e)
       interaction.dragPos = {
@@ -293,27 +310,41 @@ export function useGraphEditor() {
     if (!panelRef.value) return
     if (!cachedRect) cachedRect = panelRef.value.getBoundingClientRect()
     const rect = cachedRect
-    if (e.shiftKey) { camera.y -= e.deltaY / camera.scale; return }
-    if (e.altKey) { camera.x -= e.deltaY / camera.scale; return }
+    
+    if (e.shiftKey) { 
+      store.updateCamera({ y: camera.value.y - (e.deltaY / camera.value.scale) }); 
+      return 
+    }
+    if (e.altKey) { 
+      store.updateCamera({ x: camera.value.x - (e.deltaY / camera.value.scale) }); 
+      return 
+    }
+    
     const mouseX = e.clientX - rect.left
     const mouseY = e.clientY - rect.top
     const delta = e.deltaY < 0 ? 1 : -1
-    const oldScale = camera.scale
+    const oldScale = camera.value.scale
     let newScale = oldScale * (1 + (delta * ZOOM_SPEED))
     newScale = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, newScale))
+    
     if (newScale === oldScale) return
-    const worldX = (mouseX - camera.x) / oldScale
-    const worldY = (mouseY - camera.y) / oldScale
-    camera.scale = newScale
-    camera.x = mouseX - (worldX * newScale)
-    camera.y = mouseY - (worldY * newScale)
+    
+    const worldX = (mouseX - camera.value.x) / oldScale
+    const worldY = (mouseY - camera.value.y) / oldScale
+    
+    store.updateCamera({
+      scale: newScale,
+      x: mouseX - (worldX * newScale),
+      y: mouseY - (worldY * newScale)
+    })
+    
     nextTick(() => { cachedRect = panelRef.value?.getBoundingClientRect() })
   }
 
   const startPan = (e) => {
     interaction.mode = 'pan'
     interaction.startMouse = { x: e.clientX, y: e.clientY }
-    interaction.startCam = { x: camera.x, y: camera.y }
+    interaction.startCam = { x: camera.value.x, y: camera.value.y }
   }
 
   const getPathD = (p1, p2) => {
@@ -397,7 +428,7 @@ export function useGraphEditor() {
   return {
     panelRef, camera, nodes, edges, interaction, selectedNodeId,
     handleWheel, startPan, startDragNode, startConnect, 
-    startMoveEdge,
+    startMoveEdge, getCenterPos,
     handleGlobalMouseMove, handleGlobalMouseUp, 
     onCanvasMouseDown, onDrop, store,
     getEdgeData, getPathD, isRelated, GRID_SIZE

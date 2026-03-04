@@ -42,7 +42,7 @@ export function useEditorToEngine(projectStore, sceneStore, assetStore, editorSt
         switch (name) {
           case 'setBackgroundColor': 
             if(s) EngineBridge.updateSceneSettings({ backgroundColor: s.backgroundColor }); 
-            break;
+            break;ditor
           case 'updateWorldBounds':
             EngineBridge.updateSceneSettings({ worldBounds: args[0] });
             break;

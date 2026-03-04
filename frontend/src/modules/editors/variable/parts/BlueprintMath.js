@@ -21,12 +21,12 @@ export const BlueprintMath = {
         },
         data: {
           ops: ['add'],
-          values: { v0: 0, v1: 0 } // Nilai default dipindah ke sini
+          values: { v0: 0, v1: 0 } 
         },
         inputs: [
           { _id: 'in', label: 'In', dataType: 'execution', color: '#fff' },
-          { _id: 'v0', label: 'Val 1', dataType: 'number', color: '#B2FF59' }, // value dihapus
-          { _id: 'v1', label: 'Val 2', dataType: 'number', color: '#B2FF59' }  // value dihapus
+          { _id: 'v0', label: 'Val 1', dataType: 'number', color: '#B2FF59' }, 
+          { _id: 'v1', label: 'Val 2', dataType: 'number', color: '#B2FF59' }  
         ],
         outputs: [
           { _id: 'out', label: 'Trigger', dataType: 'execution', color: '#fff' },
