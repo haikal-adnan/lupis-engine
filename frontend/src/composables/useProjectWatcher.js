@@ -29,16 +29,12 @@ export function useProjectWatcher() {
     'selectedEntityIds'
   ]
 
-  // Array untuk menyimpan fungsi unsubscribe dari setiap store
   let unsubscribeFunctions = []
 
   const initWatchers = () => {
-    // Pastikan watcher lama dibersihkan sebelum membuat yang baru
-    // agar aman jika initWatchers tidak sengaja terpanggil dua kali
     destroyWatchers()
 
     Object.entries(storesToWatch).forEach(([storeName, store]) => {
-      // $subscribe mengembalikan fungsi untuk berhenti memantau
       const unsubscribe = store.$subscribe((mutation) => {
         if (projectStore.isLoading || projectStore.isSaving || !projectStore.isProjectLoaded) return
 
@@ -55,20 +51,17 @@ export function useProjectWatcher() {
         }
       })
       
-      // Simpan ke dalam array
       unsubscribeFunctions.push(unsubscribe)
     })
   }
 
   const destroyWatchers = () => {
-    // Eksekusi semua fungsi unsubscribe yang tersimpan
     unsubscribeFunctions.forEach(unsubscribe => unsubscribe())
-    // Kosongkan array setelah dibersihkan
     unsubscribeFunctions = []
   }
 
   return {
     initWatchers,
-    destroyWatchers // Export fungsi ini agar bisa dipanggil oleh useAppInit
+    destroyWatchers 
   }
 }

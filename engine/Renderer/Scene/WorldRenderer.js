@@ -69,7 +69,7 @@ export default class WorldRenderer {
 
         for (let li = 0; li < layers.length; li++) {
             const layer = layers[li];
-            if (layer.visible === false) continue;
+            if (layer.active === false || layer.visible === false) continue;
             if (!layer.entities) continue;
 
             const isUILayer = layer.scriptId === 'ui' || (layer.name && layer.name.includes('UI'));

@@ -7,6 +7,7 @@ export const createLayer = (data = {}) => {
     name: data.name || "New Layer",
     zIndex: Number(data.zIndex ?? 0), 
     orderIndex: Number(data.orderIndex ?? 0),
+    active: data.active ?? true,
     visible: data.visible ?? true,
     locked: data.locked ?? false
   };

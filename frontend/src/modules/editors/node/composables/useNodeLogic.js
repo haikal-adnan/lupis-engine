@@ -61,7 +61,9 @@ export function useNodeLogic() {
     const node = selectedNode.value;
 
     const dynamicTypes = [
+      'translate',
       'get_object', 'set_object',
+      'get_layer', 'set_layer',
       'get_transform', 'set_transform', 
       'get_physics', 'set_physics',
       'get_sprite', 'set_sprite',
@@ -115,7 +117,6 @@ export function useNodeLogic() {
       color: '#fff'
     });
 
-    // DAFTARKAN NILAI DEFAULT KE data.values UNTUK INPUT BARU
     if (type === 'input') {
       const currentValues = node.data?.values || {};
       const defaultVal = newDataType === 'number' ? 0 : newDataType === 'boolean' ? false : '';
@@ -145,16 +146,14 @@ export function useNodeLogic() {
         color: selectedOpt.color || '#fff'
       });
 
-      // DAFTARKAN NILAI DEFAULT KE data.values DARI DROPDOWN
       if (type === 'input') {
         const currentValues = selectedNode.value.data?.values || {};
-        const defaultVal = selectedOpt.type === 'number' ? 0 : selectedOpt.type === 'boolean' ? false : '';
         
         scriptStore.updateNodeInActive(selectedNode.value._id, {
           data: { 
             values: { 
               ...currentValues, 
-              [selectedOpt.value]: defaultVal 
+              [selectedOpt.value]: null 
             } 
           }
         });
@@ -187,7 +186,6 @@ export function useNodeLogic() {
 
     scriptStore.removeNodePort(selectedNode.value._id, type, portId);
     
-    // Opsional: Hapus kunci dari data.values agar tidak jadi 'sampah' di state
     if (type === 'input') {
        const currentValues = { ...(selectedNode.value.data?.values || {}) };
        delete currentValues[portId];

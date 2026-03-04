@@ -178,18 +178,22 @@ export function useVariableLogic(scopeProps) {
     event.dataTransfer.effectAllowed = 'copy';
   };
 
-  const addNodeToCanvas = (variable, mode) => {
+  const addNodeToCanvas = (variable, mode, centerPos = null) => {
     if (!scriptStore.activeScript) return;
 
     const isSetter = mode === 'Set';
     const varType = variable.type.toLowerCase();
     const varColor = getVarColor(variable.type);
 
+    console.log(centerPos)
+
+    const finalPosition = centerPos || { x: 0, y: 0 };
+
     const newNodePayload = {
       _id: GenerateUUID(),
       type: isSetter ? 'variable_set' : 'variable_get',
       label: isSetter ? `Set ${variable.name}` : `Get ${variable.name}`,
-      position: { x: 100, y: 100 },
+      position: finalPosition,
       data: { variableId: variable._id, scope: scopeProps },
       settings: {
         headerTitle: isSetter ? `Set ${variable.name}` : `Get ${variable.name}`,

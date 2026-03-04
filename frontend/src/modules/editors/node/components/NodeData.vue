@@ -16,9 +16,10 @@
           v-if="shouldShowField(key)" 
           :label="formatLabel(key)"
         >
-          <BaseCheckbox 
+          <BaseSelect 
             v-if="typeof value === 'boolean'"
             :model-value="value"
+            :options="booleanOptions"
             @update:model-value="updateData(key, $event)"
           />
 
@@ -30,7 +31,7 @@
           />
 
           <BaseInput 
-            v-else-if="typeof value !== 'object'"
+            v-else-if="isPrimitive(value)"
             :model-value="value"
             @update:model-value="updateData(key, $event)"
           />
@@ -41,32 +42,47 @@
         <div v-for="(val, key) in selectedNode.data.values" :key="'val-'+key">
           <PropertyRow :label="formatLabel(key)">
             
-            <div 
-              v-if="isInputConnected(key)" 
-              class="flex items-center gap-2 w-full p-1.5 bg-secondary/30 rounded border border-dashed border-primary/40 text-xs text-muted-foreground"
-            >
-              <Zap class="w-3 h-3 text-primary" />
-              <span class="italic">Value from connection</span>
-            </div>
+            <div class="relative w-full">
+              <div class="absolute -top-3 right-0 text-[9px] font-mono z-10 px-1 rounded bg-background/80 flex gap-1">
+                <span v-if="isInputConnected(key)" class="text-green-400 animate-pulse font-bold">
+                  LINKED
+                </span>
+                <span v-else-if="isNotSet(val)" class="text-red-500 font-bold uppercase tracking-tighter">
+                  NOT SET
+                </span>
+              </div>
 
-            <template v-else>
-              <BaseCheckbox 
-                v-if="typeof val === 'boolean'"
-                :model-value="val"
-                @update:model-value="updateNodeValue(key, $event)"
-              />
-              <BaseNumber 
-                v-else-if="typeof val === 'number'"
-                :model-value="val"
-                @update:model-value="updateNodeValue(key, $event)"
-                class="font-mono"
-              />
-              <BaseInput 
-                v-else-if="typeof val !== 'object'"
-                :model-value="val"
-                @update:model-value="updateNodeValue(key, $event)"
-              />
-            </template>
+              <div :class="{ 
+                'opacity-40 pointer-events-none filter grayscale': isInputConnected(key),
+                'border-red-500/20': !isInputConnected(key) && isNotSet(val) 
+              }">
+                
+                <BaseSelect 
+                  v-if="getInputDataType(key, val) === 'boolean'"
+                  :model-value="val"
+                  :options="booleanOptions"
+                  placeholder="Choose..."
+                  @update:model-value="updateNodeValue(key, $event)"
+                />
+
+                <BaseNumber 
+                  v-else-if="getInputDataType(key, val) === 'number'"
+                  :model-value="val"
+                  @update:model-value="updateNodeValue(key, $event)"
+                  class="font-mono w-full"
+                  :placeholder="getPlaceholder(val, 'Number')"
+                />
+
+                <BaseInput 
+                  v-else
+                  :model-value="val"
+                  @update:model-value="updateNodeValue(key, $event)"
+                  class="w-full"
+                  :placeholder="getPlaceholder(val, 'String')"
+                />
+              </div>
+
+            </div>
             
           </PropertyRow>
         </div>
@@ -84,7 +100,7 @@
 
 <script setup>
 import { computed } from 'vue';
-import { Sliders, Zap } from 'lucide-vue-next';
+import { Sliders } from 'lucide-vue-next';
 import { useNodeLogic } from '@editors/node/composables/useNodeLogic.js';
 import { useNodeRegistry } from '@editors/node/composables/useNodeRegistry.js';
 
@@ -92,18 +108,69 @@ import PropertySection from "@ui/display/PropertySection.vue";
 import PropertyRow from "@ui/display/PropertyRow.vue";
 import BaseInput from '@/commons/components/inputs/BaseInput.vue';
 import BaseNumber from '@/commons/components/inputs/BaseNumber.vue';
-import BaseCheckbox from '@/commons/components/inputs/BaseCheckbox.vue';
+import BaseSelect from '@/commons/components/inputs/BaseSelect.vue';
 
 const { selectedNode, scriptStore, isInputConnected } = useNodeLogic();
 const { getInspector } = useNodeRegistry();
+
+const booleanOptions = [
+  { label: 'True', value: true },
+  { label: 'False', value: false }
+];
 
 const CustomComponent = computed(() => {
   if (!selectedNode.value) return null;
   return getInspector(selectedNode.value.type);
 });
 
-// Tambahkan 'values' agar tidak di-render berulang kali sebagai object mentah
 const IGNORED_KEYS = ['propertyOptions', 'allowDynamicInputs', 'allowDynamicOutputs', 'mappings', 'values'];
+
+/**
+ * Helper: Cek apakah nilai kosong/null
+ */
+function isNotSet(value) {
+  return value === undefined || value === null || value === '';
+}
+
+/**
+ * Helper: Placeholder dinamis
+ */
+function getPlaceholder(value, type) {
+  if (isNotSet(value)) {
+    return `Empty ${type}...`;
+  }
+  return '';
+}
+
+function isPrimitive(val) {
+  return val !== null && typeof val !== 'object';
+}
+
+function getInputDataType(key, val) {
+  if (val !== null && val !== undefined && val !== '') {
+    return typeof val;
+  }
+
+  const node = selectedNode.value;
+  if (node && node.inputs) {
+    const port = node.inputs.find(p => p._id === String(key));
+    if (port && port.dataType) {
+      const type = port.dataType.toLowerCase();
+      if (['number', 'float', 'int'].includes(type)) return 'number';
+      if (['boolean', 'bool'].includes(type)) return 'boolean';
+      if (['string', 'text'].includes(type)) return 'string';
+    }
+  }
+
+  const lowerKey = String(key).toLowerCase();
+  const boolKeys = ['active', 'visible', 'enabled', 'loop', 'istrigger', 'solid', 'collision'];
+  const numKeys = ['width', 'height', 'size', 'x', 'y', 'z', 'opacity', 'speed', 'mass', 'scale', 'radius', 'margin', 'fontsize'];
+  
+  if (boolKeys.some(k => lowerKey.includes(k))) return 'boolean';
+  if (numKeys.some(k => lowerKey.includes(k))) return 'number';
+  
+  return 'string';
+}
 
 const hasData = computed(() => {
   const data = selectedNode.value?.data || {};
@@ -126,7 +193,6 @@ const hasVisibleData = computed(() => {
 
 function shouldShowField(key) {
   if (IGNORED_KEYS.includes(key)) return false;
-
   const fields = selectedNode.value?.settings?.visibleDataFields;
   if (Array.isArray(fields) && fields.length > 0) {
     return fields.includes(key);
@@ -139,14 +205,12 @@ function formatLabel(key) {
   return key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
 }
 
-// Update parameter reguler
 function updateData(key, value) {
   scriptStore.updateNodeInActive(selectedNode.value._id, {
     data: { [key]: value }
   });
 }
 
-// Update nilai statis input (tersimpan di dalam objek `values`)
 function updateNodeValue(key, value) {
   const currentValues = selectedNode.value.data?.values || {};
   scriptStore.updateNodeInActive(selectedNode.value._id, {
@@ -156,3 +220,9 @@ function updateNodeValue(key, value) {
   });
 }
 </script>
+
+<style scoped>
+.filter {
+  transition: all 0.2s ease-in-out;
+}
+</style>

@@ -14,6 +14,9 @@ import { BlueprintCamera } from '@editors/variable/parts/BlueprintCamera.js'
 import { BlueprintCollider } from '@editors/variable/parts/BlueprintCollider.js'
 import { BlueprintPhysics } from '@editors/variable/parts/BlueprintPhysics.js'
 import { BlueprintRenderer } from '@editors/variable/parts/BlueprintRenderer';
+import { BlueprintLayer } from '@editors/variable/parts/BlueprintLayer';
+import { BlueprintScene } from '@editors/variable/parts/BlueprintScene';
+import { BlueprintMouse } from '@editors/variable/parts/BlueprintMouse';
 
 export const STATIC_NODE_GROUPS = [
   BlueprintRenderer,
@@ -30,7 +33,10 @@ export const STATIC_NODE_GROUPS = [
   BlueprintObject,
   BlueprintCamera,
   BlueprintCollider,
-  BlueprintPhysics
+  BlueprintPhysics,
+  BlueprintLayer,
+  BlueprintScene,
+  BlueprintMouse
 ]
 
 export function useNodeBlueprint() {

@@ -4,10 +4,6 @@ const REGISTRY = {
   'event_advanced_key': defineAsyncComponent(() => 
     import('@editors/node/components/inspectors/KeyboardMapperInspector.vue')
   ),
-
-  'translate': defineAsyncComponent(() => 
-    import('@editors/node/components/inspectors/TranslateInspector.vue')
-  ),
   
   'variable_get': defineAsyncComponent(() => 
     import('@editors/node/components/inspectors/VariableInspector.vue')

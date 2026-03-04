@@ -24,6 +24,7 @@ export default class SceneLoader {
                     name: layer.name,
                     visible: layer.visible ?? true,
                     locked: layer.locked ?? false,
+                    active: layer.active ?? true,
                     zIndex: Number(layer.zIndex ?? defaultZ), 
                     orderIndex: Number(layer.orderIndex ?? index),
                     entities: []

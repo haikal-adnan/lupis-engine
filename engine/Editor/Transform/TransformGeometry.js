@@ -48,7 +48,6 @@ export class TransformGeometry {
 
         this.isSizeLocked = false;
         if (selectedList && selectedList.length > 0) {
-            // Jika ada satu saja entity yang punya text autoFit, lock resize untuk grup
             this.isSizeLocked = selectedList.some(e => e.components?.TextRenderer?.autoFit);
         }
 

@@ -13,6 +13,7 @@ export const useScriptStore = defineStore('script', {
     activeScript: null, 
     selectedNodeId: null,
     isLoading: false,
+    camera: { x: 0, y: 0, scale: 1 }, 
   }),
 
   getters: {
@@ -26,7 +27,6 @@ export const useScriptStore = defineStore('script', {
       if (!state.activeScript || !state.selectedNodeId) return null;
       return state.activeScript.nodes.find(n => n._id === state.selectedNodeId);
     },
-    
     isInputConnected: (state) => (nodeId, handleId) => {
       if (!state.activeScript || !state.activeScript.edges) return false;
       
@@ -37,6 +37,14 @@ export const useScriptStore = defineStore('script', {
   },
 
   actions: {
+    updateCamera(updates) {
+      this.camera = { ...this.camera, ...updates };
+    },
+    
+    resetCamera() {
+      this.camera = { x: 0, y: 0, scale: 1 };
+    },
+
     async fetchScripts(projectId) {
       this.isLoading = true;
       try {
@@ -85,6 +93,7 @@ export const useScriptStore = defineStore('script', {
     setActiveScript(scriptData) {
       this.activeScript = JSON.parse(JSON.stringify(toRaw(scriptData)));
       this.selectedNodeId = null; 
+      this.resetCamera(); 
     },
 
     setSelectedNode(nodeId) {

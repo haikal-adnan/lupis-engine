@@ -11,6 +11,9 @@ import { NodePhysics } from './Node/NodePhysics.js'
 import { NodeRenderer } from './Node/NodeRenderer.js'
 import { NodeVariable } from './Node/NodeVariable';
 import { NodeComparison } from './Node/NodeComparison.js';
+import { NodeLayer } from './Node/NodeLayer.js';
+import { NodeScene } from './Node/NodeScene.js';
+import { NodeMouse } from './Node/NodeMouse.js';
 
 export const NodeRegistry = {
     ...NodeVariable,
@@ -25,7 +28,10 @@ export const NodeRegistry = {
     ...NodeCamera,
     ...NodePhysics,
     ...NodeRenderer,
-
+    ...NodeLayer,
+    ...NodeComparison,
+    ...NodeScene,
+    ...NodeMouse,
 
     default: {
         execute: (runner, node) => runner.executeFlow(node._id, 'out'),

@@ -11,11 +11,19 @@ export default class PhysicsSystem {
         const GLOBAL_DRAG = sceneSettings.drag;
 
         const entities = this.game.world.entities;
+        
+        // Dapatkan layer yang tidak aktif melalui ColliderSystem
+        const inactiveLayers = this.game.colliderSystem._getInactiveLayers();
 
         for (let i = 0; i < entities.length; i++) {
             const entity = entities[i];
 
-            if (!entity.active && !entity.isActive) continue;
+            // Cek status aktif entity
+            if (entity.active === false || entity.isActive === false) continue;
+            
+            // Cek apakah entity berada di layer yang tidak aktif
+            if (entity.layerId && inactiveLayers.has(entity.layerId)) continue;
+
             if (!entity.components.Physics || !entity.components.Physics.enabled) continue;
             if (!entity.components.Transform) continue;
 
@@ -51,7 +59,7 @@ export default class PhysicsSystem {
                 }
             }
 
-            this._checkGrounded(entity, phys);
+            this._checkGrounded(entity, phys, inactiveLayers);
             this._checkTriggers(entity, phys);
 
             if (phys.isGrounded && phys.velocityY > 0) {
@@ -64,7 +72,7 @@ export default class PhysicsSystem {
         }
     }
 
-    _checkGrounded(entity, physComponent) {
+    _checkGrounded(entity, physComponent, inactiveLayers) {
         const colliderSys = this.game.colliderSystem;
         const bounds = colliderSys.getBounds(entity);
         if (!bounds) {
@@ -83,10 +91,20 @@ export default class PhysicsSystem {
         let isGrounded = false;
         const entities = this.game.world.entities;
 
+        // Jika tidak di-passing dari update(), ambil ulang
+        if (!inactiveLayers) {
+            inactiveLayers = colliderSys._getInactiveLayers();
+        }
+
         for (let i = 0; i < entities.length; i++) {
             const other = entities[i];
             if (other === entity) continue;
-            if (!other.active && !other.isActive) continue;
+            
+            // Abaikan entity tidak aktif
+            if (other.active === false || other.isActive === false) continue;
+            
+            // Abaikan entity di layer tidak aktif
+            if (other.layerId && inactiveLayers.has(other.layerId)) continue;
 
             const col = other.components.Collider;
             if (!col || !col.enabled || col.type !== 'solid') continue;
@@ -102,14 +120,15 @@ export default class PhysicsSystem {
     }
 
     _checkTriggers(entity, physComponent) {
-       const overlaps = this.game.colliderSystem._findAllCollisions(entity);
-       if (overlaps && overlaps.length > 0) {
-           const triggerHit = overlaps.find(e => {
-                const c = e.components.Collider;
-                return c && c.type === 'trigger';
-           });
-           if (triggerHit) physComponent.collisionInfo.hitTrigger = triggerHit;
-       }
+        // _findAllCollisions di ColliderSystem sudah menghandle pengecekan layer non-aktif
+        const overlaps = this.game.colliderSystem._findAllCollisions(entity);
+        if (overlaps && overlaps.length > 0) {
+            const triggerHit = overlaps.find(e => {
+                 const c = e.components.Collider;
+                 return c && c.type === 'trigger';
+            });
+            if (triggerHit) physComponent.collisionInfo.hitTrigger = triggerHit;
+        }
     }
 
     _aabbIntersect(a, b) {

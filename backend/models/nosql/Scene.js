@@ -7,6 +7,8 @@ const LayerSchema = new mongoose.Schema({
   
   zIndex: { type: Number, default: 0 }, 
   orderIndex: { type: Number, default: 0 },
+
+  active: { type: Boolean, default: true},
   
   locked: { type: Boolean, default: false },
   visible: { type: Boolean, default: true }

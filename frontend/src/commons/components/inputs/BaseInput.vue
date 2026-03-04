@@ -20,7 +20,7 @@
       <div
         v-if="prefix"
         class="h-full flex items-center justify-center pl-3 pr-2 select-none border-r border-transparent 
-               bg-muted/20 text-muted-foreground group-focus-within:text-primary group-focus-within:border-border/50 transition-colors"
+                bg-muted/20 text-muted-foreground group-focus-within:text-primary group-focus-within:border-border/50 transition-colors"
       >
         <span class="text-xs font-bold font-mono">
           {{ prefix }}
@@ -29,16 +29,18 @@
 
       <input
         :id="id"
+        ref="inputRef"
         v-model="localValue"
         :type="type"
         class="w-full h-full bg-transparent border-none outline-none text-sm text-foreground placeholder:text-muted-foreground/40
-               focus:ring-0 px-2"
+                focus:ring-0 px-2"
         :placeholder="placeholder"
         :style="{
           paddingLeft: prefix ? '0px' : paddingX
         }"
         @blur="handleBlur"
         @keydown.enter="handleEnter"
+        @keydown.esc="handleEsc"
       />
       
       <div 
@@ -68,6 +70,7 @@ const props = defineProps({
 const emit = defineEmits(['blur', 'change'])
 const model = defineModel()
 const id = useId()
+const inputRef = ref(null)
 
 const localValue = ref(model.value)
 
@@ -78,6 +81,7 @@ watch(() => model.value, (newVal) => {
 const commitValue = () => {
   if (model.value !== localValue.value) {
     model.value = localValue.value
+    emit('change', localValue.value)
   }
 }
 
@@ -88,5 +92,10 @@ function handleBlur(event) {
 
 function handleEnter(event) {
   event.target.blur() 
+}
+
+function handleEsc() {
+  localValue.value = model.value
+  inputRef.value?.blur()
 }
 </script>

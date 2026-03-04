@@ -17,8 +17,6 @@ export const createScriptVariable = (data = {}) => ({
 });
 
 export const createScriptNode = (data = {}) => {
-  // 1. Lakukan deep copy untuk menghindari mutasi referensi antar node
-  // 2. Pastikan properti 'values' selalu tersedia
   const safeData = data.data ? JSON.parse(JSON.stringify(data.data)) : {};
   if (!safeData.values) {
     safeData.values = {};
@@ -51,7 +49,6 @@ export const createScriptNode = (data = {}) => {
       ? data.outputs.map(createScriptPort)
       : [],
     
-    // Gunakan safeData yang sudah diproses
     data: safeData 
   };
 };

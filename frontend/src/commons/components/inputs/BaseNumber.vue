@@ -10,8 +10,8 @@
 
     <div
       class="group relative flex items-center w-full transition-all duration-200 border rounded-md bg-background 
-              focus-within:border-primary focus-within:ring-1 focus-within:ring-primary
-              hover:border-muted-foreground/50 border-input overflow-hidden"
+             focus-within:border-primary focus-within:ring-1 focus-within:ring-primary
+             hover:border-muted-foreground/50 border-input overflow-hidden"
       :class="{ 'cursor-ew-resize': isDragging }"
       :style="{
         borderRadius: radius,
@@ -52,6 +52,8 @@
         @input="validateInput"
         @keydown.up.prevent="increment(step)"
         @keydown.down.prevent="increment(-step)"
+        @keydown.enter="handleEnter"
+        @keydown.esc="handleEsc"
         @blur="handleBlur"
         @change="handleChange"
       />
@@ -89,7 +91,6 @@ const props = defineProps({
 const model = defineModel({ type: [Number, String] })
 const id = useId()
 const inputRef = ref(null)
-
 const localInput = ref(model.value)
 
 const displayValue = computed({
@@ -250,6 +251,16 @@ function handleBlur() {
 
 function handleChange() {
   updateModel(localInput.value)
+}
+
+function handleEnter() {
+  updateModel(localInput.value)
+  inputRef.value?.blur()
+}
+
+function handleEsc() {
+  localInput.value = model.value
+  inputRef.value?.blur()
 }
 </script>
 

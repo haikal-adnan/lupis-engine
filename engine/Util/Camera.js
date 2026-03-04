@@ -10,6 +10,11 @@ export default class Camera {
         this.lerp = 0.5;
     }
 
+    snapTo(x, y) {
+        this.x = x;
+        this.y = y;
+    }
+
     setTarget(entity, speed = 0.1, offset = { x: 0, y: 0 }) {
         this.target = entity;
         this.lerp = (typeof speed === 'number' && !isNaN(speed)) ? speed : 0.1;
@@ -21,6 +26,7 @@ export default class Camera {
 
     clearTarget() {
         this.target = null;
+        this.lerp = 0.5;
     }
 
     update(dt, world, canvas) {
@@ -78,5 +84,4 @@ export default class Camera {
             this.y = Math.max(minY, Math.min(this.y, maxY));
         }
     }
-
 }

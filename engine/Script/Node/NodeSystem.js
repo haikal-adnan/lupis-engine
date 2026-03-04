@@ -4,7 +4,7 @@ export const NodeSystem = {
             let message = runner.getInputValue(node, 'in_msg');
             
             if (message === undefined || message === null) {
-                message = node.data?.message || 'Notification';
+                message = node.data?.values?.in_msg ?? 'Notification';
             }
             
             console.log(
@@ -18,7 +18,12 @@ export const NodeSystem = {
 
     'system_log': {
         execute: (runner, node) => {
-            const val = runner.getInputValue(node, 'in_value');
+            let val = runner.getInputValue(node, 'in_value');
+            
+            if (val === undefined || val === null) {
+                val = node.data?.values?.in_value ?? '';
+            }
+
             const prefix = node.data?.prefix || 'LOG: ';
             
             console.log(`%c 📟 ${prefix}`, 'color: #00E676;', val);

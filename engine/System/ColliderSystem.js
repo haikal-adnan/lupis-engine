@@ -4,7 +4,6 @@ export default class ColliderSystem {
     }
 
     moveAndSlide(entity, dx, dy) {
-        // Proteksi: Abaikan kalkulasi jika entity utama sedang tidak aktif
         if (entity.active === false || entity.isActive === false) return null;
         if (!entity.components.Transform) return null;
         
@@ -60,7 +59,6 @@ export default class ColliderSystem {
     }
 
     checkOverlap(entity, targetTag = null) {
-        // Proteksi: Abaikan jika entity utama sedang tidak aktif
         if (entity.active === false || entity.isActive === false) return null;
 
         const overlaps = this._findAllCollisions(entity, null, targetTag);
@@ -74,7 +72,6 @@ export default class ColliderSystem {
         return overlaps[0];
     }
 
-    // Helper untuk mengumpulkan semua ID layer yang sedang mati/hidden
     _getInactiveLayers() {
         const worldLayers = this.game.world.layersWorld || [];
         const uiLayers = this.game.world.layersUI || [];
@@ -94,7 +91,6 @@ export default class ColliderSystem {
         const currentId = entity.id || entity._id;
         const entities = this.game.world.entities;
         
-        // Cache layer yang tidak aktif
         const inactiveLayers = this._getInactiveLayers();
 
         for (let i = 0; i < entities.length; i++) {
@@ -103,10 +99,8 @@ export default class ColliderSystem {
             
             if (otherId === currentId) continue;
             
-            // 1. Cek status aktif dari entity target
             if (other.active === false || other.isActive === false) continue;
             
-            // 2. Cek status layer dari entity target
             if (other.layerId && inactiveLayers.has(other.layerId)) continue;
 
             const col = other.components.Collider;
@@ -132,7 +126,6 @@ export default class ColliderSystem {
         const currentId = entity.id || entity._id;
         const entities = this.game.world.entities;
         
-        // Cache layer yang tidak aktif
         const inactiveLayers = this._getInactiveLayers();
 
         for (let i = 0; i < entities.length; i++) {
