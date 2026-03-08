@@ -17,6 +17,8 @@ import { BlueprintRenderer } from '@editors/variable/parts/BlueprintRenderer';
 import { BlueprintLayer } from '@editors/variable/parts/BlueprintLayer';
 import { BlueprintScene } from '@editors/variable/parts/BlueprintScene';
 import { BlueprintMouse } from '@editors/variable/parts/BlueprintMouse';
+import { BlueprintAnimator } from '@editors/variable/parts/BlueprintAnimator';
+import { BlueprintTransition } from '@editors/variable/parts/BlueprintTransition';
 
 export const STATIC_NODE_GROUPS = [
   BlueprintRenderer,
@@ -36,7 +38,9 @@ export const STATIC_NODE_GROUPS = [
   BlueprintPhysics,
   BlueprintLayer,
   BlueprintScene,
-  BlueprintMouse
+  BlueprintMouse,
+  BlueprintAnimator,
+  BlueprintTransition
 ]
 
 export function useNodeBlueprint() {

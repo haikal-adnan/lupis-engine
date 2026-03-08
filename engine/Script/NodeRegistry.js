@@ -14,6 +14,9 @@ import { NodeComparison } from './Node/NodeComparison.js';
 import { NodeLayer } from './Node/NodeLayer.js';
 import { NodeScene } from './Node/NodeScene.js';
 import { NodeMouse } from './Node/NodeMouse.js';
+import { NodeAnimator } from './Node/NodeAnimator.js';
+import { NodeKeyboard } from './Node/NodeKeyboard.js';
+import { NodeTransition } from './Node/NodeTransition.js';
 
 export const NodeRegistry = {
     ...NodeVariable,
@@ -32,6 +35,9 @@ export const NodeRegistry = {
     ...NodeComparison,
     ...NodeScene,
     ...NodeMouse,
+    ...NodeAnimator,
+    ...NodeKeyboard,
+    ...NodeTransition,
 
     default: {
         execute: (runner, node) => runner.executeFlow(node._id, 'out'),

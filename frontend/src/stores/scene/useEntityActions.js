@@ -68,7 +68,6 @@ export const entityActions = {
   },
 
   createEntity(type, contextNodeOrLayerId, overrides = {}) {
-    console.log(overrides)
     const scene = this.activeScene;
     if (!scene) return null;
 
@@ -146,10 +145,12 @@ export const entityActions = {
       components.Tilemap = { 
          tileWidth: 16, tileHeight: 16, width: defaultW, height: defaultH,
          tilesetId: null, opacity: 1, isSolid: false,
+         autoFit: true,
          data: new Array(defaultW * defaultH).fill(0)
       };
-      components.Transform = { ...rawTransform };
-    } 
+      
+      components.Transform = { ...rawTransform, width: 640, height: 480 };
+    }
     else if (type === 'ui_empty') {
       components.UITransform = { ...rawTransform, width: 100, height: 100, anchorX: 0.5, anchorY: 0.5 };
     } 

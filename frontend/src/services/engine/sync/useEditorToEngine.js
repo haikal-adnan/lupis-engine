@@ -28,6 +28,7 @@ export function useEditorToEngine(projectStore, sceneStore, assetStore, editorSt
           
           case 'toggleUIBorder': EngineBridge.updateProjectSettings({ ui: { showUIBorder: s.ui.showUIBorder } }); break;
           case 'updateUISettings': EngineBridge.updateProjectSettings({ ui: args[0] }); break;
+          case 'updateCameraSettings': EngineBridge.updateProjectSettings({ camera: args[0] }); break;
         }
       });
       onError((err) => console.error(`[Sync] Error on ProjectStore ${name}:`, err));

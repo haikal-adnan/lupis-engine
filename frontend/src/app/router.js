@@ -1,7 +1,9 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import EditorView from '@/layouts/EditorView.vue'
 import DashboardPage from '@/modules/dashboards/views/DashboardPage.vue'
-import LandingPage from '@/modules/landing/views/LandingPage.vue' 
+import LandingPage from '@/modules/landing/views/LandingPage.vue'
+import AboutPage from '@/modules/landing/views/AboutPage.vue' 
+import DocsPanel from '@/modules/docs/DocsPanel.vue'
 
 const routes = [
   {
@@ -11,10 +13,22 @@ const routes = [
     meta: { layout: 'EmptyLayout' } 
   },
   {
+    path: '/about',
+    name: 'About',
+    component: AboutPage,
+    meta: { layout: 'AboutLayout' } 
+  },
+  {
     path: '/dashboard',
     name: 'Dashboard',
     component: DashboardPage,
     meta: { layout: 'DashboardLayout' }
+  },
+    {
+    path: '/docs',
+    name: 'Docs',
+    component: DocsPanel,
+    meta: { layout: 'DocsLayout' }
   },
   {
     path: '/editor/:idProject', 

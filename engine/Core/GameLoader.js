@@ -62,7 +62,7 @@ export default class GameLoader {
             if (mode === "editor") {
                 this._initializeEditorTools(game, canvas);
             }
-
+            console.log(game)
             game.initLoop();
             this.start(game);
 
@@ -89,6 +89,7 @@ export default class GameLoader {
                 gravity: sceneSettings.physics?.gravity ?? 1200,
                 drag: sceneSettings.physics?.drag ?? 5
             },
+            camera: projSettings.camera ?? { x: 0, y: 0, zoom: 1, lerp: 0.1 }, 
             grid: projSettings.grid ?? { width: 32, height: 32, color: "#ffffff", opacity: 0.1, visible: true, snap: true },
             showRulers: sceneSettings.showRulers ?? true,
             ui: projSettings.ui ?? {
@@ -98,6 +99,8 @@ export default class GameLoader {
                 active: true
             }
         };
+
+        
     }
 
     _setupEditorState(game, config = {}) {

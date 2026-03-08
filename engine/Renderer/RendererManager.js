@@ -86,6 +86,26 @@ export default class RendererManager {
         } else {
             this._flushAll();
         }
+
+        if (game.transitionSystem && game.transitionSystem.isActive) {
+            const pScreen = this._updateEditorProjection(); 
+
+            const wasDepthEnabled = this.gl.isEnabled(this.gl.DEPTH_TEST);
+            this.gl.disable(this.gl.DEPTH_TEST);
+
+            this.shape.drawRect(
+                0, 0, this.canvas.width, this.canvas.height, 
+                game.transitionSystem.color, pScreen, 
+                0, 1, 1, 0, 0, 
+                game.transitionSystem.alpha, 
+                false, false
+            );
+            this.shape.flush();
+
+            if (wasDepthEnabled) {
+                this.gl.enable(this.gl.DEPTH_TEST);
+            }
+        }
     }
 
     _beginFrame() {

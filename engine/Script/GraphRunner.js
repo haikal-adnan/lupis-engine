@@ -52,13 +52,14 @@ export default class GraphRunner {
         if (!this._isScriptActive()) return;
         if (!this.data.nodes) return;
 
+        // [DIPERBARUI] Tambahkan filter untuk event_scene_start
         this.data.nodes
-            .filter(n => n.type === 'event_game_start')
+            .filter(n => n.type === 'event_game_start' || n.type === 'event_scene_start')
             .forEach(node => {
-                this.executeFlow(node._id, 'out');
+                // Ini akan langsung memicu pin 'out' dari node tersebut
+                this.executeFlow(node._id, 'out'); 
             });
     }
-
     _setupEventListeners() {
         if (!this.data.nodes) return;
         
@@ -67,17 +68,44 @@ export default class GraphRunner {
         this._dragNodes = [];
 
         this.data.nodes.forEach(node => {
+
+            if (node.type === 'event_any_key') {
+                this.game.events.on('input:keydown', (k) => {
+                    if (!this._isScriptActive()) return;
+
+                    // Simpan key yang ditekan ke dalam _tempData sebagai lowercase
+                    // 'k' biasanya berisi key name seperti 'A', 'Enter', 'Shift', dll.
+                    node._tempData = { 
+                        key_string: String(k).toLowerCase() 
+                    };
+
+                    // Jalankan flow output execution
+                    this.executeFlow(node._id, 'out_exec');
+                });
+            }
+
+            // --- EVENT: KEY DOWN ---
             if (node.type === 'event_simple_key') {
                 const keyTarget = node.data?.key?.toLowerCase();
                 this.game.events.on('input:keydown', (k) => {
                     if (!this._isScriptActive()) return;
+                    // Jalankan flow jika tombol yang ditekan cocok
                     if (k === keyTarget) this.executeFlow(node._id, 'sk_main');
                 });
             } 
+            // --- EVENT: KEY UP ---
+            else if (node.type === 'event_simple_key_up') {
+                const keyTarget = node.data?.key?.toLowerCase();
+                this.game.events.on('input:keyup', (k) => {
+                    if (!this._isScriptActive()) return;
+                    // Jalankan flow jika tombol yang dilepas cocok
+                    if (k === keyTarget) this.executeFlow(node._id, 'sk_up_main');
+                });
+            }
+            // --- EVENT: POINTER CLICK ---
             else if (node.type === 'event_pointer_click') {
                 const config = Array.isArray(node.data) ? node.data[0] : node.data;
                 const btnTarget = config?.button || 'left';
-                
                 this.game.events.on('input:pointerdown', (e) => {
                     if (!this._isScriptActive()) return;
                     if (e.button === btnTarget) {
@@ -86,35 +114,29 @@ export default class GraphRunner {
                     }
                 });
             } 
+            // --- EVENT: ADVANCED KEY (HOLD LOGIC) ---
             else if (node.type === 'event_advanced_key') {
                 const mappings = node.data?.mappings || [];
-                
                 mappings.forEach(map => {
                     const outputId = `out_${map._id}`;
                     const keyTarget = map.key.toLowerCase();
                     
                     if (map.trigger === 'press') {
                         this.game.events.on('input:keydown', (k) => {
-                            if (!this._isScriptActive()) return;
-                            if (k === keyTarget) this.executeFlow(node._id, outputId);
+                            if (k === keyTarget && this._isScriptActive()) this.executeFlow(node._id, outputId);
                         });
                     } else if (map.trigger === 'release') {
                         this.game.events.on('input:keyup', (k) => {
-                            if (!this._isScriptActive()) return;
-                            if (k === keyTarget) this.executeFlow(node._id, outputId);
+                            if (k === keyTarget && this._isScriptActive()) this.executeFlow(node._id, outputId);
                         });
                     } else if (map.trigger === 'hold') {
                         this._holdNodes.push({ 
-                            node, 
-                            map, 
-                            outputId, 
-                            keyTarget,
-                            currentHoldTime: 0, 
-                            hasFiredOnce: false 
+                            node, map, outputId, keyTarget,
+                            currentHoldTime: 0, hasFiredOnce: false 
                         });
                     }
                 });
-            } 
+            }
             else if (node.type === 'event_pointer_drag') {
                 this._dragNodes.push(node);
             } 

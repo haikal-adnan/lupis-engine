@@ -3,10 +3,11 @@
     
     <div
       ref="viewportRef"
-      class="h-full w-full overflow-y-auto scrollbar-hide"
+      class="h-full w-full scrollbar-hide"
+      :class="isVertical ? 'overflow-y-auto overflow-x-hidden' : 'overflow-x-auto overflow-y-hidden'"
       @scroll="handleScroll"
     >
-      <div ref="contentRef">
+      <div ref="contentRef" :class="isVertical ? '' : 'w-max h-full'">
         <slot />
       </div>
     </div>
@@ -14,23 +15,24 @@
     <Teleport to="body">
       <div
         v-if="showScrollbar"
-        class="fixed z-[9999] w-2 transition-opacity duration-200"
+        class="fixed z-[9999] transition-opacity duration-200 flex"
         :class="isScrolling || isHovering ? 'opacity-100' : 'opacity-0'"
         :style="{
           top: `${trackPosition.top}px`,
           left: `${trackPosition.left}px`,
+          width: `${trackPosition.width}px`,
           height: `${trackPosition.height}px`
         }"
         @mouseenter="handleMouseEnter"
         @mouseleave="handleMouseLeave"
       >
         <div
-          class="w-1.5 ml-auto mr-0.5 rounded-full cursor-pointer select-none transition-colors"
-          :class="isHovering || isDragging ? 'bg-white/40' : 'bg-white/20'"
-          :style="{
-            height: `${thumbHeight}px`,
-            transform: `translateY(${thumbTop}px)`
-          }"
+          class="rounded-full cursor-pointer select-none transition-colors"
+          :class="[
+            isHovering || isDragging ? 'bg-white/40' : 'bg-white/20',
+            isVertical ? 'w-1.5 ml-auto mr-0.5' : 'h-1.5 mt-auto mb-0.5'
+          ]"
+          :style="thumbStyle"
           @mousedown="handleDragStart"
         ></div>
       </div>
@@ -39,58 +41,82 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, nextTick } from 'vue'
+
+const props = defineProps({
+  orientation: {
+    type: String,
+    default: 'vertical',
+    validator: (v) => ['vertical', 'horizontal'].includes(v)
+  }
+})
+
+const isVertical = computed(() => props.orientation === 'vertical')
 
 const containerRef = ref(null)
 const viewportRef = ref(null)
 const contentRef = ref(null)
 
 const showScrollbar = ref(false)
-const thumbHeight = ref(0)
-const thumbTop = ref(0)
+const thumbSize = ref(0)
+const thumbPos = ref(0)
 const isHovering = ref(false)
 const isScrolling = ref(false)
 const isDragging = ref(false)
 
-const trackPosition = reactive({ top: 0, left: 0, height: 0 })
+const trackPosition = reactive({ top: 0, left: 0, width: 0, height: 0 })
 
 let scrollTimeout = null
 let resizeObserver = null
+
+const thumbStyle = computed(() => {
+  if (isVertical.value) {
+    return { height: `${thumbSize.value}px`, transform: `translateY(${thumbPos.value}px)` }
+  } else {
+    return { width: `${thumbSize.value}px`, transform: `translateX(${thumbPos.value}px)` }
+  }
+})
 
 const updateGeometry = () => {
   if (!viewportRef.value || !contentRef.value || !containerRef.value) return
 
   const rect = containerRef.value.getBoundingClientRect()
-  trackPosition.top = rect.top
-  trackPosition.left = rect.right - 8 
-  trackPosition.height = rect.height
+  
+  if (isVertical.value) {
+    trackPosition.top = rect.top
+    trackPosition.left = rect.right - 8 
+    trackPosition.width = 8
+    trackPosition.height = rect.height
+  } else {
+    trackPosition.top = rect.bottom - 8
+    trackPosition.left = rect.left
+    trackPosition.width = rect.width
+    trackPosition.height = 8
+  }
 
-  const viewportHeight = viewportRef.value.clientHeight
-  const contentHeight = viewportRef.value.scrollHeight
+  const viewport = isVertical.value ? viewportRef.value.clientHeight : viewportRef.value.clientWidth
+  const content = isVertical.value ? viewportRef.value.scrollHeight : viewportRef.value.scrollWidth
 
-  if (contentHeight <= viewportHeight) {
+  if (content <= viewport) {
     showScrollbar.value = false
-    thumbHeight.value = 0
+    thumbSize.value = 0
     return
   }
 
   showScrollbar.value = true
 
-  const ratio = viewportHeight / contentHeight
-  const height = Math.max(ratio * viewportHeight, 20) 
-  thumbHeight.value = height
+  const ratio = viewport / content
+  thumbSize.value = Math.max(ratio * viewport, 20) 
 
-  const maxScrollTop = contentHeight - viewportHeight
-  const maxThumbTop = viewportHeight - thumbHeight.value
-  const scrollRatio = viewportRef.value.scrollTop / maxScrollTop
+  const maxScroll = content - viewport
+  const maxThumb = viewport - thumbSize.value
+  const currentScroll = isVertical.value ? viewportRef.value.scrollTop : viewportRef.value.scrollLeft
   
-  thumbTop.value = scrollRatio * maxThumbTop
+  thumbPos.value = (currentScroll / maxScroll) * maxThumb
 }
 
 const handleScroll = () => {
-  if (!isDragging.value) {
-    updateGeometry()
-  }
+  if (!isDragging.value) updateGeometry()
   
   isScrolling.value = true
   if (scrollTimeout) clearTimeout(scrollTimeout)
@@ -102,8 +128,8 @@ const handleScroll = () => {
 const handleMouseEnter = () => { isHovering.value = true }
 const handleMouseLeave = () => { isHovering.value = false }
 
-let startY = 0
-let startScrollTop = 0
+let startCoord = 0
+let startScroll = 0
 
 const handleDragStart = (e) => {
   e.preventDefault()
@@ -111,8 +137,8 @@ const handleDragStart = (e) => {
   
   isDragging.value = true
   isHovering.value = true 
-  startY = e.clientY
-  startScrollTop = viewportRef.value.scrollTop
+  startCoord = isVertical.value ? e.clientY : e.clientX
+  startScroll = isVertical.value ? viewportRef.value.scrollTop : viewportRef.value.scrollLeft
   
   document.addEventListener('mousemove', handleDragMove)
   document.addEventListener('mouseup', handleDragEnd)
@@ -122,16 +148,19 @@ const handleDragStart = (e) => {
 const handleDragMove = (e) => {
   if (!viewportRef.value) return
 
-  const deltaY = e.clientY - startY
-  const viewportHeight = viewportRef.value.clientHeight
-  const contentHeight = viewportRef.value.scrollHeight
+  const delta = (isVertical.value ? e.clientY : e.clientX) - startCoord
+  const viewport = isVertical.value ? viewportRef.value.clientHeight : viewportRef.value.clientWidth
+  const content = isVertical.value ? viewportRef.value.scrollHeight : viewportRef.value.scrollWidth
   
-  const maxThumbTop = viewportHeight - thumbHeight.value
-  const maxScrollTop = contentHeight - viewportHeight
+  const maxThumb = viewport - thumbSize.value
+  const maxScroll = content - viewport
+  const scrollAmount = (delta / maxThumb) * maxScroll
   
-  const scrollAmount = (deltaY / maxThumbTop) * maxScrollTop
-  
-  viewportRef.value.scrollTop = startScrollTop + scrollAmount
+  if (isVertical.value) {
+    viewportRef.value.scrollTop = startScroll + scrollAmount
+  } else {
+    viewportRef.value.scrollLeft = startScroll + scrollAmount
+  }
   
   updateGeometry() 
 }

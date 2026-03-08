@@ -48,6 +48,26 @@ export const BlueprintLifecycle = {
       }
     },
     {
+      type: 'event_scene_start',
+      label: 'On Scene Start',
+      description: 'Triggered exactly once when the scene has successfully loaded and started.',
+      icon: Flag, 
+      allowDynamicInputs: false,
+      allowDynamicOutputs: false,
+      defaultData: {
+        settings: {
+          headerTitle: 'On Scene Start',
+          headerColor: '#059669', // Sedikit berbeda warna hijaunya dari Game Start
+          category: 'Events'
+        },
+        inputs: [],
+        outputs: [
+          { _id: 'out', label: 'Start', dataType: 'execution', color: '#ffffff' },
+          { _id: 'scene_name', label: 'Scene Name', dataType: 'string', color: '#FCD34D' } // Pin Output untuk nama scene
+        ]
+      }
+    },
+    {
       type: 'action_game_pause',
       label: 'Pause Game',
       description: 'Freezes the game loop update.',

@@ -13,6 +13,7 @@
           <EditorTransform v-else />
           
           <EditorSprite v-if="selectedEntity.components?.SpriteRenderer" />
+          <EditorAnimator v-if="selectedEntity.components?.SpriteAnimator" />
           <EditorShape v-if="selectedEntity.components?.ShapeRenderer" />
           <EditorText v-if="selectedEntity.components?.TextRenderer" />
           <EditorTilemap v-if="selectedEntity.components?.Tilemap" />
@@ -72,6 +73,7 @@ import EditorCollider from '@editors/properties/components/EditorCollider.vue'
 import EditorPhysics from '@editors/properties/components/EditorPhysics.vue'
 import EditorScene from '@editors/properties/components/settings/EditorScene.vue'
 import EditorProject from '@editors/properties/components/settings/EditorProject.vue'
+import EditorAnimator from '@editors/properties/components/EditorAnimator.vue'
 
 const { hasSelection, selectedEntity, selectedLayerId, addComponentToSelection, isMultiSelection } = useInspectorLogic();
 
@@ -94,16 +96,18 @@ const availableComponentOptions = computed(() => {
   
   const comps = selectedEntity.value.components;
   const hasRenderer = RENDERER_GROUP.some(r => !!comps[r]);
+  const hasSpriteRenderer = !!comps.SpriteRenderer; 
   const isUIEntity = !!comps.UITransform;
 
   let allOptions = [
-    { label: 'Sprite Renderer', value: 'SpriteRenderer', isRenderer: true },
+    { label: 'Image Renderer', value: 'SpriteRenderer', isRenderer: true },
     { label: 'Shape Renderer', value: 'ShapeRenderer', isRenderer: true },  
     { label: 'Text Renderer', value: 'TextRenderer', isRenderer: true },    
     { label: 'Tilemap', value: 'Tilemap', isRenderer: true },
     { label: 'Physics Body', value: 'Physics', isRenderer: false },
     { label: 'Collider', value: 'Collider', isRenderer: false },
     { label: 'Script Controller', value: 'ScriptController', isRenderer: false },
+    { label: 'Sprite Animator', value: 'SpriteAnimator', isRenderer: false, requiresSprite: true },
   ];
 
   if (isUIEntity) {
@@ -121,6 +125,10 @@ const availableComponentOptions = computed(() => {
     else if (opt.isRenderer && hasRenderer) { 
         disabled = true; 
         label += ' (Conflict)'; 
+    }
+    else if (opt.requiresSprite && !hasSpriteRenderer) {
+        disabled = true;
+        label += ' (Requires SpriteRenderer)'; 
     }
     
     return { ...opt, disabled, label };

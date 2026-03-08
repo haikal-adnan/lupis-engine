@@ -19,6 +19,7 @@ export const createEmptyProject = async (ownerId, projectName, description) => {
       settings: { 
         tickRate: 60,
         ui: { width: 1920, height: 1080, showUIBorder: true, active: true },
+        camera: { x: 960, y: 540, zoom: 1, lerp: 0.1 },
         grid: { width: 32, height: 32, color: "#ffffff", opacity: 0.1, visible: true, snap: true }
       },
       scenes: [sceneId],

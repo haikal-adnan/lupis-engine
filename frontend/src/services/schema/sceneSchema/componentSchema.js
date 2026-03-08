@@ -54,6 +54,15 @@ export const createPhysics = (data = {}) => {
   };
 };
 
+export const createSpriteAnimator = (data = {}) => {
+  return {
+    currentClip: data.currentClip || null,
+    clips: data.clips || {},
+    isActive: Boolean(data.isActive ?? true),
+    isPlaying: Boolean(data.isPlaying ?? true),
+  }
+}
+
 export const createComponent = (type, inputData = {}) => {
   let specificData = {};
 
@@ -107,6 +116,7 @@ export const createComponent = (type, inputData = {}) => {
         assetId: inputData.assetId || null,
         opacity: Number(inputData.opacity ?? 1),
         isSolid: Boolean(inputData.isSolid ?? false),
+        autoFit: Boolean(inputData.autoFit ?? true),
         data: inputData.data || new Array(mapW * mapH).fill(0),
         ...inputData
       };
@@ -129,6 +139,9 @@ export const createComponent = (type, inputData = {}) => {
 
     case "Physics":
       return createPhysics(inputData);
+
+    case "SpriteAnimator":
+      return createSpriteAnimator(inputData);
 
     default:
       specificData = { ...inputData };

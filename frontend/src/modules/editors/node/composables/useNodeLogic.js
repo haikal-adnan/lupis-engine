@@ -69,7 +69,9 @@ export function useNodeLogic() {
       'get_sprite', 'set_sprite',
       'get_shape', 'set_shape',
       'get_tilemap', 'set_tilemap',
-      'get_text', 'set_text'
+      'get_text', 'set_text',
+      'get_animator', 'set_animator',
+      'get_clip_prop', 'set_clip_prop'
     ];
     
     if (dynamicTypes.includes(node.type)) {

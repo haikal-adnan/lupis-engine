@@ -13,25 +13,18 @@
              focus-within:border-primary focus-within:ring-1 focus-within:ring-primary
              hover:border-muted-foreground/50 border-input overflow-hidden"
       :class="{ 'cursor-ew-resize': isDragging }"
-      :style="{
-        borderRadius: radius,
-        height: height,
-      }"
+      :style="{ borderRadius: radius, height: height }"
     >
       <div
         v-if="prefix"
         @mousedown.prevent="startScrub"
         class="h-full flex items-center justify-center pl-3 pr-2 select-none border-r border-transparent 
-                bg-muted/20 transition-colors relative z-10 cursor-ew-resize hover:bg-muted/40 hover:text-primary"
-        :class="[
-          isDragging ? '!bg-primary/20 !text-primary border-primary/20' : 'group-focus-within:border-border/50'
-        ]"
+                bg-muted/20 transition-colors relative cursor-ew-resize hover:bg-muted/40 hover:text-primary"
+        :class="[isDragging ? '!bg-primary/20 !text-primary border-primary/20' : 'group-focus-within:border-border/50']"
       >
         <span
           class="text-xs font-bold font-mono text-muted-foreground transition-colors"
-          :class="[
-            isDragging ? '!text-primary' : 'group-focus-within:text-primary'
-          ]"
+          :class="[isDragging ? '!text-primary' : 'group-focus-within:text-primary']"
         >
           {{ prefix }}
         </span>
@@ -43,12 +36,9 @@
         v-model="displayValue"
         type="text"
         inputmode="decimal" 
-        class="w-full h-full bg-transparent border-none outline-none text-sm text-foreground placeholder:text-muted-foreground/40
-                focus:ring-0 px-2"
+        class="w-full h-full bg-transparent border-none outline-none text-sm text-foreground px-2"
         :placeholder="placeholder"
-        :style="{
-          paddingLeft: prefix ? '0px' : paddingX
-        }"
+        :style="{ paddingLeft: prefix ? '0px' : paddingX }"
         @input="validateInput"
         @keydown.up.prevent="increment(step)"
         @keydown.down.prevent="increment(-step)"
@@ -58,10 +48,7 @@
         @change="handleChange"
       />
       
-      <div 
-        v-if="suffix" 
-        class="h-full flex items-center pr-3 pl-1 text-xs text-muted-foreground select-none bg-muted/20"
-      >
+      <div v-if="suffix" class="h-full flex items-center pr-3 pl-1 text-xs text-muted-foreground bg-muted/20">
         {{ suffix }}
       </div>
     </div>
@@ -84,7 +71,7 @@ const props = defineProps({
   max: { type: Number, default: Infinity },
   ignoreRange: { type: Boolean, default: false },
   cyclic: { type: Boolean, default: false },
-  scrubSensitivity: { type: Number, default: 1 },
+  scrubSensitivity: { type: Number, default: 1 }, 
   precision: { type: Number, default: null }
 })
 
@@ -92,6 +79,10 @@ const model = defineModel({ type: [Number, String] })
 const id = useId()
 const inputRef = ref(null)
 const localInput = ref(model.value)
+const isDragging = ref(false)
+
+let startX = 0
+let startValue = 0
 
 const displayValue = computed({
   get: () => localInput.value,
@@ -100,84 +91,63 @@ const displayValue = computed({
 
 watch(() => model.value, (newVal) => {
   if (!isDragging.value) {
-    if (props.precision !== null && typeof newVal === 'number') {
-      localInput.value = parseFloat(newVal.toFixed(props.precision));
-    } else {
-      localInput.value = newVal
-    }
+    localInput.value = formatValue(newVal)
   }
 })
+
+// Memastikan angka bersih dari artifact floating point (0.30000000004)
+function formatValue(val) {
+  if (val === null || val === undefined || val === '') return ''
+  const num = parseFloat(val)
+  if (isNaN(num)) return val
+  
+  const p = props.precision !== null ? props.precision : getStepPrecision(props.step)
+  return parseFloat(num.toFixed(p))
+}
+
+function getStepPrecision(step) {
+  if (!step || !step.toString().includes('.')) return 0
+  return step.toString().split('.')[1].length
+}
 
 function validateInput(event) {
   let value = event.target.value;
   let clean = value.replace(/[^0-9.-]/g, '');
-
   if (clean.lastIndexOf('-') > 0) {
-    clean = clean.replace(/-/g, ''); 
-    clean = '-' + clean; 
+    clean = '-' + clean.replace(/-/g, ''); 
   }
-
   const parts = clean.split('.');
-  if (parts.length > 2) {
-    clean = parts[0] + '.' + parts.slice(1).join('');
-  }
-
-  if (value !== clean) {
-    localInput.value = clean;
-    event.target.value = clean; 
-  }
-}
-
-function applyPrecision(val) {
-  if (props.precision !== null) {
-    return parseFloat(val.toFixed(props.precision));
-  }
-  return val;
+  if (parts.length > 2) clean = parts[0] + '.' + parts.slice(1).join('');
+  localInput.value = clean;
 }
 
 function normalizeValue(val) {
   if (props.ignoreRange) return val
-  
   if (props.cyclic) {
     const rangeSpan = (props.max - props.min) + (Number.isInteger(props.step) ? props.step : 0)
-    const wrapped = ((val - props.min) % rangeSpan + rangeSpan) % rangeSpan + props.min
-    return parseFloat(wrapped.toFixed(props.precision !== null ? props.precision : 2))
+    return ((((val - props.min) % rangeSpan) + rangeSpan) % rangeSpan) + props.min
   }
-
-  let clamped = val
-  if (clamped < props.min) clamped = props.min
-  if (clamped > props.max) clamped = props.max
-  return clamped
+  return Math.max(props.min, Math.min(props.max, val))
 }
 
 function updateModel(val) {
-  if (val === '' || val === '-' || val === '.') return;
-
+  if (val === '' || val === '-' || val === '.') return
   let num = parseFloat(val)
   if (isNaN(num)) return 
-
-  num = applyPrecision(num);
-  const finalVal = normalizeValue(num)
   
+  const finalVal = formatValue(normalizeValue(num))
   model.value = finalVal
-  
-  if (finalVal !== num) {
-    localInput.value = finalVal 
-  }
+  localInput.value = finalVal
 }
 
-const isDragging = ref(false)
-let startX = 0
-let startValue = 0
+// --- LOGIC SCRUBBING ---
 
 function startScrub(event) {
   isDragging.value = true
   startX = event.clientX
   startValue = parseFloat(model.value) || 0
-
   document.body.style.cursor = 'ew-resize'
   document.body.style.userSelect = 'none'
-
   window.addEventListener('mousemove', onMouseMove)
   window.addEventListener('mouseup', stopScrub)
 }
@@ -185,30 +155,26 @@ function startScrub(event) {
 function onMouseMove(event) {
   if (!isDragging.value) return
 
-  const currentX = event.clientX
-  const deltaX = currentX - startX
+  const deltaX = event.clientX - startX
+  let modifier = 1
+  if (event.shiftKey) modifier = 10
+  if (event.altKey) modifier = 0.1
 
-  let multiplier = 1
-  if (event.shiftKey) multiplier = 10   
-  if (event.altKey) multiplier = 0.1   
-
-  const change = deltaX * props.step * multiplier * props.scrubSensitivity
-  let newValue = startValue + change
-
-  if (props.precision !== null) {
-    newValue = parseFloat(newValue.toFixed(props.precision));
-  } else {
-    if (Number.isInteger(props.step) && !event.altKey && Number.isInteger(startValue) && Number.isInteger(props.scrubSensitivity)) {
-      newValue = Math.round(newValue)
-    } else {
-      newValue = parseFloat(newValue.toFixed(2))
-    }
-  }
-
+  // Sensitivitas murni mengatur "berat" kursor
+  // Kita hitung berapa banyak 'step' yang dilewati berdasarkan jarak pixel
+  const pixelsPerStep = 5 / props.scrubSensitivity
+  const stepsToMove = Math.round((deltaX / pixelsPerStep) * modifier)
+  
+  // Nilai baru adalah Start + (Jumlah Step * Besar Step)
+  // Ini mengunci nilai agar selalu kelipatan step, bukan angka acak
+  let newValue = startValue + (stepsToMove * props.step)
+  
   newValue = normalizeValue(newValue)
-
-  model.value = newValue
-  localInput.value = newValue
+  
+  // Update UI & Model dengan pembulatan bersih
+  const cleanedValue = formatValue(newValue)
+  model.value = cleanedValue
+  localInput.value = cleanedValue
 }
 
 function stopScrub() {
@@ -217,60 +183,20 @@ function stopScrub() {
   document.body.style.userSelect = ''
   window.removeEventListener('mousemove', onMouseMove)
   window.removeEventListener('mouseup', stopScrub)
-  
-  if (props.precision !== null) {
-    localInput.value = parseFloat((parseFloat(model.value) || 0).toFixed(props.precision));
-  }
+  updateModel(model.value)
 }
 
 function increment(val) {
-  const current = parseFloat(model.value) || 0
-  let newValue = current + val
-  
-  newValue = applyPrecision(newValue);
-  newValue = normalizeValue(newValue)
-
-  if (props.precision === null && !Number.isInteger(props.step)) {
-    newValue = parseFloat(newValue.toFixed(2))
-  }
-  
-  updateModel(newValue)
-  localInput.value = newValue 
+  updateModel((parseFloat(model.value) || 0) + val)
 }
 
-function handleBlur() {
-  updateModel(localInput.value)
-   
-  if (props.precision !== null && !isNaN(parseFloat(model.value))) {
-    localInput.value = parseFloat(model.value).toFixed(props.precision);
-    localInput.value = parseFloat(localInput.value); 
-  } else {
-    localInput.value = model.value 
-  }
-}
-
-function handleChange() {
-  updateModel(localInput.value)
-}
-
-function handleEnter() {
-  updateModel(localInput.value)
-  inputRef.value?.blur()
-}
-
-function handleEsc() {
-  localInput.value = model.value
-  inputRef.value?.blur()
-}
+function handleBlur() { updateModel(localInput.value) }
+function handleChange() { updateModel(localInput.value) }
+function handleEnter() { updateModel(localInput.value); inputRef.value?.blur() }
+function handleEsc() { localInput.value = model.value; inputRef.value?.blur() }
 </script>
 
 <style scoped>
-input::-webkit-outer-spin-button,
-input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-input[type=number] {
-  -moz-appearance: textfield;
-}
+input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+input[type=number] { -moz-appearance: textfield; }
 </style>

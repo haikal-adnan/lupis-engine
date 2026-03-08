@@ -39,15 +39,18 @@ export default class TilemapRenderer {
             if (tf.height && tf.height !== naturalH && naturalH > 0) renderScaleY = tf.height / naturalH;
             else renderScaleY = tf.scaleY || 1;
             
-            renderRotation = tf.rotation || 0;
+            renderRotation = (tf.rotation || 0) * (Math.PI / 180);
         }
 
         const currentWidth = naturalW * renderScaleX;
         const currentHeight = naturalH * renderScaleY;
+        
         const startDrawX = tf.x - (currentWidth * (tf.pivotX ?? 0));
         const startDrawY = tf.y - (currentHeight * (tf.pivotY ?? 0));
 
         return {
+            tfX: tf.x || 0, tfY: tf.y || 0,
+            pivotX: tf.pivotX ?? 0, pivotY: tf.pivotY ?? 0,
             startX: startDrawX, startY: startDrawY,
             scaleX: renderScaleX, scaleY: renderScaleY, rotation: renderRotation,
             tileW, tileH, cols, rows, naturalW, naturalH,
@@ -97,8 +100,9 @@ export default class TilemapRenderer {
         const cam = this.game.camera;
         const canvas = this.game.renderer.canvas;
         
-        const viewW = (canvas.width / cam.scale) + scaledTileW * 2;
-        const viewH = (canvas.height / cam.scale) + scaledTileH * 2;
+        const cullingMargin = rData.rotation !== 0 ? Math.max(rData.totalW, rData.totalH) : 0;
+        const viewW = (canvas.width / cam.scale) + scaledTileW * 2 + cullingMargin;
+        const viewH = (canvas.height / cam.scale) + scaledTileH * 2 + cullingMargin;
 
         const startCol = Math.floor(((cam.x - viewW / 2) - rData.startX) / scaledTileW);
         const endCol = Math.ceil(((cam.x + viewW / 2) - rData.startX) / scaledTileW);
@@ -112,6 +116,12 @@ export default class TilemapRenderer {
 
         const overlapFixX = 0.4 * Math.abs(rData.scaleX);
         const overlapFixY = 0.4 * Math.abs(rData.scaleY);
+
+        const cosR = Math.cos(rData.rotation);
+        const sinR = Math.sin(rData.rotation);
+        
+        const mapLocalX = -rData.totalW * rData.pivotX;
+        const mapLocalY = -rData.totalH * rData.pivotY;
 
         for (let y = loopStartY; y < loopEndY; y++) {
             for (let x = loopStartX; x < loopEndX; x++) {
@@ -131,13 +141,18 @@ export default class TilemapRenderer {
                     const srcX = (actualIndex % tilesetCols) * rData.tileW;
                     const srcY = Math.floor(actualIndex / tilesetCols) * rData.tileH;
                     
-                    const dstX = rData.startX + (x * scaledTileW);
-                    const dstY = rData.startY + (y * scaledTileH);
+                    const tileLocalX = mapLocalX + (x * scaledTileW);
+                    const tileLocalY = mapLocalY + (y * scaledTileH);
+
+                    const rotatedX = (tileLocalX * cosR) - (tileLocalY * sinR);
+                    const rotatedY = (tileLocalX * sinR) + (tileLocalY * cosR);
+                    
+                    const dstX = rData.tfX + rotatedX;
+                    const dstY = rData.tfY + rotatedY;
 
                     this.image.draw(
                         asset,
                         { x: srcX, y: srcY, w: rData.tileW, h: rData.tileH },
-                        
                         { 
                             x: dstX, 
                             y: dstY, 

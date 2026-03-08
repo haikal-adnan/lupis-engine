@@ -7,12 +7,6 @@ const VariableSchema = new mongoose.Schema({
   defaultValue: mongoose.Schema.Types.Mixed
 }); 
 
-const EventSchema = new mongoose.Schema({
-  _id: { type: String, required: true },
-  name: { type: String, required: true }, 
-  description: { type: String, default: '' }
-});
-
 const ProjectSchema = new mongoose.Schema({
   _id: { type: String, required: true },
   ownerId: { type: String, required: true, index: true }, 
@@ -27,6 +21,13 @@ const ProjectSchema = new mongoose.Schema({
       height: { type: Number, default: 1080 },
       showUIBorder: { type: Boolean, default: true },
       active: { type: Boolean, default: true }
+    },
+
+    camera: {
+      x: { type: Number, default: 0 },
+      y: { type: Number, default: 0 },
+      zoom: { type: Number, default: 1 },
+      lerp: { type: Number, default: 0.1 }
     },
 
     grid: {

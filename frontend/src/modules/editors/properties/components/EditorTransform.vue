@@ -66,7 +66,7 @@
     <div 
       class="transition-all duration-300"
       :class="{ 
-        'opacity-40 pointer-events-none filter grayscale cursor-not-allowed': isSizeLockedByText 
+        'opacity-40 pointer-events-none filter grayscale cursor-not-allowed': isSizeLockedByText || isSizeLockedByTilemap 
       }"
     >
       <PropertyRow label="Size (px)">
@@ -92,6 +92,12 @@
     <div v-if="isSizeLockedByText" class="px-1 mb-3 -mt-1">
       <div class="text-[9px] text-amber-500/80 italic flex items-center gap-1">
         <Info class="w-3 h-3" /> Size is controlled by Text Renderer Auto Fit
+      </div>
+    </div>
+
+    <div v-if="isSizeLockedByTilemap" class="px-1 mb-3 -mt-1">
+      <div class="text-[9px] text-amber-500/80 italic flex items-center gap-1">
+        <Info class="w-3 h-3" /> Size is controlled by Tilemap Auto Fit
       </div>
     </div>
 
@@ -137,13 +143,14 @@ import BaseButton from '@/commons/components/buttons/BaseButton.vue'
 
 const { 
   selectedEntity, 
-  prefabId,         
+  prefabId,          
   resetTransform, 
   updatePivot, 
   bindComponentProp, 
   isLocked,
   isSizeLockedByText,
-  syncComponent,      
+  isSizeLockedByTilemap, 
+  syncComponent,       
   getComponentOverrideStatus 
 } = useInspectorLogic();
 

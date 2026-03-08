@@ -50,10 +50,10 @@
           <div
             v-if="isOpen"
             ref="dropdownRef"
-            class="fixed z-[9999] mt-1 overflow-hidden border rounded-md shadow-md bg-popover border-border text-popover-foreground w-max max-w-[300px]"
+            class="fixed z-[9999] overflow-hidden border flex flex-col rounded-md shadow-md bg-popover border-border text-popover-foreground w-max max-w-[300px]"
             :style="[dropdownStyle, { borderRadius: radius }]"
           >
-            <ul class="max-h-60 overflow-y-auto py-1 custom-scrollbar">
+            <ul class="overflow-y-auto py-1 custom-scrollbar">
               
               <li 
                 v-if="editable"
@@ -150,11 +150,35 @@ const selectedLabel = computed(() => {
 const updatePosition = () => {
   if (!buttonRef.value || !isOpen.value) return
   const rect = buttonRef.value.getBoundingClientRect()
-  dropdownStyle.value = {
-    top: `${rect.bottom}px`,
+  
+  const GAP = 4; // Jarak dropdown ke button (setara mt-1)
+  const MAX_DROPDOWN_HEIGHT = 240; // Batas maksimal tinggi dropdown (mirip max-h-60)
+  
+  // Hitung sisa ruang di layar
+  const spaceBelow = window.innerHeight - rect.bottom - GAP;
+  const spaceAbove = rect.top - GAP;
+
+  let style = {
     left: `${rect.left}px`,
     minWidth: `${rect.width}px` 
+  };
+
+  // Jika ruang di bawah kurang dari tinggi maksimal dropdown, 
+  // DAN ruang di atas lebih luas dari pada di bawah -> BUKA KE ATAS
+  if (spaceBelow < MAX_DROPDOWN_HEIGHT && spaceAbove > spaceBelow) {
+    style.top = 'auto';
+    style.bottom = `${window.innerHeight - rect.top + GAP}px`;
+    // Batasi tinggi maksimal agar tidak tembus ujung atas layar
+    style.maxHeight = `${Math.min(MAX_DROPDOWN_HEIGHT, spaceAbove)}px`;
+  } else {
+    // BUKA KE BAWAH (Default)
+    style.top = `${rect.bottom + GAP}px`;
+    style.bottom = 'auto';
+    // Batasi tinggi maksimal agar tidak tembus ujung bawah layar
+    style.maxHeight = `${Math.min(MAX_DROPDOWN_HEIGHT, spaceBelow)}px`;
   }
+
+  dropdownStyle.value = style;
 }
 
 function toggle() { 

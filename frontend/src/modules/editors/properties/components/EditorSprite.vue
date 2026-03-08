@@ -1,5 +1,5 @@
 <template>
-  <PropertySection title="Sprite Renderer" :icon="Image" v-if="hasComponent">
+  <PropertySection title="Image Renderer" :icon="Image" v-if="hasComponent">
     
     <template #header-extra>
       <div 
@@ -15,10 +15,9 @@
 
     <template #menu="{ close }">
       <div class="p-1 space-y-0.5 min-w-[160px]">
-        
         <button 
           @click="resetToOriginalSize(); close()" 
-          :disabled="!assetId"
+          :disabled="!assetId || isControlledByAnimator"
           class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-accent hover:text-accent-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Maximize class="w-3.5 h-3.5 mr-2 opacity-70" /> 
@@ -29,7 +28,7 @@
         <template v-if="prefabId">
           <button 
             @click="syncComponent('SpriteRenderer'); close()" 
-            :disabled="!isOverridden"
+            :disabled="!isOverridden || isControlledByAnimator"
             class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-accent hover:text-accent-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <RefreshCw class="w-3.5 h-3.5 mr-2 opacity-70" /> 
@@ -48,65 +47,83 @@
       </div>
     </template>
 
-    <div class="flex gap-2.5 mb-1 pt-1">
+    <div class="relative mt-1">
       
-      <BaseThumbnail 
-        :src="currentTextureUrl"
-        :rect="currentRect" 
-        fallback-text="No Tex"
-        sizeClass="w-[52px] h-[52px] bg-muted/20 border-border/60 shrink-0"
-      />
+      <div 
+        v-if="isControlledByAnimator" 
+        class="absolute -inset-1.5 z-10 bg-black/70 backdrop-blur-[1px] flex flex-col items-center justify-center rounded-md text-center"
+      >
+        <Film class="w-6 h-6 text-white/80 mb-1.5" />
+        <span class="text-xs text-white">
+          Controlled by <strong class="font-bold">Animator</strong>
+        </span>
+        <span class="text-[10px] text-white/70 mt-0.5">
+          Disabled the animator to edit manually.
+        </span>
+      </div>
 
-      <div class="flex-1 flex flex-col justify-center gap-1.5 min-w-0">
-        <PropertyRow label="Texture" :no-margin="true">
-          <button 
-            type="button"
-            @click="openAssetSelector"
-            class="
-              group flex items-center w-full relative text-left
-              bg-secondary/40 border border-border rounded-md
-              hover:bg-secondary/60 hover:border-primary/30 transition-all duration-200
-              focus:ring-1 focus:ring-primary
-              cursor-pointer h-7 overflow-hidden
-            "
-            title="Click to select asset"
-          >
-            <span class="flex-1 px-2 text-[11px] font-mono text-muted-foreground/90 truncate select-none group-hover:text-foreground transition-colors">
-              {{ assetId || 'None' }}
-            </span>
+      <div class="flex flex-col" :class="{ 'pointer-events-none': isControlledByAnimator }">
+        <div class="flex gap-2.5 mb-1 pt-1">
+          <BaseThumbnail 
+            :src="currentTextureUrl"
+            :rect="currentRect" 
+            fallback-text="No Tex"
+            sizeClass="w-[52px] h-[52px] bg-muted/20 border-border/60 shrink-0"
+          />
 
-            <div class="px-2 h-full flex items-center justify-center border-l border-border bg-muted/10 text-muted-foreground/50 group-hover:text-primary group-hover:bg-primary/5 transition-colors">
-              <FolderSearch class="w-3 h-3" />
+          <div class="flex-1 flex flex-col justify-center gap-1.5 min-w-0">
+            <PropertyRow label="Texture" :no-margin="true">
+              <button 
+                type="button"
+                @click="openAssetSelector"
+                class="
+                  group flex items-center w-full relative text-left
+                  bg-secondary/40 border border-border rounded-md
+                  hover:bg-secondary/60 hover:border-primary/30 transition-all duration-200
+                  focus:ring-1 focus:ring-primary
+                  cursor-pointer h-7 overflow-hidden
+                "
+                title="Click to select asset"
+              >
+                <span class="flex-1 px-2 text-[11px] font-mono text-muted-foreground/90 truncate select-none group-hover:text-foreground transition-colors">
+                  {{ assetId || 'None' }}
+                </span>
+
+                <div class="px-2 h-full flex items-center justify-center border-l border-border bg-muted/10 text-muted-foreground/50 group-hover:text-primary group-hover:bg-primary/5 transition-colors">
+                  <FolderSearch class="w-3 h-3" />
+                </div>
+              </button>
+            </PropertyRow>
+          </div>
+        </div>
+
+        <PropertyRow label="Source Rect" :no-margin="true">
+            <div class="grid grid-cols-2 gap-2">
+              <BaseNumber v-model="sourceX" prefix="X" :scrubbable="true" class="font-mono" />
+              <BaseNumber v-model="sourceY" prefix="Y" :scrubbable="true" class="font-mono" />
+              <BaseNumber v-model="sourceW" prefix="W" :min="0" :scrubbable="true" class="font-mono" />
+              <BaseNumber v-model="sourceH" prefix="H" :min="0" :scrubbable="true" class="font-mono" />
             </div>
-          </button>
+        </PropertyRow>
+
+        <PropertyRow label="Opacity">
+            <BaseNumber 
+                prefix="%"
+                v-model="displayOpacity" 
+                :min="0" :max="100" :step="1" 
+                class="font-mono w-full" 
+            />
         </PropertyRow>
       </div>
+      
     </div>
-
-    <PropertyRow label="Source Rect" :no-margin="true">
-        <div class="grid grid-cols-2 gap-2">
-          <BaseNumber v-model="sourceX" prefix="X" :scrubbable="true" class="font-mono" />
-          <BaseNumber v-model="sourceY" prefix="Y" :scrubbable="true" class="font-mono" />
-          <BaseNumber v-model="sourceW" prefix="W" :min="0" :scrubbable="true" class="font-mono" />
-          <BaseNumber v-model="sourceH" prefix="H" :min="0" :scrubbable="true" class="font-mono" />
-        </div>
-    </PropertyRow>
-
-    <PropertyRow label="Opacity">
-        <BaseNumber 
-            prefix="%"
-            v-model="displayOpacity" 
-            :min="0" :max="100" :step="1" 
-            class="font-mono w-full" 
-        />
-    </PropertyRow>
-    
   </PropertySection>
 </template>
 
 <script setup>
 import { computed, ref } from "vue";
-import { Image, FolderSearch, Trash2, RefreshCw, Maximize } from "lucide-vue-next"; 
+// Menambahkan icon Film untuk status animator
+import { Image, FolderSearch, Trash2, RefreshCw, Maximize, Film } from "lucide-vue-next"; 
 import { useInspectorLogic } from "@editors/properties/composables/useInspectorLogic.js"; 
 import { useAssetStore } from "@/stores/useAssetStore"; 
 
@@ -128,6 +145,15 @@ const {
 const assetStore = useAssetStore();
 
 const hasComponent = computed(() => !!selectedEntity.value?.components?.SpriteRenderer);
+
+// --- Cek Status Animator ---
+const isControlledByAnimator = computed(() => {
+  if (!selectedEntity.value) return false;
+  const animator = selectedEntity.value.components?.SpriteAnimator;
+
+  return (animator && animator.isActive);
+});
+// ---------------------------
 
 const isOverridden = getComponentOverrideStatus('SpriteRenderer');
 

@@ -33,6 +33,9 @@ export const useEditorStore = defineStore('editor', {
       { id: 'scene', name: 'Scene - Level 1 Demo', type: 'scene', fixed: true },
     ],
 
+    
+    // { id: '4pdh1UKOhoJDZsVy', name: 'animator', type: 'animator', fixed: true },
+
     activeBottomTabId: 'asset', 
     isBottomBarOpen: false,
   }),

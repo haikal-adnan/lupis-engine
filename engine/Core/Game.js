@@ -8,6 +8,8 @@ import ScriptSystem from "../Script/ScriptSystem.js";
 import ColliderSystem from "../System/ColliderSystem.js";
 import PhysicsSystem from "../System/PhysicsSystem.js";
 import SceneLoader from "../Loader/SceneLoader.js"; 
+import AnimatorSystem from "../System/AnimatorSystem.js";
+import TransitionSystem from "../System/TransitionSystem.js";
 
 export default class Game {
     constructor() {
@@ -19,6 +21,8 @@ export default class Game {
         this.variables = new VariableManager();
         this.scriptSystem = new ScriptSystem(this);
         this.physicsSystem = new PhysicsSystem(this);
+        this.animatorSystem = new AnimatorSystem(this);
+        this.transitionSystem = new TransitionSystem(this);
         this.audio = null;
         this.cameraController = null;
         this.rulers = null;
@@ -34,6 +38,9 @@ export default class Game {
         this.loop = null;
         
         this._sceneDataCache = []; 
+
+        // [DITAMBAHKAN] Variabel untuk menampung antrean scene yang akan dimuat
+        this._pendingSceneLoad = null; 
     }
 
     initLoop() {
@@ -67,27 +74,40 @@ export default class Game {
         }
     }
 
+    // [DITAMBAHKAN] Fungsi untuk memasukkan pemuatan scene ke dalam antrean
+    queueLoadScene(sceneIdentifier) {
+        this._pendingSceneLoad = sceneIdentifier;
+    }
+
     loadScene(sceneIdentifier) {
         if (!this._sceneDataCache || this._sceneDataCache.length === 0) {
             console.warn("[Game] Tidak dapat memuat scene: Cache scene kosong.");
             return;
         }
 
-        const targetSceneData = this._sceneDataCache.find(
-            s => s._id === sceneIdentifier || 
-                 s.scriptId === sceneIdentifier || 
-                 (s.name && s.name.toLowerCase() === String(sceneIdentifier).toLowerCase())
+        console.log(this._sceneDataCache)
+
+        // [DIPERBARUI] Menggunakan .trim() dan .toLowerCase() untuk pencarian yang lebih akurat
+        const searchKey = String(sceneIdentifier).trim().toLowerCase();
+
+        const rawSceneData = this._sceneDataCache.find(s => 
+            (s.name && s.name.trim().toLowerCase() === searchKey) || 
+            (s._id === sceneIdentifier)
         );
 
-        if (!targetSceneData) {
+        if (!rawSceneData) {
             console.error(`[Game] Gagal memuat: Scene '${sceneIdentifier}' tidak ditemukan.`);
             return;
         }
 
+        const targetSceneData = structuredClone(rawSceneData);
+        console.log("rawScene", rawSceneData)
+
         this.pauseGame();
 
         if (this.camera) {
-            this.camera.clearTarget();
+            this.camera.clearTarget(); 
+            this.camera.snapTo(0, 0); 
         }
 
         if (this.cameraController) {
@@ -97,31 +117,35 @@ export default class Game {
         this.world.entities = [];
         this.world.layersWorld = [];
         this.world.layersUI = [];
-        if (this.world.scriptIdMap) this.world.scriptIdMap.clear();
+        
+        if (this.world.scriptIdMap) {
+            this.world.scriptIdMap.clear();
+        }
 
         if (this.scriptSystem && typeof this.scriptSystem.clear === 'function') {
             this.scriptSystem.clear();
         }
 
-        this.world.currentSceneScriptId = targetSceneData.scriptId || targetSceneData._id;
+        this.world.currentSceneScriptId = targetSceneData.scriptId || targetSceneData._id || null;
 
         const sceneLoader = new SceneLoader(this.world, Config.ENGINE_MODE);
         sceneLoader.loadScene(targetSceneData);
 
-        let newX, newY, newScale;
-        if (targetSceneData.camera && targetSceneData.camera.x !== undefined) {
-            newX = targetSceneData.camera.x;
-            newY = targetSceneData.camera.y;
-            newScale = targetSceneData.camera.scale || 1;
+        if (Config.ENGINE_MODE === "runtime") {
+            if (this.camera && this.world.settings.camera) {
+                this.camera.snapTo(
+                    this.world.settings.camera.x || 0, 
+                    this.world.settings.camera.y || 0
+                );
+                this.camera.scale = this.world.settings.camera.zoom || 1;
+                this.camera.lerp = this.world.settings.camera.lerp || 0.1;
+            }
         } else {
-            const { width: rw, height: rh } = this.world.settings.ui;
-            newX = rw / 2;
-            newY = rh / 2;
-            newScale = (Config.ENGINE_MODE === "editor") ? 0.5 : 1;
+            const rw = this.world.settings.ui?.width || 1920;
+            const rh = this.world.settings.ui?.height || 1080;
+            this.camera.snapTo(rw / 2, rh / 2);
+            this.camera.scale = 0.5;
         }
-
-        this.camera.snapTo(newX, newY);
-        this.camera.scale = newScale;
 
         if (this.cameraController) {
             this.cameraController.enabled = true;
@@ -138,7 +162,8 @@ export default class Game {
     restartScene() {
         const currentId = this.world.currentSceneScriptId;
         if (currentId) {
-            this.loadScene(currentId);
+            // [DIPERBARUI] Gunakan antrean agar aman jika dipanggil dari dalam node script
+            this.queueLoadScene(currentId);
         } else {
             console.warn("[Game] Tidak dapat me-restart: ID Scene aktif tidak ditemukan di world.");
         }
@@ -169,10 +194,18 @@ export default class Game {
     }   
 
     update(dt) {
+        // [DITAMBAHKAN] Cek apakah ada antrean pindah scene di awal frame
+        if (this._pendingSceneLoad !== null) {
+            this.loadScene(this._pendingSceneLoad);
+            this._pendingSceneLoad = null;
+            return; // Hentikan update frame ini agar script lama tidak tereksekusi di world baru
+        }
+
         if (Config.ENGINE_MODE === "runtime") {
+            this.transitionSystem.update(dt);
+            this.animatorSystem.update(dt)
             this.physicsSystem.update(dt);
             this.scriptSystem.update(dt);
-            
             if (this.camera && this.renderer) {
                 this.camera.update(dt, this.world, this.renderer.gl.canvas);
             }
