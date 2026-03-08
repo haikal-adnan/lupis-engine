@@ -331,6 +331,13 @@ export const useProjectStore = defineStore('project', {
         this.project.settings.ui.showUIBorder = !this.project.settings.ui.showUIBorder
         this.markAsDirty()
       }
-    }
+    },
+
+    updateCameraSettings(updates) {
+      if (this.project?.settings?.camera) {
+        Object.assign(this.project.settings.camera, updates)
+        this.markAsDirty()
+      }
+    },
   }
 })

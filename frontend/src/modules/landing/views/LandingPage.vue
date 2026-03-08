@@ -1,7 +1,7 @@
 <script setup>
-import { onMounted } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-
+import AuthPanel from '@/modules/auth/AuthPanel.vue'
 import { useTheme } from "@commons/composables/useTheme.js";
 
 import { 
@@ -30,9 +30,25 @@ onMounted(() => {
 const goToDashboard = () => {
   router.push('/dashboard');
 };
+
+const isAuthOpen = ref(false);
+const authMode = ref('login');
+
+const openAuth = (mode) => {
+  authMode.value = mode;
+  isAuthOpen.value = true;
+};
+
 </script>
 
 <template>
+
+  <AuthPanel 
+    :is-open="isAuthOpen" 
+    :initial-mode="authMode" 
+    @close="isAuthOpen = false" 
+  />
+
   <div class="min-h-screen bg-background text-foreground font-sans flex flex-col selection:bg-indigo-500/30">
     
     <header class="h-16 border-b border-border sticky top-0 bg-background/80 backdrop-blur-md z-50 px-6">
@@ -47,18 +63,23 @@ const goToDashboard = () => {
 
         <nav class="hidden md:flex items-center justify-center gap-8 text-sm font-medium text-muted-foreground shrink-0">
           <a href="#" class="hover:text-foreground transition-colors">Games</a>
-          <a href="#" class="hover:text-foreground transition-colors">Docs</a>
-          <a href="#" class="hover:text-foreground transition-colors">Profile</a>
-          <a href="#" class="hover:text-foreground transition-colors flex items-center gap-2">
-            <Github class="w-4 h-4" /> GitHub
-          </a>
+          <a href="/docs" class="hover:text-foreground transition-colors">Docs</a>
+          <a href="#" class="hover:text-foreground transition-colors">Community</a>
+          <a href="/about" class="hover:text-foreground transition-colors">About</a>
+
         </nav>
 
         <div class="flex items-center justify-end gap-4 flex-1">
-          <button class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors hidden sm:block">
+          <button 
+            @click="openAuth('login')"
+            class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors hidden sm:block"
+          >
             Sign In
           </button>
-          <button class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-semibold transition-all shadow-sm shadow-indigo-500/20">
+          <button 
+            @click="openAuth('register')"
+            class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-semibold transition-all shadow-sm shadow-indigo-500/20"
+          >
             Get Started - Free
           </button>
         </div>

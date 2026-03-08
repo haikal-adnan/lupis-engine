@@ -1,13 +1,14 @@
 import Config from "../Core/Config.js";
 
 export default class Camera {
-    constructor(x = 0, y = 0) {
+constructor(x = 0, y = 0) {
         this.x = isNaN(x) ? 0 : x;
         this.y = isNaN(y) ? 0 : y;
         this.scale = 1;
         this.target = null;
         this.offset = { x: 0, y: 0 }; 
         this.lerp = 0.5;
+        this.isFirstFrameTracking = false; 
     }
 
     snapTo(x, y) {
@@ -22,11 +23,13 @@ export default class Camera {
             x: (offset && typeof offset.x === 'number') ? offset.x : 0,
             y: (offset && typeof offset.y === 'number') ? offset.y : 0
         };
+        this.isFirstFrameTracking = true; 
     }
 
     clearTarget() {
         this.target = null;
         this.lerp = 0.5;
+        this.isFirstFrameTracking = false;
     }
 
     update(dt, world, canvas) {
@@ -41,14 +44,20 @@ export default class Camera {
             const desiredX = tX + this.offset.x;
             const desiredY = tY + this.offset.y;
 
-            const safeDt = dt || 0.016; 
-            const k = 1 - Math.pow(1 - this.lerp, safeDt * 60.0); 
+            if (this.isFirstFrameTracking) {
+                this.x = desiredX;
+                this.y = desiredY;
+                this.isFirstFrameTracking = false;
+            } else {
+                const safeDt = dt || 0.016; 
+                const k = 1 - Math.pow(1 - this.lerp, safeDt * 60.0); 
 
-            let nx = this.x + (desiredX - this.x) * k;
-            let ny = this.y + (desiredY - this.y) * k;
+                let nx = this.x + (desiredX - this.x) * k;
+                let ny = this.y + (desiredY - this.y) * k;
 
-            this.x = isNaN(nx) ? this.x : nx;
-            this.y = isNaN(ny) ? this.y : ny;
+                this.x = isNaN(nx) ? this.x : nx;
+                this.y = isNaN(ny) ? this.y : ny;
+            }
         }
 
         if (isNaN(this.x)) this.x = 0;

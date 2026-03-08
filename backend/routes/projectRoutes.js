@@ -66,16 +66,17 @@ router.get("/owner/:ownerId", async (req, res) => {
 router.put("/:projectId", async (req, res) => {
   try {
     const { projectId } = req.params;
-    const { name, description } = req.body;
-
-    const updateFields = {};
-    if (name !== undefined) updateFields.name = name;
-    if (description !== undefined) updateFields.description = description;
+    
+    const updateData = req.body; 
 
     const updatedProject = await Project.findByIdAndUpdate(
       projectId,
-      { $set: updateFields },
-      { new: true } 
+      { $set: updateData }, 
+      { 
+        new: true, 
+        runValidators: true,
+        overwrite: false 
+      } 
     );
 
     if (!updatedProject) {
@@ -84,13 +85,12 @@ router.put("/:projectId", async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: "Project berhasil diupdate.",
       data: updatedProject
     });
 
   } catch (error) {
-    console.error("[Route Error] Gagal update project:", error);
-    res.status(500).json({ success: false, error: "Terjadi kesalahan pada server saat update project." });
+    console.error("Update Error:", error);
+    res.status(500).json({ success: false, error: "Server Error" });
   }
 });
 

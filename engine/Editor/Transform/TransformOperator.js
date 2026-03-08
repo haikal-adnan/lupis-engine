@@ -146,7 +146,7 @@ export class TransformOperator {
         if (!startData || startData.length === 0) return;
         const item = startData[0];
         const e = item.e;
-        if (e.components?.TextRenderer?.autoFit) return;
+        if (e.components?.TextRenderer?.autoFit || e.components?.Tilemap?.autoFit) return;
         const dx = nowPos.x - startPos.x;
         const dy = nowPos.y - startPos.y;
         if (dx === 0 && dy === 0) return;

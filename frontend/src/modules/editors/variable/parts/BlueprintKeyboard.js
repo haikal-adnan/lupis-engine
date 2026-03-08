@@ -1,4 +1,4 @@
-import { Zap, Keyboard, Move } from 'lucide-vue-next';
+import { Zap, Keyboard, Move, HelpCircle } from 'lucide-vue-next';
 
 export const BlueprintKeyboard = {
   _id: 'keyboard_events',
@@ -34,7 +34,41 @@ export const BlueprintKeyboard = {
         ]
       } 
     },
-
+    { 
+      type: 'event_simple_key_up', 
+      label: 'Simple Key Up', 
+      description: 'Single key trigger saat tombol dilepas (Release). Cocok untuk set Idle.',
+      icon: Keyboard,
+      allowDynamicInputs: false,
+      allowDynamicOutputs: false,
+      defaultData: { 
+        settings: { headerTitle: 'Key Up', headerColor: '#C2185B', category: 'Keyboard Events' },
+        data: { key: 'E', trigger: 'release' }, 
+        inputs: [],
+        outputs: [
+          { _id: 'sk_up_main', label: 'Released', dataType: 'execution', color: '#69F0AE' }
+        ]
+      } 
+    },
+    { 
+      type: 'is_key_down', 
+      label: 'Is Key Down', 
+      description: 'Meneruskan alur eksekusi ke True jika tombol ditahan, atau False jika dilepas.',
+      icon: HelpCircle,
+      allowDynamicInputs: false,
+      allowDynamicOutputs: false,
+      defaultData: { 
+        settings: { headerTitle: 'Is Key Down', headerColor: '#C2185B', category: 'Keyboard Events' },
+        data: { key: 'W' },
+        inputs: [
+          { _id: 'exec_in', label: 'In', dataType: 'execution' }
+        ],
+        outputs: [
+          { _id: 'true', label: 'True (Down)', dataType: 'execution', color: '#69F0AE' },
+          { _id: 'false', label: 'False (Up)', dataType: 'execution', color: '#FF5252' }
+        ]
+      } 
+    },
     { 
       type: 'event_advanced_key', 
       label: 'Advanced Keyboard', 
@@ -63,6 +97,37 @@ export const BlueprintKeyboard = {
           { _id: 'out_def_s', label: 'S (hold)', dataType: 'execution', color: '#FFEB3B' }
         ]
       } 
-    }
+    },
+    { 
+      type: 'event_any_key', 
+      label: 'Any Key Pressed', 
+      description: 'Mendeteksi tombol apapun yang ditekan dan menghasilkan output string lowercase.',
+      icon: Zap,
+      allowDynamicInputs: false,
+      allowDynamicOutputs: false,
+      defaultData: { 
+        settings: { 
+          headerTitle: 'Any Key Down', 
+          headerColor: '#C2185B', 
+          category: 'Keyboard Events' 
+        },
+        data: {}, 
+        inputs: [],
+        outputs: [
+          { 
+            _id: 'out_exec', 
+            label: 'Pressed', 
+            dataType: 'execution', 
+            color: '#ffffff' 
+          },
+          { 
+            _id: 'key_string', 
+            label: 'Key (string)', 
+            dataType: 'string', 
+            color: '#FFEB3B' 
+          }
+        ]
+      } 
+    },
   ]
 };

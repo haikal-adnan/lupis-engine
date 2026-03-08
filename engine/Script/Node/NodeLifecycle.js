@@ -5,6 +5,30 @@ export const NodeLifecycle = {
         }
     },
 
+    'event_scene_start': {
+        
+        execute: (runner, node) => {
+
+            runner.executeFlow(node._id, 'out');
+        },
+        getOutput: (runner, node, outputKey) => {
+            if (outputKey === 'scene_name') {
+                const game = runner.game;
+                const currentId = game.world.currentSceneScriptId;
+                
+                if (game._sceneDataCache && currentId) {
+                    const currentScene = game._sceneDataCache.find(s => s.scriptId === currentId || s._id === currentId);
+                    if (currentScene && currentScene.name) {
+                        return currentScene.name;
+                    }
+                }
+                
+                return "Unknown Scene";
+            }
+            return null;
+        }
+    },
+
     'event_tick': {
         getOutput: (runner, node, outputKey) => {
             if (outputKey === 'dt') {

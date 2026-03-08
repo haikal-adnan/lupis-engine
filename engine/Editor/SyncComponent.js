@@ -62,6 +62,11 @@ export default class SyncComponent {
             Object.assign(this.world.settings.ui, payload.ui);
         }
 
+        if (payload.camera) {
+            if (!this.world.settings.camera) this.world.settings.camera = {};
+            Object.assign(this.world.settings.camera, payload.camera);
+        }
+
         if (payload.tickRate !== undefined) {
             this.world.settings.tickRate = payload.tickRate;
         }

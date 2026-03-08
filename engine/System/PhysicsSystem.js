@@ -12,24 +12,19 @@ export default class PhysicsSystem {
 
         const entities = this.game.world.entities;
         
-        // Dapatkan layer yang tidak aktif melalui ColliderSystem
         const inactiveLayers = this.game.colliderSystem._getInactiveLayers();
 
         for (let i = 0; i < entities.length; i++) {
             const entity = entities[i];
 
-            // Cek status aktif entity
             if (entity.active === false || entity.isActive === false) continue;
-            
-            // Cek apakah entity berada di layer yang tidak aktif
             if (entity.layerId && inactiveLayers.has(entity.layerId)) continue;
-
             if (!entity.components.Physics || !entity.components.Physics.enabled) continue;
             if (!entity.components.Transform) continue;
 
             const phys = entity.components.Physics;
 
-            phys.collisionInfo = { hitSolid: null, hitTrigger: null, isGrounded: false };
+            phys.collisionInfo = { hitSolid: null, hitSolidX: null, hitSolidY: null, hitTrigger: null, isGrounded: false };
 
             if (phys.gravityScale !== 0) {
                 phys.velocityY += GLOBAL_GRAVITY * phys.gravityScale * dt;
@@ -53,9 +48,11 @@ export default class PhysicsSystem {
             const dy = phys.velocityY * dt;
 
             if (Math.abs(dx) > this.MIN_MOVE_DISTANCE || Math.abs(dy) > this.MIN_MOVE_DISTANCE) {
-                const hitObject = this.game.colliderSystem.moveAndSlide(entity, dx, dy);
-                if (hitObject) {
-                    phys.collisionInfo.hitSolid = hitObject;
+                const hitResult = this.game.colliderSystem.moveAndSlide(entity, dx, dy);
+                if (hitResult) {
+                    phys.collisionInfo.hitSolidX = hitResult.x;
+                    phys.collisionInfo.hitSolidY = hitResult.y;
+                    phys.collisionInfo.hitSolid = hitResult.x || hitResult.y; 
                 }
             }
 
@@ -66,7 +63,7 @@ export default class PhysicsSystem {
                 phys.velocityY = 0;
             }
 
-            if (phys.velocityY < 0 && phys.collisionInfo.hitSolid) {
+            if (phys.velocityY < 0 && phys.collisionInfo.hitSolidY) {
                 phys.velocityY = 0;
             }
         }
@@ -80,18 +77,18 @@ export default class PhysicsSystem {
             return;
         }
 
-        const margin = 2; 
+        const inset = 2; 
+        const reach = 1; 
         const sensor = {
-            x: bounds.x + margin, 
+            x: bounds.x + inset, 
             y: bounds.y + bounds.h, 
-            w: bounds.w - (margin * 2), 
-            h: 4 
+            w: bounds.w - (inset * 2), 
+            h: reach 
         };
 
         let isGrounded = false;
         const entities = this.game.world.entities;
 
-        // Jika tidak di-passing dari update(), ambil ulang
         if (!inactiveLayers) {
             inactiveLayers = colliderSys._getInactiveLayers();
         }
@@ -100,19 +97,25 @@ export default class PhysicsSystem {
             const other = entities[i];
             if (other === entity) continue;
             
-            // Abaikan entity tidak aktif
             if (other.active === false || other.isActive === false) continue;
-            
-            // Abaikan entity di layer tidak aktif
             if (other.layerId && inactiveLayers.has(other.layerId)) continue;
 
-            const col = other.components.Collider;
-            if (!col || !col.enabled || col.type !== 'solid') continue;
+            if (other.components.Tilemap && other.components.Tilemap.isSolid) {
+                const hitBounds = colliderSys._getTilemapHitBounds(sensor, other);
+                if (hitBounds) {
+                    isGrounded = true;
+                    break;
+                }
+            } 
+            else {
+                const col = other.components.Collider;
+                if (!col || !col.enabled || col.type !== 'solid') continue;
 
-            const otherBounds = colliderSys.getBounds(other);
-            if (otherBounds && this._aabbIntersect(sensor, otherBounds)) {
-                isGrounded = true;
-                break;
+                const otherBounds = colliderSys.getBounds(other);
+                if (otherBounds && this._aabbIntersect(sensor, otherBounds)) {
+                    isGrounded = true;
+                    break;
+                }
             }
         }
 
@@ -120,7 +123,6 @@ export default class PhysicsSystem {
     }
 
     _checkTriggers(entity, physComponent) {
-        // _findAllCollisions di ColliderSystem sudah menghandle pengecekan layer non-aktif
         const overlaps = this.game.colliderSystem._findAllCollisions(entity);
         if (overlaps && overlaps.length > 0) {
             const triggerHit = overlaps.find(e => {

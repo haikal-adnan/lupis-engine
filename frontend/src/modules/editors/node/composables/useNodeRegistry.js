@@ -17,6 +17,14 @@ const REGISTRY = {
     import('@editors/node/components/inspectors/MathChainInspector.vue')
   ),
 
+  'logic_branch': defineAsyncComponent(() => 
+    import('@editors/node/components/inspectors/BranchInspector.vue')
+  ),
+
+  'logic_switch': defineAsyncComponent(() => 
+    import('@editors/node/components/inspectors/SwitchInspector.vue')
+  ),
+
   'logic_compare': defineAsyncComponent(() => 
     import('@editors/node/components/inspectors/ComparisonChainInspector.vue')
   ),

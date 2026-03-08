@@ -64,13 +64,6 @@
       </div>
     </PropertyRow>
 
-    <PropertyRow label="Tile Size">
-      <div class="grid grid-cols-2 gap-2">
-        <BaseNumber v-model="tileWidth" prefix="W" :disabled="true" class="font-mono opacity-70" />
-        <BaseNumber v-model="tileHeight" prefix="H" :disabled="true" class="font-mono opacity-70" />
-      </div>
-    </PropertyRow>
-
     <PropertyRow label="Opacity">
         <BaseNumber 
             prefix="%"
@@ -80,10 +73,29 @@
         />
     </PropertyRow>
 
-    <PropertyRow label="Physics">
+    <PropertyRow label="Auto Fit">
+      <div class="flex items-center gap-2 w-full">
+        <BaseButton 
+          :active="autoFit"
+          @click="toggleAutoFit"
+          class="flex-1 h-7 text-xs gap-2" ghost
+        >
+          <Maximize class="w-3.5 h-3.5" /> <span>Auto Fit</span>
+        </BaseButton>
+
+        <IconButton 
+          @click="resetTilemapTransform"
+          tooltip="Reset Transform to Tilemap"
+        >
+          <RefreshCcw class="w-3.5 h-3.5" />
+        </IconButton>
+      </div>
+    </PropertyRow>
+
+    <PropertyRow label="Collision">
          <BaseCheckbox 
             v-model="isSolid" 
-            label="Solid Layer" 
+            label="Solid" 
             description="Enable collision"
             class="w-full"
           />
@@ -94,7 +106,7 @@
 
 <script setup>
 import { computed } from "vue";
-import { Grid3X3, Brush, Trash2, RefreshCw } from "lucide-vue-next"; 
+import { Grid3X3, Brush, Trash2, RefreshCw, Maximize, RefreshCcw } from "lucide-vue-next";
 import { useTilemapLogic } from "@editors/tilemap/composables/useTilemapLogic.js";
 import { useInspectorLogic } from "@editors/properties/composables/useInspectorLogic.js";
 
@@ -104,6 +116,7 @@ import BaseThumbnail from "@/commons/components/display/BaseThumbnail.vue";
 import BaseNumber from "@/commons/components/inputs/BaseNumber.vue";
 import BaseCheckbox from "@/commons/components/inputs/BaseCheckbox.vue"; 
 import BaseButton from "@/commons/components/buttons/BaseButton.vue"; 
+import IconButton from "@/commons/components/buttons/IconButton.vue";
 
 const { 
   hasTilemap, 
@@ -116,10 +129,20 @@ const {
   removeComponent,
   prefabId,            
   syncComponent,             
-  getComponentOverrideStatus
+  getComponentOverrideStatus,
+  resetTilemapTransform
 } = useInspectorLogic();
 
 const hasComponent = hasTilemap;
+
+const autoFit = bindComponentProp('Tilemap', 'autoFit');
+
+const toggleAutoFit = () => {
+  autoFit.value = !autoFit.value;
+  if (autoFit.value) {
+    resetTilemapTransform();
+  }
+};
 
 const isOverridden = getComponentOverrideStatus('Tilemap');
 const tileWidth = bindComponentProp('Tilemap', 'tileWidth');

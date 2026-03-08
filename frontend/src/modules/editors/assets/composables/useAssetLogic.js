@@ -3,11 +3,13 @@ import { storeToRefs } from 'pinia'
 import { useAssetStore } from '@/stores/useAssetStore'
 import { useFolderStore } from '@/stores/useFolderStore'
 import { useAssetActions } from '@/stores/scene/useAssetActions'
+import { useAssetBackend } from '@/services/api/backend/useAssetBackend.js';
 
 export function useAssetLogic() {
   const assetStore = useAssetStore()
   const folderStore = useFolderStore()
   const { importAsset } = useAssetActions()
+  const { updateAssetToServer } = useAssetBackend() 
 
   const { isUploading } = storeToRefs(assetStore)
 
@@ -15,6 +17,8 @@ export function useAssetLogic() {
   const searchQuery = ref('')
   const selectedId = ref(null)
   const fileInputRef = ref(null)
+  
+  const clipboard = ref(null) 
 
   const currentFolderId = computed(() => folderStore.activeFolderId)
   const currentFolder = computed(() => folderStore.getFolderById(currentFolderId.value))
@@ -81,9 +85,61 @@ export function useAssetLogic() {
     e.target.value = ''
   }
 
-  const handleDrop = async (e) => {
-    const files = Array.from(e.dataTransfer.files)
-    for (const file of files) await importAsset(file, currentFolderId.value)
+  const moveItem = async (id, type, targetFolderId) => {
+    try {
+      if (type === 'asset') {
+        await updateAssetToServer(id, { folderId: targetFolderId })
+        const assetIndex = assetStore.assets.findIndex(a => a._id === id || a.id === id)
+        if (assetIndex !== -1) {
+          assetStore.assets[assetIndex].folderId = targetFolderId
+        }
+      } else if (type === 'folder') {
+      }
+    } catch (err) {
+      console.error('Failed to move item:', err)
+    }
+  }
+
+  const handleDrop = async (e, customTargetFolderId = null) => {
+    const targetFolder = customTargetFolderId !== null ? customTargetFolderId : currentFolderId.value
+
+    try {
+      const internalData = e.dataTransfer.getData('application/json')
+      if (internalData) {
+        const { id, type } = JSON.parse(internalData)
+        await moveItem(id, type, targetFolder)
+        return
+      }
+    } catch (err) {
+    }
+
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const files = Array.from(e.dataTransfer.files)
+      for (const file of files) await importAsset(file, targetFolder)
+    }
+  }
+
+  const handlePaste = async () => {
+    if (!clipboard.value) return
+    const { action, item } = clipboard.value
+
+    if (action === 'cut') {
+      await moveItem(item.id, item.type, currentFolderId.value)
+      clipboard.value = null 
+    } else if (action === 'copy') {
+      try {
+        if (item.type === 'asset') {
+          const duplicatedAsset = await duplicateAssetOnServer(item.id, currentFolderId.value)
+          
+          if (duplicatedAsset) {
+            assetStore.assets.push(duplicatedAsset)
+          }
+        } else if (item.type === 'folder') {
+        }
+      } catch (err) {
+        console.error('Failed to copy item:', err)
+      }
+    }
   }
 
   return {
@@ -91,7 +147,9 @@ export function useAssetLogic() {
     viewMode, searchQuery, selectedId, fileInputRef,
     currentFolder, visibleFolders, visibleAssets,
     folderBreadcrumbs,
+    clipboard,
     toggleViewMode, navigateTo, handleSelect,
-    triggerUpload, handleFileUpload, handleDrop
+    triggerUpload, handleFileUpload, handleDrop,
+    moveItem, handlePaste 
   }
 }

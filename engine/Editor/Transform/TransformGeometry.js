@@ -48,7 +48,10 @@ export class TransformGeometry {
 
         this.isSizeLocked = false;
         if (selectedList && selectedList.length > 0) {
-            this.isSizeLocked = selectedList.some(e => e.components?.TextRenderer?.autoFit);
+            this.isSizeLocked = selectedList.some(e => 
+                e.components?.TextRenderer?.autoFit || 
+                e.components?.Tilemap?.autoFit
+            );
         }
 
         if (selectedList.length === 1) {

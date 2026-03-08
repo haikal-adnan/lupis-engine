@@ -157,6 +157,52 @@ router.put("/updateAsset/:assetId", async (req, res) => {
   }
 });
 
+router.post("/duplicateAsset/:assetId", async (req, res) => {
+  try {
+    const { assetId } = req.params;
+    const { targetFolderId } = req.body;
+
+    const originalAsset = await Asset.findById(assetId);
+    if (!originalAsset) return res.status(404).json({ success: false, error: "Asset asal tidak ditemukan." });
+
+    const { projectId, fileKey, extension, type, size, dimensions } = originalAsset;
+    const projectFolder = path.join(STORAGE_BASE_PATH, projectId.toString());
+    
+    const random16Digit = crypto.randomBytes(8).toString('hex');
+    const label = type === 'font' ? 'font_' : 'image_';
+    const newFileKey = `${label}${random16Digit}`;
+
+    const copyFileFs = (ext) => {
+      const src = path.join(projectFolder, `${fileKey}${ext}`);
+      const dest = path.join(projectFolder, `${newFileKey}${ext}`);
+      if (fs.existsSync(src)) fs.copyFileSync(src, dest);
+    };
+
+    if (type === 'texture') {
+      copyFileFs(extension || '.png');
+    } else if (type === 'font') {
+      ['.ttf', '.png', '.fnt'].forEach(ext => copyFileFs(ext));
+    }
+
+    const duplicatedAsset = await createAsset({
+      projectId,
+      folderId: targetFolderId || originalAsset.folderId,
+      name: `${originalAsset.name} (Copy)`,
+      type,
+      fileKey: newFileKey,
+      extension,
+      size,
+      dimensions
+    });
+
+    res.json({ success: true, data: duplicatedAsset });
+
+  } catch (error) {
+    console.error("[Duplicate Error]:", error);
+    res.status(500).json({ success: false, error: "Gagal menduplikasi asset." });
+  }
+});
+
 
 router.delete("/deleteAsset/:assetId", async (req, res) => {
   try {

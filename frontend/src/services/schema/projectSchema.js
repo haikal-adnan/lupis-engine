@@ -19,6 +19,13 @@ export const createProject = (data = {}) => {
         active: data.settings?.ui?.active ?? true
       },
 
+      camera: {
+        x: Number(data.settings?.camera?.x ?? 960),
+        y: Number(data.settings?.camera?.y ?? 540),
+        zoom: Number(data.settings?.camera?.zoom ?? 1),
+        lerp: Number(data.settings?.camera?.lerp ?? 0.1)
+      },
+
       grid: {
         width: Number(data.settings?.grid?.width ?? 32),
         height: Number(data.settings?.grid?.height ?? 32),
@@ -26,7 +33,7 @@ export const createProject = (data = {}) => {
         opacity: Number(data.settings?.grid?.opacity ?? 0.1),
         visible: data.settings?.grid?.visible ?? true,
         snap: data.settings?.grid?.snap ?? true       
-      }
+      },
     },
 
     globalVariables: Array.isArray(data.globalVariables) 

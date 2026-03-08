@@ -2,6 +2,7 @@ import { useFolderStore } from '@/stores/useFolderStore';
 import { useAssetStore } from '@/stores/useAssetStore';
 import { createFolder } from '@/services/schema/folderSchema.js';
 import { usePopAlert } from '@/composables/usePopAlert';
+import { usePrompt } from '@/composables/usePrompt'; 
 import { GenerateUUID } from '@/commons/utils/generateUUID.js';
 import { useEditorStore } from '@/stores/useEditorStore';
 
@@ -12,14 +13,27 @@ export function useFolderActions() {
   const folderStore = useFolderStore();
   const assetStore = useAssetStore();
   const editorStore = useEditorStore();
+  
   const { showPop } = usePopAlert();
+  const { prompt } = usePrompt(); 
   
   const { createFolderToServer, updateFolderToServer, deleteFolderFromServer } = useFolderBackend();
   const { deleteAssetFromServer } = useAssetBackend();
 
-  const createNewFolder = async (name, parentId) => {
+  const createNewFolder = async (defaultName = 'New Folder', parentId) => {
+    const folderName = await prompt({
+      title: 'Create New Folder',
+      message: 'Enter folder name:',
+      defaultValue: defaultName,
+      confirmText: 'Create'
+    });
+
+    if (folderName === null || folderName.trim() === '') {
+      return; 
+    }
+
+    const cleanName = folderName.trim();
     const actualParentId = parentId !== undefined ? parentId : folderStore.activeFolderId;
-    const folderName = name || 'New Folder';
 
     try {
       const newId = GenerateUUID();
@@ -28,13 +42,13 @@ export function useFolderActions() {
       await createFolderToServer({
         folderId: newId,
         projectId: projectId,
-        name: folderName,
+        name: cleanName,
         parentId: actualParentId
       });
 
       const newFolder = createFolder({
         _id: newId,
-        name: folderName,
+        name: cleanName,
         parentId: actualParentId,
         projectId: projectId,
         isSynced: true
@@ -44,7 +58,7 @@ export function useFolderActions() {
 
       showPop({
         title: 'Folder Created',
-        message: `Folder "${folderName}" has been created.`,
+        message: `Folder "${cleanName}" has been created.`,
         type: 'success'
       });
 

@@ -4,10 +4,10 @@ export const NodeComparison = {
             const a = runner.getInputValue(node, 'a');
             const b = runner.getInputValue(node, 'b');
             const op = node.data?.op || 'equal';
+            console.log(a, b)
 
             const valA = isNaN(Number(a)) || a === "" ? a : Number(a);
             const valB = isNaN(Number(b)) || b === "" ? b : Number(b);
-
             if (outputKey === 'res') {
                 switch (op) {
                     case 'equal': return valA == valB;

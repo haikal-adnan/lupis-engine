@@ -1,6 +1,6 @@
 import { computed, markRaw } from 'vue'
 import { useEditorStore } from '@/stores/useEditorStore'
-import { Box, Grid, FileCode2, Network, LayoutTemplate } from 'lucide-vue-next'
+import { Box, Grid, FileCode2, Network, LayoutTemplate, Film } from 'lucide-vue-next'
 
 import SceneHierarchy from '@editors/scene/SceneHierarchy.vue'
 import PropertyPanel from '@editors/properties/PropertyPanel.vue'
@@ -10,6 +10,9 @@ import IdePanel from '@editors/ide/IdePanel.vue'
 import GraphPanel from '@editors/graph/GraphPanel.vue'
 import NodePanel from '@editors/node/NodePanel.vue'
 import VariabelPanel from '@editors/variable/VariablePanel.vue'
+import AnimatorClip from '@editors/animator/parts/AnimatorClip.vue'
+import AnimatorHelper from '@editors/animator/parts/AnimatorHelper.vue'
+import AnimatorPanel from '@editors/animator/AnimatorPanel.vue'
 
 const LAYOUT_CONFIG = {
   scene: {
@@ -74,7 +77,19 @@ const LAYOUT_CONFIG = {
       showGrid: false,
       showPlay: true
     }
-  }
+  },
+
+  animator: {
+    left: markRaw(AnimatorClip),
+    leftTitle: 'Clip',
+    right: markRaw(AnimatorHelper),
+    rightTitle: 'Properties',
+    center: markRaw(AnimatorPanel),
+    showBottom: true,
+    overlay: null
+  },
+
+
 }
 
 const TYPE_ICONS = {
@@ -82,7 +97,8 @@ const TYPE_ICONS = {
     ui: { icon: markRaw(LayoutTemplate), color: 'text-purple-500' }, 
     tilemap: { icon: markRaw(Grid), color: 'text-emerald-500' },
     ide: { icon: markRaw(FileCode2), color: 'text-yellow-500' },
-    diagram: { icon: markRaw(Network), color: 'text-blue-500' }
+    diagram: { icon: markRaw(Network), color: 'text-blue-500' },
+    animator: { icon: markRaw(Film), color: 'text-rose-500' }
 }
 
 export function useTab() {

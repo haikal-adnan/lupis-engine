@@ -14,7 +14,7 @@ export const BlueprintRenderer = {
     { 
       type: 'get_sprite', 
       label: 'Get Sprite', 
-      description: 'Get properties of the Sprite Renderer', 
+      description: 'Get properties of the Image Renderer', 
       icon: ImageIcon, 
       allowDynamicInputs: false, 
       allowDynamicOutputs: true,

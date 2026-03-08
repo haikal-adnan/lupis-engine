@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-col h-full w-full relative outline-none select-none">
     
-    <PropertySection title="Engine & Canvas" :icon="Settings2" :default-open="true">
+    <PropertySection title="Engine & Canvas" :icon="Settings2" :default-open="false">
       
       <PropertyRow label="Tick Rate">
         <div class="flex items-center gap-2">
@@ -71,7 +71,7 @@
       </div>
     </PropertySection>
 
-    <PropertySection title="Grid System" :icon="Grid3X3" :default-open="true">
+    <PropertySection title="Grid System" :icon="Grid3X3" :default-open="false">
       <div class="flex items-center gap-4 mb-3 pt-1 px-1">
         <BaseCheckbox v-model="visible" label="Show Grid" />
         <BaseCheckbox v-model="snap" label="Snap to Grid" />

@@ -101,6 +101,7 @@ export default class WorldRenderer {
             }
         }
     }
+
     _processEntity(e, world, proj, parentOpacity = 1.0) {
         if (e.active === false || e.visible === false) return;
 
@@ -110,6 +111,19 @@ export default class WorldRenderer {
         if (!comps) return;
 
         if (comps.Tilemap && this.tilemapRenderer) {
+            const tm = comps.Tilemap;
+            const t = comps.UITransform || comps.Transform;
+            
+            if (t && tm.autoFit) {
+                const targetW = (tm.width || 0) * (tm.tileWidth || 0);
+                const targetH = (tm.height || 0) * (tm.tileHeight || 0);
+                
+                if (t.width !== targetW || t.height !== targetH) {
+                    t.width = targetW;
+                    t.height = targetH;
+                }
+            }
+
             this._executeRenderQueue(proj);
             this.renderQueue.length = 0;
             this.tilemapRenderer.renderEntity(e, world, proj, currentOpacity);
@@ -152,15 +166,75 @@ export default class WorldRenderer {
             if (comps.SpriteRenderer) {
                 const s = comps.SpriteRenderer;
                 const a = (s.opacity ?? 1) * currentOpacity;
+                
                 if (a > 0) {
-                    const texture = world.assets.textures[s.assetId];
-                    this.renderQueue.push({
-                        type: "image",
-                        texture: texture,
-                        frame: { x: s.sourceX ?? 0, y: s.sourceY ?? 0, w: s.sourceWidth ?? 0, h: s.sourceHeight ?? 0 },
-                        transformData: trans,
-                        options: { flipX, flipY, opacity: a }
-                    });
+                    let finalAssetId = s.assetId;
+                    let finalX = s.sourceX ?? 0;
+                    let finalY = s.sourceY ?? 0;
+                    let finalW = s.sourceWidth ?? 0;
+                    let finalH = s.sourceHeight ?? 0;
+                    let finalFlipX = flipX;
+
+                    const animator = comps.SpriteAnimator;
+                    if (animator && animator.isActive) {
+                        // FIX: Pengecekan Array.isArray
+                        const clip = Array.isArray(animator.clips) ? animator.clips.find(c => c.id === animator.currentClip && c.type === 'clip') : null;
+                        
+                        if (clip && clip.assetId && clip.frames && clip.frames.length > 0) {
+                            let animData = null;
+
+                            if (Config.ENGINE_MODE === 'runtime' && animator.isPlaying && animator._runtimeData) {
+                                animData = animator._runtimeData;
+                            } 
+                            else {
+                                const manualIndex = clip.frameIndex || 0;
+                                const safeIndex = Math.max(0, Math.min(manualIndex, clip.frames.length - 1)); 
+                                const frameId = clip.frames[safeIndex];
+                                const sourceRect = clip.sources?.[frameId];
+                                
+                                if (sourceRect) {
+                                    animData = {
+                                        assetId: clip.assetId,
+                                        x: sourceRect.x,
+                                        y: sourceRect.y,
+                                        w: sourceRect.w,
+                                        h: sourceRect.h,
+                                        flipX: clip.flipX || false
+                                    };
+                                }
+                            }
+
+                            if (animData) {
+                                finalAssetId = animData.assetId;
+                                finalX = animData.x;
+                                finalY = animData.y;
+                                finalW = animData.w;
+                                finalH = animData.h;
+                                finalFlipX = finalFlipX !== animData.flipX; 
+                            }
+                        }
+                    }
+
+                    // FIX: Checkerboard Fallback
+                    if (!finalAssetId || finalAssetId === "") {
+                        finalAssetId = "checkerboard"; 
+                        
+                        if (finalW === 0) finalW = t.width || 64;
+                        if (finalH === 0) finalH = t.height || 64;
+                    }
+
+                    if (finalAssetId) {
+                        const texture = world.assets.textures[finalAssetId] || world.assets.textures["checkerboard"];
+                        if (texture) {
+                            this.renderQueue.push({
+                                type: "image",
+                                texture: texture,
+                                frame: { x: finalX, y: finalY, w: finalW, h: finalH },
+                                transformData: trans,
+                                options: { flipX: finalFlipX, flipY, opacity: a }
+                            });
+                        }
+                    }
                 }
             }
 

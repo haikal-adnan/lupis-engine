@@ -58,9 +58,23 @@ export function useAssetBackend() {
     return result.success;
   };
 
+  const duplicateAssetOnServer = async (assetId, targetFolderId = null) => {
+    const response = await fetchWithTimeout(`${API_URL}/assets/duplicateAsset/${assetId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ targetFolderId })
+    });
+
+    const result = await response.json();
+    if (!response.ok || !result.success) throw new Error(result.error || 'Gagal menduplikasi asset');
+    
+    return result.data;
+  };
+
   return {
     createAssetToServer,
     updateAssetToServer,
-    deleteAssetFromServer
+    deleteAssetFromServer,
+    duplicateAssetOnServer 
   };
 }

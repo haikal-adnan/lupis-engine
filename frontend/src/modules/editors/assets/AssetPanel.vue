@@ -3,6 +3,7 @@
     class="relative h-full flex flex-col bg-background text-foreground select-none overflow-hidden"
     @click="closeMenu"
     @contextmenu.prevent="handleContextMenu($event, null)"
+    tabindex="0"
   >
     <div 
       v-if="isUploading" 
@@ -34,8 +35,14 @@
       <div class="flex items-center text-xs text-muted-foreground overflow-x-auto whitespace-nowrap hide-scrollbar">
         <button 
           @click.stop="navigateTo(null)"
-          class="hover:text-foreground cursor-pointer transition-colors shrink-0"
-          :class="{ 'font-bold text-foreground': !currentFolder }"
+          @dragover.prevent="dragOverBreadcrumb = 'root'"
+          @dragleave.prevent="dragOverBreadcrumb = null"
+          @drop.prevent="handleBreadcrumbDrop($event, null)"
+          class="hover:text-foreground cursor-pointer transition-colors shrink-0 px-1 py-0.5 rounded"
+          :class="{ 
+            'font-bold text-foreground': !currentFolder,
+            'bg-primary/20 text-primary ring-1 ring-primary': dragOverBreadcrumb === 'root'
+          }"
         >
           Assets
         </button>
@@ -44,8 +51,14 @@
           <ChevronRight class="w-3 h-3 mx-1 opacity-50 shrink-0" />
           <button 
             @click.stop="navigateTo(folder)"
-            class="hover:text-foreground cursor-pointer transition-colors truncate max-w-[120px]"
-            :class="{ 'font-medium text-foreground': currentFolder && currentFolder._id === folder._id }"
+            @dragover.prevent="dragOverBreadcrumb = folder._id"
+            @dragleave.prevent="dragOverBreadcrumb = null"
+            @drop.prevent="handleBreadcrumbDrop($event, folder._id)"
+            class="hover:text-foreground cursor-pointer transition-colors truncate max-w-[120px] px-1 py-0.5 rounded"
+            :class="{ 
+              'font-medium text-foreground': currentFolder && currentFolder._id === folder._id,
+              'bg-primary/20 text-primary ring-1 ring-primary': dragOverBreadcrumb === folder._id
+            }"
             :title="folder.name"
           >
             {{ folder.name }}
@@ -95,13 +108,16 @@
              id: folder._id, 
              name: folder.name, 
              type: 'folder', 
-             isFolder: true 
+             isFolder: true,
+             parentId: folder.parentId
           }" 
           :view-mode="viewMode"
           :active="selectedId === folder._id"
+          :is-cut="clipboard?.action === 'cut' && clipboard?.item?.id === folder._id"
           @click="handleSelect(folder._id)"
           @dblclick="navigateTo(folder)"
           @contextmenu="handleContextMenu($event, { ...folder, type: 'folder' })"
+          @move-asset="({ id, type, targetFolderId }) => moveItem(id, type, targetFolderId)" 
         />
 
         <AssetItem 
@@ -113,12 +129,15 @@
             type: asset.type,
             fileKey: asset.fileKey,
             meta: asset.meta,
-            isSynced: asset.isSynced
+            isSynced: asset.isSynced,
+            folderId: asset.folderId
           }"
           :view-mode="viewMode"
           :active="selectedId === asset._id"
+          :is-cut="clipboard?.action === 'cut' && clipboard?.item?.id === asset._id"
           @click="handleSelect(asset._id)"
           @contextmenu="handleContextMenu($event, { ...asset, name: asset.displayName || asset.name })" 
+          @move-asset="({ id, type, targetFolderId }) => moveItem(id, type, targetFolderId)"
         />
       </div>
 
@@ -141,6 +160,7 @@
 </template>
 
 <script setup>
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { LayoutGrid, List, ChevronRight, Plus, FolderPlus } from 'lucide-vue-next'
 
 import BaseSearchInput from '@/commons/components/inputs/BaseSearchInput.vue'
@@ -149,6 +169,8 @@ import AssetItem from '@editors/assets/parts/AssetItem.vue'
 
 import { useAssetLogic } from '@editors/assets/composables/useAssetLogic.js'
 import { useAssetMenu } from '@editors/assets/composables/useAssetMenu.js'
+
+const assetLogic = useAssetLogic()
 
 const {
   isUploading,
@@ -165,13 +187,82 @@ const {
   triggerUpload,
   handleFileUpload,
   handleDrop,
-  folderBreadcrumbs
-} = useAssetLogic()
+  folderBreadcrumbs,
+  moveItem,   
+  handlePaste,  
+  clipboard     
+} = assetLogic
 
 const {
   menu,
   handleContextMenu,
   closeMenu,
   contextMenuItems
-} = useAssetMenu(selectedId, triggerUpload)
+} = useAssetMenu(selectedId, triggerUpload, assetLogic)
+
+const dragOverBreadcrumb = ref(null)
+
+const handleBreadcrumbDrop = (e, targetFolderId) => {
+  dragOverBreadcrumb.value = null 
+
+  try {
+    const dragData = e.dataTransfer.getData('application/json')
+    if (dragData) {
+      const { id, type, originalFolderId } = JSON.parse(dragData)
+      
+      if (id === targetFolderId) return
+      
+      if (originalFolderId !== targetFolderId) {
+        moveItem(id, type, targetFolderId)
+      }
+    }
+  } catch (err) {
+    console.error("Drop ke breadcrumb gagal:", err)
+  }
+}
+
+const handleKeyDown = (e) => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+  if (e.ctrlKey || e.metaKey) {
+    switch(e.key.toLowerCase()) {
+      case 'c':
+        if (selectedId.value) {
+          const item = visibleFolders.value.find(f => f._id === selectedId.value) || 
+                       visibleAssets.value.find(a => a._id === selectedId.value)
+          if (item) {
+            clipboard.value = { 
+              action: 'copy', 
+              item: { id: item._id, type: item.isFolder || item.type === 'folder' ? 'folder' : 'asset' } 
+            }
+          }
+        }
+        break;
+      case 'x':
+        if (selectedId.value) {
+          const item = visibleFolders.value.find(f => f._id === selectedId.value) || 
+                       visibleAssets.value.find(a => a._id === selectedId.value)
+          if (item) {
+            clipboard.value = { 
+              action: 'cut', 
+              item: { id: item._id, type: item.isFolder || item.type === 'folder' ? 'folder' : 'asset' } 
+            }
+          }
+        }
+        break;
+      case 'v':
+        e.preventDefault();
+        handlePaste();
+        break;
+    }
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', handleKeyDown)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', handleKeyDown)
+})
 </script>

@@ -3,6 +3,7 @@ import { sceneActions } from './useSceneActions';
 import { layerActions } from './useLayerActions';
 import { entityActions } from './useEntityActions';
 import { settingActions } from './useSettingActions'; 
+import { animatorActions } from './useAnimatorActions';
 
 export const useSceneStore = defineStore('scene', {
   state: () => ({
@@ -45,6 +46,7 @@ export const useSceneStore = defineStore('scene', {
     ...layerActions,
     ...entityActions,
     ...settingActions,
+    ...animatorActions,
 
     initScenes(sceneList) {
       this.scenes = Array.isArray(sceneList) ? sceneList : [];

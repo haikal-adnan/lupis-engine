@@ -3,7 +3,7 @@
     
     <div class="flex items-end h-full">
       <button 
-        v-for="tab in tabs" 
+        v-for="tab in visibleTabs" 
         :key="tab.id"
         @click="handleTabClick(tab)"
         class="group relative flex items-center gap-2 px-4 h-full text-xs font-medium border-x border-t transition-all duration-200 outline-none focus:outline-none"
@@ -40,24 +40,42 @@
 </template>
 
 <script setup>
-import { markRaw, watch } from 'vue'
-import { FolderOpen, Terminal, Library, ScrollText } from 'lucide-vue-next'
+import { markRaw, watch, computed } from 'vue'
+import { FolderOpen, Terminal, Library, ScrollText, Film } from 'lucide-vue-next'
 import { useEditorStore } from '@/stores/useEditorStore'
 
 import AssetPanel from '@editors/assets/AssetPanel.vue'
 import ConsolePanel from '@editors/console/ConsolePanel.vue'
 import PrefabPanel from '@editors/prefab/PrefabPanel.vue'
 import ScriptPanel from '@editors/scripts/ScriptPanel.vue'
+import AnimatorTimeline from '@editors/animator/parts/AnimatorTimeline.vue'
 
 const emit = defineEmits(['update:component'])
 const editorStore = useEditorStore()
 
-const tabs = [
-  { id: 'assets', label: 'Assets', icon: FolderOpen, component: markRaw(AssetPanel) },
-  { id: 'scripts', label: 'Scripts', icon: ScrollText, component: markRaw(ScriptPanel) },
-  { id: 'console', label: 'Console', icon: Terminal, component: markRaw(ConsolePanel) },
-  { id: 'prefabs', label: 'Prefabs', icon: Library, component: markRaw(PrefabPanel) },
-]
+const allTabDefinitions = {
+  assets: { id: 'assets', label: 'Assets', icon: FolderOpen, component: markRaw(AssetPanel) },
+  scripts: { id: 'scripts', label: 'Scripts', icon: ScrollText, component: markRaw(ScriptPanel) },
+  console: { id: 'console', label: 'Console', icon: Terminal, component: markRaw(ConsolePanel) },
+  prefabs: { id: 'prefabs', label: 'Prefabs', icon: Library, component: markRaw(PrefabPanel) },
+  timeline: { id: 'timeline', label: 'Timeline', icon: Film, component: markRaw(AnimatorTimeline) }
+}
+
+const visibleTabs = computed(() => {
+  if (editorStore.activeTab?.type === 'animator') {
+    return [
+      allTabDefinitions.timeline,
+      allTabDefinitions.assets
+    ]
+  }
+
+  return [
+    allTabDefinitions.assets,
+    allTabDefinitions.scripts,
+    allTabDefinitions.console,
+    allTabDefinitions.prefabs
+  ]
+})
 
 const isActive = (id) => editorStore.activeBottomTabId === id
 
@@ -66,14 +84,13 @@ const handleTabClick = (tab) => {
     editorStore.toggleBottomBar()
     return
   }
-
   editorStore.setActiveBottomTab(tab.id)
 }
 
 watch(
   () => editorStore.activeBottomTabId,
   (newId) => {
-    const foundTab = tabs.find(t => t.id === newId)
+    const foundTab = allTabDefinitions[newId]
     if (foundTab) {
       emit('update:component', foundTab.component)
     }

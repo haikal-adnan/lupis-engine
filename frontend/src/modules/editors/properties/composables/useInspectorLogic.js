@@ -49,11 +49,19 @@ export function useInspectorLogic() {
   const prefabId = computed(() => isEditingMasterPrefab.value ? null : selectedEntity.value?.prefabId);
   const isOverridden = computed(() => isEditingMasterPrefab.value ? false : (selectedEntity.value?.isOverridden || false));
   const isLocked = computed(() => selectedEntity.value?._editor?.locked || false);
+  
   const isSizeLockedByText = computed(() => {
     if (!selectedEntity.value) return false;
     const textComp = selectedEntity.value.components?.TextRenderer;
     return !!(textComp && textComp.autoFit);
   });
+
+  const isSizeLockedByTilemap = computed(() => {
+    if (!selectedEntity.value) return false;
+    const tilemapComp = selectedEntity.value.components?.Tilemap;
+    return !!(tilemapComp && tilemapComp.autoFit);
+  });
+
   const showSyncControls = computed(() => !isEditingMasterPrefab.value && !!prefabId.value);
 
   const getPrefabMaster = () => {
@@ -73,7 +81,7 @@ export function useInspectorLogic() {
   function bindSettingProp(category, propName) {
     return computed({
       get: () => {
-        if (category === 'ui' || category === 'grid') {
+        if (category === 'ui' || category === 'grid' || category === 'camera') {
             return projectStore.project?.settings?.[category]?.[propName];
         }
         if (!category && propName === 'tickRate') {
@@ -97,6 +105,10 @@ export function useInspectorLogic() {
           else if (propName === 'opacity') projectStore.setGridOpacity(val);
           else if (propName === 'visible' && val !== grid.visible) projectStore.toggleGrid();
           else if (propName === 'snap' && val !== grid.snap) projectStore.toggleMagnet();
+          return;
+        }
+        if (category === 'camera') {
+          projectStore.updateCameraSettings({ [propName]: val });
           return;
         }
         if (!category && propName === 'tickRate') {
@@ -430,12 +442,62 @@ export function useInspectorLogic() {
     if (projectStore.project) projectStore.updateUISettings(updates);
   }
 
+  function resetTextRatio() {
+    if (!selectedEntity.value) return;
+    const tr = selectedEntity.value.components.TextRenderer;
+    if (!tr) return;
+    sceneStore.updateComponentProp(selectedEntity.value._id, 'TextRenderer', 'fontSize', tr.fontSize);
+  }
+
+  function resetTilemapTransform() {
+    if (!selectedEntity.value) return;
+    const tm = selectedEntity.value.components.Tilemap;
+    if (!tm) return;
+
+    const targetWidth = (tm.width || 0) * (tm.tileWidth || 0);
+    const targetHeight = (tm.height || 0) * (tm.tileHeight || 0);
+
+    if (isEditingMasterPrefab.value) {
+      prefabStore.updateComponentProp(editorStore.activeTab.id, 'Transform', 'width', targetWidth);
+      prefabStore.updateComponentProp(editorStore.activeTab.id, 'Transform', 'height', targetHeight);
+      
+      EngineBridge.updatePrefabMasterComponentProp?.({
+        prefabId: editorStore.activeTab.id,
+        componentName: 'Transform',
+        prop: 'width',
+        value: targetWidth
+      });
+      EngineBridge.updatePrefabMasterComponentProp?.({
+        prefabId: editorStore.activeTab.id,
+        componentName: 'Transform',
+        prop: 'height',
+        value: targetHeight
+      });
+    } else {
+      const id = selectedEntity.value._id;
+      sceneStore.updateComponentProp(id, 'Transform', 'width', targetWidth);
+      sceneStore.updateComponentProp(id, 'Transform', 'height', targetHeight);
+      
+      if (EngineBridge.updateComponentProp) {
+        EngineBridge.updateComponentProp({ entityId: id, componentName: 'Transform', path: 'width', value: targetWidth });
+        EngineBridge.updateComponentProp({ entityId: id, componentName: 'Transform', path: 'height', value: targetHeight });
+      } else if (EngineBridge.patchComponent) {
+        EngineBridge.patchComponent({
+          entityId: id,
+          componentName: 'Transform',
+          updates: { width: targetWidth, height: targetHeight }
+        });
+      }
+    }
+  }
+  
   return {
     selectedEntity,
     selectedLayerId,
     hasSelection,
     isLocked,
     isSizeLockedByText,
+    isSizeLockedByTilemap,
     prefabId,
     isOverridden,
     currentTextureUrl,
@@ -459,6 +521,8 @@ export function useInspectorLogic() {
     syncComponent,
     syncAllComponents,
     unpackPrefab,
-    isMultiSelection
+    isMultiSelection,
+    resetTextRatio,
+    resetTilemapTransform
   };
 }
