@@ -101,6 +101,25 @@
       </div>
     </div>
 
+    <PropertyRow label="Scale">
+      <div class="flex items-center gap-2">
+        <div class="grid grid-cols-2 gap-2 flex-grow">
+          <BaseNumber v-model="scaleX" prefix="X" :min="1" :step="1" :precision="0" class="font-mono" :disabled="isLocked" />
+          <BaseNumber v-model="scaleY" prefix="Y" :min="1" :step="1" :precision="0" class="font-mono" :disabled="isLocked" />
+        </div>
+
+        <IconButton 
+          :active="isScaleLocked" 
+          @click="isScaleLocked = !isScaleLocked"
+          :tooltip="isScaleLocked ? 'Unlock Scale' : 'Lock Scale Uniformly'"
+          :disabled="isLocked"
+        >
+          <Lock v-if="isScaleLocked" class="w-3.5 h-3.5" />
+          <Unlock v-else class="w-3.5 h-3.5 opacity-50" />
+        </IconButton>
+      </div>
+    </PropertyRow>
+
     <PropertyRow label="Flip">
       <div class="grid grid-cols-2 gap-2">
         <BaseButton 
@@ -165,7 +184,9 @@ const height = bindComponentProp('Transform', 'height', 2);
 const flipX = bindComponentProp('Transform', 'flipX');
 const flipY = bindComponentProp('Transform', 'flipY');
 const isRatioLocked = bindComponentProp('Transform', 'isRatioLocked');
-
+const scaleX = bindComponentProp('Transform', 'scaleX');
+const scaleY = bindComponentProp('Transform', 'scaleY');
+const isScaleLocked = bindComponentProp('Transform', 'isScaleLocked');
 const pivotX = bindComponentProp('Transform', 'pivotX');
 const pivotY = bindComponentProp('Transform', 'pivotY');
 </script>

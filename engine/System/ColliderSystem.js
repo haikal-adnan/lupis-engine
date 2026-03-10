@@ -230,23 +230,32 @@ export default class ColliderSystem {
 
         const pX = t.pivotX ?? 0.5;
         const pY = t.pivotY ?? 0.5;
-        const scaleX = t.scaleX || 1;
-        const scaleY = t.scaleY || 1;
+        const scaleX = t.scaleX ?? 1;
+        const scaleY = t.scaleY ?? 1;
         
+        // 1. Dapatkan ukuran visual entity (Sprite/Tilemap base)
         const visualWidth = t.width * Math.abs(scaleX);
         const visualHeight = t.height * Math.abs(scaleY);
         
+        // 2. Tentukan titik origin ujung kiri-atas (berdasarkan pivot)
         const originX = t.x - (visualWidth * pX);
         const originY = t.y - (visualHeight * pY);
         
+        // 3. Kalikan lebar & tinggi collider dengan Math.abs(scale)
+        const colliderW = (c.autoFit ? t.width : c.width) * Math.abs(scaleX);
+        const colliderH = (c.autoFit ? t.height : c.height) * Math.abs(scaleY);
+
+        // 4. Kalikan Offset dengan scale (tanpa Math.abs, agar jika di-flip (negatif scale), offset ikut berbalik posisinya)
+        const finalOffsetX = (c.offsetX || 0) * scaleX;
+        const finalOffsetY = (c.offsetY || 0) * scaleY;
+
         return {
-            x: originX + (c.offsetX || 0),
-            y: originY + (c.offsetY || 0),
-            w: c.width, 
-            h: c.height
+            x: originX + finalOffsetX,
+            y: originY + finalOffsetY,
+            w: colliderW, 
+            h: colliderH
         };
     }
-
     _aabbIntersect(a, b) {
         return (
             a.x < b.x + b.w &&

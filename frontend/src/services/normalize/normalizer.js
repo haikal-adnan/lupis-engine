@@ -8,7 +8,7 @@ import { createFolder } from '@schemas/folderSchema.js';
 import { createScript } from '@schemas/scriptSchema.js'; 
 
 export const normalizeProjectLoad = (
-  rawProject,
+rawProject,
   rawScenes = [],
   rawAssets = [],
   rawPrefabs = [],
@@ -32,6 +32,8 @@ export const normalizeProjectLoad = (
   const cleanPrefabs = Array.isArray(rawPrefabs)
     ? rawPrefabs.map(prefab => createPrefab(prefab))
     : [];
+
+  console.log(rawPrefabs)
 
   const cleanFolders = Array.isArray(rawFolders)
     ? rawFolders.map(folder => createFolder(folder))

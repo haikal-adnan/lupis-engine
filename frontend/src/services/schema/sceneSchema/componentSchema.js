@@ -12,6 +12,7 @@ export const createTransform = (data = {}, defaults = { width: 100, height: 100 
     width: Number(data.width ?? defaults.width),
     height: Number(data.height ?? defaults.height),
     isRatioLocked: Boolean(data.isRatioLocked ?? false),
+    isScaleLocked: Boolean(data.isScaleLocked ?? true),
     isOverridden: Boolean(data.isOverridden ?? false)
   };
 };
@@ -30,6 +31,7 @@ export const createCollider = (data = {}) => {
   return {
     type: data.type || "solid", 
     enabled: Boolean(data.enabled ?? true),
+    autoFit: Boolean(data.autoFit ?? false),
     offsetX: Number(data.offsetX ?? 0),
     offsetY: Number(data.offsetY ?? 0),
     width: Number(data.width ?? 32),

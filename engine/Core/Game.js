@@ -87,7 +87,6 @@ export default class Game {
 
         console.log(this._sceneDataCache)
 
-        // [DIPERBARUI] Menggunakan .trim() dan .toLowerCase() untuk pencarian yang lebih akurat
         const searchKey = String(sceneIdentifier).trim().toLowerCase();
 
         const rawSceneData = this._sceneDataCache.find(s => 
@@ -100,7 +99,7 @@ export default class Game {
             return;
         }
 
-        const targetSceneData = structuredClone(rawSceneData);
+        const targetSceneData = JSON.parse(JSON.stringify(rawSceneData));
         console.log("rawScene", rawSceneData)
 
         this.pauseGame();
@@ -162,7 +161,6 @@ export default class Game {
     restartScene() {
         const currentId = this.world.currentSceneScriptId;
         if (currentId) {
-            // [DIPERBARUI] Gunakan antrean agar aman jika dipanggil dari dalam node script
             this.queueLoadScene(currentId);
         } else {
             console.warn("[Game] Tidak dapat me-restart: ID Scene aktif tidak ditemukan di world.");

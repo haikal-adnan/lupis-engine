@@ -530,15 +530,26 @@ export default class SyncComponent {
         this.isInternalUpdate = true; 
 
         try {
+            // 1. DOWNLOAD ASSETS DULU! (Pre-load)
+            // Lakukan proses async ini SEBELUM menghapus scene lama, 
+            // sehingga layar tidak akan kosong / berkedip saat menunggu.
+            if (assets && Array.isArray(assets) && this.assetLoader) {
+                await this.assetLoader.loadAsset(this.world, assets, this.game.baseURL);
+            }
+
             this.onClearSelection();
             
+            // 2. Bersihkan HANYA data entitas dan layer scene
             if (this.world.layersWorld) this.world.layersWorld.length = 0;
             if (this.world.layersUI) this.world.layersUI.length = 0;
             if (this.world.entities) this.world.entities.length = 0;
-            if (this.world.ui) this.world.ui.length = 0;
+            
+            // Dihapus: `if (this.world.ui) this.world.ui.length = 0;` 
+            // Alasannya: world.ui berisi fungsi render Rulers dari Editor. Biarkan saja!
             
             if (this.world.scriptIdMap) this.world.scriptIdMap.clear();
 
+            // 3. Setup ulang Prefab & Scripts
             this.world.prefabs = {};
             if (prefabs && Array.isArray(prefabs)) {
                 this.world.prefabs = Object.fromEntries(prefabs.map(p => [p._id, {
@@ -562,30 +573,20 @@ export default class SyncComponent {
                 ScriptLoader.load(this.game, payload);
             }
 
-            if (assets && Array.isArray(assets) && this.assetLoader) {
-                await this.assetLoader.loadAsset(this.world, assets, this.game.baseURL);
-            }
-
+            // 4. Load Scene Baru
             if (scene) {
+                // Tetap gunakan JSON clone untuk keamanan seperti yang kita bahas sebelumnya
+                const safeScene = JSON.parse(JSON.stringify(scene));
                 const sceneLoader = new SceneLoader(this.world, "editor");
-                sceneLoader.loadScene(scene);
+                sceneLoader.loadScene(safeScene);
             } else {
                 console.warn("[SyncComponent] Scene data kosong/tidak ditemukan di payload saat reload.");
             }
 
-            if (this.game.rulers) {
-                this.world.ui.push(ui => {
-                    if (this.world.settings?.showRulers) this.game.rulers.render(ui);
-                });
-            }
-            
-            if (this.game.grid) {
-                this.world.gridRenderer = (shape, proj) => {
-                    if (this.world.settings?.grid?.visible) this.game.grid.render(shape, proj);
-                };
-            }
+            // Dihapus: Kode re-assign this.game.rulers dan this.game.grid di bawah sini.
+            // Karena kita tidak menghapusnya di atas, kita tidak perlu membuatnya lagi!
 
-            console.log("[SyncComponent] Hard Reset selesai. Scene telah dimuat ulang.");
+            console.log("[SyncComponent] Hard Reset selesai. Scene telah dimuat ulang tanpa blink.");
 
         } catch (error) {
             console.error("[SyncComponent] Kritis: Gagal melakukan onSceneReload:", error);

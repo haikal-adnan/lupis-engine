@@ -122,7 +122,8 @@ const allPrefabs = computed(() => store.getAllPrefabs);
 
 const filteredItems = computed(() => {
   let list = allPrefabs.value.filter(p => {
-    const type = p.originalData?.data?.type || 'world'; 
+    const type = p.type || p.originalData?.type || 'world'; 
+    
     return activeTab.value === 'ui' ? type === 'ui' : type !== 'ui';
   });
 
@@ -132,7 +133,6 @@ const filteredItems = computed(() => {
   }
   return list;
 });
-
 const contextLayers = computed(() => {
   if (!activeLayers.value) return [];
   return activeLayers.value.filter(layer => layer._section === activeTab.value);

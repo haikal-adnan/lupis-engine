@@ -21,6 +21,12 @@ export default class ScriptSystem {
     }
     
     clear() {
+        this.runners.forEach(runner => {
+            if (typeof runner.destroy === 'function') {
+                runner.destroy();
+            }
+        });
         this.runners = [];
+        console.log("[ScriptSystem] Cleared all script runners.");
     }
 }

@@ -258,14 +258,24 @@ export default class WorldRenderer {
             if (Config.ENGINE_MODE === 'editor' && comps.Collider && comps.Collider.enabled) {
                 const c = comps.Collider;
                 
-                const pivotOffsetX = (t.width * (t.scaleX ?? 1)) * (t.pivotX ?? 0.5);
-                const pivotOffsetY = (t.height * (t.scaleY ?? 1)) * (t.pivotY ?? 0.5);
+                // Dimensi visual entity
+                const visualWidth = t.width * Math.abs(t.scaleX ?? 1);
+                const visualHeight = t.height * Math.abs(t.scaleY ?? 1);
 
-                const colliderX = drawX - pivotOffsetX + (c.offsetX ?? 0);
-                const colliderY = drawY - pivotOffsetY + (c.offsetY ?? 0);
+                // Offset dari pivot
+                const pivotOffsetX = visualWidth * (t.pivotX ?? 0.5);
+                const pivotOffsetY = visualHeight * (t.pivotY ?? 0.5);
+
+                // Offset collider yang di-scale (mendukung flip dari minus scale)
+                const scaledOffsetX = (c.offsetX ?? 0) * (t.scaleX ?? 1);
+                const scaledOffsetY = (c.offsetY ?? 0) * (t.scaleY ?? 1);
+
+                const colliderX = drawX - pivotOffsetX + scaledOffsetX;
+                const colliderY = drawY - pivotOffsetY + scaledOffsetY;
                 
-                const colliderW = c.width * Math.abs(t.scaleX ?? 1);
-                const colliderH = c.height * Math.abs(t.scaleY ?? 1);
+                // Ukuran collider (mendukung autoFit vs manual) dikali scale
+                const colliderW = (c.autoFit ? t.width : c.width) * Math.abs(t.scaleX ?? 1);
+                const colliderH = (c.autoFit ? t.height : c.height) * Math.abs(t.scaleY ?? 1);
 
                 const debugTrans = {
                     x: colliderX, y: colliderY, width: colliderW, height: colliderH,

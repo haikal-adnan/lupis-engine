@@ -28,12 +28,6 @@
           <div class="h-px bg-border my-1"></div>
         </template>
 
-        <button @click="syncSizeToTransform(); close()" class="menu-item">
-          <Maximize class="w-3.5 h-3.5 mr-2 opacity-70" /> Fit to Transform
-        </button>
-
-        <div class="h-px bg-border my-1"></div>
-
         <button 
           @click="removeComponent('Collider'); close()" 
           class="menu-item text-destructive hover:bg-destructive hover:text-destructive-foreground font-medium"
@@ -67,34 +61,47 @@
       </PropertyRow>
 
       <PropertyRow label="Offset">
-        <div class="grid grid-cols-2 gap-2">
-          <BaseNumber v-model="offsetX" prefix="X" :step="1" :precision="2" class="font-mono" />
-          <BaseNumber v-model="offsetY" prefix="Y" :step="1" :precision="2" class="font-mono" />
+        <div class="grid grid-cols-2 gap-2 transition-all duration-300" :class="{ 'opacity-50 grayscale pointer-events-none': autoFit }">
+          <BaseNumber v-model="offsetX" prefix="X" :step="1" :precision="2" class="font-mono" :disabled="autoFit" />
+          <BaseNumber v-model="offsetY" prefix="Y" :step="1" :precision="2" class="font-mono" :disabled="autoFit" />
         </div>
       </PropertyRow>
 
       <PropertyRow label="Size (px)">
-        <div class="grid grid-cols-2 gap-2">
-          <BaseNumber v-model="width" prefix="W" :min="0" :step="1" :precision="2" class="font-mono" />
-          <BaseNumber v-model="height" prefix="H" :min="0" :step="1" :precision="2" class="font-mono" />
+        <div class="grid grid-cols-2 gap-2 transition-all duration-300" :class="{ 'opacity-50 grayscale pointer-events-none': autoFit }">
+          <BaseNumber v-model="width" prefix="W" :min="0" :step="1" :precision="2" class="font-mono" :disabled="autoFit" />
+          <BaseNumber v-model="height" prefix="H" :min="0" :step="1" :precision="2" class="font-mono" :disabled="autoFit" />
         </div>
       </PropertyRow>
-    </div>
 
+      <div class="px-1 mb-2 mt-1">
+        <BaseCheckbox 
+          v-model="autoFit" 
+          label="Fit to Transform Size" 
+        />
+      </div>
+
+      <div v-if="autoFit" class="px-1 mb-3 -mt-1">
+        <div class="text-[9px] text-amber-500/80 italic flex items-center gap-1">
+          <Info class="w-3 h-3" /> Size is controlled by Transform
+        </div>
+      </div>
+
+    </div>
   </PropertySection>
 </template>
 
 <script setup>
-import { computed } from 'vue'
-import { Cuboid, Trash2, Maximize, RefreshCw } from 'lucide-vue-next'
+import { computed, watch } from 'vue'
+import { Cuboid, Trash2, RefreshCw, Info } from 'lucide-vue-next'
 import { useInspectorLogic } from "@editors/properties/composables/useInspectorLogic.js"
-import { useSceneStore } from '@/stores/scene/useSceneStore.js'
 
 import PropertySection from "@ui/display/PropertySection.vue"
 import PropertyRow from "@ui/display/PropertyRow.vue"
 import BaseNumber from '@/commons/components/inputs/BaseNumber.vue'
 import BaseSelect from '@/commons/components/inputs/BaseSelect.vue'
 import BaseButton from '@/commons/components/buttons/BaseButton.vue'
+import BaseCheckbox from '@/commons/components/inputs/BaseCheckbox.vue'
 
 const { 
   bindComponentProp, 
@@ -106,13 +113,12 @@ const {
   markAsOverridden 
 } = useInspectorLogic()
 
-const sceneStore = useSceneStore()
-
 const hasComponent = computed(() => !!selectedEntity.value?.components?.Collider)
 const isOverridden = getComponentOverrideStatus('Collider')
 
 const type = bindComponentProp('Collider', 'type')
 const enabled = bindComponentProp('Collider', 'enabled')
+const autoFit = bindComponentProp('Collider', 'autoFit')
 const offsetX = bindComponentProp('Collider', 'offsetX', 2)
 const offsetY = bindComponentProp('Collider', 'offsetY', 2)
 const width = bindComponentProp('Collider', 'width', 2)
@@ -123,21 +129,44 @@ const typeOptions = [
   { label: 'Trigger (Zone)', value: 'trigger' }
 ]
 
+// 1. Ambil nilai Transform width & height secara reaktif
+const transformWidth = computed(() => selectedEntity.value?.components?.Transform?.width)
+const transformHeight = computed(() => selectedEntity.value?.components?.Transform?.height)
+
 const syncSizeToTransform = () => {
   if (!selectedEntity.value) return
   const transform = selectedEntity.value.components.Transform
   if (!transform) return
 
-  const id = selectedEntity.value._id
-  
-  sceneStore.updateComponentProp(id, 'Collider', 'width', transform.width)
-  sceneStore.updateComponentProp(id, 'Collider', 'height', transform.height)
-  sceneStore.updateComponentProp(id, 'Collider', 'offsetX', 0)
-  sceneStore.updateComponentProp(id, 'Collider', 'offsetY', 0)
+  // Menggunakan setter otomatis dari bindComponentProp agar otomatis 
+  // tersimpan & terkirim ke Engine, serta menangani Prefab/Scene
+  width.value = transform.width
+  height.value = transform.height
+  offsetX.value = 0
+  offsetY.value = 0
   
   markAsOverridden()
-  sceneStore.updateComponentProp(id, 'Collider', 'isOverridden', true)
 }
+
+// 2. Pantau perubahan autoFit dari false ke true
+watch(autoFit, (isAutoFit) => {
+  if (isAutoFit) {
+    syncSizeToTransform()
+  }
+})
+
+// 3. Pantau perubahan ukuran Transform agar collider ikut membesar/mengecil real-time
+watch([transformWidth, transformHeight], ([newWidth, newHeight]) => {
+  if (autoFit.value) {
+    if (newWidth !== undefined && width.value !== newWidth) {
+      width.value = newWidth
+    }
+    if (newHeight !== undefined && height.value !== newHeight) {
+      height.value = newHeight
+    }
+  }
+})
+
 </script>
 
 <style scoped>

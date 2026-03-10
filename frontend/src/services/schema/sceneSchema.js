@@ -33,11 +33,11 @@ export const createScene = (data = {}, projectId = null) => {
 
     layersWorld: Array.isArray(data.layersWorld) 
       ? data.layersWorld.map(l => createLayer(l))
-      : [createLayer({ _id: 'layer_world_root', scriptId: 'world_root', name: 'World Root' })],
+      : [createLayer({ _id: `layer_world_${GenerateUUID()}`, scriptId: 'world_root', name: 'World Root' })],
 
     layersUI: Array.isArray(data.layersUI) 
       ? data.layersUI.map(l => createLayer(l))
-      : [createLayer({ _id: 'layer_ui_root', scriptId: 'ui_root', name: 'UI Root' })],
+      : [createLayer({ _id: `layer_ui_${GenerateUUID()}`, scriptId: 'ui_root', name: 'UI Root' })],
 
     entities: Array.isArray(data.entities) 
       ? data.entities.map(e => createEntity(e)) 

@@ -60,7 +60,8 @@ export class TransformOperator {
                 if (t.x !== newX || t.y !== newY) {
                     t.x = newX;
                     t.y = newY;
-                    t.isOverridden = true; 
+                    // Hapus atau komentari baris di bawah agar translate tidak trigger override
+                    // t.isOverridden = true; 
                     changed = true;
                 }
             }
@@ -147,6 +148,7 @@ export class TransformOperator {
         const item = startData[0];
         const e = item.e;
         if (e.components?.TextRenderer?.autoFit || e.components?.Tilemap?.autoFit) return;
+        
         const dx = nowPos.x - startPos.x;
         const dy = nowPos.y - startPos.y;
         if (dx === 0 && dy === 0) return;
@@ -160,38 +162,52 @@ export class TransformOperator {
         const c = Math.cos(-rRad);
         const s = Math.sin(-rRad);
         
+        // Jarak drag mouse diubah ke koordinat lokal objek
         const localDx = dx * c - dy * s;
         const localDy = dx * s + dy * c;
 
         const safeScaleX = Math.abs(item.sx) < 0.001 ? 0.001 : Math.abs(item.sx);
         const safeScaleY = Math.abs(item.sy) < 0.001 ? 0.001 : Math.abs(item.sy);
 
-        let dX_Adjusted = localDx / safeScaleX;
-        let dY_Adjusted = localDy / safeScaleY;
-
-        let dW = 0, dH = 0;
+        // 1. Hitung Perubahan Lebar/Tinggi VISUAL (di layar) berdasarkan tarikan mouse
+        let dVisualW = 0, dVisualH = 0;
         let anchorX = null, anchorY = null; 
 
-        if (resizeType.includes('w')) { dW = -dX_Adjusted; anchorX = 1; } 
-        if (resizeType.includes('e')) { dW = dX_Adjusted;  anchorX = 0; } 
-        if (resizeType.includes('n')) { dH = -dY_Adjusted; anchorY = 1; } 
-        if (resizeType.includes('s')) { dH = dY_Adjusted;  anchorY = 0; } 
+        if (resizeType.includes('w')) { dVisualW = -localDx; anchorX = 1; } 
+        if (resizeType.includes('e')) { dVisualW = localDx;  anchorX = 0; } 
+        if (resizeType.includes('n')) { dVisualH = -localDy; anchorY = 1; } 
+        if (resizeType.includes('s')) { dVisualH = localDy;  anchorY = 0; } 
 
-        let rawW = item.w + dW;
-        let rawH = item.h + dH;
+        // Lebar & Tinggi visual kotor (sebelum snap)
+        let rawVisualW = (item.w * safeScaleX) + dVisualW;
+        let rawVisualH = (item.h * safeScaleY) + dVisualH;
 
+        // 2. Terapkan Snapping pada VISUAL, bukan pada internal width
         if (shouldSnap) {
+            let snapW = gridSize;
+            let snapH = gridSize;
+
+            // ATURAN EMAS TILEMAP: Visual harus snap kelipatan (TileSize * Scale)
+            if (e.components.Tilemap) {
+                const tileW = e.components.Tilemap.tileWidth || gridSize;
+                const tileH = e.components.Tilemap.tileHeight || gridSize;
+                snapW = tileW * safeScaleX;
+                snapH = tileH * safeScaleY;
+            }
+
             if (resizeType.includes('w') || resizeType.includes('e')) {
-                rawW = Math.round(rawW / gridSize) * gridSize;
-                if (Math.abs(rawW) < gridSize) rawW = gridSize * (rawW < 0 ? -1 : 1); 
-                dW = rawW - item.w;
+                rawVisualW = Math.round(rawVisualW / snapW) * snapW;
+                if (Math.abs(rawVisualW) < snapW) rawVisualW = snapW * (rawVisualW < 0 ? -1 : 1); 
             }
             if (resizeType.includes('n') || resizeType.includes('s')) {
-                rawH = Math.round(rawH / gridSize) * gridSize;
-                if (Math.abs(rawH) < gridSize) rawH = gridSize * (rawH < 0 ? -1 : 1);
-                dH = rawH - item.h;
+                rawVisualH = Math.round(rawVisualH / snapH) * snapH;
+                if (Math.abs(rawVisualH) < snapH) rawVisualH = snapH * (rawVisualH < 0 ? -1 : 1);
             }
         }
+
+        // 3. Konversi kembali Visual yang sudah di-snap menjadi Internal Width (Dibagi Scale)
+        let rawW = rawVisualW / safeScaleX;
+        let rawH = rawVisualH / safeScaleY;
 
         const startFlipX = item.flipX ?? false;
         const startFlipY = item.flipY ?? false;
@@ -202,8 +218,11 @@ export class TransformOperator {
         const newW = Math.max(1, Math.round(Math.abs(rawW)));
         const newH = Math.max(1, Math.round(Math.abs(rawH)));
 
-        const dW_Visual = dW * safeScaleX;
-        const dH_Visual = dH * safeScaleY;
+        // 4. Hitung pergeseran posisi (Shift) berdasarkan lebar yang benar-benar berubah
+        const dW = newW - item.w;
+        const dH = newH - item.h;
+        const dW_Visual = dW * safeScaleX * (startFlipX !== newFlipX ? -1 : 1);
+        const dH_Visual = dH * safeScaleY * (startFlipY !== newFlipY ? -1 : 1);
 
         let shiftX_World = 0, shiftY_World = 0;
         if (anchorX !== null) shiftX_World = dW_Visual * ((t.pivotX ?? 0.5) - anchorX);
@@ -220,15 +239,20 @@ export class TransformOperator {
             t.flipY = newFlipY;
             t.width = newW;
             t.height = newH;
-            t.scaleX = safeScaleX;
+            t.scaleX = safeScaleX; // Scale tidak berubah saat resize canvas
             t.scaleY = safeScaleY;
             t.x = newX;
             t.y = newY;
             t.isOverridden = true; 
             
             if (e.components.Tilemap) {
-                const tileSize = e.components.Tilemap.tileSize || 32;
-                bus.emit("editor:tilemap:resize", { id: e.id, width: Math.round(newW/tileSize), height: Math.round(newH/tileSize) });
+                const tileSizeX = e.components.Tilemap.tileWidth || 32;
+                const tileSizeY = e.components.Tilemap.tileHeight || 32;
+                bus.emit("editor:tilemap:resize", { 
+                    id: e.id, 
+                    width: Math.round(newW / tileSizeX), 
+                    height: Math.round(newH / tileSizeY) 
+                });
             }
 
             ApplyResizeToEntity(e, this.world);

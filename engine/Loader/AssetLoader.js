@@ -14,7 +14,8 @@ export default class AssetLoader {
             this._isSystemDefaultLoaded = true;
         }
 
-        for (const asset of assets) {
+        // PERBAIKAN: Ubah array asset menjadi array of Promises
+        const loadPromises = assets.map(async (asset) => {
             try {
                 switch (asset.type) {
                     case "texture":
@@ -32,7 +33,10 @@ export default class AssetLoader {
                     err
                 );
             }
-        }
+        });
+
+        // PERBAIKAN: Jalankan semua request download secara bersamaan!
+        await Promise.all(loadPromises);
     }
 
     async _loadSystemDefault(world) {
