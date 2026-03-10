@@ -20,6 +20,9 @@ export default class GraphRunner {
         this._dragNodes = [];
         this._tickNodes = [];
         
+        // [DITAMBAHKAN] Array untuk menyimpan referensi event agar bisa dihapus
+        this._registeredEvents = []; 
+
         this._lastPointer = { x: 0, y: 0 };
         this._keyStates = {};
 
@@ -42,24 +45,30 @@ export default class GraphRunner {
     }
 
     _initVariables() {
+        // [DIPERBARUI] Pastikan localVariables bersih sebelum diinisialisasi ulang
+        this.localVariables.clear();
         const source = this.data.variables || this.data.exposedVariables || [];
         source.forEach(v => {
             this.localVariables.set(v._id, v.defaultValue);
         });
     }
 
+    // [DITAMBAHKAN] Method untuk mereset variabel lokal
+    resetLocalVariables() {
+        this._initVariables();
+    }
+
     start() {
         if (!this._isScriptActive()) return;
         if (!this.data.nodes) return;
 
-        // [DIPERBARUI] Tambahkan filter untuk event_scene_start
         this.data.nodes
             .filter(n => n.type === 'event_game_start' || n.type === 'event_scene_start')
             .forEach(node => {
-                // Ini akan langsung memicu pin 'out' dari node tersebut
                 this.executeFlow(node._id, 'out'); 
             });
     }
+
     _setupEventListeners() {
         if (!this.data.nodes) return;
         
@@ -67,38 +76,35 @@ export default class GraphRunner {
         this._holdNodes = [];
         this._dragNodes = [];
 
+        // [DITAMBAHKAN] Fungsi bantu untuk membungkus event.on agar tercatat
+        const registerEvent = (eventName, callback) => {
+            this.game.events.on(eventName, callback);
+            this._registeredEvents.push({ eventName, callback });
+        };
+
         this.data.nodes.forEach(node => {
 
             if (node.type === 'event_any_key') {
-                this.game.events.on('input:keydown', (k) => {
+                registerEvent('input:keydown', (k) => {
                     if (!this._isScriptActive()) return;
-
-                    // Simpan key yang ditekan ke dalam _tempData sebagai lowercase
-                    // 'k' biasanya berisi key name seperti 'A', 'Enter', 'Shift', dll.
-                    node._tempData = { 
-                        key_string: String(k).toLowerCase() 
-                    };
-
-                    // Jalankan flow output execution
+                    node._tempData = { key_string: String(k).toLowerCase() };
                     this.executeFlow(node._id, 'out_exec');
                 });
             }
 
             // --- EVENT: KEY DOWN ---
-            if (node.type === 'event_simple_key') {
+            else if (node.type === 'event_simple_key') {
                 const keyTarget = node.data?.key?.toLowerCase();
-                this.game.events.on('input:keydown', (k) => {
+                registerEvent('input:keydown', (k) => {
                     if (!this._isScriptActive()) return;
-                    // Jalankan flow jika tombol yang ditekan cocok
                     if (k === keyTarget) this.executeFlow(node._id, 'sk_main');
                 });
             } 
             // --- EVENT: KEY UP ---
             else if (node.type === 'event_simple_key_up') {
                 const keyTarget = node.data?.key?.toLowerCase();
-                this.game.events.on('input:keyup', (k) => {
+                registerEvent('input:keyup', (k) => {
                     if (!this._isScriptActive()) return;
-                    // Jalankan flow jika tombol yang dilepas cocok
                     if (k === keyTarget) this.executeFlow(node._id, 'sk_up_main');
                 });
             }
@@ -106,7 +112,7 @@ export default class GraphRunner {
             else if (node.type === 'event_pointer_click') {
                 const config = Array.isArray(node.data) ? node.data[0] : node.data;
                 const btnTarget = config?.button || 'left';
-                this.game.events.on('input:pointerdown', (e) => {
+                registerEvent('input:pointerdown', (e) => {
                     if (!this._isScriptActive()) return;
                     if (e.button === btnTarget) {
                         node._tempData = { pos_x: e.x, pos_y: e.y };
@@ -122,11 +128,11 @@ export default class GraphRunner {
                     const keyTarget = map.key.toLowerCase();
                     
                     if (map.trigger === 'press') {
-                        this.game.events.on('input:keydown', (k) => {
+                        registerEvent('input:keydown', (k) => {
                             if (k === keyTarget && this._isScriptActive()) this.executeFlow(node._id, outputId);
                         });
                     } else if (map.trigger === 'release') {
-                        this.game.events.on('input:keyup', (k) => {
+                        registerEvent('input:keyup', (k) => {
                             if (k === keyTarget && this._isScriptActive()) this.executeFlow(node._id, outputId);
                         });
                     } else if (map.trigger === 'hold') {
@@ -146,6 +152,24 @@ export default class GraphRunner {
         });
     }
 
+    // [DITAMBAHKAN] Method krusial untuk mencegah memory leak saat scene berganti!
+    destroy() {
+        // Cabut semua event listener yang nempel di game.events
+        this._registeredEvents.forEach(({ eventName, callback }) => {
+            if (this.game.events.off) {
+                this.game.events.off(eventName, callback);
+            }
+        });
+        this._registeredEvents = [];
+        
+        // Bersihkan state nodes & variables
+        this.localVariables.clear();
+        this._holdNodes = [];
+        this._dragNodes = [];
+        this._tickNodes = [];
+        this.nodeMap.clear();
+    }
+
     update(dt) {
         if (!this._isScriptActive()) return;
         this.currentDt = dt;
@@ -158,7 +182,6 @@ export default class GraphRunner {
 
         this._tickNodes.forEach(node => {
             node._tempData = { dt: dt };
-
             this.executeFlow(node._id, 'out');
         });
 

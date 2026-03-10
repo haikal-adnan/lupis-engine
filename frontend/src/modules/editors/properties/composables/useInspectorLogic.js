@@ -159,24 +159,50 @@ export function useInspectorLogic() {
         if (!selectedEntity.value) return;
 
         let finalVal = val;
-        if (precision !== null && typeof val === 'number') {
+        
+        // Aturan khusus Scale: Paksa minimal 1 dan selalu angka bulat
+        if (propName === 'scaleX' || propName === 'scaleY') {
+          finalVal = Math.max(1, Math.round(val));
+        } 
+        else if (precision !== null && typeof val === 'number') {
           const factor = Math.pow(10, precision);
           finalVal = Math.round(val * factor) / factor;
         }
 
-        if (isEditingMasterPrefab.value) {
-          prefabStore.updateComponentProp(editorStore.activeTab.id, compName, propName, finalVal);
-          EngineBridge.updatePrefabMasterComponentProp?.({
-            prefabId: editorStore.activeTab.id,
-            componentName: compName,
-            prop: propName,
-            value: finalVal
-          });
-        } else {
-          const id = selectedEntity.value._id;
-          sceneStore.updateComponentProp(id, compName, propName, finalVal);
-          if (prefabId.value) {
-            sceneStore.updateComponentProp(id, compName, 'isOverridden', true);
+        // Fungsi internal (Helper) untuk mengeksekusi update dan mengirim ke Engine
+
+        const applyUpdate = (pName, pValue) => {
+          if (isEditingMasterPrefab.value) {
+            prefabStore.updateComponentProp(editorStore.activeTab.id, compName, pName, pValue);
+            EngineBridge.updatePrefabMasterComponentProp?.({
+              prefabId: editorStore.activeTab.id,
+              componentName: compName,
+              prop: pName,
+              value: pValue
+            });
+          } else {
+            const id = selectedEntity.value._id;
+            sceneStore.updateComponentProp(id, compName, pName, pValue);
+            
+            if (prefabId.value) {
+              // Pengecualian: jangan trigger override jika yang diubah HANYA x atau y
+              if (pName !== 'x' && pName !== 'y') {
+                sceneStore.updateComponentProp(id, compName, 'isOverridden', true);
+              }
+            }
+          }
+        };
+
+        // 1. Update properti utama yang sedang diubah user
+        applyUpdate(propName, finalVal);
+
+        // 2. [FITUR BARU] Jika yang diubah adalah Scale dan tombol Lock aktif,
+        // otomatis copy nilai tersebut ke sumbu pasangannya (Uniform Scale).
+        if (propName === 'scaleX' || propName === 'scaleY') {
+          const comp = selectedEntity.value.components[compName];
+          if (comp && comp.isScaleLocked) {
+            const linkedProp = propName === 'scaleX' ? 'scaleY' : 'scaleX';
+            applyUpdate(linkedProp, finalVal);
           }
         }
       }

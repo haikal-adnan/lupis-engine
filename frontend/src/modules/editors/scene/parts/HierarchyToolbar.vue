@@ -92,7 +92,7 @@ import { useSceneStore } from '@/stores/scene/useSceneStore.js'
 import { useAssetStore } from '@/stores/useAssetStore.js'
 import { useScriptStore } from '@/stores/useScriptStore.js'
 import { usePrefabStore } from '@/stores/usePrefabStore.js'
-
+import { toRaw } from 'vue';
 import { EngineBridge } from '@/services/engine/EngineBridge.js'
 
 import { usePrompt } from '@/composables/usePrompt'
@@ -122,19 +122,19 @@ const syncSceneWithEngine = () => {
   const activeScene = sceneStore.activeScene;
   if (!activeScene) return;
 
+  // Ini adalah cara paling STABIL untuk state Vue yang kompleks
+  // toRaw melepaskan pelacakan reaktif, JSON membuang fungsi/referensi aneh
+  const safeScene = JSON.parse(JSON.stringify(toRaw(activeScene)));
+
   const payload = {
-    project: projectStore.project,
-    scene: activeScene,
-    prefabs: Object.values(prefabStore.prefabs || {}), 
-    scripts: Object.values(scriptStore.scripts || {}),
-    assets: assetStore.assets || []
+    project: projectStore.project ? JSON.parse(JSON.stringify(toRaw(projectStore.project))) : null,
+    scene: safeScene,
+    prefabs: JSON.parse(JSON.stringify(toRaw(Object.values(prefabStore.prefabs || {})))), 
+    scripts: JSON.parse(JSON.stringify(toRaw(Object.values(scriptStore.scripts || {})))),
+    assets: JSON.parse(JSON.stringify(toRaw(assetStore.assets || [])))
   };
 
   EngineBridge.reloadScene(payload);
-
-  if (activeScene.settings) {
-    EngineBridge.updateSceneSettings(activeScene.settings);
-  }
 
   sceneStore.clearSelection();
   EngineBridge.clearSelection();

@@ -5,9 +5,11 @@ export const sceneActions = {
   addScene(sceneData = {}) {
     const projectStore = useProjectStore();
 
+    const safeSceneData = JSON.parse(JSON.stringify(sceneData));
+
     const newScene = createScene({
       projectId: projectStore.project?._id,
-      ...sceneData
+      ...safeSceneData
     });
 
     this.scenes.push(newScene);

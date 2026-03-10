@@ -7,45 +7,52 @@ import { EngineBridge } from "@/services/engine/EngineBridge.js";
 import { useConfirm } from '@/composables/useConfirm';
 import { usePopAlert } from '@/composables/usePopAlert';
 import { usePrompt } from '@/composables/usePrompt';
+import { useProjectStore } from '@/stores/useProjectStore.js';
 
 export function usePrefabActions() {
   const store = usePrefabStore();
   const sceneStore = useSceneStore();
-  
+  const projectStore = useProjectStore();
+
   const { confirm } = useConfirm();
   const { showPop } = usePopAlert();
   const { prompt } = usePrompt();
 
   const createPrefab = (name = "New Prefab", sourceEntityData = null) => {
     try {
-      let dataPayload = {};
-      let type = 'world';
+        let dataPayload = {};
+        let type = 'world'; // Default type
 
-      if (sourceEntityData) {
-        const cleanData = JSON.parse(JSON.stringify(sourceEntityData));
-        ['_id', 'parentId', 'layerId', 'orderIndex', 'prefabId'].forEach(k => delete cleanData[k]);
-        
-        if (cleanData.type) type = cleanData.type;
-        dataPayload = { data: cleanData };
+        if (sourceEntityData) {
+          const cleanData = JSON.parse(JSON.stringify(sourceEntityData));
+          ['_id', 'parentId', 'layerId', 'orderIndex', 'prefabId'].forEach(k => delete cleanData[k]);
+          
+          // Ambil tipe dari entity yang dipilih (saat "Use as Prefab" diklik)
+          if (cleanData.type) type = cleanData.type; 
+          
+          dataPayload = { data: cleanData };
+        }
+
+        // PANGGIL SCHEMA DI SINI
+        const newPrefab = createPrefabSchema({
+          _id: GenerateUUID(),
+          projectId: projectStore.project?._id || null,
+          name: name, // Parameter nama diteruskan ke Root
+          type: type, // Parameter tipe diteruskan ke Root
+          ...dataPayload
+        });
+
+        store.addPrefab(newPrefab);
+        projectStore.markAsDirty(); // JANGAN LUPA INI!
+
+        showPop({ title: 'Success', message: `Prefab "${name}" created.`, type: 'success' });
+        return newPrefab;
+
+      } catch (error) {
+          console.error(error);
+          showPop({ title: 'Error', message: 'Failed to create prefab.', type: 'error' });
+          return null;
       }
-
-      const newPrefab = createPrefabSchema({
-        _id: GenerateUUID(),
-        name: name,
-        type: type,
-        ...dataPayload
-      });
-
-      store.addPrefab(newPrefab);
-      
-      showPop({ title: 'Success', message: `Prefab "${name}" created.`, type: 'success' });
-      return newPrefab;
-
-    } catch (error) {
-      console.error(error);
-      showPop({ title: 'Error', message: 'Failed to create prefab.', type: 'error' });
-      return null;
-    }
   };
   
   const deletePrefab = async (prefabId) => {
@@ -79,11 +86,20 @@ export function usePrefabActions() {
     });
 
     if (newName && newName.trim() !== "" && newName !== prefab.name) {
-      store.updatePrefab(prefabId, { name: newName });
+      // 3. Update nama luar (prefab) DAN nama dalam (root entity data) agar sinkron
+      const updatedEntityData = { ...prefab.data, name: newName };
+      
+      store.updatePrefab(prefabId, { 
+        name: newName, 
+        data: updatedEntityData 
+      });
+
+      // 4. FLAG PROJECT SEBAGAI DIRTY! Ini krusial agar backend tahu data harus disave.
+      projectStore.markAsDirty();
+
       showPop({ title: 'Renamed', message: `Prefab renamed to "${newName}".`, type: 'success' });
     }
   };
-
   const duplicatePrefab = (prefabId) => {
     const original = store.getPrefabById(prefabId);
     if (!original) return;

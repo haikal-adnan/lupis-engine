@@ -129,7 +129,7 @@ export default class SceneLoader {
     }
 
     _mergePrefabData(template, instance) {
-        const merged = structuredClone(template);
+        const merged = JSON.parse(JSON.stringify(template));
 
         merged._id = instance._id;
         merged.scriptId = instance.scriptId; 
