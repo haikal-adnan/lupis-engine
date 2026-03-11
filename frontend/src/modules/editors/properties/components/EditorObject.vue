@@ -176,23 +176,22 @@ const toggleActive = () => {
   if (!selectedEntity.value) return
   const newVal = !active.value
   const id = selectedEntity.value._id
-  sceneStore.updateEntityProp(id, 'active', newVal)
+  sceneStore.updateEntityProp(id, 'isActive', newVal) // Ubah 'active' menjadi 'isActive'
   markAsOverridden()
 }
 
 const visible = computed({
-  get: () => selectedEntity.value?.visible ?? true,
+  get: () => selectedEntity.value?.isVisible ?? true,
   set: (val) => {
     if (selectedEntity.value) sceneStore.updateEntityProp(selectedEntity.value._id, 'visible', val)
   }
 })
 
 const locked = computed({
-  get: () => selectedEntity.value?._editor?.locked || false,
+  get: () => selectedEntity.value?.isLocked || false, 
   set: (val) => {
     if (!selectedEntity.value) return
-    const currentEditor = selectedEntity.value._editor || {}
-    sceneStore.updateEntityProp(selectedEntity.value._id, '_editor', { ...currentEditor, locked: val })
+    sceneStore.updateEntityProp(selectedEntity.value._id, 'isLocked', val) // Hapus update _editor, ubah langsung ke isLocked
   }
 })
 

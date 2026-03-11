@@ -1,7 +1,8 @@
 import { ref, computed } from 'vue'
 import { 
   FolderPlus, Download, RefreshCw, Edit2, Trash2, 
-  Stamp, Type, Copy, Scissors, ClipboardPaste 
+  Stamp, Type, Copy, Scissors, ClipboardPaste,
+  Volume2 // --- TAMBAHAN: Import icon untuk Audio ---
 } from 'lucide-vue-next'
 import { useAssetActions } from '@/stores/scene/useAssetActions'
 import { useFolderActions } from '@/stores/scene/useFolderActions'
@@ -58,8 +59,31 @@ export function useAssetMenu(selectedIdRef, triggerUploadCb, logicActions) {
     }
 
     try {
-      sceneStore.updateComponentProp(entityId, componentName, 'assetId', asset._id)
-      showPop({ title: 'Success', message: `Applied "${asset.name}" to ${componentName}.`, type: 'success' })
+      // --- LOGIKA KHUSUS UNTUK AUDIO BANK ---
+      if (componentName === 'Audio') {
+        const audioComp = entity.components.Audio;
+        if (!audioComp.currentClip) {
+          showPop({ title: 'Failed', message: 'No active clip selected in Audio Bank.', type: 'warning' })
+          return
+        }
+
+        const clips = [...(audioComp.clips || [])]
+        const clipIndex = clips.findIndex(c => c._id === audioComp.currentClip)
+
+        if (clipIndex !== -1) {
+          // Update assetId hanya pada clip yang sedang aktif
+          clips[clipIndex] = { ...clips[clipIndex], assetId: asset._id }
+          sceneStore.updateComponentProp(entityId, 'Audio', 'clips', clips)
+          showPop({ title: 'Success', message: `Applied "${asset.name}" to active audio clip.`, type: 'success' })
+        } else {
+          showPop({ title: 'Error', message: 'Active clip not found.', type: 'error' })
+        }
+      } 
+      // --- LOGIKA STANDAR (SpriteRenderer, TextRenderer, Tilemap) ---
+      else {
+        sceneStore.updateComponentProp(entityId, componentName, 'assetId', asset._id)
+        showPop({ title: 'Success', message: `Applied "${asset.name}" to ${componentName}.`, type: 'success' })
+      }
     } catch (error) {
       showPop({ title: 'Failed', message: 'Failed to apply asset.', type: 'error' })
     }
@@ -141,6 +165,7 @@ export function useAssetMenu(selectedIdRef, triggerUploadCb, logicActions) {
     if (!isFolder) {
       const isTexture = ['texture'].includes(targetItem.type)
       const isFont = targetItem.type === 'font'
+      const isAudio = targetItem.type === 'audio' // --- TAMBAHAN: Cek jika asset adalah audio ---
       let hasAddedAppliers = false
 
       // --- LOGIKA TAB SCENE ---
@@ -157,6 +182,19 @@ export function useAssetMenu(selectedIdRef, triggerUploadCb, logicActions) {
         }
         if (isFont && entity.components.TextRenderer) {
           items.push({ label: 'Apply to TextRenderer', icon: Type, action: () => applyAsset(targetItem, entity._id, 'TextRenderer') })
+          hasAddedAppliers = true
+        }
+
+        // --- TAMBAHAN: Logika untuk apply Audio Component ---
+        if (isAudio && entity.components.Audio) {
+          const hasActiveClip = !!entity.components.Audio.currentClip;
+          items.push({ 
+            // Mengubah label dan mendisable tombol jika tidak ada clip yang aktif
+            label: hasActiveClip ? 'Apply to Active Audio Clip' : 'No Active Audio Clip', 
+            icon: Volume2, 
+            disabled: !hasActiveClip,
+            action: () => { if (hasActiveClip) applyAsset(targetItem, entity._id, 'Audio') } 
+          })
           hasAddedAppliers = true
         }
       }

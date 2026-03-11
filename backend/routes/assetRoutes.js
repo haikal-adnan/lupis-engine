@@ -16,8 +16,9 @@ const __dirname = path.dirname(__filename);
 const router = express.Router();
 const STORAGE_BASE_PATH = path.resolve(__dirname, "../../storage/projects");
 
+// 1. Tambahkan ekstensi audio ke file filter
 const fileFilter = (req, file, cb) => {
-  const allowedExts = [".png", ".jpg", ".jpeg", ".ttf"];
+  const allowedExts = [".png", ".jpg", ".jpeg", ".ttf", ".wav", ".mp3", ".ogg"];
   const ext = path.extname(file.originalname).toLowerCase();
   
   if (allowedExts.includes(ext)) {
@@ -39,7 +40,8 @@ router.post("/createAsset", (req, res) => {
   upload(req, res, async (err) => {
     if (err) return res.status(400).json({ success: false, error: err.message });
 
-    const { projectId, folderId, width, height, name } = req.body; 
+    // 2. Tangkap parameter duration dari request body
+    const { projectId, folderId, width, height, name, duration } = req.body; 
     const file = req.file;
 
     if (!file || !projectId) return res.status(400).json({ success: false, error: "Missing parameters" });
@@ -53,22 +55,30 @@ router.post("/createAsset", (req, res) => {
       if (!fs.existsSync(projectFolder)) return res.status(400).json({ success: false, error: "Project folder not found." });
 
       const ext = path.extname(file.originalname).toLowerCase();
-      const label = ext === '.ttf' ? 'font_' : 'image_';
-      const random16Digit = crypto.randomBytes(8).toString('hex'); 
       
+      // 3. Klasifikasikan tipe dan label prefix file
+      let label = 'image_';
+      let assetType = 'texture';
+      
+      if (ext === '.ttf') {
+        label = 'font_';
+        assetType = 'font';
+      } else if (['.wav', '.mp3', '.ogg'].includes(ext)) {
+        label = 'audio_';
+        assetType = 'audio';
+      }
+
+      const random16Digit = crypto.randomBytes(8).toString('hex'); 
       const baseName = `${label}${random16Digit}`;
       const savedName = `${baseName}${ext}`;
       const filePath = path.join(projectFolder, savedName);
 
-      let assetDimensions = undefined;
-      if (width && height) {
-        assetDimensions = { w: parseInt(width), h: parseInt(height) };
-      }
-
+      // Simpan file fisik
       fs.writeFileSync(filePath, file.buffer);
       console.log(`[Upload] File fisik tersimpan: ${savedName}`);
 
-      if (ext === '.ttf') {
+      // 4. Proses DB berdasarkan tipe aset
+      if (assetType === 'font') {
         const outputPath = path.join(projectFolder, `${baseName}.fnt`); 
         const cmd = `npx msdf-bmfont-xml "${filePath}" -o "${outputPath}" --texture-size 1024,1024 --distance-range 8 --smart-size --pot --square --font-size 42`;
 
@@ -85,8 +95,8 @@ router.post("/createAsset", (req, res) => {
                 type: 'font',
                 fileKey: baseName, 
                 extension: ext,
-                size: file.size,
-                dimensions: assetDimensions
+                size: file.size
+                // Font tidak butuh dimensions manual dari client
               });
 
               return res.json({ success: true, data: { asset: newAsset } });
@@ -102,7 +112,32 @@ router.post("/createAsset", (req, res) => {
           }
         });
 
+      } else if (assetType === 'audio') {
+        try {
+          const newAsset = await createAsset({
+            projectId,
+            folderId: folderId || null,
+            name: name || file.originalname, 
+            type: 'audio',
+            fileKey: baseName, 
+            extension: ext,
+            size: file.size,
+            duration: duration ? parseFloat(duration) : 0 // Parsing durasi untuk audio
+          });
+
+          return res.json({ success: true, data: { asset: newAsset } });
+        } catch (dbErr) {
+          if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+          return res.status(500).json({ success: false, error: 'Database storage failed.' });
+        }
+
       } else {
+        // Logika untuk Texture (Image)
+        let assetDimensions = undefined;
+        if (width && height) {
+          assetDimensions = { w: parseInt(width), h: parseInt(height) };
+        }
+
         try {
           const newAsset = await createAsset({
             projectId,
@@ -128,6 +163,7 @@ router.post("/createAsset", (req, res) => {
   });
 });
 
+
 router.put("/updateAsset/:assetId", async (req, res) => {
   try {
     const { assetId } = req.params;
@@ -137,6 +173,7 @@ router.put("/updateAsset/:assetId", async (req, res) => {
     if (name !== undefined) updateFields.name = name;
     if (folderId !== undefined) updateFields.folderId = folderId;
     
+    // filterMode biasanya hanya valid untuk texture, tapi kita simpan fleksibel
     if (filterMode !== undefined) updateFields['meta.filterMode'] = filterMode;
 
     const updatedAsset = await Asset.findByIdAndUpdate(
@@ -157,6 +194,7 @@ router.put("/updateAsset/:assetId", async (req, res) => {
   }
 });
 
+
 router.post("/duplicateAsset/:assetId", async (req, res) => {
   try {
     const { assetId } = req.params;
@@ -165,11 +203,16 @@ router.post("/duplicateAsset/:assetId", async (req, res) => {
     const originalAsset = await Asset.findById(assetId);
     if (!originalAsset) return res.status(404).json({ success: false, error: "Asset asal tidak ditemukan." });
 
-    const { projectId, fileKey, extension, type, size, dimensions } = originalAsset;
+    const { projectId, fileKey, extension, type, size, meta } = originalAsset;
     const projectFolder = path.join(STORAGE_BASE_PATH, projectId.toString());
     
     const random16Digit = crypto.randomBytes(8).toString('hex');
-    const label = type === 'font' ? 'font_' : 'image_';
+    
+    // 5. Tangani label duplikasi audio
+    let label = 'image_';
+    if (type === 'font') label = 'font_';
+    else if (type === 'audio') label = 'audio_';
+
     const newFileKey = `${label}${random16Digit}`;
 
     const copyFileFs = (ext) => {
@@ -178,12 +221,14 @@ router.post("/duplicateAsset/:assetId", async (req, res) => {
       if (fs.existsSync(src)) fs.copyFileSync(src, dest);
     };
 
-    if (type === 'texture') {
-      copyFileFs(extension || '.png');
+    // Copy file fisik (Texture & Audio hanya butuh 1 file ekstensi)
+    if (type === 'texture' || type === 'audio') {
+      copyFileFs(extension || (type === 'audio' ? '.mp3' : '.png'));
     } else if (type === 'font') {
       ['.ttf', '.png', '.fnt'].forEach(ext => copyFileFs(ext));
     }
 
+    // Pass data spesifik meta berdasarkan tipe
     const duplicatedAsset = await createAsset({
       projectId,
       folderId: targetFolderId || originalAsset.folderId,
@@ -192,7 +237,8 @@ router.post("/duplicateAsset/:assetId", async (req, res) => {
       fileKey: newFileKey,
       extension,
       size,
-      dimensions
+      dimensions: meta?.dimensions,
+      duration: meta?.duration
     });
 
     res.json({ success: true, data: duplicatedAsset });
@@ -218,8 +264,9 @@ router.delete("/deleteAsset/:assetId", async (req, res) => {
 
     await Asset.findByIdAndDelete(assetId);
 
-    if (type === 'texture') {
-      const ext = meta.extension || '.png';
+    // 6. Tangani penghapusan fisik file audio dan texture
+    if (type === 'texture' || type === 'audio') {
+      const ext = meta.extension || (type === 'audio' ? '.mp3' : '.png');
       const filePath = path.join(projectFolder, `${fileKey}${ext}`);
       if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
       

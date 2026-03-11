@@ -4,6 +4,7 @@ import InputManager from "../Input/InputManager.js";
 import EventManager from "../Script/EventManager.js";
 import GLImageResource from "../Renderer/Graphic/GLImageResource.js";
 import GLFontResource from "../Renderer/Graphic/GLFontResource.js";
+import GLAudioResource from "../Renderer/Graphic/GLAudioResource.js";
 import AssetLoader from "../Loader/AssetLoader.js";
 import SceneLoader from "../Loader/SceneLoader.js";
 import ScriptLoader from "../Loader/ScriptLoader.js";
@@ -37,7 +38,8 @@ export default class GameLoader {
             
             const assetLoader = new AssetLoader(
                 new GLImageResource(game.renderer.gl),
-                new GLFontResource(game.renderer.gl)
+                new GLFontResource(game.renderer.gl),
+                new GLAudioResource(game.audioSystem.context)
             );
             game.assetLoader = assetLoader;
             await assetLoader.loadAsset(game.world, assets, baseURL);

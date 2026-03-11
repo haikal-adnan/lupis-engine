@@ -33,8 +33,6 @@ rawProject,
     ? rawPrefabs.map(prefab => createPrefab(prefab))
     : [];
 
-  console.log(rawPrefabs)
-
   const cleanFolders = Array.isArray(rawFolders)
     ? rawFolders.map(folder => createFolder(folder))
     : [];

@@ -225,12 +225,12 @@ export function useInspectorLogic() {
     if (!master) return;
     const id = selectedEntity.value._id;
     const tag = master.data.tag || 'Untagged';
-    const active = master.data.isActive ?? true;
+    const isActive = master.data.isActive ?? true;
     sceneStore.updateEntityProp(id, 'tag', tag);
-    sceneStore.updateEntityProp(id, 'active', active);
+    sceneStore.updateEntityProp(id, 'isActive', isActive);
     sceneStore.updateEntityProp(id, 'isOverridden', false);
     EngineBridge.updateEntityProp({ id, prop: 'tag', value: tag });
-    EngineBridge.updateEntityProp({ id, prop: 'active', value: active });
+    EngineBridge.updateEntityProp({ id, prop: 'isActive', value: isActive });
     showPop({ title: 'Object Synced', type: 'success' });
   }
 

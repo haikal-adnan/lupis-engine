@@ -216,25 +216,28 @@ export default class WorldRenderer {
                     }
 
                     // FIX: Checkerboard Fallback
-                    if (!finalAssetId || finalAssetId === "") {
-                        finalAssetId = "checkerboard"; 
-                        
+                    let texture = null;
+                    let useCheckerboard = false;
+
+                    if (finalAssetId && finalAssetId !== "") {
+                        texture = world.assets.textures[finalAssetId];
+                    }
+
+                    // Jika asset tidak ada atau rusak (texture tidak ditemukan di memori), aktifkan checkerboard
+                    if (!texture) {
+                        useCheckerboard = true;
                         if (finalW === 0) finalW = t.width || 64;
                         if (finalH === 0) finalH = t.height || 64;
                     }
 
-                    if (finalAssetId) {
-                        const texture = world.assets.textures[finalAssetId] || world.assets.textures["checkerboard"];
-                        if (texture) {
-                            this.renderQueue.push({
-                                type: "image",
-                                texture: texture,
-                                frame: { x: finalX, y: finalY, w: finalW, h: finalH },
-                                transformData: trans,
-                                options: { flipX: finalFlipX, flipY, opacity: a }
-                            });
-                        }
-                    }
+                    // Selalu push ke renderQueue. Biarkan ImageRenderer yang menangani shader checkerboard-nya.
+                    this.renderQueue.push({
+                        type: "image",
+                        texture: texture, 
+                        frame: { x: finalX, y: finalY, w: finalW, h: finalH },
+                        transformData: trans,
+                        options: { flipX: finalFlipX, flipY, opacity: a, useCheckerboard }
+                    });
                 }
             }
 

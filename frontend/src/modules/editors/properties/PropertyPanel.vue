@@ -21,6 +21,7 @@
           <EditorPhysics v-if="selectedEntity.components?.Physics" />
           <EditorCollider v-if="selectedEntity.components?.Collider" />
           <EditorScript v-if="selectedEntity.components?.ScriptController" />
+          <EditorAudio v-if="selectedEntity.components?.Audio" />
 
           <div class="pt-6 px-1">
               <div class="relative" ref="addComponentWrapper">
@@ -74,7 +75,7 @@ import EditorPhysics from '@editors/properties/components/EditorPhysics.vue'
 import EditorScene from '@editors/properties/components/settings/EditorScene.vue'
 import EditorProject from '@editors/properties/components/settings/EditorProject.vue'
 import EditorAnimator from '@editors/properties/components/EditorAnimator.vue'
-
+import EditorAudio from '@editors/properties/components/EditorAudio.vue'
 const { hasSelection, selectedEntity, selectedLayerId, addComponentToSelection, isMultiSelection } = useInspectorLogic();
 
 const addComponentWrapper = ref(null);
@@ -104,6 +105,7 @@ const availableComponentOptions = computed(() => {
     { label: 'Shape Renderer', value: 'ShapeRenderer', isRenderer: true },  
     { label: 'Text Renderer', value: 'TextRenderer', isRenderer: true },    
     { label: 'Tilemap', value: 'Tilemap', isRenderer: true },
+    { label: 'Audio', value: 'Audio', isRenderer: false },
     { label: 'Physics Body', value: 'Physics', isRenderer: false },
     { label: 'Collider', value: 'Collider', isRenderer: false },
     { label: 'Script Controller', value: 'ScriptController', isRenderer: false },

@@ -147,27 +147,27 @@ export default class UIRenderer {
                     }
                 }
 
-                // FIX: Checkerboard Fallback
-                if (!finalAssetId || finalAssetId === "") {
-                    finalAssetId = "checkerboard";
-                    
+                let texture = null;
+                let useCheckerboard = false;
+
+                if (finalAssetId && finalAssetId !== "") {
+                    texture = world.assets.textures[finalAssetId];
+                }
+
+                // Cek apakah tekstur benar-benar ada
+                if (!texture) {
+                    useCheckerboard = true;
                     if (finalW === 0) finalW = t.width || 64;
                     if (finalH === 0) finalH = t.height || 64;
                 }
 
-                if (finalAssetId) {
-                    const texture = world.assets.textures[finalAssetId] || world.assets.textures["checkerboard"];
-                    
-                    if (texture) {
-                        this.renderQueue.push({
-                            type: "image",
-                            texture: texture,
-                            frame: { x: finalX, y: finalY, w: finalW, h: finalH },
-                            transformData: trans,
-                            options: { flipX: finalFlipX, flipY, opacity: a }
-                        });
-                    }
-                }
+                this.renderQueue.push({
+                    type: "image",
+                    texture: texture,
+                    frame: { x: finalX, y: finalY, w: finalW, h: finalH },
+                    transformData: trans,
+                    options: { flipX: finalFlipX, flipY, opacity: a, useCheckerboard }
+                });
             }
         }
         

@@ -151,6 +151,13 @@ export const entityActions = {
       
       components.Transform = { ...rawTransform, width: 640, height: 480 };
     }
+    else if (type === 'audio') {
+      components.Transform = { ...rawTransform, width: 50, height: 50 };
+      components.Audio = { 
+        currentClip: null,
+        clips: [] 
+      };
+    }
     else if (type === 'ui_empty') {
       components.UITransform = { ...rawTransform, width: 100, height: 100, anchorX: 0.5, anchorY: 0.5 };
     } 

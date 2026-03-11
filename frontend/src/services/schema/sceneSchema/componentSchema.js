@@ -17,6 +17,15 @@ export const createTransform = (data = {}, defaults = { width: 100, height: 100 
   };
 };
 
+export const createAudio = (data = {}) => {
+  return {
+    currentClip: data.currentClip || null,
+    clips: Array.isArray(data.clips) ? data.clips : [],
+    ...data,
+    isOverridden: Boolean(data.isOverridden ?? false)
+  };
+};
+
 export const createUITransform = (data = {}, defaults = { width: 160, height: 40 }) => {
   const base = createTransform(data, defaults);
   return {
@@ -144,6 +153,9 @@ export const createComponent = (type, inputData = {}) => {
 
     case "SpriteAnimator":
       return createSpriteAnimator(inputData);
+
+    case "Audio":
+      return createAudio(inputData);
 
     default:
       specificData = { ...inputData };
