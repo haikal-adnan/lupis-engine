@@ -10,6 +10,7 @@ import PhysicsSystem from "../System/PhysicsSystem.js";
 import SceneLoader from "../Loader/SceneLoader.js"; 
 import AnimatorSystem from "../System/AnimatorSystem.js";
 import TransitionSystem from "../System/TransitionSystem.js";
+import AudioSystem from "../System/AudioSystem.js";
 
 export default class Game {
     constructor() {
@@ -23,6 +24,7 @@ export default class Game {
         this.physicsSystem = new PhysicsSystem(this);
         this.animatorSystem = new AnimatorSystem(this);
         this.transitionSystem = new TransitionSystem(this);
+        this.audioSystem = new AudioSystem(this);
         this.audio = null;
         this.cameraController = null;
         this.rulers = null;
@@ -85,8 +87,6 @@ export default class Game {
             return;
         }
 
-        console.log(this._sceneDataCache)
-
         const searchKey = String(sceneIdentifier).trim().toLowerCase();
 
         const rawSceneData = this._sceneDataCache.find(s => 
@@ -100,7 +100,6 @@ export default class Game {
         }
 
         const targetSceneData = JSON.parse(JSON.stringify(rawSceneData));
-        console.log("rawScene", rawSceneData)
 
         this.pauseGame();
 
@@ -130,19 +129,13 @@ export default class Game {
         const sceneLoader = new SceneLoader(this.world, Config.ENGINE_MODE);
         sceneLoader.loadScene(targetSceneData);
 
+        const rw = this.world.settings.ui?.width || 1920;
+        const rh = this.world.settings.ui?.height || 1080;
+        this.camera.snapTo(rw / 2, rh / 2);
+
         if (Config.ENGINE_MODE === "runtime") {
-            if (this.camera && this.world.settings.camera) {
-                this.camera.snapTo(
-                    this.world.settings.camera.x || 0, 
-                    this.world.settings.camera.y || 0
-                );
-                this.camera.scale = this.world.settings.camera.zoom || 1;
-                this.camera.lerp = this.world.settings.camera.lerp || 0.1;
-            }
+            this.camera.scale = 1;
         } else {
-            const rw = this.world.settings.ui?.width || 1920;
-            const rh = this.world.settings.ui?.height || 1080;
-            this.camera.snapTo(rw / 2, rh / 2);
             this.camera.scale = 0.5;
         }
 
@@ -153,6 +146,7 @@ export default class Game {
         if (Config.ENGINE_MODE === "runtime") {
             this._initializeEntityScripts();
             this.scriptSystem.startAll();
+            this.audioSystem.startSceneAutoplay(this.world);
         }
 
         this.resumeGame();
@@ -204,6 +198,7 @@ export default class Game {
             this.animatorSystem.update(dt)
             this.physicsSystem.update(dt);
             this.scriptSystem.update(dt);
+            this.audioSystem.update();
             if (this.camera && this.renderer) {
                 this.camera.update(dt, this.world, this.renderer.gl.canvas);
             }

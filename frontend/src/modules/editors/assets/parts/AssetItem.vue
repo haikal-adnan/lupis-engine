@@ -15,6 +15,7 @@
     @dragleave="onDragLeave"
     @drop.prevent="onDrop"
     @click.stop="$emit('click', data)" 
+    @dblclick.stop="$emit('dblclick', data)"
     @contextmenu.prevent.stop="$emit('contextmenu', $event, data)"
   >
     <div v-if="!isSynced" class="absolute inset-0 z-20 striped-loading rounded-md border border-primary/30 pointer-events-none"></div>
@@ -64,7 +65,7 @@ const props = defineProps({
   isCut: { type: Boolean, default: false } 
 })
 
-const emit = defineEmits(['click', 'contextmenu', 'move-asset'])
+const emit = defineEmits(['click', 'dblclick', 'contextmenu', 'move-asset'])
 
 const assetStore = useAssetStore()
 const isDragOver = ref(false)

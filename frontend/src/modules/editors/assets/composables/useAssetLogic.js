@@ -4,13 +4,16 @@ import { useAssetStore } from '@/stores/useAssetStore'
 import { useFolderStore } from '@/stores/useFolderStore'
 import { useAssetActions } from '@/stores/scene/useAssetActions'
 import { useAssetBackend } from '@/services/api/backend/useAssetBackend.js';
+import { usePopImage } from '@/composables/usePopImage';
+import { usePopAudio } from '@/composables/usePopAudio';
 
 export function useAssetLogic() {
   const assetStore = useAssetStore()
   const folderStore = useFolderStore()
   const { importAsset } = useAssetActions()
   const { updateAssetToServer } = useAssetBackend() 
-
+  const { showImage } = usePopImage()
+  const { showAudio } = usePopAudio()
   const { isUploading } = storeToRefs(assetStore)
 
   const viewMode = ref('grid')
@@ -142,6 +145,18 @@ export function useAssetLogic() {
     }
   }
 
+  const handleAssetDoubleClick = (asset) => {
+    if (asset.type === 'texture') {
+      const imgUrl = assetStore.getAssetUrlById(asset._id);
+      showImage(imgUrl, asset.displayName || asset.name);
+    } 
+    // TAMBAHKAN KONDISI UNTUK AUDIO DI SINI
+    else if (['audio', 'sound'].includes(asset.type)) {
+      const audioUrl = assetStore.getAssetUrlById(asset._id);
+      showAudio(audioUrl, asset.displayName || asset.name);
+    }
+  }
+
   return {
     isUploading,
     viewMode, searchQuery, selectedId, fileInputRef,
@@ -150,6 +165,7 @@ export function useAssetLogic() {
     clipboard,
     toggleViewMode, navigateTo, handleSelect,
     triggerUpload, handleFileUpload, handleDrop,
-    moveItem, handlePaste 
+    moveItem, handlePaste,
+    handleAssetDoubleClick
   }
 }

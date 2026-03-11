@@ -3,7 +3,7 @@ import { useBackend } from '@/services/api/useBackend.js';
 export function useAssetBackend() {
   const { API_URL, fetchWithTimeout } = useBackend();
 
-  const createAssetToServer = async (file, projectId, folderId = null, dimensions = null, finalName = null) => {
+  const createAssetToServer = async (file, projectId, folderId = null, dimensions = null, finalName = null, duration = 0) => {
     const formData = new FormData();
     formData.append('projectId', projectId);
     
@@ -14,6 +14,10 @@ export function useAssetBackend() {
     if (dimensions && (dimensions.w > 0 || dimensions.h > 0)) {
       formData.append('width', dimensions.w);
       formData.append('height', dimensions.h);
+    }
+
+    if (duration > 0) {
+      formData.append('duration', duration);
     }
     
     if (finalName) {

@@ -1,20 +1,23 @@
 import { DEFAULT_FONT_XML, DEFAULT_FONT_TEXTURE_B64 } from "../Assets/Fonts/defaultFont.js";
+import Config from "../Core/Config.js";
 
 export default class AssetLoader {
-    constructor(imageResource, fontResource) {
+    constructor(imageResource, fontResource, audioResource) {
         this.imageResource = imageResource;
         this.fontResource = fontResource;
+        this.audioResource = audioResource;
         this._isSystemDefaultLoaded = false;
     }
 
     async loadAsset(world, assets, baseURL) {
-        
         if (!this._isSystemDefaultLoaded) {
             await this._loadSystemDefault(world);
             this._isSystemDefaultLoaded = true;
         }
+        
+        // Pastikan objek world.audios tersedia
+        if (!world.audios) world.audios = {};
 
-        // PERBAIKAN: Ubah array asset menjadi array of Promises
         const loadPromises = assets.map(async (asset) => {
             try {
                 switch (asset.type) {
@@ -24,18 +27,17 @@ export default class AssetLoader {
                     case "font":
                         await this.loadFont(world, asset, baseURL);
                         break;
-                    default:
+                    case "audio": // [DITAMBAHKAN] Handle Audio
+                        if (Config.ENGINE_MODE !== "editor") {
+                            await this.loadAudio(world, asset, baseURL);
+                        } 
                         break;
                 }
             } catch (err) {
-                console.error(
-                    `[AssetLoader] Failed to load asset: ${asset.name} (${asset._id})`,
-                    err
-                );
+                console.error(`[AssetLoader] Failed to load: ${asset.name}`, err);
             }
         });
 
-        // PERBAIKAN: Jalankan semua request download secara bersamaan!
         await Promise.all(loadPromises);
     }
 
@@ -91,6 +93,15 @@ export default class AssetLoader {
 
         if (fontResult) {
             world.addFont(asset._id, fontResult);
+        }
+    }
+
+    async loadAudio(world, asset, baseURL) {
+        const audioData = await this.audioResource.loadAudioFromAsset(asset, baseURL);
+        
+        // Simpan hanya buffer-nya saja (atau seluruh objek audioData jika Anda butuh info src/duration di masa depan)
+        if (audioData && audioData.buffer) {
+            world.audios[asset._id] = audioData.buffer; 
         }
     }
 }

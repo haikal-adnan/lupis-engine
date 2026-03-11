@@ -20,7 +20,7 @@ export function useAssetActions() {
 
     assetStore.setUploading(true);
 
-    try {
+  try {
       const projectId = editorStore.activeProjectId;
       const currentFolderId = folderStore.activeFolderId;
       
@@ -30,10 +30,17 @@ export function useAssetActions() {
       let type = 'unknown';
       if (file.type.startsWith('image/')) type = 'texture';
       else if (file.name.endsWith('.ttf')) type = 'font';
+      // Deteksi file audio
+      else if (file.type.startsWith('audio/') || ['.wav', '.mp3', '.ogg'].some(ext => file.name.toLowerCase().endsWith(ext))) type = 'audio';
 
       let dimensions = { w: 0, h: 0 };
+      let duration = 0;
+
+      // Ambil meta spesifik berdasarkan tipe
       if (type === 'texture') {
         dimensions = await _getImageDimensions(file);
+      } else if (type === 'audio') {
+        duration = await _getAudioDuration(file);
       }
 
       let finalName = pureName;
@@ -43,8 +50,9 @@ export function useAssetActions() {
         counter++;
       }
 
+      // Pastikan duration dikirim sebagai parameter
       const [serverData] = await Promise.all([
-        createAssetToServer(file, projectId, currentFolderId, dimensions, finalName),
+        createAssetToServer(file, projectId, currentFolderId, dimensions, finalName, duration),
         new Promise(resolve => setTimeout(resolve, 1000))
       ]);
 
@@ -154,6 +162,22 @@ export function useAssetActions() {
       img.onload = () => resolve({ w: img.width, h: img.height });
       img.onerror = () => resolve({ w: 0, h: 0 });
       img.src = URL.createObjectURL(file);
+    });
+  };
+
+  const _getAudioDuration = (file) => {
+    return new Promise((resolve) => {
+      const audio = new Audio();
+      const url = URL.createObjectURL(file);
+      audio.onloadedmetadata = () => {
+        resolve(audio.duration);
+        URL.revokeObjectURL(url);
+      };
+      audio.onerror = () => {
+        resolve(0);
+        URL.revokeObjectURL(url);
+      };
+      audio.src = url;
     });
   };
 

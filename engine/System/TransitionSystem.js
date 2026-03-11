@@ -23,9 +23,8 @@ export default class TransitionSystem {
     }
 
     fadeIn(duration = 1.0, colorHex = "#000000", callback = null) {
-        console.log("japfj")
         this.isActive = true;
-        this.state = 'fade_in'; // Layar kembali terang
+        this.state = 'fade_in'; 
         this.duration = duration || 1.0;
         this.timer = 0.0;
         this.alpha = 1.0;

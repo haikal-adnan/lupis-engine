@@ -74,7 +74,7 @@
         class="hidden" 
         multiple
         @change="handleFileUpload"
-        accept=".jpg,.jpeg,.png,.ttf"
+        accept=".jpg,.jpeg,.png,.ttf,.wav,.mp3,.ogg"
         :disabled="isUploading"
       />
 
@@ -136,6 +136,7 @@
           :active="selectedId === asset._id"
           :is-cut="clipboard?.action === 'cut' && clipboard?.item?.id === asset._id"
           @click="handleSelect(asset._id)"
+          @dblclick="handleAssetDoubleClick(asset)"
           @contextmenu="handleContextMenu($event, { ...asset, name: asset.displayName || asset.name })" 
           @move-asset="({ id, type, targetFolderId }) => moveItem(id, type, targetFolderId)"
         />
@@ -190,7 +191,8 @@ const {
   folderBreadcrumbs,
   moveItem,   
   handlePaste,  
-  clipboard     
+  clipboard,
+  handleAssetDoubleClick
 } = assetLogic
 
 const {

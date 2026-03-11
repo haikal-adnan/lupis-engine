@@ -9,7 +9,6 @@ export const NodeTransition = {
             // Jalankan pin 'Out' utama secara langsung (tidak menunggu fade selesai)
             runner.executeFlow(node._id, 'exec_out'); 
 
-            console.log("hurra")
             if (type === 'fade_out') {
                 runner.game.transitionSystem.fadeOut(duration, color, () => {
                     runner.executeFlow(node._id, 'on_complete'); 
