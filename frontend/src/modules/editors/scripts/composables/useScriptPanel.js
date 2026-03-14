@@ -213,7 +213,7 @@ export function useScriptPanel() {
       const newInstance = {
         _id: generateInstanceId(),
         assetId: script._id,
-        isActive: true,
+        active: true,
         variables: initialVars 
       };
 
@@ -224,7 +224,7 @@ export function useScriptPanel() {
       };
 
       if (entity.prefabId) {
-         updatePayload.isOverridden = true;
+         updatePayload.overridden = true;
       }
 
       sceneStore.patchComponent(entity._id, 'ScriptController', updatePayload);

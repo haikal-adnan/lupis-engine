@@ -8,7 +8,7 @@
     :class="[
       alignmentClass,
       heightClass,
-      isActive 
+      active 
         ? 'bg-primary text-white border-primary shadow-sm' 
         : ghost
           ? 'bg-transparent border-input text-muted-foreground hover:bg-muted/20 hover:text-foreground' 
@@ -46,7 +46,7 @@ const props = defineProps({
 
 const model = defineModel({ type: Boolean, default: undefined })
 
-const isActive = computed(() => {
+const active = computed(() => {
   if (model.value !== undefined) return model.value
   return props.active
 })

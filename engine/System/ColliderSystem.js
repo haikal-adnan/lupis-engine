@@ -4,7 +4,7 @@ export default class ColliderSystem {
     }
 
     moveAndSlide(entity, dx, dy) {
-        if (entity.active === false || entity.isActive === false) return null;
+        if (entity.active === false || entity.active === false) return null;
         if (!entity.components.Transform) return null;
         
         const collider = entity.components.Collider;
@@ -65,7 +65,7 @@ export default class ColliderSystem {
     }
 
     checkOverlap(entity, targetTag = null) {
-        if (entity.active === false || entity.isActive === false) return null;
+        if (entity.active === false || entity.active === false) return null;
 
         const overlaps = this._findAllCollisions(entity, null, targetTag);
         if (overlaps.length === 0) return null;
@@ -155,7 +155,7 @@ export default class ColliderSystem {
             const otherId = other.id || other._id;
             
             if (otherId === currentId) continue;
-            if (other.active === false || other.isActive === false) continue;
+            if (other.active === false || other.active === false) continue;
             if (other.layerId && inactiveLayers.has(other.layerId)) continue;
             
             if (targetTag && targetTag.trim() !== "") {
@@ -195,7 +195,7 @@ export default class ColliderSystem {
             const otherId = other.id || other._id;
 
             if (otherId === currentId) continue;
-            if (other.active === false || other.isActive === false) continue;
+            if (other.active === false || other.active === false) continue;
             if (other.layerId && inactiveLayers.has(other.layerId)) continue;
 
             if (targetTag && targetTag.trim() !== "") {

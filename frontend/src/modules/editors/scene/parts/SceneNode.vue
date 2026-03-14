@@ -63,7 +63,7 @@
         class="truncate py-1 pointer-events-none mr-2 flex-grow flex items-center gap-2" 
         :class="{ 
             'font-bold': node.type === 'layer',
-            'opacity-50': !isVisible || isInactive 
+            'opacity-50': !visible || isInactive 
         }"
       >
         {{ node.name }}
@@ -79,14 +79,14 @@
 
       <div 
         class="flex items-center gap-1 opacity-0 group-hover/node:opacity-100 transition-opacity"
-        :class="{ 'opacity-100': isLocked || !isVisible }"
+        :class="{ 'opacity-100': locked || !visible }"
       >
         <div class="p-1 rounded hover:bg-white/20 cursor-pointer" @click.stop="toggleLock" title="Toggle Lock">
-            <Lock v-if="isLocked" class="w-3 h-3 text-amber-500" />
+            <Lock v-if="locked" class="w-3 h-3 text-amber-500" />
             <Unlock v-else class="w-3 h-3 text-muted-foreground opacity-50 hover:opacity-100" />
         </div>
         <div class="p-1 rounded hover:bg-white/20 cursor-pointer" @click.stop="toggleVisibility" title="Toggle Visibility">
-            <EyeOff v-if="!isVisible" class="w-3.5 h-3.5 text-muted-foreground" />
+            <EyeOff v-if="!visible" class="w-3.5 h-3.5 text-muted-foreground" />
             <Eye v-else class="w-3.5 h-3.5 text-muted-foreground opacity-50 hover:opacity-100" />
         </div>
       </div>
@@ -169,17 +169,17 @@ const indentation = computed(() => (props.depth * 16) + 12)
 const isSelected = computed(() => props.selectedIds.some(id => String(id) === String(props.node._id || props.node.id)))
 const hasChildren = computed(() => sortedChildren.value.length > 0)
 
-const isLocked = computed(() => {
+const locked = computed(() => {
     if (isLayer.value) return !!props.node.locked;
-    return props.node._editor?.locked || props.node.isLocked || false;
+    return props.node._editor?.locked || props.node.locked || false;
 })
 
-const isVisible = computed(() => {
+const visible = computed(() => {
     if (isLayer.value) return props.node.visible !== false;
-    return props.node.isVisible !== false;
+    return props.node.visible !== false;
 })
 
-const isInactive = computed(() => props.node.isActive === false)
+const isInactive = computed(() => props.node.active === false)
 
 const {
   dragGhostRef, isDragOver, dragPosition,
@@ -211,23 +211,23 @@ const handleContextMenu = (e) => emit('contextmenu', { event: e, node: props.nod
 
 const toggleVisibility = () => {
     const id = props.node._id || props.node.id;
-    const newVal = !isVisible.value;
+    const newVal = !visible.value;
     
     if (isLayer.value) {
         sceneStore.updateLayerProp(id, 'visible', newVal);
     } else {
-        sceneStore.updateEntityProp(id, 'isVisible', newVal); 
+        sceneStore.updateEntityProp(id, 'visible', newVal); 
     }
 }
 
 const toggleLock = () => {
     const id = props.node._id || props.node.id;
-    const newVal = !isLocked.value;
+    const newVal = !locked.value;
     
     if (isLayer.value) {
         sceneStore.updateLayerProp(id, 'locked', newVal);
     } else {
-        sceneStore.updateEntityProp(id, 'isLocked', newVal);
+        sceneStore.updateEntityProp(id, 'locked', newVal);
     }
 }
 </script>

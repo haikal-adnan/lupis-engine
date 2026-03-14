@@ -42,8 +42,8 @@ export default class TransformTool {
 
     _isInteractive(e) {
         if (e.active === false) return false;
-        const isLocked = e.isLocked || (e._editor && e._editor.locked === true);
-        if (isLocked) return false;
+        const locked = e.locked || (e._editor && e._editor.locked === true);
+        if (locked) return false;
 
         const parentLayer = this._findLayerOfEntity(e);
         if (parentLayer && (parentLayer.active === false || parentLayer.visible === false || parentLayer.locked)) {

@@ -33,7 +33,7 @@
                 <input 
                   v-model="form.name" 
                   type="text" 
-                  placeholder="John Doe"
+                  placeholder="Your name..."
                   class="w-full bg-background text-foreground placeholder:text-muted-foreground border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 transition-colors"
                   :class="errors.name ? 'border-destructive focus:ring-destructive' : 'border-border focus:border-cyan-400 focus:ring-cyan-400'"
                 />
@@ -60,7 +60,7 @@
                 <input 
                   v-model="form.password" 
                   type="password" 
-                  placeholder="••••••••"
+                  placeholder="Your password..."
                   class="w-full bg-background text-foreground placeholder:text-muted-foreground border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 transition-colors"
                   :class="errors.password ? 'border-destructive focus:ring-destructive' : 'border-border focus:border-cyan-400 focus:ring-cyan-400'"
                 />

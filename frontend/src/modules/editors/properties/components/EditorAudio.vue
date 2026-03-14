@@ -5,11 +5,11 @@
       <div 
         v-if="prefabId"
         class="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border select-none shrink-0"
-        :class="isOverridden 
+        :class="overridden 
           ? 'bg-amber-500/10 text-amber-500 border-amber-500/30' 
           : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30'"
       >
-        {{ isOverridden ? 'Override' : 'Sync' }}
+        {{ overridden ? 'Override' : 'Sync' }}
       </div>
     </template>
 
@@ -18,7 +18,7 @@
         <template v-if="prefabId">
           <button 
             @click="syncComponent('Audio'); close()" 
-            :disabled="!isOverridden"
+            :disabled="!overridden"
             class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-accent hover:text-accent-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <RefreshCw class="w-3.5 h-3.5 mr-2 opacity-70" /> 
@@ -167,7 +167,7 @@
           class="h-7 text-xs flex justify-center items-center border border-border/50 bg-background/50 hover:bg-accent transition-all"
           ghost
         >
-          <span :class="autoplay ? 'text-primary font-medium' : 'text-muted-foreground'">
+          <span :class="autoplay ? 'text-white font-medium' : 'text-muted-foreground'">
             Play on Awake
           </span>
         </BaseButton>
@@ -187,38 +187,86 @@
 
       <div class="h-px bg-border/50 my-2"></div>
 
-      <PropertyRow label="Spatial 2D">
+      <PropertyRow label="Global Audio">
         <BaseButton 
-          :active="spatial"
-          @click="spatial = !spatial"
+          :active="persist"
+          @click="persist = !persist"
           class="w-full h-7 text-xs gap-2 justify-start px-3 border border-border/50 bg-background/50 hover:bg-accent transition-all"
           ghost
         >
-          <span :class="spatial ? 'text-foreground font-medium' : 'text-muted-foreground'">
-            {{ spatial ? 'Enabled (Positional)' : 'Disabled (Global)' }}
+          <span :class="persist ? 'text-white font-medium' : 'text-muted-foreground'">
+            {{ persist ? 'Persist Across Scenes' : 'Destroy on Load' }}
           </span>
         </BaseButton>
       </PropertyRow>
 
-      <template v-if="spatial">
-        <PropertyRow label="Min Distance">
+      <div class="grid grid-cols-2 gap-2 mt-1">
+        <PropertyRow label="Fade In (s)" :no-margin="true">
           <BaseNumber 
-            v-model="refDistance" 
-            prefix="px" 
-            :min="0" :step="10"
-            class="font-mono w-full" 
+            v-model="fadeIn" 
+            :min="0" :max="10" :step="0.1" :precision="1"
+            class="font-mono w-full text-xs" 
           />
+        </PropertyRow>
+        <PropertyRow label="Fade Out (s)" :no-margin="true">
+          <BaseNumber 
+            v-model="fadeOut" 
+            :min="0" :max="10" :step="0.1" :precision="1"
+            class="font-mono w-full text-xs" 
+          />
+        </PropertyRow>
+      </div>
+
+      <div class="h-px bg-border/50 my-2"></div>
+
+      <div 
+        class="transition-all duration-300 space-y-2"
+        :class="{ 
+          'opacity-40 pointer-events-none filter grayscale cursor-not-allowed': persist 
+        }"
+      >
+        <PropertyRow label="Spatial 2D">
+          <BaseButton 
+            :active="spatial"
+            @click="spatial = !spatial"
+            class="w-full h-7 text-xs gap-2 justify-start px-3 border border-border/50 bg-background/50 hover:bg-accent transition-all"
+            ghost
+            :disabled="persist"
+          >
+            <span :class="spatial ? 'text-white font-medium' : 'text-muted-foreground'">
+              {{ spatial ? 'Enabled (Positional)' : 'Disabled (Global)' }}
+            </span>
+          </BaseButton>
         </PropertyRow>
 
-        <PropertyRow label="Max Distance">
-          <BaseNumber 
-            v-model="maxDistance" 
-            prefix="px" 
-            :min="refDistance + 1" :step="10"
-            class="font-mono w-full" 
-          />
-        </PropertyRow>
-      </template>
+        <template v-if="spatial">
+          <PropertyRow label="Min Distance">
+            <BaseNumber 
+              v-model="refDistance" 
+              prefix="px" 
+              :min="0" :step="10"
+              class="font-mono w-full" 
+              :disabled="persist"
+            />
+          </PropertyRow>
+
+          <PropertyRow label="Max Distance">
+            <BaseNumber 
+              v-model="maxDistance" 
+              prefix="px" 
+              :min="refDistance + 1" :step="10"
+              class="font-mono w-full" 
+              :disabled="persist"
+            />
+          </PropertyRow>
+        </template>
+      </div>
+
+      <div v-if="persist" class="px-1 mb-3 -mt-1">
+        <div class="text-[9px] text-amber-500/80 italic flex items-center gap-1">
+          <Info class="w-3 h-3" /> Spatial 2D is disabled while Persist is active
+        </div>
+      </div>
 
     </div>
 
@@ -231,8 +279,7 @@
 
 <script setup>
 import { computed } from 'vue'
-// Menambahkan import VolumeX
-import { Volume2, VolumeX, Trash2, RefreshCw, FolderSearch, Repeat, MoreVertical, Plus } from 'lucide-vue-next'
+import { Volume2, VolumeX, Trash2, RefreshCw, FolderSearch, Repeat, MoreVertical, Plus, Info } from 'lucide-vue-next'
 import { useInspectorLogic } from "@editors/properties/composables/useInspectorLogic.js"
 import { useAssetStore } from '@/stores/useAssetStore'
 import { usePopAudio } from '@/composables/usePopAudio'
@@ -260,13 +307,11 @@ const { showAudio } = usePopAudio()
 const { confirm } = useConfirm() 
 
 const hasComponent = computed(() => !!selectedEntity.value?.components?.Audio)
-const isOverridden = getComponentOverrideStatus('Audio')
+const overridden = getComponentOverrideStatus('Audio')
 
-// --- DATA BINDING UTAMA ---
 const clips = bindComponentProp('Audio', 'clips')
 const currentClipId = bindComponentProp('Audio', 'currentClip')
 
-// --- LOGIKA MANAJEMEN CLIP ---
 const activeClipIndex = computed(() => {
   if (!clips.value || !currentClipId.value) return -1;
   return clips.value.findIndex(c => c._id === currentClipId.value);
@@ -278,7 +323,6 @@ const currentClipData = computed(() => {
   return clips.value[idx];
 });
 
-// Menambahkan label `(Muted)` ke dalam pilihan dropdown
 const clipOptions = computed(() => {
   if (!clips.value) return [];
   return clips.value.map((c, index) => {
@@ -291,19 +335,22 @@ const clipOptions = computed(() => {
 });
 
 function addClip() {
-  const newId = crypto.randomUUID().split('-')[0]; // Mirip dengan script editor
+  const newId = crypto.randomUUID().split('-')[0];
   const currentArray = clips.value ? [...clips.value] : [];
   
   const newClip = {
     _id: newId,
     scriptId: `AUDIO_${currentArray.length + 1}`,
     assetId: null,
-    isMute: false, // Default clip baru tidak di-mute
+    isMute: false,
     volume: 1.0,
     pitch: 1.0,
     loop: false,
     autoplay: false,
     spatial: false,
+    persist: false, 
+    fadeIn: 0.0,    
+    fadeOut: 0.0,   
     refDistance: 100,
     maxDistance: 1000
   };
@@ -330,12 +377,10 @@ async function removeCurrentClip() {
     currentArray.splice(idx, 1);
     clips.value = currentArray;
     
-    // Auto-select clip lain jika masih ada, jika tidak set null
     currentClipId.value = currentArray.length > 0 ? currentArray[0]._id : null;
   }
 }
 
-// --- PROXY UNTUK UPDATE PROPERTI PADA CLIP AKTIF ---
 function createClipProp(propName) {
   return computed({
     get: () => {
@@ -345,7 +390,6 @@ function createClipProp(propName) {
     set: (val) => {
       const idx = activeClipIndex.value;
       if (idx === -1) return;
-      // Kloning array clips, update index yang dituju, lalu trigger setter bindComponentProp
       const newClips = [...clips.value];
       newClips[idx] = { ...newClips[idx], [propName]: val };
       clips.value = newClips; 
@@ -355,8 +399,6 @@ function createClipProp(propName) {
 
 const clipScriptId = createClipProp('scriptId');
 const clipAssetId = createClipProp('assetId');
-
-// Menambahkan computed property untuk mendeteksi status isMute
 const isMute = createClipProp('isMute');
 
 const rawVolume = createClipProp('volume');
@@ -369,10 +411,12 @@ const pitch = createClipProp('pitch');
 const loop = createClipProp('loop');
 const autoplay = createClipProp('autoplay');
 const spatial = createClipProp('spatial');
+const persist = createClipProp('persist'); 
+const fadeIn = createClipProp('fadeIn');   
+const fadeOut = createClipProp('fadeOut'); 
 const refDistance = createClipProp('refDistance');
 const maxDistance = createClipProp('maxDistance');
 
-// --- AUDIO PLAYER LOGIC ---
 const audioAsset = computed(() => {
   if (!clipAssetId.value) return null;
   return assetStore.assets.find(a => a._id === clipAssetId.value || a.id === clipAssetId.value);

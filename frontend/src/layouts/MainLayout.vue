@@ -48,7 +48,7 @@ const closeProfileMenu = () => profileDropdown.value?.close();
 <template>
   <div class="min-h-screen bg-background text-foreground font-sans flex flex-col selection:bg-indigo-500/30">
     
-    <header class="h-16 border-b border-border sticky top-0 bg-background/90 backdrop-blur-md z-50 px-4 lg:px-6">
+    <header class="h-16 border-b border-border sticky top-0 bg-background backdrop-blur-md z-50 px-4 lg:px-6">
       <div class="max-w-[1400px] mx-auto w-full h-full flex items-center justify-between gap-4">
         
         <div 
@@ -150,7 +150,7 @@ const closeProfileMenu = () => profileDropdown.value?.close();
       </div>
     </header>
 
-    <main class="flex-1 overflow-y-auto">
+    <main class="flex-1">
       <router-view :search-query="searchQuery" />
     </main>
 

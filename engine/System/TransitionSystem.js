@@ -3,7 +3,7 @@ import { HexToVec4 } from "../Util/HexToVec4.js";
 export default class TransitionSystem {
     constructor(game) {
         this.game = game;
-        this.isActive = false;
+        this.active = false;
         this.alpha = 0.0;     // 0 = transparan, 1 = layar tertutup
         this.state = 'none';  // 'fade_in', 'fade_out', 'none'
         this.duration = 1.0;
@@ -13,7 +13,7 @@ export default class TransitionSystem {
     }
 
     fadeOut(duration = 1.0, colorHex = "#000000", callback = null) {
-        this.isActive = true;
+        this.active = true;
         this.state = 'fade_out'; // Layar menjadi gelap
         this.duration = duration || 1.0;
         this.timer = 0.0;
@@ -23,7 +23,7 @@ export default class TransitionSystem {
     }
 
     fadeIn(duration = 1.0, colorHex = "#000000", callback = null) {
-        this.isActive = true;
+        this.active = true;
         this.state = 'fade_in'; 
         this.duration = duration || 1.0;
         this.timer = 0.0;
@@ -54,9 +54,9 @@ export default class TransitionSystem {
             this.state = 'none';
             
             if (this.alpha <= 0) {
-                this.isActive = false; 
+                this.active = false; 
             } else {
-                this.isActive = true;
+                this.active = true;
             }
 
             if (this.onComplete) {

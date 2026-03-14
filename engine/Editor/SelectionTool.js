@@ -77,7 +77,7 @@ export default class SelectionTool {
         if (e.type === 'layer' || !e.components) return false; 
         
         if (e.active === false || e.visible === false) return false;
-        if (e.isLocked || (e._editor && e._editor.locked)) return false;
+        if (e.locked || (e._editor && e._editor.locked)) return false;
         return true;
     }
 

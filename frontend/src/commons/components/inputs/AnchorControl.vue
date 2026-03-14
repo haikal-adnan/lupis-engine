@@ -15,7 +15,7 @@
         :title="`X: ${p.x}, Y: ${p.y}`"
         class="w-full h-full rounded-[2px] transition-all duration-200 focus:outline-none focus:ring-1 focus:ring-primary/50"
         :class="[
-          isActive(p) 
+          active(p) 
             ? 'bg-blue-500 shadow-sm scale-110'   /* Warna Biru untuk membedakan dengan Pivot */
             : 'bg-secondary hover:bg-muted-foreground/40'
         ]"
@@ -39,7 +39,7 @@ const anchorPoints = [
   { x: 0, y: 1 },   { x: 0.5, y: 1 },   { x: 1, y: 1 },
 ]
 
-function isActive(p) {
+function active(p) {
   return Math.abs(props.x - p.x) < 0.01 && Math.abs(props.y - p.y) < 0.01
 }
 

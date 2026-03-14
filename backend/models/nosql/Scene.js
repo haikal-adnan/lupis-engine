@@ -33,11 +33,11 @@ const EntitySchema = new mongoose.Schema({
 
   prefabId: { type: String, ref: 'Prefab', default: null },
   
-  isOverridden: { type: Boolean, default: false },
+  overridden: { type: Boolean, default: false },
 
-  isActive: { type: Boolean, default: true },
-  isVisible: { type: Boolean, default: true },
-  isLocked: {type: Boolean, default: false},
+  active: { type: Boolean, default: true },
+  visible: { type: Boolean, default: true },
+  locked: {type: Boolean, default: false},
   
   layerId: { type: String, required: true }, 
   parentId: { type: String, default: null },

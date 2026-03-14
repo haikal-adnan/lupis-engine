@@ -6,16 +6,19 @@ export const NodePhysics = {
 
             const phys = target.components.Physics;
 
-            if (outputKey === 'isGrounded') {
-                const tag = runner.getInputValue(node, 'filter_tag');
-                if (tag) runner.game.physicsSystem._checkGrounded(target, phys, tag);
-                return phys.isGrounded;
+            // Mapping output berdasarkan key yang dipilih di UI
+            switch (outputKey) {
+                case 'isGrounded':
+                    return phys.isGrounded;
+                case 'movementState':
+                    return phys.movementState || 'idle';
+                case 'facingDirection':
+                    return phys.facingDirection || "right";
+                default:
+                    return phys[outputKey];
             }
-
-            return phys[outputKey];
         }
     },
-
     'set_physics': {
         execute(runner, node) {
             const target = runner.resolveEntity(runner.getInputValue(node, 'in_target'));

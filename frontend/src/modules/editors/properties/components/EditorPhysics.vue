@@ -5,11 +5,11 @@
       <div 
         v-if="prefabId"
         class="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border select-none shrink-0"
-        :class="isOverridden 
+        :class="overridden 
           ? 'bg-amber-500/10 text-amber-500 border-amber-500/30' 
           : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30'"
       >
-        {{ isOverridden ? 'Override' : 'Sync' }}
+        {{ overridden ? 'Override' : 'Sync' }}
       </div>
     </template>
 
@@ -18,7 +18,7 @@
         <template v-if="prefabId">
           <button 
             @click="syncComponent('Physics'); close()" 
-            :disabled="!isOverridden"
+            :disabled="!overridden"
             class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-accent hover:text-accent-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <RefreshCw class="w-3.5 h-3.5 mr-2 opacity-70" /> 
@@ -118,7 +118,7 @@ const {
 } = useInspectorLogic()
 
 const hasComponent = computed(() => !!selectedEntity.value?.components?.Physics)
-const isOverridden = getComponentOverrideStatus('Physics')
+const overridden = getComponentOverrideStatus('Physics')
 
 const enabled = bindComponentProp('Physics', 'enabled')
 const type = bindComponentProp('Physics', 'type')

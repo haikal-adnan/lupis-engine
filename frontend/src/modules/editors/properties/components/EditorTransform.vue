@@ -5,11 +5,11 @@
       <div 
         v-if="prefabId"
         class="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border select-none shrink-0"
-        :class="isOverridden 
+        :class="overridden 
           ? 'bg-amber-500/10 text-amber-500 border-amber-500/30' 
           : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30'"
       >
-        {{ isOverridden ? 'Override' : 'Sync' }}
+        {{ overridden ? 'Override' : 'Sync' }}
       </div>
     </template>
 
@@ -18,7 +18,7 @@
         <template v-if="prefabId">
           <button 
             @click="syncComponent('Transform'); close()" 
-            :disabled="!isOverridden"
+            :disabled="!overridden"
             class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-accent hover:text-accent-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <RefreshCw class="w-3.5 h-3.5 mr-2 opacity-70" /> Sync Transform
@@ -37,8 +37,8 @@
 
     <PropertyRow label="Position">
       <div class="grid grid-cols-2 gap-2">
-        <BaseNumber v-model="x" prefix="X" :step="1" :precision="2" class="font-mono" :disabled="isLocked" />
-        <BaseNumber v-model="y" prefix="Y" :step="1" :precision="2" class="font-mono" :disabled="isLocked" />
+        <BaseNumber v-model="x" prefix="X" :step="1" :precision="2" class="font-mono" :disabled="locked" />
+        <BaseNumber v-model="y" prefix="Y" :step="1" :precision="2" class="font-mono" :disabled="locked" />
       </div>
     </PropertyRow>
 
@@ -50,7 +50,7 @@
             prefix="R" suffix="°" :step="1" :precision="2"
             class="font-mono flex-grow"
             :min="0" :max="359" :cyclic="true"
-            :disabled="isLocked" 
+            :disabled="locked" 
           />
         </PropertyRow>
       </div>
@@ -58,7 +58,7 @@
       <PivotControl 
         :x="pivotX" 
         :y="pivotY" 
-        :disabled="isLocked"
+        :disabled="locked"
         @update="updatePivot" 
       />
     </div>
@@ -72,15 +72,15 @@
       <PropertyRow label="Size (px)">
         <div class="flex items-center gap-2">
           <div class="grid grid-cols-2 gap-2 flex-grow">
-            <BaseNumber v-model="width" prefix="W" :min="1" :step="1" :precision="2" class="font-mono" :disabled="isLocked" />
-            <BaseNumber v-model="height" prefix="H" :min="1" :step="1" :precision="2" class="font-mono" :disabled="isLocked" />
+            <BaseNumber v-model="width" prefix="W" :min="1" :step="1" :precision="2" class="font-mono" :disabled="locked" />
+            <BaseNumber v-model="height" prefix="H" :min="1" :step="1" :precision="2" class="font-mono" :disabled="locked" />
           </div>
 
           <IconButton 
             :active="isRatioLocked" 
             @click="isRatioLocked = !isRatioLocked"
             :tooltip="isRatioLocked ? 'Unlock Ratio' : 'Lock Ratio'"
-            :disabled="isLocked"
+            :disabled="locked"
           >
             <Lock v-if="isRatioLocked" class="w-3.5 h-3.5" />
             <Unlock v-else class="w-3.5 h-3.5 opacity-50" />
@@ -104,15 +104,15 @@
     <PropertyRow label="Scale">
       <div class="flex items-center gap-2">
         <div class="grid grid-cols-2 gap-2 flex-grow">
-          <BaseNumber v-model="scaleX" prefix="X" :min="1" :step="1" :precision="0" class="font-mono" :disabled="isLocked" />
-          <BaseNumber v-model="scaleY" prefix="Y" :min="1" :step="1" :precision="0" class="font-mono" :disabled="isLocked" />
+          <BaseNumber v-model="scaleX" prefix="X" :min="1" :step="1" :precision="0" class="font-mono" :disabled="locked" />
+          <BaseNumber v-model="scaleY" prefix="Y" :min="1" :step="1" :precision="0" class="font-mono" :disabled="locked" />
         </div>
 
         <IconButton 
           :active="isScaleLocked" 
           @click="isScaleLocked = !isScaleLocked"
           :tooltip="isScaleLocked ? 'Unlock Scale' : 'Lock Scale Uniformly'"
-          :disabled="isLocked"
+          :disabled="locked"
         >
           <Lock v-if="isScaleLocked" class="w-3.5 h-3.5" />
           <Unlock v-else class="w-3.5 h-3.5 opacity-50" />
@@ -126,7 +126,7 @@
           :active="flipX"
           @click="flipX = !flipX"
           class="h-7 text-xs gap-2" ghost
-          :disabled="isLocked"
+          :disabled="locked"
         >
           <FlipHorizontal class="w-3.5 h-3.5" /> <span>Horz</span>
         </BaseButton>
@@ -135,7 +135,7 @@
           :active="flipY"
           @click="flipY = !flipY"
           class="h-7 text-xs gap-2" ghost
-          :disabled="isLocked"
+          :disabled="locked"
         >
           <FlipVertical class="w-3.5 h-3.5" /> <span>Vert</span>
         </BaseButton>
@@ -166,14 +166,14 @@ const {
   resetTransform, 
   updatePivot, 
   bindComponentProp, 
-  isLocked,
+  locked,
   isSizeLockedByText,
   isSizeLockedByTilemap, 
   syncComponent,       
   getComponentOverrideStatus 
 } = useInspectorLogic();
 
-const isOverridden = getComponentOverrideStatus('Transform');
+const overridden = getComponentOverrideStatus('Transform');
 
 const x = bindComponentProp('Transform', 'x', 2);
 const y = bindComponentProp('Transform', 'y', 2);

@@ -32,8 +32,8 @@ export function useCanvasMenu(canvasHandlers) {
     e.stopImmediatePropagation();
   };
 
-  const toggleInputBlockers = (isActive) => {
-    if (isActive) {
+  const toggleInputBlockers = (active) => {
+    if (active) {
       window.addEventListener('keydown', blockKeyInput, { capture: true });
       window.addEventListener('keyup', blockKeyInput, { capture: true });
       window.addEventListener('wheel', blockScrollInput, { capture: true, passive: false });
@@ -44,8 +44,8 @@ export function useCanvasMenu(canvasHandlers) {
     }
   };
 
-  watch(() => contextMenu.value.visible, (isVisible) => {
-    toggleInputBlockers(isVisible);
+  watch(() => contextMenu.value.visible, (visible) => {
+    toggleInputBlockers(visible);
   });
 
   onUnmounted(() => {

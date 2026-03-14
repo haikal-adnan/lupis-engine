@@ -81,7 +81,7 @@ export default class SyncComponent {
 
             entity.prefabId = newData.prefabId;
             entity.name = newData.name;
-            if (newData.isOverridden !== undefined) entity.isOverridden = newData.isOverridden;
+            if (newData.overridden !== undefined) entity.overridden = newData.overridden;
 
             if (entity.components) {
                 Object.keys(entity.components).forEach(key => {
@@ -192,14 +192,13 @@ export default class SyncComponent {
 
     _createEntityInstance(data) {
         const e = new Entity(data._id);
-
         Object.assign(e, {
             name: data.name,
             type: data.type,
             layerId: data.layerId,
             parentId: null,
-            active: data.isActive,
-            visible: data.isVisible,
+            active: data.active,
+            visible: data.visible,
             zIndex: data.zIndex ?? 0,
             orderIndex: data.orderIndex ?? 0,
             children: []
@@ -331,8 +330,8 @@ export default class SyncComponent {
 
         e[prop] = value;
 
-        if (prop === "isVisible") e.visible = value;
-        if (prop === "isActive") e.active = value;
+        if (prop === "visible") e.visible = value;
+        if (prop === "active") e.active = value;
 
         if (prop === "zIndex" || prop === "orderIndex") {
             const container =
@@ -485,7 +484,6 @@ export default class SyncComponent {
     _processSingleEntityCreation(entityData) {
         const safeData = { ...entityData, parentId: null };
         const entity = this._createEntityInstance(safeData);
-        
         if (this._findEntityById(entityData._id)) return;
 
         const layer =

@@ -8,20 +8,20 @@
         @click="handleTabClick(tab)"
         class="group relative flex items-center gap-2 px-4 h-full text-xs font-medium border-x border-t transition-all duration-200 outline-none focus:outline-none"
         :class="[
-          isActive(tab.id) && editorStore.isBottomBarOpen
+          active(tab.id) && editorStore.isBottomBarOpen
             ? 'bg-background border-border border-t-transparent text-primary z-20' 
             : 'bg-transparent border-transparent text-muted-foreground hover:text-foreground hover:bg-secondary/30'
         ]"
       >
         <div 
-          v-if="isActive(tab.id) && editorStore.isBottomBarOpen" 
+          v-if="active(tab.id) && editorStore.isBottomBarOpen" 
           class="absolute -top-px left-0 right-0 h-[1px] bg-background"
         ></div>
 
         <component 
           :is="tab.icon" 
           class="w-3.5 h-3.5 transition-colors"
-          :class="isActive(tab.id) && editorStore.isBottomBarOpen ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'" 
+          :class="active(tab.id) && editorStore.isBottomBarOpen ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'" 
         />
         {{ tab.label }}
       </button>
@@ -77,10 +77,10 @@ const visibleTabs = computed(() => {
   ]
 })
 
-const isActive = (id) => editorStore.activeBottomTabId === id
+const active = (id) => editorStore.activeBottomTabId === id
 
 const handleTabClick = (tab) => {
-  if (isActive(tab.id) && editorStore.isBottomBarOpen) {
+  if (active(tab.id) && editorStore.isBottomBarOpen) {
     editorStore.toggleBottomBar()
     return
   }

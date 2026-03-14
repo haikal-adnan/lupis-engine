@@ -63,7 +63,7 @@ export const BlueprintAnimator = {
           propertyOptions: [
             { value: 'currentClip', label: 'Current Clip ID', type: 'string' },
             { value: 'isPlaying', label: 'Is Playing?', type: 'boolean' },
-            { value: 'isActive', label: 'Is Enabled?', type: 'boolean' },
+            { value: 'active', label: 'Is Enabled?', type: 'boolean' },
             { value: 'flipX', label: 'Flip Horizontal', type: 'boolean' }
           ]
         },
@@ -82,7 +82,7 @@ export const BlueprintAnimator = {
         data: {
           propertyOptions: [
             { value: 'currentClip', label: 'Set Current Clip', type: 'string' }, // Penambahan Set Current Clip
-            { value: 'isActive', label: 'Is Enabled', type: 'boolean' },
+            { value: 'active', label: 'Is Enabled', type: 'boolean' },
             { value: 'flipX', label: 'Flip Horizontal', type: 'boolean' }
           ]
         },

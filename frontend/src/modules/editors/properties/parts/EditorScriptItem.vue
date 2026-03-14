@@ -4,9 +4,9 @@
     <div class="flex items-center gap-2 p-2 bg-muted/20 border-b border-border/50 h-8">
       
       <button 
-        @click="isActive = !isActive"
+        @click="active = !active"
         class="text-muted-foreground hover:text-primary transition-colors focus:outline-none"
-        :class="{ 'text-primary': isActive }"
+        :class="{ 'text-primary': active }"
         title="Toggle Script"
       >
         <Power class="w-3.5 h-3.5" />
@@ -55,7 +55,7 @@
              :model-value="v.value" 
              @update:model-value="val => updateVar(v.name, val)"
              class="h-6 text-[10px] w-full"
-             :class="{ 'border-primary/50 text-primary': v.isOverridden }"
+             :class="{ 'border-primary/50 text-primary': v.overridden }"
            />
            
            <BaseCheckbox 
@@ -69,11 +69,11 @@
              :model-value="v.value"
              @update:model-value="val => updateVar(v.name, val)"
              class="h-6 text-[10px] w-full"
-             :class="{ 'border-primary/50 text-primary': v.isOverridden }"
+             :class="{ 'border-primary/50 text-primary': v.overridden }"
            />
 
            <button 
-             v-if="v.isOverridden"
+             v-if="v.overridden"
              @click="resetVar(v.name)"
              class="h-6 w-6 flex items-center justify-center hover:bg-muted rounded text-muted-foreground hover:text-foreground transition-colors"
              title="Reset to Default"
@@ -111,9 +111,9 @@ const { updateScriptInstance } = useInspectorLogic();
 const def = computed(() => scriptStore.getScriptById(props.data.assetId));
 const scriptName = computed(() => def.value?.name || 'Unknown Script');
 
-const isActive = computed({
-  get: () => props.data.isActive,
-  set: (val) => updateScriptInstance(props.index, 'isActive', val)
+const active = computed({
+  get: () => props.data.active,
+  set: (val) => updateScriptInstance(props.index, 'active', val)
 });
 
 const variables = computed(() => {
@@ -121,12 +121,12 @@ const variables = computed(() => {
   const overrides = props.data.variables || {};
 
   return (def.value.exposedVariables || []).map(vDef => {
-    const isOverridden = Object.prototype.hasOwnProperty.call(overrides, vDef.name);
+    const overridden = Object.prototype.hasOwnProperty.call(overrides, vDef.name);
     return {
       name: vDef.name,
       type: vDef.type,
-      value: isOverridden ? overrides[vDef.name] : vDef.defaultValue,
-      isOverridden
+      value: overridden ? overrides[vDef.name] : vDef.defaultValue,
+      overridden
     };
   });
 });

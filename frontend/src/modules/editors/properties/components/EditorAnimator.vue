@@ -8,11 +8,11 @@
       <div 
         v-if="prefabId"
         class="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border select-none shrink-0"
-        :class="isOverridden 
+        :class="overridden 
           ? 'bg-amber-500/10 text-amber-500 border-amber-500/30' 
           : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30'"
       >
-        {{ isOverridden ? 'Override' : 'Sync' }}
+        {{ overridden ? 'Override' : 'Sync' }}
       </div>
     </template>
 
@@ -21,7 +21,7 @@
         <template v-if="prefabId">
           <button 
             @click="syncComponent('SpriteAnimator'); close()" 
-            :disabled="!isOverridden"
+            :disabled="!overridden"
             class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-accent hover:text-accent-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <RefreshCw class="w-3.5 h-3.5 mr-2 opacity-70" /> 
@@ -43,36 +43,36 @@
       
       <PropertyRow label="Status">
         <BaseButton 
-          :active="isActive"
-          @click="isActive = !isActive"
+          :active="active"
+          @click="active = !active"
           class="w-full h-7 text-xs gap-2 justify-start px-3 border border-border/50 bg-background/50 hover:bg-accent transition-all"
           ghost
         >
-          <Power v-if="isActive" class="w-3.5 h-3.5 text-emerald-500" />
+          <Power v-if="active" class="w-3.5 h-3.5 text-emerald-500" />
           <Power v-else class="w-3.5 h-3.5 text-muted-foreground" />
-          <span :class="isActive ? 'text-foreground font-medium' : 'text-muted-foreground'">
-            {{ isActive ? 'Enabled' : 'Disabled' }}
+          <span :class="active ? 'text-foreground font-medium' : 'text-muted-foreground'">
+            {{ active ? 'Enabled' : 'Disabled' }}
           </span>
         </BaseButton>
       </PropertyRow>
 
       <PropertyRow label="Playback">
         <BaseButton 
-          :active="isPlaying && isActive"
-          :disabled="!isActive"
+          :active="isPlaying && active"
+          :disabled="!active"
           @click="togglePlay"
           class="w-full h-7 text-xs gap-2 justify-start px-3 border border-border/50 bg-background/50 hover:bg-accent transition-all disabled:opacity-40"
           ghost
         >
           <Play v-if="isPlaying" class="w-3.5 h-3.5" />
           <Pause v-else class="w-3.5 h-3.5 text-muted-foreground" />
-          <span :class="isPlaying && isActive ? 'text-foreground' : 'text-muted-foreground'">
+          <span :class="isPlaying && active ? 'text-foreground' : 'text-muted-foreground'">
             {{ isPlaying ? 'Playing' : 'Paused' }}
           </span>
         </BaseButton>
       </PropertyRow>
 
-      <PropertyRow label="Current Frame" v-if="isActive && selectedClipData">
+      <PropertyRow label="Current Frame" v-if="active && selectedClipData">
         <div class="flex items-center gap-2 w-full">
           <BaseNumber 
             v-model="displayFrame" 
@@ -96,7 +96,7 @@
           :options="clipOptions"
           placeholder="Select Clip..."
           class="w-full"
-          :disabled="clipOptions.length === 0 || !isActive"
+          :disabled="clipOptions.length === 0 || !active"
         />
       </PropertyRow>
 
@@ -146,11 +146,11 @@ const {
 const { openAnimatorEditor } = useAnimatorLogic()
 
 const hasComponent = computed(() => !!selectedEntity.value?.components?.SpriteAnimator)
-const isOverridden = getComponentOverrideStatus('SpriteAnimator')
+const overridden = getComponentOverrideStatus('SpriteAnimator')
 
 // Data Binding
-const rawActive = bindComponentProp('SpriteAnimator', 'isActive')
-const isActive = computed({
+const rawActive = bindComponentProp('SpriteAnimator', 'active')
+const active = computed({
   get: () => rawActive.value ?? true,
   set: (val) => rawActive.value = val
 })
@@ -189,7 +189,7 @@ const displayFrame = computed({
 // --------------------------------------------
 
 const togglePlay = () => {
-  if (!isActive.value) return
+  if (!active.value) return
   isPlaying.value = !isPlaying.value
 }
 

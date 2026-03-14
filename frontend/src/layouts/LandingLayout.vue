@@ -57,7 +57,7 @@ onUnmounted(() => {
 
   <div class="min-h-screen bg-background text-foreground font-sans flex flex-col selection:bg-indigo-500/30">
     
-    <header class="h-16 border-b border-border sticky top-0 bg-background/80 backdrop-blur-md z-50 px-6">
+    <header class="h-16 border-b border-border sticky top-0 bg-background z-50 px-6">
       <div class="max-w-6xl mx-auto w-full h-full flex items-center justify-between">
         
         <div class="flex items-center gap-2.5 cursor-pointer flex-1" @click="router.push('/')">
@@ -104,7 +104,7 @@ onUnmounted(() => {
                     </div>
                   </a>
                   
-                  <a href="https://github.com/lupis" target="_blank" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-secondary transition-all group">
+                  <a href="https://github.com/haikal-adnan/lupis-engine" target="_blank" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-secondary transition-all group">
                     <div class="w-8 h-8 rounded-md bg-zinc-500/10 flex items-center justify-center group-hover:bg-zinc-500/20">
                       <Github class="w-4 h-4 text-foreground" />
                     </div>

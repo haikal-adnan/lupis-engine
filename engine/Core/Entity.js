@@ -5,6 +5,7 @@ export default class Entity {
         
         this.active = true; 
         this.visible = true;
+        this.locked = false;
 
         this.name = "New Entity";
         this.type = "entity";    

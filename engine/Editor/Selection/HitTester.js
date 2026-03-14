@@ -9,8 +9,8 @@ export class HitTester {
         return e.components && (e.components.UITransform || e.components.Transform);
     }
 
-    isLocked(e) {
-        return e.isLocked || (e._editor && e._editor.locked);
+    locked(e) {
+        return e.locked || (e._editor && e._editor.locked);
     }
 
     _calculateAbsolutePosition(e, parentBounds) {
@@ -110,7 +110,7 @@ export class HitTester {
             });
 
             for (const e of sortedEntities) {
-                if (!e.visible || this.isLocked(e)) continue;
+                if (!e.visible || this.locked(e)) continue;
                 if (filter && !filter(e, layer)) continue;
 
                 if (this._isPointInEntity(wx, wy, e, rootBounds)) {
@@ -141,7 +141,7 @@ export class HitTester {
             if (!layer.entities) continue;
 
             for (const e of layer.entities) {
-                if (!e.visible || this.isLocked(e)) continue;
+                if (!e.visible || this.locked(e)) continue;
                 if (filter && !filter(e, layer)) continue;
 
                 const t = this._getTransform(e);

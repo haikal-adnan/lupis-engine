@@ -37,7 +37,7 @@ export default class GraphRunner {
             const scriptInstance = this.owner.components.ScriptController.data
                 .find(s => s.assetId === this.data._id);
             
-            if (scriptInstance && scriptInstance.isActive === false) {
+            if (scriptInstance && scriptInstance.active === false) {
                 return false;
             }
         }

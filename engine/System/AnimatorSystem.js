@@ -26,7 +26,7 @@ export default class AnimatorSystem {
         
         const animator = entity.components?.SpriteAnimator;
         
-        if (!animator || !animator.isActive || !animator.isPlaying || !animator.currentClip || !Array.isArray(animator.clips)) {
+        if (!animator || !animator.active || !animator.isPlaying || !animator.currentClip || !Array.isArray(animator.clips)) {
             if (animator) animator._runtimeData = null; 
             return;
         }

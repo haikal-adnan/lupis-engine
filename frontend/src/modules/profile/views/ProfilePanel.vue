@@ -7,8 +7,8 @@ import {
 
 // --- MOCK DATA: Profile Info ---
 const profile = ref({
-  name: 'Alex Developer',
-  username: '@alexdev',
+  name: 'Haikal Adnan',
+  username: '@haikaldev',
   description: 'Solo indie game developer and asset creator. Lover of pixel art and 2D platformers. Currently building my dream world one pixel at a time using Lupis Engine.',
   avatar: 'https://avatars.githubusercontent.com/u/9919?v=4', // Dummy GitHub avatar
   labels: ['Pro Creator', 'Pixel Artist', 'Verified'],

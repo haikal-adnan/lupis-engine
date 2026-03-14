@@ -143,7 +143,7 @@ const onExternalDeselect = () => {
   const currentId = sceneStore.selectedEntityIds[0];
   const entity = sceneStore.activeEntities.find(e => e._id === currentId);
   if (entity) {
-    const isInactive = (entity.isActive === false) || (entity.isVisible === false);
+    const isInactive = (entity.active === false) || (entity.visible === false);
     if (isInactive) return; 
   }
   sceneStore.selectedEntityIds = [];

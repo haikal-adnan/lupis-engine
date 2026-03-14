@@ -203,8 +203,6 @@ export const useProjectStore = defineStore('project', {
                 : []
         }
 
-        console.log( JSON.parse(JSON.stringify(prefabStore.prefabs)) )
-
         const timeoutPromise = new Promise((_, reject) => {
           setTimeout(() => reject(new Error('Koneksi timeout. Server tidak merespon dalam 10 detik.')), 10000)
         })

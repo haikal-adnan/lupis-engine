@@ -9,11 +9,11 @@
       <div 
         v-if="prefabId"
         class="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border select-none shrink-0"
-        :class="isOverridden 
+        :class="overridden 
           ? 'bg-amber-500/10 text-amber-500 border-amber-500/30' 
           : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30'"
       >
-        {{ isOverridden ? 'Override' : 'Sync' }}
+        {{ overridden ? 'Override' : 'Sync' }}
       </div>
     </template>
 
@@ -22,7 +22,7 @@
         <template v-if="prefabId">
           <button 
             @click="syncComponent('ScriptController'); close()" 
-            :disabled="!isOverridden"
+            :disabled="!overridden"
             class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-accent hover:text-accent-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <RefreshCw class="w-3.5 h-3.5 mr-2 opacity-70" /> 
@@ -79,14 +79,14 @@
                 @click="selectIndex(idx, close)"
                 class="relative flex items-center justify-between w-full px-2 py-1.5 text-xs text-left hover:bg-accent transition-colors group"
                 :class="[
-                  script.isActive ? 'text-foreground font-medium' : 'text-muted-foreground'
+                  script.active ? 'text-foreground font-medium' : 'text-muted-foreground'
                 ]"
               >
                 <div class="flex items-center gap-2 truncate">
                    <div class="w-1 h-1 rounded-full" :class="idx === selectedIndex ? 'bg-primary' : 'bg-transparent'"></div>
                    <span class="truncate">{{ getScriptName(script.assetId) }}</span>
                 </div>
-                <Check v-if="script.isActive" class="w-3.5 h-3.5 text-blue-500 ml-2" />
+                <Check v-if="script.active" class="w-3.5 h-3.5 text-blue-500 ml-2" />
               </button>
             </div>
           </template>
@@ -130,13 +130,13 @@
     <div v-if="currentScript" class="flex flex-col gap-2">
         <PropertyRow label="Active Status">
           <BaseButton 
-             :active="currentIsActive"
+             :active="currentActive"
              @click="toggleScriptActive"
              class="w-full h-7 text-xs gap-2 justify-start px-3 border border-border/50 bg-background/50 hover:bg-accent transition-all"
              ghost
            >
-             <span :class="currentIsActive ? 'text-foreground' : 'text-muted-foreground'">
-               {{ currentIsActive ? 'Active' : 'Inactive' }}
+             <span :class="currentActive ? 'text-foreground' : 'text-muted-foreground'">
+               {{ currentActive ? 'Active' : 'Inactive' }}
              </span>
            </BaseButton>
         </PropertyRow>
@@ -170,19 +170,19 @@
                     v-model="v.model.value" 
                     :scrubbable="true" 
                     class="w-full text-xs font-mono" 
-                    :class="{ 'border-amber-500/50 text-amber-500 bg-amber-500/5': v.isOverridden }" 
+                    :class="{ 'border-amber-500/50 text-amber-500 bg-amber-500/5': v.overridden }" 
                   />
                   <BaseCheckbox v-else-if="v.type === 'Boolean'" v-model="v.model.value" />
                   <BaseInput 
                     v-else 
                     v-model="v.model.value" 
                     class="w-full text-xs" 
-                    :class="{ 'border-amber-500/50 text-amber-500 bg-amber-500/5': v.isOverridden }" 
+                    :class="{ 'border-amber-500/50 text-amber-500 bg-amber-500/5': v.overridden }" 
                   />
                </div>
                
                <button 
-                 v-if="v.isOverridden" 
+                 v-if="v.overridden" 
                  @click="v.reset()" 
                  title="Reset to default value"
                  class="w-6 h-6 flex items-center justify-center hover:bg-amber-500/10 rounded text-amber-500 transition-colors"
@@ -242,12 +242,12 @@ const {
 
 const markComponentAsOverridden = () => {
   if (selectedEntity.value && prefabId.value) {
-     sceneStore.updateComponentProp(selectedEntity.value._id, 'ScriptController', 'isOverridden', true)
+     sceneStore.updateComponentProp(selectedEntity.value._id, 'ScriptController', 'overridden', true)
   }
 }
 
 const hasComponent = computed(() => !!selectedEntity.value?.components?.ScriptController)
-const isOverridden = getComponentOverrideStatus('ScriptController')
+const overridden = getComponentOverrideStatus('ScriptController')
 
 const selectedIndex = ref(0)
 watch(() => selectedEntity.value?._id, () => { selectedIndex.value = 0 })
@@ -261,10 +261,10 @@ function getScriptName(assetId) {
 
 const currentScriptName = computed(() => currentScript.value ? getScriptName(currentScript.value.assetId) : '')
 
-const currentIsActive = computed(() => currentScript.value?.isActive ?? true)
+const currentActive = computed(() => currentScript.value?.active ?? true)
 const toggleScriptActive = () => {
   if (!currentScript.value) return
-  updateScriptInstance(selectedIndex.value, 'isActive', !currentIsActive.value)
+  updateScriptInstance(selectedIndex.value, 'active', !currentActive.value)
   markComponentAsOverridden() 
 }
 
@@ -281,7 +281,7 @@ const currentVariables = computed(() => {
       return {
          name: d.name, 
          type: d.type, 
-         isOverridden: isVariableOverridden,
+         overridden: isVariableOverridden,
          model: computed({
             get: () => isVariableOverridden ? overrides[variableId] : d.defaultValue,
             set: (val) => {

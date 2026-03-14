@@ -41,7 +41,6 @@ export default class Game {
         
         this._sceneDataCache = []; 
 
-        // [DITAMBAHKAN] Variabel untuk menampung antrean scene yang akan dimuat
         this._pendingSceneLoad = null; 
     }
 
@@ -76,7 +75,6 @@ export default class Game {
         }
     }
 
-    // [DITAMBAHKAN] Fungsi untuk memasukkan pemuatan scene ke dalam antrean
     queueLoadScene(sceneIdentifier) {
         this._pendingSceneLoad = sceneIdentifier;
     }
@@ -146,6 +144,9 @@ export default class Game {
         if (Config.ENGINE_MODE === "runtime") {
             this._initializeEntityScripts();
             this.scriptSystem.startAll();
+            
+            // [MODIFIKASI] Jalankan filter transisi audio sebelum autoplay dieksekusi
+            this.audioSystem.handleSceneTransition(this.world.entities);
             this.audioSystem.startSceneAutoplay(this.world);
         }
 
@@ -186,11 +187,10 @@ export default class Game {
     }   
 
     update(dt) {
-        // [DITAMBAHKAN] Cek apakah ada antrean pindah scene di awal frame
         if (this._pendingSceneLoad !== null) {
             this.loadScene(this._pendingSceneLoad);
             this._pendingSceneLoad = null;
-            return; // Hentikan update frame ini agar script lama tidak tereksekusi di world baru
+            return; 
         }
 
         if (Config.ENGINE_MODE === "runtime") {
