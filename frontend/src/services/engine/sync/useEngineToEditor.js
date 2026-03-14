@@ -32,7 +32,7 @@ export function useEngineToEditor(sceneStore) {
             flipX: t.flipX ?? false,
             flipY: t.flipY ?? false,
             isRatioLocked: t.isRatioLocked ?? false,
-            isOverridden: t.isOverridden ?? false
+            overridden: t.overridden ?? false
           };
 
           if (t.anchorX !== undefined) payload.anchorX = t.anchorX;
@@ -40,8 +40,8 @@ export function useEngineToEditor(sceneStore) {
 
           sceneStore.syncTransformFromEngine(id, payload);
           
-          if (t.isOverridden) {
-             sceneStore.updateComponentProp(id, compName, 'isOverridden', true);
+          if (t.overridden) {
+             sceneStore.updateComponentProp(id, compName, 'overridden', true);
           }
         }
       });

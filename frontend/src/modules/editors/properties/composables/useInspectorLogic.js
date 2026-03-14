@@ -47,8 +47,8 @@ export function useInspectorLogic() {
   const hasSelection = computed(() => !!selectedEntity.value || !!selectedLayerId.value);
   
   const prefabId = computed(() => isEditingMasterPrefab.value ? null : selectedEntity.value?.prefabId);
-  const isOverridden = computed(() => isEditingMasterPrefab.value ? false : (selectedEntity.value?.isOverridden || false));
-  const isLocked = computed(() => selectedEntity.value?._editor?.locked || false);
+  const overridden = computed(() => isEditingMasterPrefab.value ? false : (selectedEntity.value?.overridden || false));
+  const locked = computed(() => selectedEntity.value?._editor?.locked || false);
   
   const isSizeLockedByText = computed(() => {
     if (!selectedEntity.value) return false;
@@ -187,7 +187,7 @@ export function useInspectorLogic() {
             if (prefabId.value) {
               // Pengecualian: jangan trigger override jika yang diubah HANYA x atau y
               if (pName !== 'x' && pName !== 'y') {
-                sceneStore.updateComponentProp(id, compName, 'isOverridden', true);
+                sceneStore.updateComponentProp(id, compName, 'overridden', true);
               }
             }
           }
@@ -210,12 +210,12 @@ export function useInspectorLogic() {
   }
 
   function getComponentOverrideStatus(compName) {
-    return computed(() => selectedEntity.value?.components?.[compName]?.isOverridden || false);
+    return computed(() => selectedEntity.value?.components?.[compName]?.overridden || false);
   }
 
   function markAsOverridden() {
-    if (selectedEntity.value && prefabId.value && !isOverridden.value && !isEditingMasterPrefab.value) {
-      sceneStore.updateEntityProp(selectedEntity.value._id, 'isOverridden', true);
+    if (selectedEntity.value && prefabId.value && !overridden.value && !isEditingMasterPrefab.value) {
+      sceneStore.updateEntityProp(selectedEntity.value._id, 'overridden', true);
     }
   }
 
@@ -225,12 +225,12 @@ export function useInspectorLogic() {
     if (!master) return;
     const id = selectedEntity.value._id;
     const tag = master.data.tag || 'Untagged';
-    const isActive = master.data.isActive ?? true;
+    const active = master.data.active ?? true;
     sceneStore.updateEntityProp(id, 'tag', tag);
-    sceneStore.updateEntityProp(id, 'isActive', isActive);
-    sceneStore.updateEntityProp(id, 'isOverridden', false);
+    sceneStore.updateEntityProp(id, 'active', active);
+    sceneStore.updateEntityProp(id, 'overridden', false);
     EngineBridge.updateEntityProp({ id, prop: 'tag', value: tag });
-    EngineBridge.updateEntityProp({ id, prop: 'isActive', value: isActive });
+    EngineBridge.updateEntityProp({ id, prop: 'active', value: active });
     showPop({ title: 'Object Synced', type: 'success' });
   }
 
@@ -251,7 +251,7 @@ export function useInspectorLogic() {
           cleanData.y = currentComp.y;
         }
       }
-      cleanData.isOverridden = false;
+      cleanData.overridden = false;
 
       if (sceneStore.activeScene) {
         const entity = sceneStore.activeScene.entities.find(e => e._id === id);
@@ -288,7 +288,7 @@ export function useInspectorLogic() {
           cleanData.y = instanceComps[key].y;
         }
       }
-      cleanData.isOverridden = false;
+      cleanData.overridden = false;
       if (sceneStore.activeScene) {
         const entity = sceneStore.activeScene.entities.find(e => e._id === id);
         if (entity) {
@@ -307,7 +307,7 @@ export function useInspectorLogic() {
       if (!masterComps[key]) sceneStore.removeComponent(id, key);
     });
 
-    sceneStore.updateEntityProp(id, 'isOverridden', false);
+    sceneStore.updateEntityProp(id, 'overridden', false);
     showPop({ title: 'All Synced', type: 'success' });
   }
 
@@ -316,9 +316,9 @@ export function useInspectorLogic() {
     const id = selectedEntity.value._id;
     const comps = selectedEntity.value.components || {};
     sceneStore.updateEntityProp(id, 'prefabId', null);
-    sceneStore.updateEntityProp(id, 'isOverridden', false);
+    sceneStore.updateEntityProp(id, 'overridden', false);
     Object.keys(comps).forEach(compName => {
-      sceneStore.updateComponentProp(id, compName, 'isOverridden', false);
+      sceneStore.updateComponentProp(id, compName, 'overridden', false);
     });
     EngineBridge.updateEntityProp({ id, prop: 'prefabId', value: null });
     showPop({ title: 'Unpacked', type: 'success' });
@@ -434,7 +434,7 @@ export function useInspectorLogic() {
 
   function addScript(assetId) {
     if (!selectedEntity.value) return;
-    const newInstance = { _id: `inst_${crypto.randomUUID().split('-')[0]}`, assetId, isActive: true, variables: {} };
+    const newInstance = { _id: `inst_${crypto.randomUUID().split('-')[0]}`, assetId, active: true, variables: {} };
     const currentList = [...scriptsData.value, newInstance];
     if (isEditingMasterPrefab.value) {
       prefabStore.updateComponentProp(editorStore.activeTab.id, 'ScriptController', 'data', currentList);
@@ -521,11 +521,11 @@ export function useInspectorLogic() {
     selectedEntity,
     selectedLayerId,
     hasSelection,
-    isLocked,
+    locked,
     isSizeLockedByText,
     isSizeLockedByTilemap,
     prefabId,
-    isOverridden,
+    overridden,
     currentTextureUrl,
     scriptsData,
     isEditingMasterPrefab,

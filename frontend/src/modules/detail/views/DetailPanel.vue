@@ -48,8 +48,8 @@ const game = ref({
 
 // --- MOCK DATA: Creator ---
 const creator = ref({
-  name: 'Alex Developer',
-  username: '@alexdev',
+  name: 'Haikal Adnan',
+  username: '@haikaldev',
   avatar: 'https://avatars.githubusercontent.com/u/9919?v=4',
   followers: '892',
   isFollowing: false
@@ -70,7 +70,7 @@ const similarGames = ref([
 const comments = ref([
   { id: 1, user: 'RetroGamer99', avatar: 'https://i.pravatar.cc/150?u=12', text: 'This is incredibly smooth! The procedural generation is very impressive for a web game. Did you write a custom chunking system for Lupis Engine?', time: '2 hours ago', likes: 12 },
   { id: 2, user: 'SarahCodes', avatar: 'https://i.pravatar.cc/150?u=15', text: 'Love the art style and the music. Spent way too much time mining asteroids haha.', time: '1 day ago', likes: 5 },
-  { id: 3, user: 'Alex Developer', avatar: 'https://avatars.githubusercontent.com/u/9919?v=4', text: '@RetroGamer99 Thanks! Yes, I used the built-in Spatial Hash map in Lupis and extended it to load/unload chunks asynchronously.', time: '1 hour ago', likes: 8, isCreator: true },
+  { id: 3, user: 'Haikal Adnan', avatar: 'https://avatars.githubusercontent.com/u/9919?v=4', text: '@RetroGamer99 Thanks! Yes, I used the built-in Spatial Hash map in Lupis and extended it to load/unload chunks asynchronously.', time: '1 hour ago', likes: 8, isCreator: true },
 ]);
 </script>
 
@@ -185,21 +185,21 @@ const comments = ref([
           <Gamepad2 class="w-4 h-4 text-muted-foreground" /> Game Details
         </h3>
         <ul class="space-y-3">
-          <li class="flex justify-between items-start border-b border-border/50 pb-2">
+          <li class="flex justify-between items-start border-b border-border pb-2">
             <span class="text-muted-foreground">Status</span>
             <span class="text-foreground font-medium text-right">{{ game.metadata.status }}</span>
           </li>
-          <li class="flex justify-between items-start border-b border-border/50 pb-2">
+          <li class="flex justify-between items-start border-b border-border pb-2">
             <span class="text-muted-foreground">Published</span>
             <span class="text-foreground font-medium text-right">{{ game.metadata.published }}</span>
           </li>
-          <li class="flex justify-between items-start border-b border-border/50 pb-2">
+          <li class="flex justify-between items-start border-b border-border pb-2">
             <span class="text-muted-foreground">Platforms</span>
             <span class="text-foreground font-medium text-right flex gap-1 justify-end flex-wrap">
               <span v-for="plat in game.metadata.platforms" :key="plat" class="bg-muted px-1.5 py-0.5 rounded text-xs">{{ plat }}</span>
             </span>
           </li>
-          <li class="flex justify-between items-start border-b border-border/50 pb-2">
+          <li class="flex justify-between items-start border-b border-border pb-2">
             <span class="text-muted-foreground">Genre</span>
             <span class="text-foreground font-medium text-right">{{ game.metadata.genre }}</span>
           </li>

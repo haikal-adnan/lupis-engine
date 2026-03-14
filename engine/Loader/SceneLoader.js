@@ -111,11 +111,12 @@ export default class SceneLoader {
         entity.zIndex = Number(finalData.zIndex ?? 0);
         entity.orderIndex = Number(finalData.orderIndex ?? 0);
 
-        entity.active = finalData.isActive ?? true;
-        entity.visible = finalData.isVisible ?? true;
+        entity.active = finalData.active ?? true;
+        entity.visible = finalData.visible ?? true;
+        entity.locked = finalData.locked ?? false;
         entity.prefabId = finalData.prefabId;
         
-        entity.isOverridden = finalData.isOverridden ?? false;
+        entity.overridden = finalData.overridden ?? false;
 
         if(this.mode == "editor") entity._editor = finalData._editor;
 
@@ -137,21 +138,18 @@ export default class SceneLoader {
         merged.parentId = instance.parentId;
         merged.layerId = instance.layerId;
         merged.prefabId = instance.prefabId;
+        merged.tag = instance.tag;
+        merged.active = instance.active;
+        merged.visible = instance.visible;
+        merged.locked = instance.locked;
+        merged.zIndex = instance.zIndex;
+        merged.orderIndex = instance.orderIndex;
         
-        const isRootOverridden = instance.isOverridden === true;
-
-        if (isRootOverridden) {
-            merged.tag = instance.tag;
-            merged.isActive = instance.isActive;
-            merged.zIndex = instance.zIndex ?? merged.zIndex;
-            merged.orderIndex = instance.orderIndex ?? merged.orderIndex;
-        } 
-
         merged.components ??= {};
         const instanceComps = instance.components || {};
 
         for (const [key, compData] of Object.entries(instanceComps)) {
-            const isCompOverridden = compData.isOverridden === true;
+            const isCompOverridden = compData.overridden === true;
             
             if (isCompOverridden) {
                 merged.components[key] = { ...compData }; 

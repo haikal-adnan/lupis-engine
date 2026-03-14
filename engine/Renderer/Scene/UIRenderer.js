@@ -107,7 +107,7 @@ export default class UIRenderer {
                 let finalFlipX = flipX;
 
                 const animator = comps.SpriteAnimator;
-                if (animator && animator.isActive) {
+                if (animator && animator.active) {
                     // FIX: Pengecekan Array.isArray
                     const clip = Array.isArray(animator.clips) ? animator.clips.find(c => c.id === animator.currentClip && c.type === 'clip') : null;
                     

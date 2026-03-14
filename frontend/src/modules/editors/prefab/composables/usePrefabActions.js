@@ -166,7 +166,7 @@ export function usePrefabActions() {
 
       entity.prefabId = prefab._id;
       entity.components = newComponents;
-      entity.isOverridden = false;
+      entity.overridden = false;
 
       entitiesToUpdate.push(JSON.parse(JSON.stringify(entity))); 
     });
@@ -301,7 +301,7 @@ export function usePrefabActions() {
     const newMasterComponents = JSON.parse(JSON.stringify(entity.components));
     
     Object.values(newMasterComponents).forEach(comp => {
-      delete comp.isOverridden;
+      delete comp.overridden;
     });
 
     const masterDataToSave = JSON.parse(JSON.stringify(entity));
@@ -316,7 +316,7 @@ export function usePrefabActions() {
     allInstances.forEach(inst => {
       if (inst._id === entityId) {
         Object.values(inst.components).forEach(comp => {
-          comp.isOverridden = false;
+          comp.overridden = false;
         });
         instancesToUpdate.push(JSON.parse(JSON.stringify(inst)));
       } else {
@@ -326,7 +326,7 @@ export function usePrefabActions() {
           const masterComp = newMasterComponents[compName];
           const instComp = inst.components[compName];
 
-          if (!instComp || instComp.isOverridden === false) {
+          if (!instComp || instComp.overridden === false) {
             let protectedX = 0, protectedY = 0;
             if (compName === 'Transform' || compName === 'UITransform') {
               protectedX = instComp ? instComp.x : (inst.x || 0);
@@ -334,7 +334,7 @@ export function usePrefabActions() {
             }
 
             inst.components[compName] = JSON.parse(JSON.stringify(masterComp));
-            inst.components[compName].isOverridden = false;
+            inst.components[compName].overridden = false;
 
             if (compName === 'Transform' || compName === 'UITransform') {
               inst.components[compName].x = protectedX;

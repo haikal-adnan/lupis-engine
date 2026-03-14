@@ -141,15 +141,15 @@ const openAuth = (mode) => {
 
     <div class="grid grid-cols-2 md:grid-cols-3 gap-4 max-w-4xl w-full mb-10">
       <div class="bg-card border border-border rounded-xl p-6 text-center">
-        <h4 class="text-3xl font-extrabold text-indigo-400 mb-1">12K+</h4>
+        <h4 class="text-3xl font-extrabold text-indigo-400 mb-1">1</h4>
         <p class="text-xs text-muted-foreground font-medium">Stars on GitHub</p>
       </div>
       <div class="bg-card border border-border rounded-xl p-6 text-center">
-        <h4 class="text-3xl font-extrabold text-indigo-400 mb-1">3.4K</h4>
+        <h4 class="text-3xl font-extrabold text-indigo-400 mb-1">1</h4>
         <p class="text-xs text-muted-foreground font-medium">Discord Members</p>
       </div>
       <div class="bg-card border border-border rounded-xl p-6 text-center">
-        <h4 class="text-3xl font-extrabold text-indigo-400 mb-1">28K</h4>
+        <h4 class="text-3xl font-extrabold text-indigo-400 mb-1">0</h4>
         <p class="text-xs text-muted-foreground font-medium">Games Published</p>
       </div>
     </div>

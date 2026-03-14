@@ -6,10 +6,10 @@ export const BlueprintPhysics = {
   color: '#7C4DFF',
   icon: Activity,
   items: [
-    { 
+  { 
       type: 'get_physics', 
       label: 'Get Physics', 
-      description: 'Get specific physics properties of Self or Target', 
+      description: 'Get specific physics properties like velocity, grounded state, or movement state', 
       icon: Gauge,
       allowDynamicInputs: false,
       allowDynamicOutputs: true, 
@@ -23,16 +23,17 @@ export const BlueprintPhysics = {
           propertyOptions: [
             { value: 'velocityX', label: 'Velocity X', type: 'number', color: '#69F0AE' },
             { value: 'velocityY', label: 'Velocity Y', type: 'number', color: '#69F0AE' },
+            { value: 'isGrounded', label: 'Is Grounded?', type: 'boolean', color: '#B2FF59' },
+            { value: 'movementState', label: 'Movement State', type: 'string', color: '#FFEE58' }, 
+            { value: 'facingDirection', label: 'Facing Direction', type: 'string', color: '#FF4081' },
             { value: 'mass', label: 'Mass', type: 'number', color: '#FFB74D' },
             { value: 'gravityScale', label: 'Gravity Scale', type: 'number', color: '#40C4FF' },
             { value: 'drag', label: 'Drag', type: 'number', color: '#FF8A65' },
-            { value: 'isGrounded', label: 'Is Grounded?', type: 'boolean', color: '#B2FF59' },
             { value: 'enabled', label: 'Is Enabled?', type: 'boolean', color: '#ffffff' }
           ]
         },
         inputs: [
-          { _id: 'in_target', label: 'Target ID (Self)', dataType: 'string', color: '#E040FB' },
-          { _id: 'filter_tag', label: 'Floor Tag (Optional)', dataType: 'string', color: '#FFD700' }
+          { _id: 'in_target', label: 'Target ID (Self)', dataType: 'string', color: '#E040FB' }
         ], 
         outputs: [] 
       } 

@@ -42,7 +42,7 @@ const ScriptSchema = new mongoose.Schema({
   _id: { type: String, required: true },
   projectId: { type: String, ref: 'Project', required: true, index: true },
   name: { type: String, required: true },
-  isActive: { type: Boolean, default: true }, 
+  active: { type: Boolean, default: true }, 
   exposedVariables: {
     type: [{
       _id: { type: String, required: true },

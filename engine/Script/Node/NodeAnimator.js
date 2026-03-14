@@ -71,7 +71,7 @@ export const NodeAnimator = {
 
             if (outputKey === 'currentClip') return comp.currentClip || null;
             if (outputKey === 'isPlaying') return !!comp.isPlaying;
-            if (outputKey === 'isActive') return !!comp.isActive;
+            if (outputKey === 'active') return !!comp.active;
             if (outputKey === 'flipX') {
                 const clip = comp.clips?.find(c => c.id === comp.currentClip);
                 return clip ? !!clip.flipX : false;
@@ -120,10 +120,10 @@ export const NodeAnimator = {
                 }
             }
 
-            // --- Set isActive ---
-            const isActive = runner.getInputValue(node, 'isActive');
-            if (isActive !== undefined && isActive !== null) {
-                comp.isActive = Boolean(isActive);
+            // --- Set active ---
+            const active = runner.getInputValue(node, 'active');
+            if (active !== undefined && active !== null) {
+                comp.active = Boolean(active);
             }
 
             // --- Set flipX ---

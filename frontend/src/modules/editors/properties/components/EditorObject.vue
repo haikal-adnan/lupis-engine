@@ -152,7 +152,7 @@ const zIndex = bindEntityProp('zIndex')
 
 const hasAnyOverride = computed(() => {
   if (!selectedEntity.value || !selectedEntity.value.components) return false
-  return Object.values(selectedEntity.value.components).some(comp => comp.isOverridden === true)
+  return Object.values(selectedEntity.value.components).some(comp => comp.overridden === true)
 })
 
 const onApplyToMaster = async () => {
@@ -176,22 +176,22 @@ const toggleActive = () => {
   if (!selectedEntity.value) return
   const newVal = !active.value
   const id = selectedEntity.value._id
-  sceneStore.updateEntityProp(id, 'isActive', newVal) // Ubah 'active' menjadi 'isActive'
+  sceneStore.updateEntityProp(id, 'active', newVal) // Ubah 'active' menjadi 'isActive'
   markAsOverridden()
 }
 
 const visible = computed({
-  get: () => selectedEntity.value?.isVisible ?? true,
+  get: () => selectedEntity.value?.visible ?? true,
   set: (val) => {
     if (selectedEntity.value) sceneStore.updateEntityProp(selectedEntity.value._id, 'visible', val)
   }
 })
 
 const locked = computed({
-  get: () => selectedEntity.value?.isLocked || false, 
+  get: () => selectedEntity.value?.locked || false, 
   set: (val) => {
     if (!selectedEntity.value) return
-    sceneStore.updateEntityProp(selectedEntity.value._id, 'isLocked', val) // Hapus update _editor, ubah langsung ke isLocked
+    sceneStore.updateEntityProp(selectedEntity.value._id, 'locked', val) // Hapus update _editor, ubah langsung ke locked
   }
 })
 

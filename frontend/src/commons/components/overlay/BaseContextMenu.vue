@@ -2,7 +2,7 @@
   <Teleport to="body">
     <Transition name="menu-scale" @after-leave="$emit('close')">
       <div
-        v-if="isVisible"
+        v-if="visible"
         ref="menuRef"
         class="base-context-menu-fixed fixed min-w-[160px] max-w-[240px] p-1 bg-popover border border-border shadow-lg rounded-md flex flex-col gap-0.5 text-popover-foreground z-[9999] max-h-[85vh] overflow-y-auto overflow-x-hidden scrollbar-thin"
         :style="menuStyle"
@@ -61,7 +61,7 @@ const props = defineProps({
 const emit = defineEmits(['close']);
 const menuRef = ref(null);
 
-const isVisible = ref(false);
+const visible = ref(false);
 const coords = ref({ x: 0, y: 0 });
 
 const activeSubmenuIndex = ref(null);
@@ -70,7 +70,7 @@ const submenuPos = ref({ x: 0, y: 0 });
 watch(() => props.position, async (newPos) => {
   if (newPos) {
     coords.value = { x: newPos.x, y: newPos.y };
-    isVisible.value = true;
+    visible.value = true;
     
     await nextTick();
     

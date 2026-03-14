@@ -14,7 +14,7 @@ export default class AudioSystem {
 
         this.activeNodes = new Map();
         this.isPermissionGranted = localStorage.getItem('engine_audio_permit') === 'true';
-        this.overlay = null; // Menyimpan referensi overlay
+        this.overlay = null; 
     }
 
     _showAutoplayOverlay() {
@@ -24,7 +24,7 @@ export default class AudioSystem {
         }
 
         if (this.context.state === 'running' || this.isPermissionGranted) return;
-        if (this.overlay) return; // Mencegah overlay dibuat lebih dari satu kali
+        if (this.overlay) return; 
 
         this.overlay = document.createElement('div');
         Object.assign(this.overlay.style, {
@@ -71,13 +71,18 @@ export default class AudioSystem {
         source.loop = clipData.loop ?? false;
 
         const gainNode = this.context.createGain();
-        
         const targetVolume = clipData.isMute ? 0 : (clipData.volume ?? 1.0);
+        const fadeInDuration = clipData.fadeIn || 0;
 
         if (this.context.state === 'suspended') {
             gainNode.gain.value = 0;
         } else {
-            gainNode.gain.value = targetVolume;
+            if (fadeInDuration > 0) {
+                gainNode.gain.setValueAtTime(0, this.context.currentTime);
+                gainNode.gain.linearRampToValueAtTime(targetVolume, this.context.currentTime + fadeInDuration);
+            } else {
+                gainNode.gain.value = targetVolume;
+            }
         }
 
         source.connect(gainNode);
@@ -85,7 +90,7 @@ export default class AudioSystem {
         let finalNode = gainNode;
         let pannerNode = null;
 
-        if (clipData.spatial) {
+        if (clipData.spatial && !clipData.persist) {
             pannerNode = this.context.createPanner();
             pannerNode.panningModel = 'HRTF';
             pannerNode.distanceModel = 'inverse';
@@ -108,10 +113,52 @@ export default class AudioSystem {
         source.start();
 
         const nodeId = crypto.randomUUID();
-        this.activeNodes.set(nodeId, { entity, source, gainNode, pannerNode, targetVolume });
+        this.activeNodes.set(nodeId, { entity, source, gainNode, pannerNode, targetVolume, clipData });
 
         source.onended = () => this.activeNodes.delete(nodeId);
         return nodeId;
+    }
+
+    handleSceneTransition(newEntities) {
+        const upcomingPersistentAssets = new Set();
+        
+        newEntities.forEach(entity => {
+            const audioComp = entity.components?.Audio;
+            if (audioComp && Array.isArray(audioComp.clips)) {
+                audioComp.clips.forEach(clip => {
+                    if (clip.persist && clip.autoplay) {
+                        upcomingPersistentAssets.add(clip.assetId);
+                    }
+                });
+            }
+        });
+
+        const now = this.context.currentTime;
+
+        for (const [nodeId, nodeData] of this.activeNodes.entries()) {
+            const { source, gainNode, clipData } = nodeData;
+
+            if (clipData.persist) {
+                if (upcomingPersistentAssets.has(clipData.assetId)) {
+                    nodeData.keptAlive = true; 
+                }
+            } else {
+                const fadeOutDuration = clipData.fadeOut || 0;
+                
+                if (fadeOutDuration > 0) {
+                    gainNode.gain.setValueAtTime(gainNode.gain.value, now);
+                    gainNode.gain.linearRampToValueAtTime(0, now + fadeOutDuration);
+                    
+                    setTimeout(() => {
+                        try { source.stop(); } catch(e) {}
+                    }, fadeOutDuration * 1000);
+                } else {
+                    try { source.stop(); } catch(e) {}
+                }
+                
+                this.activeNodes.delete(nodeId);
+            }
+        }
     }
 
     startSceneAutoplay(world) {
@@ -122,9 +169,22 @@ export default class AudioSystem {
             if (audioComp && Array.isArray(audioComp.clips)) {
                 audioComp.clips.forEach(clip => {
                     if (clip.autoplay) {
-                        this.play(entity, clip);
-                        if (this.context.state === 'suspended') {
-                            requiresInteraction = true;
+                        
+                        let isAlreadyPlaying = false;
+                        for (const nodeData of this.activeNodes.values()) {
+                            if (nodeData.clipData.assetId === clip.assetId && nodeData.keptAlive) {
+                                isAlreadyPlaying = true;
+                                nodeData.keptAlive = false; 
+                                nodeData.entity = entity;   
+                                break;
+                            }
+                        }
+
+                        if (!isAlreadyPlaying) {
+                            this.play(entity, clip);
+                            if (this.context.state === 'suspended') {
+                                requiresInteraction = true;
+                            }
                         }
                     }
                 });
@@ -144,13 +204,18 @@ export default class AudioSystem {
         listener.positionY.value = this.game.camera.y;
         listener.positionZ.value = 300; 
 
-        for (const { entity, pannerNode } of this.activeNodes.values()) {
-            if (pannerNode && entity) {
-                const transform = entity.components?.Transform;
-                if (transform) {
-                    pannerNode.positionX.value = transform.x;
-                    pannerNode.positionY.value = transform.y;
-                }
+        for (const [nodeId, nodeData] of this.activeNodes.entries()) {
+            const { entity, pannerNode, clipData } = nodeData;
+
+            // Handler: Jika audio persist atau kehilangan referensi entitas, abaikan update spasial
+            if (clipData.persist || !entity || !entity.components?.Transform) {
+                continue; 
+            }
+
+            if (pannerNode) {
+                const transform = entity.components.Transform;
+                pannerNode.positionX.value = transform.x;
+                pannerNode.positionY.value = transform.y;
             }
         }
     }

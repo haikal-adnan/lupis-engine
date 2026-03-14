@@ -71,11 +71,11 @@ export const createEntity = (data = {}) => {
     layerId: data.layerId || "layer_root",
     
     prefabId: data.prefabId || null,
-    isOverridden: Boolean(data.isOverridden ?? false), 
+    overridden: Boolean(data.overridden ?? false), 
     
-    isActive: data.isActive ?? true,
-    isVisible: data.isVisible ?? true,
-    isLocked: data.isLocked ?? false,
+    active: data.active ?? true,
+    visible: data.visible ?? true,
+    locked: data.locked ?? false,
     
     _editor: { 
         locked: data._editor?.locked ?? false, 

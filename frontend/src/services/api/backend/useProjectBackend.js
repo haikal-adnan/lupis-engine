@@ -44,13 +44,37 @@ export function useProjectBackend() {
   };
 
   const syncProject = async (projectId, syncPayload) => {
+    // 1. Cek ukuran payload sebelum dikirim
+    const payloadString = JSON.stringify(syncPayload);
+    const sizeInBytes = new Blob([payloadString]).size;
+    const sizeInKb = (sizeInBytes / 1024).toFixed(2);
+    
+    console.log(`[Sync] Mengirim data sebesar: ${sizeInKb} KB`);
+
     const response = await fetchWithTimeout(`${API_URL}/projects/${projectId}/sync`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(syncPayload)
+      body: payloadString // Gunakan string yang sudah dibuat tadi
     });
+
+    // 2. CEK STATUS DULU sebelum parse JSON
+    if (!response.ok) {
+      if (response.status === 413) {
+        throw new Error(`Data terlalu besar (${sizeInKb} KB). Server menolak permintaan.`);
+      }
+      // Jika bukan 413, ambil teks mentah untuk debugging (mencegah error '<')
+      const errorText = await response.text();
+      console.error("Server Error Response:", errorText);
+      throw new Error(`Server error: ${response.status}`);
+    }
+
+    // 3. Jika OK, baru parse sebagai JSON
     const result = await response.json();
-    if (!response.ok || !result.success) throw new Error(result.error || 'Gagal sinkronisasi project ke server');
+    
+    if (!result.success) {
+      throw new Error(result.error || 'Gagal sinkronisasi project ke server');
+    }
+
     return result;
   };
 

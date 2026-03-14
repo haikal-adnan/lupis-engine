@@ -5,11 +5,11 @@
       <div 
         v-if="prefabId"
         class="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border select-none shrink-0"
-        :class="isOverridden 
+        :class="overridden 
           ? 'bg-amber-500/10 text-amber-500 border-amber-500/30' 
           : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30'"
       >
-        {{ isOverridden ? 'Override' : 'Sync' }}
+        {{ overridden ? 'Override' : 'Sync' }}
       </div>
     </template>
 
@@ -19,7 +19,7 @@
         <template v-if="prefabId">
           <button 
             @click="syncComponent(COMPONENT_NAME); close()" 
-            :disabled="!isOverridden"
+            :disabled="!overridden"
             class="menu-item"
           >
             <RefreshCw class="w-3.5 h-3.5 mr-2 opacity-70" /> 
@@ -54,7 +54,7 @@
               :step="1" 
               :precision="2"
               class="font-mono" 
-              :disabled="isLocked" 
+              :disabled="locked" 
             />
             <BaseNumber 
               v-model="y" 
@@ -62,7 +62,7 @@
               :step="1" 
               :precision="2"
               class="font-mono" 
-              :disabled="isLocked" 
+              :disabled="locked" 
             />
           </div>
         </PropertyRow>
@@ -74,7 +74,7 @@
       <AnchorControl 
         :x="anchorX" 
         :y="anchorY" 
-        :disabled="isLocked"
+        :disabled="locked"
         @update="updateAnchorFromControl"
       />
     </div>
@@ -82,15 +82,15 @@
     <PropertyRow label="Size (px)">
       <div class="flex items-center gap-2">
         <div class="grid grid-cols-2 gap-2 flex-grow">
-          <BaseNumber v-model="width" prefix="W" :min="1" :step="1" :precision="2" class="font-mono" :disabled="isLocked" />
-          <BaseNumber v-model="height" prefix="H" :min="1" :step="1" :precision="2" class="font-mono" :disabled="isLocked" />
+          <BaseNumber v-model="width" prefix="W" :min="1" :step="1" :precision="2" class="font-mono" :disabled="locked" />
+          <BaseNumber v-model="height" prefix="H" :min="1" :step="1" :precision="2" class="font-mono" :disabled="locked" />
         </div>
 
         <IconButton 
           :active="isRatioLocked" 
           @click="isRatioLocked = !isRatioLocked"
           :tooltip="isRatioLocked ? 'Unlock Ratio' : 'Lock Ratio'"
-          :disabled="isLocked"
+          :disabled="locked"
         >
           <Lock v-if="isRatioLocked" class="w-3.5 h-3.5" />
           <Unlock v-else class="w-3.5 h-3.5 opacity-50" />
@@ -106,7 +106,7 @@
             prefix="R" suffix="°" :step="1" :precision="2"
             class="font-mono flex-grow"
             :min="0" :max="359" :cyclic="true"
-            :disabled="isLocked" 
+            :disabled="locked" 
           />
         </PropertyRow>
       </div>
@@ -114,7 +114,7 @@
       <PivotControl 
         :x="pivotX" 
         :y="pivotY" 
-        :disabled="isLocked"
+        :disabled="locked"
         @update="updatePivot" 
       />
     </div>
@@ -142,14 +142,14 @@ const {
   selectedEntity, 
   updatePivot, 
   bindComponentProp, 
-  isLocked,
+  locked,
   prefabId,                   
   syncComponent,             
   getComponentOverrideStatus,
   markAsOverridden          
 } = useInspectorLogic();
 
-const isOverridden = getComponentOverrideStatus(COMPONENT_NAME);
+const overridden = getComponentOverrideStatus(COMPONENT_NAME);
 
 const x = bindComponentProp(COMPONENT_NAME, 'x', 2);
 const y = bindComponentProp(COMPONENT_NAME, 'y', 2);

@@ -55,7 +55,7 @@ const games = ref([
     title: 'Cozy Cafe Manager',
     creator: { name: 'WholesomeDev', avatar: 'https://i.pravatar.cc/150?u=3' },
     thumbnail: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&q=80',
-    price: 'Name your price',
+    price: 'Free',
     tags: ['Simulation', 'Cozy'],
     downloads: '22.1k',
     likes: '9.5k',
@@ -64,7 +64,7 @@ const games = ref([
   {
     id: 4,
     title: 'Void Explorer 2D',
-    creator: { name: 'Alex Developer', avatar: 'https://avatars.githubusercontent.com/u/9919?v=4' },
+    creator: { name: 'Haikal Adnan', avatar: 'https://avatars.githubusercontent.com/u/9919?v=4' },
     thumbnail: 'https://images.unsplash.com/photo-1511512578047-dfb367046420?w=600&q=80',
     price: 'Free',
     tags: ['RPG', 'Space'],

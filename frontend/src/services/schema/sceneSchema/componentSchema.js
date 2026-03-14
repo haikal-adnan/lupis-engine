@@ -13,7 +13,7 @@ export const createTransform = (data = {}, defaults = { width: 100, height: 100 
     height: Number(data.height ?? defaults.height),
     isRatioLocked: Boolean(data.isRatioLocked ?? false),
     isScaleLocked: Boolean(data.isScaleLocked ?? true),
-    isOverridden: Boolean(data.isOverridden ?? false)
+    overridden: Boolean(data.overridden ?? false)
   };
 };
 
@@ -22,7 +22,7 @@ export const createAudio = (data = {}) => {
     currentClip: data.currentClip || null,
     clips: Array.isArray(data.clips) ? data.clips : [],
     ...data,
-    isOverridden: Boolean(data.isOverridden ?? false)
+    overridden: Boolean(data.overridden ?? false)
   };
 };
 
@@ -32,7 +32,7 @@ export const createUITransform = (data = {}, defaults = { width: 160, height: 40
     ...base,
     anchorX: Number(data.anchorX ?? 0.5),
     anchorY: Number(data.anchorY ?? 0.5),
-    isOverridden: Boolean(data.isOverridden ?? false)
+    overridden: Boolean(data.overridden ?? false)
   };
 };
 
@@ -46,7 +46,7 @@ export const createCollider = (data = {}) => {
     width: Number(data.width ?? 32),
     height: Number(data.height ?? 32),
     ...data,
-    isOverridden: Boolean(data.isOverridden ?? false)
+    overridden: Boolean(data.overridden ?? false)
   };
 };
 
@@ -60,8 +60,10 @@ export const createPhysics = (data = {}) => {
     velocityX: Number(data.velocityX ?? 0),
     velocityY: Number(data.velocityY ?? 0),
     isGrounded: Boolean(data.isGrounded ?? false),
+    movementState: data.movementState || 'idle',
+    facingDirection: data.facingDirection || "right",
     ...data,
-    isOverridden: Boolean(data.isOverridden ?? false)
+    overridden: Boolean(data.overridden ?? false)
   };
 };
 
@@ -69,7 +71,7 @@ export const createSpriteAnimator = (data = {}) => {
   return {
     currentClip: data.currentClip || null,
     clips: data.clips || {},
-    isActive: Boolean(data.isActive ?? true),
+    active: Boolean(data.active ?? true),
     isPlaying: Boolean(data.isPlaying ?? true),
   }
 }
@@ -164,6 +166,6 @@ export const createComponent = (type, inputData = {}) => {
 
   return {
     ...specificData,
-    isOverridden: Boolean(inputData.isOverridden ?? false)
+    overridden: Boolean(inputData.overridden ?? false)
   };
 };

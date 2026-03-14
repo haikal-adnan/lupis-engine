@@ -87,7 +87,7 @@ export default class RendererManager {
             this._flushAll();
         }
 
-        if (game.transitionSystem && game.transitionSystem.isActive) {
+        if (game.transitionSystem && game.transitionSystem.active) {
             const pScreen = this._updateEditorProjection(); 
 
             const wasDepthEnabled = this.gl.isEnabled(this.gl.DEPTH_TEST);

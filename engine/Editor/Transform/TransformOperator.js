@@ -95,7 +95,7 @@ export class TransformOperator {
         
         if (t.rotation !== newRotation) {
             t.rotation = newRotation;
-            t.isOverridden = true; 
+            t.overridden = true; 
             bus.emit("entity:modified", selectedList, true);
         }
     }
@@ -132,7 +132,7 @@ export class TransformOperator {
                 t.rotation = newRotation;
                 t.x = newX;
                 t.y = newY;
-                t.isOverridden = true; 
+                t.overridden = true; 
                 changed = true;
             }
         }
@@ -243,7 +243,7 @@ export class TransformOperator {
             t.scaleY = safeScaleY;
             t.x = newX;
             t.y = newY;
-            t.isOverridden = true; 
+            t.overridden = true; 
             
             if (e.components.Tilemap) {
                 const tileSizeX = e.components.Tilemap.tileWidth || 32;
