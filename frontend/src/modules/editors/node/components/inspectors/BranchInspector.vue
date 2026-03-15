@@ -90,7 +90,7 @@ const syncStructure = (newBranches) => {
     let containsElse = false;
 
     newBranches.forEach((bType, index) => {
-        const orderNum = index + 1; // Penanda nomor urut
+        const orderNum = index + 1; 
         if (bType === 'else_if') {
             finalInputs.push({ _id: `cond_${orderNum}`, label: `Else If Cond (${orderNum})`, dataType: 'boolean', color: '#4CAF50' });
             finalOutputs.push({ _id: `out_${orderNum}`, label: `Else If True (${orderNum})`, dataType: 'execution', color: '#4CAF50' });

@@ -148,7 +148,6 @@ const { openAnimatorEditor } = useAnimatorLogic()
 const hasComponent = computed(() => !!selectedEntity.value?.components?.SpriteAnimator)
 const overridden = getComponentOverrideStatus('SpriteAnimator')
 
-// Data Binding
 const rawActive = bindComponentProp('SpriteAnimator', 'active')
 const active = computed({
   get: () => rawActive.value ?? true,
@@ -159,9 +158,6 @@ const currentClip = bindComponentProp('SpriteAnimator', 'currentClip')
 const isPlaying = bindComponentProp('SpriteAnimator', 'isPlaying')
 const clips = bindComponentProp('SpriteAnimator', 'clips')
 
-// --- LOGIKA FRAME UNTUK COLLIDER MAPPING ---
-
-// Mengambil data clip yang sedang dipilih
 const selectedClipData = computed(() => {
   if (!clips.value || !currentClip.value) return null
   return clips.value.find(c => c.id === currentClip.value)
@@ -171,22 +167,17 @@ const maxFrames = computed(() => selectedClipData.value?.frames?.length || 0)
 
 const displayFrame = computed({
   get: () => {
-    // Membaca frameIndex langsung dari data clip, default ke 0
     const currentIndex = selectedClipData.value?.frameIndex || 0
-    return currentIndex + 1 // Tampilan user dimulai dari 1
+    return currentIndex + 1 
   },
   set: (val) => {
     if (selectedClipData.value) {
-      // Simpan kembali ke sistem sebagai 0-based index
       selectedClipData.value.frameIndex = Math.max(0, val - 1)
       
-      // Memicu trigger setter agar bindComponentProp menyimpannya ke state engine
       clips.value = [...clips.value]
     }
   }
 })
-
-// --------------------------------------------
 
 const togglePlay = () => {
   if (!active.value) return

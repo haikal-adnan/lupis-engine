@@ -1,4 +1,3 @@
-// Path: src/System/AnimatorSystem.js
 import Config from "../Core/Config.js";
 
 export default class AnimatorSystem {
@@ -47,7 +46,6 @@ export default class AnimatorSystem {
         
         animator._elapsedTime += dt;
 
-        // Pastikan frameIndex berupa angka yang valid
         if (typeof clip.frameIndex !== 'number' || isNaN(clip.frameIndex)) {
             clip.frameIndex = 0;
         }
@@ -63,19 +61,15 @@ export default class AnimatorSystem {
                     clip.frameIndex = clip.frames.length - 1; 
                     animator.isPlaying = false; 
                     
-                    // --- TAMBAHKAN 2 BARIS INI ---
                     if (animator._onCompleteCallback) animator._onCompleteCallback();
-                    animator._onCompleteCallback = null; // Bersihkan agar tidak terpanggil ganda
-                    // ----------------------------
+                    animator._onCompleteCallback = null;
 
                     break; 
                 }
             }
         }
 
-        // Terapkan data ke _runtimeData HANYA jika masih berstatus playing
         if (animator.isPlaying) {
-            // Batasi index agar selalu aman
             const safeIndex = Math.max(0, Math.min(clip.frameIndex, clip.frames.length - 1));
             const sourceId = clip.frames[safeIndex];
             const sourceRect = clip.sources?.[sourceId];
@@ -87,15 +81,12 @@ export default class AnimatorSystem {
                     y: sourceRect.y,
                     w: sourceRect.w,
                     h: sourceRect.h,
-                    // FIX: Pastikan flipX dikonversi mutlak menjadi boolean
-                    // agar tidak menyebabkan kegagalan logika operator !== di Renderer
                     flipX: !!clip.flipX 
                 };
             } else {
                 animator._runtimeData = null;
             }
         } else {
-            // FIX: Bersihkan data jika loop selesai (untuk animasi Once/Tidak Looping)
             animator._runtimeData = null;
         }
     }

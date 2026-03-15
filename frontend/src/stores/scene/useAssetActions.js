@@ -30,13 +30,11 @@ export function useAssetActions() {
       let type = 'unknown';
       if (file.type.startsWith('image/')) type = 'texture';
       else if (file.name.endsWith('.ttf')) type = 'font';
-      // Deteksi file audio
       else if (file.type.startsWith('audio/') || ['.wav', '.mp3', '.ogg'].some(ext => file.name.toLowerCase().endsWith(ext))) type = 'audio';
 
       let dimensions = { w: 0, h: 0 };
       let duration = 0;
 
-      // Ambil meta spesifik berdasarkan tipe
       if (type === 'texture') {
         dimensions = await _getImageDimensions(file);
       } else if (type === 'audio') {
@@ -50,7 +48,6 @@ export function useAssetActions() {
         counter++;
       }
 
-      // Pastikan duration dikirim sebagai parameter
       const [serverData] = await Promise.all([
         createAssetToServer(file, projectId, currentFolderId, dimensions, finalName, duration),
         new Promise(resolve => setTimeout(resolve, 1000))

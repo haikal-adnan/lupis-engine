@@ -20,7 +20,6 @@ export default class GraphRunner {
         this._dragNodes = [];
         this._tickNodes = [];
         
-        // [DITAMBAHKAN] Array untuk menyimpan referensi event agar bisa dihapus
         this._registeredEvents = []; 
 
         this._lastPointer = { x: 0, y: 0 };
@@ -45,7 +44,6 @@ export default class GraphRunner {
     }
 
     _initVariables() {
-        // [DIPERBARUI] Pastikan localVariables bersih sebelum diinisialisasi ulang
         this.localVariables.clear();
         const source = this.data.variables || this.data.exposedVariables || [];
         source.forEach(v => {
@@ -53,7 +51,6 @@ export default class GraphRunner {
         });
     }
 
-    // [DITAMBAHKAN] Method untuk mereset variabel lokal
     resetLocalVariables() {
         this._initVariables();
     }
@@ -76,7 +73,6 @@ export default class GraphRunner {
         this._holdNodes = [];
         this._dragNodes = [];
 
-        // [DITAMBAHKAN] Fungsi bantu untuk membungkus event.on agar tercatat
         const registerEvent = (eventName, callback) => {
             this.game.events.on(eventName, callback);
             this._registeredEvents.push({ eventName, callback });
@@ -92,7 +88,6 @@ export default class GraphRunner {
                 });
             }
 
-            // --- EVENT: KEY DOWN ---
             else if (node.type === 'event_simple_key') {
                 const keyTarget = node.data?.key?.toLowerCase();
                 registerEvent('input:keydown', (k) => {
@@ -100,7 +95,6 @@ export default class GraphRunner {
                     if (k === keyTarget) this.executeFlow(node._id, 'sk_main');
                 });
             } 
-            // --- EVENT: KEY UP ---
             else if (node.type === 'event_simple_key_up') {
                 const keyTarget = node.data?.key?.toLowerCase();
                 registerEvent('input:keyup', (k) => {
@@ -108,7 +102,6 @@ export default class GraphRunner {
                     if (k === keyTarget) this.executeFlow(node._id, 'sk_up_main');
                 });
             }
-            // --- EVENT: POINTER CLICK ---
             else if (node.type === 'event_pointer_click') {
                 const config = Array.isArray(node.data) ? node.data[0] : node.data;
                 const btnTarget = config?.button || 'left';
@@ -120,7 +113,6 @@ export default class GraphRunner {
                     }
                 });
             } 
-            // --- EVENT: ADVANCED KEY (HOLD LOGIC) ---
             else if (node.type === 'event_advanced_key') {
                 const mappings = node.data?.mappings || [];
                 mappings.forEach(map => {
@@ -152,9 +144,7 @@ export default class GraphRunner {
         });
     }
 
-    // [DITAMBAHKAN] Method krusial untuk mencegah memory leak saat scene berganti!
     destroy() {
-        // Cabut semua event listener yang nempel di game.events
         this._registeredEvents.forEach(({ eventName, callback }) => {
             if (this.game.events.off) {
                 this.game.events.off(eventName, callback);
@@ -162,7 +152,6 @@ export default class GraphRunner {
         });
         this._registeredEvents = [];
         
-        // Bersihkan state nodes & variables
         this.localVariables.clear();
         this._holdNodes = [];
         this._dragNodes = [];

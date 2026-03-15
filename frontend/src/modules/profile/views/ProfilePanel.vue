@@ -5,12 +5,11 @@ import {
   Users, Download, Box, MessageSquare, Wrench, ChevronRight
 } from 'lucide-vue-next';
 
-// --- MOCK DATA: Profile Info ---
 const profile = ref({
   name: 'Haikal Adnan',
   username: '@haikaldev',
   description: 'Solo indie game developer and asset creator. Lover of pixel art and 2D platformers. Currently building my dream world one pixel at a time using Lupis Engine.',
-  avatar: 'https://avatars.githubusercontent.com/u/9919?v=4', // Dummy GitHub avatar
+  avatar: 'https://avatars.githubusercontent.com/u/9919?v=4', 
   labels: ['Pro Creator', 'Pixel Artist', 'Verified'],
   socials: {
     github: 'https://github.com',
@@ -19,7 +18,6 @@ const profile = ref({
   }
 });
 
-// --- MOCK DATA: Stats ---
 const stats = ref([
   { label: 'Published Games', value: '4', icon: Gamepad2 },
   { label: 'Assets', value: '12', icon: Box },
@@ -27,7 +25,6 @@ const stats = ref([
   { label: 'Followers', value: '892', icon: Users },
 ]);
 
-// --- MOCK DATA: Published Content ---
 const publishedGames = ref([
   { id: 1, title: 'Cosmic Quest', genre: 'Platformer', image: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=400&q=80', downloads: '5.2k' },
   { id: 2, title: 'Neon Racer', genre: 'Arcade', image: 'https://images.unsplash.com/photo-1511512578047-dfb367046420?w=400&q=80', downloads: '3.1k' },
@@ -38,7 +35,6 @@ const publishedAssets = ref([
   { id: 2, title: 'Pixel Forest Tileset', type: 'Environment', image: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=400&q=80', downloads: '1.1k' },
 ]);
 
-// --- MOCK DATA: Sidebar (WIP & Forum) ---
 const wips = ref([
   { id: 1, title: 'Project Nebula', progress: 65, type: 'Game' },
   { id: 2, title: 'Cyberpunk Character Pack', progress: 30, type: 'Asset' },

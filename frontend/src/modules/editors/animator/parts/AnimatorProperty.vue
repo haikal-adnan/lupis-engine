@@ -103,7 +103,6 @@
 
 <script setup>
 import { computed } from 'vue'
-// Tambahkan FlipHorizontal di import Lucide
 import { Film, FolderSearch, FlipHorizontal } from 'lucide-vue-next'
 import { useAnimatorLogic } from '@editors/animator/composables/useAnimatorLogic.js'
 import { useAssetStore } from '@/stores/useAssetStore'
@@ -116,7 +115,6 @@ import BaseSelect from '@/commons/components/inputs/BaseSelect.vue'
 import BaseButton from '@/commons/components/buttons/BaseButton.vue'
 import BaseThumbnail from "@/commons/components/display/BaseThumbnail.vue"
 
-// Ambil syncAnimatorData juga
 const { activeClipData, syncAnimatorData } = useAnimatorLogic()
 
 const assetStore = useAssetStore()
@@ -173,7 +171,6 @@ const isLooping = computed({
   }
 })
 
-// Logika baru untuk Flip Horizontal
 const flipX = computed({
   get: () => activeClipData.value?.flipX ?? false,
   set: (val) => {

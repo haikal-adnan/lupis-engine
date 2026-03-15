@@ -1,5 +1,3 @@
-// File: src/Renderer/Audio/GLAudioResource.js
-
 let __audioID = 1;
 
 export default class GLAudioResource {
@@ -9,16 +7,14 @@ export default class GLAudioResource {
 
     async loadAudioFromAsset(asset, baseURL) {
         let src;
-        // Menyesuaikan pembentukan URL persis seperti GLImageResource
         if (asset.fileKey && asset.meta.extension) {
             src = `${baseURL}${asset.fileKey}${asset.meta.extension}`;
         } else if (asset.fileUrl) {
-            src = asset.fileUrl; // Fallback jika path langsung tersedia
+            src = asset.fileUrl; 
         }
 
         const audioBuffer = await this._loadAudio(src);
 
-        // Kembalikan dalam bentuk objek agar konsisten dengan textureData
         const audioData = {
             id: __audioID++,
             type: "audio_buffer",
@@ -38,7 +34,6 @@ export default class GLAudioResource {
             }
             const arrayBuffer = await response.arrayBuffer();
             
-            // Proses decode raw data menjadi AudioBuffer (analoginya seperti _uploadToGPU)
             const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
             return audioBuffer;
         } catch (error) {
@@ -47,7 +42,6 @@ export default class GLAudioResource {
         }
     }
 
-    // Fungsi load mandiri (opsional, konsisten dengan GLImageResource)
     async load(url, config = {}) {
         const audioBuffer = await this._loadAudio(url);
         

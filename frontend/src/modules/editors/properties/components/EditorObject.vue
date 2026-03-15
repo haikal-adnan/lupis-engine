@@ -176,7 +176,7 @@ const toggleActive = () => {
   if (!selectedEntity.value) return
   const newVal = !active.value
   const id = selectedEntity.value._id
-  sceneStore.updateEntityProp(id, 'active', newVal) // Ubah 'active' menjadi 'isActive'
+  sceneStore.updateEntityProp(id, 'active', newVal) 
   markAsOverridden()
 }
 
@@ -191,7 +191,7 @@ const locked = computed({
   get: () => selectedEntity.value?.locked || false, 
   set: (val) => {
     if (!selectedEntity.value) return
-    sceneStore.updateEntityProp(selectedEntity.value._id, 'locked', val) // Hapus update _editor, ubah langsung ke locked
+    sceneStore.updateEntityProp(selectedEntity.value._id, 'locked', val) 
   }
 })
 

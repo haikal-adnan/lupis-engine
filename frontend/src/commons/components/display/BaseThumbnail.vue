@@ -36,7 +36,7 @@ const props = defineProps({
   src: { type: String, default: null },
   rect: { type: Object, default: () => ({ x: 0, y: 0, w: 0, h: 0 }) },
   sizeClass: { type: String, default: 'w-12 h-12' },
-  name: { type: String, default: 'Texture Preview' } // Tambahan prop opsional untuk judul pop-up
+  name: { type: String, default: 'Texture Preview' }
 })
 
 const { showImage } = usePopImage()
@@ -73,18 +73,16 @@ const thumbnailStyle = computed(() => {
     }
   }
 
-  // Menggunakan logika existing kamu
   return TextureUtil.getThumbnailStyle(
     props.src, 
     props.rect,
     { width: imgMeta.w, height: imgMeta.h }, 
-    parseInt(props.sizeClass.match(/\d+/)?.[0] || 48) * 4 // Fallback size adjustment
+    parseInt(props.sizeClass.match(/\d+/)?.[0] || 48) * 4 
   )
 })
 
 const openPreview = () => {
   if (props.src) {
-    // Memanggil BasePopImage dengan URL gambar dan resolusi aslinya sebagai judul opsional
     const title = `${props.name} (${imgMeta.w}x${imgMeta.h}px)`
     showImage(props.src, title)
   }

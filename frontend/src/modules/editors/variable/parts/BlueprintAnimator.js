@@ -14,7 +14,6 @@ export const BlueprintAnimator = {
   color: '#8E24AA', 
   icon: Film,
   items: [
-    // --- PLAYBACK CONTROL (Event-Driven) ---
     { 
       type: 'play_animation', 
       label: 'Play Animation', 
@@ -50,7 +49,6 @@ export const BlueprintAnimator = {
       } 
     },
 
-    // --- ANIMATOR (Global State) ---
     { 
       type: 'get_animator', 
       label: 'Get Animator', 
@@ -81,7 +79,7 @@ export const BlueprintAnimator = {
         settings: { headerTitle: 'Set Animator', headerColor: '#AB47BC', category: 'Animation' },
         data: {
           propertyOptions: [
-            { value: 'currentClip', label: 'Set Current Clip', type: 'string' }, // Penambahan Set Current Clip
+            { value: 'currentClip', label: 'Set Current Clip', type: 'string' },
             { value: 'active', label: 'Is Enabled', type: 'boolean' },
             { value: 'flipX', label: 'Flip Horizontal', type: 'boolean' }
           ]
@@ -94,7 +92,6 @@ export const BlueprintAnimator = {
       } 
     },
 
-    // --- CLIPS (Data Management) ---
     { 
       type: 'get_clip_prop', 
       label: 'Get Clip Prop', 
@@ -110,7 +107,6 @@ export const BlueprintAnimator = {
             { value: 'frameCount', label: 'Total Frames', type: 'number' }
           ]
         },
-        // Murni menggunakan clip_id tanpa target entity
         inputs: [{ _id: 'clip_id', label: 'Clip ID', dataType: 'string' }],
         outputs: [] 
       } 
@@ -129,7 +125,6 @@ export const BlueprintAnimator = {
             { value: 'isLooping', label: 'Set Looping', type: 'boolean' }
           ]
         },
-        // Murni menggunakan clip_id tanpa target entity
         inputs: [
           { _id: 'exec_in', label: 'In', dataType: 'execution' },
           { _id: 'clip_id', label: 'Clip ID', dataType: 'string' }

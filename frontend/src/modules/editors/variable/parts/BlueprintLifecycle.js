@@ -57,13 +57,13 @@ export const BlueprintLifecycle = {
       defaultData: {
         settings: {
           headerTitle: 'On Scene Start',
-          headerColor: '#059669', // Sedikit berbeda warna hijaunya dari Game Start
+          headerColor: '#059669', 
           category: 'Events'
         },
         inputs: [],
         outputs: [
           { _id: 'out', label: 'Start', dataType: 'execution', color: '#ffffff' },
-          { _id: 'scene_name', label: 'Scene Name', dataType: 'string', color: '#FCD34D' } // Pin Output untuk nama scene
+          { _id: 'scene_name', label: 'Scene Name', dataType: 'string', color: '#FCD34D' }
         ]
       }
     },

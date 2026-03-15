@@ -122,8 +122,6 @@ const syncSceneWithEngine = () => {
   const activeScene = sceneStore.activeScene;
   if (!activeScene) return;
 
-  // Ini adalah cara paling STABIL untuk state Vue yang kompleks
-  // toRaw melepaskan pelacakan reaktif, JSON membuang fungsi/referensi aneh
   const safeScene = JSON.parse(JSON.stringify(toRaw(activeScene)));
 
   const payload = {

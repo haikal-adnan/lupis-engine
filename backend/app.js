@@ -3,6 +3,8 @@ import cors from "cors";
 import { connectMongo } from "./config/mongo.js";
 import { connectPostgres, pool } from "./config/postgres.js";
 
+import { verifyToken } from "./middleware/authMiddleware.js";
+
 import Project from "./models/nosql/Project.js";
 import Folder from "./models/nosql/Folder.js";
 import Asset from "./models/nosql/Asset.js";
@@ -13,6 +15,7 @@ import Script from "./models/nosql/Script.js";
 import assetRoutes from "./routes/assetRoutes.js";
 import projectRoutes from "./routes/projectRoutes.js";
 import folderRoutes from "./routes/folderRoutes.js";
+import authRoutes from "./routes/authRoutes.js";
 
 const app = express();
 
@@ -27,6 +30,7 @@ export async function initDatabase() {
   await connectPostgres();
 }
 
+app.use("/auth", authRoutes);
 app.use("/assets", assetRoutes);
 app.use("/projects", projectRoutes);
 app.use("/folders", folderRoutes);

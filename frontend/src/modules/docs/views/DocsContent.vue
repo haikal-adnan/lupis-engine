@@ -4,7 +4,6 @@ import {
   AlertTriangle, AlertCircle, Lightbulb, Check
 } from 'lucide-vue-next';
 
-// Mapping Icon untuk Features
 const iconMap = { Zap, BookOpen, Box, Layers };
 
 defineProps({
@@ -14,11 +13,10 @@ defineProps({
   }
 });
 
-// Helper untuk format tipe data di Tabel API agar terlihat cantik seperti badge
 const formatDataType = (text) => {
   const types = ['String', 'Number', 'Boolean', 'Vector2', 'Object', 'Array'];
   if (types.includes(text)) {
-    let color = 'text-indigo-500 bg-indigo-500/10 border-indigo-500/20'; // Default
+    let color = 'text-indigo-500 bg-indigo-500/10 border-indigo-500/20'; 
     if (text === 'String') color = 'text-green-500 bg-green-500/10 border-green-500/20';
     if (text === 'Number' || text === 'Vector2') color = 'text-orange-500 bg-orange-500/10 border-orange-500/20';
     if (text === 'Boolean') color = 'text-pink-500 bg-pink-500/10 border-pink-500/20';

@@ -5,7 +5,6 @@ import {
   Heart, Download, MonitorPlay, Star, ArrowDownWideNarrow
 } from 'lucide-vue-next';
 
-// --- MOCK DATA: Filters ---
 const genres = ref([
   { id: 'platformer', name: 'Platformer', count: 124 },
   { id: 'rpg', name: 'Role Playing', count: 85 },
@@ -26,7 +25,6 @@ const platforms = ref([
 const sortOptions = ['Top Rated', 'Most Downloaded', 'Newest', 'Recently Updated'];
 const selectedSort = ref('Top Rated');
 
-// --- MOCK DATA: Game List ---
 const games = ref([
   {
     id: 1,

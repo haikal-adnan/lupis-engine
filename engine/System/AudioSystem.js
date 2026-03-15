@@ -1,6 +1,5 @@
 import Config from "../Core/Config.js";
 
-// File: src/System/AudioSystem.js
 export default class AudioSystem {
     constructor(game) {
         this.game = game;
@@ -8,7 +7,6 @@ export default class AudioSystem {
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         this.context = new AudioContext();
         
-        // Node utama untuk mengatur volume global engine
         this.masterGain = this.context.createGain();
         this.masterGain.connect(this.context.destination);
 
@@ -207,7 +205,6 @@ export default class AudioSystem {
         for (const [nodeId, nodeData] of this.activeNodes.entries()) {
             const { entity, pannerNode, clipData } = nodeData;
 
-            // Handler: Jika audio persist atau kehilangan referensi entitas, abaikan update spasial
             if (clipData.persist || !entity || !entity.components?.Transform) {
                 continue; 
             }

@@ -19,7 +19,6 @@ export const BlueprintTransition = {
         },
         inputs: [
           { _id: 'exec_in', label: 'In', dataType: 'execution' },
-          // UPDATE: Tambahkan keterangan opsi 'fade' pada label
           { _id: 'type', label: 'Mode (fade_in/fade_out/fade)', dataType: 'string', value: 'fade_out' },
           { _id: 'duration', label: 'Duration (s)', dataType: 'number', value: 1.0 },
           { _id: 'color', label: 'Color Hex', dataType: 'string', value: '#000000' }

@@ -177,7 +177,6 @@ export default class WorldRenderer {
 
                     const animator = comps.SpriteAnimator;
                     if (animator && animator.active) {
-                        // FIX: Pengecekan Array.isArray
                         const clip = Array.isArray(animator.clips) ? animator.clips.find(c => c.id === animator.currentClip && c.type === 'clip') : null;
                         
                         if (clip && clip.assetId && clip.frames && clip.frames.length > 0) {
@@ -215,7 +214,6 @@ export default class WorldRenderer {
                         }
                     }
 
-                    // FIX: Checkerboard Fallback
                     let texture = null;
                     let useCheckerboard = false;
 
@@ -223,14 +221,12 @@ export default class WorldRenderer {
                         texture = world.assets.textures[finalAssetId];
                     }
 
-                    // Jika asset tidak ada atau rusak (texture tidak ditemukan di memori), aktifkan checkerboard
                     if (!texture) {
                         useCheckerboard = true;
                         if (finalW === 0) finalW = t.width || 64;
                         if (finalH === 0) finalH = t.height || 64;
                     }
 
-                    // Selalu push ke renderQueue. Biarkan ImageRenderer yang menangani shader checkerboard-nya.
                     this.renderQueue.push({
                         type: "image",
                         texture: texture, 
@@ -261,22 +257,18 @@ export default class WorldRenderer {
             if (Config.ENGINE_MODE === 'editor' && comps.Collider && comps.Collider.enabled) {
                 const c = comps.Collider;
                 
-                // Dimensi visual entity
                 const visualWidth = t.width * Math.abs(t.scaleX ?? 1);
                 const visualHeight = t.height * Math.abs(t.scaleY ?? 1);
 
-                // Offset dari pivot
                 const pivotOffsetX = visualWidth * (t.pivotX ?? 0.5);
                 const pivotOffsetY = visualHeight * (t.pivotY ?? 0.5);
 
-                // Offset collider yang di-scale (mendukung flip dari minus scale)
                 const scaledOffsetX = (c.offsetX ?? 0) * (t.scaleX ?? 1);
                 const scaledOffsetY = (c.offsetY ?? 0) * (t.scaleY ?? 1);
 
                 const colliderX = drawX - pivotOffsetX + scaledOffsetX;
                 const colliderY = drawY - pivotOffsetY + scaledOffsetY;
                 
-                // Ukuran collider (mendukung autoFit vs manual) dikali scale
                 const colliderW = (c.autoFit ? t.width : c.width) * Math.abs(t.scaleX ?? 1);
                 const colliderH = (c.autoFit ? t.height : c.height) * Math.abs(t.scaleY ?? 1);
 

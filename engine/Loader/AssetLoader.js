@@ -15,7 +15,6 @@ export default class AssetLoader {
             this._isSystemDefaultLoaded = true;
         }
         
-        // Pastikan objek world.audios tersedia
         if (!world.audios) world.audios = {};
 
         const loadPromises = assets.map(async (asset) => {
@@ -27,7 +26,7 @@ export default class AssetLoader {
                     case "font":
                         await this.loadFont(world, asset, baseURL);
                         break;
-                    case "audio": // [DITAMBAHKAN] Handle Audio
+                    case "audio":
                         if (Config.ENGINE_MODE !== "editor") {
                             await this.loadAudio(world, asset, baseURL);
                         } 
@@ -99,7 +98,6 @@ export default class AssetLoader {
     async loadAudio(world, asset, baseURL) {
         const audioData = await this.audioResource.loadAudioFromAsset(asset, baseURL);
         
-        // Simpan hanya buffer-nya saja (atau seluruh objek audioData jika Anda butuh info src/duration di masa depan)
         if (audioData && audioData.buffer) {
             world.audios[asset._id] = audioData.buffer; 
         }

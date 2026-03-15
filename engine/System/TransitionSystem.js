@@ -4,17 +4,17 @@ export default class TransitionSystem {
     constructor(game) {
         this.game = game;
         this.active = false;
-        this.alpha = 0.0;     // 0 = transparan, 1 = layar tertutup
-        this.state = 'none';  // 'fade_in', 'fade_out', 'none'
+        this.alpha = 0.0;     
+        this.state = 'none';  
         this.duration = 1.0;
         this.timer = 0.0;
-        this.color = [0, 0, 0, 1]; // RGBA Hitam
+        this.color = [0, 0, 0, 1]; 
         this.onComplete = null;
     }
 
     fadeOut(duration = 1.0, colorHex = "#000000", callback = null) {
         this.active = true;
-        this.state = 'fade_out'; // Layar menjadi gelap
+        this.state = 'fade_out'; 
         this.duration = duration || 1.0;
         this.timer = 0.0;
         this.alpha = 0.0;
@@ -35,8 +35,6 @@ export default class TransitionSystem {
     update(dt) {
         if (this.state === 'none') return;
 
-        // [DIPERBARUI] Batasi maksimal dt adalah 0.1 detik (100ms) 
-        // agar animasi tidak langsung tamat saat terjadi lag waktu loading
         let safeDt = Math.min(dt, 0.1); 
         this.timer += safeDt;
         

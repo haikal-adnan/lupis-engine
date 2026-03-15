@@ -2,7 +2,7 @@ import { ref, computed } from 'vue'
 import { 
   FolderPlus, Download, RefreshCw, Edit2, Trash2, 
   Stamp, Type, Copy, Scissors, ClipboardPaste,
-  Volume2 // --- TAMBAHAN: Import icon untuk Audio ---
+  Volume2
 } from 'lucide-vue-next'
 import { useAssetActions } from '@/stores/scene/useAssetActions'
 import { useFolderActions } from '@/stores/scene/useFolderActions'
@@ -11,8 +11,6 @@ import { usePopAlert } from '@/composables/usePopAlert'
 import { usePrompt } from '@/composables/usePrompt'
 import { useConfirm } from '@/composables/useConfirm' 
 import { useFolderStore } from '@/stores/useFolderStore'
-
-// --- Tambahan Store & Logic Baru ---
 import { useEditorStore } from '@/stores/useEditorStore'
 import { useAnimatorLogic } from "@editors/animator/composables/useAnimatorLogic.js"
 
@@ -22,7 +20,6 @@ export function useAssetMenu(selectedIdRef, triggerUploadCb, logicActions) {
   const sceneStore = useSceneStore()
   const folderStore = useFolderStore()
   
-  // Instance untuk pengecekan tab dan clip
   const editorStore = useEditorStore()
   const { activeClipId, activeClipData } = useAnimatorLogic()
 
@@ -46,7 +43,6 @@ export function useAssetMenu(selectedIdRef, triggerUploadCb, logicActions) {
     return scene.entities.find(e => e._id === sceneStore.selectedEntityIds[0])
   }
 
-  // Handler untuk Component (Scene Mode)
   const applyAsset = (asset, entityId, componentName) => {
     closeMenu()
     const scene = sceneStore.activeScene
@@ -59,9 +55,8 @@ export function useAssetMenu(selectedIdRef, triggerUploadCb, logicActions) {
     }
 
     try {
-      // --- LOGIKA KHUSUS UNTUK AUDIO BANK ---
       if (componentName === 'Audio') {
-        const audioComp = entity.components.Audio;
+        const audioComp = entity.components.Audio
         if (!audioComp.currentClip) {
           showPop({ title: 'Failed', message: 'No active clip selected in Audio Bank.', type: 'warning' })
           return
@@ -71,16 +66,13 @@ export function useAssetMenu(selectedIdRef, triggerUploadCb, logicActions) {
         const clipIndex = clips.findIndex(c => c._id === audioComp.currentClip)
 
         if (clipIndex !== -1) {
-          // Update assetId hanya pada clip yang sedang aktif
           clips[clipIndex] = { ...clips[clipIndex], assetId: asset._id }
           sceneStore.updateComponentProp(entityId, 'Audio', 'clips', clips)
           showPop({ title: 'Success', message: `Applied "${asset.name}" to active audio clip.`, type: 'success' })
         } else {
           showPop({ title: 'Error', message: 'Active clip not found.', type: 'error' })
         }
-      } 
-      // --- LOGIKA STANDAR (SpriteRenderer, TextRenderer, Tilemap) ---
-      else {
+      } else {
         sceneStore.updateComponentProp(entityId, componentName, 'assetId', asset._id)
         showPop({ title: 'Success', message: `Applied "${asset.name}" to ${componentName}.`, type: 'success' })
       }
@@ -89,10 +81,9 @@ export function useAssetMenu(selectedIdRef, triggerUploadCb, logicActions) {
     }
   }
 
-  // Handler untuk Animator (Animator Mode)
   const applyAssetToClip = (asset) => {
     closeMenu()
-    const entityId = editorStore.activeTab?.id // Tab ID di Animator biasanya adalah Entity ID
+    const entityId = editorStore.activeTab?.id
     if (!entityId || !activeClipId.value) return
 
     const clips = [...sceneStore._getAnimatorClips(entityId)]
@@ -165,10 +156,9 @@ export function useAssetMenu(selectedIdRef, triggerUploadCb, logicActions) {
     if (!isFolder) {
       const isTexture = ['texture'].includes(targetItem.type)
       const isFont = targetItem.type === 'font'
-      const isAudio = targetItem.type === 'audio' // --- TAMBAHAN: Cek jika asset adalah audio ---
+      const isAudio = targetItem.type === 'audio'
       let hasAddedAppliers = false
 
-      // --- LOGIKA TAB SCENE ---
       if (currentTabType === 'scene' && entity?.components) {
         if (isTexture) {
           if (entity.components.SpriteRenderer) {
@@ -185,11 +175,9 @@ export function useAssetMenu(selectedIdRef, triggerUploadCb, logicActions) {
           hasAddedAppliers = true
         }
 
-        // --- TAMBAHAN: Logika untuk apply Audio Component ---
         if (isAudio && entity.components.Audio) {
-          const hasActiveClip = !!entity.components.Audio.currentClip;
+          const hasActiveClip = !!entity.components.Audio.currentClip
           items.push({ 
-            // Mengubah label dan mendisable tombol jika tidak ada clip yang aktif
             label: hasActiveClip ? 'Apply to Active Audio Clip' : 'No Active Audio Clip', 
             icon: Volume2, 
             disabled: !hasActiveClip,
@@ -199,7 +187,6 @@ export function useAssetMenu(selectedIdRef, triggerUploadCb, logicActions) {
         }
       }
 
-      // --- LOGIKA TAB ANIMATOR ---
       if (currentTabType === 'animator' && isTexture && activeClipId.value) {
         items.push({ 
           label: 'Apply to Selected Clip', 
@@ -212,7 +199,6 @@ export function useAssetMenu(selectedIdRef, triggerUploadCb, logicActions) {
       if (hasAddedAppliers) items.push({ separator: true })
     }
 
-    // Common Actions
     items.push(
       { label: 'Cut', icon: Scissors, shortcut: 'Ctrl+X', action: () => handleCutCopy('cut', targetItem) },
       { label: 'Copy', icon: Copy, shortcut: 'Ctrl+C', action: () => handleCutCopy('copy', targetItem) },
@@ -226,7 +212,7 @@ export function useAssetMenu(selectedIdRef, triggerUploadCb, logicActions) {
   })
 
   const defaultEmptyMenu = () => [
-    { label: 'New Folder', icon: FolderPlus, action: () => { closeMenu(); createNewFolder('New Folder', folderStore.activeFolderId); } },
+    { label: 'New Folder', icon: FolderPlus, action: () => { closeMenu(); createNewFolder('New Folder', folderStore.activeFolderId) } },
     { label: 'Import Assets...', icon: Download, action: () => { closeMenu(); triggerUploadCb() } },
     { separator: true },
     { 
@@ -234,7 +220,7 @@ export function useAssetMenu(selectedIdRef, triggerUploadCb, logicActions) {
       icon: ClipboardPaste, 
       shortcut: 'Ctrl+V',
       disabled: !logicActions?.clipboard?.value,
-      action: () => { closeMenu(); if (logicActions?.handlePaste) logicActions.handlePaste(); } 
+      action: () => { closeMenu(); if (logicActions?.handlePaste) logicActions.handlePaste() } 
     },
     { separator: true },
     { label: 'Refresh', icon: RefreshCw, shortcut: 'F5', action: closeMenu }

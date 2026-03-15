@@ -1,5 +1,3 @@
-// Path: src/System/Nodes/NodeAnimator.js
-
 export const NodeAnimator = {
     'play_animation': {
         execute: (runner, node) => {
@@ -16,33 +14,28 @@ export const NodeAnimator = {
             const animator = entity.components.SpriteAnimator;
             const targetStr = String(clipIdInput);
             
-            // Resolve berdasarkan scriptId, name, atau id internal
             const targetClip = animator.clips?.find(c => 
                 c.scriptId === targetStr || 
                 c.name === targetStr || 
                 c.id === targetStr
             );
 
-            // Jika ketemu, pakai id internalnya. Jika tidak, fallback ke input string.
             const resolvedInternalId = targetClip ? targetClip.id : targetStr;
 
             animator.currentClip = resolvedInternalId;
             animator.isPlaying = true;
 
-            // Reset frame ke 0 jika opsi reset diaktifkan (default: true)
             if (reset !== false) {
-                animator._activeClipId = null; // Memaksa AnimatorSystem mereset _elapsedTime
+                animator._activeClipId = null;
                 if (targetClip) {
                     targetClip.frameIndex = 0;
                 }
             }
 
-            // Daftarkan callback untuk memicu pin 'on_complete' saat animasi selesai
             animator._onCompleteCallback = () => {
                 runner.executeFlow(node._id, 'on_complete');
             };
 
-            // Lanjutkan eksekusi utama dan picu event 'on_start'
             runner.executeFlow(node._id, 'exec_out');
             runner.executeFlow(node._id, 'on_start');
         }
@@ -93,12 +86,10 @@ export const NodeAnimator = {
 
             const comp = entity.components.SpriteAnimator;
 
-            // --- Set Current Clip (Mendukung Input Hold) ---
             const currentClipInput = runner.getInputValue(node, 'currentClip');
             if (currentClipInput !== undefined && currentClipInput !== null) {
                 const targetStr = String(currentClipInput);
                 
-                // Resolve berdasarkan scriptId, name, atau id internal
                 const targetClip = comp.clips?.find(c => 
                     c.scriptId === targetStr || 
                     c.name === targetStr || 
@@ -107,29 +98,24 @@ export const NodeAnimator = {
                 
                 const resolvedInternalId = targetClip ? targetClip.id : targetStr;
 
-                // FIX: HANYA reset jika clip yang direquest BERBEDA dengan yang sedang aktif.
-                // Ini mencegah bug animasi stuck di frame 0 saat menggunakan event input (Hold).
                 if (comp.currentClip !== resolvedInternalId) {
                     comp.currentClip = resolvedInternalId;
-                    comp._elapsedTime = 0; // Reset timer agar transisi mulus
-                    comp.isPlaying = true; // Pastikan animasi langsung diputar
+                    comp._elapsedTime = 0;
+                    comp.isPlaying = true;
                     
                     if (targetClip) {
-                        targetClip.frameIndex = 0; // Mulai dari frame pertama
+                        targetClip.frameIndex = 0;
                     }
                 }
             }
 
-            // --- Set active ---
             const active = runner.getInputValue(node, 'active');
             if (active !== undefined && active !== null) {
                 comp.active = Boolean(active);
             }
 
-            // --- Set flipX ---
             const flipX = runner.getInputValue(node, 'flipX');
             if (flipX !== undefined && flipX !== null) {
-                // Terapkan flipX ke clip yang saat ini sedang aktif
                 const clip = comp.clips?.find(c => c.id === comp.currentClip);
                 if (clip) clip.flipX = Boolean(flipX);
             }

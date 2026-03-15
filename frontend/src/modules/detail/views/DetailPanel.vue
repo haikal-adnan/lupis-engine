@@ -6,7 +6,6 @@ import {
   UserPlus, ChevronRight, Star
 } from 'lucide-vue-next';
 
-// --- MOCK DATA: Game Details ---
 const game = ref({
   title: 'Void Explorer 2D',
   tagline: 'A relaxing space exploration RPG built entirely with Lupis Engine.',
@@ -46,7 +45,6 @@ const game = ref({
   tags: ['Space', 'Exploration', 'Pixel Art', 'Sci-fi', 'Relaxing']
 });
 
-// --- MOCK DATA: Creator ---
 const creator = ref({
   name: 'Haikal Adnan',
   username: '@haikaldev',
@@ -55,7 +53,6 @@ const creator = ref({
   isFollowing: false
 });
 
-// --- MOCK DATA: Sidebar Lists ---
 const moreByCreator = ref([
   { id: 1, title: 'Cosmic Quest', thumb: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=300&q=80', price: '$2.00' },
   { id: 2, title: 'Neon Racer', thumb: 'https://images.unsplash.com/photo-1592839719941-8e2651039d01?w=300&q=80', price: 'Free' },
@@ -66,7 +63,6 @@ const similarGames = ref([
   { id: 4, title: 'Galaxy Trader', author: 'IndieBob', thumb: 'https://images.unsplash.com/photo-1511512578047-dfb367046420?w=300&q=80' },
 ]);
 
-// --- MOCK DATA: Comments ---
 const comments = ref([
   { id: 1, user: 'RetroGamer99', avatar: 'https://i.pravatar.cc/150?u=12', text: 'This is incredibly smooth! The procedural generation is very impressive for a web game. Did you write a custom chunking system for Lupis Engine?', time: '2 hours ago', likes: 12 },
   { id: 2, user: 'SarahCodes', avatar: 'https://i.pravatar.cc/150?u=15', text: 'Love the art style and the music. Spent way too much time mining asteroids haha.', time: '1 day ago', likes: 5 },

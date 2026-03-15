@@ -199,7 +199,6 @@ const currentRectX = computed({
   get: () => sources.value[currentSourceId.value]?.x || 0,
   set: (val) => { 
     if (activeClipData.value && currentSourceId.value) {
-      // Jika source belum ada/terhapus, buatkan objek default-nya dulu
       if (!activeClipData.value.sources[currentSourceId.value]) {
         activeClipData.value.sources[currentSourceId.value] = { x: 0, y: 0, w: 0, h: 0 };
       }
@@ -286,10 +285,8 @@ const getFrameStyle = (sourceId) => {
   const assetUrl = assetStore.getAssetUrlById(clip.assetId);
   if (!assetUrl) return null;
 
-  // JIKA SOURCE MISSING, GUNAKAN DEFAULT X:0, Y:0, W:0, H:0
   const rect = clip.sources[sourceId] || { x: 0, y: 0, w: 0, h: 0 };
   
-  // Jika w/h 0, kembalikan null agar UI merender fallback text "Missing/SourceId"
   if (rect.w <= 0 || rect.h <= 0) return null;
 
   const containerSize = 60; 
@@ -452,7 +449,6 @@ const handleDeleteSource = (sourceToDelete) => {
   }
 };
 
-// Fitur Baru: Rename Clip via Prompt
 const renameClip = async () => {
   if (!activeClipData.value) return;
   const newName = await prompt({
@@ -468,7 +464,6 @@ const renameClip = async () => {
   }
 };
 
-// Fitur Baru: Delete All Sources (Ini saya beri konfirmasi karena sifatnya destruktif total, tapi kamu bisa hapus konfirmasinya jika mau)
 const deleteAllSources = async () => {
   if (!activeClipData.value) return;
   
@@ -481,9 +476,6 @@ const deleteAllSources = async () => {
   
   if (isConfirmed) {
     activeClipData.value.sources = {};
-    // Opsional: Kosongkan juga timeline jika sourcenya hilang semua
-    // activeClipData.value.frames = []; 
-    // currentFrameIndex.value = 0;
     syncAnimatorData();
   }
 };

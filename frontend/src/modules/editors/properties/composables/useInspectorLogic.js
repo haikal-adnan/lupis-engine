@@ -160,7 +160,6 @@ export function useInspectorLogic() {
 
         let finalVal = val;
         
-        // Aturan khusus Scale: Paksa minimal 1 dan selalu angka bulat
         if (propName === 'scaleX' || propName === 'scaleY') {
           finalVal = Math.max(1, Math.round(val));
         } 
@@ -169,7 +168,6 @@ export function useInspectorLogic() {
           finalVal = Math.round(val * factor) / factor;
         }
 
-        // Fungsi internal (Helper) untuk mengeksekusi update dan mengirim ke Engine
 
         const applyUpdate = (pName, pValue) => {
           if (isEditingMasterPrefab.value) {
@@ -185,7 +183,6 @@ export function useInspectorLogic() {
             sceneStore.updateComponentProp(id, compName, pName, pValue);
             
             if (prefabId.value) {
-              // Pengecualian: jangan trigger override jika yang diubah HANYA x atau y
               if (pName !== 'x' && pName !== 'y') {
                 sceneStore.updateComponentProp(id, compName, 'overridden', true);
               }
@@ -193,11 +190,8 @@ export function useInspectorLogic() {
           }
         };
 
-        // 1. Update properti utama yang sedang diubah user
         applyUpdate(propName, finalVal);
 
-        // 2. [FITUR BARU] Jika yang diubah adalah Scale dan tombol Lock aktif,
-        // otomatis copy nilai tersebut ke sumbu pasangannya (Uniform Scale).
         if (propName === 'scaleX' || propName === 'scaleY') {
           const comp = selectedEntity.value.components[compName];
           if (comp && comp.isScaleLocked) {
