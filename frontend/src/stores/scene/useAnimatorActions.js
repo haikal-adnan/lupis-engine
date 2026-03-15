@@ -30,7 +30,7 @@ export const animatorActions = {
   _cloneAnimatorNode(node) {
     const clone = JSON.parse(JSON.stringify(node));
     clone.id = `anim_${GenerateUUID().split('-')[0]}`;
-    delete clone.children; // Pengaman jika ada data usang
+    delete clone.children;
     delete clone._uiChildren;
     return clone;
   },
@@ -44,7 +44,7 @@ export const animatorActions = {
       type: 'category', 
       scriptId: `clip_category_${GenerateUUID()}`, 
       assetId: null,
-      parentId: null, // Kategori selalu null / root
+      parentId: null, 
       fps: 12, isLooping: true, frames: [], sources: {}, baseSize: { w: 32, h: 32 }, pivot: { x: 0.5, y: 1 },
       frameIndex: 0,
       isOpen: true
@@ -57,7 +57,6 @@ export const animatorActions = {
   animatorCreateClip(entityId, targetId = null) {
     const clips = [...this._getAnimatorClips(entityId)];
 
-    // Tentukan parentId berdasarkan target klik kanan
     let parentId = null;
     if (targetId) {
       const targetNode = clips.find(c => c.id === targetId);
@@ -71,7 +70,7 @@ export const animatorActions = {
       type: 'clip', 
       scriptId: `clip_${GenerateUUID()}`,
       assetId: null,
-      parentId: parentId, // Kaitkan ke kategori jika ada
+      parentId: parentId,
       fps: 12, isLooping: true, frames: [], sources: {}, baseSize: { w: 32, h: 32 }, pivot: { x: 0.5, y: 1 },
       frameIndex: 0
     };
@@ -89,7 +88,6 @@ export const animatorActions = {
       deletedNode = clips[nodeIndex];
       clips.splice(nodeIndex, 1);
       
-      // Cascade Delete: Jika kategori dihapus, hapus juga klip anak-anaknya
       if (deletedNode.type === 'category') {
          clips = clips.filter(c => c.parentId !== deletedNode.id);
       }
@@ -113,7 +111,6 @@ export const animatorActions = {
     const node = clips.find(c => c.id === nodeId);
     if (!node) return null;
 
-    // Jika yang dicopy adalah Kategori, bungkus juga anak-anaknya ke dalam bundle clipboard
     let cloneBundle = { node: JSON.parse(JSON.stringify(node)), children: [] };
     if (node.type === 'category') {
        cloneBundle.children = clips.filter(c => c.parentId === node.id).map(c => JSON.parse(JSON.stringify(c)));
@@ -138,7 +135,6 @@ export const animatorActions = {
        cloneNode.parentId = null; 
        clips.push(cloneNode);
        
-       // Re-parent anak-anaknya ke ID kategori yang baru dibuat
        if (children && children.length > 0) {
          children.forEach(child => {
            const childClone = this._cloneAnimatorNode(child);

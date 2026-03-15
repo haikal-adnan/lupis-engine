@@ -108,7 +108,6 @@ export default class UIRenderer {
 
                 const animator = comps.SpriteAnimator;
                 if (animator && animator.active) {
-                    // FIX: Pengecekan Array.isArray
                     const clip = Array.isArray(animator.clips) ? animator.clips.find(c => c.id === animator.currentClip && c.type === 'clip') : null;
                     
                     if (clip && clip.assetId && clip.frames && clip.frames.length > 0) {
@@ -154,7 +153,6 @@ export default class UIRenderer {
                     texture = world.assets.textures[finalAssetId];
                 }
 
-                // Cek apakah tekstur benar-benar ada
                 if (!texture) {
                     useCheckerboard = true;
                     if (finalW === 0) finalW = t.width || 64;

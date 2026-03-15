@@ -79,30 +79,24 @@ import { usePopImage } from '@/composables/usePopImage';
 
 const { state, closeImage } = usePopImage();
 
-// --- Zoom & Pan State ---
 const scale = ref(1);
 const position = ref({ x: 0, y: 0 });
 const isDragging = ref(false);
 const dragStart = ref({ x: 0, y: 0 });
 
-// Konstanta batas zoom
-const MIN_SCALE = 0.1; // 10%
-const MAX_SCALE = 30;  // 3000%
+const MIN_SCALE = 0.1; 
+const MAX_SCALE = 30;  
 
-// Reset view ke posisi dan ukuran normal
 const resetView = () => {
   scale.value = 1;
   position.value = { x: 0, y: 0 };
 };
 
-// Auto-reset setiap kali modal dibuka
 watch(() => state.value.isOpen, (newVal) => {
   if (newVal) resetView();
 });
 
-// --- Logic Zoom (Scroll) ---
 const handleZoom = (e) => {
-  // Kecepatan zoom (semakin kecil, semakin halus)
   const zoomSensitivity = 0.15;
   const delta = e.deltaY < 0 ? 1 : -1;
   
@@ -112,11 +106,9 @@ const handleZoom = (e) => {
   scale.value = newScale;
 };
 
-// Tombol Manual Zoom
 const zoomIn = () => { scale.value = Math.min(scale.value * 1.5, MAX_SCALE); };
 const zoomOut = () => { scale.value = Math.max(scale.value / 1.5, MIN_SCALE); };
 
-// --- Logic Pan (Drag) ---
 const startDrag = (e) => {
   isDragging.value = true;
   dragStart.value = {
@@ -137,7 +129,6 @@ const stopDrag = () => {
   isDragging.value = false;
 };
 
-// --- Keyboard Support (Tutup pakai tombol ESC) ---
 const handleKeydown = (e) => {
   if (e.key === 'Escape' && state.value.isOpen) {
     closeImage();

@@ -7,14 +7,14 @@ import DocsContent from '@/modules/docs/views/DocsContent.vue';
 
 const {
   sidebarNav,
-  activeContent,     // Diambil dari logic
+  activeContent,     
   tocHeadings,
   activeHeadingId,
   contentContainer,
   scrollToHeading,
   initToc,
   destroyToc,
-  changeDocument     // Tersedia jika ingin dipakai
+  changeDocument     
 } = useDocsLogic();
 
 onMounted(() => {

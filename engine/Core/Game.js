@@ -145,7 +145,6 @@ export default class Game {
             this._initializeEntityScripts();
             this.scriptSystem.startAll();
             
-            // [MODIFIKASI] Jalankan filter transisi audio sebelum autoplay dieksekusi
             this.audioSystem.handleSceneTransition(this.world.entities);
             this.audioSystem.startSceneAutoplay(this.world);
         }

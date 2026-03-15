@@ -16,7 +16,7 @@ export const BlueprintProgramming = {
       defaultData: { 
         settings: { headerTitle: 'Branch', headerColor: '#E65100', category: 'Programming' },
         data: {
-          branches: [] // Array kosong berarti hanya ada 1 If dan 1 False bawaan
+          branches: [] 
         }, 
         inputs: [
           { _id: 'exec_in', label: 'In', dataType: 'execution', color: '#ffffff' },
@@ -38,12 +38,12 @@ export const BlueprintProgramming = {
       defaultData: { 
         settings: { headerTitle: 'Switch', headerColor: '#E65100', category: 'Programming' },
         data: {
-          dataType: 'string', // Default tipe data
+          dataType: 'string', 
           cases: ['right', 'left'] 
         }, 
         inputs: [
           { _id: 'exec_in', label: 'In', dataType: 'execution', color: '#ffffff' },
-          { _id: 'value', label: 'Value', dataType: 'string', color: '#03A9F4' } // Akan kita ubah warna/tipenya dinamis di inspector
+          { _id: 'value', label: 'Value', dataType: 'string', color: '#03A9F4' } 
         ], 
         outputs: [
           { _id: 'out_case_0', label: 'Case "right"', dataType: 'execution', color: '#FFB300' },

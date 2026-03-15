@@ -52,14 +52,12 @@
 import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import { Film } from 'lucide-vue-next';
 import { useAnimatorLogic } from '@editors/animator/composables/useAnimatorLogic.js'
-import { useAssetStore } from '@/stores/useAssetStore'; // Pastikan path import sesuai
+import { useAssetStore } from '@/stores/useAssetStore'; 
 
 const panelRef = ref(null);
 
-// Inisialisasi store
 const assetStore = useAssetStore();
 
-// Hubungkan ke Animator Logic
 const { activeClipData, selectedEntity, currentFrameIndex } = useAnimatorLogic();
 const activeEntityId = computed(() => selectedEntity.value?._id);
 
@@ -135,37 +133,28 @@ onBeforeUnmount(() => {
   window.removeEventListener('resize', centerCamera);
 });
 
-// --- RENDER LOGIC ---
-
-// Menggunakan getter dari useAssetStore untuk mendapatkan URL yang valid
 const resolveAssetUrl = (assetId) => {
   if (!assetId) return '';
   return assetStore.getAssetUrlById(assetId) || '';
 };
 
-// Ambil data frame spesifik berdasarkan timeline saat ini
 const currentFrameData = computed(() => {
   const clip = activeClipData.value;
   if (!clip || !clip.frames || clip.frames.length === 0) return null;
   
-  // Dapatkan index yang aman
   const index = Math.min(Math.max(0, currentFrameIndex.value), clip.frames.length - 1);
   
-  // Ambil Source ID (string) dari array frames
   const sourceId = clip.frames[index];
   
-  // Kembalikan objek rect (x, y, w, h) dari dictionary sources
   return clip.sources ? clip.sources[sourceId] : null;
 });
 
 const frameStyle = computed(() => {
   const clip = activeClipData.value;
-  // Jika source missing di dictionary, jadikan 0 semua
   const frame = currentFrameData.value || { x: 0, y: 0, w: 0, h: 0 };
   
   if (!clip) return {};
 
-  // Gunakan nilai 0 langsung jika frame memang hilang/kosong
   const w = frame.w;
   const h = frame.h;
   
@@ -179,7 +168,6 @@ const frameStyle = computed(() => {
   const imageUrl = resolveAssetUrl(clip.assetId);
   const flipTransform = isFlipped ? ' scaleX(-1)' : '';
 
-  // Jika lebar/tinggi 0, sembunyikan sepenuhnya (display none / opacity 0)
   if (w === 0 || h === 0) {
     return { display: 'none' };
   }
@@ -194,7 +182,6 @@ const frameStyle = computed(() => {
   };
 });
 
-// Style untuk Chess Background ketika null
 const fallbackStyle = computed(() => {
   const clip = activeClipData.value;
   const w = clip?.baseSize?.w || 64; 

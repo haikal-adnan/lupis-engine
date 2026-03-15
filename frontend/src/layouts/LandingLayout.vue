@@ -1,30 +1,73 @@
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'; 
+import { useRouter, useRoute } from 'vue-router';
 import AuthPanel from '@/modules/auth/AuthPanel.vue';
+import BaseDropdown from "@ui/overlay/BaseDropdown.vue";
 import { useTheme } from "@commons/composables/useTheme.js";
+
+import { useAuthStore } from '@/stores/useAuthStore.js';
+import { useAuthActions } from '@/stores/scene/useAuthActions.js'; 
+
 import { 
-  Gamepad2, 
-  ChevronDown, 
-  MessageSquare, 
-  Github, 
-  Users,
-  ExternalLink
+  Gamepad2, ChevronDown, MessageSquare, Github, ExternalLink, Plus, User, Settings, LogOut 
 } from 'lucide-vue-next';
 
 const router = useRouter();
+const route = useRoute();
 const { initTheme } = useTheme();
 
-// --- Logika Autentikasi ---
-const isAuthOpen = ref(false);
-const authMode = ref('login');
+const authStore = useAuthStore();
+const authActions = useAuthActions();
 
-const openAuth = (mode) => {
-  authMode.value = mode;
-  isAuthOpen.value = true;
+const profileDropdown = ref(null);
+
+const goToDashboard = () => router.push('/dashboard');
+const goToProfile = () => router.push('/profile');
+const closeProfileMenu = () => profileDropdown.value?.close();
+
+const checkLoginQuery = async () => {
+  await nextTick(); 
+  if (route.query.action === 'login') {
+    authStore.openAuthModal('login');
+  }
 };
 
-// --- Logika Hover Dropdown Community ---
+const handleAuthSuccess = async () => {
+  const targetPath = route.query.redirect;
+  
+  authStore.closeAuthModal();
+  
+  await nextTick();
+  
+  if (targetPath) {
+    console.log("Redirecting to:", targetPath);
+    router.push(targetPath);
+  } else {
+    router.push('/dashboard');
+  }
+  
+  sessionStorage.setItem('lupis_initial_check', 'true');
+};
+
+watch(() => route.query.action, () => {
+  checkLoginQuery();
+});
+
+onMounted(() => {
+  initTheme();
+  
+  authActions.initAuth();
+
+  const hasCheckedIn = sessionStorage.getItem('lupis_initial_check');
+
+  if (authStore.isLoggedIn && route.name === 'Landing' && !hasCheckedIn) {
+    sessionStorage.setItem('lupis_initial_check', 'true');
+    router.push('/dashboard');
+  }
+
+  checkLoginQuery();
+});
+
 const isCommunityOpen = ref(false);
 let closeTimeout = null;
 
@@ -36,12 +79,8 @@ const openDropdown = () => {
 const closeDropdown = () => {
   closeTimeout = setTimeout(() => {
     isCommunityOpen.value = false;
-  }, 150); // Jeda kecil agar tidak langsung menutup saat kursor goyang
+  }, 150);
 };
-
-onMounted(() => {
-  initTheme();
-});
 
 onUnmounted(() => {
   if (closeTimeout) clearTimeout(closeTimeout);
@@ -50,13 +89,14 @@ onUnmounted(() => {
 
 <template>
   <AuthPanel 
-    :is-open="isAuthOpen" 
-    :initial-mode="authMode" 
-    @close="isAuthOpen = false" 
+    :is-open="authStore.isAuthOpen" 
+    :initial-mode="authStore.authMode" 
+    @close="authStore.closeAuthModal()" 
+    @auth-success="handleAuthSuccess"
+    
   />
 
   <div class="min-h-screen bg-background text-foreground font-sans flex flex-col selection:bg-indigo-500/30">
-    
     <header class="h-16 border-b border-border sticky top-0 bg-background z-50 px-6">
       <div class="max-w-6xl mx-auto w-full h-full flex items-center justify-between">
         
@@ -71,17 +111,9 @@ onUnmounted(() => {
           <router-link to="/catalog" class="hover:text-foreground transition-colors" active-class="text-foreground">Games</router-link>
           <router-link to="/docs" class="hover:text-foreground transition-colors" active-class="text-foreground">Docs</router-link>
           
-          <div 
-            class="relative h-16 flex items-center community-dropdown"
-            @mouseenter="openDropdown"
-            @mouseleave="closeDropdown"
-          >
-            <button 
-              class="flex items-center gap-1 hover:text-foreground transition-colors outline-none cursor-default"
-              :class="{ 'text-foreground': isCommunityOpen }"
-            >
-              Community
-              <ChevronDown class="w-3.5 h-3.5 transition-transform duration-200" :class="{ 'rotate-180': isCommunityOpen }" />
+          <div class="relative h-16 flex items-center community-dropdown" @mouseenter="openDropdown" @mouseleave="closeDropdown">
+            <button class="flex items-center gap-1 hover:text-foreground transition-colors outline-none cursor-default" :class="{ 'text-foreground': isCommunityOpen }">
+              Community <ChevronDown class="w-3.5 h-3.5 transition-transform duration-200" :class="{ 'rotate-180': isCommunityOpen }" />
             </button>
 
             <transition
@@ -121,74 +153,68 @@ onUnmounted(() => {
           <router-link to="/about" class="hover:text-foreground transition-colors" active-class="text-foreground">About</router-link>
         </nav>
 
-        <div class="flex items-center justify-end gap-4 flex-1">
-          <button @click="openAuth('login')" class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors hidden sm:block">
-            Sign In
-          </button>
-          <button @click="openAuth('register')" class="bg-indigo-500 hover:bg-indigo-600 text-white px-5 py-2 rounded-lg text-sm font-semibold transition-all shadow-md shadow-indigo-500/20 active:scale-95">
-            Get Started
-          </button>
-        </div>
+        <div class="flex items-center justify-end gap-3 sm:gap-4 flex-1">
+          
+          <template v-if="authStore.isLoggedIn">
+            <button 
+              @click="goToDashboard"
+              class="flex items-center gap-2 bg-indigo-500 hover:bg-indigo-600 text-white pl-3 pr-4 py-1.5 rounded-full text-sm font-bold transition-all shadow-sm shadow-indigo-500/20 active:scale-95 whitespace-nowrap hidden sm:flex"
+            >
+              <div class="bg-white/20 rounded-full p-0.5">
+                <Plus class="w-3.5 h-3.5" />
+              </div>
+              Make a Game
+            </button>
 
+            <BaseDropdown ref="profileDropdown" class="shrink-0 z-20">
+              <template #trigger="{ isOpen }">
+                <button 
+                  class="w-9 h-9 rounded-full border border-border bg-muted/50 flex items-center justify-center hover:border-indigo-500/50 hover:bg-indigo-500/5 transition-all group overflow-hidden outline-none"
+                  :class="{ 'ring-2 ring-indigo-500/50 border-indigo-500/50': isOpen }"
+                >
+                  <img v-if="authStore.currentUser?.avatar_url" :src="authStore.currentUser.avatar_url" class="w-full h-full object-cover rounded-full" />
+                  <User v-else class="w-4 h-4 text-muted-foreground group-hover:text-indigo-500 transition-colors" />
+                </button>
+              </template>
+
+              <template #default>
+                <div class="px-3 py-2 border-b border-border mb-1 bg-muted/30">
+                  <p class="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mb-0.5">Signed in as</p>
+                  <p class="text-sm font-bold truncate max-w-[150px] text-foreground">@{{ authStore.displayUsername }}</p>
+                </div>
+                
+                <button class="w-full text-left px-3 py-2 text-sm hover:bg-secondary transition-colors outline-none flex items-center gap-2 text-foreground" @click="goToProfile(); closeProfileMenu();">
+                  <User class="w-4 h-4 text-muted-foreground" /> My Profile
+                </button>
+
+                <button class="w-full text-left px-3 py-2 text-sm hover:bg-secondary transition-colors outline-none flex items-center gap-2 text-foreground" @click="closeProfileMenu">
+                  <Settings class="w-4 h-4 text-muted-foreground" /> Settings
+                </button>
+                
+                <div class="h-px bg-border my-1"></div>
+                
+                <button class="w-full text-left px-3 py-2 text-sm hover:bg-destructive/10 hover:text-destructive text-destructive transition-colors outline-none flex items-center gap-2" @click="authActions.logout(); closeProfileMenu();">
+                  <LogOut class="w-4 h-4" /> Sign Out
+                </button>
+              </template>
+            </BaseDropdown>
+          </template>
+
+          <template v-else>
+            <button @click="authStore.openAuthModal('login')" class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors hidden sm:block">
+              Sign In
+            </button>
+            <button @click="authStore.openAuthModal('register')" class="bg-indigo-500 hover:bg-indigo-600 text-white px-5 py-2 rounded-lg text-sm font-semibold transition-all shadow-md shadow-indigo-500/20 active:scale-95">
+              Get Started
+            </button>
+          </template>
+
+        </div>
       </div>
     </header>
 
     <main class="flex-1 flex flex-col items-center w-full">
       <slot />
     </main>
-
-    <footer class="w-full border-t border-border bg-background py-12 px-6 mt-auto">
-      <div class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12">
-        <div class="col-span-1 md:col-span-1 space-y-4">
-          <div class="flex items-center gap-2">
-            <Gamepad2 class="w-6 h-6 text-indigo-400" />
-            <span class="font-bold tracking-tight text-xl">Lupis Engine</span>
-          </div>
-          <p class="text-sm text-muted-foreground leading-relaxed">
-            Building the future of 2D game development with open-source power.
-          </p>
-        </div>
-        
-        <div class="flex flex-col gap-4">
-          <span class="text-xs font-bold uppercase tracking-[0.2em] text-foreground/50">Resources</span>
-          <nav class="flex flex-col gap-2.5 text-sm text-muted-foreground">
-            <router-link to="/docs" class="hover:text-indigo-400 transition-colors">Documentation</router-link>
-            <a href="#" class="hover:text-indigo-400 transition-colors">API Reference</a>
-            <a href="#" class="hover:text-indigo-400 transition-colors">Asset Store</a>
-          </nav>
-        </div>
-        
-        <div class="flex flex-col gap-4">
-          <span class="text-xs font-bold uppercase tracking-[0.2em] text-foreground/50">Community</span>
-          <nav class="flex flex-col gap-2.5 text-sm text-muted-foreground">
-            <a href="#" class="hover:text-indigo-400 transition-colors">Discord Server</a>
-            <a href="#" class="hover:text-indigo-400 transition-colors">GitHub Repo</a>
-            <a href="#" class="hover:text-indigo-400 transition-colors">Forum</a>
-          </nav>
-        </div>
-
-        <div class="flex flex-col gap-4">
-          <span class="text-xs font-bold uppercase tracking-[0.2em] text-foreground/50">Legal</span>
-          <nav class="flex flex-col gap-2.5 text-sm text-muted-foreground">
-            <a href="#" class="hover:text-indigo-400 transition-colors">Privacy Policy</a>
-            <a href="#" class="hover:text-indigo-400 transition-colors">License (MIT)</a>
-            <a href="#" class="hover:text-indigo-400 transition-colors">Brand Assets</a>
-          </nav>
-        </div>
-      </div>
-
-      <div class="max-w-6xl mx-auto border-t border-border mt-12 pt-8 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-muted-foreground">
-        <p>&copy; 2026 Lupis Engine. Made with passion for game developers.</p>
-        <div class="flex items-center gap-6">
-          <span class="flex items-center gap-2">
-            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-            v0.9.4-alpha
-          </span>
-          <a href="#" class="hover:text-foreground">Status</a>
-          <a href="#" class="hover:text-foreground">Twitter / X</a>
-        </div>
-      </div>
-    </footer>
-
   </div>
 </template>

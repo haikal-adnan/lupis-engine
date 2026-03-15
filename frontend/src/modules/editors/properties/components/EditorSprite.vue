@@ -122,7 +122,6 @@
 
 <script setup>
 import { computed, ref } from "vue";
-// Menambahkan icon Film untuk status animator
 import { Image, FolderSearch, Trash2, RefreshCw, Maximize, Film } from "lucide-vue-next"; 
 import { useInspectorLogic } from "@editors/properties/composables/useInspectorLogic.js"; 
 import { useAssetStore } from "@/stores/useAssetStore"; 
@@ -146,14 +145,12 @@ const assetStore = useAssetStore();
 
 const hasComponent = computed(() => !!selectedEntity.value?.components?.SpriteRenderer);
 
-// --- Cek Status Animator ---
 const isControlledByAnimator = computed(() => {
   if (!selectedEntity.value) return false;
   const animator = selectedEntity.value.components?.SpriteAnimator;
 
   return (animator && animator.active);
 });
-// ---------------------------
 
 const overridden = getComponentOverrideStatus('SpriteRenderer');
 

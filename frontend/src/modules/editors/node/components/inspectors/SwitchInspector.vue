@@ -124,19 +124,17 @@ const boolOptions = [
   { label: 'False', value: false }
 ];
 
-// Warna port/kabel untuk merepresentasikan tipe data
 const getTypeColor = (type) => {
     switch(type) {
-        case 'number': return '#B2FF59'; // Hijau muda
-        case 'boolean': return '#4CAF50'; // Hijau tua
-        default: return '#03A9F4'; // Biru (String)
+        case 'number': return '#B2FF59'; 
+        case 'boolean': return '#4CAF50'; 
+        default: return '#03A9F4'; 
     }
 };
 
 const syncStructure = (newCases, newDataType) => {
     const currentInputs = props.node.inputs || [];
     
-    // Perbarui pin Value to Check sesuai tipe data baru
     const valColor = getTypeColor(newDataType);
     
     const execIn = currentInputs.find(i => i._id === 'exec_in') || { _id: 'exec_in', label: 'In', dataType: 'execution', color: '#ffffff' };
@@ -170,10 +168,9 @@ const syncStructure = (newCases, newDataType) => {
 const updateDataType = (newType) => {
     if (newType === dataType.value) return;
 
-    // Jika ganti tipe, reset cases agar tipe data lama tidak bikin bug
     let newCases = [];
     if (newType === 'boolean') {
-        newCases = [true, false]; // Default untuk boolean langsung terisi 2
+        newCases = [true, false]; 
     } else if (newType === 'number') {
         newCases = [0, 1];
     } else {

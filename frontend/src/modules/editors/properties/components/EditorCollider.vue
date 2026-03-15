@@ -129,7 +129,6 @@ const typeOptions = [
   { label: 'Trigger (Zone)', value: 'trigger' }
 ]
 
-// 1. Ambil nilai Transform width & height secara reaktif
 const transformWidth = computed(() => selectedEntity.value?.components?.Transform?.width)
 const transformHeight = computed(() => selectedEntity.value?.components?.Transform?.height)
 
@@ -138,8 +137,6 @@ const syncSizeToTransform = () => {
   const transform = selectedEntity.value.components.Transform
   if (!transform) return
 
-  // Menggunakan setter otomatis dari bindComponentProp agar otomatis 
-  // tersimpan & terkirim ke Engine, serta menangani Prefab/Scene
   width.value = transform.width
   height.value = transform.height
   offsetX.value = 0
@@ -148,14 +145,12 @@ const syncSizeToTransform = () => {
   markAsOverridden()
 }
 
-// 2. Pantau perubahan autoFit dari false ke true
 watch(autoFit, (isAutoFit) => {
   if (isAutoFit) {
     syncSizeToTransform()
   }
 })
 
-// 3. Pantau perubahan ukuran Transform agar collider ikut membesar/mengecil real-time
 watch([transformWidth, transformHeight], ([newWidth, newHeight]) => {
   if (autoFit.value) {
     if (newWidth !== undefined && width.value !== newWidth) {

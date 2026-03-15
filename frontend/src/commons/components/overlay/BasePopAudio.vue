@@ -94,7 +94,6 @@ const isLoading = ref(true);
 const currentTime = ref(0);
 const duration = ref(0);
 
-// Web Audio API Global (Persisten)
 let audioCtx = null;
 let analyser = null;
 let source = null;
@@ -108,7 +107,6 @@ watch(() => state.value.isOpen, async (isOpen) => {
     currentTime.value = 0;
     duration.value = 0;
     
-    // Tunggu canvas di-render
     await nextTick(); 
     
     if (audioRef.value) {
@@ -128,7 +126,6 @@ const togglePlay = () => {
   if (!audioRef.value) return;
 
   if (audioRef.value.paused) {
-    // 2. Browser Modern wajib me-resume AudioContext setelah interaksi klik
     if (audioCtx && audioCtx.state === 'suspended') {
       audioCtx.resume();
     }
@@ -175,16 +172,13 @@ const formatTime = (seconds) => {
   return `${m}:${s.toString().padStart(2, '0')}`;
 };
 
-// --- Web Audio API Visualizer ---
 const initVisualizer = () => {
   if (!audioRef.value || !canvasRef.value) return;
 
-  // 3. Hanya set-up 1x selama komponen hidup untuk menghindari "InvalidStateError"
   if (!isVisualizerSetup) {
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     analyser = audioCtx.createAnalyser();
     
-    // Hubungkan node
     source = audioCtx.createMediaElementSource(audioRef.value);
     source.connect(analyser);
     analyser.connect(audioCtx.destination);
@@ -193,19 +187,16 @@ const initVisualizer = () => {
     isVisualizerSetup = true;
   }
 
-  // Hentikan animasi sebelumnya kalau ada, lalu mulai baru
   if (animationId) cancelAnimationFrame(animationId);
   drawVisualizer();
 };
 
 const drawVisualizer = () => {
-  // Aman jika canvas hilang karena modal ditutup
   if (!canvasRef.value || !analyser || !state.value.isOpen) return;
 
   const canvas = canvasRef.value;
   const ctx = canvas.getContext('2d');
   
-  // Set ukuran aslinya agar tidak blur
   canvas.width = canvas.offsetWidth;
   canvas.height = canvas.offsetHeight;
 
@@ -268,7 +259,6 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', handleKeydown);
   cleanupAudio();
-  // Clean up AudioContext agar tidak bocor memori
   if (audioCtx && audioCtx.state !== 'closed') {
     audioCtx.close();
   }

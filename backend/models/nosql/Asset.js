@@ -8,7 +8,6 @@ const AssetSchema = new mongoose.Schema({
   name: { type: String, required: true },
   type: { 
     type: String, 
-    // 1. Tambahkan 'audio' ke dalam enum agar Mongoose tidak menolak data
     enum: ['texture', 'sound', 'audio', 'font'], 
     required: true 
   },
@@ -20,7 +19,6 @@ const AssetSchema = new mongoose.Schema({
     size: { type: Number },
     dimensions: { w: Number, h: Number },
     filterMode: { type: String, default: 'linear' },
-    // 2. Tambahkan property duration untuk menampung panjang audio
     duration: { type: Number } 
   }
 }, { 

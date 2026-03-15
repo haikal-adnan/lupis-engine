@@ -7,9 +7,9 @@ import DocsPanel from '@/modules/docs/DocsPanel.vue'
 import ProfilePanel from '@/modules/profile/views/ProfilePanel.vue'
 import CatalogPanel from '@/modules/catalog/views/CatalogPanel.vue'
 import DetailPanel from '@/modules/detail/views/DetailPanel.vue'
+import VerifyOtpPage from '@/modules/auth/views/VerifyOtpPage.vue'
 
 const routes = [
-  // --- LANDING LAYOUT ---
   {
     path: '/',
     name: 'Landing',
@@ -23,7 +23,6 @@ const routes = [
     meta: { layout: 'LandingLayout' } 
   },
 
-  // --- MAIN LAYOUT ---
   {
     path: '/docs',
     name: 'Docs',
@@ -48,24 +47,25 @@ const routes = [
     component: DetailPanel,
     meta: { layout: 'MainLayout' }
   },
-
-  // --- DASHBOARD LAYOUT ---
+  {
+    path: '/verify-otp',
+    name: 'VerifyOTP',
+    component: VerifyOtpPage,
+  },
   {
     path: '/dashboard',
     name: 'Dashboard',
     component: DashboardPage,
-    meta: { layout: 'MainLayout' }
+    meta: { layout: 'MainLayout', requiresAuth: true }
   },
 
-  // --- EDITOR LAYOUT ---
   {
     path: '/editor/:idProject', 
     name: 'Editor',
     component: EditorView,   
     props: true, 
+    meta: { requiresAuth: true }
   },
-
-  // --- FALLBACK ---
   {
     path: '/:pathMatch(.*)*',
     redirect: '/'
@@ -80,4 +80,16 @@ const router = createRouter({
   }
 })
 
+router.beforeEach((to, from) => {
+  const isAuthenticated = !!localStorage.getItem('lupis_auth_token');
+
+  if (to.meta.requiresAuth && !isAuthenticated) {
+    return { 
+      name: 'Landing', 
+      query: { action: 'login', redirect: to.fullPath } 
+    };
+  }
+  
+  return true; 
+});
 export default router

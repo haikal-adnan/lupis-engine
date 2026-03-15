@@ -158,7 +158,7 @@ export function useAnimatorLogic() {
       set: (val) => {
         if (activeClipData.value) {
           activeClipData.value.frameIndex = val;
-          syncAnimatorData(); // Otomatis tersimpan ke komponen setiap bergeser
+          syncAnimatorData(); 
         }
       }
     });
@@ -184,14 +184,12 @@ export function useAnimatorLogic() {
   const renameNode = async (id) => {
     if (!activeEntityId.value) return;
 
-    // Cari node yang ingin direname untuk mendapatkan nama saat ini
     const nodeToRename = realClipsData.value.find(c => c.id === id);
     if (!nodeToRename) return;
 
     const isCategory = nodeToRename.type === 'category';
     const labelType = isCategory ? 'Kategori' : 'Klip';
 
-    // Panggil usePrompt
     const newName = await prompt({
       title: `Ganti Nama ${labelType}`,
       message: `Masukkan nama baru untuk ${labelType.toLowerCase()} ini:`,
@@ -199,7 +197,6 @@ export function useAnimatorLogic() {
       confirmText: 'Simpan'
     });
 
-    // Validasi hasil input (tidak null, tidak kosong, dan tidak sama dengan sebelumnya)
     if (newName !== null && newName.trim() !== '' && newName !== nodeToRename.name) {
       sceneStore.animatorRenameNode(activeEntityId.value, id, newName.trim());
       showPop({

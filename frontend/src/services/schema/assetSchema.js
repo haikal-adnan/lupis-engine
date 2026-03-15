@@ -14,7 +14,6 @@ export const createAsset = (data = {}) => {
     
     fileKey: data.fileKey || "",
 
-    // Meta dikonfigurasi berdasarkan tipe aset
     meta: {
       extension: meta.extension || "",
       size: meta.size || 0,
@@ -28,7 +27,7 @@ export const createAsset = (data = {}) => {
       ...(isAudio && {
         duration: meta.duration || 0
       }),
-      ...meta // Tangkap sisa meta dari DB jika ada
+      ...meta 
     },
 
     localBlob: data.localBlob || null,

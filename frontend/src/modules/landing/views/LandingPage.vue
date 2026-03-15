@@ -1,44 +1,30 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import AuthPanel from '@/modules/auth/AuthPanel.vue'
 import { useTheme } from "@commons/composables/useTheme.js";
 
+import { useAuthStore } from '@/stores/useAuthStore.js'; 
+
 import { 
-  Gamepad2, 
-  Github, 
-  Sparkles, 
-  ArrowRight, 
-  LayoutGrid, 
-  Paintbrush, 
-  Layers, 
-  Globe, 
-  Cpu, 
-  Zap,
-  MessageSquare,
-  PlaySquare
+  Gamepad2, Github, Sparkles, ArrowRight, LayoutGrid, Paintbrush, Layers, Globe, Cpu, Zap, MessageSquare, PlaySquare
 } from 'lucide-vue-next';
 
 const router = useRouter();
-
 const { initTheme } = useTheme();
+
+const authStore = useAuthStore();
 
 onMounted(() => {
   initTheme();
 });
 
-const goToDashboard = () => {
-  router.push('/dashboard');
+const handleTryInBrowser = () => {
+  if (authStore.isLoggedIn) {
+    router.push('/dashboard');
+  } else {
+    authStore.openAuthModal('login');
+  }
 };
-
-const isAuthOpen = ref(false);
-const authMode = ref('login');
-
-const openAuth = (mode) => {
-  authMode.value = mode;
-  isAuthOpen.value = true;
-};
-
 </script>
 
 <template>
@@ -65,7 +51,7 @@ const openAuth = (mode) => {
         Download for Free <ArrowRight class="w-4 h-4" />
       </button>
       <button 
-        @click="goToDashboard"
+        @click="handleTryInBrowser"
         class="w-full sm:w-auto flex items-center justify-center gap-2 bg-secondary/50 hover:bg-secondary border border-border text-foreground px-8 py-3.5 rounded-xl text-base font-semibold transition-all"
       >
         Try in Browser

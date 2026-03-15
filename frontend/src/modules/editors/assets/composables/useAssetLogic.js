@@ -150,7 +150,6 @@ export function useAssetLogic() {
       const imgUrl = assetStore.getAssetUrlById(asset._id);
       showImage(imgUrl, asset.displayName || asset.name);
     } 
-    // TAMBAHKAN KONDISI UNTUK AUDIO DI SINI
     else if (['audio', 'sound'].includes(asset.type)) {
       const audioUrl = assetStore.getAssetUrlById(asset._id);
       showAudio(audioUrl, asset.displayName || asset.name);

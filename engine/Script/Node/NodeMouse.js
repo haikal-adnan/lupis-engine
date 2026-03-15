@@ -5,7 +5,6 @@ export const NodeMouse = {
             const basedCollider = runner.getInputValue(node, 'based_collider') || false;
             const entity = runner.resolveEntity(targetId);
 
-            // Periksa apakah entity memiliki Transform biasa ATAU UITransform
             const hasTransform = entity && entity.components && entity.components.Transform;
             const hasUITransform = entity && entity.components && entity.components.UITransform;
 
@@ -28,22 +27,17 @@ export const NodeMouse = {
             let drawX = t.x || 0;
             let drawY = t.y || 0;
 
-            // Kalkulasi Posisi Mouse & Posisi Entity berdasarkan Space
             if (isUI) {
-                // Kalkulasi UI Space (Screen Space)
                 const uiSettings = runner.game.world.settings?.ui || { width: 1920, height: 1080 };
                 
-                // Konversi pointer dari resolusi Canvas aktual ke resolusi patokan UI (misal 1920x1080)
                 targetPointerX = (pointer.x / canvas.width) * uiSettings.width;
                 targetPointerY = (pointer.y / canvas.height) * uiSettings.height;
 
-                // Kalkulasi jangkar UI seperti di UIRenderer
                 const anchorX = t.anchorX ?? 0.5;
                 const anchorY = t.anchorY ?? 0.5;
                 drawX = (uiSettings.width * anchorX) + (t.x || 0);
                 drawY = (uiSettings.height * anchorY) + (t.y || 0);
             } else {
-                // Kalkulasi World Space
                 const halfW = canvas.width / 2;
                 const halfH = canvas.height / 2;
                 
@@ -56,7 +50,6 @@ export const NodeMouse = {
 
             let bounds = { x: 0, y: 0, w: 0, h: 0 };
 
-            // Kalkulasi Bounding Box
             if (!isUI && basedCollider && entity.components.Collider) {
                 const c = entity.components.Collider;
                 const pivotOffsetX = (t.width * (t.scaleX ?? 1)) * (t.pivotX ?? 0.5);
@@ -85,7 +78,6 @@ export const NodeMouse = {
             const isHovering = targetPointerX >= left && targetPointerX <= right && 
                                targetPointerY >= top && targetPointerY <= bottom;
 
-            // --- State Management ---
             if (!node._interactStates) node._interactStates = {};
             const entityId = entity.id || entity._id;
             

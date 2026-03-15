@@ -95,7 +95,6 @@ watch(() => model.value, (newVal) => {
   }
 })
 
-// Memastikan angka bersih dari artifact floating point (0.30000000004)
 function formatValue(val) {
   if (val === null || val === undefined || val === '') return ''
   const num = parseFloat(val)
@@ -140,8 +139,6 @@ function updateModel(val) {
   localInput.value = finalVal
 }
 
-// --- LOGIC SCRUBBING ---
-
 function startScrub(event) {
   isDragging.value = true
   startX = event.clientX
@@ -160,18 +157,13 @@ function onMouseMove(event) {
   if (event.shiftKey) modifier = 10
   if (event.altKey) modifier = 0.1
 
-  // Sensitivitas murni mengatur "berat" kursor
-  // Kita hitung berapa banyak 'step' yang dilewati berdasarkan jarak pixel
   const pixelsPerStep = 5 / props.scrubSensitivity
   const stepsToMove = Math.round((deltaX / pixelsPerStep) * modifier)
   
-  // Nilai baru adalah Start + (Jumlah Step * Besar Step)
-  // Ini mengunci nilai agar selalu kelipatan step, bukan angka acak
   let newValue = startValue + (stepsToMove * props.step)
   
   newValue = normalizeValue(newValue)
   
-  // Update UI & Model dengan pembulatan bersih
   const cleanedValue = formatValue(newValue)
   model.value = cleanedValue
   localInput.value = cleanedValue

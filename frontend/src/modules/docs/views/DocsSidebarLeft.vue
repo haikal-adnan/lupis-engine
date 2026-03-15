@@ -9,10 +9,8 @@ const props = defineProps({
   }
 });
 
-// Melacak index menu yang terbuka (Secara default, kita buka semua menu di awal)
 const openMenus = ref(props.navItems.map((_, index) => index));
 
-// Fungsi untuk toggle (buka/tutup) menu
 const toggleMenu = (index) => {
   if (openMenus.value.includes(index)) {
     openMenus.value = openMenus.value.filter(i => i !== index);

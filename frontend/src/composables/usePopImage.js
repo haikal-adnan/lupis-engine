@@ -17,7 +17,6 @@ export function usePopImage() {
 
   const closeImage = () => {
     state.value.isOpen = false;
-    // Beri jeda agar animasi selesai sebelum menghapus src gambar
     setTimeout(() => {
       state.value.imageUrl = '';
     }, 200);

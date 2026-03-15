@@ -29,7 +29,6 @@ export const useAssetStore = defineStore('asset', {
         if (asset.type === 'font') {
           extension = '.png';
         } else if (['texture', 'audio', 'sound'].includes(asset.type)) {
-          // Tambahkan audio dan sound ke sini agar ekstensinya ikut terbaca
           extension = asset.meta?.extension || '';
         }
         

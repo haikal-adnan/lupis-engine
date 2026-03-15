@@ -60,8 +60,6 @@ export class TransformOperator {
                 if (t.x !== newX || t.y !== newY) {
                     t.x = newX;
                     t.y = newY;
-                    // Hapus atau komentari baris di bawah agar translate tidak trigger override
-                    // t.isOverridden = true; 
                     changed = true;
                 }
             }
@@ -162,14 +160,12 @@ export class TransformOperator {
         const c = Math.cos(-rRad);
         const s = Math.sin(-rRad);
         
-        // Jarak drag mouse diubah ke koordinat lokal objek
         const localDx = dx * c - dy * s;
         const localDy = dx * s + dy * c;
 
         const safeScaleX = Math.abs(item.sx) < 0.001 ? 0.001 : Math.abs(item.sx);
         const safeScaleY = Math.abs(item.sy) < 0.001 ? 0.001 : Math.abs(item.sy);
 
-        // 1. Hitung Perubahan Lebar/Tinggi VISUAL (di layar) berdasarkan tarikan mouse
         let dVisualW = 0, dVisualH = 0;
         let anchorX = null, anchorY = null; 
 
@@ -178,16 +174,13 @@ export class TransformOperator {
         if (resizeType.includes('n')) { dVisualH = -localDy; anchorY = 1; } 
         if (resizeType.includes('s')) { dVisualH = localDy;  anchorY = 0; } 
 
-        // Lebar & Tinggi visual kotor (sebelum snap)
         let rawVisualW = (item.w * safeScaleX) + dVisualW;
         let rawVisualH = (item.h * safeScaleY) + dVisualH;
 
-        // 2. Terapkan Snapping pada VISUAL, bukan pada internal width
         if (shouldSnap) {
             let snapW = gridSize;
             let snapH = gridSize;
 
-            // ATURAN EMAS TILEMAP: Visual harus snap kelipatan (TileSize * Scale)
             if (e.components.Tilemap) {
                 const tileW = e.components.Tilemap.tileWidth || gridSize;
                 const tileH = e.components.Tilemap.tileHeight || gridSize;
@@ -205,7 +198,6 @@ export class TransformOperator {
             }
         }
 
-        // 3. Konversi kembali Visual yang sudah di-snap menjadi Internal Width (Dibagi Scale)
         let rawW = rawVisualW / safeScaleX;
         let rawH = rawVisualH / safeScaleY;
 
@@ -218,7 +210,6 @@ export class TransformOperator {
         const newW = Math.max(1, Math.round(Math.abs(rawW)));
         const newH = Math.max(1, Math.round(Math.abs(rawH)));
 
-        // 4. Hitung pergeseran posisi (Shift) berdasarkan lebar yang benar-benar berubah
         const dW = newW - item.w;
         const dH = newH - item.h;
         const dW_Visual = dW * safeScaleX * (startFlipX !== newFlipX ? -1 : 1);
@@ -239,7 +230,7 @@ export class TransformOperator {
             t.flipY = newFlipY;
             t.width = newW;
             t.height = newH;
-            t.scaleX = safeScaleX; // Scale tidak berubah saat resize canvas
+            t.scaleX = safeScaleX; 
             t.scaleY = safeScaleY;
             t.x = newX;
             t.y = newY;

@@ -6,7 +6,6 @@ export const NodePhysics = {
 
             const phys = target.components.Physics;
 
-            // Mapping output berdasarkan key yang dipilih di UI
             switch (outputKey) {
                 case 'isGrounded':
                     return phys.isGrounded;

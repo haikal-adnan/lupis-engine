@@ -1,10 +1,10 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { useProjectStore } from '@/stores/useProjectStore'
 import { useAppInit } from '@/composables/useAppInit'
+import { useAuthActions } from '@/stores/scene/useAuthActions.js'; 
 
-// 1. Import ke-4 Layout kamu di sini
 import LandingLayout from '@/layouts/LandingLayout.vue';
 import MainLayout from '@/layouts/MainLayout.vue';
 
@@ -16,17 +16,21 @@ import BasePopAlert from '@ui/overlay/BasePopAlert.vue';
 import BasePopImage from '@ui/overlay/BasePopImage.vue';
 import BasePopAudio from '@ui/overlay/BasePopAudio.vue';
 
-useAppInit()
-const projectStore = useProjectStore()
+const authActions = useAuthActions();
+
+onMounted(() => {
+  authActions.initAuth();
+});
+
+useAppInit();
+const projectStore = useProjectStore();
 const route = useRoute();
 
-// 2. Mapping nama layout dari router.js ke komponen aslinya
 const layoutComponents = {
   LandingLayout,
   MainLayout,
 };
 
-// 3. Ambil komponen layout, default ke div biasa jika tidak ada
 const layout = computed(() => {
   return layoutComponents[route.meta.layout] || 'div';
 });

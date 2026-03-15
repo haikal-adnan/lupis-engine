@@ -16,7 +16,6 @@ export default class PhysicsSystem {
         for (let i = 0; i < entities.length; i++) {
             const entity = entities[i];
 
-            // Filter entitas yang valid untuk diproses fisika
             if (entity.active === false) continue;
             if (entity.layerId && inactiveLayers.has(entity.layerId)) continue;
             if (!entity.components.Physics || !entity.components.Physics.enabled) continue;
@@ -24,34 +23,26 @@ export default class PhysicsSystem {
 
             const phys = entity.components.Physics;
 
-            // Reset info kolisi setiap frame
             phys.collisionInfo = { hitSolid: null, hitSolidX: null, hitSolidY: null, hitTrigger: null };
 
-            // 1. Terapkan Gravitasi (Y Positif = Jatuh)
             if (phys.gravityScale !== 0) {
                 phys.velocityY += GLOBAL_GRAVITY * phys.gravityScale * dt;
             }
 
-            // 2. Terapkan Drag/Gesekan (Hanya pada sumbu X jika ada gravitasi)
             if (phys.drag > 0) {
                 const effectiveDrag = GLOBAL_DRAG * phys.drag;
                 const damping = Math.max(0, 1 - (effectiveDrag * dt));
                 
                 phys.velocityX *= damping;
 
-                // Jika objek tidak punya gravitasi (misal: peluru), drag berlaku di kedua sumbu
                 if (phys.gravityScale === 0) {
                     phys.velocityY *= damping;
                 }
             }
 
-            
-
-            // 3. Clamp Kecepatan agar tidak menembus dinding (Tunneling)
             phys.velocityX = Math.max(-this.MAX_VELOCITY, Math.min(this.MAX_VELOCITY, phys.velocityX));
             phys.velocityY = Math.max(-this.MAX_VELOCITY, Math.min(this.MAX_VELOCITY, phys.velocityY));
 
-            // 4. Kalkulasi Pergerakan & Resolusi Kolisi
             const dx = phys.velocityX * dt;
             const dy = phys.velocityY * dt;
 
@@ -68,35 +59,28 @@ export default class PhysicsSystem {
                 phys.facingDirection = dx > 0 ? "right" : "left";
             }
 
-            // 5. Cek apakah menyentuh lantai (Grounded) & Triggers
             this._checkGrounded(entity, phys, inactiveLayers);
             this._checkTriggers(entity, phys);
 
-            // 6. Resolusi Velocity setelah Grounded
-            // Jika di tanah dan sedang bergerak turun, hentikan velocity Y
             if (phys.isGrounded && phys.velocityY > 0) {
                 phys.velocityY = 0;
             }
-            // Jika menabrak atap saat melompat, hentikan velocity Y
             if (phys.velocityY < 0 && phys.collisionInfo.hitSolidY) {
                 phys.velocityY = 0;
             }
 
-            // 7. Penentuan Movement State (Untuk Animasi)
             this._updateMovementState(phys);
         }
     }
 
     _updateMovementState(phys) {
         if (phys.isGrounded) {
-            // Di tanah: Tentukan antara Idle atau Running
-            if (Math.abs(phys.velocityX) > 5) { // Threshold 5 agar tidak flicker saat berhenti
+            if (Math.abs(phys.velocityX) > 5) { 
                 phys.movementState = "running";
             } else {
                 phys.movementState = "idle";
             }
         } else {
-            // Di udara (On Air): Tentukan antara Jumping atau Falling
             if (phys.velocityY < 0) {
                 phys.movementState = "jumping";
             } else {
@@ -113,7 +97,6 @@ export default class PhysicsSystem {
             return;
         }
 
-        // Sensor sedikit lebih sempit dari badan (inset) dan menjorok 1-2 pixel ke bawah (reach)
         const inset = 2; 
         const reach = 2; 
         const sensor = {
@@ -135,7 +118,6 @@ export default class PhysicsSystem {
             if (other === entity || other.active === false) continue;
             if (other.layerId && inactiveLayers.has(other.layerId)) continue;
 
-            // Cek tabrakan dengan Tilemap
             if (other.components.Tilemap && other.components.Tilemap.isSolid) {
                 const hitBounds = colliderSys._getTilemapHitBounds(sensor, other);
                 if (hitBounds) {
@@ -143,7 +125,6 @@ export default class PhysicsSystem {
                     break;
                 }
             } 
-            // Cek tabrakan dengan Collider Solid biasa
             else {
                 const col = other.components.Collider;
                 if (!col || !col.enabled || col.type !== 'solid') continue;

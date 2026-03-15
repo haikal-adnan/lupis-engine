@@ -4,12 +4,12 @@ import { useRouter } from 'vue-router';
 import { useProjectBackend } from '@/services/api/backend/useProjectBackend.js';
 import { useProjectStore } from '@/stores/useProjectStore';
 import { useProjectMenu } from '@dashboards/composables/useProjectMenu.js';
+import { useAuthActions } from '@/stores/scene/useAuthActions.js'; 
 
 import CreateNewProjectPop from '@dashboards/components/CreateNewProjectPop.vue';
 import BaseContextMenu from '@/commons/components/overlay/BaseContextMenu.vue';
 import { Plus, Gamepad2, FolderOpen } from 'lucide-vue-next';
 
-// --- Props dari MainLayout ---
 const props = defineProps({
   searchQuery: {
     type: String,
@@ -20,20 +20,27 @@ const props = defineProps({
 const router = useRouter();
 const { getProjectsByOwnerId, createProject } = useProjectBackend();
 const projectStore = useProjectStore();
+const { getCurrentUser } = useAuthActions(); 
 
-// --- State ---
 const projects = ref([]);
 const isLoading = ref(true);
 const errorMessage = ref('');
 const isCreatePopupOpen = ref(false);
-const OWNER_ID = 'dev_2026';
 
-// --- Fetching Logic ---
+const currentUser = ref(getCurrentUser());
+
 const fetchProjects = async () => {
+  if (!currentUser.value || !currentUser.value.id) {
+    errorMessage.value = "Sesi pengguna tidak ditemukan. Silakan login kembali.";
+    isLoading.value = false;
+    return;
+  }
+
   isLoading.value = true;
   errorMessage.value = '';
+  
   try {
-    const data = await getProjectsByOwnerId(OWNER_ID);
+    const data = await getProjectsByOwnerId(currentUser.value.id);
     projects.value = data;
   } catch (error) {
     console.error(error);
@@ -53,15 +60,16 @@ const openProject = async (projectId) => {
   }
 };
 
-// --- Context Menu Logic ---
 const { menu, handleContextMenu, closeMenu, contextMenuItems } = useProjectMenu(fetchProjects, openProject);
 
 onMounted(() => {
+  if (!currentUser.value) {
+    router.push({ name: 'Landing', query: { action: 'login' } });
+    return;
+  }
   fetchProjects();
 });
 
-// --- Computed Filter ---
-// Menggunakan props.searchQuery yang diketik dari header MainLayout
 const filteredProjects = computed(() => {
   if (!props.searchQuery) return projects.value;
   return projects.value.filter(p => 
@@ -69,10 +77,14 @@ const filteredProjects = computed(() => {
   );
 });
 
-// --- Create Logic ---
 const handleCreateProject = async (projectData) => {
   isCreatePopupOpen.value = false;
   
+  if (!currentUser.value || !currentUser.value.id) {
+    alert("Anda harus login untuk membuat proyek baru.");
+    return;
+  }
+
   if (projectData.template !== 'Empty Project') {
     alert("Maaf, saat ini backend baru mendukung pembuatan 'Empty Project'.");
     return;
@@ -82,7 +94,7 @@ const handleCreateProject = async (projectData) => {
 
   try {
     const newProject = await createProject({
-      userId: OWNER_ID, 
+      userId: currentUser.value.id,
       projectName: projectData.name,
       description: projectData.description,
       type: "empty"

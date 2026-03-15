@@ -21,29 +21,27 @@ export function usePrefabActions() {
   const createPrefab = (name = "New Prefab", sourceEntityData = null) => {
     try {
         let dataPayload = {};
-        let type = 'world'; // Default type
+        let type = 'world'; 
 
         if (sourceEntityData) {
           const cleanData = JSON.parse(JSON.stringify(sourceEntityData));
           ['_id', 'parentId', 'layerId', 'orderIndex', 'prefabId'].forEach(k => delete cleanData[k]);
           
-          // Ambil tipe dari entity yang dipilih (saat "Use as Prefab" diklik)
           if (cleanData.type) type = cleanData.type; 
           
           dataPayload = { data: cleanData };
         }
 
-        // PANGGIL SCHEMA DI SINI
         const newPrefab = createPrefabSchema({
           _id: GenerateUUID(),
           projectId: projectStore.project?._id || null,
-          name: name, // Parameter nama diteruskan ke Root
-          type: type, // Parameter tipe diteruskan ke Root
+          name: name, 
+          type: type, 
           ...dataPayload
         });
 
         store.addPrefab(newPrefab);
-        projectStore.markAsDirty(); // JANGAN LUPA INI!
+        projectStore.markAsDirty(); 
 
         showPop({ title: 'Success', message: `Prefab "${name}" created.`, type: 'success' });
         return newPrefab;
@@ -86,7 +84,6 @@ export function usePrefabActions() {
     });
 
     if (newName && newName.trim() !== "" && newName !== prefab.name) {
-      // 3. Update nama luar (prefab) DAN nama dalam (root entity data) agar sinkron
       const updatedEntityData = { ...prefab.data, name: newName };
       
       store.updatePrefab(prefabId, { 
@@ -94,7 +91,6 @@ export function usePrefabActions() {
         data: updatedEntityData 
       });
 
-      // 4. FLAG PROJECT SEBAGAI DIRTY! Ini krusial agar backend tahu data harus disave.
       projectStore.markAsDirty();
 
       showPop({ title: 'Renamed', message: `Prefab renamed to "${newName}".`, type: 'success' });
