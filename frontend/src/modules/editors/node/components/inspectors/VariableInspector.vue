@@ -9,7 +9,6 @@
         <div class="py-1">
           <div class="flex items-center justify-between group">
             <div class="flex items-center gap-2 overflow-hidden">
-
               <div class="flex flex-col min-w-0">
                 <span class="text-xs font-bold truncate">{{ targetVariable.name }}</span>
                 <span class="text-[10px] text-muted-foreground uppercase tracking-tight">
@@ -22,7 +21,11 @@
 
         <PropertyRow v-if="node.type === 'variable_set'" label="Assign Value">
           
-          <div class="relative w-full">
+          <div v-if="isComplexType" class="text-[10px] text-muted-foreground italic py-1.5 px-2 bg-muted/20 rounded border border-dashed border-border text-center">
+            {{ targetVariable.type }} values must be passed via node connections.
+          </div>
+
+          <div v-else class="relative w-full">
             <div class="absolute -top-3 right-0 text-[9px] font-mono z-10 px-1 rounded bg-background/80 flex gap-1">
               <span v-if="isValueLinked" class="text-green-400 animate-pulse font-bold">
                 LINKED
@@ -114,11 +117,10 @@ const targetVariable = computed(() => {
   return variables.value.find(v => v._id === props.node.data.variableId);
 });
 
-const getVariableIcon = computed(() => {
+// Mengecek apakah tipe data saat ini adalah List atau Map
+const isComplexType = computed(() => {
   const type = targetVariable.value?.type?.toLowerCase();
-  if (type === 'number') return Hash;
-  if (type === 'boolean') return ToggleLeft;
-  return Type;
+  return type === 'list' || type === 'map';
 });
 
 const isValueLinked = computed(() => scriptStore.isInputConnected(props.node._id, PORT_ID));

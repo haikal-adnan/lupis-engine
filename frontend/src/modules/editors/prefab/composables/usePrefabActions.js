@@ -18,6 +18,35 @@ export function usePrefabActions() {
   const { showPop } = usePopAlert();
   const { prompt } = usePrompt();
 
+  // Helper untuk memastikan nama valid, unik, dan case-insensitive
+  const getValidUniqueName = (desiredName, excludeId = null) => {
+    // 1. Ganti spasi dengan underscore, hilangkan karakter selain alphabet, number, dan underscore
+    let cleanName = desiredName
+      .replace(/\s+/g, '_')
+      .replace(/[^a-zA-Z0-9_]/g, '');
+    
+    // Fallback jika string kosong setelah dibersihkan
+    if (!cleanName) cleanName = 'New_Prefab';
+
+    // 2. Cek keunikan secara case-insensitive
+    let finalName = cleanName;
+    let counter = 1;
+
+    const isNameTaken = (nameToCheck) => {
+      return store.prefabs.some(p => 
+        p._id !== excludeId && 
+        p.name.toLowerCase() === nameToCheck.toLowerCase()
+      );
+    };
+
+    while (isNameTaken(finalName)) {
+      finalName = `${cleanName}_${counter}`;
+      counter++;
+    }
+
+    return finalName;
+  };
+
   const createPrefab = (name = "New Prefab", sourceEntityData = null) => {
     try {
         let dataPayload = {};
@@ -32,10 +61,13 @@ export function usePrefabActions() {
           dataPayload = { data: cleanData };
         }
 
+        // Format nama sebelum dibuat
+        const validName = getValidUniqueName(name);
+
         const newPrefab = createPrefabSchema({
           _id: GenerateUUID(),
           projectId: projectStore.project?._id || null,
-          name: name, 
+          name: validName, 
           type: type, 
           ...dataPayload
         });
@@ -43,7 +75,7 @@ export function usePrefabActions() {
         store.addPrefab(newPrefab);
         projectStore.markAsDirty(); 
 
-        showPop({ title: 'Success', message: `Prefab "${name}" created.`, type: 'success' });
+        showPop({ title: 'Success', message: `Prefab "${validName}" created.`, type: 'success' });
         return newPrefab;
 
       } catch (error) {
@@ -75,34 +107,43 @@ export function usePrefabActions() {
     const prefab = store.getPrefabById(prefabId);
     if (!prefab) return;
 
-    const newName = await prompt({
+    const rawNewName = await prompt({
       title: 'Rename Prefab',
-      message: 'Enter new name for the prefab:',
+      message: 'Enter new name for the prefab (Alphanumeric and underscores only):',
       defaultValue: prefab.name,
       confirmText: 'Rename',
       cancelText: 'Cancel'
     });
 
-    if (newName && newName.trim() !== "" && newName !== prefab.name) {
-      const updatedEntityData = { ...prefab.data, name: newName };
-      
-      store.updatePrefab(prefabId, { 
-        name: newName, 
-        data: updatedEntityData 
-      });
+    if (rawNewName && rawNewName.trim() !== "") {
+      // Format input dari user
+      const validName = getValidUniqueName(rawNewName, prefabId);
 
-      projectStore.markAsDirty();
+      // Pastikan ada perubahan setelah diformat
+      if (validName !== prefab.name) {
+        const updatedEntityData = { ...prefab.data, name: validName };
+        
+        store.updatePrefab(prefabId, { 
+          name: validName, 
+          data: updatedEntityData 
+        });
 
-      showPop({ title: 'Renamed', message: `Prefab renamed to "${newName}".`, type: 'success' });
+        projectStore.markAsDirty();
+
+        showPop({ title: 'Renamed', message: `Prefab renamed to "${validName}".`, type: 'success' });
+      }
     }
   };
+
   const duplicatePrefab = (prefabId) => {
     const original = store.getPrefabById(prefabId);
     if (!original) return;
 
     const clone = JSON.parse(JSON.stringify(original));
     clone._id = GenerateUUID();
-    clone.name = `${original.name} (Copy)`;
+    
+    // Perbarui logika penamaan duplikat agar sesuai aturan
+    clone.name = getValidUniqueName(`${original.name}_copy`);
 
     store.addPrefab(clone);
     showPop({ title: 'Duplicated', message: `Prefab duplicated as "${clone.name}".`, type: 'success' });
@@ -225,7 +266,8 @@ export function usePrefabActions() {
     const nextOrderIndex = maxOrder + 1;
 
     const existingEntities = sceneStore.activeScene.entities;
-    const baseName = prefab.name.replace(/[^a-zA-Z0-9_]/g, ''); 
+    // BaseName sudah valid karena prefab namenya sudah distandarisasi saat pembuatan
+    const baseName = prefab.name; 
     const regex = new RegExp(`^${baseName}_(\\d+)$`);
 
     let maxIndex = 0;
@@ -244,7 +286,7 @@ export function usePrefabActions() {
     
     newEntity._id = GenerateUUID();
     newEntity.prefabId = prefabId; 
-    newEntity.name = `${prefab.name} ${nextIndex}`;
+    newEntity.name = `${prefab.name}_${nextIndex}`; // Gunakan underscore untuk entity turunan juga agar konsisten
     newEntity.scriptId = scriptId;
     newEntity.layerId = layerId;
     newEntity.parentId = parentId;

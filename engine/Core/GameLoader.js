@@ -85,7 +85,7 @@ export default class GameLoader {
     _setupWorldSettings(game, projSettings = {}, sceneSettings = {}) {
         game.world.settings = {
             tickRate: projSettings.tickRate ?? 60,
-            backgroundColor: sceneSettings.backgroundColor ?? "#222222",
+            backgroundColor: sceneSettings.backgroundColor ?? "#251414",
             worldBounds: sceneSettings.worldBounds ?? { x1: -1920, x2: 1920, y1: -1080, y2: 1080, active: true },
             physics: {
                 gravity: sceneSettings.physics?.gravity ?? 1200,

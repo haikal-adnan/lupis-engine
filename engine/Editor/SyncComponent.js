@@ -14,6 +14,9 @@ export default class SyncComponent {
     }
 
     bindEvents() {
+
+        this.bus.on("editor:theme:update", payload => this.onUpdateTheme(payload));
+
         this.bus.on("editor:entity:create", d => this.onCreateEntity(d));
         this.bus.on("editor:entity:delete", id => this.onDeleteEntity(id));
         this.bus.on("editor:entity:update-name", p => this.onUpdateEntityName(p));
@@ -48,6 +51,18 @@ export default class SyncComponent {
         });
 
         this.bus.on("editor:scene:reload", payload => this.onSceneReload(payload));
+    }
+
+    onUpdateTheme(payload) {
+        const { isDark } = payload;
+        
+        if (this.game.rulers) {
+            this.game.rulers.updateColors(isDark);
+        }
+
+        if (this.world.settings && this.world.settings.ui) {
+            this.world.settings.ui.isDarkMode = isDark;
+        }
     }
 
     onUpdateProjectSettings(payload) {

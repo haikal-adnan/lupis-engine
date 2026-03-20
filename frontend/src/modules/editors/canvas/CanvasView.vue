@@ -6,6 +6,7 @@ import { useSceneStore } from "@/stores/scene/useSceneStore.js";
 import { startEngine } from "@engines/main.js"; 
 import { prepareEngineData } from "@/services/engine/EngineBootstrapper.js";
 import { CDN_URL } from "@/services/api/useFetchProjectById.js";
+import { useTheme } from "@commons/composables/useTheme.js";
 
 import { EngineBridge } from "@/services/engine/EngineBridge.js";
 import { useEngineSync } from "@/services/engine/useEngineSync.js";
@@ -21,6 +22,7 @@ const sceneStore = useSceneStore();
 const { initSync } = useEngineSync();
 initSync();
 
+const { isDark, initTheme } = useTheme();
 const gameCanvas = ref(null);
 const initError = ref(null);
 let isInitializing = false; 
@@ -64,6 +66,8 @@ const initializeCanvas = async () => {
             
             EngineBridge.setupListeners();
             editorStore.engine.bus.on("entity:modified", handleEntityModified);
+
+            EngineBridge.updateTheme(isDark.value);
         }
 
     } catch (err) {
@@ -73,6 +77,12 @@ const initializeCanvas = async () => {
         isInitializing = false;
     }
 };
+
+watch(isDark, (newVal) => {
+    if (editorStore.isEngineReady) {
+        EngineBridge.updateTheme(newVal);
+    }
+});
 
 const getWorldPosition = (pointerX, pointerY) => {
     const engine = editorStore.engine;

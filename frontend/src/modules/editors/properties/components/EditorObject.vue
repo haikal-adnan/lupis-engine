@@ -88,7 +88,6 @@
     <PropertyRow label="Appearance">
       <div class="flex gap-1 items-center w-full">
         <BaseButton :active="active" @click="toggleActive" class="flex-1 h-7 text-xs gap-2 justify-center" ghost>
-          <Power class="w-3.5 h-3.5" :class="active ? 'text-primary' : 'text-muted-foreground'" />
           <span>{{ active ? 'Active' : 'Inactive' }}</span>
         </BaseButton>
         <div class="w-px h-4 bg-border mx-1"></div>

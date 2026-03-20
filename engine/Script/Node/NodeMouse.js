@@ -27,6 +27,7 @@ export const NodeMouse = {
             let drawX = t.x || 0;
             let drawY = t.y || 0;
 
+            // 1. Hitung Posisi Mouse dan Titik Gambar (World/UI Space)
             if (isUI) {
                 const uiSettings = runner.game.world.settings?.ui || { width: 1920, height: 1080 };
                 
@@ -48,36 +49,75 @@ export const NodeMouse = {
                 drawY = t.y || 0;
             }
 
-            let bounds = { x: 0, y: 0, w: 0, h: 0 };
+            let isHovering = false;
+            const tRotRad = (t.rotation || 0) * (Math.PI / 180);
 
-            if (!isUI && basedCollider && entity.components.Collider) {
-                const c = entity.components.Collider;
-                const pivotOffsetX = (t.width * (t.scaleX ?? 1)) * (t.pivotX ?? 0.5);
-                const pivotOffsetY = (t.height * (t.scaleY ?? 1)) * (t.pivotY ?? 0.5);
+            // 2. Deteksi Hover dengan Multi-Collider & Rotasi (OBB Inverse Rotation)
+            // 2. Deteksi Hover dengan Multi-Collider & Rotasi (OBB Inverse Rotation)
+            if (!isUI && basedCollider && entity.components.Collider && Array.isArray(entity.components.Collider.data)) {
+                const colData = entity.components.Collider.data;
+                const tRotRad = (t.rotation || 0) * (Math.PI / 180);
+                const cosT = Math.cos(tRotRad);
+                const sinT = Math.sin(tRotRad);
 
-                bounds.x = drawX - pivotOffsetX + (c.offsetX || 0);
-                bounds.y = drawY - pivotOffsetY + (c.offsetY || 0);
-                bounds.w = c.width * Math.abs(t.scaleX ?? 1);
-                bounds.h = c.height * Math.abs(t.scaleY ?? 1);
+                for (let i = 0; i < colData.length; i++) {
+                    const c = colData[i];
+                    if (!c.enabled) continue;
+
+                    const cW = (c.autoFit ? t.width : c.width) * Math.abs(t.scaleX ?? 1);
+                    const cH = (c.autoFit ? t.height : c.height) * Math.abs(t.scaleY ?? 1);
+                    const pX = c.pivotX ?? 0.5;
+                    const pY = c.pivotY ?? 0.5;
+
+                    const localTlX = -t.width * Math.abs(t.scaleX ?? 1) * (t.pivotX ?? 0.5) + (c.offsetX || 0) * Math.abs(t.scaleX ?? 1);
+                    const localTlY = -t.height * Math.abs(t.scaleY ?? 1) * (t.pivotY ?? 0.5) + (c.offsetY || 0) * Math.abs(t.scaleY ?? 1);
+
+                    const localPx = localTlX + cW * pX;
+                    const localPy = localTlY + cH * pY;
+
+                    const worldPx = drawX + localPx * cosT - localPy * sinT;
+                    const worldPy = drawY + localPx * sinT + localPy * cosT;
+
+                    const totalRot = c.autoFit ? tRotRad : tRotRad + ((c.rotation || 0) * (Math.PI / 180));
+
+                    // Inverse Rotation: Putar koordinat mouse melawan arah rotasi kotak
+                    const relX = targetPointerX - worldPx;
+                    const relY = targetPointerY - worldPy;
+                    const rotMouseX = relX * Math.cos(-totalRot) - relY * Math.sin(-totalRot);
+                    const rotMouseY = relX * Math.sin(-totalRot) + relY * Math.cos(-totalRot);
+
+                    const left = -cW * pX;
+                    const right = cW * (1 - pX);
+                    const top = -cH * pY;
+                    const bottom = cH * (1 - pY);
+
+                    if (rotMouseX >= left && rotMouseX <= right && rotMouseY >= top && rotMouseY <= bottom) {
+                        isHovering = true;
+                        break;
+                    }
+                }
             } else {
-                bounds.w = t.width * Math.abs(t.scaleX ?? 1);
-                bounds.h = t.height * Math.abs(t.scaleY ?? 1);
+                // Fallback default: Gunakan Transform Base (juga mendeteksi rotasi)
+                const boxW = t.width * Math.abs(t.scaleX ?? 1);
+                const boxH = t.height * Math.abs(t.scaleY ?? 1);
+                const pivotOffsetX = boxW * (t.pivotX ?? 0.5);
+                const pivotOffsetY = boxH * (t.pivotY ?? 0.5);
                 
-                const pivotOffsetX = bounds.w * (t.pivotX ?? 0.5);
-                const pivotOffsetY = bounds.h * (t.pivotY ?? 0.5);
+                const centerX = drawX - pivotOffsetX + (boxW / 2);
+                const centerY = drawY - pivotOffsetY + (boxH / 2);
+
+                const relX = targetPointerX - centerX;
+                const relY = targetPointerY - centerY;
                 
-                bounds.x = drawX - pivotOffsetX;
-                bounds.y = drawY - pivotOffsetY;
+                const rotMouseX = relX * Math.cos(-tRotRad) - relY * Math.sin(-tRotRad);
+                const rotMouseY = relX * Math.sin(-tRotRad) + relY * Math.cos(-tRotRad);
+
+                if (Math.abs(rotMouseX) <= boxW / 2 && Math.abs(rotMouseY) <= boxH / 2) {
+                    isHovering = true;
+                }
             }
 
-            const left = bounds.x;
-            const right = left + bounds.w;
-            const top = bounds.y;
-            const bottom = top + bounds.h;
-
-            const isHovering = targetPointerX >= left && targetPointerX <= right && 
-                               targetPointerY >= top && targetPointerY <= bottom;
-
+            // 3. Manajemen State Interaksi (Hover, Down, Hold, Up)
             if (!node._interactStates) node._interactStates = {};
             const entityId = entity.id || entity._id;
             

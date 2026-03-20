@@ -4,7 +4,7 @@
     class="absolute left-0 right-0 pointer-events-none flex items-center justify-center z-50 transition-all duration-300 ease-out"
     :class="{ 'translate-y-10 opacity-0': !overlayConfig.showGrid && !overlayConfig.showPlay }"
   >
-    <div class="flex items-center p-1 bg-background/80 backdrop-blur-sm rounded-xl border border-border shadow-lg pointer-events-auto gap-1">
+    <div class="flex items-center p-1 bg-background rounded-xl border border-border shadow-lg pointer-events-auto gap-1">
       
       <div v-if="overlayConfig.showCoords" class="flex items-center gap-3 px-3 mr-1">
         <span class="font-mono text-[10px] font-bold flex items-center gap-1 text-muted-foreground">
@@ -38,20 +38,16 @@
       </IconButton>
 
       <div v-if="overlayConfig.showPlay" class="h-4 w-[1px] bg-border mx-1"></div>
-
       <BaseButton 
         v-if="overlayConfig.showPlay"
         @click="openOrUpdatePreview"
-        class="h-8 rounded-full px-4 gap-2 text-xs font-bold transition-all shadow-sm border-0"
-        :class="isPreviewing 
-          ? 'bg-amber-500 hover:bg-amber-600 text-white' 
-          : 'bg-primary text-primary-foreground hover:bg-primary/90'"
+        :active="isPreviewing" 
+        class="h-8 rounded-full px-4 gap-2 text-xs font-bold"
       >
         <RefreshCw v-if="isPreviewing" class="w-3.5 h-3.5 animate-spin-slow" />
         <Play v-else class="w-3.5 h-3.5 fill-current" />
         <span>{{ isPreviewing ? 'Update' : 'Play' }}</span>
       </BaseButton>
-
     </div>
   </div>
 </template>

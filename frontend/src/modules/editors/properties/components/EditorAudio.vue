@@ -91,11 +91,7 @@
           class="w-full h-7 text-xs gap-2 justify-start px-3 border border-border/50 bg-background/50 hover:bg-accent transition-all"
           ghost
         >
-          <Volume2 v-if="!isMute" class="w-3.5 h-3.5 text-primary" />
-          <VolumeX v-else class="w-3.5 h-3.5 text-muted-foreground" />
-          <span :class="!isMute ? 'text-foreground' : 'text-muted-foreground'">
-            {{ !isMute ? 'Active' : 'Muted' }}
-          </span>
+          {{ !isMute ? 'Active' : 'Muted' }}
         </BaseButton>
       </PropertyRow>
 
@@ -167,9 +163,7 @@
           class="h-7 text-xs flex justify-center items-center border border-border/50 bg-background/50 hover:bg-accent transition-all"
           ghost
         >
-          <span :class="autoplay ? 'text-white font-medium' : 'text-muted-foreground'">
-            Play on Awake
-          </span>
+          Play on Awake
         </BaseButton>
 
         <BaseButton 
@@ -194,9 +188,7 @@
           class="w-full h-7 text-xs gap-2 justify-start px-3 border border-border/50 bg-background/50 hover:bg-accent transition-all"
           ghost
         >
-          <span :class="persist ? 'text-white font-medium' : 'text-muted-foreground'">
-            {{ persist ? 'Persist Across Scenes' : 'Destroy on Load' }}
-          </span>
+          {{ persist ? 'Persist Across Scenes' : 'Destroy on Load' }}
         </BaseButton>
       </PropertyRow>
 
@@ -233,9 +225,7 @@
             ghost
             :disabled="persist"
           >
-            <span :class="spatial ? 'text-white font-medium' : 'text-muted-foreground'">
-              {{ spatial ? 'Enabled (Positional)' : 'Disabled (Global)' }}
-            </span>
+            {{ spatial ? 'Enabled (Positional)' : 'Disabled (Global)' }}
           </BaseButton>
         </PropertyRow>
 

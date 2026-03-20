@@ -91,20 +91,12 @@ export default class PhysicsSystem {
 
     _checkGrounded(entity, physComponent, inactiveLayers) {
         const colliderSys = this.game.colliderSystem;
-        const bounds = colliderSys.getBounds(entity);
-        if (!bounds) {
+        const boundsList = colliderSys.getBounds(entity).filter(b => b.type === 'solid');
+        
+        if (boundsList.length === 0) {
             physComponent.isGrounded = false;
             return;
         }
-
-        const inset = 2; 
-        const reach = 2; 
-        const sensor = {
-            x: bounds.x + inset, 
-            y: bounds.y + bounds.h, 
-            w: bounds.w - (inset * 2), 
-            h: reach 
-        };
 
         let isGrounded = false;
         const entities = this.game.world.entities;
@@ -113,28 +105,53 @@ export default class PhysicsSystem {
             inactiveLayers = colliderSys._getInactiveLayers();
         }
 
-        for (let i = 0; i < entities.length; i++) {
-            const other = entities[i];
-            if (other === entity || other.active === false) continue;
-            if (other.layerId && inactiveLayers.has(other.layerId)) continue;
+        for (let bA of boundsList) {
+            // Karena ini berotasi, kita cari titik terbawah dari kotak sebagai Sensor Tanah
+            const corners = colliderSys._getObbCorners(bA);
+            const bottomY = Math.max(...corners.map(c => c.y));
+            const minX = Math.min(...corners.map(c => c.x));
+            const maxX = Math.max(...corners.map(c => c.x));
+            const w = maxX - minX;
 
-            if (other.components.Tilemap && other.components.Tilemap.isSolid) {
-                const hitBounds = colliderSys._getTilemapHitBounds(sensor, other);
-                if (hitBounds) {
-                    isGrounded = true;
-                    break;
-                }
-            } 
-            else {
-                const col = other.components.Collider;
-                if (!col || !col.enabled || col.type !== 'solid') continue;
+            const inset = 2; 
+            const reach = 2; 
+            const sensor = {
+                x: minX + inset, 
+                y: bottomY, 
+                w: w - (inset * 2), 
+                h: reach,
+                rotation: 0, // Sensor lurus horizontal ke bawah
+                pivotX: 0,   // TAMBAHKAN INI: Sensor dibuat berbasis Top-Left
+                pivotY: 0
+            };
 
-                const otherBounds = colliderSys.getBounds(other);
-                if (otherBounds && this._aabbIntersect(sensor, otherBounds)) {
-                    isGrounded = true;
-                    break;
+            for (let i = 0; i < entities.length; i++) {
+                const other = entities[i];
+                if (other === entity || other.active === false) continue;
+                if (other.layerId && inactiveLayers.has(other.layerId)) continue;
+
+                if (other.components.Tilemap && other.components.Tilemap.isSolid) {
+                    const hitBounds = colliderSys._getTilemapHitBounds(sensor, other);
+                    if (hitBounds) {
+                        isGrounded = true;
+                        break;
+                    }
+                } 
+                else {
+                    const col = other.components.Collider;
+                    if (!col || !col.data || !col.data.some(c => c.enabled)) continue;
+
+                    const otherBounds = colliderSys.getBounds(other).filter(b => b.type === 'solid');
+                    for (let bB of otherBounds) {
+                        if (colliderSys._obbIntersect(sensor, bB)) {
+                            isGrounded = true;
+                            break;
+                        }
+                    }
                 }
+                if (isGrounded) break;
             }
+            if (isGrounded) break;
         }
 
         physComponent.isGrounded = isGrounded;
@@ -145,19 +162,9 @@ export default class PhysicsSystem {
         if (overlaps && overlaps.length > 0) {
             const triggerHit = overlaps.find(e => {
                  const c = e.components.Collider;
-                 return c && c.type === 'trigger';
+                 return c && c.data && c.data.some(col => col.enabled && col.type === 'trigger');
             });
             if (triggerHit) physComponent.collisionInfo.hitTrigger = triggerHit;
         }
     }
-
-    _aabbIntersect(a, b) {
-        return (
-            a.x < b.x + b.w &&
-            a.x + a.w > b.x &&
-            a.y < b.y + b.h &&
-            a.y + a.h > b.y
-        );
-    }
 }
-

@@ -197,9 +197,11 @@ const updateType = (inputId, newType) => {
   }
 
   const colorMap = {
-    'string': '#9c27b0',
-    'number': '#00e676',
-    'boolean': '#f44336'
+    'string': '#9c27b0',   
+    'number': '#00e676',   
+    'boolean': '#f44336',  
+    'list': '#00bcd4',     
+    'map': '#ff9800'       
   };
 
   let defaultValue = (newType === 'number') ? 0 : (newType === 'boolean' ? false : '');

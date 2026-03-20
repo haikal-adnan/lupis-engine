@@ -135,9 +135,7 @@
              class="w-full h-7 text-xs gap-2 justify-start px-3 border border-border/50 bg-background/50 hover:bg-accent transition-all"
              ghost
            >
-             <span :class="currentActive ? 'text-foreground' : 'text-muted-foreground'">
-               {{ currentActive ? 'Active' : 'Inactive' }}
-             </span>
+            {{ currentActive ? 'Active' : 'Inactive' }}
            </BaseButton>
         </PropertyRow>
 

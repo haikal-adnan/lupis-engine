@@ -26,6 +26,12 @@ export const EngineBridge = {
     });
   },
 
+  updateTheme(isDark) {
+    if (this._instance) {
+        this._instance.bus.emit("editor:theme:update", { isDark });
+    }
+  },
+
   onEntityModified(cb) { onNativeEntityModified = cb; },
   onTilemapDataUpdated(cb) { onNativeTilemapUpdate = cb; },
   onToolPickup(cb) { onNativeToolPickup = cb; },

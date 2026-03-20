@@ -48,11 +48,7 @@
           class="w-full h-7 text-xs gap-2 justify-start px-3 border border-border/50 bg-background/50 hover:bg-accent transition-all"
           ghost
         >
-          <Power v-if="active" class="w-3.5 h-3.5 text-emerald-500" />
-          <Power v-else class="w-3.5 h-3.5 text-muted-foreground" />
-          <span :class="active ? 'text-foreground font-medium' : 'text-muted-foreground'">
-            {{ active ? 'Enabled' : 'Disabled' }}
-          </span>
+          {{ active ? 'Enabled' : 'Disabled' }}
         </BaseButton>
       </PropertyRow>
 
@@ -64,11 +60,7 @@
           class="w-full h-7 text-xs gap-2 justify-start px-3 border border-border/50 bg-background/50 hover:bg-accent transition-all disabled:opacity-40"
           ghost
         >
-          <Play v-if="isPlaying" class="w-3.5 h-3.5" />
-          <Pause v-else class="w-3.5 h-3.5 text-muted-foreground" />
-          <span :class="isPlaying && active ? 'text-foreground' : 'text-muted-foreground'">
-            {{ isPlaying ? 'Playing' : 'Paused' }}
-          </span>
+          {{ isPlaying ? 'Playing' : 'Paused' }}
         </BaseButton>
       </PropertyRow>
 

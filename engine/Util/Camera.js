@@ -1,7 +1,7 @@
 import Config from "../Core/Config.js";
 
 export default class Camera {
-constructor(x = 0, y = 0) {
+    constructor(x = 0, y = 0) {
         this.x = isNaN(x) ? 0 : x;
         this.y = isNaN(y) ? 0 : y;
         this.scale = 1;
