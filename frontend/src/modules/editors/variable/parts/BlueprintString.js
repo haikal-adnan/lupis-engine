@@ -64,27 +64,24 @@ export const BlueprintString = {
         ]
       } 
     },
-
     { 
-      type: 'number_to_string', 
-      label: 'Number To String', 
-      description: 'Convert a number to string with optional decimals', 
+      type: 'any_to_string', 
+      label: 'Any To String', 
+      description: 'Convert any data type (including List & Map) to a readable string', 
       icon: ArrowRightLeft,
       allowDynamicInputs: false,
       allowDynamicOutputs: false,
       defaultData: { 
         settings: { 
-          headerTitle: 'Num > Str', 
+          headerTitle: 'Any > Str', 
           headerColor: '#F57C00', 
           category: 'String' 
         },
-        data: { 
-            propertyOptions: [
-                { value: 'decimals', label: 'Decimals', type: 'number', color: '#FFCC80' }
-            ]
+        data: {
+          pretty: true 
         }, 
         inputs: [
-          { _id: 'in_val', label: 'Number', dataType: 'number', color: '#B2FF59' }
+          { _id: 'in_val', label: 'Input', dataType: 'any', color: '#ffffff' }
         ],
         outputs: [
           { _id: 'res', label: 'String', dataType: 'string', color: '#FFB74D' }

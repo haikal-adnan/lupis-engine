@@ -38,16 +38,27 @@ export const NodeString = {
         }
     },
 
-    'number_to_string': {
+    'any_to_string': {
         getOutput: (runner, node, outputKey) => {
             const val = runner.getInputValue(node, 'in_val');
             
-            if (val === undefined || val === null) return "0";
+            if (val === undefined || val === null) return "null";
 
-            const decimals = node.data?.decimals;
+            if (typeof val === 'number') {
+                const decimals = node.data?.decimals;
+                if (decimals !== undefined && decimals !== null && decimals >= 0) {
+                    return val.toFixed(Number(decimals));
+                }
+                return String(val);
+            }
 
-            if (typeof val === 'number' && decimals !== undefined && decimals !== null && decimals >= 0) {
-                return val.toFixed(Number(decimals));
+            if (typeof val === 'object') {
+                try {
+                    const isPretty = node.data?.pretty !== false;
+                    return JSON.stringify(val, null, isPretty ? 2 : 0);
+                } catch (err) {
+                    return "[Complex Object]";
+                }
             }
 
             return String(val);

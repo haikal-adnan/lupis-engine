@@ -155,13 +155,14 @@ function getPortColor(port) {
    const type = (port.dataType || port.type || 'any').toLowerCase();
    
    switch(type) {
-       case 'execution': return '#ffffff';
-       case 'boolean': return '#f44336';
-       case 'string': return '#9c27b0';
-       case 'number': return '#00e676';
-       case 'vector': return '#ffc107';
-       case 'any': return '#9ca3af'; 
-       default: return '#777777';
+       case 'execution': return '#ffffff'; 
+       case 'boolean':   return '#f44336';
+       case 'string':    return '#9c27b0'; 
+       case 'number':    return '#00e676'; 
+       case 'list':      return '#00bcd4'; 
+       case 'map':       return '#ff9800'; 
+       case 'any':       return '#9ca3af'; 
+       default:          return '#777777';
    }
 }
 </script>

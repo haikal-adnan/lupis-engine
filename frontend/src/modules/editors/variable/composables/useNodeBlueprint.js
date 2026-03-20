@@ -6,7 +6,6 @@ import { BlueprintMath } from '@editors/variable/parts/BlueprintMath.js'
 import { BlueprintSystem } from '@editors/variable/parts/BlueprintSystem.js'
 import { BlueprintString } from '@editors/variable/parts/BlueprintString.js'
 import { BlueprintObject } from '@editors/variable/parts/BlueprintObject.js'
-import { BlueprintProgramming } from '@editors/variable/parts/BlueprintProgramming.js'
 import { BlueprintBoolean } from '@editors/variable/parts/BlueprintBoolean.js'
 import { BlueprintComparison } from '@editors/variable/parts/BlueprintComparison.js'
 import { BlueprintPointer } from '@editors/variable/parts/BlueprintPointer.js'
@@ -19,11 +18,25 @@ import { BlueprintScene } from '@editors/variable/parts/BlueprintScene';
 import { BlueprintMouse } from '@editors/variable/parts/BlueprintMouse';
 import { BlueprintAnimator } from '@editors/variable/parts/BlueprintAnimator';
 import { BlueprintTransition } from '@editors/variable/parts/BlueprintTransition';
+import { BlueprintEvent } from '@editors/variable/parts/BlueprintEvent';
+import { BlueprintCollectionHelper } from '@editors/variable/parts/BlueprintCollectionHelper';
+import { BlueprintList } from '@editors/variable/parts/BlueprintList';
+import { BlueprintMap } from '@editors/variable/parts/BlueprintMap';
+import { BlueprintLoop } from '@editors/variable/parts/BlueprintLoop';
+import { BlueprintHelper } from '@editors/variable/parts/BlueprintHelper';
+import { BlueprintEntity } from '@editors/variable/parts/BlueprintEntity';
+import { BlueprintRandom } from '@editors/variable/parts/BlueprintRandom';
 
 export const STATIC_NODE_GROUPS = [
+  BlueprintRandom,
+  BlueprintEntity,
+  BlueprintLoop,
+  BlueprintHelper,
+  BlueprintList,
+  BlueprintMap,
+  BlueprintCollectionHelper,
   BlueprintRenderer,
   BlueprintLifecycle,
-  BlueprintProgramming,
   BlueprintBoolean,
   BlueprintComparison,
   BlueprintKeyboard,
@@ -40,7 +53,8 @@ export const STATIC_NODE_GROUPS = [
   BlueprintScene,
   BlueprintMouse,
   BlueprintAnimator,
-  BlueprintTransition
+  BlueprintTransition,
+  BlueprintEvent
 ]
 
 export function useNodeBlueprint() {

@@ -9,7 +9,13 @@ export default class VariableManager {
         this.globals.clear();
         if (Array.isArray(globalVarsArray)) {
             globalVarsArray.forEach(v => {
-                this.globals.set(v._id, v.defaultValue);
+                let val = v.defaultValue;
+                if (Array.isArray(val)) {
+                    val = [...val];
+                } else if (val !== null && typeof val === 'object') {
+                    val = { ...val };
+                }
+                this.globals.set(v._id, val);
             });
         }
     }

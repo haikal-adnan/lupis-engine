@@ -37,19 +37,23 @@ export const createUITransform = (data = {}, defaults = { width: 160, height: 40
 };
 
 export const createCollider = (data = {}) => {
+  // Jika sudah berupa array, gunakan data yang ada. Jika belum, jadikan objek lama ke format array.
   return {
-    type: data.type || "solid", 
-    enabled: Boolean(data.enabled ?? true),
-    autoFit: Boolean(data.autoFit ?? false),
-    offsetX: Number(data.offsetX ?? 0),
-    offsetY: Number(data.offsetY ?? 0),
-    width: Number(data.width ?? 32),
-    height: Number(data.height ?? 32),
-    ...data,
+    data: Array.isArray(data.data) ? data.data : [{
+      type: data.type || "solid", 
+      enabled: Boolean(data.enabled ?? true),
+      autoFit: Boolean(data.autoFit ?? false),
+      offsetX: Number(data.offsetX ?? 0),
+      offsetY: Number(data.offsetY ?? 0),
+      width: Number(data.width ?? 32),
+      height: Number(data.height ?? 32),
+      rotation: Number(data.rotation ?? 0),
+      pivotX: Number(data.pivotX ?? 0), 
+      pivotY: Number(data.pivotY ?? 0), 
+    }],
     overridden: Boolean(data.overridden ?? false)
   };
 };
-
 export const createPhysics = (data = {}) => {
   return {
     enabled: Boolean(data.enabled ?? true),

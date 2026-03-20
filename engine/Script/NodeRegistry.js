@@ -17,9 +17,23 @@ import { NodeMouse } from './Node/NodeMouse.js';
 import { NodeAnimator } from './Node/NodeAnimator.js';
 import { NodeKeyboard } from './Node/NodeKeyboard.js';
 import { NodeTransition } from './Node/NodeTransition.js';
+import { NodeCollectionHelper } from './Node/NodeCollectionHelper.js';
+import { NodeList } from './Node/NodeList.js';
+import { NodeMap } from './Node/NodeMap.js';
+import { NodeLoop } from './Node/NodeLoop.js';
+import { NodeHelper } from './Node/NodeHelper.js';
+import { NodeEntity } from './Node/NodeEntity.js';
+import { NodeRandom } from './Node/NodeRandom.js';
 
 export const NodeRegistry = {
+    ...NodeRandom,
+    ...NodeEntity,
+    ...NodeLoop,
+    ...NodeHelper,
     ...NodeVariable,
+    ...NodeCollectionHelper,
+    ...NodeList,
+    ...NodeMap,
     ...NodeLifecycle,
     ...NodeCollider,
     ...NodeMath,

@@ -99,34 +99,16 @@ export function useVariableLogic(scopeProps) {
       const validPattern = /^[a-zA-Z0-9_]+$/;
       
       if (!value || value.trim() === '') {
-        showPop({
-           title: 'Invalid Name',
-           message: 'Variable name cannot be empty.',
-           type: 'warning',
-           duration: 3000
-        });
+        showPop({ title: 'Invalid Name', message: 'Variable name cannot be empty.', type: 'warning', duration: 3000 });
         return; 
       }
-
       if (!validPattern.test(value)) {
-        showPop({
-           title: 'Invalid Character',
-           message: 'Use only letters (A-Z), numbers (0-9), and underscores (_). No spaces.',
-           type: 'warning',
-           duration: 3000
-        });
+        showPop({ title: 'Invalid Character', message: 'Use only letters (A-Z), numbers (0-9), and underscores (_). No spaces.', type: 'warning', duration: 3000 });
         return;
       }
-
       const isDuplicate = newList.some((v, i) => i !== index && v.name === value);
-      
       if (isDuplicate) {
-        showPop({
-           title: 'Duplicate Name',
-           message: `Variable name "${value}" is already taken.`,
-           type: 'error',
-           duration: 3000
-        });
+        showPop({ title: 'Duplicate Name', message: `Variable name "${value}" is already taken.`, type: 'error', duration: 3000 });
         return;
       }
     }
@@ -135,6 +117,8 @@ export function useVariableLogic(scopeProps) {
       if (value === 'Boolean') targetVar.defaultValue = false;
       else if (value === 'Number') targetVar.defaultValue = 0;
       else if (value === 'Vector') targetVar.defaultValue = { x: 0, y: 0 };
+      else if (value === 'List') targetVar.defaultValue = []; // Default untuk List
+      else if (value === 'Map') targetVar.defaultValue = {};  // Default untuk Map
       else targetVar.defaultValue = '';
     }
 

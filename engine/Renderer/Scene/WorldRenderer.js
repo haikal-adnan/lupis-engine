@@ -254,38 +254,48 @@ export default class WorldRenderer {
                 }
             }
 
-            if (Config.ENGINE_MODE === 'editor' && comps.Collider && comps.Collider.enabled) {
-                const c = comps.Collider;
-                
-                const visualWidth = t.width * Math.abs(t.scaleX ?? 1);
-                const visualHeight = t.height * Math.abs(t.scaleY ?? 1);
+// --- CARI BLOK INI DI DALAM _processEntity ---
+            if (Config.ENGINE_MODE === 'editor' && comps.Collider && Array.isArray(comps.Collider.data)) {
+                const tRotRad = (t.rotation || 0) * (Math.PI / 180);
+                const cosT = Math.cos(tRotRad);
+                const sinT = Math.sin(tRotRad);
 
-                const pivotOffsetX = visualWidth * (t.pivotX ?? 0.5);
-                const pivotOffsetY = visualHeight * (t.pivotY ?? 0.5);
+                for (let i = 0; i < comps.Collider.data.length; i++) {
+                    const c = comps.Collider.data[i];
+                    if (!c.enabled) continue; 
 
-                const scaledOffsetX = (c.offsetX ?? 0) * (t.scaleX ?? 1);
-                const scaledOffsetY = (c.offsetY ?? 0) * (t.scaleY ?? 1);
+                    const cW = (c.autoFit ? t.width : c.width) * Math.abs(t.scaleX ?? 1);
+                    const cH = (c.autoFit ? t.height : c.height) * Math.abs(t.scaleY ?? 1);
+                    const pX = c.pivotX ?? 0.5;
+                    const pY = c.pivotY ?? 0.5;
 
-                const colliderX = drawX - pivotOffsetX + scaledOffsetX;
-                const colliderY = drawY - pivotOffsetY + scaledOffsetY;
-                
-                const colliderW = (c.autoFit ? t.width : c.width) * Math.abs(t.scaleX ?? 1);
-                const colliderH = (c.autoFit ? t.height : c.height) * Math.abs(t.scaleY ?? 1);
+                    const localTlX = -t.width * Math.abs(t.scaleX ?? 1) * (t.pivotX ?? 0.5) + (c.offsetX || 0) * Math.abs(t.scaleX ?? 1);
+                    const localTlY = -t.height * Math.abs(t.scaleY ?? 1) * (t.pivotY ?? 0.5) + (c.offsetY || 0) * Math.abs(t.scaleY ?? 1);
 
-                const debugTrans = {
-                    x: colliderX, y: colliderY, width: colliderW, height: colliderH,
-                    rotation: 0, scaleX: 1, scaleY: 1, pivotX: 0, pivotY: 0
-                };
+                    const localPx = localTlX + cW * pX;
+                    const localPy = localTlY + cH * pY;
 
-                this.renderQueue.push({
-                    type: "shape",
-                    transformData: debugTrans,
-                    shapeOptions: {
-                        type: "rectStroke",
-                        color: c.type === 'trigger' ? this.colliderColorTrigger : this.colliderColorSolid,
-                        thickness: 2, opacity: 1.0, flipX: false, flipY: false
-                    }
-                });
+                    const worldPx = drawX + localPx * cosT - localPy * sinT;
+                    const worldPy = drawY + localPx * sinT + localPy * cosT;
+
+                    const totalRot = c.autoFit ? tRotRad : tRotRad + ((c.rotation || 0) * (Math.PI / 180));
+
+                    const debugTrans = {
+                        x: worldPx, y: worldPy, width: cW, height: cH,
+                        rotation: totalRot, scaleX: 1, scaleY: 1, 
+                        pivotX: pX, pivotY: pY
+                    };
+
+                    this.renderQueue.push({
+                        type: "shape",
+                        transformData: debugTrans,
+                        shapeOptions: {
+                            type: "rectStroke",
+                            color: c.type === 'trigger' ? this.colliderColorTrigger : this.colliderColorSolid,
+                            thickness: 2, opacity: 1.0, flipX: false, flipY: false
+                        }
+                    });
+                }
             }
 
             if (comps.TextRenderer) {

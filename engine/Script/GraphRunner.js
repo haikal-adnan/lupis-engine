@@ -47,7 +47,13 @@ export default class GraphRunner {
         this.localVariables.clear();
         const source = this.data.variables || this.data.exposedVariables || [];
         source.forEach(v => {
-            this.localVariables.set(v._id, v.defaultValue);
+            let val = v.defaultValue;
+            if (Array.isArray(val)) {
+                val = [...val]; 
+            } else if (val !== null && typeof val === 'object') {
+                val = { ...val }; 
+            }
+            this.localVariables.set(v._id, val);
         });
     }
 
