@@ -32,6 +32,16 @@
         >
           <RotateCcw class="w-3.5 h-3.5 mr-2 opacity-70" /> Reset Values
         </button>
+
+        <template v-if="hasChildren">
+          <div class="h-px bg-border my-1"></div>
+          <button 
+            @click="fitToChildren(); close()" 
+            class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-accent hover:text-accent-foreground transition-colors text-blue-400 hover:text-blue-300"
+          >
+            <Maximize class="w-3.5 h-3.5 mr-2 opacity-70" /> Fit All Child to Me
+          </button>
+        </template>
       </div>
     </template>
 
@@ -53,6 +63,12 @@
             :disabled="locked" 
           />
         </PropertyRow>
+        
+        <div v-if="globalRotation !== null" class="px-1 mt-1 mb-2">
+          <div class="text-[10px] text-amber-500/90 italic flex items-center gap-1">
+            <Link class="w-3 h-3" /> World Rot: {{ globalRotation }}°
+          </div>
+        </div>
       </div>
       
       <PivotControl 
@@ -101,24 +117,32 @@
       </div>
     </div>
 
-    <PropertyRow label="Scale">
-      <div class="flex items-center gap-2">
-        <div class="grid grid-cols-2 gap-2 flex-grow">
-          <BaseNumber v-model="scaleX" prefix="X" :min="1" :step="1" :precision="0" class="font-mono" :disabled="locked" />
-          <BaseNumber v-model="scaleY" prefix="Y" :min="1" :step="1" :precision="0" class="font-mono" :disabled="locked" />
-        </div>
+    <div>
+      <PropertyRow label="Scale">
+        <div class="flex items-center gap-2">
+          <div class="grid grid-cols-2 gap-2 flex-grow">
+            <BaseNumber v-model="scaleX" prefix="X" :min="1" :step="1" :precision="0" class="font-mono" :disabled="locked" />
+            <BaseNumber v-model="scaleY" prefix="Y" :min="1" :step="1" :precision="0" class="font-mono" :disabled="locked" />
+          </div>
 
-        <IconButton 
-          :active="isScaleLocked" 
-          @click="isScaleLocked = !isScaleLocked"
-          :tooltip="isScaleLocked ? 'Unlock Scale' : 'Lock Scale Uniformly'"
-          :disabled="locked"
-        >
-          <Lock v-if="isScaleLocked" class="w-3.5 h-3.5" />
-          <Unlock v-else class="w-3.5 h-3.5 opacity-50" />
-        </IconButton>
+          <IconButton 
+            :active="isScaleLocked" 
+            @click="isScaleLocked = !isScaleLocked"
+            :tooltip="isScaleLocked ? 'Unlock Scale' : 'Lock Scale Uniformly'"
+            :disabled="locked"
+          >
+            <Lock v-if="isScaleLocked" class="w-3.5 h-3.5" />
+            <Unlock v-else class="w-3.5 h-3.5 opacity-50" />
+          </IconButton>
+        </div>
+      </PropertyRow>
+      
+      <div v-if="globalScaleX !== null" class="px-1 mt-1 mb-3">
+        <div class="text-[10px] text-amber-500/90 italic flex items-center gap-1">
+          <Link class="w-3 h-3" /> World Scale: {{ globalScaleX }} x {{ globalScaleY }}
+        </div>
       </div>
-    </PropertyRow>
+    </div>
 
     <PropertyRow label="Flip">
       <div class="grid grid-cols-2 gap-2">
@@ -148,7 +172,7 @@
 <script setup>
 import { 
   BoxSelect, Lock, Unlock, FlipHorizontal, FlipVertical, 
-  RotateCcw, RefreshCw, Info 
+  RotateCcw, RefreshCw, Info, Link, Maximize
 } from 'lucide-vue-next'
 
 import { useInspectorLogic } from "@editors/properties/composables/useInspectorLogic.js";
@@ -170,7 +194,12 @@ const {
   isSizeLockedByText,
   isSizeLockedByTilemap, 
   syncComponent,       
-  getComponentOverrideStatus 
+  getComponentOverrideStatus,
+  globalScaleX,
+  globalScaleY,
+  globalRotation,
+  hasChildren,
+  fitToChildren 
 } = useInspectorLogic();
 
 const overridden = getComponentOverrideStatus('Transform');

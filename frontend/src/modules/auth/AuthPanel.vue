@@ -83,7 +83,8 @@
                         @click="showPassword = !showPassword"
                         class="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-foreground outline-none"
                       >
-                        </button>
+                         <span class="text-[10px] uppercase font-bold">{{ showPassword ? 'Hide' : 'Show' }}</span>
+                      </button>
                     </div>
 
                     <a 
@@ -124,7 +125,11 @@
               </p>
 
               <div class="flex flex-col gap-4">
-                <button type="button" class="w-full flex justify-center items-center gap-2 bg-background border border-border hover:bg-muted text-foreground py-3 rounded-lg text-sm font-semibold transition-all hover:shadow-sm outline-none">
+                <button 
+                  type="button" 
+                  @click="handleCustomGoogleLogin"
+                  class="w-full flex justify-center items-center gap-2 bg-background border border-border hover:bg-muted text-foreground py-3 rounded-lg text-sm font-semibold transition-all hover:shadow-sm outline-none"
+                >
                   <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24">
                     <path fill="currentColor" d="M12.545,10.239v3.821h5.445c-0.712,2.315-2.647,3.972-5.445,3.972c-3.332,0-6.033-2.701-6.033-6.032s2.701-6.032,6.033-6.032c1.498,0,2.866,0.549,3.921,1.453l2.814-2.814C17.503,2.988,15.139,2,12.545,2C7.021,2,2.543,6.477,2.543,12s4.478,10,10.002,10c8.396,0,10.249-7.85,9.426-11.748L12.545,10.239z"/>
                   </svg>
@@ -156,13 +161,14 @@
 </template>
 
 <script setup>
-import { ref, reactive, watch } from 'vue';
+import { ref, reactive, watch, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthActions } from '@/stores/scene/useAuthActions.js'; 
 import { useAuthStore } from '@/stores/useAuthStore.js';
 import { usePopAlert } from '@/composables/usePopAlert'; 
 
-const { login, register, isLoading, errorMessage } = useAuthActions();
+// Pastikan useAuthActions sekarang me-return loginWithGoogle juga
+const { login, register, loginWithGoogle, isLoading, errorMessage } = useAuthActions();
 const authStore = useAuthStore(); 
 const { showPop } = usePopAlert();
 const router = useRouter();
@@ -183,6 +189,8 @@ const emit = defineEmits(['close', 'auth-success']);
 const mode = ref(props.initialMode);
 const showPassword = ref(false); 
 const isMouseDownOutside = ref(false);
+
+let googleTokenClient = null; // Menyimpan instance Google Token Client
 
 const onOutsideMouseDown = (e) => {
   isMouseDownOutside.value = e.target === e.currentTarget;
@@ -308,6 +316,75 @@ const handleSubmit = async () => {
         type: 'error'
       });
     }
+  }
+};
+
+// ==========================================
+// GOOGLE OAUTH2 TOKEN CLIENT (CUSTOM BUTTON)
+// ==========================================
+onMounted(() => {
+  if (!document.getElementById('google-gsi-script')) {
+    const script = document.createElement('script');
+    script.id = 'google-gsi-script';
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    document.head.appendChild(script);
+
+    script.onload = initializeGoogleCustomAuth;
+  } else if (window.google) {
+    initializeGoogleCustomAuth();
+  }
+});
+
+const initializeGoogleCustomAuth = () => {
+  // Ganti dengan Client ID Anda atau gunakan import.meta.env.VITE_GOOGLE_CLIENT_ID
+  const clientId = '1036067672363-cq86tpni5p4ld7obc0vspv37dbatfhjn.apps.googleusercontent.com';
+
+  googleTokenClient = window.google.accounts.oauth2.initTokenClient({
+    client_id: clientId,
+    scope: 'email profile', // Meminta akses email dan profil dasar
+    callback: async (tokenResponse) => {
+      // Callback ini dipanggil setelah pengguna sukses login di popup Google
+      if (tokenResponse && tokenResponse.access_token) {
+        
+        // Kirim access_token ke backend Anda
+        const result = await loginWithGoogle(tokenResponse.access_token);
+        
+        if (result && result.success) {
+          handleClose();
+          emit('auth-success');
+          showPop({
+            title: 'Berhasil',
+            message: 'Berhasil login dengan akun Google.',
+            type: 'success'
+          });
+        } else {
+          showPop({
+            title: 'Autentikasi Gagal',
+            message: errorMessage.value || 'Gagal memproses data dari Google.',
+            type: 'error'
+          });
+        }
+      }
+    },
+    error_callback: (error) => {
+      console.error('Google Login Error:', error);
+      // Opsional: tampilkan alert jika user menutup popup sebelum selesai
+    }
+  });
+};
+
+const handleCustomGoogleLogin = () => {
+  if (googleTokenClient) {
+    // Memanggil popup login Google
+    googleTokenClient.requestAccessToken(); 
+  } else {
+    showPop({
+      title: 'Mohon Tunggu',
+      message: 'Sistem autentikasi Google sedang dimuat...',
+      type: 'warning'
+    });
   }
 };
 </script>

@@ -44,24 +44,33 @@ export function useAuthBackend() {
         
         return result.data; 
     };
-    const cancelRegistration = async (email, useBeacon = false) => {
-        const url = `${API_URL}/auth/cancel-registration`;
-        const data = JSON.stringify({ email });
 
-        if (useBeacon && navigator.sendBeacon) {
-            return navigator.sendBeacon(url, new Blob([data], { type: 'application/json' }));
-        }
+    const resendOtpUser = async (email) => {
+        const response = await fetchWithTimeout(`${API_URL}/auth/resend-otp`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        });
 
-        try {
-            await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: data
-            });
-        } catch (e) {
-            console.error("Cleanup failed", e);
-        }
+        const result = await response.json();
+        if (!response.ok || !result.success) throw new Error(result.error || 'Gagal mengirim ulang OTP');
+        
+        return result; 
     };
 
-    return { loginUser, registerUser, verifyOtpUser, cancelRegistration };
+    // --- FUNGSI BARU UNTUK GOOGLE ---
+    const googleAuth = async (googleToken) => {
+        const response = await fetchWithTimeout(`${API_URL}/auth/google`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: googleToken }) // Mengirim Access Token
+        });
+        
+        const result = await response.json();
+        if (!response.ok || !result.success) throw new Error(result.error || 'Gagal login dengan Google');
+        
+        return result.data; 
+    };
+
+    return { loginUser, registerUser, verifyOtpUser, resendOtpUser, googleAuth };
 }

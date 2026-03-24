@@ -52,6 +52,19 @@ export function useCanvasMenu(canvasHandlers) {
     toggleInputBlockers(false);
   });
   
+  // Helper internal untuk mengecek apakah entitas adalah descendant dari prefab
+  const isDescendantOfPrefab = (entityId) => {
+    const entities = sceneStore.activeScene?.entities;
+    if (!entities) return false;
+
+    let current = entities.find(e => e._id === entityId);
+    while (current && current.parentId) {
+      current = entities.find(e => e._id === current.parentId);
+      if (current && current.prefabId) return true;
+    }
+    return false;
+  };
+
   const openMenu = (screenX, screenY, worldX, worldY, isEntitySelected) => {
     const hasClipboard = editorStore.hasClipboardData;
     
@@ -61,6 +74,28 @@ export function useCanvasMenu(canvasHandlers) {
     const items = [];
 
     if (isEntitySelected) {
+      
+      // --- LOGIKA VALIDASI "USE AS PREFAB" ---
+      let disablePrefabAction = false;
+      const selectedIds = sceneStore.selectedEntityIds;
+
+      if (selectedIds.length !== 1) {
+        // Disable jika multi-select atau tidak ada seleksi
+        disablePrefabAction = true;
+      } else {
+        const entityId = selectedIds[0];
+        const entity = sceneStore.activeScene?.entities.find(e => e._id === entityId);
+        
+        if (entity) {
+          const isAlreadyPrefab = !!entity.prefabId;
+          const isChildOfPrefab = isDescendantOfPrefab(entityId);
+          disablePrefabAction = isAlreadyPrefab || isChildOfPrefab;
+        } else {
+          disablePrefabAction = true;
+        }
+      }
+      // ---------------------------------------
+
       items.push(
         { label: 'Copy', icon: Copy, shortcut: 'Ctrl+C', action: copy },
         { label: 'Cut', icon: Scissors, shortcut: 'Ctrl+X', action: cut },
@@ -73,7 +108,8 @@ export function useCanvasMenu(canvasHandlers) {
         
         { separator: true },
         
-        { label: 'Use as Prefab', icon: Box, action: canvasHandlers.useAsPrefab },
+        // Terapkan state disabled ke tombol Use as Prefab
+        { label: 'Use as Prefab', icon: Box, disabled: disablePrefabAction, action: canvasHandlers.useAsPrefab },
         
         { separator: true },
         

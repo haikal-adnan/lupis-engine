@@ -12,7 +12,7 @@ export const NodePhysics = {
                 case 'movementState':
                     return phys.movementState || 'idle';
                 case 'facingDirection':
-                    return phys.facingDirection || "right";
+                    return phys.facingDirection || 'right';
                 default:
                     return phys[outputKey];
             }
@@ -23,10 +23,10 @@ export const NodePhysics = {
             const target = runner.resolveEntity(runner.getInputValue(node, 'in_target'));
             if (target && target.components.Physics) {
                 const phys = target.components.Physics;
-                
-                const propsToUpdate = node.data?.dynamicInputs || []; 
+
+                const propsToUpdate = node.data?.dynamicInputs || [];
                 propsToUpdate.forEach(prop => {
-                    const val = runner.getInputValue(node, prop); 
+                    const val = runner.getInputValue(node, prop);
                     if (val !== undefined && val !== null) {
                         phys[prop] = val;
                     }
@@ -35,16 +35,45 @@ export const NodePhysics = {
             runner.executeFlow(node._id, 'exec_out');
         }
     },
-
-    'apply_impulse': {
+    'set_face_direction': {
         execute(runner, node) {
             const target = runner.resolveEntity(runner.getInputValue(node, 'in_target'));
             if (target && target.components.Physics) {
-                const fx = runner.getInputValue(node, 'forceX') || 0;
-                const fy = runner.getInputValue(node, 'forceY') || 0;
-                
-                target.components.Physics.velocityX += fx;
-                target.components.Physics.velocityY += fy;
+                const phys = target.components.Physics;
+
+                const axisX = runner.getInputValue(node, 'axisX') ?? node.data?.values?.axisX ?? 0;
+                const axisY = runner.getInputValue(node, 'axisY') ?? node.data?.values?.axisY ?? 0;
+                const mode = runner.getInputValue(node, 'mode') || node.data?.values?.mode || '4-way';
+
+                phys.customFacing = true;
+
+                if (mode === 'horizontal') {
+                    if (axisX > 0) phys.facingDirection = 'right';
+                    else if (axisX < 0) phys.facingDirection = 'left';
+                }
+                else if (mode === 'vertical') {
+                    if (axisY > 0) phys.facingDirection = 'down';
+                    else if (axisY < 0) phys.facingDirection = 'up';
+                }
+                else if (mode === '4-way') {
+                    // Logika 4-Way: Prioritaskan sumbu dengan input terbesar agar tidak macet di diagonal
+                    if (Math.abs(axisX) > Math.abs(axisY)) {
+                        phys.facingDirection = axisX > 0 ? 'right' : 'left';
+                    } else if (Math.abs(axisY) > 0) {
+                        phys.facingDirection = axisY > 0 ? 'down' : 'up';
+                    }
+                }
+                else if (mode === '8-way') {
+                    // Logika 8-Way: Mendukung kombinasi diagonal
+                    if (axisX > 0 && axisY < 0) phys.facingDirection = 'up-right';
+                    else if (axisX > 0 && axisY > 0) phys.facingDirection = 'down-right';
+                    else if (axisX < 0 && axisY < 0) phys.facingDirection = 'up-left';
+                    else if (axisX < 0 && axisY > 0) phys.facingDirection = 'down-left';
+                    else if (axisX > 0) phys.facingDirection = 'right';
+                    else if (axisX < 0) phys.facingDirection = 'left';
+                    else if (axisY < 0) phys.facingDirection = 'up';
+                    else if (axisY > 0) phys.facingDirection = 'down';
+                }
             }
             runner.executeFlow(node._id, 'exec_out');
         }

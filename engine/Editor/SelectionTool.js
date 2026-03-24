@@ -81,6 +81,45 @@ export default class SelectionTool {
         return true;
     }
 
+    _findEntityInWorld(id) {
+        const allLayers = [...(this.world.layersWorld || []), ...(this.world.layersUI || [])];
+        for (const layer of allLayers) {
+            if (layer.entities) {
+                const found = layer.entities.find(e => String(e.id || e._id) === String(id));
+                if (found) return found;
+            }
+        }
+        return null;
+    }
+
+    _getRootParent(entity) {
+        let current = entity;
+        while (current && current.parentId) {
+            const parent = this._findEntityInWorld(current.parentId);
+            if (parent) {
+                current = parent;
+            } else {
+                break;
+            }
+        }
+        return current;
+    }
+
+    // HELPER BARU: Mengumpulkan seluruh keturunan (anak, cucu, dst) dari sebuah parent
+    _getAllDescendants(parentId) {
+        let descendants = [];
+        const allLayers = [...(this.world.layersWorld || []), ...(this.world.layersUI || [])];
+        for (const layer of allLayers) {
+            if (!layer.entities) continue;
+            const children = layer.entities.filter(e => e.parentId === parentId);
+            for (const child of children) {
+                descendants.push(child);
+                descendants = descendants.concat(this._getAllDescendants(child._id || child.id));
+            }
+        }
+        return descendants;
+    }
+
     setSelection(newList, source = "internal") {
         this.selectedList = [...new Set(newList)];
         if (this.transform) {
@@ -157,6 +196,7 @@ export default class SelectionTool {
 
         this.setSelection(realEntities, "internal");
     }
+
     consolidateSelection(candidates) {
         return [...new Set(candidates)];
     }
@@ -241,6 +281,11 @@ export default class SelectionTool {
 
         let hit = this.hitTester.hit(this.world, w.x, w.y, px, py);
         
+        const isCtrlDown = this.input.keyboard.isDown("Control") || this.input.keyboard.isDown("Meta");
+        if (hit && !isCtrlDown) {
+            hit = this._getRootParent(hit);
+        }
+        
         if (hit && this._isClickable(hit)) {
             const isSelected = this.selectedList.includes(hit);
             this.canvas.style.cursor = isSelected ? "move" : "pointer";
@@ -254,11 +299,21 @@ export default class SelectionTool {
     pointerDown(px, py, w, isTouch, isRightClick = false) {
         this.dragStartPosition = { x: px, y: py }; 
 
+        const isCtrl = this.input.keyboard.isDown("Control") || this.input.keyboard.isDown("Meta");
+        const isShift = this.input.keyboard.isDown("Shift");
+
+        let hit = this.hitTester.hit(this.world, w.x, w.y, px, py);
+
+        if (hit && !isCtrl) {
+            hit = this._getRootParent(hit);
+        }
+
         if (isRightClick) {
-            let hit = this.hitTester.hit(this.world, w.x, w.y, px, py);
             if (hit && this._isClickable(hit)) {
                 if (!this.selectedList.includes(hit)) {
-                    this.setSelection([hit], "internal");
+                    // FIX: Kumpulkan parent yang diklik beserta seluruh descendant-nya
+                    const selectionGroup = [hit, ...this._getAllDescendants(hit._id || hit.id)];
+                    this.setSelection(selectionGroup, "internal");
                 }
             } else {
                 this.setSelection([], "internal");
@@ -272,21 +327,21 @@ export default class SelectionTool {
             return;
         }
 
-        const isShift = this.input.keyboard.isDown("Shift") || this.input.keyboard.isDown("Control");
-        let hit = this.hitTester.hit(this.world, w.x, w.y, px, py);
-
         if (hit && this._isClickable(hit)) {
             const alreadySelected = this.selectedList.includes(hit);
+            // FIX: Kumpulkan parent yang diklik beserta seluruh descendant-nya
+            const selectionGroup = [hit, ...this._getAllDescendants(hit._id || hit.id)];
+            
             if (isShift) {
                 let newList = alreadySelected 
-                    ? this.selectedList.filter(a => a !== hit)
-                    : [...this.selectedList, hit];
+                    ? this.selectedList.filter(a => !selectionGroup.includes(a))
+                    : [...this.selectedList, ...selectionGroup];
                 newList = this.consolidateSelection(newList);
                 this.setSelection(newList, "internal");
             } 
             else {
                 if (!alreadySelected) {
-                    this.setSelection([hit], "internal");
+                    this.setSelection(selectionGroup, "internal");
                 }
             }
 
@@ -316,12 +371,28 @@ export default class SelectionTool {
 
         if (this.marqueeActive) {
             let results = [...this.hoverMarqueeList].filter(e => this._isClickable(e));
-            const isShift = this.input.keyboard.isDown("Shift") || this.input.keyboard.isDown("Control");
-            if (isShift) {
-                results = [...this.selectedList, ...results];
+            
+            const isCtrl = this.input.keyboard.isDown("Control") || this.input.keyboard.isDown("Meta");
+            let finalResults = [];
+            
+            if (!isCtrl) {
+                // FIX: Jika Marquee menangkap parent, masukkan parent DAN anak-anaknya
+                const rootParents = [...new Set(results.map(e => this._getRootParent(e)))];
+                for (const root of rootParents) {
+                    finalResults.push(root, ...this._getAllDescendants(root._id || root.id));
+                }
+            } else {
+                finalResults = results;
             }
-            results = this.consolidateSelection(results);
-            this.setSelection(results, "internal");
+
+            const isShift = this.input.keyboard.isDown("Shift");
+            if (isShift) {
+                finalResults = [...this.selectedList, ...finalResults];
+            }
+            
+            finalResults = this.consolidateSelection(finalResults);
+            this.setSelection(finalResults, "internal");
+            
             this.marqueeActive = false;
             this.hoverMarqueeList = [];
             return;
@@ -334,8 +405,9 @@ export default class SelectionTool {
 
         const w = this.toWorld(px, py);
         let hit = this.hitTester.hit(this.world, w.x, w.y, px, py);
-        const isShift = this.input.keyboard.isDown("Shift") || this.input.keyboard.isDown("Control");
-
+        
+        const isShift = this.input.keyboard.isDown("Shift");
+        
         if (!hit && !isShift && this.input.mouse.isDown(0)) { 
             this.setSelection([], "internal");
             bus.emit("entity:deselected");

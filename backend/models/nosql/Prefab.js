@@ -1,8 +1,10 @@
 import mongoose from 'mongoose';
 
 const PrefabDataSchema = new mongoose.Schema({
+  _id: { type: String }, // Tambahkan ini agar Mongoose menerima UUID custom dari frontend
   scriptId: { type: String, default: '' },
-  type: { type: String, enum: ['entity', 'group'], default: 'entity' },
+  // Tambahkan 'ui' ke enum jika ada kemungkinan entitas UI menjadi bagian dari prefab
+  type: { type: String, enum: ['entity', 'ui'], default: 'entity' },
   name: { type: String },
   tag: { type: String, default: 'untagged' },
   zIndex: { type: Number, default: 0 }, 
@@ -15,14 +17,17 @@ const PrefabDataSchema = new mongoose.Schema({
   layerId: { type: String, default: 'layer_root' },
   parentId: { type: String, default: null },
   components: { type: mongoose.Schema.Types.Mixed, default: {} }
-}, { _id: false });
+}, { 
+  _id: false // Mencegah Mongoose menimpa _id string kita dengan ObjectId bawaannya
+});
 
 const PrefabSchema = new mongoose.Schema({
   _id: { type: String, required: true },
   projectId: { type: String, ref: 'Project', required: true, index: true }, 
   name: { type: String, default: 'New Prefab' }, 
   type: { type: String, enum: ['world', 'ui'], default: 'world' },
-  data: { type: PrefabDataSchema, default: () => ({}) }
+  data: { type: PrefabDataSchema, default: () => ({}) },
+  children: { type: [PrefabDataSchema], default: [] } // Tambahkan array children di sini
 }, { 
   timestamps: true,
   _id: false 

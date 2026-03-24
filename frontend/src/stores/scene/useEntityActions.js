@@ -10,8 +10,41 @@ const round = (num, decimals = 2) => {
   return Math.round(num * factor) / factor;
 };
 
-export const entityActions = {
+// HELPER: Mengecek secara rekursif pembatasan instansi Prefab
+const checkPrefabRestriction = (entities, entityId, targetParentId = null) => {
+    if (!entities) return null;
 
+    // Fungsi rekursif untuk mengecek apakah sebuah entity ada di DALAM hierarki instansi prefab
+    const isDescendantOfPrefab = (id) => {
+        let current = entities.find(e => e._id === id);
+        while (current && current.parentId) {
+            current = entities.find(e => e._id === current.parentId);
+            // Jika ada ancestor/parent ke atas yang merupakan prefab instance, berarti dia adalah child dari prefab
+            if (current && current.prefabId) return true;
+        }
+        return false;
+    };
+
+    // 1. Cek modifikasi (delete, move) DARI DALAM prefab
+    // Root prefab (entityId memiliki prefabId) MASIH BOLEH dihapus/dipindah utuh.
+    // Yang dilarang adalah memodifikasi childnya secara terpisah.
+    if (entityId && isDescendantOfPrefab(entityId)) {
+        return 'Tidak dapat memodifikasi, memindahkan, atau menghapus entitas di dalam instansi Prefab. Silakan Unpack terlebih dahulu.';
+    }
+
+    // 2. Cek jika memasukkan child baru KE DALAM prefab
+    if (targetParentId) {
+        const targetParent = entities.find(e => e._id === targetParentId);
+        // Tolak jika parent tujuannya adalah Root Prefab ATAU parent tujuannya ada di dalam prefab
+        if ((targetParent && targetParent.prefabId) || isDescendantOfPrefab(targetParentId)) {
+            return 'Tidak dapat menambahkan entitas baru ke dalam hierarki instansi Prefab. Silakan Unpack terlebih dahulu.';
+        }
+    }
+
+    return null; // Aman
+};
+
+export const entityActions = {
   getHierarchyData(entityId) {
     const entities = this.activeScene?.entities;
     if (!entities) return null;
@@ -69,14 +102,9 @@ export const entityActions = {
 
   createEntity(type, contextNodeOrLayerId, overrides = {}) {
     const scene = this.activeScene;
-    if (!scene) return null;
+    if (!scene) return false;
 
     const { showPop } = usePopAlert();
-
-    if (type === 'group') {
-        showPop({ title: 'Disabled', message: 'Group creation disabled.', type: 'info' });
-        return null; 
-    }
 
     let posX = 0;
     let posY = 0;
@@ -106,13 +134,22 @@ export const entityActions = {
             parentId = null;
         } else {
             layerId = contextNodeOrLayerId.layerId;
-            parentId = null; 
+            parentId = contextNodeOrLayerId._id;
         }
     } else {
         if (type.startsWith('ui_')) {
             layerId = defaultUILayer;
         } else {
             layerId = defaultWorldLayer;
+        }
+    }
+
+    // [VALIDASI PREFAB CREATE]
+    if (parentId) {
+        const restrictionMsg = checkPrefabRestriction(scene.entities, null, parentId);
+        if (restrictionMsg) {
+            showPop({ title: 'Prefab Restriction', message: restrictionMsg, type: 'warning' });
+            return false;
         }
     }
 
@@ -219,10 +256,20 @@ export const entityActions = {
   },
 
   duplicateEntity(entityIds) {
-    if (!this.activeScene) return;
+    if (!this.activeScene) return false;
+    const { showPop } = usePopAlert();
 
     const idsToDuplicate = Array.isArray(entityIds) ? entityIds : [entityIds];
-    if (idsToDuplicate.length === 0) return;
+    if (idsToDuplicate.length === 0) return false;
+
+    // [VALIDASI PREFAB DUPLICATE]
+    for (const id of idsToDuplicate) {
+        const restrictionMsg = checkPrefabRestriction(this.activeScene.entities, id);
+        if (restrictionMsg) {
+            showPop({ title: 'Prefab Restriction', message: restrictionMsg, type: 'warning' });
+            return false;
+        }
+    }
 
     const allNewEntities = [];
     const newRootIds = [];
@@ -249,7 +296,17 @@ export const entityActions = {
   },
 
   pasteEntity(clipboardDataArray, targetContext = {}) {
-      if (!this.activeScene || !clipboardDataArray) return;
+      if (!this.activeScene || !clipboardDataArray) return false;
+      const { showPop } = usePopAlert();
+
+      // [VALIDASI PREFAB PASTE]
+      if (targetContext.parentId !== undefined) {
+          const restrictionMsg = checkPrefabRestriction(this.activeScene.entities, null, targetContext.parentId);
+          if (restrictionMsg) {
+              showPop({ title: 'Prefab Restriction', message: restrictionMsg, type: 'warning' });
+              return false;
+          }
+      }
 
       const dataItems = Array.isArray(clipboardDataArray) ? clipboardDataArray : [clipboardDataArray];
       const allNewClones = [];
@@ -277,7 +334,7 @@ export const entityActions = {
   },
 
   updateEntityScriptId(entityId, newScriptId) {
-    if (!this.activeScene) return;
+    if (!this.activeScene) return false;
 
     const sanitizedId = newScriptId.replace(/[^a-zA-Z0-9_]/g, "_");
     const entity = this.activeScene.entities.find(e => e._id === entityId);
@@ -286,10 +343,19 @@ export const entityActions = {
       entity.scriptId = sanitizedId;
       return { id: entityId, prop: 'scriptId', value: sanitizedId };
     }
+    return false;
   },
 
   deleteEntity(entityId) {
-    if (!this.activeScene) return;
+    if (!this.activeScene) return false;
+    const { showPop } = usePopAlert();
+
+    // [VALIDASI PREFAB DELETE]
+    const restrictionMsg = checkPrefabRestriction(this.activeScene.entities, entityId);
+    if (restrictionMsg) {
+        showPop({ title: 'Prefab Restriction', message: restrictionMsg, type: 'warning' });
+        return false;
+    }
 
     const getDescendants = (parentId) => {
       const children = this.activeScene.entities.filter(e => e.parentId === parentId);
@@ -310,19 +376,96 @@ export const entityActions = {
     
     EngineBridge.clearSelection();
     EngineBridge.deleteEntity(entityId);
+
+    return true;
   },
 
   moveEntity(draggedId, targetContext) {
-    if (!this.activeScene) return;
+    if (!this.activeScene) return false;
+    const { showPop } = usePopAlert();
 
     const { newParentId, newLayerId, insertionType, referenceId } = targetContext;
+
+    // [VALIDASI PREFAB MOVE]
+    const restrictionMsg = checkPrefabRestriction(this.activeScene.entities, draggedId, newParentId);
+    if (restrictionMsg) {
+        showPop({ title: 'Prefab Restriction', message: restrictionMsg, type: 'warning' });
+        return false;
+    }
+
     const entities = this.activeScene.entities;
     const entity = entities.find(e => e._id === draggedId);
     
-    if (!entity) return;
+    if (!entity) return false;
+
+    // --- Seamless Reparenting Logics ---
+    const getGlobalTransform = (entId) => {
+        const ent = entities.find(e => e._id === entId);
+        if (!ent) return { x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1 };
+        
+        const t = ent.components?.Transform || ent.components?.UITransform;
+        if (!t) return { x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1 };
+
+        if (!ent.parentId) return { x: t.x, y: t.y, rotation: t.rotation || 0, scaleX: t.scaleX ?? 1, scaleY: t.scaleY ?? 1 };
+
+        const parentGlobal = getGlobalTransform(ent.parentId);
+        const rad = parentGlobal.rotation * (Math.PI / 180);
+        const cos = Math.cos(rad);
+        const sin = Math.sin(rad);
+
+        const sX = t.x * parentGlobal.scaleX;
+        const sY = t.y * parentGlobal.scaleY;
+
+        return {
+            x: parentGlobal.x + (sX * cos - sY * sin),
+            y: parentGlobal.y + (sX * sin + sY * cos),
+            rotation: parentGlobal.rotation + (t.rotation || 0),
+            scaleX: parentGlobal.scaleX * (t.scaleX ?? 1),
+            scaleY: parentGlobal.scaleY * (t.scaleY ?? 1)
+        };
+    };
+
+    const oldGlobal = getGlobalTransform(draggedId);
 
     entity.parentId = newParentId;
     entity.layerId = newLayerId;
+
+    const t = entity.components?.Transform || entity.components?.UITransform;
+    if (t) {
+        if (!newParentId) {
+            t.x = oldGlobal.x;
+            t.y = oldGlobal.y;
+            t.rotation = oldGlobal.rotation;
+            t.scaleX = oldGlobal.scaleX;
+            t.scaleY = oldGlobal.scaleY;
+        } else {
+            const newParentGlobal = getGlobalTransform(newParentId);
+            
+            const dx = oldGlobal.x - newParentGlobal.x;
+            const dy = oldGlobal.y - newParentGlobal.y;
+
+            const invRad = -newParentGlobal.rotation * (Math.PI / 180);
+            const cos = Math.cos(invRad);
+            const sin = Math.sin(invRad);
+
+            const invRotX = (dx * cos) - (dy * sin);
+            const invRotY = (dx * sin) + (dy * cos);
+
+            t.x = round(invRotX / newParentGlobal.scaleX);
+            t.y = round(invRotY / newParentGlobal.scaleY);
+            t.rotation = round(oldGlobal.rotation - newParentGlobal.rotation);
+            t.scaleX = oldGlobal.scaleX / newParentGlobal.scaleX;
+            t.scaleY = oldGlobal.scaleY / newParentGlobal.scaleY;
+        }
+        
+        t.overridden = true;
+        EngineBridge.patchComponent({
+            entityId: entity._id,
+            componentName: entity.components?.UITransform ? 'UITransform' : 'Transform',
+            updates: t
+        });
+    }
+    // -----------------------------------
 
     let targetSiblings = entities.filter(e => 
         e.parentId === newParentId && 
@@ -355,13 +498,15 @@ export const entityActions = {
             });
         }
     });
+
+    return true;
   },
 
   updateComponentProp(entityId, componentName, path, value) {
-    if (!this.activeScene) return;
+    if (!this.activeScene) return false;
 
     const entity = this.activeScene.entities.find(e => e._id === entityId);
-    if (!entity || !entity.components[componentName]) return;
+    if (!entity || !entity.components[componentName]) return false;
     
     const comp = entity.components[componentName];
     
@@ -394,31 +539,34 @@ export const entityActions = {
   },
 
   updateEntityProp(entityId, propName, value) {
-    if (!this.activeScene) return;
+    if (!this.activeScene) return false;
 
     const entity = this.activeScene.entities.find(e => e._id === entityId);
     if (entity) {
-      if (entity[propName] === value) return; 
+      if (entity[propName] === value) return false; 
       entity[propName] = value;
       return { id: entityId, prop: propName, value };
     }
+    return false;
   },
 
   syncTilemapDataFromEngine(entityId, newData) {
-    if (!this.activeScene) return;
+    if (!this.activeScene) return false;
 
     const entity = this.activeScene.entities.find(e => e._id === entityId);
     if (entity?.components?.Tilemap) {
       entity.components.Tilemap.data = newData;
+      return true;
     }
+    return false;
   },
 
   addComponent(entityId, componentName) {
-    if (!this.activeScene) return;
+    if (!this.activeScene) return false;
     const { showPop } = usePopAlert();
 
     const entity = this.activeScene.entities.find(e => e._id === entityId);
-    if (!entity) return;
+    if (!entity) return false;
     
     if (entity.prefabId) {
         showPop({
@@ -426,10 +574,10 @@ export const entityActions = {
             message: 'Cannot add components to a Prefab instance. Please Unpack Prefab first.',
             type: 'warning'
         });
-        return;
+        return false;
     }
     
-    if (entity.components && entity.components[componentName]) return;
+    if (entity.components && entity.components[componentName]) return false;
     
     const newComponentData = createComponent(componentName);
     if (!entity.components) entity.components = {};
@@ -439,7 +587,7 @@ export const entityActions = {
   },
 
   async removeComponent(entityId, componentName) {
-    if (!this.activeScene) return;
+    if (!this.activeScene) return false;
     
     const { showPop } = usePopAlert();
     const { confirm } = useConfirm();
@@ -447,7 +595,7 @@ export const entityActions = {
     const entity = this.activeScene.entities.find(e => e._id === entityId);
     if (!entity || !entity.components[componentName]) {
         showPop({ title: 'Error', message: 'Component not found.', type: 'error' });
-        return;
+        return false;
     }
     
     if (entity.prefabId) {
@@ -456,7 +604,7 @@ export const entityActions = {
             message: 'Cannot remove components from a Prefab instance. Please Unpack Prefab first.',
             type: 'warning'
         });
-        return;
+        return false;
     }
     
     const isConfirmed = await confirm({
@@ -467,7 +615,7 @@ export const entityActions = {
       type: 'warning'
     });
     
-    if (!isConfirmed) return;
+    if (!isConfirmed) return false;
     
     try {
         delete entity.components[componentName];
@@ -476,7 +624,7 @@ export const entityActions = {
         return { entityId, componentName };
     } catch (error) {
         showPop({ title: 'Failed', message: 'Could not remove component.', type: 'error' });
+        return false;
     }
   }
-
 };

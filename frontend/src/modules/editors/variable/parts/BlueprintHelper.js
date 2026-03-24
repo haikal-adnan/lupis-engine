@@ -1,6 +1,7 @@
 import { 
   GitMerge, 
-  Timer
+  Timer,
+  Hourglass
 } from 'lucide-vue-next';
 
 export const BlueprintHelper = {
@@ -30,19 +31,39 @@ export const BlueprintHelper = {
     { 
       type: 'logic_delay', 
       label: 'Delay', 
-      description: 'Menunda eksekusi selama beberapa detik.',
+      description: 'Menunda eksekusi selama beberapa milidetik.',
       icon: Timer,
       allowDynamicInputs: false,
       allowDynamicOutputs: false,
       defaultData: { 
         settings: { headerTitle: 'Delay', headerColor: '#607D8B', category: 'Helper' },
-        data: { values: { duration: 1.0 } }, 
+        data: { values: { duration: 500 } }, // Default 500ms
         inputs: [
           { _id: 'exec_in', label: 'In', dataType: 'execution', color: '#ffffff' },
-          { _id: 'duration', label: 'Duration (s)', dataType: 'number', color: '#B2FF59' }
+          { _id: 'duration', label: 'Duration (ms)', dataType: 'number', color: '#B2FF59' }
         ], 
         outputs: [
           { _id: 'out', label: 'Completed', dataType: 'execution', color: '#ffffff' }
+        ]
+      },
+    },
+    { 
+      type: 'logic_cooldown', 
+      label: 'Cooldown / Interval', 
+      description: 'Meneruskan eksekusi hanya jika waktu cooldown telah tercapai (ms).',
+      icon: Hourglass,
+      allowDynamicInputs: false,
+      allowDynamicOutputs: false,
+      defaultData: { 
+        settings: { headerTitle: 'Cooldown', headerColor: '#607D8B', category: 'Helper' },
+        data: { values: { duration: 500 } }, // Default 500ms
+        inputs: [
+          { _id: 'exec_in', label: 'In', dataType: 'execution', color: '#ffffff' },
+          { _id: 'duration', label: 'Duration (ms)', dataType: 'number', color: '#B2FF59' }
+        ], 
+        outputs: [
+          { _id: 'ready', label: 'Ready (Fire)', dataType: 'execution', color: '#ffffff' },
+          { _id: 'cooling', label: 'Cooling Down', dataType: 'execution', color: '#B0BEC5' }
         ]
       } 
     }

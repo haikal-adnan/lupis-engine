@@ -20,7 +20,7 @@ const EntitySchema = new mongoose.Schema({
   
   type: { 
     type: String, 
-    enum: ['entity', 'group', 'ui'], 
+    enum: ['entity', 'ui'], 
     default: 'entity',
     required: true 
   },

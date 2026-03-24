@@ -49,5 +49,42 @@ export const NodeObject = {
 
             runner.executeFlow(node._id, 'exec_out');
         }
-    }
+    },
+    'find_closest_by_tag': {
+        getOutput: (runner, node, outputKey) => {
+            const targetTag = runner.getInputValue(node, 'tag');
+            const fromX = Number(runner.getInputValue(node, 'from_x')) || 0;
+            const fromY = Number(runner.getInputValue(node, 'from_y')) || 0;
+
+            const entities = runner.game.world.entities;
+            let closestId = null;
+            let minDistanceSq = Infinity; 
+
+            for (let i = 0; i < entities.length; i++) {
+                const other = entities[i];
+                if (other.active === false) continue;
+                
+                // Menyamakan logika pembacaan tag dengan sistem Collider kamu
+                const otherTag = other.tag || other.components?.Tags?.value;
+                if (otherTag !== targetTag) continue;
+
+                const t = other.components?.Transform;
+                if (!t) continue;
+
+                const dx = t.x - fromX;
+                const dy = t.y - fromY;
+                const distSq = (dx * dx) + (dy * dy);
+
+                if (distSq < minDistanceSq) {
+                    minDistanceSq = distSq;
+                    closestId = other.id || other._id || other.scriptId;
+                }
+            }
+
+            if (outputKey === 'target_id') return closestId;
+            if (outputKey === 'found') return closestId !== null;
+            
+            return null;
+        }
+    },
 }

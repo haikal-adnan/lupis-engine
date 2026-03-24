@@ -99,6 +99,18 @@ export default class TransformTool {
         return null;
     }
 
+    // HELPER BARU: Hanya ambil entity yang parent-nya TIDAK sedang diseleksi
+    _getTopLevelEntities(entities) {
+        return entities.filter(e => {
+            let curr = this._findEntityInWorld(e.parentId);
+            while (curr) {
+                if (entities.some(sel => String(sel._id || sel.id) === String(curr._id || curr.id))) return false;
+                curr = this._findEntityInWorld(curr.parentId);
+            }
+            return true;
+        });
+    }
+
     toWorld(px, py) {
         return this.selection.toWorld(px, py);
     }
@@ -156,7 +168,10 @@ export default class TransformTool {
         this.draggingResize = false;
         this.draggingRotate = false;
 
-        this.moveStartData = validEntities.map(e => {
+        // FIX: Terapkan filter Top Level disini
+        const topLevelEntities = this._getTopLevelEntities(validEntities);
+
+        this.moveStartData = topLevelEntities.map(e => {
             const t = this._getTransform(e);
             return { e, x: t.x, y: t.y };
         });
@@ -168,6 +183,9 @@ export default class TransformTool {
 
         this.initialState = this._createSnapshot();
         this.startWorld = this.toWorld(px, py);
+
+        // FIX: Terapkan filter Top Level disini
+        const topLevelEntities = this._getTopLevelEntities(validEntities);
 
         if (handle.mode === 'rotate') {
             this.draggingRotate = true;
@@ -181,11 +199,11 @@ export default class TransformTool {
             this.rotateCenter = { x: cx, y: cy };
             this.rotateStartAngle = Math.atan2(this.startWorld.y - cy, this.startWorld.x - cx);
             
-            if (validEntities.length === 1) {
-                const t = this._getTransform(validEntities[0]);
+            if (topLevelEntities.length === 1) {
+                const t = this._getTransform(topLevelEntities[0]);
                 this.entityStartRotation = t.rotation || 0;
             } else {
-                this.resizeEntityStarts = validEntities.map(e => {
+                this.resizeEntityStarts = topLevelEntities.map(e => {
                      const t = this._getTransform(e);
                      return { e, startRotation: t.rotation || 0, startX: t.x, startY: t.y };
                 });
@@ -196,7 +214,7 @@ export default class TransformTool {
             this.draggingMove = false;
             this.resizeType = handle.type;
 
-            this.resizeEntityStarts = validEntities.map(e => {
+            this.resizeEntityStarts = topLevelEntities.map(e => {
                 const t = this._getTransform(e);
                 let sx = t.scaleX ?? 1, sy = t.scaleY ?? 1;
                 let fx = Boolean(t.flipX), fy = Boolean(t.flipY);
@@ -256,7 +274,7 @@ export default class TransformTool {
             this.operator.resize(worldP, this.startWorld, this.resizeType, this.resizeEntityStarts, list, isUIMode);
         } 
         else if (this.draggingRotate) {
-             if (this.resizeEntityStarts) {
+             if (this.resizeEntityStarts && this.resizeEntityStarts.length > 1) {
                  this.operator.rotateMulti(worldP, this.rotateCenter, this.rotateStartAngle, this.resizeEntityStarts, list, isUIMode);
              } else {
                  this.operator.rotateSingle(worldP, this.rotateCenter, this.rotateStartAngle, this.entityStartRotation, list, isUIMode);

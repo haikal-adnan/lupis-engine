@@ -33,7 +33,7 @@ export function useAssetBackend() {
     const response = await fetchWithTimeout(`${API_URL}/assets/createAsset`, {
       method: 'POST',
       body: formData
-    }, 10000);
+    }, 20000);
 
     const result = await handleResponse(response, 'Gagal membuat asset di server');
     return result.data; 

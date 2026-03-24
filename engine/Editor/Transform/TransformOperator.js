@@ -18,6 +18,50 @@ export class TransformOperator {
         return activeTab?.type === 'tilemap';
     }
 
+    _findEntityInWorld(id) {
+        const allLayers = [...(this.world.layersWorld || []), ...(this.world.layersUI || [])];
+        for (const layer of allLayers) {
+            if (layer.entities) {
+                const found = layer.entities.find(e => String(e.id || e._id) === String(id));
+                if (found) return found;
+            }
+        }
+        return null;
+    }
+
+    _getGlobalTransform(e) {
+        const t = this._getTransform(e);
+        if (!t) return { x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1 };
+
+        if (!e.parentId) return {
+            x: t.x, y: t.y, rotation: t.rotation || 0,
+            scaleX: t.scaleX ?? 1, scaleY: t.scaleY ?? 1
+        };
+
+        const parentEntity = this._findEntityInWorld(e.parentId);
+        if (!parentEntity) return { ...t };
+
+        const parentGlobal = this._getGlobalTransform(parentEntity);
+
+        const parentRad = parentGlobal.rotation * (Math.PI / 180);
+        const cos = Math.cos(parentRad);
+        const sin = Math.sin(parentRad);
+
+        const scaledLocalX = t.x * parentGlobal.scaleX;
+        const scaledLocalY = t.y * parentGlobal.scaleY;
+
+        const rotatedX = (scaledLocalX * cos) - (scaledLocalY * sin);
+        const rotatedY = (scaledLocalX * sin) + (scaledLocalY * cos);
+
+        return {
+            x: parentGlobal.x + rotatedX,
+            y: parentGlobal.y + rotatedY,
+            rotation: parentGlobal.rotation + (t.rotation || 0),
+            scaleX: parentGlobal.scaleX * (t.scaleX ?? 1),
+            scaleY: parentGlobal.scaleY * (t.scaleY ?? 1)
+        };
+    }
+
     getSnapSettings(isUIMode = false) {
         if (isUIMode) return { shouldSnap: false, gridSize: 1 };
         const gridSettings = this.world.settings?.grid || { snap: true, width: 32 };
@@ -41,7 +85,7 @@ export class TransformOperator {
 
         if (shouldSnap && startData.length > 0) {
             const leader = startData[0];
-            const targetX = leader.x + dx;
+            const targetX = leader.x + dx; // This is raw local movement if no parent, which is fine
             const targetY = leader.y + dy;
             const snappedX = Math.round(targetX / gridSize) * gridSize;
             const snappedY = Math.round(targetY / gridSize) * gridSize;
@@ -54,8 +98,29 @@ export class TransformOperator {
         for (const item of startData) {
             const t = this._getTransform(item.e);
             if (t) {
-                const newX = Math.round(item.x + finalDx);
-                const newY = Math.round(item.y + finalDy);
+                let localDx = finalDx;
+                let localDy = finalDy;
+
+                // Konversi delta dunia ke delta lokal jika dia adalah child
+                if (item.e.parentId) {
+                    const parentEntity = this._findEntityInWorld(item.e.parentId);
+                    if (parentEntity) {
+                        const parentGlobal = this._getGlobalTransform(parentEntity);
+                        
+                        const invRad = -parentGlobal.rotation * (Math.PI / 180);
+                        const cos = Math.cos(invRad);
+                        const sin = Math.sin(invRad);
+
+                        const rotatedDx = (finalDx * cos) - (finalDy * sin);
+                        const rotatedDy = (finalDx * sin) + (finalDy * cos);
+
+                        localDx = rotatedDx / parentGlobal.scaleX;
+                        localDy = rotatedDy / parentGlobal.scaleY;
+                    }
+                }
+
+                const newX = Math.round(item.x + localDx);
+                const newY = Math.round(item.y + localDy);
                 
                 if (t.x !== newX || t.y !== newY) {
                     t.x = newX;
@@ -73,12 +138,14 @@ export class TransformOperator {
     rotateSingle(nowPos, rotateCenter, rotateStartAngle, entityStartRotation, selectedList, isUIMode) {
         if (this._isTilemapMode()) return;
         if (!selectedList || selectedList.length === 0) return;
-        const t = this._getTransform(selectedList[0]);
+        const e = selectedList[0];
+        const t = this._getTransform(e);
         if (!t) return;
 
         const currentAngle = Math.atan2(nowPos.y - rotateCenter.y, nowPos.x - rotateCenter.x);
         let deltaAngle = currentAngle - rotateStartAngle;
 
+        // Rotasi selalu ditambahkan secara linear baik global maupun lokal
         const startRad = entityStartRotation * (Math.PI / 180);
         let newRad = startRad + deltaAngle;
         let newDeg = newRad * (180 / Math.PI);
@@ -118,6 +185,11 @@ export class TransformOperator {
             let newDeg = (startRad + deltaAngle) * (180 / Math.PI);
             const newRotation = Math.round((newDeg % 360 + 360) % 360);
 
+            let localDx = rotateCenter.x;
+            let localDy = rotateCenter.y;
+
+            // Logika offset posisi belum mempertimbangkan parent skala penuh di multi-select
+            // Ini untuk kesederhanaan offset sementara pada root level
             const dx = item.startX - rotateCenter.x;
             const dy = item.startY - rotateCenter.y;
             const cos = Math.cos(deltaAngle);
@@ -156,15 +228,18 @@ export class TransformOperator {
         const t = this._getTransform(e);
         if (!t) return;
 
-        const rRad = item.r * (Math.PI / 180);
+        // Dapatkan rotasi global dari object
+        const globalT = this._getGlobalTransform(e);
+        const rRad = (globalT.rotation || 0) * (Math.PI / 180);
+        
         const c = Math.cos(-rRad);
         const s = Math.sin(-rRad);
         
         const localDx = dx * c - dy * s;
         const localDy = dx * s + dy * c;
 
-        const safeScaleX = Math.abs(item.sx) < 0.001 ? 0.001 : Math.abs(item.sx);
-        const safeScaleY = Math.abs(item.sy) < 0.001 ? 0.001 : Math.abs(item.sy);
+        const safeScaleX = Math.abs(globalT.scaleX) < 0.001 ? 0.001 : Math.abs(globalT.scaleX);
+        const safeScaleY = Math.abs(globalT.scaleY) < 0.001 ? 0.001 : Math.abs(globalT.scaleY);
 
         let dVisualW = 0, dVisualH = 0;
         let anchorX = null, anchorY = null; 
@@ -222,16 +297,40 @@ export class TransformOperator {
         const wc = Math.cos(rRad);
         const ws = Math.sin(rRad);
 
-        const newX = Math.round(item.x + (shiftX_World * wc - shiftY_World * ws));
-        const newY = Math.round(item.y + (shiftX_World * ws + shiftY_World * wc));
+        // Calculate world delta position
+        const worldDx = shiftX_World * wc - shiftY_World * ws;
+        const worldDy = shiftX_World * ws + shiftY_World * wc;
+
+        // Convert world delta position back to local for the actual transform assignment
+        let localShiftX = worldDx;
+        let localShiftY = worldDy;
+
+        if (e.parentId) {
+            const parentEntity = this._findEntityInWorld(e.parentId);
+            if (parentEntity) {
+                const parentGlobal = this._getGlobalTransform(parentEntity);
+                const invRad = -parentGlobal.rotation * (Math.PI / 180);
+                const pCos = Math.cos(invRad);
+                const pSin = Math.sin(invRad);
+
+                const rotDx = (worldDx * pCos) - (worldDy * pSin);
+                const rotDy = (worldDx * pSin) + (worldDy * pCos);
+
+                localShiftX = rotDx / parentGlobal.scaleX;
+                localShiftY = rotDy / parentGlobal.scaleY;
+            }
+        }
+
+        const newX = Math.round(item.x + localShiftX);
+        const newY = Math.round(item.y + localShiftY);
         
         if (t.width !== newW || t.height !== newH || t.x !== newX || t.y !== newY || t.flipX !== newFlipX || t.flipY !== newFlipY) {
             t.flipX = newFlipX;
             t.flipY = newFlipY;
             t.width = newW;
             t.height = newH;
-            t.scaleX = safeScaleX; 
-            t.scaleY = safeScaleY;
+            t.scaleX = Math.abs(t.scaleX); // Scale remains local, we don't mess with it here
+            t.scaleY = Math.abs(t.scaleY);
             t.x = newX;
             t.y = newY;
             t.overridden = true; 

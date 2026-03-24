@@ -1,4 +1,4 @@
-import { onUnmounted, watch } from 'vue'
+import { onUnmounted, watch, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'; 
 import { useProjectStore } from '@/stores/useProjectStore'
 import { useProjectWatcher } from '@/composables/useProjectWatcher'
@@ -88,7 +88,7 @@ export function useAppInit() {
   });
 
   return {
-    isLoading: projectStore.isLoading,
-    project: projectStore.project
+    isLoading: computed(() => projectStore.isLoading),
+    project: computed(() => projectStore.project)
   }
 }

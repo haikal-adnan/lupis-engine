@@ -87,6 +87,7 @@ export const BlueprintString = {
           { _id: 'res', label: 'String', dataType: 'string', color: '#FFB74D' }
         ]
       } 
-    }
+    },
+    
   ]
 };

@@ -1,22 +1,20 @@
-import { ref } from 'vue';
+import { ref, computed } from 'vue'; // Tambahkan computed
 import { useEditorStore } from '@/stores/useEditorStore.js';
 import { useProjectStore } from '@/stores/useProjectStore.js';
 import { useClipboard } from '@/composables/useClipboard.js';
+import { useSceneStore } from '@/stores/scene/useSceneStore.js'; // Tambahkan ini untuk akses scene
 
 import { 
-  Plus, Trash2, Edit2, Folder, RefreshCw, 
+  Plus, Trash2, Edit2, RefreshCw, 
   Cuboid, Image, Type, Square, InspectionPanel,
-  MousePointerClick, Maximize, Copy, Scissors, Clipboard, Files, Layers
+  Maximize, Copy, Scissors, Clipboard, Files, Layers,
+  Box // Tambahkan ikon Box
 } from 'lucide-vue-next';
-
-const showPlaceholderAlert = () => {
-   alert("Group creation is temporarily disabled (Placeholder).");
-};
 
 export function useHierarchyMenu(handlers) {
   const contextMenu = ref({ visible: false, x: 0, y: 0, items: [] });
   const editorStore = useEditorStore();
-  const projectStore = useProjectStore();
+  const sceneStore = useSceneStore(); // Inisialisasi store
   const { copy, cut, paste, duplicate, remove } = useClipboard();
 
   const closeMenu = () => {
@@ -28,6 +26,18 @@ export function useHierarchyMenu(handlers) {
     if (action) action();
   };
 
+  // Helper untuk mengecek apakah sebuah entitas adalah child dari prefab
+  const isDescendantOfPrefab = (entityId) => {
+    const entities = sceneStore.activeScene?.entities;
+    if (!entities) return false;
+
+    let current = entities.find(e => e._id === entityId);
+    while (current && current.parentId) {
+      current = entities.find(e => e._id === current.parentId);
+      if (current && current.prefabId) return true;
+    }
+    return false;
+  };
 
   const openMenu = (event, node, section = 'world') => {
     let isUIContext = false;
@@ -51,8 +61,6 @@ export function useHierarchyMenu(handlers) {
       { label: 'Shape', icon: Square, action: () => runAction(() => handlers.createEntity('shape', node)) },
       { label: 'Text', icon: Type, action: () => runAction(() => handlers.createEntity('text', node)) },
       { label: 'Tilemap', icon: InspectionPanel, action: () => runAction(() => handlers.createEntity('tilemap', node)) },
-      { separator: true },
-      { label: 'Group (Disabled)', icon: Folder, action: () => runAction(showPlaceholderAlert) } 
     ];
 
     const worldX = 0;
@@ -64,8 +72,6 @@ export function useHierarchyMenu(handlers) {
       { label: 'UI Shape', icon: Square, action: () => runAction(() => handlers.createEntity('ui_shape', node, { x: worldX, y: worldY })) },
       { label: 'UI Text', icon: Type, action: () => runAction(() => handlers.createEntity('ui_text', node, { x: worldX, y: worldY })) },
       { label: 'UI Image', icon: Image, action: () => runAction(() => handlers.createEntity('ui_image', node, { x: worldX, y: worldY })) },
-      { separator: true },
-      { label: 'Group (Disabled)', icon: Folder, action: () => runAction(showPlaceholderAlert) }
     ];
 
     const items = [];
@@ -137,6 +143,23 @@ export function useHierarchyMenu(handlers) {
         });
 
         items.push({ separator: true });
+        
+        // --- LOGIKA "USE AS PREFAB" ---
+        const isMultiSelect = sceneStore.selectedEntityIds.length > 1;
+        const isAlreadyPrefab = !!node.prefabId;
+        const isChildOfPrefab = isDescendantOfPrefab(node._id);
+        
+        const disablePrefabAction = isMultiSelect || isAlreadyPrefab || isChildOfPrefab;
+
+        items.push({ 
+            label: 'Use as Prefab', 
+            icon: Box, 
+            disabled: disablePrefabAction,
+            action: () => runAction(() => handlers.useAsPrefab(node._id)) // Pastikan parent (Hierarchy.vue) passing method ini ke handlers
+        });
+        
+        items.push({ separator: true });
+        
         items.push(
           { label: 'Rename Entity', icon: Edit2, shortcut: 'F2', action: () => runAction(() => handlers.renameEntity(node._id)) },
           { separator: true },

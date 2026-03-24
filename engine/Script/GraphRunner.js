@@ -222,17 +222,25 @@ export default class GraphRunner {
         }
     }
 
+    hasInputConnection(nodeId, inputKey) {
+        return this.edges.some(e => e.target === nodeId && e.targetHandle === inputKey);
+    }
+
     executeFlow(sourceNodeId, sourcePortName) {
-        const edge = this.edges.find(e =>
+        // 1. Gunakan filter untuk mengambil SEMUA kabel yang keluar dari pin ini
+        const connectedEdges = this.edges.filter(e =>
             e.source === sourceNodeId && e.sourceHandle === sourcePortName
         );
 
-        if (!edge) return;
+        if (connectedEdges.length === 0) return;
 
-        const targetNode = this.nodeMap.get(edge.target);
-        if (targetNode) {
-            this._executeNodeLogic(targetNode);
-        }
+        // 2. Loop dan eksekusi semua node tujuan secara berurutan
+        connectedEdges.forEach(edge => {
+            const targetNode = this.nodeMap.get(edge.target);
+            if (targetNode) {
+                this._executeNodeLogic(targetNode);
+            }
+        });
     }
 
     _executeNodeLogic(node) {

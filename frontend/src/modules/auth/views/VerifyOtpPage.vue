@@ -33,10 +33,16 @@
         </button>
       </form>
 
-      <div class="mt-6 text-center">
-        <p class="text-sm text-muted-foreground">
-          Sisa waktu: <span class="font-mono font-bold" :class="timeLeft <= 30 ? 'text-destructive' : 'text-foreground'">{{ formattedTime }}</span>
-        </p>
+      <div class="mt-6 flex flex-col items-center">
+        <button 
+          @click="handleResendOtp"
+          :disabled="isLoading || cooldownLeft > 0"
+          type="button"
+          class="text-sm font-medium transition-colors"
+          :class="cooldownLeft > 0 ? 'text-muted-foreground cursor-not-allowed' : 'text-cyan-400 hover:text-cyan-300'"
+        >
+          {{ resendButtonText }}
+        </button>
       </div>
 
     </div>
@@ -45,51 +51,47 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
-import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useAuthActions } from '@/stores/scene/useAuthActions.js'; 
-import { useAuthBackend } from '@/services/api/backend/useAuthBackend.js';
 import { usePopAlert } from '@/composables/usePopAlert'; 
 
 const route = useRoute();
 const router = useRouter();
-const { verifyOtp, isLoading, errorMessage } = useAuthActions();
-const { cancelRegistration } = useAuthBackend();
+const { verifyOtp, resendOtp, isLoading, errorMessage } = useAuthActions();
 const { showPop } = usePopAlert();
 
 const userEmail = ref('');
 const otpCode = ref('');
 
-const TOTAL_SECONDS = 180;
-const timeLeft = ref(TOTAL_SECONDS);
-let timerInterval = null;
-let isActivated = false;
+// Konfigurasi Cooldown
+const COOLDOWN_SECONDS = 180; // 3 menit
+const cooldownLeft = ref(0); // Diubah menjadi 0 agar tombol langsung aktif di awal
+let cooldownInterval = null;
 
-const formattedTime = computed(() => {
-    const minutes = Math.floor(timeLeft.value / 60);
-    const seconds = timeLeft.value % 60;
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+// Teks dinamis untuk tombol resend
+const resendButtonText = computed(() => {
+    if (isLoading.value) return 'Mengirim Ulang...';
+    if (cooldownLeft.value > 0) {
+        const minutes = Math.floor(cooldownLeft.value / 60);
+        const seconds = cooldownLeft.value % 60;
+        const timeString = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        return `Kirim Ulang Kode OTP (${timeString})`;
+    }
+    return 'Kirim Ulang Kode OTP';
 });
 
-const destroyOtpSession = async (reason) => {
-    if (isActivated || !userEmail.value) return;
-
-    if (reason === 'tab_closed') {
-        cancelRegistration(userEmail.value, true);
-    } else {
-        await cancelRegistration(userEmail.value, false);
-    }
-
-    if (reason === 'timeout' || reason === 'route_changed') {
-        sessionStorage.removeItem('otp_access_token');
-        if (reason === 'timeout') {
-            showPop({
-                title: 'Waktu Habis',
-                message: 'Sesi aktivasi Anda telah berakhir.',
-                type: 'error'
-            });
-            router.replace('/');
+// Fungsi untuk menjalankan timer 3 menit
+const startCooldown = () => {
+    if (cooldownInterval) clearInterval(cooldownInterval);
+    cooldownLeft.value = COOLDOWN_SECONDS;
+    
+    cooldownInterval = setInterval(() => {
+        if (cooldownLeft.value > 0) {
+            cooldownLeft.value--;
+        } else {
+            clearInterval(cooldownInterval);
         }
-    }
+    }, 1000);
 };
 
 onMounted(() => {
@@ -103,33 +105,14 @@ onMounted(() => {
 
     try {
         userEmail.value = atob(hash);
-        timerInterval = setInterval(() => {
-            if (timeLeft.value > 0) timeLeft.value--;
-            else {
-                clearInterval(timerInterval);
-                destroyOtpSession('timeout');
-            }
-        }, 1000);
-        window.addEventListener('beforeunload', handleTabClose);
+        // Hapus pemanggilan startCooldown() dari sini agar timer tidak otomatis jalan
     } catch (e) {
         router.replace('/');
     }
 });
 
 onUnmounted(() => {
-    if (timerInterval) clearInterval(timerInterval);
-    window.removeEventListener('beforeunload', handleTabClose);
-});
-
-const handleTabClose = () => {
-    if (!isActivated) destroyOtpSession('tab_closed');
-};
-
-onBeforeRouteLeave((to, from, next) => {
-    if (!isActivated && to.name !== 'VerifyOTP') {
-        destroyOtpSession('route_changed');
-    }
-    next();
+    if (cooldownInterval) clearInterval(cooldownInterval);
 });
 
 const handleActivation = async () => {
@@ -138,13 +121,24 @@ const handleActivation = async () => {
     const result = await verifyOtp(userEmail.value, otpCode.value);
     
     if (result.success) {
-        isActivated = true;
-        if (timerInterval) clearInterval(timerInterval);
+        if (cooldownInterval) clearInterval(cooldownInterval);
         
         sessionStorage.removeItem('otp_access_token');
         sessionStorage.setItem('lupis_initial_check', 'true');
 
         router.replace('/dashboard'); 
+    }
+};
+
+const handleResendOtp = async () => {
+    // Cegah double klik saat sedang memuat atau masih cooldown
+    if (cooldownLeft.value > 0 || isLoading.value) return;
+
+    const result = await resendOtp(userEmail.value);
+    
+    if (result.success) {
+        otpCode.value = ''; // Kosongkan input agar user bisa mengetik kode baru
+        startCooldown(); // Mulai timer 3 menit HANYA setelah resend berhasil
     }
 };
 </script>

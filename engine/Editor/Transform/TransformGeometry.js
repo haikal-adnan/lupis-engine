@@ -17,12 +17,67 @@ export class TransformGeometry {
         return { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
     }
 
+    _findEntityInWorld(id) {
+        const allLayers = [...(this.world.layersWorld || []), ...(this.world.layersUI || [])];
+        for (const layer of allLayers) {
+            if (layer.entities) {
+                const found = layer.entities.find(e => String(e.id || e._id) === String(id));
+                if (found) return found;
+            }
+        }
+        return null;
+    }
+
+    getGlobalTransform(e) {
+        const t = this._getTransform(e);
+        if (!t) return { x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1, pivotX: 0.5, pivotY: 0.5, width: 100, height: 100 };
+
+        if (!e.parentId) {
+            return {
+                x: t.x, y: t.y,
+                rotation: t.rotation || 0,
+                scaleX: t.scaleX ?? 1, scaleY: t.scaleY ?? 1,
+                pivotX: t.pivotX ?? 0.5, pivotY: t.pivotY ?? 0.5,
+                width: t.width, height: t.height
+            };
+        }
+
+        const parentEntity = this._findEntityInWorld(e.parentId);
+        if (!parentEntity) return { ...t }; 
+
+        const parentGlobal = this.getGlobalTransform(parentEntity);
+
+        const parentRad = parentGlobal.rotation * (Math.PI / 180);
+        const cos = Math.cos(parentRad);
+        const sin = Math.sin(parentRad);
+
+        const scaledLocalX = t.x * parentGlobal.scaleX;
+        const scaledLocalY = t.y * parentGlobal.scaleY;
+
+        const rotatedX = (scaledLocalX * cos) - (scaledLocalY * sin);
+        const rotatedY = (scaledLocalX * sin) + (scaledLocalY * cos);
+
+        return {
+            x: parentGlobal.x + rotatedX,
+            y: parentGlobal.y + rotatedY,
+            rotation: parentGlobal.rotation + (t.rotation || 0),
+            scaleX: parentGlobal.scaleX * (t.scaleX ?? 1),
+            scaleY: parentGlobal.scaleY * (t.scaleY ?? 1),
+            pivotX: t.pivotX ?? 0.5, 
+            pivotY: t.pivotY ?? 0.5,
+            width: t.width, 
+            height: t.height
+        };
+    }
+
     calculateAbsolutePosition(e) {
         const t = this._getTransform(e);
         if (!t) return { x: 0, y: 0 };
 
+        const globalT = this.getGlobalTransform(e);
+
         if (!e.components.UITransform) {
-            return { x: t.x, y: t.y };
+            return { x: globalT.x, y: globalT.y };
         }
 
         const uiSettings = this.world.settings?.ui || { width: 1920, height: 1080 };
@@ -34,8 +89,8 @@ export class TransformGeometry {
         const anchorPointY = parentBounds.y + (parentBounds.height * anchorY);
 
         return { 
-            x: anchorPointX + (t.x || 0), 
-            y: anchorPointY + (t.y || 0) 
+            x: anchorPointX + (globalT.x || 0), 
+            y: anchorPointY + (globalT.y || 0) 
         };
     }
 
@@ -59,10 +114,17 @@ export class TransformGeometry {
             const t = this._getTransform(e);
             if (!t) return;
 
+            const globalT = this.getGlobalTransform(e);
             const absPos = this.calculateAbsolutePosition(e);
-            const rRad = (t.rotation || 0) * (Math.PI / 180);
+            const rRad = (globalT.rotation || 0) * (Math.PI / 180);
             
-            const v = calculateQuadVertices(absPos.x, absPos.y, t.width, t.height, rRad, t.scaleX??1, t.scaleY??1, t.pivotX??0.5, t.pivotY??0.5);
+            const v = calculateQuadVertices(
+                absPos.x, absPos.y, 
+                t.width, t.height, 
+                rRad, 
+                globalT.scaleX ?? 1, globalT.scaleY ?? 1, 
+                globalT.pivotX ?? 0.5, globalT.pivotY ?? 0.5
+            );
 
             const nw = { type: "nw", x: v.tl.x, y: v.tl.y };
             const ne = { type: "ne", x: v.tr.x, y: v.tr.y };
@@ -87,9 +149,17 @@ export class TransformGeometry {
             const t = this._getTransform(e);
             if (!t) continue;
             
+            const globalT = this.getGlobalTransform(e);
             const absPos = this.calculateAbsolutePosition(e);
-            const rRad = (t.rotation || 0) * (Math.PI / 180);
-            const v = calculateQuadVertices(absPos.x, absPos.y, t.width, t.height, rRad, t.scaleX??1, t.scaleY??1, t.pivotX??0.5, t.pivotY??0.5);
+            const rRad = (globalT.rotation || 0) * (Math.PI / 180);
+            
+            const v = calculateQuadVertices(
+                absPos.x, absPos.y, 
+                t.width, t.height, 
+                rRad, 
+                globalT.scaleX ?? 1, globalT.scaleY ?? 1, 
+                globalT.pivotX ?? 0.5, globalT.pivotY ?? 0.5
+            );
             
             const xs = [v.tl.x, v.tr.x, v.bl.x, v.br.x];
             const ys = [v.tl.y, v.tr.y, v.bl.y, v.br.y];
