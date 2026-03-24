@@ -37,7 +37,6 @@ export const createUITransform = (data = {}, defaults = { width: 160, height: 40
 };
 
 export const createCollider = (data = {}) => {
-  // Jika sudah berupa array, gunakan data yang ada. Jika belum, jadikan objek lama ke format array.
   return {
     data: Array.isArray(data.data) ? data.data : [{
       type: data.type || "solid", 
@@ -100,12 +99,27 @@ export const createComponent = (type, inputData = {}) => {
     case "TextRenderer":
       specificData = {
         value: inputData.value || "New Text",
+        mode: inputData.mode || "static", // "static" atau "rich"
+        assetId: inputData.assetId || null,
+        
         fontSize: Number(inputData.fontSize || 24),
         color: inputData.color || "#FFFFFF",
-        align: inputData.align || "left",
-        assetId: inputData.assetId || null,
         opacity: Number(inputData.opacity ?? 1),
+        align: inputData.align || "left",
+        maxWidth: Number(inputData.maxWidth || 500),
+        lineSpacing: Number(inputData.lineSpacing || 1.2),
+        letterSpacing: Number(inputData.letterSpacing || 0),
+        overflow: inputData.overflow || "wrap", // "wrap", "truncate", "ellipsis"
         autoFit: Boolean(inputData.autoFit ?? true),
+
+        smoothing: Number(inputData.smoothing || 0.1),
+        outlineWidth: Number(inputData.outlineWidth || 0),
+        outlineColor: inputData.outlineColor || "#000000",
+
+        shadowEnabled: Boolean(inputData.shadowEnabled || false),
+        shadowColor: inputData.shadowColor || "rgba(0,0,0,0.5)",
+        shadowOffset: inputData.shadowOffset || { x: 2, y: -2 },
+
         ...inputData
       };
       break;

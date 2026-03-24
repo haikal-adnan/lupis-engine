@@ -1,9 +1,11 @@
 import { computed } from 'vue';
 import { useSceneStore } from '@/stores/scene/useSceneStore';
+import { useEditorStore } from '@/stores/useEditorStore.js';
 import { usePopAlert } from '@/composables/usePopAlert';
 
 export function useHierarchyLogic() {
   const sceneStore = useSceneStore();
+  const editorStore = useEditorStore();
   const { showPop } = usePopAlert();
 
   const entities = computed(() => sceneStore.activeEntities || []);
@@ -111,28 +113,13 @@ export function useHierarchyLogic() {
     return false;
   };
 
-  const containsType = (entityId, typeToCheck) => {
-    const entity = getEntityById(entityId);
-    if (!entity) return false;
-
-    const isUIEntity = entity.type === 'ui' || (entity.components && entity.components.UITransform);
-    
-    if (typeToCheck === 'ui' && isUIEntity) return true;
-    if (typeToCheck === 'world' && !isUIEntity && entity.type !== 'group') return true;
-
-    const children = entities.value.filter(e => e.parentId === entityId);
-    for (const child of children) {
-      if (containsType(child._id, typeToCheck)) return true;
-    }
-    return false;
-  };
-
   const moveEntity = (draggedId, targetNode, position) => {
     if (!draggedId) return;
 
     const draggedLayer = getLayerById(draggedId);
     const draggedEntity = getEntityById(draggedId);
     
+    // LAYER LOGIC
     if (draggedLayer) {
         if (!targetNode || targetNode.type !== 'layer') return;
         const draggedIsUI = draggedLayer._section === 'ui' || (draggedLayer.name && draggedLayer.name.includes('UI'));
@@ -146,6 +133,7 @@ export function useHierarchyLogic() {
         return;
     }
 
+    // ENTITY LOGIC
     if (draggedEntity) {
         if (!targetNode) {
              sceneStore.moveEntity(draggedId, {
@@ -158,14 +146,8 @@ export function useHierarchyLogic() {
 
         const targetId = targetNode._id;
         if (draggedId === targetId) return;
-        if (targetNode.type !== 'layer' && isAncestor(draggedId, targetId)) return;
-
-        if (position === 'inside' && targetNode.type !== 'layer') {
-            showPop({ 
-                title: 'Grouping Disabled', 
-                message: 'Grouping/Nesting entities is temporarily disabled due to stability issues.', 
-                type: 'warning' 
-            });
+        if (targetNode.type !== 'layer' && isAncestor(draggedId, targetId)) {
+            showPop({ title: 'Invalid Move', message: 'Cannot move an entity inside its own child.', type: 'error' });
             return;
         }
 
@@ -182,22 +164,17 @@ export function useHierarchyLogic() {
         }
 
         const isDraggedUI = draggedEntity.type === 'ui' || (draggedEntity.components && draggedEntity.components.UITransform);
-        const isGroup = draggedEntity.type === 'group';
 
-        if (isGroup) {
-        } else {
-            if (isDraggedUI && !isTargetUI) {
-                showPop({ title: 'Invalid Move', message: 'UI Entity cannot go to World Layer.', type: 'error' });
-                return;
-            }
-            if (!isDraggedUI && isTargetUI) {
-                showPop({ title: 'Invalid Move', message: 'World Entity cannot go to UI Layer.', type: 'error' });
-                return;
-            }
+        if (isDraggedUI && !isTargetUI) {
+            showPop({ title: 'Invalid Move', message: 'UI Entity cannot go to World Layer.', type: 'error' });
+            return;
+        }
+        if (!isDraggedUI && isTargetUI) {
+            showPop({ title: 'Invalid Move', message: 'World Entity cannot go to UI Layer.', type: 'error' });
+            return;
         }
 
         const isSameParent = (draggedEntity.parentId || null) === (targetNode.parentId || null);
-
         if (targetNode.type !== 'layer' && (position === 'top' || position === 'bottom') && isSameParent) {
             const targetZ = targetNode.zIndex ?? 0;
             const draggedZ = draggedEntity.zIndex ?? 0;
@@ -212,6 +189,7 @@ export function useHierarchyLogic() {
             }
         }
 
+        // BUILDING CONTEXT FOR STORE
         const context = {
             newParentId: null,
             newLayerId: null,
@@ -222,6 +200,11 @@ export function useHierarchyLogic() {
         if (targetNode.type === 'layer') {
             context.newLayerId = targetNode._id;
             context.newParentId = null; 
+            context.insertionType = 'append';
+        } else if (position === 'inside') {
+            // [AKTIFKAN NESTING DISINI]
+            context.newParentId = targetNode._id;
+            context.newLayerId = targetNode.layerId;
             context.insertionType = 'append';
         } else {
              context.newParentId = targetNode.parentId || null;

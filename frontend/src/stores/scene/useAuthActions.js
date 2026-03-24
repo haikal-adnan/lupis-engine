@@ -5,7 +5,9 @@ import { useAuthStore } from '@/stores/useAuthStore.js';
 import { usePopAlert } from '@/composables/usePopAlert.js';
 
 export function useAuthActions() {
-    const { loginUser, registerUser, verifyOtpUser } = useAuthBackend();
+    // 1. Tambahkan googleAuth di sini
+    const { loginUser, registerUser, verifyOtpUser, resendOtpUser, googleAuth } = useAuthBackend();
+    
     const router = useRouter();
     const route = useRoute();
     const authStore = useAuthStore();
@@ -106,17 +108,78 @@ export function useAuthActions() {
     };
 
     const verifyOtp = async (email, otp) => {
+        authStore.setLoading(true);
+        authStore.setError('');
+        try {
+            const data = await verifyOtpUser(email, otp);
+            
+            _saveLocalData(data.user, data.token);
+            authStore.setAuthData(data.user, data.token);
+
+            showPop({
+                title: 'Verifikasi Berhasil',
+                message: 'Akun Anda telah aktif. Selamat datang di Lupis Engine!',
+                type: 'success'
+            });
+
+            return { success: true, data };
+        } catch (error) {
+            authStore.setError(error.message);
+            
+            showPop({
+                title: 'Verifikasi Gagal',
+                message: error.message || 'Kode OTP tidak valid atau sudah kadaluarsa.',
+                type: 'error'
+            });
+
+            return { success: false, error: error.message };
+        } finally {
+            authStore.setLoading(false);
+        }
+    };
+
+    const resendOtp = async (email) => {
+        authStore.setLoading(true);
+        authStore.setError('');
+        try {
+            const result = await resendOtpUser(email);
+            
+            showPop({
+                title: 'OTP Terkirim',
+                message: result.message || 'Kode OTP baru telah dikirim ke email Anda.',
+                type: 'info'
+            });
+
+            return { success: true };
+        } catch (error) {
+            authStore.setError(error.message);
+            
+            showPop({
+                title: 'Gagal Kirim OTP',
+                message: error.message || 'Terjadi kesalahan saat meminta OTP baru.',
+                type: 'error'
+            });
+
+            return { success: false, error: error.message };
+        } finally {
+            authStore.setLoading(false);
+        }
+    };
+
+    // 2. TAMBAHKAN FUNGSI loginWithGoogle DI SINI
+    const loginWithGoogle = async (googleToken) => {
       authStore.setLoading(true);
       authStore.setError('');
+      
       try {
-        const data = await verifyOtpUser(email, otp);
+        const data = await googleAuth(googleToken);
         
         _saveLocalData(data.user, data.token);
         authStore.setAuthData(data.user, data.token);
 
         showPop({
-          title: 'Verifikasi Berhasil',
-          message: 'Akun Anda telah aktif. Selamat datang di Lupis Engine!',
+          title: 'Google Login Sukses',
+          message: `Halo @${data.user.username || data.user.display_name}, selamat datang.`,
           type: 'success'
         });
 
@@ -125,8 +188,8 @@ export function useAuthActions() {
         authStore.setError(error.message);
         
         showPop({
-          title: 'Verifikasi Gagal',
-          message: error.message || 'Kode OTP tidak valid atau sudah kadaluarsa.',
+          title: 'Google Login Gagal',
+          message: error.message || 'Gagal terhubung dengan akun Google.',
           type: 'error'
         });
 
@@ -173,6 +236,8 @@ export function useAuthActions() {
       login,
       register,
       verifyOtp,
+      resendOtp,
+      loginWithGoogle, // 3. PASTIKAN loginWithGoogle DI-RETURN DI SINI
       logout,
       getCurrentUser,
       isLoading,

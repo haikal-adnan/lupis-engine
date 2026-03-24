@@ -63,5 +63,6 @@ export const NodeString = {
 
             return String(val);
         }
-    }
+    },
+    
 };

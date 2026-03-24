@@ -26,6 +26,59 @@ export default class UIRenderer {
         });
     }
 
+    // HELPER: Mencari Entity
+    _findEntityById(world, id) {
+        const allLayers = [...(world.layersWorld || []), ...(world.layersUI || [])];
+        for (const layer of allLayers) {
+            if (!layer.entities) continue;
+            const found = layer.entities.find(e => String(e.id || e._id) === String(id));
+            if (found) return found;
+        }
+        return null;
+    }
+
+    // HELPER: Kalkulasi Global Transform untuk Rendering
+    getGlobalTransform(e, world) {
+        const t = e.components && (e.components.UITransform || e.components.Transform);
+        if (!t) return { x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1, pivotX: 0.5, pivotY: 0.5, width: 100, height: 100 };
+
+        if (!e.parentId) {
+            return {
+                x: t.x, y: t.y,
+                rotation: t.rotation || 0,
+                scaleX: t.scaleX ?? 1, scaleY: t.scaleY ?? 1,
+                pivotX: t.pivotX ?? 0.5, pivotY: t.pivotY ?? 0.5,
+                width: t.width, height: t.height
+            };
+        }
+
+        const parentEntity = this._findEntityById(world, e.parentId);
+        if (!parentEntity) return { ...t }; 
+
+        const parentGlobal = this.getGlobalTransform(parentEntity, world);
+
+        const parentRad = parentGlobal.rotation * (Math.PI / 180);
+        const cos = Math.cos(parentRad);
+        const sin = Math.sin(parentRad);
+
+        const scaledLocalX = t.x * parentGlobal.scaleX;
+        const scaledLocalY = t.y * parentGlobal.scaleY;
+
+        const rotatedX = (scaledLocalX * cos) - (scaledLocalY * sin);
+        const rotatedY = (scaledLocalX * sin) + (scaledLocalY * cos);
+
+        return {
+            x: parentGlobal.x + rotatedX,
+            y: parentGlobal.y + rotatedY,
+            rotation: parentGlobal.rotation + (t.rotation || 0),
+            scaleX: parentGlobal.scaleX * (t.scaleX ?? 1),
+            scaleY: parentGlobal.scaleY * (t.scaleY ?? 1),
+            pivotX: t.pivotX ?? 0.5, 
+            pivotY: t.pivotY ?? 0.5,
+            width: t.width, height: t.height
+        };
+    }
+
     render(world, proj, isSceneMode = false) {
         const isEditor = Config.ENGINE_MODE === "editor";
         const uiSettings = world.settings?.ui || { 
@@ -70,29 +123,33 @@ export default class UIRenderer {
         const comps = e.components;
         if (!comps) return;
 
-        const t = comps.UITransform || comps.Transform;
-        if (!t) return;
+        const rawT = comps.UITransform || comps.Transform;
+        if (!rawT) return;
 
-        const anchorX = t.anchorX ?? 0.5;
-        const anchorY = t.anchorY ?? 0.5;
+        // FIX: Gunakan Global Transform
+        const globalT = this.getGlobalTransform(e, world);
+
+        const anchorX = rawT.anchorX ?? 0.5;
+        const anchorY = rawT.anchorY ?? 0.5;
         const anchorPointX = parentBounds.x + (parentBounds.width * anchorX);
         const anchorPointY = parentBounds.y + (parentBounds.height * anchorY);
 
         const trans = {
-            x: anchorPointX + (t.x || 0),
-            y: anchorPointY + (t.y || 0),
-            width: t.width || 0,
-            height: t.height || 0,
-            rotation: (t.rotation || 0) * (Math.PI / 180),
-            scaleX: t.scaleX ?? 1,
-            scaleY: t.scaleY ?? 1,
-            pivotX: t.pivotX ?? 0.5,
-            pivotY: t.pivotY ?? 0.5
+            // Gabungkan Root Anchor dengan Global Transformed Position
+            x: anchorPointX + (globalT.x || 0),
+            y: anchorPointY + (globalT.y || 0),
+            width: globalT.width || 0,
+            height: globalT.height || 0,
+            rotation: (globalT.rotation || 0) * (Math.PI / 180),
+            scaleX: globalT.scaleX ?? 1,
+            scaleY: globalT.scaleY ?? 1,
+            pivotX: globalT.pivotX ?? 0.5,
+            pivotY: globalT.pivotY ?? 0.5
         };
 
         const currentOpacity = (e.opacity ?? 1) * parentOpacity;
-        const flipX = t.flipX || false;
-        const flipY = t.flipY || false;
+        const flipX = rawT.flipX || false;
+        const flipY = rawT.flipY || false;
 
         if (comps.SpriteRenderer) {
             const s = comps.SpriteRenderer;
@@ -155,8 +212,8 @@ export default class UIRenderer {
 
                 if (!texture) {
                     useCheckerboard = true;
-                    if (finalW === 0) finalW = t.width || 64;
-                    if (finalH === 0) finalH = t.height || 64;
+                    if (finalW === 0) finalW = rawT.width || 64;
+                    if (finalH === 0) finalH = rawT.height || 64;
                 }
 
                 this.renderQueue.push({
@@ -196,12 +253,12 @@ export default class UIRenderer {
                 if (tx.autoFit) {
                     const measurement = this.renderer.text.measureText(font, tx.value ?? "", tx.fontSize || 24);
                     
-                    if (t.width !== measurement.boundsWidth || t.height !== measurement.boundsHeight) {
-                        t.width = measurement.boundsWidth;
-                        t.height = measurement.boundsHeight;
+                    if (rawT.width !== measurement.boundsWidth || rawT.height !== measurement.boundsHeight) {
+                        rawT.width = measurement.boundsWidth;
+                        rawT.height = measurement.boundsHeight;
                         
-                        trans.width = t.width;
-                        trans.height = t.height;
+                        trans.width = rawT.width;
+                        trans.height = rawT.height;
                     }
                 }
 

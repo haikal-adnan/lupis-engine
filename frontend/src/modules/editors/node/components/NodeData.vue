@@ -58,7 +58,15 @@
               }">
                 
                 <BaseSelect 
-                  v-if="getInputDataType(key, val) === 'boolean'"
+                  v-if="hasOptions(key)"
+                  :model-value="val"
+                  :options="getOptions(key)"
+                  placeholder="Choose option..."
+                  @update:model-value="updateNodeValue(key, $event)"
+                />
+
+                <BaseSelect 
+                  v-else-if="getInputDataType(key, val) === 'boolean'"
                   :model-value="val"
                   :options="booleanOptions"
                   placeholder="Choose..."
@@ -81,7 +89,6 @@
                   :placeholder="getPlaceholder(val, 'String')"
                 />
               </div>
-
             </div>
             
           </PropertyRow>
@@ -123,7 +130,7 @@ const CustomComponent = computed(() => {
   return getInspector(selectedNode.value.type);
 });
 
-const IGNORED_KEYS = ['propertyOptions', 'allowDynamicInputs', 'allowDynamicOutputs', 'mappings', 'values'];
+const IGNORED_KEYS = ['propertyOptions', 'allowDynamicInputs', 'allowDynamicOutputs', 'mappings', 'values', 'options'];
 
 /**
  * Helper: Cek apakah nilai kosong/null
@@ -140,6 +147,14 @@ function getPlaceholder(value, type) {
     return `Empty ${type}...`;
   }
   return '';
+}
+
+function hasOptions(key) {
+  return !!selectedNode.value?.data?.options?.[key];
+}
+
+function getOptions(key) {
+  return selectedNode.value?.data?.options?.[key] || [];
 }
 
 function isPrimitive(val) {

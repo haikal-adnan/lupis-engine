@@ -44,12 +44,16 @@ import { useHierarchyFilter } from '@editors/scene/composables/useHierarchyFilte
 import { useHierarchyMenu } from '@editors/scene/composables/useHierarchyMenu.js'
 import { useClipboard } from '@/composables/useClipboard.js'
 import { EngineBridge } from '@/services/engine/EngineBridge.js'
+import { usePrefabActions } from '@editors/prefab/composables/usePrefabActions.js';
 
 const sceneStore = useSceneStore()
 const { prompt } = usePrompt() 
 const { treeData, moveEntity } = useHierarchyLogic()
 const { searchQuery, filteredData } = useHierarchyFilter(treeData)
 const { copy, cut, paste, duplicate, remove } = useClipboard()
+
+// Inisiasi prefab actions
+const { createPrefab, linkPrefabToEntities } = usePrefabActions()
 
 const isRefreshing = ref(false)
 
@@ -85,9 +89,35 @@ const handlers = {
     const newName = await prompt({ title, defaultValue: entity.name, confirmText: 'Rename' })
     if (newName?.trim()) sceneStore.updateEntityName(entityId, newName)
   },
+  
+  // --- TAMBAHKAN HANDLER INI ---
+  useAsPrefab: async (entityId) => {
+    const entity = sceneStore.activeScene.entities.find(e => e._id === entityId)
+    if (!entity) return
+    
+    const prefabName = await prompt({ 
+      title: 'Create Prefab', 
+      message: 'Enter name for the new prefab:', 
+      defaultValue: `${entity.name} Prefab`, 
+      confirmText: 'Create' 
+    })
+
+    if (prefabName?.trim()) {
+      // 1. Buat Blueprint Prefab-nya
+      const newPrefab = createPrefab(prefabName, entity)
+      
+      // 2. Jika berhasil, ubah entitas asli di scene menjadi instance dari prefab tersebut
+      if (newPrefab) {
+        await linkPrefabToEntities(newPrefab._id, [entityId])
+      }
+    }
+  },
+  // -----------------------------
+
   refresh: () => { isRefreshing.value = true; setTimeout(() => (isRefreshing.value = false), 300) }
 }
 
+// Kirim handlers yang sudah berisi useAsPrefab ke dalam menu logic
 const { contextMenu, openMenu, closeMenu } = useHierarchyMenu(handlers)
 
 const handleSelect = (payload) => {

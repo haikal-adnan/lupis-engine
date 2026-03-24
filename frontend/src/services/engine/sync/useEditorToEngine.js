@@ -38,6 +38,9 @@ export function useEditorToEngine(projectStore, sceneStore, assetStore, editorSt
       log(`%c[SceneStore] Action: ${name}`, "color: #4CAF50; font-weight: bold;", { args });
       
       after((result) => {
+        
+        if (result === false) return;
+
         const s = sceneStore.activeScene?.settings;
         
         switch (name) {

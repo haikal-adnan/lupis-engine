@@ -1,3 +1,4 @@
+// StructuredDataEditor
 <template>
   <Teleport to="body">
     <Transition
@@ -70,7 +71,7 @@
                   @dragover.prevent
                   @dragenter.prevent
                   @drop="onDrop($event, idx)"
-                  class="group flex items-center gap-2 p-1.5 pr-3 rounded-lg border border-border bg-card hover:border-primary/30 transition-all shadow-sm"
+                  class="group flex items-center gap-2 p-1.5 pr-2 rounded-lg border border-border bg-card hover:border-primary/30 transition-all shadow-sm"
                   :class="{ 'opacity-40 scale-[0.98] border-primary/50 bg-primary/5': dragIndex === idx }"
                 >
                   <div class="cursor-grab active:cursor-grabbing p-1.5 text-muted-foreground group-hover:text-primary/60 transition-colors shrink-0">
@@ -110,13 +111,29 @@
                     <BaseInput v-else v-model="item.value" placeholder="Enter string..." />
                   </div>
 
-                  <div class="flex items-center gap-1 shrink-0 ml-1">
-                    <button @click="copyToClipboard(getItemPath(item, idx))" class="p-1.5 rounded text-muted-foreground hover:bg-muted hover:text-foreground transition-colors" title="Copy Path">
-                      <Link class="w-3.5 h-3.5" />
-                    </button>
-                    <button @click="removeItem(idx)" class="p-1.5 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors" title="Remove Item">
-                      <Trash2 class="w-3.5 h-3.5" />
-                    </button>
+                  <div class="flex items-center shrink-0 ml-1">
+                    <BaseDropdown align="right">
+                      <template #trigger>
+                        <button class="p-1.5 rounded text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                          <MoreVertical class="w-4 h-4" />
+                        </button>
+                      </template>
+
+                      <template #default="{ close }">
+                        <div class="w-auto whitespace-nowrap flex flex-col py-1 text-xs min-w-[130px]">
+                          <button @click="copyToClipboard(getItemPath(item, idx)); close()" class="flex items-center px-2 py-1.5 hover:bg-accent hover:text-accent-foreground text-left transition-colors">
+                            <Link class="w-3.5 h-3.5 mr-2 text-muted-foreground" /> Copy Path
+                          </button>
+                          <button @click="duplicateItem(idx); close()" class="flex items-center px-2 py-1.5 hover:bg-accent hover:text-accent-foreground text-left transition-colors">
+                            <Copy class="w-3.5 h-3.5 mr-2 text-muted-foreground" /> Duplicate
+                          </button>
+                          <div class="h-px bg-border my-1"></div>
+                          <button @click="removeItem(idx); close()" class="flex items-center px-2 py-1.5 hover:bg-destructive/10 text-destructive text-left transition-colors">
+                            <Trash2 class="w-3.5 h-3.5 mr-2" /> Delete
+                          </button>
+                        </div>
+                      </template>
+                    </BaseDropdown>
                   </div>
                 </div>
               </TransitionGroup>
@@ -159,7 +176,7 @@
 
 <script setup>
 import { ref, computed, watch, nextTick } from 'vue';
-import { X, GripVertical, Trash2, Plus, ChevronRight, Settings2, Copy, Link } from 'lucide-vue-next'; 
+import { X, GripVertical, Trash2, Plus, ChevronRight, Settings2, Copy, Link, MoreVertical } from 'lucide-vue-next'; 
 import { GenerateUUID } from '@/commons/utils/generateUUID.js';
 import { usePopAlert } from '@/composables/usePopAlert';
 import { getVarColor } from '@editors/variable/parts/VariableConfig.js';
@@ -168,6 +185,7 @@ import BaseInput from '@/commons/components/inputs/BaseInput.vue';
 import BaseNumber from '@/commons/components/inputs/BaseNumber.vue';
 import BaseSelect from '@/commons/components/inputs/BaseSelect.vue';
 import BaseButton from '@/commons/components/buttons/BaseButton.vue';
+import BaseDropdown from '@/commons/components/overlay/BaseDropdown.vue';
 
 const props = defineProps({
   isOpen: { type: Boolean, default: false },
@@ -200,23 +218,15 @@ const currentLevel = computed(() => stack.value[stack.value.length - 1] || {});
 const currentType = computed(() => currentLevel.value.type);
 const currentData = computed(() => currentLevel.value.dataRef || []);
 
-// --- LOGIKA COPY PATH (DIPERBARUI) ---
 const currentLevelPath = computed(() => {
-  // Melewati index 0 (nama variabel)
   return stack.value.slice(1).map(s => s.accessor).join('');
 });
 
 const getItemPath = (item, idx) => {
   const isMap = currentType.value === 'Map';
-  // Untuk map string key, untuk list menggunakan index
-  // Kita hilangkan petik (quotes) untuk Map key agar sesuai dengan logika Get From Path yang lebih umum, atau bisa dipertahankan. 
-  // Saya pertahankan dot notation jika key bersih dari spasi, atau bracket jika tidak, tapi untuk amannya pakai bracket notation
   const itemAccessor = isMap ? `[${item.key || ''}]` : `[${idx}]`;
-  
-  // Jika sedang di root (stack.length === 1), currentLevelPath.value akan kosong
   const basePath = currentLevelPath.value;
   
-  // Format menjadi rapi (hilangkan dot di depan jika ada, dll)
   let finalPath = `${basePath}${itemAccessor}`;
   if (finalPath.startsWith('.')) finalPath = finalPath.substring(1);
   
@@ -225,7 +235,6 @@ const getItemPath = (item, idx) => {
 
 const copyToClipboard = async (text) => {
   try {
-    // Jika path kosong (misal di-copy dari root tapi tidak ada isinya)
     const textToCopy = text || "[]";
     await navigator.clipboard.writeText(textToCopy);
     showPop({ title: 'Copied!', message: `Path "${textToCopy}" copied.`, type: 'success', duration: 1500 });
@@ -233,7 +242,6 @@ const copyToClipboard = async (text) => {
     showPop({ title: 'Error', message: 'Failed to copy path.', type: 'error' });
   }
 };
-// -------------------------
 
 const formatDataDeep = (val, type) => {
   if (type === 'Map') {
@@ -298,7 +306,6 @@ const enterNestedLevel = (item, idx) => {
   const isMap = currentType.value === 'Map';
   const label = isMap ? (item.key || `EmptyKey`) : `Idx ${idx}`;
   
-  // Menggunakan dot notation jika memungkinkan, atau bracket notation untuk string key
   const pathAccessor = isMap ? `.${item.key || ''}` : `[${idx}]`;
   
   stack.value.push({
@@ -319,6 +326,35 @@ const addNewItem = async () => {
   if (scrollContainerRef.value) {
     scrollContainerRef.value.scrollTo({ top: scrollContainerRef.value.scrollHeight, behavior: 'smooth' });
   }
+};
+
+const duplicateItem = (idx) => {
+  const itemToDuplicate = currentData.value[idx];
+  
+  // Lakukan deep clone agar nested object/array tidak memakai reference yang sama
+  const clonedItem = JSON.parse(JSON.stringify(itemToDuplicate));
+  
+  // Fungsi rekursif untuk me-reset UUID di setiap level turunan (mencegah v-for conflict)
+  const regenerateIds = (obj) => {
+    if (Array.isArray(obj)) {
+      obj.forEach(child => regenerateIds(child));
+    } else if (obj && typeof obj === 'object') {
+      if (obj._id) obj._id = GenerateUUID();
+      if (obj.value && (obj.type === 'List' || obj.type === 'Map')) {
+        regenerateIds(obj.value);
+      }
+    }
+  };
+  
+  regenerateIds(clonedItem);
+
+  // Jika ini adalah Map, modifikasi key-nya agar tidak ada duplikasi string key di awal
+  if (currentType.value === 'Map') {
+    clonedItem.key = `${clonedItem.key}_copy`;
+  }
+  
+  // Insert item yang sudah di-clone ke index selanjutnya
+  currentData.value.splice(idx + 1, 0, clonedItem);
 };
 
 const removeItem = (idx) => currentData.value.splice(idx, 1);

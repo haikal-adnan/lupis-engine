@@ -4,7 +4,8 @@ import { useAuthBackend } from '@/services/api/backend/useAuthBackend.js';
 import { useAuthStore } from '@/stores/useAuthStore.js';
 
 export function useAuthLogic() {
-    const { loginUser, registerUser, verifyOtpUser } = useAuthBackend();
+    // Pastikan googleAuth ikut di-import
+    const { loginUser, registerUser, verifyOtpUser, googleAuth } = useAuthBackend();
     const router = useRouter();
     const route = useRoute();
     const authStore = useAuthStore();
@@ -95,6 +96,29 @@ export function useAuthLogic() {
       }
     };
 
+    // --- FUNGSI BARU UNTUK GOOGLE ---
+    const loginWithGoogle = async (googleToken) => {
+      authStore.setLoading(true);
+      authStore.setError('');
+      
+      try {
+        // Panggil endpoint /google
+        const data = await googleAuth(googleToken);
+        
+        // Simpan token ke localStorage dan state persis seperti login biasa
+        _saveLocalData(data.user, data.token);
+        authStore.setAuthData(data.user, data.token);
+
+        console.log('✅ Berhasil login via Google!');
+        return { success: true, data };
+      } catch (error) {
+        authStore.setError(error.message);
+        return { success: false, error: error.message };
+      } finally {
+        authStore.setLoading(false);
+      }
+    };
+
     const logout = () => {
       _clearLocalData();
       authStore.clearAuthData();
@@ -130,6 +154,7 @@ export function useAuthLogic() {
       verifyOtp,
       logout,
       getCurrentUser,
+      loginWithGoogle, // Jangan lupa di-return agar bisa dipakai di AuthPanel
       isLoading,
       errorMessage
     };

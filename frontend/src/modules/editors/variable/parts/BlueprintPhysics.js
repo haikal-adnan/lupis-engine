@@ -1,4 +1,4 @@
-import { MoveRight, Zap, Gauge, Layers, Activity, Footprints } from 'lucide-vue-next';
+import { MoveRight, Gauge, Activity, Footprints } from 'lucide-vue-next';
 
 export const BlueprintPhysics = {
   _id: 'game_physics',
@@ -6,25 +6,25 @@ export const BlueprintPhysics = {
   color: '#7C4DFF',
   icon: Activity,
   items: [
-  { 
-      type: 'get_physics', 
-      label: 'Get Physics', 
-      description: 'Get specific physics properties like velocity, grounded state, or movement state', 
+    {
+      type: 'get_physics',
+      label: 'Get Physics',
+      description: 'Get specific physics properties like velocity, grounded state, or movement state',
       icon: Gauge,
       allowDynamicInputs: false,
-      allowDynamicOutputs: true, 
-      defaultData: { 
-        settings: { 
-          headerTitle: 'Get Physics', 
-          headerColor: '#5E35B1', 
-          category: 'Physics' 
+      allowDynamicOutputs: true,
+      defaultData: {
+        settings: {
+          headerTitle: 'Get Physics',
+          headerColor: '#5E35B1',
+          category: 'Physics'
         },
         data: {
           propertyOptions: [
             { value: 'velocityX', label: 'Velocity X', type: 'number', color: '#69F0AE' },
             { value: 'velocityY', label: 'Velocity Y', type: 'number', color: '#69F0AE' },
             { value: 'isGrounded', label: 'Is Grounded?', type: 'boolean', color: '#B2FF59' },
-            { value: 'movementState', label: 'Movement State', type: 'string', color: '#FFEE58' }, 
+            { value: 'movementState', label: 'Movement State', type: 'string', color: '#FFEE58' },
             { value: 'facingDirection', label: 'Facing Direction', type: 'string', color: '#FF4081' },
             { value: 'mass', label: 'Mass', type: 'number', color: '#FFB74D' },
             { value: 'gravityScale', label: 'Gravity Scale', type: 'number', color: '#40C4FF' },
@@ -34,23 +34,22 @@ export const BlueprintPhysics = {
         },
         inputs: [
           { _id: 'in_target', label: 'Target ID (Self)', dataType: 'string', color: '#E040FB' }
-        ], 
-        outputs: [] 
-      } 
+        ],
+        outputs: []
+      }
     },
-
-    { 
-      type: 'set_physics', 
-      label: 'Set Physics', 
-      description: 'Modify specific physics properties of Self or Target', 
+    {
+      type: 'set_physics',
+      label: 'Set Physics',
+      description: 'Modify specific physics properties of Self or Target',
       icon: MoveRight,
-      allowDynamicInputs: true, 
+      allowDynamicInputs: true,
       allowDynamicOutputs: false,
-      defaultData: { 
-        settings: { 
-          headerTitle: 'Set Physics', 
-          headerColor: '#5E35B1', 
-          category: 'Physics' 
+      defaultData: {
+        settings: {
+          headerTitle: 'Set Physics',
+          headerColor: '#5E35B1',
+          category: 'Physics'
         },
         data: {
           propertyOptions: [
@@ -69,32 +68,47 @@ export const BlueprintPhysics = {
         outputs: [
           { _id: 'exec_out', label: 'Out', dataType: 'execution', color: '#ffffff' }
         ]
-      } 
+      }
     },
-
-    { 
-      type: 'apply_impulse', 
-      label: 'Apply Impulse', 
-      description: 'Add instant force (useful for jumping or explosions)', 
-      icon: Zap,
-      allowDynamicInputs: false, 
+    {
+      type: 'set_face_direction',
+      label: 'Set Face Direction',
+      description: 'Atur arah hadap karakter (4-Way, 8-Way, atau per sumbu)',
+      icon: Footprints,
+      allowDynamicInputs: false,
       allowDynamicOutputs: false,
-      defaultData: { 
-        settings: { 
-          headerTitle: 'Apply Impulse', 
-          headerColor: '#D500F9', 
-          category: 'Physics' 
+      defaultData: {
+        settings: {
+          headerTitle: 'Face Direction',
+          headerColor: '#FF4081',
+          category: 'Physics'
+        },
+        data: {
+          values: {
+            axisX: 0,
+            axisY: 0,
+            mode: '4-way'
+          },
+          options: {
+            mode: [
+              { label: 'Horizontal Only', value: 'horizontal' },
+              { label: 'Vertical Only', value: 'vertical' },
+              { label: '4-Direction (Top/Side)', value: '4-way' },
+              { label: '8-Direction (Diagonal)', value: '8-way' }
+            ]
+          }
         },
         inputs: [
           { _id: 'exec_in', label: 'In', dataType: 'execution', color: '#ffffff' },
           { _id: 'in_target', label: 'Target ID (Self)', dataType: 'string', color: '#E040FB' },
-          { _id: 'forceX', label: 'Force X', dataType: 'number', color: '#69F0AE', value: 0 },
-          { _id: 'forceY', label: 'Force Y', dataType: 'number', color: '#69F0AE', value: 0 }
+          { _id: 'axisX', label: 'Axis X', dataType: 'number', color: '#69F0AE' },
+          { _id: 'axisY', label: 'Axis Y', dataType: 'number', color: '#69F0AE' },
+          { _id: 'mode', label: 'Mode', dataType: 'string', color: '#FFEE58' }
         ],
         outputs: [
           { _id: 'exec_out', label: 'Out', dataType: 'execution', color: '#ffffff' }
         ]
-      } 
+      }
     }
   ]
 };

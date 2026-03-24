@@ -29,6 +29,48 @@ export default class WorldRenderer {
         });
     }
 
+    // HELPER: Kalkulasi Global Transform untuk Rendering
+    getGlobalTransform(e, world) {
+        const t = e.components && (e.components.UITransform || e.components.Transform);
+        if (!t) return { x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1, pivotX: 0.5, pivotY: 0.5, width: 100, height: 100 };
+
+        if (!e.parentId) {
+            return {
+                x: t.x, y: t.y,
+                rotation: t.rotation || 0,
+                scaleX: t.scaleX ?? 1, scaleY: t.scaleY ?? 1,
+                pivotX: t.pivotX ?? 0.5, pivotY: t.pivotY ?? 0.5,
+                width: t.width, height: t.height
+            };
+        }
+
+        const parentEntity = this._findEntityById(world, e.parentId);
+        if (!parentEntity) return { ...t }; 
+
+        const parentGlobal = this.getGlobalTransform(parentEntity, world);
+
+        const parentRad = parentGlobal.rotation * (Math.PI / 180);
+        const cos = Math.cos(parentRad);
+        const sin = Math.sin(parentRad);
+
+        const scaledLocalX = t.x * parentGlobal.scaleX;
+        const scaledLocalY = t.y * parentGlobal.scaleY;
+
+        const rotatedX = (scaledLocalX * cos) - (scaledLocalY * sin);
+        const rotatedY = (scaledLocalX * sin) + (scaledLocalY * cos);
+
+        return {
+            x: parentGlobal.x + rotatedX,
+            y: parentGlobal.y + rotatedY,
+            rotation: parentGlobal.rotation + (t.rotation || 0),
+            scaleX: parentGlobal.scaleX * (t.scaleX ?? 1),
+            scaleY: parentGlobal.scaleY * (t.scaleY ?? 1),
+            pivotX: t.pivotX ?? 0.5, 
+            pivotY: t.pivotY ?? 0.5,
+            width: t.width, height: t.height
+        };
+    }
+
     render(world, proj, alpha = 1.0, isUIMode = false) {
         const { activeTabId, tabs, tilemapContext } = world._editors || {};
         const activeTab = tabs?.find(t => t.id === activeTabId);
@@ -126,42 +168,46 @@ export default class WorldRenderer {
 
             this._executeRenderQueue(proj);
             this.renderQueue.length = 0;
+            
+            // TilemapRenderer internal should also use global transform in the future if nested tilemaps are needed
             this.tilemapRenderer.renderEntity(e, world, proj, currentOpacity);
             return;
         }
 
-        const t = comps.UITransform || comps.Transform;
+        const rawT = comps.UITransform || comps.Transform;
         
-        if (t) {
-            let drawX = t.x || 0;
-            let drawY = t.y || 0;
+        if (rawT) {
+            const globalT = this.getGlobalTransform(e, world);
+
+            let drawX = globalT.x || 0;
+            let drawY = globalT.y || 0;
 
             if (comps.UITransform) {
                 const uiSettings = world.settings?.ui || { width: 1920, height: 1080 };
                 const parentW = uiSettings.width;
                 const parentH = uiSettings.height;
                 
-                const anchorX = t.anchorX ?? 0.5;
-                const anchorY = t.anchorY ?? 0.5;
+                const anchorX = rawT.anchorX ?? 0.5;
+                const anchorY = rawT.anchorY ?? 0.5;
 
-                drawX = (parentW * anchorX) + (t.x || 0);
-                drawY = (parentH * anchorY) + (t.y || 0);
+                drawX = (parentW * anchorX) + (globalT.x || 0);
+                drawY = (parentH * anchorY) + (globalT.y || 0);
             }
 
             const trans = {
                 x: drawX, 
                 y: drawY, 
-                width: t.width, 
-                height: t.height,
-                rotation: (t.rotation || 0) * (Math.PI / 180),
-                scaleX: t.scaleX ?? 1, 
-                scaleY: t.scaleY ?? 1,
-                pivotX: t.pivotX ?? 0.5, 
-                pivotY: t.pivotY ?? 0.5
+                width: globalT.width, 
+                height: globalT.height,
+                rotation: (globalT.rotation || 0) * (Math.PI / 180),
+                scaleX: globalT.scaleX ?? 1, 
+                scaleY: globalT.scaleY ?? 1,
+                pivotX: globalT.pivotX ?? 0.5, 
+                pivotY: globalT.pivotY ?? 0.5
             };
 
-            const flipX = t.flipX || false;
-            const flipY = t.flipY || false;
+            const flipX = rawT.flipX || false;
+            const flipY = rawT.flipY || false;
 
             if (comps.SpriteRenderer) {
                 const s = comps.SpriteRenderer;
@@ -223,8 +269,8 @@ export default class WorldRenderer {
 
                     if (!texture) {
                         useCheckerboard = true;
-                        if (finalW === 0) finalW = t.width || 64;
-                        if (finalH === 0) finalH = t.height || 64;
+                        if (finalW === 0) finalW = rawT.width || 64;
+                        if (finalH === 0) finalH = rawT.height || 64;
                     }
 
                     this.renderQueue.push({
@@ -254,9 +300,8 @@ export default class WorldRenderer {
                 }
             }
 
-// --- CARI BLOK INI DI DALAM _processEntity ---
             if (Config.ENGINE_MODE === 'editor' && comps.Collider && Array.isArray(comps.Collider.data)) {
-                const tRotRad = (t.rotation || 0) * (Math.PI / 180);
+                const tRotRad = (globalT.rotation || 0) * (Math.PI / 180);
                 const cosT = Math.cos(tRotRad);
                 const sinT = Math.sin(tRotRad);
 
@@ -264,13 +309,15 @@ export default class WorldRenderer {
                     const c = comps.Collider.data[i];
                     if (!c.enabled) continue; 
 
-                    const cW = (c.autoFit ? t.width : c.width) * Math.abs(t.scaleX ?? 1);
-                    const cH = (c.autoFit ? t.height : c.height) * Math.abs(t.scaleY ?? 1);
+                    // Collider scaling based on global scale
+                    const cW = (c.autoFit ? globalT.width : c.width) * Math.abs(globalT.scaleX ?? 1);
+                    const cH = (c.autoFit ? globalT.height : c.height) * Math.abs(globalT.scaleY ?? 1);
                     const pX = c.pivotX ?? 0.5;
                     const pY = c.pivotY ?? 0.5;
 
-                    const localTlX = -t.width * Math.abs(t.scaleX ?? 1) * (t.pivotX ?? 0.5) + (c.offsetX || 0) * Math.abs(t.scaleX ?? 1);
-                    const localTlY = -t.height * Math.abs(t.scaleY ?? 1) * (t.pivotY ?? 0.5) + (c.offsetY || 0) * Math.abs(t.scaleY ?? 1);
+                    // Collider offset relative to pivot
+                    const localTlX = -globalT.width * Math.abs(globalT.scaleX ?? 1) * (globalT.pivotX ?? 0.5) + (c.offsetX || 0) * Math.abs(globalT.scaleX ?? 1);
+                    const localTlY = -globalT.height * Math.abs(globalT.scaleY ?? 1) * (globalT.pivotY ?? 0.5) + (c.offsetY || 0) * Math.abs(globalT.scaleY ?? 1);
 
                     const localPx = localTlX + cW * pX;
                     const localPy = localTlY + cH * pY;
@@ -308,12 +355,12 @@ export default class WorldRenderer {
                     if (tx.autoFit) {
                         const measurement = this.renderer.text.measureText(font, tx.value ?? "", tx.fontSize || 24);
                         
-                        if (t.width !== measurement.boundsWidth || t.height !== measurement.boundsHeight) {
-                            t.width = measurement.boundsWidth;
-                            t.height = measurement.boundsHeight;
+                        if (rawT.width !== measurement.boundsWidth || rawT.height !== measurement.boundsHeight) {
+                            rawT.width = measurement.boundsWidth;
+                            rawT.height = measurement.boundsHeight;
                             
-                            trans.width = t.width;
-                            trans.height = t.height;
+                            trans.width = rawT.width;
+                            trans.height = rawT.height;
                         }
                     }
 
@@ -336,7 +383,7 @@ export default class WorldRenderer {
         const allLayers = [...(world.layersWorld || []), ...(world.layersUI || [])];
         for (const layer of allLayers) {
             if (!layer.entities) continue;
-            const found = layer.entities.find(e => e.id === id);
+            const found = layer.entities.find(e => e.id === id || e._id === id); // Handle ID fallback
             if (found) return found;
         }
         return null;

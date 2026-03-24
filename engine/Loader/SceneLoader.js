@@ -95,7 +95,22 @@ export default class SceneLoader {
         if (instanceData.prefabId) {
             const prefab = this.world.prefabs?.[instanceData.prefabId];
             if (prefab) {
-                finalData = this._mergePrefabData(prefab.data, instanceData);
+                let template = null;
+
+                // Cek apakah entitas ini adalah "anak" dari prefab dengan mencocokkan namanya
+                // (Karena nama anak tidak diubah saat instantiate, sedangkan nama root ditambah suffix _1, _2 dst)
+                if (prefab.children && prefab.children.length > 0) {
+                    template = prefab.children.find(c => c.name === instanceData.name);
+                }
+
+                // Jika tidak ada anak yang cocok, berarti ini adalah Root Instance dari prefab
+                if (!template) {
+                    template = prefab.data;
+                }
+
+                if (template) {
+                    finalData = this._mergePrefabData(template, instanceData);
+                }
             }
         }
 

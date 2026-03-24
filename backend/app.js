@@ -17,6 +17,8 @@ import projectRoutes from "./routes/projectRoutes.js";
 import folderRoutes from "./routes/folderRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 
+import { sendOTPEmail } from "./services/email.js";
+
 const app = express();
 
 app.use(cors());
@@ -123,6 +125,22 @@ app.get("/test-users", async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.post("/test-email", async (req, res) => {
+  const { email, userName, otp } = req.body;
+
+  if (!email || !userName || !otp) {
+    return res.status(400).json({ error: "Email, userName, and otp are required" });
+  }
+
+  const result = await sendOTPEmail(email, userName, otp);
+
+  if (result.success) {
+    res.json({ message: "Email sent successfully!", detail: result.data });
+  } else {
+    res.status(500).json({ error: "Failed to send email", detail: result.error });
   }
 });
 

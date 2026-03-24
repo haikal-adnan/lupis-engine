@@ -126,11 +126,6 @@ export default class SyncComponent {
         const entity = this._findEntityById(id);
         if (!entity) return;
 
-        const hitTester = this.game.selection?.hitTester;
-        if (!hitTester) return;
-
-        const oldWorldPos = hitTester.getGlobalPosition(entity);
-
         const newLayer =
             this.world.layersWorld.find(l => l._id === layerId) ||
             this.world.layersUI.find(l => l._id === layerId);
@@ -141,27 +136,20 @@ export default class SyncComponent {
 
         this.isInternalUpdate = true;
 
+        // 1. Cabut entity dari layer/container lamanya
         this._removeEntityFromCurrentContainer(entity);
 
+        // 2. Set environment baru
         entity.layerId = layerId;
         entity.parentId = parentId !== undefined ? parentId : null; 
 
+        // 3. Masukkan ke container layer baru
         targetContainer.push(entity);
 
-        const t = entity.components.Transform || entity.components.UITransform;
-        
-        if (t && entity.type !== 'ui') {
-            const resolvedLocal = hitTester.solveLocalPosition(
-                null,
-                oldWorldPos.x,
-                oldWorldPos.y
-            );
+        // (Kalkulasi Transform inversi lokal dihapus dari sini, 
+        // karena editor akan mengirim "patchComponent" sesaat setelah event ini)
 
-            t.x = resolvedLocal.x;
-            t.y = resolvedLocal.y;
-            this.bus.emit("entity:modified", [entity]);
-        }
-
+        // 4. Urutkan berdasarkan z-index dan order
         this._sortContainer(targetContainer);
         this.isInternalUpdate = false;
     }
@@ -211,7 +199,7 @@ export default class SyncComponent {
             name: data.name,
             type: data.type,
             layerId: data.layerId,
-            parentId: null,
+            parentId: data.parentId || null,
             active: data.active,
             visible: data.visible,
             zIndex: data.zIndex ?? 0,
@@ -497,7 +485,7 @@ export default class SyncComponent {
     }
 
     _processSingleEntityCreation(entityData) {
-        const safeData = { ...entityData, parentId: null };
+        const safeData = { ...entityData };
         const entity = this._createEntityInstance(safeData);
         if (this._findEntityById(entityData._id)) return;
 
@@ -560,10 +548,11 @@ export default class SyncComponent {
                 this.world.prefabs = Object.fromEntries(prefabs.map(p => [p._id, {
                     _id: p._id,
                     name: p.name,
-                    data: p.data 
+                    data: p.data,
+                    children: p.children || [] // Tambahkan array children di sini
                 }]));
             }
-
+            
             this.world.scripts = {};
             if (scripts && Array.isArray(scripts)) {
                 this.world.scripts = Object.fromEntries(scripts.map(s => [s._id, {

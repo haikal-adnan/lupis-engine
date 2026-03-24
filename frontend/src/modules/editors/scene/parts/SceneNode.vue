@@ -55,7 +55,9 @@
         class="w-3.5 h-3.5 mr-2 shrink-0 pointer-events-none"
         :class="[
             isSelected ? 'text-white' : '',
-            node.type === 'layer' ? 'text-blue-500' : (node.type === 'group' ? 'text-yellow-500' : 'opacity-70')
+            node.type === 'layer' ? 'text-blue-500' : 
+            (node.type === 'group' ? 'text-yellow-500' : 
+            (isPrefab && !isSelected ? 'text-sky-400' : 'opacity-70'))
         ]"
       />
 
@@ -63,6 +65,7 @@
         class="truncate py-1 pointer-events-none mr-2 flex-grow flex items-center gap-2" 
         :class="{ 
             'font-bold': node.type === 'layer',
+            'text-sky-400 font-medium': isPrefab && !isSelected,
             'opacity-50': !visible || isInactive 
         }"
       >
@@ -148,6 +151,9 @@ const isOpen = ref(true)
 
 const isLayer = computed(() => props.node.type === 'layer')
 
+// COMPUTED BARU: Mengecek apakah entity adalah prefab
+const isPrefab = computed(() => !!props.node.prefabId)
+
 const sortedChildren = computed(() => {
   if (!props.node.children) return []
   return [...props.node.children].sort((a, b) => {
@@ -189,6 +195,9 @@ const {
 const getIcon = computed(() => {
   if (isLayer.value) return Layers
   if (props.node.type === 'group') return isOpen.value ? FolderOpen : Folder
+  
+  // LOGIKA BARU: Tampilkan icon Box jika merupakan prefab
+  if (isPrefab.value) return Box
   
   const name = (props.node.name || '').toLowerCase()
   if (name.includes('text')) return Type
