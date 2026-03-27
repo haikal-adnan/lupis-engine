@@ -2,7 +2,8 @@ import {
   Image as ImageIcon,
   Type as TypeIcon,
   Square,
-  Grid3x3
+  Grid3x3,
+  Layers
 } from 'lucide-vue-next';
 
 export const BlueprintRenderer = {
@@ -72,11 +73,28 @@ export const BlueprintRenderer = {
         data: {
           propertyOptions: [
             { value: 'value', label: 'Content', type: 'string', color: '#FFF' },
-            { value: 'fontSize', label: 'Font Size', type: 'number', color: '#FFC107' },
-            { value: 'color', label: 'Color', type: 'string', color: '#FFC107' },
-            { value: 'align', label: 'Align', type: 'string', color: '#FFC107' },
+            { value: 'mode', label: 'Mode', type: 'string', color: '#FFF' },
             { value: 'assetId', label: 'Font Asset', type: 'string', color: '#FFF' },
-            { value: 'opacity', label: 'Opacity', type: 'number', color: '#FFC107' }
+            { value: 'fontSize', label: 'Font Size', type: 'number', color: '#FFC107' },
+            { value: 'color', label: 'Text Color', type: 'string', color: '#FFF' },
+            { value: 'opacity', label: 'Opacity', type: 'number', color: '#FFC107' },
+            { value: 'align', label: 'Align', type: 'string', color: '#FFF' },
+            { value: 'maxWidth', label: 'Max Width', type: 'number', color: '#FFC107' },
+            { value: 'maxLine', label: 'Max Line', type: 'number', color: '#FFC107' },
+            { value: 'lineSpacing', label: 'Line Spacing', type: 'number', color: '#FFC107' },
+            { value: 'letterSpacing', label: 'Char Spacing', type: 'number', color: '#FFC107' },
+            { value: 'overflow', label: 'Overflow', type: 'string', color: '#FFF' },
+            { value: 'autoFit', label: 'Auto Fit', type: 'boolean', color: '#F44336' },
+            { value: 'smoothing', label: 'Smoothing', type: 'number', color: '#FFC107' },
+            { value: 'bias', label: 'Font Bias', type: 'number', color: '#FFC107' },
+            { value: 'outlineWidth', label: 'Outline Width', type: 'number', color: '#FFC107' },
+            { value: 'outlineColor', label: 'Outline Color', type: 'string', color: '#FFF' },
+            { value: 'shadowEnabled', label: 'Shadow Enabled', type: 'boolean', color: '#F44336' },
+            { value: 'shadowColor', label: 'Shadow Color', type: 'string', color: '#FFF' },
+            { value: 'shadowOpacity', label: 'Shadow Opacity', type: 'number', color: '#FFC107' },
+            { value: 'shadowOffsetX', label: 'Shadow Offset X', type: 'number', color: '#FFC107' },
+            { value: 'shadowOffsetY', label: 'Shadow Offset Y', type: 'number', color: '#FFC107' },
+            { value: 'shadowBlur', label: 'Shadow Blur', type: 'number', color: '#FFC107' }
           ]
         },
         inputs: [{ _id: 'target', label: 'Target ID (Self)', dataType: 'string', color: '#E040FB' }], 
@@ -202,6 +220,27 @@ export const BlueprintRenderer = {
           { _id: 'target', label: 'Target ID (Self)', dataType: 'string', color: '#E040FB' }
         ], 
         outputs: [{ _id: 'exec_out', label: 'Out', dataType: 'execution', color: '#ffffff' }]
+      } 
+    },
+    { 
+      type: 'batch_set', 
+      label: 'Batch Set Properties', 
+      description: 'Set multiple properties in one execution node',
+      icon: Layers,
+      allowDynamicInputs: false, // Kita atur false karena inspector yang akan memanage port
+      allowDynamicOutputs: false,
+      defaultData: { 
+        settings: { headerTitle: 'Batch Set', headerColor: '#7E57C2', category: 'Logic' },
+        data: {
+          steps: [], // Menyimpan daftar operasi
+          values: {} // Menyimpan nilai statis
+        },
+        inputs: [
+          { _id: 'exec_in', label: 'In', dataType: 'execution', color: '#ffffff' }
+        ], 
+        outputs: [
+          { _id: 'exec_out', label: 'Out', dataType: 'execution', color: '#ffffff' }
+        ]
       } 
     }
   ]

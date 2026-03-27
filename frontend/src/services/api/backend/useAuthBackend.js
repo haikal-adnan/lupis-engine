@@ -58,12 +58,11 @@ export function useAuthBackend() {
         return result; 
     };
 
-    // --- FUNGSI BARU UNTUK GOOGLE ---
     const googleAuth = async (googleToken) => {
         const response = await fetchWithTimeout(`${API_URL}/auth/google`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ token: googleToken }) // Mengirim Access Token
+            body: JSON.stringify({ token: googleToken })
         });
         
         const result = await response.json();

@@ -50,10 +50,8 @@ const props = defineProps({
   ghost: { type: Boolean, default: false } 
 })
 
-// Menggunakan defineModel untuk sinkronisasi state dua arah (v-model)
 const model = defineModel({ type: Boolean, default: undefined })
 
-// Prioritaskan model jika ada, jika tidak gunakan prop active
 const isActive = computed(() => {
   if (model.value !== undefined) return model.value
   return props.active

@@ -15,6 +15,12 @@ export function useInspectorLogic() {
   const editorStore = useEditorStore();
   const { showPop } = usePopAlert();
 
+  // Helper untuk mendapatkan nama komponen transform secara dinamis
+  const getTransformCompName = (entity) => {
+    if (!entity) return 'Transform';
+    return entity.components?.UITransform ? 'UITransform' : 'Transform';
+  };
+
   const isEditingMasterPrefab = computed(() => editorStore.activeTab?.type === 'prefab');
 
   const selectedLayerId = computed(() => {
@@ -53,13 +59,12 @@ export function useInspectorLogic() {
     return null;
   });
 
-  // COMPUTED BARU: Pengecekan Rekursif untuk memblokir aksi komponen Inspector
   const isLockedByPrefab = computed(() => {
     if (isEditingMasterPrefab.value || !selectedEntity.value) return false;
     
     let current = selectedEntity.value;
     while (current) {
-        if (current.prefabId) return true; // Diri sendiri atau ancestornya adalah prefab
+        if (current.prefabId) return true; 
         if (!current.parentId) break;
         current = sceneStore.activeScene?.entities.find(e => e._id === current.parentId);
     }
@@ -100,7 +105,6 @@ export function useInspectorLogic() {
   onMounted(() => window.addEventListener("keydown", handleKeydown));
   onBeforeUnmount(() => window.removeEventListener("keydown", handleKeydown));
 
-  // --- LOGIKA GLOBAL TRANSFORM & FIT TO CHILDREN ---
   const getGlobalTransform = (entityId) => {
       const entity = sceneStore.activeScene?.entities.find(e => e._id === entityId);
       if (!entity) return null;
@@ -228,7 +232,7 @@ export function useInspectorLogic() {
       const newPivotX = newWidth > 0 ? -minX / newWidth : 0.5;
       const newPivotY = newHeight > 0 ? -minY / newHeight : 0.5;
 
-      const compName = selectedEntity.value.components.UITransform ? 'UITransform' : 'Transform';
+      const compName = getTransformCompName(selectedEntity.value);
       
       sceneStore.updateComponentProp(parentId, compName, 'width', newWidth);
       sceneStore.updateComponentProp(parentId, compName, 'height', newHeight);
@@ -242,7 +246,6 @@ export function useInspectorLogic() {
       });
       showPop({ title: 'Fit to Children', message: 'Parent size successfully adjusted.', type: 'success' });
   };
-  // ---------------------------------------------
 
   function bindSettingProp(category, propName) {
     return computed({
@@ -420,7 +423,6 @@ export function useInspectorLogic() {
   function addComponentToSelection(componentName) {
     if (!selectedEntity.value) return;
     
-    // VALIDASI REKURSIF
     if (isLockedByPrefab.value) {
       showPop({ title: 'Restricted', message: 'Cannot add components to a Prefab instance or its children. Unpack it first.', type: 'warning' });
       return;
@@ -441,7 +443,6 @@ export function useInspectorLogic() {
   function removeComponent(compName) {
     if (!selectedEntity.value) return;
     
-    // VALIDASI REKURSIF
     if (isLockedByPrefab.value) {
       showPop({ title: 'Restricted', message: 'Cannot remove components from a Prefab instance or its children. Unpack it first.', type: 'warning' });
       return;
@@ -455,17 +456,28 @@ export function useInspectorLogic() {
 
   function resetTransform() {
     if (!selectedEntity.value) return;
+    const compName = getTransformCompName(selectedEntity.value);
     const updates = { x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1, pivotX: 0.5, pivotY: 0.5, flipX: false, flipY: false };
+    
+    // Opsional: Jika di UITransform ingin me-reset anchor juga, kita bisa tambahkan
+    if (compName === 'UITransform') {
+      updates.anchorX = 0.5;
+      updates.anchorY = 0.5;
+    }
+
     Object.entries(updates).forEach(([prop, val]) => {
-      if (isEditingMasterPrefab.value) prefabStore.updateComponentProp(editorStore.activeTab.id, 'Transform', prop, val);
-      else sceneStore.updateComponentProp(selectedEntity.value._id, 'Transform', prop, val);
+      if (isEditingMasterPrefab.value) prefabStore.updateComponentProp(editorStore.activeTab.id, compName, prop, val);
+      else sceneStore.updateComponentProp(selectedEntity.value._id, compName, prop, val);
     });
   }
 
   function updatePivot({ x: newPx, y: newPy }) {
     if (!selectedEntity.value) return;
     const ent = selectedEntity.value;
-    const t = ent.components.Transform;
+    const compName = getTransformCompName(ent);
+    const t = ent.components[compName];
+    if (!t) return;
+
     const oldPx = t.pivotX ?? 0.5;
     const oldPy = t.pivotY ?? 0.5;
     const currentX = t.x || 0;
@@ -485,16 +497,16 @@ export function useInspectorLogic() {
     const worldDy = localDx * sin + localDy * cos;
 
     if (isEditingMasterPrefab.value) {
-      prefabStore.updateComponentProp(editorStore.activeTab.id, 'Transform', 'pivotX', newPx);
-      prefabStore.updateComponentProp(editorStore.activeTab.id, 'Transform', 'pivotY', newPy);
-      prefabStore.updateComponentProp(editorStore.activeTab.id, 'Transform', 'x', currentX + worldDx);
-      prefabStore.updateComponentProp(editorStore.activeTab.id, 'Transform', 'y', currentY + worldDy);
+      prefabStore.updateComponentProp(editorStore.activeTab.id, compName, 'pivotX', newPx);
+      prefabStore.updateComponentProp(editorStore.activeTab.id, compName, 'pivotY', newPy);
+      prefabStore.updateComponentProp(editorStore.activeTab.id, compName, 'x', currentX + worldDx);
+      prefabStore.updateComponentProp(editorStore.activeTab.id, compName, 'y', currentY + worldDy);
     } else {
       const id = ent._id;
-      sceneStore.updateComponentProp(id, 'Transform', 'pivotX', newPx);
-      sceneStore.updateComponentProp(id, 'Transform', 'pivotY', newPy);
-      sceneStore.updateComponentProp(id, 'Transform', 'x', currentX + worldDx);
-      sceneStore.updateComponentProp(id, 'Transform', 'y', currentY + worldDy);
+      sceneStore.updateComponentProp(id, compName, 'pivotX', newPx);
+      sceneStore.updateComponentProp(id, compName, 'pivotY', newPy);
+      sceneStore.updateComponentProp(id, compName, 'x', currentX + worldDx);
+      sceneStore.updateComponentProp(id, compName, 'y', currentY + worldDy);
     }
   }
 
@@ -549,26 +561,28 @@ export function useInspectorLogic() {
     if (!selectedEntity.value) return;
     const tm = selectedEntity.value.components.Tilemap;
     if (!tm) return;
+    
+    const compName = getTransformCompName(selectedEntity.value);
 
     const targetWidth = (tm.width || 0) * (tm.tileWidth || 0);
     const targetHeight = (tm.height || 0) * (tm.tileHeight || 0);
 
     if (isEditingMasterPrefab.value) {
-      prefabStore.updateComponentProp(editorStore.activeTab.id, 'Transform', 'width', targetWidth);
-      prefabStore.updateComponentProp(editorStore.activeTab.id, 'Transform', 'height', targetHeight);
+      prefabStore.updateComponentProp(editorStore.activeTab.id, compName, 'width', targetWidth);
+      prefabStore.updateComponentProp(editorStore.activeTab.id, compName, 'height', targetHeight);
       
-      EngineBridge.updatePrefabMasterComponentProp?.({ prefabId: editorStore.activeTab.id, componentName: 'Transform', prop: 'width', value: targetWidth });
-      EngineBridge.updatePrefabMasterComponentProp?.({ prefabId: editorStore.activeTab.id, componentName: 'Transform', prop: 'height', value: targetHeight });
+      EngineBridge.updatePrefabMasterComponentProp?.({ prefabId: editorStore.activeTab.id, componentName: compName, prop: 'width', value: targetWidth });
+      EngineBridge.updatePrefabMasterComponentProp?.({ prefabId: editorStore.activeTab.id, componentName: compName, prop: 'height', value: targetHeight });
     } else {
       const id = selectedEntity.value._id;
-      sceneStore.updateComponentProp(id, 'Transform', 'width', targetWidth);
-      sceneStore.updateComponentProp(id, 'Transform', 'height', targetHeight);
+      sceneStore.updateComponentProp(id, compName, 'width', targetWidth);
+      sceneStore.updateComponentProp(id, compName, 'height', targetHeight);
       
       if (EngineBridge.updateComponentProp) {
-        EngineBridge.updateComponentProp({ entityId: id, componentName: 'Transform', path: 'width', value: targetWidth });
-        EngineBridge.updateComponentProp({ entityId: id, componentName: 'Transform', path: 'height', value: targetHeight });
+        EngineBridge.updateComponentProp({ entityId: id, componentName: compName, path: 'width', value: targetWidth });
+        EngineBridge.updateComponentProp({ entityId: id, componentName: compName, path: 'height', value: targetHeight });
       } else if (EngineBridge.patchComponent) {
-        EngineBridge.patchComponent({ entityId: id, componentName: 'Transform', updates: { width: targetWidth, height: targetHeight } });
+        EngineBridge.patchComponent({ entityId: id, componentName: compName, updates: { width: targetWidth, height: targetHeight } });
       }
     }
   }

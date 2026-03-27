@@ -79,8 +79,7 @@ export default class AssetLoader {
             glTexture: textureData.glTexture,
             fileurl: textureData.src, 
             width: textureData.width,
-            height: textureData.height,
-            filterMode: asset.meta?.filterMode || "nearest"
+            height: textureData.height
         };
 
         world.addTexture(asset._id, data);

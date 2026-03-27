@@ -3,7 +3,7 @@ import { ref, shallowRef, computed, watch } from 'vue'
 
 import { useLayoutState } from '@/composables/useLayoutState.js'
 import { useTab } from '@/composables/useTab.js' 
-import { useAppInit } from '@/composables/useAppInit.js' // <-- Pindah ke sini
+import { useAppInit } from '@/composables/useAppInit.js'
 
 import { useEditorStore } from '@/stores/useEditorStore'
 import { useScriptStore } from '@/stores/useScriptStore'
@@ -17,9 +17,8 @@ import BottomBar from '@/layouts/parts/BottomBar.vue'
 import BottomOverlay from '@/layouts/parts/BottomOverlay.vue'
 
 import AssetPanel from '@editors/assets/AssetPanel.vue'
-import AppLoading from '@/commons/components/overlay/AppLoading.vue' // <-- Pindah ke sini
+import AppLoading from '@/commons/components/overlay/AppLoading.vue' 
 
-// Inisialisasi Project (Hanya berjalan ketika masuk ke Editor)
 const { isLoading } = useAppInit() 
 
 const {

@@ -8,6 +8,7 @@ export default class AnimatorSystem {
     update(dt) {
         if (Config.ENGINE_MODE !== "runtime") return;
 
+
         const world = this.game.world;
         const layers = [...(world.layersWorld || []), ...(world.layersUI || [])];
 

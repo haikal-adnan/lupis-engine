@@ -105,7 +105,6 @@ export default class SelectionTool {
         return current;
     }
 
-    // HELPER BARU: Mengumpulkan seluruh keturunan (anak, cucu, dst) dari sebuah parent
     _getAllDescendants(parentId) {
         let descendants = [];
         const allLayers = [...(this.world.layersWorld || []), ...(this.world.layersUI || [])];
@@ -311,7 +310,6 @@ export default class SelectionTool {
         if (isRightClick) {
             if (hit && this._isClickable(hit)) {
                 if (!this.selectedList.includes(hit)) {
-                    // FIX: Kumpulkan parent yang diklik beserta seluruh descendant-nya
                     const selectionGroup = [hit, ...this._getAllDescendants(hit._id || hit.id)];
                     this.setSelection(selectionGroup, "internal");
                 }
@@ -329,7 +327,6 @@ export default class SelectionTool {
 
         if (hit && this._isClickable(hit)) {
             const alreadySelected = this.selectedList.includes(hit);
-            // FIX: Kumpulkan parent yang diklik beserta seluruh descendant-nya
             const selectionGroup = [hit, ...this._getAllDescendants(hit._id || hit.id)];
             
             if (isShift) {
@@ -376,7 +373,6 @@ export default class SelectionTool {
             let finalResults = [];
             
             if (!isCtrl) {
-                // FIX: Jika Marquee menangkap parent, masukkan parent DAN anak-anaknya
                 const rootParents = [...new Set(results.map(e => this._getRootParent(e)))];
                 for (const root of rootParents) {
                     finalResults.push(root, ...this._getAllDescendants(root._id || root.id));

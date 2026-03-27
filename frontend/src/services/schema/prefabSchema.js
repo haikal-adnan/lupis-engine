@@ -6,7 +6,6 @@ export const createPrefab = (data = {}) => {
   const finalName = data.name || entityData.name || "New Prefab";
   const finalType = data.type || entityData.type || "world";
 
-  // HAPUS entityData._id = null; agar relasi ke anak-anaknya tidak terputus!
   entityData.prefabId = null; 
   entityData.parentId = null; 
   entityData.overridden = false;
@@ -22,11 +21,7 @@ export const createPrefab = (data = {}) => {
   }
 
   const childrenData = (data.children || []).map(child => {
-    // Gunakan _id dan parentId asli agar struktur pohon (tree) tetap utuh
     const c = createEntity({ ...child, _id: child._id, parentId: child.parentId });
-    
-    // CATATAN: Kita tidak mengeset c.prefabId = null di sini 
-    // agar jika child ini adalah "Prefab Lain", statusnya tetap terjaga.
     
     c.overridden = false;
     if (c.components) {

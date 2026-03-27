@@ -204,6 +204,4 @@ export default class CameraController {
         bus.emit("camera:zoom", { scale: cam.scale });
     }
 
-
-
 }

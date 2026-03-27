@@ -119,7 +119,6 @@ export function useHierarchyLogic() {
     const draggedLayer = getLayerById(draggedId);
     const draggedEntity = getEntityById(draggedId);
     
-    // LAYER LOGIC
     if (draggedLayer) {
         if (!targetNode || targetNode.type !== 'layer') return;
         const draggedIsUI = draggedLayer._section === 'ui' || (draggedLayer.name && draggedLayer.name.includes('UI'));
@@ -133,7 +132,6 @@ export function useHierarchyLogic() {
         return;
     }
 
-    // ENTITY LOGIC
     if (draggedEntity) {
         if (!targetNode) {
              sceneStore.moveEntity(draggedId, {
@@ -189,7 +187,6 @@ export function useHierarchyLogic() {
             }
         }
 
-        // BUILDING CONTEXT FOR STORE
         const context = {
             newParentId: null,
             newLayerId: null,
@@ -202,7 +199,6 @@ export function useHierarchyLogic() {
             context.newParentId = null; 
             context.insertionType = 'append';
         } else if (position === 'inside') {
-            // [AKTIFKAN NESTING DISINI]
             context.newParentId = targetNode._id;
             context.newLayerId = targetNode.layerId;
             context.insertionType = 'append';

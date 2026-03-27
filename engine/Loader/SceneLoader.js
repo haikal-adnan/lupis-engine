@@ -10,7 +10,11 @@ export default class SceneLoader {
         if (!sceneData) return;
 
         if (this.world) {
-            this.world.currentSceneScriptId = sceneData.scriptId;
+            // --- PERBAIKAN DI SINI ---
+            this.world.currentSceneId = sceneData._id; 
+            this.world.currentSceneScriptId = sceneData.scriptId || sceneData._id || null;
+            this.world.currentSceneName = sceneData.name || "";
+            
             if (sceneData.settings) {
                 this.world.settings = { ...this.world.settings, ...sceneData.settings };
             }
@@ -25,6 +29,7 @@ export default class SceneLoader {
                     visible: layer.visible ?? true,
                     locked: layer.locked ?? false,
                     active: layer.active ?? true,
+                    opacity: layer.opacity ?? 1.0, // <-- Tambahkan opacity
                     zIndex: Number(layer.zIndex ?? defaultZ), 
                     orderIndex: Number(layer.orderIndex ?? index),
                     entities: []
@@ -97,13 +102,10 @@ export default class SceneLoader {
             if (prefab) {
                 let template = null;
 
-                // Cek apakah entitas ini adalah "anak" dari prefab dengan mencocokkan namanya
-                // (Karena nama anak tidak diubah saat instantiate, sedangkan nama root ditambah suffix _1, _2 dst)
                 if (prefab.children && prefab.children.length > 0) {
                     template = prefab.children.find(c => c.name === instanceData.name);
                 }
 
-                // Jika tidak ada anak yang cocok, berarti ini adalah Root Instance dari prefab
                 if (!template) {
                     template = prefab.data;
                 }

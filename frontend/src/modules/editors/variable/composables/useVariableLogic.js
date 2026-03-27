@@ -117,8 +117,8 @@ export function useVariableLogic(scopeProps) {
       if (value === 'Boolean') targetVar.defaultValue = false;
       else if (value === 'Number') targetVar.defaultValue = 0;
       else if (value === 'Vector') targetVar.defaultValue = { x: 0, y: 0 };
-      else if (value === 'List') targetVar.defaultValue = []; // Default untuk List
-      else if (value === 'Map') targetVar.defaultValue = {};  // Default untuk Map
+      else if (value === 'List') targetVar.defaultValue = []; 
+      else if (value === 'Map') targetVar.defaultValue = {}; 
       else targetVar.defaultValue = '';
     }
 

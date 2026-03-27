@@ -9,23 +9,22 @@ export const BlueprintString = {
     { 
       type: 'string_format', 
       label: 'Format String', 
-      description: 'Combine text using placeholders like {0}, {1}', 
+      description: 'Hub for multiple text formats using {variables}', 
       icon: FileText,
       allowDynamicInputs: true,
-      allowDynamicOutputs: false,
+      allowDynamicOutputs: true,
       defaultData: { 
         settings: { headerTitle: 'Format String', headerColor: '#F57C00', category: 'String' },
-        data: { format: 'Score: {0} / {1}' },
+        data: { formats: ['Score: {score} / {max}'] },
         inputs: [
-          { _id: '0', label: '{0}', dataType: 'any', color: '#ffffff' },
-          { _id: '1', label: '{1}', dataType: 'any', color: '#ffffff' },
+          { _id: 'score', label: 'score', dataType: 'any', color: '#ffffff' },
+          { _id: 'max', label: 'max', dataType: 'any', color: '#ffffff' },
         ],
         outputs: [
-          { _id: 'res', label: 'Result', dataType: 'string', color: '#FFB74D' }
+          { _id: 'res_0', label: 'Format 1', dataType: 'any', color: '#FFB74D' }
         ]
       } 
     },
-
     { 
       type: 'string_join', 
       label: 'Join Strings', 

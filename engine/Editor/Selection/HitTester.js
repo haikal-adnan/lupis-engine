@@ -13,7 +13,6 @@ export class HitTester {
         return e.locked || (e._editor && e._editor.locked);
     }
 
-    // HELPER: Mencari entity dari world
     _findEntityById(id) {
         const allLayers = [...(this.game.world.layersWorld || []), ...(this.game.world.layersUI || [])];
         for (const layer of allLayers) {
@@ -25,7 +24,6 @@ export class HitTester {
         return null;
     }
 
-    // HELPER: Kalkulasi Global Transform
     getGlobalTransform(e) {
         const t = this._getTransform(e);
         if (!t) return { x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1, pivotX: 0.5, pivotY: 0.5, width: 100, height: 100 };

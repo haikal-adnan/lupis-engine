@@ -23,6 +23,8 @@ export default class PhysicsSystem {
 
             const phys = entity.components.Physics;
 
+            if (phys.isFrozen) continue;
+
             phys.collisionInfo = { hitSolid: null, hitSolidX: null, hitSolidY: null, hitTrigger: null };
 
             const preDragVelocityX = phys.velocityX;

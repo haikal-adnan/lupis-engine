@@ -1,4 +1,4 @@
-export default class UIRenderer {
+export default class EditorRenderer {
     constructor(image, shape, text, game) {
         this.image = image;
         this.shape = shape;
@@ -42,7 +42,7 @@ export default class UIRenderer {
         this.shape.drawRectStroke(x, y, w, h, color, t, this.projection);
     }
 
-    drawText(str, x, y, size, color, font = null, rotation = 0) {
+    drawText(str, x, y, size, color, font = null, rotation = 0, textOptions = {}) {
         let targetFont = font;
 
         if (!targetFont) {
@@ -55,6 +55,17 @@ export default class UIRenderer {
 
         if (!targetFont || !targetFont.glTexture) return;
 
+        const options = {
+            align: "left",
+            lineSpacing: 1.2,
+            letterSpacing: 0,
+            smoothing: 0.1,
+            outlineWidth: 0,
+            outlineColor: [0, 0, 0, 1],
+            shadowEnabled: false,
+            ...textOptions
+        };
+
         this.text.drawText(
             targetFont,
             str,
@@ -63,7 +74,12 @@ export default class UIRenderer {
             size,
             color,
             this.projection,
-            rotation
+            rotation,
+            1, 1, 
+            0, 0, 
+            1,  
+            false, false, 
+            options 
         );
     }
 

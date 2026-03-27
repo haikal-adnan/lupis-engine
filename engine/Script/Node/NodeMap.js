@@ -176,5 +176,52 @@ export const NodeMap = {
             }
             return defaultVal;
         }
-    }
+    },
+    'map_filter': {
+        getOutput: (runner, node, outputKey) => {
+            if (outputKey !== 'filtered_out') return null;
+
+            const inputData = runner.getInputValue(node, 'map'); // Bisa Map atau List
+            const keyInput = runner.getInputValue(node, 'key');
+            const valInput = runner.getInputValue(node, 'value');
+
+            const searchKey = (keyInput !== undefined && keyInput !== null && keyInput !== "") ? keyInput : node.data?.values?.key;
+            const searchValue = (valInput !== undefined && valInput !== null) ? valInput : node.data?.values?.value;
+
+            if (!inputData || typeof inputData !== 'object' || !searchKey) return null;
+
+            // KASUS 1: Input adalah ARRAY (Seperti isi "levels" Anda)
+            if (Array.isArray(inputData)) {
+                // Mencari objek di dalam list yang memiliki {key: value}
+                const found = inputData.find(item => 
+                    item && typeof item === 'object' && item[searchKey] === searchValue
+                );
+                return found || null;
+            }
+
+            // KASUS 2: Input adalah OBJECT / MAP
+            // Kita cek dulu apakah key-nya ada di level root object ini
+            if (inputData[searchKey] === searchValue) {
+                return inputData; 
+            }
+
+            // Jika tidak ada di root, kita scan isi propertinya (Nested Search)
+            for (const k in inputData) {
+                const subItem = inputData[k];
+                if (subItem && typeof subItem === 'object') {
+                    // Jika sub-item adalah array, kita cari di dalam array tersebut
+                    if (Array.isArray(subItem)) {
+                        const foundInArray = subItem.find(i => i && i[searchKey] === searchValue);
+                        if (foundInArray) return foundInArray;
+                    } 
+                    // Jika sub-item adalah object, cek kecocokannya
+                    else if (subItem[searchKey] === searchValue) {
+                        return subItem;
+                    }
+                }
+            }
+
+            return null;
+        }
+    },
 };

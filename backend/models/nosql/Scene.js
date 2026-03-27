@@ -11,7 +11,10 @@ const LayerSchema = new mongoose.Schema({
   active: { type: Boolean, default: true},
   
   locked: { type: Boolean, default: false },
-  visible: { type: Boolean, default: true }
+  visible: { type: Boolean, default: true },
+  
+  // Tambahkan definisi opacity di sini
+  opacity: { type: Number, default: 1.0 }
 }, { _id: false });
 
 const EntitySchema = new mongoose.Schema({

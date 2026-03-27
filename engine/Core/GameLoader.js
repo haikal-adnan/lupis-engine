@@ -135,7 +135,8 @@ export default class GameLoader {
         world.prefabs = Object.fromEntries(prefabs.map(p => [p._id, {
             _id: p._id,
             name: p.name,
-            data: p.data 
+            data: p.data,
+            children: p.children || [] // ✅ TAMBAHKAN BARIS INI
         }]));
     }
 

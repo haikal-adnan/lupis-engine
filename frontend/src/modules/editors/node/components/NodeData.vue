@@ -47,14 +47,14 @@
                 <span v-if="isInputConnected(key)" class="text-green-400 animate-pulse font-bold">
                   LINKED
                 </span>
-                <span v-else-if="isNotSet(val)" class="text-red-500 font-bold uppercase tracking-tighter">
+                <span v-else-if="isErrorNotSet(key, val)" class="text-red-500 font-bold uppercase tracking-tighter">
                   NOT SET
                 </span>
               </div>
 
               <div :class="{ 
                 'opacity-40 pointer-events-none filter grayscale': isInputConnected(key),
-                'border-red-500/20': !isInputConnected(key) && isNotSet(val) 
+                'border-red-500/20': !isInputConnected(key) && isErrorNotSet(key, val) 
               }">
                 
                 <BaseSelect 
@@ -78,7 +78,7 @@
                   :model-value="val"
                   @update:model-value="updateNodeValue(key, $event)"
                   class="font-mono w-full"
-                  :placeholder="getPlaceholder(val, 'Number')"
+                  :placeholder="getPlaceholder(key, val, 'Number')"
                 />
 
                 <BaseInput 
@@ -86,7 +86,7 @@
                   :model-value="val"
                   @update:model-value="updateNodeValue(key, $event)"
                   class="w-full"
-                  :placeholder="getPlaceholder(val, 'String')"
+                  :placeholder="getPlaceholder(key, val, 'String')"
                 />
               </div>
             </div>
@@ -140,9 +140,21 @@ function isNotSet(value) {
 }
 
 /**
+ * Helper: Pengecekan error untuk status "NOT SET" (Mengecualikan target_in)
+ */
+function isErrorNotSet(key, value) {
+  // Semua target_in (termasuk target_in_1) defaultnya adalah "self", jadi bukan error
+  if (String(key).startsWith('target_in')) return false; 
+  return isNotSet(value);
+}
+
+/**
  * Helper: Placeholder dinamis
  */
-function getPlaceholder(value, type) {
+function getPlaceholder(key, value, type) {
+  if (String(key).startsWith('target_in') && isNotSet(value)) {
+    return 'self';
+  }
   if (isNotSet(value)) {
     return `Empty ${type}...`;
   }

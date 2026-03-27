@@ -63,12 +63,10 @@ const { showPop } = usePopAlert();
 const userEmail = ref('');
 const otpCode = ref('');
 
-// Konfigurasi Cooldown
-const COOLDOWN_SECONDS = 180; // 3 menit
-const cooldownLeft = ref(0); // Diubah menjadi 0 agar tombol langsung aktif di awal
+const COOLDOWN_SECONDS = 180; 
+const cooldownLeft = ref(0);
 let cooldownInterval = null;
 
-// Teks dinamis untuk tombol resend
 const resendButtonText = computed(() => {
     if (isLoading.value) return 'Mengirim Ulang...';
     if (cooldownLeft.value > 0) {
@@ -80,7 +78,6 @@ const resendButtonText = computed(() => {
     return 'Kirim Ulang Kode OTP';
 });
 
-// Fungsi untuk menjalankan timer 3 menit
 const startCooldown = () => {
     if (cooldownInterval) clearInterval(cooldownInterval);
     cooldownLeft.value = COOLDOWN_SECONDS;
@@ -105,7 +102,6 @@ onMounted(() => {
 
     try {
         userEmail.value = atob(hash);
-        // Hapus pemanggilan startCooldown() dari sini agar timer tidak otomatis jalan
     } catch (e) {
         router.replace('/');
     }
@@ -131,14 +127,13 @@ const handleActivation = async () => {
 };
 
 const handleResendOtp = async () => {
-    // Cegah double klik saat sedang memuat atau masih cooldown
     if (cooldownLeft.value > 0 || isLoading.value) return;
 
     const result = await resendOtp(userEmail.value);
     
     if (result.success) {
-        otpCode.value = ''; // Kosongkan input agar user bisa mengetik kode baru
-        startCooldown(); // Mulai timer 3 menit HANYA setelah resend berhasil
+        otpCode.value = ''; 
+        startCooldown(); 
     }
 };
 </script>

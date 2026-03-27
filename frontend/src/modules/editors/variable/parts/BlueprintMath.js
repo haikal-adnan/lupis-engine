@@ -56,6 +56,27 @@ export const BlueprintMath = {
       } 
     },
     { 
+      type: 'math_round', 
+      label: 'Rounding (Floor/Ceil)', 
+      description: 'Round, floor, or ceil a number', 
+      icon: Calculator, // Atau icon lain yang pas
+      allowDynamicInputs: false, 
+      defaultData: { 
+        settings: { headerTitle: 'Rounding', headerColor: '#00796B', category: 'Math' },
+        data: {
+          method: 'floor' // Default value: 'floor', 'ceil', atau 'round'
+        },
+        inputs: [
+            { _id: 'in', label: 'In', dataType: 'execution', color: '#fff' },
+            { _id: 'val', label: 'Value', dataType: 'number', color: '#B2FF59' }
+        ],
+        outputs: [
+            { _id: 'out', label: 'Trigger', dataType: 'execution', color: '#fff' },
+            { _id: 'res', label: 'Result', dataType: 'number', color: '#B2FF59' }
+        ]
+      } 
+    },
+    { 
       type: 'math_distance_2d', 
       label: 'Distance 2D', 
       description: 'Calculate distance between two 2D points', 
@@ -71,7 +92,6 @@ export const BlueprintMath = {
           { _id: 'y2', label: 'Y2', dataType: 'number', color: '#B2FF59' }
         ], 
         outputs: [
-          // Tidak ada execution pin, karena ini adalah fungsi "Pure"
           { _id: 'res', label: 'Distance', dataType: 'number', color: '#B2FF59' }
         ]
       } 
@@ -92,7 +112,6 @@ export const BlueprintMath = {
           { _id: 'to_y', label: 'To Y', dataType: 'number', color: '#B2FF59' }
         ], 
         outputs: [
-          // Tidak ada execution pin
           { _id: 'dir_x', label: 'Dir X (-1 to 1)', dataType: 'number', color: '#B2FF59' },
           { _id: 'dir_y', label: 'Dir Y (-1 to 1)', dataType: 'number', color: '#B2FF59' },
           { _id: 'angle', label: 'Angle (Deg)', dataType: 'number', color: '#B2FF59' }

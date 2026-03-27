@@ -8,7 +8,7 @@ import EventManager from "../Script/EventManager.js";
 import ScriptSystem from "../Script/ScriptSystem.js";
 import ColliderSystem from "../System/ColliderSystem.js";
 import PhysicsSystem from "../System/PhysicsSystem.js";
-import SceneLoader from "../Loader/SceneLoader.js"; 
+import SceneLoader from "../Loader/SceneLoader.js";
 import AnimatorSystem from "../System/AnimatorSystem.js";
 import TransitionSystem from "../System/TransitionSystem.js";
 import AudioSystem from "../System/AudioSystem.js";
@@ -39,10 +39,8 @@ export default class Game {
         this.isPaused = false;
         this.isRunning = false;
         this.loop = null;
-        
-        this._sceneDataCache = []; 
-
-        this._pendingSceneLoad = null; 
+        this._sceneDataCache = [];
+        this._pendingSceneLoad = null;
     }
 
     initLoop() {
@@ -54,20 +52,67 @@ export default class Game {
         this.loop.start();
     }
 
-    quitGame() { 
-        if (this.loop) this.loop.stop(); 
+    quitGame() {
+        if (this.loop) this.loop.stop();
     }
 
     destroy() {
         this.quitGame();
-        
         if (this.renderer && typeof this.renderer.destroy === 'function') {
             this.renderer.destroy();
         }
-        
         this.world = null;
         this.renderer = null;
         this.syncSystem = null;
+    }
+
+    destroyEntity(entity) {
+        if (!entity || !this.world) return;
+
+        const entityId = entity.id || entity._id;
+
+        // 1. Hapus semua child dari entity ini secara rekursif
+        // Kita cari entity lain yang parentId-nya merujuk ke entity ini
+        const children = this.world.entities.filter(e => e.parentId === entityId);
+        for (const child of children) {
+            this.destroyEntity(child); // Panggil fungsi ini lagi untuk anak-anaknya
+        }
+
+        // 2. Hapus entity ini dari daftar children milik parent-nya (jika punya parent)
+        if (entity.parentId) {
+            const parent = this.world.entities.find(e => (e.id === entity.parentId || e._id === entity.parentId));
+            if (parent && Array.isArray(parent.children)) {
+                parent.children = parent.children.filter(c => (c.id !== entityId && c._id !== entityId));
+            }
+        }
+
+        // 3. Hapus dari map Script ID agar tidak bisa di-resolve lagi oleh runner
+        if (this.world.scriptIdMap && entity.scriptId) {
+            this.world.scriptIdMap.delete(entity.scriptId);
+        }
+
+        // 4. Hapus dari daftar entity global di World
+        this.world.entities = this.world.entities.filter(e => (e.id !== entityId && e._id !== entityId));
+
+        // 5. Hapus dari layer yang menampung entity ini
+        if (this.world.allLayers) {
+            const layer = this.world.allLayers.find(l => l._id === entity.layerId);
+            if (layer && Array.isArray(layer.entities)) {
+                layer.entities = layer.entities.filter(e => (e.id !== entityId && e._id !== entityId));
+            }
+        }
+
+        // 6. Cleanup di sistem-sistem spesifik (Opsional, pastikan fungsi ini ada di class sistem kamu)
+        // Jika belum ada, kamu bisa membuat method remove/clear untuk masing-masing system nantinya.
+        if (this.scriptSystem && typeof this.scriptSystem.removeEntityScripts === 'function') {
+            this.scriptSystem.removeEntityScripts(entity);
+        }
+        if (this.physicsSystem && typeof this.physicsSystem.removeBody === 'function') {
+            this.physicsSystem.removeBody(entity);
+        }
+        if (this.colliderSystem && typeof this.colliderSystem.removeCollider === 'function') {
+            this.colliderSystem.removeCollider(entity);
+        }
     }
 
     setSceneCache(scenesArray) {
@@ -88,8 +133,8 @@ export default class Game {
 
         const searchKey = String(sceneIdentifier).trim().toLowerCase();
 
-        const rawSceneData = this._sceneDataCache.find(s => 
-            (s.name && s.name.trim().toLowerCase() === searchKey) || 
+        const rawSceneData = this._sceneDataCache.find(s =>
+            (s.name && s.name.trim().toLowerCase() === searchKey) ||
             (s._id === sceneIdentifier)
         );
 
@@ -103,8 +148,8 @@ export default class Game {
         this.pauseGame();
 
         if (this.camera) {
-            this.camera.clearTarget(); 
-            this.camera.snapTo(0, 0); 
+            this.camera.clearTarget();
+            this.camera.snapTo(0, 0);
         }
 
         if (this.cameraController) {
@@ -114,7 +159,7 @@ export default class Game {
         this.world.entities = [];
         this.world.layersWorld = [];
         this.world.layersUI = [];
-        
+
         if (this.world.scriptIdMap) {
             this.world.scriptIdMap.clear();
         }
@@ -123,7 +168,10 @@ export default class Game {
             this.scriptSystem.clear();
         }
 
+        // --- PERBAIKAN DI SINI ---
+        this.world.currentSceneId = targetSceneData._id; // Simpan _id asli untuk keperluan restart
         this.world.currentSceneScriptId = targetSceneData.scriptId || targetSceneData._id || null;
+        this.world.currentSceneName = targetSceneData.name || ""; 
 
         const sceneLoader = new SceneLoader(this.world, Config.ENGINE_MODE);
         sceneLoader.loadScene(targetSceneData);
@@ -145,16 +193,20 @@ export default class Game {
         if (Config.ENGINE_MODE === "runtime") {
             this._initializeEntityScripts();
             this.scriptSystem.startAll();
-            
             this.audioSystem.handleSceneTransition(this.world.entities);
             this.audioSystem.startSceneAutoplay(this.world);
+            if (this.loop) {
+                this.loop.isFirstFrame = true;
+            }
         }
 
         this.resumeGame();
     }
 
     restartScene() {
-        const currentId = this.world.currentSceneScriptId;
+        // --- PERBAIKAN DI SINI ---
+        // Gunakan currentSceneId (_id) alih-alih currentSceneScriptId agar pasti ketemu di Cache
+        const currentId = this.world.currentSceneId || this.world.currentSceneScriptId;
         if (currentId) {
             this.queueLoadScene(currentId);
         } else {
@@ -171,7 +223,6 @@ export default class Game {
                 const asset = this.world.scripts[instance.assetId];
                 if (asset) {
                     const instanceVars = instance.variables || {};
-
                     const mergedVars = asset.variables.map(v => ({
                         ...v,
                         defaultValue: instanceVars[v._id] !== undefined ? instanceVars[v._id] : v.defaultValue
@@ -184,18 +235,18 @@ export default class Game {
                 }
             });
         });
-    }   
+    }
 
     update(dt) {
         if (this._pendingSceneLoad !== null) {
             this.loadScene(this._pendingSceneLoad);
             this._pendingSceneLoad = null;
-            return; 
+            return;
         }
 
         if (Config.ENGINE_MODE === "runtime") {
             this.transitionSystem.update(dt);
-            this.animatorSystem.update(dt)
+            this.animatorSystem.update(dt);
             this.physicsSystem.update(dt);
             this.scriptSystem.update(dt);
             this.audioSystem.update();
@@ -206,8 +257,8 @@ export default class Game {
     }
 
     render(alpha) {
-        const cam = this.camera; 
-        
+        const cam = this.camera;
+
         if (this.cameraController) this.cameraController.update();
 
         if (Config.ENGINE_MODE === "editor") {
@@ -227,143 +278,162 @@ export default class Game {
     resumeGame() { this.isPaused = false; }
     togglePause() { if (this.isPaused) this.resumeGame(); else this.pauseGame(); }
 
-// Tambahkan properti counter di constructor Game
-// this._entityCounter = 0;
-
-    spawnPrefab(prefabIdentifier, posX = 0, posY = 0, layerScriptId = "", zIndex = 0) {
+    spawnPrefab(prefabIdentifier, posX = 0, posY = 0, layerScriptId = "", zIndex = 0, customScriptId = "") {
         if (!this.world.prefabs) return null;
 
-        // 1. Cari data prefab
         let prefabData = null;
+        let prefabChildren = [];
+
         for (const key in this.world.prefabs) {
             const p = this.world.prefabs[key];
             if (p._id === prefabIdentifier || p.name === prefabIdentifier) {
                 prefabData = p.data;
+                prefabChildren = p.children || [];
                 break;
             }
         }
-        
-        if (!prefabData) {
-            console.warn(`[LupisEngine] Spawn gagal: Prefab '${prefabIdentifier}' tidak ditemukan.`);
-            return null;
-        }
 
-        // 2. Tentukan Target Layer
+        if (!prefabData) return null;
+
         let targetLayerId = "layer_w_root";
-        if (layerScriptId && this.world.allLayers) {
-            const foundLayer = this.world.allLayers.find(l => l.scriptId === layerScriptId);
-            if (foundLayer) targetLayerId = foundLayer._id;
+        let targetLayer = null;
+        if (this.world.allLayers) {
+            if (layerScriptId) targetLayer = this.world.allLayers.find(l => l.scriptId === layerScriptId);
+            if (!targetLayer) targetLayer = this.world.allLayers.find(l => l._id === targetLayerId);
+            if (targetLayer) targetLayerId = targetLayer._id;
         }
 
-        // 3. Deep Copy (PENTING: Mencegah bug kecepatan x4 karena shared reference)
-        const instanceData = JSON.parse(JSON.stringify(prefabData));
+        // Cari order index tertinggi di layer saat ini agar spawn selalu di paling depan
+        let baseOrderIndex = 0;
+        if (targetLayer && targetLayer.entities) {
+            baseOrderIndex = targetLayer.entities.reduce((max, e) => Math.max(max, e.orderIndex || 0), -1);
+        }
 
-        // 4. Gunakan Fungsi Utilitas Kamu untuk ID Unik
-        const uniqueId = GenerateUUID(16);
-        
-        instanceData._id = 'ent_' + uniqueId;
-        instanceData.scriptId = 'script_' + uniqueId;
-        instanceData.layerId = targetLayerId;
-        instanceData.zIndex = zIndex;
+        // --- LOGIKA SANITASI DAN VALIDASI SCRIPT ID ---
+        let finalRootScriptId = 'script_' + GenerateUUID(16); // ID fallback default
 
-        // 5. Inisialisasi Instance
+        if (typeof customScriptId === 'string' && customScriptId.trim() !== "") {
+            // Ubah ke lowercase dan hapus semua karakter selain a-z, 0-9, dan underscore
+            let sanitizedId = customScriptId.toLowerCase().replace(/[^a-z0-9_]/g, '');
+
+            if (sanitizedId !== '') {
+                // Cek apakah ID tersebut sudah dipakai oleh entity lain di world
+                let isIdExist = false;
+                if (this.world.scriptIdMap) {
+                    isIdExist = this.world.scriptIdMap.has(sanitizedId);
+                } else {
+                    isIdExist = this.world.entities.some(e => e.scriptId === sanitizedId);
+                }
+
+                // Jika belum dipakai, gunakan ID dari user
+                if (!isIdExist) {
+                    finalRootScriptId = sanitizedId;
+                } else {
+                    console.warn(`[Spawn Prefab] Script ID '${sanitizedId}' sudah ada. Generate ID acak.`);
+                }
+            }
+        }
+        // ----------------------------------------------
+
+        const idMap = {};
+        const allNewData = [];
+        const uniqueSuffix = GenerateUUID(16).substring(0, 8);
+
+        // --- ROOT DATA ---
+        const rootData = JSON.parse(JSON.stringify(prefabData));
+        const newRootId = 'ent_' + GenerateUUID(16);
+        idMap[rootData._id] = newRootId;
+
+        baseOrderIndex++; // Order untuk parent
+
+        rootData._id = newRootId;
+        rootData.scriptId = finalRootScriptId; // <--- Menggunakan ID yang sudah divalidasi
+        rootData.layerId = targetLayerId;
+        rootData.zIndex = zIndex;
+        rootData.orderIndex = baseOrderIndex;
+        rootData.parentId = null; 
+
+        if (rootData.components?.Transform) {
+            rootData.components.Transform.x = posX;
+            rootData.components.Transform.y = posY;
+        } else if (rootData.components?.UITransform) {
+            rootData.components.UITransform.x = posX;
+            rootData.components.UITransform.y = posY;
+        }
+        allNewData.push(rootData);
+
+        // --- CHILDREN DATA ---
+        if (prefabChildren && prefabChildren.length > 0) {
+            const clonedChildren = prefabChildren.map(child => {
+                const c = JSON.parse(JSON.stringify(child));
+                const newChildId = 'ent_' + GenerateUUID(16);
+                
+                idMap[c._id] = newChildId;
+                baseOrderIndex++; // Pastikan child orderIndex-nya LEBIH BESAR dari parent
+
+                c._id = newChildId;
+                c.scriptId = `${c.scriptId}_${uniqueSuffix}`; // Child ID tetap unik
+                c.layerId = targetLayerId; 
+                c.zIndex = zIndex; // Child mewarisi zIndex Parent
+                c.orderIndex = baseOrderIndex; 
+                return c;
+            });
+
+            clonedChildren.forEach(c => {
+                c.parentId = idMap[c.parentId] || newRootId;
+            });
+            allNewData.push(...clonedChildren);
+        }
+
         const sceneLoader = new SceneLoader(this.world, Config.ENGINE_MODE);
-        const entity = sceneLoader._createEntityInstance(instanceData);
+        const createdEntities = new Map();
+        let rootEntity = null;
 
-        if (!entity) return null;
-
-        // 6. Set Posisi
-        if (entity.components.Transform) {
-            entity.components.Transform.x = posX;
-            entity.components.Transform.y = posY;
+        for (const data of allNewData) {
+            const entity = sceneLoader._createEntityInstance(data);
+            if (!entity) continue;
+            
+            if (data._id === newRootId) rootEntity = entity;
+            createdEntities.set(entity.id || entity._id, entity);
+            
+            this.world.addEntity(entity);
+            if (this.world.scriptIdMap && entity.scriptId) this.world.scriptIdMap.set(entity.scriptId, entity);
+            if (targetLayer) targetLayer.entities.push(entity);
         }
 
-        // 7. Registrasi ke World & Layer
-        this.world.addEntity(entity);
-        
-        if (this.world.scriptIdMap) {
-            this.world.scriptIdMap.set(entity.scriptId, entity);
-        }
-
-        if (this.world.allLayers) {
-            const layer = this.world.allLayers.find(l => l._id === entity.layerId);
-            if (layer) {
-                layer.entities.push(entity);
-                layer.entities.sort((a, b) => {
-                    if (a.zIndex !== b.zIndex) return a.zIndex - b.zIndex;
-                    return (a.orderIndex || 0) - (b.orderIndex || 0);
-                });
-            }
-        }
-
-        // 8. Jalankan Script di Runtime
-        if (Config.ENGINE_MODE === "runtime") {
-            this._initializeSingleEntityScript(entity);
-        }
-
-        return entity;
-    }
-
-    destroyEntity(entity) {
-        if (!entity) return;
-
-        // 1. Rekursif hapus semua children terlebih dahulu
-        if (entity.children && entity.children.length > 0) {
-            const childrenToDestroy = [...entity.children];
-            childrenToDestroy.forEach(child => this.destroyEntity(child));
-        }
-
-        // 2. Hapus dari World
-        const index = this.world.entities.findIndex(e => e.id === entity.id);
-        if (index !== -1) {
-            this.world.entities.splice(index, 1);
-        }
-
-        // Hapus dari map pencarian Script ID
-        if (this.world.scriptIdMap && entity.scriptId) {
-            this.world.scriptIdMap.delete(entity.scriptId);
-        }
-
-        // 3. Hapus dari Layer
-        if (this.world.allLayers) {
-            const layer = this.world.allLayers.find(l => l._id === entity.layerId);
-            if (layer) {
-                const layerIdx = layer.entities.findIndex(e => e.id === entity.id);
-                if (layerIdx !== -1) {
-                    layer.entities.splice(layerIdx, 1);
+        for (const entity of createdEntities.values()) {
+            if (!entity.parentId) continue;
+            let parent = createdEntities.get(entity.parentId) || this.world.entities.find(e => (e.id === entity.parentId || e._id === entity.parentId));
+            
+            if (parent) {
+                if (typeof parent.addChild === 'function') parent.addChild(entity);
+                else {
+                    if (!parent.children) parent.children = [];
+                    if (!parent.children.find(c => (c.id === entity.id || c._id === entity.id))) parent.children.push(entity);
                 }
             }
         }
 
-        // 4. Hapus referensi dari Parent (jika punya parent)
-        if (entity.parentId) {
-            const parent = this.world.entities.find(e => e.id === entity.parentId);
-            if (parent) parent.removeChild(entity.id);
-        }
-
-        // 5. Matikan dan bersihkan Script yang jalan di entity ini
-        if (this.scriptSystem && this.scriptSystem.runners) {
-            this.scriptSystem.runners = this.scriptSystem.runners.filter(runner => {
-                if (runner.owner && runner.owner.id === entity.id) {
-                    if (typeof runner.destroy === 'function') runner.destroy();
-                    return false; // Buang dari array runners
-                }
-                return true;
+        if (targetLayer) {
+            targetLayer.entities.sort((a, b) => {
+                if (a.zIndex !== b.zIndex) return a.zIndex - b.zIndex;
+                return (a.orderIndex || 0) - (b.orderIndex || 0);
             });
         }
-        
-        // Catatan: Jika kamu memakai Physics engine seperti Matter.js, 
-        // pastikan untuk menghapus bodynya di sini:
-        // if (this.physicsSystem) this.physicsSystem.removeBody(entity);
-    }
 
+        if (Config.ENGINE_MODE === "runtime") {
+            for (const entity of createdEntities.values()) {
+                this._initializeSingleEntityScript(entity);
+            }
+        }
+
+        return rootEntity;
+    }
     async cloneEntity(sourceEntity) {
         if (!sourceEntity) return null;
 
-        // 1. Deep clone objek entity
         const clonedData = JSON.parse(JSON.stringify(sourceEntity));
         
-        // 2. Buat ID baru
         const generateId = () => Date.now().toString(36) + Math.random().toString(36).substring(2, 9);
         const newId = 'ent_clone_' + generateId();
         const newScriptId = 'script_clone_' + generateId();
@@ -371,18 +441,13 @@ export default class Game {
         clonedData._id = newId;
         clonedData.id = newId;
         clonedData.scriptId = newScriptId;
-        
-        // Secara default clone tidak menduplikat children untuk menghindari loop berlebih.
-        // Jika ingin duplikat anak-anaknya, ini harus dibuat rekursif.
-        clonedData.children = []; 
+        clonedData.children = [];
 
-        // 3. Jadikan instance class Entity
         const sceneLoader = new SceneLoader(this.world, Config.ENGINE_MODE);
         const entity = sceneLoader._createEntityInstance(clonedData);
 
         if (!entity) return null;
 
-        // 4. Masukkan ke World & Layer
         this.world.addEntity(entity);
         if (this.world.scriptIdMap) {
             this.world.scriptIdMap.set(entity.scriptId, entity);
@@ -399,13 +464,11 @@ export default class Game {
             }
         }
 
-        // 5. Jika sumber memiliki parent, masukkan clone ini sebagai saudaranya (sibling)
         if (entity.parentId) {
             const parent = this.world.entities.find(e => e.id === entity.parentId);
             if (parent) parent.addChild(entity);
         }
 
-        // 6. Jalankan Script-nya
         if (Config.ENGINE_MODE === "runtime") {
             this._initializeSingleEntityScript(entity);
         }
@@ -413,8 +476,6 @@ export default class Game {
         return entity;
     }
 
-    // Fungsi Helper untuk menginisialisasi script hanya untuk SATU entity saja.
-    // (Agar saat spawn/clone, kita tidak me-restart semua script yang sudah jalan)
     _initializeSingleEntityScript(entity) {
         const controller = entity.components?.ScriptController;
         if (!Array.isArray(controller?.data)) return;
@@ -428,15 +489,12 @@ export default class Game {
                     defaultValue: instanceVars[v._id] !== undefined ? instanceVars[v._id] : v.defaultValue
                 }));
 
-                // Tambahkan runner baru ke scriptSystem
                 const newScriptData = { ...asset, variables: mergedVars };
                 this.scriptSystem.add(newScriptData, entity);
                 
-                // Cari runner yang baru ditambahkan (selalu di index terakhir)
                 const newRunner = this.scriptSystem.runners[this.scriptSystem.runners.length - 1];
                 newRunner.start();
             }
         });
     }
-
 }

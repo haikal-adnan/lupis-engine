@@ -10,6 +10,9 @@ export default class GameLoop {
         this.lastTime = performance.now();
         this.accumulator = 0;
         this.rafId = null;
+        
+        // FLAG BARU: Untuk mendeteksi frame/tick pertama
+        this.isFirstFrame = true; 
     }
 
     loop(now) {
@@ -29,6 +32,12 @@ export default class GameLoop {
             this.game.render(1);
         } else {
             if (!this.game.isPaused) {
+                // TRIK PRE-WARM: Paksa accumulator penuh di frame pertama
+                // agar update() (termasuk script On Tick) PASTI berjalan.
+                if (this.isFirstFrame && this.accumulator < this.interval) {
+                    this.accumulator = this.interval;
+                }
+
                 this.accumulator += delta;
                 while (this.accumulator >= this.interval) {
                     this.game.update(this.interval / 1000);
@@ -39,7 +48,13 @@ export default class GameLoop {
             }
 
             const alpha = this.accumulator / this.interval;
-            this.game.render(alpha);
+
+            // TRIK SKIP RENDER: Jangan gambar apapun di frame pertama
+            if (this.isFirstFrame) {
+                this.isFirstFrame = false; // Matikan flag untuk frame berikutnya
+            } else {
+                this.game.render(alpha); // Frame kedua dan seterusnya normal
+            }
         }
 
         if (this.game.isRunning) {
@@ -50,6 +65,9 @@ export default class GameLoop {
     start() {
         if (this.game.isRunning) return;
         this.game.isRunning = true;
+        
+        this.isFirstFrame = true; // Reset flag setiap kali loop di-start
+        
         this.lastTime = performance.now();
         this.accumulator = 0;
         this.rafId = requestAnimationFrame(t => this.loop(t));

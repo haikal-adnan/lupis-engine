@@ -24,8 +24,7 @@ export const createAsset = async ({
       meta: {
         extension,
         size,
-        dimensions,
-        filterMode: type === 'texture' ? 'nearest' : 'linear' 
+        dimensions
       }
     });
 

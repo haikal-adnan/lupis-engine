@@ -9,7 +9,8 @@ import {
   XSquare, 
   Key, 
   List, 
-  Hash 
+  Hash,
+  Filter
 } from 'lucide-vue-next';
 
 export const BlueprintMap = {
@@ -234,6 +235,27 @@ export const BlueprintMap = {
           { _id: 'value', label: 'Value', dataType: 'any', color: '#FFFFFF' }
         ]
       } 
+    },
+    { 
+      type: 'map_filter', 
+      label: 'Universal Filter', 
+      description: 'Mencari objek utuh berdasarkan key & value, baik di dalam Map maupun di dalam List.',
+      icon: Filter,
+      allowDynamicInputs: false,
+      allowDynamicOutputs: false,
+      defaultData: { 
+        settings: { headerTitle: 'Universal Filter', headerColor: '#D81B60', category: 'Map' },
+        data: { values: { key: "id", value: "" } },
+        inputs: [
+          { _id: 'map', label: 'Input (Map/List)', dataType: 'any', color: '#FFFFFF' },
+          { _id: 'key', label: 'Search Key', dataType: 'string', color: '#FFC107' },
+          { _id: 'value', label: 'Match Value', dataType: 'any', color: '#FFFFFF' }
+        ], 
+        outputs: [
+          { _id: 'filtered_out', label: 'Result Object', dataType: 'map', color: '#D81B60' }
+        ]
+      } 
     }
+    
   ]
 };

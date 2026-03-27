@@ -59,6 +59,7 @@ export const createPhysics = (data = {}) => {
     type: data.type || "dynamic", 
     mass: Number(data.mass ?? 1.0),
     gravityScale: Number(data.gravityScale ?? 1.0),
+    isFrozen: Boolean(data.isFrozen ?? false),
     drag: Number(data.drag ?? 1.0),
     velocityX: Number(data.velocityX ?? 0),
     velocityY: Number(data.velocityY ?? 0),
@@ -92,6 +93,8 @@ export const createComponent = (type, inputData = {}) => {
         sourceHeight: Number(inputData.sourceHeight ?? 100),
         color: inputData.color || "#FFFFFF",
         opacity: Number(inputData.opacity ?? 1),
+        filterMode: inputData.filterMode || "pixelated", 
+        useSDF: Boolean(inputData.useSDF ?? false),
         ...inputData
       };
       break;
@@ -99,26 +102,32 @@ export const createComponent = (type, inputData = {}) => {
     case "TextRenderer":
       specificData = {
         value: inputData.value || "New Text",
-        mode: inputData.mode || "static", // "static" atau "rich"
+        mode: inputData.mode || "static",
         assetId: inputData.assetId || null,
         
-        fontSize: Number(inputData.fontSize || 24),
+        fontSize: Number(inputData.fontSize ?? 24),
         color: inputData.color || "#FFFFFF",
         opacity: Number(inputData.opacity ?? 1),
-        align: inputData.align || "left",
-        maxWidth: Number(inputData.maxWidth || 500),
-        lineSpacing: Number(inputData.lineSpacing || 1.2),
-        letterSpacing: Number(inputData.letterSpacing || 0),
-        overflow: inputData.overflow || "wrap", // "wrap", "truncate", "ellipsis"
+        
+        align: inputData.align || "left", 
+        maxWidth: Number(inputData.maxWidth ?? 0),
+        maxLine: Number(inputData.maxLine ?? 0),
+        lineSpacing: Number(inputData.lineSpacing ?? 1.2),
+        letterSpacing: Number(inputData.letterSpacing ?? 0),
+        overflow: inputData.overflow || "wrap",
         autoFit: Boolean(inputData.autoFit ?? true),
 
-        smoothing: Number(inputData.smoothing || 0.1),
-        outlineWidth: Number(inputData.outlineWidth || 0),
+        smoothing: Number(inputData.smoothing ?? 0.5),
+        bias: Number(inputData.bias ?? 0), 
+        outlineWidth: Number(inputData.outlineWidth ?? 0),
         outlineColor: inputData.outlineColor || "#000000",
 
-        shadowEnabled: Boolean(inputData.shadowEnabled || false),
-        shadowColor: inputData.shadowColor || "rgba(0,0,0,0.5)",
-        shadowOffset: inputData.shadowOffset || { x: 2, y: -2 },
+        shadowEnabled: Boolean(inputData.shadowEnabled ?? false),
+        shadowColor: inputData.shadowColor || "#000000",
+        shadowOpacity: Number(inputData.shadowOpacity ?? 0.5),
+        shadowOffsetX: Number(inputData.shadowOffsetX ?? 2),
+        shadowOffsetY: Number(inputData.shadowOffsetY ?? -2),
+        shadowBlur: Number(inputData.shadowBlur ?? 5),
 
         ...inputData
       };
@@ -148,6 +157,9 @@ export const createComponent = (type, inputData = {}) => {
         opacity: Number(inputData.opacity ?? 1),
         isSolid: Boolean(inputData.isSolid ?? false),
         autoFit: Boolean(inputData.autoFit ?? true),
+        
+        filterMode: inputData.filterMode || "pixelated",
+
         data: inputData.data || new Array(mapW * mapH).fill(0),
         ...inputData
       };

@@ -1,4 +1,3 @@
-// StructuredDataEditor
 <template>
   <Teleport to="body">
     <Transition
@@ -47,7 +46,11 @@
 
             <div class="w-px h-4 bg-border mx-1"></div>
 
-            <button @click="handleCancel" class="w-7 h-7 flex items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground transition-colors ml-2 shrink-0">
+            <button @click="openRawEditor" class="w-7 h-7 flex items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-primary transition-colors ml-2 shrink-0" title="Edit Raw JSON">
+              <Code class="w-4 h-4" />
+            </button>
+
+            <button @click="handleCancel" class="w-7 h-7 flex items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground transition-colors ml-1 shrink-0">
               <X class="w-4 h-4" />
             </button>
           </div>
@@ -168,6 +171,39 @@
             </BaseButton>
           </div>
 
+          <Transition
+            enter-active-class="transition duration-200 ease-out"
+            enter-from-class="opacity-0 translate-y-4"
+            enter-to-class="opacity-100 translate-y-0"
+            leave-active-class="transition duration-150 ease-in"
+            leave-from-class="opacity-100 translate-y-0"
+            leave-to-class="opacity-0 translate-y-4"
+          >
+            <div v-if="isRawEditorOpen" class="absolute inset-0 z-50 flex flex-col bg-card">
+              <div class="flex items-center justify-between px-5 py-3 border-b border-border bg-muted/20">
+                <div class="flex items-center gap-2 text-sm font-medium text-foreground">
+                  <Code class="w-4 h-4 text-primary" />
+                  Raw JSON Editor (Experimental)
+                </div>
+                <button @click="closeRawEditor" class="w-7 h-7 flex items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                  <X class="w-4 h-4" />
+                </button>
+              </div>
+              <div class="flex-1 p-4 bg-muted/5">
+                <textarea 
+                  v-model="rawJsonString" 
+                  class="text-foreground w-full h-full p-4 font-mono text-sm bg-card border border-border rounded-lg resize-none focus:outline-none focus:ring-1 focus:ring-primary/50 custom-scroll"
+                  placeholder="Paste your JSON here..."
+                  spellcheck="false"
+                ></textarea>
+              </div>
+              <div class="flex items-center justify-end px-5 py-4 border-t border-border bg-muted/20 gap-3">
+                <BaseButton @click="closeRawEditor" variant="ghost" class="px-5">Cancel</BaseButton>
+                <BaseButton @click="saveRawJson" class="px-8 bg-primary hover:bg-primary/90 text-primary-foreground">Apply JSON</BaseButton>
+              </div>
+            </div>
+          </Transition>
+
         </div>
       </div>
     </Transition>
@@ -176,7 +212,8 @@
 
 <script setup>
 import { ref, computed, watch, nextTick } from 'vue';
-import { X, GripVertical, Trash2, Plus, ChevronRight, Settings2, Copy, Link, MoreVertical } from 'lucide-vue-next'; 
+// Menambahkan ikon Code dari lucide-vue-next
+import { X, GripVertical, Trash2, Plus, ChevronRight, Settings2, Copy, Link, MoreVertical, Code } from 'lucide-vue-next'; 
 import { GenerateUUID } from '@/commons/utils/generateUUID.js';
 import { usePopAlert } from '@/composables/usePopAlert';
 import { getVarColor } from '@editors/variable/parts/VariableConfig.js';
@@ -200,6 +237,10 @@ const stack = ref([]);
 const dragIndex = ref(null);
 const scrollContainerRef = ref(null);
 const isMouseDownOutside = ref(false);
+
+// Refs baru untuk Raw Editor
+const isRawEditorOpen = ref(false);
+const rawJsonString = ref('');
 
 const typeOptions = [
   { label: 'String', value: 'String' },
@@ -291,6 +332,7 @@ watch(() => props.isOpen, (newVal) => {
   } else {
     stack.value = [];
     rootData.value = [];
+    isRawEditorOpen.value = false; // Reset state saat ditutup
   }
 });
 
@@ -331,10 +373,8 @@ const addNewItem = async () => {
 const duplicateItem = (idx) => {
   const itemToDuplicate = currentData.value[idx];
   
-  // Lakukan deep clone agar nested object/array tidak memakai reference yang sama
   const clonedItem = JSON.parse(JSON.stringify(itemToDuplicate));
   
-  // Fungsi rekursif untuk me-reset UUID di setiap level turunan (mencegah v-for conflict)
   const regenerateIds = (obj) => {
     if (Array.isArray(obj)) {
       obj.forEach(child => regenerateIds(child));
@@ -348,12 +388,10 @@ const duplicateItem = (idx) => {
   
   regenerateIds(clonedItem);
 
-  // Jika ini adalah Map, modifikasi key-nya agar tidak ada duplikasi string key di awal
   if (currentType.value === 'Map') {
     clonedItem.key = `${clonedItem.key}_copy`;
   }
   
-  // Insert item yang sudah di-clone ke index selanjutnya
   currentData.value.splice(idx + 1, 0, clonedItem);
 };
 
@@ -398,6 +436,47 @@ const cleanDataDeep = (arr, type) => {
       }
       return item.value;
     });
+  }
+};
+
+// Metode Raw Editor
+const openRawEditor = () => {
+  const cleanData = cleanDataDeep(rootData.value, props.variable.type);
+  rawJsonString.value = JSON.stringify(cleanData, null, 2);
+  isRawEditorOpen.value = true;
+};
+
+const closeRawEditor = () => {
+  isRawEditorOpen.value = false;
+};
+
+const saveRawJson = () => {
+  try {
+    const parsed = JSON.parse(rawJsonString.value);
+    
+    // Validasi dasar agar format cocok dengan tipe awal
+    if (props.variable.type === 'Map' && (typeof parsed !== 'object' || Array.isArray(parsed) || parsed === null)) {
+      throw new Error("Tipe data tidak valid. Root elemen harus berupa Object (Map).");
+    }
+    if (props.variable.type === 'List' && !Array.isArray(parsed)) {
+      throw new Error("Tipe data tidak valid. Root elemen harus berupa Array (List).");
+    }
+
+    // Konversi kembali dari JSON mentah ke struktur UI
+    rootData.value = formatDataDeep(parsed, props.variable.type);
+    
+    // Reset navigasi (stack) ke root agar pengguna tidak terjebak di path yang dihapus
+    stack.value = [{
+      label: props.variable.name || 'Unnamed',
+      type: props.variable.type,
+      dataRef: rootData.value,
+      accessor: props.variable.name 
+    }];
+    
+    isRawEditorOpen.value = false;
+    showPop({ title: 'Berhasil', message: 'JSON berhasil diterapkan ke editor.', type: 'success', duration: 1500 });
+  } catch (err) {
+    showPop({ title: 'JSON Error', message: err.message, type: 'error' });
   }
 };
 

@@ -75,8 +75,7 @@ const seedDatabase = async () => {
         meta: { 
           extension: ".png", 
           size: 1024, 
-          dimensions: { w: 352, h: 176 }, 
-          filterMode: "nearest", 
+          dimensions: { w: 352, h: 176 }
         }
       },
       {
@@ -89,7 +88,6 @@ const seedDatabase = async () => {
         meta: { 
           extension: ".fnt",
           size: 512,
-          filterMode: "nearest", 
         }
       }
     ]);

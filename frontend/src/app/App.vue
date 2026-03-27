@@ -6,7 +6,6 @@ import { useAuthActions } from '@/stores/scene/useAuthActions.js';
 import LandingLayout from '@/layouts/LandingLayout.vue';
 import MainLayout from '@/layouts/MainLayout.vue';
 
-// Base component tetap di-import normal agar instant stand-by untuk global event (misal: Auth Error)
 import BaseConfirm from '@ui/overlay/BaseConfirm.vue';
 import BasePrompt from '@ui/overlay/BasePrompt.vue';
 import BaseAlert from '@ui/overlay/BaseAlert.vue';

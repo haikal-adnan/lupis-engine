@@ -39,7 +39,6 @@ export function useNodeDragDrop(props, emit) {
     if (isDraggingLayer) {
       dragPosition.value = percentage < 0.5 ? 'top' : 'bottom'
     } else {
-      // FIX: Izinkan posisi "inside" untuk semua tipe entity (persentase area tengah diperbesar)
       if (percentage < 0.25) dragPosition.value = 'top'
       else if (percentage > 0.75) dragPosition.value = 'bottom'
       else dragPosition.value = 'inside'

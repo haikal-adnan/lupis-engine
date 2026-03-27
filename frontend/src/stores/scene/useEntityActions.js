@@ -10,38 +10,30 @@ const round = (num, decimals = 2) => {
   return Math.round(num * factor) / factor;
 };
 
-// HELPER: Mengecek secara rekursif pembatasan instansi Prefab
 const checkPrefabRestriction = (entities, entityId, targetParentId = null) => {
     if (!entities) return null;
 
-    // Fungsi rekursif untuk mengecek apakah sebuah entity ada di DALAM hierarki instansi prefab
     const isDescendantOfPrefab = (id) => {
         let current = entities.find(e => e._id === id);
         while (current && current.parentId) {
             current = entities.find(e => e._id === current.parentId);
-            // Jika ada ancestor/parent ke atas yang merupakan prefab instance, berarti dia adalah child dari prefab
             if (current && current.prefabId) return true;
         }
         return false;
     };
 
-    // 1. Cek modifikasi (delete, move) DARI DALAM prefab
-    // Root prefab (entityId memiliki prefabId) MASIH BOLEH dihapus/dipindah utuh.
-    // Yang dilarang adalah memodifikasi childnya secara terpisah.
     if (entityId && isDescendantOfPrefab(entityId)) {
         return 'Tidak dapat memodifikasi, memindahkan, atau menghapus entitas di dalam instansi Prefab. Silakan Unpack terlebih dahulu.';
     }
 
-    // 2. Cek jika memasukkan child baru KE DALAM prefab
     if (targetParentId) {
         const targetParent = entities.find(e => e._id === targetParentId);
-        // Tolak jika parent tujuannya adalah Root Prefab ATAU parent tujuannya ada di dalam prefab
         if ((targetParent && targetParent.prefabId) || isDescendantOfPrefab(targetParentId)) {
             return 'Tidak dapat menambahkan entitas baru ke dalam hierarki instansi Prefab. Silakan Unpack terlebih dahulu.';
         }
     }
 
-    return null; // Aman
+    return null; 
 };
 
 export const entityActions = {
@@ -144,7 +136,6 @@ export const entityActions = {
         }
     }
 
-    // [VALIDASI PREFAB CREATE]
     if (parentId) {
         const restrictionMsg = checkPrefabRestriction(scene.entities, null, parentId);
         if (restrictionMsg) {
@@ -262,7 +253,6 @@ export const entityActions = {
     const idsToDuplicate = Array.isArray(entityIds) ? entityIds : [entityIds];
     if (idsToDuplicate.length === 0) return false;
 
-    // [VALIDASI PREFAB DUPLICATE]
     for (const id of idsToDuplicate) {
         const restrictionMsg = checkPrefabRestriction(this.activeScene.entities, id);
         if (restrictionMsg) {
@@ -299,7 +289,6 @@ export const entityActions = {
       if (!this.activeScene || !clipboardDataArray) return false;
       const { showPop } = usePopAlert();
 
-      // [VALIDASI PREFAB PASTE]
       if (targetContext.parentId !== undefined) {
           const restrictionMsg = checkPrefabRestriction(this.activeScene.entities, null, targetContext.parentId);
           if (restrictionMsg) {
@@ -350,7 +339,6 @@ export const entityActions = {
     if (!this.activeScene) return false;
     const { showPop } = usePopAlert();
 
-    // [VALIDASI PREFAB DELETE]
     const restrictionMsg = checkPrefabRestriction(this.activeScene.entities, entityId);
     if (restrictionMsg) {
         showPop({ title: 'Prefab Restriction', message: restrictionMsg, type: 'warning' });
@@ -386,7 +374,6 @@ export const entityActions = {
 
     const { newParentId, newLayerId, insertionType, referenceId } = targetContext;
 
-    // [VALIDASI PREFAB MOVE]
     const restrictionMsg = checkPrefabRestriction(this.activeScene.entities, draggedId, newParentId);
     if (restrictionMsg) {
         showPop({ title: 'Prefab Restriction', message: restrictionMsg, type: 'warning' });
@@ -398,7 +385,6 @@ export const entityActions = {
     
     if (!entity) return false;
 
-    // --- Seamless Reparenting Logics ---
     const getGlobalTransform = (entId) => {
         const ent = entities.find(e => e._id === entId);
         if (!ent) return { x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1 };
@@ -465,7 +451,6 @@ export const entityActions = {
             updates: t
         });
     }
-    // -----------------------------------
 
     let targetSiblings = entities.filter(e => 
         e.parentId === newParentId && 

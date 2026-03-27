@@ -1,3 +1,4 @@
+// NodePorts
 <template>
   <PropertySection title="Ports Configuration" :icon="Network" v-if="selectedNode">
     
@@ -15,7 +16,16 @@
             >
                 <div class="flex-1 flex items-center gap-2 px-2 py-1 bg-secondary/20 border border-border rounded text-xs hover:bg-secondary/30 transition-colors">
                     <div class="w-2 h-2 rounded-full shrink-0" :style="{ backgroundColor: getPortColor(port) }"></div>
-                    <span class="flex-1 truncate font-mono">{{ port.label || 'Input' }}</span>
+                    
+                    <input 
+                        :value="port.label"
+                        @change="updatePortLabel(port._id, 'input', $event.target.value)"
+                        placeholder="Input"
+                        maxlength="20"
+                        spellcheck="false"
+                        class="flex-1 w-full min-w-0 bg-transparent outline-none font-mono text-xs truncate focus:bg-background focus:ring-1 focus:ring-border rounded px-1 py-0.5 -ml-1 transition-all"
+                    />
+
                     <span class="text-[9px] text-muted-foreground bg-muted px-1 rounded shrink-0">{{ port.dataType || port.type }}</span>
                 </div>
 
@@ -80,7 +90,16 @@
             >
                 <div class="flex-1 flex items-center gap-2 px-2 py-1 bg-secondary/20 border border-border rounded text-xs hover:bg-secondary/30 transition-colors">
                     <div class="w-2 h-2 rounded-full shrink-0" :style="{ backgroundColor: getPortColor(port) }"></div>
-                    <span class="flex-1 truncate font-mono">{{ port.label || 'Output' }}</span>
+                    
+                    <input 
+                        :value="port.label"
+                        @change="updatePortLabel(port._id, 'output', $event.target.value)"
+                        placeholder="Output"
+                        maxlength="20"
+                        spellcheck="false"
+                        class="flex-1 w-full min-w-0 bg-transparent outline-none font-mono text-xs truncate focus:bg-background focus:ring-1 focus:ring-border rounded px-1 py-0.5 -ml-1 transition-all"
+                    />
+
                     <span class="text-[9px] text-muted-foreground bg-muted px-1 rounded shrink-0">{{ port.dataType || port.type }}</span>
                 </div>
                 
@@ -146,7 +165,8 @@ const {
   availableOptions,   
   handleAddPort,   
   addFromDropdown,   
-  removeDynamicInput 
+  removeDynamicInput,
+  updatePortLabel
 } = useNodeLogic();
 
 function getPortColor(port) {

@@ -1,5 +1,6 @@
 import { HexToVec4 } from "../../Util/HexToVec4.js";
 import Config from "../../Core/Config.js";
+import FontMath from "../../Util/FontMath.js"; 
 
 export default class WorldRenderer { 
     constructor(image, text, shape, game, tilemapRenderer) {
@@ -29,7 +30,6 @@ export default class WorldRenderer {
         });
     }
 
-    // HELPER: Kalkulasi Global Transform untuk Rendering
     getGlobalTransform(e, world) {
         const t = e.components && (e.components.UITransform || e.components.Transform);
         if (!t) return { x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1, pivotX: 0.5, pivotY: 0.5, width: 100, height: 100 };
@@ -103,9 +103,9 @@ export default class WorldRenderer {
         }
     }
 
+    // Di dalam _collectRenderables
     _collectRenderables(world, activeTabId, isIsolationMode, isUIMode, tilemapContext, proj) {
         const isEditor = Config.ENGINE_MODE === 'editor';
-
         const layers = [...(world.layersWorld || []), ...(world.layersUI || [])]; 
         this._sortItems(layers);
 
@@ -115,27 +115,28 @@ export default class WorldRenderer {
             if (!layer.entities) continue;
 
             const isUILayer = layer.scriptId === 'ui' || (layer.name && layer.name.includes('UI'));
-
             if (!isEditor && isUILayer) continue;
+
+            const layerOpacity = layer.opacity ?? 1.0; // <-- Ambil opacity dari layer
 
             const allEntities = [...layer.entities];
             this._sortItems(allEntities);
 
             for (const e of allEntities) {
                 const isEntityUI = e.type === 'ui' || e.type === 'ui_entity' || e.components.UITransform || isUILayer;
-
                 if (!isEditor && isEntityUI) continue;
 
-                let entityVisualOpacity = 1.0;
+                // <-- Gunakan layerOpacity sebagai dasar
+                let entityVisualOpacity = layerOpacity; 
 
                 if (isIsolationMode && e.id !== activeTabId) {
                     if (tilemapContext && !tilemapContext.showOthers) continue;
-                    if (tilemapContext) entityVisualOpacity = tilemapContext.opacity;
+                    if (tilemapContext) entityVisualOpacity *= tilemapContext.opacity; // Kalikan jika dalam mode isolasi
                 }
                 
                 if (isEditor && isUIMode) {
                     if (!isEntityUI) {
-                        entityVisualOpacity = 0.3;
+                        entityVisualOpacity *= 0.3; // Kalikan jika UI mode
                     }
                 }
 
@@ -168,8 +169,6 @@ export default class WorldRenderer {
 
             this._executeRenderQueue(proj);
             this.renderQueue.length = 0;
-            
-            // TilemapRenderer internal should also use global transform in the future if nested tilemaps are needed
             this.tilemapRenderer.renderEntity(e, world, proj, currentOpacity);
             return;
         }
@@ -278,7 +277,15 @@ export default class WorldRenderer {
                         texture: texture, 
                         frame: { x: finalX, y: finalY, w: finalW, h: finalH },
                         transformData: trans,
-                        options: { flipX: finalFlipX, flipY, opacity: a, useCheckerboard }
+                        // --- LEMPAR DATA FILTER KE OPTIONS ---
+                        options: { 
+                            flipX: finalFlipX, 
+                            flipY, 
+                            opacity: a, 
+                            useCheckerboard,
+                            filterMode: s.filterMode || "pixelated",
+                            useSDF: s.useSDF || false
+                        }
                     });
                 }
             }
@@ -309,13 +316,11 @@ export default class WorldRenderer {
                     const c = comps.Collider.data[i];
                     if (!c.enabled) continue; 
 
-                    // Collider scaling based on global scale
                     const cW = (c.autoFit ? globalT.width : c.width) * Math.abs(globalT.scaleX ?? 1);
                     const cH = (c.autoFit ? globalT.height : c.height) * Math.abs(globalT.scaleY ?? 1);
                     const pX = c.pivotX ?? 0.5;
                     const pY = c.pivotY ?? 0.5;
 
-                    // Collider offset relative to pivot
                     const localTlX = -globalT.width * Math.abs(globalT.scaleX ?? 1) * (globalT.pivotX ?? 0.5) + (c.offsetX || 0) * Math.abs(globalT.scaleX ?? 1);
                     const localTlY = -globalT.height * Math.abs(globalT.scaleY ?? 1) * (globalT.pivotY ?? 0.5) + (c.offsetY || 0) * Math.abs(globalT.scaleY ?? 1);
 
@@ -352,8 +357,30 @@ export default class WorldRenderer {
                 if (!font?.ready) font = world.assets.fonts["system_default"];
                 
                 if (a > 0 && font) {
+                    const textOptions = {
+                        text: tx.value ?? "",
+                        fontSize: tx.fontSize || 24,
+                        color: HexToVec4(tx.color || "#FFFFFF"),
+                        font, opacity: a, flipX, flipY,
+                        align: tx.align || "left",
+                        maxWidth: tx.maxWidth || 0,
+                        maxLine: tx.maxLine || 0,
+                        lineSpacing: tx.lineSpacing || 1.2,
+                        letterSpacing: tx.letterSpacing || 0,
+                        overflow: tx.overflow || "wrap",
+                        smoothing: tx.smoothing ?? 0.5,
+                        bias: tx.bias ?? 0, 
+                        outlineWidth: tx.outlineWidth || 0,
+                        outlineColor: HexToVec4(tx.outlineColor || "#000000"),
+                        shadowEnabled: tx.shadowEnabled || false,
+                        shadowColor: HexToVec4(tx.shadowColor || "#000000"), 
+                        shadowOpacity: tx.shadowOpacity ?? 0.5, 
+                        shadowOffset: { x: tx.shadowOffsetX ?? 2, y: tx.shadowOffsetY ?? -2 },
+                        shadowBlur: tx.shadowBlur ?? 0.5
+                    };
+                    
                     if (tx.autoFit) {
-                        const measurement = this.renderer.text.measureText(font, tx.value ?? "", tx.fontSize || 24);
+                        const measurement = FontMath.measureText(font, textOptions.text, textOptions.fontSize, textOptions);
                         
                         if (rawT.width !== measurement.boundsWidth || rawT.height !== measurement.boundsHeight) {
                             rawT.width = measurement.boundsWidth;
@@ -367,12 +394,7 @@ export default class WorldRenderer {
                     this.renderQueue.push({
                         type: "text",
                         transformData: trans,
-                        textOptions: {
-                            text: tx.value ?? "",
-                            fontSize: tx.fontSize || 24,
-                            color: HexToVec4(tx.color || "#FFFFFF"),
-                            font, opacity: a, flipX, flipY
-                        }
+                        textOptions: textOptions
                     });
                 }
             }
@@ -383,7 +405,7 @@ export default class WorldRenderer {
         const allLayers = [...(world.layersWorld || []), ...(world.layersUI || [])];
         for (const layer of allLayers) {
             if (!layer.entities) continue;
-            const found = layer.entities.find(e => e.id === id || e._id === id); // Handle ID fallback
+            const found = layer.entities.find(e => e.id === id || e._id === id); 
             if (found) return found;
         }
         return null;
@@ -436,12 +458,12 @@ export default class WorldRenderer {
             } else if (item.type === "shape") {
                 this._drawShape(item.shapeOptions, item.transformData, proj);
             } else if (item.type === "text") {
-                const { text, font, fontSize, color, opacity, flipX, flipY } = item.textOptions;
+                const opt = item.textOptions;
                 const t = item.transformData;
                 this.renderer.text.drawText(
-                    font, text, t.x, t.y, t.width, t.height, 
-                    fontSize, color, proj, t.rotation, t.scaleX, t.scaleY, 
-                    t.pivotX, t.pivotY, opacity, flipX, flipY
+                    opt.font, opt.text, t.x, t.y, t.width, t.height, 
+                    opt.fontSize, opt.color, proj, t.rotation, t.scaleX, t.scaleY, 
+                    t.pivotX, t.pivotY, opt.opacity, opt.flipX, opt.flipY, opt
                 );
             }
         }

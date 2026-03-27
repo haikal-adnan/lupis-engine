@@ -5,12 +5,10 @@ export default class ImageRenderer {
         this.ctx = ctx;
         this.gl = ctx.gl;
         this.cache = cache;
-
         this.isWebGL2 = this.gl instanceof WebGL2RenderingContext;
 
         this.maxSprites = 20000;
         this.verticesPerQuad = 6;
-        
         this.floatsPerVertex = 7; 
         this.floatsPerQuad = this.verticesPerQuad * this.floatsPerVertex;
 
@@ -18,10 +16,16 @@ export default class ImageRenderer {
         this.bufferIndex = 0;
 
         this.currentTexture = null;
+        this.currentFilterMode = null;
+        this.currentUseSDF = null;
         this.lastProjection = null;
 
-        this.whiteTexture = this._createWhiteTexture();
+        this.FILTER_MODES = {
+            pixelated: this.gl.NEAREST,
+            smooth: this.gl.LINEAR
+        };
 
+        this.whiteTexture = this._createWhiteTexture();
         this._createShader();
         this._createBuffers();
     }
@@ -38,6 +42,7 @@ export default class ImageRenderer {
 
     _createShader() {
         const gl = this.gl;
+        const hasDeriv = this.isWebGL2 || !!gl.getExtension("OES_standard_derivatives");
         
         const vs = this.isWebGL2 ? `#version 300 es
             layout(location=0) in vec2 aPos;
@@ -45,22 +50,15 @@ export default class ImageRenderer {
             layout(location=2) in float aAlpha;
             layout(location=3) in vec2 aDimension;
             uniform mat4 uProjection;
-            out vec2 vUV;
-            out float vAlpha;
-            out vec2 vDimension;
+            out vec2 vUV; out float vAlpha; out vec2 vDimension;
             void main(){
                 vUV = aUV; vAlpha = aAlpha; vDimension = aDimension;
                 gl_Position = uProjection * vec4(aPos, 0.0, 1.0);
             }
         ` : `
-            attribute vec2 aPos;
-            attribute vec2 aUV;
-            attribute float aAlpha;
-            attribute vec2 aDimension;
+            attribute vec2 aPos; attribute vec2 aUV; attribute float aAlpha; attribute vec2 aDimension;
             uniform mat4 uProjection;
-            varying vec2 vUV;
-            varying float vAlpha;
-            varying vec2 vDimension;
+            varying vec2 vUV; varying float vAlpha; varying vec2 vDimension;
             void main(){
                 vUV = aUV; vAlpha = aAlpha; vDimension = aDimension;
                 gl_Position = uProjection * vec4(aPos, 0.0, 1.0);
@@ -71,45 +69,62 @@ export default class ImageRenderer {
             precision mediump float;
             in vec2 vUV; in float vAlpha; in vec2 vDimension;
             out vec4 outColor;
+            
             uniform sampler2D uTex;
+            uniform float uUseSDF; // Saklar dari flush()
+            
             void main(){
                 vec4 c;
                 if (vDimension.x > 0.0) {
                     float size = 32.0;
                     vec2 cell = floor((vUV * vDimension) / size);
                     float isLight = mod(cell.x + cell.y, 2.0);
-                    vec3 col = mix(vec3(0.2), vec3(0.3), isLight);
-                    c = vec4(col, 1.0);
+                    c = vec4(mix(vec3(0.2), vec3(0.3), isLight), 1.0);
                 } else {
-                    if (vUV.x < 0.0 || vUV.x > 1.0 || vUV.y < 0.0 || vUV.y > 1.0) {
-                        c = vec4(0.0, 0.0, 0.0, 0.0);
+                    vec4 texColor = texture(uTex, vUV);
+                    
+                    if (uUseSDF > 0.5) {
+                        float distance = texColor.a; 
+                        float fw = fwidth(distance); 
+                        float sdfAlpha = smoothstep(0.5 - fw, 0.5 + fw, distance);
+                        c = vec4(texColor.rgb, sdfAlpha);
                     } else {
-                        c = texture(uTex, vUV);
+                        c = texColor;
                     }
                 }
                 c.a *= vAlpha;
+                if (c.a < 0.001) discard;
                 outColor = c;
             }
         ` : `
+            ${hasDeriv ? "#extension GL_OES_standard_derivatives : enable" : ""}
             precision mediump float;
             varying vec2 vUV; varying float vAlpha; varying vec2 vDimension;
+            
             uniform sampler2D uTex;
+            uniform float uUseSDF; // Saklar dari flush()
+            
             void main(){
                 vec4 c;
                 if (vDimension.x > 0.0) {
                     float size = 32.0;
                     vec2 cell = floor((vUV * vDimension) / size);
                     float isLight = mod(cell.x + cell.y, 2.0);
-                    vec3 col = mix(vec3(0.2), vec3(0.3), isLight);
-                    c = vec4(col, 1.0);
+                    c = vec4(mix(vec3(0.2), vec3(0.3), isLight), 1.0);
                 } else {
-                    if (vUV.x < 0.0 || vUV.x > 1.0 || vUV.y < 0.0 || vUV.y > 1.0) {
-                        c = vec4(0.0, 0.0, 0.0, 0.0);
+                    vec4 texColor = texture2D(uTex, vUV);
+                    
+                    if (uUseSDF > 0.5) {
+                        float distance = texColor.a; 
+                        float fw = ${hasDeriv ? "fwidth(distance)" : "0.04"};
+                        float sdfAlpha = smoothstep(0.5 - fw, 0.5 + fw, distance);
+                        c = vec4(texColor.rgb, sdfAlpha);
                     } else {
-                        c = texture2D(uTex, vUV);
+                        c = texColor;
                     }
                 }
                 c.a *= vAlpha;
+                if (c.a < 0.001) discard;
                 gl_FragColor = c;
             }
         `;
@@ -136,6 +151,7 @@ export default class ImageRenderer {
         this.program = program;
         this.uProjection = gl.getUniformLocation(program, "uProjection");
         this.uTex = gl.getUniformLocation(program, "uTex");
+        this.uUseSDF = gl.getUniformLocation(program, "uUseSDF"); // Binding Uniform
     }
 
     _createBuffers() {
@@ -162,34 +178,37 @@ export default class ImageRenderer {
         this.lastProjection = projection;
 
         const { x, y, width: w, height: h, rotation: rot, scaleX: sx = 1, scaleY: sy = 1, pivotX: px = 0.5, pivotY: py = 0.5 } = transform;
-        
-        const { flipX = false, flipY = false, opacity = 1, useCheckerboard = false } = options || {};
+        const { 
+            flipX = false, flipY = false, opacity = 1, useCheckerboard = false,
+            filterMode = 'pixelated', useSDF = false // Ambil data dari entity
+        } = options || {};
 
         const isValidTexture = texRes && texRes.glTexture;
         const shouldChecker = useCheckerboard || !isValidTexture;
         const targetGLTexture = shouldChecker ? this.whiteTexture : texRes.glTexture;
-        
         const dimW = shouldChecker ? w : 0;
         const dimH = shouldChecker ? h : 0;
 
-        if (this.currentTexture !== targetGLTexture) {
+        if (this.currentTexture !== targetGLTexture || 
+            this.currentFilterMode !== filterMode || 
+            this.currentUseSDF !== useSDF) {
+            
             this.flush();
             this.currentTexture = targetGLTexture;
+            this.currentFilterMode = filterMode;
+            this.currentUseSDF = useSDF;
         }
 
         const finalSX = flipX ? -sx : sx;
         const finalSY = flipY ? -sy : sy;
-
         const v = calculateQuadVertices(x, y, w, h, rot, finalSX, finalSY, px, py);
 
         let u0 = 0, v0 = 0, u1 = 1, v1 = 1;
         if (!shouldChecker && isValidTexture) {
             const tw = texRes.width || 1; 
             const th = texRes.height || 1;
-            u0 = source.x / tw; 
-            v0 = source.y / th;
-            u1 = (source.x + source.w) / tw; 
-            v1 = (source.y + source.h) / th;
+            u0 = source.x / tw; v0 = source.y / th;
+            u1 = (source.x + source.w) / tw; v1 = (source.y + source.h) / th;
         }
 
         const d = this.bufferData;
@@ -214,12 +233,18 @@ export default class ImageRenderer {
         this.cache.bindVAO(this.vao);
         this.cache.bindTexture(this.currentTexture);
 
+        // --- TERAPKAN FILTER KE TEKSTUR ---
+        const glFilter = this.FILTER_MODES[this.currentFilterMode] || gl.NEAREST;
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, glFilter);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, glFilter);
+
+        // --- TERAPKAN UNIFORM KE SHADER ---
         gl.uniformMatrix4fv(this.uProjection, false, this.lastProjection);
         gl.uniform1i(this.uTex, 0);
+        gl.uniform1f(this.uUseSDF, this.currentUseSDF ? 1.0 : 0.0);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.vbo);
         gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.bufferData.subarray(0, this.bufferIndex));
-
         gl.drawArrays(gl.TRIANGLES, 0, this.bufferIndex / this.floatsPerVertex);
 
         this.bufferIndex = 0;

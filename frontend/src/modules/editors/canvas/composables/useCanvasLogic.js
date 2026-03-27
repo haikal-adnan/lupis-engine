@@ -157,7 +157,6 @@ export function useCanvasLogic() {
     const entity = sceneStore.activeScene.entities.find(e => e._id === id);
     if (!entity) return;
 
-    // Bersihkan nama entity: ganti spasi dengan underscore, hapus karakter ilegal
     const baseName = entity.name || "New Prefab";
     const suggestedName = baseName
       .replace(/\s+/g, '_')
@@ -166,15 +165,13 @@ export function useCanvasLogic() {
     const prefabName = await prompt({
         title: "Create Prefab",
         message: "Enter name for the new prefab (Alphanumeric and underscores only):",
-        defaultValue: suggestedName || "New_Prefab", // Gunakan nama yang sudah diformat
+        defaultValue: suggestedName || "New_Prefab",
         confirmText: "Create",
         cancelText: "Cancel"
     });
 
     if (!prefabName || prefabName.trim() === "") return;
 
-    // Jika pengguna mengedit prompt dengan spasi/karakter lain, 
-    // akan otomatis ditangani oleh fungsi getValidUniqueName di createPrefab (yang kita buat sebelumnya)
     const newPrefab = createPrefab(prefabName, entity);
 
     if (newPrefab) {

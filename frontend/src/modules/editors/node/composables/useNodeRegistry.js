@@ -28,6 +28,18 @@ const REGISTRY = {
   'logic_compare': defineAsyncComponent(() => 
     import('@editors/node/components/inspectors/ComparisonChainInspector.vue')
   ),
+
+  'batch_set': defineAsyncComponent(() => 
+    import('@editors/node/components/inspectors/BatchSetInspector.vue')
+  ),
+
+  'get_from_path': defineAsyncComponent(() => 
+    import('@editors/node/components/inspectors/GetPathInspector.vue')
+  ),
+
+  'string_format': defineAsyncComponent(() => 
+    import('@editors/node/components/inspectors/StringFormatInspector.vue')
+  ),
 };
 
 export function useNodeRegistry() {

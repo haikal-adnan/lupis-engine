@@ -117,7 +117,6 @@ const targetVariable = computed(() => {
   return variables.value.find(v => v._id === props.node.data.variableId);
 });
 
-// Mengecek apakah tipe data saat ini adalah List atau Map
 const isComplexType = computed(() => {
   const type = targetVariable.value?.type?.toLowerCase();
   return type === 'list' || type === 'map';

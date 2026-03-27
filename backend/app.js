@@ -3,7 +3,7 @@ import cors from "cors";
 import { connectMongo } from "./config/mongo.js";
 import { connectPostgres, pool } from "./config/postgres.js";
 
-import { verifyToken } from "./middleware/authMiddleware.js";
+// import { verifyToken } from "./middleware/authMiddleware.js";
 
 import Project from "./models/nosql/Project.js";
 import Folder from "./models/nosql/Folder.js";
