@@ -2,7 +2,7 @@ import { ref, computed } from 'vue'
 import { 
   FolderPlus, Download, RefreshCw, Edit2, Trash2, 
   Stamp, Type, Copy, Scissors, ClipboardPaste,
-  Volume2
+  Volume2, Hash // <-- [BARU] Tambahkan Hash untuk ikon Copy ID
 } from 'lucide-vue-next'
 import { useAssetActions } from '@/stores/scene/useAssetActions'
 import { useFolderActions } from '@/stores/scene/useFolderActions'
@@ -140,6 +140,21 @@ export function useAssetMenu(selectedIdRef, triggerUploadCb, logicActions) {
     closeMenu()
   }
 
+  // --- [BARU] Fungsi untuk menyalin Asset ID ke Clipboard ---
+  const handleCopyId = async (targetItem) => {
+    closeMenu()
+    const id = targetItem.id || targetItem._id
+    if (!id) return
+    
+    try {
+      await navigator.clipboard.writeText(id)
+      showPop({ title: 'Success', message: 'Asset ID copied to clipboard.', type: 'success' })
+    } catch (err) {
+      showPop({ title: 'Error', message: 'Failed to copy Asset ID.', type: 'error' })
+    }
+  }
+  // --------------------------------------------------------
+
   const contextMenuItems = computed(() => {
     const targetItem = menu.value.item
     if (!targetItem) return defaultEmptyMenu()
@@ -152,14 +167,14 @@ export function useAssetMenu(selectedIdRef, triggerUploadCb, logicActions) {
 
     const entity = getSelectedEntity()
     const currentTabType = editorStore.activeTab?.type
+    let hasAddedAppliers = false
 
     if (!isFolder) {
       const isTexture = ['texture'].includes(targetItem.type)
       const isFont = targetItem.type === 'font'
       const isAudio = targetItem.type === 'audio'
-      let hasAddedAppliers = false
 
-      if (currentTabType === 'scene' && entity?.components) {
+      if (['scene', 'ui'].includes(currentTabType) && entity?.components) {
         if (isTexture) {
           if (entity.components.SpriteRenderer) {
             items.push({ label: 'Apply to SpriteRenderer', icon: Stamp, action: () => applyAsset(targetItem, entity._id, 'SpriteRenderer') })
@@ -196,10 +211,14 @@ export function useAssetMenu(selectedIdRef, triggerUploadCb, logicActions) {
         hasAddedAppliers = true
       }
 
-      if (hasAddedAppliers) items.push({ separator: true })
     }
 
+    if (hasAddedAppliers) items.push({ separator: true })
+
+    // Menambahkan menu item ke dalam list
     items.push(
+      { label: 'Copy ID', icon: Hash, action: () => handleCopyId(targetItem) }, // <-- [BARU] Tambahan menu Copy ID
+      { separator: true },
       { label: 'Cut', icon: Scissors, shortcut: 'Ctrl+X', action: () => handleCutCopy('cut', targetItem) },
       { label: 'Copy', icon: Copy, shortcut: 'Ctrl+C', action: () => handleCutCopy('copy', targetItem) },
       { separator: true },

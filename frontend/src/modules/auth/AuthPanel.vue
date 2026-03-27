@@ -167,7 +167,6 @@ import { useAuthActions } from '@/stores/scene/useAuthActions.js';
 import { useAuthStore } from '@/stores/useAuthStore.js';
 import { usePopAlert } from '@/composables/usePopAlert'; 
 
-// Pastikan useAuthActions sekarang me-return loginWithGoogle juga
 const { login, register, loginWithGoogle, isLoading, errorMessage } = useAuthActions();
 const authStore = useAuthStore(); 
 const { showPop } = usePopAlert();
@@ -190,7 +189,7 @@ const mode = ref(props.initialMode);
 const showPassword = ref(false); 
 const isMouseDownOutside = ref(false);
 
-let googleTokenClient = null; // Menyimpan instance Google Token Client
+let googleTokenClient = null;
 
 const onOutsideMouseDown = (e) => {
   isMouseDownOutside.value = e.target === e.currentTarget;
@@ -319,9 +318,6 @@ const handleSubmit = async () => {
   }
 };
 
-// ==========================================
-// GOOGLE OAUTH2 TOKEN CLIENT (CUSTOM BUTTON)
-// ==========================================
 onMounted(() => {
   if (!document.getElementById('google-gsi-script')) {
     const script = document.createElement('script');
@@ -338,17 +334,14 @@ onMounted(() => {
 });
 
 const initializeGoogleCustomAuth = () => {
-  // Ganti dengan Client ID Anda atau gunakan import.meta.env.VITE_GOOGLE_CLIENT_ID
   const clientId = '1036067672363-cq86tpni5p4ld7obc0vspv37dbatfhjn.apps.googleusercontent.com';
 
   googleTokenClient = window.google.accounts.oauth2.initTokenClient({
     client_id: clientId,
-    scope: 'email profile', // Meminta akses email dan profil dasar
+    scope: 'email profile', 
     callback: async (tokenResponse) => {
-      // Callback ini dipanggil setelah pengguna sukses login di popup Google
       if (tokenResponse && tokenResponse.access_token) {
         
-        // Kirim access_token ke backend Anda
         const result = await loginWithGoogle(tokenResponse.access_token);
         
         if (result && result.success) {
@@ -370,14 +363,12 @@ const initializeGoogleCustomAuth = () => {
     },
     error_callback: (error) => {
       console.error('Google Login Error:', error);
-      // Opsional: tampilkan alert jika user menutup popup sebelum selesai
     }
   });
 };
 
 const handleCustomGoogleLogin = () => {
   if (googleTokenClient) {
-    // Memanggil popup login Google
     googleTokenClient.requestAccessToken(); 
   } else {
     showPop({

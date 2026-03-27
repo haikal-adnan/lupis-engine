@@ -1,125 +1,96 @@
+import PointerRaycast from '../../System/PointerRaycast.js'; // Ganti path ini sesuai proyek Anda
+
 export const NodeMouse = {
     'mouse_entity_interact': {
         execute: (runner, node) => {
-            const targetId = runner.getInputValue(node, 'target');
-            const basedCollider = runner.getInputValue(node, 'based_collider') || false;
+            const targetId = runner.getInputValue(node, 'target_in');
             const entity = runner.resolveEntity(targetId);
 
-            const hasTransform = entity && entity.components && entity.components.Transform;
-            const hasUITransform = entity && entity.components && entity.components.UITransform;
-
-            if (!entity || (!hasTransform && !hasUITransform)) {
+            if (!entity) {
                 runner.executeFlow(node._id, 'exec_out');
                 return;
             }
 
-            const isUI = !!hasUITransform;
-            const t = isUI ? entity.components.UITransform : entity.components.Transform;
+            const hasTransform = entity.components && entity.components.Transform;
+            const hasUITransform = entity.components && entity.components.UITransform;
+
+            if (!hasTransform && !hasUITransform) {
+                runner.executeFlow(node._id, 'exec_out');
+                return;
+            }
 
             const pointer = runner.game.input.getPointer();
             const isPointerDown = pointer.down; 
+            const entityId = entity.id || entity._id;
             
-            const camera = runner.game.camera;
-            const canvas = runner.game.renderer.canvas;
-            
-            let targetPointerX = 0;
-            let targetPointerY = 0;
-            let drawX = t.x || 0;
-            let drawY = t.y || 0;
-
-            // 1. Hitung Posisi Mouse dan Titik Gambar (World/UI Space)
-            if (isUI) {
-                const uiSettings = runner.game.world.settings?.ui || { width: 1920, height: 1080 };
-                
-                targetPointerX = (pointer.x / canvas.width) * uiSettings.width;
-                targetPointerY = (pointer.y / canvas.height) * uiSettings.height;
-
-                const anchorX = t.anchorX ?? 0.5;
-                const anchorY = t.anchorY ?? 0.5;
-                drawX = (uiSettings.width * anchorX) + (t.x || 0);
-                drawY = (uiSettings.height * anchorY) + (t.y || 0);
-            } else {
-                const halfW = canvas.width / 2;
-                const halfH = canvas.height / 2;
-                
-                targetPointerX = camera.x + (pointer.x - halfW) / camera.scale;
-                targetPointerY = camera.y + (pointer.y - halfH) / camera.scale;
-                
-                drawX = t.x || 0;
-                drawY = t.y || 0;
-            }
+            // Ambil input use_raycast (default: true)
+            const useRaycast = runner.getInputValue(node, 'use_raycast') ?? true;
 
             let isHovering = false;
-            const tRotRad = (t.rotation || 0) * (Math.PI / 180);
+            let outputEntityScriptId = null;
 
-            // 2. Deteksi Hover dengan Multi-Collider & Rotasi (OBB Inverse Rotation)
-            // 2. Deteksi Hover dengan Multi-Collider & Rotasi (OBB Inverse Rotation)
-            if (!isUI && basedCollider && entity.components.Collider && Array.isArray(entity.components.Collider.data)) {
-                const colData = entity.components.Collider.data;
-                const tRotRad = (t.rotation || 0) * (Math.PI / 180);
-                const cosT = Math.cos(tRotRad);
-                const sinT = Math.sin(tRotRad);
+            if (useRaycast) {
+                // --- METODE 1: RAYCAST (Menghormati Z-Index & Occlusion) ---
+                const topEntity = PointerRaycast.getTopEntityUnderPointer(runner.game);
+                
+                if (topEntity) {
+                    outputEntityScriptId = topEntity.scriptId || topEntity.id || topEntity._id;
 
-                for (let i = 0; i < colData.length; i++) {
-                    const c = colData[i];
-                    if (!c.enabled) continue;
-
-                    const cW = (c.autoFit ? t.width : c.width) * Math.abs(t.scaleX ?? 1);
-                    const cH = (c.autoFit ? t.height : c.height) * Math.abs(t.scaleY ?? 1);
-                    const pX = c.pivotX ?? 0.5;
-                    const pY = c.pivotY ?? 0.5;
-
-                    const localTlX = -t.width * Math.abs(t.scaleX ?? 1) * (t.pivotX ?? 0.5) + (c.offsetX || 0) * Math.abs(t.scaleX ?? 1);
-                    const localTlY = -t.height * Math.abs(t.scaleY ?? 1) * (t.pivotY ?? 0.5) + (c.offsetY || 0) * Math.abs(t.scaleY ?? 1);
-
-                    const localPx = localTlX + cW * pX;
-                    const localPy = localTlY + cH * pY;
-
-                    const worldPx = drawX + localPx * cosT - localPy * sinT;
-                    const worldPy = drawY + localPx * sinT + localPy * cosT;
-
-                    const totalRot = c.autoFit ? tRotRad : tRotRad + ((c.rotation || 0) * (Math.PI / 180));
-
-                    // Inverse Rotation: Putar koordinat mouse melawan arah rotasi kotak
-                    const relX = targetPointerX - worldPx;
-                    const relY = targetPointerY - worldPy;
-                    const rotMouseX = relX * Math.cos(-totalRot) - relY * Math.sin(-totalRot);
-                    const rotMouseY = relX * Math.sin(-totalRot) + relY * Math.cos(-totalRot);
-
-                    const left = -cW * pX;
-                    const right = cW * (1 - pX);
-                    const top = -cH * pY;
-                    const bottom = cH * (1 - pY);
-
-                    if (rotMouseX >= left && rotMouseX <= right && rotMouseY >= top && rotMouseY <= bottom) {
+                    if (topEntity.id === entityId || topEntity._id === entityId) {
                         isHovering = true;
-                        break;
+                    } else {
+                        let currentParentId = topEntity.parentId;
+                        while (currentParentId) {
+                            if (currentParentId === entityId) {
+                                isHovering = true;
+                                break;
+                            }
+                            const pEntity = runner.game.world.entities.find(
+                                e => e.id === currentParentId || e._id === currentParentId
+                            );
+                            currentParentId = pEntity ? pEntity.parentId : null;
+                        }
                     }
                 }
             } else {
-                // Fallback default: Gunakan Transform Base (juga mendeteksi rotasi)
-                const boxW = t.width * Math.abs(t.scaleX ?? 1);
-                const boxH = t.height * Math.abs(t.scaleY ?? 1);
-                const pivotOffsetX = boxW * (t.pivotX ?? 0.5);
-                const pivotOffsetY = boxH * (t.pivotY ?? 0.5);
-                
-                const centerX = drawX - pivotOffsetX + (boxW / 2);
-                const centerY = drawY - pivotOffsetY + (boxH / 2);
+                // --- METODE 2: DIRECT HIT-TEST (Mengabaikan Z-Index & Occlusion) ---
+                const canvas = runner.game.renderer?.canvas || { width: 1920, height: 1080 };
+                const uiSettings = runner.game.world.settings?.ui || { width: 1920, height: 1080 };
+                const camera = runner.game.camera;
 
-                const relX = targetPointerX - centerX;
-                const relY = targetPointerY - centerY;
-                
-                const rotMouseX = relX * Math.cos(-tRotRad) - relY * Math.sin(-tRotRad);
-                const rotMouseY = relX * Math.sin(-tRotRad) + relY * Math.cos(-tRotRad);
+                const uiPointer = {
+                    x: (pointer.x / canvas.width) * uiSettings.width,
+                    y: (pointer.y / canvas.height) * uiSettings.height
+                };
 
-                if (Math.abs(rotMouseX) <= boxW / 2 && Math.abs(rotMouseY) <= boxH / 2) {
-                    isHovering = true;
+                const halfW = canvas.width / 2;
+                const halfH = canvas.height / 2;
+                const worldPointer = {
+                    x: camera.x + (pointer.x - halfW) / (camera.scale || 1),
+                    y: camera.y + (pointer.y - halfH) / (camera.scale || 1)
+                };
+
+                const globalT = PointerRaycast._getGlobalTransform(entity, runner.game.world);
+                let drawX = globalT.x || 0;
+                let drawY = globalT.y || 0;
+                let targetPointer = hasUITransform ? uiPointer : worldPointer;
+
+                if (hasUITransform) {
+                    const t = entity.components.UITransform;
+                    const anchorX = t.anchorX ?? 0.5;
+                    const anchorY = t.anchorY ?? 0.5;
+                    drawX = (uiSettings.width * anchorX) + (globalT.x || 0);
+                    drawY = (uiSettings.height * anchorY) + (globalT.y || 0);
+                }
+
+                isHovering = PointerRaycast._checkIntersection(entity, globalT, drawX, drawY, targetPointer.x, targetPointer.y);
+                
+                if (isHovering) {
+                    outputEntityScriptId = entity.scriptId || entity.id || entity._id;
                 }
             }
 
-            // 3. Manajemen State Interaksi (Hover, Down, Hold, Up)
             if (!node._interactStates) node._interactStates = {};
-            const entityId = entity.id || entity._id;
             
             let state = node._interactStates[entityId];
             if (!state) {
@@ -129,11 +100,12 @@ export const NodeMouse = {
 
             node._tempData = {
                 is_hovering: isHovering,
-                is_holding: isHovering && isPointerDown
+                is_holding: isHovering && isPointerDown,
+                entity_id: outputEntityScriptId 
             };
 
             runner.executeFlow(node._id, 'exec_out');
-
+            
             if (isHovering) {
                 runner.executeFlow(node._id, 'on_hover');
 
@@ -157,6 +129,7 @@ export const NodeMouse = {
         getOutput: (runner, node, outputKey) => {
             if (outputKey === 'is_hovering') return node._tempData?.is_hovering || false;
             if (outputKey === 'is_holding') return node._tempData?.is_holding || false;
+            if (outputKey === 'entityId') return node._tempData?.entity_id || null; 
             return null;
         }
     }

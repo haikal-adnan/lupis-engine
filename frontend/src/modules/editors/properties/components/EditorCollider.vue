@@ -245,7 +245,6 @@ const { showPop } = usePopAlert()
 const hasComponent = computed(() => !!selectedEntity.value?.components?.Collider)
 const overridden = getComponentOverrideStatus('Collider')
 
-// Array State Management
 const collidersData = computed(() => selectedEntity.value?.components?.Collider?.data || [])
 const selectedIndex = ref(0)
 
@@ -263,21 +262,18 @@ function selectIndex(idx, close) {
    if (close) close()
 }
 
-// Override Helper
 const markComponentAsOverridden = () => {
   if (selectedEntity.value && prefabId.value && !isEditingMasterPrefab.value) {
      sceneStore.updateComponentProp(selectedEntity.value._id, 'Collider', 'overridden', true)
   }
 }
 
-// Dynamic binding based on selected index
 const bindCurrentColliderProp = (propName) => computed({
   get: () => currentCollider.value ? currentCollider.value[propName] : undefined,
   set: (val) => {
     if (!currentCollider.value || !selectedEntity.value) return
     const path = `data.${selectedIndex.value}.${propName}`
     
-    // Convert boolean types to proper format
     let finalVal = val;
     if (propName === 'enabled' || propName === 'autoFit') finalVal = Boolean(val);
     if (typeof finalVal === 'number') finalVal = Math.round(finalVal * 100) / 100;
@@ -302,7 +298,6 @@ const rotation = bindCurrentColliderProp('rotation')
 const pivotX = bindCurrentColliderProp('pivotX')
 const pivotY = bindCurrentColliderProp('pivotY')
 
-// CRUD Actions
 function addNewCollider() {
   const newCol = { 
     type: 'solid', 
@@ -351,7 +346,6 @@ async function removeCurrentCollider() {
    }
 }
 
-// AutoFit sync logic
 const transformWidth = computed(() => selectedEntity.value?.components?.Transform?.width)
 const transformHeight = computed(() => selectedEntity.value?.components?.Transform?.height)
 
@@ -362,11 +356,9 @@ function updateColliderPivot({ x: newPx, y: newPy }) {
   const oldPx = c.pivotX ?? 0.5;
   const oldPy = c.pivotY ?? 0.5;
   
-  // 1. Hitung selisih pergerakan pivot
   const deltaPx = newPx - oldPx;
   const deltaPy = newPy - oldPy;
 
-  // 2. Ambil nilai rotasi collider dalam radian
   const rotRad = (c.rotation || 0) * (Math.PI / 180);
   const cosR = Math.cos(rotRad);
   const sinR = Math.sin(rotRad);
@@ -374,16 +366,12 @@ function updateColliderPivot({ x: newPx, y: newPy }) {
   const w = c.width || 32;
   const h = c.height || 32;
 
-  // 3. Kalkulasi Kompensasi Offset menggunakan Matrix Rotasi
-  // Ini memastikan visual collider tidak bergerak ketika pivot point diganti
   const deltaOx = -(deltaPx * w) * (1 - cosR) - (deltaPy * h) * sinR;
   const deltaOy = -(deltaPy * h) * (1 - cosR) + (deltaPx * w) * sinR;
 
-  // 4. Terapkan offset baru dengan presisi desimal
   const newOx = Number(((c.offsetX || 0) + deltaOx).toFixed(2));
   const newOy = Number(((c.offsetY || 0) + deltaOy).toFixed(2));
 
-  // 5. Simpan ke State Store
   if (isEditingMasterPrefab.value) {
     prefabStore.updateComponentProp(editorStore.activeTab.id, 'Collider', `data.${selectedIndex.value}.pivotX`, newPx);
     prefabStore.updateComponentProp(editorStore.activeTab.id, 'Collider', `data.${selectedIndex.value}.pivotY`, newPy);

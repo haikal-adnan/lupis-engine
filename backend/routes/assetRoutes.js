@@ -75,7 +75,7 @@ router.post("/createAsset", (req, res) => {
 
       if (assetType === 'font') {
         const outputPath = path.join(projectFolder, `${baseName}.fnt`); 
-        const cmd = `npx msdf-bmfont-xml "${filePath}" -o "${outputPath}" --texture-size 1024,1024 --distance-range 8 --smart-size --pot --square --font-size 42`;
+        const cmd = `npx msdf-bmfont-xml "${filePath}" -o "${outputPath}" --fieldType msdf --texture-size 2048,2048 --distance-range 8 --texture-padding 8 --smart-size --pot --square --overlap`;
 
         exec(cmd, async (error) => {
           const pngPath = path.join(projectFolder, `${baseName}.png`);
@@ -160,14 +160,12 @@ router.post("/createAsset", (req, res) => {
 router.put("/updateAsset/:assetId", async (req, res) => {
   try {
     const { assetId } = req.params;
-    const { name, folderId, filterMode } = req.body;
+    const { name, folderId} = req.body;
 
     const updateFields = {};
     if (name !== undefined) updateFields.name = name;
     if (folderId !== undefined) updateFields.folderId = folderId;
     
-    if (filterMode !== undefined) updateFields['meta.filterMode'] = filterMode;
-
     const updatedAsset = await Asset.findByIdAndUpdate(
       assetId,
       { $set: updateFields },

@@ -99,7 +99,6 @@ export default class TransformTool {
         return null;
     }
 
-    // HELPER BARU: Hanya ambil entity yang parent-nya TIDAK sedang diseleksi
     _getTopLevelEntities(entities) {
         return entities.filter(e => {
             let curr = this._findEntityInWorld(e.parentId);
@@ -168,7 +167,6 @@ export default class TransformTool {
         this.draggingResize = false;
         this.draggingRotate = false;
 
-        // FIX: Terapkan filter Top Level disini
         const topLevelEntities = this._getTopLevelEntities(validEntities);
 
         this.moveStartData = topLevelEntities.map(e => {
@@ -184,7 +182,6 @@ export default class TransformTool {
         this.initialState = this._createSnapshot();
         this.startWorld = this.toWorld(px, py);
 
-        // FIX: Terapkan filter Top Level disini
         const topLevelEntities = this._getTopLevelEntities(validEntities);
 
         if (handle.mode === 'rotate') {

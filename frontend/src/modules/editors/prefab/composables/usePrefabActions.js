@@ -18,7 +18,6 @@ export function usePrefabActions() {
   const { showPop } = usePopAlert();
   const { prompt } = usePrompt();
 
-  // Helper untuk memastikan nama valid, unik, dan case-insensitive
   const getValidUniqueName = (desiredName, excludeId = null) => {
     let cleanName = desiredName
       .replace(/\s+/g, '_')
@@ -51,9 +50,8 @@ export function usePrefabActions() {
 
         if (sourceEntityData) {
           const cleanData = JSON.parse(JSON.stringify(sourceEntityData));
-          const sourceId = cleanData._id; // Simpan ID asli root untuk mapping
+          const sourceId = cleanData._id; 
 
-          // Fungsi rekursif untuk mengambil semua children dari scene
           const getDescendants = (pId) => {
             let arr = [];
             const children = sceneStore.activeScene.entities.filter(e => e.parentId === pId);
@@ -67,10 +65,8 @@ export function usePrefabActions() {
           const descendants = sourceId ? getDescendants(sourceId) : [];
           const cleanChildren = JSON.parse(JSON.stringify(descendants));
 
-          // Hapus properti runtime, JANGAN hapus '_id' agar pohon hierarki tetap utuh
           ['layerId', 'orderIndex', 'prefabId'].forEach(k => delete cleanData[k]);
           
-          // Pastikan Root tidak memiliki parent di dalam struktur Blueprint
           cleanData.parentId = null;
           
           if (cleanData.type) type = cleanData.type; 
@@ -81,11 +77,11 @@ export function usePrefabActions() {
         const validName = getValidUniqueName(name);
 
         const newPrefab = createPrefabSchema({
-          _id: GenerateUUID(), // UUID untuk Blueprint Prefab-nya
+          _id: GenerateUUID(), 
           projectId: projectStore.project?._id || null,
           name: validName, 
           type: type, 
-          ...dataPayload // data dan children
+          ...dataPayload
         });
 
         store.addPrefab(newPrefab);
@@ -293,11 +289,9 @@ export function usePrefabActions() {
     const nextIndex = maxIndex + 1;
     const baseScriptId = `${baseName}_${nextIndex}`;
 
-    // 1. Kloning Data Root
     const newRootEntity = JSON.parse(JSON.stringify(prefab.data));
     const newRootId = GenerateUUID();
     
-    // Siapkan Peta ID (Old ID -> New ID)
     const idMap = { [newRootEntity._id]: newRootId };
 
     newRootEntity._id = newRootId;
@@ -308,7 +302,6 @@ export function usePrefabActions() {
     newRootEntity.parentId = parentId;
     newRootEntity.orderIndex = nextOrderIndex;
 
-    // Sesuaikan Posisi Root
     if (newRootEntity.components?.Transform) {
       newRootEntity.components.Transform.x = posX;
       newRootEntity.components.Transform.y = posY;
@@ -319,10 +312,7 @@ export function usePrefabActions() {
 
     const allNewEntities = [newRootEntity];
 
-    // 2. Kloning Anak-anaknya jika ada
     if (prefab.children && prefab.children.length > 0) {
-      
-      // Tahap 2A: Buat ID baru untuk semua anak & daftarkan ke idMap DULU
       const clonedChildren = prefab.children.map(child => {
         const clonedChild = JSON.parse(JSON.stringify(child));
         const newChildId = GenerateUUID();
@@ -330,7 +320,6 @@ export function usePrefabActions() {
         idMap[clonedChild._id] = newChildId; 
         clonedChild._id = newChildId;
         
-        // Buat ScriptId yang unik agar logic engine tidak bentrok
         const shortHash = GenerateUUID().split('-')[0];
         clonedChild.scriptId = `${clonedChild.scriptId}_${shortHash}`;
         clonedChild.layerId = layerId; 
@@ -338,12 +327,10 @@ export function usePrefabActions() {
         return clonedChild;
       });
 
-      // Tahap 2B: Pasangkan parentId yang baru setelah semua ID terdaftar di idMap
       clonedChildren.forEach(child => {
         if (idMap[child.parentId]) {
           child.parentId = idMap[child.parentId];
         } else {
-          // Fallback aman jika karena suatu hal parent tidak terdaftar
           child.parentId = newRootId;
         }
       });
@@ -351,7 +338,6 @@ export function usePrefabActions() {
       allNewEntities.push(...clonedChildren);
     }
 
-    // 3. Masukkan ke Scene & Engine
     sceneStore.activeScene.entities.push(...allNewEntities);
     sceneStore.selectedEntityIds = [newRootEntity._id];
 
@@ -379,7 +365,6 @@ export function usePrefabActions() {
     const prefab = store.getPrefabById(entity.prefabId);
     if (!prefab) return;
 
-    // 1. Cari Root dari Instance Prefab ini
     let rootInstance = entity;
     while (rootInstance.parentId) {
         const parent = entities.find(e => e._id === rootInstance.parentId);
@@ -400,7 +385,6 @@ export function usePrefabActions() {
 
     if (!isConfirmed) return;
 
-    // 2. Rekap ulang seluruh descendants dari rootInstance
     const getDescendants = (pId) => {
         let arr = [];
         const children = entities.filter(e => e.parentId === pId);
@@ -413,7 +397,6 @@ export function usePrefabActions() {
 
     const descendants = getDescendants(rootInstance._id);
 
-    // 3. Siapkan data Root untuk Master
     const newMasterComponents = JSON.parse(JSON.stringify(rootInstance.components));
     Object.values(newMasterComponents).forEach(comp => { delete comp.overridden; });
     
@@ -421,7 +404,6 @@ export function usePrefabActions() {
     ['layerId', 'orderIndex', 'prefabId', 'scriptId'].forEach(k => delete masterDataToSave[k]);
     masterDataToSave.components = newMasterComponents;
 
-    // 4. Siapkan data Children untuk Master
     const masterChildrenToSave = JSON.parse(JSON.stringify(descendants)).map(child => {
         ['layerId', 'orderIndex', 'prefabId', 'scriptId'].forEach(k => delete child[k]);
         if (child.components) {
@@ -430,7 +412,6 @@ export function usePrefabActions() {
         return child;
     });
 
-    // 5. Simpan struktur baru ke Store Prefab
     store.updatePrefab(prefab._id, { 
         data: masterDataToSave,
         children: masterChildrenToSave
@@ -438,14 +419,12 @@ export function usePrefabActions() {
 
     const instancesToUpdate = [];
     
-    // 6. Ambil semua ROOT dari instance prefab yang sama di Scene
     const otherRoots = entities.filter(e => 
         e.prefabId === prefab._id && 
         e._id !== rootInstance._id &&
         (!e.parentId || entities.find(p => p._id === e.parentId)?.prefabId !== prefab._id)
     );
 
-    // 7. Sinkronisasi komponen khusus untuk Root dari instance lain
     otherRoots.forEach(inst => {
         let hasChanges = false;
         Object.keys(newMasterComponents).forEach(compName => {
@@ -475,7 +454,6 @@ export function usePrefabActions() {
         }
     });
 
-    // 8. Bersihkan status "overridden" pada instance yang sedang di-apply
     Object.values(rootInstance.components).forEach(comp => { comp.overridden = false; });
     instancesToUpdate.push(JSON.parse(JSON.stringify(rootInstance)));
     
@@ -486,7 +464,6 @@ export function usePrefabActions() {
         }
     });
 
-    // 9. Kirim update ke Engine
     if (instancesToUpdate.length > 0) {
         EngineBridge.updateEntity(instancesToUpdate);
     }

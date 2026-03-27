@@ -1,8 +1,6 @@
-// src/editors/graph/composables/useNodePreferences.js (sesuaikan path Anda)
 import { ref, computed } from 'vue';
 import { STATIC_NODE_GROUPS } from '@editors/variable/composables/useNodeBlueprint.js';
 
-// Global state agar reaktif di semua komponen yang memanggilnya
 const favoriteNodesIds = ref(JSON.parse(localStorage.getItem('lupis-fav-nodes') || '[]'));
 const recentNodesIds = ref(JSON.parse(localStorage.getItem('lupis-recent-nodes') || '[]'));
 
@@ -35,9 +33,9 @@ export function useNodePreferences() {
 
   const addToRecent = (type) => {
     let recents = [...recentNodesIds.value];
-    recents = recents.filter(id => id !== type); // Hapus duplikat
-    recents.unshift(type); // Tambah ke awal
-    if (recents.length > 15) recents.pop(); // Max 15 recent
+    recents = recents.filter(id => id !== type);
+    recents.unshift(type); 
+    if (recents.length > 15) recents.pop(); 
     recentNodesIds.value = recents;
     localStorage.setItem('lupis-recent-nodes', JSON.stringify(recents));
   };

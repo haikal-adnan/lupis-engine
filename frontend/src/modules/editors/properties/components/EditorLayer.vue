@@ -59,6 +59,16 @@
         </IconButton>
       </div>
     </PropertyRow>
+
+    <PropertyRow label="Opacity">
+        <BaseNumber 
+            prefix="%"
+            v-model="displayOpacity" 
+            :min="0" :max="100" :step="1" 
+            :scrubbable="true"
+            class="font-mono w-full" 
+        />
+    </PropertyRow>
   </PropertySection>
 </template>
 
@@ -152,6 +162,18 @@ const locked = computed({
   get: () => layer.value?.locked ?? false,
   set: (val) => { if (layer.value) sceneStore.updateLayerProp(layer.value._id, 'locked', val) }
 })
+
+const displayOpacity = computed({
+  get: () => {
+    return Math.round((layer.value?.opacity ?? 1) * 100);
+  },
+  set: (val) => {
+    if (layer.value) {
+      const rawVal = parseFloat((val / 100).toFixed(2));
+      sceneStore.updateLayerProp(layer.value._id, 'opacity', rawVal);
+    }
+  }
+});
 
 const onCopyId = () => {
   if (layer.value) handleCopyId(layer.value.scriptId)

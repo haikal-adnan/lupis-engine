@@ -85,7 +85,7 @@ export class TransformOperator {
 
         if (shouldSnap && startData.length > 0) {
             const leader = startData[0];
-            const targetX = leader.x + dx; // This is raw local movement if no parent, which is fine
+            const targetX = leader.x + dx; 
             const targetY = leader.y + dy;
             const snappedX = Math.round(targetX / gridSize) * gridSize;
             const snappedY = Math.round(targetY / gridSize) * gridSize;
@@ -101,7 +101,6 @@ export class TransformOperator {
                 let localDx = finalDx;
                 let localDy = finalDy;
 
-                // Konversi delta dunia ke delta lokal jika dia adalah child
                 if (item.e.parentId) {
                     const parentEntity = this._findEntityInWorld(item.e.parentId);
                     if (parentEntity) {
@@ -145,7 +144,6 @@ export class TransformOperator {
         const currentAngle = Math.atan2(nowPos.y - rotateCenter.y, nowPos.x - rotateCenter.x);
         let deltaAngle = currentAngle - rotateStartAngle;
 
-        // Rotasi selalu ditambahkan secara linear baik global maupun lokal
         const startRad = entityStartRotation * (Math.PI / 180);
         let newRad = startRad + deltaAngle;
         let newDeg = newRad * (180 / Math.PI);
@@ -188,8 +186,6 @@ export class TransformOperator {
             let localDx = rotateCenter.x;
             let localDy = rotateCenter.y;
 
-            // Logika offset posisi belum mempertimbangkan parent skala penuh di multi-select
-            // Ini untuk kesederhanaan offset sementara pada root level
             const dx = item.startX - rotateCenter.x;
             const dy = item.startY - rotateCenter.y;
             const cos = Math.cos(deltaAngle);
@@ -228,7 +224,6 @@ export class TransformOperator {
         const t = this._getTransform(e);
         if (!t) return;
 
-        // Dapatkan rotasi global dari object
         const globalT = this._getGlobalTransform(e);
         const rRad = (globalT.rotation || 0) * (Math.PI / 180);
         
@@ -297,11 +292,9 @@ export class TransformOperator {
         const wc = Math.cos(rRad);
         const ws = Math.sin(rRad);
 
-        // Calculate world delta position
         const worldDx = shiftX_World * wc - shiftY_World * ws;
         const worldDy = shiftX_World * ws + shiftY_World * wc;
 
-        // Convert world delta position back to local for the actual transform assignment
         let localShiftX = worldDx;
         let localShiftY = worldDy;
 
@@ -329,7 +322,7 @@ export class TransformOperator {
             t.flipY = newFlipY;
             t.width = newW;
             t.height = newH;
-            t.scaleX = Math.abs(t.scaleX); // Scale remains local, we don't mess with it here
+            t.scaleX = Math.abs(t.scaleX); 
             t.scaleY = Math.abs(t.scaleY);
             t.x = newX;
             t.y = newY;

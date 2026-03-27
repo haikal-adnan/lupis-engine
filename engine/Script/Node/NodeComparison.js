@@ -21,6 +21,7 @@ export const NodeComparison = {
             }
         }
     },
+
     'logic_branch': {
         execute: (runner, node) => {
             const branches = node.data?.branches || [];
@@ -46,23 +47,37 @@ export const NodeComparison = {
             runner.executeFlow(node._id, 'out_false');
         }
     },
+
     'logic_switch': {
         execute: (runner, node) => {
-            const rawValue = runner.getInputValue(node, 'value');
+            // Gunakan ?? agar nilai false murni tidak ter-override
+            const rawValue = runner.getInputValue(node, 'value') ?? node.data?.value;
             const cases = node.data?.cases || [];
             const dataType = node.data?.dataType || 'string';
 
-            let checkValue;
-            if (dataType === 'number') checkValue = Number(rawValue);
-            else if (dataType === 'boolean') checkValue = Boolean(rawValue);
-            else checkValue = String(rawValue || '');
+            let matchIndex = -1;
 
-            const matchIndex = cases.findIndex(c => {
-                if (dataType === 'number') return Number(c) === checkValue;
-                if (dataType === 'boolean') return Boolean(c) === checkValue;
-                return String(c) === checkValue;
-            });
+            if (dataType === 'boolean') {
+                // Konversi ringan yang aman untuk Boolean & String ("true")
+                const isTrue = (typeof rawValue === 'boolean') 
+                    ? rawValue 
+                    : String(rawValue || '').toLowerCase().trim() === 'true';
 
+                matchIndex = cases.findIndex(c => {
+                    const cTrue = (typeof c === 'boolean') ? c : String(c).toLowerCase().trim() === 'true';
+                    return cTrue === isTrue;
+                });
+            } 
+            else if (dataType === 'number') {
+                const checkNum = Number(rawValue);
+                matchIndex = cases.findIndex(c => Number(c) === checkNum);
+            } 
+            else {
+                const checkStr = String(rawValue ?? '').trim();
+                matchIndex = cases.findIndex(c => String(c).trim() === checkStr);
+            }
+
+            // Eksekusi flow berdasarkan index case yang cocok
             if (matchIndex !== -1) {
                 runner.executeFlow(node._id, `out_case_${matchIndex}`);
             } else {

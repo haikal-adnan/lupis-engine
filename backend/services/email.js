@@ -22,7 +22,6 @@ const clientConfig = {
 const client = new SesClient(clientConfig);
 
 export const sendOTPEmail = async (targetEmail, userName, otpCode) => {
-  // Debugging: Pastikan Template ID terbaca (hapus log ini jika sudah jalan)
   console.log("Using Template ID:", process.env.TENCENT_SES_TEMPLATE_ID);
 
   const templateId = parseInt(process.env.TENCENT_SES_TEMPLATE_ID, 10);

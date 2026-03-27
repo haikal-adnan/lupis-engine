@@ -1,22 +1,80 @@
 export const NodeString = {
     'string_format': {
         getOutput: (runner, node, outputKey) => {
-            let rawFormat = node.data?.format;
+            const formats = node.data?.formats || (node.data?.format ? [node.data.format] : [""]);
+            
+            let formatIndex = 0;
+            if (outputKey && outputKey.startsWith('res_')) {
+                formatIndex = parseInt(outputKey.replace('res_', ''), 10);
+            }
+
+            let rawFormat = formats[formatIndex];
             let formatStr = (rawFormat !== undefined && rawFormat !== null) ? String(rawFormat) : "";
 
-            const getVal = (idx) => runner.getInputValue(node, String(idx));
+            return formatStr.replace(/{([^{}]+)}/g, (match, path) => {
+                const parts = path.split('.');
+                const varName = parts[0].trim();
+                
+                // Kumpulkan SEMUA port yang labelnya sama dengan variabel 
+                // (Ini mencegah bug 'Ghost Port' jika ada duplikasi ID di background)
+                const matchingPorts = (node.inputs || []).filter(p => p.label === varName);
+                
+                let finalVal = undefined;
 
-            for (let i = 0; i < 10; i++) {
-                const val = getVal(i);
-                if (val !== undefined && val !== null) {
-                    const displayVal = (typeof val === 'number' && !Number.isInteger(val)) ? val.toFixed(2) : val;
-                    formatStr = formatStr.split(`{${i}}`).join(String(displayVal));
+                // PRIORITAS 1: EDGE (Kabel)
+                for (const port of matchingPorts) {
+                    let edgeVal = runner.getInputValue(node, port._id);
+                    // Abaikan jika edge belum tersambung atau mengirim nilai kosong
+                    if (edgeVal !== undefined && edgeVal !== null && edgeVal !== "") {
+                        finalVal = edgeVal;
+                        break; 
+                    }
                 }
-            }
-            return formatStr;
+
+                // PRIORITAS 2: INPUTAN UI (Manual)
+                // Hanya dieksekusi jika dari Edge benar-benar kosong
+                if (finalVal === undefined || finalVal === null || finalVal === "") {
+                    for (const port of matchingPorts) {
+                        let manualVal = node.data?.values?.[port._id];
+                        if (manualVal !== undefined && manualVal !== null && manualVal !== "") {
+                            finalVal = manualVal;
+                            break;
+                        }
+                    }
+                }
+
+                // Jika nilai berhasil didapatkan (dari Edge atau Inputan)
+                if (finalVal !== undefined && finalVal !== null && finalVal !== "") {
+                    
+                    // Jika ada dot notation (misal: dialog_id.text)
+                    if (parts.length > 1 && typeof finalVal === 'object') {
+                        for (let i = 1; i < parts.length; i++) {
+                            const prop = parts[i].trim();
+                            if (finalVal[prop] === undefined) {
+                                finalVal = undefined;
+                                break;
+                            }
+                            finalVal = finalVal[prop];
+                        }
+                    }
+
+                    // Format hasil akhir
+                    if (finalVal !== undefined && finalVal !== null) {
+                        if (typeof finalVal === 'object' && !Array.isArray(finalVal)) {
+                            return JSON.stringify(finalVal);
+                        }
+                        return (typeof finalVal === 'number' && !Number.isInteger(finalVal)) 
+                            ? finalVal.toFixed(2) 
+                            : String(finalVal);
+                    }
+                }
+                
+                // Jika data benar-benar tidak ada di Edge maupun Inputan, return string kosong
+                // agar tidak muncul tulisan "{dialog_id}" secara mentah di hasil akhir
+                return ""; 
+            });
         }
     },
-
     'string_join': {
         getOutput: (runner, node, outputKey) => {
             const separator = node.data?.separator || "";

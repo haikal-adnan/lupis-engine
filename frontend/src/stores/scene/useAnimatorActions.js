@@ -47,7 +47,10 @@ export const animatorActions = {
       parentId: null, 
       fps: 12, isLooping: true, frames: [], sources: {}, baseSize: { w: 32, h: 32 }, pivot: { x: 0.5, y: 1 },
       frameIndex: 0,
-      isOpen: true
+      isOpen: true,
+      // --- TAMBAHAN PROPERTI FILTER ---
+      filterMode: 'pixelated',
+      useSDF: false
     };
 
     clips.push(newNode);
@@ -72,7 +75,10 @@ export const animatorActions = {
       assetId: null,
       parentId: parentId,
       fps: 12, isLooping: true, frames: [], sources: {}, baseSize: { w: 32, h: 32 }, pivot: { x: 0.5, y: 1 },
-      frameIndex: 0
+      frameIndex: 0,
+      // --- TAMBAHAN PROPERTI FILTER ---
+      filterMode: 'pixelated',
+      useSDF: false
     };
 
     clips.push(newNode);

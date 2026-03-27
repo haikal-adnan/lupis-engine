@@ -5,9 +5,6 @@ import {
   GitPullRequest
 } from 'lucide-vue-next';
 
-// ==========================================
-// 1. COMPARISON (Branch, Switch, Compare)
-// ==========================================
 export const BlueprintComparison = {
   _id: 'comparison',
   label: 'Logic & Compare',

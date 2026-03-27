@@ -45,7 +45,6 @@ export async function addLocalAsset(file, projectId, folderId) {
         meta: {
             extension: ext, 
             size: file.size,
-            filterMode: 'nearest',
             dimensions: dimensions 
         },
         createdAt: new Date().toISOString()

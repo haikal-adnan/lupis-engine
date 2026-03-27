@@ -153,7 +153,7 @@ export const BlueprintList = {
       allowDynamicOutputs: false,
       defaultData: { 
         settings: { headerTitle: 'Fill', headerColor: '#8E24AA', category: 'List' },
-        data: { values: { value: "", start: 0, end: 0 } }, // 0 di end berarti sampai akhir list
+        data: { values: { value: "", start: 0, end: 0 } }, 
         inputs: [
           { _id: 'exec_in', label: 'In', dataType: 'execution', color: '#FFFFFF' },
           { _id: 'list', label: 'List', dataType: 'list', color: '#8E24AA' },

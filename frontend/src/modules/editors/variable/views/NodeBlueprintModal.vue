@@ -200,16 +200,14 @@ const flatSearchResults = computed(() => {
   return results;
 });
 
-// FUNGSI BARU: Mencari kategori dari node dan membukanya
 const openCategoryOfNode = (node) => {
-  // Cari di dalam STATIC_NODE_GROUPS grup mana yang menampung node dengan type tersebut
   const targetGroup = STATIC_NODE_GROUPS.find(group => 
     group.items.some(item => item.type === node.type)
   );
 
   if (targetGroup) {
     activeGroup.value = targetGroup;
-    localSearchQuery.value = ''; // Kosongkan pencarian agar view kategori terbuka
+    localSearchQuery.value = ''; 
   }
 };
 

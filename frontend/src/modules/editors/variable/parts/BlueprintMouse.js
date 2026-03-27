@@ -9,7 +9,7 @@ export const BlueprintMouse = {
     { 
       type: 'event_pointer_click', 
       label: 'Global Mouse Click', 
-      description: 'Triggered when a mouse button is clicked anywhere on the screen',
+      description: 'Triggered when a mouse button is clicked anywhere on the screen.',
       icon: MousePointer2,
       allowDynamicInputs: false,
       allowDynamicOutputs: false,
@@ -27,7 +27,7 @@ export const BlueprintMouse = {
     { 
       type: 'event_pointer_drag', 
       label: 'Global Mouse Drag', 
-      description: 'Triggered continuously while mouse is held down and moving',
+      description: 'Triggered continuously while mouse is held down and moving.',
       icon: Move,
       allowDynamicInputs: false,
       allowDynamicOutputs: false, 
@@ -47,15 +47,23 @@ export const BlueprintMouse = {
     {
       type: 'mouse_entity_interact',
       label: 'Entity Mouse Event',
-      description: 'Checks if the mouse is hovering, clicking, or holding a specific entity.',
+      description: 'Checks if the mouse is interacting with an entity. Can use Raycast (respects Z-Index/blocking) or Direct bounds check.',
       icon: MousePointerClick,
       allowDynamicInputs: false,
       allowDynamicOutputs: false,
       defaultData: {
-        settings: { headerTitle: 'Entity Interact', headerColor: '#2E7D32', category: 'Mouse Events' },
+        settings: { headerTitle: 'Entity Mouse Event', headerColor: '#2E7D32', category: 'Mouse Events' },
+        data: {
+            values: {
+              target_in: '',
+              based_collider: '',
+              use_raycast: true // Default ke true
+          }
+        },
         inputs: [
           { _id: 'exec_in', label: 'In', dataType: 'execution' },
-          { _id: 'target', label: 'Target ID (Self)', dataType: 'string', value: 'self', icon: Target },
+          { _id: 'target_in', label: 'Target ID (Self)', dataType: 'string', icon: Target },
+          { _id: 'use_raycast', label: 'Use Raycast?', dataType: 'boolean', value: true }, // <--- Input Baru
           { _id: 'based_collider', label: 'Use Collider Bounds?', dataType: 'boolean', value: false }
         ],
         outputs: [
@@ -67,7 +75,9 @@ export const BlueprintMouse = {
           { _id: 'on_up', label: 'On Mouse Up', dataType: 'execution', color: '#FFAB91' },
           
           { _id: 'is_hovering', label: 'Is Hovering?', dataType: 'boolean', color: '#FFEB3B' },
-          { _id: 'is_holding', label: 'Is Holding?', dataType: 'boolean', color: '#4FC3F7' }
+          { _id: 'is_holding', label: 'Is Holding?', dataType: 'boolean', color: '#4FC3F7' },
+          
+          { _id: 'entityId', label: 'Entity ID', dataType: 'string', color: '#B0BEC5' } 
         ]
       }
     }

@@ -1,5 +1,6 @@
 import { HexToVec4 } from "../../Util/HexToVec4.js";
 import Config from "../../Core/Config.js";
+import FontMath from "../../Util/FontMath.js"; 
 
 export default class UIRenderer {
     constructor(image, shape, text, game) {
@@ -8,6 +9,10 @@ export default class UIRenderer {
         this.renderQueue = [];
         this.borderColor = HexToVec4("#00aaff");
         this.dashedColor = [0, 0.66, 1, 0.5];
+        
+        // --- DITAMBAHKAN: Warna untuk Collider ---
+        this.colliderColorSolid = [0, 1, 0, 0.8]; 
+        this.colliderColorTrigger = [1, 1, 0, 0.8]; 
     }
 
     _sortItems(items) {
@@ -26,7 +31,6 @@ export default class UIRenderer {
         });
     }
 
-    // HELPER: Mencari Entity
     _findEntityById(world, id) {
         const allLayers = [...(world.layersWorld || []), ...(world.layersUI || [])];
         for (const layer of allLayers) {
@@ -37,7 +41,6 @@ export default class UIRenderer {
         return null;
     }
 
-    // HELPER: Kalkulasi Global Transform untuk Rendering
     getGlobalTransform(e, world) {
         const t = e.components && (e.components.UITransform || e.components.Transform);
         if (!t) return { x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1, pivotX: 0.5, pivotY: 0.5, width: 100, height: 100 };
@@ -101,6 +104,7 @@ export default class UIRenderer {
         this._executeRenderQueue(proj);
     }
 
+    // Di dalam _collectUIEntities
     _collectUIEntities(world, proj, rootBounds) {
         const layers = [...(world.layersUI || [])];
         this._sortItems(layers);
@@ -108,11 +112,14 @@ export default class UIRenderer {
         for (const layer of layers) {
             if (layer.active === false || !layer.visible || !layer.entities) continue;
             
+            const layerOpacity = layer.opacity ?? 1.0; // <-- Ambil opacity dari layer
+
             const allEntities = [...layer.entities];
             this._sortItems(allEntities);
             
             for (const entity of allEntities) {
-                this._processUIEntity(entity, world, proj, 1.0, rootBounds);
+                // <-- Teruskan layerOpacity
+                this._processUIEntity(entity, world, proj, layerOpacity, rootBounds); 
             }
         }
     }
@@ -126,7 +133,6 @@ export default class UIRenderer {
         const rawT = comps.UITransform || comps.Transform;
         if (!rawT) return;
 
-        // FIX: Gunakan Global Transform
         const globalT = this.getGlobalTransform(e, world);
 
         const anchorX = rawT.anchorX ?? 0.5;
@@ -135,7 +141,6 @@ export default class UIRenderer {
         const anchorPointY = parentBounds.y + (parentBounds.height * anchorY);
 
         const trans = {
-            // Gabungkan Root Anchor dengan Global Transformed Position
             x: anchorPointX + (globalT.x || 0),
             y: anchorPointY + (globalT.y || 0),
             width: globalT.width || 0,
@@ -217,12 +222,19 @@ export default class UIRenderer {
                 }
 
                 this.renderQueue.push({
-                    type: "image",
-                    texture: texture,
-                    frame: { x: finalX, y: finalY, w: finalW, h: finalH },
-                    transformData: trans,
-                    options: { flipX: finalFlipX, flipY, opacity: a, useCheckerboard }
-                });
+                        type: "image",
+                        texture: texture, 
+                        frame: { x: finalX, y: finalY, w: finalW, h: finalH },
+                        transformData: trans,
+                        options: { 
+                            flipX: finalFlipX, 
+                            flipY, 
+                            opacity: a, 
+                            useCheckerboard,
+                            filterMode: s.filterMode || "pixelated",
+                            useSDF: s.useSDF || false
+                        }
+                    });
             }
         }
         
@@ -250,8 +262,30 @@ export default class UIRenderer {
             if (!font?.ready) font = world.assets.fonts["system_default"];
             
             if (a > 0 && font) {
+                const textOptions = {
+                    text: tx.value ?? "",
+                    fontSize: tx.fontSize || 24,
+                    color: HexToVec4(tx.color || "#FFFFFF"),
+                    font, opacity: a, flipX, flipY,
+                    align: tx.align || "left",
+                    maxWidth: tx.maxWidth || 0,
+                    maxLine: tx.maxLine || 0,
+                    lineSpacing: tx.lineSpacing || 1.2,
+                    letterSpacing: tx.letterSpacing || 0,
+                    overflow: tx.overflow || "wrap",
+                    smoothing: tx.smoothing ?? 0.5,
+                    bias: tx.bias ?? 0, 
+                    outlineWidth: tx.outlineWidth || 0,
+                    outlineColor: HexToVec4(tx.outlineColor || "#000000"),
+                    shadowEnabled: tx.shadowEnabled || false,
+                    shadowColor: HexToVec4(tx.shadowColor || "#000000"), 
+                    shadowOpacity: tx.shadowOpacity ?? 0.5, 
+                    shadowOffset: { x: tx.shadowOffsetX ?? 2, y: tx.shadowOffsetY ?? -2 },
+                    shadowBlur: tx.shadowBlur ?? 0.5
+                };
+
                 if (tx.autoFit) {
-                    const measurement = this.renderer.text.measureText(font, tx.value ?? "", tx.fontSize || 24);
+                    const measurement = FontMath.measureText(font, textOptions.text, textOptions.fontSize, textOptions);
                     
                     if (rawT.width !== measurement.boundsWidth || rawT.height !== measurement.boundsHeight) {
                         rawT.width = measurement.boundsWidth;
@@ -265,11 +299,51 @@ export default class UIRenderer {
                 this.renderQueue.push({
                     type: "text",
                     transformData: trans,
-                    textOptions: {
-                        text: tx.value ?? "",
-                        fontSize: tx.fontSize || 24,
-                        color: HexToVec4(tx.color || "#FFFFFF"),
-                        font, opacity: a, flipX, flipY
+                    textOptions: textOptions
+                });
+            }
+        }
+
+        // --- DITAMBAHKAN: Rendering Collider di Editor ---
+        if (Config.ENGINE_MODE === 'editor' && comps.Collider && Array.isArray(comps.Collider.data)) {
+            const tRotRad = trans.rotation; // trans.rotation sudah dalam wujud Radian
+            const cosT = Math.cos(tRotRad);
+            const sinT = Math.sin(tRotRad);
+
+            for (let i = 0; i < comps.Collider.data.length; i++) {
+                const c = comps.Collider.data[i];
+                if (!c.enabled) continue; 
+
+                const cW = (c.autoFit ? globalT.width : c.width) * Math.abs(globalT.scaleX ?? 1);
+                const cH = (c.autoFit ? globalT.height : c.height) * Math.abs(globalT.scaleY ?? 1);
+                const pX = c.pivotX ?? 0.5;
+                const pY = c.pivotY ?? 0.5;
+
+                const localTlX = -globalT.width * Math.abs(globalT.scaleX ?? 1) * (globalT.pivotX ?? 0.5) + (c.offsetX || 0) * Math.abs(globalT.scaleX ?? 1);
+                const localTlY = -globalT.height * Math.abs(globalT.scaleY ?? 1) * (globalT.pivotY ?? 0.5) + (c.offsetY || 0) * Math.abs(globalT.scaleY ?? 1);
+
+                const localPx = localTlX + cW * pX;
+                const localPy = localTlY + cH * pY;
+
+                // Menggunakan koordinat trans.x dan trans.y (bukan drawX/drawY) untuk UI
+                const worldPx = trans.x + localPx * cosT - localPy * sinT;
+                const worldPy = trans.y + localPx * sinT + localPy * cosT;
+
+                const totalRot = c.autoFit ? tRotRad : tRotRad + ((c.rotation || 0) * (Math.PI / 180));
+
+                const debugTrans = {
+                    x: worldPx, y: worldPy, width: cW, height: cH,
+                    rotation: totalRot, scaleX: 1, scaleY: 1, 
+                    pivotX: pX, pivotY: pY
+                };
+
+                this.renderQueue.push({
+                    type: "shape",
+                    transformData: debugTrans,
+                    shapeOptions: {
+                        type: "rectStroke",
+                        color: c.type === 'trigger' ? this.colliderColorTrigger : this.colliderColorSolid,
+                        thickness: 2, opacity: 1.0, flipX: false, flipY: false
                     }
                 });
             }
@@ -287,11 +361,11 @@ export default class UIRenderer {
             } else if (item.type === "shape") {
                 this._drawShape(item.shapeOptions, item.transformData, proj);
             } else if (item.type === "text") {
-                const { text, font, fontSize, color, opacity, flipX, flipY } = item.textOptions;
+                const opt = item.textOptions;
                 const t = item.transformData;
                 this.renderer.text.drawText(
-                    font, text, t.x, t.y, t.width, t.height, fontSize, color, proj, 
-                    t.rotation, t.scaleX, t.scaleY, t.pivotX, t.pivotY, opacity, flipX, flipY
+                    opt.font, opt.text, t.x, t.y, t.width, t.height, opt.fontSize, opt.color, proj, 
+                    t.rotation, t.scaleX, t.scaleY, t.pivotX, t.pivotY, opt.opacity, opt.flipX, opt.flipY, opt
                 );
             }
         }

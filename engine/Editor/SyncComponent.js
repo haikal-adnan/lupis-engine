@@ -40,6 +40,10 @@ export default class SyncComponent {
         this.bus.on("editor:script:update", p => this.onScriptUpdate(p));
         this.bus.on("editor:script:delete", id => this.onScriptDelete(id));
 
+        this.bus.on("editor:prefab:create", d => this.onCreatePrefab(d));
+        this.bus.on("editor:prefab:update", p => this.onUpdatePrefab(p));
+        this.bus.on("editor:prefab:delete", id => this.onDeletePrefab(id));
+
         this.bus.on("editor:store:update", p => this.onUpdateEditorStore(p));
         this.bus.on("editor:project:settings-update", p => this.onUpdateProjectSettings(p));
         this.bus.on("editor:scene:settings-update", p => this.onUpdateSceneSettings(p));    
@@ -136,20 +140,13 @@ export default class SyncComponent {
 
         this.isInternalUpdate = true;
 
-        // 1. Cabut entity dari layer/container lamanya
         this._removeEntityFromCurrentContainer(entity);
 
-        // 2. Set environment baru
         entity.layerId = layerId;
         entity.parentId = parentId !== undefined ? parentId : null; 
 
-        // 3. Masukkan ke container layer baru
         targetContainer.push(entity);
 
-        // (Kalkulasi Transform inversi lokal dihapus dari sini, 
-        // karena editor akan mengirim "patchComponent" sesaat setelah event ini)
-
-        // 4. Urutkan berdasarkan z-index dan order
         this._sortContainer(targetContainer);
         this.isInternalUpdate = false;
     }
@@ -415,6 +412,7 @@ export default class SyncComponent {
             name: layerData.name,
             visible: true,
             locked: false,
+            opacity: layerData.opacity ?? 1.0, // <-- Tambahkan opacity
             zIndex: layerData.zIndex ?? 0,
             orderIndex: layerData.orderIndex ?? 0,
             entities: []
@@ -549,7 +547,7 @@ export default class SyncComponent {
                     _id: p._id,
                     name: p.name,
                     data: p.data,
-                    children: p.children || [] // Tambahkan array children di sini
+                    children: p.children || [] 
                 }]));
             }
             
@@ -581,6 +579,32 @@ export default class SyncComponent {
             console.error("[SyncComponent] Kritis: Gagal melakukan onSceneReload:", error);
         } finally {
             this.isInternalUpdate = false;
+        }
+    }
+
+    onCreatePrefab(p) {
+        if (!this.world.prefabs) this.world.prefabs = {};
+        
+        this.world.prefabs[p._id] = {
+            _id: p._id,
+            name: p.name,
+            data: p.data,
+            children: p.children || []
+        };
+        console.log(`[SyncComponent] Prefab '${p.name}' berhasil disinkronisasi ke Engine.`);
+    }
+
+    onUpdatePrefab({ id, updates }) {
+        if (this.world.prefabs && this.world.prefabs[id]) {
+            Object.assign(this.world.prefabs[id], updates);
+            console.log(`[SyncComponent] Prefab '${this.world.prefabs[id].name}' berhasil di-update di Engine.`);
+        }
+    }
+
+    onDeletePrefab(id) {
+        if (this.world.prefabs && this.world.prefabs[id]) {
+            console.log(`[SyncComponent] Prefab '${this.world.prefabs[id].name}' dihapus dari Engine.`);
+            delete this.world.prefabs[id];
         }
     }
 }

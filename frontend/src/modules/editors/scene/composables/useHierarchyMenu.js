@@ -1,20 +1,20 @@
-import { ref, computed } from 'vue'; // Tambahkan computed
+import { ref, computed } from 'vue'; 
 import { useEditorStore } from '@/stores/useEditorStore.js';
 import { useProjectStore } from '@/stores/useProjectStore.js';
 import { useClipboard } from '@/composables/useClipboard.js';
-import { useSceneStore } from '@/stores/scene/useSceneStore.js'; // Tambahkan ini untuk akses scene
+import { useSceneStore } from '@/stores/scene/useSceneStore.js'; 
 
 import { 
   Plus, Trash2, Edit2, RefreshCw, 
   Cuboid, Image, Type, Square, InspectionPanel,
   Maximize, Copy, Scissors, Clipboard, Files, Layers,
-  Box // Tambahkan ikon Box
+  Box 
 } from 'lucide-vue-next';
 
 export function useHierarchyMenu(handlers) {
   const contextMenu = ref({ visible: false, x: 0, y: 0, items: [] });
   const editorStore = useEditorStore();
-  const sceneStore = useSceneStore(); // Inisialisasi store
+  const sceneStore = useSceneStore();
   const { copy, cut, paste, duplicate, remove } = useClipboard();
 
   const closeMenu = () => {
@@ -26,7 +26,6 @@ export function useHierarchyMenu(handlers) {
     if (action) action();
   };
 
-  // Helper untuk mengecek apakah sebuah entitas adalah child dari prefab
   const isDescendantOfPrefab = (entityId) => {
     const entities = sceneStore.activeScene?.entities;
     if (!entities) return false;
@@ -144,18 +143,40 @@ export function useHierarchyMenu(handlers) {
 
         items.push({ separator: true });
         
-        // --- LOGIKA "USE AS PREFAB" ---
-        const isMultiSelect = sceneStore.selectedEntityIds.length > 1;
+        // --- LOGIC PREFAB BARU ---
+        const selectedIds = sceneStore.selectedEntityIds || [];
+        const isMultiSelect = selectedIds.length > 1;
         const isAlreadyPrefab = !!node.prefabId;
         const isChildOfPrefab = isDescendantOfPrefab(node._id);
         
-        const disablePrefabAction = isMultiSelect || isAlreadyPrefab || isChildOfPrefab;
+        // Default disable jika sudah jadi prefab atau child dari prefab
+        let disablePrefabAction = isAlreadyPrefab || isChildOfPrefab;
+
+        if (isMultiSelect) {
+          const primaryId = selectedIds[0];
+          const entities = sceneStore.activeScene?.entities || [];
+          
+          // Cek apakah entity di index 0 (primary) memiliki child
+          const hasChild = entities.some(e => e.parentId === primaryId);
+          
+          // Jika tidak punya child, berarti user menyeleksi multiple entity biasa secara manual
+          if (!hasChild) {
+            disablePrefabAction = true;
+          }
+          
+          // Opsional tapi disarankan: Pastikan node yang diklik kanan adalah si parent (index 0)
+          // Mencegah user klik kanan di salah satu child-nya lalu menekan 'Use as Prefab'
+          if (node._id !== primaryId) {
+            disablePrefabAction = true;
+          }
+        }
+        // -------------------------
 
         items.push({ 
             label: 'Use as Prefab', 
             icon: Box, 
             disabled: disablePrefabAction,
-            action: () => runAction(() => handlers.useAsPrefab(node._id)) // Pastikan parent (Hierarchy.vue) passing method ini ke handlers
+            action: () => runAction(() => handlers.useAsPrefab(node._id)) 
         });
         
         items.push({ separator: true });

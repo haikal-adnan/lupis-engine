@@ -5,7 +5,6 @@ import { useAuthStore } from '@/stores/useAuthStore.js';
 import { usePopAlert } from '@/composables/usePopAlert.js';
 
 export function useAuthActions() {
-    // 1. Tambahkan googleAuth di sini
     const { loginUser, registerUser, verifyOtpUser, resendOtpUser, googleAuth } = useAuthBackend();
     
     const router = useRouter();
@@ -166,7 +165,6 @@ export function useAuthActions() {
         }
     };
 
-    // 2. TAMBAHKAN FUNGSI loginWithGoogle DI SINI
     const loginWithGoogle = async (googleToken) => {
       authStore.setLoading(true);
       authStore.setError('');
@@ -237,7 +235,7 @@ export function useAuthActions() {
       register,
       verifyOtp,
       resendOtp,
-      loginWithGoogle, // 3. PASTIKAN loginWithGoogle DI-RETURN DI SINI
+      loginWithGoogle, 
       logout,
       getCurrentUser,
       isLoading,

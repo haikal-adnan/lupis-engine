@@ -8,7 +8,7 @@ import {
 export const BlueprintCollectionHelper = {
   _id: 'helper_list_map',
   label: 'Collection Helpers',
-  color: '#673AB7', // Warna ungu tua, memadukan List dan Map
+  color: '#673AB7', 
   icon: Network,
   items: [
     { 
@@ -25,7 +25,7 @@ export const BlueprintCollectionHelper = {
         },
         inputs: [
           { _id: 'collection', label: 'Collection (List/Map)', dataType: 'any', color: '#673AB7' },
-          { _id: 'path_in', label: 'Path String', dataType: 'string', color: '#FFB74D' }
+          { _id: 'path_in', label: 'Path 0', dataType: 'string', color: '#FFB74D' }
         ], 
         outputs: [
           { _id: 'result', label: 'Value', dataType: 'any', color: '#FFFFFF' }

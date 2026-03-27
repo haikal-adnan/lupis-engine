@@ -17,10 +17,23 @@ export const BlueprintTransition = {
           headerColor: '#7C3AED', 
           category: 'Transition' 
         },
+        data: {
+          values: {
+            type: 'fade_out',
+            duration: 1000 
+          },
+          options: {
+            type: [
+              { label: 'Fade Out', value: 'fade_out' },
+              { label: 'Fade In', value: 'fade_in' },
+              { label: 'Fade In & Out', value: 'fade' }
+            ]
+          }
+        },
         inputs: [
           { _id: 'exec_in', label: 'In', dataType: 'execution' },
-          { _id: 'type', label: 'Mode (fade_in/fade_out/fade)', dataType: 'string', value: 'fade_out' },
-          { _id: 'duration', label: 'Duration (s)', dataType: 'number', value: 1.0 },
+          { _id: 'type', label: 'Mode', dataType: 'string', color: '#FFEE58' },
+          { _id: 'duration', label: 'Duration (ms)', dataType: 'number', color: '#69F0AE' }, 
           { _id: 'color', label: 'Color Hex', dataType: 'string', value: '#000000' }
         ],
         outputs: [

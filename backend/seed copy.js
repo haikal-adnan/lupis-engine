@@ -75,7 +75,7 @@ const seedDatabase = async () => {
       name: "dungeon_sheet",
       type: "texture",
       fileKey: "dungeon_sheet_fixed_key",
-      meta: { extension: ".png", dimensions: { w: 352, h: 176 }, filterMode: "nearest" }
+      meta: { extension: ".png", dimensions: { w: 352, h: 176 } }
     });
 
     await Asset.create({

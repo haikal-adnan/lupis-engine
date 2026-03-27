@@ -52,7 +52,6 @@ export function useCanvasMenu(canvasHandlers) {
     toggleInputBlockers(false);
   });
   
-  // Helper internal untuk mengecek apakah entitas adalah descendant dari prefab
   const isDescendantOfPrefab = (entityId) => {
     const entities = sceneStore.activeScene?.entities;
     if (!entities) return false;
@@ -75,26 +74,38 @@ export function useCanvasMenu(canvasHandlers) {
 
     if (isEntitySelected) {
       
-      // --- LOGIKA VALIDASI "USE AS PREFAB" ---
       let disablePrefabAction = false;
-      const selectedIds = sceneStore.selectedEntityIds;
+      const selectedIds = sceneStore.selectedEntityIds || [];
+      const isMultiSelect = selectedIds.length > 1;
 
-      if (selectedIds.length !== 1) {
-        // Disable jika multi-select atau tidak ada seleksi
-        disablePrefabAction = true;
-      } else {
-        const entityId = selectedIds[0];
-        const entity = sceneStore.activeScene?.entities.find(e => e._id === entityId);
+      // Ambil ID utama dari array (kalau tidak ada fallback ke null)
+      const primaryEntityId = selectedIds[0];
+      const primaryEntity = sceneStore.activeScene?.entities?.find(e => e._id === primaryEntityId);
+      
+      if (primaryEntity) {
+        const isAlreadyPrefab = !!primaryEntity.prefabId;
+        const isChildOfPrefab = isDescendantOfPrefab(primaryEntityId);
         
-        if (entity) {
-          const isAlreadyPrefab = !!entity.prefabId;
-          const isChildOfPrefab = isDescendantOfPrefab(entityId);
-          disablePrefabAction = isAlreadyPrefab || isChildOfPrefab;
-        } else {
-          disablePrefabAction = true;
+        // Default: Disable jika entitas tersebut sudah merupakan prefab atau di dalam prefab
+        disablePrefabAction = isAlreadyPrefab || isChildOfPrefab;
+
+        // -- LOGIC PREFAB SAMA SEPERTI HIERARCHY MENU --
+        if (isMultiSelect) {
+            const entities = sceneStore.activeScene?.entities || [];
+            
+            // Cek apakah entity utama (index 0) ini memiliki child
+            const hasChild = entities.some(e => e.parentId === primaryEntityId);
+            
+            if (!hasChild) {
+               // Jika diseleksi lebih dari 1 tapi primary entity tidak punya child,
+               // berarti ini seleksi acak multiple entity biasa. Disable aksi prefab.
+               disablePrefabAction = true;
+            }
         }
+        // ---------------------------------------------
+      } else {
+        disablePrefabAction = true;
       }
-      // ---------------------------------------
 
       items.push(
         { label: 'Copy', icon: Copy, shortcut: 'Ctrl+C', action: copy },
@@ -108,7 +119,6 @@ export function useCanvasMenu(canvasHandlers) {
         
         { separator: true },
         
-        // Terapkan state disabled ke tombol Use as Prefab
         { label: 'Use as Prefab', icon: Box, disabled: disablePrefabAction, action: canvasHandlers.useAsPrefab },
         
         { separator: true },

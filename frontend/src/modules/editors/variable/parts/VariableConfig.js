@@ -14,8 +14,8 @@ export const VAR_COLORS = {
   [VAR_TYPES.NUMBER]: '#64B5F6',   
   [VAR_TYPES.BOOLEAN]: '#E57373',  
   [VAR_TYPES.OBJECT]: '#BA68C8',
-  [VAR_TYPES.LIST]: '#4DD0E1',     // Cyan cerah (List)
-  [VAR_TYPES.MAP]: '#FF8A65',      // Deep Orange (Map)
+  [VAR_TYPES.LIST]: '#4DD0E1',    
+  [VAR_TYPES.MAP]: '#FF8A65',  
   [VAR_TYPES.ANY]: '#E0E0E0',     
   [VAR_TYPES.EXECUTION]: '#FFFFFF' 
 };

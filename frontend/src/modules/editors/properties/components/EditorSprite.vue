@@ -114,6 +114,27 @@
                 class="font-mono w-full" 
             />
         </PropertyRow>
+
+        <PropertyRow label="Rendering">
+          <div class="flex items-center gap-2 w-full">
+            <BaseSelect 
+              v-model="safeFilterMode" 
+              :options="filterOptions" 
+              class="flex-1"
+            />
+            
+            <BaseButton 
+              :active="useSDF"
+              @click="useSDF = !useSDF"
+              class="h-7 text-xs px-2.5 gap-1 shrink-0" 
+              ghost
+              tooltip="Enable Signed Distance Field rendering for sharp vector-like edges"
+            >
+              <span>SDF</span>
+            </BaseButton>
+          </div>
+        </PropertyRow>
+
       </div>
       
     </div>
@@ -130,13 +151,15 @@ import PropertySection from "@ui/display/PropertySection.vue";
 import PropertyRow from "@ui/display/PropertyRow.vue";
 import BaseThumbnail from "@/commons/components/display/BaseThumbnail.vue"; 
 import BaseNumber from "@/commons/components/inputs/BaseNumber.vue";
+import BaseSelect from "@/commons/components/inputs/BaseSelect.vue"; // TAMBAHAN
+import BaseButton from "@/commons/components/buttons/BaseButton.vue"; // TAMBAHAN
 
 const { 
   selectedEntity, 
   bindComponentProp,
   currentTextureUrl,
   removeComponent,
-  prefabId,           
+  prefabId,          
   syncComponent,            
   getComponentOverrideStatus 
 } = useInspectorLogic();
@@ -148,7 +171,6 @@ const hasComponent = computed(() => !!selectedEntity.value?.components?.SpriteRe
 const isControlledByAnimator = computed(() => {
   if (!selectedEntity.value) return false;
   const animator = selectedEntity.value.components?.SpriteAnimator;
-
   return (animator && animator.active);
 });
 
@@ -169,8 +191,28 @@ const sourceY = bindComponentProp('SpriteRenderer', 'sourceY');
 const sourceW = bindComponentProp('SpriteRenderer', 'sourceWidth');
 const sourceH = bindComponentProp('SpriteRenderer', 'sourceHeight');
 
+// --- TAMBAHAN: BINDING RENDERING ---
+const filterMode = bindComponentProp('SpriteRenderer', 'filterMode');
+const useSDF = bindComponentProp('SpriteRenderer', 'useSDF');
+
+// Safe computed setter agar tidak crash jika entitas lawas belum punya filterMode
+const safeFilterMode = computed({
+  get: () => filterMode.value || 'pixelated',
+  set: (val) => filterMode.value = val
+});
+
+const filterOptions = [
+  { label: 'Pixelated', value: 'pixelated' },
+  { label: 'Smooth', value: 'smooth' }
+];
+// -----------------------------------
+
+// Bind kedua jenis Transform
 const transformW = bindComponentProp('Transform', 'width');
 const transformH = bindComponentProp('Transform', 'height');
+
+const uiTransformW = bindComponentProp('UITransform', 'width');
+const uiTransformH = bindComponentProp('UITransform', 'height');
 
 const currentRect = computed(() => ({
     x: sourceX.value || 0,
@@ -181,9 +223,7 @@ const currentRect = computed(() => ({
 
 function resetToOriginalSize() {
   if (!assetId.value) return;
-
   const asset = assetStore.getAssetById(assetId.value);
-  
   if (asset && asset.meta?.dimensions) {
     const { w, h } = asset.meta.dimensions;
 
@@ -192,8 +232,13 @@ function resetToOriginalSize() {
     sourceW.value = w;
     sourceH.value = h;
 
-    transformW.value = w;
-    transformH.value = h;
+    if (selectedEntity.value?.components?.UITransform) {
+      uiTransformW.value = w;
+      uiTransformH.value = h;
+    } else if (selectedEntity.value?.components?.Transform) {
+      transformW.value = w;
+      transformH.value = h;
+    }
   }
 }
 

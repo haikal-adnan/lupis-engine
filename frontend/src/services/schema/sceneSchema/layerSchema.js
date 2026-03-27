@@ -9,6 +9,7 @@ export const createLayer = (data = {}) => {
     orderIndex: Number(data.orderIndex ?? 0),
     active: data.active ?? true,
     visible: data.visible ?? true,
-    locked: data.locked ?? false
+    locked: data.locked ?? false,
+    opacity: data.opacity ?? 1.0
   };
 };

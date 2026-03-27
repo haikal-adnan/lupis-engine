@@ -22,9 +22,12 @@ export const BlueprintObject = {
             { value: 'tag', label: 'Tag', type: 'string', color: '#FF9800' },
             { value: 'active', label: 'Active', type: 'boolean', color: '#4CAF50' },
             { value: 'visible', label: 'Visible', type: 'boolean', color: '#2196F3' },
-          ]
+          ],
+          values: {
+            target_in: ''
+          }
         },
-        inputs: [{ _id: 'target', label: 'Target ID (Self)', dataType: 'string', color: '#E040FB' }], 
+        inputs: [{ _id: 'target_in', label: 'Target ID (Self)', dataType: 'string', color: '#E040FB' }], 
         outputs: [] 
       } 
     },
@@ -43,11 +46,14 @@ export const BlueprintObject = {
             { value: 'tag', label: 'Tag', type: 'string', color: '#FF9800' },
             { value: 'active', label: 'Active', type: 'boolean', color: '#4CAF50' },
             { value: 'visible', label: 'Visible', type: 'boolean', color: '#2196F3' },
-          ]
+          ],
+          values: {
+            target_in: ''
+          }
         },
         inputs: [
           { _id: 'exec_in', label: 'In', dataType: 'execution', color: '#ffffff' },
-          { _id: 'target', label: 'Target ID (Self)', dataType: 'string', color: '#E040FB' }
+          { _id: 'target_in', label: 'Target ID (Self)', dataType: 'string', color: '#E040FB' }
         ], 
         outputs: [{ _id: 'exec_out', label: 'Out', dataType: 'execution', color: '#ffffff' }]
       } 
@@ -56,11 +62,18 @@ export const BlueprintObject = {
       type: 'find_closest_by_tag', 
       label: 'Find Closest by Tag', 
       description: 'Get the closest active entity ID based on tag and origin position', 
-      icon: Scan, // Memanfaatkan icon Scan dari lucide-vue-next
+      icon: Scan, 
       allowDynamicInputs: false, 
       allowDynamicOutputs: false,
       defaultData: { 
         settings: { headerTitle: 'Find Closest', headerColor: '#455A64', category: 'General' },
+        data: {
+          values: {
+            tag: '',
+            from_x: 0,
+            from_y: 0
+          }
+        },
         inputs: [
           { _id: 'tag', label: 'Tag Target', dataType: 'string', color: '#FF9800' },
           { _id: 'from_x', label: 'From X', dataType: 'number', color: '#69F0AE' },

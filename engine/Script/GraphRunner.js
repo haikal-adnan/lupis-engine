@@ -227,28 +227,28 @@ export default class GraphRunner {
     }
 
     executeFlow(sourceNodeId, sourcePortName) {
-        // 1. Gunakan filter untuk mengambil SEMUA kabel yang keluar dari pin ini
         const connectedEdges = this.edges.filter(e =>
             e.source === sourceNodeId && e.sourceHandle === sourcePortName
         );
 
         if (connectedEdges.length === 0) return;
 
-        // 2. Loop dan eksekusi semua node tujuan secara berurutan
         connectedEdges.forEach(edge => {
             const targetNode = this.nodeMap.get(edge.target);
             if (targetNode) {
-                this._executeNodeLogic(targetNode);
+                // PERBAIKAN: Kirimkan edge.targetHandle (nama port input) ke fungsi eksekusi
+                this._executeNodeLogic(targetNode, edge.targetHandle);
             }
         });
     }
 
-    _executeNodeLogic(node) {
+    _executeNodeLogic(node, inputKey) { 
         try {
             const processor = NodeRegistry[node.type] || NodeRegistry['default'];
             
             if (processor && typeof processor.execute === 'function') {
-                processor.execute(this, node);
+                // PERBAIKAN: Teruskan inputKey ke dalam fungsi execute node
+                processor.execute(this, node, inputKey); 
             } else {
                 this.executeFlow(node._id, 'out');
             }
@@ -297,7 +297,7 @@ export default class GraphRunner {
     }
 
     resolveEntity(targetScriptId) {
-        if (!targetScriptId || typeof targetScriptId !== 'string') {
+        if (!targetScriptId || typeof targetScriptId !== 'string' || targetScriptId.trim().toLowerCase() === 'self') {
             return this.owner;
         }
 

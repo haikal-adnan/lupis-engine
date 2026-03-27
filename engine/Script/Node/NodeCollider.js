@@ -11,7 +11,6 @@ export const NodeCollider = {
             }
 
             const collider = entity.components.Collider;
-            // Cek array data: Adakah minimal 1 yg tipe 'solid' dan 'enabled'
             if (!collider || !collider.data || !collider.data.some(c => c.enabled && c.type === 'solid')) {
                 runner.executeFlow(node._id, 'exec_out');
                 return;
@@ -70,7 +69,6 @@ export const NodeCollider = {
             }
 
             const collider = entity.components.Collider;
-            // Cek array data: Adakah minimal 1 yg tipe 'trigger' dan 'enabled'
             if (!collider || !collider.data || !collider.data.some(c => c.enabled && c.type === 'trigger')) {
                 myState.isOverlapping = false;
                 myState.lastId = null;

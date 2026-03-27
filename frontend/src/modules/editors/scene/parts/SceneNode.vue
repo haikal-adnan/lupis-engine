@@ -151,7 +151,6 @@ const isOpen = ref(true)
 
 const isLayer = computed(() => props.node.type === 'layer')
 
-// COMPUTED BARU: Mengecek apakah entity adalah prefab
 const isPrefab = computed(() => !!props.node.prefabId)
 
 const sortedChildren = computed(() => {
@@ -196,7 +195,6 @@ const getIcon = computed(() => {
   if (isLayer.value) return Layers
   if (props.node.type === 'group') return isOpen.value ? FolderOpen : Folder
   
-  // LOGIKA BARU: Tampilkan icon Box jika merupakan prefab
   if (isPrefab.value) return Box
   
   const name = (props.node.name || '').toLowerCase()

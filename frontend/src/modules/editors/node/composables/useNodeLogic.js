@@ -197,6 +197,25 @@ export function useNodeLogic() {
     }
   };
 
+  const updatePortLabel = (portId, type = 'input', newLabel) => {
+    if (!selectedNode.value) return;
+    
+    const node = selectedNode.value;
+    const portsKey = type === 'input' ? 'inputs' : 'outputs';
+    
+    // Clone array untuk menghindari mutasi state secara langsung sebelum masuk store
+    const updatedPorts = [...(node[portsKey] || [])];
+    const portIndex = updatedPorts.findIndex(p => p._id === portId);
+    
+    if (portIndex > -1) {
+      updatedPorts[portIndex] = { ...updatedPorts[portIndex], label: newLabel };
+      
+      scriptStore.updateNodeInActive(node._id, {
+        [portsKey]: updatedPorts
+      });
+    }
+  };
+
   return {
     selectedNode,
     scriptStore,
@@ -207,6 +226,7 @@ export function useNodeLogic() {
     availableOptions,
     handleAddPort,
     addFromDropdown,
-    removeDynamicInput
+    removeDynamicInput,
+    updatePortLabel
   };
 }

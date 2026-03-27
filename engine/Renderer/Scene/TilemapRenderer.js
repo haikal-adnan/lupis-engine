@@ -93,6 +93,9 @@ export default class TilemapRenderer {
         const tilesetCols = Math.floor(textureWidth / rData.tileW);
         const baseOpacity = (tm.opacity ?? 1) * (entity.opacity ?? 1) * externalOpacity;
         const dragState = editors?.dragState;
+        
+        // --- AMBIL FILTER MODE DARI TILEMAP COMPONENT ---
+        const filterMode = tm.filterMode || "pixelated";
 
         const scaledTileW = rData.tileW * rData.scaleX;
         const scaledTileH = rData.tileH * rData.scaleY;
@@ -164,7 +167,8 @@ export default class TilemapRenderer {
                             pivotX: 0, 
                             pivotY: 0 
                         },
-                        { opacity: currentOpacity },
+                        // --- MASUKKAN FILTER MODE ---
+                        { opacity: currentOpacity, filterMode },
                         proj
                     );
                 }
@@ -178,6 +182,7 @@ export default class TilemapRenderer {
 
         const scaledTileW = rData.tileW * rData.scaleX;
         const scaledTileH = rData.tileH * rData.scaleY;
+        const filterMode = tm.filterMode || "pixelated"; // Ambil Filter Mode
 
         const cam = this.game.camera;
         const canvas = this.game.renderer.canvas;
@@ -248,7 +253,8 @@ export default class TilemapRenderer {
                             asset, 
                             { x: srcX, y: srcY, w: rData.tileW, h: rData.tileH }, 
                             { x: dstX, y: dstY, width: scaledTileW, height: scaledTileH },
-                            { opacity: 0.8 }, 
+                            // --- MASUKKAN FILTER MODE ---
+                            { opacity: 0.8, filterMode }, 
                             proj
                         );
                     }
@@ -275,6 +281,7 @@ export default class TilemapRenderer {
     _renderGhost(rData, tm, asset, selection, proj, gridX, gridY) {
         const scaledTileW = rData.tileW * rData.scaleX;
         const scaledTileH = rData.tileH * rData.scaleY;
+        const filterMode = tm.filterMode || "pixelated"; // Ambil Filter Mode
 
         const tilesetCols = Math.floor(asset.width / rData.tileW);
         for (let dy = 0; dy < selection.h; dy++) {
@@ -291,7 +298,8 @@ export default class TilemapRenderer {
                         asset, 
                         { x: srcX, y: srcY, w: rData.tileW, h: rData.tileH }, 
                         { x: dstX, y: dstY, width: scaledTileW, height: scaledTileH }, 
-                        { opacity: 0.6 }, 
+                        // --- MASUKKAN FILTER MODE ---
+                        { opacity: 0.6, filterMode }, 
                         proj
                     );
                 }

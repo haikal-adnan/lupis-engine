@@ -18,7 +18,6 @@ const AssetSchema = new mongoose.Schema({
     extension: { type: String, required: true },
     size: { type: Number },
     dimensions: { w: Number, h: Number },
-    filterMode: { type: String, default: 'linear' },
     duration: { type: Number } 
   }
 }, { 

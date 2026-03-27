@@ -53,6 +53,28 @@
       </div>
     </div>
 
+    <PropertyRow label="Rendering">
+      <div class="flex items-center gap-2 w-full">
+        <BaseSelect 
+          v-model="safeFilterMode" 
+          :options="filterOptions" 
+          class="flex-1"
+          :disabled="!activeClipData"
+        />
+        
+        <BaseButton 
+          :active="useSDF"
+          @click="toggleSDF"
+          class="h-7 text-xs px-2.5 gap-1 shrink-0" 
+          ghost
+          :disabled="!activeClipData"
+          tooltip="Enable Signed Distance Field rendering"
+        >
+          <span>SDF</span>
+        </BaseButton>
+      </div>
+    </PropertyRow>
+
     <div class="flex gap-3 items-start px-1">
       <div class="flex-grow pt-[1px]">
         <PropertyRow label="Base Size">
@@ -130,6 +152,32 @@ const currentRect = computed(() => ({
     w: sourceW.value || 0,
     h: sourceH.value || 0
 }));
+
+// --- TAMBAHAN: COMPUTED PROPERTIES UNTUK FILTER ---
+const safeFilterMode = computed({
+  get: () => activeClipData.value?.filterMode || 'pixelated',
+  set: (val) => {
+    if (activeClipData.value) {
+      activeClipData.value.filterMode = val;
+      syncAnimatorData();
+    }
+  }
+})
+
+const useSDF = computed(() => activeClipData.value?.useSDF || false)
+
+const toggleSDF = () => {
+  if (activeClipData.value) {
+    activeClipData.value.useSDF = !activeClipData.value.useSDF;
+    syncAnimatorData();
+  }
+}
+
+const filterOptions = [
+  { label: 'Pixelated', value: 'pixelated' },
+  { label: 'Smooth', value: 'smooth' }
+]
+// --------------------------------------------------
 
 const clipName = computed({
   get: () => activeClipData.value?.name || '',

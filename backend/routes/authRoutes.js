@@ -4,7 +4,7 @@ import { randomUUID, randomInt } from 'crypto';
 import jwt from 'jsonwebtoken';
 import { pool } from '../config/postgres.js';
 import { verifyToken } from '../middleware/authMiddleware.js';
-import { sendOTPEmail } from '../services/email.js'; 
+import { sendOTPEmail } from '../services/email.js';
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'rahasia_lupis_engine_super_aman_123';
@@ -25,7 +25,6 @@ router.post('/register', async (req, res) => {
   try {
     await client.query('BEGIN');
 
-    // Cek apakah email sudah ada
     const existingUser = await client.query('SELECT id, verified FROM users WHERE email = $1', [email]);
     
     if (existingUser.rowCount > 0) {
@@ -35,7 +34,6 @@ router.post('/register', async (req, res) => {
         await client.query('ROLLBACK');
         return res.status(400).json({ success: false, error: 'Email sudah terdaftar dan aktif' });
       } else {
-        // Hapus data lama (profile dihapus lebih dulu untuk menghindari error Foreign Key)
         await client.query('DELETE FROM user_profiles WHERE user_id = $1', [user.id]);
         await client.query('DELETE FROM users WHERE id = $1', [user.id]);
       }
@@ -47,7 +45,6 @@ router.post('/register', async (req, res) => {
     const username = `${baseUsername}_${Math.floor(1000 + Math.random() * 9000)}`;
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Generate OTP & Set Timer 10 Menit
     const otp = generateOTP();
     const hashedOtp = await bcrypt.hash(otp, 10);
     const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
@@ -66,7 +63,6 @@ router.post('/register', async (req, res) => {
 
     await client.query('COMMIT');
 
-    // Kirim email OTP
     const emailResult = await sendOTPEmail(email, name, otp);
     if (!emailResult.success) {
       console.error('[SES Error]', emailResult.error);
@@ -87,9 +83,6 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// ==========================================
-// 2. VERIFY OTP
-// ==========================================
 router.post('/verify-otp', async (req, res) => {
   const { email, otp } = req.body;
 
@@ -114,18 +107,15 @@ router.post('/verify-otp', async (req, res) => {
       return res.status(400).json({ success: false, error: 'Akun sudah diverifikasi' });
     }
 
-    // Cek Timer
     if (new Date() > new Date(user.otp_expires_at)) {
       return res.status(400).json({ success: false, error: 'Kode OTP sudah kadaluwarsa. Silakan minta ulang.' });
     }
 
-    // Verifikasi Hash OTP
     const isOtpValid = await bcrypt.compare(otp, user.otp_code);
     if (!isOtpValid) {
       return res.status(400).json({ success: false, error: 'Kode OTP tidak valid' });
     }
 
-    // Aktifkan Akun & Bersihkan Data OTP
     await pool.query(
       `UPDATE users 
        SET verified = true, otp_code = NULL, otp_expires_at = NULL 
@@ -153,9 +143,6 @@ router.post('/verify-otp', async (req, res) => {
   }
 });
 
-// ==========================================
-// 3. RESEND OTP
-// ==========================================
 router.post('/resend-otp', async (req, res) => {
   const { email } = req.body;
 
@@ -182,7 +169,6 @@ router.post('/resend-otp', async (req, res) => {
       return res.status(400).json({ success: false, error: 'Akun ini sudah diverifikasi. Silakan login.' });
     }
 
-    // Generate OTP baru dan perbarui timer 10 menit dari sekarang
     const newOtp = generateOTP();
     const hashedOtp = await bcrypt.hash(newOtp, 10);
     const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
@@ -194,7 +180,6 @@ router.post('/resend-otp', async (req, res) => {
       [hashedOtp, otpExpiresAt, user.id]
     );
 
-    // Gunakan display_name dari tabel user_profiles untuk email
     const name = user.display_name || 'User';
     const emailResult = await sendOTPEmail(email, name, newOtp);
 
@@ -211,9 +196,6 @@ router.post('/resend-otp', async (req, res) => {
   }
 });
 
-// ==========================================
-// 4. LOGIN
-// ==========================================
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
 
@@ -236,7 +218,6 @@ router.post('/login', async (req, res) => {
 
     const user = userResult.rows[0];
 
-    // Mencegah login jika akun belum diverifikasi
     if (!user.verified) {
       return res.status(403).json({ success: false, error: 'Akun belum diverifikasi. Silakan cek email Anda.' });
     }
@@ -269,9 +250,6 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// ==========================================
-// 5. GET ME
-// ==========================================
 router.get('/me', verifyToken, async (req, res) => {
   try {
     const userResult = await pool.query(
@@ -296,12 +274,6 @@ router.get('/me', verifyToken, async (req, res) => {
   }
 });
 
-// ==========================================
-// 6. GOOGLE AUTH (CUSTOM BUTTON - ACCESS TOKEN)
-// ==========================================
-// ==========================================
-// 6. GOOGLE AUTH (CUSTOM BUTTON - ACCESS TOKEN & GOOGLE ID)
-// ==========================================
 router.post('/google', async (req, res) => {
   const { token } = req.body; 
 
@@ -312,7 +284,6 @@ router.post('/google', async (req, res) => {
   const client = await pool.connect();
 
   try {
-    // 1. Ambil data dari Google API menggunakan Access Token
     const googleResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
       headers: { 
         Authorization: `Bearer ${token}`,
@@ -325,8 +296,6 @@ router.post('/google', async (req, res) => {
     }
 
     const payload = await googleResponse.json();
-    
-    // Ambil 'sub' dan ubah namanya menjadi 'googleId' untuk memudahkan
     const { email, name, picture, sub: googleId } = payload;
 
     if (!email || !googleId) {
@@ -335,7 +304,6 @@ router.post('/google', async (req, res) => {
 
     await client.query('BEGIN');
 
-    // 2. Cari pengguna berdasarkan google_id TERLEBIH DAHULU, lalu berdasarkan email
     const userLookup = await client.query(
       `SELECT u.id, u.email, u.google_id, u.username, u.verified, p.display_name, p.avatar_url 
        FROM users u 
@@ -347,10 +315,8 @@ router.post('/google', async (req, res) => {
     let user;
 
     if (userLookup.rowCount > 0) {
-      // PENGGUNA SUDAH ADA (Proses Login / Sinkronisasi)
       user = userLookup.rows[0];
 
-      // a. Sinkronisasi: Jika mendaftar manual dulu (google_id masih kosong), isi sekarang
       if (!user.google_id) {
         await client.query(
           `UPDATE users SET google_id = $1 WHERE id = $2`, 
@@ -359,7 +325,6 @@ router.post('/google', async (req, res) => {
         user.google_id = googleId;
       }
 
-      // b. Jika mendaftar manual tapi belum verifikasi OTP, aktifkan sekarang
       if (!user.verified) {
         await client.query(
           `UPDATE users 
@@ -370,7 +335,6 @@ router.post('/google', async (req, res) => {
         user.verified = true;
       }
       
-      // c. Update avatar jika di database belum ada foto profil
       if (!user.avatar_url && picture) {
         await client.query(
           `UPDATE user_profiles SET avatar_url = $1 WHERE user_id = $2`, 
@@ -380,21 +344,18 @@ router.post('/google', async (req, res) => {
       }
 
     } else {
-      // PENGGUNA BARU (Proses Registrasi)
       const userId = randomUUID(); 
       const profileId = randomUUID();
       
       const baseUsername = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '');
       const username = `${baseUsername}_${Math.floor(1000 + Math.random() * 9000)}`;
       
-      // Insert ke tabel users, SEKARANG TERMASUK google_id
       await client.query(
         `INSERT INTO users (id, username, email, google_id, verified) 
          VALUES ($1, $2, $3, $4, true)`,
         [userId, username, email, googleId]
       );
 
-      // Insert ke tabel user_profiles
       await client.query(
         `INSERT INTO user_profiles (id, user_id, display_name, avatar_url) 
          VALUES ($1, $2, $3, $4)`,
@@ -414,7 +375,6 @@ router.post('/google', async (req, res) => {
 
     await client.query('COMMIT');
 
-    // 3. Buat dan kembalikan JWT Lokal
     const jwtToken = jwt.sign(
       { id: user.id, email: user.email, username: user.username }, 
       JWT_SECRET, 
@@ -436,9 +396,6 @@ router.post('/google', async (req, res) => {
   }
 });
 
-// ==========================================
-// 7. GITHUB AUTH (OAUTH CODE FLOW)
-// ==========================================
 router.post('/github', async (req, res) => {
   const { code } = req.body; 
 
@@ -449,7 +406,6 @@ router.post('/github', async (req, res) => {
   const client = await pool.connect();
 
   try {
-    // 1. Tukar 'code' dari frontend dengan 'access_token' dari GitHub
     const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
       method: 'POST',
       headers: {
@@ -471,7 +427,6 @@ router.post('/github', async (req, res) => {
 
     const accessToken = tokenData.access_token;
 
-    // 2. Ambil data profil user menggunakan access_token
     const userResponse = await fetch('https://api.github.com/user', {
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -485,8 +440,6 @@ router.post('/github', async (req, res) => {
 
     const githubUser = await userResponse.json();
     
-    // 3. GitHub API tidak selalu mengembalikan email di /user jika diset private
-    // Kita lakukan fetch tambahan ke endpoint /user/emails jika email kosong
     let email = githubUser.email;
     if (!email) {
       const emailResponse = await fetch('https://api.github.com/user/emails', {
@@ -496,7 +449,6 @@ router.post('/github', async (req, res) => {
         }
       });
       const emails = await emailResponse.json();
-      // Cari email utama yang sudah terverifikasi
       const primaryEmail = emails.find((e) => e.primary && e.verified);
       if (primaryEmail) {
         email = primaryEmail.email;
@@ -513,7 +465,6 @@ router.post('/github', async (req, res) => {
 
     await client.query('BEGIN');
 
-    // 4. Cari pengguna berdasarkan github_id TERLEBIH DAHULU, lalu berdasarkan email
     const userLookup = await client.query(
       `SELECT u.id, u.email, u.github_id, u.username, u.verified, p.display_name, p.avatar_url 
        FROM users u 
@@ -525,7 +476,6 @@ router.post('/github', async (req, res) => {
     let user;
 
     if (userLookup.rowCount > 0) {
-      // PENGGUNA SUDAH ADA (Proses Sinkronisasi)
       user = userLookup.rows[0];
 
       if (!user.github_id) {
@@ -553,14 +503,12 @@ router.post('/github', async (req, res) => {
       }
 
     } else {
-      // PENGGUNA BARU (Proses Registrasi)
       const userId = randomUUID(); 
       const profileId = randomUUID();
       
       const baseUsername = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '');
       const username = `${baseUsername}_${Math.floor(1000 + Math.random() * 9000)}`;
       
-      // Pastikan ada kolom github_id di tabel users
       await client.query(
         `INSERT INTO users (id, username, email, github_id, verified) 
          VALUES ($1, $2, $3, $4, true)`,
@@ -581,7 +529,6 @@ router.post('/github', async (req, res) => {
 
     await client.query('COMMIT');
 
-    // 5. Buat JWT Lokal
     const jwtToken = jwt.sign(
       { id: user.id, email: user.email, username: user.username }, 
       JWT_SECRET, 

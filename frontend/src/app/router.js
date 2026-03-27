@@ -1,14 +1,9 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
-// ==========================================
-// 1. INSTANT LOAD (Synchronous Imports)
-// Dimuat di awal, cocok untuk halaman utama
-// ==========================================
 import LandingPage from '@/modules/landing/views/LandingPage.vue'
 import AboutPage from '@/modules/landing/views/AboutPage.vue' 
 
 const routes = [
-  // --- INSTANT LOAD ROUTES ---
   {
     path: '/',
     name: 'Landing',
@@ -21,11 +16,6 @@ const routes = [
     component: AboutPage,
     meta: { layout: 'LandingLayout' } 
   },
-
-  // ==========================================
-  // 2. LAZY LOAD (Asynchronous Imports)
-  // Dimuat hanya ketika user mengunjungi URL ini
-  // ==========================================
   {
     path: '/docs',
     name: 'Docs',
@@ -68,8 +58,6 @@ const routes = [
     props: true, 
     meta: { requiresAuth: true }
   },
-  
-  // Fallback Route
   {
     path: '/:pathMatch(.*)*',
     redirect: '/'

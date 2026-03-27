@@ -42,7 +42,6 @@ export const BlueprintKeyboard = {
       defaultData: { 
         settings: { headerTitle: 'Calc Axis 2D', headerColor: '#C2185B', category: 'Keyboard Events' },
         data: {
-          // Default tombol agar user tidak repot (bisa diedit di properties node)
           upKey: 'W', downKey: 'S', rightKey: 'D', leftKey: 'A'
         },
         inputs: [

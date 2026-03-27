@@ -39,10 +39,12 @@ export const createEmptyProject = async (ownerId, projectName, description) => {
         showRulers: true
       },
       layersWorld: [
-        { _id: layerWorldId, scriptId: "layer_world_editor", name: "World", zIndex: 10, orderIndex: 0, locked: false, visible: true } 
+        // Tambahkan opacity di sini
+        { _id: layerWorldId, scriptId: "layer_world_editor", name: "World", zIndex: 10, orderIndex: 0, locked: false, visible: true, opacity: 1.0 } 
       ],
       layersUI: [
-        { _id: layerUIId, scriptId: "layer_ui_editor", name: "HUD", zIndex: 100, orderIndex: 1, locked: false, visible: true }          
+        // Tambahkan opacity di sini
+        { _id: layerUIId, scriptId: "layer_ui_editor", name: "HUD", zIndex: 100, orderIndex: 1, locked: false, visible: true, opacity: 1.0 }          
       ],
       entities: [] 
     });

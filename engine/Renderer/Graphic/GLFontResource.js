@@ -26,7 +26,7 @@ export default class GLFontResource {
         const xmlText = await xmlRes.text();
         const fontData = this._parseFontXML(xmlText);
 
-        const glTexture = this._uploadFontTexture(img, this.gl.LINEAR);
+        const glTexture = this._uploadFontTexture(img);
 
         return {
             _id: asset._id,
@@ -50,7 +50,7 @@ export default class GLFontResource {
         });
     }
 
-    _uploadFontTexture(img, filterMode) {
+    _uploadFontTexture(img) {
         const gl = this.gl;
         const tex = gl.createTexture();
         gl.bindTexture(gl.TEXTURE_2D, tex);
@@ -58,8 +58,8 @@ export default class GLFontResource {
         
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
         
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, filterMode);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, filterMode);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
         
@@ -83,6 +83,27 @@ export default class GLFontResource {
         const commonNode = xml.querySelector("common");
         const infoNode = xml.querySelector("info");
         const distNode = xml.querySelector("distanceField");
+        const lineHeight = +commonNode.getAttribute("lineHeight");
+
+        let stdYMin = Infinity;
+        let stdYMax = -Infinity;
+        const refString = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        
+        for (let i = 0; i < refString.length; i++) {
+            const gdat = chars[refString.charCodeAt(i)];
+            if (!gdat) continue;
+            
+            const y0 = gdat.oy;
+            const y1 = gdat.oy + gdat.h;
+            
+            if (y0 < stdYMin) stdYMin = y0;
+            if (y1 > stdYMax) stdYMax = y1;
+        }
+
+        if (stdYMin === Infinity) {
+            stdYMin = 0;
+            stdYMax = lineHeight;
+        }
 
         return {
             chars,
@@ -90,7 +111,9 @@ export default class GLFontResource {
                 texW: +commonNode.getAttribute("scaleW"),
                 texH: +commonNode.getAttribute("scaleH"),
                 base: +commonNode.getAttribute("base"),
-                lineHeight: +commonNode.getAttribute("lineHeight")
+                lineHeight: lineHeight,
+                stdYMin: stdYMin,
+                stdYMax: stdYMax
             },
             info: {
                 size: +infoNode.getAttribute("size"),

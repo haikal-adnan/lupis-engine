@@ -78,5 +78,22 @@ export const NodeMath = {
 
             return 0;
         }
-    }
+    },
+    'math_round': {
+        execute: (runner, node) => runner.executeFlow(node._id, 'out'),
+        getOutput: (runner, node, outputKey) => {
+            const val = Number(runner.getInputValue(node, 'val')) || 0;
+            const method = node.data?.method || 'floor';
+            
+            if (outputKey === 'res') {
+                switch (method) {
+                    case 'floor': return Math.floor(val);
+                    case 'ceil': return Math.ceil(val);
+                    case 'round': return Math.round(val);
+                    default: return Math.floor(val);
+                }
+            }
+            return 0;
+        }
+    },
 };

@@ -1,9 +1,8 @@
 import mongoose from 'mongoose';
 
 const PrefabDataSchema = new mongoose.Schema({
-  _id: { type: String }, // Tambahkan ini agar Mongoose menerima UUID custom dari frontend
+  _id: { type: String }, 
   scriptId: { type: String, default: '' },
-  // Tambahkan 'ui' ke enum jika ada kemungkinan entitas UI menjadi bagian dari prefab
   type: { type: String, enum: ['entity', 'ui'], default: 'entity' },
   name: { type: String },
   tag: { type: String, default: 'untagged' },
@@ -18,7 +17,7 @@ const PrefabDataSchema = new mongoose.Schema({
   parentId: { type: String, default: null },
   components: { type: mongoose.Schema.Types.Mixed, default: {} }
 }, { 
-  _id: false // Mencegah Mongoose menimpa _id string kita dengan ObjectId bawaannya
+  _id: false 
 });
 
 const PrefabSchema = new mongoose.Schema({
@@ -27,7 +26,7 @@ const PrefabSchema = new mongoose.Schema({
   name: { type: String, default: 'New Prefab' }, 
   type: { type: String, enum: ['world', 'ui'], default: 'world' },
   data: { type: PrefabDataSchema, default: () => ({}) },
-  children: { type: [PrefabDataSchema], default: [] } // Tambahkan array children di sini
+  children: { type: [PrefabDataSchema], default: [] }
 }, { 
   timestamps: true,
   _id: false 

@@ -9,7 +9,7 @@ import {
 export const BlueprintRandom = {
   _id: 'random_operations',
   label: 'Random Operations',
-  color: '#FF5722', // Deep Orange agar mudah dibedakan dengan List atau Renderer
+  color: '#FF5722', 
   icon: Dices,
   items: [
     { 
@@ -43,7 +43,6 @@ export const BlueprintRandom = {
         data: {}, 
         inputs: [], 
         outputs: [
-          // dataType diubah ke boolean, warna hijau khas boolean
           { _id: 'result', label: 'Boolean', dataType: 'boolean', color: '#4CAF50' }
         ]
       } 
@@ -80,7 +79,6 @@ export const BlueprintRandom = {
           { _id: 'chance', label: 'Chance (%)', dataType: 'number', color: '#00BCD4' }
         ], 
         outputs: [
-          // dataType diubah ke boolean
           { _id: 'result', label: 'Boolean', dataType: 'boolean', color: '#4CAF50' }
         ]
       } 
@@ -94,10 +92,9 @@ export const BlueprintRandom = {
       allowDynamicOutputs: false,
       defaultData: { 
         settings: { headerTitle: 'Random Color', headerColor: '#FF5722', category: 'Random' },
-        data: {}, // Tidak butuh input manual
+        data: {},
         inputs: [], 
         outputs: [
-          // dataType adalah string, karena set_sprite/set_shape menerima String untuk warna
           { _id: 'color', label: 'Color (Hex)', dataType: 'string', color: '#FFFFFF' }
         ]
       } 

@@ -21,8 +21,7 @@ export const createAsset = (data = {}) => {
         dimensions: {
           w: meta.dimensions?.w || 0,
           h: meta.dimensions?.h || 0
-        },
-        filterMode: meta.filterMode || 'nearest'
+        }
       }),
       ...(isAudio && {
         duration: meta.duration || 0

@@ -1,6 +1,6 @@
 export const NodeLoop = {
     'logic_loop': { 
-        execute: (runner, node) => { // Dibuat Synchronous (tanpa async)
+        execute: (runner, node) => { 
             const startInput = runner.getInputValue(node, 'start');
             const endInput = runner.getInputValue(node, 'end');
             const stepInput = runner.getInputValue(node, 'step');
@@ -14,12 +14,12 @@ export const NodeLoop = {
             if (step > 0) {
                 for (let i = start; i <= end; i += step) {
                     node._tempLoopIndex = i;
-                    runner.executeFlow(node._id, 'loop_body'); // Tanpa await
+                    runner.executeFlow(node._id, 'loop_body'); 
                 }
             } else {
                 for (let i = start; i >= end; i += step) {
                     node._tempLoopIndex = i;
-                    runner.executeFlow(node._id, 'loop_body'); // Tanpa await
+                    runner.executeFlow(node._id, 'loop_body'); 
                 }
             }
             
@@ -31,14 +31,14 @@ export const NodeLoop = {
     },
 
     'logic_for_each': {
-        execute: (runner, node) => { // Dibuat Synchronous (tanpa async)
+        execute: (runner, node) => {
             const list = runner.getInputValue(node, 'list');
 
             if (Array.isArray(list)) {
                 for (let i = 0; i < list.length; i++) {
                     node._tempIndex = i;
                     node._tempItem = list[i];
-                    runner.executeFlow(node._id, 'loop_body'); // Tanpa await
+                    runner.executeFlow(node._id, 'loop_body'); 
                 }
             }
 
@@ -52,7 +52,7 @@ export const NodeLoop = {
     },
 
     'logic_while': {
-        execute: (runner, node) => { // Dibuat Synchronous (tanpa async)
+        execute: (runner, node) => { 
             let iterations = 0;
             const LIMIT = 5000; 
 
@@ -62,7 +62,7 @@ export const NodeLoop = {
                     console.error(`[LupisEngine] Infinite Loop Terdeteksi pada Node While! Dihentikan paksa.`);
                     break;
                 }
-                runner.executeFlow(node._id, 'loop_body'); // Tanpa await
+                runner.executeFlow(node._id, 'loop_body'); 
             }
             runner.executeFlow(node._id, 'completed');
         }

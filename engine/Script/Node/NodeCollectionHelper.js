@@ -1,17 +1,25 @@
 export const NodeCollectionHelper = {
     'get_from_path': {
         getOutput: (runner, node, outputKey) => {
-            if (outputKey !== 'result') return null;
+            // Pastikan kita hanya memproses output yang memiliki awalan 'result'
+            if (!outputKey.startsWith('result')) return null;
 
             const collection = runner.getInputValue(node, 'collection');
-            const pathInput = runner.getInputValue(node, 'path_in');
             
-            const pathString = (pathInput != null && pathInput !== "") ? pathInput : node.data?.values?.path;
+            // Deteksi apakah ini port utama atau port tambahan
+            const isBasePort = outputKey === 'result';
+            const suffix = isBasePort ? '' : outputKey.replace('result', '');
+            
+            // Petakan ke input dan data value yang benar
+            const pathInputKey = `path_in${suffix}`;
+            const dataValueKey = isBasePort ? 'path' : `path_in${suffix}`; // 'path' untuk backward compatibility dengan defaultData
+            
+            const pathInput = runner.getInputValue(node, pathInputKey);
+            const pathString = (pathInput != null && pathInput !== "") ? pathInput : node.data?.values?.[dataValueKey];
 
             if (!collection || !pathString) return collection;
 
             try {
-                // Regex untuk memecah path seperti "players[0].stats.hp" menjadi ["players", "0", "stats", "hp"]
                 const parts = pathString.split(/[.\[\]]+/).filter(p => p !== "");
                 let current = collection;
 
@@ -36,7 +44,6 @@ export const NodeCollectionHelper = {
             }
         }
     },
-
     'set_from_path': {
         execute: (runner, node) => {
             const collection = runner.getInputValue(node, 'collection');
@@ -61,7 +68,6 @@ export const NodeCollectionHelper = {
                     for (let i = 0; i < parts.length - 1; i++) {
                         const part = parts[i];
 
-                        // Jika path belum ada, buat Object/Array baru secara dinamis
                         if (current[part] === undefined || current[part] === null) {
                             const nextPart = parts[i + 1];
                             const isNextIndex = !isNaN(parseInt(nextPart));
@@ -107,7 +113,6 @@ export const NodeCollectionHelper = {
             
             if (collection === undefined || collection === null) return collection;
             
-            // Deep copy menggunakan JSON parse/stringify (cukup aman untuk struktur data standar visual scripting)
             try {
                 return JSON.parse(JSON.stringify(collection));
             } catch (err) {
@@ -130,7 +135,7 @@ export const NodeCollectionHelper = {
             if (typeof collection === 'object') {
                 return Object.keys(collection).length === 0;
             }
-            return false; // Jika tipe datanya primitif (string/number), dikembalikan false
+            return false; 
         }
     }
 };
