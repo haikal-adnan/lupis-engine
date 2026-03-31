@@ -21,6 +21,13 @@ const authActions = useAuthActions();
 
 const profileDropdown = ref(null);
 
+// --- FITUR BACKGROUND INVISIBLE ---
+const isScrolled = ref(false);
+const handleScroll = () => {
+  isScrolled.value = window.scrollY > 20;
+};
+// ----------------------------------
+
 const goToDashboard = () => router.push('/dashboard');
 const goToProfile = () => router.push('/profile');
 const closeProfileMenu = () => profileDropdown.value?.close();
@@ -40,7 +47,6 @@ const handleAuthSuccess = async () => {
   await nextTick();
   
   if (targetPath) {
-    console.log("Redirecting to:", targetPath);
     router.push(targetPath);
   } else {
     router.push('/dashboard');
@@ -55,8 +61,10 @@ watch(() => route.query.action, () => {
 
 onMounted(() => {
   initTheme();
-  
   authActions.initAuth();
+
+  // Aktifkan listener scroll
+  window.addEventListener('scroll', handleScroll);
 
   const hasCheckedIn = sessionStorage.getItem('lupis_initial_check');
 
@@ -84,6 +92,8 @@ const closeDropdown = () => {
 
 onUnmounted(() => {
   if (closeTimeout) clearTimeout(closeTimeout);
+  // Bersihkan listener scroll
+  window.removeEventListener('scroll', handleScroll);
 });
 </script>
 
@@ -93,21 +103,26 @@ onUnmounted(() => {
     :initial-mode="authStore.authMode" 
     @close="authStore.closeAuthModal()" 
     @auth-success="handleAuthSuccess"
-    
   />
 
-  <div class="min-h-screen bg-background text-foreground font-sans flex flex-col selection:bg-indigo-500/30">
-    <header class="h-16 border-b border-border sticky top-0 bg-background z-50 px-6">
+  <div class="min-h-screen bg-background text-foreground font-sans flex flex-col selection:bg-indigo-500/30 relative">
+    <header 
+      class="h-16 fixed top-0 w-full z-50 px-6 transition-all duration-300"
+      :class="(isScrolled || route.name !== 'Landing') ? 'bg-background border-b border-border shadow-sm' : 'bg-transparent border-transparent'"
+    >
       <div class="max-w-6xl mx-auto w-full h-full flex items-center justify-between">
         
         <div class="flex items-center gap-2.5 cursor-pointer flex-1" @click="router.push('/')">
           <div class="w-8 h-8 rounded bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20">
             <Gamepad2 class="w-5 h-5 text-indigo-400" />
           </div>
-          <span class="font-bold tracking-tight text-lg">Lupis Engine</span>
+          <span class="font-bold tracking-tight text-lg" :class="{ 'drop-shadow-md': !isScrolled && route.name === 'Landing' }">Lupis Engine</span>
         </div>
 
-        <nav class="hidden md:flex items-center justify-center gap-8 text-sm font-medium text-muted-foreground shrink-0">
+        <nav 
+          class="hidden md:flex items-center justify-center gap-8 text-sm font-medium shrink-0 transition-colors"
+          :class="(isScrolled || route.name !== 'Landing') ? 'text-muted-foreground' : 'text-white/90'"
+        >
           <router-link to="/catalog" class="hover:text-foreground transition-colors" active-class="text-foreground">Games</router-link>
           <router-link to="/docs" class="hover:text-foreground transition-colors" active-class="text-foreground">Docs</router-link>
           
@@ -130,7 +145,7 @@ onUnmounted(() => {
                     <div class="w-8 h-8 rounded-md bg-indigo-500/10 flex items-center justify-center group-hover:bg-indigo-500/20">
                       <MessageSquare class="w-4 h-4 text-indigo-400" />
                     </div>
-                    <div class="flex flex-col">
+                    <div class="flex flex-col text-left">
                       <span class="text-sm font-semibold text-foreground flex items-center gap-1">Discord <ExternalLink class="w-2.5 h-2.5 opacity-30" /></span>
                       <span class="text-[10px] text-muted-foreground">Chat with creators</span>
                     </div>
@@ -140,7 +155,7 @@ onUnmounted(() => {
                     <div class="w-8 h-8 rounded-md bg-zinc-500/10 flex items-center justify-center group-hover:bg-zinc-500/20">
                       <Github class="w-4 h-4 text-foreground" />
                     </div>
-                    <div class="flex flex-col">
+                    <div class="flex flex-col text-left">
                       <span class="text-sm font-semibold text-foreground flex items-center gap-1">GitHub <ExternalLink class="w-2.5 h-2.5 opacity-30" /></span>
                       <span class="text-[10px] text-muted-foreground">Open source code</span>
                     </div>
@@ -169,7 +184,7 @@ onUnmounted(() => {
             <BaseDropdown ref="profileDropdown" class="shrink-0 z-20">
               <template #trigger="{ isOpen }">
                 <button 
-                  class="w-9 h-9 rounded-full border border-border bg-muted/50 flex items-center justify-center hover:border-indigo-500/50 hover:bg-indigo-500/5 transition-all group overflow-hidden outline-none"
+                  class="w-9 h-9 rounded-full border border-indigo-500/50 bg-muted/50 flex items-center justify-center hover:border-indigo-500/50 hover:bg-indigo-500/5 transition-all group overflow-hidden outline-none"
                   :class="{ 'ring-2 ring-indigo-500/50 border-indigo-500/50': isOpen }"
                 >
                   <img v-if="authStore.currentUser?.avatar_url" :src="authStore.currentUser.avatar_url" class="w-full h-full object-cover rounded-full" />
@@ -201,7 +216,11 @@ onUnmounted(() => {
           </template>
 
           <template v-else>
-            <button @click="authStore.openAuthModal('login')" class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors hidden sm:block">
+            <button 
+              @click="authStore.openAuthModal('login')" 
+              class="text-sm font-medium transition-colors hidden sm:block"
+              :class="(isScrolled || route.name !== 'Landing') ? 'text-muted-foreground hover:text-foreground' : 'text-white/80 hover:text-white'"
+            >
               Sign In
             </button>
             <button @click="authStore.openAuthModal('register')" class="bg-indigo-500 hover:bg-indigo-600 text-white px-5 py-2 rounded-lg text-sm font-semibold transition-all shadow-md shadow-indigo-500/20 active:scale-95">

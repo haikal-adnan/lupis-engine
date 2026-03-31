@@ -165,7 +165,7 @@
             </BaseButton>
             <BaseButton 
               @click="handleSave"
-              class="px-8 bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
+              class="px-8 bg-primary hover:bg-primary/90 text-primary font-medium"
             >
               Save Changes
             </BaseButton>

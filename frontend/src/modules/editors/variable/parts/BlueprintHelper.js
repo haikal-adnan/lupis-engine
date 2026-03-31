@@ -166,12 +166,14 @@ export const BlueprintHelper = {
             scaleNormal: 1.0,
             scaleHover: 1.1,
             scalePressed: 0.9,
-            lerpSpeed: 0.2
+            lerpSpeed: 0.2,
+            use_raycast: true // <--- Tambahan: Default value untuk raycast
           } 
         }, 
         inputs: [
           { _id: 'exec_in', label: 'Update (Tick)', dataType: 'execution' },
           { _id: 'target_in', label: 'Target ID (Self)', dataType: 'string' },
+          { _id: 'use_raycast', label: 'Use Raycast?', dataType: 'boolean', value: true }, // <--- Tambahan: Port input baru
           { _id: 'scaleNormal', label: 'Normal Scale', dataType: 'number', color: '#B2FF59' },
           { _id: 'scaleHover', label: 'Hover Scale', dataType: 'number', color: '#B2FF59' },
           { _id: 'scalePressed', label: 'Pressed Scale', dataType: 'number', color: '#B2FF59' },
@@ -180,7 +182,6 @@ export const BlueprintHelper = {
         outputs: [
           { _id: 'exec_out', label: 'Out', dataType: 'execution', color: '#ffffff' },
           { _id: 'on_click', label: 'On Click (Released)', dataType: 'execution', color: '#69F0AE' },
-          // Tambahkan output data string untuk mendeteksi scriptId
           { _id: 'script_id_out', label: 'Clicked ID', dataType: 'string', color: '#E040FB' } 
         ]
       } 

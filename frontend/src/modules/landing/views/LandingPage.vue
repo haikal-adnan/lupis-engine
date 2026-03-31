@@ -28,40 +28,44 @@ const handleTryInBrowser = () => {
 </script>
 
 <template>
-  <section class="w-full max-w-5xl mx-auto px-6 pt-16 pb-24 flex flex-col items-center text-center">
-    <div class="flex items-center gap-2 bg-secondary/50 border border-border rounded-full px-3 py-1 mb-8">
-      <Sparkles class="w-3.5 h-3.5 text-indigo-400" />
-      <span class="text-xs font-medium text-muted-foreground">Open Source 2D Game Engine <span class="bg-indigo-500/20 text-indigo-400 px-1.5 py-0.5 rounded ml-1">v0.9</span></span>
-    </div>
+  <section class="relative w-full h-[calc(100vh+4rem)] overflow-hidden flex items-center justify-center text-center px-6 -mt-16">
+    
+    <video autoplay loop muted playsinline class="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none">
+      <source src="/lupis_engine_showcase.mp4" type="video/mp4">
+    </video>
 
-    <h1 class="text-5xl md:text-7xl font-extrabold tracking-tight mb-6 leading-tight">
-      Build Games <br />
-      <span class="bg-gradient-to-r from-indigo-400 to-blue-400 bg-clip-text text-transparent">
-        Without Limits
-      </span>
-    </h1>
+    <div class="absolute inset-0 bg-black/60 z-0"></div>
+    <div class="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-background to-transparent z-0"></div>
 
-    <p class="text-lg md:text-xl text-muted-foreground max-w-2xl mb-10 leading-relaxed">
-      A free, open-source 2D engine with a visual editor, node-based logic, 
-      and one-click publishing to web, desktop & mobile.
-    </p>
+    <div class="relative z-10 w-full max-w-5xl mx-auto flex flex-col items-center drop-shadow-lg">
+      <div class="flex items-center gap-2 bg-white/10 border border-white/20 backdrop-blur-md rounded-full px-3 py-1 mb-6">
+        <Sparkles class="w-3.5 h-3.5 text-indigo-400" />
+        <span class="text-xs font-medium text-white/90">Open Source 2D Game Engine <span class="bg-indigo-500/30 text-indigo-300 px-1.5 py-0.5 rounded ml-1">v1.0</span></span>
+      </div>
 
-    <div class="flex flex-col sm:flex-row items-center gap-4">
-      <button class="w-full sm:w-auto flex items-center justify-center gap-2 bg-indigo-500 hover:bg-indigo-600 text-white px-8 py-3.5 rounded-xl text-base font-bold transition-all shadow-lg shadow-indigo-500/20">
-        Download for Free <ArrowRight class="w-4 h-4" />
-      </button>
-      <button 
-        @click="handleTryInBrowser"
-        class="w-full sm:w-auto flex items-center justify-center gap-2 bg-secondary/50 hover:bg-secondary border border-border text-foreground px-8 py-3.5 rounded-xl text-base font-semibold transition-all"
-      >
-        Try in Browser
-      </button>
-    </div>
+      <h1 class="text-4xl md:text-6xl font-extrabold tracking-tight mb-5 leading-tight text-white">
+        Build Games <br />
+        <span class="bg-gradient-to-r from-indigo-400 to-blue-400 bg-clip-text text-transparent">
+          Without Limits
+        </span>
+      </h1>
 
-    <div class="mt-20">
-      <p class="text-[10px] uppercase tracking-[0.2em] font-bold text-muted-foreground/60">
-        Made with Lupis Engine
+      <p class="text-base md:text-lg text-white/80 max-w-2xl mb-8 leading-relaxed">
+        A free, open-source 2D engine with a visual editor, node-based logic, 
+        and one-click publishing to web, desktop & mobile.
       </p>
+
+      <div class="flex flex-col sm:flex-row items-center gap-4">
+        <button class="w-full sm:w-auto flex items-center justify-center gap-2 bg-indigo-500 hover:bg-indigo-600 text-white px-7 py-3 rounded-xl text-base font-bold transition-all shadow-lg shadow-indigo-500/20 backdrop-blur-sm">
+          Download for Free <ArrowRight class="w-4 h-4" />
+        </button>
+        <button 
+          @click="handleTryInBrowser"
+          class="w-full sm:w-auto flex items-center justify-center gap-2 bg-black/40 hover:bg-black/60 border border-white/20 text-white px-7 py-3 rounded-xl text-base font-semibold transition-all backdrop-blur-md"
+        >
+          Try in Browser
+        </button>
+      </div>
     </div>
   </section>
 
