@@ -53,6 +53,7 @@ export function useClipboard() {
     if (targets.length === 0) return;
 
     if (isLayerId(targets[0])) {
+      // Pastikan fungsi duplicateLayer sudah ditambahkan di layerActions ya
       return sceneStore.duplicateLayer(targets[0]);
     } else {
       return sceneStore.duplicateEntity(targets);
@@ -77,7 +78,13 @@ export function useClipboard() {
     let resultIds = [];
 
     if (type === 'layer') {
-      resultIds = sceneStore.pasteLayer(editorStore.clipboard);
+      // Mengambil section ('world' atau 'ui') dari data layer yang di-copy
+      const sourceData = Array.isArray(data) ? data[0] : data;
+      const targetSection = sourceData?.section || 'world';
+
+      // Mengirimkan targetSection ke parameter kedua pasteLayer
+      resultIds = sceneStore.pasteLayer(editorStore.clipboard, targetSection);
+      
     } else if (type === 'entity') {
       let context = {};
       const currentSelection = sceneStore.selectedEntityIds;
@@ -90,7 +97,7 @@ export function useClipboard() {
           context.layerId = selectedEntity.layerId;
         } else {
           const selectedLayer = sceneStore.activeScene.layersWorld.find(l => l._id === referenceId) ||
-                               sceneStore.activeScene.layersUI.find(l => l._id === referenceId);
+                                sceneStore.activeScene.layersUI.find(l => l._id === referenceId);
           if (selectedLayer) {
             context.layerId = selectedLayer._id;
             context.parentId = null;

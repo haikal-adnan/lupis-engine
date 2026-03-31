@@ -45,7 +45,7 @@ const assets = [
 </script>
 
 <template>
-  <section class="w-full max-w-4xl mx-auto px-6 pt-16 pb-10">
+  <section class="w-full max-w-4xl mx-auto px-6 pt-32 pb-10">
     <p class="text-xs font-bold uppercase tracking-widest text-indigo-400 mb-3">About The Project</p>
     <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight mb-4 text-foreground">
       Lupis Engine

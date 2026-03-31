@@ -40,7 +40,7 @@ const game = ref({
     updated: '2 days ago',
     platforms: ['Web', 'Windows', 'Linux'],
     genre: 'RPG',
-    engine: 'Lupis Engine v2.4.0'
+    engine: 'Lupis Engine v1.0'
   },
   tags: ['Space', 'Exploration', 'Pixel Art', 'Sci-fi', 'Relaxing']
 });

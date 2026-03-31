@@ -40,8 +40,22 @@ export default class PointerRaycast {
         // Gabungkan: Pastikan layer UI SELALU dievaluasi duluan (berada di array terdepan)
         const allLayers = [...sortedUILayers, ...sortedWorldLayers];
 
+        // Fungsi bantu: Cek apakah entity ini ATAU salah satu parent-nya sedang false (tidak aktif)
+        const isEntityAndParentsActive = (entity, world) => {
+            if (entity.active === false) return false;
+            
+            let current = entity;
+            while (current.parentId) {
+                current = world.entities.find(e => e.id === current.parentId || e._id === current.parentId);
+                if (!current) break; // Jika parent tidak ketemu, kita anggap aman (aktif)
+                if (current.active === false) return false;
+            }
+            return true;
+        };
+
         // 3. Evaluasi dari layer paling atas ke bawah
         for (const layer of allLayers) {
+            // Layer false -> Lewati sepenuhnya
             if (layer.active === false || !layer.visible || !layer.entities) continue;
             
             const isUILayer = layer.scriptId === 'ui' || (layer.name && layer.name.includes('UI'));
@@ -64,7 +78,8 @@ export default class PointerRaycast {
 
             // 4. Hit-test setiap entity
             for (const entity of sortedEntities) {
-                if (entity.active === false) continue;
+                // --- PERBAIKAN: Gunakan fungsi pengecekan berantai ---
+                if (!isEntityAndParentsActive(entity, world)) continue;
 
                 const comps = entity.components;
                 if (!comps) continue;
@@ -74,9 +89,6 @@ export default class PointerRaycast {
                 
                 // Jika tidak punya Transform sama sekali, tidak bisa dihitung ukurannya
                 if (!hasUITransform && !hasTransform) continue;
-
-                // KITA HAPUS FILTER VISUAL/COLLIDER DI SINI.
-                // Entitas kosong yang hanya punya Transform kini SAH menjadi penahan klik.
 
                 const isEntityUI = isUILayer || hasUITransform;
                 const t = hasUITransform ? comps.UITransform : comps.Transform;
@@ -97,7 +109,7 @@ export default class PointerRaycast {
                 const isHit = this._checkIntersection(entity, globalT, drawX, drawY, targetPointer.x, targetPointer.y);
                 
                 if (isHit) {
-                    return entity; // Kembalikan entitas ini, tidak peduli dia visible atau invisible!
+                    return entity; // Kembalikan entitas ini
                 }
             }
         }

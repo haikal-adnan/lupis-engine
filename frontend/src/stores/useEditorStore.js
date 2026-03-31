@@ -30,7 +30,7 @@ export const useEditorStore = defineStore('editor', {
 
     activeTabId: 'scene',
     tabs: [
-      { id: 'scene', name: 'Scene - Level 1 Demo', type: 'scene', fixed: true },
+      { id: 'scene', name: 'Scene Editor', type: 'scene', fixed: true },
     ],
 
     activeBottomTabId: 'asset', 

@@ -1,3 +1,5 @@
+import PointerRaycast from '../../System/PointerRaycast.js';
+
 export const NodeHelper = {
     'logic_flow_merge': {
         execute: (runner, node) => {
@@ -177,8 +179,10 @@ export const NodeHelper = {
             const targetId = runner.getInputValue(node, 'target_in');
             const entity = runner.resolveEntity(targetId);
 
-            // Deteksi komponen Transform (Prioritaskan UI Transform jika ada)
-            const t = entity?.components?.UITransform || entity?.components?.Transform;
+            const hasTransform = entity?.components?.Transform;
+            const hasUITransform = entity?.components?.UITransform;
+            const t = hasUITransform ? entity.components.UITransform : entity?.components?.Transform;
+
             if (!entity || !t) {
                 runner.executeFlow(node._id, 'exec_out');
                 return;
@@ -192,46 +196,69 @@ export const NodeHelper = {
             const scaleHover = Number(runner.getInputValue(node, 'scaleHover') ?? node.data?.values?.scaleHover ?? 1.1);
             const scalePressed = Number(runner.getInputValue(node, 'scalePressed') ?? node.data?.values?.scalePressed ?? 0.9);
             const lerpSpeed = Number(runner.getInputValue(node, 'lerpSpeed') ?? node.data?.values?.lerpSpeed ?? 0.2);
+            
+            // Ambil opsi penggunaan raycast (default true)
+            const useRaycast = runner.getInputValue(node, 'use_raycast') ?? true;
 
-            // 1. DETEKSI POSISI MOUSE 
             const pointer = runner.game.input.getPointer();
             const isPointerDown = pointer.down;
-            const canvas = runner.game.renderer.canvas;
             
             let isHovering = false;
-            
-            // Logika bounding box untuk UI
-            const uiSettings = runner.game.world.settings?.ui || { width: 1920, height: 1080 };
-            const targetPointerX = (pointer.x / canvas.width) * uiSettings.width;
-            const targetPointerY = (pointer.y / canvas.height) * uiSettings.height;
 
-            const anchorX = t.anchorX ?? 0.5;
-            const anchorY = t.anchorY ?? 0.5;
-            const drawX = (uiSettings.width * anchorX) + (t.x || 0);
-            const drawY = (uiSettings.height * anchorY) + (t.y || 0);
+            // 1. DETEKSI HOVER DENGAN RAYCAST / DIRECT HIT-TEST
+            if (useRaycast) {
+                // --- METODE 1: RAYCAST (Menghormati Z-Index & Occlusion) ---
+                const topEntity = PointerRaycast.getTopEntityUnderPointer(runner.game);
+                
+                if (topEntity) {
+                    if (topEntity.id === entityId || topEntity._id === entityId) {
+                        isHovering = true;
+                    } else {
+                        // Cek apakah entity yang terdeteksi adalah child dari tombol ini
+                        let currentParentId = topEntity.parentId;
+                        while (currentParentId) {
+                            if (currentParentId === entityId) {
+                                isHovering = true;
+                                break;
+                            }
+                            const pEntity = runner.game.world.entities.find(
+                                e => e.id === currentParentId || e._id === currentParentId
+                            );
+                            currentParentId = pEntity ? pEntity.parentId : null;
+                        }
+                    }
+                }
+            } else {
+                // --- METODE 2: DIRECT HIT-TEST (Mengabaikan Z-Index & Occlusion) ---
+                const canvas = runner.game.renderer?.canvas || { width: 1920, height: 1080 };
+                const uiSettings = runner.game.world.settings?.ui || { width: 1920, height: 1080 };
+                const camera = runner.game.camera;
 
-            const boxW = t.width;
-            const boxH = t.height;
-            const pivotOffsetX = boxW * (t.pivotX ?? 0.5);
-            const pivotOffsetY = boxH * (t.pivotY ?? 0.5);
+                const uiPointer = {
+                    x: (pointer.x / canvas.width) * uiSettings.width,
+                    y: (pointer.y / canvas.height) * uiSettings.height
+                };
 
-            const centerX = drawX - pivotOffsetX + (boxW / 2);
-            const centerY = drawY - pivotOffsetY + (boxH / 2);
+                const halfW = canvas.width / 2;
+                const halfH = canvas.height / 2;
+                const worldPointer = {
+                    x: camera.x + (pointer.x - halfW) / (camera.scale || 1),
+                    y: camera.y + (pointer.y - halfH) / (camera.scale || 1)
+                };
 
-            const relX = targetPointerX - centerX;
-            const relY = targetPointerY - centerY;
-            
-            const tRotRad = (t.rotation || 0) * (Math.PI / 180);
-            const rotMouseX = relX * Math.cos(-tRotRad) - relY * Math.sin(-tRotRad);
-            const rotMouseY = relX * Math.sin(-tRotRad) + relY * Math.cos(-tRotRad);
+                const globalT = PointerRaycast._getGlobalTransform(entity, runner.game.world);
+                let drawX = globalT.x || 0;
+                let drawY = globalT.y || 0;
+                let targetPointer = hasUITransform ? uiPointer : worldPointer;
 
-            // Pengecekan overlap kursor dan bounding box tombol
-            const currentScaleX = t.scaleX ?? 1.0;
-            const currentScaleY = t.scaleY ?? 1.0;
-            
-            if (Math.abs(rotMouseX) <= (boxW * Math.abs(currentScaleX)) / 2 && 
-                Math.abs(rotMouseY) <= (boxH * Math.abs(currentScaleY)) / 2) {
-                isHovering = true;
+                if (hasUITransform) {
+                    const anchorX = t.anchorX ?? 0.5;
+                    const anchorY = t.anchorY ?? 0.5;
+                    drawX = (uiSettings.width * anchorX) + (globalT.x || 0);
+                    drawY = (uiSettings.height * anchorY) + (globalT.y || 0);
+                }
+
+                isHovering = PointerRaycast._checkIntersection(entity, globalT, drawX, drawY, targetPointer.x, targetPointer.y);
             }
 
             // 2. STATE MANAGER & LERP
@@ -260,6 +287,7 @@ export const NodeHelper = {
 
             // 3. DETEKSI "ON CLICK"
             let clicked = false;
+            // Syarat klik: Kursor di atas tombol, kursor baru saja dilepas (mouse up), dan sebelumnya ditahan (mouse down)
             if (isHovering && !isPointerDown && state.wasDown) {
                 clicked = true;
             }
@@ -275,7 +303,6 @@ export const NodeHelper = {
                 runner.executeFlow(node._id, 'on_click');
             }
         },
-        // Tambahkan fungsi getOutput untuk mereturn nilai data string-nya
         getOutput: (runner, node, outputKey) => {
             if (outputKey === 'script_id_out') {
                 return node._clickedScriptId || null;

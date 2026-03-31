@@ -7,7 +7,7 @@ export function useDocsLogic() {
         title: 'Lupis Engine: Visual Scripting & 2D Power',
         category: 'Getting Started',
         description: 'Selamat datang di dokumentasi Lupis Engine. Di sini kamu akan mempelajari cara membangun game 2D berperforma tinggi menggunakan sistem Node-Based yang intuitif.',
-        infoBox: 'Lupis Engine v2.4.0 mendukung ekspor ke Web, Android, dan Desktop secara native.',
+        infoBox: 'Lupis Engine v1.0 mendukung ekspor ke Web, Android, dan Desktop secara native.',
         features: [
           { title: 'Ultra Fast', desc: 'WebGL 2.0 Rendering.', icon: 'Zap', color: 'text-yellow-500' },
           { title: 'Visual Editor', desc: 'No-code logic editor.', icon: 'Layers', color: 'text-blue-500' },

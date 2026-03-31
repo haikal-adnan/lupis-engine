@@ -82,7 +82,7 @@ const isDashboardPage = computed(() => route.name === 'Dashboard');
             <Gamepad2 class="w-5 h-5 text-indigo-500" />
           </div>
           <span class="font-bold tracking-tight text-lg hidden sm:block">Lupis Engine</span>
-          <span v-if="isDocsPage" class="hidden lg:inline-flex text-[10px] bg-indigo-500/10 text-indigo-500 px-1.5 py-0.5 rounded font-bold border border-indigo-500/20 ml-1">v2.4.0</span>
+          <span v-if="isDocsPage" class="hidden lg:inline-flex text-[10px] bg-indigo-500/10 text-indigo-500 px-1.5 py-0.5 rounded font-bold border border-indigo-500/20 ml-1">v1.0</span>
         </div>
 
         <div class="flex-1 max-w-xl hidden md:block">
