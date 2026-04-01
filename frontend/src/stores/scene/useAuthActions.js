@@ -207,7 +207,7 @@ export function useAuthActions() {
         type: 'info'
       });
       
-      const publicRoutes = ['Landing', 'About', 'Docs', 'Catalog Games', 'Detail Games'];
+      const publicRoutes = ['Landing', 'About', 'Docs', 'Explore Games', 'Detail Games'];
       if (route && !publicRoutes.includes(route.name)) {
         router.push('/');
       } else if (!router) {

@@ -16,7 +16,7 @@ defineProps({
 const formatDataType = (text) => {
   const types = ['String', 'Number', 'Boolean', 'Vector2', 'Object', 'Array'];
   if (types.includes(text)) {
-    let color = 'text-indigo-500 bg-indigo-500/10 border-indigo-500/20'; 
+    let color = 'text-cyan-500 bg-cyan-500/10 border-cyan-500/20'; 
     if (text === 'String') color = 'text-green-500 bg-green-500/10 border-green-500/20';
     if (text === 'Number' || text === 'Vector2') color = 'text-orange-500 bg-orange-500/10 border-orange-500/20';
     if (text === 'Boolean') color = 'text-pink-500 bg-pink-500/10 border-pink-500/20';
@@ -37,13 +37,13 @@ const formatDataType = (text) => {
       {{ data.description }}
     </p>
 
-    <div v-if="data.infoBox" class="bg-indigo-500/5 border border-indigo-500/20 rounded-lg p-4 mb-8 flex gap-3 items-start">
-      <Info class="w-5 h-5 text-indigo-500 shrink-0 mt-0.5" />
+    <div v-if="data.infoBox" class="bg-cyan-500/5 border border-cyan-500/20 rounded-lg p-4 mb-8 flex gap-3 items-start">
+      <Info class="w-5 h-5 text-cyan-500 shrink-0 mt-0.5" />
       <p class="text-sm text-muted-foreground m-0">{{ data.infoBox }}</p>
     </div>
 
     <div v-if="data.features" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-12 not-prose">
-      <div v-for="feat in data.features" :key="feat.title" class="border border-border rounded-xl p-5 bg-card hover:border-indigo-500/30 transition-colors">
+      <div v-for="feat in data.features" :key="feat.title" class="border border-border rounded-xl p-5 bg-card hover:border-cyan-500/30 transition-colors">
         <component :is="iconMap[feat.icon]" class="w-5 h-5 mb-3" :class="feat.color" />
         <h3 class="font-semibold text-foreground mb-1">{{ feat.title }}</h3>
         <p class="text-sm text-muted-foreground">{{ feat.desc }}</p>
@@ -92,7 +92,7 @@ const formatDataType = (text) => {
 
       <ol v-if="section.steps" class="space-y-4 my-8 list-none p-0 not-prose">
         <li v-for="(step, idx) in section.steps" :key="idx" class="flex gap-4 items-start bg-muted/20 p-4 rounded-lg border border-border">
-          <span class="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-500 text-white flex items-center justify-center text-xs font-bold mt-0.5 shadow-sm shadow-indigo-500/20">
+          <span class="flex-shrink-0 w-6 h-6 rounded-full bg-cyan-500 text-white flex items-center justify-center text-xs font-bold mt-0.5 shadow-sm shadow-cyan-500/20">
             {{ idx + 1 }}
           </span>
           <span class="text-sm text-foreground/90 leading-relaxed">{{ step }}</span>
@@ -147,7 +147,7 @@ const formatDataType = (text) => {
           <tbody class="divide-y divide-border">
             <tr v-for="(row, idx) in section.table.rows" :key="idx" class="hover:bg-muted/30 transition-colors">
               <td v-for="(cell, cIdx) in row" :key="cIdx" class="px-4 py-3 text-muted-foreground">
-                <span v-if="cIdx === 0" class="font-mono text-indigo-400 font-medium">{{ cell }}</span>
+                <span v-if="cIdx === 0" class="font-mono text-cyan-400 font-medium">{{ cell }}</span>
                 <span v-else v-html="formatDataType(cell)"></span>
               </td>
             </tr>

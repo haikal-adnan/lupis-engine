@@ -5,6 +5,7 @@ import { fileURLToPath } from "url";
 import { createEmptyProject } from "../bin/emptyProject.js";
 import Project from "../models/nosql/Project.js";
 import { syncProjectData } from "../utils/projectSyncHelper.js"; 
+import { verifyToken } from "../middleware/authMiddleware.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -53,7 +54,7 @@ router.get("/owner/:ownerId", async (req, res) => {
     if (!ownerId) return res.status(400).json({ success: false, error: "Parameter ownerId wajib diisi." });
 
     const projects = await Project.find({ ownerId })
-                                  .select('_id name description tags settings updatedAt')
+                                  .select('_id name description status tags settings updatedAt')
                                   .sort({ updatedAt: -1 });
 
     res.status(200).json({ success: true, data: projects });
@@ -124,8 +125,6 @@ router.delete("/:projectId", async (req, res) => {
   }
 });
 
-
-
 router.post("/:projectId/sync", async (req, res) => {
   try {
     const { projectId } = req.params;
@@ -145,6 +144,17 @@ router.post("/:projectId/sync", async (req, res) => {
   } catch (error) {
     console.error("[Route Error] Gagal sync project:", error);
     res.status(500).json({ success: false, error: "Terjadi kesalahan saat sinkronisasi data." });
+  }
+});
+
+router.get("/:projectId", async (req, res) => {
+  try {
+    const project = await Project.findById(req.params.projectId).lean();
+    if (!project) return res.status(404).json({ success: false, error: "Project tidak ditemukan" });
+    
+    res.status(200).json({ success: true, data: project });
+  } catch (error) {
+    res.status(500).json({ success: false, error: "Server Error saat mengambil project." });
   }
 });
 

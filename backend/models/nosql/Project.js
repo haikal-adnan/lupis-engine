@@ -13,23 +13,27 @@ const ProjectSchema = new mongoose.Schema({
   name: { type: String, required: true },
   description: { type: String },
   
+  status: { 
+    type: String, 
+    enum: ['DRAFT', 'IN_PROGRESS', 'PUBLISHED'], 
+    default: 'DRAFT',
+    uppercase: true 
+  },
+
   settings: {
     tickRate: { type: Number, default: 60 },
-    
     ui: {
       width: { type: Number, default: 1920 },
       height: { type: Number, default: 1080 },
       showUIBorder: { type: Boolean, default: true },
       active: { type: Boolean, default: true }
     },
-
     camera: {
       x: { type: Number, default: 0 },
       y: { type: Number, default: 0 },
       zoom: { type: Number, default: 1 },
       lerp: { type: Number, default: 0.1 }
     },
-
     grid: {
       width: { type: Number, default: 32 },
       height: { type: Number, default: 32 },

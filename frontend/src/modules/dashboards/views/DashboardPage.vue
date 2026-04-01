@@ -108,6 +108,19 @@ const handleCreateProject = async (projectData) => {
     projectStore.isLoading = false;
   }
 };
+
+// Fungsi baru untuk menentukan warna badge status
+const getStatusStyle = (status) => {
+  switch(status) {
+    case 'PUBLISHED': 
+      return 'text-cyan-500 bg-cyan-500/10 border-cyan-500/20';
+    case 'IN_PROGRESS': 
+      return 'text-amber-500 bg-amber-500/10 border-amber-500/20';
+    case 'DRAFT':
+    default: 
+      return 'text-slate-500 bg-slate-500/10 border-slate-500/20';
+  }
+};
 </script>
 
 <template>
@@ -120,7 +133,7 @@ const handleCreateProject = async (projectData) => {
           
           <button 
             @click="isCreatePopupOpen = true"
-            class="hidden sm:flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-full text-xs font-bold transition-all active:scale-95 shadow-sm shadow-emerald-500/20 mt-1"
+            class="hidden sm:flex items-center gap-1.5 bg-cyan-500 hover:bg-cyan-600 text-white px-3 py-1.5 rounded-full text-xs font-bold transition-all active:scale-95 shadow-sm shadow-cyan-500/20 mt-1"
           >
             <Plus class="w-3.5 h-3.5" :stroke-width="3" />
             New
@@ -139,7 +152,7 @@ const handleCreateProject = async (projectData) => {
 
       <button 
         @click="isCreatePopupOpen = true"
-        class="sm:hidden w-full flex justify-center items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2.5 rounded-xl text-sm font-bold transition-all active:scale-95 shadow-sm shadow-emerald-500/20"
+        class="sm:hidden w-full flex justify-center items-center gap-2 bg-cyan-500 hover:bg-cyan-600 text-white px-4 py-2.5 rounded-xl text-sm font-bold transition-all active:scale-95 shadow-sm shadow-cyan-500/20"
       >
         <Plus class="w-4 h-4" :stroke-width="3" />
         New Project
@@ -147,7 +160,7 @@ const handleCreateProject = async (projectData) => {
     </div>
 
     <div v-if="isLoading" class="h-64 flex flex-col items-center justify-center">
-      <div class="w-10 h-10 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin mb-4"></div>
+      <div class="w-10 h-10 border-4 border-cyan-500/20 border-t-cyan-500 rounded-full animate-spin mb-4"></div>
       <p class="text-muted-foreground font-medium animate-pulse text-sm">Loading your universe...</p>
     </div>
 
@@ -167,7 +180,7 @@ const handleCreateProject = async (projectData) => {
       
       <button 
         @click="isCreatePopupOpen = true"
-        class="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2"
+        class="bg-cyan-500 hover:bg-cyan-600 text-white px-6 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg shadow-cyan-500/20 flex items-center gap-2"
       >
         <Plus class="w-4 h-4" :stroke-width="3" /> Create First Project
       </button>
@@ -175,14 +188,14 @@ const handleCreateProject = async (projectData) => {
 
     <div v-else-if="filteredProjects.length === 0" class="h-64 flex flex-col items-center justify-center border border-border rounded-3xl bg-card">
       <p class="text-muted-foreground mb-2">No projects matching "{{ props.searchQuery }}"</p>
-      <button @click="$emit('update:searchQuery', '')" class="text-sm text-emerald-500 hover:underline">Clear search</button>
+      <button @click="$emit('update:searchQuery', '')" class="text-sm text-cyan-500 hover:underline">Clear search</button>
     </div>
 
     <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
       <div 
         v-for="project in filteredProjects" 
         :key="project._id"
-        class="group bg-card border border-border rounded-2xl overflow-hidden cursor-pointer hover:border-emerald-500/40 transition-all duration-300 hover:-translate-y-1 shadow-sm hover:shadow-xl hover:shadow-emerald-500/5 flex flex-col"
+        class="group bg-card border border-border rounded-2xl overflow-hidden cursor-pointer hover:border-cyan-500/40 transition-all duration-300 hover:-translate-y-1 shadow-sm hover:shadow-xl hover:shadow-cyan-500/5 flex flex-col"
         @click="openProject(project._id)"
         @contextmenu.prevent="handleContextMenu($event, project)"
       >
@@ -192,19 +205,19 @@ const handleCreateProject = async (projectData) => {
             :src="project.thumbnailUrl" 
             class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
           />
-          <div v-else class="w-full h-full flex items-center justify-center text-muted-foreground/20 group-hover:text-emerald-500/20 transition-colors">
+          <div v-else class="w-full h-full flex items-center justify-center text-muted-foreground/20 group-hover:text-cyan-500/20 transition-colors">
             <Gamepad2 class="w-12 h-12" :stroke-width="1.5" />
           </div>
           
           <div class="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-5">
-            <span class="text-xs font-bold uppercase tracking-wider text-emerald-500 flex items-center gap-1">
+            <span class="text-xs font-bold uppercase tracking-wider text-cyan-500 flex items-center gap-1">
               Open Editor <span class="group-hover:translate-x-1 transition-transform">→</span>
             </span>
           </div>
         </div>
 
         <div class="p-5 flex-1 flex flex-col">
-          <h3 class="font-bold text-lg group-hover:text-emerald-500 transition-colors line-clamp-1">
+          <h3 class="font-bold text-lg group-hover:text-cyan-500 transition-colors line-clamp-1">
             {{ project.name }}
           </h3>
           <p class="text-muted-foreground text-xs mt-1.5 line-clamp-2 leading-relaxed flex-1">
@@ -215,7 +228,12 @@ const handleCreateProject = async (projectData) => {
             <span class="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">
               Updated {{ new Date(project.updatedAt || Date.now()).toLocaleDateString() }}
             </span>
-            <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
+            <span 
+              class="text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider border"
+              :class="getStatusStyle(project.status)"
+            >
+              {{ (project.status || 'DRAFT').replace('_', ' ') }}
+            </span>
           </div>
         </div>
       </div>

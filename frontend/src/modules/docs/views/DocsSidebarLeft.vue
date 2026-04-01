@@ -1,13 +1,19 @@
 <script setup>
 import { ref } from 'vue';
-import { ChevronDown } from 'lucide-vue-next';
+import { ChevronDown, X } from 'lucide-vue-next'; // <-- Tambahkan icon X untuk mobile
 
 const props = defineProps({
   navItems: {
     type: Array,
     required: true
+  },
+  isOpen: {
+    type: Boolean,
+    default: false
   }
 });
+
+const emit = defineEmits(['close']);
 
 const openMenus = ref(props.navItems.map((_, index) => index));
 
@@ -21,16 +27,45 @@ const toggleMenu = (index) => {
 </script>
 
 <template>
-  <aside class="hidden lg:block w-64 shrink-0 h-[calc(100vh-4rem)] sticky top-16 overflow-y-auto py-8 pr-6 border-r border-border custom-scrollbar">
+  <transition
+    enter-active-class="transition-opacity ease-linear duration-200"
+    enter-from-class="opacity-0"
+    enter-to-class="opacity-100"
+    leave-active-class="transition-opacity ease-linear duration-200"
+    leave-from-class="opacity-100"
+    leave-to-class="opacity-0"
+  >
+    <div 
+      v-if="isOpen" 
+      @click="emit('close')" 
+      class="fixed inset-0 bg-background z-40 lg:hidden"
+    ></div>
+  </transition>
+
+  <aside 
+    class="fixed inset-y-0 left-0 z-50 w-72 bg-background border-r border-border transform transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 lg:w-64 lg:shrink-0 lg:h-[calc(100vh-4rem)] lg:sticky lg:top-16 overflow-y-auto py-6 lg:py-8 px-4 lg:px-0 lg:pr-6 custom-scrollbar"
+    :class="isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:shadow-none'"
+  >
+    
+    <div class="flex items-center justify-between mb-6 lg:hidden px-2">
+      <span class="font-bold text-lg text-foreground">Navigation</span>
+      <button 
+        @click="emit('close')" 
+        class="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-md transition-colors"
+      >
+        <X class="w-5 h-5" />
+      </button>
+    </div>
+
     <nav class="space-y-4">
       <div v-for="(section, index) in navItems" :key="index">
         
         <button 
           @click="toggleMenu(index)"
-          class="w-full flex items-center justify-between mb-1 py-1 text-sm font-semibold text-foreground hover:text-indigo-500 transition-colors group"
+          class="w-full flex items-center justify-between mb-1 py-1 text-sm font-semibold text-foreground hover:text-cyan-500 transition-colors group"
         >
           <div class="flex items-center gap-2">
-            <component :is="section.icon" class="w-4 h-4 text-muted-foreground group-hover:text-indigo-500 transition-colors" />
+            <component :is="section.icon" class="w-4 h-4 text-muted-foreground group-hover:text-cyan-500 transition-colors" />
             {{ section.title }}
           </div>
           
@@ -48,9 +83,10 @@ const toggleMenu = (index) => {
           <li v-for="link in section.links" :key="link.name">
             <a 
               :href="link.href" 
+              @click="emit('close')" 
               class="block py-1.5 text-sm transition-colors rounded-md px-2 -ml-2"
               :class="link.active 
-                ? 'text-indigo-500 font-medium bg-indigo-500/5' 
+                ? 'text-cyan-500 font-medium bg-cyan-500/5' 
                 : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'"
             >
               {{ link.name }}

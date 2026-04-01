@@ -16,6 +16,12 @@ export function useProjectBackend() {
     return result;
   };
 
+  const getProjectById = async (projectId) => {
+    const response = await fetchWithTimeout(`${API_URL}/projects/${projectId}`, { method: 'GET' });
+    const result = await handleResponse(response, 'Gagal mengambil detail project');
+    return result.data;
+  };
+
   const getProjectsByOwnerId = async (ownerId) => {
     const response = await fetchWithTimeout(`${API_URL}/projects/owner/${ownerId}`, {
       method: 'GET'
@@ -77,6 +83,7 @@ export function useProjectBackend() {
 
   return {
     getProjectsByOwnerId,
+    getProjectById,
     createProject,
     updateProject,
     deleteProject,

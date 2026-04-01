@@ -16,6 +16,7 @@ export const createEmptyProject = async (ownerId, projectName, description) => {
       ownerId: ownerId, 
       name: projectName,
       description: description,
+      status: "DRAFT",
       settings: { 
         tickRate: 60,
         ui: { width: 1920, height: 1080, showUIBorder: true, active: true },
@@ -39,11 +40,9 @@ export const createEmptyProject = async (ownerId, projectName, description) => {
         showRulers: true
       },
       layersWorld: [
-        // Tambahkan opacity di sini
         { _id: layerWorldId, scriptId: "layer_world_editor", name: "World", zIndex: 10, orderIndex: 0, locked: false, visible: true, opacity: 1.0 } 
       ],
       layersUI: [
-        // Tambahkan opacity di sini
         { _id: layerUIId, scriptId: "layer_ui_editor", name: "HUD", zIndex: 100, orderIndex: 1, locked: false, visible: true, opacity: 1.0 }          
       ],
       entities: [] 

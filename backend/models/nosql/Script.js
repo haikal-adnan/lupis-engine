@@ -5,10 +5,12 @@ const PortSchema = new mongoose.Schema({
   label: { type: String, default: '' },
   dataType: { 
     type: String, 
-    enum: ['execution', 'string', 'number', 'boolean', 'object', 'vector', 'any'], 
+    // Tambahkan 'map' dan tipe lain jika diperlukan di masa depan
+    enum: ['execution', 'string', 'number', 'boolean', 'object', 'vector', 'map', 'any', 'array', 'list'], 
     default: 'any' 
   },
   color: { type: String, default: '#ffffff' },
+  enabled: { type: Boolean, default: true }, // Sinkron dengan frontend
   defaultValue: { type: mongoose.Schema.Types.Mixed, default: null } 
 }, { _id: false });
 
@@ -23,7 +25,9 @@ const NodeSchema = new mongoose.Schema({
   settings: {
     headerTitle: { type: String, default: 'Node' },
     headerColor: { type: String, default: '#333' },
-    category: { type: String, default: 'General' }
+    category: { type: String, default: 'General' },
+    description: { type: String, default: '' },
+    visibleDataFields: { type: [String], default: [] }
   },
   data: { type: mongoose.Schema.Types.Mixed, default: {} },
   inputs: { type: [PortSchema], default: [] },
@@ -42,24 +46,19 @@ const ScriptSchema = new mongoose.Schema({
   _id: { type: String, required: true },
   projectId: { type: String, ref: 'Project', required: true, index: true },
   name: { type: String, required: true },
+  type: { type: String, default: 'component' }, // Menampung "component" atau "global"
   active: { type: Boolean, default: true }, 
   exposedVariables: {
     type: [{
       _id: { type: String, required: true },
       name: String,
-      type: { type: String, default: 'string' },
+      type: { type: String, default: 'number' }, // Default number sesuai createScriptVariable
       defaultValue: mongoose.Schema.Types.Mixed
     }],
     default: []
   },
-  nodes: {
-    type: [NodeSchema],
-    default: []
-  },
-  edges: {
-    type: [EdgeSchema],
-    default: []
-  }
+  nodes: { type: [NodeSchema], default: [] },
+  edges: { type: [EdgeSchema], default: [] }
 }, { 
   timestamps: true,
   _id: false 
