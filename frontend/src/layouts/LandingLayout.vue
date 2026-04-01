@@ -7,9 +7,10 @@ import { useTheme } from "@commons/composables/useTheme.js";
 
 import { useAuthStore } from '@/stores/useAuthStore.js';
 import { useAuthActions } from '@/stores/scene/useAuthActions.js'; 
+import { useAvatarUrl } from '@/composables/useAvatarUrl.js'; // <-- Tambahkan ini
 
 import { 
-  Gamepad2, ChevronDown, MessageSquare, Github, ExternalLink, Plus, User, Settings, LogOut 
+  Gamepad2, ChevronDown, MessageSquare, Github, ExternalLink, Plus, User, Settings, LogOut, Menu, X 
 } from 'lucide-vue-next';
 
 const router = useRouter();
@@ -18,19 +19,33 @@ const { initTheme } = useTheme();
 
 const authStore = useAuthStore();
 const authActions = useAuthActions();
+const { getAvatarUrl } = useAvatarUrl(); // <-- Ekstrak fungsi
 
 const profileDropdown = ref(null);
+const isMobileMenuOpen = ref(false);
 
-// --- FITUR BACKGROUND INVISIBLE ---
 const isScrolled = ref(false);
 const handleScroll = () => {
   isScrolled.value = window.scrollY > 20;
 };
-// ----------------------------------
 
 const goToDashboard = () => router.push('/dashboard');
-const goToProfile = () => router.push('/profile');
+const goToProfile = () => {
+  const username = authStore.currentUser?.username;
+  if (username) {
+    router.push(`/profile/${username}`);
+  }
+};
+const goToSettings = () => router.push('/settings');
 const closeProfileMenu = () => profileDropdown.value?.close();
+
+const toggleMobileMenu = () => {
+  isMobileMenuOpen.value = !isMobileMenuOpen.value;
+};
+
+watch(() => route.fullPath, () => {
+  isMobileMenuOpen.value = false;
+});
 
 const checkLoginQuery = async () => {
   await nextTick(); 
@@ -41,17 +56,13 @@ const checkLoginQuery = async () => {
 
 const handleAuthSuccess = async () => {
   const targetPath = route.query.redirect;
-  
   authStore.closeAuthModal();
-  
   await nextTick();
-  
   if (targetPath) {
     router.push(targetPath);
   } else {
     router.push('/dashboard');
   }
-  
   sessionStorage.setItem('lupis_initial_check', 'true');
 };
 
@@ -62,17 +73,7 @@ watch(() => route.query.action, () => {
 onMounted(() => {
   initTheme();
   authActions.initAuth();
-
-  // Aktifkan listener scroll
   window.addEventListener('scroll', handleScroll);
-
-  const hasCheckedIn = sessionStorage.getItem('lupis_initial_check');
-
-  if (authStore.isLoggedIn && route.name === 'Landing' && !hasCheckedIn) {
-    sessionStorage.setItem('lupis_initial_check', 'true');
-    router.push('/dashboard');
-  }
-
   checkLoginQuery();
 });
 
@@ -92,7 +93,6 @@ const closeDropdown = () => {
 
 onUnmounted(() => {
   if (closeTimeout) clearTimeout(closeTimeout);
-  // Bersihkan listener scroll
   window.removeEventListener('scroll', handleScroll);
 });
 </script>
@@ -105,25 +105,25 @@ onUnmounted(() => {
     @auth-success="handleAuthSuccess"
   />
 
-  <div class="min-h-screen bg-background text-foreground font-sans flex flex-col selection:bg-indigo-500/30 relative">
+  <div class="min-h-screen bg-background text-foreground font-sans flex flex-col selection:bg-cyan-500/30 relative">
     <header 
       class="h-16 fixed top-0 w-full z-50 px-6 transition-all duration-300"
-      :class="(isScrolled || route.name !== 'Landing') ? 'bg-background border-b border-border shadow-sm' : 'bg-transparent border-transparent'"
+      :class="[(isScrolled || route.name !== 'Landing' || isMobileMenuOpen) ? 'bg-background border-b border-border shadow-sm' : 'bg-transparent border-transparent']"
     >
       <div class="max-w-6xl mx-auto w-full h-full flex items-center justify-between">
         
         <div class="flex items-center gap-2.5 cursor-pointer flex-1" @click="router.push('/')">
-          <div class="w-8 h-8 rounded bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20">
-            <Gamepad2 class="w-5 h-5 text-indigo-400" />
+          <div class="w-8 h-8 rounded bg-cyan-500/10 flex items-center justify-center border border-cyan-500/20">
+            <Gamepad2 class="w-5 h-5 text-cyan-400" />
           </div>
-          <span class="font-bold tracking-tight text-lg" :class="{ 'drop-shadow-md': !isScrolled && route.name === 'Landing' }">Lupis Engine</span>
+          <span class="font-bold tracking-tight text-lg" :class="{ 'drop-shadow-md': !isScrolled && !isMobileMenuOpen && route.name === 'Landing' }">Lupis Engine</span>
         </div>
 
         <nav 
           class="hidden md:flex items-center justify-center gap-8 text-sm font-medium shrink-0 transition-colors"
           :class="(isScrolled || route.name !== 'Landing') ? 'text-muted-foreground' : 'text-white/90'"
         >
-          <router-link to="/catalog" class="hover:text-foreground transition-colors" active-class="text-foreground">Games</router-link>
+          <router-link to="/explore" class="hover:text-foreground transition-colors" active-class="text-foreground">Games</router-link>
           <router-link to="/docs" class="hover:text-foreground transition-colors" active-class="text-foreground">Docs</router-link>
           
           <div class="relative h-16 flex items-center community-dropdown" @mouseenter="openDropdown" @mouseleave="closeDropdown">
@@ -142,8 +142,8 @@ onUnmounted(() => {
               <div v-if="isCommunityOpen" class="absolute top-full left-0 w-60 pt-1 z-[60]">
                 <div class="rounded-xl bg-card border border-border shadow-2xl p-2 bg-background/95 backdrop-blur-sm">
                   <a href="https://discord.gg/lupis" target="_blank" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-secondary transition-all group">
-                    <div class="w-8 h-8 rounded-md bg-indigo-500/10 flex items-center justify-center group-hover:bg-indigo-500/20">
-                      <MessageSquare class="w-4 h-4 text-indigo-400" />
+                    <div class="w-8 h-8 rounded-md bg-cyan-500/10 flex items-center justify-center group-hover:bg-cyan-500/20">
+                      <MessageSquare class="w-4 h-4 text-cyan-400" />
                     </div>
                     <div class="flex flex-col text-left">
                       <span class="text-sm font-semibold text-foreground flex items-center gap-1">Discord <ExternalLink class="w-2.5 h-2.5 opacity-30" /></span>
@@ -173,7 +173,7 @@ onUnmounted(() => {
           <template v-if="authStore.isLoggedIn">
             <button 
               @click="goToDashboard"
-              class="flex items-center gap-2 bg-indigo-500 hover:bg-indigo-600 text-white pl-3 pr-4 py-1.5 rounded-full text-sm font-bold transition-all shadow-sm shadow-indigo-500/20 active:scale-95 whitespace-nowrap hidden sm:flex"
+              class="hidden sm:flex items-center gap-2 bg-cyan-500 hover:bg-cyan-600 text-white pl-3 pr-4 py-1.5 rounded-full text-sm font-bold transition-all shadow-sm shadow-cyan-500/20 active:scale-95 whitespace-nowrap"
             >
               <div class="bg-white/20 rounded-full p-0.5">
                 <Plus class="w-3.5 h-3.5" />
@@ -184,11 +184,11 @@ onUnmounted(() => {
             <BaseDropdown ref="profileDropdown" class="shrink-0 z-20">
               <template #trigger="{ isOpen }">
                 <button 
-                  class="w-9 h-9 rounded-full border border-indigo-500/50 bg-muted/50 flex items-center justify-center hover:border-indigo-500/50 hover:bg-indigo-500/5 transition-all group overflow-hidden outline-none"
-                  :class="{ 'ring-2 ring-indigo-500/50 border-indigo-500/50': isOpen }"
+                  class="w-9 h-9 rounded-full border border-cyan-500/50 bg-muted/50 flex items-center justify-center hover:border-cyan-500/50 hover:bg-cyan-500/5 transition-all group overflow-hidden outline-none"
+                  :class="{ 'ring-2 ring-cyan-500/50 border-cyan-500/50': isOpen }"
                 >
-                  <img v-if="authStore.currentUser?.avatar_url" :src="authStore.currentUser.avatar_url" class="w-full h-full object-cover rounded-full" />
-                  <User v-else class="w-4 h-4 text-muted-foreground group-hover:text-indigo-500 transition-colors" />
+                  <img v-if="authStore.currentUser?.avatar_url" :src="getAvatarUrl(authStore.currentUser.avatar_url)" class="w-full h-full object-cover rounded-full" />
+                  <User v-else class="w-4 h-4 text-muted-foreground group-hover:text-cyan-500 transition-colors" />
                 </button>
               </template>
 
@@ -202,7 +202,7 @@ onUnmounted(() => {
                   <User class="w-4 h-4 text-muted-foreground" /> My Profile
                 </button>
 
-                <button class="w-full text-left px-3 py-2 text-sm hover:bg-secondary transition-colors outline-none flex items-center gap-2 text-foreground" @click="closeProfileMenu">
+                <button class="w-full text-left px-3 py-2 text-sm hover:bg-secondary transition-colors outline-none flex items-center gap-2 text-foreground" @click="goToSettings(); closeProfileMenu();">
                   <Settings class="w-4 h-4 text-muted-foreground" /> Settings
                 </button>
                 
@@ -219,21 +219,90 @@ onUnmounted(() => {
             <button 
               @click="authStore.openAuthModal('login')" 
               class="text-sm font-medium transition-colors hidden sm:block"
-              :class="(isScrolled || route.name !== 'Landing') ? 'text-muted-foreground hover:text-foreground' : 'text-white/80 hover:text-white'"
+              :class="(isScrolled || route.name !== 'Landing' || isMobileMenuOpen) ? 'text-muted-foreground hover:text-foreground' : 'text-white/80 hover:text-white'"
             >
               Sign In
             </button>
-            <button @click="authStore.openAuthModal('register')" class="bg-indigo-500 hover:bg-indigo-600 text-white px-5 py-2 rounded-lg text-sm font-semibold transition-all shadow-md shadow-indigo-500/20 active:scale-95">
+            <button @click="authStore.openAuthModal('register')" class="bg-cyan-500 hover:bg-cyan-600 text-white px-5 py-2 rounded-lg text-sm font-semibold transition-all shadow-md shadow-cyan-500/20 active:scale-95 hidden sm:block">
               Get Started
             </button>
           </template>
 
+          <button 
+            @click="toggleMobileMenu" 
+            class="md:hidden p-2 transition-colors focus:outline-none"
+            :class="(isScrolled || route.name !== 'Landing' || isMobileMenuOpen) ? 'text-foreground' : 'text-white'"
+          >
+            <Menu v-if="!isMobileMenuOpen" class="w-6 h-6" />
+            <X v-else class="w-6 h-6" />
+          </button>
+
         </div>
       </div>
+
+      <transition 
+        enter-active-class="transition duration-200 ease-out"
+        enter-from-class="transform -translate-y-4 opacity-0"
+        enter-to-class="transform translate-y-0 opacity-100"
+        leave-active-class="transition duration-150 ease-in"
+        leave-from-class="transform translate-y-0 opacity-100"
+        leave-to-class="transform -translate-y-4 opacity-0"
+      >
+        <div v-if="isMobileMenuOpen" class="absolute top-16 left-0 w-full bg-background border-b border-border shadow-lg p-4 flex flex-col gap-2 md:hidden z-40">
+          
+          <router-link to="/explore" class="text-base font-medium text-foreground py-2 border-b border-border">Games</router-link>
+          <router-link to="/docs" class="text-base font-medium text-foreground py-2 border-b border-border">Docs</router-link>
+          <router-link to="/about" class="text-base font-medium text-foreground py-2 border-b border-border">About</router-link>
+          
+          <div class="py-2 border-b border-border flex flex-col gap-2">
+            <span class="text-sm text-muted-foreground font-semibold">Community</span>
+            <a href="https://discord.gg/lupis" target="_blank" class="flex items-center gap-2 text-foreground"><MessageSquare class="w-4 h-4"/> Discord</a>
+            <a href="https://github.com/haikal-adnan/lupis-engine" target="_blank" class="flex items-center gap-2 text-foreground"><Github class="w-4 h-4"/> GitHub</a>
+          </div>
+
+          <template v-if="!authStore.isLoggedIn">
+            <div class="flex flex-col gap-2 mt-2">
+              <button @click="authStore.openAuthModal('login'); isMobileMenuOpen = false" class="w-full text-center py-2 text-sm font-medium text-foreground border border-border rounded-lg">
+                Sign In
+              </button>
+              <button @click="authStore.openAuthModal('register'); isMobileMenuOpen = false" class="w-full bg-cyan-500 hover:bg-cyan-600 text-white py-2 rounded-lg text-sm font-semibold transition-all">
+                Get Started
+              </button>
+            </div>
+          </template>
+          <template v-else>
+             <button @click="goToDashboard(); isMobileMenuOpen = false" class="w-full flex items-center justify-center gap-2 bg-cyan-500 hover:bg-cyan-600 text-white py-2 rounded-lg text-sm font-bold transition-all mt-2">
+                <Plus class="w-4 h-4" /> Make a Game
+            </button>
+          </template>
+
+        </div>
+      </transition>
     </header>
 
     <main class="flex-1 flex flex-col items-center w-full">
       <slot />
     </main>
+
+    <footer class="w-full border-t border-border bg-background py-8 px-6">
+      <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+        <div class="flex items-center gap-2">
+          <Gamepad2 class="w-5 h-5 text-cyan-400" />
+          <span class="font-bold tracking-tight text-sm">Lupis Engine</span>
+        </div>
+        
+        <nav class="flex items-center gap-6 text-sm text-muted-foreground">
+          <a href="/docs" class="hover:text-foreground transition-colors">Docs</a>
+          <a href="/about" class="hover:text-foreground transition-colors">Contribute</a>
+          <a href="/about" class="hover:text-foreground transition-colors">Reference</a>
+          <a href="/about" class="hover:text-foreground transition-colors">License</a>
+        </nav>
+
+        <p class="text-xs text-muted-foreground">
+          &copy; 2026 Lupis Engine.
+        </p>
+      </div>
+    </footer>
+
   </div>
 </template>

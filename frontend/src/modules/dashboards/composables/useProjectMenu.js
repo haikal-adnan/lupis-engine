@@ -1,11 +1,16 @@
 import { ref, computed } from 'vue';
-import { Edit2, Type, Trash2, FolderOpen, ExternalLink } from 'lucide-vue-next';
+import { useRouter } from 'vue-router';
+import { 
+  Edit2, Type, Trash2, FolderOpen, ExternalLink, 
+  Activity, FileEdit, Clock, Globe, Settings, Globe2 // Tambahkan Globe dan Settings
+} from 'lucide-vue-next';
 import { usePrompt } from '@/composables/usePrompt';
 import { useConfirm } from '@/composables/useConfirm';
 import { usePopAlert } from '@/composables/usePopAlert'; 
 import { useProjectBackend } from '@/services/api/backend/useProjectBackend.js';
 
 export function useProjectMenu(refreshListCallback, openProjectCallback) {
+  const router = useRouter();
   const { prompt } = usePrompt();
   const { confirm } = useConfirm();
   const { showPop } = usePopAlert(); 
@@ -119,34 +124,91 @@ export function useProjectMenu(refreshListCallback, openProjectCallback) {
     }
   };
 
+  const handleChangeStatus = async (project, newStatus) => {
+    closeMenu();
+    if (project.status === newStatus) return;
+
+    try {
+      await updateProject(project._id, { status: newStatus });
+      if (refreshListCallback) refreshListCallback();
+      
+      showPop({
+        title: 'Status Updated',
+        message: `Status proyek berhasil diubah menjadi ${newStatus.replace('_', ' ')}.`,
+        type: 'success'
+      });
+    } catch (error) {
+      console.error("Failed to update status:", error);
+      showPop({
+        title: 'Error',
+        message: error.message || 'Gagal mengubah status proyek.',
+        type: 'error'
+      });
+    }
+  };
+
   const contextMenuItems = computed(() => {
     const targetProject = menu.value.item;
-    
     if (!targetProject) return [];
 
-    return [
-      {
-        label: targetProject.name,
-        disabled: true,
-        icon: null
-      },
-      { separator: true },
-      {
-        label: 'Open',
-        icon: FolderOpen,
+    const isPublished = targetProject.status === 'PUBLISHED';
+
+    let items = [
+      // ... (Menu Open, dll aslinya)
+    ];
+
+    // [UBAH BAGIAN INI] Logika Menu Publish / Edit Published
+    if (isPublished) {
+      items.push(
+        {
+          label: 'View Published Game',
+          icon: Globe2,
+          action: () => {
+            closeMenu();
+            // Cek jika kita menyimpan publishedSlug di settings, jika tidak gunakan ID project/slug dummy
+            const gameSlug = targetProject.settings?.publishedSlug || targetProject._id; 
+            router.push(`/game/${gameSlug}`); // Sesuaikan route detail publisnya
+          }
+        },
+        {
+          label: 'Edit Published Data',
+          icon: Settings,
+          action: () => {
+            closeMenu();
+            router.push(`/publish/${targetProject._id}`);
+          }
+        }
+      );
+    } else {
+      items.push({
+        label: 'Publish Game',
+        icon: Globe,
         action: () => {
           closeMenu();
-          if (openProjectCallback) openProjectCallback(targetProject._id, false);
+          router.push(`/publish/${targetProject._id}`);
         }
-      },
-      {
-        label: 'Open in New Tab',
-        icon: ExternalLink,
-        action: () => {
-          closeMenu();
-          if (openProjectCallback) openProjectCallback(targetProject._id, true);
-        }
-      },
+      });
+
+      // Logika Change Status HANYA jika belum published
+      items.push({
+        label: 'Change Status',
+        icon: Activity,
+        children: [
+          {
+            label: 'Draft',
+            icon: FileEdit,
+            action: () => handleChangeStatus(targetProject, 'DRAFT')
+          },
+          {
+            label: 'In Progress',
+            icon: Clock,
+            action: () => handleChangeStatus(targetProject, 'IN_PROGRESS')
+          }
+        ]
+      });
+    }
+
+    items.push(
       { separator: true },
       { 
         label: 'Rename', 
@@ -164,7 +226,9 @@ export function useProjectMenu(refreshListCallback, openProjectCallback) {
         icon: Trash2, 
         action: () => handleDelete(targetProject) 
       }
-    ];
+    );
+
+    return items;
   });
 
   return {

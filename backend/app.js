@@ -3,7 +3,8 @@ import cors from "cors";
 import { connectMongo } from "./config/mongo.js";
 import { connectPostgres, pool } from "./config/postgres.js";
 
-// import { verifyToken } from "./middleware/authMiddleware.js";
+// 1. Buka komentar import verifyToken
+import { verifyToken } from "./middleware/authMiddleware.js";
 
 import Project from "./models/nosql/Project.js";
 import Folder from "./models/nosql/Folder.js";
@@ -16,6 +17,8 @@ import assetRoutes from "./routes/assetRoutes.js";
 import projectRoutes from "./routes/projectRoutes.js";
 import folderRoutes from "./routes/folderRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
+import publishRoutes from "./routes/publishRoutes.js";
+import profileRoutes from "./routes/profileRoutes.js";
 
 import { sendOTPEmail } from "./services/email.js";
 
@@ -24,7 +27,6 @@ const app = express();
 app.use(cors());
 
 app.use(express.json({ limit: '5mb' }));
-
 app.use(express.urlencoded({ limit: '5mb', extended: true }));
 
 export async function initDatabase() {
@@ -32,12 +34,29 @@ export async function initDatabase() {
   await connectPostgres();
 }
 
+// ==========================================
+// 2. DAFTARKAN ROUTE PUBLIK
+// (Jangan pasang verifyToken di sini)
+// ==========================================
 app.use("/auth", authRoutes);
-app.use("/assets", assetRoutes);
-app.use("/projects", projectRoutes);
-app.use("/folders", folderRoutes);
+app.use("/publish", publishRoutes); // Katalog game harus bisa dilihat publik
+app.use("/profile", profileRoutes); // Profil pengguna harus bisa dilihat publik
 
-app.get("/projects", async (req, res) => {
+// ==========================================
+// 3. DAFTARKAN ROUTE MODULAR PRIVAT
+// (Pasang verifyToken untuk melindungi semua endpoint di dalamnya)
+// ==========================================
+app.use("/assets", verifyToken, assetRoutes);
+app.use("/projects", verifyToken, projectRoutes);
+app.use("/folders", verifyToken, folderRoutes);
+
+
+// ==========================================
+// 4. DAFTARKAN ROUTE SATUAN PRIVAT
+// (Sisipkan verifyToken sebagai parameter kedua)
+// ==========================================
+
+app.get("/projects", verifyToken, async (req, res) => {
   try {
     res.json(await Project.find().sort({ updatedAt: -1 }));
   } catch (e) {
@@ -45,7 +64,7 @@ app.get("/projects", async (req, res) => {
   }
 });
 
-app.get("/projects/:projectId", async (req, res) => {
+app.get("/projects/:projectId", verifyToken, async (req, res) => {
   try {
     const project = await Project.findById(req.params.projectId);
     if (!project) return res.status(404).json({ error: "Project not found" });
@@ -55,7 +74,7 @@ app.get("/projects/:projectId", async (req, res) => {
   }
 });
 
-app.get("/folders/:projectId", async (req, res) => {
+app.get("/folders/:projectId", verifyToken, async (req, res) => {
   try {
     res.json(await Folder.find({ projectId: req.params.projectId }));
   } catch (e) {
@@ -63,7 +82,7 @@ app.get("/folders/:projectId", async (req, res) => {
   }
 });
 
-app.get("/assets/:projectId", async (req, res) => {
+app.get("/assets/:projectId", verifyToken, async (req, res) => {
   try {
     res.json(await Asset.find({ projectId: req.params.projectId }));
   } catch (e) {
@@ -71,7 +90,7 @@ app.get("/assets/:projectId", async (req, res) => {
   }
 });
 
-app.get("/scenes/project/:projectId", async (req, res) => {
+app.get("/scenes/project/:projectId", verifyToken, async (req, res) => {
   try {
     const scenes = await Scene.find({ projectId: req.params.projectId }).select("name _id");
     res.json(scenes);
@@ -80,7 +99,7 @@ app.get("/scenes/project/:projectId", async (req, res) => {
   }
 });
 
-app.get("/scenes/:sceneId", async (req, res) => {
+app.get("/scenes/:sceneId", verifyToken, async (req, res) => {
   try {
     res.json(await Scene.findById(req.params.sceneId));
   } catch (e) {
@@ -88,7 +107,7 @@ app.get("/scenes/:sceneId", async (req, res) => {
   }
 });
 
-app.get("/prefabs/:projectId", async (req, res) => {
+app.get("/prefabs/:projectId", verifyToken, async (req, res) => {
   try {
     res.json(await Prefab.find({ projectId: req.params.projectId }));
   } catch (e) {
@@ -96,7 +115,7 @@ app.get("/prefabs/:projectId", async (req, res) => {
   }
 });
 
-app.get("/scripts/:projectId", async (req, res) => {
+app.get("/scripts/:projectId", verifyToken, async (req, res) => {
   try {
     const scripts = await Script.find({ projectId: req.params.projectId });
     res.json(scripts);
@@ -105,7 +124,7 @@ app.get("/scripts/:projectId", async (req, res) => {
   }
 });
 
-app.get("/script/:scriptId", async (req, res) => {
+app.get("/script/:scriptId", verifyToken, async (req, res) => {
   try {
     const script = await Script.findById(req.params.scriptId);
     if (!script) return res.status(404).json({ error: "Script not found" });
@@ -114,6 +133,10 @@ app.get("/script/:scriptId", async (req, res) => {
     res.status(500).json({ error: e.message });
   }
 });
+
+// ==========================================
+// 5. ROUTE TESTING (Opsional: Publik atau Privat)
+// ==========================================
 
 app.get("/test-users", async (req, res) => {
   try {

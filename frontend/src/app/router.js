@@ -23,20 +23,28 @@ const routes = [
     meta: { layout: 'MainLayout' }
   },
   {
-    path: '/profile',
+    path: '/profile/:usernameUser', 
     name: 'Profile',
     component: () => import('@/modules/profile/views/ProfilePanel.vue'),
+    meta: { layout: 'MainLayout' } 
+  },
+  // --- TAMBAH ROUTE SETTINGS DI SINI ---
+  {
+    path: '/settings',
+    name: 'Settings',
+    component: () => import('@/modules/setting/SettingsPage.vue'), // Sesuaikan path ini
+    meta: { layout: 'MainLayout', requiresAuth: true }
+  },
+  // -------------------------------------
+  {
+    path: '/explore',
+    name: 'Explore',
+    component: () => import('@/modules/explore/views/ExplorePanel.vue'),
     meta: { layout: 'MainLayout' }
   },
   {
-    path: '/catalog',
-    name: 'Catalog Games',
-    component: () => import('@/modules/catalog/views/CatalogPanel.vue'),
-    meta: { layout: 'MainLayout' }
-  },
-  {
-    path: '/detail',
-    name: 'Detail Games',
+    path: '/play/:slug',
+    name: 'GameDetail',
     component: () => import('@/modules/detail/views/DetailPanel.vue'),
     meta: { layout: 'MainLayout' }
   },
@@ -50,6 +58,13 @@ const routes = [
     name: 'Dashboard',
     component: () => import('@/modules/dashboards/views/DashboardPage.vue'),
     meta: { layout: 'MainLayout', requiresAuth: true }
+  },
+  {
+    path: '/publish/:idProject',
+    name: 'PublishGame',
+    component: () => import('@/modules/publish/views/PublishGamePage.vue'),
+    meta: { layout: 'MainLayout', requiresAuth: true },
+    props: true
   },
   {
     path: '/editor/:idProject', 
@@ -67,15 +82,26 @@ const routes = [
 const router = createRouter({
   history: createWebHistory(),
   routes,
-  scrollBehavior() {
-    return { top: 0 }
+  scrollBehavior(to, from, savedPosition) {
+    if (savedPosition) {
+      return savedPosition
+    } else {
+      return { top: 0 }
+    }
   }
 })
 
 router.beforeEach((to, from) => {
+  document.body.classList.add('is-loading');
+
   const isAuthenticated = !!localStorage.getItem('lupis_auth_token');
 
+  if (isAuthenticated && to.name === 'Landing') {
+    return { name: 'Dashboard' };
+  }
+
   if (to.meta.requiresAuth && !isAuthenticated) {
+    document.body.classList.remove('is-loading'); 
     return { 
       name: 'Landing', 
       query: { action: 'login', redirect: to.fullPath } 
@@ -83,6 +109,14 @@ router.beforeEach((to, from) => {
   }
   
   return true; 
+});
+
+router.afterEach(() => {
+  document.body.classList.remove('is-loading');
+});
+
+router.onError(() => {
+  document.body.classList.remove('is-loading');
 });
 
 export default router

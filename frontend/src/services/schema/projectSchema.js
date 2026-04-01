@@ -6,6 +6,7 @@ export const createProject = (data = {}) => {
     name: data.name || "Untitled Project",
     ownerId: data.ownerId || null,
     description: data.description || "",
+    status: data.status || "DRAFT", 
     createdAt: data.createdAt || new Date().toISOString(),
     thumbnailUrl: data.thumbnailUrl || null,
     

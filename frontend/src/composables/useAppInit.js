@@ -1,3 +1,5 @@
+// src/composables/useAppInit.js
+
 import { onUnmounted, watch, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'; 
 import { useProjectStore } from '@/stores/useProjectStore'
@@ -33,11 +35,25 @@ export function useAppInit() {
           projectStore.isLoading = false; 
         }
 
-        const currentUser = authStore.currentUser; 
-        
-        const projectOwnerId = projectStore.project.ownerId || projectStore.project.userId;
+        // --- TAMBAHAN 1: Cek apakah project masih null setelah di-load ---
+        if (!projectStore.project) {
+          throw new Error("Data project gagal dimuat dari database.");
+        }
 
-        if (!currentUser || projectOwnerId !== (currentUser._id || currentUser.id)) {
+        let currentUser = authStore.currentUser;
+        if (!currentUser) {
+          const localData = localStorage.getItem('lupis_user_data');
+          if (localData && localData !== 'undefined') {
+            currentUser = JSON.parse(localData);
+          }
+        }
+        
+        // --- TAMBAHAN 2: Gunakan optional chaining (?.) untuk keamanan ekstra ---
+        const projectOwnerId = projectStore.project?.ownerId || projectStore.project?.userId;
+
+        console.log(projectStore.project?.ownerId, projectStore.project?.userId)
+
+        if (!currentUser || projectOwnerId !== currentUser.id) {
           showPop({
             title: 'Akses Ditolak',
             message: 'Anda tidak memiliki izin untuk mengedit proyek ini.',
@@ -54,9 +70,11 @@ export function useAppInit() {
         console.error("Gagal memuat project:", error);
         showPop({
           title: 'Error',
-          message: 'Project tidak ditemukan atau terjadi kesalahan server.',
+          message: error.message || 'Project tidak ditemukan atau terjadi kesalahan server.',
           type: 'error'
         });
+        
+        cleanupApplication(); // Bersihkan state sebelum ditendang balik
         return router.push('/dashboard');
       }
     }

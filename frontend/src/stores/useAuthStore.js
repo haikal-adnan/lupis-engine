@@ -8,7 +8,7 @@ export const useAuthStore = defineStore('auth', {
     errorMessage: '',
     
     isAuthOpen: false,
-    authMode: 'login' // 'login' | 'register' | 'otp'
+    authMode: 'login' 
   }),
 
   getters: {
@@ -23,6 +23,18 @@ export const useAuthStore = defineStore('auth', {
       this.user = user;
       this.token = token;
     },
+
+    // --- TAMBAH ACTION INI ---
+    updateUserField(fields) {
+      if (this.user) {
+        // Update state reaktif
+        this.user = { ...this.user, ...fields };
+        
+        // Simpan kembali ke localStorage agar persisten
+        localStorage.setItem('lupis_user_data', JSON.stringify(this.user));
+      }
+    },
+    // -------------------------
     
     clearAuthData() {
       this.user = null;

@@ -76,3 +76,11 @@ auto_commit.sh
 !/storage/projects/
 /storage/projects/*
 !/storage/projects/.gitkeep
+
+!/storage/published/
+/storage/published/*
+!/storage/published/.gitkeep
+
+!/storage/profiles/
+/storage/profiles/*
+!/storage/profiles/.gitkeep

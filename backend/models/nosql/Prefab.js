@@ -24,7 +24,11 @@ const PrefabSchema = new mongoose.Schema({
   _id: { type: String, required: true },
   projectId: { type: String, ref: 'Project', required: true, index: true }, 
   name: { type: String, default: 'New Prefab' }, 
-  type: { type: String, enum: ['world', 'ui'], default: 'world' },
+  type: { 
+    type: String, 
+    enum: ['world', 'ui', 'entity'], 
+    default: 'world' 
+  },
   data: { type: PrefabDataSchema, default: () => ({}) },
   children: { type: [PrefabDataSchema], default: [] }
 }, { 

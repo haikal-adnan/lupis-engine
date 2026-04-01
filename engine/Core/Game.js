@@ -168,7 +168,6 @@ export default class Game {
             this.scriptSystem.clear();
         }
 
-        // --- PERBAIKAN DI SINI ---
         this.world.currentSceneId = targetSceneData._id; // Simpan _id asli untuk keperluan restart
         this.world.currentSceneScriptId = targetSceneData.scriptId || targetSceneData._id || null;
         this.world.currentSceneName = targetSceneData.name || ""; 

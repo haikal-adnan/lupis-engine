@@ -115,3 +115,9 @@
     --sidebar-ring: hsl(217 91% 60%);
   }
 }
+
+body.is-loading, 
+body.is-loading * {
+  cursor: progress !important; 
+  pointer-events: none !important; 
+}
