@@ -84,3 +84,7 @@ auto_commit.sh
 !/storage/profiles/
 /storage/profiles/*
 !/storage/profiles/.gitkeep
+
+!/storage/thumbnails/
+/storage/thumbnails/*
+!/storage/thumbnails/.gitkeep
