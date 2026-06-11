@@ -103,7 +103,6 @@ export default class WorldRenderer {
         }
     }
 
-    // Di dalam _collectRenderables
     _collectRenderables(world, activeTabId, isIsolationMode, isUIMode, tilemapContext, proj) {
         const isEditor = Config.ENGINE_MODE === 'editor';
         const layers = [...(world.layersWorld || []), ...(world.layersUI || [])]; 
@@ -117,7 +116,7 @@ export default class WorldRenderer {
             const isUILayer = layer.scriptId === 'ui' || (layer.name && layer.name.includes('UI'));
             if (!isEditor && isUILayer) continue;
 
-            const layerOpacity = layer.opacity ?? 1.0; // <-- Ambil opacity dari layer
+            const layerOpacity = layer.opacity ?? 1.0; 
 
             const allEntities = [...layer.entities];
             this._sortItems(allEntities);
@@ -126,17 +125,16 @@ export default class WorldRenderer {
                 const isEntityUI = e.type === 'ui' || e.type === 'ui_entity' || e.components.UITransform || isUILayer;
                 if (!isEditor && isEntityUI) continue;
 
-                // <-- Gunakan layerOpacity sebagai dasar
                 let entityVisualOpacity = layerOpacity; 
 
                 if (isIsolationMode && e.id !== activeTabId) {
                     if (tilemapContext && !tilemapContext.showOthers) continue;
-                    if (tilemapContext) entityVisualOpacity *= tilemapContext.opacity; // Kalikan jika dalam mode isolasi
+                    if (tilemapContext) entityVisualOpacity *= tilemapContext.opacity; 
                 }
                 
                 if (isEditor && isUIMode) {
                     if (!isEntityUI) {
-                        entityVisualOpacity *= 0.3; // Kalikan jika UI mode
+                        entityVisualOpacity *= 0.3; 
                     }
                 }
 
@@ -277,7 +275,6 @@ export default class WorldRenderer {
                         texture: texture, 
                         frame: { x: finalX, y: finalY, w: finalW, h: finalH },
                         transformData: trans,
-                        // --- LEMPAR DATA FILTER KE OPTIONS ---
                         options: { 
                             flipX: finalFlipX, 
                             flipY, 
@@ -290,22 +287,32 @@ export default class WorldRenderer {
                 }
             }
 
-            if (comps.ShapeRenderer) {
-                const s = comps.ShapeRenderer;
-                const a = (s.opacity ?? 1) * currentOpacity;
-                if (a > 0) {
-                    this.renderQueue.push({
-                        type: "shape",
-                        transformData: trans,
-                        shapeOptions: {
-                            type: s.type || "rectangle",
-                            color: HexToVec4(s.color || "#FFFFFF"),
-                            thickness: s.thickness || 1,
-                            x2: s.x2, y2: s.y2, opacity: a, flipX, flipY
-                        }
-                    });
-                }
+        if (comps.ShapeRenderer) {
+            const s = comps.ShapeRenderer;
+            const globalA = (s.opacity ?? 1) * currentOpacity;
+            
+            const fillA = (s.fillOpacity ?? 1) * globalA;
+            const outA = (s.outlineOpacity ?? 1) * globalA;
+            
+            if (fillA > 0 || (Math.abs(s.outlineWidth) > 0 && outA > 0)) {
+                this.renderQueue.push({
+                    type: "shape",
+                    transformData: trans,
+                    shapeOptions: {
+                        type: s.type || "rectangle",
+                        isFilled: s.isFilled ?? true,
+                        color: HexToVec4(s.color || "#FF0000"),
+                        fillOpacity: fillA,
+                        outlineWidth: s.outlineWidth || 0,
+                        outlineColor: HexToVec4(s.outlineColor || "#000000"),
+                        outlineOpacity: outA,
+                        cornerRadius: s.cornerRadius || 0,
+                        sides: s.sides || 3,
+                        flipX, flipY
+                    }
+                });
             }
+        }
 
             if (Config.ENGINE_MODE === 'editor' && comps.Collider && Array.isArray(comps.Collider.data)) {
                 const tRotRad = (globalT.rotation || 0) * (Math.PI / 180);
@@ -472,18 +479,25 @@ export default class WorldRenderer {
 
     _drawShape(opt, t, proj) {
         const shape = this.renderer.shape;
-        const fx = opt.flipX || false;
-        const fy = opt.flipY || false;
-        if (opt.type === "rectangle") {
-            shape.drawRect(t.x, t.y, t.width, t.height, opt.color, proj, t.rotation, t.scaleX, t.scaleY, t.pivotX, t.pivotY, opt.opacity, fx, fy);
-        } else if (opt.type === "rectStroke") {
-            shape.drawRectStroke(t.x, t.y, t.width, t.height, opt.color, opt.thickness, proj, t.rotation, t.scaleX, t.scaleY, t.pivotX, t.pivotY, opt.opacity, fx, fy);
-        } else if (opt.type === "circle") {
-            const radius = (t.width / 2) * ((Math.abs(t.scaleX) + Math.abs(t.scaleY)) / 2);
-            shape.drawCircle(t.x, t.y, radius, opt.color, 32, proj);
-        } else if (opt.type === "line") {
-            shape.drawLine(t.x, t.y, opt.x2, opt.y2, opt.color, opt.thickness, proj);
+        
+        if (opt.type === "rectStroke") {
+             shape.drawParametricShape(
+                "rectangle", t.x, t.y, t.width, t.height,
+                [0,0,0,0], opt.color, false, opt.thickness, 0, 4,
+                proj, t.rotation, t.scaleX, t.scaleY, t.pivotX, t.pivotY, opt.flipX, opt.flipY
+            );
+            return;
         }
+
+        const cFill = [...opt.color.slice(0, 3), opt.color[3] * opt.fillOpacity];
+        const cStroke = [...opt.outlineColor.slice(0, 3), opt.outlineColor[3] * opt.outlineOpacity];
+
+        shape.drawParametricShape(
+            opt.type, t.x, t.y, t.width, t.height,
+            cFill, cStroke, opt.isFilled, opt.outlineWidth,
+            opt.cornerRadius, opt.sides,
+            proj, t.rotation, t.scaleX, t.scaleY, t.pivotX, t.pivotY, opt.flipX, opt.flipY
+        );
     }
 
     _flushAll() {

@@ -1,0 +1,143 @@
+{
+  "title": "Hierarchy Scene",
+  "category": "Scene Editor",
+  "description": "Panduan komprehensif mengenai konsep fundamental Hierarchy Scene, sistem kontrol antarmuka, pengaturan lapisan (layering), serta manajemen struktural entitas di dalam mesin.",
+  "sections": [
+    {
+      "id": "penjelasan-umum",
+      "title": "1. Apa Itu Hierarchy Scene?",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "**Hierarchy Scene** merupakan representasi struktural berbasis visual yang menampilkan seluruh elemen atau objek yang sedang aktif di dalam sebuah ruang lingkup proyek. Setiap elemen yang diciptakan, baik berupa karakter, antarmuka, maupun efek visual, akan diregistrasikan sebagai **Entity** di dalam daftar hierarki ini."
+        },
+        {
+          "type": "image",
+          "url": "overall_hierarchy_scene.png",
+          "alt": "Tampilan Keseluruhan Hierarchy Scene",
+          "caption": "Representasi antarmuka Hierarchy Scene secara keseluruhan, menampilkan struktur susunan entitas dan lapisan."
+        },
+        {
+          "type": "alert",
+          "variant": "info",
+          "message": "Sistem Hierarchy didesain untuk menyederhanakan manajemen proyek yang kompleks. Sistem ini mendemonstrasikan hubungan ***Parent-Child*** secara transparan, di mana perubahan pada *Parent* (induk) akan secara otomatis memengaruhi seluruh *Child* (anak) yang bernaung di bawahnya."
+        }
+      ]
+    },
+    {
+      "id": "sistem-kontrol",
+      "title": "2. Sistem Kontrol Hierarchy",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "Pengendalian keseluruhan ruang lingkup environment ditangani melalui sistem navigasi pusat. Sistem ini memungkinkan transisi instan antar *scene* yang telah dibangun tanpa perlu memuat ulang seluruh aset proyek."
+        },
+        {
+          "type": "image",
+          "url": "scene_navigation.png",
+          "alt": "Navigasi Antar Scene",
+          "caption": "Menu dropdown utama untuk perpindahan antar scene yang sedang aktif."
+        },
+        {
+          "type": "text",
+          "content": "Untuk memanajemen fail *scene* secara terstruktur, sistem menyediakan sekumpulan fitur tingkat lanjut pada menu **Scene Action**:"
+        },
+        {
+          "type": "features",
+          "items": [
+            { "title": "New Scene", "desc": "Menciptakan ruang kanvas *scene* kosong baru beserta pengaturan standar.", "icon": "Plus", "color": "text-green-500" },
+            { "title": "Rename Scene", "desc": "Memodifikasi nama identitas *scene* untuk mempermudah kategorisasi.", "icon": "Edit", "color": "text-blue-500" },
+            { "title": "Duplicate Scene", "desc": "Mengkloning seluruh struktur elemen dan pengaturan *scene* ke fail baru secara identik.", "icon": "Copy", "color": "text-yellow-500" },
+            { "title": "Delete Scene", "desc": "Menghapus *scene* dan seluruh entitas di dalamnya secara permanen dari basis data proyek.", "icon": "Trash", "color": "text-red-500" }
+          ]
+        },
+        {
+          "type": "image",
+          "url": "scene_action.png",
+          "alt": "Scene Actions",
+          "caption": "Tampilan antarmuka menu Scene Action."
+        },
+        {
+          "type": "text",
+          "content": "Proses lokalisasi komponen spesifik didukung oleh integrasi mesin pencari pintar. Entitas dapat ditemukan secara cepat dengan mengetikkan kriteria berupa **Nama** ataupun **ID Registrasi** pada kolom yang tersedia, baik untuk elemen *World* maupun *User Interface*."
+        },
+        {
+          "type": "image",
+          "url": "search_entity.png",
+          "alt": "Pencarian Berdasarkan Nama atau ID",
+          "caption": "Kolom pencarian pintar untuk menemukan entity secara presisi."
+        }
+      ]
+    },
+    {
+      "id": "sistem-layering",
+      "title": "3. Sistem Layering & Manajemen Entity",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "Struktur *Hierarchy* diklasifikasikan secara tegas ke dalam dua segmentasi utama:"
+        },
+        {
+          "type": "steps",
+          "items": [
+            "**World**: Berfungsi sebagai wadah bagi entitas ruang interaktif fisik (karakter, lingkungan, rintangan).",
+            "**User Interface (UI)**: Dikhususkan untuk elemen visual dua dimensi yang bersifat *overlay*, seperti tombol, teks HUD, dan menu."
+          ]
+        },
+        {
+          "type": "text",
+          "content": "Penjelasan lebih mendalam mengenai arsitektur kedua segmen ini dapat ditinjau pada dokumentasi [Pengenalan World & User Interface](#link-penjelasan-world-ui)."
+        },
+        {
+          "type": "text",
+          "content": "Sistem algoritma *rendering* visual diproses menggunakan metode prioritas bertingkat. Urutan penumpukan elemen di layar dieksekusi secara absolut berdasarkan kaidah: **Layer > Z-Index > Order Index**."
+        },
+        {
+          "type": "steps",
+          "items": [
+            "**Layer**: Menentukan kelompok lapisan utama entitas.",
+            "**Z-Index**: Prioritas kedalaman yang direpresentasikan oleh nomor penanda pada label setiap entitas. Angka lebih besar akan dirender di depan.",
+            "**Order Index**: Urutan absolut di dalam satu *Layer* dan *Z-Index* yang sama. Perubahan letak *order index* diatur melalui metode *drag-and-drop*."
+          ]
+        },
+        {
+          "type": "alert",
+          "variant": "warning",
+          "message": "**Peringatan Batasan Navigasi**: Perpindahan *entity* melalui metode *drag-and-drop* hanya diizinkan di dalam segmentasi yang sama. Sebuah *entity* tidak dapat ditarik dari segmen **World** untuk dimasukkan ke segmen **User Interface**, begitu pula sebaliknya."
+        },
+        {
+          "type": "alert",
+          "variant": "info",
+          "message": "**Klasifikasi Visual Entity**: Terdapat pembeda visual untuk jenis entitas. **Instansi dari Prefabs** selalu diindikasikan dengan label berwarna *Biru*, sedangkan **Entity Murni** menggunakan teks standar."
+        },
+        {
+          "type": "text",
+          "content": "Untuk memanipulasi struktur hierarki dengan cepat, interaksi klik kanan (*right-click*) akan memunculkan menu konteks mengambang (*floating menu*) yang opsinya menyesuaikan dengan target objek (Layer atau Entity)."
+        },
+        {
+          "type": "image",
+          "url": "layer_context.png",
+          "alt": "Floating Menu Pada Layer",
+          "caption": "Menu Konteks Layer: Menyediakan opsi untuk menambah entity baru ke layer terpilih, Duplicate, Copy Layer, Cut Layer, Paste, Rename Layer, Change Z-Index, hingga Delete Layer."
+        },
+        {
+          "type": "image",
+          "url": "entity_context.png",
+          "alt": "Floating Menu Pada Entity",
+          "caption": "Menu Konteks Entity: Menyediakan opsi penciptaan entity baru (otomatis menjadi child dari entity terpilih), Duplicate, Copy, Cut, Paste, Use as Prefab, Rename Entity, dan Delete Entity."
+        },
+        {
+          "type": "text",
+          "content": "Guna mencegah modifikasi yang tidak disengaja selama proses penyuntingan tingkat lanjut, sistem menyediakan *toggle* utilitas instan pada *header* setiap *entity* maupun *layer*:"
+        },
+        {
+          "type": "features",
+          "items": [
+            { "title": "Lock", "desc": "Membekukan komponen secara total agar tidak dapat diseleksi, digeser, atau dimodifikasi dari area *viewport* utama.", "icon": "Lock", "color": "text-gray-400" },
+            { "title": "Hide", "desc": "Menonaktifkan proses *rendering* dan visibilitas objek sementara waktu pada area kerja, tanpa menghapus eksistensinya dari proyek.", "icon": "EyeOff", "color": "text-indigo-400" }
+          ]
+        }
+      ]
+    }
+  ]
+}

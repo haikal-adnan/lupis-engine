@@ -125,7 +125,6 @@ import BaseInput from '@/commons/components/inputs/BaseInput.vue';
 const props = defineProps({ node: Object });
 const store = useScriptStore();
 
-// Dukungan untuk multiple formats
 const formats = computed(() => {
   if (props.node.data?.formats) return props.node.data.formats;
   if (props.node.data?.format) return [props.node.data.format];
@@ -144,15 +143,11 @@ const updateValue = (inputId, newValue) => {
   });
 };
 
-// Fungsi inti untuk sinkronisasi format dengan port input/output
-// Ganti fungsi syncNodeData di <script setup> Anda dengan versi ini:
-
 const syncNodeData = (newFormats) => {
   const currentInputs = [...(props.node.inputs || [])];
   const newOutputs = [];
   const foundVars = new Set();
   
-  // 1. Kumpulkan semua variabel menggunakan matchAll (Lebih aman dari regex.exec loop)
   newFormats.forEach((fmt, index) => {
     const matches = [...fmt.matchAll(/{([^{}]+)}/g)];
     
@@ -173,14 +168,13 @@ const syncNodeData = (newFormats) => {
     });
   });
 
-  // 2. Pertahankan port lama, buat port baru untuk variabel yang belum ada
   const newInputs = currentInputs.filter(inp => inp); 
   
   foundVars.forEach(varName => {
     const exists = newInputs.some(p => p.label === varName);
     if (!exists) {
       newInputs.push({
-        _id: `var_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`, // Dijamin unik
+        _id: `var_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`, 
         label: varName,
         dataType: 'any', 
         color: '#ffffff'
@@ -188,7 +182,6 @@ const syncNodeData = (newFormats) => {
     }
   });
 
-  // 3. Terapkan ke global state
   store.updateNodeInActive(props.node._id, {
     data: { ...props.node.data, formats: newFormats },
     inputs: newInputs,
@@ -213,7 +206,6 @@ const removeFormat = (index) => {
   syncNodeData(newFormats);
 };
 
-// Fungsi Input Manual (Tetap ada agar user bisa menamai variabel pelan-pelan)
 const addVariable = () => {
   const currentInputs = [...(props.node.inputs || [])];
   currentInputs.push({

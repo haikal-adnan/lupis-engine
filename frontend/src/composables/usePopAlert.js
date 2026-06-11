@@ -4,7 +4,7 @@ const popState = ref({
   isOpen: false,
   title: '',
   message: '',
-  type: 'warning', // 'info' | 'success' | 'warning' | 'error'
+  type: 'warning',
 });
 
 let timer = null;

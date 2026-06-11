@@ -15,7 +15,6 @@ export function useInspectorLogic() {
   const editorStore = useEditorStore();
   const { showPop } = usePopAlert();
 
-  // Helper untuk mendapatkan nama komponen transform secara dinamis
   const getTransformCompName = (entity) => {
     if (!entity) return 'Transform';
     return entity.components?.UITransform ? 'UITransform' : 'Transform';
@@ -459,7 +458,6 @@ export function useInspectorLogic() {
     const compName = getTransformCompName(selectedEntity.value);
     const updates = { x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1, pivotX: 0.5, pivotY: 0.5, flipX: false, flipY: false };
     
-    // Opsional: Jika di UITransform ingin me-reset anchor juga, kita bisa tambahkan
     if (compName === 'UITransform') {
       updates.anchorX = 0.5;
       updates.anchorY = 0.5;

@@ -56,7 +56,6 @@ export const BlueprintPhysics = {
             { value: 'gravityScale', label: 'Gravity Scale', type: 'number', color: '#40C4FF' },
             { value: 'drag', label: 'Drag', type: 'number', color: '#FF8A65' },
             { value: 'enabled', label: 'Enabled?', type: 'boolean', color: '#ffffff' },
-            // --- TAMBAHAN BARU ---
             { value: 'isFrozen', label: 'Is Frozen?', type: 'boolean', color: '#D50000' }
           ]
         },

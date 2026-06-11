@@ -1,0 +1,36 @@
+{
+  "title": "Floating Toolbar",
+  "category": "Interface",
+  "description": "Halaman dokumentasi teknis mengenai **Floating Toolbar**, sebuah panel akses cepat yang mengambang pada antarmuka *canvas* utama. Panel ini dirancang untuk mempermudah pemantauan matriks spasial, pengaturan presisi visual, serta eksekusi pengujian logika proyek secara instan.",
+  "sections": [
+    {
+      "id": "panduan-floating-toolbar",
+      "title": "Panduan Floating Toolbar",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "Keberadaan Floating Toolbar berfungsi untuk menaungi instrumen utilitas ruang kerja tanpa memotong visibilitas area secara signifikan. Fokus utamanya mencakup kalibrasi ruang, pemantauan informasi posisional kursor secara *real-time*, hingga proses inisialisasi pengujian proyek."
+        },
+        {
+          "type": "table",
+          "headers": ["Fitur", "Deskripsi Sistem"],
+          "rows": [
+            ["Indikator Koordinat (X, Y)", "Sistem pelacakan posisi *real-time* yang menerjemahkan letak kursor pada *canvas scene* menjadi nilai matriks sumbu **X** dan **Y** absolut."],
+            ["Snap To Grid", "Fungsi pengikat (*snapping*) ruang yang memaksa setiap pergerakan maupun penempatan *Entity* agar sejajar secara otomatis dengan titik perpotongan garis *grid* terdekat."],
+            ["Show Grid", "Modul *toggle* untuk melakukan proses *render* lapisan matriks garis bantu (*grid*) pada area kerja sebagai referensi skala, proporsi, dan penempatan jarak visual."],
+            ["Preview Game", "Instrumen utama untuk menjalankan proses kompilasi *scene* aktif dan menginisialisasi sesi pratinjau logika proyek."]
+          ]
+        },
+        {
+          "type": "text",
+          "content": "Sebagai catatan tambahan, fitur **Preview Game** memegang peranan krusial dalam siklus pengembangan iteratif. Pemicuan fitur ini akan secara otomatis memerintahkan *engine* untuk mengompilasi seluruh *Entity*, skrip visual, dan properti yang ada pada *scene* aktif untuk divalidasi kinerjanya. Penjelasan sistematis mengenai modul eksekusi ini dapat ditinjau lebih lanjut pada referensi khusus [Preview Game](#preview-game)."
+        },
+        {
+          "type": "alert",
+          "variant": "tip",
+          "message": "Sangat direkomendasikan untuk mengaktifkan kombinasi **Show Grid** dan **Snap To Grid** saat menyusun objek berbasis ubin (*Tilemap*) guna memastikan presisi matriks dan menghindari tumpang-tindih batas *sprite*."
+        }
+      ]
+    }
+  ]
+}

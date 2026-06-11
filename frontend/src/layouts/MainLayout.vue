@@ -9,14 +9,14 @@ import AuthPanel from '@/modules/auth/AuthPanel.vue';
 
 import { useAuthStore } from '@/stores/useAuthStore.js';
 import { useAuthActions } from '@/stores/scene/useAuthActions.js'; 
-import { useAvatarUrl } from '@/composables/useAvatarUrl.js'; // <-- Tambahkan ini
+import { useAvatarUrl } from '@/composables/useAvatarUrl.js';
 
 const route = useRoute();
 const router = useRouter();
 
 const authStore = useAuthStore();
 const authActions = useAuthActions();
-const { getAvatarUrl } = useAvatarUrl(); // <-- Ekstrak fungsi
+const { getAvatarUrl } = useAvatarUrl(); 
 
 const profileDropdown = ref(null);
 const isMobileMenuOpen = ref(false);

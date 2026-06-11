@@ -1,21 +1,29 @@
 <template>
-  <label class="flex items-center gap-2 cursor-pointer group select-none py-1">
-    <div class="relative flex items-center">
+  <label 
+    class="flex items-center gap-2 cursor-pointer group select-none py-1"
+    :class="{ 'opacity-50 cursor-not-allowed': disabled }"
+  >
+    <div class="relative flex items-center justify-center">
       <input 
         type="checkbox" 
         v-model="model"
+        :disabled="disabled"
         class="
-          peer appearance-none w-3.5 h-3.5 rounded-[3px] border border-input bg-background 
-          checked:bg-primary checked:border-primary focus:ring-0 focus:ring-offset-0 transition-all
-          disabled:cursor-not-allowed disabled:opacity-50
+          peer appearance-none rounded-[3px] border border-input bg-background 
+          checked:bg-primary checked:border-primary 
+          focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/50
+          group-hover:border-primary/50 transition-all duration-200
+          disabled:cursor-not-allowed disabled:hover:border-input
         "
+        :class="[boxSize]"
       />
       <svg 
-        class="absolute w-2.5 h-2.5 text-white pointer-events-none opacity-0 peer-checked:opacity-100 left-0.5 top-0.5 transition-opacity duration-200" 
+        class="absolute text-primary-foreground pointer-events-none opacity-0 peer-checked:opacity-100 transition-opacity duration-200" 
+        :class="[iconSize]"
         viewBox="0 0 24 24" 
         fill="none" 
         stroke="currentColor" 
-        stroke-width="4" 
+        stroke-width="3.5" 
         stroke-linecap="round" 
         stroke-linejoin="round"
       >
@@ -25,7 +33,8 @@
     
     <span 
       v-if="label" 
-      class="text-[10px] text-muted-foreground group-hover:text-foreground transition-colors"
+      class="font-medium text-muted-foreground group-hover:text-foreground transition-colors"
+      :class="[textSize]"
     >
       {{ label }}
     </span>
@@ -34,7 +43,11 @@
 
 <script setup>
 defineProps({
-  label: { type: String, default: '' }
+  label: { type: String, default: '' },
+  disabled: { type: Boolean, default: false },
+  boxSize: { type: String, default: 'w-3.5 h-3.5' },
+  iconSize: { type: String, default: 'w-2.5 h-2.5' },
+  textSize: { type: String, default: 'text-[10px]' }
 })
 
 const model = defineModel({ type: Boolean })

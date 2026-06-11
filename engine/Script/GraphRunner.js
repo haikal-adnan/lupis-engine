@@ -236,7 +236,6 @@ export default class GraphRunner {
         connectedEdges.forEach(edge => {
             const targetNode = this.nodeMap.get(edge.target);
             if (targetNode) {
-                // PERBAIKAN: Kirimkan edge.targetHandle (nama port input) ke fungsi eksekusi
                 this._executeNodeLogic(targetNode, edge.targetHandle);
             }
         });
@@ -247,7 +246,6 @@ export default class GraphRunner {
             const processor = NodeRegistry[node.type] || NodeRegistry['default'];
             
             if (processor && typeof processor.execute === 'function') {
-                // PERBAIKAN: Teruskan inputKey ke dalam fungsi execute node
                 processor.execute(this, node, inputKey); 
             } else {
                 this.executeFlow(node._id, 'out');

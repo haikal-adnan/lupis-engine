@@ -143,34 +143,27 @@ export function useHierarchyMenu(handlers) {
 
         items.push({ separator: true });
         
-        // --- LOGIC PREFAB BARU ---
         const selectedIds = sceneStore.selectedEntityIds || [];
         const isMultiSelect = selectedIds.length > 1;
         const isAlreadyPrefab = !!node.prefabId;
         const isChildOfPrefab = isDescendantOfPrefab(node._id);
         
-        // Default disable jika sudah jadi prefab atau child dari prefab
         let disablePrefabAction = isAlreadyPrefab || isChildOfPrefab;
 
         if (isMultiSelect) {
           const primaryId = selectedIds[0];
           const entities = sceneStore.activeScene?.entities || [];
           
-          // Cek apakah entity di index 0 (primary) memiliki child
           const hasChild = entities.some(e => e.parentId === primaryId);
           
-          // Jika tidak punya child, berarti user menyeleksi multiple entity biasa secara manual
           if (!hasChild) {
             disablePrefabAction = true;
           }
           
-          // Opsional tapi disarankan: Pastikan node yang diklik kanan adalah si parent (index 0)
-          // Mencegah user klik kanan di salah satu child-nya lalu menekan 'Use as Prefab'
           if (node._id !== primaryId) {
             disablePrefabAction = true;
           }
         }
-        // -------------------------
 
         items.push({ 
             label: 'Use as Prefab', 

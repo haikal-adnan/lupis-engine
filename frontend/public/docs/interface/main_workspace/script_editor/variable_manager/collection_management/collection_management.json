@@ -1,0 +1,169 @@
+{
+  "title": "Dokumentasi Collection Management",
+  "category": "Panduan Pengguna",
+  "description": "Halaman referensi teknis mengenai pengelolaan struktur data kompleks tingkat lanjut, termasuk manipulasi tipe data Map dan List di dalam arsitektur memori Lupis Engine.",
+  "sections": [
+    {
+      "id": "pengenalan-collection",
+      "title": "Pengenalan Struktur Collection",
+      "blocks": [
+        {
+          "type": "image",
+          "url": "collection_overall.png",
+          "alt": "Antarmuka Collection Management",
+          "caption": "Tampilan utama panel Collection Management untuk pengelolaan data kompleks."
+        },
+        {
+          "type": "text",
+          "content": "Dalam komputasi game engine, **Collection** merujuk pada struktur data tingkat lanjut yang dirancang untuk menyimpan, mengelola, dan mengorganisasi kumpulan nilai secara terstruktur. Berbeda dengan variabel primitif yang hanya menyimpan nilai tunggal, koleksi memungkinkan penyimpanan banyak data sekaligus melalui format **Map** (pasangan kunci-nilai asosiatif) atau **List** (array berindeks berurutan)."
+        },
+        {
+          "type": "text",
+          "content": "Untuk mengakses antarmuka manajemen ini, pembuatan variabel baru pada Variable Manager perlu dilakukan dengan mengatur tipe datanya menjadi **Map** atau **List**, yang dilanjutkan dengan penekanan tombol **Edit** pada parameter nilai variabel tersebut."
+        }
+      ]
+    },
+    {
+      "id": "navigasi-breadcrumb",
+      "title": "Sistem Navigasi Breadcrumb",
+      "blocks": [
+        {
+          "type": "image",
+          "url": "collection_crumb.png",
+          "alt": "Navigasi Breadcrumb Collection",
+          "caption": "Indikator hierarki jalur untuk bernavigasi antar tingkat struktur data."
+        },
+        {
+          "type": "text",
+          "content": "Mengingat struktur koleksi dapat memiliki tingkat kedalaman hierarki yang tinggi, panel ini dilengkapi dengan sistem navigasi **Breadcrumb** pada bagian atas antarmuka. Fitur ini melacak rekam jejak (*path*) dari lokasi elemen yang sedang diinspeksi."
+        },
+        {
+          "type": "text",
+          "content": "Apabila sistem sedang berfokus pada pengeditan elemen anak (*child node*), penekanan pada teks di dalam baris breadcrumb akan langsung mengembalikan sudut pandang antarmuka ke elemen induknya (*parent node*) tanpa kehilangan konteks struktur data secara keseluruhan."
+        }
+      ]
+    },
+    {
+      "id": "editor-json",
+      "title": "Manipulasi Data via JSON Editor",
+      "blocks": [
+        {
+          "type": "image",
+          "url": "collection_icon_json.png",
+          "alt": "Akses Editor JSON",
+          "caption": "Tombol akses cepat untuk beralih ke mode pengeditan data menggunakan format JSON."
+        },
+        {
+          "type": "text",
+          "content": "Sebagai alternatif dari antarmuka visual, sistem menyediakan akses modifikasi data secara langsung menggunakan format teks **JSON** (*JavaScript Object Notation*). Penggunaan format ini memfasilitasi migrasi data massal atau penyalinan konfigurasi dari sumber eksternal. Setiap modifikasi sintaks yang ditulis akan langsung dikompilasi dan diterjemahkan secara otomatis oleh sistem menjadi struktur variabel koleksi (Map/List) pada saat pengetikan."
+        },
+        {
+          "type": "alert",
+          "variant": "warning",
+          "message": "Fitur sinkronisasi JSON ini masih berada dalam tahap **Eksperimental**. Kesalahan penulisan sintaks (seperti hilangnya tanda koma atau kurung kurawal) dapat menyebabkan anomali penerjemahan tipe data. Validasi format JSON sangat disarankan sebelum diaplikasikan."
+        },
+        {
+          "type": "image",
+          "url": "collection_json.png",
+          "alt": "Integrasi Editor JSON",
+          "caption": "Kolom modifikasi skema data menggunakan sintaks JavaScript Object Notation murni."
+        }
+      ]
+    },
+    {
+      "id": "struktur-kolom-dan-tooltip",
+      "title": "Struktur Kolom dan Menu Konteks (Tooltip)",
+      "blocks": [
+        {
+          "type": "image",
+          "url": "collection_context.png",
+          "alt": "Detail Kolom dan Menu Aksi",
+          "caption": "Parameter pembentuk koleksi beserta opsi tindakan pada masing-masing entri."
+        },
+        {
+          "type": "text",
+          "content": "Setiap entri data di dalam koleksi direpresentasikan melalui tiga atribut kolom fungsional. Pengubahan nilai pada kolom ini akan langsung merefleksikan alokasi memori pada sistem node."
+        },
+        {
+          "type": "table",
+          "headers": ["Atribut Kolom", "Karakteristik Tipe Data", "Fungsi Teknis"],
+          "rows": [
+            ["Key", "String / Integer (Index)", "Pengidentifikasi unik untuk mengambil data. Pada tipe Map, parameter ini berupa teks (kunci), sedangkan pada tipe List direpresentasikan sebagai nomor indeks berurutan."],
+            ["Type", "Primitive & Collection", "Pendefinisian ulang tipe data untuk nilai yang spesifik pada entri tersebut. Memungkinkan penyimpanan tipe data heterogen dalam satu koleksi."],
+            ["Value", "Dynamic", "Kandungan nilai aktual yang dialokasikan. Kolom input akan beradaptasi secara otomatis mengikuti tipe data yang ditetapkan."]
+          ]
+        },
+        {
+          "type": "text",
+          "content": "Selain kolom parameter, setiap baris entri memiliki menu konteks (*tooltip*) di bagian ujung, yang menyediakan kumpulan eksekusi perintah instan berikut:"
+        },
+        {
+          "type": "table",
+          "headers": ["Aksi Tooltip", "Proses Eksekusi Sistem"],
+          "rows": [
+            ["Copy Path", "Menyalin jalur alamat hierarki (contoh: `playerData.inventory[0].itemID`) ke dalam *clipboard* sistem untuk keperluan referensi node."],
+            ["Duplicate", "Melakukan kloning secara dalam (*deep copy*) terhadap entri terpilih, beserta seluruh elemen bersarang di dalamnya, menjadi indeks atau kunci baru."],
+            ["Delete", "Menghapus entri secara permanen dari blok memori koleksi. Pada tipe List, sistem akan menghitung ulang indeks entri di bawahnya (re-indexing)."]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "add-new-key-value",
+      "title": "Inisialisasi Key-Value Baru",
+      "blocks": [
+        {
+          "type": "image",
+          "url": "collection_add.png",
+          "alt": "Menambahkan Entri Koleksi",
+          "caption": "Mekanisme perluasan kapasitas ruang struktur data secara dinamis."
+        },
+        {
+          "type": "text",
+          "content": "Peningkatan kapasitas struktur koleksi dilakukan melalui fungsionalitas **Add New Key-Value**. Ketika dieksekusi, sistem akan menyuntikkan satu elemen kosong baru di posisi paling bawah dari hierarki yang sedang aktif. Selanjutnya, penentuan nama *Key* (apabila berada di dalam Map) serta *Type* wajib dilakukan sebelum proses inisialisasi *Value*."
+        }
+      ]
+    },
+    {
+      "id": "nested-collection",
+      "title": "Struktur Data Bersarang (Nested Collection)",
+      "blocks": [
+        {
+          "type": "image",
+          "url": "collection_many.png",
+          "alt": "Nested Collection",
+          "caption": "Ilustrasi pembentukan hierarki Map di dalam List atau sebaliknya."
+        },
+        {
+          "type": "text",
+          "content": "Sistem memori internal engine telah dirancang untuk mendukung pembuatan **Struktur Data Bersarang** (*Nested Collections*). Hal ini mengindikasikan bahwa suatu nilai (*Value*) dari koleksi dapat diatur tipenya menjadi Map atau List lain. Tidak terdapat batasan keras (*hard limit*) mengenai tingkat kedalaman pohon struktur data, sehingga memungkinkan pemodelan data kompleks seperti sistem inventaris, pohon dialog, atau status RPG statis."
+        },
+        {
+          "type": "alert",
+          "variant": "tip",
+          "message": "Meskipun tidak ada batasan kedalaman nesting, perancangan hierarki data secara dangkal (*shallow/flat*) sangat disarankan guna meminimalisir penurunan performa iterasi (traversal) saat *runtime* dan menjaga keterbacaan alur logika."
+        }
+      ]
+    },
+    {
+      "id": "save-and-cancel",
+      "title": "Konfirmasi Perubahan (Save & Cancel)",
+      "blocks": [
+        {
+          "type": "image",
+          "url": "collection_finish.png",
+          "alt": "Tombol Konfirmasi Collection",
+          "caption": "Tindakan finalisasi modifikasi struktur data koleksi."
+        },
+        {
+          "type": "text",
+          "content": "Seluruh manipulasi data yang terjadi di dalam panel Collection Management ditahan di dalam memori sementara (*buffer*). Untuk mengaplikasikan semua rekayasa struktur secara permanen kepada variabel induk, penekanan tombol **Save Changes** bersifat wajib. Tindakan ini akan mengkompilasi struktur dan menutup antarmuka editor."
+        },
+        {
+          "type": "text",
+          "content": "Sebaliknya, pengaktifan fungsi **Cancel** akan membatalkan seluruh rekayasa yang belum tersimpan dan mengosongkan memori sementara, sehingga wujud variabel akan kembali pada kondisi aslinya sesaat sebelum panel editor dibuka."
+        }
+      ]
+    }
+  ]
+}

@@ -151,8 +151,8 @@ import PropertySection from "@ui/display/PropertySection.vue";
 import PropertyRow from "@ui/display/PropertyRow.vue";
 import BaseThumbnail from "@/commons/components/display/BaseThumbnail.vue"; 
 import BaseNumber from "@/commons/components/inputs/BaseNumber.vue";
-import BaseSelect from "@/commons/components/inputs/BaseSelect.vue"; // TAMBAHAN
-import BaseButton from "@/commons/components/buttons/BaseButton.vue"; // TAMBAHAN
+import BaseSelect from "@/commons/components/inputs/BaseSelect.vue"; 
+import BaseButton from "@/commons/components/buttons/BaseButton.vue"; 
 
 const { 
   selectedEntity, 
@@ -191,11 +191,9 @@ const sourceY = bindComponentProp('SpriteRenderer', 'sourceY');
 const sourceW = bindComponentProp('SpriteRenderer', 'sourceWidth');
 const sourceH = bindComponentProp('SpriteRenderer', 'sourceHeight');
 
-// --- TAMBAHAN: BINDING RENDERING ---
 const filterMode = bindComponentProp('SpriteRenderer', 'filterMode');
 const useSDF = bindComponentProp('SpriteRenderer', 'useSDF');
 
-// Safe computed setter agar tidak crash jika entitas lawas belum punya filterMode
 const safeFilterMode = computed({
   get: () => filterMode.value || 'pixelated',
   set: (val) => filterMode.value = val
@@ -205,9 +203,7 @@ const filterOptions = [
   { label: 'Pixelated', value: 'pixelated' },
   { label: 'Smooth', value: 'smooth' }
 ];
-// -----------------------------------
 
-// Bind kedua jenis Transform
 const transformW = bindComponentProp('Transform', 'width');
 const transformH = bindComponentProp('Transform', 'height');
 

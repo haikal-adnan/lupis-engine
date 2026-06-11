@@ -26,7 +26,7 @@ export const BlueprintLayer = {
             { value: 'active', label: 'Active', type: 'boolean', color: '#4CAF50' },
             { value: 'locked', label: 'Locked', type: 'boolean', color: '#F44336' },
             { value: 'zIndex', label: 'Z-Index', type: 'number', color: '#00BCD4' },
-            { value: 'opacity', label: 'Opacity (%)', type: 'number', color: '#00BCD4' }, // <-- Tambahan Opacity
+            { value: 'opacity', label: 'Opacity (%)', type: 'number', color: '#00BCD4' },
           ]
         },
         inputs: [{ _id: 'target_in', label: 'Layer ID (Self)', dataType: 'string', color: '#ffffff' }], 

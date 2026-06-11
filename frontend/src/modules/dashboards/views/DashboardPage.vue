@@ -109,7 +109,6 @@ const handleCreateProject = async (projectData) => {
   }
 };
 
-// Fungsi baru untuk menentukan warna badge status
 const getStatusStyle = (status) => {
   switch(status) {
     case 'PUBLISHED': 

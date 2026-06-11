@@ -1,4 +1,3 @@
-// src/composables/useExploreLogic.js
 import { ref, computed, onMounted } from 'vue';
 import { useBackend } from '@/services/api/useBackend.js';
 

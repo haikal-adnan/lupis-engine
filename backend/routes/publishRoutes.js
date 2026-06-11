@@ -1,4 +1,3 @@
-// routes/publishRoutes.js
 import express from "express";
 import fs from "fs/promises";
 import path from "path";
@@ -6,7 +5,7 @@ import multer from "multer";
 import { fileURLToPath } from "url";
 import { GenerateUUID } from "../utils/GenerateUUID.js";
 import { pool } from "../config/postgres.js";
-import fsSync from "fs"; // Kita butuh fs sync untuk ini
+import fsSync from "fs"; 
 
 import Project from "../models/nosql/Project.js";
 import Scene from "../models/nosql/Scene.js";
@@ -37,7 +36,7 @@ if (!fsSync.existsSync(STORAGE_THUMBNAILS)) {
 
 const uploadThumbnail = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024 }, // Maksimal 5MB
+  limits: { fileSize: 5 * 1024 * 1024 }, 
   fileFilter: (req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase();
     if (['.png', '.jpg', '.jpeg', '.webp'].includes(ext)) {
@@ -58,14 +57,11 @@ router.post('/upload-thumbnail', async (req, res) => {
 
     try {
       const ext = path.extname(req.file.originalname).toLowerCase();
-      // Gunakan UUID acak agar tidak bentrok
       const fileName = `thumb_${GenerateUUID()}${ext}`; 
       const filePath = path.join(STORAGE_THUMBNAILS, fileName);
 
-      // Tulis file ke storage fisik
       await fs.writeFile(filePath, req.file.buffer);
 
-      // Kembalikan nama filenya
       res.json({ success: true, data: { thumbnailUrl: fileName } });
     } catch (error) {
       console.error('[Upload Thumbnail Error]', error);
@@ -77,7 +73,6 @@ router.post('/upload-thumbnail', async (req, res) => {
 router.get("/project/:projectId", async (req, res) => {
   try {
     const game = await Published.findOne({ projectId: req.params.projectId }).lean();
-    // Jika tidak ketemu, kembalikan null (berarti mode Create)
     res.json({ success: true, data: game || null });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -127,7 +122,6 @@ router.post("/create", async (req, res) => {
 
     await Project.findByIdAndUpdate(projectId, { 
       status: 'PUBLISHED',
-      // Opsional: Simpan slug di project untuk memudahkan context menu membuka URL
       $set: { "settings.publishedSlug": slug } 
     });
 
@@ -219,7 +213,7 @@ router.get("/", async (req, res) => {
     const creatorsMap = Object.fromEntries(
       creatorsResult.rows.map(row => [
         row.id, 
-        { name: row.name, avatar: row.avatar_url, username: row.username } // Tambahkan username di sini
+        { name: row.name, avatar: row.avatar_url, username: row.username } 
       ])
     );
 
@@ -240,7 +234,6 @@ router.get("/slug/:slug", async (req, res) => {
     const game = await Published.findOne({ slug: req.params.slug }).lean();
     if (!game) return res.status(404).json({ success: false, error: "Game not found" });
 
-    // PERBAIKAN: Tambahkan u.username di bagian SELECT
     const query = `
       SELECT 
         u.id, 
@@ -258,7 +251,7 @@ router.get("/slug/:slug", async (req, res) => {
       ? { 
           name: creatorResult.rows[0].name, 
           avatar: creatorResult.rows[0].avatar_url,
-          username: creatorResult.rows[0].username // Sekarang nilainya ada
+          username: creatorResult.rows[0].username 
         }
       : { name: "Unknown", avatar: null, username: null };
 

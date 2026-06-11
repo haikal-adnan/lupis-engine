@@ -100,7 +100,6 @@ export const NodeHelper = {
 
             const speed = Number(runner.getInputValue(node, 'speed') ?? node.data?.values?.speed ?? 50);
 
-            // Fungsi untuk membersihkan timer
             const stopTimer = () => {
                 if (node._typewriterTimer) {
                     clearTimeout(node._typewriterTimer);
@@ -108,37 +107,30 @@ export const NodeHelper = {
                 }
             };
 
-            // --- LOGIKA SKIP ---
             if (inputKey === 'skip_in') {
-                // Hanya skip jika sedang dalam proses mengetik
                 if (node._isTyping && node._currentTargetText) {
                     stopTimer();
-                    comp.value = node._currentTargetText; // Langsung set ke teks penuh
-                    node._isTyping = false;               // Tandai sudah selesai
-                    node._lastFinishedText = node._currentTargetText; // Simpan cache selesai
+                    comp.value = node._currentTargetText; 
+                    node._isTyping = false;
+                    node._lastFinishedText = node._currentTargetText;
                     runner.executeFlow(node._id, 'on_complete');
                 }
                 return;
             }
 
-            // --- LOGIKA START (exec_in) ---
-            // 1. Ambil input teks baru
             const inputText = runner.getInputValue(node, 'text_in') ?? node.data?.values?.text_in;
             const targetText = (inputText !== undefined && inputText !== null && inputText !== '') 
                 ? String(inputText) 
                 : (comp.value || "");
 
-            // 2. GUARD: Jika sedang mengetik teks yang SAMA, jangan restart!
             if (node._isTyping && node._currentTargetText === targetText) {
                 return;
             }
 
-            // 3. GUARD: Jika teks sudah selesai diketik dan tidak ada perubahan teks, jangan restart!
             if (!node._isTyping && node._lastFinishedText === targetText) {
                 return;
             }
 
-            // 4. MULAI ANIMASI BARU
             stopTimer();
             node._isTyping = true;
             node._currentTargetText = targetText;
@@ -148,7 +140,6 @@ export const NodeHelper = {
             let currentIndex = 0;
 
             const typeChar = () => {
-                // Pastikan state masih mengetik (tidak di-skip di tengah jalan)
                 if (!node._isTyping) return;
 
                 if (currentIndex < node._currentTargetText.length) {
@@ -158,7 +149,6 @@ export const NodeHelper = {
                     runner.executeFlow(node._id, 'exec_out');
                     node._typewriterTimer = setTimeout(typeChar, speed);
                 } else {
-                    // Selesai secara normal
                     node._isTyping = false;
                     node._lastFinishedText = node._currentTargetText;
                     node._typewriterTimer = null;
@@ -188,16 +178,13 @@ export const NodeHelper = {
                 return;
             }
 
-            // Ambil ID Unik untuk membedakan state antar entity
             const entityId = entity.id || entity._id;
 
-            // Ambil parameter nilai
             const scaleNormal = Number(runner.getInputValue(node, 'scaleNormal') ?? node.data?.values?.scaleNormal ?? 1.0);
             const scaleHover = Number(runner.getInputValue(node, 'scaleHover') ?? node.data?.values?.scaleHover ?? 1.1);
             const scalePressed = Number(runner.getInputValue(node, 'scalePressed') ?? node.data?.values?.scalePressed ?? 0.9);
             const lerpSpeed = Number(runner.getInputValue(node, 'lerpSpeed') ?? node.data?.values?.lerpSpeed ?? 0.2);
             
-            // Ambil opsi penggunaan raycast (default true)
             const useRaycast = runner.getInputValue(node, 'use_raycast') ?? true;
 
             const pointer = runner.game.input.getPointer();
@@ -205,16 +192,13 @@ export const NodeHelper = {
             
             let isHovering = false;
 
-            // 1. DETEKSI HOVER DENGAN RAYCAST / DIRECT HIT-TEST
             if (useRaycast) {
-                // --- METODE 1: RAYCAST (Menghormati Z-Index & Occlusion) ---
                 const topEntity = PointerRaycast.getTopEntityUnderPointer(runner.game);
                 
                 if (topEntity) {
                     if (topEntity.id === entityId || topEntity._id === entityId) {
                         isHovering = true;
                     } else {
-                        // Cek apakah entity yang terdeteksi adalah child dari tombol ini
                         let currentParentId = topEntity.parentId;
                         while (currentParentId) {
                             if (currentParentId === entityId) {
@@ -229,7 +213,6 @@ export const NodeHelper = {
                     }
                 }
             } else {
-                // --- METODE 2: DIRECT HIT-TEST (Mengabaikan Z-Index & Occlusion) ---
                 const canvas = runner.game.renderer?.canvas || { width: 1920, height: 1080 };
                 const uiSettings = runner.game.world.settings?.ui || { width: 1920, height: 1080 };
                 const camera = runner.game.camera;
@@ -261,7 +244,6 @@ export const NodeHelper = {
                 isHovering = PointerRaycast._checkIntersection(entity, globalT, drawX, drawY, targetPointer.x, targetPointer.y);
             }
 
-            // 2. STATE MANAGER & LERP
             if (!node._btnStates) {
                 node._btnStates = {};
             }
@@ -285,20 +267,16 @@ export const NodeHelper = {
             t.scaleX = state.currentScale;
             t.scaleY = state.currentScale;
 
-            // 3. DETEKSI "ON CLICK"
             let clicked = false;
-            // Syarat klik: Kursor di atas tombol, kursor baru saja dilepas (mouse up), dan sebelumnya ditahan (mouse down)
             if (isHovering && !isPointerDown && state.wasDown) {
                 clicked = true;
             }
 
             state.wasDown = isPointerDown;
 
-            // 4. EKSEKUSI ALUR SELANJUTNYA
             runner.executeFlow(node._id, 'exec_out');
             
             if (clicked) {
-                // Simpan scriptId saat tombol ini diklik agar bisa ditarik oleh getOutput
                 node._clickedScriptId = entity.scriptId;
                 runner.executeFlow(node._id, 'on_click');
             }

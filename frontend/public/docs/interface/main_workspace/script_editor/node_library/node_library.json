@@ -1,0 +1,107 @@
+{
+  "title": "Dokumentasi Node Library",
+  "category": "Panduan Pengguna",
+  "description": "Halaman referensi teknis mengenai pencarian, akses, dan penempatan blok logika melalui sistem Node Library di dalam ekosistem Lupis Engine.",
+  "sections": [
+    {
+      "id": "pengenalan-node-library",
+      "title": "Pengenalan Node Library (Blueprint)",
+      "blocks": [
+        {
+          "type": "image",
+          "url": "library_overall.png",
+          "alt": "Antarmuka Node Library",
+          "caption": "Tampilan utama panel Node Library yang berisi daftar cetak biru logika (Blueprint)."
+        },
+        {
+          "type": "text",
+          "content": "Dalam arsitektur visual scripting Lupis Engine, **Node Library** merupakan pusat penyimpanan dari seluruh cetak biru logika atau **Blueprint**. Setiap fungsi matematika, manipulasi entitas, event handler, dan kontrol alur permainan tersimpan di dalam pustaka ini sebagai blok data siap pakai."
+        },
+        {
+          "type": "text",
+          "content": "Mekanisme utama untuk mengintegrasikan logika tersebut ke dalam alur permainan adalah dengan melakukan metode penyeretan (*drag and drop*) pada entri Blueprint yang dipilih langsung dari panel pustaka menuju ke area kerja editor utama (*Logic Canvas*)."
+        },
+        {
+          "type": "image",
+          "url": "library_menu.png",
+          "alt": "Tampilan Menu Node Library",
+          "caption": "Tampilan kumpulan Blueprint yang terorganisasi berdasarkan kategori di dalam Node Library."
+        }
+      ]
+    },
+    {
+      "id": "search-dan-recent",
+      "title": "Fitur Pencarian dan Akses Terkini (Search & Recent)",
+      "blocks": [
+        {
+          "type": "image",
+          "url": "library_search.png",
+          "alt": "Kolom Pencarian dan Daftar Recent",
+          "caption": "Fasilitas optimasi pencarian instan dan rekaman jejak penggunaan node."
+        },
+        {
+          "type": "text",
+          "content": "Untuk mempercepat alur pengerjaan skrip visual, sistem menyediakan dua komponen navigasi utama pada bagian atas panel:"
+        },
+        {
+          "type": "table",
+          "headers": ["Komponen Navigasi", "Mekanisme Kerja", "Keuntungan Teknis"],
+          "rows": [
+            ["Search Bar", "Kueri teks dievaluasi secara real-time terhadap indeks nama dan tag Blueprint.", "Memotong waktu penjelajahan hierarki folder dengan menampilkan kecocokan string secara instan."],
+            ["Recent List", "Array internal merekam riwayat penempatan node terakhir yang sukses dieksekusi.", "Mempermudah pemanggilan ulang logika yang sering digunakan tanpa perlu mencarinya kembali dari struktur direktori induk."]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "akses-menu-library",
+      "title": "Akses Antarmuka Menu Library",
+      "blocks": [
+        {
+          "type": "image",
+          "url": "library_open_menu.png",
+          "alt": "Tombol Akses Node Library",
+          "caption": "Lokasi tombol pemicu untuk memunculkan jendela pop-up atau panel Node Library."
+        },
+        {
+          "type": "text",
+          "content": "Antarmuka pustaka node dirancang agar tidak memenuhi ruang kerja *Logic Canvas* secara permanen. Oleh karena itu, akses ke dalam menu utama dilakukan secara dinamis melalui penekanan tombol khusus bernama **Node Library** pada bilah alat editor. Tindakan ini akan memicu munculnya jendela pencarian interaktif."
+        }
+      ]
+    },
+    {
+      "id": "menu-library-dan-interaksi",
+      "title": "Manajemen Kategorisasi dan Metode Interaksi",
+      "blocks": [
+        {
+          "type": "image",
+          "url": "library_menu_item.png",
+          "alt": "Metode Interaksi Node Library",
+          "caption": "Proses pemilihan kategori dan penambahan objek Blueprint melalui metode klik ganda."
+        },
+        {
+          "type": "text",
+          "content": "Di dalam **Menu Library**, seluruh Blueprint dikelompokkan ke dalam beberapa folder arsitektur fungsional. Informasi mendalam mengenai daftar lengkap blueprint yang tersedia beserta spesifikasi input/output parameternya dapat dipelajari melalui tautan referensi berikut: [Katalog Panduan Blueprint](#link-blueprint)."
+        },
+        {
+          "type": "text",
+          "content": "Selain metode penyeretan standar, penambahan node ke dalam canvas dapat dilakukan dengan fungsionalitas klik ganda (*double click*). Sistem menerapkan standarisasi perilaku eksekusi berdasarkan area interaksi sebagai berikut:"
+        },
+        {
+          "type": "table",
+          "headers": ["Sumber Objek", "Syarat Prosedural", "Hasil Eksekusi Sistem"],
+          "rows": [
+            ["Struktur Folder Library", "Wajib memilih dan membuka kategori fungsional terlebih dahulu hingga entri spesifik terlihat.", "Klik ganda pada blueprint target akan langsung menginstansiasi node baru tepat di titik pusat koordinat viewport canvas saat itu."],
+            ["Daftar Recent", "Dapat dieksekusi secara langsung tanpa prasyarat navigasi folder.", "Menyalin cetak biru dari riwayat dan menempatkannya ke dalam canvas secara instan."],
+            ["Daftar Favorites", "Dapat dieksekusi secara langsung dari tab penanda yang telah disimpan sebelumnya.", "Mempercepat inisialisasi blok logika kustom yang memiliki intensitas penggunaan tinggi."]
+          ]
+        },
+        {
+          "type": "alert",
+          "variant": "info",
+          "message": "Metode klik ganda dari daftar **Recent** atau **Favorites** sangat direkomendasikan untuk menjaga ritme pengembangan logika pemrograman tanpa memutus fokus visual pada area kanvas kerja."
+        }
+      ]
+    }
+  ]
+}

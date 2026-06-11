@@ -1,0 +1,116 @@
+{
+  "title": "Dokumentasi Variable Manager",
+  "category": "Panduan Pengguna",
+  "description": "Halaman referensi teknis untuk mengelola, membuat, dan memodifikasi variabel global maupun lokal di dalam sistem Variable Manager Lupis Engine.",
+  "sections": [
+    {
+      "id": "pengenalan-variabel",
+      "title": "Pengenalan Manajemen Variabel",
+      "blocks": [
+        {
+          "type": "image",
+          "url": "variabel_overall.png",
+          "alt": "Tampilan Utama Variable Manager",
+          "caption": "Gambaran umum panel Variable Manager untuk manajemen state data pada engine."
+        },
+        {
+          "type": "text",
+          "content": "Dalam pengembangan game, variabel bertindak sebagai wadah penyimpanan data dinamis yang esensial untuk mengontrol logika permainan, status entitas, dan alur data runtime. Di dalam Lupis Engine, manajemen variabel dipusatkan pada **Variable Manager** untuk mempermudah integrasi dengan sistem visual scripting."
+        },
+        {
+          "type": "text",
+          "content": "Variabel di dalam sistem ini dikategorikan menjadi dua cakupan (*scope*) utama berdasarkan arsitektur manajemen memori:"
+        },
+        {
+          "type": "table",
+          "headers": ["Cakupan Variabel", "Siklus Hidup (Lifecycle)", "Deskripsi Teknis"],
+          "rows": [
+            ["Global Variable", "Persisten sepanjang runtime game aktif.", "Dapat diakses dan dimodifikasi oleh seluruh scene, script, dan entitas tanpa batas hierarki. Cocok untuk menyimpan data persisten seperti skor, status pemain, atau pengaturan game."],
+            ["Local Variable", "Terbatas pada eksekusi objek/script tertentu.", "Hanya dapat diakses di dalam lingkup internal satu blueprint atau instansiasi objek spesifik. Digunakan untuk kalkulasi sementara atau enkapsulasi data objek."]
+          ]
+        },
+        {
+          "type": "text",
+          "content": "Untuk pemahaman mendalam mengenai alokasi memori dan hierarki pemanggilan data, silakan merujuk pada tautan eksternal maupun internal berikut: [Panduan Konsep Variabel Lanjutan](#link-variabel)."
+        }
+      ]
+    },
+    {
+      "id": "add-variabel-baru",
+      "title": "Menambahkan Variabel Baru",
+      "blocks": [
+        {
+          "type": "image",
+          "url": "variabel_add.png",
+          "alt": "Proses Menambahkan Variabel Baru",
+          "caption": "Tombol ikon penambahan entri variabel baru ke dalam daftar manager."
+        },
+        {
+          "type": "text",
+          "content": "Proses inisialisasi variabel dilakukan dengan menekan **Ikon Button (+)** yang terletak pada bagian atas panel Variable Manager. Setelah tombol ditekan, sistem secara otomatis mengalokasikan ruang memori baru dan memunculkan entri variabel default dengan tipe data primitif di dalam daftar alokasi."
+        },
+        {
+          "type": "alert",
+          "variant": "tip",
+          "message": "Disarankan untuk menggunakan penamaan variabel yang deskriptif menggunakan format *camelCase* dan berbasis bahasa Inggris (contoh: `playerHealth`, `isEnemyDead`, `totalScore`) guna menjaga keterbacaan struktur kode proyek."
+        }
+      ]
+    },
+    {
+      "id": "tooltip-dan-konteks-opsi",
+      "title": "Menu Konteks & Tooltip Akses",
+      "blocks": [
+        {
+          "type": "image",
+          "url": "variabel_context.png",
+          "alt": "Menu Konteks Tooltip Variabel",
+          "caption": "Menu aksi cepat untuk manipulasi properti dan pembuatan node visual scripting."
+        },
+        {
+          "type": "text",
+          "content": "Setiap entri variabel dilengkapi dengan menu interaksi cepat (*tooltip/context menu*) untuk melakukan operasi refactoring, kloning, maupun konversi visual scripting ke dalam canvas logic editor."
+        },
+        {
+          "type": "table",
+          "headers": ["Kategori Komponen", "Aksi / Opsi", "Fungsi Operasional Sistem"],
+          "rows": [
+            ["Node Generator", "Add \"Get\" Node", "Instansiasi node pembaca nilai (Getter) ke dalam Visual Scripting Canvas untuk mengambil data variabel."],
+            ["Node Generator", "Add \"Set\" Node", "Instansiasi node pengubah nilai (Setter) ke dalam Visual Scripting Canvas untuk memanipulasi data variabel."],
+            ["Data Casting", "Change Type", "Mengubah tipe data internal variabel. Opsi tipe data yang didukung meliputi: **String**, **Number**, **Boolean**, **List**, dan **Map**."],
+            ["Management", "Duplicate", "Menggandakan variabel terpilih beserta konfigurasi tipe datanya, kemudian memberikan sufiks indeks unik secara otomatis."],
+            ["Management", "Delete", "Menghapus entri variabel secara permanen dari alokasi memori runtime."]
+          ]
+        },
+        {
+          "type": "alert",
+          "variant": "danger",
+          "message": "Melakukan penghapusan (*Delete*) pada variabel yang masih digunakan oleh node visual scripting aktif akan memicu error fatal berupa *unresolved reference* saat kompilasi game."
+        }
+      ]
+    },
+    {
+      "id": "edit-nama-dan-nilai",
+      "title": "Mengubah Nama dan Nilai Variabel",
+      "blocks": [
+        {
+          "type": "image",
+          "url": "variabel_edit.png",
+          "alt": "Antarmuka Modifikasi Variabel",
+          "caption": "Fitur inline editing untuk modifikasi identifier nama dan nilai inisialisasi awal."
+        },
+        {
+          "type": "text",
+          "content": "Sistem mendukung fitur **Inline Editing** untuk mempercepat pengubahan parameter. Pengubahan nama pengidentifikasi (*identifier*) dilakukan dengan melakukan klik kiri langsung pada teks nama variabel, yang kemudian akan membuka kolom input teks aktif."
+        },
+        {
+          "type": "text",
+          "content": "Mekanisme pengisian nilai awal (*initial value*) dikalkulasi secara dinamis berdasarkan format tipe data yang dipilih. Tipe primitif seperti String menggunakan kolom teks, Number menggunakan kolom numerik, dan Boolean menggunakan tombol sakelar (*toggle*). Namun, untuk tipe data kompleks seperti koleksi terstruktur, pengisian nilai memiliki panel editor khusus yang berbeda."
+        },
+        {
+          "type": "text",
+          "content": "Apabila variabel bertipe data koleksi kompleks (seperti tipe asosiatif pasangan kunci-nilai pada **Map** maupun struktur data array berindeks pada **List**), pengguna akan diarahkan ke dokumentasi konfigurasi spesifik melalui tautan berikut: [Panduan Collection Management](#collection-management)."
+        }
+      ]
+    }
+  ]
+}

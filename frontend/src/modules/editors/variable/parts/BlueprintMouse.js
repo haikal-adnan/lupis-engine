@@ -57,13 +57,13 @@ export const BlueprintMouse = {
             values: {
               target_in: '',
               based_collider: '',
-              use_raycast: true // Default ke true
+              use_raycast: true 
           }
         },
         inputs: [
           { _id: 'exec_in', label: 'In', dataType: 'execution' },
           { _id: 'target_in', label: 'Target ID (Self)', dataType: 'string', icon: Target },
-          { _id: 'use_raycast', label: 'Use Raycast?', dataType: 'boolean', value: true }, // <--- Input Baru
+          { _id: 'use_raycast', label: 'Use Raycast?', dataType: 'boolean', value: true },
           { _id: 'based_collider', label: 'Use Collider Bounds?', dataType: 'boolean', value: false }
         ],
         outputs: [

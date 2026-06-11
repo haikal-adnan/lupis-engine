@@ -133,17 +133,29 @@ export const createComponent = (type, inputData = {}) => {
       };
       break;
 
-    case "ShapeRenderer":
+    case "ShapeRenderer": {
       specificData = {
         type: inputData.type || "rectangle",
+
+        opacity: Number(inputData.opacity ?? 1), 
+
+        isFilled: inputData.isFilled ?? true,
         color: inputData.color || "#FF0000",
+        fillOpacity: Number(inputData.fillOpacity ?? 1),
+
+        outlineWidth: Number(inputData.outlineWidth ?? 0),
+        outlineColor: inputData.outlineColor || "#000000",
+        outlineOpacity: Number(inputData.outlineOpacity ?? 1), 
+
         width: Number(inputData.width || 100),
         height: Number(inputData.height || 100),
-        thickness: Number(inputData.thickness || 1),
-        opacity: Number(inputData.opacity ?? 1),
-        ...inputData
+        cornerRadius: Number(inputData.cornerRadius || 0),
+        sides: Number(inputData.sides || 3),
+
+        ...inputData,
       };
       break;
+    }
 
     case "Tilemap":
       const mapW = Number(inputData.width || 40);

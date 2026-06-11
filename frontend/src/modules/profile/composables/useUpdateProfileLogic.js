@@ -2,21 +2,20 @@ import { ref, onMounted } from 'vue';
 import { useAuthActions } from '@/stores/scene/useAuthActions.js';
 import { useAuthStore } from '@/stores/useAuthStore.js';
 import { usePopAlert } from '@/composables/usePopAlert.js';
-import { useProfileBackend } from '@/services/api/backend/useProfileBackend.js'; // Sesuaikan path
-import { useBackend } from '@/services/api/useBackend.js'; // <-- Tambahkan ini untuk fetch data
+import { useProfileBackend } from '@/services/api/backend/useProfileBackend.js'; 
+import { useBackend } from '@/services/api/useBackend.js'; 
 
 export function useUpdateProfileLogic() {
   const { getCurrentUser } = useAuthActions();
   const authStore = useAuthStore();
   const { showPop } = usePopAlert();
   const { uploadAvatarToServer, updateProfileToServer } = useProfileBackend();
-  const { API_URL, fetchWithTimeout } = useBackend(); // <-- Inisiasi URL API
+  const { API_URL, fetchWithTimeout } = useBackend(); 
 
   const currentUser = ref(null);
   const isLoading = ref(true);
   const isSaving = ref(false);
 
-  // Form State
   const profileData = ref({
     userId: '',
     username: '',
@@ -28,7 +27,6 @@ export function useUpdateProfileLogic() {
     avatar_url: ''
   });
 
-  // Cropper State
   const isCropperOpen = ref(false);
   const selectedImageFile = ref(null);
   const isUploadingAvatar = ref(false);
@@ -40,13 +38,11 @@ export function useUpdateProfileLogic() {
     if (user) {
       currentUser.value = user;
       
-      // 1. Isi form sementara dari localStorage agar UI tidak kosong melompong
       profileData.value.userId = user.id;
       profileData.value.username = user.username || '';
       profileData.value.display_name = user.display_name || user.name || '';
       profileData.value.avatar_url = user.avatar_url || '';
 
-      // 2. Tarik data terbaru & terlengkap langsung dari database
       try {
         const response = await fetchWithTimeout(`${API_URL}/profile/${user.username}`);
         const result = await response.json();
@@ -54,7 +50,6 @@ export function useUpdateProfileLogic() {
         if (response.ok && result.success) {
           const dbProfile = result.data.profile;
           
-          // Timpa data form dengan data lengkap dari server
           profileData.value = {
             userId: user.id,
             username: dbProfile.username || '',
@@ -74,26 +69,21 @@ export function useUpdateProfileLogic() {
     isLoading.value = false;
   });
 
-  // Handle File Input
   const handleFileSelect = (event) => {
     const file = event.target.files[0];
     if (!file) return;
     selectedImageFile.value = file;
     isCropperOpen.value = true;
-    event.target.value = ''; // Reset input
+    event.target.value = ''; 
   };
 
-  // Handle Crop and Upload
   const handleCropAndUpload = async (croppedFile) => {
     isUploadingAvatar.value = true;
     try {
       const result = await uploadAvatarToServer(croppedFile, currentUser.value.id);
       profileData.value.avatar_url = result.data.avatar_url;
       
-      // --- UBAH BAGIAN INI ---
-      // Update state authStore lokal dan simpan ke localStorage
       authStore.updateUserField({ avatar_url: result.data.avatar_url });
-      // -------------------------
 
       showPop({ title: 'Sukses', message: 'Foto profil diperbarui!', type: 'success' });
       isCropperOpen.value = false;
@@ -105,19 +95,15 @@ export function useUpdateProfileLogic() {
     }
   };
 
-  // Handle Save Profile
   const handleSaveProfile = async () => {
     isSaving.value = true;
     try {
       await updateProfileToServer(profileData.value);
       
-      // --- UBAH BAGIAN INI ---
-      // Update state authStore lokal dan simpan ke localStorage
       authStore.updateUserField({ 
         username: profileData.value.username,
         display_name: profileData.value.display_name
       });
-      // -------------------------
       
       showPop({ title: 'Tersimpan', message: 'Profil berhasil diperbarui.', type: 'success' });
     } catch (error) {

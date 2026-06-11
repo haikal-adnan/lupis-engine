@@ -2,7 +2,7 @@ import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { 
   Edit2, Type, Trash2, FolderOpen, ExternalLink, 
-  Activity, FileEdit, Clock, Globe, Settings, Globe2 // Tambahkan Globe dan Settings
+  Activity, FileEdit, Clock, Globe, Settings, Globe2 
 } from 'lucide-vue-next';
 import { usePrompt } from '@/composables/usePrompt';
 import { useConfirm } from '@/composables/useConfirm';
@@ -154,10 +154,31 @@ export function useProjectMenu(refreshListCallback, openProjectCallback) {
     const isPublished = targetProject.status === 'PUBLISHED';
 
     let items = [
-      // ... (Menu Open, dll aslinya)
+      {
+        label: targetProject.name,
+        disabled: true,
+        icon: null
+      },
+      { separator: true },
+      {
+        label: 'Open',
+        icon: FolderOpen,
+        action: () => {
+          closeMenu();
+          if (openProjectCallback) openProjectCallback(targetProject._id, false);
+        }
+      },
+      {
+        label: 'Open in New Tab',
+        icon: ExternalLink,
+        action: () => {
+          closeMenu();
+          if (openProjectCallback) openProjectCallback(targetProject._id, true);
+        }
+      },
+      { separator: true }
     ];
 
-    // [UBAH BAGIAN INI] Logika Menu Publish / Edit Published
     if (isPublished) {
       items.push(
         {
@@ -165,9 +186,8 @@ export function useProjectMenu(refreshListCallback, openProjectCallback) {
           icon: Globe2,
           action: () => {
             closeMenu();
-            // Cek jika kita menyimpan publishedSlug di settings, jika tidak gunakan ID project/slug dummy
             const gameSlug = targetProject.settings?.publishedSlug || targetProject._id; 
-            router.push(`/game/${gameSlug}`); // Sesuaikan route detail publisnya
+            router.push(`/game/${gameSlug}`); 
           }
         },
         {
@@ -189,7 +209,6 @@ export function useProjectMenu(refreshListCallback, openProjectCallback) {
         }
       });
 
-      // Logika Change Status HANYA jika belum published
       items.push({
         label: 'Change Status',
         icon: Activity,

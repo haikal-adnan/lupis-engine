@@ -1,10 +1,15 @@
 <script setup>
 import { ref } from 'vue';
-import { ChevronDown, X } from 'lucide-vue-next'; // <-- Tambahkan icon X untuk mobile
+import { ChevronDown, X } from 'lucide-vue-next';
+import DocsSidebarItem from '@/modules/docs/components/DocsSidebarItem.vue'; // <-- Import komponen rekursif
 
 const props = defineProps({
   navItems: {
     type: Array,
+    required: true
+  },
+  currentDocId: {
+    type: String,
     required: true
   },
   isOpen: {
@@ -13,7 +18,7 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(['close']);
+const emit = defineEmits(['close', 'navigate']);
 
 const openMenus = ref(props.navItems.map((_, index) => index));
 
@@ -23,6 +28,11 @@ const toggleMenu = (index) => {
   } else {
     openMenus.value.push(index);
   }
+};
+
+const handleNavigation = (id) => {
+  emit('navigate', id);
+  emit('close'); 
 };
 </script>
 
@@ -62,7 +72,7 @@ const toggleMenu = (index) => {
         
         <button 
           @click="toggleMenu(index)"
-          class="w-full flex items-center justify-between mb-1 py-1 text-sm font-semibold text-foreground hover:text-cyan-500 transition-colors group"
+          class="w-full flex items-center justify-between mb-1 py-1 text-sm font-semibold text-foreground hover:text-cyan-500 transition-colors group cursor-pointer"
         >
           <div class="flex items-center gap-2">
             <component :is="section.icon" class="w-4 h-4 text-muted-foreground group-hover:text-cyan-500 transition-colors" />
@@ -80,18 +90,13 @@ const toggleMenu = (index) => {
           v-show="openMenus.includes(index) && section.links.length" 
           class="space-y-1 border-l border-border ml-2 pl-4 mt-2 mb-4"
         >
-          <li v-for="link in section.links" :key="link.name">
-            <a 
-              :href="link.href" 
-              @click="emit('close')" 
-              class="block py-1.5 text-sm transition-colors rounded-md px-2 -ml-2"
-              :class="link.active 
-                ? 'text-cyan-500 font-medium bg-cyan-500/5' 
-                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'"
-            >
-              {{ link.name }}
-            </a>
-          </li>
+          <DocsSidebarItem 
+            v-for="link in section.links" 
+            :key="link.id || link.name"
+            :item="link"
+            :current-doc-id="currentDocId"
+            @navigate="handleNavigation"
+          />
         </ul>
 
       </div>

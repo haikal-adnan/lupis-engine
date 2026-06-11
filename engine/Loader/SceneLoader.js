@@ -10,7 +10,6 @@ export default class SceneLoader {
         if (!sceneData) return;
 
         if (this.world) {
-            // --- PERBAIKAN DI SINI ---
             this.world.currentSceneId = sceneData._id; 
             this.world.currentSceneScriptId = sceneData.scriptId || sceneData._id || null;
             this.world.currentSceneName = sceneData.name || "";
@@ -29,7 +28,7 @@ export default class SceneLoader {
                     visible: layer.visible ?? true,
                     locked: layer.locked ?? false,
                     active: layer.active ?? true,
-                    opacity: layer.opacity ?? 1.0, // <-- Tambahkan opacity
+                    opacity: layer.opacity ?? 1.0, 
                     zIndex: Number(layer.zIndex ?? defaultZ), 
                     orderIndex: Number(layer.orderIndex ?? index),
                     entities: []

@@ -25,6 +25,8 @@ import HeaderProjectMenu from '@editors/header/components/HeaderProjectMenu.vue'
 import HeaderTabs from '@editors/header/components/HeaderTabs.vue';
 import HeaderActions from '@editors/header/components/HeaderActions.vue';
 
+const emit = defineEmits(['settings']);
+
 const onUndo = () => {
   console.log("Undo triggered");
 };
@@ -34,6 +36,6 @@ const onRedo = () => {
 };
 
 const onOpenSettings = () => {
-  console.log("Settings triggered");
+  emit('settings');
 };
 </script>

@@ -93,13 +93,19 @@ export default class RendererManager {
             const wasDepthEnabled = this.gl.isEnabled(this.gl.DEPTH_TEST);
             this.gl.disable(this.gl.DEPTH_TEST);
 
-            this.shape.drawRect(
-                0, 0, this.canvas.width, this.canvas.height, 
-                game.transitionSystem.color, pScreen, 
-                0, 1, 1, 0, 0, 
-                game.transitionSystem.alpha, 
-                false, false
+            const tCol = game.transitionSystem.color;
+            const tAlpha = game.transitionSystem.alpha;
+            const transitionColor = [tCol[0], tCol[1], tCol[2], tCol[3] * tAlpha];
+
+            this.shape.drawParametricShape(
+                "rectangle", 0, 0, this.canvas.width, this.canvas.height, 
+                transitionColor, [0, 0, 0, 0], 
+                true, 0, 
+                0, 4, 
+                pScreen, 
+                0, 1, 1, 0, 0, false, false
             );
+            
             this.shape.flush();
 
             if (wasDepthEnabled) {

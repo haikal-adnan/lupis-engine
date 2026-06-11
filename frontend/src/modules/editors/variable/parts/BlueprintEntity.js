@@ -26,7 +26,7 @@ export const BlueprintEntity = {
           { _id: 'pos_y', label: 'Position Y', dataType: 'number', color: '#4CAF50' },
           { _id: 'layer_id', label: 'Layer (Script ID)', dataType: 'string', color: '#9C27B0' },
           { _id: 'zindex', label: 'Z-Index', dataType: 'number', color: '#FF9800' },
-          { _id: 'custom_id', label: 'Custom ID (Opt)', dataType: 'string', color: '#00BCD4' } // <--- PIN BARU
+          { _id: 'custom_id', label: 'Custom ID (Opt)', dataType: 'string', color: '#00BCD4' }
         ], 
         outputs: [
           { _id: 'exec_out', label: 'Out', dataType: 'execution', color: '#FFFFFF' },
@@ -107,7 +107,7 @@ export const BlueprintEntity = {
       type: 'entity_get_parent', 
       label: 'Get Parent', 
       description: 'Mendapatkan Script ID dari parent entity ini. Jika tidak memiliki parent, output akan kosong.',
-      icon: Network, // Kamu bisa ganti dengan icon lain jika perlu
+      icon: Network, 
       defaultData: { 
         settings: { headerTitle: 'Get Parent', headerColor: '#00BCD4', category: 'Entity' },
         inputs: [

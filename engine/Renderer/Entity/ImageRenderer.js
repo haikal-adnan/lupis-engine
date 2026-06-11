@@ -71,7 +71,7 @@ export default class ImageRenderer {
             out vec4 outColor;
             
             uniform sampler2D uTex;
-            uniform float uUseSDF; // Saklar dari flush()
+            uniform float uUseSDF;
             
             void main(){
                 vec4 c;
@@ -102,7 +102,7 @@ export default class ImageRenderer {
             varying vec2 vUV; varying float vAlpha; varying vec2 vDimension;
             
             uniform sampler2D uTex;
-            uniform float uUseSDF; // Saklar dari flush()
+            uniform float uUseSDF; 
             
             void main(){
                 vec4 c;
@@ -151,7 +151,7 @@ export default class ImageRenderer {
         this.program = program;
         this.uProjection = gl.getUniformLocation(program, "uProjection");
         this.uTex = gl.getUniformLocation(program, "uTex");
-        this.uUseSDF = gl.getUniformLocation(program, "uUseSDF"); // Binding Uniform
+        this.uUseSDF = gl.getUniformLocation(program, "uUseSDF"); 
     }
 
     _createBuffers() {
@@ -180,7 +180,7 @@ export default class ImageRenderer {
         const { x, y, width: w, height: h, rotation: rot, scaleX: sx = 1, scaleY: sy = 1, pivotX: px = 0.5, pivotY: py = 0.5 } = transform;
         const { 
             flipX = false, flipY = false, opacity = 1, useCheckerboard = false,
-            filterMode = 'pixelated', useSDF = false // Ambil data dari entity
+            filterMode = 'pixelated', useSDF = false 
         } = options || {};
 
         const isValidTexture = texRes && texRes.glTexture;
@@ -233,12 +233,10 @@ export default class ImageRenderer {
         this.cache.bindVAO(this.vao);
         this.cache.bindTexture(this.currentTexture);
 
-        // --- TERAPKAN FILTER KE TEKSTUR ---
         const glFilter = this.FILTER_MODES[this.currentFilterMode] || gl.NEAREST;
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, glFilter);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, glFilter);
 
-        // --- TERAPKAN UNIFORM KE SHADER ---
         gl.uniformMatrix4fv(this.uProjection, false, this.lastProjection);
         gl.uniform1i(this.uTex, 0);
         gl.uniform1f(this.uUseSDF, this.currentUseSDF ? 1.0 : 0.0);

@@ -139,18 +139,11 @@ function isNotSet(value) {
   return value === undefined || value === null || value === '';
 }
 
-/**
- * Helper: Pengecekan error untuk status "NOT SET" (Mengecualikan target_in)
- */
 function isErrorNotSet(key, value) {
-  // Semua target_in (termasuk target_in_1) defaultnya adalah "self", jadi bukan error
   if (String(key).startsWith('target_in')) return false; 
   return isNotSet(value);
 }
 
-/**
- * Helper: Placeholder dinamis
- */
 function getPlaceholder(key, value, type) {
   if (String(key).startsWith('target_in') && isNotSet(value)) {
     return 'self';

@@ -1,6 +1,4 @@
-// ==========================================
-// EXECUTOR PHYSICS
-// ==========================================
+
 export const NodePhysics = {
     'get_physics': {
         getOutput(runner, node, outputKey) {
@@ -16,7 +14,6 @@ export const NodePhysics = {
                     return phys.movementState || 'idle';
                 case 'facingDirection':
                     return phys.facingDirection || 'right';
-                // --- TAMBAHAN BARU ---
                 case 'isFrozen':
                     return phys.isFrozen || false;
                 default:
@@ -26,7 +23,6 @@ export const NodePhysics = {
     },
     'set_physics': {
         execute(runner, node) {
-            // 1. Resolve Target (Prioritas: Kabel -> Inputan UI)
             let targetId = runner.getInputValue(node, 'target_in');
             if (targetId === undefined && node.data?.values?.target_in !== undefined) {
                 targetId = node.data.values.target_in;
@@ -41,7 +37,6 @@ export const NodePhysics = {
 
             const phys = entity.components.Physics;
 
-            // 2. Mapping properti dan konversi tipe data (seperti di set_text)
             const props = {
                 velocityX: v => Number(v),
                 velocityY: v => Number(v),
@@ -52,27 +47,21 @@ export const NodePhysics = {
                 isFrozen: v => Boolean(v === 'true' || v === true)
             };
 
-            // 3. Iterasi dan eksekusi
             Object.keys(props).forEach(key => {
-                // Prioritas 1: Edge (Kabel Input)
                 let rawVal = runner.getInputValue(node, key);
                 
-                // Prioritas 2: Inputan UI (values)
                 if (rawVal === undefined && node.data?.values?.[key] !== undefined) {
                     rawVal = node.data.values[key];
                 }
 
-                // Terapkan jika ada nilai
                 if (rawVal !== undefined && rawVal !== null && rawVal !== '') {
                     const finalVal = props[key](rawVal);
                     phys[key] = finalVal;
                     
-                    // Flag khusus jika velocity diubah
                     if (key === 'velocityX' || key === 'velocityY') {
                         phys._isIntentionalMove = Math.abs(finalVal) > 10;
                     }
                     
-                    // Reset velocity seketika jika node memicu isFrozen = true
                     if (key === 'isFrozen' && finalVal === true) {
                         phys.velocityX = 0;
                         phys.velocityY = 0;
@@ -150,18 +139,11 @@ export const NodePhysics = {
             const hasPhysics = phys && phys.enabled;
 
             if (hasPhysics) {
-                // Selalu set velocity X untuk pergerakan horizontal
                 phys.velocityX = Number(velX); 
                 
-                // --- PERBAIKAN LOGIKA GRAVITASI ---
-                // Jika karakter ini terpengaruh gravitasi (platformer) DAN nilai velY adalah 0,
-                // JANGAN timpa velocityY. Biarkan PhysicsSystem yang menariknya ke bawah.
                 if (phys.gravityScale !== 0 && Number(velY) === 0) {
-                    // Do nothing, let gravity pull it down.
+
                 } else {
-                    // Ini tereksekusi jika:
-                    // 1. Game Top-Down (gravityScale == 0)
-                    // 2. Atau User secara eksplisit memasukkan nilai velY (misalnya sedang melompat/terbang)
                     phys.velocityY = Number(velY);
                 }
 

@@ -94,7 +94,6 @@ export default class TilemapRenderer {
         const baseOpacity = (tm.opacity ?? 1) * (entity.opacity ?? 1) * externalOpacity;
         const dragState = editors?.dragState;
         
-        // --- AMBIL FILTER MODE DARI TILEMAP COMPONENT ---
         const filterMode = tm.filterMode || "pixelated";
 
         const scaledTileW = rData.tileW * rData.scaleX;
@@ -167,7 +166,6 @@ export default class TilemapRenderer {
                             pivotX: 0, 
                             pivotY: 0 
                         },
-                        // --- MASUKKAN FILTER MODE ---
                         { opacity: currentOpacity, filterMode },
                         proj
                     );
@@ -182,7 +180,7 @@ export default class TilemapRenderer {
 
         const scaledTileW = rData.tileW * rData.scaleX;
         const scaledTileH = rData.tileH * rData.scaleY;
-        const filterMode = tm.filterMode || "pixelated"; // Ambil Filter Mode
+        const filterMode = tm.filterMode || "pixelated"; 
 
         const cam = this.game.camera;
         const canvas = this.game.renderer.canvas;
@@ -208,7 +206,11 @@ export default class TilemapRenderer {
             this.shape.drawLine(rData.startX, yPos, rData.startX + rData.totalW, yPos, this.colors.grid, 1, proj);
         }
 
-        this.shape.drawRectStroke(rData.startX, rData.startY, rData.totalW, rData.totalH, this.colors.border, 2, proj);
+        this.shape.drawParametricShape(
+            "rectangle", rData.startX, rData.startY, rData.totalW, rData.totalH,
+            [0,0,0,0], this.colors.border, false, 2, 0, 4,
+            proj, 0, 1, 1, 0, 0, false, false
+        );
 
         const mx = this.game.input?.mouse?.x || 0;
         const my = this.game.input?.mouse?.y || 0;
@@ -253,7 +255,6 @@ export default class TilemapRenderer {
                             asset, 
                             { x: srcX, y: srcY, w: rData.tileW, h: rData.tileH }, 
                             { x: dstX, y: dstY, width: scaledTileW, height: scaledTileH },
-                            // --- MASUKKAN FILTER MODE ---
                             { opacity: 0.8, filterMode }, 
                             proj
                         );
@@ -281,7 +282,7 @@ export default class TilemapRenderer {
     _renderGhost(rData, tm, asset, selection, proj, gridX, gridY) {
         const scaledTileW = rData.tileW * rData.scaleX;
         const scaledTileH = rData.tileH * rData.scaleY;
-        const filterMode = tm.filterMode || "pixelated"; // Ambil Filter Mode
+        const filterMode = tm.filterMode || "pixelated"; 
 
         const tilesetCols = Math.floor(asset.width / rData.tileW);
         for (let dy = 0; dy < selection.h; dy++) {
@@ -298,7 +299,6 @@ export default class TilemapRenderer {
                         asset, 
                         { x: srcX, y: srcY, w: rData.tileW, h: rData.tileH }, 
                         { x: dstX, y: dstY, width: scaledTileW, height: scaledTileH }, 
-                        // --- MASUKKAN FILTER MODE ---
                         { opacity: 0.6, filterMode }, 
                         proj
                     );
@@ -317,6 +317,11 @@ export default class TilemapRenderer {
         const dstY = rData.startY + (gridY * scaledTileH);
         const dstW = w * scaledTileW;
         const dstH = h * scaledTileH;
-        this.shape.drawRectStroke(dstX, dstY, dstW, dstH, color, thickness, proj);
+        
+        this.shape.drawParametricShape(
+            "rectangle", dstX, dstY, dstW, dstH,
+            [0,0,0,0], color, false, thickness, 0, 4,
+            proj, 0, 1, 1, 0, 0, false, false
+        );
     }
 }

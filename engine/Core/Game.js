@@ -71,14 +71,11 @@ export default class Game {
 
         const entityId = entity.id || entity._id;
 
-        // 1. Hapus semua child dari entity ini secara rekursif
-        // Kita cari entity lain yang parentId-nya merujuk ke entity ini
         const children = this.world.entities.filter(e => e.parentId === entityId);
         for (const child of children) {
-            this.destroyEntity(child); // Panggil fungsi ini lagi untuk anak-anaknya
+            this.destroyEntity(child); 
         }
 
-        // 2. Hapus entity ini dari daftar children milik parent-nya (jika punya parent)
         if (entity.parentId) {
             const parent = this.world.entities.find(e => (e.id === entity.parentId || e._id === entity.parentId));
             if (parent && Array.isArray(parent.children)) {
@@ -86,15 +83,12 @@ export default class Game {
             }
         }
 
-        // 3. Hapus dari map Script ID agar tidak bisa di-resolve lagi oleh runner
         if (this.world.scriptIdMap && entity.scriptId) {
             this.world.scriptIdMap.delete(entity.scriptId);
         }
 
-        // 4. Hapus dari daftar entity global di World
         this.world.entities = this.world.entities.filter(e => (e.id !== entityId && e._id !== entityId));
 
-        // 5. Hapus dari layer yang menampung entity ini
         if (this.world.allLayers) {
             const layer = this.world.allLayers.find(l => l._id === entity.layerId);
             if (layer && Array.isArray(layer.entities)) {
@@ -102,8 +96,6 @@ export default class Game {
             }
         }
 
-        // 6. Cleanup di sistem-sistem spesifik (Opsional, pastikan fungsi ini ada di class sistem kamu)
-        // Jika belum ada, kamu bisa membuat method remove/clear untuk masing-masing system nantinya.
         if (this.scriptSystem && typeof this.scriptSystem.removeEntityScripts === 'function') {
             this.scriptSystem.removeEntityScripts(entity);
         }
@@ -168,7 +160,7 @@ export default class Game {
             this.scriptSystem.clear();
         }
 
-        this.world.currentSceneId = targetSceneData._id; // Simpan _id asli untuk keperluan restart
+        this.world.currentSceneId = targetSceneData._id; 
         this.world.currentSceneScriptId = targetSceneData.scriptId || targetSceneData._id || null;
         this.world.currentSceneName = targetSceneData.name || ""; 
 
@@ -203,8 +195,6 @@ export default class Game {
     }
 
     restartScene() {
-        // --- PERBAIKAN DI SINI ---
-        // Gunakan currentSceneId (_id) alih-alih currentSceneScriptId agar pasti ketemu di Cache
         const currentId = this.world.currentSceneId || this.world.currentSceneScriptId;
         if (currentId) {
             this.queueLoadScene(currentId);
@@ -302,21 +292,17 @@ export default class Game {
             if (targetLayer) targetLayerId = targetLayer._id;
         }
 
-        // Cari order index tertinggi di layer saat ini agar spawn selalu di paling depan
         let baseOrderIndex = 0;
         if (targetLayer && targetLayer.entities) {
             baseOrderIndex = targetLayer.entities.reduce((max, e) => Math.max(max, e.orderIndex || 0), -1);
         }
 
-        // --- LOGIKA SANITASI DAN VALIDASI SCRIPT ID ---
-        let finalRootScriptId = 'script_' + GenerateUUID(16); // ID fallback default
+        let finalRootScriptId = 'script_' + GenerateUUID(16); 
 
         if (typeof customScriptId === 'string' && customScriptId.trim() !== "") {
-            // Ubah ke lowercase dan hapus semua karakter selain a-z, 0-9, dan underscore
             let sanitizedId = customScriptId.toLowerCase().replace(/[^a-z0-9_]/g, '');
 
             if (sanitizedId !== '') {
-                // Cek apakah ID tersebut sudah dipakai oleh entity lain di world
                 let isIdExist = false;
                 if (this.world.scriptIdMap) {
                     isIdExist = this.world.scriptIdMap.has(sanitizedId);
@@ -324,7 +310,6 @@ export default class Game {
                     isIdExist = this.world.entities.some(e => e.scriptId === sanitizedId);
                 }
 
-                // Jika belum dipakai, gunakan ID dari user
                 if (!isIdExist) {
                     finalRootScriptId = sanitizedId;
                 } else {
@@ -332,21 +317,19 @@ export default class Game {
                 }
             }
         }
-        // ----------------------------------------------
 
         const idMap = {};
         const allNewData = [];
         const uniqueSuffix = GenerateUUID(16).substring(0, 8);
 
-        // --- ROOT DATA ---
         const rootData = JSON.parse(JSON.stringify(prefabData));
         const newRootId = 'ent_' + GenerateUUID(16);
         idMap[rootData._id] = newRootId;
 
-        baseOrderIndex++; // Order untuk parent
+        baseOrderIndex++;
 
         rootData._id = newRootId;
-        rootData.scriptId = finalRootScriptId; // <--- Menggunakan ID yang sudah divalidasi
+        rootData.scriptId = finalRootScriptId; 
         rootData.layerId = targetLayerId;
         rootData.zIndex = zIndex;
         rootData.orderIndex = baseOrderIndex;
@@ -361,19 +344,18 @@ export default class Game {
         }
         allNewData.push(rootData);
 
-        // --- CHILDREN DATA ---
         if (prefabChildren && prefabChildren.length > 0) {
             const clonedChildren = prefabChildren.map(child => {
                 const c = JSON.parse(JSON.stringify(child));
                 const newChildId = 'ent_' + GenerateUUID(16);
                 
                 idMap[c._id] = newChildId;
-                baseOrderIndex++; // Pastikan child orderIndex-nya LEBIH BESAR dari parent
+                baseOrderIndex++; 
 
                 c._id = newChildId;
-                c.scriptId = `${c.scriptId}_${uniqueSuffix}`; // Child ID tetap unik
+                c.scriptId = `${c.scriptId}_${uniqueSuffix}`;
                 c.layerId = targetLayerId; 
-                c.zIndex = zIndex; // Child mewarisi zIndex Parent
+                c.zIndex = zIndex; 
                 c.orderIndex = baseOrderIndex; 
                 return c;
             });

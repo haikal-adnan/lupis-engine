@@ -16,7 +16,7 @@ const ProjectPublishedSchema = new mongoose.Schema({
   status: { 
     type: String, 
     enum: ['DRAFT', 'IN_PROGRESS', 'PUBLISHED'], 
-    default: 'PUBLISHED', // Pastikan defaultnya PUBLISHED
+    default: 'PUBLISHED', 
     uppercase: true 
   },
 
@@ -51,7 +51,7 @@ const ProjectPublishedSchema = new mongoose.Schema({
     default: ['Untagged', 'Player', 'Enemy', 'Terrain', 'UI'] 
   },
 
-  scenes: [{ type: String }], // Dibuat String biasa saja, hapus ref: 'Scene' karena ini environment published
+  scenes: [{ type: String }], 
   thumbnailUrl: { type: String }
 }, { 
   timestamps: true,

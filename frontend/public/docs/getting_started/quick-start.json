@@ -1,0 +1,42 @@
+{
+  "title": "Quick Start: Game Pertamamu",
+  "category": "Getting Started",
+  "description": "Mari buat objek bergerak di layar dalam waktu kurang dari 5 menit. Di panduan ini, kita akan menginisialisasi engine dan me-render sebuah kotak sederhana.",
+  "features": [
+    { "title": "Engine Init", "desc": "Menyiapkan canvas.", "icon": "Zap", "color": "text-yellow-500" },
+    { "title": "Entity Creation", "desc": "Membuat objek game.", "icon": "Box", "color": "text-purple-500" }
+  ],
+  "sections": [
+    {
+      "id": "init-engine",
+      "title": "1. Inisialisasi Engine",
+      "content": "Langkah pertama adalah membuat instance dari Lupis Engine dan menghubungkannya dengan elemen Canvas di HTML kamu.",
+      "code": {
+        "language": "javascript",
+        "snippet": "import { Engine } from '@lupis/core';\n\n// Inisialisasi engine pada resolusi 800x600\nconst game = new Engine({\n  canvasId: 'game-canvas',\n  width: 800,\n  height: 600,\n  backgroundColor: '#1a1a24'\n});\n\ngame.start();"
+      }
+    },
+    {
+      "id": "create-entity",
+      "title": "2. Membuat Entity",
+      "content": "Setelah engine berjalan, mari kita tambahkan sebuah kotak merah ke tengah layar. Lupis menggunakan sistem berbasis Entity untuk mengelola semua objek di dalam game.",
+      "code": {
+        "language": "javascript",
+        "snippet": "import { Entity, RectComponent } from '@lupis/core';\n\n// Membuat entity baru\nconst player = new Entity('Player1');\n\n// Mengatur posisi ke tengah layar\nplayer.position.set(400, 300);\n\n// Menambahkan komponen visual (Kotak merah ukuran 50x50)\nplayer.addComponent(new RectComponent(50, 50, '#ff0055'));\n\n// Masukkan entity ke dalam scene aktif\ngame.scene.add(player);"
+      },
+      "alert": {
+        "type": "info",
+        "message": "Sistem komponen di Lupis sangat modular. Kamu bisa menambahkan komponen Physics atau Input ke Entity yang sama nantinya."
+      }
+    },
+    {
+      "id": "game-loop-update",
+      "title": "3. Menggerakkan Objek",
+      "content": "Untuk membuat objek bergerak, kita perlu mengaitkannya ke dalam fungsi Update (Game Loop) yang dipanggil setiap frame.",
+      "code": {
+        "language": "javascript",
+        "snippet": "game.onUpdate((deltaTime) => {\n  // Gerakkan player ke kanan sebesar 100 pixel per detik\n  player.position.x += 100 * deltaTime;\n  \n  // Reset posisi jika keluar batas layar\n  if (player.position.x > 850) {\n    player.position.x = -50;\n  }\n});"
+      }
+    }
+  ]
+}

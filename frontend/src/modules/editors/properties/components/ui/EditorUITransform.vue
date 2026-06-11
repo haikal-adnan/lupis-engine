@@ -1,4 +1,3 @@
-// UITransform
 <template>
   <PropertySection title="UI Transform" :icon="LayoutTemplate" v-if="selectedEntity">
     
@@ -210,7 +209,7 @@
 <script setup>
 import { 
   LayoutTemplate, Lock, Unlock, RotateCcw, Crosshair, RefreshCw,
-  Info, Link, Maximize, FlipHorizontal, FlipVertical // Tambahan ikon
+  Info, Link, Maximize, FlipHorizontal, FlipVertical 
 } from 'lucide-vue-next'
 import { useInspectorLogic } from "@editors/properties/composables/useInspectorLogic.js";
 
@@ -218,8 +217,7 @@ import PropertySection from "@ui/display/PropertySection.vue";
 import PropertyRow from "@ui/display/PropertyRow.vue";
 import BaseNumber from '@/commons/components/inputs/BaseNumber.vue'
 import IconButton from '@/commons/components/buttons/IconButton.vue'
-import BaseButton from '@/commons/components/buttons/BaseButton.vue' // Tambahan BaseButton
-
+import BaseButton from '@/commons/components/buttons/BaseButton.vue'
 import PivotControl from '@ui/inputs/PivotControl.vue'
 import AnchorControl from '@ui/inputs/AnchorControl.vue'
 
@@ -235,7 +233,6 @@ const {
   getComponentOverrideStatus,
   markAsOverridden,
   
-  // Tambahan state dari useInspectorLogic untuk sinkronisasi fitur baru
   isSizeLockedByText,
   isSizeLockedByTilemap,
   globalScaleX,
@@ -247,7 +244,6 @@ const {
 
 const overridden = getComponentOverrideStatus(COMPONENT_NAME);
 
-// Binding bawaan
 const x = bindComponentProp(COMPONENT_NAME, 'x', 2);
 const y = bindComponentProp(COMPONENT_NAME, 'y', 2);
 const width = bindComponentProp(COMPONENT_NAME, 'width', 2);
@@ -255,13 +251,11 @@ const height = bindComponentProp(COMPONENT_NAME, 'height', 2);
 const rotation = bindComponentProp(COMPONENT_NAME, 'rotation', 2);
 const isRatioLocked = bindComponentProp(COMPONENT_NAME, 'isRatioLocked'); 
 
-// Binding Anchor & Pivot
 const anchorX = bindComponentProp(COMPONENT_NAME, 'anchorX');
 const anchorY = bindComponentProp(COMPONENT_NAME, 'anchorY');
 const pivotX = bindComponentProp(COMPONENT_NAME, 'pivotX');
 const pivotY = bindComponentProp(COMPONENT_NAME, 'pivotY');
 
-// Binding baru hasil adaptasi dari Transform World
 const flipX = bindComponentProp(COMPONENT_NAME, 'flipX');
 const flipY = bindComponentProp(COMPONENT_NAME, 'flipY');
 const scaleX = bindComponentProp(COMPONENT_NAME, 'scaleX');
@@ -277,7 +271,6 @@ const handleReset = () => {
   x.value = 0;
   y.value = 0;
   rotation.value = 0;
-  // Opsional: Anda juga bisa me-reset scale ke 1 dan flip ke false di sini jika diperlukan
 };
 
 const centerAnchors = () => {

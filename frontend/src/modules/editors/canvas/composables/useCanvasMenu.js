@@ -78,7 +78,6 @@ export function useCanvasMenu(canvasHandlers) {
       const selectedIds = sceneStore.selectedEntityIds || [];
       const isMultiSelect = selectedIds.length > 1;
 
-      // Ambil ID utama dari array (kalau tidak ada fallback ke null)
       const primaryEntityId = selectedIds[0];
       const primaryEntity = sceneStore.activeScene?.entities?.find(e => e._id === primaryEntityId);
       
@@ -86,23 +85,17 @@ export function useCanvasMenu(canvasHandlers) {
         const isAlreadyPrefab = !!primaryEntity.prefabId;
         const isChildOfPrefab = isDescendantOfPrefab(primaryEntityId);
         
-        // Default: Disable jika entitas tersebut sudah merupakan prefab atau di dalam prefab
         disablePrefabAction = isAlreadyPrefab || isChildOfPrefab;
 
-        // -- LOGIC PREFAB SAMA SEPERTI HIERARCHY MENU --
         if (isMultiSelect) {
             const entities = sceneStore.activeScene?.entities || [];
             
-            // Cek apakah entity utama (index 0) ini memiliki child
             const hasChild = entities.some(e => e.parentId === primaryEntityId);
             
             if (!hasChild) {
-               // Jika diseleksi lebih dari 1 tapi primary entity tidak punya child,
-               // berarti ini seleksi acak multiple entity biasa. Disable aksi prefab.
                disablePrefabAction = true;
             }
         }
-        // ---------------------------------------------
       } else {
         disablePrefabAction = true;
       }

@@ -1,6 +1,5 @@
 import mongoose from 'mongoose';
 
-// Menggunakan sub-schema yang sama persis
 const PortSchema = new mongoose.Schema({
   _id: { type: String, required: true },
   label: { type: String, default: '' },

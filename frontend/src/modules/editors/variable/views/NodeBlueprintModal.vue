@@ -55,7 +55,7 @@
                 <div class="flex items-center gap-2 text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">
                   <Star class="w-3.5 h-3.5" /> Favorites
                 </div>
-                <div v-if="favoriteNodes.length === 0" class="text-xs text-muted-foreground/60 italic px-2">No favorites yet</div>
+                <div v-if="favoriteNodes.length === 0" class="text-xs text-muted-foreground italic px-2">No favorites yet</div>
                 <div class="space-y-0.5">
                   <div 
                     v-for="node in favoriteNodes" :key="'mod-fav-'+node.type"

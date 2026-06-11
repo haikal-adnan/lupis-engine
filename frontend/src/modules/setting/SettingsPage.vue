@@ -2,7 +2,6 @@
 import { ref, onMounted } from 'vue';
 import { User, Monitor, Shield, Code, CreditCard, Bell, Moon, Sun, Laptop } from 'lucide-vue-next';
 
-// Memanggil Komponen Profile dari Module Profile
 import EditProfileForm from '@/modules/profile/views/EditProfileForm.vue';
 
 const activeTab = ref('profile');

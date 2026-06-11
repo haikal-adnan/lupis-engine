@@ -48,7 +48,6 @@ export const animatorActions = {
       fps: 12, isLooping: true, frames: [], sources: {}, baseSize: { w: 32, h: 32 }, pivot: { x: 0.5, y: 1 },
       frameIndex: 0,
       isOpen: true,
-      // --- TAMBAHAN PROPERTI FILTER ---
       filterMode: 'pixelated',
       useSDF: false
     };
@@ -76,7 +75,6 @@ export const animatorActions = {
       parentId: parentId,
       fps: 12, isLooping: true, frames: [], sources: {}, baseSize: { w: 32, h: 32 }, pivot: { x: 0.5, y: 1 },
       frameIndex: 0,
-      // --- TAMBAHAN PROPERTI FILTER ---
       filterMode: 'pixelated',
       useSDF: false
     };

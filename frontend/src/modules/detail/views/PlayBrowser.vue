@@ -2,7 +2,7 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 import { Play, Loader2, AlertCircle, Maximize, Minimize } from 'lucide-vue-next';
 import { usePlayLogic } from '@modules/detail/composables/usePlayLogic';
-import { useThumbnailUrl } from '@/composables/useThumbnailUrl.js'; // <-- Import helper
+import { useThumbnailUrl } from '@/composables/useThumbnailUrl.js'; 
 
 const props = defineProps({
   publishedId: {
@@ -15,7 +15,7 @@ const props = defineProps({
   }
 });
 
-const { getThumbnailUrl } = useThumbnailUrl(); // <-- Ekstrak fungsi
+const { getThumbnailUrl } = useThumbnailUrl();
 
 const { 
   gameCanvas, 
@@ -27,20 +27,17 @@ const {
   startGame 
 } = usePlayLogic();
 
-// --- FULLSCREEN LOGIC ---
 const containerRef = ref(null);
 const isFullscreen = ref(false);
 
 const toggleFullscreen = async () => {
   if (!document.fullscreenElement) {
-    // Request fullscreen pada container utama
     try {
       await containerRef.value?.requestFullscreen();
     } catch (err) {
       console.error(`Gagal masuk ke mode fullscreen: ${err.message}`);
     }
   } else {
-    // Keluar dari fullscreen
     if (document.exitFullscreen) {
       await document.exitFullscreen();
     }
@@ -58,7 +55,6 @@ onMounted(() => {
 onUnmounted(() => {
   document.removeEventListener('fullscreenchange', handleFullscreenChange);
 });
-// ------------------------
 
 const handlePlayClick = () => {
   startGame(props.publishedId);

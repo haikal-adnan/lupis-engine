@@ -23,7 +23,7 @@ export default class EditorRenderer {
         if (!tex) {
             this.fillRect(x, y, w, h, [1, 1, 1, 1]);
             return;
-        }
+    }
 
         this.image.draw(
             tex,
@@ -35,11 +35,23 @@ export default class EditorRenderer {
     }
 
     fillRect(x, y, w, h, color) {
-        this.shape.drawRect(x, y, w, h, color, this.projection);
+        this.shape.drawParametricShape(
+            "rectangle", x, y, w, h, 
+            color, [0, 0, 0, 0], true, 0, 
+            0, 4, 
+            this.projection, 
+            0, 1, 1, 0, 0, false, false
+        );
     }
 
     strokeRect(x, y, w, h, color, t=1) {
-        this.shape.drawRectStroke(x, y, w, h, color, t, this.projection);
+        this.shape.drawParametricShape(
+            "rectangle", x, y, w, h, 
+            [0, 0, 0, 0], color, false, t, 
+            0, 4, 
+            this.projection, 
+            0, 1, 1, 0, 0, false, false
+        );
     }
 
     drawText(str, x, y, size, color, font = null, rotation = 0, textOptions = {}) {
@@ -84,10 +96,16 @@ export default class EditorRenderer {
     }
 
     drawCircle(x, y, r, color) {
-        this.shape.drawCircle(x, y, r, color, 24, this.projection);
+        this.shape.drawCircle(x, y, r, color, 64, this.projection);
     }
 
     strokeCircle(x, y, r, color, t=2) {
-        this.shape.drawCircleOutline(x, y, r, color, t, 32, this.projection);
+        this.shape.drawParametricShape(
+            "circle", x, y, r * 2, r * 2, 
+            [0, 0, 0, 0], color, false, t, 
+            0, 0, 
+            this.projection, 
+            0, 1, 1, 0.5, 0.5, false, false
+        );
     }
 }

@@ -1,5 +1,3 @@
-// src/services/api/backend/usePublishBackend.js
-
 import { useBackend } from '@/services/api/useBackend.js';
 
 export function usePublishBackend() {
@@ -35,7 +33,7 @@ export function usePublishBackend() {
       method: 'GET'
     });
     const result = await handleResponse(response, 'Gagal mengecek slug');
-    return result; // mengembalikan objek { success: true, available: boolean }
+    return result; 
   };
 
   const getPublishedByProjectId = async (projectId) => {
@@ -56,22 +54,16 @@ export function usePublishBackend() {
     return result.data;
   };
 
-  // --- FUNGSI UPLOAD THUMBNAIL ---
   const uploadThumbnailToServer = async (file) => {
     const formData = new FormData();
     formData.append('thumbnail', file);
 
-    // Ambil token secara manual dari storage
     const token = localStorage.getItem('lupis_auth_token');
 
-    // MENGGUNAKAN NATIVE FETCH: 
-    // fetchWithTimeout biasanya menimpa header dengan application/json
     const response = await fetch(`${API_URL}/publish/upload-thumbnail`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`
-        // PENTING: Jangan tulis 'Content-Type': 'multipart/form-data' di sini.
-        // Biarkan browser yang secara otomatis menyuntikkan boundary-nya.
       },
       body: formData
     });

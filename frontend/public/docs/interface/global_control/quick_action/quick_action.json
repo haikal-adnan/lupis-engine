@@ -1,0 +1,71 @@
+{
+  "title": "Quick Action",
+  "category": "Antarmuka / Kontrol Global",
+  "description": "Panduan penggunaan fitur Quick Action di top bar Lupis Engine untuk akses kontrol cepat.",
+  "sections": [
+    {
+      "id": "pengenalan-quick-action",
+      "title": "Apa itu Quick Action?",
+      "blocks": [
+        {
+          "type": "image",
+          "url": "quick_action.png",
+          "alt": "Quick Action Interface",
+          "caption": "Tampilan Quick Action pada bagian Top Bar sistem."
+        },
+        {
+          "type": "text",
+          "content": "**Quick Action** adalah kumpulan kontrol cepat yang terletak pada *top bar* utama. Fitur ini dirancang untuk mempermudah alur kerja pengguna dengan menyediakan akses instan ke fungsi manajemen perubahan, tampilan, dan konfigurasi sistem."
+        },
+        {
+          "type": "alert",
+          "variant": "info",
+          "message": "Tombol-tombol ini selalu tersedia secara global terlepas dari panel mana yang sedang aktif."
+        }
+      ]
+    },
+    {
+      "id": "fungsi-tombol",
+      "title": "Daftar Kontrol Utama",
+      "blocks": [
+        {
+          "type": "features",
+          "items": [
+            { "title": "Undo", "desc": "Membatalkan perubahan terakhir yang dilakukan.", "icon": "RotateCcw", "color": "text-red-400" },
+            { "title": "Redo", "desc": "Mengulang kembali tindakan yang telah dibatalkan.", "icon": "RotateCw", "color": "text-green-400" },
+            { "title": "Toggle Theme", "desc": "Beralih antara mode gelap (dark) dan terang (light).", "icon": "SunMoon", "color": "text-yellow-500" },
+            { "title": "Settings", "desc": "Membuka panel konfigurasi global engine.", "icon": "Settings", "color": "text-gray-400" }
+          ]
+        },
+        {
+          "type": "table",
+          "headers": ["Tombol", "Fungsi", "Shortcut"],
+          "rows": [
+            ["Undo", "Membatalkan riwayat aksi", "Ctrl + Z"],
+            ["Redo", "Mengembalikan riwayat aksi", "Ctrl + Y"],
+            ["Toggle Theme", "Ganti visual antarmuka", "-"],
+            ["Settings", "Konfigurasi preferensi", "Ctrl + ,"]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tips-penggunaan",
+      "title": "Tips Efisiensi",
+      "blocks": [
+        {
+          "type": "alert",
+          "variant": "tip",
+          "message": "Gunakan **Undo** dan **Redo** secara cepat saat melakukan eksperimen pada visual scripting untuk menghindari kehilangan data penting."
+        },
+        {
+          "type": "shortcuts",
+          "items": [
+            { "keys": ["Ctrl", "Z"], "description": "Quick Undo" },
+            { "keys": ["Ctrl", "Y"], "description": "Quick Redo" }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -412,7 +412,7 @@ export default class SyncComponent {
             name: layerData.name,
             visible: true,
             locked: false,
-            opacity: layerData.opacity ?? 1.0, // <-- Tambahkan opacity
+            opacity: layerData.opacity ?? 1.0,
             zIndex: layerData.zIndex ?? 0,
             orderIndex: layerData.orderIndex ?? 0,
             entities: []

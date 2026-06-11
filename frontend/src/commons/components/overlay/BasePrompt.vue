@@ -33,7 +33,7 @@
               v-model="state.inputValue"
               type="text"
               :placeholder="state.placeholder"
-              class="w-full h-9 px-3 text-sm bg-background border border-input rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary text-white placeholder:text-white/50"
+              class="w-full h-9 px-3 text-sm bg-background border border-input rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary text-foreground placeholder:text-white/50"
               @keyup.enter="handleConfirm"
               @keyup.esc="handleCancel"
             />

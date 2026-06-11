@@ -212,7 +212,6 @@
 
 <script setup>
 import { ref, computed, watch, nextTick } from 'vue';
-// Menambahkan ikon Code dari lucide-vue-next
 import { X, GripVertical, Trash2, Plus, ChevronRight, Settings2, Copy, Link, MoreVertical, Code } from 'lucide-vue-next'; 
 import { GenerateUUID } from '@/commons/utils/generateUUID.js';
 import { usePopAlert } from '@/composables/usePopAlert';
@@ -238,7 +237,6 @@ const dragIndex = ref(null);
 const scrollContainerRef = ref(null);
 const isMouseDownOutside = ref(false);
 
-// Refs baru untuk Raw Editor
 const isRawEditorOpen = ref(false);
 const rawJsonString = ref('');
 
@@ -332,7 +330,7 @@ watch(() => props.isOpen, (newVal) => {
   } else {
     stack.value = [];
     rootData.value = [];
-    isRawEditorOpen.value = false; // Reset state saat ditutup
+    isRawEditorOpen.value = false; 
   }
 });
 
@@ -439,7 +437,6 @@ const cleanDataDeep = (arr, type) => {
   }
 };
 
-// Metode Raw Editor
 const openRawEditor = () => {
   const cleanData = cleanDataDeep(rootData.value, props.variable.type);
   rawJsonString.value = JSON.stringify(cleanData, null, 2);
@@ -454,7 +451,6 @@ const saveRawJson = () => {
   try {
     const parsed = JSON.parse(rawJsonString.value);
     
-    // Validasi dasar agar format cocok dengan tipe awal
     if (props.variable.type === 'Map' && (typeof parsed !== 'object' || Array.isArray(parsed) || parsed === null)) {
       throw new Error("Tipe data tidak valid. Root elemen harus berupa Object (Map).");
     }
@@ -462,10 +458,8 @@ const saveRawJson = () => {
       throw new Error("Tipe data tidak valid. Root elemen harus berupa Array (List).");
     }
 
-    // Konversi kembali dari JSON mentah ke struktur UI
     rootData.value = formatDataDeep(parsed, props.variable.type);
     
-    // Reset navigasi (stack) ke root agar pengguna tidak terjebak di path yang dihapus
     stack.value = [{
       label: props.variable.name || 'Unnamed',
       type: props.variable.type,

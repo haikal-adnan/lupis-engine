@@ -1,18 +1,14 @@
 <script setup>
 import { usePublishLogic } from '@modules/publish/composables/usePublishLogic.js';
 
-// Import Quill Editor
 import { QuillEditor } from '@vueup/vue-quill';
 import '@vueup/vue-quill/dist/vue-quill.snow.css';
 
-// Import Icons
 import { UploadCloud, FileType2, MonitorPlay, Check, X, Search, Loader2 } from 'lucide-vue-next';
 
-// Import Base Components
 import BaseInput from '@/commons/components/inputs/BaseInput.vue';
 import ThumbnailCropperModal from '@modules/publish/components/ThumbnailCropperModal.vue'; 
 
-// Ekstrak state dan method dari composable
 const {
   isLoading,
   isUpdating,

@@ -227,13 +227,13 @@ export const BlueprintRenderer = {
       label: 'Batch Set Properties', 
       description: 'Set multiple properties in one execution node',
       icon: Layers,
-      allowDynamicInputs: false, // Kita atur false karena inspector yang akan memanage port
+      allowDynamicInputs: false, 
       allowDynamicOutputs: false,
       defaultData: { 
         settings: { headerTitle: 'Batch Set', headerColor: '#7E57C2', category: 'Logic' },
         data: {
-          steps: [], // Menyimpan daftar operasi
-          values: {} // Menyimpan nilai statis
+          steps: [], 
+          values: {}
         },
         inputs: [
           { _id: 'exec_in', label: 'In', dataType: 'execution', color: '#ffffff' }

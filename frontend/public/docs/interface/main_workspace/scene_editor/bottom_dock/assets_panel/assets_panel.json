@@ -1,0 +1,157 @@
+{
+  "title": "Dokumentasi Asset Panel",
+  "category": "Antarmuka Ruang Kerja",
+  "description": "Halaman referensi teknis mengenai fitur **Asset Panel**, manajemen direktori folder, serta pengelolaan berkas media yang digunakan di dalam engine.",
+  "sections": [
+    {
+      "id": "ikhtisar-asset-panel",
+      "title": "Ikhtisar & Jenis Aset",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "Asset Panel adalah pusat manajemen sumber daya yang berfungsi untuk mengatur hierarki folder dan menyimpan berbagai aset proyek, meliputi gambar, font, dan audio. Seluruh berkas yang terintegrasi pada ruang kerja akan dikelola melalui antarmuka ini."
+        },
+        {
+          "type": "image",
+          "url": "assets_panel.png",
+          "alt": "Overall Assets Panel",
+          "caption": "Tampilan keseluruhan antarmuka Asset Panel."
+        },
+        {
+          "type": "text",
+          "content": "Sistem manajemen aset ini didesain untuk menerima dan memproses berbagai ekstensi berkas spesifik, yang dikategorikan sebagai berikut:"
+        },
+        {
+          "type": "features",
+          "items": [
+            {
+              "title": "Aset Gambar",
+              "desc": "Mendukung format gambar statis yaitu **.png**, **.jpeg**, dan **.jpg**.",
+              "icon": "Image",
+              "color": "text-green-500"
+            },
+            {
+              "title": "Aset Audio",
+              "desc": "Mendukung format efek suara dan musik latar yaitu **.mp3**, **.ogg**, dan **.wav**.",
+              "icon": "Music",
+              "color": "text-purple-500"
+            },
+            {
+              "title": "Aset Font",
+              "desc": "Mendukung format tipografi berupa **.ttf**.",
+              "icon": "Type",
+              "color": "text-blue-500"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "pencarian-dan-navigasi",
+      "title": "Sistem Pencarian & Navigasi",
+      "blocks": [
+        {
+          "type": "image",
+          "url": "search.png",
+          "alt": "Search Bar pada Asset Panel",
+          "caption": "Antarmuka sistem pencarian aset (Search bar)."
+        },
+        {
+          "type": "text",
+          "content": "Fitur pencarian (Search Bar) diimplementasikan untuk memfasilitasi penemuan aset secara cepat berdasarkan nama berkas. Fitur ini sangat krusial dalam skenario proyek berskala besar yang memiliki ratusan aset."
+        },
+        {
+          "type": "text",
+          "content": "Operasi pemindahan aset antar folder didukung oleh mekanisme navigasi **Drag and Drop**. Pengguna dapat menggeser aset secara langsung ke folder tujuan. Selain itu, elemen navigasi **Breadcrumb** pada bagian atas panel dapat menerima operasi drop, memungkinkan pengembalian aset ke direktori induk secara instan."
+        }
+      ]
+    },
+    {
+      "id": "menu-konteks",
+      "title": "Menu Konteks (Context Menu)",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "Interaksi klik kanan (right-click) akan memicu eksekusi Menu Konteks yang isinya menyesuaikan dengan titik target kursor pengguna."
+        },
+        {
+          "type": "image",
+          "url": "folder_context.png",
+          "alt": "Context Menu Folder",
+          "caption": "Tampilan menu konteks ketika berinteraksi pada area kosong atau direktori folder."
+        },
+        {
+          "type": "text",
+          "content": "Tabel di bawah ini menjelaskan operasi yang tersedia saat interaksi klik kanan dilakukan pada **area kosong** Asset Panel:"
+        },
+        {
+          "type": "table",
+          "headers": ["Operasi", "Fungsi dan Deskripsi"],
+          "rows": [
+            ["New Folder", "Menciptakan direktori folder baru pada tingkat hierarki yang sedang aktif."],
+            ["Import Assets", "Membuka dialog sistem operasi untuk mengunggah berkas aset baru ke dalam proyek."],
+            ["Paste", "Menempelkan berkas aset yang sebelumnya telah dieksekusi dengan perintah Copy atau Cut."],
+            ["Refresh", "Mensinkronisasikan ulang daftar aset untuk mendeteksi perubahan terbaru di dalam sistem."]
+          ]
+        },
+        {
+          "type": "text",
+          "content": "Apabila interaksi klik kanan dilakukan secara spesifik pada **suatu berkas aset**, opsi berikut akan dimunculkan:"
+        },
+        {
+          "type": "image",
+          "url": "asset_context.png",
+          "alt": "Context Menu Asset",
+          "caption": "Tampilan menu konteks ketika berinteraksi pada asset."
+        },
+        {
+          "type": "table",
+          "headers": ["Operasi", "Fungsi dan Deskripsi"],
+          "rows": [
+            ["Copy ID", "Menyalin ID unik dari aset yang bersangkutan ke dalam memori perangkat (Clipboard)."],
+            ["Cut", "Memotong aset untuk persiapan pemindahan ke dalam direktori lain."],
+            ["Copy", "Menyalin aset untuk persiapan duplikasi ke dalam direktori lain."],
+            ["Rename", "Memodifikasi atau mengubah nama dari berkas aset tersebut."],
+            ["Delete", "Menghapus berkas aset dari pangkalan data proyek secara permanen."]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "penerapan-aset",
+      "title": "Sistem Penerapan Aset (Apply Asset)",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "Sistem **Apply Asset** didesain untuk merampingkan alur kerja integrasi aset ke dalam sebuah *Entity*. Jika suatu *Entity* telah terkonfigurasi dengan komponen pembaca aset seperti **ImageRenderer**, **Tilemap**, atau **Audio** sistem akan menyuntikkan menu konteks tambahan pada aset yang sesuai."
+        },
+        {
+          "type": "image",
+          "url": "asset_apply.png",
+          "alt": "Context Menu Apply to Selected Entity",
+          "caption": "Menu konteks aset dengan adanya tambahan operasi pamasangan otomatis (Apply to selected entity)."
+        },
+        {
+          "type": "steps",
+          "items": [
+            "Melakukan seleksi (select) pada sebuah Entity target melalui antarmuka Canvas ataupun Hierarchy.",
+            "Memastikan bahwa Entity yang diseleksi telah dipasangkan komponen pendukung, misalnya ImageRenderer untuk pemuatan gambar.",
+            "Melakukan klik kanan pada berkas aset yang kompatibel di dalam Asset Panel.",
+            "Memilih opsi **Apply to selected entity** pada menu konteks, sehingga sistem secara otomatis memasangkan aset tersebut ke komponen Entity."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "peringatan-konektivitas",
+      "title": "Peringatan Konektivitas Pengunggahan",
+      "blocks": [
+        {
+          "type": "alert",
+          "variant": "warning",
+          "message": "Apabila pengguna ingin mengunggah (upload) aset baru, perangkat harus terhubung ke jaringan internet. Tanpa koneksi internet, proses unggah tidak dapat diselesaikan karena berkas memerlukan transmisi data menuju ke pangkalan server."
+        }
+      ]
+    }
+  ]
+}

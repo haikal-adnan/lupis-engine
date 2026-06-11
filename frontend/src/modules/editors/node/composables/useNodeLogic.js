@@ -203,7 +203,6 @@ export function useNodeLogic() {
     const node = selectedNode.value;
     const portsKey = type === 'input' ? 'inputs' : 'outputs';
     
-    // Clone array untuk menghindari mutasi state secara langsung sebelum masuk store
     const updatedPorts = [...(node[portsKey] || [])];
     const portIndex = updatedPorts.findIndex(p => p._id === portId);
     

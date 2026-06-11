@@ -53,7 +53,6 @@ export function useClipboard() {
     if (targets.length === 0) return;
 
     if (isLayerId(targets[0])) {
-      // Pastikan fungsi duplicateLayer sudah ditambahkan di layerActions ya
       return sceneStore.duplicateLayer(targets[0]);
     } else {
       return sceneStore.duplicateEntity(targets);
@@ -78,11 +77,9 @@ export function useClipboard() {
     let resultIds = [];
 
     if (type === 'layer') {
-      // Mengambil section ('world' atau 'ui') dari data layer yang di-copy
       const sourceData = Array.isArray(data) ? data[0] : data;
       const targetSection = sourceData?.section || 'world';
 
-      // Mengirimkan targetSection ke parameter kedua pasteLayer
       resultIds = sceneStore.pasteLayer(editorStore.clipboard, targetSection);
       
     } else if (type === 'entity') {

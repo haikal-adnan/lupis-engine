@@ -1,0 +1,69 @@
+{
+  "title": "Animation View",
+  "category": "Antarmuka",
+  "description": "Halaman referensi untuk memahami tata letak dan fungsionalitas ruang kerja Animation View pada **Lupis Engine**.",
+  "sections": [
+    {
+      "id": "sidebar-kiri",
+      "title": "Animation Clip Manager",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "Bagian ini difungsikan khusus untuk manajemen *clip* dari animasi. Daftar *clip* yang ada di dalam proyek ditampilkan di sini, memberikan akses cepat untuk memilih, menambah, atau menghapus *clip* yang akan dimodifikasi."
+        }
+      ]
+    },
+    {
+      "id": "sidebar-kanan",
+      "title": "Animation Property Inspector",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "Panel ini merupakan inspektur untuk mengatur *property* dari *clip* yang dipilih saat ini. Seluruh parameter teknis yang memengaruhi perilaku *clip* dapat dikonfigurasi melalui area ini."
+        },
+        {
+          "type": "alert",
+          "variant": "info",
+          "message": "Pastikan sebuah *clip* sudah dipilih pada Sidebar Kiri agar parameter *property* dapat dimunculkan dan diedit."
+        }
+      ]
+    },
+    {
+      "id": "konten-tengah",
+      "title": "Animation Canvas",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "Area tengah adalah *viewport* utama yang menampilkan pratinjau visual dari animasi saat ini. Hasil render dari *clip* yang dipilih akan muncul di sini, dan animasi dapat dilihat secara *real-time* saat dijalankan melalui *timeline*."
+        }
+      ]
+    },
+    {
+      "id": "bottom-dock",
+      "title": "Bottom Dock",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "Area *dock* bagian bawah menyediakan dua menu utama yang esensial untuk penyusunan animasi:"
+        },
+        {
+          "type": "features",
+          "items": [
+            {
+              "title": "Asset Panel",
+              "desc": "Menu untuk mengatur *clip asset* yang digunakan saat ini. Referensi lebih lanjut dapat dilihat pada tautan [Asset Panel](#asset-panel).",
+              "icon": "Folder",
+              "color": "text-green-500"
+            },
+            {
+              "title": "Timeline Panel",
+              "desc": "Navigasi waktu untuk memutar pratinjau animasi, mengontrol *playback*, serta memanipulasi *keyframe* secara presisi.",
+              "icon": "Clock",
+              "color": "text-purple-500"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

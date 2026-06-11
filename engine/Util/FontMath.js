@@ -118,15 +118,12 @@ export default class FontMath {
                 const gdat = font.chars[ch.charCodeAt(0)];
                 if (!gdat) continue;
 
-                // Hitung batas X secara normal berdasarkan karakter yang ada
                 const x0 = lineW + gdat.ox * scale;
                 const x1 = x0 + gdat.w * scale;
 
                 if (x0 < xMin) xMin = x0;
                 if (x1 > xMax) xMax = x1;
 
-                // Kita tetap bisa menghitung Y murni sebagai cadangan,
-                // tapi nanti akan di-override oleh nilai standar jika tersedia.
                 const y0 = cy + gdat.oy * scale;
                 const y1 = y0 + gdat.h * scale;
                 if (y0 < yMin) yMin = y0;
@@ -143,22 +140,15 @@ export default class FontMath {
             cy += lineH;
         }
 
-        // ========================================================
-        // MODIFIKASI: LANGSUNG AKTIFKAN STANDARD HEIGHT
-        // ========================================================
         if (font.common && font.common.stdYMin !== undefined) {
-            // Override nilai Y dengan nilai standar dari GLFontResource
             yMin = font.common.stdYMin * scale;
             const scaledStdYMax = font.common.stdYMax * scale;
             
             const totalLines = lines.length > 0 ? lines.length : 1;
-            // yMax memperhitungkan jumlah baris teks saat ini
             yMax = scaledStdYMax + ((totalLines - 1) * lineH);
         } else if (xMin === Infinity) {
-            // Fallback jika string kosong dan tidak ada data standar
             xMin = 0; xMax = cx; yMin = 0; yMax = lineH * (lines.length > 0 ? lines.length : 1);
         }
-        // ========================================================
 
         return {
             lines,
@@ -166,7 +156,7 @@ export default class FontMath {
             wordCounts,
             width: cx,
             boundsWidth: Math.max(0, xMax - xMin),
-            boundsHeight: Math.max(0, yMax - yMin), // Dijamin stabil!
+            boundsHeight: Math.max(0, yMax - yMin),
             xMin, yMin, xMax, yMax,
             baseline: (font.common?.base || 0) * scale,
             lineH

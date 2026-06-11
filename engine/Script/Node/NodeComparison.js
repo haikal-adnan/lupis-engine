@@ -50,7 +50,6 @@ export const NodeComparison = {
 
     'logic_switch': {
         execute: (runner, node) => {
-            // Gunakan ?? agar nilai false murni tidak ter-override
             const rawValue = runner.getInputValue(node, 'value') ?? node.data?.value;
             const cases = node.data?.cases || [];
             const dataType = node.data?.dataType || 'string';
@@ -58,7 +57,6 @@ export const NodeComparison = {
             let matchIndex = -1;
 
             if (dataType === 'boolean') {
-                // Konversi ringan yang aman untuk Boolean & String ("true")
                 const isTrue = (typeof rawValue === 'boolean') 
                     ? rawValue 
                     : String(rawValue || '').toLowerCase().trim() === 'true';
@@ -77,7 +75,6 @@ export const NodeComparison = {
                 matchIndex = cases.findIndex(c => String(c).trim() === checkStr);
             }
 
-            // Eksekusi flow berdasarkan index case yang cocok
             if (matchIndex !== -1) {
                 runner.executeFlow(node._id, `out_case_${matchIndex}`);
             } else {

@@ -1,18 +1,15 @@
 export const NodeCollectionHelper = {
     'get_from_path': {
         getOutput: (runner, node, outputKey) => {
-            // Pastikan kita hanya memproses output yang memiliki awalan 'result'
             if (!outputKey.startsWith('result')) return null;
 
             const collection = runner.getInputValue(node, 'collection');
             
-            // Deteksi apakah ini port utama atau port tambahan
             const isBasePort = outputKey === 'result';
             const suffix = isBasePort ? '' : outputKey.replace('result', '');
             
-            // Petakan ke input dan data value yang benar
             const pathInputKey = `path_in${suffix}`;
-            const dataValueKey = isBasePort ? 'path' : `path_in${suffix}`; // 'path' untuk backward compatibility dengan defaultData
+            const dataValueKey = isBasePort ? 'path' : `path_in${suffix}`; 
             
             const pathInput = runner.getInputValue(node, pathInputKey);
             const pathString = (pathInput != null && pathInput !== "") ? pathInput : node.data?.values?.[dataValueKey];

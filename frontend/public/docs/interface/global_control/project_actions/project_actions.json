@@ -1,0 +1,78 @@
+{
+  "title": "Project Actions",
+  "category": "Referensi Interface",
+  "description": "Panduan kontrol utama untuk mengelola status proyek di Lupis Engine, mencakup sinkronisasi, penyimpanan, navigasi dasbor, dan status indikator.",
+  "sections": [
+    {
+      "id": "visual-overview",
+      "title": "Overview Interface",
+      "blocks": [
+        {
+          "type": "image",
+          "url": "project_actions.webp",
+          "alt": "Interface Project Actions",
+          "caption": "Panel kontrol utama untuk manajemen proyek."
+        }
+      ]
+    },
+    {
+      "id": "action-details",
+      "title": "Fungsi Aksi",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "Panel **Project Actions** memberikan akses cepat untuk mengelola data proyek antara lokal dan server."
+        },
+        {
+          "type": "table",
+          "headers": ["Action", "Deskripsi"],
+          "rows": [
+            ["Sync from Server", "Mengambil data terbaru dari server dan menimpa perubahan lokal yang belum tersimpan."],
+            ["Save to Server", "Mengunggah dan menyimpan perubahan saat ini ke database server."],
+            ["Back to Dashboard", "Navigasi kembali ke menu utama dasbor tanpa menyimpan perubahan."]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "status-indikator",
+      "title": "Status Indikator Sinkronisasi",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "Status sinkronisasi proyek ditandai dengan dot (titik) yang berubah warna berdasarkan kondisi data saat ini:"
+        },
+        {
+          "type": "table",
+          "headers": ["Warna", "Status", "Deskripsi"],
+          "rows": [
+            ["Hijau", "Synced", "Proyek sudah sinkron dengan server. Versi saat ini adalah yang terbaru."],
+            ["Merah", "Unsynced", "Terdapat perubahan lokal yang belum diunggah ke server."]
+          ]
+        },
+        {
+          "type": "alert",
+          "variant": "tip",
+          "message": "**Best Practice:** Pastikan indikator dot selalu berwarna **hijau** sebelum Anda keluar dari editor untuk memastikan semua progres kerja telah tersimpan dengan aman."
+        }
+      ]
+    },
+    {
+      "id": "shortcuts-warnings",
+      "title": "Shortcut & Peringatan",
+      "blocks": [
+        {
+          "type": "shortcuts",
+          "items": [
+            { "keys": ["Ctrl", "S"], "description": "Save to Server" }
+          ]
+        },
+        {
+          "type": "alert",
+          "variant": "warning",
+          "message": "**Perhatian:** Gunakan 'Sync from Server' dengan hati-hati. Aksi ini akan me-refresh project Anda dengan data terbaru dari server dan menghapus perubahan lokal yang belum disimpan."
+        }
+      ]
+    }
+  ]
+}

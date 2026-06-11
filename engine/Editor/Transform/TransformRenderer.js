@@ -39,8 +39,13 @@ export class TransformRenderer {
 
         for (const h of geometry.handles) {
             if (h.type.length === 2) {
-                shape.drawCircle(h.x, h.y, rCorner, dotFill, 12, proj);
-                shape.drawCircleOutline(h.x, h.y, rCorner, dotStroke, lineThick, 16, proj);
+                shape.drawParametricShape(
+                    "circle", h.x, h.y, rCorner * 2, rCorner * 2,
+                    dotFill, dotStroke, 
+                    true, lineThick, 
+                    0, 0, 
+                    proj, 0, 1, 1, 0.5, 0.5, false, false
+                );
             } 
             else {
                 if (geometry.isSizeLocked) continue;
@@ -54,8 +59,13 @@ export class TransformRenderer {
                     h_dim = capLen; 
                 }
 
-                shape.drawRect(h.x, h.y, w, h_dim, dotFill, proj, rot, 1, 1, 0.5, 0.5);
-                shape.drawRectStroke(h.x, h.y, w, h_dim, dotStroke, lineThick, proj, rot, 1, 1, 0.5, 0.5);
+                shape.drawParametricShape(
+                    "rectangle", h.x, h.y, w, h_dim,
+                    dotFill, dotStroke, 
+                    true, lineThick, 
+                    0, 4, 
+                    proj, rot, 1, 1, 0.5, 0.5, false, false
+                );
             }
         }
     }

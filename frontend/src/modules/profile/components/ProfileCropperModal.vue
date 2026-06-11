@@ -10,7 +10,6 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'crop']);
 
-// --- STATE IMAGE & TRANSFORM ---
 const imageSrc = ref('');
 const scale = ref(1);
 const position = ref({ x: 0, y: 0 });
@@ -22,7 +21,6 @@ const containerRef = ref(null);
 const MIN_SCALE = 0.1; 
 const MAX_SCALE = 10;  
 
-// --- WATCHERS ---
 watch(() => props.imageFile, (newFile) => {
   if (newFile) {
     const reader = new FileReader();
@@ -41,13 +39,11 @@ watch(() => props.isOpen, (newVal) => {
   if (newVal) resetView();
 });
 
-// --- LOGIKA TRANSFORM ---
 const resetView = () => {
   scale.value = 1;
   position.value = { x: 0, y: 0 };
   
   if (imageRef.value && containerRef.value) {
-    // PERBAIKAN: Hitung skala awal berdasarkan ukuran lingkaran (80%)
     const guideSize = containerRef.value.clientWidth * 0.8; 
     const scaleX = guideSize / imageRef.value.naturalWidth;
     const scaleY = guideSize / imageRef.value.naturalHeight;
@@ -69,7 +65,6 @@ const handleZoom = (e) => {
 const zoomIn = () => { if(!props.isUploading) scale.value = Math.min(scale.value * 1.2, MAX_SCALE); };
 const zoomOut = () => { if(!props.isUploading) scale.value = Math.max(scale.value / 1.2, MIN_SCALE); };
 
-// --- LOGIKA DRAG ---
 const startDrag = (e) => {
   if (props.isUploading) return;
   isDragging.value = true;
@@ -91,7 +86,6 @@ const stopDrag = () => {
   isDragging.value = false;
 };
 
-// --- LOGIKA FINALIZE CROP ---
 const handleCrop = () => {
   if (!imageRef.value || !containerRef.value) return;
 
@@ -102,28 +96,22 @@ const handleCrop = () => {
   canvas.width = OUTPUT_SIZE;
   canvas.height = OUTPUT_SIZE;
 
-  // PERBAIKAN: Target area crop hanya sebesar lingkaran (80% dari container)
   const containerSize = containerRef.value.clientWidth;
   const guideSize = containerSize * 0.8; 
   const outputRatio = OUTPUT_SIZE / guideSize;
 
   ctx.save();
   
-  // Isi background dengan warna putih
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // Geser titik nol ke tengah Canvas target
   ctx.translate(OUTPUT_SIZE / 2, OUTPUT_SIZE / 2);
   
-  // Aplikasikan pergeseran (pan) user, sesuaikan dengan rasio output
   ctx.translate(position.value.x * outputRatio, position.value.y * outputRatio);
 
-  // Aplikasikan skala (zoom) user, sesuaikan dengan rasio output
   const finalScale = scale.value * outputRatio;
   ctx.scale(finalScale, finalScale);
   
-  // Gambar tepat dari tengah *image*
   const img = imageRef.value;
   ctx.drawImage(img, -img.naturalWidth / 2, -img.naturalHeight / 2);
   
