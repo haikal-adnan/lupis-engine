@@ -3,7 +3,6 @@ import cors from "cors";
 import { connectMongo } from "./config/mongo.js";
 import { connectPostgres, pool } from "./config/postgres.js";
 
-// 1. Buka komentar import verifyToken
 import { verifyToken } from "./middleware/authMiddleware.js";
 
 import Project from "./models/nosql/Project.js";
@@ -34,27 +33,13 @@ export async function initDatabase() {
   await connectPostgres();
 }
 
-// ==========================================
-// 2. DAFTARKAN ROUTE PUBLIK
-// (Jangan pasang verifyToken di sini)
-// ==========================================
 app.use("/auth", authRoutes);
-app.use("/publish", publishRoutes); // Katalog game harus bisa dilihat publik
-app.use("/profile", profileRoutes); // Profil pengguna harus bisa dilihat publik
-
-// ==========================================
-// 3. DAFTARKAN ROUTE MODULAR PRIVAT
-// (Pasang verifyToken untuk melindungi semua endpoint di dalamnya)
-// ==========================================
+app.use("/publish", publishRoutes);
+app.use("/profile", profileRoutes);
 app.use("/assets", verifyToken, assetRoutes);
 app.use("/projects", verifyToken, projectRoutes);
 app.use("/folders", verifyToken, folderRoutes);
 
-
-// ==========================================
-// 4. DAFTARKAN ROUTE SATUAN PRIVAT
-// (Sisipkan verifyToken sebagai parameter kedua)
-// ==========================================
 
 app.get("/projects", verifyToken, async (req, res) => {
   try {
@@ -134,10 +119,6 @@ app.get("/script/:scriptId", verifyToken, async (req, res) => {
   }
 });
 
-// ==========================================
-// 5. ROUTE TESTING (Opsional: Publik atau Privat)
-// ==========================================
-
 app.get("/test-users", async (req, res) => {
   try {
     const result = await pool.query("SELECT * FROM users");
@@ -164,6 +145,59 @@ app.post("/test-email", async (req, res) => {
     res.json({ message: "Email sent successfully!", detail: result.data });
   } else {
     res.status(500).json({ error: "Failed to send email", detail: result.error });
+  }
+});
+
+import Review from "./models/nosql/Review.js"; 
+
+app.post("/api/reviews", async (req, res) => {
+  try {
+    const { userName, comment, stars } = req.body;
+
+    if (!userName || !comment || stars === undefined) {
+      return res.status(400).json({
+        success: false,
+        message: "Semua field (userName, comment, stars) harus diisi"
+      });
+    }
+
+    const newReview = new Review({
+      userName,
+      comment,
+      stars: parseInt(stars)
+    });
+
+    const savedReview = await newReview.save();
+
+    res.status(201).json({
+      success: true,
+      message: "Review berhasil disimpan",
+      data: savedReview
+    });
+
+  } catch (e) {
+    res.status(500).json({ 
+      success: false, 
+      error: e.message 
+    });
+  }
+});
+
+app.get("/api/reviews", async (req, res) => {
+  try {
+    const reviews = await Review.find().sort({ createdAt: -1 });
+    
+    res.json({
+      success: true,
+      total: reviews.length,
+      data: reviews
+    });
+
+  } catch (e) {
+    res.status(500).json({ 
+      success: false, 
+      error: e.message 
+    });
   }
 });
 

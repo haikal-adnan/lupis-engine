@@ -7,7 +7,7 @@ import { useTheme } from "@commons/composables/useTheme.js";
 
 import { useAuthStore } from '@/stores/useAuthStore.js';
 import { useAuthActions } from '@/stores/scene/useAuthActions.js'; 
-import { useAvatarUrl } from '@/composables/useAvatarUrl.js'; // <-- Tambahkan ini
+import { useAvatarUrl } from '@/composables/useAvatarUrl.js'; 
 
 import { 
   Gamepad2, ChevronDown, MessageSquare, Github, ExternalLink, Plus, User, Settings, LogOut, Menu, X 
@@ -19,7 +19,7 @@ const { initTheme } = useTheme();
 
 const authStore = useAuthStore();
 const authActions = useAuthActions();
-const { getAvatarUrl } = useAvatarUrl(); // <-- Ekstrak fungsi
+const { getAvatarUrl } = useAvatarUrl(); 
 
 const profileDropdown = ref(null);
 const isMobileMenuOpen = ref(false);

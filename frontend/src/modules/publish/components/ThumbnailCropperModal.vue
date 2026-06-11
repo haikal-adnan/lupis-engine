@@ -21,7 +21,6 @@ const containerRef = ref(null);
 const MIN_SCALE = 0.1; 
 const MAX_SCALE = 10;  
 
-// TARGET OUTPUT RESOLUTION (16:9)
 const OUTPUT_WIDTH = 1280;
 const OUTPUT_HEIGHT = 720;
 
@@ -48,8 +47,7 @@ const resetView = () => {
   position.value = { x: 0, y: 0 };
   
   if (imageRef.value && containerRef.value) {
-    // Hitung area crop (16:9 dari lebar container visual)
-    const guideWidth = containerRef.value.clientWidth * 0.9; // Guide takes 90% of width
+    const guideWidth = containerRef.value.clientWidth * 0.9; 
     const guideHeight = guideWidth * (9/16); 
 
     const scaleX = guideWidth / imageRef.value.naturalWidth;

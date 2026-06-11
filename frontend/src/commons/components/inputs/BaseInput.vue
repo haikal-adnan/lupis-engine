@@ -3,7 +3,8 @@
     <label
       v-if="label"
       :for="id"
-      class="text-xs font-medium text-muted-foreground select-none"
+      class="font-medium text-muted-foreground select-none"
+      :class="[labelSize]"
     >
       {{ label }}
     </label>
@@ -20,9 +21,9 @@
       <div
         v-if="prefix"
         class="h-full flex items-center justify-center pl-3 pr-2 select-none border-r border-transparent 
-                bg-muted/20 text-muted-foreground group-focus-within:text-primary group-focus-within:border-border/50 transition-colors"
+               bg-muted/20 text-muted-foreground group-focus-within:text-primary group-focus-within:border-border/50 transition-colors"
       >
-        <span class="text-xs font-bold font-mono">
+        <span class="font-bold font-mono" :class="[labelSize]">
           {{ prefix }}
         </span>
       </div>
@@ -32,8 +33,8 @@
         ref="inputRef"
         v-model="localValue"
         :type="type"
-        class="w-full h-full bg-transparent border-none outline-none text-sm text-foreground placeholder:text-muted-foreground/40
-                focus:ring-0 px-2"
+        class="w-full h-full bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground/40 focus:ring-0 px-2"
+        :class="[textSize]"
         :placeholder="placeholder"
         :style="{
           paddingLeft: prefix ? '0px' : paddingX
@@ -45,7 +46,8 @@
       
       <div 
         v-if="suffix" 
-        class="h-full flex items-center pr-3 pl-1 text-xs text-muted-foreground select-none bg-muted/20"
+        class="h-full flex items-center pr-3 pl-1 text-muted-foreground select-none bg-muted/20"
+        :class="[labelSize]"
       >
         {{ suffix }}
       </div>
@@ -64,7 +66,9 @@ const props = defineProps({
   type: { type: String, default: 'text' },
   radius: { type: String, default: '0.375rem' },
   height: { type: String, default: '2rem' },
-  paddingX: { type: String, default: '0.75rem' }
+  paddingX: { type: String, default: '0.75rem' },
+  textSize: { type: String, default: 'text-sm' },
+  labelSize: { type: String, default: 'text-xs' }
 })
 
 const emit = defineEmits(['blur', 'change'])

@@ -153,7 +153,6 @@ const currentRect = computed(() => ({
     h: sourceH.value || 0
 }));
 
-// --- TAMBAHAN: COMPUTED PROPERTIES UNTUK FILTER ---
 const safeFilterMode = computed({
   get: () => activeClipData.value?.filterMode || 'pixelated',
   set: (val) => {
@@ -177,7 +176,6 @@ const filterOptions = [
   { label: 'Pixelated', value: 'pixelated' },
   { label: 'Smooth', value: 'smooth' }
 ]
-// --------------------------------------------------
 
 const clipName = computed({
   get: () => activeClipData.value?.name || '',

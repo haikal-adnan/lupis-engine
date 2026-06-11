@@ -1,0 +1,140 @@
+{
+  "title": "Dokumentasi Panel Properties Animasi",
+  "category": "Panduan Pengembang",
+  "description": "Halaman referensi teknis yang merangkum seluruh parameter konfigurasi pada Panel Properties, mencakup pengaturan data klip animasi hingga preferensi ruang kerja editor pada Lupis Engine.",
+  "sections": [
+    {
+      "id": "penjelasan-properties",
+      "title": "Penjelasan Sistem Properties",
+      "blocks": [
+        {
+          "type": "image",
+          "url": "clip_property_overall.png",
+          "alt": "Overview Panel Properties",
+          "caption": "Gambaran visual antarmuka Panel Properties yang mengendalikan parameter animasi dan editor."
+        },
+        {
+          "type": "text",
+          "content": "Panel Properties bertindak sebagai antarmuka utama untuk melakukan modifikasi terhadap parameter fundamental dari objek animasi yang sedang aktif. Sistem ini terbagi menjadi dua segmentasi fungsional: modifikasi metadata klip yang berdampak langsung pada pipeline rendering runtime (Clip Properties), serta modifikasi ruang kerja visual yang bertujuan untuk meningkatkan efisiensi proses authoring tanpa mempengaruhi hasil akhir kompilasi aset (Editor Settings). Setiap perubahan nilai pada parameter ini akan secara langsung direfleksikan pada komponen inspektur dan subsistem pemrosesan grafis engine."
+        }
+      ]
+    },
+    {
+    "id": "clip-properties",
+    "title": "Clip Properties (Properti Klip)",
+    "blocks": [
+        {
+        "type": "text",
+        "content": "Bagian Clip Properties menampung seluruh variabel esensial yang mendefinisikan identitas, perilaku, dan teknik pemrosesan grafis dari suatu rangkaian animasi. Parameter di dalam seksi ini sangat krusial karena menentukan bagaimana engine akan memuat tekstur ke dalam memori VRAM, menentukan titik tumpu (origin) kalkulasi matriks transformasi, mengatur algoritma penyaringan piksel (filtering), hingga mendikte kecepatan pemutaran sekuens visual melalui pengaturan Frame Rate. Pendefinisian nilai Base Size secara spesifik digunakan sebagai acuan dasar saat kalkulasi pemotongan otomatis (slicing) dari koordinat sprite sheet utama."
+        },
+        {
+        "type": "table",
+        "headers": [
+            "Parameter",
+            "Tipe / Input",
+            "Deskripsi Teknis"
+        ],
+        "rows": [
+            [
+            "Clip ID / Name",
+            "String",
+            "Identitas unik (ID) dan nama tampilan untuk registrasi aset pada struktur data internal engine."
+            ],
+            [
+            "Texture",
+            "UUID / Asset Ref",
+            "Referensi relasional yang menunjuk pada data tekstur (spritesheet) spesifik di dalam memori."
+            ],
+            [
+            "Rendering",
+            "Enum (Pixelated / Smooth)",
+            "Menentukan algoritma interpolasi pemrosesan tekstur grafis. Opsi 'Pixelated' (Point Filtering) digunakan untuk mempertahankan ketajaman setiap piksel pada aset pixel art, sedangkan 'Smooth' (Bilinear Filtering) menerapkan filter pelembutan tepi pada elemen tekstur saat mengalami transformasi skala."
+            ],
+            [
+            "SDF",
+            "Toggle (Enabled / Disabled)",
+            "Mengaktifkan fitur Signed Distance Field untuk merender aset berbasis vektor atau font agar tetap tajam dan presisi tanpa mengalami penurunan kualitas visual meskipun dilakukan pembesaran (zoom) ekstrem pada viewport."
+            ],
+            [
+            "Base Size (W/H)",
+            "Integer",
+            "Resolusi dimensi absolut dalam hitungan piksel yang menjadi acuan standar setiap frame sprite."
+            ],
+            [
+            "Pivot",
+            "Grid 3x3",
+            "Titik asal (origin point) untuk operasi translasi, rotasi, dan skala geometri pada engine."
+            ],
+            [
+            "Frame Rate (FPS)",
+            "Integer",
+            "Konfigurasi nilai kecepatan pembaruan delta-time per detik untuk eksekusi animasi."
+            ],
+            [
+            "Loop Animation",
+            "Boolean",
+            "Menentukan apakah instruksi iterasi frame harus diulang ke indeks nol saat mencapai akhir struktur array."
+            ],
+            [
+            "Flip Horizontal",
+            "Boolean / Toggle",
+            "Menerapkan instruksi pembalikan proyeksi sumbu X (inversi matriks skalar) pada level rendering."
+            ]
+        ]
+        },
+        {
+        "type": "image",
+        "url": "clip_property.png",
+        "alt": "Detail Clip Properties",
+        "caption": "Tampilan parameter Clip Properties termasuk konfigurasi ID, Texture, Base Size, Pivot, Rendering, SDF, dan FPS."
+        }
+    ]
+    },
+    {
+      "id": "editor-settings",
+      "title": "Editor Settings (Pengaturan Editor)",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "Seksi Editor Settings didedikasikan secara penuh untuk mengakomodasi kebutuhan visual pengembang selama berada di dalam lingkungan authoring (editor). Modifikasi pada parameter ini murni bersifat kosmetik lokal atau alat bantu visualisasi dan sama sekali tidak akan diekspor maupun diikutsertakan dalam proses build proyek game. Pengaturan ini mencakup kemampuan untuk mengubah warna latar belakang kanvas agar kontras objek lebih jelas, sistem grid untuk kalibrasi posisi koordinat absolut, hingga aktivasi fitur tingkat lanjut seperti Onion Skin yang sangat vital dalam menganalisis transisi gerak antar frame secara simultan."
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Pengaturan",
+            "Nilai Opsi",
+            "Fungsi Operasional"
+          ],
+          "rows": [
+            [
+              "Background",
+              "Hex Color Code",
+              "Menentukan warna lapisan latar paling belakang pada sistem kanvas editor (misal: #1A1A1A)."
+            ],
+            [
+              "Grid Overlay",
+              "Enabled / Disabled",
+              "Menampilkan garis panduan kartesian berbasis ukuran referensi untuk membantu presisi perataan piksel."
+            ],
+            [
+              "Onion Skin",
+              "Enabled / Disabled",
+              "Merender proyeksi tembus pandang (translucent) dari entitas frame sebelum atau sesudah iterasi saat ini."
+            ],
+            [
+              "Zoom Level",
+              "Float / Skalar",
+              "Menentukan tingkat pembesaran optik matriks kamera pada area viewport atau ruang kerja kanvas."
+            ]
+          ]
+        },
+        {
+          "type": "image",
+          "url": "clip_property_editor.png",
+          "alt": "Detail Editor Settings",
+          "caption": "Tampilan pengaturan lingkungan ruang kerja editor mencakup warna latar, grid, dan pengaturan zoom."
+        }
+      ]
+    }
+  ]
+}

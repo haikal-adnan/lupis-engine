@@ -78,9 +78,8 @@ export function usePlayLogic() {
         throw new Error("Data project tidak valid atau kosong.");
       }
 
-      // ✅ PERBAIKAN: Masukkan `project` ke dalam runtimeData
       const runtimeData = {
-        project: resources.project || {}, // Pastikan project dikirim ke GameLoader
+        project: resources.project || {}, 
         scenes: resources.scenes || [],
         assets: resources.assets || [],
         prefabs: resources.prefabs || [],
@@ -88,7 +87,6 @@ export function usePlayLogic() {
         editorConfig: {} 
       };
 
-      // Set resolusi target dinamis berdasarkan setingan project
       const refW = resources.project?.settings?.ui?.width || 1920;
       const refH = resources.project?.settings?.ui?.height || 1080;
       

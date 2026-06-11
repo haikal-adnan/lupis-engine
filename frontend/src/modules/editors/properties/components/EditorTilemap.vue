@@ -125,7 +125,7 @@ import BaseNumber from "@/commons/components/inputs/BaseNumber.vue";
 import BaseCheckbox from "@/commons/components/inputs/BaseCheckbox.vue"; 
 import BaseButton from "@/commons/components/buttons/BaseButton.vue"; 
 import IconButton from "@/commons/components/buttons/IconButton.vue";
-import BaseSelect from "@/commons/components/inputs/BaseSelect.vue"; // TAMBAHAN
+import BaseSelect from "@/commons/components/inputs/BaseSelect.vue";
 
 const { 
   hasTilemap, 
@@ -169,11 +169,10 @@ const displayOpacity = computed({
   }
 });
 
-// --- TAMBAHAN BINDING RENDERING ---
 const filterMode = bindComponentProp('Tilemap', 'filterMode');
 
 const safeFilterMode = computed({
-  get: () => filterMode.value || 'pixelated', // Fallback aman untuk map lama
+  get: () => filterMode.value || 'pixelated', 
   set: (val) => filterMode.value = val
 });
 
@@ -181,7 +180,6 @@ const filterOptions = [
   { label: 'Pixelated', value: 'pixelated' },
   { label: 'Smooth', value: 'smooth' }
 ];
-// ----------------------------------
 
 const totalWidth = computed(() => (tileWidth.value || 0) * (mapWidth.value || 0));
 const totalHeight = computed(() => (tileHeight.value || 0) * (mapHeight.value || 0));

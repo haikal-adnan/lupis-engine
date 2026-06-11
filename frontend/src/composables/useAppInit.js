@@ -1,5 +1,3 @@
-// src/composables/useAppInit.js
-
 import { onUnmounted, watch, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'; 
 import { useProjectStore } from '@/stores/useProjectStore'
@@ -35,7 +33,6 @@ export function useAppInit() {
           projectStore.isLoading = false; 
         }
 
-        // --- TAMBAHAN 1: Cek apakah project masih null setelah di-load ---
         if (!projectStore.project) {
           throw new Error("Data project gagal dimuat dari database.");
         }
@@ -48,10 +45,7 @@ export function useAppInit() {
           }
         }
         
-        // --- TAMBAHAN 2: Gunakan optional chaining (?.) untuk keamanan ekstra ---
         const projectOwnerId = projectStore.project?.ownerId || projectStore.project?.userId;
-
-        console.log(projectStore.project?.ownerId, projectStore.project?.userId)
 
         if (!currentUser || projectOwnerId !== currentUser.id) {
           showPop({
@@ -74,7 +68,7 @@ export function useAppInit() {
           type: 'error'
         });
         
-        cleanupApplication(); // Bersihkan state sebelum ditendang balik
+        cleanupApplication(); 
         return router.push('/dashboard');
       }
     }

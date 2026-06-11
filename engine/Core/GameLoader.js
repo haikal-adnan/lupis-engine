@@ -136,7 +136,7 @@ export default class GameLoader {
             _id: p._id,
             name: p.name,
             data: p.data,
-            children: p.children || [] // ✅ TAMBAHKAN BARIS INI
+            children: p.children || [] 
         }]));
     }
 

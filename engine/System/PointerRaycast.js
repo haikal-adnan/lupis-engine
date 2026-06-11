@@ -9,7 +9,6 @@ export default class PointerRaycast {
         const pointer = game.input.getPointer();
         const canvas = game.renderer?.canvas || { width: 1920, height: 1080 };
 
-        // 1. Siapkan koordinat Pointer untuk UI dan World
         const uiSettings = world.settings?.ui || { width: 1920, height: 1080 };
         const uiPointer = {
             x: (pointer.x / canvas.width) * uiSettings.width,
@@ -23,7 +22,6 @@ export default class PointerRaycast {
             y: camera.y + (pointer.y - halfH) / (camera.scale || 1)
         };
 
-        // 2. Kumpulkan layer, tapi PISAHKAN pengurutan UI dan World
         const sortLayersDescending = (a, b) => {
             const zA = a.zIndex ?? 0;
             const zB = b.zIndex ?? 0;
@@ -37,30 +35,25 @@ export default class PointerRaycast {
         const sortedUILayers = [...(world.layersUI || [])].sort(sortLayersDescending);
         const sortedWorldLayers = [...(world.layersWorld || [])].sort(sortLayersDescending);
 
-        // Gabungkan: Pastikan layer UI SELALU dievaluasi duluan (berada di array terdepan)
         const allLayers = [...sortedUILayers, ...sortedWorldLayers];
 
-        // Fungsi bantu: Cek apakah entity ini ATAU salah satu parent-nya sedang false (tidak aktif)
         const isEntityAndParentsActive = (entity, world) => {
             if (entity.active === false) return false;
             
             let current = entity;
             while (current.parentId) {
                 current = world.entities.find(e => e.id === current.parentId || e._id === current.parentId);
-                if (!current) break; // Jika parent tidak ketemu, kita anggap aman (aktif)
+                if (!current) break; 
                 if (current.active === false) return false;
             }
             return true;
         };
 
-        // 3. Evaluasi dari layer paling atas ke bawah
         for (const layer of allLayers) {
-            // Layer false -> Lewati sepenuhnya
             if (layer.active === false || !layer.visible || !layer.entities) continue;
             
             const isUILayer = layer.scriptId === 'ui' || (layer.name && layer.name.includes('UI'));
 
-            // Urutkan entitas di dalam layer DESCENDING
             const sortedEntities = [...layer.entities].sort((a, b) => {
                 const zA = a.zIndex ?? 0;
                 const zB = b.zIndex ?? 0;
@@ -70,15 +63,12 @@ export default class PointerRaycast {
                 const oB = b.orderIndex ?? 0;
                 if (oA !== oB) return oB - oA;
 
-                // Child harus dievaluasi mendahului Parent-nya
                 const depthA = this._getEntityDepth(a, world);
                 const depthB = this._getEntityDepth(b, world);
                 return depthB - depthA; 
             });
 
-            // 4. Hit-test setiap entity
             for (const entity of sortedEntities) {
-                // --- PERBAIKAN: Gunakan fungsi pengecekan berantai ---
                 if (!isEntityAndParentsActive(entity, world)) continue;
 
                 const comps = entity.components;
@@ -87,7 +77,6 @@ export default class PointerRaycast {
                 const hasUITransform = !!comps.UITransform;
                 const hasTransform = !!comps.Transform;
                 
-                // Jika tidak punya Transform sama sekali, tidak bisa dihitung ukurannya
                 if (!hasUITransform && !hasTransform) continue;
 
                 const isEntityUI = isUILayer || hasUITransform;
@@ -105,11 +94,10 @@ export default class PointerRaycast {
                     drawY = (uiSettings.height * anchorY) + (globalT.y || 0);
                 }
 
-                // Cek apakah pointer berada di dalam area Transform atau Collider
                 const isHit = this._checkIntersection(entity, globalT, drawX, drawY, targetPointer.x, targetPointer.y);
                 
                 if (isHit) {
-                    return entity; // Kembalikan entitas ini
+                    return entity; 
                 }
             }
         }
@@ -206,7 +194,6 @@ export default class PointerRaycast {
             }
             return false;
         } else {
-            // Fallback bounding box murni jika tak ada collider
             const boxW = t.width * Math.abs(t.scaleX ?? 1);
             const boxH = t.height * Math.abs(t.scaleY ?? 1);
             const pivotOffsetX = boxW * (t.pivotX ?? 0.5);

@@ -1,0 +1,74 @@
+{
+  "title": "Dokumentasi Console Panel",
+  "category": "Antarmuka Ruang Kerja",
+  "description": "Halaman referensi teknis mengenai fitur **Console Panel**, pelacakan kesalahan (debugging), dan sistem visualisasi log saat menjalankan preview game.",
+  "sections": [
+    {
+      "id": "ikhtisar-console-panel",
+      "title": "Ikhtisar Console Panel",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "Console Panel adalah modul antarmuka yang berfungsi untuk menampilkan pesan log, peringatan, dan error secara real-time ketika game sedang dijalankan dalam mode **Preview**. Panel ini merupakan alat bantu utama bagi pengembang untuk melakukan proses debugging dan memantau jalannya logika game."
+        }
+      ]
+    },
+    {
+      "id": "jenis-log-console",
+      "title": "Klasifikasi & Warna Log",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "Pesan yang muncul di dalam Console Panel dikelompokkan menjadi 4 jenis utama berdasarkan sumbernya. Untuk mempermudah identifikasi visual, setiap jenis log dirender dengan warna teks yang spesifik:"
+        },
+        {
+          "type": "features",
+          "items": [
+            {
+              "title": "Script Notification (User)",
+              "desc": "Pesan kustom yang dikirimkan oleh pengguna secara manual melalui **Node Script Notification**. Log ini menggunakan teks berwarna **Putih**.",
+              "icon": "MessageSquare",
+              "color": "text-slate-100"
+            },
+            {
+              "title": "System Information",
+              "desc": "Log standar dari internal engine yang menandakan bahwa suatu proses atau sistem berjalan sukses. Menggunakan teks berwarna **Hijau**.",
+              "icon": "CheckCircle",
+              "color": "text-green-500"
+            },
+            {
+              "title": "System Warning",
+              "desc": "Peringatan otomatis dari sistem mengenai adanya indikasi masalah atau performa suboptimal yang perlu diperhatikan. Menggunakan teks berwarna **Kuning**.",
+              "icon": "AlertTriangle",
+              "color": "text-yellow-500"
+            },
+            {
+              "title": "System Error",
+              "desc": "Pemberitahuan kesalahan fatal dari sistem yang menyebabkan kegagalan eksekusi fungsi atau berpotensi menghentikan game. Menggunakan teks berwarna **Merah**.",
+              "icon": "XCircle",
+              "color": "text-red-500"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "panduan-penggunaan-sederhana",
+      "title": "Alur Pemantauan Log",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "Konsol ini bekerja secara otomatis tanpa memerlukan konfigurasi tambahan yang rumit di sisi antarmuka."
+        },
+        {
+          "type": "steps",
+          "items": [
+            "Aktifkan mode **Preview** untuk mulai menjalankan game.",
+            "Amati Console Panel yang terletak di area ruang kerja untuk melihat pesan mengalir secara real-time.",
+            "Gunakan visualisasi warna untuk menyaring prioritas penanganan masalah (misal: fokus ke warna merah jika terjadi crash)."
+          ]
+        }
+      ]
+    }
+  ]
+}

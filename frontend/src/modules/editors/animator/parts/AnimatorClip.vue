@@ -1,3 +1,5 @@
+// AnimatorClip
+
 <template>
   <div class="flex flex-col h-full w-full relative outline-none select-none bg-background border-r border-border font-sans" @click="closeMenu">
     
@@ -35,87 +37,91 @@
       </div>
     </div>
 
-    <div class="flex-1 overflow-y-auto pb-6 relative pt-2" 
-         @contextmenu.prevent="handleContextMenu($event, null)"
-         @dragover.prevent="onRootDragOver"
-         @drop.prevent="onRootDrop"
-         @dragleave="onDragLeave">
-      
-      <div v-for="node in treeVisualData" :key="node.id" class="flex flex-col">
-        
-        <div class="relative">
-          <div v-show="dragState.targetId === node.id && dragState.position === 'top'" 
-               class="absolute -top-[1px] left-2 right-2 h-[2px] bg-primary z-10 pointer-events-none rounded-full"></div>
-
-          <div class="group flex items-center w-full py-2.5 px-3 cursor-pointer transition-all duration-200 relative"
-            draggable="true"
-            @dragstart.stop="onDragStart($event, node)"
-            @dragover.prevent.stop="onDragOver($event, node)"
-            @dragleave.prevent.stop="onDragLeave"
-            @drop.prevent.stop="onDrop($event, node)"
-            :class="[
-              node.type === 'category' ? 'mt-1' : 'mx-3 my-1 rounded-lg border w-[calc(100%-24px)]',
-              activeClipId === node.id ? 'bg-primary/15 border-primary text-primary shadow-sm' : 'text-muted-foreground hover:bg-muted/40 hover:text-foreground border-transparent',
-              dragState.targetId === node.id && dragState.position === 'inside' ? 'ring-2 ring-primary bg-primary/20 rounded-lg' : ''
-            ]"
-            @click.stop="node.type === 'category' ? handlers.toggleCategory(node.id) : selectClip(node.id)"
-            @contextmenu.prevent.stop="handleContextMenu($event, node)"
-          >
-            <div v-if="node.type === 'category'" class="flex items-center justify-center w-5 h-5 mr-1 text-muted-foreground">
-              <component :is="node.isOpen ? ChevronDown : ChevronRight" class="w-3.5 h-3.5" />
-            </div>
-
-            <component :is="node.type === 'category' ? (node.isOpen ? FolderOpen : Folder) : Film" class="w-4 h-4 mr-2.5" :class="[ node.type === 'category' ? 'text-yellow-500' : (activeClipId === node.id ? 'text-primary' : 'opacity-70') ]"/>
-            <span class="text-sm flex-grow" :class="node.type === 'category' ? 'font-semibold tracking-wide' : 'font-medium'">{{ node.name }}</span>
-            
-            <span v-if="node.type === 'category'" class="text-[10px] font-bold opacity-50 bg-muted px-2 rounded-full">
-              {{ node._uiChildren?.length || 0 }}
-            </span>
-            <PlayCircle v-else-if="activeClipId === node.id" class="w-4 h-4 text-primary animate-pulse" />
-          </div>
-
-          <div v-show="dragState.targetId === node.id && dragState.position === 'bottom'" 
-               class="absolute -bottom-[1px] left-2 right-2 h-[2px] bg-primary z-10 pointer-events-none rounded-full"></div>
-        </div>
-
-        <div v-if="node.type === 'category' && node.isOpen" class="relative mb-2">
-          <div class="absolute top-0 bottom-0 w-[1.5px] pointer-events-none transition-all duration-300" :class="selectedInside(node) ? 'bg-primary opacity-70' : 'bg-border'" style="left: 21px;"></div>
+    <div class="flex-1 min-h-0 relative w-full">
+      <ScrollArea>
+        <div class="pb-6 relative pt-2 h-full min-h-[100px]" 
+             @contextmenu.prevent="handleContextMenu($event, null)"
+             @dragover.prevent="onRootDragOver"
+             @drop.prevent="onRootDrop"
+             @dragleave="onDragLeave">
           
-          <div v-for="child in node._uiChildren" :key="child.id" class="relative ml-8 mr-3">
-            <div v-show="dragState.targetId === child.id && dragState.position === 'top'" 
-                 class="absolute -top-[1px] left-0 right-0 h-[2px] bg-primary z-10 pointer-events-none rounded-full"></div>
+          <div v-for="node in treeVisualData" :key="node.id" class="flex flex-col">
+            
+            <div class="relative">
+              <div v-show="dragState.targetId === node.id && dragState.position === 'top'" 
+                   class="absolute -top-[1px] left-2 right-2 h-[2px] bg-primary z-10 pointer-events-none rounded-full"></div>
 
-            <div class="group flex items-center my-1 px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-200 border"
-              draggable="true"
-              @dragstart.stop="onDragStart($event, child)"
-              @dragover.prevent.stop="onDragOver($event, child)"
-              @dragleave.prevent.stop="onDragLeave"
-              @drop.prevent.stop="onDrop($event, child)"
-              :class="activeClipId === child.id ? 'bg-primary/15 border-primary text-primary shadow-sm' : 'bg-transparent border-transparent text-muted-foreground hover:bg-accent hover:text-foreground hover:border-border/50'"
-              @click.stop="selectClip(child.id)"
-              @contextmenu.prevent.stop="handleContextMenu($event, child)"
-            >
-              <Film class="w-4 h-4 mr-3" :class="activeClipId === child.id ? 'text-primary' : 'opacity-60'" />
-              <span class="text-sm font-medium flex-grow">{{ child.name }}</span>
-              <PlayCircle v-if="activeClipId === child.id" class="w-4 h-4 text-primary opacity-80" />
+              <div class="group flex items-center w-full py-2.5 px-3 cursor-pointer transition-all duration-200 relative"
+                draggable="true"
+                @dragstart.stop="onDragStart($event, node)"
+                @dragover.prevent.stop="onDragOver($event, node)"
+                @dragleave.prevent.stop="onDragLeave"
+                @drop.prevent.stop="onDrop($event, node)"
+                :class="[
+                  node.type === 'category' ? 'mt-1' : 'mx-3 my-1 rounded-lg border w-[calc(100%-24px)]',
+                  activeClipId === node.id ? 'bg-primary/15 border-primary text-primary shadow-sm' : 'text-muted-foreground hover:bg-muted/40 hover:text-foreground border-transparent',
+                  dragState.targetId === node.id && dragState.position === 'inside' ? 'ring-2 ring-primary bg-primary/20 rounded-lg' : ''
+                ]"
+                @click.stop="node.type === 'category' ? handlers.toggleCategory(node.id) : selectClip(node.id)"
+                @contextmenu.prevent.stop="handleContextMenu($event, node)"
+              >
+                <div v-if="node.type === 'category'" class="flex items-center justify-center w-5 h-5 mr-1 text-muted-foreground">
+                  <component :is="node.isOpen ? ChevronDown : ChevronRight" class="w-3.5 h-3.5" />
+                </div>
+
+                <component :is="node.type === 'category' ? (node.isOpen ? FolderOpen : Folder) : Film" class="w-4 h-4 mr-2.5" :class="[ node.type === 'category' ? 'text-yellow-500' : (activeClipId === node.id ? 'text-primary' : 'opacity-70') ]"/>
+                <span class="text-sm flex-grow" :class="node.type === 'category' ? 'font-semibold tracking-wide' : 'font-medium'">{{ node.name }}</span>
+                
+                <span v-if="node.type === 'category'" class="text-[10px] font-bold opacity-50 bg-muted px-2 rounded-full">
+                  {{ node._uiChildren?.length || 0 }}
+                </span>
+                <PlayCircle v-else-if="activeClipId === node.id" class="w-4 h-4 text-primary animate-pulse" />
+              </div>
+
+              <div v-show="dragState.targetId === node.id && dragState.position === 'bottom'" 
+                   class="absolute -bottom-[1px] left-2 right-2 h-[2px] bg-primary z-10 pointer-events-none rounded-full"></div>
             </div>
 
-            <div v-show="dragState.targetId === child.id && dragState.position === 'bottom'" 
-                 class="absolute -bottom-[1px] left-0 right-0 h-[2px] bg-primary z-10 pointer-events-none rounded-full"></div>
+            <div v-if="node.type === 'category' && node.isOpen" class="relative mb-2">
+              <div class="absolute top-0 bottom-0 w-[1.5px] pointer-events-none transition-all duration-300" :class="selectedInside(node) ? 'bg-primary opacity-70' : 'bg-border'" style="left: 21px;"></div>
+              
+              <div v-for="child in node._uiChildren" :key="child.id" class="relative ml-8 mr-3">
+                <div v-show="dragState.targetId === child.id && dragState.position === 'top'" 
+                     class="absolute -top-[1px] left-0 right-0 h-[2px] bg-primary z-10 pointer-events-none rounded-full"></div>
+
+                <div class="group flex items-center my-1 px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-200 border"
+                  draggable="true"
+                  @dragstart.stop="onDragStart($event, child)"
+                  @dragover.prevent.stop="onDragOver($event, child)"
+                  @dragleave.prevent.stop="onDragLeave"
+                  @drop.prevent.stop="onDrop($event, child)"
+                  :class="activeClipId === child.id ? 'bg-primary/15 border-primary text-primary shadow-sm' : 'bg-transparent border-transparent text-muted-foreground hover:bg-accent hover:text-foreground hover:border-border/50'"
+                  @click.stop="selectClip(child.id)"
+                  @contextmenu.prevent.stop="handleContextMenu($event, child)"
+                >
+                  <Film class="w-4 h-4 mr-3" :class="activeClipId === child.id ? 'text-primary' : 'opacity-60'" />
+                  <span class="text-sm font-medium flex-grow">{{ child.name }}</span>
+                  <PlayCircle v-if="activeClipId === child.id" class="w-4 h-4 text-primary opacity-80" />
+                </div>
+
+                <div v-show="dragState.targetId === child.id && dragState.position === 'bottom'" 
+                     class="absolute -bottom-[1px] left-0 right-0 h-[2px] bg-primary z-10 pointer-events-none rounded-full"></div>
+              </div>
+            </div>
+
+          </div>
+
+          <div v-if="dragState.position === 'root' && dragState.id" 
+               class="mx-3 mt-4 h-12 border-2 border-dashed border-primary/50 rounded-lg flex items-center justify-center text-xs text-primary bg-primary/5">
+            Drop to move out of category
+          </div>
+
+          <div v-if="treeVisualData.length === 0" class="flex flex-col items-center justify-center p-8 text-center opacity-50">
+            <Film class="w-8 h-8 mb-2" />
+            <span class="text-xs">No clips found</span>
           </div>
         </div>
-
-      </div>
-
-      <div v-if="dragState.position === 'root' && dragState.id" 
-           class="mx-3 mt-4 h-12 border-2 border-dashed border-primary/50 rounded-lg flex items-center justify-center text-xs text-primary bg-primary/5">
-        Drop to move out of category
-      </div>
-
-      <div v-if="treeVisualData.length === 0" class="flex flex-col items-center justify-center p-8 text-center opacity-50">
-        <Film class="w-8 h-8 mb-2" />
-        <span class="text-xs">No clips found</span>
-      </div>
+      </ScrollArea>
     </div>
 
     <BaseContextMenu v-if="contextMenu.visible" :position="{ x: contextMenu.x, y: contextMenu.y }" :items="contextMenu.items" @close="closeMenu" />
@@ -127,6 +133,8 @@ import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { Search, MoreVertical, FolderPlus, Film, Folder, FolderOpen, ChevronRight, ChevronDown, PlayCircle, Trash2 } from 'lucide-vue-next'
 import BaseDropdown from '@ui/overlay/BaseDropdown.vue'
 import BaseContextMenu from '@ui/overlay/BaseContextMenu.vue'
+// Pastikan untuk mengimpor ScrollArea dari jalur yang benar
+import ScrollArea from '@ui/overlay/ScrollArea.vue'
 import { useAnimatorLogic } from '@editors/animator/composables/useAnimatorLogic.js'
 import { useAnimatorMenu } from '@editors/animator/composables/useAnimatorMenu.js'
 

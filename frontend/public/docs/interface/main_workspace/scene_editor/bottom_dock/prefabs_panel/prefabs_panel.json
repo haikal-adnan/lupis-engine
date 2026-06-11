@@ -1,0 +1,137 @@
+{
+  "title": "Dokumentasi Prefab Panel",
+  "category": "Antarmuka Ruang Kerja",
+  "description": "Halaman referensi teknis mengenai fitur **Prefab Panel**, pengelolaan cetak biru (blueprint) objek game, serta sistem pembuatan entity instan di dalam engine.",
+  "sections": [
+    {
+      "id": "ikhtisar-prefab-panel",
+      "title": "Ikhtisar Prefab",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "Prefab Panel adalah komponen antarmuka yang berfungsi untuk menyimpan dan mengelola **Prefab** sebuah cetak biru (blueprint) dari kumpulan komponen dan entity yang dapat digunakan kembali (*reusable*) di berbagai scene. Prefab mempercepat proses pengembangan dengan mematangkan konfigurasi objek tertentu sebelum diduplikasi."
+        },
+        {
+          "type": "image",
+          "url": "prefabs_panel.png",
+          "alt": "Overall Prefab Panel",
+          "caption": "Tampilan keseluruhan antarmuka Prefab Panel."
+        },
+        {
+          "type": "alert",
+          "variant": "info",
+          "message": "Penjelasan di atas merupakan gambaran umum sistem Prefab. Untuk panduan arsitektur data, serialisasi, dan optimasi performa yang mendalam, silakan merujuk pada [Dokumentasi Lengkap Prefab Engine](https://example.com/docs/prefab-system-deep-dive)."
+        }
+      ]
+    },
+    {
+      "id": "filter-dan-pencarian",
+      "title": "Sistem Navigasi & Klasifikasi",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "Untuk mempermudah manajemen komponen visual yang kompleks, Prefab Panel dilengkapi dengan bilah pencarian (*search bar*) serta menu filter kategori utama. Fitur ini memisahkan konteks pengembangan berdasarkan tipe ruang objek yang digunakan."
+        },
+        {
+          "type": "image",
+          "url": "prefabs_search.png",
+          "alt": "Search Bar pada Prefab Panel",
+          "caption": "Antarmuka sistem pencarian prefab (Search bar)."
+        },
+        {
+          "type": "features",
+          "items": [
+            {
+              "title": "Kategori World",
+              "desc": "Menampilkan daftar prefab objek yang hidup di dalam ruang simulasi permainan 2D/3D (misal: Karakter, Obstacle, Item).",
+              "icon": "Globe",
+              "color": "text-blue-500"
+            },
+            {
+              "title": "Kategori UI",
+              "desc": "Menampilkan daftar prefab elemen antarmuka pengguna grafis (misal: HUD Canvas, Tombol Menu, Pop-up Dialog).",
+              "icon": "Layout",
+              "color": "text-yellow-500"
+            }
+          ]
+        },
+        {
+          "type": "image",
+          "url": "prefabs_toggle.png",
+          "alt": "Toggle Kategori Prefab",
+          "caption": "Toggle untuk memilih kategori prefab yang ingin ditampilkan di dalam panel."
+        }
+      ]
+    },
+    {
+      "id": "menu-konteks-prefab",
+      "title": "Menu Konteks Prefab (Right-Click)",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "Interaksi klik kanan (*right-click*) pada area Prefab Panel memiliki perilaku adaptif yang disesuaikan dengan posisi target kursor."
+        },
+        {
+          "type": "text",
+          "content": "Berikut adalah tabel operasi yang tersedia saat melakukan klik kanan pada **area kosong** di dalam Prefab Panel:"
+        },
+        {
+          "type": "table",
+          "headers": ["Operasi", "Fungsi dan Deskripsi"],
+          "rows": [
+            ["Refresh Library", "Memperbarui pustaka prefab untuk menyelaraskan perubahan berkas prefab dari direktori lokal."]
+          ]
+        },
+        {
+          "type": "text",
+          "content": "Apabila interaksi klik kanan dilakukan secara spesifik pada **elemen Prefab** yang terdaftar, opsi menu operasional berikut akan dimunculkan:"
+        },
+        {
+          "type": "table",
+          "headers": ["Operasi", "Fungsi dan Deskripsi"],
+          "rows": [
+            ["Instantiate to...", "Membuat dan memasukkan entity baru ke dalam scene aktif dengan menerapkan konfigurasi prefab yang dipilih secara langsung."],
+            ["Rename", "Mengubah nama dari berkas prefab terdaftar."],
+            ["Duplicate", "Menggandakan berkas prefab beserta seluruh struktur komponen di dalamnya."],
+            ["Delete", "Menghapus aset prefab dari pustaka proyek secara permanen."]
+          ]
+        },
+        {
+          "type": "image",
+          "url": "prefabs_context.png",
+          "alt": "Context Menu Prefab",
+          "caption": "Tampilan menu konteks saat berinteraksi pada elemen prefab yang terdaftar."
+        }
+      ]
+    },
+    {
+      "id": "alur-pembuatan-prefab",
+      "title": "Alur Pembuatan & Menghubungkan Prefab",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "Pengguna dapat mendaftarkan entity biasa menjadi sebuah prefab baru melalui interaksi pada **Hierarchy** maupun **Canvas Utama**. Jika pengguna menyeleksi entity yang belum terhubung dengan prefab mana pun, opsi interaksi tambahan akan otomatis terbuka."
+        },
+        {
+          "type": "steps",
+          "items": [
+            "Pilih (select) entity target yang ingin dijadikan cetak biru melalui jendela Hierarchy atau area Canvas Utama.",
+            "Pastikan entity tersebut berstatus independen (tidak terhubung ke prefab lain). Menu tambahan bernama **Link to Selected** akan muncul pada menu konteks panel.",
+            "Klik kanan pada Hierarchy entity atau Canvas, lalu eksekusi untuk mendaftarkan konfigurasi entity tersebut ke dalam pustaka Prefab Panel."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "batasan-sistem-hierarki",
+      "title": "Sistem Restriksi Hierarki Prefab",
+      "blocks": [
+        {
+          "type": "alert",
+          "variant": "warning",
+          "message": "Apabila suatu Entity bertindak sebagai bagian dari struktur Prefab dan memiliki *child entity* di bawahnya, objek anak (*child*) tersebut **tidak dapat dipindahkan atau dikeluarkan** dari hierarki induk prefab secara manual. Restriksi ini diterapkan oleh sistem untuk menjaga keutuhan struktur data dan validasi relasi komponen prefab asal."
+        }
+      ]
+    }
+  ]
+}   

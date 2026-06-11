@@ -1,7 +1,7 @@
 import { 
   Clapperboard, 
   RefreshCw, 
-  MapPin // Icon yang cocok untuk menandakan posisi scene saat ini
+  MapPin 
 } from 'lucide-vue-next';
 
 export const BlueprintScene = {
@@ -53,14 +53,12 @@ export const BlueprintScene = {
       description: 'Mendapatkan nama scene yang sedang aktif saat ini', 
       icon: MapPin, 
       allowDynamicInputs: false, 
-      allowDynamicOutputs: false, // Output sudah pasti (fix), jadi false
+      allowDynamicOutputs: false, 
       defaultData: { 
         settings: { headerTitle: 'Get Current Scene', headerColor: '#8E24AA', category: 'Scene' },
         data: {},
-        // Tidak butuh input exec_in dan target, karena ini data konstan global
         inputs: [], 
         outputs: [
-          // Tidak butuh exec_out, langsung return nilai string
           { _id: 'sceneName', label: 'Scene Name', dataType: 'string', color: '#E040FB' }
         ]
       } 

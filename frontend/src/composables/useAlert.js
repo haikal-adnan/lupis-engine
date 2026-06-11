@@ -5,7 +5,7 @@ const state = ref({
   title: '',
   message: '',
   buttonText: 'OK',
-  type: 'info' // 'info' | 'success' | 'warning' | 'error'
+  type: 'info' 
 });
 
 let resolvePromise = null;

@@ -1,13 +1,12 @@
 <script setup>
-// Tambahkan Gamepad2 dan User
 import { Search, MonitorPlay, Download, ChevronRight, Gamepad2, User } from 'lucide-vue-next';
 import { useExploreLogic } from '@/modules/explore/composables/useExploreLogic.js';
 import { useAvatarUrl } from '@/composables/useAvatarUrl.js';
-import { useThumbnailUrl } from '@/composables/useThumbnailUrl.js'; // <-- Import
+import { useThumbnailUrl } from '@/composables/useThumbnailUrl.js';
 
 const { filteredGames, searchQuery, isLoading } = useExploreLogic();
 const { getAvatarUrl } = useAvatarUrl();
-const { getThumbnailUrl } = useThumbnailUrl(); // <-- Extract
+const { getThumbnailUrl } = useThumbnailUrl();
 
 </script>
 

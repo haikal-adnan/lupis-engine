@@ -1,0 +1,207 @@
+{
+  "title": "Dokumentasi Editor Timeline Animasi",
+  "category": "Panduan Pengembang",
+  "description": "Halaman referensi teknis lengkap mengenai struktur, kontrol, dan konfigurasi komponen blok sistem Timeline Animasi pada Lupis Engine.",
+  "sections": [
+    {
+      "id": "penjelasan-timeline",
+      "title": "Penjelasan Sistem Timeline",
+      "blocks": [
+        {
+          "type": "image",
+          "url": "timeline_panel.png",
+          "alt": "Overview Panel Timeline Animasi",
+          "caption": "Gambaran visual utama dari antarmuka area kerja panel timeline di dalam Lupis Engine."
+        },
+        {
+          "type": "text",
+          "content": "Panel Timeline merupakan pusat kendali dari sistem animasi berbasis sprite dalam Lupis Engine. Komponen ini berfungsi untuk mengatur sekuensial frame, memetakan aset visual, serta mengontrol manajemen waktu dari setiap objek animasi yang berjalan di dalam game. Melalui integrasi subsistem rendering, setiap perubahan data dalam track timeline ini akan langsung ditranslasikan menjadi struktur data sekuensial array yang efisien untuk dieksekusi oleh runtime engine secara real-time."
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Komponen Utama",
+            "Fungsi Teknis",
+            "Keterangan"
+          ],
+          "rows": [
+            [
+              "Track Timeline",
+              "Tempat peletakan rangkaian node frame secara kronologis.",
+              "Mendukung pengaturan durasi sekuens klip."
+            ],
+            [
+              "Cursor Playback",
+              "Indikator penunjuk posisi waktu atau indeks frame aktif.",
+              "Bergerak otomatis saat status pemutaran aktif."
+            ],
+            [
+              "Clip Manager",
+              "Sistem pengelola berkas klip animasi yang berbeda.",
+              "Memungkinkan pengembang beralih antar animasi objek."
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "playback-animasi",
+      "title": "Kontrol Playback Animasi",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "Sistem Playback bertugas mengeksekusi jalannya urutan frame animasi secara real-time di dalam area preview editor. Pemutaran sekuens ini berjalan secara presisi berdasarkan nilai FPS (Frames Per Second) yang dikonfigurasi pada panel properti. Sistem juga menerapkan logika perulangan otomatis (looping continuous), yang berarti ketika iterator pembaca frame mencapai ujung akhir dari indeks clip, sistem akan secara otomatis mengembalikan cursor ke frame awal demi menjaga kesinambungan visual secara konstan tanpa interupsi performa game."
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Kontrol Playback",
+            "Deskripsi Operasional",
+            "Dampak Sistem"
+          ],
+          "rows": [
+            [
+              "Navigasi Frame",
+              "Tombol untuk melompat maju satu frame atau kembali ke frame sebelumnya secara presisi.",
+              "Menghentikan pemutaran otomatis dan menggeser cursor sekuens."
+            ],
+            [
+              "Mulai Animasi (Play)",
+              "Mengaktifkan atau menghentikan siklus iterasi pembacaan frame.",
+              "Mengeksekusi siklus looping sesuai dengan target delta-time FPS."
+            ],
+            [
+              "Informasi Frame Aktif",
+              "Menampilkan data numerik konstan mengenai posisi indeks frame yang sedang dirender.",
+              "Berguna untuk proses debugging urutan timing sprite secara akurat."
+            ]
+          ]
+        },
+        {
+          "type": "image",
+          "url": "timeline_playback.png",
+          "alt": "Panel Kontrol Playback",
+          "caption": "Antarmuka tombol navigasi, play, dan informasi frame aktif pada sistem playback."
+        }
+      ]
+    },
+    {
+      "id": "toolbox-utama",
+      "title": "Fitur Toolbox Animasi",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "Toolbox menyediakan fungsionalitas utilitas cepat untuk memanipulasi struktur data frame dalam clip yang sedang aktif. Salah satu fitur utama dalam komponen ini adalah Auto Fill, sebuah mekanisme cerdas yang melakukan kalkulasi otomatis berdasarkan total dimensi lebar (width) dari aset gambar atau spritesheet yang digunakan. Dengan membagi total lebar tersebut menggunakan nilai ukuran dasar (base size), sistem dapat memotong dan menyusun seluruh rangkaian frame secara instan. Selain itu, terdapat pula perintah pembersihan total untuk mengosongkan jalur track secara cepat."
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Alat (Tool)",
+            "Deskripsi Fungsi",
+            "Algoritma Kerja Teknis"
+          ],
+          "rows": [
+            [
+              "Tambah Frame Baru",
+              "Menyisipkan satu slot frame kosong baru ke dalam ujung akhir sekuens animasi.",
+              "Alokasi memori objek frame baru pada struktur array clip animasi."
+            ],
+            [
+              "Auto Fill Frames",
+              "Pembuatan frame otomatis berdasarkan koordinat dan ukuran dasar aset.",
+              "Membagi total width aset dengan base size untuk menentukan jumlah frame."
+            ],
+            [
+              "Clear Clip Track",
+              "Menghapus seluruh rangkaian frame yang terdaftar dalam klip saat ini.",
+              "Melakukan reset total pada array frame sehingga track kembali kosong."
+            ]
+          ]
+        },
+        {
+          "type": "image",
+          "url": "timeline_toolbox.png",
+          "alt": "Komponen Toolbox Editor",
+          "caption": "Kumpulan tombol utilitas manipulasi frame seperti Tambah, Auto Fill, dan Clear."
+        }
+      ]
+    },
+    {
+      "id": "view-frame",
+      "title": "Tampilan Visual View Frame",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "Section View memberikan visualisasi representatif dari seluruh susunan node frame yang terdaftar dalam clip aktif. Area ini dirancang secara interaktif untuk memudahkan peninjauan struktur animasi sebelum dieksekusi di dalam pipeline rendering game. Setiap node frame yang tampak dapat diinteraksi secara langsung lewat klik mouse untuk memindahkan target cursor, memberikan efisiensi tinggi saat proses pengeditan dilakukan. Di samping itu, fungsionalitas penghapusan langsung juga disematkan pada tiap representasi node ini untuk membuang elemen yang tidak lagi diperlukan dalam sekuens."
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Metode Interaksi",
+            "Deskripsi Mekanisme",
+            "Hasil Output Pada Sistem"
+          ],
+          "rows": [
+            [
+              "Klik Node Frame",
+              "Melakukan klik pada salah satu kotak representasi frame di lini masa.",
+              "Cursor playback langsung berpindah ke indeks frame yang dipilih."
+            ],
+            [
+              "Hapus Node Frame",
+              "Mengeksekusi perintah penghapusan pada elemen frame yang ditentukan.",
+              "Mengurangi total frame dan menata ulang urutan indeks di sekitarnya."
+            ]
+          ]
+        },
+        {
+          "type": "image",
+          "url": "timeline_view.png",
+          "alt": "Area Tampilan View Frame",
+          "caption": "Representasi visual deretan node frame interaktif yang menyusun rangkaian klip animasi."
+        }
+      ]
+    },
+    {
+      "id": "property-frame-source",
+      "title": "Konfigurasi Properti & Source Rect",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "Panel Properti berfokus pada manajemen data koordinat spesifik dan optimalisasi memori untuk setiap frame yang menyusun animasi. Melalui parameter Source Rect (X, Y, W, H), sistem memotong koordinat bounding box dari tekstur aset utama secara akurat. Komponen ini juga mengadopsi fitur Source ID, sebuah pengenal unik untuk referensi potongan visual tertentu. Penggunaan Source ID memungkinkan pemakaian ulang (reusability) data sub-tekstur pada frame atau clip lain tanpa perlu memuat ulang aset ke dalam memori VRAM. Source ID akan digenerasikan secara otomatis oleh sistem saat penambahan frame baru dilakukan, namun pengembang tetap dapat menambahkannya secara manual untuk kebutuhan kustomisasi yang lebih kompleks."
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Atribut Properti",
+            "Tipe Data",
+            "Fungsi Teknis & Perilaku Sistem"
+          ],
+          "rows": [
+            [
+              "Source X & Y",
+              "Integer (Piksel)",
+              "Menentukan titik koordinat awal (top-left) pemotongan pada tekstur aset."
+            ],
+            [
+              "Source W & H",
+              "Integer (Piksel)",
+              "Menentukan dimensi lebar (width) dan tinggi (height) dari area bounding box sprite."
+            ],
+            [
+              "Source ID",
+              "Alfanumerik (String)",
+              "ID unik referensi potongan gambar. Terbuat otomatis saat frame ditambah, serta dapat dikonfigurasi secara manual."
+            ]
+          ]
+        },
+        {
+          "type": "image",
+          "url": "timeline_property.png",
+          "alt": "Panel Pengaturan Properti Frame",
+          "caption": "Konfigurasi parameter koordinat Source Rect serta pengelolaan referensi reusable Source ID."
+        }
+      ]
+    }
+  ]
+}

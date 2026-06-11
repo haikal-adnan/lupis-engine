@@ -120,6 +120,8 @@
         </div>
       </div>
 
+      <div class="h-16 shrink-0 pointer-events-none"></div>
+
     </div>
   </PropertySection>
 
@@ -135,7 +137,7 @@ import { Component, Star, Clock, X, Search } from 'lucide-vue-next';
 import PropertySection from "@ui/display/PropertySection.vue";
 import BaseButton from "@/commons/components/buttons/BaseButton.vue";
 import NodeBlueprintModal from '@editors/variable/views/NodeBlueprintModal.vue'; 
-import { useNodePreferences } from '@editors/variable/composables/useNodePreferences.js'; // Sesuaikan path
+import { useNodePreferences } from '@editors/variable/composables/useNodePreferences.js'; 
 import { useGraphEditor } from '@editors/graph/composables/useGraphEditor.js';
 import { STATIC_NODE_GROUPS } from '@editors/variable/composables/useNodeBlueprint.js';
 import { GenerateUUID } from '@/commons/utils/generateUUID.js';
@@ -146,7 +148,6 @@ const sidebarSearchQuery = ref('');
 const { favoriteNodes, recentNodes, toggleFavorite, addToRecent } = useNodePreferences();
 const { getCenterPos, store } = useGraphEditor();
 
-// Computed untuk hasil pencarian di sidebar
 const sidebarSearchResults = computed(() => {
   if (!sidebarSearchQuery.value) return [];
   
@@ -162,7 +163,7 @@ const sidebarSearchResults = computed(() => {
       if (isGroupMatch || isItemMatch) {
         results.push({
           ...item,
-          groupLabel: group.label // Ini memastikan groupLabel tersedia untuk key
+          groupLabel: group.label
         });
       }
     });
@@ -171,7 +172,6 @@ const sidebarSearchResults = computed(() => {
   return results;
 });
 
-// Fungsi menambahkan node ke canvas (Double Click)
 const handleAddNodeToCanvas = (template) => {
   const centerPos = getCenterPos();
   const newNodePayload = {
@@ -188,7 +188,6 @@ const handleAddNodeToCanvas = (template) => {
   addToRecent(template.type);
 };
 
-// Fungsi drag-and-drop ke canvas (Drag)
 const onDragNode = (event, item) => {
   const templateToDrag = { ...item };
   delete templateToDrag.groupLabel;

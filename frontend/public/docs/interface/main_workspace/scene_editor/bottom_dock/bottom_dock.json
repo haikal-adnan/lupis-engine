@@ -1,0 +1,60 @@
+{
+  "title": "Bottom Dock Overview",
+  "category": "Antarmuka Ruang Kerja",
+  "description": "Panduan ringkas mengenai fungsionalitas panel-panel yang terintegrasi pada area Bottom Dock Lupis Engine, berfungsi sebagai pusat manajemen sumber daya, alur logika, dan pelacakan proyek.",
+  "sections": [
+    {
+      "id": "pengenalan-bottom-dock",
+      "title": "Tentang Bottom Dock",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "**Bottom Dock** adalah area ruang kerja utama yang berada di bagian bawah antarmuka editor. Area ini mengelompokkan alat bantu penting untuk mengelola material dasar penyusun game, mencakup manajemen berkas media, logika pemrograman visual, cetak biru objek, hingga pemantauan sistem."
+        }
+      ]
+    },
+    {
+      "id": "komponen-panel-utama",
+      "title": "Daftar Panel Utama",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "Bottom Dock memuat empat panel esensial yang dapat diakses pengguna sesuai konteks pekerjaan yang sedang dilakukan:"
+        },
+        {
+          "type": "table",
+          "headers": ["Nama Panel", "Fungsi Utama", "Jenis Data yang Dikelola"],
+          "rows": [
+            ["Asset Panel", "Manajemen direktori dan berkas sumber daya proyek.", "Gambar (.png/.jpg), Audio (.mp3/.wav), Font (.ttf)"],
+            ["Console Panel", "Pelacakan kesalahan (debugging) dan pemantauan sistem real-time.", "Log Notifikasi, Info, Warning, Error"],
+            ["Prefab Panel", "Penyimpanan cetak biru (blueprint) objek untuk penggunaan ulang.", "Kategori World (Objek) & UI (Antarmuka)"],
+            ["Script Panel", "Pusat kendali logika game berbasis node-graph.", "Berkas Visual Scripting Modular"]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "standar-interaksi",
+      "title": "Standar Interaksi Umum",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "Untuk mempercepat alur kerja, sebagian besar panel di dalam Bottom Dock (khususnya Asset, Prefab, dan Script) dirancang dengan pola interaksi yang seragam:"
+        },
+        {
+          "type": "steps",
+          "items": [
+            "**Sistem Pencarian (Search Bar):** Memungkinkan pencarian berkas atau entri secara instan berdasarkan nama di dalam tumpukan data yang besar.",
+            "**Menu Konteks Adaptif:** Interaksi klik kanan (*right-click*) pada item akan memunculkan menu operasional standar seperti *Rename*, *Duplicate*, *Delete*, dan modifikasi spesifik lainnya.",
+            "**Injeksi Langsung (Apply System):** Kemudahan memasangkan aset media atau berkas script secara otomatis ke *Entity* yang sedang diseleksi hanya melalui menu konteks klik kanan."
+          ]
+        },
+        {
+          "type": "alert",
+          "variant": "info",
+          "message": "**Catatan Alur Kerja:** Pastikan *Entity* target telah dilengkapi dengan komponen penampung yang sesuai (seperti *ImageRenderer*, *Audio*, atau *Script Container*) sebelum melakukan injeksi data dari Bottom Dock."
+        }
+      ]
+    }
+  ]
+}

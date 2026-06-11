@@ -3,7 +3,6 @@ import { User, Globe, Github, Twitter, UploadCloud, Check, Settings as SettingsI
 import BaseInput from '@/commons/components/inputs/BaseInput.vue';
 import { CDN_URL } from '@/services/api/useFetchProjectById.js';
 
-// Import logic dan modal dari folder profile yang sama
 import ProfileCropperModal from '@modules/profile/components/ProfileCropperModal.vue'; 
 import { useUpdateProfileLogic } from '@modules/profile/composables/useUpdateProfileLogic.js'; 
 import { useAvatarUrl } from '@/composables/useAvatarUrl.js';

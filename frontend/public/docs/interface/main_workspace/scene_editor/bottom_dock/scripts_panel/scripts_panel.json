@@ -1,0 +1,138 @@
+{
+  "title": "Dokumentasi Script Panel",
+  "category": "Antarmuka Ruang Kerja",
+  "description": "Halaman referensi teknis mengenai fitur **Script Panel**, pengelolaan logika berbasis node, serta mekanika pengikatan blueprint pada objek di dalam engine.",
+  "sections": [
+    {
+      "id": "ikhtisar-script-panel",
+      "title": "Ikhtisar & Struktur Script",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "Script Panel adalah pusat kendali logika yang berfungsi untuk mengatur direktori blueprint dan menyimpan berbagai berkas visual scripting proyek. Seluruh alur sekuensial, interaksi, dan manipulasi data di dalam game akan dikelola secara visual melalui antarmuka ini."
+        },
+        {
+          "type": "image",
+          "url": "scripts_panel.png",
+          "alt": "Overall Script Panel",
+          "caption": "Tampilan keseluruhan antarmuka Script Panel."
+        },
+        {
+          "type": "text",
+          "content": "Sistem visual scripting ini mengimplementasikan arsitektur editor grafis berbasis node (*node-based graph editor*). Hubungan logis antar instruksi dijalankan melalui penyambungan titik input-output (*pin*) dengan karakteristik utama sebagai berikut:"
+        },
+        {
+          "type": "features",
+          "items": [
+            {
+              "title": "Arsitektur Modular",
+              "desc": "Penyusunan kode terisolasi ke dalam sub-grafik terpisah untuk meningkatkan penggunaan kembali (*reusability*).",
+              "icon": "Layers",
+              "color": "text-blue-500"
+            },
+            {
+              "title": "Eksekusi Real-Time",
+              "desc": "Pemrosesan data aliran logika secara langsung (*live execution evaluation*) pada lingkungan runtime engine.",
+              "icon": "Zap",
+              "color": "text-yellow-500"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "pencarian-logika",
+      "title": "Sistem Pencarian Logika",
+      "blocks": [
+        {
+          "type": "image",
+          "url": "scripts_search.png",
+          "alt": "Search Bar pada Script Panel",
+          "caption": "Antarmuka sistem pencarian berkas script (Search bar)."
+        },
+        {
+          "type": "text",
+          "content": "Fitur pencarian (Search Bar) diimplementasikan untuk memfasilitasi penemuan berkas script secara cepat melalui pemrosesan kueri string nama secara *real-time*. Subsistem utilitas ini sangat krusial dalam skenario proyek berskala besar untuk menyaring tumpukan berkas blueprint yang kompleks."
+        }
+      ]
+    },
+    {
+      "id": "menu-konteks-script",
+      "title": "Menu Konteks (Context Menu)",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "Interaksi klik kanan (right-click) pada area Script Panel akan memicu eksekusi Menu Konteks yang isinya beradaptasi secara dinamis berdasarkan target koordinat kursor pengguna."
+        },
+        {
+          "type": "image",
+          "url": "scripts_new.png",
+          "alt": "Context Menu Workspace",
+          "caption": "Tampilan menu konteks ketika berinteraksi pada area kosong di dalam panel."
+        },
+        {
+          "type": "text",
+          "content": "Tabel di bawah ini menjelaskan operasi yang tersedia saat interaksi klik kanan dilakukan pada **area kosong** Script Panel:"
+        },
+        {
+          "type": "table",
+          "headers": ["Operasi", "Fungsi dan Deskripsi"],
+          "rows": [
+            ["New Script", "Menginisialisasi dan menciptakan berkas visual script graph baru berskala kosong di dalam direktori aktif."],
+            ["Refresh", "Mensinkronisasikan ulang susunan hierarki berkas script untuk mendeteksi perubahan terbaru pada sistem penyimpanan."]
+          ]
+        },
+        {
+          "type": "text",
+          "content": "Apabila interaksi klik kanan dilakukan secara spesifik pada **suatu berkas script** yang telah terbuat, opsi berikut akan dimunculkan:"
+        },
+        {
+          "type": "image",
+          "url": "scripts_context.png",
+          "alt": "Context Menu Script Asset",
+          "caption": "Tampilan menu konteks ketika berinteraksi pada aset berkas script."
+        },
+        {
+          "type": "table",
+          "headers": ["Operasi", "Fungsi dan Deskripsi"],
+          "rows": [
+            ["Open Graph", "Membuka kanvas editor node utama untuk melakukan penyusunan, modifikasi, dan pengelolaan arsitektur logika."],
+            ["Rename", "Membuka hak akses modifikasi string nama untuk mengubah identitas dari berkas script terpilih."],
+            ["Duplicate", "Melakukan kloning atau penggandaan seluruh objek berkas script beserta dependensi susunan node di dalamnya secara identik."],
+            ["Delete", "Mengeksekusi penghapusan berkas script secara permanen dari sistem penyimpanan lokal proyek."]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "penerapan-script",
+      "title": "Sistem Penerapan Script (Apply Script)",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "Sistem pengikatan (*binding*) didesain untuk menyuntikkan alur logika dari visual script graph ke dalam runtime objek permainan. Struktur objek target wajib memiliki komponen penampung yang valid sebelum injeksi logika dapat dieksekusi secara mekanis."
+        },
+        {
+          "type": "image",
+          "url": "scripts_apply.png",
+          "alt": "Context Menu Add to Script Component",
+          "caption": "Menu konteks berkas script dengan adanya tambahan operasi pemasangan otomatis (Add to Script)."
+        },
+        {
+          "type": "steps",
+          "items": [
+            "Melakukan seleksi (select) pada objek Entity target melalui antarmuka Canvas utama ataupun hierarki editor.",
+            "Memastikan bahwa Entity yang sedang diseleksi telah dipasangkan komponen kontainer bernama **Script** di dalam inspektor propertinya.",
+            "Melakukan klik kanan pada berkas grafik logika yang ingin dipasangkan di dalam daftar Script Panel.",
+            "Memilih opsi **Add to Script** pada menu konteks untuk mengonfirmasi operasi pengaitan logika graph ke komponen Entity."
+          ]
+        },
+        {
+          "type": "alert",
+          "variant": "tip",
+          "message": "Sistem dirancang dengan arsitektur berbasis komponen (*Component-Based Architecture*), memungkinkan **1 objek Entity memuat banyak berkas script sekaligus** demi menjaga modularitas fungsi logika yang terisolasi dan rapi."
+        }
+      ]
+    }
+  ]
+}

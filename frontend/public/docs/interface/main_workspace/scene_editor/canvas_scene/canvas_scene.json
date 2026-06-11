@@ -1,0 +1,108 @@
+{
+  "title": "Canvas Scene",
+  "category": "Scene Editor",
+  "description": "Dokumentasi teknis mengenai manipulasi objek, navigasi viewport, dan manajemen entity di dalam Canvas Scene Lupis Engine.",
+  "sections": [
+    {
+      "id": "canvas-overview",
+      "title": "Ruang Kerja Utama",
+      "blocks": [
+        {
+          "type": "image",
+          "url": "canvas_scenes.png",
+          "alt": "Canvas Scene Workspace",
+          "caption": "Viewport utama untuk perancangan level secara visual."
+        },
+        {
+          "type": "text",
+          "content": "**Canvas Scene** berfungsi sebagai pusat integrasi seluruh aset visual dan logic. Fitur utama mencakup kontrol penuh terhadap siklus hidup **Entity**, mulai dari instansiasi, modifikasi transformasi (posisi, rotasi, skala), hingga penghapusan objek dari world space."
+        },
+        {
+          "type": "alert",
+          "variant": "tip",
+          "message": "**Optimasi Viewport:** Luas area kerja dapat dimaksimalkan dengan melakukan drag pada pembatas panel atau meminimalkan sidebar (Inspector/Hierarchy) guna mendapatkan visibilitas canvas yang lebih luas."
+        },
+        {
+          "type": "features",
+          "items": [
+            { "title": "Transformasi Objek", "desc": "Manipulasi posisi, skala, dan rotasi secara real-time di dalam viewport.", "icon": "Move", "color": "text-blue-500" },
+            { "title": "Manajemen Layer", "desc": "Pengaturan hierarki dan urutan render antar entity secara dinamis.", "icon": "List", "color": "text-purple-500" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-context-menu",
+      "title": "Interaksi & Floating Action",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "Sistem menyediakan Floating Action Menu yang dapat diakses melalui klik kanan. Menu ini bersifat kontekstual, bergantung pada objek atau area yang menjadi target klik."
+        },
+        {
+          "type": "image",
+          "url": "entity_interaction.png",
+          "alt": "Entity Action Menu",
+          "caption": "A. Menu Kontekstual pada Entity"
+        },
+        {
+          "type": "table",
+          "headers": ["Aksi", "Fungsi", "Dampak Operasional"],
+          "rows": [
+            ["Copy / Cut", "Menyimpan data entity ke clipboard.", "Data siap untuk ditempelkan kembali."],
+            ["Duplicate", "Instansiasi objek identik secara instan.", "Entity baru muncul pada koordinat yang sama."],
+            ["Bring / Send", "Modifikasi urutan Z-Order.", "Mengatur prioritas rendering visual."],
+            ["Use as Prefab", "Konversi entity menjadi template reusable.", "Aset terdaftar ke dalam folder Prefabs."],
+            ["Lock / Hidden", "Proteksi transformasi atau visibilitas.", "Mencegah modifikasi atau rendering."],
+            ["Inactive", "Deaktivasi logic script dan render.", "Entity tetap eksis dalam memory tanpa eksekusi."],
+            ["Delete", "Terminasi entity dari scene.", "Penghapusan permanen dari hierarki aktif."]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "empty-space-menu",
+      "title": "Manajemen Global Canvas",
+      "blocks": [
+        {
+          "type": "image",
+          "url": "empty_click.png",
+          "alt": "Global Creation Menu",
+          "caption": "B. Menu Kontekstual pada Area Kosong"
+        },
+        {
+          "type": "text",
+          "content": "Klik kanan pada area kosong di canvas akan mengaktifkan fungsi manajemen global sebagai berikut:"
+        },
+        {
+          "type": "steps",
+          "items": [
+            "**Paste Here**: Menempatkan entity dari clipboard pada koordinat pointer saat ini.",
+            "**Create Entity**: Inisialisasi entity baru dengan menentukan target layer tujuan.",
+            "**Entity Type**: Seleksi tipe data entity yang akan diinstansiasi (Sprite, Text, Shape, dll)."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "canvas-shortcuts",
+      "title": "Kontrol & Keamanan",
+      "blocks": [
+        {
+          "type": "shortcuts",
+          "items": [
+            { "keys": ["V"], "description": "Selection Tool" },
+            { "keys": ["G"], "description": "Grab / Move Tool" },
+            { "keys": ["Del"], "description": "Hapus Entity terpilih" },
+            { "keys": ["Ctrl", "D"], "description": "Duplikasi objek" }
+          ]
+        },
+        {
+          "type": "alert",
+          "variant": "warning",
+          "message": "Operasi penghapusan pada **Parent Entity** akan memicu penghapusan rekursif terhadap seluruh **Child Entities** yang terikat."
+        }
+      ]
+    }
+  ]
+}

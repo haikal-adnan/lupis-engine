@@ -29,6 +29,8 @@ import { useTheme } from "@commons/composables/useTheme.js";
 import IconButton from "@ui/buttons/IconButton.vue";
 import { Undo2, Redo2, Sun, Moon, Settings } from 'lucide-vue-next';
 
+defineEmits(['undo', 'redo', 'settings']);
+
 const { isDark, toggleTheme, initTheme } = useTheme();
 
 onMounted(() => {

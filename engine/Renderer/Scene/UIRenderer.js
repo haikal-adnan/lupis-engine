@@ -10,7 +10,6 @@ export default class UIRenderer {
         this.borderColor = HexToVec4("#00aaff");
         this.dashedColor = [0, 0.66, 1, 0.5];
         
-        // --- DITAMBAHKAN: Warna untuk Collider ---
         this.colliderColorSolid = [0, 1, 0, 0.8]; 
         this.colliderColorTrigger = [1, 1, 0, 0.8]; 
     }
@@ -104,7 +103,6 @@ export default class UIRenderer {
         this._executeRenderQueue(proj);
     }
 
-    // Di dalam _collectUIEntities
     _collectUIEntities(world, proj, rootBounds) {
         const layers = [...(world.layersUI || [])];
         this._sortItems(layers);
@@ -112,13 +110,12 @@ export default class UIRenderer {
         for (const layer of layers) {
             if (layer.active === false || !layer.visible || !layer.entities) continue;
             
-            const layerOpacity = layer.opacity ?? 1.0; // <-- Ambil opacity dari layer
+            const layerOpacity = layer.opacity ?? 1.0;
 
             const allEntities = [...layer.entities];
             this._sortItems(allEntities);
             
             for (const entity of allEntities) {
-                // <-- Teruskan layerOpacity
                 this._processUIEntity(entity, world, proj, layerOpacity, rootBounds); 
             }
         }
@@ -240,16 +237,26 @@ export default class UIRenderer {
         
         if (comps.ShapeRenderer) {
             const s = comps.ShapeRenderer;
-            const a = (s.opacity ?? 1) * currentOpacity;
-            if (a > 0) {
+            const globalA = (s.opacity ?? 1) * currentOpacity; 
+            
+            const fillA = (s.fillOpacity ?? 1) * globalA;
+            const outA = (s.outlineOpacity ?? 1) * globalA;
+            
+            if (fillA > 0 || (Math.abs(s.outlineWidth) > 0 && outA > 0)) {
                 this.renderQueue.push({
                     type: "shape",
                     transformData: trans,
                     shapeOptions: {
                         type: s.type || "rectangle",
-                        color: HexToVec4(s.color || "#FFFFFF"),
-                        thickness: s.thickness || 1,
-                        x2: s.x2, y2: s.y2, opacity: a, flipX, flipY
+                        isFilled: s.isFilled ?? true,
+                        color: HexToVec4(s.color || "#FF0000"),
+                        fillOpacity: fillA,
+                        outlineWidth: s.outlineWidth || 0,
+                        outlineColor: HexToVec4(s.outlineColor || "#000000"),
+                        outlineOpacity: outA,
+                        cornerRadius: s.cornerRadius || 0,
+                        sides: s.sides || 3,
+                        flipX, flipY
                     }
                 });
             }
@@ -304,9 +311,8 @@ export default class UIRenderer {
             }
         }
 
-        // --- DITAMBAHKAN: Rendering Collider di Editor ---
         if (Config.ENGINE_MODE === 'editor' && comps.Collider && Array.isArray(comps.Collider.data)) {
-            const tRotRad = trans.rotation; // trans.rotation sudah dalam wujud Radian
+            const tRotRad = trans.rotation; 
             const cosT = Math.cos(tRotRad);
             const sinT = Math.sin(tRotRad);
 
@@ -325,7 +331,6 @@ export default class UIRenderer {
                 const localPx = localTlX + cW * pX;
                 const localPy = localTlY + cH * pY;
 
-                // Menggunakan koordinat trans.x dan trans.y (bukan drawX/drawY) untuk UI
                 const worldPx = trans.x + localPx * cosT - localPy * sinT;
                 const worldPy = trans.y + localPx * sinT + localPy * cosT;
 
@@ -341,7 +346,7 @@ export default class UIRenderer {
                     type: "shape",
                     transformData: debugTrans,
                     shapeOptions: {
-                        type: "rectStroke",
+                        type: "rectStroke", 
                         color: c.type === 'trigger' ? this.colliderColorTrigger : this.colliderColorSolid,
                         thickness: 2, opacity: 1.0, flipX: false, flipY: false
                     }
@@ -374,22 +379,33 @@ export default class UIRenderer {
 
     _drawShape(opt, t, proj) {
         const shape = this.renderer.shape;
-        const fx = opt.flipX || false;
-        const fy = opt.flipY || false;
-        if (opt.type === "rectangle") {
-             shape.drawRect(t.x, t.y, t.width, t.height, opt.color, proj, t.rotation, t.scaleX, t.scaleY, t.pivotX, t.pivotY, opt.opacity, fx, fy);
-        } else if (opt.type === "rectStroke") {
-             shape.drawRectStroke(t.x, t.y, t.width, t.height, opt.color, opt.thickness, proj, t.rotation, t.scaleX, t.scaleY, t.pivotX, t.pivotY, opt.opacity, fx, fy);
-        } else if (opt.type === "circle") {
-             const radius = (t.width / 2) * ((Math.abs(t.scaleX) + Math.abs(t.scaleY)) / 2);
-             shape.drawCircle(t.x, t.y, radius, opt.color, 32, proj);
-        } else if (opt.type === "line") {
-             shape.drawLine(t.x, t.y, opt.x2, opt.y2, opt.color, opt.thickness, proj);
+        
+        if (opt.type === "rectStroke") {
+             shape.drawParametricShape(
+                "rectangle", t.x, t.y, t.width, t.height,
+                [0,0,0,0], opt.color, false, opt.thickness, 0, 4,
+                proj, t.rotation, t.scaleX, t.scaleY, t.pivotX, t.pivotY, opt.flipX, opt.flipY
+            );
+            return;
         }
+
+        const cFill = [...opt.color.slice(0, 3), opt.color[3] * opt.fillOpacity];
+        const cStroke = [...opt.outlineColor.slice(0, 3), opt.outlineColor[3] * opt.outlineOpacity];
+
+        shape.drawParametricShape(
+            opt.type, t.x, t.y, t.width, t.height,
+            cFill, cStroke, opt.isFilled, opt.outlineWidth,
+            opt.cornerRadius, opt.sides,
+            proj, t.rotation, t.scaleX, t.scaleY, t.pivotX, t.pivotY, opt.flipX, opt.flipY
+        );
     }
 
     _renderWorkspaceGizmos(proj, w, h) {
-        this.renderer.shape.drawRectStroke(0, 0, w, h, this.borderColor, 4, proj);
+        this.renderer.shape.drawParametricShape(
+            "rectangle", 0, 0, w, h,
+            [0,0,0,0], this.borderColor, false, 4, 0, 4,
+            proj, 0, 1, 1, 0, 0, false, false
+        );
         this.renderer.shape.flush();
     }
 

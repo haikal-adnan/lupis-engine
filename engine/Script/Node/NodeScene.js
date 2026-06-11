@@ -8,7 +8,6 @@ export const NodeScene = {
                 console.warn("[NodeScene] Gagal pindah scene: Input Scene Name kosong.");
             }
             
-            // Lanjutkan eksekusi (queueLoadScene baru tereksekusi di frame update berikutnya)
             runner.executeFlow(node._id, 'exec_out');
         }
     },
@@ -21,8 +20,6 @@ export const NodeScene = {
     },
 
     'get_current_scene': {
-        // Karena ini Get Node (seperti get_sprite/get_text), kita gunakan getOutput
-        // agar node bisa dievaluasi langsung nilainya tanpa pin execution (exec_in/exec_out)
         getOutput: (runner, node, outputKey) => {
             if (outputKey === 'sceneName') {
                 return runner.game.world.currentSceneName || "";

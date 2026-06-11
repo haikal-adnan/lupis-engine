@@ -1,4 +1,3 @@
-// NodePorts
 <template>
   <PropertySection title="Ports Configuration" :icon="Network" v-if="selectedNode">
     

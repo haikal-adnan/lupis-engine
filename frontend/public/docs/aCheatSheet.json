@@ -1,0 +1,105 @@
+{
+  "title": "Cheat Sheet Dokumentasi",
+  "category": "Referensi",
+  "description": "Halaman referensi lengkap untuk melihat seluruh komponen blok yang tersedia dalam sistem dokumentasi **Lupis Engine**.",
+  "sections": [
+    {
+      "id": "komponen-dasar",
+      "title": "Komponen Teks & Peringatan",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "Ini adalah blok **text**. Mendukung format **Bold** dan juga **Smart Links** baik secara [Internal](#komponen-media) maupun [Eksternal](https://google.com)."
+        },
+        {
+          "type": "alert",
+          "variant": "info",
+          "message": "Varian **Info**: Gunakan untuk memberikan informasi tambahan yang relevan."
+        },
+        {
+          "type": "alert",
+          "variant": "tip",
+          "message": "Varian **Tip**: Gunakan untuk memberikan saran atau trik cepat."
+        },
+        {
+          "type": "alert",
+          "variant": "warning",
+          "message": "Varian **Warning**: Berikan peringatan agar user lebih berhati-hati."
+        },
+        {
+          "type": "alert",
+          "variant": "danger",
+          "message": "Varian **Danger**: Gunakan untuk mencegah kesalahan fatal atau error sistem."
+        }
+      ]
+    },
+    {
+      "id": "fitur-dan-tutorial",
+      "title": "Fitur & Tutorial",
+      "blocks": [
+        {
+          "type": "features",
+          "items": [
+            { "title": "Ultra Fast", "desc": "Rendering berbasis **WebGL 2.0**.", "icon": "Zap", "color": "text-yellow-500" },
+            { "title": "Node Logic", "desc": "Sistem **Visual Scripting**.", "icon": "Layers", "color": "text-blue-500" }
+          ]
+        },
+        {
+          "type": "steps",
+          "items": [
+            "Instalasi paket melalui **NPM** atau **Yarn**.",
+            "Inisialisasi engine pada elemen **Canvas**.",
+            "Buat **Entity** pertama kamu."
+          ]
+        },
+        {
+          "type": "shortcuts",
+          "items": [
+            { "keys": ["Ctrl", "S"], "description": "Simpan Proyek" },
+            { "keys": ["Space"], "description": "Play / Pause Preview" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "kode-dan-data",
+      "title": "Kode & Tabel API",
+      "blocks": [
+        {
+          "type": "code",
+          "language": "javascript",
+          "snippet": "import { Engine } from '@lupis/core';\nconst game = new Engine();\ngame.start();"
+        },
+        {
+          "type": "table",
+          "headers": ["Property", "Type", "Default", "Description"],
+          "rows": [
+            ["position", "Vector2", "{x:0, y:0}", "Posisi entity."],
+            ["visible", "Boolean", "true", "Status render."],
+            ["tag", "String", "\"Untagged\"", "Label identifikasi."]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "komponen-media",
+      "title": "Komponen Media",
+      "blocks": [
+        {
+          "type": "image",
+          "url": "project_actions.png",
+          "alt": "Placeholder Image",
+          "caption": "Contoh penggunaan blok gambar lokal."
+        },
+        {
+          "type": "video",
+          "url": "https://vjs.zencdn.net/v/oceans.mp4",
+          "poster": "https://placehold.co/800x450/1e1e2e/indigo?text=Video+Preview",
+          "caption": "Contoh penggunaan blok video eksternal.",
+          "controls": true,
+          "autoplay": false
+        }
+      ]
+    }
+  ]
+}

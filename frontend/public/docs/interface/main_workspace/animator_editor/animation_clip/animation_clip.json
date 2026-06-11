@@ -1,0 +1,162 @@
+{
+  "title": "Dokumentasi Panel Hierarchy Clip",
+  "category": "Panduan Pengembang",
+  "description": "Halaman referensi teknis yang merangkum fungsionalitas panel Hierarchy Clip, mencakup struktur data tree-view, manipulasi instansi animasi, sistem pencarian, serta navigasi context menu pada Lupis Engine.",
+  "sections": [
+    {
+      "id": "penjelasan-hierarchy-clip",
+      "title": "Penjelasan Hierarchy Clip",
+      "blocks": [
+        {
+          "type": "image",
+          "url": "clip_overall.png",
+          "alt": "Overview Panel Hierarchy Clip",
+          "caption": "Gambaran struktural dari antarmuka Hierarchy Clip yang menampilkan manajemen node kategori dan klip."
+        },
+        {
+          "type": "text",
+          "content": "Panel Hierarchy Clip merupakan struktur antarmuka berbasis tree-view (pohon hierarki) yang diimplementasikan untuk melakukan manajemen aset sekuens animasi secara sistematis. Sistem ini dirancang untuk menstrukturkan memori dan memfasilitasi pengkategorian state animasi yang kompleks, seperti pengelompokan aksi pergerakan (locomotion), serangan (combat), atau status pasif. Dengan memanfaatkan arsitektur hierarki ini, pemanggilan referensi klip pada level kode logika state machine atau komponen komponen animator akan menjadi lebih terorganisir, sekaligus mempercepat proses instruksi lookup data saat runtime engine berjalan."
+        }
+      ]
+    },
+    {
+      "id": "tooltip-toolbar-manajemen",
+      "title": "Tooltip & Inisialisasi Data Baru",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "Bagian operasional dasar pada hierarchy didukung oleh sekumpulan tooltips dan tombol antarmuka khusus pada bilah atas (toolbar) untuk inisialisasi entitas baru. Fungsionalitas ini dirancang agar pengembang dapat secara cepat mengalokasikan instansi objek kategori (sebagai kontainer node direktori) maupun instansi objek klip animasi (berkas state animasi) baru ke dalam sistem tree-view yang sedang aktif."
+        },
+        {
+          "type": "alert",
+          "variant": "tip",
+          "message": "Varian **Tip**: Untuk mempercepat alur kerja (workflow) authoring, proses inisialisasi kategori atau klip baru juga dapat dieksekusi dengan melakukan klik kanan (right-click) pada area ruang kosong di dalam panel hierarchy untuk memunculkan context menu global."
+        },
+        {
+          "type": "image",
+          "url": "clip_tooltip.png",
+          "alt": "Antarmuka Tooltip dan Toolbar",
+          "caption": "Tombol kontrol untuk menambahkan kategori dan klip secara cepat pada bagian atas panel."
+        }
+      ]
+    },
+    {
+      "id": "search-clip-category",
+      "title": "Sistem Pencarian (Search Filter)",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "Ketika kompleksitas proyek meningkat dan alokasi data klip mencapai jumlah yang masif, subsistem pencarian (search bar) berfungsi sebagai mekanisme filter komputasi waktu nyata (real-time filtering). Mesin filter ini melakukan pemindaian komparasi string karakter secara linear terhadap identitas seluruh node yang terdaftar (baik nama kategori maupun instansi klip) di dalam struktur hierarki. Node yang atribut namanya tidak memenuhi kriteria pencarian regex akan diabaikan secara sementara dari proses rendering antarmuka antrean display, sehingga memfokuskan area kerja secara langsung pada aset target."
+        },
+        {
+          "type": "image",
+          "url": "clip_search.png",
+          "alt": "Sistem Pencarian Klip",
+          "caption": "Kolom input pencarian yang memfilter rendering node berdasarkan kecocokan string karakter."
+        }
+      ]
+    },
+    {
+      "id": "context-menu-category",
+      "title": "Context Menu: Kategori",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "Context Menu pada entitas kategori dapat diakses melalui interaksi klik kanan pada node direktori yang dirender di antarmuka. Sistem menu ini menyediakan serangkaian perintah manipulasi struktur data yang ruang lingkup operasionalnya difokuskan pada manajemen direktori kontainer tersebut beserta elemen-elemen node turunan (children) yang berada di dalam cakupannya."
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Perintah (Action)",
+            "Deskripsi Komputasi & Fungsionalitas"
+          ],
+          "rows": [
+            [
+              "New Category",
+              "Mengalokasikan node folder baru di dalam struktur direktori yang saat ini terseleksi."
+            ],
+            [
+              "Add Clip",
+              "Menginisialisasi instansi data klip animasi kosong baru ke dalam node kategori yang aktif."
+            ],
+            [
+              "Rename",
+              "Membuka input teks untuk memodifikasi parameter string identitas pada node kategori."
+            ],
+            [
+              "Duplicate",
+              "Mengeksekusi penyalinan dalam memori (deep copy) atas keseluruhan folder kategori beserta struktur turunan di dalamnya."
+            ],
+            [
+              "Paste Inside",
+              "Memindahkan atau menduplikasi entitas yang terdapat pada memori clipboard lokal (copy/cut buffer) ke dalam cakupan kategori ini."
+            ],
+            [
+              "Delete",
+              "Menghapus node kategori secara destruktif beserta seluruh data klip yang berafiliasi di dalamnya dari struktur memori proyek."
+            ]
+          ]
+        },
+        {
+          "type": "image",
+          "url": "clip_context_category.png",
+          "alt": "Tampilan Context Menu Kategori",
+          "caption": "Daftar operasi fungsional saat mengaktifkan menu konteks pada sebuah node direktori kategori."
+        }
+      ]
+    },
+    {
+      "id": "context-menu-clip",
+      "title": "Context Menu: Klip Animasi",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "Berbeda dengan direktori kategori, Context Menu pada elemen klip animasi dirancang secara eksplisit untuk melakukan manipulasi data pada tingkatan file-level atau parameter dari instansi klip tunggal. Sistem ini mengintegrasikan fungsi utilitas clipboard standar editor yang berinteraksi langsung dengan memori buffer, memungkinkan relokasi data klip ke direktori lain secara presisi tanpa merusak konfigurasi properti internal frame yang telah tersusun."
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Perintah (Action)",
+            "Deskripsi Komputasi & Fungsionalitas"
+          ],
+          "rows": [
+            [
+              "New Clip",
+              "Membuat instansi klip sekuensial baru yang diletakkan pada posisi hierarki yang sejajar dengan node saat ini."
+            ],
+            [
+              "Rename",
+              "Memodifikasi metadata nama string atau ID referensi dari instansi klip yang bersangkutan."
+            ],
+            [
+              "Duplicate",
+              "Melakukan kloning instansi klip secara instan (termasuk referensi aset dan pengaturan timing) dengan alokasi nama baru."
+            ],
+            [
+              "Copy",
+              "Menyalin seluruh payload data klip ke dalam cache memori clipboard sementara untuk direplika ke lokasi lain."
+            ],
+            [
+              "Cut",
+              "Menandai pointer data klip di memori untuk dipindahkan (relokasi absolut) saat operasi paste dieksekusi di node tujuan."
+            ],
+            [
+              "Paste Below",
+              "Menyisipkan entitas klip yang berada pada cache clipboard persis di bawah indeks node klip yang sedang diseleksi."
+            ],
+            [
+              "Delete Clip",
+              "Menghancurkan instansi objek klip secara permanen, membebaskan memori yang digunakan oleh sekuens frame tersebut."
+            ]
+          ]
+        },
+        {
+          "type": "image",
+          "url": "clip_context_clip.png",
+          "alt": "Tampilan Context Menu Klip",
+          "caption": "Daftar utilitas dan manajemen clipboard pada tingkat instansi klip animasi tunggal."
+        }
+      ]
+    }
+  ]
+}

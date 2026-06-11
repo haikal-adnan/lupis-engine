@@ -19,6 +19,14 @@ import BottomOverlay from '@/layouts/parts/BottomOverlay.vue'
 import AssetPanel from '@editors/assets/AssetPanel.vue'
 import AppLoading from '@/commons/components/overlay/AppLoading.vue' 
 
+import EditorSettingsModal from '@editors/settings/EditorSettingsModal.vue';
+
+const isSettingsModalOpen = ref(false)
+
+const handleOpenSettings = () => {
+  isSettingsModalOpen.value = true
+}
+
 const { isLoading } = useAppInit() 
 
 const {
@@ -120,7 +128,7 @@ const onLayoutDragOpen = () => {
       </template>
 
       <template #topbar>
-        <TopBar />
+        <TopBar @settings="handleOpenSettings" />
       </template>
 
       <template #left-panel>
@@ -167,6 +175,11 @@ const onLayoutDragOpen = () => {
         <BottomOverlay v-if="currentLayout.overlay" />
       </template>
     </EditorLayout>
+
+    <EditorSettingsModal 
+      :is-open="isSettingsModalOpen" 
+      @close="isSettingsModalOpen = false" 
+    />
 
     <transition
       enter-active-class="transition duration-300 ease-out"

@@ -130,7 +130,7 @@ export const BlueprintHelper = {
           values: { 
             speed: 50,
             target_in: '',
-            text_in: '' // Tambahkan penampung nilai statis teks
+            text_in: ''
            } ,
           
         }, 
@@ -138,7 +138,7 @@ export const BlueprintHelper = {
           { _id: 'exec_in', label: 'Start', dataType: 'execution', color: '#ffffff' },
           { _id: 'skip_in', label: 'Skip (Instant)', dataType: 'execution', color: '#FF5252' },
           { _id: 'target_in', label: 'Target ID (Self)', dataType: 'string', color: '#E040FB' },
-          { _id: 'text_in', label: 'New Text', dataType: 'string', color: '#FFF' }, // Port input teks baru
+          { _id: 'text_in', label: 'New Text', dataType: 'string', color: '#FFF' },
           { _id: 'speed', label: 'Speed (ms)', dataType: 'number', color: '#B2FF59' }
         ], 
         outputs: [
@@ -167,13 +167,13 @@ export const BlueprintHelper = {
             scaleHover: 1.1,
             scalePressed: 0.9,
             lerpSpeed: 0.2,
-            use_raycast: true // <--- Tambahan: Default value untuk raycast
+            use_raycast: true
           } 
         }, 
         inputs: [
           { _id: 'exec_in', label: 'Update (Tick)', dataType: 'execution' },
           { _id: 'target_in', label: 'Target ID (Self)', dataType: 'string' },
-          { _id: 'use_raycast', label: 'Use Raycast?', dataType: 'boolean', value: true }, // <--- Tambahan: Port input baru
+          { _id: 'use_raycast', label: 'Use Raycast?', dataType: 'boolean', value: true },
           { _id: 'scaleNormal', label: 'Normal Scale', dataType: 'number', color: '#B2FF59' },
           { _id: 'scaleHover', label: 'Hover Scale', dataType: 'number', color: '#B2FF59' },
           { _id: 'scalePressed', label: 'Pressed Scale', dataType: 'number', color: '#B2FF59' },

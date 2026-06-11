@@ -197,19 +197,17 @@ export const NodeRenderer = {
             steps.forEach((step, index) => {
                 let targetId = runner.getInputValue(node, `target_${index}`);
                 
-                // Fallback jika input kosong string
                 if (!targetId || targetId.trim() === '') {
                     targetId = 'Self';
                 }
                 
                 const entity = runner.resolveEntity(targetId);
-                if (!entity) return; // Skip jika entitas tidak ditemukan di world
+                if (!entity) return;
 
                 const rawVal = runner.getInputValue(node, `val_${index}`);
                 
                 if (rawVal !== undefined && rawVal !== null) {
                     
-                    // 1. Jika target operasinya adalah Root Data (Entity)
                     if (step.component === 'Entity') {
 
                         const rootProps = {
@@ -229,10 +227,8 @@ export const NodeRenderer = {
 
                         }
                     } 
-                    // 2. Jika target operasinya adalah Component (berada di dalam entity.components)
                     else if (entity.components && entity.components[step.component]) {
                         const comp = entity.components[step.component];
-                        // Asumsi properti komponen sudah di-handle tipe datanya oleh UI/Visual Scripting input
                         comp[step.property] = rawVal; 
                     }
 

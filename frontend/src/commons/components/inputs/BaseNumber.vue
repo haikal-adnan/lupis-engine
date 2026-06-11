@@ -3,7 +3,8 @@
     <label
       v-if="label"
       :for="id"
-      class="text-xs font-medium text-muted-foreground select-none"
+      class="font-medium text-muted-foreground select-none"
+      :class="[labelSize]"
     >
       {{ label }}
     </label>
@@ -19,12 +20,12 @@
         v-if="prefix"
         @mousedown.prevent="startScrub"
         class="h-full flex items-center justify-center pl-3 pr-2 select-none border-r border-transparent 
-                bg-muted/20 transition-colors relative cursor-ew-resize hover:bg-muted/40 hover:text-primary"
+               bg-muted/20 transition-colors relative cursor-ew-resize hover:bg-muted/40 hover:text-primary"
         :class="[isDragging ? '!bg-primary/20 !text-primary border-primary/20' : 'group-focus-within:border-border/50']"
       >
         <span
-          class="text-xs font-bold font-mono text-muted-foreground transition-colors"
-          :class="[isDragging ? '!text-primary' : 'group-focus-within:text-primary']"
+          class="font-bold font-mono text-muted-foreground transition-colors"
+          :class="[labelSize, isDragging ? '!text-primary' : 'group-focus-within:text-primary']"
         >
           {{ prefix }}
         </span>
@@ -36,7 +37,8 @@
         v-model="displayValue"
         type="text"
         inputmode="decimal" 
-        class="w-full h-full bg-transparent border-none outline-none text-sm text-foreground px-2"
+        class="w-full h-full bg-transparent border-none outline-none text-foreground px-2"
+        :class="[textSize]"
         :placeholder="placeholder"
         :style="{ paddingLeft: prefix ? '0px' : paddingX }"
         @input="validateInput"
@@ -48,7 +50,7 @@
         @change="handleChange"
       />
       
-      <div v-if="suffix" class="h-full flex items-center pr-3 pl-1 text-xs text-muted-foreground bg-muted/20">
+      <div v-if="suffix" class="h-full flex items-center pr-3 pl-1 text-muted-foreground bg-muted/20" :class="[labelSize]">
         {{ suffix }}
       </div>
     </div>
@@ -66,6 +68,8 @@ const props = defineProps({
   radius: { type: String, default: '0.375rem' },
   height: { type: String, default: '2rem' },
   paddingX: { type: String, default: '0.75rem' },
+  textSize: { type: String, default: 'text-sm' },
+  labelSize: { type: String, default: 'text-xs' },
   step: { type: Number, default: 1 },
   min: { type: Number, default: -Infinity },
   max: { type: Number, default: Infinity },

@@ -1,4 +1,3 @@
-// src/composables/useGameDetailLogic.js
 import { ref, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { useBackend } from '@/services/api/useBackend.js';

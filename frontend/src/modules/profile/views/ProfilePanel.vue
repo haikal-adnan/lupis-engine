@@ -6,17 +6,15 @@ import {
 } from 'lucide-vue-next';
 import { useProfileLogic } from '@modules/profile/composables/useProfileLogic.js'; 
 import { useAvatarUrl } from '@/composables/useAvatarUrl.js';
-import { useThumbnailUrl } from '@/composables/useThumbnailUrl.js'; // <-- Import helper thumbnail
+import { useThumbnailUrl } from '@/composables/useThumbnailUrl.js';
 
 const route = useRoute();
 const { profile, publishedGames, isLoading, error, fetchProfile } = useProfileLogic();
 const { getAvatarUrl } = useAvatarUrl();
-const { getThumbnailUrl } = useThumbnailUrl(); // <-- Ekstrak fungsi
+const { getThumbnailUrl } = useThumbnailUrl(); 
 
-// Ambil parameter dari URL
 const usernameUser = computed(() => route.params.usernameUser);
 
-// Load data saat komponen dimuat
 onMounted(() => {
   if (usernameUser.value) {
     fetchProfile(usernameUser.value);

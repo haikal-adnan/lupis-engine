@@ -1,0 +1,77 @@
+{
+  "title": "Dokumentasi Node Script",
+  "category": "Panduan Pengguna",
+  "description": "Halaman referensi teknis mengenai arsitektur visual pemrograman Node Script, mekanika sirkuit edge, serta sistem validasi tipe data port pada Lupis Engine.",
+  "sections": [
+    {
+      "id": "pengenalan-node-script",
+      "title": "Pengenalan Sistem Node Script",
+      "blocks": [
+        {
+          "type": "image",
+          "url": "node_script.png",
+          "alt": "Gambaran Umum Kanvas Node Script",
+          "caption": "Arsitektur visual scripting berbasis jaringan node dan sirkuit edge pada editor utama."
+        },
+        {
+          "type": "text",
+          "content": "Arsitektur **Node Script** pada Lupis Engine mengadopsi paradigma pemrograman visual berbasis aliran (*flow-based visual scripting*). Sistem ini mengeliminasi penulisan kode sintaksis konvensional dengan menggantinya menggunakan representasi visual berupa blok modular (**Node**) dan garis penghubung (**Edge**)."
+        },
+        {
+          "type": "text",
+          "content": "Logika permainan diatur dengan cara menghubungkan satu titik node ke titik node lainnya melalui garis sirkuit *edge*. Seluruh kalkulasi runtime dan rangkaian instruksi game engine akan dieksekusi secara berurutan mengikuti arah jalur interkoneksi graf yang telah dibentuk pada kanvas skrip."
+        }
+      ]
+    },
+    {
+      "id": "anatomi-port-dan-aliran",
+      "title": "Anatomi Port dan Regulasi Aliran Sirkuit",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "Setiap komponen node memiliki standarisasi struktur anatomi yang memisahkan peran data berdasarkan posisi letak geografisnya. Sisi sebelah kiri node dialokasikan sebagai **Input Port**, sedangkan sisi sebelah kanan dialokasikan sebagai **Output Port**. Pembentukan logika mutlak bergerak dari kanan (sumber data/eksekusi) menuju ke kiri (penerima data/eksekusi)."
+        },
+        {
+          "type": "text",
+          "content": "Sistem menerapkan pembatasan kuantitas koneksi (*cardinality rules*) yang ketat pada masing-masing jenis port demi menjaga stabilitas pembacaan memori data saat runtime:"
+        },
+        {
+          "type": "table",
+          "headers": ["Jenis Posisi Port", "Batasan Hubungan (Cardinality)", "Perilaku Mekanis Sistem"],
+          "rows": [
+            ["Input Port (Sisi Kiri)", "Maksimal 1 Jalur Masuk", "Hanya dapat menerima tepat satu garis edge dari satu sumber output. Apabila garis edge baru ditarik ke dalam input port yang sudah terisi, maka jalur sirkuit lama secara otomatis akan terputus dan digantikan oleh jalur baru."],
+            ["Output Port (Sisi Kanan)", "Banyak Jalur Keluar (1-to-Many)", "Dapat memancarkan, mendistribusikan, atau membagi cabang data ke banyak input port pada node yang berbeda secara simultan tanpa adanya batasan kuantitas."]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "klasifikasi-tipe-data",
+      "title": "Klasifikasi Tipe Data dan Validasi Koneksi",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "Untuk mencegah terjadinya kesalahan fatal akibat ketidakcocokan data (*type mismatch*) saat kompilasi game, sistem menerapkan arsitektur validasi tipe data yang ketat (*strict type checking*). Garis *edge* hanya dapat menghubungkan dua port yang memiliki tipe data yang selaras, kecuali melibatkan tipe data universal."
+        },
+        {
+          "type": "table",
+          "headers": ["Tipe Data Port", "Syarat Kompatibilitas Hubungan", "Fungsi Operasional dalam Game"],
+          "rows": [
+            ["Execution", "Wajib terhubung ke sesama Execution.", "Mengontrol alur urutan jalannya instruksi frame (control flow). Umumnya disimbolkan dengan ikon panah eksekusi."],
+            ["String", "Wajib terhubung ke sesama String.", "Mentransfer data informasi berbasis tekstual atau kumpulan karakter alfanumerik."],
+            ["Boolean", "Wajib terhubung ke sesama Boolean.", "Mentransfer data logika kondisi biner, yaitu bernilai benar (true) atau salah (false)."],
+            ["Number", "Wajib terhubung ke sesama Number.", "Mentransfer data nilai komputasi numerik, baik berupa bilangan bulat maupun pecahan."],
+            ["List", "Wajib terhubung ke sesama List.", "Mentransfer struktur data koleksi array berindeks."],
+            ["Map", "Wajib terhubung ke sesama Map.", "Mentransfer struktur data koleksi berpasangan kunci dan nilai (key-value)."],
+            ["Any", "Wildcard (Kompatibel dengan semua tipe data).", "Bertindak sebagai tipe data dinamis universal. Port bertipe Any dapat menerima masukan atau mengirimkan data ke jenis port manapun tanpa memicu error sistem."]
+          ]
+        },
+        {
+          "type": "alert",
+          "variant": "warning",
+          "message": "Upaya penyambungan port non-Any yang berbeda karakteristik (misalnya menghubungkan port bertipe data String langsung ke port bertipe data Number) secara otomatis akan ditolak oleh kanvas skrip dan garis edge tidak akan terbentuk."
+        }
+      ]
+    }
+  ]
+}

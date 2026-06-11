@@ -47,7 +47,10 @@ export function useAssetLogic() {
     if (searchQuery.value) {
       folders = folders.filter(f => f.name.toLowerCase().includes(searchQuery.value.toLowerCase()))
     }
-    return folders
+    
+    return folders.sort((a, b) => 
+      a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' })
+    )
   })
 
   const visibleAssets = computed(() => {
@@ -56,6 +59,10 @@ export function useAssetLogic() {
     if (searchQuery.value) {
       assets = assets.filter(a => a.name.toLowerCase().includes(searchQuery.value.toLowerCase()))
     }
+
+    assets.sort((a, b) => 
+      a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' })
+    )
 
     return assets.map(a => ({
       ...a,

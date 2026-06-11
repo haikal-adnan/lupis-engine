@@ -59,12 +59,12 @@ export const BlueprintMath = {
       type: 'math_round', 
       label: 'Rounding (Floor/Ceil)', 
       description: 'Round, floor, or ceil a number', 
-      icon: Calculator, // Atau icon lain yang pas
+      icon: Calculator, 
       allowDynamicInputs: false, 
       defaultData: { 
         settings: { headerTitle: 'Rounding', headerColor: '#00796B', category: 'Math' },
         data: {
-          method: 'floor' // Default value: 'floor', 'ceil', atau 'round'
+          method: 'floor' 
         },
         inputs: [
             { _id: 'in', label: 'In', dataType: 'execution', color: '#fff' },

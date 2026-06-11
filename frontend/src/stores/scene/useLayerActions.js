@@ -194,14 +194,12 @@ export const layerActions = {
     const data = this.getLayerData(layerId);
     if (!data || data.length === 0) return [];
 
-    // Ambil section dari layer yang akan diduplikasi ('world' atau 'ui')
     const targetSection = data[0].section;
 
-    // Buat mock clipboard object untuk memicu fungsi paste
     const mockClipboard = {
       type: 'layer',
       data: data,
-      mode: 'copy' // Gunakan mode copy agar namanya mendapat embel-embel "(Copy)"
+      mode: 'copy' 
     };
 
     return this.pasteLayer(mockClipboard, targetSection);

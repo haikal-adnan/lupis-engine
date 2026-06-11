@@ -1,0 +1,111 @@
+{
+  "title": "Dokumentasi Node Settings",
+  "category": "Panduan Pengguna",
+  "description": "Halaman referensi teknis mengenai konfigurasi properti, parameterisasi internal, dan kustomisasi port eksekusi pada objek node di dalam Logic Canvas.",
+  "sections": [
+    {
+      "id": "pengenalan-node-settings",
+      "title": "Pengenalan Node Settings",
+      "blocks": [
+        {
+          "type": "image",
+          "url": "setting_overall.png",
+          "alt": "Panel Antarmuka Node Settings",
+          "caption": "Tampilan bilah sisi (sidebar) Node Settings saat sebuah node dipilih pada kanvas."
+        },
+        {
+          "type": "text",
+          "content": "Panel **Node Settings** adalah pusat kendali atribut properti untuk setiap objek node individual yang berada di dalam Logic Canvas. Akses terhadap konfigurasi ini dilakukan secara dinamis dengan cara memilih atau mengklik salah satu node aktif yang ingin dimodifikasi pada area kerja kanvas."
+        },
+        {
+          "type": "text",
+          "content": "Setiap perubahan nilai di dalam panel ini akan langsung merefleksikan perilaku runtime, struktur passing data, serta visualisasi grafis dari node yang bersangkutan secara real-time."
+        }
+      ]
+    },
+    {
+      "id": "node-header",
+      "title": "Konfigurasi Header Node",
+      "blocks": [
+        {
+          "type": "image",
+          "url": "setting_overall.png",
+          "alt": "Bagian Header Properti Node",
+          "caption": "Menu konfigurasi identitas visual dan penamaan instance node."
+        },
+        {
+          "type": "text",
+          "content": "Komponen **Header** berfungsi untuk mengatur identifikasi dasar dan dokumentasi visual dari sebuah instansiasi node agar mudah dikenali di tengah jaringan logika yang kompleks."
+        },
+        {
+          "type": "table",
+          "headers": ["Field Properti", "Format Input", "Fungsi Instansiasi Sistem"],
+          "rows": [
+            ["Title", "String Teks", "Mengubah nama tampilan utama pada bagian atas node di canvas (contoh default: 'Spawn Prefab')."],
+            ["Color", "Hex Code / Color Picker", "Mengatur warna aksen visual pada header node untuk mempermudah kategorisasi fungsional secara visual."],
+            ["Description", "Blok Teks Multi-baris", "Wadah komentar internal untuk menuliskan catatan, deskripsi fungsi logika, atau dokumentasi arsitektur skrip."]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "node-parameters",
+      "title": "Parameterisasi Internal Node (Parameters)",
+      "blocks": [
+        {
+          "type": "image",
+          "url": "setting_parameter_static.png",
+          "alt": "Parameter Struktur Statis",
+          "caption": "Contoh parameter statis dengan tipe inputan terstruktur (Prefab Name, Posisi, Layer ID, ZIndex)."
+        },
+        {
+          "type": "image",
+          "url": "setting_parameter_dynamic.png",
+          "alt": "Parameter Struktur Dinamis",
+          "caption": "Contoh parameter kustom berbasis operasi kelompok (Batch Operations) yang mendukung penambahan sub-elemen data."
+        },
+        {
+          "type": "text",
+          "content": "Bagian **Parameters** menyediakan kolom input data yang strukturnya ditentukan secara spesifik oleh blueprint induk yang digunakan. Karakteristik parameter ini terbagi menjadi dua klasifikasi mekanis:"
+        },
+        {
+          "type": "table",
+          "headers": ["Klasifikasi Parameter", "Karakteristik Mekanis", "Bentuk Interaksi"],
+          "rows": [
+            ["Parameter Statis", "Memiliki struktur kolom masukan tetap yang mengikat nilai variabel primitif atau referensi string objek game.", "Input koordinat numerik (X, Y), pengisian nama layer teks, atau penentuan indeks kedalaman (ZIndex)."],
+            ["Parameter Dinamis / Kustom", "Memiliki struktur array dinamis yang memungkinkan penambahan, penyusunan ulang, atau penghapusan elemen baris baru (edge/step ops).", "Penekanan opsi 'Add Batch Step' untuk menyuntikkan target ID, pemilihan komponen dropdown, dan manipulasi properti secara kelompok."]
+          ]
+        },
+        {
+          "type": "text",
+          "content": "Spesifikasi lengkap mengenai kebutuhan tipe parameter untuk masing-masing fungsi node dapat dipelajari secara komprehensif melalui tautan berikut: [Katalog Blueprint Komponen](#link-blueprint)."
+        }
+      ]
+    },
+    {
+      "id": "ports-configuration",
+      "title": "Konfigurasi Jalur Koneksi (Ports Configuration)",
+      "blocks": [
+        {
+          "type": "image",
+          "url": "setting_ports.png",
+          "alt": "Manajemen Port Input dan Output",
+          "caption": "Panel refactoring label pin input dan output eksekusi logika."
+        },
+        {
+          "type": "text",
+          "content": "Komponen **Ports Configuration** mengelola tata letak pin interkoneksi yang terbagi menjadi saluran **Inputs** (jalur masuknya arus eksekusi atau data) dan **Outputs** (jalur keluaran atau passing data menuju node berikutnya)."
+        },
+        {
+          "type": "text",
+          "content": "Nama label dari masing-masing port dapat disesuaikan secara mandiri guna meningkatkan kejelasan alur data skrip. Proses pengubahan nama dilakukan dengan mengklik langsung teks judul port saat ini untuk mengaktifkan mode input teks teks, kemudian mengetikkan label identifikasi baru."
+        },
+        {
+          "type": "alert",
+          "variant": "tip",
+          "message": "Disarankan untuk hanya mengubah label pada bagian port yang bersifat esensial. Pengubahan nama port secara sembarangan atau berlebihan berpotensi memicu kebingungan pembacaan alur logika sirkuit data pada masa mendatang."
+        }
+      ]
+    }
+  ]
+}

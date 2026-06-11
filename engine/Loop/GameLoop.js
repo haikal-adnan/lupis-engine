@@ -11,7 +11,6 @@ export default class GameLoop {
         this.accumulator = 0;
         this.rafId = null;
         
-        // FLAG BARU: Untuk mendeteksi frame/tick pertama
         this.isFirstFrame = true; 
     }
 
@@ -32,8 +31,6 @@ export default class GameLoop {
             this.game.render(1);
         } else {
             if (!this.game.isPaused) {
-                // TRIK PRE-WARM: Paksa accumulator penuh di frame pertama
-                // agar update() (termasuk script On Tick) PASTI berjalan.
                 if (this.isFirstFrame && this.accumulator < this.interval) {
                     this.accumulator = this.interval;
                 }
@@ -49,11 +46,10 @@ export default class GameLoop {
 
             const alpha = this.accumulator / this.interval;
 
-            // TRIK SKIP RENDER: Jangan gambar apapun di frame pertama
             if (this.isFirstFrame) {
-                this.isFirstFrame = false; // Matikan flag untuk frame berikutnya
+                this.isFirstFrame = false;
             } else {
-                this.game.render(alpha); // Frame kedua dan seterusnya normal
+                this.game.render(alpha); 
             }
         }
 
@@ -66,7 +62,7 @@ export default class GameLoop {
         if (this.game.isRunning) return;
         this.game.isRunning = true;
         
-        this.isFirstFrame = true; // Reset flag setiap kali loop di-start
+        this.isFirstFrame = true;
         
         this.lastTime = performance.now();
         this.accumulator = 0;

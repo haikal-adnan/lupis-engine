@@ -123,7 +123,6 @@ import BaseSelect from '@/commons/components/inputs/BaseSelect.vue';
 const props = defineProps({ node: Object });
 const store = useScriptStore();
 
-// Konfigurasi Komponen & Property lengkap
 const componentRegistry = {
   'Entity': {
     label: 'Entity (Root)',
@@ -244,7 +243,6 @@ const updateStep = (index, key, value) => {
 
 const handleComponentChange = (index, newComp) => {
   const newSteps = [...steps.value];
-  // Reset property saat komponen berubah
   const firstProp = Object.keys(componentRegistry[newComp]?.props || {})[0] || '';
   newSteps[index] = { ...newSteps[index], component: newComp, property: firstProp };
   syncStructure(newSteps);
@@ -255,7 +253,6 @@ const syncStructure = (newSteps) => {
     const currentValues = props.node.data?.values || {};
     const newValues = { ...currentValues };
     
-    // Pastikan port eksekusi (exec_in) selalu ada di awal
     const execIn = currentInputs.find(i => i._id === 'exec_in') || { 
         _id: 'exec_in', 
         label: 'In', 
@@ -268,23 +265,19 @@ const syncStructure = (newSteps) => {
         const targetId = `target_${index}`;
         const valId = `val_${index}`;
         
-        // Ambil tipe data dari componentRegistry
         const dataType = getPropertyType(step.component, step.property);
         
-        // Tentukan warna port sesuai dengan tipe data
-        let portColor = '#9c27b0'; // Default warna untuk string (ungu)
-        if (dataType === 'number') portColor = '#00e676'; // Hijau
-        if (dataType === 'boolean') portColor = '#f44336'; // Merah
+        let portColor = '#9c27b0'; 
+        if (dataType === 'number') portColor = '#00e676'; 
+        if (dataType === 'boolean') portColor = '#f44336';
 
-        // Tambahkan port untuk Target
         finalInputs.push({
             _id: targetId,
             label: `[${index}] Target`,
             dataType: 'string',
-            color: '#E040FB' // Ungu muda
+            color: '#E040FB'
         });
 
-        // Tambahkan port untuk Value
         finalInputs.push({
             _id: valId,
             label: `[${index}] ${step.property}`,
@@ -292,24 +285,21 @@ const syncStructure = (newSteps) => {
             color: portColor
         });
 
-        // Set default value untuk Target jika belum ada
         if (newValues[targetId] === undefined) {
             newValues[targetId] = step.targetId || 'Self';
         }
         
-        // Set default value untuk Value jika belum ada sesuai tipe datanya
         if (newValues[valId] === undefined) {
             if (dataType === 'number') {
                 newValues[valId] = 0;
             } else if (dataType === 'boolean') {
                 newValues[valId] = false;
             } else {
-                newValues[valId] = ''; // Default string
+                newValues[valId] = ''; 
             }
         }
     });
 
-    // Bersihkan value statis yang sudah tidak terpakai
     const validKeys = finalInputs.map(i => i._id);
     Object.keys(newValues).forEach(key => {
         if (!validKeys.includes(key)) {
@@ -317,7 +307,6 @@ const syncStructure = (newSteps) => {
         }
     });
 
-    // Terapkan perubahan ke global store
     store.updateNodeInActive(props.node._id, {
         data: { ...props.node.data, steps: newSteps, values: newValues },
         inputs: finalInputs
@@ -325,11 +314,9 @@ const syncStructure = (newSteps) => {
 };
 
 const addStep = () => {
-    // Nilai default
     let nextComponent = 'SpriteRenderer';
     let nextProperty = 'opacity';
 
-    // Ambil component dan property dari step terakhir (jika ada)
     if (steps.value.length > 0) {
         const lastStep = steps.value[steps.value.length - 1];
         nextComponent = lastStep.component;

@@ -2,7 +2,7 @@ import { ref, computed } from 'vue'
 import { 
   FolderPlus, Download, RefreshCw, Edit2, Trash2, 
   Stamp, Type, Copy, Scissors, ClipboardPaste,
-  Volume2, Hash // <-- [BARU] Tambahkan Hash untuk ikon Copy ID
+  Volume2, Hash 
 } from 'lucide-vue-next'
 import { useAssetActions } from '@/stores/scene/useAssetActions'
 import { useFolderActions } from '@/stores/scene/useFolderActions'
@@ -140,7 +140,6 @@ export function useAssetMenu(selectedIdRef, triggerUploadCb, logicActions) {
     closeMenu()
   }
 
-  // --- [BARU] Fungsi untuk menyalin Asset ID ke Clipboard ---
   const handleCopyId = async (targetItem) => {
     closeMenu()
     const id = targetItem.id || targetItem._id
@@ -153,7 +152,6 @@ export function useAssetMenu(selectedIdRef, triggerUploadCb, logicActions) {
       showPop({ title: 'Error', message: 'Failed to copy Asset ID.', type: 'error' })
     }
   }
-  // --------------------------------------------------------
 
   const contextMenuItems = computed(() => {
     const targetItem = menu.value.item
@@ -215,9 +213,8 @@ export function useAssetMenu(selectedIdRef, triggerUploadCb, logicActions) {
 
     if (hasAddedAppliers) items.push({ separator: true })
 
-    // Menambahkan menu item ke dalam list
     items.push(
-      { label: 'Copy ID', icon: Hash, action: () => handleCopyId(targetItem) }, // <-- [BARU] Tambahan menu Copy ID
+      { label: 'Copy ID', icon: Hash, action: () => handleCopyId(targetItem) }, 
       { separator: true },
       { label: 'Cut', icon: Scissors, shortcut: 'Ctrl+X', action: () => handleCutCopy('cut', targetItem) },
       { label: 'Copy', icon: Copy, shortcut: 'Ctrl+C', action: () => handleCutCopy('copy', targetItem) },

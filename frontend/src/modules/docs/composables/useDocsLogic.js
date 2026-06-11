@@ -2,134 +2,112 @@ import { ref, nextTick, markRaw, computed } from 'vue';
 import { BookOpen, Layers, Code2, Settings, Zap, Box } from 'lucide-vue-next';
 
 export function useDocsLogic() {
-  const docsData = ref({
-    'introduction': {
-        title: 'Lupis Engine: Visual Scripting & 2D Power',
-        category: 'Getting Started',
-        description: 'Selamat datang di dokumentasi Lupis Engine. Di sini kamu akan mempelajari cara membangun game 2D berperforma tinggi menggunakan sistem Node-Based yang intuitif.',
-        infoBox: 'Lupis Engine v1.0 mendukung ekspor ke Web, Android, dan Desktop secara native.',
-        features: [
-          { title: 'Ultra Fast', desc: 'WebGL 2.0 Rendering.', icon: 'Zap', color: 'text-yellow-500' },
-          { title: 'Visual Editor', desc: 'No-code logic editor.', icon: 'Layers', color: 'text-blue-500' },
-          { title: 'Asset Manager', desc: 'Auto-packing textures.', icon: 'Box', color: 'text-purple-500' },
-          { title: 'Open Source', desc: 'Community driven core.', icon: 'BookOpen', color: 'text-green-500' }
-        ],
-        sections: [
+  const gettingStartedLinks = [
+    { id: 'getting_started/introduction', name: 'Introduction' },
+    { id: 'getting_started/installation', name: 'Installation' },
+    { id: 'getting_started/quick-start', name: 'Quick Start' },
+  ];
+
+  const interfaceLinks = [
+    {
+      id: 'interface/global_control/global_control', 
+      name: 'Global Control',
+      children: [
+        { id: 'interface/global_control/project_actions/project_actions', name: 'Project Actions' },
+        { id: 'interface/global_control/tab_manager/tab_manager', name: 'Tab Manager' },
+        { id: 'interface/global_control/quick_action/quick_action', name: 'Quick Actions' },
+      ]
+    },
+    {
+      id: 'core-editors',
+      name: 'Main Workspace',
+      children: [
         {
-            id: 'getting-started-video',
-            title: 'Lihat Engine dalam Aksi',
-            content: 'Video di bawah menunjukkan betapa cepatnya membuat sebuah karakter bergerak menggunakan sistem Visual Logic kami.',
-            video: {
-              url: 'https://vjs.zencdn.net/v/oceans.mp4',
-              poster: 'https://placehold.co/800x450/1e1e2e/indigo?text=Video+Preview',
-              caption: 'Visual Editor: Menghubungkan node Move ke input Keyboard.',
-              autoplay: true,
-              loop: true,
-              muted: true,
-              controls: false
-            }
-        },
-        {
-            id: 'editor-shortcuts',
-            title: 'Shortcut Editor',
-            content: 'Gunakan shortcut ini untuk mempercepat workflow pengembangan game kamu di dalam Visual Editor.',
-            shortcuts: [
-              { keys: ['Space', 'Drag'], description: 'Pan / Geser Viewport' },
-              { keys: ['Ctrl', 'D'], description: 'Duplicate Entity' },
-              { keys: ['Delete'], description: 'Hapus Node yang dipilih' },
-              { keys: ['Ctrl', 'Z'], description: 'Undo action' }
-            ],
-            alert: {
-              type: 'tip',
-              message: 'Kamu bisa mengubah tema editor menjadi "Amoled Dark" di menu Settings.'
-            }
-        },
-        {
-            id: 'installation-guide',
-            title: 'Instalasi Programmatic',
-            content: 'Bagi developer yang lebih suka menulis code, Lupis bisa diinstal melalui NPM.',
-            code: {
-              language: 'bash',
-              snippet: 'npm install @lupis/core @lupis/physics\nnpm run dev'
-            },
-            alert: {
-              type: 'warning',
-              message: 'Pastikan versi Node.js kamu di atas v18.0.0 untuk menghindari error saat build.'
-            }
-        },
-        {
-            id: 'asset-workflow',
-            title: 'Workflow Import Asset',
-            content: 'Ikuti langkah-langkah berikut untuk memasukkan asset gambar ke dalam game kamu.',
-            steps: [
-              'Buka folder "Assets" di panel sebelah kiri.',
-              'Drag file .png atau .jpg kamu langsung ke dalam editor.',
-              'Lupis akan otomatis membuat SpriteSheet jika kamu memasukkan lebih dari 5 gambar.',
-              'Tarik asset tersebut ke Viewport untuk menjadikannya Entity baru.'
-            ],
-            image: {
-              url: 'https://placehold.co/800x400/1e1e2e/indigo?text=Asset+Import+GIF+Demo',
-              alt: 'Asset import demo',
-              caption: 'Lupis Engine secara otomatis mengoptimalkan ukuran gambar saat di-import.'
-            }
-        },
-        {
-            id: 'api-reference',
-            title: 'Sprite Properties API',
-            content: 'Berikut adalah tabel referensi properti yang bisa kamu akses melalui script maupun editor.',
-            table: {
-              headers: ['Property', 'Type', 'Default', 'Description'],
-              rows: [
-                  ['position', 'Vector2', '{x:0, y:0}', 'Posisi entity di koordinat world.'],
-                  ['anchor', 'Vector2', '{x:0.5, y:0.5}', 'Titik pusat rotasi dan scaling.'],
-                  ['visible', 'Boolean', 'true', 'Menentukan apakah sprite dirender.'],
-                  ['texture', 'String', '""', 'ID Asset gambar yang digunakan.'],
-                  ['alpha', 'Number', '1.0', 'Tingkat transparansi (0.0 - 1.0).']
+          id: 'scene-editor',
+          name: 'Scene Editor',
+          children: [
+            { id: 'interface/main_workspace/scene_editor/canvas_scene/canvas_scene', name: 'Canvas Scene' },
+            { id: 'interface/main_workspace/scene_editor/hierarchy_scene/hierarchy_scene', name: 'Hierarchy Scene' },
+            { id: 'interface/main_workspace/scene_editor/property_inspector/property_inspector', name: 'Property Inspector' },
+            { id: 'interface/main_workspace/scene_editor/floating_toolbar/floating_toolbar', name: 'Floating Toolbar' },
+            { id: 'interface/main_workspace/scene_editor/bottom_dock/bottom_dock', 
+              name: 'Bottom Dock',
+              children: [
+                { id: 'interface/main_workspace/scene_editor/bottom_dock/assets_panel/assets_panel', name: 'Assets Panel' },
+                { id: 'interface/main_workspace/scene_editor/bottom_dock/scripts_panel/scripts_panel', name: 'Scripts Panel' },
+                { id: 'interface/main_workspace/scene_editor/bottom_dock/console_panel/console_panel', name: 'Console Panel' },
+                { id: 'interface/main_workspace/scene_editor/bottom_dock/prefabs_panel/prefabs_panel', name: 'Prefabs Panel' },
               ]
             },
-            alert: {
-              type: 'danger',
-              message: 'Jangan mengubah properti "anchor" saat animasi sedang berjalan karena akan merusak perhitungan bounding box.'
-            }
+          ]
+        },
+        {
+          id: 'interface/main_workspace/script_editor/script_editor',
+          name: 'Script Editor (Visual Logic)',
+          children: [
+            { id: 'interface/main_workspace/script_editor/node_script/node_script', name: 'Node Script' },
+            { id: 'interface/main_workspace/script_editor/variable_manager/variable_manager', 
+              name: 'Variable Manager',
+              children: [
+                { id: 'interface/main_workspace/script_editor/variable_manager/collection_management/collection_management', name: 'Collection Management' },
+              ]
+            },
+            { id: 'interface/main_workspace/script_editor/node_library/node_library', name: 'Node Library' },
+            { id: 'interface/main_workspace/script_editor/node_inspector/node_inspector', name: 'Node Inspector' }
+          ]
+        },
+        {
+          id: 'animator-editor',
+          name: 'Animator Editor',
+          children: [
+            { id: 'interface/main_workspace/animator_editor/animation_view/animation_view', name: 'Animation View' },
+            { id: 'interface/main_workspace/animator_editor/animation_clip/animation_clip', name: 'Clip Manager' },
+            { id: 'interface/main_workspace/animator_editor/animation_property/animation_property', name: 'Animation Property' },
+            { id: 'interface/main_workspace/animator_editor/animation_timeline/animation_timeline', name: 'Animation Timeline' }
+          ]
+        },
+        {
+          id: 'interface/main_workspace/tilemap_editor/tilemap_editor',
+          name: 'Tilemap Editor',
+          
         }
-        ]
-    }
-  });
+      ]
+    },
 
-  const currentDocId = ref('introduction'); 
-  const activeContent = computed(() => docsData.value[currentDocId.value] || null);
+  ];
+
+  const apiReferenceLinks = []; 
+
+  const configurationLinks = [
+    { id: 'aCheatSheet', name: 'Cheat Sheet' },
+  ];
 
   const sidebarNav = ref([
     {
       title: 'Getting Started',
       icon: markRaw(BookOpen),
-      links: [
-        { id: 'introduction', name: 'Introduction', href: '#introduction', active: true },
-        { id: 'installation', name: 'Installation', href: '#installation', active: false },
-        { id: 'quick-start', name: 'Quick Start', href: '#quick-start', active: false },
-      ]
+      links: gettingStartedLinks
     },
     {
-      title: 'Core Concepts',
+      title: 'Interface',
       icon: markRaw(Layers),
-      links: [
-        { id: 'game-loop', name: 'The Game Loop', href: '#', active: false },
-        { id: 'ecs', name: 'Entities & Components', href: '#', active: false },
-      ]
+      links: interfaceLinks
     },
     {
       title: 'API Reference',
       icon: markRaw(Code2),
-      links: []
+      links: apiReferenceLinks
     },
     {
       title: 'Configuration',
       icon: markRaw(Settings),
-      links: [
-        { id: 'config-options', name: 'Configuration Options', href: '#', active: false },
-      ]
+      links: configurationLinks
     }
   ]);
+
+  const docsData = ref({}); 
+  const currentDocId = ref('introduction'); 
+  const activeContent = computed(() => docsData.value[currentDocId.value] || null);
 
   const tocHeadings = ref([]);
   const activeHeadingId = ref('');
@@ -157,7 +135,12 @@ export function useDocsLogic() {
     await nextTick();
     const headingElements = extractHeadings();
     
-    if (!headingElements || headingElements.length === 0) return;
+    if (!headingElements || headingElements.length === 0) {
+      activeHeadingId.value = '';
+      return;
+    }
+
+    activeHeadingId.value = headingElements[0].id;
 
     const observerOptions = {
       root: null,
@@ -223,16 +206,58 @@ export function useDocsLogic() {
     }
   };
 
+  const fetchDocumentData = async (docId) => {
+    if (docsData.value[docId]) return;
+
+    try {
+      const response = await fetch(`/docs/${docId}.json`);
+      
+      if (!response.ok) {
+        throw new Error(`Dokumen ${docId} belum ada.`);
+      }
+      
+      const data = await response.json();
+      docsData.value[docId] = data; 
+      
+    } catch (error) {
+      console.warn(error.message);
+      
+      docsData.value[docId] = {
+        title: "Sedang Dikerjakan",
+        category: "Work in Progress",
+        description: "Halaman dokumentasi untuk topik ini masih dalam tahap penulisan.",
+        sections: [
+          {
+            id: "contribution-notice",
+            title: "Bantu Kami Menulis",
+            blocks: [
+              { 
+                type: "text", 
+                content: "Kami sedang berusaha melengkapi seluruh bagian dokumentasi Lupis Engine." 
+              }
+            ]
+          }
+        ]
+      };
+    }
+  };
+
   const changeDocument = async (newDocId) => {
+    await fetchDocumentData(newDocId);
     currentDocId.value = newDocId;
+    
     destroyToc();     
     await initToc();  
-    window.scrollTo({ top: 0, behavior: 'smooth' }); 
+    
+    window.scrollTo({ top: 0, behavior: 'auto' }); 
   };
+
+  fetchDocumentData(currentDocId.value);
 
   return {
     sidebarNav,
     activeContent,
+    currentDocId,
     tocHeadings,
     activeHeadingId,
     contentContainer,

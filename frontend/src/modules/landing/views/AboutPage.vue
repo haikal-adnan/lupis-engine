@@ -46,9 +46,9 @@ const assets = [
 
 <template>
   <section class="w-full max-w-4xl mx-auto px-6 pt-32 pb-10">
-    <p class="text-xs font-bold uppercase tracking-widest text-cyan-400 mb-3">About The Project</p>
+    <p class="text-xs font-bold uppercase tracking-widest text-cyan-400 mb-3">Tentang Proyek</p>
     <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight mb-4 text-foreground">
-      Lupis Engine
+      Lupis Engines
     </h1>
     <p class="text-lg md:text-xl text-muted-foreground leading-relaxed max-w-3xl">
       Proyek Tugas Akhir: Pengembangan Game Engine 2D dan Platform Editor Visual Berbasis Komponen Modular dengan Teknologi WebGL
@@ -132,7 +132,7 @@ const assets = [
           HS
         </div>
         <div>
-          <h4 class="font-bold text-foreground">Dr. Harja Santana Purba, M.Kom.</h4>
+          <h4 class="font-bold text-foreground">Drs. Harja Santana Purba, M.Kom., Ph.D.</h4>
           <p class="text-sm text-muted-foreground">Pembimbing Satu</p>
         </div>
       </div>

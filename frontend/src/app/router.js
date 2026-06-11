@@ -1,7 +1,17 @@
+// @ts-nocheck
 import { createRouter, createWebHistory } from 'vue-router'
 
 import LandingPage from '@/modules/landing/views/LandingPage.vue'
 import AboutPage from '@/modules/landing/views/AboutPage.vue' 
+import NProgress from 'nprogress'
+import 'nprogress/nprogress.css'
+
+NProgress.configure({ 
+  showSpinner: false, 
+  easing: 'ease', 
+  speed: 500,
+  trickleSpeed: 200 
+});
 
 const routes = [
   {
@@ -16,26 +26,30 @@ const routes = [
     component: AboutPage,
     meta: { layout: 'LandingLayout' } 
   },
+  // --- BAGIAN YANG DIPERBARUI ---
   {
     path: '/docs',
+    redirect: '/docs/getting_started/introduction' // Redirect ke halaman default jika user hanya mengunjungi /docs
+  },
+  {
+    path: '/docs/:docPath(.*)*', // Menangkap semua path yang memiliki "/" setelah /docs/
     name: 'Docs',
     component: () => import('@/modules/docs/DocsPanel.vue'),
     meta: { layout: 'MainLayout' }
   },
+  // -----------------------------
   {
     path: '/profile/:usernameUser', 
     name: 'Profile',
     component: () => import('@/modules/profile/views/ProfilePanel.vue'),
     meta: { layout: 'MainLayout' } 
   },
-  // --- TAMBAH ROUTE SETTINGS DI SINI ---
   {
     path: '/settings',
     name: 'Settings',
-    component: () => import('@/modules/setting/SettingsPage.vue'), // Sesuaikan path ini
+    component: () => import('@/modules/setting/SettingsPage.vue'), 
     meta: { layout: 'MainLayout', requiresAuth: true }
   },
-  // -------------------------------------
   {
     path: '/explore',
     name: 'Explore',
@@ -91,17 +105,17 @@ const router = createRouter({
   }
 })
 
-router.beforeEach((to, from) => {
-  document.body.classList.add('is-loading');
+router.beforeEach((to, from) => { 
+  NProgress.start();
 
   const isAuthenticated = !!localStorage.getItem('lupis_auth_token');
 
   if (isAuthenticated && to.name === 'Landing') {
-    return { name: 'Dashboard' };
+    return { name: 'Dashboard' }; 
   }
 
   if (to.meta.requiresAuth && !isAuthenticated) {
-    document.body.classList.remove('is-loading'); 
+    NProgress.done(); 
     return { 
       name: 'Landing', 
       query: { action: 'login', redirect: to.fullPath } 
@@ -112,11 +126,11 @@ router.beforeEach((to, from) => {
 });
 
 router.afterEach(() => {
-  document.body.classList.remove('is-loading');
+  NProgress.done();
 });
 
 router.onError(() => {
-  document.body.classList.remove('is-loading');
+  NProgress.done();
 });
 
 export default router

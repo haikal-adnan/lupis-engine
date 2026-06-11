@@ -6,7 +6,7 @@ const state = ref({
   message: '',
   confirmText: 'Confirm',
   cancelText: 'Cancel',
-  type: 'info' // 'info' | 'danger' | 'warning'
+  type: 'info'
 });
 
 let resolvePromise = null;

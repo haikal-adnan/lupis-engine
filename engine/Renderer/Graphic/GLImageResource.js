@@ -11,7 +11,7 @@ export default class GLImageResource {
             src = `${baseURL}${asset.fileKey}${asset.meta.extension}`;
         }
         const img = await this._loadImage(src);
-        const textureData = this._uploadToGPU(img); // Tidak perlu parameter filter lagi
+        const textureData = this._uploadToGPU(img); 
         textureData.src = src;
         textureData.image = img;
         return textureData;
@@ -30,7 +30,6 @@ export default class GLImageResource {
     async load(url, config = {}) {
         const img = await this._loadImage(url);
         
-        // --- HARDCODE KE LINEAR UNTUK MENDUKUNG SDF ---
         const filter = this.gl.LINEAR;
         
         return this._uploadToGPU(img, filter);
@@ -44,7 +43,6 @@ export default class GLImageResource {
         gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
 
-        // Upload awal biarkan NEAREST, nanti akan di-override oleh ImageRenderer
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);

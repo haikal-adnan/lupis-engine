@@ -94,8 +94,18 @@ export class SelectionRenderer {
         if (marqueeBox) {
             const mc = [0, 0.6, 1, 0.2]; 
             const mb = [0, 0.6, 1, 0.8]; 
-            shape.drawRect(marqueeBox.x, marqueeBox.y, marqueeBox.w, marqueeBox.h, mc, proj);
-            shape.drawRectStroke(marqueeBox.x, marqueeBox.y, marqueeBox.w, marqueeBox.h, mb, lineThick, proj);
+
+            shape.drawParametricShape(
+                "rectangle", 
+                marqueeBox.x, marqueeBox.y, marqueeBox.w, marqueeBox.h, 
+                mc, mb, 
+                true, lineThick, 
+                0, 4, 
+                proj, 
+                0, 1, 1, 
+                0, 0,
+                false, false 
+            );
         }
     }
 

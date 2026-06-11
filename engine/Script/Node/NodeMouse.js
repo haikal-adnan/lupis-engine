@@ -1,4 +1,4 @@
-import PointerRaycast from '../../System/PointerRaycast.js'; // Ganti path ini sesuai proyek Anda
+import PointerRaycast from '../../System/PointerRaycast.js'; 
 
 export const NodeMouse = {
     'mouse_entity_interact': {
@@ -23,14 +23,12 @@ export const NodeMouse = {
             const isPointerDown = pointer.down; 
             const entityId = entity.id || entity._id;
             
-            // Ambil input use_raycast (default: true)
             const useRaycast = runner.getInputValue(node, 'use_raycast') ?? true;
 
             let isHovering = false;
             let outputEntityScriptId = null;
 
             if (useRaycast) {
-                // --- METODE 1: RAYCAST (Menghormati Z-Index & Occlusion) ---
                 const topEntity = PointerRaycast.getTopEntityUnderPointer(runner.game);
                 
                 if (topEntity) {
@@ -53,7 +51,6 @@ export const NodeMouse = {
                     }
                 }
             } else {
-                // --- METODE 2: DIRECT HIT-TEST (Mengabaikan Z-Index & Occlusion) ---
                 const canvas = runner.game.renderer?.canvas || { width: 1920, height: 1080 };
                 const uiSettings = runner.game.world.settings?.ui || { width: 1920, height: 1080 };
                 const camera = runner.game.camera;

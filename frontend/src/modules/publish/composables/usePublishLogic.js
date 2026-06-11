@@ -21,15 +21,12 @@ export function usePublishLogic() {
   const projectId = route.params.idProject;
   const currentUser = ref(getCurrentUser());
 
-  // --- STATE CROPPER & UPLOAD ---
   const isCropperOpen = ref(false);
   const selectedImageFile = ref(null);
-  const isUploadingThumbnail = ref(false); // Untuk animasi loading di tombol Save nanti
+  const isUploadingThumbnail = ref(false);
   
-  // STATE BARU: Menyimpan file fisik hasil crop sementara (Belum diupload)
   const pendingThumbnailFile = ref(null); 
   
-  // --- STATE FORM ---
   const isLoading = ref(false);
   const isUpdating = ref(false);
   const publishData = ref(createPublished());
@@ -43,7 +40,6 @@ export function usePublishLogic() {
       const existingData = await getPublishedByProjectId(projectId);
       
       if (existingData) {
-        // MODE EDIT
         isUpdating.value = true;
         publishData.value = createPublished(existingData);
         
@@ -53,7 +49,6 @@ export function usePublishLogic() {
         
         slugStatus.value = 'available'; 
       } else {
-        // MODE CREATE
         isUpdating.value = false;
         const initialData = createPublished({
           projectId: projectId,
@@ -98,11 +93,10 @@ export function usePublishLogic() {
         const file = e.target.files[0];
         if (!file) return;
         selectedImageFile.value = file;
-        isCropperOpen.value = true; // Buka Modal Cropper
+        isCropperOpen.value = true;
       };
     } else {
       input.accept = '.exe,.apk,.bin,.zip,.rar';
-      // Mock File Upload APK/EXE
       input.onchange = (e) => {
         const file = e.target.files[0];
         if (!file) return;
@@ -119,19 +113,16 @@ export function usePublishLogic() {
     input.click();
   };
 
-  // DIPERBARUI: Hanya simpan sementara dan buat preview lokal
   const handleCropAndUploadThumbnail = (croppedFile) => {
-    // 1. Simpan file fisik ke variabel sementara
     pendingThumbnailFile.value = croppedFile; 
     
-    // 2. Buat URL lokal (Blob) untuk preview UI
     if (thumbnailPreview.value && thumbnailPreview.value.startsWith('blob:')) {
-      URL.revokeObjectURL(thumbnailPreview.value); // Bersihkan memory jika ganti gambar berkali-kali
+      URL.revokeObjectURL(thumbnailPreview.value); 
     }
     thumbnailPreview.value = URL.createObjectURL(croppedFile);
     
     isCropperOpen.value = false;
-    selectedImageFile.value = null; // Reset file mentah
+    selectedImageFile.value = null; 
   };
 
   const handleSave = async () => {
@@ -144,13 +135,10 @@ export function usePublishLogic() {
     publishData.value.updatedAt = new Date().toISOString();
     
     try {
-      // --- LOGIKA UPLOAD THUMBNAIL SESUNGGUHNYA ---
-      // Jika ada file pending di variabel, upload dulu sebelum simpan database!
       if (pendingThumbnailFile.value) {
         const result = await uploadThumbnailToServer(pendingThumbnailFile.value);
-        publishData.value.thumbnailUrl = result.thumbnailUrl; // Timpa dengan nama file dari server
+        publishData.value.thumbnailUrl = result.thumbnailUrl;
       }
-      // -------------------------------------------
 
       if (!isUpdating.value) {
         await createPublishedGame(publishData.value);
@@ -193,7 +181,7 @@ export function usePublishLogic() {
     router,
     isCropperOpen,
     selectedImageFile,
-    isUploadingThumbnail, // Bisa digunakan untuk mendisable form saat handleSave berjalan
+    isUploadingThumbnail, 
     handleCropAndUploadThumbnail
   };
 }
