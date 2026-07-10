@@ -72,11 +72,20 @@ export function usePublishBackend() {
     return result.data;
   };
 
+  const republishGame = async (projectId) => {
+    const response = await fetchWithTimeout(`${API_URL}/publish/republish/${projectId}`, {
+      method: 'POST'
+    });
+    const result = await handleResponse(response, 'Gagal menimpa game dengan data terbaru');
+    return result;
+  };
+
   return {
     createPublishedGame,
     checkSlugAvailability, 
     getPublishedByProjectId, 
     updatePublishedGame,
-    uploadThumbnailToServer
+    uploadThumbnailToServer,
+    republishGame
   };
 }

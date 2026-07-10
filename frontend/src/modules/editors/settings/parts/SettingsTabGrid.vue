@@ -21,7 +21,7 @@
             <button 
               @click="isRatioLocked = !isRatioLocked" 
               class="h-10 w-10 flex items-center justify-center rounded-md border transition-colors focus:outline-none shrink-0"
-              :class="isRatioLocked ? 'border-primary/50 bg-primary/5 text-primary' : 'border-border bg-background text-muted-foreground hover:bg-muted'"
+              :class="isRatioLocked ? 'border-primary bg-primary/5 text-primary' : 'border-border bg-background text-muted-foreground hover:bg-muted'"
               :title="isRatioLocked ? 'Unlock Ratio' : 'Lock Ratio'"
             >
               <Lock v-if="isRatioLocked" class="w-4 h-4" />
@@ -42,7 +42,7 @@
     <section class="space-y-5">
       <div class="border-b border-border pb-2">
         <h4 class="text-sm font-bold text-foreground">Editor Camera</h4>
-        <p class="text-xs text-muted-foreground mt-0.5">Sudut pandang bawaan editor terhadap dunia permainan.</p>
+        <p class="text-xs text-muted-foreground mt-0.5">The default editor viewport perspective relative to the game world.</p>
       </div>
       
       <div class="space-y-6">

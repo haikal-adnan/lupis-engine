@@ -169,8 +169,6 @@ export function useVariableLogic(scopeProps) {
     const varType = variable.type.toLowerCase();
     const varColor = getVarColor(variable.type);
 
-    console.log(centerPos)
-
     const finalPosition = centerPos || { x: 0, y: 0 };
 
     const newNodePayload = {

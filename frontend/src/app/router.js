@@ -110,9 +110,10 @@ router.beforeEach((to, from) => {
 
   const isAuthenticated = !!localStorage.getItem('lupis_auth_token');
 
-  if (isAuthenticated && to.name === 'Landing') {
+  if (isAuthenticated && to.name === 'Landing' && !from.name) {
     return { name: 'Dashboard' }; 
   }
+  // -----------------------------
 
   if (to.meta.requiresAuth && !isAuthenticated) {
     NProgress.done(); 

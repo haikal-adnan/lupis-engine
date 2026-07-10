@@ -19,8 +19,6 @@ export const NodeTransform = {
             const entity = runner.resolveEntity(targetId);
             const t = entity?.components?.UITransform || entity?.components?.Transform;
 
-            console.log(targetId)
-            
             if (!t) {
                 runner.executeFlow(node._id, 'exec_out');
                 return;

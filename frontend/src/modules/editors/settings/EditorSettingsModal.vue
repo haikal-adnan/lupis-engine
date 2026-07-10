@@ -45,13 +45,13 @@ const props = defineProps({ isOpen: Boolean });
 const emit = defineEmits(['close']);
 
 const TABS = [
-  { id: 'project', label: 'Project Info', icon: FolderSync, desc: 'Identitas proyek dan konfigurasi penyimpanan otomatis.' },
-  { id: 'engine', label: 'Engine & Canvas', icon: Activity, desc: 'Konfigurasi dasar putaran game dan resolusi tampilan.' },
-  { id: 'physics', label: 'Physics & Bounds', icon: Wind, desc: 'Konfigurasi gaya tarik, hambatan, dan batas area.' },
-  { id: 'grid', label: 'Grid & Camera', icon: Grid3X3, desc: 'Panduan visual editor dan sudut pandang kamera.' },
-  { id: 'resources', label: 'Resources', icon: Database, desc: 'Pengaturan global untuk aset, kompresi, dan audio.' },
-  { id: 'debug', label: 'Debugging', icon: BugPlay, desc: 'Alat bantu visual untuk mengukur performa game.' },
-  { id: 'publish', label: 'Publish & Export', icon: Box, desc: 'Kompilasi proyek menjadi aplikasi mandiri.' }
+  { id: 'project', label: 'Project Info', icon: FolderSync, desc: 'Project metadata and auto-save configuration.' },
+  { id: 'engine', label: 'Engine & Canvas', icon: Activity, desc: 'Core game loop configuration and canvas resolution parameters.' },
+  { id: 'physics', label: 'Physics & Bounds', icon: Wind, desc: 'Global gravity force, drag coefficients, and active world boundary limits.' },
+  { id: 'grid', label: 'Grid & Camera', icon: Grid3X3, desc: 'Visual guidelines for the editor and default viewport camera perspectives.' },
+  { id: 'resources', label: 'Resources', icon: Database, desc: 'Global configurations for asset management, compression, and audio volume.' },
+  { id: 'debug', label: 'Debugging', icon: BugPlay, desc: 'Visual utility tools for tracking and measuring game runtime performance.' },
+  { id: 'publish', label: 'Publish & Export', icon: Box, desc: 'Compile and bundle your project into independent standalone applications.' }
 ];
 
 const activeTab = ref('engine');
@@ -73,3 +73,7 @@ const closeModal = () => emit('close');
 onMounted(() => window.addEventListener('keydown', handleKeyDown));
 onUnmounted(() => window.removeEventListener('keydown', handleKeyDown));
 </script>
+
+<style scoped>
+/* Menjaga konsistensi styling */
+</style>

@@ -20,7 +20,7 @@
       <div class="flex items-center justify-between border-b border-border pb-2">
         <div>
           <h4 class="text-sm font-bold text-foreground">World Boundaries</h4>
-          <p class="text-xs text-muted-foreground mt-0.5">Batas area aktif untuk sistem tabrakan dan kamera.</p>
+          <p class="text-xs text-muted-foreground mt-0.5">Active area limits for the collision system and camera viewport.</p>
         </div>
         <BaseCheckbox v-model="boundsActive" label="Enable Bounds" box-size="w-4 h-4" icon-size="w-3 h-3" text-size="text-sm" />
       </div>

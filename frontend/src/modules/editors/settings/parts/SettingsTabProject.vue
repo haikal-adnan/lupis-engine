@@ -3,7 +3,7 @@
     <section class="space-y-5">
       <div class="border-b border-border pb-2">
         <h4 class="text-sm font-bold text-foreground">Data Management</h4>
-        <p class="text-xs text-muted-foreground mt-0.5">Konfigurasi penyimpanan proyek di dalam editor.</p>
+        <p class="text-xs text-muted-foreground mt-0.5">Configure project storage and saving preferences within the editor.</p>
       </div>
       
       <div class="space-y-6">
@@ -23,7 +23,7 @@
               <div class="flex items-start gap-2 mt-1 p-2.5 rounded-lg bg-orange-500/10 border border-orange-500/20">
                 <AlertTriangle class="w-4 h-4 text-orange-500 shrink-0 mt-0.5" />
                 <p class="text-[11px] text-orange-600 dark:text-orange-400 leading-tight">
-                  Interval minimum adalah 10 menit untuk menjaga performa. Penyimpanan otomatis hanya berjalan saat tab Lupis Editor aktif dan tidak sedang <i>idle</i>.
+                  The minimum interval is 10 minutes to maintain optimal performance. Auto-save triggers only when the Lupis Editor tab is active and not idle.
                 </p>
               </div>
             </div>
@@ -37,7 +37,7 @@
         <h4 class="text-sm font-bold text-foreground">Project Identity</h4>
       </div>
       <div class="p-6 text-center border-2 border-dashed border-border rounded-xl">
-        <p class="text-xs text-muted-foreground italic">Project metadata (Nama, Package, Versi) akan ditambahkan di sini.</p>
+        <p class="text-xs text-muted-foreground italic">Project metadata (Name, Package, Version) will be added here.</p>
       </div>
     </section>
   </div>
@@ -55,3 +55,7 @@ defineProps({ info: Object });
 const autoSave = ref(true);
 const saveInterval = ref(10); 
 </script>
+
+<style scoped>
+:deep(.property-row) { margin-bottom: 0; }
+</style>

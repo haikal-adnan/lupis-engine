@@ -3,7 +3,7 @@
     <section class="space-y-5">
       <div class="border-b border-border pb-2">
         <h4 class="text-sm font-bold text-foreground">Global Audio</h4>
-        <p class="text-xs text-muted-foreground mt-0.5">Pengaturan standar volume di seluruh scene saat permainan dijalankan.</p>
+        <p class="text-xs text-muted-foreground mt-0.5">Default volume configurations across all scenes when the game is running.</p>
       </div>
       
       <div class="space-y-6">
@@ -41,3 +41,7 @@ defineProps({ info: Object });
 const masterVolume = ref(1.0);
 const muteInEditor = ref(false);
 </script>
+
+<style scoped>
+:deep(.property-row) { margin-bottom: 0; }
+</style>
