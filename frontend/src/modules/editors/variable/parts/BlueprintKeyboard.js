@@ -109,6 +109,26 @@ export const BlueprintKeyboard = {
           { _id: 'key_string', label: 'Key (string)', dataType: 'string', color: '#FFEB3B' }
         ]
       } 
+    },
+    { 
+      type: 'simulate_key', 
+      label: 'Simulate Key', 
+      description: 'Mensimulasikan input keyboard. Berguna untuk memicu pergerakan dari tombol UI.',
+      icon: Zap,
+      allowDynamicInputs: false,
+      allowDynamicOutputs: false,
+      defaultData: { 
+        settings: { headerTitle: 'Simulate Key', headerColor: '#C2185B', category: 'Keyboard Events' },
+        data: { key: 'D', isDown: true },
+        inputs: [
+          { _id: 'exec_in', label: 'In', dataType: 'execution', color: '#ffffff' },
+          { _id: 'key', label: 'Key', dataType: 'string', color: '#FFEB3B' },
+          { _id: 'isDown', label: 'Is Down', dataType: 'boolean', color: '#B2FF59' }
+        ],
+        outputs: [
+          { _id: 'exec_out', label: 'Out', dataType: 'execution', color: '#ffffff' }
+        ]
+      } 
     }
   ]
 };

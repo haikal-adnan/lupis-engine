@@ -64,7 +64,6 @@ export default class GameLoader {
             if (mode === "editor") {
                 this._initializeEditorTools(game, canvas);
             }
-            console.log(game)
             game.initLoop();
             this.start(game);
 

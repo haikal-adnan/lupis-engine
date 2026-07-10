@@ -2,12 +2,13 @@ import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { 
   Edit2, Type, Trash2, FolderOpen, ExternalLink, 
-  Activity, FileEdit, Clock, Globe, Settings, Globe2 
+  Activity, FileEdit, Clock, Globe, Settings, Globe2, UploadCloud 
 } from 'lucide-vue-next';
 import { usePrompt } from '@/composables/usePrompt';
 import { useConfirm } from '@/composables/useConfirm';
 import { usePopAlert } from '@/composables/usePopAlert'; 
 import { useProjectBackend } from '@/services/api/backend/useProjectBackend.js';
+import { usePublishBackend } from '@/services/api/backend/usePublishBackend.js';
 
 export function useProjectMenu(refreshListCallback, openProjectCallback) {
   const router = useRouter();
@@ -16,6 +17,7 @@ export function useProjectMenu(refreshListCallback, openProjectCallback) {
   const { showPop } = usePopAlert(); 
   
   const { updateProject, deleteProject } = useProjectBackend();
+  const { republishGame } = usePublishBackend();
 
   const menu = ref({ visible: false, x: 0, y: 0, item: null });
 
@@ -147,6 +149,37 @@ export function useProjectMenu(refreshListCallback, openProjectCallback) {
     }
   };
 
+  const handleRepublish = async (project) => {
+    closeMenu();
+    const isConfirmed = await confirm({
+      title: 'Update Published Game?',
+      message: `PERINGATAN: Semua data game "${project.name}" yang telah dipublish akan dihapus dan ditimpa dengan data proyek (draft) terbaru. Apakah Anda yakin ingin melanjutkan?`,
+      type: 'warning',
+      confirmText: 'Ya, Timpa Data'
+    });
+
+    if (isConfirmed) {
+      try {
+        showPop({ title: 'Updating...', message: 'Sedang memperbarui game dengan data terbaru...', type: 'info' });
+        
+        await republishGame(project._id);
+        
+        showPop({
+          title: 'Sukses',
+          message: 'Game berhasil diperbarui ke versi terbaru!',
+          type: 'success'
+        });
+      } catch (error) {
+        console.error("Failed to republish game:", error);
+        showPop({
+          title: 'Error',
+          message: error.message || 'Gagal memperbarui game.',
+          type: 'error'
+        });
+      }
+    }
+  };
+
   const contextMenuItems = computed(() => {
     const targetProject = menu.value.item;
     if (!targetProject) return [];
@@ -189,6 +222,11 @@ export function useProjectMenu(refreshListCallback, openProjectCallback) {
             const gameSlug = targetProject.settings?.publishedSlug || targetProject._id; 
             router.push(`/game/${gameSlug}`); 
           }
+        },
+        {
+          label: 'Update Published Game',
+          icon: UploadCloud,
+          action: () => handleRepublish(targetProject)
         },
         {
           label: 'Edit Published Data',

@@ -25,7 +25,7 @@
     <section class="space-y-5">
       <div class="border-b border-border pb-2">
         <h4 class="text-sm font-bold text-foreground">Viewport & Resolution</h4>
-        <p class="text-xs text-muted-foreground mt-0.5">Pengaturan resolusi render canvas dan UI layer.</p>
+        <p class="text-xs text-muted-foreground mt-0.5">Configure resolution settings for the render canvas and UI layer.</p>
       </div>
       
       <div class="space-y-6">

@@ -5,7 +5,7 @@
   "sections": [
     {
       "id": "ikhtisar-script-panel",
-      "title": "Ikhtisar & Struktur Script",
+      "title": "Overview Struktur Script",
       "blocks": [
         {
           "type": "text",

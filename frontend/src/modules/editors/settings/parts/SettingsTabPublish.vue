@@ -10,7 +10,7 @@
 
     <h3 class="text-lg font-bold text-foreground mb-2">Build & Export Module</h3>
     <p class="text-sm text-muted-foreground max-w-md mx-auto mb-8 leading-relaxed">
-      Modul kompilasi sedang dalam pengembangan. Nantinya Anda dapat meng-export proyek Lupis Engine ini menjadi file <b>.APK</b> (Android) atau format Web (<b>HTML5</b>).
+      The compilation module is currently under development. Soon, you will be able to export this Lupis Engine project into an .APK (Android) bundle or Web format (HTML5).
     </p>
 
     <div class="flex gap-4">

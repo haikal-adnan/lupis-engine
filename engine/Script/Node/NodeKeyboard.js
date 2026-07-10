@@ -20,6 +20,7 @@ export const NodeKeyboard = {
             return null;
         }
     },
+
     'calculate_axis_2d': {
         execute: (runner, node) => {
             const upKey = runner.getInputValue(node, 'upKey');
@@ -56,6 +57,37 @@ export const NodeKeyboard = {
                 return node._tempData ? node._tempData.axis_y : 0;
             }
             return 0;
+        }
+    },
+
+    // --- NODE BARU: SIMULATE KEY ---
+    'simulate_key': {
+        execute: (runner, node) => {
+            const key = runner.getInputValue(node, 'key') || node.data?.key || '';
+            const isDown = runner.getInputValue(node, 'isDown') ?? node.data?.isDown ?? true;
+
+            if (key) {
+                const eventType = isDown ? 'keydown' : 'keyup';
+                const keyCode = key.toUpperCase().charCodeAt(0);
+                
+                const event = new KeyboardEvent(eventType, {
+                    key: key,
+                    code: `Key${key.toUpperCase()}`,
+                    keyCode: keyCode,
+                    which: keyCode,
+                    bubbles: true,
+                    cancelable: true
+                });
+                
+                window.dispatchEvent(event);
+                console.log("iwhrgo")
+                // Opsional: Jika engine spesifik menempel pada canvas
+                if (runner.game && runner.game.canvas) {
+                    runner.game.canvas.dispatchEvent(event);
+                }
+            }
+
+            runner.executeFlow(node._id, 'exec_out');
         }
     }
 };
