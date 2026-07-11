@@ -14,7 +14,7 @@ export default defineConfig({
     appType: 'mpa',
     port: 6500,
     allowedHosts: [
-      'example.com',
+      'dev-example.com',
       'localhost',
     ],
     hmr: {

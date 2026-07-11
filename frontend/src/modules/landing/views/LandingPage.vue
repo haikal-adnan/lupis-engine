@@ -10,12 +10,7 @@ import {
 } from 'lucide-vue-next';
 
 const router = useRouter();
-const { initTheme } = useTheme();
 const authStore = useAuthStore();
-
-onMounted(() => {
-  initTheme();
-});
 
 const handleTryInBrowser = () => {
   if (authStore.isLoggedIn) {

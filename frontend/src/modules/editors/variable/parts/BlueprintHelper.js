@@ -7,8 +7,6 @@ import {
   MousePointerClick
 } from 'lucide-vue-next';
 
-
-
 export const BlueprintHelper = {
   _id: 'flow_helper',
   label: 'Flow Helpers',
@@ -18,7 +16,7 @@ export const BlueprintHelper = {
     { 
       type: 'logic_flow_merge', 
       label: 'Merge Flow', 
-      description: 'Menggabungkan banyak jalur eksekusi ke dalam satu output.',
+      description: 'Merges multiple execution paths into a single output.',
       icon: GitMerge, 
       allowDynamicInputs: true,
       allowDynamicOutputs: false,
@@ -36,7 +34,7 @@ export const BlueprintHelper = {
     { 
       type: 'logic_delay', 
       label: 'Delay', 
-      description: 'Menunda eksekusi selama beberapa milidetik.',
+      description: 'Delays execution for a specified number of milliseconds.',
       icon: Timer,
       allowDynamicInputs: false,
       allowDynamicOutputs: false,
@@ -55,7 +53,7 @@ export const BlueprintHelper = {
     { 
       type: 'logic_cooldown', 
       label: 'Cooldown / Interval', 
-      description: 'Meneruskan eksekusi hanya jika waktu cooldown telah tercapai (ms).',
+      description: 'Passes execution only if the cooldown duration (ms) has been reached.',
       icon: Hourglass,
       allowDynamicInputs: false,
       allowDynamicOutputs: false,
@@ -75,7 +73,7 @@ export const BlueprintHelper = {
     {
       type: 'logic_tween_value',
       label: 'Tween Value',
-      description: 'Menghasilkan nilai interpolasi dari Start ke End selama durasi tertentu.',
+      description: 'Generates interpolated values from Start to End over a specific duration.',
       icon: Activity,
       allowDynamicInputs: false,
       allowDynamicOutputs: false,
@@ -116,7 +114,7 @@ export const BlueprintHelper = {
     { 
       type: 'logic_typewriter', 
       label: 'Typewriter Effect', 
-      description: 'Mengganti teks dan menganimasikannya satu per satu.',
+      description: 'Replaces text and animates it character by character.',
       icon: TypeIcon, 
       allowDynamicInputs: false,
       allowDynamicOutputs: false,
@@ -139,7 +137,7 @@ export const BlueprintHelper = {
           { _id: 'skip_in', label: 'Skip (Instant)', dataType: 'execution', color: '#FF5252' },
           { _id: 'target_in', label: 'Target ID (Self)', dataType: 'string', color: '#E040FB' },
           { _id: 'text_in', label: 'New Text', dataType: 'string', color: '#FFF' },
-          { _id: 'speed', label: 'Speed (ms)', dataType: 'number', color: '#B2FF59' }
+          { _id: 'speed', label: 'Speed (ms)', dataType: '#B2FF59' }
         ], 
         outputs: [
           { _id: 'exec_out', label: 'Out', dataType: 'execution', color: '#ffffff' },
@@ -150,7 +148,7 @@ export const BlueprintHelper = {
     { 
       type: 'ui_button_scale_effect', 
       label: 'Button Scale Effect', 
-      description: 'Menangani efek hover, click, dan interpolasi (Lerp) scale secara otomatis dalam satu node.',
+      description: 'Handles button hover, click, and scale interpolation (Lerp) automatically within a single node.',
       icon: MousePointerClick,
       allowDynamicInputs: false,
       allowDynamicOutputs: false,

@@ -15,6 +15,7 @@
       </span>
       
       <span 
+        v-if="log.source"
         class="font-semibold mr-2 cursor-pointer hover:underline opacity-80 group-hover:opacity-100 transition-opacity"
         :class="sourceColorClass"
         :title="log.source"

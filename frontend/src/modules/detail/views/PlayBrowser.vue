@@ -24,7 +24,8 @@ const {
   error, 
   loadingMessage,
   loadingProgress,
-  startGame 
+  startGame,
+  stopGame
 } = usePlayLogic();
 
 const containerRef = ref(null);
@@ -54,6 +55,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  stopGame();
 });
 
 const handlePlayClick = () => {
@@ -110,6 +112,7 @@ const handlePlayClick = () => {
       </div>
     </div>
 
+    <!-- State 3: Terjadi Error -->
     <div v-if="error" class="absolute inset-0 z-20 flex flex-col items-center justify-center bg-slate-950 text-rose-500 p-6 text-center">
       <AlertCircle class="w-12 h-12 mb-3 opacity-80" />
       <p class="font-bold text-lg mb-1">Failed to Load</p>

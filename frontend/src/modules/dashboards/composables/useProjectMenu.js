@@ -37,28 +37,28 @@ export function useProjectMenu(refreshListCallback, openProjectCallback) {
   const handleEditName = async (project) => {
     closeMenu();
     const newName = await prompt({
-      title: 'Rename Project',
-      message: 'Enter a new name for your project:',
+      title: 'Ubah Nama Proyek',
+      message: 'Masukkan nama baru untuk proyek Anda:',
       defaultValue: project.name,
-      placeholder: 'Project Name...',
-      confirmText: 'Save'
+      placeholder: 'Nama Proyek...',
+      confirmText: 'Simpan'
     });
 
-    if (newName && newName.trim() !== "" && newName !== project.name) {
+  if (newName && newName.trim() !== "" && newName !== project.name) {
       try {
         await updateProject(project._id, { name: newName.trim() });
         if (refreshListCallback) refreshListCallback();
         
         showPop({
-          title: 'Success',
-          message: 'Project name updated successfully.',
+          title: 'Sukses',
+          message: 'Nama proyek berhasil diperbarui.',
           type: 'success'
         });
       } catch (error) {
         console.error("Failed to rename project:", error);
         showPop({
           title: 'Error',
-          message: error.message || 'Failed to rename project.',
+          message: error.message || 'Gagal mengubah nama proyek.',
           type: 'error'
         });
       }
@@ -68,11 +68,11 @@ export function useProjectMenu(refreshListCallback, openProjectCallback) {
   const handleEditDescription = async (project) => {
     closeMenu();
     const newDesc = await prompt({
-      title: 'Edit Description',
-      message: 'Enter a new description:',
+      title: 'Ubah Deskripsi',
+      message: 'Masukkan deskripsi baru:',
       defaultValue: project.description || '',
-      placeholder: 'A short description...',
-      confirmText: 'Save'
+      placeholder: 'Deskripsi singkat...',
+      confirmText: 'Simpan'
     });
 
     if (newDesc !== null && newDesc.trim() !== project.description) {
@@ -81,15 +81,15 @@ export function useProjectMenu(refreshListCallback, openProjectCallback) {
         if (refreshListCallback) refreshListCallback();
         
         showPop({
-          title: 'Success',
-          message: 'Project description updated.',
+          title: 'Sukses',
+          message: 'Deskripsi proyek berhasil diperbarui.',
           type: 'success'
         });
       } catch (error) {
         console.error("Failed to update description:", error);
         showPop({
           title: 'Error',
-          message: error.message || 'Failed to update description.',
+          message: error.message || 'Gagal memperbarui deskripsi.',
           type: 'error'
         });
       }
@@ -99,10 +99,10 @@ export function useProjectMenu(refreshListCallback, openProjectCallback) {
   const handleDelete = async (project) => {
     closeMenu();
     const isConfirmed = await confirm({
-      title: 'Delete Project?',
-      message: `Are you sure you want to delete "${project.name}"? This action cannot be undone.`,
+      title: 'Hapus Proyek?',
+      message: `Apakah Anda yakin ingin menghapus "${project.name}"? Tindakan ini tidak dapat dibatalkan.`,
       type: 'danger',
-      confirmText: 'Delete'
+      confirmText: 'Hapus'
     });
 
     if (isConfirmed) {
@@ -111,15 +111,15 @@ export function useProjectMenu(refreshListCallback, openProjectCallback) {
         if (refreshListCallback) refreshListCallback();
         
         showPop({
-          title: 'Deleted',
-          message: `Project "${project.name}" has been deleted.`,
+          title: 'Terhapus',
+          message: `Proyek "${project.name}" telah berhasil dihapus.`,
           type: 'success'
         });
       } catch (error) {
         console.error("Failed to delete project:", error);
         showPop({
           title: 'Error',
-          message: error.message || 'Failed to delete project.',
+          message: error.message || 'Gagal menghapus proyek.',
           type: 'error'
         });
       }
@@ -135,7 +135,7 @@ export function useProjectMenu(refreshListCallback, openProjectCallback) {
       if (refreshListCallback) refreshListCallback();
       
       showPop({
-        title: 'Status Updated',
+        title: 'Status Diperbarui',
         message: `Status proyek berhasil diubah menjadi ${newStatus.replace('_', ' ')}.`,
         type: 'success'
       });
@@ -152,7 +152,7 @@ export function useProjectMenu(refreshListCallback, openProjectCallback) {
   const handleRepublish = async (project) => {
     closeMenu();
     const isConfirmed = await confirm({
-      title: 'Update Published Game?',
+      title: 'Perbarui Game yang Dipublish?',
       message: `PERINGATAN: Semua data game "${project.name}" yang telah dipublish akan dihapus dan ditimpa dengan data proyek (draft) terbaru. Apakah Anda yakin ingin melanjutkan?`,
       type: 'warning',
       confirmText: 'Ya, Timpa Data'
@@ -160,7 +160,7 @@ export function useProjectMenu(refreshListCallback, openProjectCallback) {
 
     if (isConfirmed) {
       try {
-        showPop({ title: 'Updating...', message: 'Sedang memperbarui game dengan data terbaru...', type: 'info' });
+        showPop({ title: 'Memperbarui...', message: 'Sedang memperbarui game dengan data terbaru...', type: 'info' });
         
         await republishGame(project._id);
         
@@ -194,7 +194,7 @@ export function useProjectMenu(refreshListCallback, openProjectCallback) {
       },
       { separator: true },
       {
-        label: 'Open',
+        label: 'Buka',
         icon: FolderOpen,
         action: () => {
           closeMenu();
@@ -202,7 +202,7 @@ export function useProjectMenu(refreshListCallback, openProjectCallback) {
         }
       },
       {
-        label: 'Open in New Tab',
+        label: 'Buka di Tab Baru',
         icon: ExternalLink,
         action: () => {
           closeMenu();
@@ -215,7 +215,7 @@ export function useProjectMenu(refreshListCallback, openProjectCallback) {
     if (isPublished) {
       items.push(
         {
-          label: 'View Published Game',
+          label: 'Lihat Game yang Dipublish',
           icon: Globe2,
           action: () => {
             closeMenu();
@@ -224,12 +224,12 @@ export function useProjectMenu(refreshListCallback, openProjectCallback) {
           }
         },
         {
-          label: 'Update Published Game',
+          label: 'Perbarui Game yang Dipublish',
           icon: UploadCloud,
           action: () => handleRepublish(targetProject)
         },
         {
-          label: 'Edit Published Data',
+          label: 'Ubah Data Publikasi',
           icon: Settings,
           action: () => {
             closeMenu();
@@ -248,7 +248,7 @@ export function useProjectMenu(refreshListCallback, openProjectCallback) {
       });
 
       items.push({
-        label: 'Change Status',
+        label: 'Ubah Status',
         icon: Activity,
         children: [
           {
@@ -268,18 +268,18 @@ export function useProjectMenu(refreshListCallback, openProjectCallback) {
     items.push(
       { separator: true },
       { 
-        label: 'Rename', 
+        label: 'Ubah Nama', 
         icon: Edit2, 
         action: () => handleEditName(targetProject) 
       },
       { 
-        label: 'Edit Description', 
+        label: 'Ubah Deskripsi', 
         icon: Type, 
         action: () => handleEditDescription(targetProject) 
       },
       { separator: true },
       { 
-        label: 'Delete Project', 
+        label: 'Hapus Proyek', 
         icon: Trash2, 
         action: () => handleDelete(targetProject) 
       }

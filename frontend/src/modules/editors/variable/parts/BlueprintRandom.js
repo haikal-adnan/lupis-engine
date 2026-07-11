@@ -15,7 +15,7 @@ export const BlueprintRandom = {
     { 
       type: 'random_smart', 
       label: 'Random Number', 
-      description: 'Menghasilkan angka acak. Bulat jika input bulat, desimal jika input desimal.',
+      description: 'Generates a random number. Outputs an integer if inputs are integers, or a float if inputs are decimals.',
       icon: Dices,
       allowDynamicInputs: false,
       allowDynamicOutputs: false,
@@ -34,7 +34,7 @@ export const BlueprintRandom = {
     { 
       type: 'random_boolean', 
       label: 'Random Boolean', 
-      description: 'Menghasilkan nilai true atau false secara acak (50:50).',
+      description: 'Generates a random true or false value (50:50 chance).',
       icon: ToggleLeft,
       allowDynamicInputs: false,
       allowDynamicOutputs: false,
@@ -50,7 +50,7 @@ export const BlueprintRandom = {
     { 
       type: 'random_from_list', 
       label: 'List Get Random', 
-      description: 'Mengambil satu item secara acak dari dalam List/Array.',
+      description: 'Retrieves a single random item from within the provided List or Array.',
       icon: Shuffle,
       allowDynamicInputs: false,
       allowDynamicOutputs: false,
@@ -68,7 +68,7 @@ export const BlueprintRandom = {
     { 
       type: 'random_chance', 
       label: 'Random Chance', 
-      description: 'Menghasilkan true (Berhasil) atau false (Gagal) berdasarkan persentase (0 - 100).',
+      description: 'Outputs true (Success) or false (Failure) based on a specified probability percentage (0 - 100).',
       icon: Percent,
       allowDynamicInputs: false,
       allowDynamicOutputs: false,
@@ -86,7 +86,7 @@ export const BlueprintRandom = {
     { 
       type: 'random_color', 
       label: 'Random Color', 
-      description: 'Menghasilkan warna acak dalam format Hex String (contoh: #A3F10C).',
+      description: 'Generates a random color formatted as a Hex string (e.g., #A3F10C).',
       icon: Palette,
       allowDynamicInputs: false,
       allowDynamicOutputs: false,

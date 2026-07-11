@@ -25,7 +25,7 @@ export const BlueprintList = {
     { 
       type: 'list_push', 
       label: 'List Push', 
-      description: 'Menambahkan item baru ke akhir List',
+      description: 'Appends a new item to the end of the List.',
       icon: Plus,
       allowDynamicInputs: false,
       allowDynamicOutputs: false,
@@ -46,7 +46,7 @@ export const BlueprintList = {
     { 
       type: 'list_insert', 
       label: 'List Insert', 
-      description: 'Menyisipkan item ke List pada index tertentu',
+      description: 'Inserts an item into the List at a specified index.',
       icon: Plus,
       allowDynamicInputs: false,
       allowDynamicOutputs: false,
@@ -68,7 +68,7 @@ export const BlueprintList = {
     { 
       type: 'list_concat', 
       label: 'List Concat', 
-      description: 'Menggabungkan dua List menjadi satu List baru',
+      description: 'Merges two Lists together into a single new List.',
       icon: Layers,
       allowDynamicInputs: false,
       allowDynamicOutputs: false,
@@ -87,7 +87,7 @@ export const BlueprintList = {
     { 
       type: 'list_get', 
       label: 'List Get', 
-      description: 'Mengambil item dari List berdasarkan index',
+      description: 'Retrieves an item from the List by its index.',
       icon: Search,
       allowDynamicInputs: false,
       allowDynamicOutputs: false,
@@ -106,7 +106,7 @@ export const BlueprintList = {
     { 
       type: 'list_index_of', 
       label: 'List IndexOf', 
-      description: 'Mencari index dari sebuah value di dalam List. Me-return -1 jika tidak ada.',
+      description: 'Finds the index of a specified value within the List. Returns -1 if not found.',
       icon: Search,
       allowDynamicInputs: false,
       allowDynamicOutputs: false,
@@ -125,7 +125,7 @@ export const BlueprintList = {
     { 
       type: 'list_set', 
       label: 'List Set', 
-      description: 'Mengubah nilai item pada index tertentu',
+      description: 'Updates the value of an item at a specified index.',
       icon: Edit,
       allowDynamicInputs: false,
       allowDynamicOutputs: false,
@@ -147,7 +147,7 @@ export const BlueprintList = {
     { 
       type: 'list_fill', 
       label: 'List Fill', 
-      description: 'Mengisi List dengan sebuah value dari index Start sampai End',
+      description: 'Fills the List with a specific value from a Start index up to an End index.',
       icon: PaintBucket,
       allowDynamicInputs: false,
       allowDynamicOutputs: false,
@@ -170,7 +170,7 @@ export const BlueprintList = {
     { 
       type: 'list_remove_at', 
       label: 'List Remove At', 
-      description: 'Menghapus item dari List berdasarkan index',
+      description: 'Removes an item from the List at a specified index.',
       icon: Trash,
       allowDynamicInputs: false,
       allowDynamicOutputs: false,
@@ -191,7 +191,7 @@ export const BlueprintList = {
     { 
       type: 'list_remove_value', 
       label: 'List Remove Value', 
-      description: 'Mencari dan menghapus value pertama yang cocok di dalam List',
+      description: 'Finds and removes the first matching value within the List.',
       icon: Trash,
       allowDynamicInputs: false,
       allowDynamicOutputs: false,
@@ -212,7 +212,7 @@ export const BlueprintList = {
     { 
       type: 'list_clear', 
       label: 'List Clear', 
-      description: 'Menghapus semua isi List (mengosongkan array)',
+      description: 'Removes all items from the List, resetting it to an empty array.',
       icon: X,
       allowDynamicInputs: false,
       allowDynamicOutputs: false,
@@ -232,7 +232,7 @@ export const BlueprintList = {
     { 
       type: 'list_sort', 
       label: 'List Sort', 
-      description: 'Mengurutkan elemen di dalam List (alfabetik / ascending)',
+      description: 'Sorts the elements within the List in ascending or alphabetical order.',
       icon: ArrowDownUp,
       allowDynamicInputs: false,
       allowDynamicOutputs: false,
@@ -252,7 +252,7 @@ export const BlueprintList = {
     { 
       type: 'list_shuffle', 
       label: 'List Shuffle', 
-      description: 'Mengacak urutan elemen di dalam List secara random',
+      description: 'Randomly shuffles the order of elements within the List.',
       icon: Shuffle,
       allowDynamicInputs: false,
       allowDynamicOutputs: false,
@@ -272,7 +272,7 @@ export const BlueprintList = {
     { 
       type: 'list_reverse', 
       label: 'List Reverse', 
-      description: 'Membalikkan urutan elemen di dalam List',
+      description: 'Reverses the chronological order of elements inside the List.',
       icon: RefreshCw,
       allowDynamicInputs: false,
       allowDynamicOutputs: false,
@@ -292,7 +292,7 @@ export const BlueprintList = {
     { 
       type: 'list_length', 
       label: 'List Length', 
-      description: 'Mengembalikan jumlah item di dalam List',
+      description: 'Returns the total number of items currently contained in the List.',
       icon: Hash,
       allowDynamicInputs: false,
       allowDynamicOutputs: false,
@@ -310,7 +310,7 @@ export const BlueprintList = {
     { 
       type: 'list_contains', 
       label: 'List Contains', 
-      description: 'Mengecek apakah suatu value ada di dalam List',
+      description: 'Checks whether a specified value exists anywhere inside the List.',
       icon: CheckSquare,
       allowDynamicInputs: false,
       allowDynamicOutputs: false,
@@ -329,7 +329,7 @@ export const BlueprintList = {
     { 
       type: 'list_filter', 
       label: 'List Filter', 
-      description: 'Membuat List baru berdasarkan nilai pencarian. Jika Property dikosongkan, filter mencocokkan value langsung.',
+      description: 'Creates a new List based on search criteria. If Property is left empty, the filter matches values directly.',
       icon: Filter,
       allowDynamicInputs: false,
       allowDynamicOutputs: false,
@@ -349,7 +349,7 @@ export const BlueprintList = {
     { 
       type: 'list_get_random', 
       label: 'List Get Random', 
-      description: 'Mengambil satu item acak dari dalam List',
+      description: 'Retrieves a single random item from within the List.',
       icon: Dices,
       allowDynamicInputs: false,
       allowDynamicOutputs: false,

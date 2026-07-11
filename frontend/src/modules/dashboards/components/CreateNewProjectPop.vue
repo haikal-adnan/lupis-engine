@@ -19,39 +19,33 @@
         >
           <div class="px-4 py-3 border-b border-border bg-muted/30">
             <h3 class="text-sm font-semibold text-foreground">
-              Create New Project
+              Buat Proyek Baru
             </h3>
           </div>
 
           <div class="px-4 py-4 space-y-4">
             <div class="space-y-1.5">
-              <label class="text-xs font-medium text-muted-foreground ml-1">Project Name</label>
+              <label class="text-xs font-medium text-muted-foreground ml-1">Nama Proyek</label>
+              <!-- Menambahkan @input agar nilai projectName langsung ter-update secara real-time saat mengetik -->
               <BaseInput 
                 ref="inputRef"
                 v-model="projectName" 
-                placeholder="My Awesome Game"
+                placeholder="Game Keren Saya"
+                @input="projectName = $event.target.value"
                 @keyup.enter="handleConfirm"
               />
             </div>
 
             <div class="space-y-1.5">
-                <div class="flex items-center justify-between ml-1">
-                    <label class="text-xs font-medium text-muted-foreground">Description</label>
-                    <span class="text-[10px] text-muted-foreground/60">Optional</span>
-                </div>
-                <BaseInput 
-                    v-model="projectDescription" 
-                    placeholder="A short description of your game..."
-                    @keyup.enter="handleConfirm"
-                />
-                </div>
-
-            <div class="space-y-1.5">
-              <label class="text-xs font-medium text-muted-foreground ml-1">Template</label>
-              <BaseSelect 
-                v-model="selectedTemplate" 
-                :options="templateOptions" 
-                placeholder="Select Template"
+              <div class="flex items-center justify-between ml-1">
+                <label class="text-xs font-medium text-muted-foreground">Deskripsi</label>
+                <span class="text-[10px] text-muted-foreground/60">Opsional</span>
+              </div>
+              <BaseInput 
+                v-model="projectDescription" 
+                placeholder="Deskripsi singkat tentang game Anda..."
+                @input="projectDescription = $event.target.value"
+                @keyup.enter="handleConfirm"
               />
             </div>
           </div>
@@ -61,15 +55,15 @@
               @click="handleCancel"
               class="px-3 py-1.5 text-xs font-medium text-foreground bg-transparent hover:bg-muted border border-border rounded transition-colors"
             >
-              Cancel
+              Batal
             </button>
             
             <button 
               @click="handleConfirm"
               :disabled="!projectName.trim()"
-              class="px-3 py-1.5 text-xs font-medium text-white bg-emerald-500 hover:bg-emerald-600 rounded transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              class="px-3 py-1.5 text-xs font-medium text-white bg-emerald-500 hover:bg-emerald-600 rounded transition-all duration-200 shadow-sm disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-emerald-500"
             >
-              Create
+              Buat
             </button>
           </div>
         </div>
@@ -81,7 +75,6 @@
 <script setup>
 import { ref, watch, nextTick } from 'vue';
 import BaseInput from '@/commons/components/inputs/BaseInput.vue';
-import BaseSelect from '@/commons/components/inputs/BaseSelect.vue';
 
 const props = defineProps({
   isOpen: {
@@ -94,21 +87,12 @@ const emit = defineEmits(['close', 'create']);
 
 const inputRef = ref(null);
 const projectName = ref('');
-const selectedTemplate = ref('Empty Project');
 const projectDescription = ref('');
-
-const templateOptions = ref([
-  { label: 'Empty Project', value: 'Empty Project' },
-  { label: 'Top Down', value: 'Top Down' },
-  { label: 'Visual Novel', value: 'Visual Novel' },
-  { label: 'Platformer', value: 'Platformer' }
-]);
 
 watch(() => props.isOpen, async (isOpen) => {
   if (isOpen) {
     projectName.value = '';
     projectDescription.value = ''; 
-    selectedTemplate.value = 'Empty Project';
     
     await nextTick();
     if (inputRef.value?.$el) {
@@ -127,8 +111,8 @@ const handleConfirm = () => {
   
   emit('create', {
     name: projectName.value.trim(),
-    description: projectDescription.value.trim(), 
-    template: selectedTemplate.value
+    description: projectDescription.value.trim(),
+    template: 'Empty Project'
   });
 };
 </script>

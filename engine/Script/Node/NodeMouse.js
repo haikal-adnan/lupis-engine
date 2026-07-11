@@ -103,14 +103,10 @@ export const NodeMouse = {
 
             runner.executeFlow(node._id, 'exec_out');
             
-            // --- LOGIKA UTAMA YANG DIPERBAIKI UNTUK MOBILE ---
-
-            // 1. Eksekusi Hover (Hanya jika benar-benar sedang di atas area)
             if (isHovering) {
                 runner.executeFlow(node._id, 'on_hover');
             }
 
-            // 2. Eksekusi Down / Hold (Jari menyentuh tombol)
             if (isHovering && isPointerDown) {
                 if (!state.wasDown) {
                     runner.executeFlow(node._id, 'on_down');
@@ -119,9 +115,6 @@ export const NodeMouse = {
                 }
             }
 
-            // 3. Eksekusi Up / Lepas (Kunci perbaikan mobile)
-            // Jika sebelumnya jari menempel (wasDown), dan sekarang dilepas (!isPointerDown)
-            // Kita tembak 'on_up' tanpa memedulikan isHovering saat ini.
             if (!isPointerDown && state.wasDown) {
                 runner.executeFlow(node._id, 'on_up');
             }

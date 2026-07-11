@@ -1,10 +1,12 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { bus } from '@engines/Util/EventBus.js'
-import { econsole } from '@engines/Util/EngineConsole.js' 
+import { econsole } from '@engines/Util/EngineConsole.js'
 
 const logs = ref([])
+const BROADCAST_CHANNEL_NAME = "lupis_engine_preview_channel";
 
 export function useConsole() {
+  let channel = null;
 
   const formatTime = (timestamp) => {
     return new Date(timestamp).toLocaleTimeString('en-GB', { 
@@ -22,7 +24,6 @@ export function useConsole() {
 
   const handleLogEvent = (entry) => {
     logs.value.push(processLogEntry(entry))
-    
     if (logs.value.length > 1000) logs.value.shift()
   }
 
@@ -31,7 +32,10 @@ export function useConsole() {
   }
 
   const triggerClear = () => {
-    econsole.clear() 
+    econsole.clear()
+    if (channel) {
+       channel.postMessage({ type: "CONSOLE_CLEAR_REQUEST" });
+    }
   }
 
   onMounted(() => {
@@ -43,6 +47,16 @@ export function useConsole() {
     bus.on('console:warn', handleLogEvent)
     bus.on('console:error', handleLogEvent)
     bus.on('console:clear', handleClearEvent)
+
+    channel = new BroadcastChannel(BROADCAST_CHANNEL_NAME);
+    channel.onmessage = (event) => {
+      const { type, payload } = event.data;
+      if (type === "ENGINE_CONSOLE_LOG") {
+        handleLogEvent(payload);
+      } else if (type === "ENGINE_CONSOLE_CLEAR") {
+        handleClearEvent();
+      }
+    };
   })
 
   onUnmounted(() => {
@@ -50,6 +64,11 @@ export function useConsole() {
     bus.off('console:warn', handleLogEvent)
     bus.off('console:error', handleLogEvent)
     bus.off('console:clear', handleClearEvent)
+    
+    if (channel) {
+      channel.close();
+      channel = null;
+    }
   })
 
   return {

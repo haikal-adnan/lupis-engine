@@ -26,18 +26,16 @@ const routes = [
     component: AboutPage,
     meta: { layout: 'LandingLayout' } 
   },
-  // --- BAGIAN YANG DIPERBARUI ---
   {
     path: '/docs',
-    redirect: '/docs/getting_started/introduction' // Redirect ke halaman default jika user hanya mengunjungi /docs
+    redirect: '/docs/getting_started/introduction'
   },
   {
-    path: '/docs/:docPath(.*)*', // Menangkap semua path yang memiliki "/" setelah /docs/
+    path: '/docs/:docPath(.*)*',
     name: 'Docs',
     component: () => import('@/modules/docs/DocsPanel.vue'),
     meta: { layout: 'MainLayout' }
   },
-  // -----------------------------
   {
     path: '/profile/:usernameUser', 
     name: 'Profile',
@@ -113,7 +111,6 @@ router.beforeEach((to, from) => {
   if (isAuthenticated && to.name === 'Landing' && !from.name) {
     return { name: 'Dashboard' }; 
   }
-  // -----------------------------
 
   if (to.meta.requiresAuth && !isAuthenticated) {
     NProgress.done(); 

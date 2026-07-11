@@ -13,12 +13,6 @@ import {
 
 const router = useRouter();
 
-const { initTheme } = useTheme();
-
-onMounted(() => {
-  initTheme();
-});
-
 const isAuthOpen = ref(false);
 const authMode = ref('login');
 

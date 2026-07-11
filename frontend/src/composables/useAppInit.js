@@ -61,7 +61,7 @@ export function useAppInit() {
         initWatchers();
 
       } catch (error) {
-        console.error("Gagal memuat project:", error);
+        console.error("Failed load project:", error);
         showPop({
           title: 'Error',
           message: error.message || 'Project tidak ditemukan atau terjadi kesalahan server.',

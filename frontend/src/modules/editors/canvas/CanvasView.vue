@@ -22,7 +22,7 @@ const sceneStore = useSceneStore();
 const { initSync } = useEngineSync();
 initSync();
 
-const { isDark, initTheme } = useTheme();
+const { isDark } = useTheme();
 const gameCanvas = ref(null);
 const initError = ref(null);
 let isInitializing = false; 

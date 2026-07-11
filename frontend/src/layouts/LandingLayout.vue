@@ -15,7 +15,6 @@ import {
 
 const router = useRouter();
 const route = useRoute();
-const { initTheme } = useTheme();
 
 const authStore = useAuthStore();
 const authActions = useAuthActions();
@@ -71,7 +70,6 @@ watch(() => route.query.action, () => {
 });
 
 onMounted(() => {
-  initTheme();
   authActions.initAuth();
   window.addEventListener('scroll', handleScroll);
   checkLoginQuery();
@@ -123,12 +121,12 @@ onUnmounted(() => {
           class="hidden md:flex items-center justify-center gap-8 text-sm font-medium shrink-0 transition-colors"
           :class="(isScrolled || route.name !== 'Landing') ? 'text-muted-foreground' : 'text-white/90'"
         >
-          <router-link to="/explore" class="hover:text-foreground transition-colors" active-class="text-foreground">Games</router-link>
-          <router-link to="/docs" class="hover:text-foreground transition-colors" active-class="text-foreground">Docs</router-link>
+          <router-link to="/explore" class="hover:text-foreground transition-colors" active-class="text-foreground">Game</router-link>
+          <router-link to="/docs" class="hover:text-foreground transition-colors" active-class="text-foreground">Dokumentasi</router-link>
           
           <div class="relative h-16 flex items-center community-dropdown" @mouseenter="openDropdown" @mouseleave="closeDropdown">
             <button class="flex items-center gap-1 hover:text-foreground transition-colors outline-none cursor-default" :class="{ 'text-foreground': isCommunityOpen }">
-              Community <ChevronDown class="w-3.5 h-3.5 transition-transform duration-200" :class="{ 'rotate-180': isCommunityOpen }" />
+              Komunitas <ChevronDown class="w-3.5 h-3.5 transition-transform duration-200" :class="{ 'rotate-180': isCommunityOpen }" />
             </button>
 
             <transition
@@ -147,7 +145,7 @@ onUnmounted(() => {
                     </div>
                     <div class="flex flex-col text-left">
                       <span class="text-sm font-semibold text-foreground flex items-center gap-1">Discord <ExternalLink class="w-2.5 h-2.5 opacity-30" /></span>
-                      <span class="text-[10px] text-muted-foreground">Chat with creators</span>
+                      <span class="text-[10px] text-muted-foreground">Mengobrol dengan kreator</span>
                     </div>
                   </a>
                   
@@ -157,7 +155,7 @@ onUnmounted(() => {
                     </div>
                     <div class="flex flex-col text-left">
                       <span class="text-sm font-semibold text-foreground flex items-center gap-1">GitHub <ExternalLink class="w-2.5 h-2.5 opacity-30" /></span>
-                      <span class="text-[10px] text-muted-foreground">Open source code</span>
+                      <span class="text-[10px] text-muted-foreground">Kode open source</span>
                     </div>
                   </a>
                 </div>
@@ -165,7 +163,7 @@ onUnmounted(() => {
             </transition>
           </div>
 
-          <router-link to="/about" class="hover:text-foreground transition-colors" active-class="text-foreground">About</router-link>
+          <router-link to="/about" class="hover:text-foreground transition-colors" active-class="text-foreground">Tentang</router-link>
         </nav>
 
         <div class="flex items-center justify-end gap-3 sm:gap-4 flex-1">
@@ -178,7 +176,7 @@ onUnmounted(() => {
               <div class="bg-white/20 rounded-full p-0.5">
                 <Plus class="w-3.5 h-3.5" />
               </div>
-              Make a Game
+              Buat Game
             </button>
 
             <BaseDropdown ref="profileDropdown" class="shrink-0 z-20">
@@ -194,12 +192,12 @@ onUnmounted(() => {
 
               <template #default>
                 <div class="px-3 py-2 border-b border-border mb-1 bg-muted/30">
-                  <p class="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mb-0.5">Signed in as</p>
+                  <p class="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mb-0.5">Masuk sebagai</p>
                   <p class="text-sm font-bold truncate max-w-[150px] text-foreground">@{{ authStore.displayUsername }}</p>
                 </div>
                 
                 <button class="w-full text-left px-3 py-2 text-sm hover:bg-secondary transition-colors outline-none flex items-center gap-2 text-foreground" @click="goToProfile(); closeProfileMenu();">
-                  <User class="w-4 h-4 text-muted-foreground" /> My Profile
+                  <User class="w-4 h-4 text-muted-foreground" /> Profil Saya
                 </button>
 
                 <button class="w-full text-left px-3 py-2 text-sm hover:bg-secondary transition-colors outline-none flex items-center gap-2 text-foreground" @click="goToSettings(); closeProfileMenu();">
@@ -209,7 +207,7 @@ onUnmounted(() => {
                 <div class="h-px bg-border my-1"></div>
                 
                 <button class="w-full text-left px-3 py-2 text-sm hover:bg-destructive/10 hover:text-destructive text-destructive transition-colors outline-none flex items-center gap-2" @click="authActions.logout(); closeProfileMenu();">
-                  <LogOut class="w-4 h-4" /> Sign Out
+                  <LogOut class="w-4 h-4" /> Keluar
                 </button>
               </template>
             </BaseDropdown>
@@ -221,10 +219,10 @@ onUnmounted(() => {
               class="text-sm font-medium transition-colors hidden sm:block"
               :class="(isScrolled || route.name !== 'Landing' || isMobileMenuOpen) ? 'text-muted-foreground hover:text-foreground' : 'text-white/80 hover:text-white'"
             >
-              Sign In
+              Masuk
             </button>
             <button @click="authStore.openAuthModal('register')" class="bg-cyan-500 hover:bg-cyan-600 text-white px-5 py-2 rounded-lg text-sm font-semibold transition-all shadow-md shadow-cyan-500/20 active:scale-95 hidden sm:block">
-              Get Started
+              Mulai Sekarang
             </button>
           </template>
 
@@ -250,12 +248,12 @@ onUnmounted(() => {
       >
         <div v-if="isMobileMenuOpen" class="absolute top-16 left-0 w-full bg-background border-b border-border shadow-lg p-4 flex flex-col gap-2 md:hidden z-40">
           
-          <router-link to="/explore" class="text-base font-medium text-foreground py-2 border-b border-border">Games</router-link>
-          <router-link to="/docs" class="text-base font-medium text-foreground py-2 border-b border-border">Docs</router-link>
-          <router-link to="/about" class="text-base font-medium text-foreground py-2 border-b border-border">About</router-link>
+          <router-link to="/explore" class="text-base font-medium text-foreground py-2 border-b border-border">Game</router-link>
+          <router-link to="/docs" class="text-base font-medium text-foreground py-2 border-b border-border">Dokumentasi</router-link>
+          <router-link to="/about" class="text-base font-medium text-foreground py-2 border-b border-border">Tentang</router-link>
           
           <div class="py-2 border-b border-border flex flex-col gap-2">
-            <span class="text-sm text-muted-foreground font-semibold">Community</span>
+            <span class="text-sm text-muted-foreground font-semibold">Komunitas</span>
             <a href="https://discord.gg/lupis" target="_blank" class="flex items-center gap-2 text-foreground"><MessageSquare class="w-4 h-4"/> Discord</a>
             <a href="https://github.com/haikal-adnan/lupis-engine" target="_blank" class="flex items-center gap-2 text-foreground"><Github class="w-4 h-4"/> GitHub</a>
           </div>
@@ -263,16 +261,16 @@ onUnmounted(() => {
           <template v-if="!authStore.isLoggedIn">
             <div class="flex flex-col gap-2 mt-2">
               <button @click="authStore.openAuthModal('login'); isMobileMenuOpen = false" class="w-full text-center py-2 text-sm font-medium text-foreground border border-border rounded-lg">
-                Sign In
+                Masuk
               </button>
               <button @click="authStore.openAuthModal('register'); isMobileMenuOpen = false" class="w-full bg-cyan-500 hover:bg-cyan-600 text-white py-2 rounded-lg text-sm font-semibold transition-all">
-                Get Started
+                Mulai Sekarang
               </button>
             </div>
           </template>
           <template v-else>
              <button @click="goToDashboard(); isMobileMenuOpen = false" class="w-full flex items-center justify-center gap-2 bg-cyan-500 hover:bg-cyan-600 text-white py-2 rounded-lg text-sm font-bold transition-all mt-2">
-                <Plus class="w-4 h-4" /> Make a Game
+                <Plus class="w-4 h-4" /> Buat Game
             </button>
           </template>
 
@@ -292,9 +290,9 @@ onUnmounted(() => {
         </div>
         
         <nav class="flex items-center gap-6 text-sm text-muted-foreground">
-          <a href="/docs" class="hover:text-foreground transition-colors">Docs</a>
-          <a href="/about" class="hover:text-foreground transition-colors">Contribute</a>
-          <a href="/about" class="hover:text-foreground transition-colors">Reference</a>
+          <a href="/docs" class="hover:text-foreground transition-colors">Dokumentasi</a>
+          <a href="/about" class="hover:text-foreground transition-colors">Kontribusi</a>
+          <a href="/about" class="hover:text-foreground transition-colors">Referensi</a>
           <a href="/about" class="hover:text-foreground transition-colors">License</a>
         </nav>
 

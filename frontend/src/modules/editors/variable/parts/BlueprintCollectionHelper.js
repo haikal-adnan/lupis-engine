@@ -14,7 +14,7 @@ export const BlueprintCollectionHelper = {
     { 
       type: 'get_from_path', 
       label: 'Get From Path', 
-      description: 'Mengambil data bersarang (nested) menggunakan path string (misal: players[0].stats.hp).',
+      description: 'Retrieves nested data using a path string (e.g., players[0].stats.hp).',
       icon: ListTree,
       allowDynamicInputs: false,
       allowDynamicOutputs: false,
@@ -35,7 +35,7 @@ export const BlueprintCollectionHelper = {
     { 
       type: 'set_from_path', 
       label: 'Set From Path', 
-      description: 'Memperbarui data bersarang menggunakan path. Jika path tidak ada, akan otomatis dibuat.',
+      description: 'Updates nested data using a path. If the path does not exist, it will be automatically created.',
       icon: Network,
       allowDynamicInputs: false,
       allowDynamicOutputs: false,
@@ -60,7 +60,7 @@ export const BlueprintCollectionHelper = {
     { 
       type: 'clone_collection', 
       label: 'Clone Collection', 
-      description: 'Menduplikasi (Deep Copy) List atau Map agar referensi aslinya tidak ikut berubah saat dimodifikasi.',
+      description: 'Duplicates (Deep Copy) a List or Map so the original reference remains unchanged when modified.',
       icon: Copy,
       allowDynamicInputs: false,
       allowDynamicOutputs: false,
@@ -78,7 +78,7 @@ export const BlueprintCollectionHelper = {
     { 
       type: 'is_collection_empty', 
       label: 'Is Empty', 
-      description: 'Mengecek apakah sebuah List kosong (panjang 0) atau Map kosong (tidak punya key).',
+      description: 'Checks whether a List is empty (length 0) or a Map is empty (has no keys).',
       icon: BoxSelect,
       allowDynamicInputs: false,
       allowDynamicOutputs: false,

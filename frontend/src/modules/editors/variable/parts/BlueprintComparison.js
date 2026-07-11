@@ -14,7 +14,7 @@ export const BlueprintComparison = {
     { 
       type: 'logic_compare', 
       label: 'Compare', 
-      description: 'Membandingkan dua nilai (A vs B).', 
+      description: 'Compares two values (A vs B).', 
       icon: ArrowRightLeft,
       allowDynamicInputs: false,
       allowDynamicOutputs: false,
@@ -33,7 +33,7 @@ export const BlueprintComparison = {
     { 
       type: 'logic_branch', 
       label: 'Branch (If/Else)', 
-      description: 'Membagi jalur eksekusi berdasarkan kondisi boolean.',
+      description: 'Splits the execution path based on a boolean condition.',
       icon: GitBranch,
       allowDynamicInputs: true,
       allowDynamicOutputs: true,
@@ -53,7 +53,7 @@ export const BlueprintComparison = {
     { 
       type: 'logic_switch', 
       label: 'Switch', 
-      description: 'Mengarahkan eksekusi ke jalur spesifik berdasarkan tipe data dan nilainya.',
+      description: 'Directs execution to a specific path based on the data type and its value.',
       icon: GitPullRequest, 
       allowDynamicInputs: false,
       allowDynamicOutputs: true,

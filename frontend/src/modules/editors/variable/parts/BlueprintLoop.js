@@ -13,7 +13,7 @@ export const BlueprintLoop = {
     { 
       type: 'logic_loop', 
       label: 'For Loop', 
-      description: 'Mengulang eksekusi dari angka Start hingga End dengan penambahan Step.',
+      description: 'Repeats execution from a Start value to an End value, incrementing by the specified Step.',
       icon: Repeat,
       allowDynamicInputs: false,
       allowDynamicOutputs: false,
@@ -36,7 +36,7 @@ export const BlueprintLoop = {
     { 
       type: 'logic_for_each', 
       label: 'For Each', 
-      description: 'Mengulang eksekusi untuk setiap elemen di dalam List.',
+      description: 'Repeats execution for each individual item contained within the List.',
       icon: RotateCcw,
       allowDynamicInputs: false,
       allowDynamicOutputs: false,
@@ -58,7 +58,7 @@ export const BlueprintLoop = {
     { 
       type: 'logic_while', 
       label: 'While Loop', 
-      description: 'Terus mengulang eksekusi selama kondisi bernilai true.',
+      description: 'Continuously loops execution as long as the input condition remains true.',
       icon: RefreshCcw,
       allowDynamicInputs: false,
       allowDynamicOutputs: false,

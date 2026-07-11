@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted } from 'vue';
+import { computed, onMounted, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { 
   Gamepad2, Github, Twitter, Globe, Download, ChevronRight, User, MonitorPlay
@@ -14,6 +14,12 @@ const { getAvatarUrl } = useAvatarUrl();
 const { getThumbnailUrl } = useThumbnailUrl(); 
 
 const usernameUser = computed(() => route.params.usernameUser);
+
+watch(usernameUser, (newUsername) => {
+  if (newUsername) {
+    fetchProfile(newUsername);
+  }
+});
 
 onMounted(() => {
   if (usernameUser.value) {
@@ -44,7 +50,7 @@ const totalPublishedGames = computed(() => publishedGames.value.length);
           <img 
             v-if="profile.avatar_url" 
             :src="getAvatarUrl(profile.avatar_url)" 
-            alt="Profile" 
+            alt="Profil" 
             class="w-32 h-32 rounded-2xl object-cover border-2 border-border shadow-sm bg-muted" 
           />
           <div v-else class="w-32 h-32 rounded-2xl border-2 border-border bg-muted flex items-center justify-center">
@@ -59,7 +65,7 @@ const totalPublishedGames = computed(() => publishedGames.value.length);
           <p class="text-indigo-500 font-medium mb-2">@{{ profile.username }}</p>
           
           <p class="text-muted-foreground mb-4 max-w-2xl text-sm md:text-base md:mx-0 mx-auto" :class="{'italic opacity-80': !profile.bio}">
-            {{ profile.bio || "No description provided. This developer is still working on their awesome profile." }}
+            {{ profile.bio || "Belum ada deskripsi. Developer ini masih merapikan profil keren mereka." }}
           </p>
 
           <div v-if="profile.tags && profile.tags.length" class="flex flex-wrap items-center justify-center md:justify-start gap-2 mb-6">
@@ -86,8 +92,8 @@ const totalPublishedGames = computed(() => publishedGames.value.length);
                 <Gamepad2 class="w-4 h-4 text-indigo-500" />
               </div>
               <div class="text-left">
-                <div class="text-sm font-bold text-foreground">{{ totalPublishedGames }} Games</div>
-                <div class="text-xs text-muted-foreground">Published</div>
+                <div class="text-sm font-bold text-foreground">{{ totalPublishedGames }} Game</div>
+                <div class="text-xs text-muted-foreground">Dipublikasikan</div>
               </div>
             </div>
           </div>
@@ -98,7 +104,7 @@ const totalPublishedGames = computed(() => publishedGames.value.length);
         <div class="flex items-center justify-between mb-6 border-b border-border pb-3">
           <h2 class="text-xl font-bold text-foreground flex items-center gap-2">
             <Gamepad2 class="w-6 h-6 text-indigo-500" />
-            Published Projects
+            Proyek yang Dipublikasikan
           </h2>
         </div>
         
@@ -127,7 +133,7 @@ const totalPublishedGames = computed(() => publishedGames.value.length);
               
               <div class="absolute inset-0 bg-gradient-to-t from-background/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
                 <span class="text-indigo-400 text-xs font-bold uppercase tracking-wider flex items-center gap-1">
-                  View Detail <ChevronRight class="w-3 h-3" />
+                  Lihat Detail <ChevronRight class="w-3 h-3" />
                 </span>
               </div>
             </div>

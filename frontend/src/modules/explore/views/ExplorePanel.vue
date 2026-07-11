@@ -1,13 +1,19 @@
 <script setup>
-import { Search, MonitorPlay, Download, ChevronRight, Gamepad2, User } from 'lucide-vue-next';
+import { MonitorPlay, Download, ChevronRight, Gamepad2, User } from 'lucide-vue-next';
 import { useExploreLogic } from '@/modules/explore/composables/useExploreLogic.js';
 import { useAvatarUrl } from '@/composables/useAvatarUrl.js';
 import { useThumbnailUrl } from '@/composables/useThumbnailUrl.js';
 
-const { filteredGames, searchQuery, isLoading } = useExploreLogic();
+const props = defineProps({
+  searchQuery: {
+    type: String,
+    default: ''
+  }
+});
+
+const { filteredGames, isLoading } = useExploreLogic(props);
 const { getAvatarUrl } = useAvatarUrl();
 const { getThumbnailUrl } = useThumbnailUrl();
-
 </script>
 
 <template>
@@ -15,18 +21,8 @@ const { getThumbnailUrl } = useThumbnailUrl();
     
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-4 border-b border-border">
       <div>
-        <h1 class="text-3xl font-bold text-foreground">Explore</h1>
-        <p class="text-sm text-muted-foreground mt-1">Discover games made with Lupis Engine</p>
-      </div>
-      
-      <div class="relative w-full sm:w-72">
-        <Search class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-        <input 
-          v-model="searchQuery"
-          type="text" 
-          placeholder="Search games..." 
-          class="w-full pl-9 pr-4 py-2 bg-card border border-border rounded-lg text-sm text-foreground focus:ring-1 focus:ring-cyan-500 outline-none"
-        />
+        <h1 class="text-3xl font-bold text-foreground">Eksplorasi</h1>
+        <p class="text-sm text-muted-foreground mt-1">Temukan game menarik yang dibuat dengan Lupis Engine</p>
       </div>
     </div>
 
@@ -54,7 +50,7 @@ const { getThumbnailUrl } = useThumbnailUrl();
           
           <div class="absolute inset-0 bg-gradient-to-t from-background/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
             <span class="text-cyan-400 text-xs font-bold uppercase tracking-wider flex items-center gap-1">
-              View Detail <ChevronRight class="w-3 h-3" />
+              Lihat Detail <ChevronRight class="w-3 h-3" />
             </span>
           </div>
         </div>

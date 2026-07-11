@@ -120,12 +120,12 @@ const handleAction = (item) => {
 };
 
 const handleClickOutside = (event) => {
-  if (event.target.closest('.base-context-menu-fixed')) return;
+  if (event.target?.closest?.('.base-context-menu-fixed')) return;
   emit('close');
 };
 
 const handleScroll = (event) => {
-  if (event.target.closest('.base-context-menu-fixed')) return;
+  if (event.target?.closest?.('.base-context-menu-fixed')) return;
   
   emit('close');
 };

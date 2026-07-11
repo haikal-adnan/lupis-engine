@@ -17,7 +17,7 @@ export const BlueprintAnimator = {
     { 
       type: 'play_animation', 
       label: 'Play Animation', 
-      description: 'Memutar animasi. Gunakan On Complete untuk logika setelah animasi selesai.',
+      description: 'Plays the animation. Use On Complete for logic execution after the animation finishes.',
       icon: PlayCircle,
       defaultData: { 
         settings: { headerTitle: 'Play Animation', headerColor: '#9C27B0', category: 'Animation' },
@@ -37,7 +37,7 @@ export const BlueprintAnimator = {
     { 
       type: 'pause_animation', 
       label: 'Pause Animation', 
-      description: 'Berhenti sementara di frame saat ini.',
+      description: 'Temporarily pauses the animation at the current frame.',
       icon: PauseCircle,
       defaultData: { 
         settings: { headerTitle: 'Pause Animation', headerColor: '#9C27B0', category: 'Animation' },

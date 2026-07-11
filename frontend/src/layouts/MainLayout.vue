@@ -11,6 +11,8 @@ import { useAuthStore } from '@/stores/useAuthStore.js';
 import { useAuthActions } from '@/stores/scene/useAuthActions.js'; 
 import { useAvatarUrl } from '@/composables/useAvatarUrl.js';
 
+import { useProfileLogic } from '@modules/profile/composables/useProfileLogic.js'; 
+
 const route = useRoute();
 const router = useRouter();
 
@@ -34,10 +36,6 @@ const closeProfileMenu = () => profileDropdown.value?.close();
 const toggleMobileMenu = () => {
   isMobileMenuOpen.value = !isMobileMenuOpen.value;
 };
-
-watch(() => route.fullPath, () => {
-  isMobileMenuOpen.value = false;
-});
 
 const checkLoginQuery = async () => {
   await nextTick();
@@ -64,19 +62,53 @@ watch(() => route.query.action, () => {
 
 const searchQuery = ref(''); 
 
+const isGameDetailPage = computed(() => route.name === 'GameDetail');
+const isDocsPage = computed(() => route.name === 'Docs');
+const isDashboardPage = computed(() => route.name === 'Dashboard');
+const isProfilePage = computed(() => route.name === 'Profile');
+
 const searchPlaceholder = computed(() => {
   switch (route.name) {
-    case 'Docs': return 'Search documentation...';
-    case 'Profile': return 'Search user, games, or assets...';
-    case 'Explore Games':
-    case 'Detail Games': return 'Search games...';
-    case 'Dashboard': return 'Search your projects...';
-    default: return 'Search...';
+    case 'Docs': return 'Cari dokumentasi...';
+    case 'Profile': return 'Cari pengguna...';
+    case 'Explore': return 'Cari game...';
+    case 'Dashboard': return 'Cari proyek Anda...';
+    default: return 'Cari...';
   }
 });
 
-const isDocsPage = computed(() => route.name === 'Docs');
-const isDashboardPage = computed(() => route.name === 'Dashboard');
+const { searchUsers } = useProfileLogic();
+const searchResults = ref([]);
+const isDropdownOpen = ref(false);
+let searchTimeout = null;
+
+watch(searchQuery, (newVal) => {
+  if (!isProfilePage.value || isGameDetailPage.value) return; 
+
+  if (!newVal.trim()) {
+    searchResults.value = [];
+    isDropdownOpen.value = false;
+    return;
+  }
+
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(async () => {
+    searchResults.value = await searchUsers(newVal);
+    isDropdownOpen.value = searchResults.value.length > 0;
+  }, 300);
+});
+
+const goToSearchedUser = (username) => {
+  isDropdownOpen.value = false;
+  searchQuery.value = ''; 
+  router.push(`/profile/${username}`);
+};
+
+watch(() => route.fullPath, () => {
+  isMobileMenuOpen.value = false;
+  isDropdownOpen.value = false;
+  searchQuery.value = ''; 
+});
 </script>
 
 <template>
@@ -91,6 +123,7 @@ const isDashboardPage = computed(() => route.name === 'Dashboard');
     <header class="h-16 border-b border-border sticky top-0 bg-background backdrop-blur-md z-50 px-4 lg:px-6">
       <div class="max-w-[1400px] mx-auto w-full h-full flex items-center justify-between gap-4">
         
+        <!-- Logo -->
         <div @click="router.push('/')" class="flex items-center gap-2.5 cursor-pointer min-w-fit shrink-0 group">
           <div class="w-8 h-8 rounded bg-cyan-500/10 flex items-center justify-center border border-cyan-500/20 group-hover:border-cyan-500/50 transition-all">
             <Gamepad2 class="w-5 h-5 text-cyan-500" />
@@ -99,32 +132,73 @@ const isDashboardPage = computed(() => route.name === 'Dashboard');
           <span v-if="isDocsPage" class="hidden lg:inline-flex text-[10px] bg-cyan-500/10 text-cyan-500 px-1.5 py-0.5 rounded font-bold border border-cyan-500/20 ml-1">v1.0</span>
         </div>
 
-        <div class="flex-1 max-w-xl hidden md:block">
-          <div class="relative group flex items-center w-full transition-all duration-200 border rounded-lg bg-muted/40 focus-within:bg-background focus-within:border-cyan-500 focus-within:ring-1 focus-within:ring-cyan-500 border-border h-9">
+        <!-- Pencarian Global (Sembunyikan total jika di halaman GameDetail) -->
+        <div v-if="!isGameDetailPage" class="flex-1 max-w-xl hidden md:block">
+          <div class="relative group flex items-center w-full transition-all duration-200 border rounded-lg bg-muted/40 focus-within:bg-background focus-within:border-cyan-500 focus-within:ring-1 focus-within:ring-cyan-500 border-border h-9 z-50">
             <div class="flex items-center justify-center pl-3 pr-2 text-muted-foreground">
               <Search class="w-4 h-4" />
             </div>
+            
             <input 
               v-model="searchQuery"
               type="text" 
               :placeholder="searchPlaceholder" 
               class="w-full h-full bg-transparent border-none outline-none text-sm text-foreground placeholder:text-muted-foreground focus:ring-0 px-1"
             />
-            <div class="flex items-center pr-2">
-              <kbd class="hidden lg:inline-flex h-5 items-center gap-1 rounded border border-border bg-background px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
-                <span class="text-xs">⌘</span>K
-              </kbd>
-            </div>
+            
+            <!-- Custom Dropdown untuk Pencarian Profil -->
+            <transition
+              enter-active-class="transition duration-150 ease-out"
+              enter-from-class="transform -translate-y-2 opacity-0"
+              enter-to-class="transform translate-y-0 opacity-100"
+              leave-active-class="transition duration-100 ease-in"
+              leave-from-class="transform translate-y-0 opacity-100"
+              leave-to-class="transform -translate-y-2 opacity-0"
+            >
+              <div 
+                v-if="isProfilePage && isDropdownOpen" 
+                class="absolute top-full left-0 mt-2 w-full bg-background border border-border rounded-lg shadow-xl overflow-hidden z-50"
+              >
+                <div 
+                  v-for="user in searchResults" 
+                  :key="user.user_id" 
+                  @click="goToSearchedUser(user.username)" 
+                  class="flex items-center gap-3 p-3 hover:bg-muted cursor-pointer transition-colors border-b border-border last:border-0"
+                >
+                  <img 
+                    v-if="user.avatar_url" 
+                    :src="getAvatarUrl(user.avatar_url)" 
+                    class="w-8 h-8 rounded-full object-cover bg-muted/50 border border-border shrink-0" 
+                  />
+                  <div v-else class="w-8 h-8 rounded-full bg-muted flex items-center justify-center border border-border shrink-0">
+                    <User class="w-4 h-4 text-muted-foreground" />
+                  </div>
+                  
+                  <div class="flex flex-col overflow-hidden">
+                    <span class="text-sm font-bold text-foreground truncate leading-tight">
+                      {{ user.display_name || user.username }}
+                    </span>
+                    <span class="text-xs text-muted-foreground truncate">
+                      @{{ user.username }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </transition>
           </div>
         </div>
 
+        <!-- Spacer pengganti pencarian agar posisi navigasi kanan tidak bergeser -->
+        <div v-else class="flex-1 hidden md:block"></div>
+
+        <!-- Navigasi Kanan -->
         <nav class="flex items-center gap-3 sm:gap-5 ml-auto">
           <router-link to="/explore" class="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors hidden md:flex" active-class="text-foreground">
-            <Compass class="w-4 h-4" /> Explore
+            <Compass class="w-4 h-4" /> Eksplorasi
           </router-link>
 
           <router-link to="/docs" class="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors hidden md:flex" active-class="text-foreground">
-            <BookOpen class="w-4 h-4" /> Docs
+            <BookOpen class="w-4 h-4" /> Dokumentasi
           </router-link>
 
           <div class="w-px h-6 bg-border hidden md:block mx-1"></div>
@@ -138,7 +212,7 @@ const isDashboardPage = computed(() => route.name === 'Dashboard');
                 <div class="bg-white/20 rounded-full p-0.5">
                   <Plus class="w-3.5 h-3.5" />
                 </div>
-                Make a Game
+                Buat Game
             </button>
 
             <BaseDropdown ref="profileDropdown" class="shrink-0 z-20">
@@ -154,12 +228,12 @@ const isDashboardPage = computed(() => route.name === 'Dashboard');
 
               <template #default>
                 <div class="px-3 py-2 border-b border-border mb-1 bg-muted/30">
-                  <p class="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mb-0.5">Signed in as</p>
+                  <p class="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mb-0.5">Masuk sebagai</p>
                   <p class="text-sm font-bold truncate max-w-[150px] text-foreground">@{{ authStore.displayUsername }}</p>
                 </div>
                 
                 <button class="w-full text-left px-3 py-2 text-sm hover:bg-secondary transition-colors outline-none flex items-center gap-2 text-foreground" @click="goToProfile(); closeProfileMenu();">
-                  <User class="w-4 h-4 text-muted-foreground" /> My Profile
+                  <User class="w-4 h-4 text-muted-foreground" /> Profil Saya
                 </button>
 
                 <button class="w-full text-left px-3 py-2 text-sm hover:bg-secondary transition-colors outline-none flex items-center gap-2 text-foreground" @click="goToSettings(); closeProfileMenu();">
@@ -169,7 +243,7 @@ const isDashboardPage = computed(() => route.name === 'Dashboard');
                 <div class="h-px bg-border my-1"></div>
                 
                 <button class="w-full text-left px-3 py-2 text-sm hover:bg-destructive/10 hover:text-destructive text-destructive transition-colors outline-none flex items-center gap-2" @click="authActions.logout(); closeProfileMenu();">
-                  <LogOut class="w-4 h-4" /> Sign Out
+                  <LogOut class="w-4 h-4" /> Keluar
                 </button>
               </template>
             </BaseDropdown>
@@ -177,10 +251,10 @@ const isDashboardPage = computed(() => route.name === 'Dashboard');
 
           <template v-else>
             <button @click="authStore.openAuthModal('login')" class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors hidden sm:block">
-              Sign In
+              Masuk
             </button>
             <button @click="authStore.openAuthModal('register')" class="bg-cyan-500 hover:bg-cyan-600 text-white px-5 py-2 rounded-lg text-sm font-semibold transition-all shadow-md shadow-cyan-500/20 active:scale-95 hidden sm:block">
-              Get Started
+              Mulai Sekarang
             </button>
           </template>
 
@@ -191,6 +265,7 @@ const isDashboardPage = computed(() => route.name === 'Dashboard');
         </nav>
       </div>
 
+      <!-- Mobile Menu -->
       <transition 
         enter-active-class="transition duration-200 ease-out"
         enter-from-class="transform -translate-y-4 opacity-0"
@@ -201,26 +276,26 @@ const isDashboardPage = computed(() => route.name === 'Dashboard');
       >
         <div v-if="isMobileMenuOpen" class="absolute top-16 left-0 w-full bg-background border-b border-border shadow-lg p-4 flex flex-col gap-4 md:hidden z-40">
           <router-link to="/explore" class="flex items-center gap-2 text-base font-medium text-foreground py-2 border-b border-border">
-            <Compass class="w-5 h-5 text-muted-foreground" /> Explore
+            <Compass class="w-5 h-5 text-muted-foreground" /> Eksplorasi
           </router-link>
           
           <router-link to="/docs" class="flex items-center gap-2 text-base font-medium text-foreground py-2 border-b border-border">
-            <BookOpen class="w-5 h-5 text-muted-foreground" /> Docs
+            <BookOpen class="w-5 h-5 text-muted-foreground" /> Dokumentasi
           </router-link>
 
           <template v-if="!authStore.isLoggedIn">
             <div class="flex flex-col gap-2 mt-2">
               <button @click="authStore.openAuthModal('login'); isMobileMenuOpen = false" class="w-full text-center py-2 text-sm font-medium text-foreground border border-border rounded-lg">
-                Sign In
+                Masuk
               </button>
               <button @click="authStore.openAuthModal('register'); isMobileMenuOpen = false" class="w-full bg-cyan-500 hover:bg-cyan-600 text-white py-2 rounded-lg text-sm font-semibold transition-all">
-                Get Started
+                Mulai Sekarang
               </button>
             </div>
           </template>
           <template v-else-if="!isDashboardPage">
              <button @click="goToDashboard(); isMobileMenuOpen = false" class="w-full flex items-center justify-center gap-2 bg-cyan-500 hover:bg-cyan-600 text-white py-2 rounded-lg text-sm font-bold transition-all mt-2">
-                <Plus class="w-4 h-4" /> Make a Game
+                <Plus class="w-4 h-4" /> Buat Game
             </button>
           </template>
         </div>

@@ -15,7 +15,7 @@ const props = defineProps({
 
 const emit = defineEmits(['navigate']);
 
-const isOpen = ref(true); // Default folder terbuka
+const isOpen = ref(true); 
 const hasChildren = computed(() => props.item.children && props.item.children.length > 0);
 
 const toggle = () => {
