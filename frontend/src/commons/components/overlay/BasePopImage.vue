@@ -32,8 +32,9 @@
             </button>
           </div>
 
+          <!-- MENGUBAH BACKGROUND DI SINI: dari bg-black/50 bg-checkerboard menjadi bg-black -->
           <div 
-            class="relative w-full aspect-square overflow-hidden bg-black/50 bg-checkerboard flex items-center justify-center rounded-b-lg group"
+            class="relative w-full aspect-square overflow-hidden bg-black flex items-center justify-center rounded-b-lg group"
             :class="isDragging ? 'cursor-grabbing' : 'cursor-grab'"
             @wheel.prevent="handleZoom"
             @mousedown.prevent="startDrag"
@@ -147,7 +148,6 @@ onBeforeUnmount(() => {
 <style scoped>
 .pixelated { 
   image-rendering: pixelated; 
-  /* Fallback untuk beberapa browser lama */
   image-rendering: -moz-crisp-edges;
   image-rendering: crisp-edges;
 }
@@ -156,14 +156,5 @@ onBeforeUnmount(() => {
   aspect-ratio: 1 / 1;
 }
 
-/* Pola papan catur untuk background transparan */
-.bg-checkerboard {
-  background-image: 
-    linear-gradient(45deg, #1e1e1e 25%, transparent 25%), 
-    linear-gradient(-45deg, #1e1e1e 25%, transparent 25%), 
-    linear-gradient(45deg, transparent 75%, #1e1e1e 75%), 
-    linear-gradient(-45deg, transparent 75%, #1e1e1e 75%);
-  background-size: 20px 20px;
-  background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
-}
+/* Style .bg-checkerboard lama sudah dihapus agar CSS bersih */
 </style>

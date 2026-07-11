@@ -58,7 +58,7 @@ export const useProjectStore = defineStore('project', {
       this.clearProjectData();
 
       this.isLoading = true
-      this.loadingMessage = 'Memuat project data...'
+      this.loadingMessage = 'Load project data...'
       this.error = null
 
       const assetStore = useAssetStore()

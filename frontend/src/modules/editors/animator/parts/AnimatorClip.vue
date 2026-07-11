@@ -1,5 +1,3 @@
-// AnimatorClip
-
 <template>
   <div class="flex flex-col h-full w-full relative outline-none select-none bg-background border-r border-border font-sans" @click="closeMenu">
     
@@ -133,7 +131,6 @@ import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { Search, MoreVertical, FolderPlus, Film, Folder, FolderOpen, ChevronRight, ChevronDown, PlayCircle, Trash2 } from 'lucide-vue-next'
 import BaseDropdown from '@ui/overlay/BaseDropdown.vue'
 import BaseContextMenu from '@ui/overlay/BaseContextMenu.vue'
-// Pastikan untuk mengimpor ScrollArea dari jalur yang benar
 import ScrollArea from '@ui/overlay/ScrollArea.vue'
 import { useAnimatorLogic } from '@editors/animator/composables/useAnimatorLogic.js'
 import { useAnimatorMenu } from '@editors/animator/composables/useAnimatorMenu.js'

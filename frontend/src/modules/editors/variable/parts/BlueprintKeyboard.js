@@ -9,7 +9,7 @@ export const BlueprintKeyboard = {
     { 
       type: 'event_advanced_key', 
       label: 'Input Mapper', 
-      description: 'Trigger utama untuk input keyboard (Mendukung Press, Release, dan Hold)',
+      description: 'The primary trigger for keyboard inputs (Supports Press, Release, and Hold states).',
       icon: Zap,
       allowDynamicInputs: false,
       allowDynamicOutputs: false, 
@@ -35,7 +35,7 @@ export const BlueprintKeyboard = {
     { 
       type: 'calculate_axis_2d', 
       label: 'Calculate Axis 2D', 
-      description: 'Menerima eksekusi Tick. Otomatis mendeteksi sumbu (Horz/Vert) berdasarkan input tombol (String) yang diisi.',
+      description: 'Receives Tick execution. Automatically calculates directional axes (Horz/Vert) based on the assigned key strings.',
       icon: Move,
       allowDynamicInputs: false,
       allowDynamicOutputs: false,
@@ -61,7 +61,7 @@ export const BlueprintKeyboard = {
     { 
       type: 'is_key_down', 
       label: 'Branch: Key Down', 
-      description: 'Gerbang logika (If). Mengalirkan eksekusi ke True jika ditahan, False jika dilepas.',
+      description: 'A logic gate (If). Routes execution to True if the key is pressed, and False if it is released.',
       icon: HelpCircle,
       allowDynamicInputs: false,
       allowDynamicOutputs: false,
@@ -80,7 +80,7 @@ export const BlueprintKeyboard = {
     { 
       type: 'get_key_state', 
       label: 'Get Key State', 
-      description: 'Membaca nilai Boolean (True/False) tanpa memblokir eksekusi.',
+      description: 'Reads the Boolean value (True/False) of a key without blocking the execution flow.',
       icon: HelpCircle,
       allowDynamicInputs: false,
       allowDynamicOutputs: false,
@@ -96,7 +96,7 @@ export const BlueprintKeyboard = {
     { 
       type: 'event_any_key', 
       label: 'Any Key Pressed', 
-      description: 'Mendeteksi tombol apapun yang ditekan (menghasilkan string).',
+      description: 'Detects when any key is pressed and outputs its corresponding name as a string.',
       icon: Zap,
       allowDynamicInputs: false,
       allowDynamicOutputs: false,
@@ -113,7 +113,7 @@ export const BlueprintKeyboard = {
     { 
       type: 'simulate_key', 
       label: 'Simulate Key', 
-      description: 'Mensimulasikan input keyboard. Berguna untuk memicu pergerakan dari tombol UI.',
+      description: 'Simulates a keyboard input event. Ideal for triggering movement behaviors using UI buttons.',
       icon: Zap,
       allowDynamicInputs: false,
       allowDynamicOutputs: false,

@@ -14,7 +14,7 @@ export default defineConfig({
     appType: 'mpa',
     port: 6500,
     allowedHosts: [
-      'lupis.calk.cloud',
+      'dev-lupis.calk.cloud',
       'localhost',
     ],
     hmr: {

@@ -9,13 +9,21 @@ export default class AssetLoader {
         this._isSystemDefaultLoaded = false;
     }
 
-    async loadAsset(world, assets, baseURL) {
+    async loadAsset(world, assets, baseURL, onProgress) {
         if (!this._isSystemDefaultLoaded) {
             await this._loadSystemDefault(world);
             this._isSystemDefaultLoaded = true;
         }
         
         if (!world.audios) world.audios = {};
+
+        const totalAssets = assets.length;
+        let loadedAssets = 0;
+
+        if (totalAssets === 0) {
+            if (onProgress) onProgress("Semua aset siap...", 100);
+            return;
+        }
 
         const loadPromises = assets.map(async (asset) => {
             try {
@@ -34,6 +42,12 @@ export default class AssetLoader {
                 }
             } catch (err) {
                 console.error(`[AssetLoader] Failed to load: ${asset.name}`, err);
+            } finally {
+                loadedAssets++;
+                if (onProgress) {
+                    const percentage = Math.floor((loadedAssets / totalAssets) * 100);
+                    onProgress(`Mengunduh ${asset.name || 'Aset'}...`, percentage);
+                }
             }
         });
 

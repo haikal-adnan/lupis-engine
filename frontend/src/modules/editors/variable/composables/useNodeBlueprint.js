@@ -27,7 +27,7 @@ import { BlueprintHelper } from '@editors/variable/parts/BlueprintHelper';
 import { BlueprintEntity } from '@editors/variable/parts/BlueprintEntity';
 import { BlueprintRandom } from '@editors/variable/parts/BlueprintRandom';
 
-export const STATIC_NODE_GROUPS = [
+const rawGroups = [
   BlueprintRandom,
   BlueprintEntity,
   BlueprintLoop,
@@ -55,13 +55,17 @@ export const STATIC_NODE_GROUPS = [
   BlueprintAnimator,
   BlueprintTransition,
   BlueprintEvent
-]
+];
+
+export const STATIC_NODE_GROUPS = [...rawGroups].sort((a, b) => {
+  return a.label.localeCompare(b.label);
+});
 
 export function useNodeBlueprint() {
   const searchQuery = ref('');
 
   const filteredGroups = computed(() => {
-    const allGroups = STATIC_NODE_GROUPS;
+    const allGroups = STATIC_NODE_GROUPS; 
     if (!searchQuery.value) return allGroups;
     
     const q = searchQuery.value.toLowerCase();

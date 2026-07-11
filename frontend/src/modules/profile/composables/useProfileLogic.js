@@ -30,11 +30,24 @@ export function useProfileLogic() {
     }
   };
 
+  const searchUsers = async (query) => {
+    if (!query) return [];
+    try {
+      const response = await fetchWithTimeout(`${API_URL}/profile/search/users?q=${encodeURIComponent(query)}`);
+      const result = await response.json();
+      return result.success ? result.data : [];
+    } catch (err) {
+      console.error("Search users error:", err);
+      return [];
+    }
+  };
+
   return {
     profile,
     publishedGames,
     isLoading,
     error,
-    fetchProfile
+    fetchProfile,
+    searchUsers
   };
 }

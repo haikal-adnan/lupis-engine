@@ -69,7 +69,7 @@ export function usePlayLogic() {
     try {
       await nextTick();
 
-      setCheckpoint("Mengunduh aset dan logika visual...", 40);
+      setCheckpoint("Mengunduh metadata proyek...", 20);
       
       const resources = await getGameResources(publishedId);
       const projectId = resources.project?._id || resources.projectId || resources.scenes?.[0]?.projectId;
@@ -84,28 +84,28 @@ export function usePlayLogic() {
         assets: resources.assets || [],
         prefabs: resources.prefabs || [],
         scripts: resources.scripts || [],
-        editorConfig: {} 
+        editorConfig: {},
+        onProgress: (message, progress) => {
+          const actualProgress = 30 + Math.floor(progress * 0.7);
+          setCheckpoint(message, actualProgress);
+        }
       };
 
       const refW = resources.project?.settings?.ui?.width || 1920;
       const refH = resources.project?.settings?.ui?.height || 1080;
       
-      setCheckpoint("Menyesuaikan resolusi layar...", 70);
       setupCanvasResponsiveness(refW, refH);
 
       const cdnUrl = `${CDN_URL}/published/${projectId}/`;
 
-      setCheckpoint("Menghidupkan Engine...", 90);
       engineInstance = await startEngine(gameCanvas.value, cdnUrl, "runtime", runtimeData);
 
       if (!engineInstance) throw new Error("Gagal menginisialisasi Lupis Engine.");
 
-      setCheckpoint("Game siap dimainkan!", 100);
-      
       setTimeout(() => {
         isPlaying.value = true;
         isLoading.value = false;
-        gameCanvas.value.focus(); 
+        if (gameCanvas.value) gameCanvas.value.focus(); 
       }, 500);
 
     } catch (err) {
@@ -117,9 +117,23 @@ export function usePlayLogic() {
 
   const stopGame = () => {
     if (engineInstance) {
-      if (typeof engineInstance.game?.destroy === 'function') {
-        engineInstance.game.destroy();
+      const game = engineInstance.game || engineInstance;
+
+      const audioCtx = game.audioSystem?.context;
+      if (audioCtx && typeof audioCtx.close === 'function' && audioCtx.state !== 'closed') {
+        audioCtx.close().then(() => {
+          console.log("[Lupis Engine] AudioContext closed successfully.");
+        }).catch(err => {
+          console.error("[Lupis Engine] Failed to close AudioContext:", err);
+        });
       }
+
+      if (typeof game.destroy === 'function') {
+        game.destroy();
+      } else if (game.loop && typeof game.loop.stop === 'function') {
+        game.loop.stop();
+      }
+
       engineInstance = null;
     }
     

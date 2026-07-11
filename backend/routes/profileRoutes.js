@@ -93,6 +93,30 @@ router.put('/update', async (req, res) => {
   }
 });
 
+router.get('/search/users', async (req, res) => {
+  const { q } = req.query;
+  
+  if (!q) {
+    return res.json({ success: true, data: [] });
+  }
+
+  try {
+    const query = `
+      SELECT u.id as user_id, u.username, p.display_name, p.avatar_url
+      FROM users u
+      LEFT JOIN user_profiles p ON u.id = p.user_id
+      WHERE u.username ILIKE $1 OR p.display_name ILIKE $1
+      LIMIT 3
+    `;
+    
+    const { rows } = await pool.query(query, [`%${q}%`]);
+    res.json({ success: true, data: rows });
+  } catch (error) {
+    console.error('[Search Users Error]', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
 router.get('/:username', async (req, res) => {
   const { username } = req.params;
 

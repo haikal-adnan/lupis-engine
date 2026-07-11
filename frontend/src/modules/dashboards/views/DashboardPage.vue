@@ -128,23 +128,23 @@ const getStatusStyle = (status) => {
     <div class="mb-10 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
       <div>
         <div class="flex items-center gap-4 mb-1">
-          <h2 class="text-3xl font-extrabold tracking-tight text-foreground">My Projects</h2>
+          <h2 class="text-3xl font-extrabold tracking-tight text-foreground">Proyek Saya</h2>
           
           <button 
             @click="isCreatePopupOpen = true"
             class="hidden sm:flex items-center gap-1.5 bg-cyan-500 hover:bg-cyan-600 text-white px-3 py-1.5 rounded-full text-xs font-bold transition-all active:scale-95 shadow-sm shadow-cyan-500/20 mt-1"
           >
             <Plus class="w-3.5 h-3.5" :stroke-width="3" />
-            New
+            Baru
           </button>
         </div>
         
         <p class="text-muted-foreground text-sm font-medium">
           <span v-if="props.searchQuery">
-            Found {{ filteredProjects.length }} results for "{{ props.searchQuery }}"
+            Menampilkan {{ filteredProjects.length }} hasil untuk "{{ props.searchQuery }}"
           </span>
           <span v-else>
-            You have {{ filteredProjects.length }} active projects.
+            Anda memiliki {{ filteredProjects.length }} proyek aktif.
           </span>
         </p>
       </div>
@@ -154,19 +154,19 @@ const getStatusStyle = (status) => {
         class="sm:hidden w-full flex justify-center items-center gap-2 bg-cyan-500 hover:bg-cyan-600 text-white px-4 py-2.5 rounded-xl text-sm font-bold transition-all active:scale-95 shadow-sm shadow-cyan-500/20"
       >
         <Plus class="w-4 h-4" :stroke-width="3" />
-        New Project
+        Proyek Baru
       </button>
     </div>
 
     <div v-if="isLoading" class="h-64 flex flex-col items-center justify-center">
       <div class="w-10 h-10 border-4 border-cyan-500/20 border-t-cyan-500 rounded-full animate-spin mb-4"></div>
-      <p class="text-muted-foreground font-medium animate-pulse text-sm">Loading your universe...</p>
+      <p class="text-muted-foreground font-medium animate-pulse text-sm">Memuat proyek Anda...</p>
     </div>
 
     <div v-else-if="errorMessage" class="h-64 flex flex-col items-center justify-center bg-destructive/5 border border-destructive/20 rounded-2xl">
       <p class="text-destructive font-semibold mb-4">{{ errorMessage }}</p>
       <button @click="fetchProjects" class="px-5 py-2 bg-background border border-border rounded-lg text-sm hover:bg-secondary transition-colors font-medium">
-        Try Again
+        Coba Lagi
       </button>
     </div>
 
@@ -174,20 +174,20 @@ const getStatusStyle = (status) => {
       <div class="w-16 h-16 bg-muted/50 rounded-2xl flex items-center justify-center mb-5">
         <FolderOpen class="w-8 h-8 text-muted-foreground/50" :stroke-width="1.5" />
       </div>
-      <h3 class="text-xl font-bold mb-2">No Projects Found</h3>
-      <p class="text-muted-foreground text-sm mb-6 text-center max-w-xs">You haven't created any game projects yet. Start building your dream game today.</p>
+      <h3 class="text-xl font-bold mb-2">Proyek Tidak Ditemukan</h3>
+      <p class="text-muted-foreground text-sm mb-6 text-center max-w-xs">Anda belum membuat proyek game apa pun. Mulai bangun game impian Anda sekarang.</p>
       
       <button 
         @click="isCreatePopupOpen = true"
         class="bg-cyan-500 hover:bg-cyan-600 text-white px-6 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg shadow-cyan-500/20 flex items-center gap-2"
       >
-        <Plus class="w-4 h-4" :stroke-width="3" /> Create First Project
+        <Plus class="w-4 h-4" :stroke-width="3" /> Buat Proyek Pertama
       </button>
     </div>
 
     <div v-else-if="filteredProjects.length === 0" class="h-64 flex flex-col items-center justify-center border border-border rounded-3xl bg-card">
-      <p class="text-muted-foreground mb-2">No projects matching "{{ props.searchQuery }}"</p>
-      <button @click="$emit('update:searchQuery', '')" class="text-sm text-cyan-500 hover:underline">Clear search</button>
+      <p class="text-muted-foreground mb-2">Tidak ada proyek yang cocok dengan "{{ props.searchQuery }}"</p>
+      <button @click="$emit('update:searchQuery', '')" class="text-sm text-cyan-500 hover:underline">Hapus pencarian</button>
     </div>
 
     <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -210,7 +210,7 @@ const getStatusStyle = (status) => {
           
           <div class="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-5">
             <span class="text-xs font-bold uppercase tracking-wider text-cyan-500 flex items-center gap-1">
-              Open Editor <span class="group-hover:translate-x-1 transition-transform">→</span>
+              Buka Editor <span class="group-hover:translate-x-1 transition-transform">→</span>
             </span>
           </div>
         </div>
@@ -220,12 +220,12 @@ const getStatusStyle = (status) => {
             {{ project.name }}
           </h3>
           <p class="text-muted-foreground text-xs mt-1.5 line-clamp-2 leading-relaxed flex-1">
-            {{ project.description || 'A 2D game project built with Lupis Engine.' }}
+            {{ project.description || 'Sebuah proyek game 2D yang dibuat dengan Lupis Engine.' }}
           </p>
           
           <div class="flex items-center justify-between mt-4 pt-4 border-t border-border">
             <span class="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">
-              Updated {{ new Date(project.updatedAt || Date.now()).toLocaleDateString() }}
+              Diperbarui {{ new Date(project.updatedAt || Date.now()).toLocaleDateString('id-ID') }}
             </span>
             <span 
               class="text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider border"

@@ -1,34 +1,32 @@
-import { ref, onMounted, watch } from 'vue'
+import { ref, watch } from 'vue'
 
-const isDark = ref(false)
+const saved = localStorage.getItem('theme')
+const isDark = ref(
+  saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)
+)
+
+function applyTheme() {
+  const html = document.documentElement
+  if (isDark.value) {
+    html.classList.add('dark')
+  } else {
+    html.classList.remove('dark')
+  }
+}
+applyTheme()
+
+watch(isDark, () => {
+  applyTheme()
+})
 
 export function useTheme() {
-  function applyTheme() {
-    const html = document.documentElement
-    if (isDark.value) {
-      html.classList.add('dark')
-    } else {
-      html.classList.remove('dark')
-    }
-  }
-
   function toggleTheme() {
     isDark.value = !isDark.value
     localStorage.setItem('theme', isDark.value ? 'dark' : 'light')
-    applyTheme()
   }
-
-  function initTheme() {
-    const saved = localStorage.getItem('theme')
-    isDark.value = saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)
-    applyTheme()
-  }
-
-  watch(isDark, () => applyTheme())
 
   return {
     isDark,
-    toggleTheme,
-    initTheme
+    toggleTheme
   }
 }

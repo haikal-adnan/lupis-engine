@@ -299,13 +299,11 @@ router.post("/republish/:projectId", async (req, res) => {
   try {
     const { projectId } = req.params;
     
-    // Pastikan proyek aslinya ada
     const projectExists = await Project.findById(projectId).lean();
     if (!projectExists) {
       return res.status(404).json({ success: false, error: "Project tidak ditemukan." });
     }
 
-    // Pastikan game memang sudah dipublish sebelumnya
     const publishedGame = await Published.findOne({ projectId });
     if (!publishedGame) {
       return res.status(404).json({ success: false, error: "Game belum dipublish." });
@@ -315,7 +313,6 @@ router.post("/republish/:projectId", async (req, res) => {
     const destDir = path.join(STORAGE_PUBLISHED, projectId.toString());
 
     try {
-      // Hapus direktori lama secara paksa lalu timpa dengan yang baru
       await fs.rm(destDir, { recursive: true, force: true }).catch(() => {}); 
       await fs.cp(srcDir, destDir, { recursive: true });
       console.log(`[Publish] Berhasil menimpa asset fisik ke: ${destDir}`);
@@ -323,14 +320,12 @@ router.post("/republish/:projectId", async (req, res) => {
       console.error("[Publish Warning] Folder project mungkin kosong atau gagal disalin:", fsError);
     }
 
-    // Ambil data terbaru dari draft/project
     const scenes = await Scene.find({ projectId }).lean();
     const folders = await Folder.find({ projectId }).lean();
     const assets = await Asset.find({ projectId }).lean();
     const prefabs = await Prefab.find({ projectId }).lean();
     const scripts = await Script.find({ projectId }).lean();
 
-    // Hapus data schema lama di database published
     await Promise.all([
       ProjectPublished.deleteOne({ _id: projectId }),
       ScenePublished.deleteMany({ projectId }),
@@ -340,7 +335,6 @@ router.post("/republish/:projectId", async (req, res) => {
       ScriptPublished.deleteMany({ projectId })
     ]);
 
-    // Timpa dengan data yang baru
     await ProjectPublished.create({
       ...projectExists,
       status: 'PUBLISHED' 

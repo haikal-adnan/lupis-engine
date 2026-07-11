@@ -22,7 +22,7 @@ export const BlueprintMap = {
     { 
       type: 'map_set', 
       label: 'Map Set', 
-      description: 'Menambah atau memperbarui nilai pada key tertentu di dalam Map',
+      description: 'Adds or updates a value for a specific key within the Map.',
       icon: PlusSquare,
       allowDynamicInputs: false,
       allowDynamicOutputs: false,
@@ -44,7 +44,7 @@ export const BlueprintMap = {
     { 
       type: 'map_merge', 
       label: 'Map Merge', 
-      description: 'Menggabungkan dua Map menjadi satu Map baru (Map B akan menimpa key yang sama di Map A)',
+      description: 'Merges two Maps into a new single Map (keys in Map B will overwrite matching keys in Map A).',
       icon: Combine,
       allowDynamicInputs: false,
       allowDynamicOutputs: false,
@@ -63,7 +63,7 @@ export const BlueprintMap = {
     { 
       type: 'map_put_if_absent', 
       label: 'Map PutIfAbsent', 
-      description: 'Menambahkan key-value baru hanya jika key tersebut belum ada di dalam Map',
+      description: 'Adds a new key-value pair only if the key does not already exist within the Map.',
       icon: HelpCircle,
       allowDynamicInputs: false,
       allowDynamicOutputs: false,
@@ -86,7 +86,7 @@ export const BlueprintMap = {
     { 
       type: 'map_get', 
       label: 'Map Get', 
-      description: 'Mengambil nilai dari Map berdasarkan key',
+      description: 'Retrieves a value from the Map based on its key.',
       icon: Search,
       allowDynamicInputs: false,
       allowDynamicOutputs: false,
@@ -105,7 +105,7 @@ export const BlueprintMap = {
     { 
       type: 'map_has', 
       label: 'Map Has', 
-      description: 'Mengecek apakah suatu key ada di dalam Map',
+      description: 'Checks whether a specified key exists inside the Map.',
       icon: CheckSquare,
       allowDynamicInputs: false,
       allowDynamicOutputs: false,
@@ -124,7 +124,7 @@ export const BlueprintMap = {
     { 
       type: 'map_remove', 
       label: 'Map Remove', 
-      description: 'Menghapus key beserta nilainya dari Map',
+      description: 'Removes the specified key and its associated value from the Map.',
       icon: Trash2,
       allowDynamicInputs: false,
       allowDynamicOutputs: false,
@@ -145,7 +145,7 @@ export const BlueprintMap = {
     { 
       type: 'map_clear', 
       label: 'Map Clear', 
-      description: 'Menghapus seluruh isi Map (mengosongkan object)',
+      description: 'Removes all keys and values from the Map, resetting it to an empty object.',
       icon: XSquare,
       allowDynamicInputs: false,
       allowDynamicOutputs: false,
@@ -165,7 +165,7 @@ export const BlueprintMap = {
     { 
       type: 'map_keys', 
       label: 'Map Keys', 
-      description: 'Mengembalikan List yang berisi semua key dari dalam Map',
+      description: 'Returns a List containing all the keys found inside the Map.',
       icon: Key,
       allowDynamicInputs: false,
       allowDynamicOutputs: false,
@@ -183,7 +183,7 @@ export const BlueprintMap = {
     { 
       type: 'map_values', 
       label: 'Map Values', 
-      description: 'Mengembalikan List yang berisi semua nilai dari dalam Map',
+      description: 'Returns a List containing all the values found inside the Map.',
       icon: List,
       allowDynamicInputs: false,
       allowDynamicOutputs: false,
@@ -201,7 +201,7 @@ export const BlueprintMap = {
     { 
       type: 'map_size', 
       label: 'Map Size', 
-      description: 'Menghitung total jumlah pasangan key-value di dalam Map',
+      description: 'Counts the total number of key-value pairs stored in the Map.',
       icon: Hash,
       allowDynamicInputs: false,
       allowDynamicOutputs: false,
@@ -219,7 +219,7 @@ export const BlueprintMap = {
     { 
       type: 'map_get_or_default', 
       label: 'Map GetOrDefault', 
-      description: 'Mengambil nilai dari Map, jika key tidak ditemukan maka akan mengembalikan Default Value',
+      description: 'Retrieves a value by its key; if the key is not found, it returns the provided Default Value.',
       icon: Search,
       allowDynamicInputs: false,
       allowDynamicOutputs: false,
@@ -239,7 +239,7 @@ export const BlueprintMap = {
     { 
       type: 'map_filter', 
       label: 'Universal Filter', 
-      description: 'Mencari objek utuh berdasarkan key & value, baik di dalam Map maupun di dalam List.',
+      description: 'Searches for an entire object using a key-value match, compatible with both Maps and Lists.',
       icon: Filter,
       allowDynamicInputs: false,
       allowDynamicOutputs: false,
@@ -256,6 +256,5 @@ export const BlueprintMap = {
         ]
       } 
     }
-    
   ]
 };

@@ -1,11 +1,10 @@
 import { ref, nextTick, markRaw, computed } from 'vue';
-import { BookOpen, Layers, Code2, Settings, Zap, Box } from 'lucide-vue-next';
+import { BookOpen, Layers, Settings } from 'lucide-vue-next';
 
 export function useDocsLogic() {
   const gettingStartedLinks = [
     { id: 'getting_started/introduction', name: 'Introduction' },
     { id: 'getting_started/installation', name: 'Installation' },
-    { id: 'getting_started/quick-start', name: 'Quick Start' },
   ];
 
   const interfaceLinks = [
@@ -19,18 +18,19 @@ export function useDocsLogic() {
       ]
     },
     {
-      id: 'core-editors',
+      id: 'main-workspace-wrapper', 
       name: 'Main Workspace',
       children: [
         {
-          id: 'scene-editor',
+          id: 'scene-editor-wrapper', 
           name: 'Scene Editor',
           children: [
             { id: 'interface/main_workspace/scene_editor/canvas_scene/canvas_scene', name: 'Canvas Scene' },
             { id: 'interface/main_workspace/scene_editor/hierarchy_scene/hierarchy_scene', name: 'Hierarchy Scene' },
             { id: 'interface/main_workspace/scene_editor/property_inspector/property_inspector', name: 'Property Inspector' },
             { id: 'interface/main_workspace/scene_editor/floating_toolbar/floating_toolbar', name: 'Floating Toolbar' },
-            { id: 'interface/main_workspace/scene_editor/bottom_dock/bottom_dock', 
+            { 
+              id: 'interface/main_workspace/scene_editor/bottom_dock', 
               name: 'Bottom Dock',
               children: [
                 { id: 'interface/main_workspace/scene_editor/bottom_dock/assets_panel/assets_panel', name: 'Assets Panel' },
@@ -42,11 +42,12 @@ export function useDocsLogic() {
           ]
         },
         {
-          id: 'interface/main_workspace/script_editor/script_editor',
+          id: 'script-editor-wrapper',
           name: 'Script Editor (Visual Logic)',
           children: [
             { id: 'interface/main_workspace/script_editor/node_script/node_script', name: 'Node Script' },
-            { id: 'interface/main_workspace/script_editor/variable_manager/variable_manager', 
+            { 
+              id: 'interface/main_workspace/script_editor/variable_manager/variable_manager', 
               name: 'Variable Manager',
               children: [
                 { id: 'interface/main_workspace/script_editor/variable_manager/collection_management/collection_management', name: 'Collection Management' },
@@ -57,7 +58,7 @@ export function useDocsLogic() {
           ]
         },
         {
-          id: 'animator-editor',
+          id: 'animator-editor-wrapper', 
           name: 'Animator Editor',
           children: [
             { id: 'interface/main_workspace/animator_editor/animation_view/animation_view', name: 'Animation View' },
@@ -69,14 +70,10 @@ export function useDocsLogic() {
         {
           id: 'interface/main_workspace/tilemap_editor/tilemap_editor',
           name: 'Tilemap Editor',
-          
         }
       ]
     },
-
   ];
-
-  const apiReferenceLinks = []; 
 
   const configurationLinks = [
     { id: 'aCheatSheet', name: 'Cheat Sheet' },
@@ -94,19 +91,58 @@ export function useDocsLogic() {
       links: interfaceLinks
     },
     {
-      title: 'API Reference',
-      icon: markRaw(Code2),
-      links: apiReferenceLinks
-    },
-    {
       title: 'Configuration',
       icon: markRaw(Settings),
       links: configurationLinks
     }
   ]);
 
+  const flattenDocs = (items, parentPath = []) => {
+    let result = [];
+    items.forEach(item => {
+      const currentPath = [...parentPath, item.name];
+
+      const isWrapperOnly = [
+        'main-workspace-wrapper', 
+        'scene-editor-wrapper', 
+        'script-editor-wrapper', 
+        'animator-editor-wrapper'
+      ].includes(item.id);
+
+      if (item.id && !isWrapperOnly) {
+        result.push({
+          id: item.id,
+          name: item.name,
+          path: currentPath.join(' > ')
+        });
+      }
+
+      if (item.children && item.children.length > 0) {
+        result = result.concat(flattenDocs(item.children, currentPath));
+      }
+    });
+    return result;
+  };
+
+  const allFlatDocs = computed(() => {
+    return [
+      ...flattenDocs(gettingStartedLinks, ['Getting Started']),
+      ...flattenDocs(interfaceLinks, ['Interface']),
+      ...flattenDocs(configurationLinks, ['Configuration'])
+    ];
+  });
+
+  const searchDocs = (query) => {
+    if (!query) return [];
+    const q = query.toLowerCase();
+    return allFlatDocs.value.filter(doc => 
+      doc.name.toLowerCase().includes(q) || 
+      doc.path.toLowerCase().includes(q)
+    );
+  };
+
   const docsData = ref({}); 
-  const currentDocId = ref('introduction'); 
+  const currentDocId = ref('getting_started/introduction'); 
   const activeContent = computed(() => docsData.value[currentDocId.value] || null);
 
   const tocHeadings = ref([]);
@@ -215,6 +251,11 @@ export function useDocsLogic() {
       if (!response.ok) {
         throw new Error(`Dokumen ${docId} belum ada.`);
       }
+
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        throw new Error(`Dokumen ${docId} tidak mengembalikan JSON valid (terjadi fallback HTML).`);
+      }
       
       const data = await response.json();
       docsData.value[docId] = data; 
@@ -264,6 +305,7 @@ export function useDocsLogic() {
     scrollToHeading,
     initToc,
     destroyToc,
-    changeDocument
+    changeDocument,
+    searchDocs
   };
 }

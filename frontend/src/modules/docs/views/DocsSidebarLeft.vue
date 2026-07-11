@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from 'vue';
 import { ChevronDown, X } from 'lucide-vue-next';
-import DocsSidebarItem from '@/modules/docs/components/DocsSidebarItem.vue'; // <-- Import komponen rekursif
+import DocsSidebarItem from '@/modules/docs/components/DocsSidebarItem.vue'; 
 
 const props = defineProps({
   navItems: {

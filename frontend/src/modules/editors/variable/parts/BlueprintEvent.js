@@ -13,7 +13,7 @@ export const BlueprintEvent = {
     {
       type: 'action_emit_signal',
       label: 'Emit Signal',
-      description: 'Menyiarkan pesan ke seluruh sistem yang mendengarkan sinyal ini.',
+      description: 'Broadcasts a message to the entire system listening for this signal.',
       icon: Radio,
       defaultData: {
         settings: { headerTitle: 'Emit Signal', headerColor: '#0288D1', category: 'Signals' },
@@ -34,7 +34,7 @@ export const BlueprintEvent = {
     {
       type: 'event_on_signal',
       label: 'On Signal Received',
-      description: 'Memicu aliran saat sinyal global yang cocok diterima.',
+      description: 'Triggers the flow when a matching global signal is received.',
       icon: BellRing,
       defaultData: {
         settings: { headerTitle: 'On Signal', headerColor: '#0288D1', category: 'Signals' },

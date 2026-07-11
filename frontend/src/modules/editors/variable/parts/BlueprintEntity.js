@@ -14,7 +14,7 @@ export const BlueprintEntity = {
     { 
       type: 'entity_spawn', 
       label: 'Spawn From Prefab', 
-      description: 'Menciptakan instance baru dari prefab. Jika Custom Script ID diisi, sistem akan mencobanya jika belum dipakai.',
+      description: 'Creates a new instance from a prefab. If Custom Script ID is provided, the system will attempt to use it if it is not already taken.',
       icon: Box,
       defaultData: { 
         settings: { headerTitle: 'Spawn Prefab', headerColor: '#00BCD4', category: 'Entity' },
@@ -37,7 +37,7 @@ export const BlueprintEntity = {
     { 
       type: 'entity_destroy', 
       label: 'Destroy Entity', 
-      description: 'Menghapus entity dari scene secara permanen berdasarkan Script ID.',
+      description: 'Permanently removes an entity from the scene based on its Script ID.',
       icon: Trash2,
       defaultData: { 
         settings: { headerTitle: 'Destroy', headerColor: '#F44336', category: 'Entity' },
@@ -53,7 +53,7 @@ export const BlueprintEntity = {
     { 
       type: 'entity_destroy_with_parent', 
       label: 'Destroy With Parent', 
-      description: 'Menghapus entity beserta parent-nya (dan seluruh saudaranya) dari scene secara permanen.',
+      description: 'Permanently removes an entity along with its parent (and all its siblings) from the scene.',
       icon: Trash2,
       defaultData: { 
         settings: { headerTitle: 'Destroy W/ Parent', headerColor: '#D32F2F', category: 'Entity' },
@@ -69,7 +69,7 @@ export const BlueprintEntity = {
     { 
       type: 'entity_clone', 
       label: 'Clone Entity', 
-      description: 'Menduplikasi entity yang sudah ada di scene berdasarkan Script ID.',
+      description: 'Duplicates an existing entity in the scene based on its Script ID.',
       icon: Copy,
       defaultData: { 
         settings: { headerTitle: 'Clone', headerColor: '#00BCD4', category: 'Entity' },
@@ -86,7 +86,7 @@ export const BlueprintEntity = {
     { 
       type: 'entity_get_children', 
       label: 'Get Children', 
-      description: 'Mengambil array seluruh child dari parent. Jika Index diisi, output Child ID akan mengeluarkan Script ID pada urutan tersebut.',
+      description: 'Retrieves an array of all children from a parent. If Index is provided, the Child ID output will return the Script ID at that specific sequence.',
       icon: Network,
       defaultData: { 
         settings: { headerTitle: 'Get Children', headerColor: '#00BCD4', category: 'Entity' },
@@ -106,7 +106,7 @@ export const BlueprintEntity = {
     { 
       type: 'entity_get_parent', 
       label: 'Get Parent', 
-      description: 'Mendapatkan Script ID dari parent entity ini. Jika tidak memiliki parent, output akan kosong.',
+      description: 'Retrieves the Script ID of this entity\'s parent. If it does not have a parent, the output will be empty.',
       icon: Network, 
       defaultData: { 
         settings: { headerTitle: 'Get Parent', headerColor: '#00BCD4', category: 'Entity' },

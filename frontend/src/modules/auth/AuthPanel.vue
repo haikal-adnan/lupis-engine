@@ -34,18 +34,18 @@
                   Lupis<span class="text-foreground">Engine</span>
                 </h2>
                 <p class="text-sm text-muted-foreground font-medium mt-1.5">
-                  {{ mode === 'login' ? 'Welcome back to the visual editor.' : 'Start your game dev journey.' }}
+                  {{ mode === 'login' ? 'Selamat datang kembali di visual editor.' : 'Mulai perjalanan game dev Anda.' }}
                 </p>
               </div>
 
               <form @submit.prevent="handleSubmit" class="flex flex-col">
                 
                 <div v-if="mode === 'register'" class="mb-5">
-                  <label class="block text-xs font-medium text-foreground mb-1.5">Full Name</label>
+                  <label class="block text-xs font-medium text-foreground mb-1.5">Nama Lengkap</label>
                   <input 
                     v-model="form.name" 
                     type="text" 
-                    placeholder="Your display name"
+                    placeholder="Nama tampilan Anda"
                     class="w-full bg-background text-foreground placeholder:text-muted-foreground border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 transition-colors"
                     :class="errors.name ? 'border-destructive focus:ring-destructive' : 'border-border focus:border-cyan-400 focus:ring-cyan-400'"
                   />
@@ -57,7 +57,7 @@
                   <input 
                     v-model="form.email" 
                     type="email" 
-                    placeholder="you@example.com"
+                    placeholder="anda@example.com"
                     class="w-full bg-background text-foreground placeholder:text-muted-foreground border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 transition-colors"
                     :class="errors.email ? 'border-destructive focus:ring-destructive' : 'border-border focus:border-cyan-400 focus:ring-cyan-400'"
                   />
@@ -72,7 +72,7 @@
                       <input 
                         v-model="form.password" 
                         :type="showPassword ? 'text' : 'password'" 
-                        placeholder="Enter your password"
+                        placeholder="Masukkan password Anda"
                         class="w-full bg-background text-foreground placeholder:text-muted-foreground border rounded-lg pl-3 pr-10 py-2.5 text-sm focus:outline-none focus:ring-1 transition-colors"
                         :class="errors.password ? 'border-destructive focus:ring-destructive' : 'border-border focus:border-cyan-400 focus:ring-cyan-400'"
                       />
@@ -83,18 +83,18 @@
                         @click="showPassword = !showPassword"
                         class="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-foreground outline-none"
                       >
-                         <span class="text-[10px] uppercase font-bold">{{ showPassword ? 'Hide' : 'Show' }}</span>
+                         <span class="text-[10px] uppercase font-bold">{{ showPassword ? 'Sembunyikan' : 'Tampilkan' }}</span>
                       </button>
                     </div>
 
-                    <a 
+                    <button 
                       v-if="mode === 'login'" 
-                      href="#" 
-                      tabindex="0"
-                      class="absolute top-0 right-0 text-[11px] font-medium text-muted-foreground hover:text-cyan-400 transition-colors"
+                      type="button"
+                      disabled
+                      class="absolute top-0 right-0 text-[11px] font-medium text-muted-foreground cursor-not-allowed"
                     >
-                      Forgot password?
-                    </a>
+                      Lupa password?
+                    </button>
                   </div>
                   
                   <span v-if="errors.password" class="text-[10px] text-destructive mt-1 block">{{ errors.password }}</span>
@@ -105,14 +105,14 @@
                   :disabled="isLoading"
                   class="w-full bg-cyan-400 hover:bg-cyan-300 disabled:opacity-50 disabled:cursor-not-allowed text-slate-900 font-bold py-3 rounded-lg text-sm transition-colors shadow-lg shadow-cyan-400/20"
                 >
-                  {{ isLoading ? 'Processing...' : (mode === 'login' ? 'Sign In' : 'Create Account') }}
+                  {{ isLoading ? 'Memproses...' : (mode === 'login' ? 'Masuk' : 'Buat Akun') }}
                 </button>
               </form>
 
               <div class="mt-8 text-sm text-foreground text-center md:text-left">
-                {{ mode === 'login' ? "Don't have an account?" : "Already have an account?" }}
+                {{ mode === 'login' ? "Belum punya akun?" : "Sudah punya akun?" }}
                 <button type="button" @click="switchMode(mode === 'login' ? 'register' : 'login')" class="text-cyan-400 hover:text-cyan-300 font-semibold ml-1 transition-colors outline-none">
-                  {{ mode === 'login' ? 'Sign up' : 'Sign in' }}
+                  {{ mode === 'login' ? 'Daftar' : 'Masuk' }}
                 </button>
               </div>
 
@@ -121,7 +121,7 @@
             <div class="w-full md:w-[45%] p-6 pb-10 md:p-12 border-t md:border-t-0 md:border-l border-border flex flex-col justify-center bg-muted/20 min-h-max shrink-0">
               
               <p class="text-[12px] font-semibold text-muted-foreground uppercase tracking-wider mb-6 text-center md:text-left">
-                Or continue with
+                Atau lanjutkan dengan
               </p>
 
               <div class="flex flex-col gap-4">
@@ -140,9 +140,9 @@
               
               <div class="mt-8 text-center md:text-left">
                 <p class="text-[12px] text-muted-foreground leading-relaxed">
-                  By logging in, you agree to our <br class="hidden lg:block"/>
-                  <a href="#" class="text-foreground hover:text-cyan-400 transition-colors font-medium">Terms of Service</a> and 
-                  <a href="#" class="text-foreground hover:text-cyan-400 transition-colors font-medium">Privacy Policy</a>.
+                  Dengan masuk, Anda menyetujui <br class="hidden lg:block"/>
+                  <a href="#" class="text-foreground hover:text-cyan-400 transition-colors font-medium">Ketentuan Layanan</a> dan 
+                  <a href="#" class="text-foreground hover:text-cyan-400 transition-colors font-medium">Kebijakan Privasi</a> kami.
                 </p>
               </div>
 
@@ -251,24 +251,24 @@ const validateForm = () => {
   let isValid = true;
 
   if (mode.value === 'register' && !form.name.trim()) {
-    errors.name = 'Full name is required';
+    errors.name = 'Nama lengkap wajib diisi';
     isValid = false;
   }
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!form.email.trim()) {
-    errors.email = 'Email is required';
+    errors.email = 'Email wajib diisi';
     isValid = false;
   } else if (!emailRegex.test(form.email)) {
-    errors.email = 'Please enter a valid email address';
+    errors.email = 'Silakan masukkan alamat email yang valid';
     isValid = false;
   }
 
   if (!form.password) {
-    errors.password = 'Password is required';
+    errors.password = 'Password wajib diisi';
     isValid = false;
   } else if (form.password.length < 6) {
-    errors.password = 'Password must be at least 6 characters';
+    errors.password = 'Password minimal harus 6 karakter';
     isValid = false;
   }
 

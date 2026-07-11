@@ -60,7 +60,6 @@ export const NodeKeyboard = {
         }
     },
 
-    // --- NODE BARU: SIMULATE KEY ---
     'simulate_key': {
         execute: (runner, node) => {
             const key = runner.getInputValue(node, 'key') || node.data?.key || '';
@@ -81,7 +80,6 @@ export const NodeKeyboard = {
                 
                 window.dispatchEvent(event);
                 console.log("iwhrgo")
-                // Opsional: Jika engine spesifik menempel pada canvas
                 if (runner.game && runner.game.canvas) {
                     runner.game.canvas.dispatchEvent(event);
                 }

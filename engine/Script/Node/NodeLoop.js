@@ -1,6 +1,5 @@
 export const NodeLoop = {
     'logic_loop': { 
-        // 1. Tambahkan async di depan fungsi
         execute: async (runner, node) => { 
             const startInput = runner.getInputValue(node, 'start');
             const endInput = runner.getInputValue(node, 'end');
@@ -15,7 +14,6 @@ export const NodeLoop = {
             if (step > 0) {
                 for (let i = start; i <= end; i += step) {
                     node._tempLoopIndex = i;
-                    // 2. Tambahkan await untuk menunggu proses loop body hingga tuntas
                     await runner.executeFlow(node._id, 'loop_body'); 
                 }
             } else {
@@ -25,7 +23,6 @@ export const NodeLoop = {
                 }
             }
             
-            // 3. Tambahkan await pada proses penyelesaian
             await runner.executeFlow(node._id, 'completed');
         },
         getOutput: (runner, node, outputKey) => {

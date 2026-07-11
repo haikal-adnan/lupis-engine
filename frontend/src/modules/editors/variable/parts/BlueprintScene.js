@@ -13,7 +13,7 @@ export const BlueprintScene = {
     { 
       type: 'change_scene', 
       label: 'Change Scene', 
-      description: 'Pindah ke scene lain menggunakan Nama Scene', 
+      description: 'Switches to another scene using the specified Scene Name.', 
       icon: Clapperboard,
       allowDynamicInputs: false, 
       allowDynamicOutputs: false,
@@ -32,7 +32,7 @@ export const BlueprintScene = {
     { 
       type: 'restart_scene', 
       label: 'Restart Scene', 
-      description: 'Memuat ulang scene yang sedang aktif', 
+      description: 'Reloads the currently active scene.', 
       icon: RefreshCw,
       allowDynamicInputs: false, 
       allowDynamicOutputs: false,
@@ -50,7 +50,7 @@ export const BlueprintScene = {
     { 
       type: 'get_current_scene', 
       label: 'Get Current Scene', 
-      description: 'Mendapatkan nama scene yang sedang aktif saat ini', 
+      description: 'Retrieves the name of the currently active scene.', 
       icon: MapPin, 
       allowDynamicInputs: false, 
       allowDynamicOutputs: false, 
