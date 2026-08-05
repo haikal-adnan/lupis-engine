@@ -290,6 +290,26 @@ export default class SyncComponent {
         if (e) e.name = name;
     }
 
+    onPatchComponent({ entityId, componentName, updates }) {
+        const e = this._findEntityById(entityId);
+        if (!e) return;
+
+        if (!e.components) e.components = {};
+
+        if (!e.components[componentName]) {
+            e.addComponent(componentName, updates);
+        } else {
+            const c = e.components[componentName];
+            if (updates.elements && Array.isArray(updates.elements)) {
+                c.elements = [...updates.elements];
+            } else {
+                Object.assign(c, updates);
+            }
+        }
+
+        e.isDirty = true;
+    }
+
     onUpdateComponent({ entityId, componentName, path, value }) {
         const e = this._findEntityById(entityId);
         if (!e) return;
@@ -307,13 +327,16 @@ export default class SyncComponent {
 
         target[keys[keys.length - 1]] = value;
 
+        this.isInternalUpdate = true;
+
         if (
-            componentName === "TextRenderer" &&
-            ["fontSize", "value", "assetId", "lockRatio"].includes(path)
+            (componentName === "Transform" || componentName === "UITransform") ||
+            (componentName === "TextRenderer" && ["fontSize", "value", "assetId", "lockRatio"].includes(path))
         ) {
             ApplyResizeToEntity(e, this.world, true);
-            this.bus.emit("entity:modified", [e]);
         }
+
+        this.isInternalUpdate = false;
     }
 
     onUpdateLayerProp({ id, prop, value }) {

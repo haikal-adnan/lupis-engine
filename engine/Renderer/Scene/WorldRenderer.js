@@ -1,6 +1,5 @@
-import { HexToVec4 } from "../../Util/HexToVec4.js";
 import Config from "../../Core/Config.js";
-import FontMath from "../../Util/FontMath.js"; 
+import RenderUtils from "./RenderUtils.js";
 
 export default class WorldRenderer { 
     constructor(image, text, shape, game, tilemapRenderer) {
@@ -12,63 +11,6 @@ export default class WorldRenderer {
         this.boundsColor = [0.7, 0, 1, 0.6];
         this.colliderColorSolid = [0, 1, 0, 0.8]; 
         this.colliderColorTrigger = [1, 1, 0, 0.8]; 
-    }
-
-    _sortItems(items) {
-        return items.sort((a, b) => {
-            const zA = a.zIndex ?? 0;
-            const zB = b.zIndex ?? 0;
-            if (zA !== zB) return zA - zB;
-            
-            const oA = a.orderIndex ?? 0;
-            const oB = b.orderIndex ?? 0;
-            if (oA !== oB) return oA - oB;
-
-            const idA = a.id || a._id || "";
-            const idB = b.id || b._id || "";
-            return idA.localeCompare(idB);
-        });
-    }
-
-    getGlobalTransform(e, world) {
-        const t = e.components && (e.components.UITransform || e.components.Transform);
-        if (!t) return { x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1, pivotX: 0.5, pivotY: 0.5, width: 100, height: 100 };
-
-        if (!e.parentId) {
-            return {
-                x: t.x, y: t.y,
-                rotation: t.rotation || 0,
-                scaleX: t.scaleX ?? 1, scaleY: t.scaleY ?? 1,
-                pivotX: t.pivotX ?? 0.5, pivotY: t.pivotY ?? 0.5,
-                width: t.width, height: t.height
-            };
-        }
-
-        const parentEntity = this._findEntityById(world, e.parentId);
-        if (!parentEntity) return { ...t }; 
-
-        const parentGlobal = this.getGlobalTransform(parentEntity, world);
-
-        const parentRad = parentGlobal.rotation * (Math.PI / 180);
-        const cos = Math.cos(parentRad);
-        const sin = Math.sin(parentRad);
-
-        const scaledLocalX = t.x * parentGlobal.scaleX;
-        const scaledLocalY = t.y * parentGlobal.scaleY;
-
-        const rotatedX = (scaledLocalX * cos) - (scaledLocalY * sin);
-        const rotatedY = (scaledLocalX * sin) + (scaledLocalY * cos);
-
-        return {
-            x: parentGlobal.x + rotatedX,
-            y: parentGlobal.y + rotatedY,
-            rotation: parentGlobal.rotation + (t.rotation || 0),
-            scaleX: parentGlobal.scaleX * (t.scaleX ?? 1),
-            scaleY: parentGlobal.scaleY * (t.scaleY ?? 1),
-            pivotX: t.pivotX ?? 0.5, 
-            pivotY: t.pivotY ?? 0.5,
-            width: t.width, height: t.height
-        };
     }
 
     render(world, proj, alpha = 1.0, isUIMode = false) {
@@ -88,10 +30,10 @@ export default class WorldRenderer {
 
         this.renderQueue.length = 0;
         this._collectRenderables(world, activeTabId, isIsolationMode, isUIMode, tilemapContext, proj);
-        this._executeRenderQueue(proj);
+        RenderUtils.executeRenderQueue(this.renderQueue, this.renderer, proj, world);
 
         if (isIsolationMode) {
-            const activeEntity = this._findEntityById(world, activeTabId);
+            const activeEntity = RenderUtils.findEntityById(world, activeTabId);
             if (activeEntity && activeEntity.components.Tilemap) {
                 this._flushAll();
                 const gl = this.game.renderer.gl;
@@ -106,20 +48,18 @@ export default class WorldRenderer {
     _collectRenderables(world, activeTabId, isIsolationMode, isUIMode, tilemapContext, proj) {
         const isEditor = Config.ENGINE_MODE === 'editor';
         const layers = [...(world.layersWorld || []), ...(world.layersUI || [])]; 
-        this._sortItems(layers);
+        RenderUtils.sortItems(layers);
 
         for (let li = 0; li < layers.length; li++) {
             const layer = layers[li];
-            if (layer.active === false || layer.visible === false) continue;
-            if (!layer.entities) continue;
+            if (layer.active === false || layer.visible === false || !layer.entities) continue;
 
             const isUILayer = layer.scriptId === 'ui' || (layer.name && layer.name.includes('UI'));
             if (!isEditor && isUILayer) continue;
 
             const layerOpacity = layer.opacity ?? 1.0; 
-
             const allEntities = [...layer.entities];
-            this._sortItems(allEntities);
+            RenderUtils.sortItems(allEntities);
 
             for (const e of allEntities) {
                 const isEntityUI = e.type === 'ui' || e.type === 'ui_entity' || e.components.UITransform || isUILayer;
@@ -148,7 +88,6 @@ export default class WorldRenderer {
 
         const currentOpacity = (e.opacity ?? 1) * parentOpacity;
         const comps = e.components;
-
         if (!comps) return;
 
         if (comps.Tilemap && this.tilemapRenderer) {
@@ -165,7 +104,7 @@ export default class WorldRenderer {
                 }
             }
 
-            this._executeRenderQueue(proj);
+            RenderUtils.executeRenderQueue(this.renderQueue, this.renderer, proj, world);
             this.renderQueue.length = 0;
             this.tilemapRenderer.renderEntity(e, world, proj, currentOpacity);
             return;
@@ -174,7 +113,7 @@ export default class WorldRenderer {
         const rawT = comps.UITransform || comps.Transform;
         
         if (rawT) {
-            const globalT = this.getGlobalTransform(e, world);
+            const globalT = RenderUtils.getGlobalTransform(e, world);
 
             let drawX = globalT.x || 0;
             let drawY = globalT.y || 0;
@@ -183,7 +122,6 @@ export default class WorldRenderer {
                 const uiSettings = world.settings?.ui || { width: 1920, height: 1080 };
                 const parentW = uiSettings.width;
                 const parentH = uiSettings.height;
-                
                 const anchorX = rawT.anchorX ?? 0.5;
                 const anchorY = rawT.anchorY ?? 0.5;
 
@@ -205,217 +143,22 @@ export default class WorldRenderer {
 
             const flipX = rawT.flipX || false;
             const flipY = rawT.flipY || false;
+            const entityId = e.id || e._id;
 
             if (comps.SpriteRenderer) {
-                const s = comps.SpriteRenderer;
-                const a = (s.opacity ?? 1) * currentOpacity;
-                
-                if (a > 0) {
-                    let finalAssetId = s.assetId;
-                    let finalX = s.sourceX ?? 0;
-                    let finalY = s.sourceY ?? 0;
-                    let finalW = s.sourceWidth ?? 0;
-                    let finalH = s.sourceHeight ?? 0;
-                    let finalFlipX = flipX;
-
-                    const animator = comps.SpriteAnimator;
-                    if (animator && animator.active) {
-                        const clip = Array.isArray(animator.clips) ? animator.clips.find(c => c.id === animator.currentClip && c.type === 'clip') : null;
-                        
-                        if (clip && clip.assetId && clip.frames && clip.frames.length > 0) {
-                            let animData = null;
-
-                            if (Config.ENGINE_MODE === 'runtime' && animator.isPlaying && animator._runtimeData) {
-                                animData = animator._runtimeData;
-                            } 
-                            else {
-                                const manualIndex = clip.frameIndex || 0;
-                                const safeIndex = Math.max(0, Math.min(manualIndex, clip.frames.length - 1)); 
-                                const frameId = clip.frames[safeIndex];
-                                const sourceRect = clip.sources?.[frameId];
-                                
-                                if (sourceRect) {
-                                    animData = {
-                                        assetId: clip.assetId,
-                                        x: sourceRect.x,
-                                        y: sourceRect.y,
-                                        w: sourceRect.w,
-                                        h: sourceRect.h,
-                                        flipX: clip.flipX || false
-                                    };
-                                }
-                            }
-
-                            if (animData) {
-                                finalAssetId = animData.assetId;
-                                finalX = animData.x;
-                                finalY = animData.y;
-                                finalW = animData.w;
-                                finalH = animData.h;
-                                finalFlipX = finalFlipX !== animData.flipX; 
-                            }
-                        }
-                    }
-
-                    let texture = null;
-                    let useCheckerboard = false;
-
-                    if (finalAssetId && finalAssetId !== "") {
-                        texture = world.assets.textures[finalAssetId];
-                    }
-
-                    if (!texture) {
-                        useCheckerboard = true;
-                        if (finalW === 0) finalW = rawT.width || 64;
-                        if (finalH === 0) finalH = rawT.height || 64;
-                    }
-
-                    this.renderQueue.push({
-                        type: "image",
-                        texture: texture, 
-                        frame: { x: finalX, y: finalY, w: finalW, h: finalH },
-                        transformData: trans,
-                        options: { 
-                            flipX: finalFlipX, 
-                            flipY, 
-                            opacity: a, 
-                            useCheckerboard,
-                            filterMode: s.filterMode || "pixelated",
-                            useSDF: s.useSDF || false
-                        }
-                    });
-                }
+                RenderUtils.processSprite(comps, currentOpacity, flipX, flipY, rawT, world, this.renderQueue, trans);
             }
 
-        if (comps.ShapeRenderer) {
-            const s = comps.ShapeRenderer;
-            const globalA = (s.opacity ?? 1) * currentOpacity;
-            
-            const fillA = (s.fillOpacity ?? 1) * globalA;
-            const outA = (s.outlineOpacity ?? 1) * globalA;
-            
-            if (fillA > 0 || (Math.abs(s.outlineWidth) > 0 && outA > 0)) {
-                this.renderQueue.push({
-                    type: "shape",
-                    transformData: trans,
-                    shapeOptions: {
-                        type: s.type || "rectangle",
-                        isFilled: s.isFilled ?? true,
-                        color: HexToVec4(s.color || "#FF0000"),
-                        fillOpacity: fillA,
-                        outlineWidth: s.outlineWidth || 0,
-                        outlineColor: HexToVec4(s.outlineColor || "#000000"),
-                        outlineOpacity: outA,
-                        cornerRadius: s.cornerRadius || 0,
-                        sides: s.sides || 3,
-                        flipX, flipY
-                    }
-                });
+            if (comps.ShapeRenderer) {
+                RenderUtils.processShape(comps, currentOpacity, flipX, flipY, entityId, this.renderQueue, trans);
             }
-        }
 
-            if (Config.ENGINE_MODE === 'editor' && comps.Collider && Array.isArray(comps.Collider.data)) {
-                const tRotRad = (globalT.rotation || 0) * (Math.PI / 180);
-                const cosT = Math.cos(tRotRad);
-                const sinT = Math.sin(tRotRad);
-
-                for (let i = 0; i < comps.Collider.data.length; i++) {
-                    const c = comps.Collider.data[i];
-                    if (!c.enabled) continue; 
-
-                    const cW = (c.autoFit ? globalT.width : c.width) * Math.abs(globalT.scaleX ?? 1);
-                    const cH = (c.autoFit ? globalT.height : c.height) * Math.abs(globalT.scaleY ?? 1);
-                    const pX = c.pivotX ?? 0.5;
-                    const pY = c.pivotY ?? 0.5;
-
-                    const localTlX = -globalT.width * Math.abs(globalT.scaleX ?? 1) * (globalT.pivotX ?? 0.5) + (c.offsetX || 0) * Math.abs(globalT.scaleX ?? 1);
-                    const localTlY = -globalT.height * Math.abs(globalT.scaleY ?? 1) * (globalT.pivotY ?? 0.5) + (c.offsetY || 0) * Math.abs(globalT.scaleY ?? 1);
-
-                    const localPx = localTlX + cW * pX;
-                    const localPy = localTlY + cH * pY;
-
-                    const worldPx = drawX + localPx * cosT - localPy * sinT;
-                    const worldPy = drawY + localPx * sinT + localPy * cosT;
-
-                    const totalRot = c.autoFit ? tRotRad : tRotRad + ((c.rotation || 0) * (Math.PI / 180));
-
-                    const debugTrans = {
-                        x: worldPx, y: worldPy, width: cW, height: cH,
-                        rotation: totalRot, scaleX: 1, scaleY: 1, 
-                        pivotX: pX, pivotY: pY
-                    };
-
-                    this.renderQueue.push({
-                        type: "shape",
-                        transformData: debugTrans,
-                        shapeOptions: {
-                            type: "rectStroke",
-                            color: c.type === 'trigger' ? this.colliderColorTrigger : this.colliderColorSolid,
-                            thickness: 2, opacity: 1.0, flipX: false, flipY: false
-                        }
-                    });
-                }
-            }
+            RenderUtils.processColliderDebug(comps, globalT, trans, this.renderQueue, this.colliderColorSolid, this.colliderColorTrigger);
 
             if (comps.TextRenderer) {
-                const tx = comps.TextRenderer;
-                const a = (tx.opacity ?? 1) * currentOpacity;
-                let font = world.assets.fonts[tx.assetId];
-                if (!font?.ready) font = world.assets.fonts["system_default"];
-                
-                if (a > 0 && font) {
-                    const textOptions = {
-                        text: tx.value ?? "",
-                        fontSize: tx.fontSize || 24,
-                        color: HexToVec4(tx.color || "#FFFFFF"),
-                        font, opacity: a, flipX, flipY,
-                        align: tx.align || "left",
-                        maxWidth: tx.maxWidth || 0,
-                        maxLine: tx.maxLine || 0,
-                        lineSpacing: tx.lineSpacing || 1.2,
-                        letterSpacing: tx.letterSpacing || 0,
-                        overflow: tx.overflow || "wrap",
-                        smoothing: tx.smoothing ?? 0.5,
-                        bias: tx.bias ?? 0, 
-                        outlineWidth: tx.outlineWidth || 0,
-                        outlineColor: HexToVec4(tx.outlineColor || "#000000"),
-                        shadowEnabled: tx.shadowEnabled || false,
-                        shadowColor: HexToVec4(tx.shadowColor || "#000000"), 
-                        shadowOpacity: tx.shadowOpacity ?? 0.5, 
-                        shadowOffset: { x: tx.shadowOffsetX ?? 2, y: tx.shadowOffsetY ?? -2 },
-                        shadowBlur: tx.shadowBlur ?? 0.5
-                    };
-                    
-                    if (tx.autoFit) {
-                        const measurement = FontMath.measureText(font, textOptions.text, textOptions.fontSize, textOptions);
-                        
-                        if (rawT.width !== measurement.boundsWidth || rawT.height !== measurement.boundsHeight) {
-                            rawT.width = measurement.boundsWidth;
-                            rawT.height = measurement.boundsHeight;
-                            
-                            trans.width = rawT.width;
-                            trans.height = rawT.height;
-                        }
-                    }
-
-                    this.renderQueue.push({
-                        type: "text",
-                        transformData: trans,
-                        textOptions: textOptions
-                    });
-                }
+                RenderUtils.processText(comps, currentOpacity, flipX, flipY, rawT, world, this.renderQueue, trans);
             }
         }
-    }
-
-    _findEntityById(world, id) {
-        const allLayers = [...(world.layersWorld || []), ...(world.layersUI || [])];
-        for (const layer of allLayers) {
-            if (!layer.entities) continue;
-            const found = layer.entities.find(e => e.id === id || e._id === id); 
-            if (found) return found;
-        }
-        return null;
     }
 
     _renderWorldBounds(world, proj) {
@@ -426,78 +169,13 @@ export default class WorldRenderer {
         const dashLen = 40 / scale;
         const gapLen = 20 / scale;
         const thickness = 4 / scale;
-        this._drawDashedLine(x1, y1, x2, y1, dashLen, gapLen, thickness, proj);
-        this._drawDashedLine(x2, y1, x2, y2, dashLen, gapLen, thickness, proj);
-        this._drawDashedLine(x2, y2, x1, y2, dashLen, gapLen, thickness, proj);
-        this._drawDashedLine(x1, y2, x1, y1, dashLen, gapLen, thickness, proj);
-        this.renderer.shape.flush();
-    }
-
-    _drawDashedLine(x1, y1, x2, y2, dashLen, gapLen, thickness, proj) {
-        const dx = x2 - x1;
-        const dy = y2 - y1;
-        const len = Math.sqrt(dx * dx + dy * dy);
-        if (len === 0) return;
-        const nx = dx / len;
-        const ny = dy / len;
-        let dist = 0;
-        while (dist < len) {
-            const segmentLen = Math.min(dashLen, len - dist);
-            this.renderer.shape.drawLine(
-                x1 + nx * dist, y1 + ny * dist,
-                x1 + nx * (dist + segmentLen), y1 + ny * (dist + segmentLen),
-                this.boundsColor, thickness, proj
-            );
-            dist += dashLen + gapLen;
-        }
-    }
-
-    _executeRenderQueue(proj) {
-        if (this.renderQueue.length === 0) return;
-        let currentType = null;
-        for (const item of this.renderQueue) {
-            if (currentType && currentType !== item.type) {
-                this.renderer[currentType].flush();
-            }
-            currentType = item.type;
-            if (item.type === "image") {
-                this.renderer.image.draw(item.texture, item.frame, item.transformData, item.options, proj);
-            } else if (item.type === "shape") {
-                this._drawShape(item.shapeOptions, item.transformData, proj);
-            } else if (item.type === "text") {
-                const opt = item.textOptions;
-                const t = item.transformData;
-                this.renderer.text.drawText(
-                    opt.font, opt.text, t.x, t.y, t.width, t.height, 
-                    opt.fontSize, opt.color, proj, t.rotation, t.scaleX, t.scaleY, 
-                    t.pivotX, t.pivotY, opt.opacity, opt.flipX, opt.flipY, opt
-                );
-            }
-        }
-        if (currentType) this.renderer[currentType].flush();
-    }
-
-    _drawShape(opt, t, proj) {
         const shape = this.renderer.shape;
-        
-        if (opt.type === "rectStroke") {
-             shape.drawParametricShape(
-                "rectangle", t.x, t.y, t.width, t.height,
-                [0,0,0,0], opt.color, false, opt.thickness, 0, 4,
-                proj, t.rotation, t.scaleX, t.scaleY, t.pivotX, t.pivotY, opt.flipX, opt.flipY
-            );
-            return;
-        }
 
-        const cFill = [...opt.color.slice(0, 3), opt.color[3] * opt.fillOpacity];
-        const cStroke = [...opt.outlineColor.slice(0, 3), opt.outlineColor[3] * opt.outlineOpacity];
-
-        shape.drawParametricShape(
-            opt.type, t.x, t.y, t.width, t.height,
-            cFill, cStroke, opt.isFilled, opt.outlineWidth,
-            opt.cornerRadius, opt.sides,
-            proj, t.rotation, t.scaleX, t.scaleY, t.pivotX, t.pivotY, opt.flipX, opt.flipY
-        );
+        RenderUtils.drawDashedLine(shape, x1, y1, x2, y1, dashLen, gapLen, thickness, this.boundsColor, proj);
+        RenderUtils.drawDashedLine(shape, x2, y1, x2, y2, dashLen, gapLen, thickness, this.boundsColor, proj);
+        RenderUtils.drawDashedLine(shape, x2, y2, x1, y2, dashLen, gapLen, thickness, this.boundsColor, proj);
+        RenderUtils.drawDashedLine(shape, x1, y2, x1, y1, dashLen, gapLen, thickness, this.boundsColor, proj);
+        shape.flush();
     }
 
     _flushAll() {

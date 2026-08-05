@@ -89,16 +89,10 @@ import IconButton from '@/commons/components/buttons/IconButton.vue';
 
 const { selectedNode, scriptStore, isInputConnected } = useNodeLogic();
 
-/**
- * Helper: Cek apakah nilai kosong/null
- */
 function isNotSet(value) {
   return value === undefined || value === null || value === '';
 }
 
-/**
- * Helper: Pengecekan error untuk status "NOT SET"
- */
 function isErrorNotSet(key, value) {
   return isNotSet(value);
 }

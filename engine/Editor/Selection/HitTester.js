@@ -205,47 +205,27 @@ export class HitTester {
                 const globalT = this.getGlobalTransform(e);
                 const absPos = this._calculateAbsolutePosition(e, rootBounds);
 
+                const r = (globalT.rotation || 0) * (Math.PI / 180);
                 const sx = globalT.scaleX ?? 1;
                 const sy = globalT.scaleY ?? 1;
-                const w = (t.width || 0) * sx;
-                const h = (t.height || 0) * sy;
                 const px = globalT.pivotX ?? 0.5;
                 const py = globalT.pivotY ?? 0.5;
-                const r = (globalT.rotation || 0) * (Math.PI / 180);
 
-                const minX = -px * w;
-                const maxX = w - (px * w);
-                const minY = -py * h;
-                const maxY = h - (py * h);
+                const v = calculateQuadVertices(absPos.x, absPos.y, t.width, t.height, r, sx, sy, px, py);
 
-                const localCorners = [
-                    { x: minX, y: minY },
-                    { x: maxX, y: minY }, 
-                    { x: minX, y: maxY },
-                    { x: maxX, y: maxY } 
-                ];
+                const xs = [v.tl.x, v.tr.x, v.br.x, v.bl.x];
+                const ys = [v.tl.y, v.tr.y, v.br.y, v.bl.y];
 
-                let eLeft = Infinity, eRight = -Infinity;
-                let eTop = Infinity, eBottom = -Infinity;
-
-                const cosR = Math.cos(r);
-                const sinR = Math.sin(r);
-
-                for (const pt of localCorners) {
-                    const rotatedX = pt.x * cosR - pt.y * sinR + absPos.x;
-                    const rotatedY = pt.x * sinR + pt.y * cosR + absPos.y;
-
-                    eLeft = Math.min(eLeft, rotatedX);
-                    eRight = Math.max(eRight, rotatedX);
-                    eTop = Math.min(eTop, rotatedY);
-                    eBottom = Math.max(eBottom, rotatedY);
-                }
+                const eLeft = Math.min(...xs);
+                const eRight = Math.max(...xs);
+                const eTop = Math.min(...ys);
+                const eBottom = Math.max(...ys);
 
                 const isOverlapping = !(
                     box.x + box.w < eLeft ||  
                     box.x > eRight ||        
                     box.y + box.h < eTop ||  
-                    box.y > eBottom         
+                    box.y > eBottom          
                 );
 
                 if (isOverlapping) {

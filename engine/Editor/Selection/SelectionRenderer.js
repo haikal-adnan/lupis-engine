@@ -92,20 +92,29 @@ export class SelectionRenderer {
         }
 
         if (marqueeBox) {
-            const mc = [0, 0.6, 1, 0.2]; 
-            const mb = [0, 0.6, 1, 0.8]; 
+            const mc = [0, 0.6, 1, 0.15]; 
+            const mb = [0, 0.6, 1, 0.8];  
 
-            shape.drawParametricShape(
-                "rectangle", 
-                marqueeBox.x, marqueeBox.y, marqueeBox.w, marqueeBox.h, 
-                mc, mb, 
-                true, lineThick, 
-                0, 4, 
-                proj, 
-                0, 1, 1, 
-                0, 0,
-                false, false 
-            );
+            const x1 = marqueeBox.x;
+            const y1 = marqueeBox.y;
+            const x2 = marqueeBox.x + marqueeBox.w;
+            const y2 = marqueeBox.y + marqueeBox.h;
+
+            const quad = [
+                { x: x1, y: y1 },
+                { x: x2, y: y1 },
+                { x: x2, y: y2 },
+                { x: x1, y: y2 }
+            ];
+
+            if (shape._fillConvexPolygon) {
+                shape._fillConvexPolygon(quad, mc);
+            }
+
+            shape.drawLine(x1, y1, x2, y1, mb, lineThick, proj);
+            shape.drawLine(x2, y1, x2, y2, mb, lineThick, proj);
+            shape.drawLine(x2, y2, x1, y2, mb, lineThick, proj);
+            shape.drawLine(x1, y2, x1, y1, mb, lineThick, proj);
         }
     }
 

@@ -108,7 +108,7 @@ const handleContextMenu = (e) => {
     const engine = editorStore.engine;
     if (!engine) return;
 
-    if (editorStore.activeTab && editorStore.activeTab.type === 'tilemap') {
+    if (editorStore.activeTab && ['tilemap', 'shape_editor'].includes(editorStore.activeTab.type)) {
         return;
     }
 

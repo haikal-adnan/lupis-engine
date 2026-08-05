@@ -106,6 +106,8 @@
 
             setupCanvasResponsiveness(refW, refH);
 
+            console.log(canvasEl, cdnUrl, payload);
+
             await startEngine(canvasEl, cdnUrl, "runtime", payload);
 
             loadingEl.classList.add("hidden");

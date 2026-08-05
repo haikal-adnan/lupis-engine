@@ -205,11 +205,11 @@ export class TransformGeometry {
     getHandleSizes() {
         const scale = this.game.camera.scale || 1;
         
-        const baseResizeRad = 10;
-        const baseRotateRad = 30;
-        const baseCapLen = 24;
-        const baseCapThick = 6;
-        const baseCornerRad = 5;
+        const baseResizeRad = 6;
+        const baseRotateRad = 15;
+        const baseCapLen = 16;
+        const baseCapThick = 5;
+        const baseCornerRad = 4;
 
         let rResize = baseResizeRad / scale;
         let rRotate = baseRotateRad / scale;

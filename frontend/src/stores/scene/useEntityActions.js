@@ -160,7 +160,7 @@ export const entityActions = {
       components.Transform = { ...rawTransform };
     } 
     else if (type === 'shape') {
-      components.ShapeRenderer = { type: 'rectangle', color: '#FF0000' };
+      components.ShapeRenderer = createComponent('ShapeRenderer');
       components.Transform = { ...rawTransform };
     } 
     else if (type === 'text') {
@@ -191,7 +191,7 @@ export const entityActions = {
     } 
     else if (type === 'ui_shape') {
       components.UITransform = { ...rawTransform, width: 300, height: 200, anchorX: 0.5, anchorY: 0.5 };
-      components.ShapeRenderer = { type: 'rectangle', color: '#2d2d2d', opacity: 0.8 };
+      components.ShapeRenderer = createComponent('ShapeRenderer');
     } 
     else if (type === 'ui_text') {
       components.UITransform = { ...rawTransform, width: 107, height: 23, anchorX: 0.5, anchorY: 0.5 };

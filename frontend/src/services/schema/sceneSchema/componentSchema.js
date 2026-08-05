@@ -53,6 +53,7 @@ export const createCollider = (data = {}) => {
     overridden: Boolean(data.overridden ?? false)
   };
 };
+
 export const createPhysics = (data = {}) => {
   return {
     enabled: Boolean(data.enabled ?? true),
@@ -78,7 +79,7 @@ export const createSpriteAnimator = (data = {}) => {
     active: Boolean(data.active ?? true),
     isPlaying: Boolean(data.isPlaying ?? true),
   }
-}
+};
 
 export const createComponent = (type, inputData = {}) => {
   let specificData = {};
@@ -134,24 +135,43 @@ export const createComponent = (type, inputData = {}) => {
       break;
 
     case "ShapeRenderer": {
+      let elements = Array.isArray(inputData.elements) ? inputData.elements : [];
+      
+      if (elements.length === 0) {
+        const generateId = () => Math.random().toString(36).substring(2, 11);
+        const p1 = `pt_${generateId()}`;
+        const p2 = `pt_${generateId()}`;
+        const p3 = `pt_${generateId()}`;
+        const p4 = `pt_${generateId()}`;
+        
+        elements = [
+          { id: p1, type: 'point', x: -50, y: -50, size: 6, enabled: true },
+          { id: p2, type: 'point', x: 50, y: -50, size: 6, enabled: true },
+          { id: p3, type: 'point', x: 50, y: 50, size: 6, enabled: true },
+          { id: p4, type: 'point', x: -50, y: 50, size: 6, enabled: true },
+          { 
+            id: `poly_${generateId()}`, 
+            type: 'polygon', 
+            points: [p1, p2, p3, p4], 
+            enabled: true 
+          }
+        ];
+      }
+
       specificData = {
-        type: inputData.type || "rectangle",
-
-        opacity: Number(inputData.opacity ?? 1), 
-
-        isFilled: inputData.isFilled ?? true,
-        color: inputData.color || "#FF0000",
+        type: "custom",
+        opacity: Number(inputData.opacity ?? 1),
+        isFilled: Boolean(inputData.isFilled ?? true),
+        color: inputData.color || "#ff1e00",
         fillOpacity: Number(inputData.fillOpacity ?? 1),
-
         outlineWidth: Number(inputData.outlineWidth ?? 0),
-        outlineColor: inputData.outlineColor || "#000000",
-        outlineOpacity: Number(inputData.outlineOpacity ?? 1), 
-
-        width: Number(inputData.width || 100),
-        height: Number(inputData.height || 100),
-        cornerRadius: Number(inputData.cornerRadius || 0),
-        sides: Number(inputData.sides || 3),
-
+        outlineColor: inputData.outlineColor || "#0066FF",
+        outlineOpacity: Number(inputData.outlineOpacity ?? 1),
+        
+        elements: elements,
+        enablePolygonCollision: Boolean(inputData.enablePolygonCollision ?? false),
+        enableSegmentCollision: Boolean(inputData.enableSegmentCollision ?? false),
+        enableCircleCollision: Boolean(inputData.enableCircleCollision ?? false),
         ...inputData,
       };
       break;

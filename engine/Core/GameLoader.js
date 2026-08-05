@@ -14,6 +14,7 @@ import PointerCoordinates from "../Editor/PointerCoordinates.js";
 import SelectionTool from "../Editor/SelectionTool.js";
 import TilemapTool from "../Editor/TilemapTool.js";
 import TransformTool from "../Editor/TransformTool.js";
+import ShapeTool from "../Editor/ShapeTool.js";
 import SyncComponent from "../Editor/SyncComponent.js";
 import Grid from "../Editor/Grid.js";
 import Rulers from "../Editor/Rulers.js";
@@ -242,6 +243,7 @@ export default class GameLoader {
         if (EDITOR.POINTER) game.pointerCoords = new PointerCoordinates(game, renderer);
 
         game.tilemapTool = new TilemapTool(game);
+        game.shapeTool = new ShapeTool(game);
         game.syncSystem = new SyncComponent(world, bus, game);
     }
 
