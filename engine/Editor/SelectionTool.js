@@ -43,7 +43,8 @@ export default class SelectionTool {
             if (!this.active) return;
             const { activeTabId, tabs } = this.world._editors || {};
             const activeTab = tabs?.find(t => t.id === activeTabId);
-            if (activeTab?.type === 'tilemap') return;
+            
+            if (activeTab?.type === 'tilemap' || activeTab?.type === 'shape_editor') return;
 
             const marqueeBox = this.marqueeActive ? this.getMarqueeWorld() : null;
             
@@ -75,7 +76,6 @@ export default class SelectionTool {
     _isClickable(e) {
         if (!e) return false;
         if (e.type === 'layer' || !e.components) return false; 
-        
         if (e.active === false || e.visible === false) return false;
         if (e.locked || (e._editor && e._editor.locked)) return false;
         return true;
@@ -210,6 +210,10 @@ export default class SelectionTool {
         if (!this.game.selection) this.game.selection = {};
 
         this.game.selection.filter = (entity, layer) => {
+            if (activeTab?.type === 'shape_editor' || activeTab?.type === 'tilemap') {
+                return false; 
+            }
+
             const layersUI = this.world.layersUI || [];
             const isUILayer = layersUI.includes(layer);
 
@@ -224,8 +228,12 @@ export default class SelectionTool {
         
         const { activeTabId, tabs } = this.world._editors || {};
         const activeTab = tabs?.find(t => t.id === activeTabId);
-        if (activeTab && activeTab.type === 'tilemap') {
-            if (this.selectedList.length > 0) this.clear();
+
+        if (activeTab && (activeTab.type === 'tilemap' || activeTab.type === 'shape_editor')) {
+            this.marqueeActive = false;
+            this.hoverMarqueeList = [];
+            this.hovered = null;
+            this.hoverHandle = null;
             this.canvas.style.cursor = "default";
             return; 
         }
@@ -263,7 +271,7 @@ export default class SelectionTool {
         
         this.panner.update();
     }
-    
+
     updateHover(px, py, w) {
         this.hoverHandle = null;
         if (this.isPointerDown) return;

@@ -58,6 +58,17 @@ export default class PhysicsSystem {
                     phys.collisionInfo.hitSolidX = hitResult.x;
                     phys.collisionInfo.hitSolidY = hitResult.y;
                     phys.collisionInfo.hitSolid = hitResult.x || hitResult.y;
+                    
+                    if (hitResult.normals && hitResult.normals.length > 0) {
+                        for (let j = 0; j < hitResult.normals.length; j++) {
+                            const n = hitResult.normals[j];
+                            const dot = phys.velocityX * n.x + phys.velocityY * n.y;
+                            if (dot < 0) {
+                                phys.velocityX -= dot * n.x;
+                                phys.velocityY -= dot * n.y;
+                            }
+                        }
+                    }
                 }
             }
 
@@ -73,12 +84,6 @@ export default class PhysicsSystem {
                 if (phys.isGrounded && phys.velocityY > 0) {
                     phys.velocityY = 0;
                 }
-                if (phys.velocityY < 0 && phys.collisionInfo.hitSolidY) {
-                    phys.velocityY = 0;
-                }
-            } else {
-                if (phys.collisionInfo.hitSolidY) phys.velocityY = 0;
-                if (phys.collisionInfo.hitSolidX) phys.velocityX = 0;
             }
 
             this._updateMovementState(phys);
@@ -152,16 +157,18 @@ export default class PhysicsSystem {
                 if (other === entity || other.active === false) continue;
                 if (other.layerId && inactiveLayers.has(other.layerId)) continue;
 
+                const col = other.components.Collider;
+                const shape = other.components.ShapeRenderer;
+                const hasCollider = col && col.data && col.data.some(c => c.enabled);
+                const hasShape = shape && (shape.enablePolygonCollision || shape.enableSegmentCollision || shape.enableCircleCollision);
+
                 if (other.components.Tilemap && other.components.Tilemap.isSolid) {
                     const hitBounds = colliderSys._getTilemapHitBounds(sensor, other);
                     if (hitBounds) {
                         isGrounded = true;
                         break;
                     }
-                } else {
-                    const col = other.components.Collider;
-                    if (!col || !col.data || !col.data.some(c => c.enabled)) continue;
-
+                } else if (hasCollider || hasShape) {
                     const otherBounds = colliderSys.getBounds(other).filter(b => b.type === 'solid');
                     for (let bB of otherBounds) {
                         if (colliderSys._obbIntersect(sensor, bB)) {

@@ -132,9 +132,6 @@ const CustomComponent = computed(() => {
 
 const IGNORED_KEYS = ['propertyOptions', 'allowDynamicInputs', 'allowDynamicOutputs', 'mappings', 'values', 'options'];
 
-/**
- * Helper: Cek apakah nilai kosong/null
- */
 function isNotSet(value) {
   return value === undefined || value === null || value === '';
 }

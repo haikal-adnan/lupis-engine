@@ -1,8 +1,4 @@
 export default class PointerRaycast {
-    /**
-     * Mengembalikan satu Entity teratas (top-most) yang tersentuh oleh pointer.
-     * Mengabaikan entitas yang tidak memiliki visual (Sprite/Shape/Text) ATAU Collider.
-     */
     static getTopEntityUnderPointer(game) {
         const world = game.world;
         const camera = game.camera;

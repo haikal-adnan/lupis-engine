@@ -1,11 +1,12 @@
 import { computed, markRaw } from 'vue'
 import { useEditorStore } from '@/stores/useEditorStore'
-import { Box, Grid, FileCode2, Network, LayoutTemplate, Film } from 'lucide-vue-next'
+import { Box, Grid, FileCode2, Network, LayoutTemplate, Film, Shapes } from 'lucide-vue-next'
 
 import SceneHierarchy from '@editors/scene/SceneHierarchy.vue'
 import PropertyPanel from '@editors/properties/PropertyPanel.vue'
 import CanvasView from '@editors/canvas/CanvasView.vue'
 import TilemapPanel from '@editors/tilemap/TilemapPanel.vue'
+import ShapePanel from '@editors/shape/ShapePanel.vue' 
 import IdePanel from '@editors/ide/IdePanel.vue'
 import GraphPanel from '@editors/graph/GraphPanel.vue'
 import NodePanel from '@editors/node/NodePanel.vue'
@@ -56,6 +57,19 @@ const LAYOUT_CONFIG = {
     }
   },
 
+  shape_editor: {
+    left: null,
+    right: markRaw(ShapePanel),
+    rightTitle: 'Custom Shape Inspector',
+    center: markRaw(CanvasView),
+    showBottom: true,
+    overlay: {
+      showCoords: true,
+      showGrid: true,
+      showPlay: true
+    }
+  },
+
   ide: {
     left: markRaw(SceneHierarchy),
     leftTitle: 'Explorer',
@@ -66,7 +80,6 @@ const LAYOUT_CONFIG = {
   },
 
   diagram: {
-    rightTitle: 'Library Nodes',
     left: markRaw(VariabelPanel),
     right: markRaw(NodePanel),
     rightTitle: 'Node Settings',
@@ -88,17 +101,16 @@ const LAYOUT_CONFIG = {
     showBottom: true,
     overlay: null
   },
-
-
 }
 
 const TYPE_ICONS = {
-    scene: { icon: markRaw(Box), color: 'text-primary' },
-    ui: { icon: markRaw(LayoutTemplate), color: 'text-purple-500' }, 
-    tilemap: { icon: markRaw(Grid), color: 'text-emerald-500' },
-    ide: { icon: markRaw(FileCode2), color: 'text-yellow-500' },
-    diagram: { icon: markRaw(Network), color: 'text-blue-500' },
-    animator: { icon: markRaw(Film), color: 'text-rose-500' }
+  scene: { icon: markRaw(Box), color: 'text-primary' },
+  ui: { icon: markRaw(LayoutTemplate), color: 'text-purple-500' }, 
+  tilemap: { icon: markRaw(Grid), color: 'text-emerald-500' },
+  shape_editor: { icon: markRaw(Shapes), color: 'text-amber-500' },
+  ide: { icon: markRaw(FileCode2), color: 'text-yellow-500' },
+  diagram: { icon: markRaw(Network), color: 'text-blue-500' },
+  animator: { icon: markRaw(Film), color: 'text-rose-500' }
 }
 
 export function useTab() {

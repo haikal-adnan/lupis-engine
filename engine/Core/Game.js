@@ -34,6 +34,7 @@ export default class Game {
         this.transform = null;
         this.pointerCoords = null;
         this.tilemapTool = null;
+        this.shapeTool = null;
         this.history = null;
         this.syncSystem = null;
         this.isPaused = false;
@@ -253,6 +254,7 @@ export default class Game {
         if (Config.ENGINE_MODE === "editor") {
             if (this.history) this.history.update();
             if (this.tilemapTool) this.tilemapTool.update();
+            if (this.shapeTool) this.shapeTool.update();
             if (this.selection) this.selection.update();
             if (this.transform) this.transform.update();
             if (this.pointerCoords) this.pointerCoords.update();

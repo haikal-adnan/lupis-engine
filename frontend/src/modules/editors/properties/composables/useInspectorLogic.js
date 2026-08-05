@@ -321,6 +321,13 @@ export function useInspectorLogic() {
             if (prefabId.value) {
               if (pName !== 'x' && pName !== 'y') sceneStore.updateComponentProp(id, compName, 'overridden', true);
             }
+
+            EngineBridge.updateComponentProp({
+              entityId: id,
+              componentName: compName,
+              path: pName,
+              value: pValue
+            });
           }
         };
 

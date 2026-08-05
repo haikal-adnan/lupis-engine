@@ -1,4 +1,5 @@
 import { useEditorStore } from '@/stores/useEditorStore.js'; 
+import { useSceneStore } from '@/stores/scene/useSceneStore.js';
 
 let onNativeEntityModified = null;
 let onNativeTilemapUpdate = null;
@@ -13,10 +14,34 @@ export const EngineBridge = {
     const engine = this._instance;
     if (!engine) return;
 
+    const sceneStore = useSceneStore();
+
     engine.bus.on("entity:modified", (entities) => {
-       if (onNativeEntityModified) onNativeEntityModified(entities);
+        if (engine.syncComponent?.isInternalUpdate) return;
+
+        const sceneStore = useSceneStore();
+        const list = Array.isArray(entities) ? entities : [entities];
+        
+        list.forEach(entity => {
+            const id = entity._id || entity.id;
+            const transform = entity.components?.Transform || entity.components?.UITransform;
+
+            if (transform) {
+                sceneStore.syncTransformFromEngine(id, {
+                    x: transform.x,
+                    y: transform.y,
+                    rotation: transform.rotation,
+                    scaleX: transform.scaleX,
+                    scaleY: transform.scaleY,
+                    width: transform.width,
+                    height: transform.height
+                });
+            }
+        });
+
+        if (onNativeEntityModified) onNativeEntityModified(entities);
     });
-    
+
     engine.bus.on("editor:tool:pickup", (data) => {
         if (onNativeToolPickup) onNativeToolPickup(data);
     });

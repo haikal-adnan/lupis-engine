@@ -9,9 +9,6 @@ export class TransformRenderer {
         if (!list || !list.length) return;
         if (!geometry || !geometry.handles || geometry.handles.length === 0) return;
 
-        const sizes = geometry.getHandleSizes();
-        const { capLen, capThick, rCorner } = sizes;
-
         const scale = this.game.camera.scale || 1;
         const lineThick = 2 / scale; 
 
@@ -38,9 +35,11 @@ export class TransformRenderer {
         const rot = geometry.activeRotation || 0;
 
         for (const h of geometry.handles) {
+            const sizes = geometry.getHandleSizes();
+
             if (h.type.length === 2) {
                 shape.drawParametricShape(
-                    "circle", h.x, h.y, rCorner * 2, rCorner * 2,
+                    "circle", h.x, h.y, sizes.rCorner * 2, sizes.rCorner * 2,
                     dotFill, dotStroke, 
                     true, lineThick, 
                     0, 0, 
@@ -52,11 +51,11 @@ export class TransformRenderer {
                 let w = 0, h_dim = 0;
                 
                 if (h.type === 'n' || h.type === 's') { 
-                    w = capLen; 
-                    h_dim = capThick; 
+                    w = sizes.capLen; 
+                    h_dim = sizes.capThick; 
                 } else { 
-                    w = capThick; 
-                    h_dim = capLen; 
+                    w = sizes.capThick; 
+                    h_dim = sizes.capLen; 
                 }
 
                 shape.drawParametricShape(
