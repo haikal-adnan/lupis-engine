@@ -93,13 +93,7 @@ export const NodeHelper = {
             const entity = runner.resolveEntity(targetId);
             const comp = entity?.components?.TextRenderer;
 
-            if (!comp) {
-                if (inputKey !== 'skip_in') runner.executeFlow(node._id, 'on_complete');
-                return;
-            }
-
-            const speed = Number(runner.getInputValue(node, 'speed') ?? node.data?.values?.speed ?? 50);
-
+            // Fungsi pembantu untuk membersihkan timer
             const stopTimer = () => {
                 if (node._typewriterTimer) {
                     clearTimeout(node._typewriterTimer);
@@ -107,8 +101,18 @@ export const NodeHelper = {
                 }
             };
 
+            if (!comp) {
+                stopTimer();
+                node._isTyping = false;
+                if (inputKey !== 'skip_in') runner.executeFlow(node._id, 'on_complete');
+                return;
+            }
+
+            const speed = Number(runner.getInputValue(node, 'speed') ?? node.data?.values?.speed ?? 50);
+
+            // --- HANDLER SKIP ---
             if (inputKey === 'skip_in') {
-                if (node._isTyping && node._currentTargetText) {
+                if (node._isTyping && node._currentTargetText !== undefined) {
                     stopTimer();
                     comp.value = node._currentTargetText; 
                     node._isTyping = false;
@@ -118,19 +122,17 @@ export const NodeHelper = {
                 return;
             }
 
+            // --- PREPARASI TEKS ---
             const inputText = runner.getInputValue(node, 'text_in') ?? node.data?.values?.text_in;
             const targetText = (inputText !== undefined && inputText !== null && inputText !== '') 
                 ? String(inputText) 
                 : (comp.value || "");
 
-            if (node._isTyping && node._currentTargetText === targetText) {
-                return;
-            }
+            // Cek jika sedang mengetik teks yang sama atau sudah selesai
+            if (node._isTyping && node._currentTargetText === targetText) return;
+            if (!node._isTyping && node._lastFinishedText === targetText) return;
 
-            if (!node._isTyping && node._lastFinishedText === targetText) {
-                return;
-            }
-
+            // Reset state & hentikan timer lama
             stopTimer();
             node._isTyping = true;
             node._currentTargetText = targetText;
@@ -139,29 +141,47 @@ export const NodeHelper = {
             comp.value = ""; 
             let currentIndex = 0;
 
-            const typeChar = () => {
-                if (!node._isTyping) return;
+            // Re-check target text lokal untuk mencegah race condition
+            const activeText = targetText;
 
-                if (currentIndex < node._currentTargetText.length) {
+            const typeChar = () => {
+                // Validasi apakah entity/komponen masih ada
+                const currentEntity = runner.resolveEntity(targetId);
+                const currentComp = currentEntity?.components?.TextRenderer;
+
+                if (!node._isTyping || !currentComp || node._currentTargetText !== activeText) {
+                    stopTimer();
+                    return;
+                }
+
+                if (currentIndex < activeText.length) {
                     currentIndex++;
-                    comp.value = node._currentTargetText.slice(0, currentIndex);
+                    currentComp.value = activeText.slice(0, currentIndex);
                     
                     runner.executeFlow(node._id, 'exec_out');
                     node._typewriterTimer = setTimeout(typeChar, speed);
                 } else {
+                    stopTimer();
                     node._isTyping = false;
-                    node._lastFinishedText = node._currentTargetText;
-                    node._typewriterTimer = null;
+                    node._lastFinishedText = activeText;
                     runner.executeFlow(node._id, 'on_complete');
                 }
             };
 
-            if (node._currentTargetText.length > 0) {
+            if (activeText.length > 0) {
                 typeChar();
             } else {
                 node._isTyping = false;
+                node._lastFinishedText = "";
                 runner.executeFlow(node._id, 'on_complete');
             }
+        },
+
+        getOutput: (runner, node, outputKey) => {
+            if (outputKey === 'is_typing') {
+                return Boolean(node._isTyping);
+            }
+            return null;
         }
     },
     'ui_button_scale_effect': {

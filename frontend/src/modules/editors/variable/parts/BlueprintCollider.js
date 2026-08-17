@@ -22,6 +22,7 @@ export const BlueprintCollider = {
           { _id: 'exec_out', label: 'Out', dataType: 'execution' },
           { _id: 'on_hit', label: 'On Hit', dataType: 'execution', color: '#FF5252' },
           { _id: 'is_colliding', label: 'Is Colliding?', dataType: 'boolean', color: '#69F0AE' },
+          { _id: 'self_id', label: 'Self ID', dataType: 'string' },
           { _id: 'hit_id', label: 'Hit ID', dataType: 'string' }
         ]
       } 
@@ -40,10 +41,10 @@ export const BlueprintCollider = {
         ],
         outputs: [
           { _id: 'exec_out', label: 'Out', dataType: 'execution', color: '#ffffff' },
-          
           { _id: 'on_enter', label: 'On Enter', dataType: 'execution', color: '#69F0AE' },
           { _id: 'on_exit', label: 'On Exit', dataType: 'execution', color: '#FFAB91' },
           { _id: 'is_inside', label: 'Is Inside?', dataType: 'boolean', color: '#69F0AE' },
+          { _id: 'trigger_id', label: 'Trigger ID', dataType: 'string' },
           { _id: 'other_id', label: 'Other ID', dataType: 'string' }
         ]
       } 
