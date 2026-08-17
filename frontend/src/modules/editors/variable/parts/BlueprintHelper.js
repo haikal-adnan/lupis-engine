@@ -129,18 +129,18 @@ export const BlueprintHelper = {
             speed: 50,
             target_in: '',
             text_in: ''
-           } ,
-          
+          }
         }, 
         inputs: [
           { _id: 'exec_in', label: 'Start', dataType: 'execution', color: '#ffffff' },
           { _id: 'skip_in', label: 'Skip (Instant)', dataType: 'execution', color: '#FF5252' },
           { _id: 'target_in', label: 'Target ID (Self)', dataType: 'string', color: '#E040FB' },
           { _id: 'text_in', label: 'New Text', dataType: 'string', color: '#FFF' },
-          { _id: 'speed', label: 'Speed (ms)', dataType: '#B2FF59' }
+          { _id: 'speed', label: 'Speed (ms)', dataType: 'number', color: '#B2FF59' }
         ], 
         outputs: [
           { _id: 'exec_out', label: 'Out', dataType: 'execution', color: '#ffffff' },
+          { _id: 'is_typing', label: 'Is Typing', dataType: 'boolean', color: '#40C4FF' }, // <-- OUTPUT BOOLEAN BARU
           { _id: 'on_complete', label: 'Completed', dataType: 'execution', color: '#69F0AE' }
         ]
       } 

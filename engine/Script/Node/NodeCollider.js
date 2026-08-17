@@ -25,11 +25,13 @@ export const NodeCollider = {
                 }
             }
 
-            const isColliding = !!hitObject;
+            const selfScriptId = entity.scriptId || entity.script_id || entity.id || entity._id;
+            const hitScriptId = hitObject ? (hitObject.scriptId || hitObject.script_id || hitObject.id || hitObject._id) : null;
 
             node._tempData = {
-                hit_id: hitObject ? (hitObject.id || hitObject._id) : null,
-                is_colliding: isColliding
+                self_id: selfScriptId,
+                hit_id: hitScriptId,
+                is_colliding: !!hitObject
             };
 
             runner.executeFlow(node._id, 'exec_out');
@@ -39,6 +41,7 @@ export const NodeCollider = {
             }
         },
         getOutput: (runner, node, outputKey) => {
+            if (outputKey === 'self_id') return node._tempData?.self_id || null;
             if (outputKey === 'hit_id') return node._tempData?.hit_id || null;
             if (outputKey === 'is_colliding') return node._tempData?.is_colliding || false;
             return null;
@@ -77,12 +80,20 @@ export const NodeCollider = {
             }
 
             let overlapObject = runner.game.colliderSystem.checkOverlap(entity, filterTag);
-            const currentId = overlapObject ? (overlapObject.id || overlapObject._id) : null;
+
+            // Script ID untuk Objek Pemicu (Milik Target Utama)
+            const triggerScriptId = entity.scriptId || entity.script_id || entity.id || entity._id;
+
+            // Script ID untuk Objek Yang Dipicu (Milik Objek Lain yang Overlap)
+            const currentId = overlapObject 
+                ? (overlapObject.scriptId || overlapObject.script_id || overlapObject.id || overlapObject._id) 
+                : null;
+                
             const previousId = myState.lastId;
-            
             const isCurrentlyOverlapping = !!currentId;
             
             let newData = {
+                trigger_id: triggerScriptId,
                 other_id: currentId || previousId,
                 is_inside: isCurrentlyOverlapping
             };
@@ -93,16 +104,15 @@ export const NodeCollider = {
                 myState.lastId = currentId;
                 runner.executeFlow(node._id, 'on_enter');
             }
-            
             else if (previousId && currentId && previousId !== currentId) {
                 myState.lastId = currentId;
                 runner.executeFlow(node._id, 'on_enter');
             }
-
             else if (previousId && !currentId) {
                 myState.lastId = null;
                 
                 node._tempData = {
+                    trigger_id: triggerScriptId,
                     other_id: previousId,
                     is_inside: false
                 };
@@ -117,6 +127,7 @@ export const NodeCollider = {
             runner.executeFlow(node._id, 'exec_out');
         },
         getOutput: (runner, node, outputKey) => {
+            if (outputKey === 'trigger_id') return node._tempData?.trigger_id || null;
             if (outputKey === 'other_id') return node._tempData?.other_id || null;
             if (outputKey === 'is_inside') return node._tempData?.is_inside || false;
             return null;
