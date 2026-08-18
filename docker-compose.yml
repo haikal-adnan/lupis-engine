@@ -1,0 +1,142 @@
+# ==============================================================================
+# Lupis Engine - Production Stack Configuration
+# Orchestration: Docker Compose (v2+)
+# Architecture : Multi-Container Microservices (Postgres, Mongo, API, Engine, Web)
+# Registry     : Docker Hub (haikaladnan/*)
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# GLOBAL EXTENSION FIELDS (CONFIGURATION ANCHORS)
+# ------------------------------------------------------------------------------
+x-ports:
+  postgres_mapping: &pg_port "5432:5432"
+  mongo_mapping: &mongo_port "27017:27017"
+  backend_mapping: &backend_port "3303:3303"
+  frontend_mapping: &frontend_port "6500:6500"
+  engine_mapping: &engine_port "8080:80"
+
+  # Internal container runtime ports
+  backend_raw_port: &backend_raw_port "3303"
+  frontend_raw_port: &frontend_raw_port "6500"
+
+x-urls:
+  vite_api_url: &api_url "http://localhost:3303"
+  vite_storage_url: &storage_url "http://localhost:3303/storage"
+  vite_engine_url: &engine_url "http://localhost:8080"
+
+x-credentials:
+  pg_user: &pg_user "postgres"
+  pg_pass: &pg_pass "12345678"
+  pg_db: &pg_db "lupis"
+  mongo_user: &mongo_user "admin"
+  mongo_pass: &mongo_pass "12345678"
+
+# ------------------------------------------------------------------------------
+# APPLICATION SERVICES
+# ------------------------------------------------------------------------------
+services:
+  # Relational Database Service (Schema & Core Metadata)
+  postgres-db:
+    image: haikaladnan/lupis-postgres:latest
+    container_name: lupis-postgress
+    restart: always
+    environment:
+      POSTGRES_USER: *pg_user
+      POSTGRES_PASSWORD: *pg_pass
+      POSTGRES_DB: *pg_db
+    ports:
+      - *pg_port
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - lupis-network
+
+  # Document Database Service (Project Data & Dynamic Documents)
+  mongo-db:
+    image: mongo:8.0
+    container_name: lupis-mongos
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: *mongo_user
+      MONGO_INITDB_ROOT_PASSWORD: *mongo_pass
+    ports:
+      - *mongo_port
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - lupis-network
+
+  # Core Backend API Service (Node.js REST Gateway)
+  backend:
+    image: haikaladnan/lupis-backend:latest
+    container_name: lupis-backends
+    restart: always
+    ports:
+      - *backend_port
+    environment:
+      PORT: *backend_raw_port
+      MONGO_URI: mongodb://admin:12345678@mongo-db:27017/lupis_engine?authSource=admin
+      PG_USER: *pg_user
+      PG_HOST: postgres-db
+      PG_PASSWORD: *pg_pass
+      PG_DATABASE: *pg_db
+      PG_PORT: 5432
+    volumes:
+      - storage_data:/storage
+    depends_on:
+      - postgres-db
+      - mongo-db
+    networks:
+      - lupis-network
+
+  # Engine Static Resource Service (Nginx CDN / Core Module Assets)
+  engine:
+    image: haikaladnan/lupis-engine:latest
+    container_name: lupis-engines
+    restart: always
+    ports:
+      - *engine_port
+    networks:
+      - lupis-network
+
+  # Frontend Web Client (Vue 3 Editor & Dashboard)
+  frontend:
+    image: haikaladnan/lupis-frontend:latest
+    container_name: lupis-frontends
+    restart: always
+    ports:
+      - *frontend_port
+    environment:
+      NODE_ENV: production
+      PORT: *frontend_raw_port
+      VITE_API_BASE_URL: *api_url
+      VITE_STORAGE_URL: *storage_url
+      VITE_ENGINE_URL: *engine_url
+      VITE_GAME_DEBUG: "false"
+      VITE_ENV: production
+      VITE_DEV_AUTO_LOAD: "true"
+      VITE_DEV_USER_ID: dev_2025
+      VITE_DEV_PROJECT_ID: jzA6wmUT6ubGNYJq
+    depends_on:
+      - backend
+      - engine
+    networks:
+      - lupis-network
+
+# ------------------------------------------------------------------------------
+# STORAGE VOLUMES (PERSISTENT DATA MANAGEMENT)
+# ------------------------------------------------------------------------------
+volumes:
+  postgres_data:
+    driver: local
+  mongo_data:
+    driver: local
+  storage_data:
+    driver: local
+
+# ------------------------------------------------------------------------------
+# ISOLATED BRIDGE NETWORKS
+# ------------------------------------------------------------------------------
+networks:
+  lupis-network:
+    driver: bridge
