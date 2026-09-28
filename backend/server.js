@@ -17,13 +17,12 @@ const app = express();
 const PORT = process.env.PORT || 4000;
 
 const TEMP_DIR = path.resolve(__dirname, "./temp");
-const EXPORTS_DIR = path.resolve(__dirname, "./exports"); // Folder khusus penyimpanan permanen ekspor
+const EXPORTS_DIR = path.resolve(__dirname, "./exports"); 
 const RUNNER_TEMPLATE_DIR = path.resolve(__dirname, "./runner");
 
 if (!fs.existsSync(TEMP_DIR)) fs.mkdirSync(TEMP_DIR, { recursive: true });
 if (!fs.existsSync(EXPORTS_DIR)) fs.mkdirSync(EXPORTS_DIR, { recursive: true });
 
-// 1. Konfigurasi CORS
 const allowedOrigins = [
   "app://localhost",
   "http://localhost:6500",
@@ -207,7 +206,6 @@ app.post("/api/export-app/zip", (req, res) => {
 
     fs.mkdirSync(projectExportDir, { recursive: true });
 
-    // Fungsi pembantu untuk mengirim file secara aman
     const sendFileToClient = (filePath) => {
       res.download(filePath, `${projectId}.zip`, (err) => {
         if (err && !res.headersSent) {
@@ -217,7 +215,6 @@ app.post("/api/export-app/zip", (req, res) => {
       });
     };
 
-    // 1. CEK FILE EKSISTING
     if (fs.existsSync(targetFilePath) && fs.existsSync(metadataPath)) {
       try {
         const meta = JSON.parse(fs.readFileSync(metadataPath, "utf-8"));
@@ -230,7 +227,6 @@ app.post("/api/export-app/zip", (req, res) => {
       }
     }
 
-    // 2. BUILD BARU (JIKA BERUBAH / BELUM ADA)
     const jobId = crypto.randomBytes(8).toString("hex");
     const jobFolder = path.join(TEMP_DIR, jobId);
     const projectExtractDir = path.join(jobFolder, "project");
@@ -306,7 +302,6 @@ app.post("/api/export-app/exe", (req, res) => {
 
     const downloadRelativeUrl = `/api/download-app/exe/${projectId}`;
 
-    // 1. CEK FILE EKSISTING (Sistem Timpa Berdasarkan updatedAt)
     if (fs.existsSync(targetFilePath) && fs.existsSync(metadataPath)) {
       try {
         const meta = JSON.parse(fs.readFileSync(metadataPath, "utf-8"));
@@ -324,7 +319,6 @@ app.post("/api/export-app/exe", (req, res) => {
       }
     }
 
-    // 2. KOMPILASI BARU
     const jobId = crypto.randomBytes(8).toString("hex");
     const jobFolder = path.join(TEMP_DIR, jobId);
     const engineDir = fs.existsSync("/engine") ? "/engine" : path.resolve(__dirname, "../engine");
@@ -407,13 +401,11 @@ app.post("/api/export-app/exe", (req, res) => {
 
         const generatedExePath = path.join(distDir, exeFile);
 
-        // Menimpa / Menyimpan EXE ke folder terdedikasi
         fs.copyFileSync(generatedExePath, targetFilePath);
         fs.writeFileSync(metadataPath, JSON.stringify({ projectId, updatedAt, lastExported: new Date().toISOString() }));
 
         cleanup();
 
-        // Kembalikan JSON sukses beserta URL unduhan
         return res.json({
           success: true,
           message: "Kompilasi EXE selesai.",

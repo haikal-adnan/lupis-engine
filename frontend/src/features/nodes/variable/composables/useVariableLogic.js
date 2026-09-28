@@ -156,11 +156,10 @@ export function useVariableLogic(scopeProps) {
     }
   };
 
-  // 📄 lokasi: useVariableLogic.js (bagian syncNodesWithVariable)
   const syncNodesWithVariable = (updatedVar) => {
     if (!scriptStore.activeScript) return;
 
-    const scope = getScope(); // Mendapatkan scope variabel saat ini ('Global' / 'Local')
+    const scope = getScope(); 
     const { id, name, type } = updatedVar;
     const newColor = getVarColor(type);
     const newDataType = type.toLowerCase();
@@ -174,7 +173,6 @@ export function useVariableLogic(scopeProps) {
       const isGet = node.type === 'variable_get';
       const newTitle = isGet ? `Get ${name}` : `Set ${name}`;
       
-      // Perbarui scope node agar selalu konsisten
       node.data.scope = scope;
 
       const getMethod = scope === 'Global' ? 'getGlobal' : 'getLocal';
@@ -287,7 +285,6 @@ export function useVariableLogic(scopeProps) {
       }
     }
 
-    // Tentukan metode berdasarkan scope (Global atau Local)
     const getMethod = scope === 'Global' ? 'getGlobal' : 'getLocal';
     const setMethod = scope === 'Global' ? 'setGlobal' : 'setLocal';
 

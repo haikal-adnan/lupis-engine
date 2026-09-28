@@ -14,7 +14,6 @@ export default class EntitySystem {
         const searchKey = targetId.trim();
         const entities = this.game?.world?.entities || [];
 
-        // Cari berdasarkan id, scriptId, atau name
         const found = entities.find(e => 
             e.id === searchKey || 
             e.scriptId === searchKey || 
@@ -30,7 +29,6 @@ export default class EntitySystem {
 
         const entityId = entity.id;
 
-        // Hapus entity anak secara rekursif
         const children = world.entities.filter(e => e.parentId === entityId);
         for (const child of children) {
             this.destroyEntity(child);

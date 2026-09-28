@@ -55,27 +55,21 @@ export default class Keyboard {
         this.meta = e.metaKey;
     }
 
-    // --- FUNGSI HELPER BARU ---
-    
-    /** Mengecek apakah tombol sedang ditahan (Hold) */
     isDown(k) {
         if (!k) return false;
         return this.keys.has(String(k).toLowerCase());
     }
 
-    /** Mengecek apakah tombol baru saja ditekan di frame ini (Just Pressed) */
     isPressed(k) {
         if (!k) return false;
         return this.pressed.has(String(k).toLowerCase());
     }
 
-    /** Mengecek apakah tombol baru saja dilepas di frame ini (Just Released) */
     isReleased(k) {
         if (!k) return false;
         return this.released.has(String(k).toLowerCase());
     }
 
-    /** Mengembalikan array tombol yang sedang ditekan di frame ini */
     getPressedKeys() {
         return Array.from(this.pressed);
     }

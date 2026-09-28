@@ -107,7 +107,6 @@
             v-html="highlightedCode"
           ></pre>
 
-          <!-- Input Textarea (Transparent Layer on Top) -->
           <textarea
             ref="textareaRef"
             v-model="codeContent"
@@ -185,10 +184,9 @@ const projectStore = useProjectStore()
 const textareaRef = ref(null)
 const highlightRef = ref(null)
 
-// --- Fitur Zoom Level (Font Size Scaling) ---
-const zoomLevel = ref(100) // Default 100%
-const baseFontSize = 12   // Default font size dalam pixel (text-xs)
-const baseLineHeight = 24 // Line height pas 24px
+const zoomLevel = ref(100) 
+const baseFontSize = 12 
+const baseLineHeight = 24 
 
 const fontSize = computed(() => Math.round((baseFontSize * zoomLevel.value) / 100))
 const lineHeight = computed(() => Math.round((baseLineHeight * zoomLevel.value) / 100))
@@ -226,7 +224,6 @@ const targetNode = computed(() => {
 const scriptName = computed(() => scriptStore.activeScript?.name || 'Script')
 const nodeTitle = computed(() => targetNode.value?.settings?.headerTitle || targetNode.value?.label || 'Node')
 
-// Auto-Close Tab jika Node Dihapus dari Script
 watch(
   () => [scriptStore.activeScript?.nodes, extractedNodeId.value],
   () => {
@@ -240,7 +237,6 @@ watch(
   { deep: true, immediate: true }
 )
 
-// Inisialisasi Code History System (Auto-Save Debounce 800ms)
 const {
   codeContent,
   isDirty,
@@ -249,7 +245,6 @@ const {
   handleEditorKeyDown
 } = useCodeHistory(extractedNodeId, targetNode, { debounceMs: 800 })
 
-// --- Syntax Highlighting Transformer ---
 const highlightedCode = computed(() => {
   const code = codeContent.value || ''
   if (!code) return '<br/>'
@@ -257,7 +252,6 @@ const highlightedCode = computed(() => {
   return html.endsWith('\n') ? html + '<br/>' : html
 })
 
-// Sinkronisasi Scroll Textarea & Element Highlight
 const syncScroll = () => {
   if (textareaRef.value && highlightRef.value) {
     highlightRef.value.scrollTop = textareaRef.value.scrollTop
@@ -265,7 +259,6 @@ const syncScroll = () => {
   }
 }
 
-// --- Static Code Analysis & Port Validation ---
 const dataInputPorts = computed(() => {
   if (!targetNode.value || !Array.isArray(targetNode.value.inputs)) return []
   return targetNode.value.inputs.filter(p => {

@@ -32,7 +32,6 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
-  // Buka proteksi CORS di level sesi Electron
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
     callback({
       responseHeaders: {

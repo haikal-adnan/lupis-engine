@@ -10,7 +10,6 @@ export default class EventManager {
         this.listeners.get(eventName).push(callback);
     }
 
-    // METHOD BARU: Sekali dipicu, listener otomatis dilepas
     once(eventName, callback) {
         const wrapper = (...args) => {
             this.off(eventName, wrapper);
@@ -32,7 +31,6 @@ export default class EventManager {
     emit(eventName, ...args) {
         if (!this.listeners.has(eventName)) return;
 
-        // Clone array listener dengan slice() agar tidak rusak jika ada off() saat iterasi
         const callbacks = [...this.listeners.get(eventName)];
         callbacks.forEach(callback => {
             try {

@@ -38,7 +38,6 @@ services:
     environment:
       NODE_ENV: development
       PORT: *backend_raw_port
-    # HAPUS volumes: ./engine:/engine:ro agar Compose Watch bekerja penuh tanpa hambatan
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:4000/api/health"]
       interval: 5s
@@ -77,9 +76,6 @@ services:
       VITE_BACKEND_URL: *backend_url
       VITE_GAME_DEBUG: "true"
       VITE_ENV: development
-      VITE_DEV_AUTO_LOAD: "true"
-      VITE_DEV_USER_ID: dev_2025
-      VITE_DEV_PROJECT_ID: jzA6wmUT6ubGNYJq
     depends_on:
       - engine
       - backend

@@ -323,7 +323,6 @@ export const useProjectStore = defineStore('project', {
       }
     },
 
-    // Tambahkan di dalam actions pada useProjectStore
     updateDebugSettings(updates) {
       if (this.project?.settings) {
         if (!this.project.settings.debug) {

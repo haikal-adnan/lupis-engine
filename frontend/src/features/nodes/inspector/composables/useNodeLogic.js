@@ -19,18 +19,15 @@ export function useNodeLogic() {
   const startScriptTransaction = scriptHistory.startTransaction;
   const endScriptTransactionWithDelay = scriptHistory.endTransactionWithDelay;
 
-  // Dipersonalisasi agar mendukung Canvas Selection dan Code Panel Tab Active Mode
   const selectedNode = computed(() => {
     if (!scriptStore.activeScript) return null;
 
-    // 1. Jika pengguna sedang membuka Code Panel Tab
     const activeTab = workspaceStore.activeTab;
     if (activeTab?.type === 'code_editor') {
       const tabNodeId = activeTab.nodeId || activeTab.id?.replace('code_', '');
       return scriptStore.activeScript.nodes.find(n => n.id === tabNodeId) || null;
     }
 
-    // 2. Jika pengguna berada di Canvas Graph biasa
     if (!scriptStore.selectedNodeId) return null;
     return scriptStore.activeScript.nodes.find(n => n.id === scriptStore.selectedNodeId) || null;
   });
@@ -119,7 +116,6 @@ export function useNodeLogic() {
     return options.filter(opt => !existingPorts.some(p => p.id === opt.value));
   });
 
-  // UNIFIED HANDLE ADD PORT
   const handleAddPort = async (type = 'input') => {
     if (!selectedNode.value) return;
     const node = selectedNode.value;

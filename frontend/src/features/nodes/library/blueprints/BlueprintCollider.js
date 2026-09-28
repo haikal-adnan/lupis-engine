@@ -31,7 +31,6 @@ export const BlueprintCollider = {
         code: `const rawTarget = inputs['target'] || inputs['Target'] || 'self';
 const filterTag = inputs['filter_tag'] || inputs['Filter Tag'];
 
-// Resolve entity pemilik atau entity target
 const entity = context.entity.get(rawTarget);
 
 if (!entity) {
@@ -43,7 +42,6 @@ if (!entity) {
   return;
 }
 
-// Cek tabrakan langsung pada frame ini
 let hitObject = context.game.colliderSystem.checkSolid(entity);
 
 if (hitObject && filterTag && typeof filterTag === 'string' && filterTag.trim() !== "") {

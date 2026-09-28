@@ -12,7 +12,6 @@ export const BlueprintRenderer = {
   color: '#00ACC1',
   icon: ImageIcon,
   items: [
-    // 1. GET SPRITE (Pure Node - Dynamic Outputs)
     { 
       type: 'get_sprite', 
       label: 'Get Sprite', 
@@ -57,7 +56,6 @@ return;`
       } 
     },
 
-    // 2. SET SPRITE (Action Node - Dynamic Inputs)
     { 
       type: 'set_sprite', 
       label: 'Set Sprite', 
@@ -116,7 +114,6 @@ return;`
       } 
     },
 
-    // 3. GET TEXT (Pure Node - Dynamic Outputs)
     { 
       type: 'get_text', 
       label: 'Get Text', 
@@ -192,7 +189,6 @@ return;`
       } 
     },
 
-    // 4. SET TEXT (Action Node - Dynamic Inputs)
     { 
       type: 'set_text', 
       label: 'Set Text', 
@@ -249,7 +245,6 @@ return;`
       } 
     },
 
-    // 5. GET SHAPE (Pure Node - Dynamic Outputs)
     { 
       type: 'get_shape', 
       label: 'Get Shape', 
@@ -291,7 +286,6 @@ return;`
       } 
     },
 
-    // 6. SET SHAPE (Action Node - Dynamic Inputs)
     { 
       type: 'set_shape', 
       label: 'Set Shape', 
@@ -348,7 +342,6 @@ return;`
       } 
     },
 
-    // 7. GET TILEMAP (Pure Node - Dynamic Outputs)
     { 
       type: 'get_tilemap', 
       label: 'Get Tilemap', 
@@ -392,7 +385,6 @@ return;`
       } 
     },
 
-    // 8. SET TILEMAP (Action Node - Dynamic Inputs)
     { 
       type: 'set_tilemap', 
       label: 'Set Tilemap', 
@@ -451,7 +443,6 @@ return;`
       } 
     },
 
-    // 9. BATCH SET PROPERTIES (Action Node - Step Driven)
     { 
       type: 'batch_set', 
       label: 'Batch Set Properties', 

@@ -27,7 +27,6 @@ export const createScriptNode = (data = {}) => {
     ? data.inputs.map(createScriptPort)
     : [];
 
-  // 🛠️ FIX: Mendaftarkan default value pada port.id DAN port.label
   inputs.forEach(port => {
     const dType = String(port.dataType || '').toLowerCase();
     if (dType !== 'execution') {

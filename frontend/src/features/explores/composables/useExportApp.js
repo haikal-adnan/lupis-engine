@@ -31,27 +31,19 @@ export function useExportApp() {
     }
   };
 
-  /**
-   * Mengunduh file EXE secara aman tanpa memicu window / page unload
-   * Mencegah crash BroadcastChannel (InvalidStateError) pada EditorLoader
-   */
   const downloadExeFile = (projectId) => {
     if (!exeDownloadUrl.value) return;
 
-    // 1. Jika berjalan di Electron Runner yang menyediakan API Shell
     if (window.electronAPI && window.electronAPI.openExternal) {
       window.electronAPI.openExternal(exeDownloadUrl.value);
       return;
     }
 
-    // 2. Gunakan Hidden Iframe Download di Browser/Electron Renderer
-    // Metode ini berjalan di background stream tanpa memicu event window.unload
     const iframe = document.createElement('iframe');
     iframe.style.display = 'none';
     iframe.src = exeDownloadUrl.value;
     document.body.appendChild(iframe);
 
-    // Bersihkan elemen iframe setelah download terinisialisasi
     setTimeout(() => {
       if (document.body.contains(iframe)) {
         document.body.removeChild(iframe);
@@ -95,9 +87,6 @@ export function useExportApp() {
         throw new Error(`Folder proyek '${projectId}' tidak ditemukan di penyimpanan lokal (OPFS).`);
       }
 
-      // ====================================================================
-      // 1. DIBIARKAN SEPERTI SEMULA: EKSPOR WEB STANDALONE (.ZIP)
-      // ====================================================================
       if (targetFormat === 'zip') {
         const projectZip = new JSZip();
         await _addDirectoryToZip(targetProjectDir, projectZip);
@@ -137,9 +126,6 @@ export function useExportApp() {
         return { success: true };
       }
 
-      // ====================================================================
-      // 2. PENANGANAN BARU: EKSPOR EXECUTABLE STANDALONE (.EXE)
-      // ====================================================================
       let updatedAt = new Date().toISOString();
       try {
         const projectFileHandle = await targetProjectDir.getFileHandle('project.json');
@@ -173,7 +159,6 @@ export function useExportApp() {
         throw new Error(resData.error || `Server error (${response.status})`);
       }
 
-      // Simpan URL file EXE yang dikembalikan backend
       exeDownloadUrl.value = `${backendUrl}${resData.downloadUrl}`;
 
       showPop({

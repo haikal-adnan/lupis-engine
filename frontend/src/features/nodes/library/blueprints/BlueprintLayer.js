@@ -6,7 +6,6 @@ export const BlueprintLayer = {
   color: '#8E24AA',
   icon: Layers,
   items: [
-    // 1. GET LAYER INFO (Pure Node - Dynamic Outputs)
     { 
       type: 'get_layer', 
       label: 'Get Layer Info', 
@@ -50,7 +49,6 @@ return;`
       } 
     },
 
-    // 2. SET LAYER INFO (Action Node - Dynamic Inputs)
     { 
       type: 'set_layer', 
       label: 'Set Layer Info', 

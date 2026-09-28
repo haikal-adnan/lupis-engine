@@ -1,9 +1,6 @@
 import { computed } from 'vue';
 
 export function useVariableConfig() {
-  /**
-   * Daftar Tipe Data Variabel yang Didukung
-   */
   const VAR_TYPES = Object.freeze({
     STRING: 'string',
     NUMBER: 'number',
@@ -12,9 +9,6 @@ export function useVariableConfig() {
     MAP: 'map',
   });
 
-  /**
-   * Pemetaan Warna Indikator Visual untuk Port/Tipe Variabel
-   */
   const VAR_COLORS = Object.freeze({
     [VAR_TYPES.STRING]: '#F48FB1',
     [VAR_TYPES.NUMBER]: '#64B5F6',
@@ -23,17 +17,11 @@ export function useVariableConfig() {
     [VAR_TYPES.MAP]: '#FF8A65',
   });
 
-  /**
-   * Mengambil warna hex berdasarkan nama tipe data
-   */
   const getVarColor = (type) => {
     if (!type) return VAR_COLORS[VAR_TYPES.ANY];
     return VAR_COLORS[type.toLowerCase()] || VAR_COLORS[VAR_TYPES.ANY];
   };
 
-  /**
-   * Mengembalikan Opsi Tipe Data untuk Dropdown / Selection UI
-   */
   const typeOptions = computed(() => {
     return Object.values(VAR_TYPES).map(type => ({
       value: type, // 'string', 'number', 'list', 'map', dll.
@@ -42,18 +30,12 @@ export function useVariableConfig() {
     }));
   });
 
-  /**
-   * Memeriksa apakah tipe variabel termasuk Koleksi (kebal Uppercase/Lowercase)
-   */
   const isCollectionType = (type) => {
     if (!type) return false;
     const t = String(type).toLowerCase();
     return t === VAR_TYPES.LIST || t === VAR_TYPES.MAP;
   };
 
-  /**
-   * Mengembalikan nilai dasar bersih (Clean Primitive Values) sesuai tipe data
-   */
   const getDefaultValueForType = (type) => {
     if (!type) return null;
     switch (String(type).toLowerCase()) {
@@ -65,26 +47,18 @@ export function useVariableConfig() {
         return false;
       case VAR_TYPES.OBJECT:
       case VAR_TYPES.MAP:
-        return {}; // Kosong Murni
+        return {}; 
       case VAR_TYPES.LIST:
-        return []; // Kosong Murni
+        return []; 
       default:
         return null;
     }
   };
 
-  /**
-   * Membentuk elemen item baru untuk ditambahkan ke List
-   * Menghasilkan nilai murni, BUKAN objek wrapper { id, type, value }
-   */
   const createListElement = (itemType = 'string') => {
     return getDefaultValueForType(itemType);
   };
 
-  /**
-   * Melakukan ekstraksi & pembersihan (sanitasi) terhadap nilai List/Map
-   * yang mungkin sebelumnya masih tersimpan dengan wrapper { id, type, defaultValue }
-   */
   const sanitizeVariableValue = (value, type) => {
     if (!type) return value;
     const t = String(type).toLowerCase();

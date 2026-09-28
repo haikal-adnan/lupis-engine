@@ -6,7 +6,6 @@ export const BlueprintSystem = {
   color: '#607D8B',
   icon: MessageSquare,
   items: [
-    // 1. Notification Standard (Manual Trigger via Execution Flow)
     { 
       type: 'ui_notification', 
       label: 'Notification', 
@@ -49,7 +48,6 @@ return;`
       } 
     },
 
-    // 2. Debug Notification (Auto Executed on Tick via Context)
     { 
       type: 'debug_notification', 
       label: 'Debug Notification', 

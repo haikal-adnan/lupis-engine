@@ -34,18 +34,14 @@ export function useNodeMenu() {
 
       if (targetIds.length === 0) return
 
-      // 1. Dapatkan Objek Node yang akan dihapus
       const nodesToDelete = store.activeScript.nodes.filter(n => targetIds.includes(n.id))
       
-      // 2. Dapatkan Edge yang terhubung ke Node-Node tersebut
       const connectedEdges = store.activeScript.edges.filter(e => 
         targetIds.includes(e.source) || targetIds.includes(e.target)
       )
 
-      // 3. Catat transaksi ke History sebelum perubahan diterapkan di store
       scriptHistory.recordRemoveNodes(nodesToDelete, connectedEdges)
 
-      // 4. Hapus dari Store
       targetIds.forEach(id => {
         store.removeNodeFromActive(id)
       })

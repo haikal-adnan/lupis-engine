@@ -6,7 +6,6 @@ export const BlueprintObject = {
   color: '#00BCD4',
   icon: Box,
   items: [
-    // 1. GET OBJECT INFO (Pure Node - Dynamic Outputs)
     { 
       type: 'get_object', 
       label: 'Get Object Info', 
@@ -46,7 +45,6 @@ return;`
       } 
     },
 
-    // 2. SET OBJECT INFO (Action Node - Dynamic Inputs)
     { 
       type: 'set_object', 
       label: 'Set Object Info', 
@@ -102,7 +100,6 @@ return;`
       } 
     },
 
-    // 3. FIND CLOSEST BY TAG (Pure Node)
     { 
       type: 'find_closest_by_tag', 
       label: 'Find Closest By Tag', 

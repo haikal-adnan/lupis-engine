@@ -31,7 +31,6 @@ export default class GameLoop {
             this.game.render(1);
         } else {
             if (!this.game.isPaused) {
-                // Jika frame pertama, paksakan eksekusi update awal agar mutasi script (seperti reposisi) langsung terikat sebelum render
                 if (this.isFirstFrame) {
                     this.game.update(0);
                     this.accumulator = 0;

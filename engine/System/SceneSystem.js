@@ -5,26 +5,17 @@ export default class SceneSystem {
     constructor(game) {
         this.game = game;
         
-        // --- State Scene Management ---
-        this._sceneDataCache = []; // List semua scene di project
-        this._currentSceneData = null; // Object scene yang sedang aktif saat ini
+        this._sceneDataCache = []; 
+        this._currentSceneData = null; 
         this._pendingSceneLoad = null;
     }
 
-    /**
-     * Menyimpan seluruh daftar scene dari payload project.
-     * @param {Array} scenesArray 
-     */
     setSceneCache(scenesArray) {
         if (Array.isArray(scenesArray)) {
             this._sceneDataCache = scenesArray;
         }
     }
 
-    /**
-     * Mendapatkan daftar semua scene yang tersedia di project.
-     * @returns {Array<{id: string, name: string}>}
-     */
     getAvailableScenes() {
         return this._sceneDataCache.map(s => ({
             id: s.id,
@@ -32,27 +23,14 @@ export default class SceneSystem {
             scriptId: s.scriptId
         }));
     }
-
-    /**
-     * Mendapatkan data scene yang sedang aktif saat ini.
-     * @returns {Object|null}
-     */
     getCurrentScene() {
         return this._currentSceneData;
     }
 
-    /**
-     * Mendapatkan nama scene aktif saat ini.
-     * @returns {string}
-     */
     getCurrentSceneName() {
         return this._currentSceneData?.name || this.game.world.currentSceneName || "";
     }
 
-    /**
-     * Mendapatkan ID scene aktif saat ini.
-     * @returns {string|null}
-     */
     getCurrentSceneId() {
         return this._currentSceneData?.id || this.game.world.currentSceneId || null;
     }
@@ -133,7 +111,6 @@ export default class SceneSystem {
             this.game.audioSystem.handleSceneTransition(world.entities);
             this.game.audioSystem.startSceneAutoplay(world);
 
-            // Reset flag isFirstFrame agar GameLoop mengeksekusi update awal tanpa lag render
             if (this.game.loop) {
                 this.game.loop.isFirstFrame = true;
             }

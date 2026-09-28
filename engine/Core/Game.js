@@ -24,7 +24,6 @@ export default class Game {
         this.renderer = null;
         this.deltaTime = 0;
 
-        // Core Systems
         this.colliderSystem = new ColliderSystem(this);
         this.variables = new VariableManager();
         this.scriptSystem = new ScriptSystem(this);
@@ -37,7 +36,6 @@ export default class Game {
         this.entitySystem = new EntitySystem(this);
         this.contextSystem = new ContextSystem(this); 
 
-        // Editor & State Tools
         this.audio = null;
         this.cameraController = null;
         this.rulers = null;
@@ -78,7 +76,6 @@ export default class Game {
         this.syncSystem = null;
     }
 
-    // Game.js
     update(dt) {
         this.deltaTime = dt; 
 
@@ -88,10 +85,8 @@ export default class Game {
             this.transitionSystem.update(dt);
             this.animatorSystem.update(dt);
             
-            // 1. Eksekusi Script & Node Blueprint terlebih dahulu saat tabrakan terjadi di frame ini
             this.scriptSystem.update(dt);
             
-            // 2. Terapkan kalkulasi Fisika & Pemisahan Tabrakan setelah Script membaca state
             this.physicsSystem.update(dt);
             
             this.audioSystem.update();

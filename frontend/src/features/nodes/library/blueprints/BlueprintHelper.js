@@ -48,7 +48,6 @@ export const BlueprintHelper = {
           code: `const duration = Number(inputs['Milisecond'] ?? inputs['duration'] ?? 500);
 const dt = (context.dt || 0.016) * 1000;
 
-// Tandai node sedang berjalan
 if (!node._isDelayActive) {
   node._isDelayActive = true;
   node._delayRemaining = duration;

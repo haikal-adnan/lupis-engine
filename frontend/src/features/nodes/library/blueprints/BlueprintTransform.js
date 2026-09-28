@@ -6,7 +6,6 @@ export const BlueprintTransform = {
   color: '#4CAF50',
   icon: Move,
   items: [
-    // 1. GET TRANSFORM (Pure Node - Dynamic Outputs)
     { 
       type: 'get_transform', 
       label: 'Get Transform', 
@@ -57,7 +56,6 @@ return;`
       } 
     },
 
-    // 2. SET TRANSFORM (Action Node - Dynamic Inputs)
     { 
       type: 'set_transform', 
       label: 'Set Transform', 

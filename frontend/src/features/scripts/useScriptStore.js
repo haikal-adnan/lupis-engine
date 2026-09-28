@@ -233,7 +233,6 @@ export const useScriptStore = defineStore('script', {
         if (node.inputs.some(p => p.id === newPort.id)) return;
         node.inputs.push(newPort);
 
-        // Reset label port & kode secara sinkron
         if (node.allowDynamicInputs) {
           syncDynamicInputsAndCode(node);
         }
@@ -256,7 +255,6 @@ export const useScriptStore = defineStore('script', {
           !(e.target === nodeId && e.targetHandle === portId)
         );
 
-        // Reset dan re-index label port & kode secara sinkron setelah ada port yang dihapus
         if (node.allowDynamicInputs) {
           syncDynamicInputsAndCode(node);
         }

@@ -309,7 +309,6 @@ export function useProjectActions() {
           delete cleanScript.projectId;
           delete cleanScript.folderId;
           
-          // PERBAIKAN: Gunakan script.id langsung
           await _writeJsonFile(scriptsDir, `${script.id}.json`, cleanScript);
         }
       }

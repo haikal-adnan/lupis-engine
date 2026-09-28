@@ -52,7 +52,6 @@ export function useGraphEditor() {
     hasMoved: false         
   })
 
-  // --- Hapus Node dengan History (Single & Multi-Selection) ---
   const deleteSelectedNodes = () => {
     const targets = selectedNodeIds.value.length > 0 
       ? [...selectedNodeIds.value] 
@@ -60,18 +59,14 @@ export function useGraphEditor() {
 
     if (targets.length === 0) return
 
-    // 1. Ambil data lengkap objek Node yang akan dihapus
     const nodesToDelete = nodes.value.filter(n => targets.includes(n.id))
     
-    // 2. Ambil data Edge (koneksi) yang terhubung dengan Node-Node ini
     const connectedEdges = edges.value.filter(e => 
       targets.includes(e.source) || targets.includes(e.target)
     )
 
-    // 3. Catat aksi penghapusan ke History Undo/Redo
     scriptHistory.recordRemoveNodes(nodesToDelete, connectedEdges)
 
-    // 4. Hapus node dan edge terkait dari store
     targets.forEach(id => {
       store.removeNodeFromActive(id)
     })

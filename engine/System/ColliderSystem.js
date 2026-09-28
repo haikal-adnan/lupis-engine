@@ -309,7 +309,6 @@ export default class ColliderSystem {
         const entityW = t.width || 32;
         const entityH = t.height || 32;
 
-        // 1. Ekstraksi bounds dari komponen Collider (jika ada dan enabled)
         const colliderComp = entity.components.Collider;
         if (colliderComp && Array.isArray(colliderComp.data)) {
             for (let i = 0; i < colliderComp.data.length; i++) {
@@ -345,7 +344,6 @@ export default class ColliderSystem {
             }
         }
 
-        // 2. Ekstraksi bounds dari komponen ShapeRenderer HANYA JIKA opsi collision-nya dicentang
         const shapeComp = entity.components.ShapeRenderer;
         if (shapeComp && shapeComp.elements) {
             const enablePoly = Boolean(shapeComp.enablePolygonCollision);
@@ -373,7 +371,6 @@ export default class ColliderSystem {
                 for (const el of shapeComp.elements) {
                     if (el.enabled === false) continue;
 
-                    // Polygon Collision
                     if (enablePoly && el.type === 'polygon') {
                         const pts = (el.points || []).map(id => pointMap.get(id)).filter(Boolean);
                         if (pts.length >= 3) {
@@ -384,7 +381,6 @@ export default class ColliderSystem {
                         }
                     }
 
-                    // Segment / Line Collision
                     if (enableSeg) {
                         if (el.type === 'segment') {
                             const pts = (el.points || []).map(id => pointMap.get(id)).filter(Boolean);
@@ -406,7 +402,6 @@ export default class ColliderSystem {
                         }
                     }
 
-                    // Circle Collision
                     if (enableCircle && el.type === 'circle') {
                         const centerPt = pointMap.get(el.pCenter);
                         const edgePt = pointMap.get(el.pEdge);

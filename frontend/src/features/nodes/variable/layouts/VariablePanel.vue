@@ -152,7 +152,6 @@ const props = defineProps({
 const workspaceStore = useWorkspaceStore();
 const { getVarColor } = useVariableConfig();
 
-// Cek apakah tab aktif saat ini adalah diagram node (bukan code_editor)
 const isGraphEditor = computed(() => workspaceStore.activeTab?.type !== 'code_editor');
 
 const isManagerOpen = ref(false);

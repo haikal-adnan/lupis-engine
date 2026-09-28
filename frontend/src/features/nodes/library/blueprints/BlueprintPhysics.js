@@ -6,7 +6,6 @@ export const BlueprintPhysics = {
   color: '#7C4DFF',
   icon: Activity,
   items: [
-    // 1. GET PHYSICS (Pure Node - Dynamic Outputs)
     {
       type: 'get_physics',
       label: 'Get Physics',
@@ -57,7 +56,6 @@ return;`
       }
     },
 
-    // 2. SET PHYSICS (Action Node - Dynamic Inputs)
     {
       type: 'set_physics',
       label: 'Set Physics',
@@ -139,7 +137,6 @@ return;`
       }
     },
 
-    // 3. SET FACE DIRECTION (Action Node)
     {
       type: 'set_face_direction',
       label: 'Set Face Direction',
@@ -210,7 +207,6 @@ return;`
       }
     },
 
-    // 4. MOVE AND SLIDE (Action Node)
     { 
       type: 'move_and_slide', 
       label: 'Move and Slide', 

@@ -11,7 +11,6 @@ export function useNodeInspector(props = {}) {
   const { showPop } = usePopAlert();
   const { getVarColor } = useVariableConfig();
 
-  // Memanggil komposabel utama agar logika manipulasi port terpusat
   const { 
     addFromDropdown, 
     removeDynamicInput, 

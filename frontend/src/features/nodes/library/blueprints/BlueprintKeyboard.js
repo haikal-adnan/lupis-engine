@@ -6,7 +6,6 @@ export const BlueprintKeyboard = {
   color: '#E91E63',
   icon: Zap,
   items: [
-    // 1. INPUT MAPPER (Event Node - Output Dynamic & Hold Focus)
     { 
       type: 'event_advanced_key', 
       label: 'Input Mapper', 
@@ -46,7 +45,6 @@ return;`
       } 
     },
 
-    // 2. CALCULATE AXIS 2D (Action Node)
     { 
       type: 'calculate_axis_2d', 
       label: 'Calculate Axis 2D', 
@@ -98,7 +96,6 @@ return;`
       } 
     },
 
-    // 3. BRANCH: KEY DOWN (Logic / Action Node)
     { 
       type: 'is_key_down', 
       label: 'Branch: Key Down', 
@@ -130,7 +127,6 @@ return;`
       } 
     },
 
-    // 4. GET KEY STATE (Pure Node)
     { 
       type: 'get_key_state', 
       label: 'Get Key State', 
@@ -154,7 +150,6 @@ return;`
       } 
     },
 
-    // 5. ANY KEY PRESSED (Event Node - Menggunakan Keyboard Class Method)
     { 
       type: 'event_any_key', 
       label: 'Any Key Pressed', 
@@ -185,7 +180,6 @@ return;`
       } 
     },
 
-    // 6. SIMULATE KEY (Action Node)
     { 
       type: 'simulate_key', 
       label: 'Simulate Key', 

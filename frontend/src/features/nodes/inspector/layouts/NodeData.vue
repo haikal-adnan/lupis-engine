@@ -188,23 +188,19 @@ const booleanOptions = [
   { label: 'False', value: false }
 ];
 
-// IGNORED_KEYS menyembunyikan variableId agar tidak muncul dua kali
 const IGNORED_KEYS = [
   'code', 'values', 'propertyOptions', 'allowDynamicInputs', 'allowDynamicOutputs', 
   'mappings', 'options', 'valueModes', 'variableBindings', 'variableModifiers',
   'variableId', 'scope', 'items'
 ];
 
-// Deteksi apakah node bertipe variable (Get / Set)
 const isVariableNode = computed(() => {
   return node.value?.type === 'variable_get' || node.value?.type === 'variable_set';
 });
 
-// Handler ketika variabel baru dipilih dari VariableSelect
 function onSelectVariable(newVarId) {
   if (!node.value || !newVarId) return;
 
-  // Cari data variabel dari Global maupun Local
   const globals = (projectStore.activeProject?.globalVariables || []).map(v => ({ ...v, scope: 'Global' }));
   const locals = (scriptStore.activeScript?.localVariables || []).map(v => ({ ...v, scope: 'Local' }));
   const targetVar = [...globals, ...locals].find(v => v.id === newVarId);
@@ -225,19 +221,16 @@ function onSelectVariable(newVarId) {
     ? `outputs['out_0'] = context.${getMethod}('${varName}');\nreturn;`
     : `const val = inputs['val_0'];\ncontext.${setMethod}('${varName}', val);\noutputs['out_0'] = val;\noutputs['exec_out'] = true;\nreturn;`;
 
-  // 1. Update data internal node
   node.value.data.variableId = targetVar.id;
   node.value.data.scope = scope;
   node.value.data.code = nodeCode;
 
-  // 2. Update tampilan & header
   node.value.label = newTitle;
   if (node.value.settings) {
     node.value.settings.headerTitle = newTitle;
     node.value.settings.headerColor = varColor;
   }
 
-  // 3. Sync Ports
   if (node.value.inputs) {
     node.value.inputs.forEach(inp => {
       if (inp.dataType !== 'execution') {
@@ -258,7 +251,6 @@ function onSelectVariable(newVarId) {
     });
   }
 
-  // Save Perubahan
   scriptStore.saveActiveScript();
 }
 

@@ -1,6 +1,5 @@
 import { ref, watchEffect } from 'vue'
 
-// Inisialisasi state sesuai dengan class 'dark' yang sudah terpasang dari index.html
 const isDark = ref(document.documentElement.classList.contains('dark'))
 
 function applyTheme() {
@@ -12,7 +11,6 @@ function applyTheme() {
   }
 }
 
-// Dengarkan perubahan preferensi sistem secara realtime (jika tidak ada pilihan manual di localStorage)
 if (typeof window !== 'undefined') {
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
     if (!localStorage.getItem('theme')) {

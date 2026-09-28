@@ -154,7 +154,6 @@ export default class ScriptRunner {
         connectedEdges.forEach(edge => {
             const targetNode = this.nodeMap.get(edge.target);
             if (targetNode) {
-                // Selalu eksekusi node target saat mendapat sinyal execution flow
                 this._executeNodeLogic(targetNode, edge.targetHandle);
             }
         });
@@ -175,14 +174,12 @@ export default class ScriptRunner {
                 node._tempData = node._tempData || {};
                 Object.assign(node._tempData, outputs);
 
-                // Gunakan Set agar tiap port ID unik hanya dipemicu 1 kali per eksekusi
                 const executedPortIds = new Set();
 
                 if (node.outputs && Array.isArray(node.outputs)) {
                     node.outputs.forEach(port => {
                         if (port.dataType !== 'execution') return;
 
-                        // Cek nilai berdasarkan ID port atau Label port
                         const isTriggered = outputs[port.id] === true || outputs[port.label] === true;
                         if (isTriggered && !executedPortIds.has(port.id)) {
                             executedPortIds.add(port.id);
@@ -215,7 +212,6 @@ export default class ScriptRunner {
             }
 
             if (val === undefined) {
-                // Evaluasi input: utamakan defaultValue jika data values bernilai ID internal 'shape_1' / 'self'
                 const values = node.data ? node.data.values : undefined;
                 if (values) {
                     val = values[port.id] !== undefined ? values[port.id] : values[port.label];

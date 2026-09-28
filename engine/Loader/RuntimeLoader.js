@@ -88,7 +88,6 @@ export default class RuntimeLoader {
                 game.sceneSystem.setSceneCache(scenes);
             }
 
-            // Pasang MiniConsoleOverlay sebelum scene dimuat agar siap menangkap log
             this._onPostInit(game, canvas, payload);
 
             reportProgress("Memulai Game Loop...", 98);
@@ -96,7 +95,6 @@ export default class RuntimeLoader {
 
             reportProgress("Game Siap!", 100);
 
-            // Log status sistem berjalan
             bus.emit('console:log', {
                 type: 'log',
                 time: Date.now(),
@@ -104,10 +102,8 @@ export default class RuntimeLoader {
                 message: `${mode.toUpperCase()} engine successfully initialized and running!`
             });
 
-            // Jalankan engine loop
             this.start(game);
 
-            // TUNDA PEMUATAN SCENE: Eksekusi loadScene setelah engine dan loop aktif
             if (scenes && scenes.length > 0) {
                 const initialScene = scenes[0];
                 this._setupWorldSettings(game, project?.settings, initialScene.settings);

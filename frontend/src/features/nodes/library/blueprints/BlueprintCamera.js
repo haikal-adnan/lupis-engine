@@ -40,7 +40,6 @@ const smoothness = inputs['Smoothness'];
 const offsetX = inputs['Offset X'];
 const offsetY = inputs['Offset Y'];
 
-// Menggunakan context.entity.get() sesuai ContextSystem baru
 const targetEntity = context.entity.get(target);
 
 if (targetEntity) {

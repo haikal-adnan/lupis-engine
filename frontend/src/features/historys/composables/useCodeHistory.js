@@ -14,7 +14,6 @@ export function useCodeHistory(extractedNodeId, targetNode, options = {}) {
   let debounceTimer = null
   let snapshotBeforeEdit = ''
 
-  // Sinkronisasi nilai lokal ketika targetNode berubah/pindah tab
   watch(
     () => targetNode.value,
     (newNode) => {
@@ -31,7 +30,6 @@ export function useCodeHistory(extractedNodeId, targetNode, options = {}) {
     { immediate: true }
   )
 
-  // Auto Reset Kode dari Blueprint saat terjadi perubahan Dynamic Output Ports (khusus tanpa propertyOptions)
   watch(
     () => targetNode.value?.outputs,
     (newOutputs, oldOutputs) => {
@@ -40,7 +38,6 @@ export function useCodeHistory(extractedNodeId, targetNode, options = {}) {
 
       const hasPropertyOptions = Array.isArray(node.data?.propertyOptions) && node.data.propertyOptions.length > 0
 
-      // Reset otomatis hanya berjalan jika allowDynamicOutputs = true DAN tidak ada propertyOptions
       if (node.allowDynamicOutputs && !hasPropertyOptions) {
         resetCodeToBlueprint()
       }
@@ -48,12 +45,10 @@ export function useCodeHistory(extractedNodeId, targetNode, options = {}) {
     { deep: true }
   )
 
-  // Reset Kode ke Template Blueprint Asli
   const resetCodeToBlueprint = () => {
     const node = targetNode.value
     if (!node) return
 
-    // Cari blueprint item asli berdasarkan tipe node
     const blueprintItem = scriptStore.blueprints
       ?.flatMap(group => group.items || [])
       .find(item => item.type === node.type)
@@ -65,7 +60,6 @@ export function useCodeHistory(extractedNodeId, targetNode, options = {}) {
     }
   }
 
-  // Fungsi Komit ke Pinia & Simpan Record ke History Engine
   const commitCode = (newCode) => {
     if (!targetNode.value || !extractedNodeId.value) return
     const nodeId = extractedNodeId.value
@@ -73,7 +67,6 @@ export function useCodeHistory(extractedNodeId, targetNode, options = {}) {
 
     if (oldValue === newCode) return
 
-    // 1. Simpan ke ScriptStore (Pinia)
     scriptStore.updateNodeInActive(nodeId, {
       data: {
         ...targetNode.value.data,
@@ -81,16 +74,13 @@ export function useCodeHistory(extractedNodeId, targetNode, options = {}) {
       }
     })
 
-    // 2. Transaksikan ke History Stack (Terisolasi per-tab / node via history key)
     recordNodeDataChange(nodeId, 'data.code', oldValue, newCode)
 
-    // 3. Update state lokal
     projectStore.markAsDirty()
     snapshotBeforeEdit = newCode
     isDirty.value = false
   }
 
-  // Auto Save dengan Debounce saat ada input teks
   const handleCodeInput = () => {
     isDirty.value = true
     if (debounceTimer) clearTimeout(debounceTimer)
@@ -100,26 +90,22 @@ export function useCodeHistory(extractedNodeId, targetNode, options = {}) {
     }, debounceMs)
   }
 
-  // Manual Save (Langsung mengabaikan timer debounce)
   const saveCode = () => {
     if (debounceTimer) clearTimeout(debounceTimer)
     commitCode(codeContent.value)
   }
 
-  // Reset Teks ke State Terakhir di Pinia / Reset ke Blueprint
   const resetCode = () => {
     if (debounceTimer) clearTimeout(debounceTimer)
     resetCodeToBlueprint()
   }
 
-  // Handler Undo / Redo khusus Code Panel
   const undo = () => {
     if (debounceTimer) {
       clearTimeout(debounceTimer)
       commitCode(codeContent.value)
     }
     globalUndo()
-    // Update tampilan editor lokal setelah undo diproses store
     if (targetNode.value?.data) {
       codeContent.value = targetNode.value.data.code || ''
       snapshotBeforeEdit = codeContent.value
@@ -140,7 +126,6 @@ export function useCodeHistory(extractedNodeId, targetNode, options = {}) {
     }
   }
 
-  // Keydown Handler untuk Shortcut Ctrl+Z / Ctrl+Y / Ctrl+S di Textarea
   const handleEditorKeyDown = (e) => {
     const isCtrl = e.ctrlKey || e.metaKey
     if (!isCtrl) return
@@ -165,7 +150,6 @@ export function useCodeHistory(extractedNodeId, targetNode, options = {}) {
   onUnmounted(() => {
     if (debounceTimer) {
       clearTimeout(debounceTimer)
-      // Commit sisa perubahan saat komponen di-unmount/ditutup
       if (isDirty.value) {
         commitCode(codeContent.value)
       }

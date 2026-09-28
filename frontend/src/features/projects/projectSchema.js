@@ -15,7 +15,7 @@ export const projectSchema = (data = {}) => {
       
       debug: {
         active: data.settings?.debug?.active ?? true,
-        position: data.settings?.debug?.position || 'top-right', // 9 posisi: top-left, top-center, top-right, middle-left, middle-center, middle-right, bottom-left, bottom-center, bottom-right
+        position: data.settings?.debug?.position || 'top-right', 
         width: Number(data.settings?.debug?.width ?? 360),
         height: Number(data.settings?.debug?.height ?? 220),
         maxLogs: Number(data.settings?.debug?.maxLogs ?? 50)

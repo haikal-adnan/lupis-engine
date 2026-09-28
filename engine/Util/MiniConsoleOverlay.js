@@ -23,11 +23,9 @@ export default class MiniConsoleOverlay {
     }
 
     _initDOM() {
-        // Buat elemen overlay utama
         this.domElement = document.createElement('div');
         this.domElement.id = 'lupis-mini-console';
         
-        // CSS Style bawaan tanpa dependensi luar
         Object.assign(this.domElement.style, {
             position: 'absolute',
             zIndex: '9999',
@@ -48,10 +46,8 @@ export default class MiniConsoleOverlay {
             transition: 'all 0.2s ease'
         });
 
-        // Terapkan penentuan posisi dari 9-point grid
         this._applyPositionStyle(this.config.position);
 
-        // Render Header
         const header = document.createElement('div');
         Object.assign(header.style, {
             padding: '4px 8px',
@@ -84,7 +80,6 @@ export default class MiniConsoleOverlay {
         header.appendChild(clearBtn);
         this.domElement.appendChild(header);
 
-        // Render Log Container List
         this.logContainer = document.createElement('div');
         Object.assign(this.logContainer.style, {
             flex: '1',
@@ -153,7 +148,6 @@ export default class MiniConsoleOverlay {
         const sourceText = data.source || 'App';
         const type = data.type || 'log';
 
-        // Aggregation: Gabungkan jika log beruntun sama persis (terutama pada tick loop)
         const lastLog = this.logs[this.logs.length - 1];
         if (lastLog && lastLog.message === msgText && lastLog.source === sourceText && lastLog.type === type) {
             lastLog.count = (lastLog.count || 1) + 1;

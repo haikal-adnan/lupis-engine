@@ -52,19 +52,15 @@ const { selectedNode, scriptStore } = useNodeLogic();
 const selectedNodeIds = computed(() => scriptStore.selectedNodeIds);
 const selectedEdgeId = computed(() => scriptStore.selectedEdgeId);
 
-// Cek apakah tab aktif adalah Code Editor
 const activeTab = computed(() => workspaceStore.activeTab);
 const isCodeEditorTab = computed(() => activeTab.value?.type === 'code_editor');
 
-// Dapatkan node target untuk Inspector
 const targetInspectorNode = computed(() => {
   if (isCodeEditorTab.value) {
-    // Ambil nodeId dari tab code editor
     const tabNodeId = activeTab.value?.nodeId || activeTab.value?.id?.replace('code_', '');
     if (!scriptStore.activeScript || !tabNodeId) return null;
     return scriptStore.activeScript.nodes.find(n => n.id === tabNodeId);
   }
-  // Mode Canvas biasa
   return selectedNode.value;
 });
 </script>

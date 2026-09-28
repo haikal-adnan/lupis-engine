@@ -344,9 +344,6 @@ const isRootLevel = computed(() => stack.value.length === 1);
 const currentLevel = computed(() => stack.value[stack.value.length - 1] || {});
 const currentType = computed(() => currentLevel.value.type);
 
-/**
- * Deteksi Tipe Data Nilai secara otomatis
- */
 const detectTypeFromValue = (val) => {
   if (Array.isArray(val)) return 'list';
   if (val !== null && typeof val === 'object') return 'map';
@@ -355,9 +352,6 @@ const detectTypeFromValue = (val) => {
   return 'string';
 };
 
-/**
- * Normalisasi data untuk dikonsumsi oleh UI Modal
- */
 const displayItems = computed(() => {
   if (isRootLevel.value) {
     return (variables.value || []).map(v => ({
@@ -435,15 +429,11 @@ const navigateTo = (index) => {
   searchQuery.value = '';
 };
 
-/**
- * Pindah Ke Level Dalam (Masuk ke Konfigurasi List/Map)
- */
 const enterNestedLevel = (item, idx) => {
   let val = item.value;
   const isMap = currentType.value?.toLowerCase() === 'map';
   const targetType = (item.type || 'string').toLowerCase();
 
-  // Jika nilai belum berupa koleksi, paksakan inisialisasi awal
   if (!val || (targetType === 'list' && !Array.isArray(val)) || (targetType === 'map' && typeof val !== 'object')) {
     val = getDefaultValueForType(targetType);
     handleValueChange(item, idx, val);
@@ -461,9 +451,6 @@ const enterNestedLevel = (item, idx) => {
   });
 };
 
-/**
- * Menambahkan Item Baru (Root atau Nested Level)
- */
 const addNewItem = async () => {
   if (isRootLevel.value) {
     addVariable();
@@ -474,10 +461,8 @@ const addNewItem = async () => {
     if (cType === 'list' && Array.isArray(parentRef)) {
       parentRef.push('');
     } else if (cType === 'map' && parentRef && typeof parentRef === 'object') {
-      // 1. Jika Map masih kosong, key awal dibuat string kosong ''
       let newKey = '';
       
-      // 2. Jika key '' sudah ada, beri nama unik temporary tanpa prefiks 'key'
       if (newKey in parentRef) {
         let count = 1;
         newKey = `key_${count}`;
@@ -504,15 +489,13 @@ const handleUpdateField = (idx, key, value) => {
 };
 
 const handleMapKeyChange = (oldKey, newKey) => {
-  // Jika key tidak berubah, batalkan
   if (oldKey === newKey) return;
   
   const parentRef = currentLevel.value.targetRef;
   if (!parentRef || typeof parentRef !== 'object' || Array.isArray(parentRef)) return;
 
-  const trimmedNewKey = newKey; // Memungkinkan string kosong saat mengetik
+  const trimmedNewKey = newKey; 
 
-  // Jika key baru sudah ada di dalam Map (selain key lama itu sendiri)
   if (trimmedNewKey !== '' && trimmedNewKey in parentRef && trimmedNewKey !== oldKey) {
     showPop({ 
       title: 'Duplicate Key', 
@@ -523,16 +506,11 @@ const handleMapKeyChange = (oldKey, newKey) => {
     return;
   }
 
-  // Simpan nilai lama, hapus key lama, lalu set dengan key baru
   const val = parentRef[oldKey];
   delete parentRef[oldKey];
   parentRef[trimmedNewKey] = val;
 };
 
-
-/**
- * Mengubah Tipe Data Item
- */
 const handleTypeChange = (item, idx, newType) => {
   const cleanType = String(newType).toLowerCase();
   const newVal = getDefaultValueForType(cleanType);
@@ -544,9 +522,6 @@ const handleTypeChange = (item, idx, newType) => {
   }
 };
 
-/**
- * Mengubah Nilai Item
- */
 const handleValueChange = (item, idx, val) => {
   if (isRootLevel.value) {
     updateVariable(idx, 'defaultValue', val);
