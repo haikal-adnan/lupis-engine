@@ -1,0 +1,106 @@
+x-ports:
+  frontend_mapping: &frontend_port "6500:6500"
+  engine_mapping: &engine_port "8080:80"
+  backend_mapping: &backend_port "4000:4000"
+
+  frontend_raw_port: &frontend_raw_port "6500"
+  backend_raw_port: &backend_raw_port "4000"
+
+x-urls:
+  vite_engine_url: &engine_url "http://localhost:8080"
+  vite_backend_url: &backend_url "http://localhost:4000"
+
+services:
+  engine:
+    build:
+      context: ./engine
+      dockerfile: Dockerfile
+    container_name: lupis-engines
+    restart: always
+    ports:
+      - *engine_port
+    networks:
+      - lupis-network
+    develop:
+      watch:
+        - action: sync
+          path: ./engine
+          target: /usr/share/nginx/html
+
+  backend:
+    build:
+      context: ./backend 
+      dockerfile: Dockerfile
+    container_name: lupis-backend
+    restart: always
+    ports:
+      - *backend_port
+    environment:
+      NODE_ENV: development
+      PORT: *backend_raw_port
+    # HAPUS volumes: ./engine:/engine:ro agar Compose Watch bekerja penuh tanpa hambatan
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4000/api/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+    networks:
+      - lupis-network
+    develop:
+      watch:
+        - action: sync
+          path: ./backend
+          target: /app
+          ignore:
+            - node_modules/
+            - temp/
+        - action: sync
+          path: ./engine
+          target: /engine
+        - action: rebuild
+          path: ./backend/package.json
+        - action: rebuild
+          path: ./backend/package-lock.json
+
+  frontend:
+    build:
+      context: .
+      dockerfile: ./frontend/Dockerfile
+    container_name: lupis-frontends
+    restart: always
+    ports:
+      - *frontend_port
+    environment:
+      NODE_ENV: development
+      PORT: *frontend_raw_port
+      VITE_ENGINE_URL: *engine_url
+      VITE_BACKEND_URL: *backend_url
+      VITE_GAME_DEBUG: "true"
+      VITE_ENV: development
+      VITE_DEV_AUTO_LOAD: "true"
+      VITE_DEV_USER_ID: dev_2025
+      VITE_DEV_PROJECT_ID: jzA6wmUT6ubGNYJq
+    depends_on:
+      - engine
+      - backend
+    networks:
+      - lupis-network
+    develop:
+      watch:
+        - action: sync
+          path: ./frontend
+          target: /app
+          ignore:
+            - node_modules/
+            - dist/
+        - action: sync
+          path: ./engine
+          target: /engine
+        - action: rebuild
+          path: ./frontend/package.json
+        - action: rebuild
+          path: ./frontend/package-lock.json
+
+networks:
+  lupis-network:
+    driver: bridge

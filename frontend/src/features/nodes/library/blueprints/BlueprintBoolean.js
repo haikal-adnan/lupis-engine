@@ -1,0 +1,98 @@
+import { ShieldCheck, CircleSlash, Rows, Columns } from 'lucide-vue-next';
+
+export const BlueprintBoolean = {
+  id: 'boolean_logic',
+  label: 'Boolean Logic',
+  color: '#4CAF50',
+  icon: ShieldCheck,
+  items: [
+    { 
+      type: 'logic_and', 
+      label: 'And', 
+      description: 'True if all dynamic inputs are true',
+      icon: Rows,
+      allowDynamicInputs: true,
+      allowDynamicOutputs: false,
+      defaultData: { 
+        settings: { headerTitle: 'And', headerColor: '#2E7D32', category: 'Boolean Logic' },
+        inputs: [
+          { id: 'v0', label: 'Val 1', dataType: 'boolean', color: '#f472b6', defaultValue: false },
+          { id: 'v1', label: 'Val 2', dataType: 'boolean', color: '#f472b6', defaultValue: false }
+        ], 
+        outputs: [
+          { id: 'result', label: 'Result', dataType: 'boolean', color: '#f472b6' }
+        ],
+        data: {
+          values: {
+            v0: false,
+            v1: false
+          },
+          code: `const val1 = inputs['Val 1'];
+const val2 = inputs['Val 2'];
+const collection = [val1, val2];
+
+outputs['Result'] = collection.every(Boolean);
+return;`
+        }
+      } 
+    },
+
+    { 
+      type: 'logic_or', 
+      label: 'Or', 
+      description: 'True if at least one input is true',
+      icon: Columns,
+      allowDynamicInputs: true,
+      allowDynamicOutputs: false,
+      defaultData: { 
+        settings: { headerTitle: 'Or', headerColor: '#2E7D32', category: 'Boolean Logic' },
+        inputs: [
+          { id: 'v0', label: 'Val 1', dataType: 'boolean', color: '#f472b6', defaultValue: false },
+          { id: 'v1', label: 'Val 2', dataType: 'boolean', color: '#f472b6', defaultValue: false }
+        ], 
+        outputs: [
+          { id: 'result', label: 'Result', dataType: 'boolean', color: '#f472b6' }
+        ],
+        data: {
+          values: {
+            v0: false,
+            v1: false
+          },
+          code: `const val1 = inputs['Val 1'];
+const val2 = inputs['Val 2'];
+const collection = [val1, val2];
+
+outputs['Result'] = collection.some(Boolean);
+return;`
+        }
+      } 
+    },
+
+    { 
+      type: 'logic_not', 
+      label: 'Not', 
+      description: 'Inverts the boolean value',
+      icon: CircleSlash,
+      allowDynamicInputs: false,
+      allowDynamicOutputs: false,
+      defaultData: { 
+        settings: { headerTitle: 'Not', headerColor: '#2E7D32', category: 'Boolean Logic' },
+        inputs: [
+          { id: 'in_val', label: 'In', dataType: 'boolean', color: '#f472b6', defaultValue: false }
+        ], 
+        outputs: [
+          { id: 'result', label: 'Out', dataType: 'boolean', color: '#f472b6' }
+        ],
+        data: {
+          values: {
+            in_val: false
+          },
+          code: `const inVal = inputs['In'];
+
+outputs['Out'] = !inVal;
+return;`
+        }
+      } 
+    }
+  ]
+};

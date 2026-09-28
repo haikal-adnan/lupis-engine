@@ -1,0 +1,24 @@
+{
+  "name": "lupis-runner",
+  "version": "0.1.0",
+  "description": "Lupis Engine Standalone Runner",
+  "main": "main.js",
+  "build": {
+    "appId": "com.lupis.runner",
+    "productName": "Lupis Engine Standalone",
+    "compression": "normal",
+    "asar": true,
+    "removePackageScripts": true,
+    "nodeGypRebuild": false,
+    "buildDependenciesFromSource": false,
+    "files": [
+      "main.js",
+      "web/**/*"
+    ],
+    "win": {
+      "target": ["portable"],
+      "signAndEditExecutable": false,
+      "verifyUpdateCodeSignature": false
+    }
+  }
+}

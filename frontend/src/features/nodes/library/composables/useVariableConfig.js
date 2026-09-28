@@ -1,0 +1,128 @@
+import { computed } from 'vue';
+
+export function useVariableConfig() {
+  /**
+   * Daftar Tipe Data Variabel yang Didukung
+   */
+  const VAR_TYPES = Object.freeze({
+    STRING: 'string',
+    NUMBER: 'number',
+    BOOLEAN: 'boolean',
+    LIST: 'list',
+    MAP: 'map',
+  });
+
+  /**
+   * Pemetaan Warna Indikator Visual untuk Port/Tipe Variabel
+   */
+  const VAR_COLORS = Object.freeze({
+    [VAR_TYPES.STRING]: '#F48FB1',
+    [VAR_TYPES.NUMBER]: '#64B5F6',
+    [VAR_TYPES.BOOLEAN]: '#E57373',
+    [VAR_TYPES.LIST]: '#4DD0E1',
+    [VAR_TYPES.MAP]: '#FF8A65',
+  });
+
+  /**
+   * Mengambil warna hex berdasarkan nama tipe data
+   */
+  const getVarColor = (type) => {
+    if (!type) return VAR_COLORS[VAR_TYPES.ANY];
+    return VAR_COLORS[type.toLowerCase()] || VAR_COLORS[VAR_TYPES.ANY];
+  };
+
+  /**
+   * Mengembalikan Opsi Tipe Data untuk Dropdown / Selection UI
+   */
+  const typeOptions = computed(() => {
+    return Object.values(VAR_TYPES).map(type => ({
+      value: type, // 'string', 'number', 'list', 'map', dll.
+      label: type.charAt(0).toUpperCase() + type.slice(1),
+      color: VAR_COLORS[type]
+    }));
+  });
+
+  /**
+   * Memeriksa apakah tipe variabel termasuk Koleksi (kebal Uppercase/Lowercase)
+   */
+  const isCollectionType = (type) => {
+    if (!type) return false;
+    const t = String(type).toLowerCase();
+    return t === VAR_TYPES.LIST || t === VAR_TYPES.MAP;
+  };
+
+  /**
+   * Mengembalikan nilai dasar bersih (Clean Primitive Values) sesuai tipe data
+   */
+  const getDefaultValueForType = (type) => {
+    if (!type) return null;
+    switch (String(type).toLowerCase()) {
+      case VAR_TYPES.STRING:
+        return '';
+      case VAR_TYPES.NUMBER:
+        return 0;
+      case VAR_TYPES.BOOLEAN:
+        return false;
+      case VAR_TYPES.OBJECT:
+      case VAR_TYPES.MAP:
+        return {}; // Kosong Murni
+      case VAR_TYPES.LIST:
+        return []; // Kosong Murni
+      default:
+        return null;
+    }
+  };
+
+  /**
+   * Membentuk elemen item baru untuk ditambahkan ke List
+   * Menghasilkan nilai murni, BUKAN objek wrapper { id, type, value }
+   */
+  const createListElement = (itemType = 'string') => {
+    return getDefaultValueForType(itemType);
+  };
+
+  /**
+   * Melakukan ekstraksi & pembersihan (sanitasi) terhadap nilai List/Map
+   * yang mungkin sebelumnya masih tersimpan dengan wrapper { id, type, defaultValue }
+   */
+  const sanitizeVariableValue = (value, type) => {
+    if (!type) return value;
+    const t = String(type).toLowerCase();
+
+    if (t === VAR_TYPES.LIST) {
+      if (!Array.isArray(value)) return [];
+      return value.map(item => {
+        if (item && typeof item === 'object' && ('defaultValue' in item || 'value' in item)) {
+          return item.defaultValue ?? item.value ?? '';
+        }
+        return item;
+      });
+    }
+
+    if (t === VAR_TYPES.MAP) {
+      if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+      const cleanMap = {};
+      for (const [key, val] of Object.entries(value)) {
+        if (val && typeof val === 'object' && ('defaultValue' in val || 'value' in val)) {
+          cleanMap[key] = val.defaultValue ?? val.value ?? '';
+        } else {
+          cleanMap[key] = val;
+        }
+      }
+      return cleanMap;
+    }
+
+    return value;
+  };
+
+  return {
+    VAR_TYPES,
+    VAR_COLORS,
+    typeOptions,
+    getVarColor,
+    isCollectionType,
+    getDefaultValueForType,
+    createListElement,
+    sanitizeVariableValue
+  };
+}

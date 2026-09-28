@@ -1,0 +1,51 @@
+{
+  "title": "Tab Manager",
+  "category": "Interface",
+  "description": "Panduan penggunaan Tab Manager untuk mengelola navigasi dan tata letak jendela kerja di Lupis Engine.",
+  "sections": [
+    {
+      "id": "overview",
+      "title": "Tentang Tab Manager",
+      "blocks": [
+        {
+          "type": "image",
+          "url": "tab_manager.webp",
+          "alt": "Tab Manager Interface",
+          "caption": "Tampilan antarmuka Tab Manager."
+        },
+        {
+          "type": "text",
+          "content": "Tab Manager adalah sistem pusat yang mengatur navigasi dan tata letak jendela kerja di **Lupis Engine**. Sistem ini memungkinkan pengguna untuk membuka, mengelola, dan berpindah antar komponen kerja secara efisien dalam satu area kerja."
+        }
+      ]
+    },
+    {
+      "id": "tipe-tab",
+      "title": "Tipe Tab",
+      "blocks": [
+        {
+          "type": "table",
+          "headers": ["Tipe Tab", "Deskripsi", "Contoh"],
+          "rows": [
+            ["Permanen", "Tab inti yang selalu ada dan tidak dapat ditutup.", "Scene Editor"],
+            ["Closeable", "Tab yang bisa dibuka/tutup sesuai kebutuhan.", "Script Editor, Tilemap Editor"]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "interaksi",
+      "title": "Cara Penggunaan",
+      "blocks": [
+        {
+          "type": "steps",
+          "items": [
+            "**Memunculkan Tab**: Tab dapat dipicu dari aksi komponen tertentu, misalnya membuka file script atau memilih objek Tilemap pada hierarki.",
+            "**Menutup Tab**: Untuk tab bertipe *Closeable*, klik ikon 'x' pada header tab.",
+            "**Memindahkan Tab**: Klik dan tahan (drag) pada header tab, lalu geser ke posisi yang diinginkan di dalam area Tab Manager."
+          ]
+        }
+      ]
+    }
+  ]
+}

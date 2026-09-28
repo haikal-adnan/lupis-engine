@@ -1,0 +1,55 @@
+{
+  "title": "Installation",
+  "category": "Getting Started",
+  "description": "Panduan mengenai akses dan cara memulai **Lupis Engine** di perangkatmu.",
+  "sections": [
+    {
+      "id": "status-akses",
+      "title": "Status Instalasi & Akses",
+      "blocks": [
+        {
+          "type": "alert",
+          "variant": "info",
+          "message": "Untuk sementara, Lupis Engine **hanya bisa diakses langsung melalui browser**. Aplikasi *native* atau *desktop* sedang dalam tahap pengembangan. Mohon menunggu kelanjutannya ya!"
+        },
+        {
+          "type": "text",
+          "content": "Karena berjalan secara penuh di web, kamu tidak perlu mengunduh installer berukuran besar atau melewati proses instalasi yang rumit. Cukup buka tautan editor, dan lingkungan kerja kamu siap digunakan."
+        }
+      ]
+    },
+    {
+      "id": "persyaratan-browser",
+      "title": "Persyaratan Browser",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "Untuk mendapatkan performa maksimal, pastikan kamu menggunakan browser modern yang sudah mendukung akselerasi perangkat keras dan **WebGL 2.0**."
+        },
+        {
+          "type": "features",
+          "items": [
+            { "title": "Google Chrome", "desc": "Versi 90 atau lebih baru.", "icon": "Chrome", "color": "text-green-500" },
+            { "title": "Mozilla Firefox", "desc": "Versi 88 atau lebih baru.", "icon": "Firefox", "color": "text-orange-500" },
+            { "title": "Microsoft Edge", "desc": "Versi 90 atau lebih baru.", "icon": "Edge", "color": "text-blue-500" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "langkah-selanjutnya",
+      "title": "Langkah Selanjutnya",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "Sudah membuka editor di browser kamu? Bagus! Sekarang saatnya kita melangkah ke tahap pembuatan pro."
+        },
+        {
+          "type": "alert",
+          "variant": "tip",
+          "message": "Lanjutkan ke panduan **[Quick Start](#quick-start)** untuk mempelajari navigasi *workspace*, logika dasar node, dan cara merender objek pertamamu!"
+        }
+      ]
+    }
+  ]
+}

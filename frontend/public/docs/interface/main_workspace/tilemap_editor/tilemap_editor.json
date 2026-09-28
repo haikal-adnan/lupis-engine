@@ -1,0 +1,154 @@
+{
+  "title": "Dokumentasi Sistem Tilemap",
+  "category": "Panduan Pengguna",
+  "description": "Halaman dokumentasi teknis dan panduan penggunaan fitur Tilemap di dalam ekosistem Lupis Engine untuk efisiensi pembuatan level desain 2D.",
+  "sections": [
+    {
+      "id": "pengenalan-tilemap",
+      "title": "Pengenalan Tilemap",
+      "blocks": [
+        {
+          "type": "image",
+          "url": "tilemap_overall.png",
+          "alt": "Tampilan Panel Tilemap Lupis Engine",
+          "caption": "Gambaran umum antarmuka komponen Panel Tilemap pada Lupis Engine."
+        },
+        {
+          "type": "text",
+          "content": "Sistem **Tilemap** adalah sebuah metode rendering dan penyusunan level desain 2D yang memanfaatkan sekumpulan gambar kecil berukuran statis (disebut sebagai *tile*) untuk membentuk sebuah lingkungan permainan yang luas dan kompleks. Penggunaan Tilemap sangat krusial dalam pengembangan game 2D karena mampu menghemat memori GPU secara signifikan melalui teknik penggunaan kembali aset visual (*asset reuse*)."
+        },
+        {
+          "type": "text",
+          "content": "Melalui sistem Tilemap Lupis Engine, proses kalkulasi *culling* dan rendering dioptimalkan agar mampu menangani ribuan *tile* secara simultan tanpa menurunkan performa *frame rate* game. Komponen ini terintegrasi langsung dengan sistem koordinat grid internal engine."
+        },
+        {
+          "type": "alert",
+          "variant": "info",
+          "message": "Pastikan aset gambar (*spritesheet*) yang diimport telah diatur koordinat pemotongannya secara presisi sebelum dimasukkan ke dalam sistem Tilemap."
+        }
+      ]
+    },
+    {
+      "id": "tile-tool",
+      "title": "Alat Manipulasi (Tile Tool)",
+      "blocks": [
+        {
+          "type": "image",
+          "url": "tilemap_tool.png",
+          "alt": "Toolbar Alat Manipulasi Tilemap",
+          "caption": "Bilah peralatan (toolbar) yang berisi shortcut manipulasi penempatan objek pada grid."
+        },
+        {
+          "type": "text",
+          "content": "Pengembangan level desain difasilitasi oleh sejumlah alat manipulasi (*Tile Tool*) utama. Setiap alat dirancang khusus untuk mempercepat penempatan, penghapusan, maupun pemilihan aset pada kanvas. Penggunaan tombol pintas (*shortcut*) sangat disarankan untuk meningkatkan efisiensi alur kerja."
+        },
+        {
+          "type": "table",
+          "headers": ["Nama Alat", "Tombol Pintas (Shortcut)", "Fungsi Teknis"],
+          "rows": [
+            ["Pan Tool", "Space", "Menggeser sudut pandang (viewport) kamera editor tanpa mengubah struktur tile."],
+            ["Select/Move Tool", "V", "Memilih atau memindahkan tile dan koordinat objek yang berada di dalam grid."],
+            ["Brush Tool", "B", "Menempatkan satu atau beberapa tile yang dipilih pada palette ke dalam area kanvas."],
+            ["Eraser Tool", "E", "Menghapus tile yang berada di posisi koordinat grid target."],
+            ["Bucket Fill", "G", "Mengisi area kosong yang saling terhubung dengan tile yang dipilih secara instan."],
+            ["Tile Picker", "I", "Mengambil sampel tile yang sudah terpasang di kanvas untuk dijadikan kuas aktif."]
+          ]
+        },
+        {
+          "type": "text",
+          "content": "Selain alat manipulasi di atas, terdapat fitur pengaturan visibilitas untuk membantu proses manajemen *layering*. Fitur **Scene Opacity** berfungsi untuk memanipulasi tingkat transparansi dari *scene* latar belakang agar fokus desainer tetap terjaga. Sementara itu, fitur **Visibility Scene** dapat mengubah status lingkungan menjadi terlihat (*visible*) ataupun tersembunyi (*hidden*) guna mempermudah analisis berlapis."
+        }
+      ]
+    },
+    {
+      "id": "tilemap-settings",
+      "title": "Pengaturan Konfigurasi (Tilemap Settings)",
+      "blocks": [
+        {
+          "type": "image",
+          "url": "tilemap_setting.png",
+          "alt": "Panel Pengaturan Tilemap",
+          "caption": "Menu konfigurasi dimensi dasar grid dan ukuran piksel individual tile."
+        },
+        {
+          "type": "text",
+          "content": "Sebelum melakukan penggambaran objek, konfigurasi dimensi matematis dari Tilemap wajib ditentukan terlebih dahulu melalui panel **Tilemap Settings**. Kesalahan dalam menentukan nilai awal dapat menyebabkan distorsi visual pada aspek rasio *sprite* game."
+        },
+        {
+          "type": "table",
+          "headers": ["Parameter Input", "Satuan/Format", "Deskripsi Teknis"],
+          "rows": [
+            ["Tile Size Width", "Piksel (PX)", "Menentukan lebar resolusi untuk satu kotak grid individual."],
+            ["Tile Size Height", "Piksel (PX)", "Menentukan tinggi resolusi untuk satu kotak grid individual."],
+            ["Map Size Column", "Jumlah Grid", "Menentukan total kapasitas kolom horizontal yang tersedia pada area peta."],
+            ["Map Size Row", "Jumlah Grid", "Menentukan total kapasitas baris vertikal yang tersedia pada area peta."]
+          ]
+        },
+        {
+          "type": "alert",
+          "variant": "warning",
+          "message": "Mengubah ukuran **Tile Size** saat proses desain sedang berjalan dapat menyebabkan pergeseran koordinat objek yang sudah terpasang."
+        }
+      ]
+    },
+    {
+      "id": "tile-palette",
+      "title": "Palet Aset (Tile Palette)",
+      "blocks": [
+        {
+          "type": "image",
+          "url": "tilemap_palette.png",
+          "alt": "Antarmuka Panel Tile Palette",
+          "caption": "Komponen manajemen tekstur untuk memilih kuas sumber tile."
+        },
+        {
+          "type": "text",
+          "content": "Panel **Tile Palette** bertindak sebagai wadah atau katalog aset dari *spritesheet* yang telah dipecah. Komponen ini memisahkan antara fungsionalitas navigasi internal palet dengan fungsi seleksi struktur data visual."
+        },
+        {
+          "type": "table",
+          "headers": ["Elemen Kontrol", "Aksi Pengguna", "Keluaran Teknis"],
+          "rows": [
+            ["Select Button", "Klik Kiri / Drag", "Mengaktifkan mode pemilihan. Pengguna dapat melakukan klik tunggal atau melakukan penyeretan (*drag*) untuk memilih beberapa ubin (*multiple tiles*) sekaligus sebagai satu kesatuan kuas."],
+            ["Move Palette Button", "Klik Kiri + Tahan", "Mengaktifkan penjelajahan area palet. Navigasi didukung oleh fitur perbesaran visual (*zoom in* dan *zoom out*) menggunakan roda mouse."],
+            ["Reset View Button", "Klik Tunggal", "Mengembalikan posisi sudut pandang kamera palet dan tingkat perbesaran ke status default secara instan."]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tilemap-canvas",
+      "title": "Area Kerja Utama (Tilemap Canvas)",
+      "blocks": [
+        {
+          "type": "image",
+          "url": "tilemap_canvas.png",
+          "alt": "Interaksi pada Tilemap Canvas",
+          "caption": "Proses penempatan struktur level desain di atas kanvas editor utama."
+        },
+        {
+          "type": "text",
+          "content": "Tempat eksekusi utama pembuatan level desain dilakukan pada komponen **Tilemap Canvas**. Batas suci dan kalkulasi koordinat area kerja ini sepenuhnya terikat pada matriks yang telah ditetapkan pada *Tilemap Settings*. Mekanisme interaksinya memadukan antara fungsionalitas alat aktif (*tool*) dan kuas terpilih dari *palette* yang kemudian diaplikasikan langsung dengan menekan koordinat area grid kanvas."
+        },
+        {
+          "type": "text",
+          "content": "Untuk meningkatkan efisiensi pengerjaan skala besar, terdapat fungsi modifikasi penekanan tombol keyboard. Fitur manipulasi massal tertanam pada fungsi pemindahan (*move*) dan penghapusan (*eraser*)."
+        },
+        {
+          "type": "table",
+          "headers": ["Fitur Tambahan Kanvas", "Kombinasi Kontrol", "Perilaku Sistem"],
+          "rows": [
+            ["Massive Selection/Move", "Hold CTRL + Drag Mouse", "Memungkinkan sistem melakukan kalkulasi seleksi terhadap banyak koordinat grid sekaligus untuk dipindahkan secara masif."],
+            ["Massive Eraser", "Hold CTRL + Drag Mouse (Active Eraser)", "Menghapus seluruh rangkaian matriks tile yang dilewati oleh kursor secara *real-time* selama tombol kontrol ditahan."]
+          ]
+        },
+        {
+          "type": "alert",
+          "variant": "tip",
+          "message": "Gunakan kombinasi **Hold CTRL** saat membersihkan aset latar belakang yang luas untuk memangkas waktu pengerjaan secara signifikan."
+        }
+      ]
+    }
+  ]
+}
+

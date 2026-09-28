@@ -1,0 +1,47 @@
+{
+  "title": "Global Control Overview",
+  "category": "Antarmuka / Kontrol Global",
+  "description": "Panduan ringkas mengenai kontrol utama yang tersedia pada top bar editor Lupis Engine untuk mengelola alur kerja secara terpusat.",
+  "sections": [
+    {
+      "id": "pengenalan-global-control",
+      "title": "Tentang Global Control",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "**Global Control** adalah pusat kendali utama yang terletak di area *top bar* editor Lupis Engine. Kontrol ini bersifat universal dan selalu dapat diakses untuk mempermudah manajemen proyek, eksekusi perintah cepat, serta pengaturan navigasi ruang kerja."
+        }
+      ]
+    },
+    {
+      "id": "komponen-utama-topbar",
+      "title": "Komponen Utama Top Bar",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "Secara umum, Global Control memayungi tiga bagian kontrol utama dengan peran sebagai berikut:"
+        },
+        {
+          "type": "table",
+          "headers": ["Bagian Kontrol", "Fungsi Utama", "Elemen Utama"],
+          "rows": [
+            ["Project Actions", "Menangani sinkronisasi data proyek antara lokal dan server.", "Save, Sync, Indikator Status"],
+            ["Quick Action", "Menyediakan akses instan untuk modifikasi cepat dan preferensi.", "Undo, Redo, Theme, Settings"],
+            ["Tab Manager", "Mengatur tata letak dan alur navigasi jendela kerja aktif.", "Manajemen Tab Permanen & Closeable"]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "best-practice-global",
+      "title": "Alur Kerja Efisien",
+      "blocks": [
+        {
+          "type": "alert",
+          "variant": "tip",
+          "message": "**Tips:** Kombinasikan penggunaan fitur-fitur ini untuk menjaga produktivitas. Gunakan *Quick Action* untuk mempercepat eksperimen desain, kelola area kerja via *Tab Manager*, dan pastikan melakukan *Save to Server* pada *Project Actions* sebelum mengakhiri sesi."
+        }
+      ]
+    }
+  ]
+}

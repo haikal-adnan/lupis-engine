@@ -1,0 +1,36 @@
+{
+  "title": "Lupis Engine: Visual Scripting & 2D Power",
+  "category": "Getting Started",
+  "description": "Framework pengembangan game 2D modern dengan sistem **Node-Based** intuitif yang dibangun di atas **WebGL 2.0**.",
+  "sections": [
+    {
+      "id": "pengenalan-engine",
+      "title": "Apa itu Lupis Engine?",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "Lupis Engine adalah framework pengembangan game 2D modern yang dirancang untuk menggabungkan **performa tinggi** dengan kemudahan penggunaan. Dibangun di atas teknologi **WebGL 2.0**, engine ini memungkinkan pengembang untuk menciptakan pengalaman visual yang memukau tanpa harus terjebak dalam kompleksitas rendering tingkat rendah."
+        },
+        {
+          "type": "text",
+          "content": "Sistem utama kami mengandalkan arsitektur **Node-Based** yang intuitif, di mana kamu bisa menyusun logika permainan melalui **Visual Editor** tanpa perlu menulis ribuan baris kode secara manual. Hal ini membuat Lupis Engine ideal bagi desainer maupun developer profesional yang membutuhkan alur kerja prototyping yang sangat efisien."
+        },
+        {
+          "type": "image",
+          "url": "introduction.png",
+          "alt": "Tampilan Visual Editor Lupis Engine",
+          "caption": "Antarmuka Visual Editor: Membangun logika game menggunakan sistem koneksi antar node."
+        },
+        {
+          "type": "text",
+          "content": "Selain kemudahan visual, Lupis Engine juga menyediakan akses **API yang mendalam** bagi mereka yang ingin melakukan kustomisasi penuh melalui kode. Kamu bisa mempelajari lebih lanjut tentang hal ini di halaman [Cheat Sheet Dokumentasi](cheat-sheet#komponen-dasar)."
+        },
+        {
+          "type": "alert",
+          "variant": "tip",
+          "message": "Lupis Engine sepenuhnya bersifat **Open Source**! Kamu bisa berkontribusi atau memodifikasi core engine melalui [Repositori GitHub](https://github.com/lupis-studio)."
+        }
+      ]
+    }
+  ]
+}

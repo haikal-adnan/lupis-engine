@@ -1,0 +1,87 @@
+{
+  "title": "Property Inspector",
+  "category": "Scene Editor",
+  "description": "Halaman dokumentasi teknis mengenai antarmuka Property Inspector yang berfungsi sebagai panel utama untuk memodifikasi parameter dan komponen dari sebuah Entity di dalam *scene*.",
+  "sections": [
+    {
+      "id": "pengenalan-property-inspector",
+      "title": "Pengenalan Property Inspector",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "**Property Inspector** adalah kumpulan *input* dan *toggle* yang disediakan untuk memodifikasi suatu *entity*. Panel ini dapat diaktifkan dengan cara memilih salah satu *entity* yang terdapat pada *hierarchy scene* ataupun *canvas scene*."
+        },
+        {
+          "type": "alert",
+          "variant": "info",
+          "message": "Property Inspector hanya menampilkan data dari *entity parent* saja apabila *entity* yang dipilih memiliki struktur hierarki berbasis *child-parent*."
+        },
+        {
+          "type": "image",
+          "url": "overall_property_inspector.png",
+          "alt": "Overall Property Inspector",
+          "caption": "Overall Property Inspector"
+        }
+      ]
+    },
+    {
+      "id": "context-quick-action",
+      "title": "Context Quick Action",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "Apabila tidak ada *entity* yang dipilih di dalam *scene*, panel Property Inspector akan menampilkan beberapa menu **Quick Actions** yang dapat digunakan untuk mempermudah dan mempercepat alur pengerjaan."
+        },
+        {
+          "type": "image",
+          "url": "quick_action.png",
+          "alt": "Quick Action",
+          "caption": "Quick Action"
+        },
+        {
+          "type": "table",
+          "headers": ["Quick Action", "Fungsi"],
+          "rows": [
+            ["Show Grid Guide", "Menampilkan garis bantu *grid* pada area kerja *scene*."],
+            ["Snap to Grid", "Memastikan objek bergeser dengan presisi mengikuti letak dan jarak *grid*."],
+            ["Show Editor Rulers", "Menampilkan penggaris metrik di tepi antarmuka area kerja."],
+            ["Enable UI Layer", "Mengaktifkan dan memprioritaskan lapisan khusus antarmuka pengguna (*User Interface*)."],
+            ["Show UI Bounds", "Menampilkan garis batas pembatas (*bounding box*) pada seluruh elemen UI."],
+            ["Background Color", "Memodifikasi warna latar belakang utama dari *scene* yang sedang aktif."]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "komponen-entity",
+      "title": "Komponen Entity (Entity Component)",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "Sistem yang digunakan telah sepenuhnya mendukung arsitektur **Entity Component System (ECS)**. Terdapat berbagai komponen yang dapat dipasangkan pada sebuah *Entity*. Komponen terbagi menjadi komponen permanen serta komponen dinamis yang dapat dicabut-pasang sesuai kebutuhan logika. Untuk melihat dokumentasi menyeluruh terkait hal ini, silakan akses halaman referensi [Entity Component](#entity-component)."
+        },
+        {
+          "type": "table",
+          "headers": ["Nama Komponen", "Sifat", "Keterangan Lengkap"],
+          "rows": [
+            ["Object", "Permanen", "Komponen dasar yang menyimpan data identitas dan status aktif sebuah *Entity*."],
+            ["Transform", "Permanen", "Komponen fundamental yang mengkalkulasi posisi (X, Y), rotasi, serta skala spasial *Entity*."],
+            ["Renderer", "Cabut Pasang", "Sistem rendering visual. Hanya satu tipe yang dapat dipilih pada satu waktu: **Image**, **Shape**, **Text**, atau **Tilemap**."],
+            ["Sprite Animator", "Cabut Pasang", "Komponen penanganan animasi bingkai (*frame-by-frame*). Membutuhkan komponen **Image Renderer** agar dapat berfungsi dan dipasangkan."]
+          ]
+        },
+        {
+          "type": "alert",
+          "variant": "warning",
+          "message": "Perlu diperhatikan bahwa komponen **Sprite Animator** memiliki dependensi langsung. Sebuah *Entity* wajib memiliki komponen **Image Renderer** sebelum *Sprite Animator* dapat dipasangkan."
+        },
+        {
+          "type": "image",
+          "url": "add_component.png",
+          "alt": "Add Component",
+          "caption": "Antarmuka Add Component"
+        }
+      ]
+    }
+  ]
+}

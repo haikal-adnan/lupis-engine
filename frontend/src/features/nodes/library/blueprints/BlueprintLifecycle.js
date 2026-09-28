@@ -1,0 +1,187 @@
+import { Play, Pause, Square, Power, Flag, Clock } from 'lucide-vue-next';
+
+export const BlueprintLifecycle = {
+  id: 'category_game_flow',
+  label: 'Game Lifecycle',
+  color: '#EF4444',
+  icon: Power,
+  items: [
+    {
+      type: 'event_tick',
+      label: 'On Tick',
+      description: 'Runs every frame. Use for continuous logic.',
+      icon: Clock,
+      defaultData: {
+        settings: {
+          headerTitle: 'On Tick',
+          headerColor: '#3B82F6',
+          category: 'Events'
+        },
+        inputs: [],
+        outputs: [
+          { id: 'out', label: 'Update', dataType: 'execution', color: '#ffffff' },
+          { id: 'dt', label: 'Delta Time', dataType: 'number', color: '#69F0AE' }
+        ],
+        data: {
+          code: `context.onTick((dt) => {
+  outputs['dt'] = dt;
+  context.triggerFlow('out');
+});
+return;`
+        }
+      }
+    },
+
+    {
+      type: 'event_game_start',
+      label: 'On Game Start',
+      description: 'Triggered once when the game begins.',
+      icon: Flag,
+      allowDynamicInputs: false,
+      allowDynamicOutputs: false,
+      defaultData: {
+        settings: {
+          headerTitle: 'On Game Start',
+          headerColor: '#10B981',
+          category: 'Events'
+        },
+        inputs: [],
+        outputs: [
+          { id: 'out', label: 'Start', dataType: 'execution', color: '#ffffff' }
+        ],
+        data: {
+          code: `context.onGameStart(() => {
+  context.triggerFlow('out');
+});
+return;`
+        }
+      }
+    },
+    {
+      type: 'event_scene_start',
+      label: 'On Scene Start',
+      description: 'Triggered exactly once when the scene has successfully loaded and started.',
+      icon: Flag,
+      allowDynamicInputs: false,
+      allowDynamicOutputs: false,
+      defaultData: {
+        settings: {
+          headerTitle: 'On Scene Start',
+          headerColor: '#059669',
+          category: 'Events'
+        },
+        inputs: [],
+        outputs: [
+          { id: 'out', label: 'Start', dataType: 'execution', color: '#ffffff' },
+          { id: 'scene_name', label: 'Scene Name', dataType: 'string', color: '#FCD34D' }
+        ],
+        data: {
+          code: `context.onSceneStart((sceneName) => {
+  node._tempData = node._tempData || {};
+  node._tempData['scene_name'] = sceneName;
+  outputs['scene_name'] = sceneName;
+  context.triggerFlow('out');
+});
+return;`
+        }
+      }
+    },
+
+    {
+      type: 'action_game_pause',
+      label: 'Pause Game',
+      description: 'Freezes the game loop update.',
+      icon: Pause,
+      defaultData: {
+        settings: {
+          headerTitle: 'Pause Game',
+          headerColor: '#EF4444',
+          category: 'Game Flow'
+        },
+        inputs: [
+          { id: 'exec_in', label: 'In', dataType: 'execution', color: '#ffffff' }
+        ],
+        outputs: [
+          { id: 'out', label: 'Out', dataType: 'execution', color: '#ffffff' }
+        ],
+        data: {
+          code: `context.game.pauseGame();
+outputs['out'] = true;
+return;`
+        }
+      }
+    },
+
+    {
+      type: 'action_game_resume',
+      label: 'Resume Game',
+      description: 'Resumes the game loop update.',
+      icon: Play,
+      defaultData: {
+        settings: {
+          headerTitle: 'Resume Game',
+          headerColor: '#EF4444',
+          category: 'Game Flow'
+        },
+        inputs: [
+          { id: 'exec_in', label: 'In', dataType: 'execution', color: '#ffffff' }
+        ],
+        outputs: [
+          { id: 'out', label: 'Out', dataType: 'execution', color: '#ffffff' }
+        ],
+        data: {
+          code: `context.game.resumeGame();
+outputs['out'] = true;
+return;`
+        }
+      }
+    },
+
+    {
+      type: 'action_game_toggle_pause',
+      label: 'Toggle Pause',
+      description: 'Switches between Pause and Resume.',
+      icon: Pause,
+      defaultData: {
+        settings: {
+          headerTitle: 'Toggle Pause',
+          headerColor: '#F59E0B',
+          category: 'Game Flow'
+        },
+        inputs: [
+          { id: 'exec_in', label: 'In', dataType: 'execution', color: '#ffffff' }
+        ],
+        outputs: [
+          { id: 'out', label: 'Out', dataType: 'execution', color: '#ffffff' }
+        ],
+        data: {
+          code: `context.game.togglePause();
+outputs['out'] = true;
+return;`
+        }
+      }
+    },
+
+    {
+      type: 'action_game_quit',
+      label: 'Quit Game',
+      description: 'Stops the game execution.',
+      icon: Square,
+      defaultData: {
+        settings: {
+          headerTitle: 'Quit / End Game',
+          headerColor: '#000000',
+          category: 'Game Flow'
+        },
+        inputs: [
+          { id: 'exec_in', label: 'In', dataType: 'execution', color: '#ffffff' }
+        ],
+        outputs: [],
+        data: {
+          code: `context.game.quitGame();
+return;`
+        }
+      }
+    }
+  ]
+};
