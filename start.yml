@@ -85,13 +85,13 @@ services:
       watch:
         - action: sync
           path: ./frontend
-          target: /app
+          target: /workspace/frontend
           ignore:
             - node_modules/
             - dist/
         - action: sync
           path: ./engine
-          target: /engine
+          target: /workspace/engine
         - action: rebuild
           path: ./frontend/package.json
         - action: rebuild

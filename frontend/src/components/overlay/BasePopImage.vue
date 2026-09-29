@@ -155,5 +155,4 @@ onBeforeUnmount(() => {
   aspect-ratio: 1 / 1;
 }
 
-/* Style .bg-checkerboard lama sudah dihapus agar CSS bersih */
 </style>

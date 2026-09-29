@@ -2,7 +2,6 @@
 import { onMounted, onUnmounted, ref, nextTick, watch } from "vue";
 import { useWorkspaceStore } from '@workspaces/workspaces.js';
 import { useSceneStore } from '@scenes/scenes.js';
-import { useUserStore } from "@users/users.js";
 import { startEngine } from "@core/RuntimeEditor.js"; 
 import { useTheme } from '@composables/composables.js';
 import { useSceneHistory, useTilemapHistory } from '@historys/historys.js';
@@ -13,10 +12,9 @@ import { useCanvasLogic, useCanvasMenu } from '@viewports/viewports.js';
 
 const workspaceStore = useWorkspaceStore();
 const sceneStore = useSceneStore();
-const userStore = useUserStore();
 
 const { listen: listenEngineToEditor } = useEngineToEditor(sceneStore);
-const { recordTransformChange, recordComponentChange } = useSceneHistory();
+const { recordTransformChange } = useSceneHistory();
 const { startStrokeTransaction, endStrokeTransaction, recordTilemapPropChange } = useTilemapHistory();
 const { initSync } = useEngineSync();
 initSync();
@@ -212,7 +210,6 @@ const initializeCanvas = async () => {
     }
 
     const currentProjectId = workspaceStore.activeProjectId;
-    const userId = userStore.currentUser?.id;
 
     if (!currentProjectId) {
         initError.value = "Project ID is not initialized in Store.";
@@ -224,7 +221,7 @@ const initializeCanvas = async () => {
         const enginePayload = await prepareEngineData();
         if (!gameCanvas.value) throw new Error("Canvas DOM Missing");
 
-        const opfsContext = { userId, projectId: currentProjectId };
+        const opfsContext = { projectId: currentProjectId };
         const instance = await startEngine(gameCanvas.value, opfsContext, "editor", enginePayload);
 
         if (instance) {
@@ -329,6 +326,7 @@ onUnmounted(() => {
     engineBridge.disconnect();
 });
 </script>
+
 <template>
   <div 
     class="w-full h-full relative overflow-hidden flex flex-col bg-slate-900 select-none"

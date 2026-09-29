@@ -1,9 +1,6 @@
-import { useOPFSStore } from '@opfs/opfs.js';
-
 const APP_STORAGE_DIR = 'lupis-engine';
 
 export function useProjectActions() {
-  const opfsStore = useOPFSStore();
 
   const _ensureOPFSSupport = () => {
     if (!navigator.storage || !navigator.storage.getDirectory) {
@@ -36,7 +33,7 @@ export function useProjectActions() {
     await writable.close();
   };
 
-  const getProjectsByOwnerId = async () => {
+  const getProjects = async () => {
     const projectsDir = await getUserProjectsDir();
     const projectsList = [];
 
@@ -67,7 +64,6 @@ export function useProjectActions() {
 
     if (!project.id) project.id = projectId;
     if (!project.projectId) project.projectId = projectId;
-    project.ownerId = APP_STORAGE_DIR;
 
     await projectDir.getDirectoryHandle('assets', { create: true });
     const scenesDir = await projectDir.getDirectoryHandle('scenes', { create: true });
@@ -183,7 +179,6 @@ export function useProjectActions() {
     const newProjectData = {
       id: projectId,
       projectId: projectId,
-      ownerId: APP_STORAGE_DIR,
       name: projectName,
       description: description,
       status: 'DRAFT',
@@ -323,7 +318,7 @@ export function useProjectActions() {
 
   return {
     getUserProjectsDir,
-    getProjectsByOwnerId,
+    getProjects,
     getProjectById,
     createProject,
     updateProject,

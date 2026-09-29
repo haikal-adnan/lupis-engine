@@ -131,14 +131,12 @@ watch(activeFilter, () => {
 </script>
 
 <style scoped>
-/* Menirukan visualisasi track minimalis & thumb melayang dari ScrollArea atomic */
 .custom-atomic-scrollbar {
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
   scroll-behavior: smooth;
 }
 
-/* Kustomisasi Webkit Engine (Chrome, Safari, Edge) */
 .custom-atomic-scrollbar::-webkit-scrollbar {
   width: 6px;
   height: 6px;

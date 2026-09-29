@@ -5,11 +5,11 @@ export default class GLAudioResource {
         this.audioContext = audioContext;
     }
 
-    async _getOpfsAudioBuffer(userId, projectId, fileName) {
+    async _getOpfsAudioBuffer(projectId, fileName) {
         try {
             const root = await navigator.storage.getDirectory();
-            const userDir = await root.getDirectoryHandle(String(userId));
-            const projectsDir = await userDir.getDirectoryHandle('projects');
+            const appDir = await root.getDirectoryHandle('lupis-engine', { create: true });
+            const projectsDir = await appDir.getDirectoryHandle('projects');
             const projectDir = await projectsDir.getDirectoryHandle(String(projectId));
             const assetsDir = await projectDir.getDirectoryHandle('assets');
 
@@ -31,9 +31,9 @@ export default class GLAudioResource {
         if (asset.fileKey && asset.meta?.extension) {
             const fileName = `${asset.fileKey}${asset.meta.extension}`;
 
-            if (typeof opfsConfig === 'object' && opfsConfig !== null && opfsConfig.userId && opfsConfig.projectId) {
-                audioBuffer = await this._getOpfsAudioBuffer(opfsConfig.userId, opfsConfig.projectId, fileName);
-                resolvedSrc = `opfs://${opfsConfig.userId}/projects/${opfsConfig.projectId}/${fileName}`;
+            if (typeof opfsConfig === 'object' && opfsConfig !== null && opfsConfig.projectId) {
+                audioBuffer = await this._getOpfsAudioBuffer(opfsConfig.projectId, fileName);
+                resolvedSrc = `opfs://projects/${opfsConfig.projectId}/${fileName}`;
             } 
             else if (typeof opfsConfig === 'string' && opfsConfig.length > 0) {
                 const cleanBaseURL = opfsConfig.replace(/\/$/, "");
@@ -68,11 +68,10 @@ export default class GLAudioResource {
             if (url.startsWith('opfs://')) {
                 const cleanPath = url.replace('opfs://', '');
                 const parts = cleanPath.split('/'); 
-                const userId = parts[0];
-                const projectId = parts[2];
-                const fileName = parts[3] || parts[parts.length - 1];
+                const projectId = parts[0] === 'projects' ? parts[1] : parts[0];
+                const fileName = parts[parts.length - 1];
 
-                return await this._getOpfsAudioBuffer(userId, projectId, fileName);
+                return await this._getOpfsAudioBuffer(projectId, fileName);
             }
 
             const response = await fetch(url);

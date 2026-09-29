@@ -1,6 +1,5 @@
 import { defineStore } from 'pinia';
 import { useWorkspaceStore } from '@workspaces/workspaces.js';
-import { useUserStore } from '@users/users.js'; 
 
 export const useAssetStore = defineStore('asset', {
   state: () => ({
@@ -28,15 +27,12 @@ export const useAssetStore = defineStore('asset', {
 
     async _getOPFSDirectories() {
       const workspaceStore = useWorkspaceStore();
-      const userStore = useUserStore();
-      const userId = userStore.currentUser?.id || userStore.currentUser?.uuid;
       const projectId = workspaceStore.activeProjectId;
 
-      if (!userId || !projectId) return null;
+      if (!projectId) return null;
 
       const root = await navigator.storage.getDirectory();
-      const userDir = await root.getDirectoryHandle(String(userId), { create: true });
-      const projectsDir = await userDir.getDirectoryHandle('projects', { create: true });
+      const projectsDir = await root.getDirectoryHandle('projects', { create: true });
       const projectDir = await projectsDir.getDirectoryHandle(String(projectId), { create: true });
       const assetsDir = await projectDir.getDirectoryHandle('assets', { create: true });
       

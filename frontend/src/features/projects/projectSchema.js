@@ -4,7 +4,6 @@ export const projectSchema = (data = {}) => {
   return {
     id: data.id, 
     name: data.name || "Untitled Project",
-    ownerId: data.ownerId || null,
     description: data.description || "",
     status: data.status || "DRAFT", 
     createdAt: data.createdAt || new Date().toISOString(),

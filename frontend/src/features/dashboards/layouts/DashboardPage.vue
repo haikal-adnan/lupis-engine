@@ -3,7 +3,6 @@ import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useProjectActions, useProjectMenu } from '@projects/projects.js';
 import { useWorkspaceStore } from '@workspaces/workspaces.js';
-import { useUserActions } from '@users/users.js';
 import { useOPFSActions } from '@opfs/opfs.js';
 import { usePopAlert } from '@composables/composables.js';
 
@@ -19,10 +18,9 @@ const props = defineProps({
 });
 
 const router = useRouter();
-const { getProjectsByOwnerId, createProject } = useProjectActions();
+const { getProjects, createProject } = useProjectActions();
 const { importFromLupisProject } = useOPFSActions();
 const workspaceStore = useWorkspaceStore();
-const { getCurrentUser } = useUserActions();
 const { showPop } = usePopAlert();
 
 const projects = ref([]);
@@ -30,25 +28,17 @@ const isLoading = ref(true);
 const errorMessage = ref('');
 const isCreatePopupOpen = ref(false);
 
-const currentUser = ref(getCurrentUser());
 const fileInputRef = ref(null);
-
 const isDraggingOver = ref(false);
 const isInvalidFileDragged = ref(false);
 let dragCounter = 0;
 
 const fetchProjects = async () => {
-  if (!currentUser.value || !currentUser.value.id) {
-    errorMessage.value = "User session not found. Please log in again.";
-    isLoading.value = false;
-    return;
-  }
-
   isLoading.value = true;
   errorMessage.value = '';
   
   try {
-    const data = await getProjectsByOwnerId(currentUser.value.id);
+    const data = await getProjects();
     projects.value = data;
   } catch (error) {
     console.error(error);
@@ -71,10 +61,6 @@ const openProject = async (projectId) => {
 const { menu, handleContextMenu, closeMenu, contextMenuItems } = useProjectMenu(fetchProjects, openProject);
 
 onMounted(() => {
-  if (!currentUser.value) {
-    router.push({ name: 'Landing', query: { action: 'login' } });
-    return;
-  }
   fetchProjects();
 });
 
@@ -87,17 +73,10 @@ const filteredProjects = computed(() => {
 
 const handleCreateProject = async (projectData) => {
   isCreatePopupOpen.value = false;
-  
-  if (!currentUser.value || !currentUser.value.id) {
-    alert("You must be logged in to create a new project.");
-    return;
-  }
-
   workspaceStore.isLoading = true;
 
   try {
     const newProject = await createProject({
-      userId: currentUser.value.id,
       projectName: projectData.name,
       description: projectData.description,
       type: "empty"
@@ -120,18 +99,14 @@ const isLupisProjectFile = (file) => {
 const handleDragEnter = (e) => {
   e.preventDefault();
   e.stopPropagation();
-
   dragCounter++;
 
   if (dragCounter === 1) {
     isDraggingOver.value = true;
-
     const items = Array.from(e.dataTransfer?.items || []);
     if (items.length > 0) {
       const fileItem = items.find(item => item.kind === 'file');
-      if (fileItem) {
-        isInvalidFileDragged.value = false;
-      }
+      if (fileItem) isInvalidFileDragged.value = false;
     }
   }
 };
@@ -145,7 +120,6 @@ const handleDragOver = (e) => {
 const handleDragLeave = (e) => {
   e.preventDefault();
   e.stopPropagation();
-
   dragCounter--;
 
   if (dragCounter <= 0) {
@@ -203,7 +177,7 @@ const handleFileSelect = async (e) => {
 };
 
 const processImport = async (file) => {
-  const res = await importFromLupisProject(file, currentUser.value?.id);
+  const res = await importFromLupisProject(file);
   if (res.success) {
     await fetchProjects();
   }
@@ -231,7 +205,7 @@ const getStatusStyle = (status) => {
     @drop="handleDrop"
     @click="closeMenu"
   >
-    <!-- Visual Drag File Explorer Overlay -->
+    <!-- Teleport Overlay & Modal Content -->
     <Teleport to="body">
       <Transition
         enter-active-class="transition-all duration-300 ease-out"
@@ -249,7 +223,6 @@ const getStatusStyle = (status) => {
             class="max-w-md w-full bg-card/90 border-2 border-dashed rounded-3xl p-8 md:p-10 flex flex-col items-center text-center shadow-2xl backdrop-blur-xl transition-colors duration-300 relative overflow-hidden"
             :class="isInvalidFileDragged ? 'border-destructive/80 bg-destructive/5' : 'border-cyan-500/80 bg-cyan-500/5'"
           >
-            <!-- Glow Effects -->
             <div 
               class="absolute -top-20 -left-20 w-40 h-40 rounded-full blur-3xl pointer-events-none"
               :class="isInvalidFileDragged ? 'bg-destructive/20' : 'bg-cyan-500/20'"
@@ -259,7 +232,6 @@ const getStatusStyle = (status) => {
               :class="isInvalidFileDragged ? 'bg-destructive/20' : 'bg-cyan-500/20'"
             ></div>
 
-            <!-- Icon Box -->
             <div 
               class="w-20 h-20 rounded-2xl flex items-center justify-center mb-6 animate-bounce border transition-colors shadow-lg"
               :class="isInvalidFileDragged 
@@ -270,7 +242,6 @@ const getStatusStyle = (status) => {
               <FileCode2 v-else class="w-10 h-10" :stroke-width="2" />
             </div>
 
-            <!-- Title & Description -->
             <h2 class="text-2xl font-black tracking-tight text-white mb-2.5">
               {{ isInvalidFileDragged ? 'Unsupported File Format' : 'Drop .lupisproject File' }}
             </h2>
@@ -282,7 +253,6 @@ const getStatusStyle = (status) => {
               }}
             </p>
 
-            <!-- Status Badge -->
             <div class="mt-6 pt-5 border-t border-border/50 w-full flex justify-center">
               <span 
                 class="text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-wider border flex items-center gap-1.5"
@@ -299,7 +269,6 @@ const getStatusStyle = (status) => {
       </Transition>
     </Teleport>
 
-    <!-- Hidden Input File for .lupisproject -->
     <input 
       ref="fileInputRef"
       type="file" 
@@ -309,8 +278,6 @@ const getStatusStyle = (status) => {
     />
 
     <div class="max-w-[1400px] w-full mx-auto p-6 md:p-10 lg:p-12">
-      
-      <!-- Header Area -->
       <div class="mb-10 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <div class="flex items-center gap-3 mb-1">
@@ -346,7 +313,6 @@ const getStatusStyle = (status) => {
           </p>
         </div>
 
-        <!-- Mobile Buttons -->
         <div class="flex sm:hidden items-center gap-2 w-full">
           <button 
             @click="isCreatePopupOpen = true"
@@ -461,7 +427,6 @@ const getStatusStyle = (status) => {
           </div>
         </div>
       </div>
-      
     </div>
 
     <!-- Popup Create Project -->

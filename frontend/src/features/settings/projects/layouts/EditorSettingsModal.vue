@@ -74,5 +74,4 @@ onUnmounted(() => window.removeEventListener('keydown', handleKeyDown));
 </script>
 
 <style scoped>
-/* Menjaga konsistensi styling */
 </style>

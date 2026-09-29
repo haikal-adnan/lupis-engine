@@ -16,7 +16,7 @@
         class="w-full h-full rounded-[2px] transition-all duration-200 focus:outline-none focus:ring-1 focus:ring-primary/50"
         :class="[
           active(p) 
-            ? 'bg-blue-500 shadow-sm scale-110'   /* Warna Biru untuk membedakan dengan Pivot */
+            ? 'bg-blue-500 shadow-sm scale-110'  
             : 'bg-secondary hover:bg-muted-foreground/40'
         ]"
       />

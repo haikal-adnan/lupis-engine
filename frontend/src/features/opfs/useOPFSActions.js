@@ -1,29 +1,17 @@
 import { computed } from 'vue';
 import JSZip from 'jszip';
 import { useOPFSStore } from '@opfs/opfs.js';
-import { useUserStore } from '@users/users.js';
 import { useProjectStore } from '@projects/projects.js';
 import { usePopAlert } from '@composables/composables.js';
 import { encodeLupisProject, decodeLupisProject } from '@utils/projectFormat.js';
 
 export function useOPFSActions() {
   const opfsStore = useOPFSStore();
-  const userStore = useUserStore();
   const projectStore = useProjectStore();
   const { showPop } = usePopAlert();
 
   const isLoading = computed(() => opfsStore.isLoading);
   const isSaving = computed(() => opfsStore.isSaving);
-
-  const _getUserUuid = (overrideId = null) => {
-    const user = userStore.currentUser;
-    const userUuid = overrideId || user?.id;
-
-    if (!userUuid) {
-      throw new Error('Sesi pengguna tidak ditemukan. Silakan login kembali.');
-    }
-    return String(userUuid);
-  };
 
   const _ensureOPFSSupport = () => {
     if (!navigator.storage || !navigator.storage.getDirectory) {
@@ -31,11 +19,9 @@ export function useOPFSActions() {
     }
   };
 
-  const getUserDirectory = async (userId = null) => {
+  const getUserDirectory = async () => {
     _ensureOPFSSupport();
-    const userUuid = _getUserUuid(userId);
-    const root = await navigator.storage.getDirectory();
-    return await root.getDirectoryHandle(userUuid, { create: true });
+    return await navigator.storage.getDirectory();
   };
 
   const scanDirectory = async (dirHandle, path = '') => {
@@ -55,11 +41,10 @@ export function useOPFSActions() {
     });
   };
 
-  const refreshTree = async (userId = null) => {
-    if (!userStore.isLoggedIn && !userId) return;
+  const refreshTree = async () => {
     opfsStore.setLoading(true);
     try {
-      const userDir = await getUserDirectory(userId);
+      const userDir = await getUserDirectory();
       const tree = await scanDirectory(userDir);
       opfsStore.setFileTree(tree);
     } catch (error) {
@@ -70,11 +55,11 @@ export function useOPFSActions() {
     }
   };
 
-  const initProjectStructure = async (userId = null) => {
+  const initProjectStructure = async () => {
     opfsStore.setLoading(true);
     try {
-      await getUserDirectory(userId);
-      await refreshTree(userId);
+      await getUserDirectory();
+      await refreshTree();
     } catch (error) {
       showPop({ title: 'Inisialisasi OPFS Gagal', message: error.message, type: 'error' });
     } finally {
@@ -225,11 +210,8 @@ export function useOPFSActions() {
     }
   };
 
-  const clearCurrentUsersCache = async (userId = null) => {
+  const clearCurrentUsersCache = async () => {
     try {
-      const userUuid = _getUserUuid(userId);
-      const root = await navigator.storage.getDirectory();
-      await root.removeEntry(userUuid, { recursive: true });
       opfsStore.clearActiveFile();
       opfsStore.setFileTree([]);
       showPop({ title: 'Cache Dibersihkan', message: 'Folder proyek lokal telah dibersihkan.', type: 'info' });
@@ -347,7 +329,7 @@ export function useOPFSActions() {
     }
   };
 
-  const importFromLupisProject = async (file, userId = null) => {
+  const importFromLupisProject = async (file) => {
     opfsStore.setLoading(true);
     try {
       _ensureOPFSSupport();

@@ -5,11 +5,11 @@ export default class GLImageResource {
         this.gl = gl;
     }
 
-    async _getOpfsBlobUrl(userId, projectId, fileName) {
+    async _getOpfsBlobUrl(projectId, fileName) {
         try {
             const root = await navigator.storage.getDirectory();
-            const userDir = await root.getDirectoryHandle(String(userId));
-            const projectsDir = await userDir.getDirectoryHandle('projects');
+            const appDir = await root.getDirectoryHandle('lupis-engine', { create: true });
+            const projectsDir = await appDir.getDirectoryHandle('projects');
             const projectDir = await projectsDir.getDirectoryHandle(String(projectId));
             const assetsDir = await projectDir.getDirectoryHandle('assets');
 
@@ -30,8 +30,8 @@ export default class GLImageResource {
         if (asset.fileKey && asset.meta?.extension) {
             const fileName = `${asset.fileKey}${asset.meta.extension}`;
             
-            if (typeof opfsConfig === 'object' && opfsConfig !== null && opfsConfig.userId && opfsConfig.projectId) {
-                objectUrl = await this._getOpfsBlobUrl(opfsConfig.userId, opfsConfig.projectId, fileName);
+            if (typeof opfsConfig === 'object' && opfsConfig !== null && opfsConfig.projectId) {
+                objectUrl = await this._getOpfsBlobUrl(opfsConfig.projectId, fileName);
                 srcForImage = objectUrl;
             } 
             else if (typeof opfsConfig === 'string' && opfsConfig.length > 0) {
@@ -82,11 +82,10 @@ export default class GLImageResource {
         if (url.startsWith('opfs://')) {
             const cleanPath = url.replace('opfs://', '');
             const parts = cleanPath.split('/'); 
-            const userId = parts[0];
-            const projectId = parts[2];
-            const fileName = parts[3] || parts[parts.length - 1];
+            const projectId = parts[1] === 'projects' ? parts[2] : parts[0];
+            const fileName = parts[parts.length - 1];
 
-            targetUrl = await this._getOpfsBlobUrl(userId, projectId, fileName);
+            targetUrl = await this._getOpfsBlobUrl(projectId, fileName);
             isBlob = true;
         }
 

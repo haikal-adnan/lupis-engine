@@ -67,7 +67,6 @@ export default defineConfig({
       '@composables': fileURLToPath(new URL('./src/composables', import.meta.url)),
       '@components': fileURLToPath(new URL('./src/components', import.meta.url)),
       '@docs': fileURLToPath(new URL('./src/features/docs', import.meta.url)),
-      '@users': fileURLToPath(new URL('./src/features/users', import.meta.url)),
       '@projects': fileURLToPath(new URL('./src/features/projects', import.meta.url)),
       '@workspaces': fileURLToPath(new URL('./src/features/workspaces', import.meta.url)),
       '@assets': fileURLToPath(new URL('./src/features/assets', import.meta.url)),
@@ -84,13 +83,22 @@ export default defineConfig({
       '@viewports': fileURLToPath(new URL('./src/features/viewports', import.meta.url)),
       '@settings': fileURLToPath(new URL('./src/features/settings', import.meta.url)),
       '@dashboards': fileURLToPath(new URL('./src/features/dashboards', import.meta.url)),
-      '@explores': fileURLToPath(new URL('./src/features/explores', import.meta.url)),
       '@historys': fileURLToPath(new URL('./src/features/historys', import.meta.url)),
       '@utils': fileURLToPath(new URL('./src/utils', import.meta.url)),
       '@core': path.resolve(__dirname, '../engine'),
       '@engines': fileURLToPath(new URL('./src/features/engines', import.meta.url)),
       'vue': 'vue/dist/vue.esm-bundler.js',
     },
+  },
+
+  test: {
+    globals: true,
+    environment: 'happy-dom', 
+    include: [
+      'tests/unit/**/*.spec.js',
+      'tests/integration/**/*.spec.js',
+      'tests/system/**/*.spec.js'
+    ]
   },
 
   build: {

@@ -8,15 +8,12 @@
     :class="[
       alignmentClass,
       heightClass,
-      /* State: ACTIVE (Soft Blue Style) */
       active 
         ? 'bg-blue-500/10 text-blue-600 border-blue-500/40 dark:bg-blue-500/20 dark:text-blue-400 dark:border-blue-500/50 shadow-sm ' +
           'hover:bg-blue-500/20 hover:border-blue-500/60' 
         : ghost
-          /* State: GHOST / INACTIVE (Netral, Hover Blue Halus) */
           ? 'bg-transparent border-slate-200 dark:border-slate-800 text-muted-foreground ' +
             'hover:bg-blue-500/5 hover:border-blue-500/30 hover:text-blue-600 dark:hover:text-blue-400' 
-          /* State: NORMAL */
           : 'bg-white dark:bg-slate-900 text-foreground border-slate-200 dark:border-slate-700 shadow-sm ' +
             'hover:border-blue-500/40 hover:text-blue-600 dark:hover:text-blue-400 dark:hover:bg-slate-800'
     ]"

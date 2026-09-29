@@ -6,21 +6,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lupis Engine</title>
 
-    <!-- 1. CRITICAL CSS (Mencegah browser merender background putih bawaan) -->
     <style>
-      /* Style darurat langsung di render engine browser */
       html, body {
-        background-color: hsl(0 0% 98%); /* Default Light */
+        background-color: hsl(0 0% 98%);
         color: hsl(220 11% 20%);
       }
       html.dark, html.dark body {
-        background-color: hsl(220 25% 10%) !important; /* Nilai --background dark Anda */
+        background-color: hsl(220 25% 10%) !important; 
         color: hsl(210 40% 96%) !important;
         color-scheme: dark;
       }
     </style>
 
-    <!-- 2. INLINE SCRIPT (Berjalan instant sebelum DOM di-render) -->
     <script>
       (function() {
         try {

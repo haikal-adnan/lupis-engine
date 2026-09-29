@@ -3,10 +3,10 @@ export default class GLFontResource {
         this.gl = gl;
     }
 
-    async _getOpfsFontFile(userId, projectId, fileName, isText = false) {
+    async _getOpfsFontFile(projectId, fileName, isText = false) {
         const root = await navigator.storage.getDirectory();
-        const userDir = await root.getDirectoryHandle(String(userId));
-        const projectsDir = await userDir.getDirectoryHandle('projects');
+        const appDir = await root.getDirectoryHandle('lupis-engine', { create: true });
+        const projectsDir = await appDir.getDirectoryHandle('projects');
         const projectDir = await projectsDir.getDirectoryHandle(String(projectId));
         const assetsDir = await projectDir.getDirectoryHandle('assets');
 
@@ -56,10 +56,10 @@ export default class GLFontResource {
                 const xmlFileName = `${asset.fileKey}.fnt`;
                 const texFileName = `${asset.fileKey}.png`;
 
-                if (typeof opfsConfig === 'object' && opfsConfig !== null && opfsConfig.userId && opfsConfig.projectId) {
+                if (typeof opfsConfig === 'object' && opfsConfig !== null && opfsConfig.projectId) {
                     const [fetchedXmlText, blobUrl] = await Promise.all([
-                        this._getOpfsFontFile(opfsConfig.userId, opfsConfig.projectId, xmlFileName, true),
-                        this._getOpfsFontFile(opfsConfig.userId, opfsConfig.projectId, texFileName, false)
+                        this._getOpfsFontFile(opfsConfig.projectId, xmlFileName, true),
+                        this._getOpfsFontFile(opfsConfig.projectId, texFileName, false)
                     ]);
 
                     xmlText = fetchedXmlText;

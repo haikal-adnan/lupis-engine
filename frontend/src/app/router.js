@@ -58,19 +58,6 @@ const routes = [
     meta: { layout: 'MainLayout' }
   },
   {
-    path: '/explore',
-    name: 'Explore',
-    component: () => import('@/features/explores/layouts/ExplorePanel.vue'),
-    meta: { layout: 'MainLayout' }
-  },
-  {
-    path: '/play/:id',
-    name: 'DetailPanel',
-    component: () => import('@/features/explores/layouts/DetailPanel.vue'),
-    props: true,
-    meta: { layout: 'MainLayout' }
-  },
-  {
     path: '/:pathMatch(.*)*',
     redirect: '/dashboard'
   }

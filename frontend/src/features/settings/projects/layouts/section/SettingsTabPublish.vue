@@ -136,10 +136,9 @@
 <script setup>
 import { computed } from 'vue';
 import { Archive, Cpu, FolderArchive, Download, Loader2, Share2 } from 'lucide-vue-next';
-import { useExportApp } from '@explores/explores.js';
 import { useOPFSActions } from '@opfs/opfs.js';
 import { useWorkspaceStore } from '@workspaces/workspaces.js';
-import { usePopAlert } from '@composables/composables.js';
+import { useExportApp, usePopAlert } from '@composables/composables.js';
 
 const props = defineProps({
   info: {

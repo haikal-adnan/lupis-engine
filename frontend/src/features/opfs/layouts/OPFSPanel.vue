@@ -7,14 +7,12 @@ import {
 } from 'lucide-vue-next';
 
 import { useOPFSStore, useOPFSActions } from '@opfs/opfs.js';
-import { useUserStore } from '@users/users.js';
 import { useTheme } from '@composables/composables.js';
 import { BaseContextMenu } from '@components/components.js';
 
 const { isDark } = useTheme();
 
 const opfsStore = useOPFSStore();
-const userStore = useUserStore();
 const { 
   openFile, 
   createEntry, 
@@ -97,18 +95,8 @@ const fetchEntireOPFSTree = async () => {
   opfsStore.setLoading(true);
   try {
     const root = await navigator.storage.getDirectory();
-
-    const userId = userStore.currentUser?.id;
-    if (userId) {
-      await root.getDirectoryHandle(String(userId), { create: true });
-    }
-
     const tree = await scanRootOPFS(root);
     opfsStore.setFileTree(tree);
-
-    if (userId) {
-      openFolders.value.add(String(userId));
-    }
   } catch (error) {
     console.error('Gagal memuat seluruh struktur OPFS:', error);
     opfsStore.setError(error.message);

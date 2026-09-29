@@ -12,3 +12,4 @@ export { useClipboard } from '@composables/useClipboard.js'
 
 export { usePreview } from '@composables/usePreview.js'
 export { useAppInit } from '@composables/useAppInit.js'
+export { useExportApp } from '@composables/useExportApp.js'

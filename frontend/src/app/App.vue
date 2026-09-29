@@ -1,7 +1,6 @@
 <script setup>
-import { computed, onMounted } from 'vue';
+import { computed } from 'vue';
 import { useRoute } from 'vue-router';
-import { useUserActions } from '@users/users.js'; 
 
 import MainLayout from '@layouts/MainLayout.vue';
 
@@ -13,12 +12,6 @@ import {
   BasePopImage, 
   BasePopAudio 
 } from '@components/components.js';
-
-const userActions = useUserActions();
-
-onMounted(() => {
-  userActions.initUser();
-});
 
 const route = useRoute();
 

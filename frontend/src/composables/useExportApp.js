@@ -87,15 +87,33 @@ export function useExportApp() {
         throw new Error(`Folder proyek '${projectId}' tidak ditemukan di penyimpanan lokal (OPFS).`);
       }
 
+      // 1. Ekstraksi updatedAt dari project.json OPFS (digunakan oleh ZIP dan EXE)
+      let updatedAt = new Date().toISOString();
+      try {
+        const projectFileHandle = await targetProjectDir.getFileHandle('project.json');
+        const projectFile = await projectFileHandle.getFile();
+        const projectText = await projectFile.text();
+        const projectJson = JSON.parse(projectText);
+        if (projectJson.updatedAt) {
+          updatedAt = projectJson.updatedAt;
+        }
+      } catch (err) {
+        console.warn('Gagal membaca project.json dari OPFS, menggunakan timestamp fallback.', err);
+      }
+
+      // 2. Kompresi folder OPFS ke JSZip
+      const projectZip = new JSZip();
+      await _addDirectoryToZip(targetProjectDir, projectZip);
+      const projectBlob = await projectZip.generateAsync({ type: 'blob' });
+
+      // 3. Menyiapkan FormData terpadu
+      const formData = new FormData();
+      formData.append('projectZip', projectBlob, `${projectId}.zip`);
+      formData.append('projectId', projectId);
+      formData.append('updatedAt', updatedAt); // Sekarang terkirim baik di ZIP maupun EXE
+
+      // 4. Handling untuk format ZIP
       if (targetFormat === 'zip') {
-        const projectZip = new JSZip();
-        await _addDirectoryToZip(targetProjectDir, projectZip);
-        const projectBlob = await projectZip.generateAsync({ type: 'blob' });
-
-        const formData = new FormData();
-        formData.append('projectZip', projectBlob, `${projectId}.zip`);
-        formData.append('projectId', projectId);
-
         const response = await fetch(`${backendUrl}/api/export-app/zip`, {
           method: 'POST',
           body: formData,
@@ -126,28 +144,7 @@ export function useExportApp() {
         return { success: true };
       }
 
-      let updatedAt = new Date().toISOString();
-      try {
-        const projectFileHandle = await targetProjectDir.getFileHandle('project.json');
-        const projectFile = await projectFileHandle.getFile();
-        const projectText = await projectFile.text();
-        const projectJson = JSON.parse(projectText);
-        if (projectJson.updatedAt) {
-          updatedAt = projectJson.updatedAt;
-        }
-      } catch (err) {
-        console.warn('Gagal membaca project.json dari OPFS, menggunakan timestamp fallback.', err);
-      }
-
-      const projectZip = new JSZip();
-      await _addDirectoryToZip(targetProjectDir, projectZip);
-      const projectBlob = await projectZip.generateAsync({ type: 'blob' });
-
-      const formData = new FormData();
-      formData.append('projectZip', projectBlob, `${projectId}.zip`);
-      formData.append('projectId', projectId);
-      formData.append('updatedAt', updatedAt);
-
+      // 5. Handling untuk format EXE
       const response = await fetch(`${backendUrl}/api/export-app/exe`, {
         method: 'POST',
         body: formData,

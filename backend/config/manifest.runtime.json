@@ -15,7 +15,6 @@
     "Core/Config.js",
     "Core/Entity.js",
     "Core/Game.js",
-    "Core/GameLoader.js",
     "Core/World.js",
 
     "Input/InputManager.js",
@@ -24,9 +23,9 @@
     "Input/Touch.js",
 
     "Loader/AssetLoader.js",
+    "Loader/RuntimeLoader.js",
     "Loader/SceneLoader.js",
     "Loader/ScriptLoader.js",
-    "Loader/RuntimeLoader.js",
 
     "Loop/GameLoop.js",
 
@@ -45,44 +44,21 @@
     "Renderer/Scene/UIRenderer.js",
     "Renderer/Scene/WorldRenderer.js",
 
+    "Script/ContextSystem.js",
     "Script/EventManager.js",
-    "Script/GraphRunner.js",
-    "Script/NodeRegistry.js",
+    "Script/ScriptRunner.js",
     "Script/ScriptSystem.js",
     "Script/VariableManager.js",
-    "Script/Node/aNodeTemplate.js",
-    "Script/Node/NodeAnimator.js",
-    "Script/Node/NodeCamera.js",
-    "Script/Node/NodeCollectionHelper.js",
-    "Script/Node/NodeCollider.js",
-    "Script/Node/NodeComparison.js",
-    "Script/Node/NodeEntity.js",
-    "Script/Node/NodeHelper.js",
-    "Script/Node/NodeKeyboard.js",
-    "Script/Node/NodeLayer.js",
-    "Script/Node/NodeLifecycle.js",
-    "Script/Node/NodeList.js",
-    "Script/Node/NodeLogic.js",
-    "Script/Node/NodeLoop.js",
-    "Script/Node/NodeMap.js",
-    "Script/Node/NodeMath.js",
-    "Script/Node/NodeMouse.js",
-    "Script/Node/NodeObject.js",
-    "Script/Node/NodePhysics.js",
-    "Script/Node/NodeRandom.js",
-    "Script/Node/NodeRenderer.js",
-    "Script/Node/NodeScene.js",
-    "Script/Node/NodeString.js",
-    "Script/Node/NodeSystem.js",
-    "Script/Node/NodeTransform.js",
-    "Script/Node/NodeTransition.js",
-    "Script/Node/NodeVariable.js",
 
     "System/AnimatorSystem.js",
     "System/AudioSystem.js",
     "System/ColliderSystem.js",
+    "System/EntitySystem.js",
+    "System/LayerSystem.js",
     "System/PhysicsSystem.js",
     "System/PointerRaycast.js",
+    "System/PrefabSystem.js",
+    "System/SceneSystem.js",
     "System/TransitionSystem.js",
 
     "Util/ApplyResizeToEntity.js",
@@ -95,6 +71,7 @@
     "Util/GenerateUUID.js",
     "Util/HexToVec4.js",
     "Util/MapToCanvasPixels.js",
-    "Util/Mat4.js"
+    "Util/Mat4.js",
+    "Util/MiniConsoleOverlay.js"
   ]
 }

@@ -2,7 +2,6 @@ import { ref, onMounted, onUnmounted } from "vue";
 import { prepareEngineData } from "@engines/engines.js";
 import { useProjectStore } from '@projects/projects.js';
 import { useWorkspaceStore } from '@workspaces/workspaces.js';
-import { useUserStore } from '@users/users.js'; 
 
 const BROADCAST_CHANNEL_NAME = "lupis_engine_preview_channel";
 
@@ -14,7 +13,6 @@ export function usePreview() {
 
   const projectStore = useProjectStore();
   const workspaceStore = useWorkspaceStore();
-  const userStore = useUserStore();
 
   const initChannel = () => {
     if (channel) return;
@@ -34,15 +32,12 @@ export function usePreview() {
       const rawData = await prepareEngineData();
       
       const currentProjectId = workspaceStore.activeProjectId;
-      const user = userStore.currentUser;
-      const userId = user?.id;
 
-      if (!userId || !currentProjectId) {
-        throw new Error("[Preview] Sesi User atau Project ID tidak valid.");
+      if (!currentProjectId) {
+        throw new Error("[Preview] Project ID tidak valid.");
       }
 
       const opfsContext = {
-        userId: String(userId),
         projectId: String(currentProjectId)
       };
 

@@ -8,7 +8,6 @@ import { spawn, exec } from "child_process";
 import archiver from "archiver";
 import cors from "cors";
 import unzipper from "unzipper";
-import { Readable } from "stream";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -17,7 +16,7 @@ const app = express();
 const PORT = process.env.PORT || 4000;
 
 const TEMP_DIR = path.resolve(__dirname, "./temp");
-const EXPORTS_DIR = path.resolve(__dirname, "./exports"); 
+const EXPORTS_DIR = path.resolve(__dirname, "./exports");
 const RUNNER_TEMPLATE_DIR = path.resolve(__dirname, "./runner");
 
 if (!fs.existsSync(TEMP_DIR)) fs.mkdirSync(TEMP_DIR, { recursive: true });
@@ -164,40 +163,52 @@ app.post("/api/convert-font", (req, res) => {
   });
 });
 
-function getEngineFilesFromManifest(engineDir) {
+/**
+ * Membaca manifest.runtime.json HANYA untuk pemetaan modul & aset yang akan di-export
+ */
+function getEngineFilesFromManifest() {
   const manifestPath = path.join(__dirname, "config", "manifest.runtime.json");
   let filesToExport = [];
 
   if (fs.existsSync(manifestPath)) {
-    const manifestData = JSON.parse(fs.readFileSync(manifestPath, "utf-8"));
-    if (manifestData.modules && Array.isArray(manifestData.modules)) {
-      filesToExport.push(...manifestData.modules);
+    try {
+      const manifestData = JSON.parse(fs.readFileSync(manifestPath, "utf-8"));
+      if (manifestData.modules && Array.isArray(manifestData.modules)) {
+        filesToExport.push(...manifestData.modules);
+      }
+      if (manifestData.assets) {
+        Object.values(manifestData.assets).forEach((assetList) => {
+          if (Array.isArray(assetList)) filesToExport.push(...assetList);
+        });
+      }
+      console.log(`[Manifest Mapping] Berhasil memetakan ${filesToExport.length} file dari manifest.`);
+    } catch (e) {
+      console.error("[Manifest Error] Gagal membaca manifest.runtime.json:", e.message);
     }
-    if (manifestData.assets) {
-      Object.values(manifestData.assets).forEach((assetList) => {
-        if (Array.isArray(assetList)) filesToExport.push(...assetList);
-      });
-    }
+  } else {
+    console.warn(`[Manifest Warning] File manifest tidak ditemukan di: ${manifestPath}`);
   }
-  return { manifestPath, filesToExport };
+  return filesToExport;
 }
 
-/* ==========================================================================
-   1. API EXPORT APP TO ZIP (.zip)
-   ========================================================================== */
-/* ==========================================================================
-   1. API EXPORT APP TO ZIP (.zip)
-   ========================================================================== */
+/**
+ * Helper ekstraksi ZIP yang stabil langsung dari Buffer
+ */
+async function extractZipBuffer(zipBuffer, outputDir) {
+  const directory = await unzipper.Open.buffer(zipBuffer);
+  await directory.extract({ path: outputDir });
+}
+
 app.post("/api/export-app/zip", (req, res) => {
   exportUpload(req, res, async (err) => {
     if (err) return res.status(400).json({ success: false, error: err.message });
     if (!req.file) return res.status(400).json({ success: false, error: "Payload ZIP proyek tidak ditemukan." });
 
-    const projectId = req.body.projectId;
-    const updatedAt = req.body.updatedAt;
+    const { projectId, updatedAt } = req.body;
+    const validUpdatedAt = updatedAt || new Date().toISOString();
 
-    if (!projectId || !updatedAt) {
-      return res.status(400).json({ success: false, error: "projectId dan updatedAt wajib dikirim." });
+    if (!projectId) {
+      return res.status(400).json({ success: false, error: "projectId wajib dikirim." });
     }
 
     const projectExportDir = path.join(EXPORTS_DIR, projectId, "zip");
@@ -207,9 +218,9 @@ app.post("/api/export-app/zip", (req, res) => {
     fs.mkdirSync(projectExportDir, { recursive: true });
 
     const sendFileToClient = (filePath) => {
-      res.download(filePath, `${projectId}.zip`, (err) => {
-        if (err && !res.headersSent) {
-          console.error(`[ZIP Send Error]:`, err);
+      res.download(filePath, `${projectId}.zip`, (downloadErr) => {
+        if (downloadErr && !res.headersSent) {
+          console.error(`[ZIP Send Error]:`, downloadErr);
           res.status(500).json({ success: false, error: "Gagal mengunduh file ZIP." });
         }
       });
@@ -218,8 +229,8 @@ app.post("/api/export-app/zip", (req, res) => {
     if (fs.existsSync(targetFilePath) && fs.existsSync(metadataPath)) {
       try {
         const meta = JSON.parse(fs.readFileSync(metadataPath, "utf-8"));
-        if (meta.updatedAt === updatedAt) {
-          console.log(`[ZIP Export] Mengirim build ZIP dari folder khusus...`);
+        if (meta.updatedAt === validUpdatedAt) {
+          console.log(`[ZIP Export] Mengirim build ZIP dari cache...`);
           return sendFileToClient(targetFilePath);
         }
       } catch (e) {
@@ -241,43 +252,58 @@ app.post("/api/export-app/zip", (req, res) => {
     };
 
     try {
-      const zipStream = Readable.from(req.file.buffer);
-      await zipStream.pipe(unzipper.Extract({ path: projectExtractDir })).promise();
+      // 1. Ekstrak ZIP proyek dengan unzipper.Open.buffer
+      await extractZipBuffer(req.file.buffer, projectExtractDir);
 
-      const outputStream = fs.createWriteStream(targetFilePath);
-      const archive = archiver("zip", { zlib: { level: 9 } });
+      // 2. Buat bundel ZIP baru yang berisi file engine + proyek
+      await new Promise((resolve, reject) => {
+        const outputStream = fs.createWriteStream(targetFilePath);
+        const archive = archiver("zip", { zlib: { level: 9 } });
 
-      archive.on("error", (archiveErr) => {
-        cleanup();
-        if (!res.headersSent) res.status(500).json({ success: false, error: "Gagal membundel file ZIP." });
-      });
+        outputStream.on("close", resolve);
+        outputStream.on("error", reject);
+        archive.on("error", reject);
 
-      outputStream.on("close", () => {
-        fs.writeFileSync(metadataPath, JSON.stringify({ projectId, updatedAt, lastExported: new Date().toISOString() }));
-        cleanup();
-        sendFileToClient(targetFilePath);
-      });
+        archive.pipe(outputStream);
 
-      archive.pipe(outputStream);
-      const { manifestPath, filesToExport } = getEngineFilesFromManifest(engineDir);
+        const filesToExport = getEngineFilesFromManifest();
 
-      if (fs.existsSync(engineDir)) {
-        if (fs.existsSync(manifestPath)) {
-          filesToExport.forEach((relPath) => {
-            const fullPath = path.join(engineDir, relPath);
-            if (fs.existsSync(fullPath)) archive.file(fullPath, { name: `engine/${relPath}` });
-          });
+        if (fs.existsSync(engineDir)) {
+          if (filesToExport.length > 0) {
+            let copiedCount = 0;
+            filesToExport.forEach((relPath) => {
+              const fullPath = path.join(engineDir, relPath);
+              if (fs.existsSync(fullPath)) {
+                archive.file(fullPath, { name: `engine/${relPath}` });
+                copiedCount++;
+              } else {
+                console.warn(`[ZIP Export Warning] Modul/Aset tidak ditemukan di engine: ${fullPath}`);
+              }
+            });
+            console.log(`[ZIP Export] Berhasil menambahkan ${copiedCount}/${filesToExport.length} file engine ke ZIP.`);
+          } else {
+            console.warn(`[ZIP Export Warning] Manifest kosong/tidak ada, menyalin seluruh direktori engine.`);
+            archive.directory(engineDir, "engine");
+          }
         } else {
-          archive.directory(engineDir, "engine");
+          console.error(`[ZIP Export Error] Engine directory tidak ditemukan di: ${engineDir}`);
         }
-      }
 
-      archive.directory(projectExtractDir, "engine/project");
-      archive.finalize();
+        // Masukkan file proyek ke folder engine/project/
+        archive.directory(projectExtractDir, "engine/project");
+        archive.finalize();
+      });
+
+      fs.writeFileSync(metadataPath, JSON.stringify({ projectId, updatedAt: validUpdatedAt, lastExported: new Date().toISOString() }));
+      cleanup();
+      sendFileToClient(targetFilePath);
 
     } catch (processErr) {
+      console.error(`[ZIP Export Error]:`, processErr);
       cleanup();
-      if (!res.headersSent) res.status(500).json({ success: false, error: "Gagal memproses ekspor ZIP." });
+      if (!res.headersSent) {
+        res.status(500).json({ success: false, error: "Gagal memproses ekspor ZIP." });
+      }
     }
   });
 });
@@ -352,23 +378,32 @@ app.post("/api/export-app/exe", (req, res) => {
       const projectExtractDir = path.join(runnerWebDir, "project");
       fs.mkdirSync(projectExtractDir, { recursive: true });
 
-      const zipStream = Readable.from(req.file.buffer);
-      await zipStream.pipe(unzipper.Extract({ path: projectExtractDir })).promise();
+      // 1. Ekstrak ZIP proyek dengan aman dari buffer
+      await extractZipBuffer(req.file.buffer, projectExtractDir);
 
-      const { manifestPath, filesToExport } = getEngineFilesFromManifest(engineDir);
+      // 2. Salin file engine sesuai pemetaan manifest
+      const filesToExport = getEngineFilesFromManifest();
       if (fs.existsSync(engineDir)) {
-        if (fs.existsSync(manifestPath)) {
+        if (filesToExport.length > 0) {
+          let copiedCount = 0;
           filesToExport.forEach((relPath) => {
             const srcPath = path.join(engineDir, relPath);
             const destPath = path.join(runnerWebDir, relPath);
             if (fs.existsSync(srcPath)) {
               fs.mkdirSync(path.dirname(destPath), { recursive: true });
               fs.copyFileSync(srcPath, destPath);
+              copiedCount++;
+            } else {
+              console.warn(`[EXE Export Warning] Modul/Aset tidak ditemukan di engine: ${srcPath}`);
             }
           });
+          console.log(`[EXE Export] Berhasil menyalin ${copiedCount}/${filesToExport.length} file engine ke workspace runner.`);
         } else {
+          console.warn(`[EXE Export Warning] Manifest kosong/tidak ada, menyalin seluruh direktori engine.`);
           fs.cpSync(engineDir, runnerWebDir, { recursive: true });
         }
+      } else {
+        console.error(`[EXE Export Error] Engine directory tidak ditemukan di: ${engineDir}`);
       }
 
       console.log(`[Job ${jobId}] Menjalankan kompilasi electron-builder ke EXE...`);
@@ -414,15 +449,13 @@ app.post("/api/export-app/exe", (req, res) => {
       });
 
     } catch (processErr) {
+      console.error(`[EXE Process Error]:`, processErr);
       cleanup();
       if (!res.headersSent) res.status(500).json({ success: false, error: "Gagal memproses ekspor EXE." });
     }
   });
 });
 
-/* ==========================================================================
-   3. API UNDUH MANUAL FILE EXE (GET STREAMING SANGAT STABIL)
-   ========================================================================== */
 app.get("/api/download-app/exe/:projectId", (req, res) => {
   const { projectId } = req.params;
   const filePath = path.join(EXPORTS_DIR, projectId, "exe", `${projectId}.exe`);
