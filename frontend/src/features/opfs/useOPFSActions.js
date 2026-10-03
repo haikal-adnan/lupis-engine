@@ -1,6 +1,6 @@
 import { computed } from 'vue';
 import JSZip from 'jszip';
-import { useOPFSStore } from '@opfs/opfs.js';
+import { useOPFSStore, getFileTypeByExtension } from '@opfs/opfs.js';
 import { useProjectStore } from '@projects/projects.js';
 import { usePopAlert } from '@composables/composables.js';
 import { encodeLupisProject, decodeLupisProject } from '@utils/projectFormat.js';
@@ -13,28 +13,67 @@ export function useOPFSActions() {
   const isLoading = computed(() => opfsStore.isLoading);
   const isSaving = computed(() => opfsStore.isSaving);
 
-  const _ensureOPFSSupport = () => {
-    if (!navigator.storage || !navigator.storage.getDirectory) {
-      throw new Error('Browser Anda tidak mendukung OPFS.');
+  const getUserDirectory = async () => {
+    return await navigator.storage.getDirectory();
+  };
+
+  const getProjectsRootDirectory = async () => {
+    const root = await getUserDirectory();
+    const appDir = await root.getDirectoryHandle('lupis-engine', { create: true });
+    return await appDir.getDirectoryHandle('projects', { create: true });
+  };
+
+  const resolveDirectoryPath = async (baseHandle, targetPath, options = { create: true }) => {
+    const parts = Array.isArray(targetPath) 
+      ? targetPath 
+      : targetPath.split('/').filter(Boolean);
+
+    let currentDir = baseHandle;
+    for (const part of parts) {
+      currentDir = await currentDir.getDirectoryHandle(part, options);
+    }
+    return currentDir;
+  };
+
+  const writeFileToHandle = async (dirHandle, fileName, content) => {
+    const fileHandle = await dirHandle.getFileHandle(fileName, { create: true });
+    const writable = await fileHandle.createWritable();
+    await writable.write(content);
+    await writable.close();
+  };
+
+  const removeFileFromHandle = async (dirHandle, fileName) => {
+    try {
+      await dirHandle.removeEntry(fileName);
+    } catch (err) {
+      console.warn(`[OPFS Executor] File "${fileName}" gagal dihapus atau tidak ditemukan:`, err);
     }
   };
 
-  const getUserDirectory = async () => {
-    _ensureOPFSSupport();
-    return await navigator.storage.getDirectory();
+  const getFileBlobUrlFromHandle = async (dirHandle, fileName) => {
+    const fileHandle = await dirHandle.getFileHandle(fileName);
+    const file = await fileHandle.getFile();
+    return URL.createObjectURL(file);
   };
 
   const scanDirectory = async (dirHandle, path = '') => {
     const items = [];
-    for await (const [name, handle] of dirHandle.entries()) {
+    if (typeof dirHandle.entries !== 'function') return items;
+
+    const entriesIterable = dirHandle.entries();
+    for await (const entry of entriesIterable) {
+      if (!Array.isArray(entry)) continue;
+      const [name, handle] = entry;
       const itemPath = path ? `${path}/${name}` : name;
+      
       if (handle.kind === 'directory') {
         const children = await scanDirectory(handle, itemPath);
-        items.push({ name, kind: 'directory', path: itemPath, handle, isOpen: false, children });
+        items.push({ name, kind: 'directory', path: itemPath, handle, children });
       } else {
         items.push({ name, kind: 'file', path: itemPath, handle });
       }
     }
+
     return items.sort((a, b) => {
       if (a.kind === b.kind) return a.name.localeCompare(b.name);
       return a.kind === 'directory' ? -1 : 1;
@@ -58,7 +97,6 @@ export function useOPFSActions() {
   const initProjectStructure = async () => {
     opfsStore.setLoading(true);
     try {
-      await getUserDirectory();
       await refreshTree();
     } catch (error) {
       showPop({ title: 'Inisialisasi OPFS Gagal', message: error.message, type: 'error' });
@@ -68,15 +106,15 @@ export function useOPFSActions() {
   };
 
   const openFile = async (fileItem) => {
-    if (!fileItem || fileItem.kind !== 'file') return;
     opfsStore.setLoading(true);
     try {
       const file = await fileItem.handle.getFile();
-      const ext = fileItem.name.split('.').pop().toLowerCase();
-      if (['js', 'json', 'scene', 'prefab'].includes(ext)) {
+      const fileType = getFileTypeByExtension(fileItem.name);
+
+      if (fileType === 'code') {
         const textContent = await file.text();
         opfsStore.setActiveFile(fileItem, textContent, '');
-      } else if (['png', 'jpg', 'jpeg', 'webp'].includes(ext)) {
+      } else if (fileType === 'image') {
         const url = URL.createObjectURL(file);
         opfsStore.setActiveFile(fileItem, '', url);
       } else {
@@ -90,13 +128,19 @@ export function useOPFSActions() {
   };
 
   const saveActiveFile = async (contentOverride = null) => {
-    if (!opfsStore.activeFile) return { success: false };
+    if (!opfsStore.activeFile || !opfsStore.activeFile.handle) {
+      showPop({ title: 'Gagal Menyimpan File', message: 'Tidak ada file aktif untuk disimpan.', type: 'error' });
+      return { success: false, error: 'Tidak ada file aktif untuk disimpan.' };
+    }
+
     opfsStore.setSaving(true);
     try {
       const contentToSave = contentOverride !== null ? contentOverride : opfsStore.fileContent;
+      
       const writable = await opfsStore.activeFile.handle.createWritable();
       await writable.write(contentToSave);
       await writable.close();
+
       projectStore.markAsDirty();
       showPop({ title: 'Tersimpan', message: `File ${opfsStore.activeFile.name} disimpan ke OPFS.`, type: 'success' });
       return { success: true };
@@ -109,26 +153,17 @@ export function useOPFSActions() {
   };
 
   const createEntry = async (name, type = 'file', targetDirPath = '') => {
-    if (!name.trim()) return { success: false };
     opfsStore.setLoading(true);
     try {
-      _ensureOPFSSupport();
-      const root = await navigator.storage.getDirectory();
-      let targetDir = root;
-      if (targetDirPath) {
-        const parts = targetDirPath.split('/');
-        for (const part of parts) {
-          if (part) targetDir = await targetDir.getDirectoryHandle(part, { create: true });
-        }
-      }
+      const root = await getUserDirectory();
+      const targetDir = targetDirPath ? await resolveDirectoryPath(root, targetDirPath) : root;
+
       if (type === 'file') {
-        const fileHandle = await targetDir.getFileHandle(name, { create: true });
-        const writable = await fileHandle.createWritable();
-        await writable.write('');
-        await writable.close();
+        await writeFileToHandle(targetDir, name, '');
       } else {
         await targetDir.getDirectoryHandle(name, { create: true });
       }
+
       projectStore.markAsDirty();
       return { success: true };
     } catch (error) {
@@ -142,22 +177,21 @@ export function useOPFSActions() {
   const deleteEntry = async (item) => {
     opfsStore.setLoading(true);
     try {
-      _ensureOPFSSupport();
-      const root = await navigator.storage.getDirectory();
-      if (item.path.includes('/')) {
-        const parts = item.path.split('/');
-        const targetName = parts.pop();
-        let currentDir = root;
-        for (const part of parts) {
-          if (part) currentDir = await currentDir.getDirectoryHandle(part);
-        }
-        await currentDir.removeEntry(targetName, { recursive: true });
-      } else {
-        await root.removeEntry(item.name, { recursive: true });
+      const root = await getUserDirectory();
+      const parts = item.path.split('/');
+      const targetName = parts.pop();
+      let currentDir = root;
+
+      for (const part of parts) {
+        currentDir = await currentDir.getDirectoryHandle(part);
       }
-      if (opfsStore.activeFile?.path === item.path || opfsStore.activeFile?.path.startsWith(item.path + '/')) {
+      await currentDir.removeEntry(targetName, { recursive: true });
+
+      const activePath = opfsStore.activeFile.path;
+      if (activePath === item.path || activePath.startsWith(item.path + '/')) {
         opfsStore.clearActiveFile();
       }
+
       projectStore.markAsDirty();
       showPop({ title: 'Berhasil Dihapus', message: `"${item.name}" telah dihapus.`, type: 'info' });
       return { success: true };
@@ -170,32 +204,24 @@ export function useOPFSActions() {
   };
 
   const handleDropFiles = async (files, targetDirPath = '') => {
-    if (!files || !files.length) return;
     opfsStore.setLoading(true);
     const saved = [];
     const rejected = [];
+
     try {
-      _ensureOPFSSupport();
-      const root = await navigator.storage.getDirectory();
-      let targetDir = root;
-      if (targetDirPath) {
-        const parts = targetDirPath.split('/');
-        for (const part of parts) {
-          if (part) targetDir = await targetDir.getDirectoryHandle(part, { create: true });
-        }
-      }
+      const root = await getUserDirectory();
+      const targetDir = targetDirPath ? await resolveDirectoryPath(root, targetDirPath) : root;
+
       for (const file of files) {
         const ext = file.name.split('.').pop().toLowerCase();
         if (opfsStore.allowedExtensions.includes(ext)) {
-          const fileHandle = await targetDir.getFileHandle(file.name, { create: true });
-          const writable = await fileHandle.createWritable();
-          await writable.write(file);
-          await writable.close();
+          await writeFileToHandle(targetDir, file.name, file);
           saved.push(file.name);
         } else {
           rejected.push(file.name);
         }
       }
+
       if (rejected.length) {
         showPop({ title: 'Beberapa File Ditolak', message: `Ekstensi tidak didukung: ${rejected.join(', ')}`, type: 'warning' });
       }
@@ -228,8 +254,7 @@ export function useOPFSActions() {
         const file = await handle.getFile();
         zipFolder.file(name, file);
       } else if (handle.kind === 'directory') {
-        const subZipFolder = zipFolder.folder(name);
-        await _addDirectoryToZip(handle, subZipFolder);
+        await _addDirectoryToZip(handle, zipFolder.folder(name));
       }
     }
   };
@@ -239,56 +264,32 @@ export function useOPFSActions() {
       const entry = zipObject.files[relativePath];
       if (entry.dir) continue;
 
-      const parts = relativePath.split('/').filter(Boolean);
+      const parts = relativePath.split('/');
       const fileName = parts.pop();
-      let currentDir = targetDirHandle;
+      
+      const currentDir = parts.length > 0 
+        ? await resolveDirectoryPath(targetDirHandle, parts) 
+        : targetDirHandle;
 
-      for (const part of parts) {
-        currentDir = await currentDir.getDirectoryHandle(part, { create: true });
-      }
-
-      const fileHandle = await currentDir.getFileHandle(fileName, { create: true });
-      const writable = await fileHandle.createWritable();
       const contentBlob = await entry.async('blob');
-      await writable.write(contentBlob);
-      await writable.close();
+      await writeFileToHandle(currentDir, fileName, contentBlob);
     }
   };
 
   const exportToLupisProject = async (projectId = null) => {
     opfsStore.setLoading(true);
     try {
-      _ensureOPFSSupport();
-      if (!projectId) throw new Error('ID Proyek tidak valid.');
-
-      const root = await navigator.storage.getDirectory();
-      let appDir, projectsDir, targetProjectDir;
-
-      try {
-        appDir = await root.getDirectoryHandle('lupis-engine');
-        projectsDir = await appDir.getDirectoryHandle('projects');
-        targetProjectDir = await projectsDir.getDirectoryHandle(String(projectId));
-      } catch (e) {
-        throw new Error(`Folder proyek '${projectId}' tidak ditemukan di OPFS.`);
-      }
+      const projectsRootDir = await getProjectsRootDirectory();
+      const targetProjectDir = await resolveDirectoryPath(projectsRootDir, String(projectId), { create: false });
 
       let fileName = String(projectId);
       try {
         const projectJsonHandle = await targetProjectDir.getFileHandle('project.json');
         const projectJsonFile = await projectJsonHandle.getFile();
-        const projectJsonText = await projectJsonFile.text();
-        const projectData = JSON.parse(projectJsonText);
+        const projectData = JSON.parse(await projectJsonFile.text());
 
-        if (projectData && projectData.name) {
-          const sanitizedName = projectData.name
-            .trim()
-            .replace(/[/\\?%*:|"<>]/g, '') 
-            .replace(/\s+/g, '_');         
-
-          if (sanitizedName) {
-            fileName = sanitizedName;
-          }
-        }
+        const sanitizedName = projectData.name.trim().replace(/[/\\?%*:|"<>]/g, '').replace(/\s+/g, '_');
+        fileName = sanitizedName;
       } catch (e) {
         console.warn('Gagal membaca nama dari project.json, menggunakan ID sebagai nama file:', e);
       }
@@ -332,42 +333,22 @@ export function useOPFSActions() {
   const importFromLupisProject = async (file) => {
     opfsStore.setLoading(true);
     try {
-      _ensureOPFSSupport();
-      if (!file) throw new Error('File tidak ditemukan.');
-
       const loadedZip = await decodeLupisProject(file);
 
-      let projectJsonFile = loadedZip.file('project.json');
-      if (!projectJsonFile) {
-        const projectJsonKeys = Object.keys(loadedZip.files).filter(k => k.endsWith('project.json'));
-        if (projectJsonKeys.length > 0) {
-          projectJsonFile = loadedZip.file(projectJsonKeys[0]);
-        }
-      }
+      const projectJsonFile = loadedZip.file('project.json') || 
+        loadedZip.file(Object.keys(loadedZip.files).find(k => k.endsWith('project.json')));
 
-      if (!projectJsonFile) {
-        throw new Error('File tidak valid: "project.json" tidak ditemukan di dalam arsip proyek.');
-      }
-
-      const projectJsonText = await projectJsonFile.async('text');
-      const projectData = JSON.parse(projectJsonText);
-
-      if (!projectData.id) {
-        throw new Error('Format project.json tidak valid: Missing project ID.');
-      }
-
+      const projectData = JSON.parse(await projectJsonFile.async('text'));
       const projectId = String(projectData.id);
 
-      const root = await navigator.storage.getDirectory();
-      const appDir = await root.getDirectoryHandle('lupis-engine', { create: true });
-      const projectsDir = await appDir.getDirectoryHandle('projects', { create: true });
-      const targetProjectDir = await projectsDir.getDirectoryHandle(projectId, { create: true });
+      const projectsRootDir = await getProjectsRootDirectory();
+      const targetProjectDir = await resolveDirectoryPath(projectsRootDir, projectId);
 
       await _writeZipEntryToOPFS(loadedZip, targetProjectDir);
 
       showPop({
         title: 'Import Berhasil',
-        message: `Proyek "${projectData.name || projectId}" berhasil di-import.`,
+        message: `Proyek "${projectData.name}" berhasil di-import.`,
         type: 'success'
       });
 
@@ -381,8 +362,29 @@ export function useOPFSActions() {
     }
   };
 
+  const refreshProjectTree = async (projectId) => {
+    opfsStore.setLoading(true);
+    try {
+      const projectsRootDir = await getProjectsRootDirectory();
+      const targetProjectDir = await resolveDirectoryPath(projectsRootDir, String(projectId), { create: true });
+      const tree = await scanDirectory(targetProjectDir);
+      opfsStore.setFileTree(tree);
+    } catch (error) {
+      console.error('Gagal memindai folder proyek OPFS:', error);
+      opfsStore.setError(error.message);
+    } finally {
+      opfsStore.setLoading(false);
+    }
+  };
+
   return {
     getUserDirectory,
+    getProjectsRootDirectory,
+    resolveDirectoryPath,
+    writeFileToHandle,
+    removeFileFromHandle,
+    getFileBlobUrlFromHandle,
+    refreshProjectTree,
     refreshTree,
     initProjectStructure,
     openFile,

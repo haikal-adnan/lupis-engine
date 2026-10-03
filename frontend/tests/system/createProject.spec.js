@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
-import { DashboardPage} from '@dashboards/dashboards.js'
+import { DashboardPage } from '@dashboards/dashboards.js'
 
 // Mock Router
 const mockPush = vi.fn()

@@ -1,13 +1,13 @@
 import { useFolderStore } from '@folders/folders.js';
-import { useAssetStore } from '@assets/assets.js'
+import { useAssetStore } from '@assets/assets.js';
 import { usePrefabStore } from '@prefabs/prefabs.js';
 import { useScriptStore } from '@scripts/scripts.js';
 import { folderSchema } from '@folders/folders.js';
 
 import { 
-  usePrompt ,
+  usePrompt,
   usePopAlert
-} from '@composables/composables.js'
+} from '@composables/composables.js';
 
 import { GenerateUUID } from '@utils/utils.js';
 import { useWorkspaceStore } from '@workspaces/workspaces.js';
@@ -22,7 +22,11 @@ export function useFolderActions() {
   const { showPop } = usePopAlert();
   const { prompt } = usePrompt(); 
 
-  const createNewFolder = async (defaultName = 'New Folder', parentId, section) => {
+  const createNewFolder = async (options = {}) => {
+    const defaultName = options.defaultName || 'New Folder';
+    const parentId = options.parentId || null;
+    const section = options.section || workspaceStore.activeBottomTabId;
+
     const folderName = await prompt({
       title: 'Create New Folder',
       message: 'Enter folder name:',
@@ -30,139 +34,107 @@ export function useFolderActions() {
       confirmText: 'Create'
     });
 
-    if (folderName === null || folderName.trim() === '') {
-      return; 
+    if (!folderName || typeof folderName !== 'string' || !folderName.trim()) {
+      return null;
     }
 
     const cleanName = folderName.trim();
-    const actualParentId = parentId !== undefined ? parentId : folderStore.activeFolderId;
+    const newId = GenerateUUID();
+    const projectId = workspaceStore.activeProjectId;
 
-    try {
-      const newId = GenerateUUID();
-      const projectId = workspaceStore.activeProjectId;
+    const newFolder = folderSchema({
+      id: newId,
+      name: cleanName,
+      section: section, 
+      parentId: parentId,
+      projectId: projectId,
+    });
 
-      const newFolder = folderSchema({
-        id: newId,
-        name: cleanName,
-        section: section, 
-        parentId: actualParentId || null,
-        projectId: projectId,
-        isSynced: true
-      });
+    await folderStore.createFolder(newFolder);
 
-      await folderStore.createFolder(newFolder);
+    showPop({
+      title: 'Folder Created',
+      message: `Folder "${cleanName}" created successfully.`,
+      type: 'success'
+    });
 
-      showPop({
-        title: 'Folder Created',
-        message: `Folder "${cleanName}" created successfully.`,
-        type: 'success'
-      });
-
-      return newFolder;
-    } catch (error) {
-      showPop({
-        title: 'Creation Failed',
-        message: error.message || 'Failed to create folder.',
-        type: 'error'
-      });
-    }
+    return newFolder;
   };
 
   const deleteFolder = async (folderId) => {
-    try {
-      const cascadeDelete = async (currentFolderId) => {
-        const subFolders = folderStore.folders.filter(f => f.parentId === currentFolderId);
-        for (const sub of subFolders) {
-          await cascadeDelete(sub.id);
-        }
+    const cascadeDelete = async (currentFolderId) => {
+      const subFolders = folderStore.folders.filter(f => f.parentId === currentFolderId);
+      for (const sub of subFolders) {
+        await cascadeDelete(sub.id);
+      }
 
-        const assetsInFolder = assetStore.assets.filter(a => a.folderId === currentFolderId);
-        for (const asset of assetsInFolder) {
-          await assetStore.removeAsset(asset.id);                   
-        }
+      const assetsInFolder = assetStore.assets.filter(a => a.folderId === currentFolderId);
+      for (const asset of assetsInFolder) {
+        await assetStore.removeAsset(asset.id);                  
+      }
 
-        const prefabsInFolder = prefabStore.prefabs.filter(p => p.folderId === currentFolderId);
-        for (const prefab of prefabsInFolder) {
-          await prefabStore.removePrefab(prefab.id);
-        }
+      const prefabsInFolder = prefabStore.prefabs.filter(p => p.folderId === currentFolderId);
+      for (const prefab of prefabsInFolder) {
+        await prefabStore.removePrefab(prefab.id);
+      }
 
-        const scriptsInFolder = scriptStore.scripts.filter(s => s.folderId === currentFolderId);
-        for (const script of scriptsInFolder) {
-          await scriptStore.removeScript(script.id);
-        }
+      const scriptsInFolder = scriptStore.scripts.filter(s => s.folderId === currentFolderId);
+      for (const script of scriptsInFolder) {
+        await scriptStore.removeScript(script.id);
+      }
 
-        await folderStore.deleteFolder(currentFolderId);
-      };
+      await folderStore.deleteFolder(currentFolderId);
+    };
 
-      await cascadeDelete(folderId);
+    await cascadeDelete(folderId);
 
-      showPop({
-        title: 'Folder Deleted',
-        message: 'Folder and its contents removed.',
-        type: 'info'
-      });
-    } catch (error) {
-      console.error("Cascade delete error:", error);
-      showPop({
-        title: 'Delete Failed',
-        message: error.message || 'Failed to delete folder.',
-        type: 'error'
-      });
-    }
+    showPop({
+      title: 'Folder Deleted',
+      message: 'Folder and its contents removed.',
+      type: 'info'
+    });
   };
 
   const renameFolder = async (folderId, newName) => {
-    try {
-      const cleanName = newName.trim();
-      if (!cleanName) return;
+    const cleanName = newName.trim();
 
-      await folderStore.updateFolder(folderId, { name: cleanName });
-      
-      showPop({ 
-        title: 'Success', 
-        message: 'Folder renamed.', 
-        type: 'success' 
-      });
-    } catch (error) {
-      showPop({
-        title: 'Rename Failed',
-        message: error.message || 'Failed to rename folder.',
-        type: 'error'
-      });
-    }
+    await folderStore.updateFolder(folderId, { name: cleanName });
+    
+    showPop({ 
+      title: 'Success', 
+      message: 'Folder renamed.', 
+      type: 'success' 
+    });
   };
 
   const duplicateFolder = async (folderId) => {
-    try {
-      const original = folderStore.getFolderById(folderId);
-      if (!original) return;
+    const original = folderStore.getFolderById(folderId);
 
-      const newId = GenerateUUID();
-      const newName = `${original.name} (Copy)`;
-
-      const newFolder = folderSchema({
-        ...original,
-        id: newId,
-        name: newName,
-        isSynced: true 
-      });
-
-      await folderStore.createFolder(newFolder);
-
-      showPop({
-        title: 'Folder Duplicated',
-        message: `Created copy of "${original.name}".`,
-        type: 'success'
-      });
-
-      return newFolder;
-    } catch (error) {
-      showPop({
-        title: 'Duplicate Failed',
-        message: error.message || 'Failed to duplicate folder.',
-        type: 'error'
-      });
+    // Tambahkan guard clause di sini
+    if (!original) {
+      return null;
     }
+
+    const newId = GenerateUUID();
+    const newName = `${original.name} (Copy)`;
+
+    const newFolder = folderSchema({
+      ...original,
+      id: newId,
+      name: newName,
+      section: original.section || workspaceStore.activeBottomTabId,
+      isSynced: true 
+    });
+
+    await folderStore.createFolder(newFolder);
+
+    showPop({
+      title: 'Folder Duplicated',
+      message: `Created copy of "${original.name}".`,
+      type: 'success'
+    });
+
+    return newFolder;
   };
 
   return {

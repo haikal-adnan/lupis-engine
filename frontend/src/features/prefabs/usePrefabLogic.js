@@ -1,21 +1,26 @@
 import { ref, computed } from 'vue';
 import { usePrefabStore, usePrefabActions } from '@prefabs/prefabs.js';
-import { useFolderStore } from '@folders/folders.js';
-import { useProjectStore, useProjectActions } from '@projects/projects.js'
+import { useFolderStore, useFolderActions } from '@folders/folders.js';
+import { useSceneHistory } from '@historys/historys.js';
+import { useWorkspaceStore } from '@workspaces/workspaces.js';
 
 export function usePrefabLogic() {
   const prefabStore = usePrefabStore();
   const folderStore = useFolderStore();
-  const projectStore = useProjectStore();
+  const workspaceStore = useWorkspaceStore();
   
   const { createPrefab, deletePrefab, renamePrefab, duplicatePrefab } = usePrefabActions(); 
-  const { getUserProjectsDir } = useProjectActions();
+  const { createNewFolder, deleteFolder, renameFolder, duplicateFolder } = useFolderActions();
   
   const viewMode = ref('grid');
   const searchQuery = ref('');
   const selectedId = ref(null);
   const activeTab = ref('world');
-  const clipboard = ref(null);
+  
+  const clipboard = ref({
+    action: null,
+    item: { id: null, type: null }
+  });
 
   const currentFolderId = computed(() => folderStore.activeFolderId);
   const currentFolder = computed(() => folderStore.getFolderById(currentFolderId.value));
@@ -28,12 +33,8 @@ export function usePrefabLogic() {
     
     while (currentId) {
       const folder = folderStore.getFolderById(currentId);
-      if (folder) {
-        path.unshift(folder); 
-        currentId = folder.parentId;
-      } else {
-        break;
-      }
+      path.unshift(folder); 
+      currentId = folder.parentId;
     }
     return path;
   });
@@ -53,10 +54,10 @@ export function usePrefabLogic() {
   });
 
   const visiblePrefabs = computed(() => {
-    let list = prefabStore.prefabs.filter(p => (p.folderId || null) === currentFolderId.value);
+    let list = prefabStore.prefabs.filter(p => p.folderId === currentFolderId.value);
 
     list = list.filter(p => {
-      const type = p.type || p.originalData?.type || 'world';
+      const type = p.type || p.originalData.type;
       return activeTab.value === 'ui' ? type === 'ui' : type !== 'ui';
     });
 
@@ -71,18 +72,14 @@ export function usePrefabLogic() {
   });
 
   const _deletePrefabFileFromOPFS = async (prefabId) => {
-    try {
-      const projectId = projectStore.project?.id;
-      if (!projectId) return;
-
-      const projectsDir = await getUserProjectsDir();
-      const projectDir = await projectsDir.getDirectoryHandle(projectId);
-      const prefabsDir = await projectDir.getDirectoryHandle('prefabs');
-      
-      await prefabsDir.removeEntry(`${prefabId}.json`);
-    } catch (e) {
-      console.warn(`File OPFS prefabs/${prefabId}.json tidak ditemukan atau telah dihapus:`, e);
-    }
+    const projectId = workspaceStore.activeProjectId;
+    const root = await navigator.storage.getDirectory();
+    const appDir = await root.getDirectoryHandle('lupis-engine', { create: true });
+    const projectsDir = await appDir.getDirectoryHandle('projects', { create: true });
+    const projectDir = await projectsDir.getDirectoryHandle(String(projectId));
+    const prefabsDir = await projectDir.getDirectoryHandle('prefabs');
+    
+    await prefabsDir.removeEntry(`${prefabId}.json`);
   };
 
   const toggleViewMode = () => {
@@ -100,75 +97,84 @@ export function usePrefabLogic() {
   };
 
   const moveItem = async (id, type, targetFolderId) => {
-    try {
-      if (type === 'prefab') {
-        const prefab = prefabStore.getPrefabById(id);
-        if (prefab && prefab.folderId !== targetFolderId) {
-          const oldFolderId = prefab.folderId || null;
-          await prefabStore.movePrefab(id, targetFolderId);
+    if (type === 'prefab') {
+      const prefab = prefabStore.getPrefabById(id);
+      if (prefab.folderId !== targetFolderId) {
+        const oldFolderId = prefab.folderId;
+        await prefabStore.movePrefab(id, targetFolderId);
 
-          const { recordMovePrefabFolder } = useSceneHistory();
-          recordMovePrefabFolder(id, oldFolderId, targetFolderId || null);
-        }
-      } else if (type === 'folder') {
-        await folderStore.moveFolder(id, targetFolderId);
+        const { recordMovePrefabFolder } = useSceneHistory();
+        recordMovePrefabFolder(id, oldFolderId, targetFolderId);
       }
-    } catch (err) {
-      console.error('Failed to move item:', err);
+    } else if (type === 'folder') {
+      await folderStore.moveFolder(id, targetFolderId);
     }
   };
 
   const handleDrop = async (e, customTargetFolderId = null) => {
     const targetFolder = customTargetFolderId !== null ? customTargetFolderId : currentFolderId.value;
-
-    try {
-      const internalData = e.dataTransfer.getData('application/json');
-      if (internalData) {
-        const { id, type } = JSON.parse(internalData);
-        await moveItem(id, type, targetFolder);
-      }
-    } catch (err) {}
+    const internalData = e.dataTransfer.getData('application/json');
+    const { id, type } = JSON.parse(internalData);
+    await moveItem(id, type, targetFolder);
   };
 
   const handlePaste = async () => {
-    if (!clipboard.value) return;
     const { action, item } = clipboard.value;
 
     if (action === 'cut') {
       await moveItem(item.id, item.type, currentFolderId.value);
-      clipboard.value = null;
+      clipboard.value = { action: null, item: { id: null, type: null } };
     } else if (action === 'copy') {
-      try {
-        if (item.type === 'prefab') {
-          duplicatePrefab(item.id);
-        }
-      } catch (err) {
-        console.error('Failed to copy item:', err);
+      if (item.type === 'prefab') {
+        duplicatePrefab(item.id);
+      } else if (item.type === 'folder') {
+        duplicateFolder(item.id);
       }
     }
   };
 
   const handleCreateEmpty = () => {
     const newPrefab = createPrefab("New Prefab", currentFolderId.value, activeTab.value);
-    if (newPrefab) handleSelect(newPrefab.id);
+    handleSelect(newPrefab.id);
+  };
+
+  const handleCreateFolder = async () => {
+    const newFolder = await createNewFolder({
+      defaultName: 'New Folder',
+      parentId: currentFolderId.value,
+      section: currentSection.value
+    });
+    if (newFolder) handleSelect(newFolder.id);
   };
 
   const handleDelete = async (item) => {
     const id = item.id;
-    const isDeleted = await deletePrefab(id);
-    
-    if (isDeleted) {
-      await _deletePrefabFileFromOPFS(id); 
+    if (item.isFolder || item.type === 'folder') {
+      await deleteFolder(id);
       if (selectedId.value === id) selectedId.value = null;
+    } else {
+      const isDeleted = await deletePrefab(id);
+      if (isDeleted) {
+        await _deletePrefabFileFromOPFS(id); 
+        if (selectedId.value === id) selectedId.value = null;
+      }
     }
   };
 
   const handleDuplicate = (item) => {
-    duplicatePrefab(item.id);
+    if (item.isFolder || item.type === 'folder') {
+      duplicateFolder(item.id);
+    } else {
+      duplicatePrefab(item.id);
+    }
   };
   
   const handleRename = (item) => {
-    renamePrefab(item.id); 
+    if (item.isFolder || item.type === 'folder') {
+      renameFolder(item.id, item.name);
+    } else {
+      renamePrefab(item.id); 
+    }
   };
 
   return {
@@ -189,6 +195,7 @@ export function usePrefabLogic() {
     handleDrop,
     handlePaste,
     createEmptyPrefab: handleCreateEmpty,
+    createFolder: handleCreateFolder,
     handleDelete,
     handleDuplicate,
     handleRename

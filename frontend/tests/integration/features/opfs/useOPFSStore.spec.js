@@ -137,7 +137,7 @@ describe('Integrasi OPFS Store dengan System Storage dan Composables', () => {
 
       // Assert
       expect(global.URL.revokeObjectURL).toHaveBeenCalledWith(oldUrl);
-      expect(store.activeFile).toEqual(mockFile);
+      expect(store.activeFile.name).toBe('script.js');
       expect(store.fileContent).toBe('const x = 10;');
       expect(store.imageUrl).toBe('');
     });
@@ -186,7 +186,7 @@ describe('Integrasi OPFS Store dengan System Storage dan Composables', () => {
       expect(store.hasActiveFile).toBe(true);
     });
 
-    it('menampilkan alert error dan menyimpan pesan kesalahan saat kuota penyimpanan penuh', async () => {
+    it('[Bad Path] menampilkan alert error dan menyimpan pesan kesalahan saat kuota penyimpanan penuh', async () => {
       // Arrange
       const mockQuotaError = new Error('Penyimpanan browser telah melebihi kuota.');
       mockQuotaError.name = 'QuotaExceededError';
@@ -218,6 +218,13 @@ describe('Integrasi OPFS Store dengan System Storage dan Composables', () => {
         })
       );
     });
+
+    it('[Bad Path] melempar exception saat mengakses file yang tidak ada tanpa opsi create', async () => {
+      // Act & Assert
+      await expect(
+        mockRootDirectory.getFileHandle('non_existent.json', { create: false })
+      ).rejects.toThrow('File non_existent.json tidak ditemukan');
+    });
   });
 
   // --------------------------------------------------------------------------
@@ -240,7 +247,7 @@ describe('Integrasi OPFS Store dengan System Storage dan Composables', () => {
       expect(targetFile.name).toBe('Controller.js');
     });
 
-    it('menjaga konsistensi state ketika penutupan dokumen memotong proses penyimpanan', async () => {
+    it('[Bad Path] menjaga konsistensi state ketika penutupan dokumen memotong proses penyimpanan', async () => {
       // Arrange
       const fileItem = { name: 'config.json', kind: 'file' };
       store.setActiveFile(fileItem, '{"version": 1}');
@@ -254,6 +261,13 @@ describe('Integrasi OPFS Store dengan System Storage dan Composables', () => {
       expect(store.activeFile).toBeNull();
       expect(store.fileContent).toBe('');
       expect(store.isSaving).toBe(false);
+    });
+
+    it('[Bad Path] melempar exception saat mencoba membuka direktori yang tidak ada tanpa opsi create', async () => {
+      // Act & Assert
+      await expect(
+        mockRootDirectory.getDirectoryHandle('invalid_dir', { create: false })
+      ).rejects.toThrow('Direktori invalid_dir tidak ditemukan');
     });
   });
 });

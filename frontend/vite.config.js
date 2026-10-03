@@ -85,6 +85,7 @@ export default defineConfig({
       '@dashboards': fileURLToPath(new URL('./src/features/dashboards', import.meta.url)),
       '@historys': fileURLToPath(new URL('./src/features/historys', import.meta.url)),
       '@utils': fileURLToPath(new URL('./src/utils', import.meta.url)),
+      '@tests': path.resolve(__dirname, './tests'),
       '@core': path.resolve(__dirname, '../engine'),
       '@engines': fileURLToPath(new URL('./src/features/engines', import.meta.url)),
       'vue': 'vue/dist/vue.esm-bundler.js',

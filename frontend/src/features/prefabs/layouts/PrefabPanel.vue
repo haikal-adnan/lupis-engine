@@ -94,7 +94,7 @@
           }" 
           :view-mode="viewMode"
           :active="selectedId === folder.id"
-          :is-cut="clipboard?.action === 'cut' && clipboard?.item?.id === folder.id"
+          :is-cut="clipboard.action === 'cut' && clipboard.item.id === folder.id"
           @click="handleSelect(folder.id)"
           @dblclick="navigateTo(folder)"
           @contextmenu="handleContextMenu($event, { ...folder, type: 'folder', isFolder: true })"
@@ -107,13 +107,13 @@
           :data="{
             id: prefab.id,
             name: prefab.name,
-            type: prefab.type || prefab.originalData?.type || 'world',
+            type: prefab.type || prefab.originalData.type,
             thumbnailUrl: prefab.thumbnailUrl,
             folderId: prefab.folderId
           }"
           :view-mode="viewMode"
           :active="selectedId === prefab.id"
-          :is-cut="clipboard?.action === 'cut' && clipboard?.item?.id === prefab.id"
+          :is-cut="clipboard.action === 'cut' && clipboard.item.id === prefab.id"
           @click="handleSelect(prefab.id)"
           @contextmenu="handleContextMenu($event, prefab)" 
           @move-item="({ id, type, targetFolderId }) => moveItem(id, type, targetFolderId)"
@@ -154,7 +154,6 @@ import { useFolderStore } from '@folders/folders.js';
 import { usePrefabLogic, usePrefabMenu } from '@prefabs/prefabs.js';
 
 const folderStore = useFolderStore();
-
 const prefabLogic = usePrefabLogic();
 
 const {
@@ -192,19 +191,13 @@ const dragOverBreadcrumb = ref(null);
 const handleBreadcrumbDrop = (e, targetFolderId) => {
   dragOverBreadcrumb.value = null;
 
-  try {
-    const dragData = e.dataTransfer.getData('application/json');
-    if (dragData) {
-      const { id, type, originalFolderId } = JSON.parse(dragData);
-      
-      if (id === targetFolderId) return;
-      
-      if (originalFolderId !== targetFolderId) {
-        moveItem(id, type, targetFolderId);
-      }
-    }
-  } catch (err) {
-    console.error("Drop to breadcrumb failed:", err);
+  const dragData = e.dataTransfer.getData('application/json');
+  const { id, type, originalFolderId } = JSON.parse(dragData);
+  
+  if (id === targetFolderId) return;
+  
+  if (originalFolderId !== targetFolderId) {
+    moveItem(id, type, targetFolderId);
   }
 };
 
@@ -217,24 +210,20 @@ const handleKeyDown = (e) => {
         if (selectedId.value) {
           const item = visibleFolders.value.find(f => f.id === selectedId.value) || 
                        visiblePrefabs.value.find(p => p.id === selectedId.value);
-          if (item) {
-            clipboard.value = { 
-              action: 'copy', 
-              item: { id: item.id, type: item.isFolder || item.type === 'folder' ? 'folder' : 'prefab' } 
-            };
-          }
+          clipboard.value = { 
+            action: 'copy', 
+            item: { id: item.id, type: item.isFolder || item.type === 'folder' ? 'folder' : 'prefab' } 
+          };
         }
         break;
       case 'x':
         if (selectedId.value) {
           const item = visibleFolders.value.find(f => f.id === selectedId.value) || 
                        visiblePrefabs.value.find(p => p.id === selectedId.value);
-          if (item) {
-            clipboard.value = { 
-              action: 'cut', 
-              item: { id: item.id, type: item.isFolder || item.type === 'folder' ? 'folder' : 'prefab' } 
-            };
-          }
+          clipboard.value = { 
+            action: 'cut', 
+            item: { id: item.id, type: item.isFolder || item.type === 'folder' ? 'folder' : 'prefab' } 
+          };
         }
         break;
       case 'v':

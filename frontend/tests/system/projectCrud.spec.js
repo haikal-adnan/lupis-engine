@@ -6,48 +6,12 @@ import { DashboardPage } from '@dashboards/dashboards.js'
 import { useWorkspaceStore } from '@workspaces/workspaces.js'
 import { useProjectActions } from '@projects/projects.js'
 import { useOPFSActions } from '@opfs/opfs.js'
+import { LUPIS_HEADER, XOR_KEY } from '@utils/utils.js'
 
-/* ============================================================================
- * 1. STRUKTUR PROYEK & ANATOMI DATA OPFS DUMMY UNTUK PENGUJIEN
- * ============================================================================
- *
- * Selama pengujian berjalan, OPFS di-mocking secara in-memory dalam struktur
- * direktori sebagai berikut:
- *
- *  OPFS Root (navigator.storage.getDirectory())
- *  └── lupis-engine/
- *      └── projects/
- *          └── [projectId]/                        <-- ID Proyek (misal: proj_123456)
- *              ├── project.json                    <-- Metadata proyek (Nama, Status, Settings)
- *              ├── assets/                         <-- Folder aset media/gambar
- *              ├── prefabs/                        <-- Folder prefab
- *              │   └── [prefabId].json
- *              ├── scripts/                        <-- Folder komponen/skrip
- *              │   └── [scriptId].json
- *              ├── scenes/                         <-- Folder adegan game
- *              │   └── [sceneId].json              <-- Hierarki Entity & Component
- *              └── workspaces/                     <-- Workspace registry
- *                  ├── assets.json
- *                  ├── scenes.json
- *                  ├── prefabs.json
- *                  ├── scripts.json
- *                  └── folders.json
- *
- * Struktur File .lupisproject (Format Biner Ekspor/Impor):
- *  [16-byte LUPIS_HEADER] + [ZIP Archive (XOR Encrpyted with Key 0x5A)]
- *   └── project.json (+ scenes/, scripts/, assets/, dll)
- * ============================================================================
- */
-
-// Format Header dan Kunci XOR sesuai spesifikasi Lupis Engine
-const LUPIS_HEADER = new Uint8Array([
-  0x4C, 0x55, 0x50, 0x49, 0x53, 0x5F, 0x50, 0x52, 0x4F, 0x4A, 0x45, 0x43, 0x54, 0x31, 0x21, 0x00
-])
-const XOR_KEY = 0x5A
+import { setupMockOPFS, createMockEmptyProject } from '@tests/tests.js'
 
 /**
- * Helper untuk membuat instansiasi File .lupisproject yang sah
- * digunakan pada pengujian Alur Import via Drop File & File Explorer.
+ * Helper spesifik projectCrud untuk membuat instansiasi File .lupisproject
  */
 async function createValidLupisProjectFile(projectData, fileName = 'project.lupisproject') {
   const zip = new JSZip()
@@ -67,11 +31,10 @@ async function createValidLupisProjectFile(projectData, fileName = 'project.lupi
 }
 
 /* ============================================================================
- * 2. MOCKING KETERGANTUNGAN LINGKUNGAN (OPFS, Router, & VTU Options)
+ * MOCKING KETERGANTUNGAN LINGKUNGAN (Vue Router & VTU Options)
  * ============================================================================
  */
 
-// Mock Vue Router
 const mockPush = vi.fn()
 vi.mock('vue-router', () => ({
   useRouter: () => ({
@@ -79,95 +42,6 @@ vi.mock('vue-router', () => ({
   })
 }))
 
-// Virtual In-Memory Store untuk OPFS Directory Handle
-let mockOPFSStore = new Map()
-
-const createMockDirectoryHandle = (fullPath = 'root') => {
-  const dirName = fullPath.split('/').pop()
-
-  return {
-    kind: 'directory',
-    name: dirName,
-
-    getDirectoryHandle: vi.fn(async (name, options = {}) => {
-      const childPath = `${fullPath}/${name}`
-
-      if (!mockOPFSStore.has(childPath)) {
-        if (options.create) {
-          mockOPFSStore.set(childPath, createMockDirectoryHandle(childPath))
-        } else {
-          throw new Error(`Directory '${name}' tidak ditemukan di OPFS.`)
-        }
-      }
-
-      return mockOPFSStore.get(childPath)
-    }),
-
-    getFileHandle: vi.fn(async (fileName, options = {}) => {
-      const filePath = `${fullPath}/${fileName}`
-
-      if (!mockOPFSStore.has(filePath)) {
-        if (options.create) {
-          let content = new Uint8Array()
-
-          const fileHandleObj = {
-            kind: 'file',
-            name: fileName,
-
-            // Mengembalikan Web Standard File Object agar kompatibel dengan JSZip
-            getFile: async () => new File([content], fileName),
-
-            createWritable: async () => ({
-              write: async (data) => {
-                if (typeof data === 'string') {
-                  content = new TextEncoder().encode(data)
-                } else if (data instanceof Blob) {
-                  content = new Uint8Array(await data.arrayBuffer())
-                } else if (data instanceof ArrayBuffer) {
-                  content = new Uint8Array(data)
-                } else if (ArrayBuffer.isView(data)) {
-                  content = new Uint8Array(data.buffer, data.byteOffset, data.byteLength)
-                }
-              },
-              close: async () => {}
-            })
-          }
-
-          mockOPFSStore.set(filePath, fileHandleObj)
-        } else {
-          throw new Error(`File '${fileName}' tidak ditemukan di OPFS.`)
-        }
-      }
-
-      return mockOPFSStore.get(filePath)
-    }),
-
-    removeEntry: vi.fn(async (name) => {
-      const targetPath = `${fullPath}/${name}`
-      mockOPFSStore.delete(targetPath)
-
-      for (const key of mockOPFSStore.keys()) {
-        if (key.startsWith(`${targetPath}/`)) {
-          mockOPFSStore.delete(key)
-        }
-      }
-    }),
-
-    entries: async function* () {
-      const prefix = `${fullPath}/`
-      for (const [key, handle] of mockOPFSStore.entries()) {
-        if (key.startsWith(prefix)) {
-          const relativePath = key.slice(prefix.length)
-          if (!relativePath.includes('/')) {
-            yield [relativePath, handle]
-          }
-        }
-      }
-    }
-  }
-}
-
-// Global configuration untuk Vue Test Utils
 const globalMountOptions = {
   global: {
     stubs: {
@@ -177,7 +51,7 @@ const globalMountOptions = {
 }
 
 /* ============================================================================
- * 3. SYSTEM TEST SUITE: CRUD & MANAJEMEN PROYEK
+ * SYSTEM TEST SUITE: CRUD & MANAJEMEN PROYEK
  * ============================================================================
  */
 
@@ -189,20 +63,12 @@ describe('Sistem Manajemen dan Operasi CRUD Proyek', () => {
     vi.restoreAllMocks()
     
     setActivePinia(createPinia())
-    mockOPFSStore = new Map()
+    setupMockOPFS()
     mockPush.mockClear()
 
     vi.spyOn(globalThis.URL, 'createObjectURL').mockReturnValue('blob:http://localhost/mock-url')
     vi.spyOn(globalThis.URL, 'revokeObjectURL').mockImplementation(() => {})
     vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
-
-    Object.defineProperty(global.navigator, 'storage', {
-      value: {
-        getDirectory: vi.fn(async () => createMockDirectoryHandle('root'))
-      },
-      writable: true,
-      configurable: true
-    })
 
     projectActions = useProjectActions()
     opfsActions = useOPFSActions()
@@ -212,7 +78,7 @@ describe('Sistem Manajemen dan Operasi CRUD Proyek', () => {
     it('mengarahkan ke router editor dan memperbarui activeProjectId pada workspaceStore saat proyek dibuka', async () => {
       const workspaceStore = useWorkspaceStore()
 
-      const newProject = await projectActions.createProject({
+      const newProject = await createMockEmptyProject({
         projectName: 'Game RPG 2D',
         description: 'Proyek RPG'
       })
@@ -229,7 +95,7 @@ describe('Sistem Manajemen dan Operasi CRUD Proyek', () => {
 
   describe('Alur Ekspor / Save File Proyek', () => {
     it('mengekspor berkas dari OPFS dan memicu unduhan file .lupisproject di browser', async () => {
-      const newProject = await projectActions.createProject({
+      const newProject = await createMockEmptyProject({
         projectName: 'Game Platformer',
         description: 'Aplikasi Platformer'
       })
@@ -249,7 +115,7 @@ describe('Sistem Manajemen dan Operasi CRUD Proyek', () => {
 
   describe('Alur Pengubahan Metadata Proyek', () => {
     it('mengubah status proyek antara DRAFT, IN_PROGRESS, dan PUBLISHED serta menyimpan perubahannya di OPFS', async () => {
-      const created = await projectActions.createProject({
+      const created = await createMockEmptyProject({
         projectName: 'Game Puzzle'
       })
 
@@ -270,7 +136,7 @@ describe('Sistem Manajemen dan Operasi CRUD Proyek', () => {
     })
 
     it('mengubah nama (rename) dan deskripsi proyek dengan data baru yang konsisten', async () => {
-      const created = await projectActions.createProject({
+      const created = await createMockEmptyProject({
         projectName: 'Nama Awal',
         description: 'Deskripsi Awal'
       })
@@ -289,7 +155,7 @@ describe('Sistem Manajemen dan Operasi CRUD Proyek', () => {
 
   describe('Alur Penghapusan Proyek', () => {
     it('menghapus folder proyek dari OPFS sehingga proyek tidak lagi tampil di dashboard', async () => {
-      const created = await projectActions.createProject({
+      const created = await createMockEmptyProject({
         projectName: 'Proyek Sementara'
       })
 
@@ -394,7 +260,7 @@ describe('Sistem Manajemen dan Operasi CRUD Proyek', () => {
     })
 
     it('menampilkan status pencarian kosong ketika filter nama proyek tidak cocok', async () => {
-      await projectActions.createProject({
+      await createMockEmptyProject({
         projectName: 'Space Shooter'
       })
 

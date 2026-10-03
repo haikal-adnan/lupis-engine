@@ -78,8 +78,7 @@ const handleCreateProject = async (projectData) => {
   try {
     const newProject = await createProject({
       projectName: projectData.name,
-      description: projectData.description,
-      type: "empty"
+      description: projectData.description
     });
 
     await router.push(`/editor/${newProject.id}`);

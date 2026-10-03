@@ -55,7 +55,7 @@ export function useProjectMenu(refreshListCallback, openProjectCallback) {
 
     if (newName && newName.trim() !== "" && newName !== project.name) {
       try {
-        await updateProject(project.id, { name: newName.trim() });
+        await updateProject({ name: newName.trim() });
         if (refreshListCallback) refreshListCallback();
         
         showPop({

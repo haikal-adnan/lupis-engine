@@ -35,7 +35,7 @@ export function useVariableLogic(scopeProps) {
 
     if (scope === 'Global') {
       if (!projectStore.activeProject) return;
-      projectStore.updateProject(projectStore.activeProject.id, { globalVariables: newList });
+      projectStore.updateProject({ globalVariables: newList });
     } else {
       if (!scriptStore.activeScript) return;
       

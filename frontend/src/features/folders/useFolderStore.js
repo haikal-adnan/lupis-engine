@@ -12,7 +12,6 @@ export const useFolderStore = defineStore('folder', {
     projectFolders: (state) => state.folders,
     
     getFolderPathString: (state) => (folderId) => {
-      if (!folderId) return '';
       const pathParts = [];
       let current = state.folders.find(f => f.id === folderId);
       
@@ -27,14 +26,12 @@ export const useFolderStore = defineStore('folder', {
 
   actions: {
     initFolders(folderList) {
-      this.folders = Array.isArray(folderList) 
-        ? folderList.map(f => ({
-            id: f.id,
-            name: f.name || 'Untitled Folder',
-            section: f.section || 'assets',
-            parentId: f.parentId || null
-          }))
-        : [];
+      this.folders = folderList.map(f => ({
+        id: f.id,
+        name: f.name,
+        section: f.section || null,
+        parentId: f.parentId || null
+      }));
     },
 
     setActiveFolder(folderId) {
@@ -45,42 +42,36 @@ export const useFolderStore = defineStore('folder', {
       const workspaceStore = useWorkspaceStore();
       const projectId = workspaceStore.activeProjectId;
 
-      if (!projectId) return null;
-
       const root = await navigator.storage.getDirectory();
-      const projectsDir = await root.getDirectoryHandle('projects', { create: true });
+      const appDir = await root.getDirectoryHandle('lupis-engine', { create: true });
+      const projectsDir = await appDir.getDirectoryHandle('projects', { create: true });
+
       const projectDir = await projectsDir.getDirectoryHandle(String(projectId), { create: true });
-      
       return await projectDir.getDirectoryHandle('workspaces', { create: true });
     },
 
     async syncFoldersToOPFS() {
-      try {
-        const workspaceDir = await this._getWorkspaceDirHandle();
-        if (!workspaceDir) return;
+      const workspaceDir = await this._getWorkspaceDirHandle();
 
-        const cleanFoldersPayload = this.folders.map(f => ({
-          id: f.id,
-          name: f.name,
-          section: f.section || 'assets',
-          parentId: f.parentId || null
-        }));
+      const cleanFoldersPayload = this.folders.map(f => ({
+        id: f.id,
+        name: f.name,
+        section: f.section,
+        parentId: f.parentId
+      }));
 
-        const foldersFileHandle = await workspaceDir.getFileHandle('folders.json', { create: true });
-        const writable = await foldersFileHandle.createWritable();
-        await writable.write(JSON.stringify(cleanFoldersPayload, null, 2));
-        await writable.close();
-      } catch (error) {
-        console.error('Gagal menyinkronkan folders.json ke OPFS (workspaces):', error);
-      }
+      const foldersFileHandle = await workspaceDir.getFileHandle('folders.json', { create: true });
+      const writable = await foldersFileHandle.createWritable();
+      await writable.write(JSON.stringify(cleanFoldersPayload, null, 2));
+      await writable.close();
     },
 
     async createFolder(folder) {
       const normalizedFolder = {
         id: folder.id,
         name: folder.name,
-        section: folder.section || 'assets',
-        parentId: folder.parentId || null
+        section: folder.section,
+        parentId: folder.parentId
       };
       
       this.folders.push(normalizedFolder);
@@ -88,20 +79,9 @@ export const useFolderStore = defineStore('folder', {
     },
 
     async moveFolder(folderId, newParentId) {
-      if (folderId === newParentId) return false;
-
-      let current = this.getFolderById(newParentId);
-      while (current) {
-        if (current.id === folderId) {
-          console.warn('Cannot move folder into its own child directory.');
-          return false;
-        }
-        current = this.getFolderById(current.parentId);
-      }
-
       const folderIndex = this.folders.findIndex(f => f.id === folderId);
       if (folderIndex !== -1) {
-        this.folders[folderIndex].parentId = newParentId || null;
+        this.folders[folderIndex].parentId = newParentId;
         await this.syncFoldersToOPFS();
         return true;
       }
@@ -110,9 +90,6 @@ export const useFolderStore = defineStore('folder', {
 
     async deleteFolder(folderId) {
       this.folders = this.folders.filter(f => f.id !== folderId);
-      if (this.activeFolderId === folderId) {
-        this.activeFolderId = null;
-      }
       await this.syncFoldersToOPFS();
     },
 

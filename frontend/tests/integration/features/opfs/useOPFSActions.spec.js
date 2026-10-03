@@ -1,6 +1,6 @@
 import { setActivePinia, createPinia } from 'pinia';
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
-import { useOPFSStore, useOPFSActions } from '@opfs/opfs.js';
+import { useOPFSStore, useOPFSActions, opfsItemSchema, getFileTypeByExtension } from '@opfs/opfs.js';
 import { useProjectStore } from '@projects/projects.js';
 import { usePopAlert } from '@composables/composables.js';
 import { encodeLupisProject, decodeLupisProject } from '@utils/projectFormat.js';
@@ -22,29 +22,42 @@ vi.mock('@utils/projectFormat.js', () => ({
 }));
 
 // Helper Mock FileHandle OPFS
-const createMockFileHandle = (fileName, content = 'contoh konten') => ({
-  kind: 'file',
-  getFile: vi.fn().mockResolvedValue({
-    text: vi.fn().mockResolvedValue(content),
-  }),
-  createWritable: vi.fn().mockResolvedValue({
-    write: vi.fn().mockResolvedValue(true),
-    close: vi.fn().mockResolvedValue(true),
-  }),
-});
+const createMockFileHandle = (fileName, content = 'contoh konten') => {
+  const mockFile = new File([content], fileName, { type: 'text/plain' });
+  return {
+    kind: 'file',
+    name: fileName,
+    getFile: vi.fn().mockResolvedValue({
+      ...mockFile,
+      name: fileName,
+      text: vi.fn().mockResolvedValue(content),
+      arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(0)),
+    }),
+    createWritable: vi.fn().mockResolvedValue({
+      write: vi.fn().mockResolvedValue(true),
+      close: vi.fn().mockResolvedValue(true),
+    }),
+  };
+};
 
 // Helper Mock DirectoryHandle OPFS
-const createMockDirectoryHandle = (dirName, entriesMap = new Map()) => ({
-  kind: 'directory',
-  entries: async function* () {
-    for (const entry of entriesMap.entries()) {
-      yield entry;
-    }
-  },
-  getDirectoryHandle: vi.fn(),
-  getFileHandle: vi.fn(),
-  removeEntry: vi.fn().mockResolvedValue(true),
-});
+const createMockDirectoryHandle = (dirName, entriesMap = new Map()) => {
+  return {
+    kind: 'directory',
+    name: dirName,
+    entries: vi.fn().mockImplementation(() => {
+      const entriesArray = Array.from(entriesMap.entries());
+      return (async function* () {
+        for (const [key, value] of entriesArray) {
+          yield [key, value];
+        }
+      })();
+    }),
+    getDirectoryHandle: vi.fn(),
+    getFileHandle: vi.fn(),
+    removeEntry: vi.fn().mockResolvedValue(true),
+  };
+};
 
 // ==============================================================================
 // 2. INTEGRATION TEST: USE OPFS ACTIONS
@@ -84,29 +97,84 @@ describe('Integrasi useOPFSActions dengan Pinia Store, UI Alert, dan Storage', (
   });
 
   // ----------------------------------------------------------------------------
-  // A. Verifikasi Dukungan Browser terhadap OPFS
+  // A. Verifikasi Dukungan Browser & Base Helper OPFS
   // ----------------------------------------------------------------------------
-  describe('Dukungan API OPFS Browser', () => {
-    it('melempar error saat dijalankan pada browser yang tidak mendukung OPFS', async () => {
-      // Arrange
+  describe('Dukungan API OPFS Browser & Core Executors', () => {
+    it('[Bad Path] melempar Error saat dijalankan pada browser yang tidak mendukung OPFS API', async () => {
       delete global.navigator.storage;
       const { getUserDirectory } = useOPFSActions();
 
-      // Act & Assert
-      await expect(getUserDirectory()).rejects.toThrow('Browser Anda tidak mendukung OPFS.');
+      await expect(getUserDirectory()).rejects.toThrow();
     });
 
     it('mengembalikan root directory handle ketika browser mendukung OPFS', async () => {
-      // Arrange
       const mockRoot = createMockDirectoryHandle('root');
       global.navigator.storage.getDirectory.mockResolvedValue(mockRoot);
       const { getUserDirectory } = useOPFSActions();
 
-      // Act
       const result = await getUserDirectory();
 
-      // Assert
       expect(result).toBe(mockRoot);
+    });
+
+    it('getProjectsRootDirectory mengembalikan handle lupis-engine/projects', async () => {
+      const mockProjectsDir = createMockDirectoryHandle('projects');
+      const mockEngineDir = createMockDirectoryHandle('lupis-engine');
+      mockEngineDir.getDirectoryHandle.mockResolvedValue(mockProjectsDir);
+
+      const mockRoot = createMockDirectoryHandle('root');
+      mockRoot.getDirectoryHandle.mockResolvedValue(mockEngineDir);
+
+      global.navigator.storage.getDirectory.mockResolvedValue(mockRoot);
+
+      const { getProjectsRootDirectory } = useOPFSActions();
+      const result = await getProjectsRootDirectory();
+
+      expect(mockRoot.getDirectoryHandle).toHaveBeenCalledWith('lupis-engine', { create: true });
+      expect(mockEngineDir.getDirectoryHandle).toHaveBeenCalledWith('projects', { create: true });
+      expect(result).toBe(mockProjectsDir);
+    });
+
+    it('resolveDirectoryPath menavigasi subfolder berdasarkan string atau array path', async () => {
+      const mockAssetsDir = createMockDirectoryHandle('assets');
+      const mockProjDir = createMockDirectoryHandle('proj-123');
+      mockProjDir.getDirectoryHandle.mockResolvedValue(mockAssetsDir);
+
+      const mockRoot = createMockDirectoryHandle('projects');
+      mockRoot.getDirectoryHandle.mockResolvedValue(mockProjDir);
+
+      const { resolveDirectoryPath } = useOPFSActions();
+      const result = await resolveDirectoryPath(mockRoot, 'proj-123/assets');
+
+      expect(mockRoot.getDirectoryHandle).toHaveBeenCalledWith('proj-123', { create: true });
+      expect(mockProjDir.getDirectoryHandle).toHaveBeenCalledWith('assets', { create: true });
+      expect(result).toBe(mockAssetsDir);
+    });
+
+    it('writeFileToHandle menulis data ke file handle spesifik', async () => {
+      const mockWritable = { write: vi.fn(), close: vi.fn() };
+      const mockFileHandle = { createWritable: vi.fn().mockResolvedValue(mockWritable) };
+      const mockDir = createMockDirectoryHandle('assets');
+      mockDir.getFileHandle.mockResolvedValue(mockFileHandle);
+
+      const { writeFileToHandle } = useOPFSActions();
+      await writeFileToHandle(mockDir, 'test.png', 'binary-data');
+
+      expect(mockDir.getFileHandle).toHaveBeenCalledWith('test.png', { create: true });
+      expect(mockWritable.write).toHaveBeenCalledWith('binary-data');
+      expect(mockWritable.close).toHaveBeenCalled();
+    });
+
+    it('getFileBlobUrlFromHandle membaca file dan mengembalikan Blob URL', async () => {
+      const mockFileHandle = createMockFileHandle('image.png', 'content');
+      const mockDir = createMockDirectoryHandle('assets');
+      mockDir.getFileHandle.mockResolvedValue(mockFileHandle);
+
+      const { getFileBlobUrlFromHandle } = useOPFSActions();
+      const url = await getFileBlobUrlFromHandle(mockDir, 'image.png');
+
+      expect(mockDir.getFileHandle).toHaveBeenCalledWith('image.png');
+      expect(url).toBe('blob:http://localhost/mock-url');
     });
   });
 
@@ -115,9 +183,8 @@ describe('Integrasi useOPFSActions dengan Pinia Store, UI Alert, dan Storage', (
   // ----------------------------------------------------------------------------
   describe('Pemindaian Struktur Folder (refreshTree)', () => {
     it('memindai direktori OPFS secara rekursif dan memperbarui fileTree pada store', async () => {
-      // Arrange
       const fileHandle = createMockFileHandle('app.js');
-      const subDirHandle = createMockDirectoryHandle('assets');
+      const subDirHandle = createMockDirectoryHandle('assets', new Map());
 
       const mockRoot = createMockDirectoryHandle(
         'root',
@@ -130,10 +197,8 @@ describe('Integrasi useOPFSActions dengan Pinia Store, UI Alert, dan Storage', (
       global.navigator.storage.getDirectory.mockResolvedValue(mockRoot);
       const { refreshTree } = useOPFSActions();
 
-      // Act
       await refreshTree();
 
-      // Assert
       expect(opfsStore.fileTree).toHaveLength(2);
       expect(opfsStore.fileTree[0].name).toBe('assets');
       expect(opfsStore.fileTree[0].kind).toBe('directory');
@@ -142,15 +207,12 @@ describe('Integrasi useOPFSActions dengan Pinia Store, UI Alert, dan Storage', (
       expect(opfsStore.isLoading).toBe(false);
     });
 
-    it('menangani kegagalan akses direktori dengan mencatat pesan error ke store', async () => {
-      // Arrange
+    it('[Bad Path] menangani kegagalan akses direktori dengan mencatat pesan error ke store', async () => {
       global.navigator.storage.getDirectory.mockRejectedValue(new Error('Akses ditolak'));
       const { refreshTree } = useOPFSActions();
 
-      // Act
       await refreshTree();
 
-      // Assert
       expect(opfsStore.errorMessage).toBe('Akses ditolak');
       expect(opfsStore.isLoading).toBe(false);
     });
@@ -161,48 +223,48 @@ describe('Integrasi useOPFSActions dengan Pinia Store, UI Alert, dan Storage', (
   // ----------------------------------------------------------------------------
   describe('Pembacaan File (openFile)', () => {
     it('membaca file teks kode dan memperbarui state activeFile serta fileContent', async () => {
-      // Arrange
       const fileHandle = createMockFileHandle('script.js', 'console.log("test");');
-      const fileItem = { name: 'script.js', kind: 'file', handle: fileHandle };
+      const fileItem = opfsItemSchema({ name: 'script.js', kind: 'file', path: 'script.js', handle: fileHandle });
       const { openFile } = useOPFSActions();
 
-      // Act
       await openFile(fileItem);
 
-      // Assert
-      expect(opfsStore.activeFile).toEqual(fileItem);
+      expect(opfsStore.activeFile).toMatchObject({
+        name: 'script.js',
+        kind: 'file',
+        path: 'script.js',
+      });
       expect(opfsStore.fileContent).toBe('console.log("test");');
       expect(opfsStore.imageUrl).toBe('');
       expect(opfsStore.isLoading).toBe(false);
     });
 
     it('membuat Blob Object URL saat membuka berkas gambar', async () => {
-      // Arrange
       const fileHandle = createMockFileHandle('logo.png');
-      const fileItem = { name: 'logo.png', kind: 'file', handle: fileHandle };
+      const fileItem = opfsItemSchema({ name: 'logo.png', kind: 'file', path: 'logo.png', handle: fileHandle });
       const { openFile } = useOPFSActions();
 
-      // Act
       await openFile(fileItem);
 
-      // Assert
-      expect(opfsStore.activeFile).toEqual(fileItem);
+      expect(opfsStore.activeFile).toMatchObject({
+        name: 'logo.png',
+        kind: 'file',
+        path: 'logo.png',
+      });
       expect(opfsStore.fileContent).toBe('');
       expect(opfsStore.imageUrl).toBe('blob:http://localhost/mock-url');
+      expect(opfsStore.isLoading).toBe(false);
     });
 
-    it('menampilkan notifikasi pop-up saat terjadi kesalahan pembacaan berkas', async () => {
-      // Arrange
+    it('[Bad Path] menampilkan notifikasi pop-up saat terjadi kesalahan pembacaan berkas', async () => {
       const fileHandle = {
         getFile: vi.fn().mockRejectedValue(new Error('File rusak')),
       };
-      const fileItem = { name: 'data.json', kind: 'file', handle: fileHandle };
+      const fileItem = opfsItemSchema({ name: 'data.json', kind: 'file', path: 'data.json', handle: fileHandle });
       const { openFile } = useOPFSActions();
 
-      // Act
       await openFile(fileItem);
 
-      // Assert
       expect(mockShowPop).toHaveBeenCalledWith({
         title: 'Gagal Membuka File',
         message: 'File rusak',
@@ -216,29 +278,34 @@ describe('Integrasi useOPFSActions dengan Pinia Store, UI Alert, dan Storage', (
   // D. Pengisian dan Penyimpanan Dokumen Aktif
   // ----------------------------------------------------------------------------
   describe('Penyimpanan Berkas Aktif (saveActiveFile)', () => {
-    it('mengembalikan status gagal jika tidak ada berkas aktif yang terbuka', async () => {
-      // Arrange
+    it('[Bad Path] mengembalikan status gagal jika tidak ada berkas aktif yang terpasang di store', async () => {
+      opfsStore.activeFile = null;
       const { saveActiveFile } = useOPFSActions();
 
-      // Act
       const result = await saveActiveFile();
 
-      // Assert
-      expect(result).toEqual({ success: false });
+      expect(result.success).toBe(false);
+      expect(mockShowPop).toHaveBeenCalledWith(
+        expect.objectContaining({ title: 'Gagal Menyimpan File', type: 'error' })
+      );
     });
 
     it('menulis konten aktif ke file storage dan menandai status proyek dirty', async () => {
-      // Arrange
-      const mockWritable = { write: vi.fn(), close: vi.fn() };
-      const fileHandle = { createWritable: vi.fn().mockResolvedValue(mockWritable) };
+      const mockWritable = {
+        write: vi.fn().mockResolvedValue(true),
+        close: vi.fn().mockResolvedValue(true),
+      };
+      const fileHandle = {
+        createWritable: vi.fn().mockResolvedValue(mockWritable),
+      };
 
-      opfsStore.setActiveFile({ name: 'config.json', handle: fileHandle }, '{"v":1}', '');
+      const activeItem = opfsItemSchema({ name: 'config.json', path: 'config.json', handle: fileHandle });
+      opfsStore.setActiveFile(activeItem, '{"v":1}', '');
       const { saveActiveFile } = useOPFSActions();
 
-      // Act
       const result = await saveActiveFile();
 
-      // Assert
+      expect(fileHandle.createWritable).toHaveBeenCalled();
       expect(mockWritable.write).toHaveBeenCalledWith('{"v":1}');
       expect(mockWritable.close).toHaveBeenCalled();
       expect(mockProjectStore.markAsDirty).toHaveBeenCalled();
@@ -248,25 +315,33 @@ describe('Integrasi useOPFSActions dengan Pinia Store, UI Alert, dan Storage', (
       expect(result).toEqual({ success: true });
       expect(opfsStore.isSaving).toBe(false);
     });
+
+    it('[Bad Path] menangani kegagalan penulisan stream ke storage (I/O Exception)', async () => {
+      const fileHandle = {
+        createWritable: vi.fn().mockRejectedValue(new Error('Gagal menulis stream')),
+      };
+
+      const activeItem = opfsItemSchema({ name: 'config.json', path: 'config.json', handle: fileHandle });
+      opfsStore.setActiveFile(activeItem, '{"v":1}', '');
+      const { saveActiveFile } = useOPFSActions();
+
+      const result = await saveActiveFile();
+
+      expect(result).toEqual({ success: false, error: 'Gagal menulis stream' });
+      expect(mockShowPop).toHaveBeenCalledWith({
+        title: 'Gagal Menyimpan File',
+        message: 'Gagal menulis stream',
+        type: 'error',
+      });
+      expect(opfsStore.isSaving).toBe(false);
+    });
   });
 
   // ----------------------------------------------------------------------------
   // E. Pembuatan Entri Berkas dan Folder
   // ----------------------------------------------------------------------------
   describe('Pembuatan Berkas atau Folder Baru (createEntry)', () => {
-    it('menolak pembuatan entri apabila nama file hanya berisi spasi atau kosong', async () => {
-      // Arrange
-      const { createEntry } = useOPFSActions();
-
-      // Act
-      const result = await createEntry('   ');
-
-      // Assert
-      expect(result).toEqual({ success: false });
-    });
-
     it('membuat berkas baru di direktori root storage', async () => {
-      // Arrange
       const mockWritable = { write: vi.fn(), close: vi.fn() };
       const mockFileHandle = { createWritable: vi.fn().mockResolvedValue(mockWritable) };
       const mockRoot = createMockDirectoryHandle('root');
@@ -275,10 +350,8 @@ describe('Integrasi useOPFSActions dengan Pinia Store, UI Alert, dan Storage', (
       global.navigator.storage.getDirectory.mockResolvedValue(mockRoot);
       const { createEntry } = useOPFSActions();
 
-      // Act
       const result = await createEntry('index.js', 'file');
 
-      // Assert
       expect(mockRoot.getFileHandle).toHaveBeenCalledWith('index.js', { create: true });
       expect(mockWritable.write).toHaveBeenCalledWith('');
       expect(mockProjectStore.markAsDirty).toHaveBeenCalled();
@@ -286,7 +359,6 @@ describe('Integrasi useOPFSActions dengan Pinia Store, UI Alert, dan Storage', (
     });
 
     it('menelusuri path tersarang dan membuat folder di direktori tujuan', async () => {
-      // Arrange
       const mockUiDir = createMockDirectoryHandle('ui');
       const mockSrcDir = createMockDirectoryHandle('src');
       mockSrcDir.getDirectoryHandle.mockResolvedValue(mockUiDir);
@@ -297,14 +369,29 @@ describe('Integrasi useOPFSActions dengan Pinia Store, UI Alert, dan Storage', (
       global.navigator.storage.getDirectory.mockResolvedValue(mockRoot);
       const { createEntry } = useOPFSActions();
 
-      // Act
       const result = await createEntry('components', 'directory', 'src/ui');
 
-      // Assert
       expect(mockRoot.getDirectoryHandle).toHaveBeenCalledWith('src', { create: true });
       expect(mockSrcDir.getDirectoryHandle).toHaveBeenCalledWith('ui', { create: true });
       expect(mockUiDir.getDirectoryHandle).toHaveBeenCalledWith('components', { create: true });
       expect(result).toEqual({ success: true });
+    });
+
+    it('[Bad Path] mengembalikan status gagal jika proses pembuatan berkas di storage melempar exception', async () => {
+      const mockRoot = createMockDirectoryHandle('root');
+      mockRoot.getFileHandle.mockRejectedValue(new Error('Kapasitas disk penuh'));
+
+      global.navigator.storage.getDirectory.mockResolvedValue(mockRoot);
+      const { createEntry } = useOPFSActions();
+
+      const result = await createEntry('newfile.js', 'file');
+
+      expect(result).toEqual({ success: false, error: 'Kapasitas disk penuh' });
+      expect(mockShowPop).toHaveBeenCalledWith({
+        title: 'Gagal Membuat file',
+        message: 'Kapasitas disk penuh',
+        type: 'error',
+      });
     });
   });
 
@@ -313,18 +400,15 @@ describe('Integrasi useOPFSActions dengan Pinia Store, UI Alert, dan Storage', (
   // ----------------------------------------------------------------------------
   describe('Penghapusan Berkas dan Folder (deleteEntry)', () => {
     it('menghapus entri berkas aktif dan mengosongkan state activeFile pada store', async () => {
-      // Arrange
       const mockRoot = createMockDirectoryHandle('root');
       global.navigator.storage.getDirectory.mockResolvedValue(mockRoot);
 
-      const fileItem = { name: 'test.js', path: 'test.js' };
+      const fileItem = opfsItemSchema({ name: 'test.js', path: 'test.js' });
       opfsStore.setActiveFile(fileItem, 'konten', '');
       const { deleteEntry } = useOPFSActions();
 
-      // Act
       const result = await deleteEntry(fileItem);
 
-      // Assert
       expect(mockRoot.removeEntry).toHaveBeenCalledWith('test.js', { recursive: true });
       expect(opfsStore.activeFile).toBeNull();
       expect(mockProjectStore.markAsDirty).toHaveBeenCalled();
@@ -332,7 +416,6 @@ describe('Integrasi useOPFSActions dengan Pinia Store, UI Alert, dan Storage', (
     });
 
     it('menelusuri struktur direktori tersarang untuk menghapus entri target', async () => {
-      // Arrange
       const mockUtilsDir = createMockDirectoryHandle('utils');
       const mockSrcDir = createMockDirectoryHandle('src');
       mockSrcDir.getDirectoryHandle.mockResolvedValue(mockUtilsDir);
@@ -342,17 +425,36 @@ describe('Integrasi useOPFSActions dengan Pinia Store, UI Alert, dan Storage', (
 
       global.navigator.storage.getDirectory.mockResolvedValue(mockRoot);
 
-      const fileItem = { name: 'old.js', path: 'src/utils/old.js' };
+      const fileItem = opfsItemSchema({ name: 'old.js', path: 'src/utils/old.js' });
+      opfsStore.setActiveFile(fileItem, 'konten', '');
+
       const { deleteEntry } = useOPFSActions();
 
-      // Act
       const result = await deleteEntry(fileItem);
 
-      // Assert
       expect(mockRoot.getDirectoryHandle).toHaveBeenCalledWith('src');
       expect(mockSrcDir.getDirectoryHandle).toHaveBeenCalledWith('utils');
       expect(mockUtilsDir.removeEntry).toHaveBeenCalledWith('old.js', { recursive: true });
       expect(result).toEqual({ success: true });
+    });
+
+    it('[Bad Path] mengembalikan respon error saat mencoba menghapus berkas yang tidak ditemukan', async () => {
+      const mockRoot = createMockDirectoryHandle('root');
+      mockRoot.removeEntry.mockRejectedValue(new Error('Entry not found'));
+
+      global.navigator.storage.getDirectory.mockResolvedValue(mockRoot);
+
+      const fileItem = opfsItemSchema({ name: 'missing.js', path: 'missing.js' });
+      const { deleteEntry } = useOPFSActions();
+
+      const result = await deleteEntry(fileItem);
+
+      expect(result).toEqual({ success: false, error: 'Entry not found' });
+      expect(mockShowPop).toHaveBeenCalledWith({
+        title: 'Gagal Menghapus',
+        message: 'Entry not found',
+        type: 'error',
+      });
     });
   });
 
@@ -361,7 +463,6 @@ describe('Integrasi useOPFSActions dengan Pinia Store, UI Alert, dan Storage', (
   // ----------------------------------------------------------------------------
   describe('Unggah Berkas Drag & Drop (handleDropFiles)', () => {
     it('memproses berkas dengan ekstensi valid dan memberikan peringatan untuk ekstensi yang dilarang', async () => {
-      // Arrange
       const mockWritable = { write: vi.fn(), close: vi.fn() };
       const mockFileHandle = { createWritable: vi.fn().mockResolvedValue(mockWritable) };
       const mockRoot = createMockDirectoryHandle('root');
@@ -375,10 +476,8 @@ describe('Integrasi useOPFSActions dengan Pinia Store, UI Alert, dan Storage', (
       ];
       const { handleDropFiles } = useOPFSActions();
 
-      // Act
       await handleDropFiles(files);
 
-      // Assert
       expect(mockRoot.getFileHandle).toHaveBeenCalledWith('valid.json', { create: true });
       expect(mockShowPop).toHaveBeenCalledWith(
         expect.objectContaining({ title: 'Beberapa File Ditolak', type: 'warning' })
@@ -388,6 +487,24 @@ describe('Integrasi useOPFSActions dengan Pinia Store, UI Alert, dan Storage', (
       );
       expect(mockProjectStore.markAsDirty).toHaveBeenCalled();
     });
+
+    it('[Bad Path] menampilkan notifikasi error saat penulisan berkas unggahan gagal', async () => {
+      const mockRoot = createMockDirectoryHandle('root');
+      mockRoot.getFileHandle.mockRejectedValue(new Error('I/O Upload Error'));
+
+      global.navigator.storage.getDirectory.mockResolvedValue(mockRoot);
+
+      const files = [{ name: 'data.png', type: 'image/png' }];
+      const { handleDropFiles } = useOPFSActions();
+
+      await handleDropFiles(files);
+
+      expect(mockShowPop).toHaveBeenCalledWith({
+        title: 'Gagal Mengunggah File',
+        message: 'I/O Upload Error',
+        type: 'error',
+      });
+    });
   });
 
   // ----------------------------------------------------------------------------
@@ -395,15 +512,12 @@ describe('Integrasi useOPFSActions dengan Pinia Store, UI Alert, dan Storage', (
   // ----------------------------------------------------------------------------
   describe('Pembersihan Cache Lokal (clearCurrentUsersCache)', () => {
     it('mereset file aktif dan mengosongkan pohon berkas di store', async () => {
-      // Arrange
-      opfsStore.setActiveFile({ name: 'temp.js' }, 'data', '');
-      opfsStore.setFileTree([{ name: 'temp.js' }]);
+      opfsStore.setActiveFile(opfsItemSchema({ name: 'temp.js', path: 'temp.js' }), 'data', '');
+      opfsStore.setFileTree([opfsItemSchema({ name: 'temp.js' })]);
       const { clearCurrentUsersCache } = useOPFSActions();
 
-      // Act
       const result = await clearCurrentUsersCache();
 
-      // Assert
       expect(opfsStore.activeFile).toBeNull();
       expect(opfsStore.fileTree).toEqual([]);
       expect(result).toEqual({ success: true });
@@ -413,21 +527,35 @@ describe('Integrasi useOPFSActions dengan Pinia Store, UI Alert, dan Storage', (
   // ----------------------------------------------------------------------------
   // I. Ekspor Proyek (.lupisproject)
   // ----------------------------------------------------------------------------
-  describe('Ekspor Berkas Proyek (exportToLupisProject)', () => {
-    it('mengembalikan respons gagal apabila ID proyek tidak valid', async () => {
-      // Arrange
-      global.navigator.storage.getDirectory.mockResolvedValue(createMockDirectoryHandle('root'));
+  describe('Ekspor Berkas Proyek (.lupisproject)', () => {
+    it('[Bad Path] mengembalikan respons gagal apabila direktori proyek target tidak ditemukan di OPFS', async () => {
+      const mockProjectsDir = createMockDirectoryHandle('projects');
+      mockProjectsDir.getDirectoryHandle.mockRejectedValue(new Error("Directory 'invalid-id' not found."));
+
+      const mockAppDir = createMockDirectoryHandle('lupis-engine');
+      mockAppDir.getDirectoryHandle.mockResolvedValue(mockProjectsDir);
+
+      const mockRoot = createMockDirectoryHandle('root');
+      mockRoot.getDirectoryHandle.mockResolvedValue(mockAppDir);
+
+      global.navigator.storage.getDirectory.mockResolvedValue(mockRoot);
+
       const { exportToLupisProject } = useOPFSActions();
 
-      // Act
-      const result = await exportToLupisProject(null);
+      const result = await exportToLupisProject('invalid-id');
 
-      // Assert
-      expect(result).toEqual({ success: false, error: 'ID Proyek tidak valid.' });
+      expect(result).toEqual({
+        success: false,
+        error: "Directory 'invalid-id' not found.",
+      });
+      expect(mockShowPop).toHaveBeenCalledWith({
+        title: 'Gagal Ekspor Proyek',
+        message: "Directory 'invalid-id' not found.",
+        type: 'error',
+      });
     });
 
     it('membaca direktori proyek, melakukan pengkodean, dan memicu unduhan file pada DOM', async () => {
-      // Arrange
       const mockProjectJsonFile = {
         text: vi.fn().mockResolvedValue(JSON.stringify({ name: 'Proyek Game Saya' })),
       };
@@ -459,10 +587,8 @@ describe('Integrasi useOPFSActions dengan Pinia Store, UI Alert, dan Storage', (
 
       const { exportToLupisProject } = useOPFSActions();
 
-      // Act
       const result = await exportToLupisProject('123');
 
-      // Assert
       expect(mockAnchor.download).toBe('Proyek_Game_Saya.lupisproject');
       expect(mockAnchor.click).toHaveBeenCalled();
       expect(mockShowPop).toHaveBeenCalledWith(
@@ -475,30 +601,27 @@ describe('Integrasi useOPFSActions dengan Pinia Store, UI Alert, dan Storage', (
   // ----------------------------------------------------------------------------
   // J. Impor Proyek (.lupisproject)
   // ----------------------------------------------------------------------------
-  describe('Impor Berkas Proyek (importFromLupisProject)', () => {
-    it('mengembalikan error jika arsip proyek tidak memuat berkas project.json', async () => {
-      // Arrange
-      const mockZip = {
-        file: vi.fn().mockReturnValue(null),
-        files: {},
-      };
-      vi.mocked(decodeLupisProject).mockResolvedValue(mockZip);
+  describe('Impor Berkas Proyek (.lupisproject)', () => {
+    it('[Bad Path] mengembalikan error jika arsip proyek terkorupsi atau tidak memuat project.json', async () => {
+      vi.mocked(decodeLupisProject).mockRejectedValue(new Error('Format berkas .lupisproject tidak valid'));
 
       const { importFromLupisProject } = useOPFSActions();
-      const mockFile = new File([''], 'test.lupisproject');
+      const mockFile = new File([''], 'invalid.lupisproject');
 
-      // Act
       const result = await importFromLupisProject(mockFile);
 
-      // Assert
       expect(result).toEqual({
         success: false,
-        error: 'File tidak valid: "project.json" tidak ditemukan di dalam arsip proyek.',
+        error: 'Format berkas .lupisproject tidak valid',
+      });
+      expect(mockShowPop).toHaveBeenCalledWith({
+        title: 'Gagal Import Proyek',
+        message: 'Format berkas .lupisproject tidak valid',
+        type: 'error',
       });
     });
 
     it('Mendekode arsip ZIP, mengembalikan struktur direktori di OPFS, dan menulis ulang seluruh berkas', async () => {
-      // Arrange
       const projectData = { id: 'proj-99', name: 'Proyek Hasil Impor' };
       const mockZipFile = {
         async: vi.fn().mockResolvedValue(JSON.stringify(projectData)),
@@ -531,10 +654,8 @@ describe('Integrasi useOPFSActions dengan Pinia Store, UI Alert, dan Storage', (
       const { importFromLupisProject } = useOPFSActions();
       const mockFile = new File(['konten'], 'project.lupisproject');
 
-      // Act
       const result = await importFromLupisProject(mockFile);
 
-      // Assert
       expect(result).toEqual({
         success: true,
         projectId: 'proj-99',

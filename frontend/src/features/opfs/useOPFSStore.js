@@ -1,44 +1,37 @@
 import { defineStore } from 'pinia';
+import { opfsSchema, opfsItemSchema, getFileTypeByExtension } from '@opfs/opfs.js';
 
 export const useOPFSStore = defineStore('opfs', {
-  state: () => ({
-    fileTree: [],        
-    activeFile: null,    
-    fileContent: '',      
-    imageUrl: '',        
-    
-    isLoading: false,
-    isSaving: false,
-    errorMessage: '',
-    
-    allowedExtensions: ['js', 'json', 'png', 'jpg', 'jpeg', 'webp', 'scene', 'prefab']
-  }),
+  state: () => opfsSchema(),
 
-getters: {
-    hasActiveFile: (state) => !!state.activeFile,
-    activeFileName: (state) => state.activeFile?.name || '',
+  getters: {
+    hasActiveFile: (state) => Boolean(state.activeFile),
     
+    activeFileName: (state) => {
+      if (state.activeFile && state.activeFile.name) {
+        return state.activeFile.name;
+      }
+      return '';
+    },
+
     activeFileType: (state) => {
-      if (!state.activeFile || state.activeFile.kind !== 'file') return 'none';
-      const ext = state.activeFile.name.split('.').pop().toLowerCase();
-      if (['js', 'json', 'scene', 'prefab'].includes(ext)) return 'code';
-      if (['png', 'jpg', 'jpeg', 'webp'].includes(ext)) return 'image';
-      return 'unsupported';
+      if (state.activeFile && state.activeFile.name) {
+        return getFileTypeByExtension(state.activeFile.name);
+      }
+      return null;
     }
   },
 
   actions: {
     setFileTree(tree) {
-      this.fileTree = tree;
+      this.fileTree = tree.map(opfsItemSchema);
     },
 
     setActiveFile(fileItem, content = '', imgUrl = '') {
       if (this.imageUrl) {
         URL.revokeObjectURL(this.imageUrl);
-        this.imageUrl = '';
       }
-
-      this.activeFile = fileItem;
+      this.activeFile = opfsItemSchema(fileItem);
       this.fileContent = content;
       this.imageUrl = imgUrl;
     },

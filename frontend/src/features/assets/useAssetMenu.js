@@ -230,7 +230,14 @@ export function useAssetMenu(selectedIdRef, triggerUploadCb, logicActions) {
   })
 
   const defaultEmptyMenu = () => [
-    { label: 'New Folder', icon: FolderPlus, action: () => { closeMenu(); createNewFolder('New Folder', folderStore.activeFolderId) } },
+    { 
+      label: 'New Folder', 
+      icon: FolderPlus, 
+      action: () => { 
+        closeMenu(); 
+        createNewFolder({ parentId: folderStore.activeFolderId }); 
+      } 
+    },
     { label: 'Import Assets...', icon: Download, action: () => { closeMenu(); triggerUploadCb() } },
     { separator: true },
     { 

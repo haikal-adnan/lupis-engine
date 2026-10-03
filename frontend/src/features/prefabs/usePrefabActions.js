@@ -11,15 +11,16 @@ import {
   usePrompt
 } from '@composables/composables.js';
 
-import { useProjectStore, useProjectActions } from '@projects/projects.js';
+import { useWorkspaceStore } from '@workspaces/workspaces.js';
+import { useProjectStore } from '@projects/projects.js';
 import { useFolderStore } from '@folders/folders.js';
 
 export function usePrefabActions() {
   const store = usePrefabStore();
   const sceneStore = useSceneStore();
+  const workspaceStore = useWorkspaceStore();
   const projectStore = useProjectStore();
   const folderStore = useFolderStore();
-  const { getUserProjectsDir } = useProjectActions();
 
   const { confirm } = useConfirm();
   const { showPop } = usePopAlert();
@@ -29,8 +30,6 @@ export function usePrefabActions() {
     let cleanName = desiredName
       .replace(/\s+/g, '_')
       .replace(/[^a-zA-Z0-9_]/g, '');
-    
-    if (!cleanName) cleanName = 'New_Prefab';
 
     let finalName = cleanName;
     let counter = 1;
@@ -51,39 +50,36 @@ export function usePrefabActions() {
   };
 
   const _savePrefabToOPFS = async (prefab) => {
-    try {
-      const projectId = projectStore.project?.id;
-      if (!projectId) return;
+    const projectId = workspaceStore.activeProjectId;
+    const root = await navigator.storage.getDirectory();
+    const appDir = await root.getDirectoryHandle('lupis-engine', { create: true });
+    const projectsDir = await appDir.getDirectoryHandle('projects', { create: true });
+    const projectDir = await projectsDir.getDirectoryHandle(String(projectId), { create: true });
 
-      const projectsDir = await getUserProjectsDir();
-      const projectDir = await projectsDir.getDirectoryHandle(projectId, { create: true });
-      const prefabsDir = await projectDir.getDirectoryHandle('prefabs', { create: true });
-      const workspacesDir = await projectDir.getDirectoryHandle('workspaces', { create: true });
+    const prefabsDir = await projectDir.getDirectoryHandle('prefabs', { create: true });
+    const workspacesDir = await projectDir.getDirectoryHandle('workspaces', { create: true });
 
-      const cleanPrefab = JSON.parse(JSON.stringify(prefab));
-      delete cleanPrefab.projectId;
-      delete cleanPrefab.folderId;
+    const cleanPrefab = JSON.parse(JSON.stringify(prefab));
+    delete cleanPrefab.projectId;
+    delete cleanPrefab.folderId;
 
-      const fileHandle = await prefabsDir.getFileHandle(`${prefab.id}.json`, { create: true });
-      const writable = await fileHandle.createWritable();
-      await writable.write(JSON.stringify(cleanPrefab, null, 2));
-      await writable.close();
+    const fileHandle = await prefabsDir.getFileHandle(`${prefab.id}.json`, { create: true });
+    const writable = await fileHandle.createWritable();
+    await writable.write(JSON.stringify(cleanPrefab, null, 2));
+    await writable.close();
 
-      const prefabMetas = store.prefabs.map(p => ({
-        id: p.id,
-        projectId: projectId,
-        folderId: p.folderId || null,
-        name: p.name,
-        type: p.type || 'world'
-      }));
+    const prefabMetas = store.prefabs.map(p => ({
+      id: p.id,
+      projectId: projectId,
+      folderId: p.folderId,
+      name: p.name,
+      type: p.type
+    }));
 
-      const metaHandle = await workspacesDir.getFileHandle('prefabs.json', { create: true });
-      const metaWritable = await metaHandle.createWritable();
-      await metaWritable.write(JSON.stringify(prefabMetas, null, 2));
-      await metaWritable.close();
-    } catch (error) {
-      console.error('Gagal menyimpan Prefab ke OPFS:', error);
-    }
+    const metaHandle = await workspacesDir.getFileHandle('prefabs.json', { create: true });
+    const metaWritable = await metaHandle.createWritable();
+    await metaWritable.write(JSON.stringify(prefabMetas, null, 2));
+    await metaWritable.close();
   };
 
   const createPrefab = async (
@@ -92,75 +88,69 @@ export function usePrefabActions() {
     defaultType = 'world',
     sourceEntityData = null
   ) => {
-    try {
-      let dataPayload = {};
-      let type = defaultType; 
+    let dataPayload = {};
+    let type = defaultType; 
 
-      const targetFolderId = folderId !== null ? folderId : (folderStore.activeFolderId || null);
+    const targetFolderId = folderId !== null ? folderId : folderStore.activeFolderId;
 
-      if (sourceEntityData && typeof sourceEntityData === 'object') {
-        const cleanData = JSON.parse(JSON.stringify(sourceEntityData));
-        const sourceId = cleanData.id; 
+    if (sourceEntityData) {
+      const cleanData = JSON.parse(JSON.stringify(sourceEntityData));
+      const sourceId = cleanData.id; 
 
-        const getDescendants = (pId) => {
-          let arr = [];
-          const children = sceneStore.activeScene.entities.filter(e => e.parentId === pId);
-          for (const c of children) {
-            arr.push(c);
-            arr = arr.concat(getDescendants(c.id));
-          }
-          return arr;
-        };
+      const getDescendants = (pId) => {
+        let arr = [];
+        const children = sceneStore.activeScene.entities.filter(e => e.parentId === pId);
+        for (const c of children) {
+          arr.push(c);
+          arr = arr.concat(getDescendants(c.id));
+        }
+        return arr;
+      };
 
-        const descendants = sourceId ? getDescendants(sourceId) : [];
-        const cleanChildren = JSON.parse(JSON.stringify(descendants));
+      const descendants = getDescendants(sourceId);
+      const cleanChildren = JSON.parse(JSON.stringify(descendants));
 
-        ['layerId', 'orderIndex', 'prefabId'].forEach(k => delete cleanData[k]);
-        
-        cleanChildren.forEach(child => {
-          ['layerId', 'orderIndex', 'prefabId'].forEach(k => delete child[k]);
-        });
-
-        cleanData.parentId = null;
-        
-        if (cleanData.type) type = cleanData.type; 
-        
-        dataPayload = { data: cleanData, children: cleanChildren };
-      }
-
-      const validName = getValidUniqueName(name);
-
-      const newPrefab = prefabSchema({
-        id: GenerateUUID(), 
-        projectId: projectStore.project?.id || null,
-        folderId: targetFolderId,
-        name: validName, 
-        type: type, 
-        ...dataPayload
+      delete cleanData.layerId;
+      delete cleanData.orderIndex;
+      delete cleanData.prefabId;
+      
+      cleanChildren.forEach(child => {
+        delete child.layerId;
+        delete child.orderIndex;
+        delete child.prefabId;
       });
 
-      store.addPrefab(newPrefab);
+      cleanData.parentId = null;
+      type = cleanData.type; 
       
-      await _savePrefabToOPFS(newPrefab);
-      projectStore.markAsDirty(); 
-
-      const { recordCreatePrefab } = useSceneHistory();
-      recordCreatePrefab(newPrefab);
-
-      showPop({ title: 'Success', message: `Prefab "${validName}" created.`, type: 'success' });
-      return newPrefab;
-
-    } catch (error) {
-      console.error(error);
-      showPop({ title: 'Error', message: 'Failed to create prefab.', type: 'error' });
-      return null;
+      dataPayload = { data: cleanData, children: cleanChildren };
     }
+
+    const validName = getValidUniqueName(name);
+
+    const newPrefab = prefabSchema({
+      id: GenerateUUID(), 
+      projectId: workspaceStore.activeProjectId,
+      folderId: targetFolderId,
+      name: validName, 
+      type: type, 
+      ...dataPayload
+    });
+
+    store.addPrefab(newPrefab);
+    
+    await _savePrefabToOPFS(newPrefab);
+    projectStore.markAsDirty(); 
+
+    const { recordCreatePrefab } = useSceneHistory();
+    recordCreatePrefab(newPrefab);
+
+    showPop({ title: 'Success', message: `Prefab "${validName}" created.`, type: 'success' });
+    return newPrefab;
   };
 
   const deletePrefab = async (prefabId) => {
     const prefab = store.getPrefabById(prefabId);
-    if (!prefab) return false;
-
     const clonedPrefab = JSON.parse(JSON.stringify(prefab));
 
     store.removePrefab(prefabId);
@@ -180,7 +170,6 @@ export function usePrefabActions() {
 
   const renamePrefab = async (prefabId) => {
     const prefab = store.getPrefabById(prefabId);
-    if (!prefab) return;
 
     const rawNewName = await prompt({
       title: 'Rename Prefab',
@@ -203,9 +192,7 @@ export function usePrefabActions() {
         });
 
         const updatedPrefab = store.getPrefabById(prefabId);
-        if (updatedPrefab) {
-          await _savePrefabToOPFS(updatedPrefab);
-        }
+        await _savePrefabToOPFS(updatedPrefab);
 
         projectStore.markAsDirty();
 
@@ -219,12 +206,11 @@ export function usePrefabActions() {
 
   const duplicatePrefab = async (prefabId) => {
     const original = store.getPrefabById(prefabId);
-    if (!original) return;
 
     const clone = JSON.parse(JSON.stringify(original));
     clone.id = GenerateUUID();
     clone.name = getValidUniqueName(`${original.name}_copy`);
-    clone.folderId = folderStore.activeFolderId || original.folderId || null;
+    clone.folderId = folderStore.activeFolderId;
 
     store.addPrefab(clone);
     await _savePrefabToOPFS(clone);
@@ -239,27 +225,20 @@ export function usePrefabActions() {
     return clone;
   };
 
-  const updatePrefab = async (prefabId, newData) => {
-    const prefab = store.getPrefabById(prefabId);
-    if (prefab) {
-      const cleanData = JSON.parse(JSON.stringify(newData));
-      delete cleanData.layerId;
+  const updatePrefab = async (prefabId, patchData) => {
+    const cleanPatch = JSON.parse(JSON.stringify(patchData));
+    
+    store.updatePrefab(prefabId, cleanPatch);
+    
+    const updatedPrefab = store.getPrefabById(prefabId);
+    await _savePrefabToOPFS(updatedPrefab);
 
-      store.updatePrefab(prefabId, { data: cleanData });
-      
-      const updatedPrefab = store.getPrefabById(prefabId);
-      if (updatedPrefab) {
-        await _savePrefabToOPFS(updatedPrefab);
-      }
-
-      projectStore.markAsDirty();
-      showPop({ title: 'Saved', message: `Prefab data updated.`, type: 'success' });
-    }
+    projectStore.markAsDirty();
+    showPop({ title: 'Saved', message: `Prefab data updated.`, type: 'success' });
   };
 
   const linkPrefabToEntities = async (prefabId, entityIds) => {
     const prefab = store.getPrefabById(prefabId);
-    if (!prefab || !entityIds || entityIds.length === 0) return;
 
     if (entityIds.length > 1) {
       const isConfirmed = await confirm({
@@ -280,18 +259,10 @@ export function usePrefabActions() {
 
     entityIds.forEach(id => {
       const entity = sceneStore.activeScene.entities.find(e => e.id === id);
-      if (!entity) return;
 
-      let currentX = 0, currentY = 0;
-      const transformComp = entity.components?.Transform || entity.components?.UITransform;
-      
-      if (transformComp) {
-        currentX = transformComp.x;
-        currentY = transformComp.y;
-      } else {
-        currentX = entity.x || 0;
-        currentY = entity.y || 0;
-      }
+      const transformComp = entity.components.Transform || entity.components.UITransform;
+      const currentX = transformComp.x;
+      const currentY = transformComp.y;
 
       const newComponents = JSON.parse(JSON.stringify(prefab.data.components));
 
@@ -310,23 +281,20 @@ export function usePrefabActions() {
       entitiesToUpdate.push(JSON.parse(JSON.stringify(entity))); 
     });
 
-    if (entitiesToUpdate.length > 0) {
-      engineBridge.linkEntitiesToPrefab(entitiesToUpdate);
+    engineBridge.linkEntitiesToPrefab(entitiesToUpdate);
 
-      const { recordLinkPrefab } = useSceneHistory();
-      recordLinkPrefab(oldEntitiesSnapshot, entitiesToUpdate);
+    const { recordLinkPrefab } = useSceneHistory();
+    recordLinkPrefab(oldEntitiesSnapshot, entitiesToUpdate);
 
-      showPop({ 
-        title: 'Linked', 
-        message: `${entitiesToUpdate.length} entities linked to "${prefab.name}".`, 
-        type: 'success' 
-      });
-    }
+    showPop({ 
+      title: 'Linked', 
+      message: `${entitiesToUpdate.length} entities linked to "${prefab.name}".`, 
+      type: 'success' 
+    });
   };
 
   const instantiatePrefab = (prefabId, options = {}) => {
     const prefab = store.getPrefabById(prefabId);
-    if (!prefab || !sceneStore.activeScene) return null;
 
     let posX = 0;
     let posY = 0;
@@ -335,7 +303,7 @@ export function usePrefabActions() {
       posX = Number(options.x);
       posY = Number(options.y);
     } else {
-      const camPos = engineBridge.getCameraPosition ? engineBridge.getCameraPosition() : { x: 0, y: 0 };
+      const camPos = engineBridge.getCameraPosition();
       posX = Math.round(camPos.x);
       posY = Math.round(camPos.y);
     }
@@ -350,16 +318,12 @@ export function usePrefabActions() {
         parentId = null;
       } else {
         const parentEntity = sceneStore.activeScene.entities.find(e => e.id === options.parentId);
-        if (parentEntity) {
-          targetLayerId = parentEntity.layerId;
-          parentId = options.parentId;
-        } else {
-          targetLayerId = options.parentId;
-        }
+        targetLayerId = parentEntity.layerId;
+        parentId = options.parentId;
       }
     } else {
-      const defaultWorldLayer = sceneStore.activeScene.layersWorld?.[0]?.id;
-      const defaultUILayer = sceneStore.activeScene.layersUI?.[0]?.id;
+      const defaultWorldLayer = sceneStore.activeScene.layersWorld[0].id;
+      const defaultUILayer = sceneStore.activeScene.layersUI[0].id;
       targetLayerId = prefab.type === 'ui' ? defaultUILayer : defaultWorldLayer;
     }
 
@@ -377,7 +341,7 @@ export function usePrefabActions() {
 
     let maxIndex = 0;
     existingEntities.forEach(ent => {
-      const match = ent.scriptId ? ent.scriptId.match(regex) : null;
+      const match = ent.scriptId.match(regex);
       if (match) {
         const num = parseInt(match[1], 10);
         if (num > maxIndex) maxIndex = num;
@@ -401,17 +365,17 @@ export function usePrefabActions() {
     newRootEntity.parentId = parentId;
     newRootEntity.orderIndex = nextOrderIndex;
 
-    if (newRootEntity.components?.Transform) {
+    if (newRootEntity.components.Transform) {
       newRootEntity.components.Transform.x = posX;
       newRootEntity.components.Transform.y = posY;
-    } else if (newRootEntity.components?.UITransform) {
+    } else if (newRootEntity.components.UITransform) {
       newRootEntity.components.UITransform.x = posX;
       newRootEntity.components.UITransform.y = posY;
     }
 
     const allNewEntities = [newRootEntity];
 
-    if (prefab.children && prefab.children.length > 0) {
+    if (prefab.children.length > 0) {
       const clonedChildren = prefab.children.map(child => {
         const clonedChild = JSON.parse(JSON.stringify(child));
         const newChildId = GenerateUUID();
@@ -421,7 +385,6 @@ export function usePrefabActions() {
         
         const shortHash = GenerateUUID().split('-')[0];
         clonedChild.scriptId = `${clonedChild.scriptId}_${shortHash}`;
-        
         clonedChild.layerId = targetLayerId; 
 
         return clonedChild;
@@ -441,12 +404,8 @@ export function usePrefabActions() {
     sceneStore.activeScene.entities.push(...allNewEntities);
     sceneStore.selectedEntityIds = [newRootEntity.id];
 
-    if (engineBridge.createEntity) {
-      engineBridge.createEntity(allNewEntities);
-    }
-    if (engineBridge.selectEntity) {
-      engineBridge.selectEntity([newRootEntity.id]);
-    }
+    engineBridge.createEntity(allNewEntities);
+    engineBridge.selectEntity([newRootEntity.id]);
 
     const { recordInstantiatePrefab } = useSceneHistory();
     recordInstantiatePrefab(allNewEntities);
@@ -463,15 +422,12 @@ export function usePrefabActions() {
   const applyToMasterPrefab = async (entityId) => {
     const entities = sceneStore.activeScene.entities;
     const entity = entities.find(e => e.id === entityId);
-    if (!entity || !entity.prefabId) return;
-
     const prefab = store.getPrefabById(entity.prefabId);
-    if (!prefab) return;
 
     let rootInstance = entity;
     while (rootInstance.parentId) {
       const parent = entities.find(e => e.id === rootInstance.parentId);
-      if (parent && parent.prefabId === prefab.id) {
+      if (parent.prefabId === prefab.id) {
         rootInstance = parent;
       } else {
         break;
@@ -507,14 +463,19 @@ export function usePrefabActions() {
     
     const masterDataToSave = JSON.parse(JSON.stringify(rootInstance));
     
-    ['layerId', 'orderIndex', 'prefabId', 'scriptId'].forEach(k => delete masterDataToSave[k]);
+    delete masterDataToSave.layerId;
+    delete masterDataToSave.orderIndex;
+    delete masterDataToSave.prefabId;
+    delete masterDataToSave.scriptId;
     masterDataToSave.components = newMasterComponents;
 
     const masterChildrenToSave = JSON.parse(JSON.stringify(descendants)).map(child => {
-      ['layerId', 'orderIndex', 'prefabId', 'scriptId'].forEach(k => delete child[k]);
-      if (child.components) {
-        Object.values(child.components).forEach(comp => { delete comp.overridden; });
-      }
+      delete child.layerId;
+      delete child.orderIndex;
+      delete child.prefabId;
+      delete child.scriptId;
+
+      Object.values(child.components).forEach(comp => { delete comp.overridden; });
       return child;
     });
 
@@ -530,7 +491,7 @@ export function usePrefabActions() {
     const otherRoots = entities.filter(e => 
       e.prefabId === prefab.id && 
       e.id !== rootInstance.id &&
-      (!e.parentId || entities.find(p => p.id === e.parentId)?.prefabId !== prefab.id)
+      (!e.parentId || entities.find(p => p.id === e.parentId).prefabId !== prefab.id)
     );
 
     otherRoots.forEach(inst => {
@@ -539,12 +500,9 @@ export function usePrefabActions() {
         const masterComp = newMasterComponents[compName];
         const instComp = inst.components[compName];
 
-        if (!instComp || instComp.overridden === false) {
-          let protectedX = 0, protectedY = 0;
-          if (compName === 'Transform' || compName === 'UITransform') {
-            protectedX = instComp ? instComp.x : (inst.x || 0);
-            protectedY = instComp ? instComp.y : (inst.y || 0);
-          }
+        if (instComp.overridden === false) {
+          const protectedX = instComp.x;
+          const protectedY = instComp.y;
 
           inst.components[compName] = JSON.parse(JSON.stringify(masterComp));
           inst.components[compName].overridden = false;
@@ -566,15 +524,11 @@ export function usePrefabActions() {
     instancesToUpdate.push(JSON.parse(JSON.stringify(rootInstance)));
     
     descendants.forEach(desc => {
-      if(desc.components) {
-        Object.values(desc.components).forEach(c => c.overridden = false);
-        instancesToUpdate.push(JSON.parse(JSON.stringify(desc)));
-      }
+      Object.values(desc.components).forEach(c => c.overridden = false);
+      instancesToUpdate.push(JSON.parse(JSON.stringify(desc)));
     });
 
-    if (instancesToUpdate.length > 0) {
-      engineBridge.updateEntity(instancesToUpdate);
-    }
+    engineBridge.updateEntity(instancesToUpdate);
 
     const newSceneEntitiesSnapshot = JSON.parse(JSON.stringify(sceneStore.activeScene.entities));
     const { recordApplyMasterPrefab } = useSceneHistory();

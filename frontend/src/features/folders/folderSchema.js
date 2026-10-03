@@ -9,6 +9,5 @@ export const folderSchema = (data = {}) => {
     section: data.section, 
     projectId: data.projectId || null, 
     parentId: data.parentId || null,
-    isSynced: data.isSynced !== undefined ? data.isSynced : true
   };
 };

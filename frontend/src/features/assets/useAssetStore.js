@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import { useWorkspaceStore } from '@workspaces/workspaces.js';
+import { useOPFSActions } from '@opfs/opfs.js';
 
 export const useAssetStore = defineStore('asset', {
   state: () => ({
@@ -22,64 +23,51 @@ export const useAssetStore = defineStore('asset', {
     },
 
     initAssets(assetList) {
-      this.assets = Array.isArray(assetList) ? assetList : [];
+      this.assets = assetList;
     },
 
-    async _getOPFSDirectories() {
+    /**
+     * DOMAIN LOGIC: Menentukan struktur path lanjutan spesifik Asset & Workspaces
+     */
+    async _getAssetDirectories() {
       const workspaceStore = useWorkspaceStore();
-      const projectId = workspaceStore.activeProjectId;
-
-      if (!projectId) return null;
-
-      const root = await navigator.storage.getDirectory();
-      const projectsDir = await root.getDirectoryHandle('projects', { create: true });
-      const projectDir = await projectsDir.getDirectoryHandle(String(projectId), { create: true });
-      const assetsDir = await projectDir.getDirectoryHandle('assets', { create: true });
+      const opfs = useOPFSActions();
       
-      const workspacesDir = await projectDir.getDirectoryHandle('workspaces', { create: true });
+      const projectId = String(workspaceStore.activeProjectId);
+
+      // 1. Ambil Root Directory "lupis-engine/projects/"
+      const projectsRootDir = await opfs.getProjectsRootDirectory();
+
+      // 2. Tentukan path lanjutan internal domain
+      const assetsDir = await opfs.resolveDirectoryPath(projectsRootDir, `${projectId}/assets`);
+      const workspacesDir = await opfs.resolveDirectoryPath(projectsRootDir, `${projectId}/workspaces`);
 
       return { assetsDir, workspacesDir };
     },
 
     async syncAssetsToOPFS() {
-      try {
-        const dirs = await this._getOPFSDirectories();
-        if (!dirs) return;
+      const opfs = useOPFSActions();
+      const { workspacesDir } = await this._getAssetDirectories();
 
-        const cleanPayload = this.assets.map(a => ({ ...a }));
-        const fileHandle = await dirs.workspacesDir.getFileHandle('assets.json', { create: true });
-        const writable = await fileHandle.createWritable();
-        await writable.write(JSON.stringify(cleanPayload, null, 2));
-        await writable.close();
-      } catch (err) {
-        console.error('Gagal menyinkronkan assets.json ke OPFS (workspaces):', err);
-      }
+      const cleanPayload = this.assets.map(a => ({ ...a }));
+      const jsonContent = JSON.stringify(cleanPayload, null, 2);
+
+      await opfs.writeFileToHandle(workspacesDir, 'assets.json', jsonContent);
     },
 
-    async addAsset(asset, rawFile = null, extraFiles = []) {
-      if (!asset.id) asset.id = `asset_${Date.now()}`;
+    async addAsset(asset, rawFile, extraFiles) {
+      const opfs = useOPFSActions();
+      const { assetsDir } = await this._getAssetDirectories();
 
-      const dirs = await this._getOPFSDirectories();
+      const ext = asset.meta.extension;
+      const savedFileName = `${asset.fileKey}${ext}`;
 
-      if (rawFile && dirs) {
-        const ext = asset.meta?.extension || '';
-        const savedFileName = `${asset.fileKey}${ext}`;
+      // Simpan file utama
+      await opfs.writeFileToHandle(assetsDir, savedFileName, rawFile);
 
-        const fileHandle = await dirs.assetsDir.getFileHandle(savedFileName, { create: true });
-        const writable = await fileHandle.createWritable();
-        await writable.write(rawFile);
-        await writable.close();
-      }
-
-      if (Array.isArray(extraFiles) && extraFiles.length > 0 && dirs) {
-        for (const item of extraFiles) {
-          if (item.file && item.fileName) {
-            const extraHandle = await dirs.assetsDir.getFileHandle(item.fileName, { create: true });
-            const writable = await extraHandle.createWritable();
-            await writable.write(item.file);
-            await writable.close();
-          }
-        }
+      // Simpan extra files (seperti .fnt dan .png pada BMFont)
+      for (const item of extraFiles) {
+        await opfs.writeFileToHandle(assetsDir, item.fileName, item.file);
       }
 
       this.assets.push(asset);
@@ -89,42 +77,32 @@ export const useAssetStore = defineStore('asset', {
     async moveAsset(assetId, targetFolderId) {
       const asset = this.assets.find(a => a.id === assetId);
       if (asset) {
-        asset.folderId = targetFolderId || null;
+        asset.folderId = targetFolderId;
         await this.syncAssetsToOPFS();
-        return true;
       }
-      return false;
+      return true;
     },
 
     async removeAsset(assetId) {
       const asset = this.getAssetById(assetId);
-      
+      if (!asset) return;
+
+      const opfs = useOPFSActions();
+      const { assetsDir } = await this._getAssetDirectories();
+
       if (this.blobUrlCache.has(assetId)) {
         URL.revokeObjectURL(this.blobUrlCache.get(assetId));
         this.blobUrlCache.delete(assetId);
       }
 
-      if (asset?.fileKey) {
-        try {
-          const dirs = await this._getOPFSDirectories();
-          if (dirs) {
-            const ext = asset.meta?.extension || '';
-            const fileName = `${asset.fileKey}${ext}`;
-            await dirs.assetsDir.removeEntry(fileName).catch(() => {});
+      const ext = asset.meta.extension;
+      const fileName = `${asset.fileKey}${ext}`;
+      await opfs.removeFileFromHandle(assetsDir, fileName);
 
-            if (asset.meta?.hasBmFont) {
-              if (asset.meta?.fntFile) {
-                await dirs.assetsDir.removeEntry(asset.meta.fntFile).catch(() => {});
-              }
-              if (Array.isArray(asset.meta?.pngFiles)) {
-                for (const pngName of asset.meta.pngFiles) {
-                  await dirs.assetsDir.removeEntry(pngName).catch(() => {});
-                }
-              }
-            }
-          }
-        } catch (err) {
-          console.warn(`File OPFS tidak ditemukan saat menghapus asset: ${asset.fileKey}`, err);
+      if (asset.meta.hasBmFont) {
+        await opfs.removeFileFromHandle(assetsDir, asset.meta.fntFile);
+        for (const pngName of (asset.meta.pngFiles || [])) {
+          await opfs.removeFileFromHandle(assetsDir, pngName);
         }
       }
 
@@ -144,68 +122,46 @@ export const useAssetStore = defineStore('asset', {
       const original = this.getAssetById(assetId);
       if (!original) return;
 
+      const opfs = useOPFSActions();
+      const { assetsDir } = await this._getAssetDirectories();
+
       const newAsset = JSON.parse(JSON.stringify(original));
       newAsset.id = `asset_${Date.now()}_copy`;
       newAsset.name = `${original.name} (Copy)`;
 
-      if (original.fileKey) {
-        try {
-          const dirs = await this._getOPFSDirectories();
-          if (dirs) {
-            const ext = original.meta?.extension || '';
-            const originalFileName = `${original.fileKey}${ext}`;
-            
-            const randomHex = Math.random().toString(36).substring(2, 10);
-            const newFileKey = `copy_${randomHex}_${original.fileKey}`;
-            const newFileName = `${newFileKey}${ext}`;
+      const ext = original.meta.extension;
+      const originalFileName = `${original.fileKey}${ext}`;
 
-            const oldFileHandle = await dirs.assetsDir.getFileHandle(originalFileName);
-            const oldFile = await oldFileHandle.getFile();
+      const randomHex = Math.random().toString(36).substring(2, 10);
+      const newFileKey = `copy_${randomHex}_${original.fileKey}`;
+      const newFileName = `${newFileKey}${ext}`;
 
-            const newFileHandle = await dirs.assetsDir.getFileHandle(newFileName, { create: true });
-            const writable = await newFileHandle.createWritable();
-            await writable.write(oldFile);
-            await writable.close();
+      const oldFileHandle = await assetsDir.getFileHandle(originalFileName);
+      const oldFile = await oldFileHandle.getFile();
+      await opfs.writeFileToHandle(assetsDir, newFileName, oldFile);
 
-            newAsset.fileKey = newFileKey;
+      newAsset.fileKey = newFileKey;
 
-            if (original.meta?.hasBmFont) {
-              if (original.meta?.fntFile) {
-                const oldFntHandle = await dirs.assetsDir.getFileHandle(original.meta.fntFile);
-                const oldFntFile = await oldFntHandle.getFile();
-                const newFntName = `${newFileKey}.fnt`;
+      if (original.meta.hasBmFont) {
+        const oldFntHandle = await assetsDir.getFileHandle(original.meta.fntFile);
+        const oldFntFile = await oldFntHandle.getFile();
+        const newFntName = `${newFileKey}.fnt`;
 
-                const newFntHandle = await dirs.assetsDir.getFileHandle(newFntName, { create: true });
-                const fntWritable = await newFntHandle.createWritable();
-                await fntWritable.write(oldFntFile);
-                await fntWritable.close();
+        await opfs.writeFileToHandle(assetsDir, newFntName, oldFntFile);
+        newAsset.meta.fntFile = newFntName;
+        newAsset.meta.pngFiles = [];
 
-                newAsset.meta.fntFile = newFntName;
-              }
+        for (let i = 0; i < original.meta.pngFiles.length; i++) {
+          const oldPngName = original.meta.pngFiles[i];
+          const oldPngHandle = await assetsDir.getFileHandle(oldPngName);
+          const oldPngFile = await oldPngHandle.getFile();
 
-              if (Array.isArray(original.meta?.pngFiles)) {
-                newAsset.meta.pngFiles = [];
-                for (let i = 0; i < original.meta.pngFiles.length; i++) {
-                  const oldPngName = original.meta.pngFiles[i];
-                  const oldPngHandle = await dirs.assetsDir.getFileHandle(oldPngName);
-                  const oldPngFile = await oldPngHandle.getFile();
+          const newPngName = original.meta.pngFiles.length === 1
+            ? `${newFileKey}.png`
+            : `${newFileKey}_${i}.png`;
 
-                  const newPngName = original.meta.pngFiles.length === 1 
-                    ? `${newFileKey}.png` 
-                    : `${newFileKey}_${i}.png`;
-
-                  const newPngHandle = await dirs.assetsDir.getFileHandle(newPngName, { create: true });
-                  const pngWritable = await newPngHandle.createWritable();
-                  await pngWritable.write(oldPngFile);
-                  await pngWritable.close();
-
-                  newAsset.meta.pngFiles.push(newPngName);
-                }
-              }
-            }
-          }
-        } catch (err) {
-          console.error('Gagal menyalin file fisik OPFS saat duplikasi:', err);
+          await opfs.writeFileToHandle(assetsDir, newPngName, oldPngFile);
+          newAsset.meta.pngFiles.push(newPngName);
         }
       }
 
@@ -214,35 +170,23 @@ export const useAssetStore = defineStore('asset', {
     },
 
     async getAssetUrlById(id) {
-      const asset = this.getAssetById(id);
-      if (!asset) return null;
-
       if (this.blobUrlCache.has(id)) {
         return this.blobUrlCache.get(id);
       }
 
-      if (asset.fileKey) {
-        try {
-          const dirs = await this._getOPFSDirectories();
-          if (!dirs) return null;
+      const asset = this.getAssetById(id);
+      if (!asset) return '';
 
-          const ext = asset.meta?.extension || '';
-          const fileName = `${asset.fileKey}${ext}`;
+      const opfs = useOPFSActions();
+      const { assetsDir } = await this._getAssetDirectories();
 
-          const fileHandle = await dirs.assetsDir.getFileHandle(fileName);
-          const file = await fileHandle.getFile();
-          
-          const blobUrl = URL.createObjectURL(file);
-          this.blobUrlCache.set(id, blobUrl);
+      const ext = asset.meta.extension;
+      const fileName = `${asset.fileKey}${ext}`;
 
-          return blobUrl;
-        } catch (err) {
-          console.error(`Gagal membaca file OPFS untuk asset ID ${id}:`, err);
-          return null;
-        }
-      }
+      const blobUrl = await opfs.getFileBlobUrlFromHandle(assetsDir, fileName);
+      this.blobUrlCache.set(id, blobUrl);
 
-      return asset.fileUrl || null;
+      return blobUrl;
     }
   }
 });

@@ -10,7 +10,7 @@ export const usePrefabStore = defineStore('prefab', {
       return state.prefabs.map(p => ({
         id: p.id,
         name: p.name,
-        folderId: p.folderId || null,
+        folderId: p.folderId,
         thumbnailUrl: null, 
         originalData: p
       }));
@@ -23,33 +23,25 @@ export const usePrefabStore = defineStore('prefab', {
 
   actions: {
     initPrefabs(prefabList) {
-      this.prefabs = Array.isArray(prefabList) 
-        ? prefabList.map(p => ({
-            ...p,
-            folderId: p.folderId || null
-          }))
-        : [];
+      this.prefabs = prefabList.map(p => ({
+        ...p,
+        folderId: p.folderId
+      }));
     },
 
     addPrefab(prefab) {
-      if (!prefab.folderId) prefab.folderId = null;
       this.prefabs.push(prefab);
     },
 
     async movePrefab(prefabId, targetFolderId) {
       const prefab = this.prefabs.find(p => p.id === prefabId);
-      if (prefab) {
-        prefab.folderId = targetFolderId || null;
-        return true;
-      }
-      return false;
+      prefab.folderId = targetFolderId;
+      return true;
     },
 
     updatePrefab(id, updates) {
       const index = this.prefabs.findIndex(p => p.id === id);
-      if (index !== -1) {
-        this.prefabs[index] = { ...this.prefabs[index], ...updates };
-      }
+      this.prefabs[index] = { ...this.prefabs[index], ...updates };
     },
 
     removePrefab(id) {
@@ -58,9 +50,7 @@ export const usePrefabStore = defineStore('prefab', {
 
     updateComponentProp(prefabId, compName, propName, value) {
       const prefab = this.prefabs.find(p => p.id === prefabId);
-      if (prefab && prefab.data?.components?.[compName]) {
-        prefab.data.components[compName][propName] = value;
-      }
+      prefab.data.components[compName][propName] = value;
     }
   }
 });

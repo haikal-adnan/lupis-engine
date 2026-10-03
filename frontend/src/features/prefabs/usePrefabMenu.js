@@ -14,7 +14,6 @@ import {
   useConfirm
 } from '@composables/composables.js';
 
-
 export function usePrefabMenu(selectedIdRef, activeTabRef, logicActions) {
   const { deletePrefab, duplicatePrefab, renamePrefab, linkPrefabToEntities, instantiatePrefab } = usePrefabActions()
   const { createNewFolder, deleteFolder, renameFolder } = useFolderActions()
@@ -37,7 +36,6 @@ export function usePrefabMenu(selectedIdRef, activeTabRef, logicActions) {
   }
 
   const contextLayers = computed(() => {
-    if (!sceneStore.activeLayers) return []
     return sceneStore.activeLayers.filter(layer => layer._section === activeTabRef.value)
   })
 
@@ -76,11 +74,9 @@ export function usePrefabMenu(selectedIdRef, activeTabRef, logicActions) {
   }
 
   const handleCutCopy = (action, item) => {
-    if (logicActions?.clipboard) {
-      logicActions.clipboard.value = {
-        action,
-        item: { id: item.id, type: item.isFolder || item.type === 'folder' ? 'folder' : 'prefab' }
-      }
+    logicActions.clipboard.value = {
+      action,
+      item: { id: item.id, type: item.isFolder || item.type === 'folder' ? 'folder' : 'prefab' }
     }
     closeMenu()
   }
@@ -88,7 +84,6 @@ export function usePrefabMenu(selectedIdRef, activeTabRef, logicActions) {
   const handleCopyId = async (targetItem) => {
     closeMenu()
     const id = targetItem.id
-    if (!id) return
     
     try {
       await navigator.clipboard.writeText(id)
@@ -162,8 +157,7 @@ export function usePrefabMenu(selectedIdRef, activeTabRef, logicActions) {
   })
 
   const defaultEmptyMenu = () => {
-    const targetSection = `prefabs-${activeTabRef.value || 'world'}`
-    console.log(targetSection, 'targetSection') 
+    const targetSection = `prefabs-${activeTabRef.value}`
 
     return [
       { 
@@ -171,7 +165,11 @@ export function usePrefabMenu(selectedIdRef, activeTabRef, logicActions) {
         icon: FolderPlus, 
         action: () => { 
           closeMenu(); 
-          createNewFolder('New Folder', folderStore.activeFolderId, targetSection) 
+          createNewFolder({
+            defaultName: 'New Folder',
+            parentId: folderStore.activeFolderId,
+            section: targetSection
+          }) 
         } 
       },
       { 
@@ -179,7 +177,7 @@ export function usePrefabMenu(selectedIdRef, activeTabRef, logicActions) {
         icon: Box, 
         action: () => { 
           closeMenu(); 
-          if (logicActions?.createEmptyPrefab) logicActions.createEmptyPrefab() 
+          logicActions.createEmptyPrefab() 
         } 
       },
       { separator: true },
@@ -187,8 +185,8 @@ export function usePrefabMenu(selectedIdRef, activeTabRef, logicActions) {
         label: 'Paste', 
         icon: ClipboardPaste, 
         shortcut: 'Ctrl+V',
-        disabled: !logicActions?.clipboard?.value,
-        action: () => { closeMenu(); if (logicActions?.handlePaste) logicActions.handlePaste() } 
+        disabled: !logicActions.clipboard.value.action,
+        action: () => { closeMenu(); logicActions.handlePaste() } 
       },
       { separator: true },
       { label: 'Refresh', icon: RefreshCw, shortcut: 'F5', action: closeMenu }

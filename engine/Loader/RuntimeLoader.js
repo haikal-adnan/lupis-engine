@@ -10,9 +10,12 @@ import ScriptLoader from "./ScriptLoader.js";
 import { bus } from "../Util/EventBus.js";
 import ConsoleBroadcaster from "../Util/ConsoleBroadcaster.js";
 import MiniConsoleOverlay from "../Util/MiniConsoleOverlay.js";
+import { DEFAULT_PROJECT_PAYLOAD } from "../Schema/defaultProject.js";
 
 export default class RuntimeLoader {
-    async initializeGame(game, canvas, baseURL, mode = "runtime", payload = {}) {
+    async initializeGame(game, canvas, baseURL, mode = "runtime", userPayload = {}) {
+        // Safe sanitization: Merge userPayload dengan DEFAULT_PROJECT_PAYLOAD
+        const payload = this._mergeWithDefaultPayload(userPayload);
         const { project, assets, scenes, prefabs, scripts, onProgress } = payload;
 
         const reportProgress = (message, percent) => {
@@ -30,18 +33,19 @@ export default class RuntimeLoader {
             });
 
             game.baseURL = baseURL;
-            game.debugSettings = project?.settings?.debug || {};
+            game.debugSettings = project.settings.debug;
+            game.id = project.id;
             
             this._initMain(game, canvas, mode);
             
             game.consoleBroadcaster = new ConsoleBroadcaster();
 
-            if (project) game.id = project.id;
-
+            // Setup Prefabs
             reportProgress("Membangun Prefab Library...", 30);
             game.prefabSystem.initLibrary(prefabs);
             
-            const totalScripts = scripts ? (Array.isArray(scripts) ? scripts.length : Object.keys(scripts).length) : 0;
+            // Setup Scripts & Blueprints
+            const totalScripts = Array.isArray(scripts) ? scripts.length : Object.keys(scripts).length;
             bus.emit('console:log', {
                 type: 'log',
                 time: Date.now(),
@@ -52,7 +56,8 @@ export default class RuntimeLoader {
             reportProgress("Mengkompilasi Blueprint Script...", 50);
             ScriptLoader.load(game, payload); 
             
-            const totalAssets = assets ? (Array.isArray(assets) ? assets.length : Object.keys(assets).length) : 0;
+            // Setup & Load GPU Assets
+            const totalAssets = Array.isArray(assets) ? assets.length : Object.keys(assets).length;
             bus.emit('console:log', {
                 type: 'log',
                 time: Date.now(),
@@ -81,15 +86,14 @@ export default class RuntimeLoader {
                 message: `All assets successfully cached into GPU memory.`
             });
 
+            // Prepare Scenes & Scripts
             reportProgress("Menyiapkan Scene Awal...", 90);
             this._initScriptLibrary(game.world, scripts);
-
-            if (scenes && Array.isArray(scenes)) {
-                game.sceneSystem.setSceneCache(scenes);
-            }
+            game.sceneSystem.setSceneCache(scenes);
 
             this._onPostInit(game, canvas, payload);
 
+            // Start Main Loop
             reportProgress("Memulai Game Loop...", 98);
             game.initLoop();
 
@@ -104,28 +108,19 @@ export default class RuntimeLoader {
 
             this.start(game);
 
-            if (scenes && scenes.length > 0) {
-                const initialScene = scenes[0];
-                this._setupWorldSettings(game, project?.settings, initialScene.settings);
-                
-                queueMicrotask(() => {
-                    bus.emit('console:log', {
-                        type: 'log',
-                        time: Date.now(),
-                        source: 'SceneManager',
-                        message: `Loading initial scene: "${initialScene.name || initialScene.id}"`
-                    });
-                    game.sceneSystem.loadScene(initialScene.id);
-                });
-            } else {
-                bus.emit('console:warn', {
-                    type: 'warn',
+            // Load Initial Scene (Pasti tersedia minimal 1 scene berkat default payload)
+            const initialScene = scenes[0];
+            this._setupWorldSettings(game, project.settings, initialScene.settings);
+            
+            queueMicrotask(() => {
+                bus.emit('console:log', {
+                    type: 'log',
                     time: Date.now(),
                     source: 'SceneManager',
-                    message: `No active scenes found in project payload.`
+                    message: `Loading initial scene: "${initialScene.name || initialScene.id}"`
                 });
-                this._setupWorldSettings(game, project?.settings, {});
-            }
+                game.sceneSystem.loadScene(initialScene.id);
+            });
 
         } catch (err) {
             console.error("Critical initialization failure:", err);
@@ -138,8 +133,40 @@ export default class RuntimeLoader {
         }
     }
 
+    /**
+     * Menggabungkan payload pengguna dengan default payload secara rekursif/defensif.
+     */
+    _mergeWithDefaultPayload(userPayload = {}) {
+        const userProj = userPayload.project || {};
+        const userSettings = userProj.settings || {};
+        const defProj = DEFAULT_PROJECT_PAYLOAD.project;
+        const defSettings = defProj.settings;
+
+        return {
+            project: {
+                ...defProj,
+                ...userProj,
+                settings: {
+                    ...defSettings,
+                    ...userSettings,
+                    debug: { ...defSettings.debug, ...userSettings.debug },
+                    ui: { ...defSettings.ui, ...userSettings.ui },
+                    camera: { ...defSettings.camera, ...userSettings.camera },
+                    grid: { ...defSettings.grid, ...userSettings.grid }
+                }
+            },
+            scenes: (Array.isArray(userPayload.scenes) && userPayload.scenes.length > 0)
+                ? userPayload.scenes
+                : DEFAULT_PROJECT_PAYLOAD.scenes,
+            prefabs: userPayload.prefabs || DEFAULT_PROJECT_PAYLOAD.prefabs,
+            assets: userPayload.assets || DEFAULT_PROJECT_PAYLOAD.assets,
+            scripts: userPayload.scripts || DEFAULT_PROJECT_PAYLOAD.scripts,
+            onProgress: userPayload.onProgress
+        };
+    }
+
     _onPostInit(game, canvas, payload) {
-        const debugConfig = game.debugSettings || payload.project?.settings?.debug;
+        const debugConfig = game.debugSettings;
         if (debugConfig && debugConfig.active !== false) {
             const parentElement = canvas.parentElement || document.body;
             game.miniConsole = new MiniConsoleOverlay(parentElement, debugConfig);
@@ -162,25 +189,20 @@ export default class RuntimeLoader {
         }
     }
 
-    _setupWorldSettings(game, projSettings = {}, sceneSettings = {}) {
+    _setupWorldSettings(game, projSettings, sceneSettings = {}) {
         game.world.settings = {
-            tickRate: projSettings.tickRate ?? 60,
-            debug: projSettings.debug ?? { active: true, position: 'top-right', width: 360, height: 220, maxLogs: 50 },
-            backgroundColor: sceneSettings.backgroundColor ?? "#251414",
+            tickRate: projSettings.tickRate,
+            debug: projSettings.debug,
+            backgroundColor: sceneSettings.backgroundColor ?? "#1a1a1a",
             worldBounds: sceneSettings.worldBounds ?? { x1: -1920, x2: 1920, y1: -1080, y2: 1080, active: true },
             physics: {
                 gravity: sceneSettings.physics?.gravity ?? 1200,
                 drag: sceneSettings.physics?.drag ?? 5
             },
-            camera: projSettings.camera ?? { x: 0, y: 0, zoom: 1, lerp: 0.1 }, 
-            grid: projSettings.grid ?? { width: 32, height: 32, color: "#ffffff", opacity: 0.1, visible: true, snap: true },
-            showRulers: sceneSettings.showRulers ?? true,
-            ui: projSettings.ui ?? {
-                width: 1920,
-                height: 1080,
-                showUIBorder: true,
-                active: true
-            }
+            camera: projSettings.camera, 
+            grid: projSettings.grid,
+            showRulers: sceneSettings.showRulers ?? false,
+            ui: projSettings.ui
         };
     }
 
@@ -265,7 +287,7 @@ export default class RuntimeLoader {
         if (game._unloadHandler) {
             window.removeEventListener('beforeunload', game._unloadHandler);
         }
-        
+
         bus.emit('console:warn', {
             type: 'warn',
             time: Date.now(),

@@ -16,6 +16,7 @@ Menguji interaksi dan aliran data antar beberapa modul yang bekerja bersama, sep
 * Dependency di luar batas sistem yang diuji tetap di-mock menggunakan vi.fn(), vi.mock(), atau mock factory.
 * API server, database eksternal, file system, I/O disk, Web Bridge, dan layanan eksternal tidak perlu benar-benar digunakan.
 * Web API yang tidak tersedia di lingkungan test dapat disimulasikan menggunakan stub/mock atau in-memory simulator.
+* Untuk pengujian buruk tambahkan di awal dengan [Bad Path].
 
 3. MINIMUM TEST
 

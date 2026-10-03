@@ -14,16 +14,13 @@ const { isDark } = useTheme();
 
 const opfsStore = useOPFSStore();
 const { 
+  refreshTree,
   openFile, 
   createEntry, 
   deleteEntry, 
   handleDropFiles,
-  exportToZip 
+  exportToLupisProject 
 } = useOPFSActions();
-
-const handleExportZip = async () => {
-  await exportToZip();
-};
 
 const selectedItem = ref(null);
 const newItemName = ref('');
@@ -38,6 +35,7 @@ const contextMenu = ref({
   targetItem: null
 });
 
+// State & Getters dari Store
 const fileTree = computed(() => opfsStore.fileTree);
 const isLoading = computed(() => opfsStore.isLoading);
 const activeFile = computed(() => opfsStore.activeFile);
@@ -55,54 +53,10 @@ const toggleFolderUI = (path) => {
   }
 };
 
-const isFolderOpen = (path) => openFolders.value.has(path);
-
-const scanRootOPFS = async (dirHandle, path = '') => {
-  const items = [];
-
-  for await (const [name, handle] of dirHandle.entries()) {
-    const itemPath = path ? `${path}/${name}` : name;
-
-    if (handle.kind === 'directory') {
-      const children = await scanRootOPFS(handle, itemPath);
-      items.push({
-        name,
-        kind: 'directory',
-        path: itemPath,
-        handle,
-        isOpen: false,
-        children
-      });
-    } else {
-      items.push({
-        name,
-        kind: 'file',
-        path: itemPath,
-        handle
-      });
-    }
-  }
-
-  return items.sort((a, b) => {
-    if (a.kind === b.kind) return a.name.localeCompare(b.name);
-    return a.kind === 'directory' ? -1 : 1;
-  });
-};
-
-const fetchEntireOPFSTree = async () => {
-  if (!navigator.storage || !navigator.storage.getDirectory) return;
-
-  opfsStore.setLoading(true);
-  try {
-    const root = await navigator.storage.getDirectory();
-    const tree = await scanRootOPFS(root);
-    opfsStore.setFileTree(tree);
-  } catch (error) {
-    console.error('Gagal memuat seluruh struktur OPFS:', error);
-    opfsStore.setError(error.message);
-  } finally {
-    opfsStore.setLoading(false);
-  }
+const handleExportProject = async () => {
+  // Jika ada ID proyek yang aktif, teruskan ke fungsi ekspor
+  const activeProjectId = opfsStore.activeFile?.path?.split('/')[2] || null;
+  await exportToLupisProject(activeProjectId);
 };
 
 const handleItemContextMenu = (event, item) => {
@@ -172,7 +126,7 @@ const handleDrop = async (e) => {
   }
 
   await handleDropFiles(files, targetPath);
-  await fetchEntireOPFSTree();
+  await refreshTree();
 };
 
 const handleCreateItemSubmit = async () => {
@@ -187,7 +141,7 @@ const handleCreateItemSubmit = async () => {
   if (result.success) {
     newItemName.value = '';
     showNewModal.value = false;
-    await fetchEntireOPFSTree();
+    await refreshTree();
   }
 };
 
@@ -200,7 +154,7 @@ const handleDeleteItem = async (item) => {
     if (selectedItem.value?.path === item.path) {
       selectedItem.value = null;
     }
-    await fetchEntireOPFSTree();
+    await refreshTree();
   }
 };
 
@@ -219,7 +173,7 @@ const getFileIcon = (name) => {
 };
 
 onMounted(() => {
-  fetchEntireOPFSTree();
+  refreshTree();
   window.addEventListener('click', closeContextMenu);
 });
 
@@ -238,6 +192,7 @@ onBeforeUnmount(() => {
     @drop="handleDrop"
     @click="closeContextMenu"
   >
+    <!-- Overlay Drag Over -->
     <div 
       v-if="isDraggingOver" 
       class="absolute inset-0 bg-cyan-500/10 border-2 border-dashed border-cyan-500 rounded-xl z-40 backdrop-blur-sm flex flex-col items-center justify-center text-cyan-500 transition-all pointer-events-none"
@@ -247,6 +202,7 @@ onBeforeUnmount(() => {
       <p class="text-xs opacity-75 mt-1">Hanya format .js, .json, .png, .jpg, .webp</p>
     </div>
 
+    <!-- Tree Explorer Side Panel -->
     <div 
       class="col-span-1 flex flex-col h-full border rounded-xl overflow-hidden shadow-sm transition-colors duration-300"
       :class="isDark ? 'bg-[#252526] border-white/10' : 'bg-white border-black/10'"
@@ -278,8 +234,8 @@ onBeforeUnmount(() => {
           </button>
 
           <button 
-            @click="handleExportZip" 
-            title="Export Project to ZIP" 
+            @click="handleExportProject" 
+            title="Export Project (.lupisproject)" 
             :disabled="isLoading"
             class="p-1.5 rounded-lg transition-colors disabled:opacity-50"
             :class="isDark ? 'text-slate-400 hover:text-cyan-400 hover:bg-white/10' : 'text-slate-500 hover:text-cyan-600 hover:bg-black/5'"
@@ -288,7 +244,7 @@ onBeforeUnmount(() => {
           </button>
 
           <button 
-            @click="fetchEntireOPFSTree" 
+            @click="refreshTree" 
             title="Refresh OPFS" 
             :class="[
               'p-1.5 rounded-lg transition-colors',
@@ -322,6 +278,7 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
+    <!-- Preview Panel -->
     <div 
       class="col-span-1 md:col-span-2 h-full border rounded-xl overflow-hidden shadow-sm flex flex-col transition-colors duration-300"
       :class="isDark ? 'bg-[#252526] border-white/10' : 'bg-white border-black/10'"
@@ -377,6 +334,7 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
+    <!-- Modal Buat Item Baru -->
     <div v-if="showNewModal" class="fixed inset-0 backdrop-blur-sm z-50 flex items-center justify-center p-4" :class="isDark ? 'bg-black/80' : 'bg-black/40'">
       <div 
         class="p-5 rounded-xl max-w-sm w-full space-y-4 shadow-xl border transition-colors duration-300 font-sans"
@@ -415,6 +373,7 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
+    <!-- Context Menu -->
     <Teleport to="body">
       <BaseContextMenu 
         v-if="contextMenu.visible"
