@@ -98,7 +98,12 @@
 <script setup>
 import { computed } from 'vue'
 import { Atom, Trash2, RefreshCw } from 'lucide-vue-next'
-import { useInspectorLogic } from "@inspectors/inspectors.js";
+
+import { 
+  useInspectorSelection, 
+  useInspectorPrefab, 
+  useInspectorBinding 
+} from "@inspectors/inspectors.js";
 
 import {
   PropertySection,
@@ -108,14 +113,16 @@ import {
   BaseSelect
 } from '@components/components.js';
 
+const { selectedEntity } = useInspectorSelection()
+
 const { 
-  bindComponentProp, 
-  removeComponent, 
-  selectedEntity,
-  prefabId,                 
-  syncComponent,          
-  getComponentOverrideStatus 
-} = useInspectorLogic()
+  prefabId, 
+  getComponentOverrideStatus, 
+  syncComponent, 
+  removeComponent 
+} = useInspectorPrefab()
+
+const { bindComponentProp } = useInspectorBinding()
 
 const hasComponent = computed(() => !!selectedEntity.value?.components?.Physics)
 const overridden = getComponentOverrideStatus('Physics')

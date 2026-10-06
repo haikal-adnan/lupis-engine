@@ -44,7 +44,8 @@
 </template>
 
 <script setup>
-import { useInspectorLogic } from "@inspectors/inspectors.js";
+// Barrel import dari @inspectors/inspectors.js
+import { useInspectorBinding } from "@inspectors/inspectors.js";
 
 import {
   PropertyRow,
@@ -54,8 +55,10 @@ import {
 
 defineProps({ info: Object });
 
-const { bindSettingProp } = useInspectorLogic();
+// 1. Setting Bindings
+const { bindSettingProp } = useInspectorBinding();
 
+// --- Logic Komponen ---
 const gravity = bindSettingProp('physics', 'gravity');
 const drag    = bindSettingProp('physics', 'drag');
 const boundsActive = bindSettingProp('worldBounds', 'active');
@@ -64,7 +67,6 @@ const x2 = bindSettingProp('worldBounds', 'x2');
 const y1 = bindSettingProp('worldBounds', 'y1');
 const y2 = bindSettingProp('worldBounds', 'y2');
 </script>
-
 <style scoped>
 :deep(.property-row) { margin-bottom: 0; }
 </style>

@@ -80,7 +80,8 @@
 import { computed } from 'vue';
 import { MonitorPlay, Check, ArrowRightLeft } from 'lucide-vue-next';
 
-import { useInspectorLogic } from "@inspectors/inspectors.js";
+// Barrel import dari @inspectors/inspectors.js
+import { useInspectorBinding } from "@inspectors/inspectors.js";
 
 import {
   PropertyRow,
@@ -92,8 +93,10 @@ import {
 
 defineProps({ info: Object });
 
-const { bindSettingProp, updateUISettingsBulk } = useInspectorLogic();
+// 1. Setting Bindings & Bulk Updates
+const { bindSettingProp, updateUISettingsBulk } = useInspectorBinding();
 
+// --- Logic Komponen ---
 const tickRate = bindSettingProp(null, 'tickRate');
 const backgroundColor = bindSettingProp(null, 'backgroundColor');
 const active = bindSettingProp('ui', 'active');

@@ -14,7 +14,7 @@
 
 <script setup>
 import { Monitor, Wind } from 'lucide-vue-next';
-import { useInspectorLogic } from "@inspectors/inspectors.js";
+import { useInspectorBinding } from "@inspectors/inspectors.js";
 
 import {
   PropertySection,
@@ -22,7 +22,7 @@ import {
   BaseColor
 } from '@components/components.js';
 
-const { bindSettingProp } = useInspectorLogic();
+const { bindSettingProp } = useInspectorBinding();
 
 const backgroundColor = bindSettingProp(null, 'backgroundColor');
 </script>

@@ -15,11 +15,11 @@
 
 <script setup>
 import { Zap, Settings2 } from 'lucide-vue-next';
-import { useInspectorLogic } from "@inspectors/inspectors.js";
+import { useInspectorBinding } from "@inspectors/inspectors.js";
 
 import { BaseCheckbox, PropertySection } from '@components/components.js';
 
-const { bindSettingProp } = useInspectorLogic();
+const { bindSettingProp } = useInspectorBinding();
 
 const active     = bindSettingProp('ui', 'active');
 const showBorder = bindSettingProp('ui', 'showUIBorder');

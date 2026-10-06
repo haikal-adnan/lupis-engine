@@ -151,7 +151,13 @@ import {
   Type, Trash2, AlignLeft, AlignCenter, AlignRight, AlignJustify,
   FolderSearch, RefreshCcw, RefreshCw
 } from "lucide-vue-next"; 
-import { useInspectorLogic } from "@inspectors/inspectors.js";
+
+// Barrel import dari @inspectors/inspectors.js
+import { 
+  useInspectorSelection, 
+  useInspectorPrefab, 
+  useInspectorBinding 
+} from "@inspectors/inspectors.js";
 
 import {
   PropertySection,
@@ -165,12 +171,24 @@ import {
   BaseColor
 } from '@components/components.js';
 
+// 1. Selection State
+const { selectedEntity } = useInspectorSelection()
 
+// 2. Prefab & Component Operations
 const { 
-  selectedEntity, removeComponent, bindComponentProp,
-  resetTextRatio, prefabId, syncComponent, getComponentOverrideStatus  
-} = useInspectorLogic();
+  prefabId, 
+  getComponentOverrideStatus, 
+  syncComponent, 
+  removeComponent 
+} = useInspectorPrefab()
 
+// 3. Property Bindings & Text Utilities
+const { 
+  bindComponentProp, 
+  resetTextRatio 
+} = useInspectorBinding()
+
+// --- Logic Komponen ---
 const hasComponent = computed(() => !!selectedEntity.value?.components?.TextRenderer);
 const overridden = getComponentOverrideStatus('TextRenderer');
 

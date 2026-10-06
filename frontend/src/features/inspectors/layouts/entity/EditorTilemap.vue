@@ -116,7 +116,12 @@
 import { computed } from "vue";
 import { Grid3X3, Brush, Trash2, RefreshCw, Maximize, RefreshCcw } from "lucide-vue-next";
 import { useTilemapLogic } from "@builders/builders.js";
-import { useInspectorLogic } from "@inspectors/inspectors.js";
+
+// Barrel import dari @inspectors/inspectors.js
+import { 
+  useInspectorPrefab, 
+  useInspectorTransform 
+} from "@inspectors/inspectors.js";
 
 import {
   PropertySection,
@@ -129,6 +134,7 @@ import {
   BaseThumbnail
 } from '@components/components.js';
 
+// Tilemap Builder Logic
 const { 
   hasTilemap, 
   currentTextureUrl, 
@@ -136,14 +142,18 @@ const {
   openTilemapEditor,
 } = useTilemapLogic();
 
+// 1. Prefab & Component Operations
 const { 
-  removeComponent,
-  prefabId,            
-  syncComponent,             
-  getComponentOverrideStatus,
-  resetTilemapTransform
-} = useInspectorLogic();
+  prefabId, 
+  getComponentOverrideStatus, 
+  syncComponent, 
+  removeComponent 
+} = useInspectorPrefab();
 
+// 2. Transform Operations
+const { resetTilemapTransform } = useInspectorTransform();
+
+// --- Logic Komponen ---
 const hasComponent = hasTilemap;
 
 const autoFit = bindComponentProp('Tilemap', 'autoFit');
@@ -162,6 +172,7 @@ const mapWidth = bindComponentProp('Tilemap', 'width');
 const mapHeight = bindComponentProp('Tilemap', 'height');
 const isSolid = bindComponentProp('Tilemap', 'isSolid');
 const rawOpacity = bindComponentProp('Tilemap', 'opacity');
+
 const displayOpacity = computed({
   get: () => {
     return Math.round((rawOpacity.value ?? 1) * 100);

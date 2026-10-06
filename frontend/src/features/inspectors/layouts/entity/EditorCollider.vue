@@ -209,7 +209,11 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { Cuboid, Trash2, RefreshCw, Info, ChevronDown, Check, MoreVertical, Plus } from 'lucide-vue-next'
-import { useInspectorLogic } from "@inspectors/inspectors.js";
+
+import { 
+  useInspectorSelection, 
+  useInspectorPrefab 
+} from "@inspectors/inspectors.js";
 
 import { useSceneStore } from '@scenes/scenes.js';
 import { useWorkspaceStore } from '@workspaces/workspaces.js';
@@ -231,14 +235,14 @@ import {
   BaseCheckbox
 } from '@components/components.js';
 
+const { selectedEntity, isEditingMasterPrefab } = useInspectorSelection()
+
 const { 
-  selectedEntity,
-  prefabId,
-  syncComponent,
-  getComponentOverrideStatus,
-  removeComponent,
-  isEditingMasterPrefab
-} = useInspectorLogic()
+  prefabId, 
+  getComponentOverrideStatus, 
+  syncComponent, 
+  removeComponent 
+} = useInspectorPrefab()
 
 const sceneStore = useSceneStore()
 const workspaceStore = useWorkspaceStore()
@@ -421,7 +425,6 @@ watch([transformWidth, transformHeight], ([newWidth, newHeight]) => {
     }
   }
 })
-
 </script>
 
 <style scoped>

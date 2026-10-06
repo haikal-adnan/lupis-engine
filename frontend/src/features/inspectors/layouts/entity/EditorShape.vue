@@ -108,7 +108,13 @@
 <script setup>
 import { computed } from "vue";
 import { Square, Trash2, RefreshCw, Pencil } from "lucide-vue-next"; 
-import { useInspectorLogic } from "@inspectors/inspectors.js";
+
+// Barrel import dari @inspectors/inspectors.js
+import { 
+  useInspectorSelection, 
+  useInspectorPrefab 
+} from "@inspectors/inspectors.js";
+
 import { useWorkspaceStore } from '@workspaces/workspaces.js';
 import { useSceneStore } from '@scenes/scenes.js';
 import { engineBridge } from "@engines/engines.js";
@@ -122,10 +128,22 @@ import {
   BaseCheckbox,
 } from '@components/components.js';
 
+// 1. Selection State
+const { selectedEntity } = useInspectorSelection()
+
+// 2. Prefab & Component Operations
+const { 
+  prefabId, 
+  getComponentOverrideStatus, 
+  syncComponent, 
+  removeComponent 
+} = useInspectorPrefab()
+
+// Stores & Composables
 const workspaceStore = useWorkspaceStore();
 const sceneStore = useSceneStore();
-const { selectedEntity, removeComponent, prefabId, syncComponent, getComponentOverrideStatus } = useInspectorLogic();
 
+// --- Logic Komponen ---
 const hasComponent = computed(() => !!selectedEntity.value?.components?.ShapeRenderer);
 const overridden = getComponentOverrideStatus('ShapeRenderer');
 

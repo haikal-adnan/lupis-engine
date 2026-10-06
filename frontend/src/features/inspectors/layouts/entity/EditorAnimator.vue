@@ -117,7 +117,12 @@
 <script setup>
 import { computed } from 'vue'
 import { Film, Trash2, RefreshCw, Play, Pause, Power } from 'lucide-vue-next'
-import { useInspectorLogic } from "@inspectors/inspectors.js";
+
+import { 
+  useInspectorSelection, 
+  useInspectorPrefab, 
+  useInspectorBinding
+} from "@inspectors/inspectors.js";
 import { useAnimatorLogic } from '@animators/animators.js'
 
 import {
@@ -128,14 +133,16 @@ import {
   BaseButton
 } from '@components/components.js';
 
+const { selectedEntity } = useInspectorSelection()
+
 const { 
-  selectedEntity,
-  removeComponent,
-  prefabId,
-  syncComponent,
-  getComponentOverrideStatus,
-  bindComponentProp
-} = useInspectorLogic()
+  prefabId, 
+  getComponentOverrideStatus, 
+  syncComponent, 
+  removeComponent 
+} = useInspectorPrefab()
+
+const { bindComponentProp } = useInspectorBinding()
 
 const { openAnimatorEditor } = useAnimatorLogic()
 
@@ -167,7 +174,6 @@ const displayFrame = computed({
   set: (val) => {
     if (selectedClipData.value) {
       selectedClipData.value.frameIndex = Math.max(0, val - 1)
-      
       clips.value = [...clips.value]
     }
   }

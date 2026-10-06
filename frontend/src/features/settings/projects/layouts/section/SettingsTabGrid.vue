@@ -77,8 +77,9 @@
 import { ref } from 'vue';
 import { RotateCcw, Lock, Unlock } from 'lucide-vue-next';
 
-import { useInspectorLogic } from "@inspectors/inspectors.js";
-import { useProjectStore } from '@projects/projects.js'
+// Barrel import dari @inspectors/inspectors.js
+import { useInspectorBinding } from "@inspectors/inspectors.js";
+import { useProjectStore } from '@projects/projects.js';
 
 import {
   PropertyRow,
@@ -89,9 +90,11 @@ import {
 
 defineProps({ info: Object });
 
-const { bindSettingProp } = useInspectorLogic();
+// 1. Setting Bindings
+const { bindSettingProp } = useInspectorBinding();
 const projectStore = useProjectStore();
 
+// --- Logic Komponen ---
 const visible = bindSettingProp('grid', 'visible');
 const snap    = bindSettingProp('grid', 'snap');
 const width   = bindSettingProp('grid', 'width');

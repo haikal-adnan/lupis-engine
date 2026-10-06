@@ -270,7 +270,13 @@
 <script setup>
 import { computed } from 'vue'
 import { Volume2, VolumeX, Trash2, RefreshCw, FolderSearch, Repeat, MoreVertical, Plus, Info } from 'lucide-vue-next'
-import { useInspectorLogic } from "@inspectors/inspectors.js";
+
+import { 
+  useInspectorSelection, 
+  useInspectorPrefab, 
+  useInspectorBinding 
+} from "@inspectors/inspectors.js";
+
 import { useAssetStore } from '@assets/assets.js'
 
 import { 
@@ -288,14 +294,16 @@ import {
   BaseDropdown
 } from '@components/components.js';
 
+const { selectedEntity } = useInspectorSelection()
+
 const { 
-  bindComponentProp, 
-  removeComponent, 
-  selectedEntity,
-  prefabId,                
-  syncComponent,          
-  getComponentOverrideStatus 
-} = useInspectorLogic()
+  prefabId, 
+  getComponentOverrideStatus, 
+  syncComponent, 
+  removeComponent 
+} = useInspectorPrefab()
+
+const { bindComponentProp } = useInspectorBinding()
 
 const assetStore = useAssetStore()
 const { showAudio } = usePopAudio()

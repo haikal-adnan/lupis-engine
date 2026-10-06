@@ -75,6 +75,9 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
 import { Layers, Copy, Trash2, Eye, EyeOff, Lock, Unlock, Power } from 'lucide-vue-next'
+
+import { useInspectorSelection } from "@inspectors/inspectors.js";
+
 import { useSceneStore } from '@scenes/scenes.js';
 
 import { 
@@ -94,14 +97,15 @@ import {
   IconButton
 } from '@components/components.js';
 
+const { selectedLayerId } = useInspectorSelection()
+
 const { handleCopyId } = useWorkspaceActions()
 const sceneStore = useSceneStore()
 const { copy } = useClipboard()
 const { confirm } = useConfirm()
 const { showPop } = usePopAlert()
 
-const layerId = computed(() => sceneStore.selectedEntityIds[0])
-const layer = computed(() => sceneStore.activeLayers.find(l => l.id === layerId.value))
+const layer = computed(() => sceneStore.activeLayers.find(l => l.id === selectedLayerId.value))
 
 const isUISection = computed(() => layer.value?.section === 'ui' || layer.value?._section === 'ui')
 

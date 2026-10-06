@@ -144,7 +144,14 @@
 <script setup>
 import { computed, ref } from "vue";
 import { Image, FolderSearch, Trash2, RefreshCw, Maximize, Film } from "lucide-vue-next"; 
-import { useInspectorLogic } from "@inspectors/inspectors.js";
+
+// Barrel import dari @inspectors/inspectors.js
+import { 
+  useInspectorSelection, 
+  useInspectorPrefab, 
+  useInspectorBinding 
+} from "@inspectors/inspectors.js";
+
 import { useAssetStore } from '@assets/assets.js'
 
 import {
@@ -156,19 +163,27 @@ import {
   BaseSelect,
 } from '@components/components.js';
 
+// 1. Selection State
+const { selectedEntity } = useInspectorSelection()
 
+// 2. Prefab & Component Operations
 const { 
-  selectedEntity, 
-  bindComponentProp,
-  currentTextureUrl,
-  removeComponent,
-  prefabId,          
-  syncComponent,            
-  getComponentOverrideStatus 
-} = useInspectorLogic();
+  prefabId, 
+  getComponentOverrideStatus, 
+  syncComponent, 
+  removeComponent 
+} = useInspectorPrefab()
 
+// 3. Property Bindings & Asset Reading
+const { 
+  bindComponentProp, 
+  currentTextureUrl 
+} = useInspectorBinding()
+
+// Stores
 const assetStore = useAssetStore();
 
+// --- Logic Komponen ---
 const hasComponent = computed(() => !!selectedEntity.value?.components?.SpriteRenderer);
 
 const isControlledByAnimator = computed(() => {

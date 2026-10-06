@@ -211,7 +211,14 @@ import {
   LayoutTemplate, Lock, Unlock, RotateCcw, Crosshair, RefreshCw,
   Info, Link, Maximize, FlipHorizontal, FlipVertical 
 } from 'lucide-vue-next'
-import { useInspectorLogic } from "@inspectors/inspectors.js";
+
+// Barrel import dari @inspectors/inspectors.js
+import { 
+  useInspectorSelection, 
+  useInspectorPrefab, 
+  useInspectorTransform, 
+  useInspectorBinding 
+} from "@inspectors/inspectors.js";
 
 import {
   PropertySection,
@@ -223,28 +230,35 @@ import {
   AnchorControl
 } from '@components/components.js';
 
-
 const COMPONENT_NAME = 'UITransform';
 
-const { 
-  selectedEntity, 
-  updatePivot, 
-  bindComponentProp, 
-  locked,
-  prefabId,                   
-  syncComponent,             
-  getComponentOverrideStatus,
-  markAsOverridden,
-  
-  isSizeLockedByText,
-  isSizeLockedByTilemap,
-  globalScaleX,
-  globalScaleY,
-  globalRotation,
-  hasChildren,
-  fitToChildren 
-} = useInspectorLogic();
+// 1. Selection State
+const { selectedEntity, locked } = useInspectorSelection();
 
+// 2. Prefab Operations
+const { 
+  prefabId, 
+  getComponentOverrideStatus, 
+  syncComponent, 
+  markAsOverridden 
+} = useInspectorPrefab();
+
+// 3. Transform Calculations & Actions
+const { 
+  updatePivot, 
+  isSizeLockedByText, 
+  isSizeLockedByTilemap, 
+  globalScaleX, 
+  globalScaleY, 
+  globalRotation, 
+  hasChildren, 
+  fitToChildren 
+} = useInspectorTransform();
+
+// 4. Property Bindings
+const { bindComponentProp } = useInspectorBinding();
+
+// --- Logic Komponen ---
 const overridden = getComponentOverrideStatus(COMPONENT_NAME);
 
 const x = bindComponentProp(COMPONENT_NAME, 'x', 2);

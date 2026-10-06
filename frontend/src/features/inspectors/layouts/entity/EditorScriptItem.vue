@@ -91,7 +91,8 @@
 import { computed } from 'vue';
 import { FileCode2, Power, MoreHorizontal, Trash2, Workflow, RotateCcw } from 'lucide-vue-next';
 import { useScriptStore } from '@scripts/scripts.js';
-import { useInspectorLogic } from "@inspectors/inspectors.js";
+
+import { useInspectorBinding } from "@inspectors/inspectors.js";
 
 import {
   BaseDropdown,
@@ -108,7 +109,8 @@ const props = defineProps({
 const emit = defineEmits(['remove']);
 
 const scriptStore = useScriptStore();
-const { updateScriptInstance } = useInspectorLogic();
+
+const { updateScriptInstance } = useInspectorBinding();
 
 const def = computed(() => scriptStore.getScriptById(props.data.assetId));
 const scriptName = computed(() => def.value?.name || 'Unknown Script');

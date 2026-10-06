@@ -175,7 +175,13 @@ import {
   RotateCcw, RefreshCw, Info, Link, Maximize
 } from 'lucide-vue-next'
 
-import { useInspectorLogic } from "@inspectors/inspectors.js";
+// Barrel import dari @inspectors/inspectors.js
+import { 
+  useInspectorSelection, 
+  useInspectorPrefab, 
+  useInspectorTransform, 
+  useInspectorBinding 
+} from "@inspectors/inspectors.js";
 
 import {
   PropertySection,
@@ -186,24 +192,33 @@ import {
   PivotControl
 } from '@components/components.js';
 
+// 1. Selection State
+const { selectedEntity, locked } = useInspectorSelection()
+
+// 2. Prefab Operations
 const { 
-  selectedEntity, 
-  prefabId,          
+  prefabId, 
+  getComponentOverrideStatus, 
+  syncComponent 
+} = useInspectorPrefab()
+
+// 3. Transform Calculations & Actions
+const { 
   resetTransform, 
   updatePivot, 
-  bindComponentProp, 
-  locked,
-  isSizeLockedByText,
+  isSizeLockedByText, 
   isSizeLockedByTilemap, 
-  syncComponent,       
-  getComponentOverrideStatus,
-  globalScaleX,
-  globalScaleY,
-  globalRotation,
-  hasChildren,
+  globalScaleX, 
+  globalScaleY, 
+  globalRotation, 
+  hasChildren, 
   fitToChildren 
-} = useInspectorLogic();
+} = useInspectorTransform()
 
+// 4. Property Bindings
+const { bindComponentProp } = useInspectorBinding()
+
+// --- Logic Komponen ---
 const overridden = getComponentOverrideStatus('Transform');
 
 const x = bindComponentProp('Transform', 'x', 2);

@@ -206,7 +206,13 @@ import {
   ChevronDown, Check, RotateCcw, RefreshCw 
 } from 'lucide-vue-next'
 
-import { useInspectorLogic } from "@inspectors/inspectors.js";
+// Barrel import dari @inspectors/inspectors.js
+import { 
+  useInspectorSelection, 
+  useInspectorPrefab, 
+  useInspectorBinding 
+} from "@inspectors/inspectors.js";
+
 import { useScriptStore } from '@scripts/scripts.js';
 import { useWorkspaceStore } from '@workspaces/workspaces.js';
 import { useSceneStore } from '@scenes/scenes.js';
@@ -226,21 +232,30 @@ import {
   BaseInput,
 } from '@components/components.js';
 
+// 1. Selection State
+const { selectedEntity } = useInspectorSelection()
+
+// 2. Prefab & Component Operations
+const { 
+  prefabId, 
+  getComponentOverrideStatus, 
+  syncComponent, 
+  removeComponent 
+} = useInspectorPrefab()
+
+// 3. Property Bindings & Script Actions
+const { 
+  scriptsData, 
+  updateScriptInstance, 
+  removeScript 
+} = useInspectorBinding()
+
+// Stores & Composables
 const scriptStore = useScriptStore()
 const workspaceStore = useWorkspaceStore()
 const sceneStore = useSceneStore()
 const { confirm } = useConfirm()
 const { showPop } = usePopAlert()
-const { 
-  selectedEntity, 
-  scriptsData,       
-  removeScript, 
-  updateScriptInstance,
-  removeComponent,
-  prefabId,                   
-  syncComponent,              
-  getComponentOverrideStatus, 
-} = useInspectorLogic()
 
 const markComponentAsOverridden = () => {
   if (selectedEntity.value && prefabId.value) {

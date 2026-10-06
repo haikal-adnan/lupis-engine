@@ -1,4 +1,7 @@
-export { useInspectorLogic } from '@inspectors/composables/useInspectorLogic.js'
+export { useInspectorSelection } from '@inspectors/composables/useInspectorSelection.js'
+export { useInspectorTransform } from '@inspectors/composables/useInspectorTransform.js'
+export { useInspectorPrefab } from '@inspectors/composables/useInspectorPrefab.js'
+export { useInspectorBinding } from '@inspectors/composables/useInspectorBinding.js'
 
 export { default as EditorScene } from '@inspectors/layouts/settings/EditorScene.vue'
 export { default as EditorProject } from '@inspectors/layouts/settings/EditorProject.vue'

@@ -65,7 +65,8 @@ import {
 } from '@components/components.js';
 
 import {
-  useInspectorLogic,
+  useInspectorSelection,
+  useInspectorPrefab,
   EditorLayer,
   EditorObject,
   EditorTransform,
@@ -83,8 +84,18 @@ import {
   EditorAudio
 } from '@inspectors/inspectors.js'
 
-const { hasSelection, selectedEntity, selectedLayerId, addComponentToSelection, isMultiSelection } = useInspectorLogic();
+// 1. Selection State
+const { 
+  hasSelection, 
+  selectedEntity, 
+  selectedLayerId, 
+  isMultiSelection 
+} = useInspectorSelection();
 
+// 2. Component Addition Actions
+const { addComponentToSelection } = useInspectorPrefab();
+
+// Stores & State
 const addComponentWrapper = ref(null);
 const sceneStore = useSceneStore();
 const RENDERER_GROUP = ['SpriteRenderer', 'ShapeRenderer', 'TextRenderer', 'Tilemap'];

@@ -110,8 +110,13 @@ import {
   Eye, EyeOff, Lock, Unlock, Power, Box, Copy, Trash2, 
   RefreshCw, PackageOpen, Layers2, ExternalLink, Upload
 } from 'lucide-vue-next'
-import { engineBridge } from '@engines/engines.js'
-import { useInspectorLogic } from "@inspectors/inspectors.js";
+
+import { 
+  useInspectorSelection, 
+  useInspectorPrefab, 
+  useInspectorBinding 
+} from "@inspectors/inspectors.js";
+
 import { useWorkspaceActions } from "@workspaces/workspaces.js"
 import { usePrefabActions } from '@prefabs/prefabs.js';
 import { useSceneStore } from '@scenes/scenes.js';
@@ -133,11 +138,23 @@ import {
   BaseSelect
 } from '@components/components.js';
 
-const prefabStore = usePrefabStore()
+// 1. Selection State
+const { selectedEntity } = useInspectorSelection()
+
+// 2. Prefab & Component Operations
 const { 
-  bindEntityProp, selectedEntity, prefabId,
-  syncObject, syncAllComponents, unpackPrefab, markAsOverridden
-} = useInspectorLogic()
+  prefabId, 
+  syncObject, 
+  syncAllComponents, 
+  unpackPrefab, 
+  markAsOverridden 
+} = useInspectorPrefab()
+
+// 3. Property Bindings
+const { bindEntityProp } = useInspectorBinding()
+
+// Stores & Composables
+const prefabStore = usePrefabStore()
 const { handleDeleteEntity, handleCopyId } = useWorkspaceActions()
 const { applyToMasterPrefab } = usePrefabActions()
 const sceneStore = useSceneStore()
