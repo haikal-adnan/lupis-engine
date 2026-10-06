@@ -1,17 +1,15 @@
 import { ref, computed } from 'vue';
 import { useScriptStore, useScriptActions } from '@scripts/scripts.js';
-import { useFolderStore } from '@folders/folders.js';
+import { useFolderStore, useFolderActions } from '@folders/folders.js';
 import { useWorkspaceStore } from '@workspaces/workspaces.js';
-import { useProjectActions, useProjectStore } from '@projects/projects.js'
 
 export function useScriptLogic() {
   const scriptStore = useScriptStore();
   const folderStore = useFolderStore();
   const workspaceStore = useWorkspaceStore();
-  const projectStore = useProjectStore();
 
   const { createScript, renameScript, duplicateScript, deleteScript } = useScriptActions();
-  const { getUserProjectsDir } = useProjectActions();
+  const { duplicateFolder } = useFolderActions();
 
   const viewMode = ref('grid');
   const searchQuery = ref('');
@@ -64,27 +62,12 @@ export function useScriptLogic() {
     );
   });
 
-  const _deleteScriptFileFromOPFS = async (scriptId) => {
-    try {
-      const projectId = projectStore.project?.id;
-      if (!projectId) return;
-
-      const projectsDir = await getUserProjectsDir();
-      const projectDir = await projectsDir.getDirectoryHandle(projectId);
-      const scriptsDir = await projectDir.getDirectoryHandle('scripts');
-
-      await scriptsDir.removeEntry(`${scriptId}.json`);
-    } catch (e) {
-      console.warn(`File OPFS scripts/${scriptId}.json tidak ditemukan atau telah dihapus:`, e);
-    }
-  };
-
   const toggleViewMode = () => {
     viewMode.value = viewMode.value === 'grid' ? 'list' : 'grid';
   };
 
   const navigateTo = (folder) => {
-    folderStore.setActiveFolder(folder ? (folder.id) : null);
+    folderStore.setActiveFolder(folder ? folder.id : null);
     selectedId.value = null;
     searchQuery.value = '';
   };
@@ -94,27 +77,25 @@ export function useScriptLogic() {
   };
 
   const moveItem = async (id, type, targetFolderId) => {
-    try {
-      if (type === 'script') {
-        await scriptStore.moveScript(id, targetFolderId);
-      } else if (type === 'folder') {
-        await folderStore.moveFolder(id, targetFolderId);
-      }
-    } catch (err) {
-      console.error('Failed to move item:', err);
+    if (type === 'script') {
+      await scriptStore.moveScript(id, targetFolderId);
+    } else if (type === 'folder') {
+      await folderStore.moveFolder(id, targetFolderId);
     }
   };
 
   const handleDrop = async (e, customTargetFolderId = null) => {
     const targetFolder = customTargetFolderId !== null ? customTargetFolderId : currentFolderId.value;
+    const internalData = e.dataTransfer.getData('application/json');
 
-    try {
-      const internalData = e.dataTransfer.getData('application/json');
-      if (internalData) {
+    if (internalData) {
+      try {
         const { id, type } = JSON.parse(internalData);
         await moveItem(id, type, targetFolder);
+      } catch (err) {
+        console.warn('[ScriptLogic] Gagal parse payload drag and drop:', err);
       }
-    } catch (err) {}
+    }
   };
 
   const handlePaste = async () => {
@@ -125,12 +106,10 @@ export function useScriptLogic() {
       await moveItem(item.id, item.type, currentFolderId.value);
       clipboard.value = null;
     } else if (action === 'copy') {
-      try {
-        if (item.type === 'script') {
-          duplicateScript(item.id);
-        }
-      } catch (err) {
-        console.error('Failed to copy item:', err);
+      if (item.type === 'script') {
+        await duplicateScript(item.id);
+      } else if (item.type === 'folder') {
+        await duplicateFolder(item.id);
       }
     }
   };
@@ -150,18 +129,17 @@ export function useScriptLogic() {
     const id = item.id;
     const isDeleted = await deleteScript(id);
 
-    if (isDeleted) {
-      await _deleteScriptFileFromOPFS(id);
-      if (selectedId.value === id) selectedId.value = null;
+    if (isDeleted && selectedId.value === id) {
+      selectedId.value = null;
     }
   };
 
-  const handleDuplicate = (item) => {
-    duplicateScript(item.id);
+  const handleDuplicate = async (item) => {
+    await duplicateScript(item.id);
   };
 
-  const handleRename = (item) => {
-    renameScript(item.id);
+  const handleRename = async (item) => {
+    await renameScript(item.id);
   };
 
   return {

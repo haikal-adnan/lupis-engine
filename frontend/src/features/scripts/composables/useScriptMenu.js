@@ -31,7 +31,7 @@ export function useScriptMenu(selectedIdRef, logicActions) {
 
   const handleContextMenu = (e, item) => {
     if (item) selectedIdRef.value = item.id;
-    menu.value = { visible: true, x: e.clientX, y: e.clientY, item: item };
+    menu.value = { visible: true, x: e.clientX, y: e.clientY, item };
   };
 
   const closeMenu = () => {
@@ -39,22 +39,16 @@ export function useScriptMenu(selectedIdRef, logicActions) {
   };
 
   const getEligibleEntity = () => {
-    if (sceneStore.selectedEntityIds.length === 0) return null;
     const entityId = sceneStore.selectedEntityIds[0];
-    const scene = sceneStore.activeScene;
-    if (!scene) return null;
+    if (!entityId || !sceneStore.activeScene) return null;
 
-    const entity = scene.entities.find(e => e.id === entityId);
-    if (entity && entity.components && entity.components.ScriptController) {
-      return entity;
-    }
-    return null;
+    const entity = sceneStore.activeScene.entities.find(e => e.id === entityId);
+    return entity?.components?.ScriptController ? entity : null;
   };
 
   const handleRename = async (targetItem) => {
     closeMenu();
     const isFolder = targetItem.type === 'folder' || targetItem.isFolder;
-    const id = targetItem.id;
 
     if (isFolder) {
       const newName = await prompt({
@@ -63,55 +57,45 @@ export function useScriptMenu(selectedIdRef, logicActions) {
         defaultValue: targetItem.name,
         confirmText: 'Rename'
       });
-      if (newName && newName.trim() !== '' && newName !== targetItem.name) {
-        renameFolder(id, newName);
+      if (newName?.trim() && newName.trim() !== targetItem.name) {
+        renameFolder(targetItem.id, newName.trim());
       }
     } else {
-      renameScript(id);
+      await renameScript(targetItem.id);
     }
   };
 
   const handleDelete = async (targetItem) => {
     closeMenu();
     const isFolder = targetItem.type === 'folder' || targetItem.isFolder;
-    const id = targetItem.id;
 
     if (isFolder) {
       const isConfirmed = await confirm({
         title: 'Delete Folder?',
-        message: `Are you sure? This action will remove the folder and all nested content.`,
+        message: 'Are you sure? This action will remove the folder and all nested content.',
         type: 'danger'
       });
-      if (isConfirmed) deleteFolder(id);
+      if (isConfirmed) deleteFolder(targetItem.id);
     } else {
-      deleteScript(id);
+      await deleteScript(targetItem.id);
     }
   };
 
   const handleCutCopy = (action, item) => {
-    if (logicActions?.clipboard) {
-      logicActions.clipboard.value = {
-        action,
-        item: { 
-          id: item.id, 
-          type: item.isFolder || item.type === 'folder' ? 'folder' : 'script' 
-        }
-      };
-    }
+    logicActions.clipboard.value = {
+      action,
+      item: { 
+        id: item.id, 
+        type: item.isFolder || item.type === 'folder' ? 'folder' : 'script' 
+      }
+    };
     closeMenu();
   };
 
   const handleCopyId = async (targetItem) => {
     closeMenu();
-    const id = targetItem.id;
-    if (!id) return;
-
-    try {
-      await navigator.clipboard.writeText(id);
-      showPop({ title: 'Success', message: 'Script ID copied to clipboard.', type: 'success' });
-    } catch (err) {
-      showPop({ title: 'Error', message: 'Failed to copy Script ID.', type: 'error' });
-    }
+    await navigator.clipboard.writeText(targetItem.id);
+    showPop({ title: 'Success', message: 'Script ID copied to clipboard.', type: 'success' });
   };
 
   const contextMenuItems = computed(() => {
@@ -161,7 +145,7 @@ export function useScriptMenu(selectedIdRef, logicActions) {
         icon: Workflow, 
         action: () => {
           closeMenu();
-          if (logicActions?.handleOpenGraph) logicActions.handleOpenGraph(scriptObj || targetItem);
+          logicActions.handleOpenGraph(scriptObj || targetItem);
         }
       },
       { separator: true },
@@ -171,7 +155,7 @@ export function useScriptMenu(selectedIdRef, logicActions) {
       { label: 'Copy', icon: Copy, shortcut: 'Ctrl+C', action: () => handleCutCopy('copy', targetItem) },
       { separator: true },
       { label: 'Rename', icon: Edit2, shortcut: 'F2', action: () => handleRename(targetItem) },
-      { label: 'Duplicate', icon: Copy, action: () => { closeMenu(); duplicateScript(id); } },
+      { label: 'Duplicate', icon: Copy, action: async () => { closeMenu(); await duplicateScript(id); } },
       { separator: true },
       { label: 'Delete', icon: Trash2, shortcut: 'Del', action: () => handleDelete(targetItem) }
     );
@@ -179,36 +163,34 @@ export function useScriptMenu(selectedIdRef, logicActions) {
     return items;
   });
 
-  const defaultEmptyMenu = () => {
-    return [
-      { 
-        label: 'New Folder', 
-        icon: FolderPlus, 
-        action: () => { 
-          closeMenu(); 
-          createNewFolder('New Folder', folderStore.activeFolderId, 'scripts');
-        } 
-      },
-      { 
-        label: 'New Script', 
-        icon: FileCode2, 
-        action: () => { 
-          closeMenu(); 
-          if (logicActions?.createScript) logicActions.createScript('component');
-        } 
-      },
-      { separator: true },
-      { 
-        label: 'Paste', 
-        icon: ClipboardPaste, 
-        shortcut: 'Ctrl+V',
-        disabled: !logicActions?.clipboard?.value,
-        action: () => { closeMenu(); if (logicActions?.handlePaste) logicActions.handlePaste(); } 
-      },
-      { separator: true },
-      { label: 'Refresh', icon: RefreshCw, shortcut: 'F5', action: closeMenu }
-    ];
-  };
+  const defaultEmptyMenu = () => [
+    { 
+      label: 'New Folder', 
+      icon: FolderPlus, 
+      action: () => { 
+        closeMenu(); 
+        createNewFolder('New Folder', folderStore.activeFolderId, 'scripts');
+      } 
+    },
+    { 
+      label: 'New Script', 
+      icon: FileCode2, 
+      action: async () => { 
+        closeMenu(); 
+        await logicActions.createScript('component');
+      } 
+    },
+    { separator: true },
+    { 
+      label: 'Paste', 
+      icon: ClipboardPaste, 
+      shortcut: 'Ctrl+V',
+      disabled: !logicActions.clipboard?.value,
+      action: async () => { closeMenu(); await logicActions.handlePaste(); } 
+    },
+    { separator: true },
+    { label: 'Refresh', icon: RefreshCw, shortcut: 'F5', action: closeMenu }
+  ];
 
   return { menu, handleContextMenu, closeMenu, contextMenuItems };
 }

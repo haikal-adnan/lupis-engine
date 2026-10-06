@@ -1,7 +1,6 @@
-
 import { useScriptStore } from '@scripts/scripts.js';
 import { useSceneStore } from '@scenes/scenes.js';
-import { useProjectStore } from '@projects/projects.js'
+import { useProjectStore } from '@projects/projects.js';
 import { useFolderStore } from '@folders/folders.js';
 import { scriptSchema } from '@scripts/scripts.js';
 import { GenerateUUID } from '@utils/utils.js';
@@ -71,7 +70,7 @@ export function useScriptActions() {
         type
       });
 
-      scriptStore.addScript(newScript);
+      await scriptStore.addScript(newScript);
       projectStore.markAsDirty();
 
       showPop({
@@ -98,7 +97,7 @@ export function useScriptActions() {
     });
 
     if (isConfirmed) {
-      scriptStore.removeScript(scriptId);
+      await scriptStore.removeScript(scriptId);
       projectStore.markAsDirty();
 
       showPop({
@@ -125,7 +124,13 @@ export function useScriptActions() {
     if (rawNewName && rawNewName.trim() !== '') {
       const validName = getValidUniqueName(rawNewName.trim(), scriptId);
       if (validName !== script.name) {
+        // 1. Update state di RAM
         scriptStore.updateScriptInList(scriptId, { name: validName });
+
+        // 2. Persist metadata nama baru ke OPFS (Tambahkan baris ini)
+        await scriptStore.syncScriptsMetaToOPFS();
+
+        // 3. Mark project dirty
         projectStore.markAsDirty();
 
         showPop({
@@ -137,7 +142,7 @@ export function useScriptActions() {
     }
   };
 
-  const duplicateScript = (scriptId) => {
+  const duplicateScript = async (scriptId) => {
     const original = scriptStore.getScriptById(scriptId);
     if (!original) return null;
 
@@ -146,7 +151,7 @@ export function useScriptActions() {
     clone.name = getValidUniqueName(`${original.name}_Copy`);
     clone.folderId = folderStore.activeFolderId || original.folderId || null;
 
-    scriptStore.addScript(clone);
+    await scriptStore.addScript(clone);
     projectStore.markAsDirty();
 
     showPop({

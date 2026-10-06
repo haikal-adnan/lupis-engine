@@ -7,6 +7,9 @@ import {
   createScriptPort 
 } from '@scripts/scripts.js';
 import { useNodeBlueprint } from '@nodes/nodes.js';
+import { useWorkspaceStore } from '@workspaces/workspaces.js';
+import { useProjectStore } from '@projects/projects.js';
+import { useOPFSActions } from '@opfs/opfs.js';
 
 const { syncDynamicInputsAndCode } = useNodeBlueprint();
 
@@ -31,12 +34,8 @@ export const useScriptStore = defineStore('script', {
         originalData: s
       }));
     },
-    getScriptById: (state) => (id) => {
-      return state.scripts.find(s => s.id === id);
-    },
-    componentScripts: (state) => {
-      return state.scripts.filter(s => s.type === 'component');
-    },
+    getScriptById: (state) => (id) => state.scripts.find(s => s.id === id),
+    componentScripts: (state) => state.scripts.filter(s => s.type === 'component'),
     selectedNode: (state) => {
       if (!state.activeScript) return null;
       if (state.selectedNodeIds.length === 1) {
@@ -56,7 +55,7 @@ export const useScriptStore = defineStore('script', {
       return state.activeScript.edges.find(e => e.id === state.selectedEdgeId);
     },
     isInputConnected: (state) => (nodeId, handleId) => {
-      if (!state.activeScript || !state.activeScript.edges) return false;
+      if (!state.activeScript?.edges) return false;
       return state.activeScript.edges.some(edge => 
         edge.target === nodeId && edge.targetHandle === handleId
       );
@@ -72,14 +71,60 @@ export const useScriptStore = defineStore('script', {
       this.camera = { x: 0, y: 0, scale: 1 };
     },
 
-    async fetchScripts(projectId) {
-      this.isLoading = true;
-      try {
-        console.log(`[Script Store] Fetching scripts for project: ${projectId}`);
-      } catch (err) {
-        console.log(`[Script Store] Failed to fetch scripts:`, err);
-      } finally {
-        this.isLoading = false;
+    async _getScriptDirectories() {
+      const workspaceStore = useWorkspaceStore();
+      const opfs = useOPFSActions();
+      
+      const projectId = String(workspaceStore.activeProjectId);
+      const projectsRootDir = await opfs.getProjectsRootDirectory();
+
+      const scriptsDir = await opfs.resolveDirectoryPath(projectsRootDir, `${projectId}/scripts`);
+      const workspacesDir = await opfs.resolveDirectoryPath(projectsRootDir, `${projectId}/workspaces`);
+
+      return { scriptsDir, workspacesDir };
+    },
+
+    async syncScriptsMetaToOPFS() {
+      const workspaceStore = useWorkspaceStore();
+      const opfs = useOPFSActions();
+      const { workspacesDir } = await this._getScriptDirectories();
+
+      const projectId = workspaceStore.activeProjectId;
+      const scriptMetas = this.scripts.map(s => ({
+        id: s.id,
+        projectId,
+        folderId: s.folderId,
+        name: s.name,
+        type: s.type
+      }));
+
+      await opfs.writeFileToHandle(workspacesDir, 'scripts.json', JSON.stringify(scriptMetas, null, 2));
+    },
+
+    /**
+     * Membekukan dan menulis single script ke OPFS (Dipanggil saat Save Proyek / Add Script)
+     */
+    async saveScriptToOPFS(script) {
+      const opfs = useOPFSActions();
+      const { scriptsDir } = await this._getScriptDirectories();
+
+      const cleanScript = JSON.parse(JSON.stringify(toRaw(script)));
+      delete cleanScript.projectId;
+      delete cleanScript.folderId;
+
+      await opfs.writeFileToHandle(scriptsDir, `${script.id}.json`, JSON.stringify(cleanScript, null, 2));
+      await this.syncScriptsMetaToOPFS();
+    },
+
+    /**
+     * Menyimpan SELURUH script di RAM ke OPFS (Gunakan ini pada tombol Save Project)
+     */
+    async syncAllScriptsToOPFS() {
+      if (this.activeScript) {
+        this.saveActiveScript();
+      }
+      for (const script of this.scripts) {
+        await this.saveScriptToOPFS(script);
       }
     },
 
@@ -89,27 +134,32 @@ export const useScriptStore = defineStore('script', {
         : [];
     },
 
-    addScript(script) {
+    async addScript(script) {
       const clean = scriptSchema(toRaw(script));
       this.scripts.push(clean);
+      await this.saveScriptToOPFS(clean);
     },
 
     async moveScript(scriptId, targetFolderId) {
       const script = this.scripts.find(s => s.id === scriptId);
       if (script) {
         script.folderId = targetFolderId || null;
+        await this.syncScriptsMetaToOPFS();
         return true;
       }
       return false;
     },
 
+    /**
+     * Hanya memperbarui state di RAM
+     */
     updateScriptInList(scriptId, updates) {
       const index = this.scripts.findIndex(s => s.id === scriptId);
       if (index !== -1) {
         this.scripts[index] = { ...this.scripts[index], ...updates };
       }
 
-      if (this.activeScript && this.activeScript.id === scriptId) {
+      if (this.activeScript?.id === scriptId) {
         const isSelfUpdate = updates.nodes === this.activeScript.nodes;
         if (!isSelfUpdate) {
           Object.assign(this.activeScript, updates);
@@ -117,14 +167,23 @@ export const useScriptStore = defineStore('script', {
       }
     },
 
-    removeScript(scriptId) {
+    async removeScript(scriptId) {
+      const script = this.getScriptById(scriptId);
+      if (!script) return;
+
+      const opfs = useOPFSActions();
+      const { scriptsDir } = await this._getScriptDirectories();
+
+      await opfs.removeFileFromHandle(scriptsDir, `${scriptId}.json`);
+
       this.scripts = this.scripts.filter(s => s.id !== scriptId);
-      if (this.activeScript && this.activeScript.id === scriptId) {
+      if (this.activeScript?.id === scriptId) {
         this.activeScript = null;
         this.selectedNodeId = null;
         this.selectedNodeIds = [];
         this.selectedEdgeId = null;
       }
+      await this.syncScriptsMetaToOPFS();
     },
 
     setActiveScript(scriptData) {
@@ -307,18 +366,21 @@ export const useScriptStore = defineStore('script', {
       }
     },
 
+    /**
+     * Menyimpan perubahan node ke RAM & Menandai Proyek dirty
+     */
     saveActiveScript() {
       if (!this.activeScript) return;
-      try {
-        const cleanScript = JSON.parse(JSON.stringify(toRaw(this.activeScript)));
-        this.updateScriptInList(cleanScript.id, {
-          nodes: cleanScript.nodes,
-          edges: cleanScript.edges,
-          localVariables: cleanScript.localVariables
-        });
-      } catch (err) {
-        console.error("[ScriptStore] FAILED to save active script", err);
-      }
+      const projectStore = useProjectStore();
+      
+      const cleanScript = JSON.parse(JSON.stringify(toRaw(this.activeScript)));
+      this.updateScriptInList(cleanScript.id, {
+        nodes: cleanScript.nodes,
+        edges: cleanScript.edges,
+        localVariables: cleanScript.localVariables
+      });
+
+      projectStore.markAsDirty();
     }
   }
 });

@@ -49,39 +49,6 @@ export function usePrefabActions() {
     return finalName;
   };
 
-  const _savePrefabToOPFS = async (prefab) => {
-    const projectId = workspaceStore.activeProjectId;
-    const root = await navigator.storage.getDirectory();
-    const appDir = await root.getDirectoryHandle('lupis-engine', { create: true });
-    const projectsDir = await appDir.getDirectoryHandle('projects', { create: true });
-    const projectDir = await projectsDir.getDirectoryHandle(String(projectId), { create: true });
-
-    const prefabsDir = await projectDir.getDirectoryHandle('prefabs', { create: true });
-    const workspacesDir = await projectDir.getDirectoryHandle('workspaces', { create: true });
-
-    const cleanPrefab = JSON.parse(JSON.stringify(prefab));
-    delete cleanPrefab.projectId;
-    delete cleanPrefab.folderId;
-
-    const fileHandle = await prefabsDir.getFileHandle(`${prefab.id}.json`, { create: true });
-    const writable = await fileHandle.createWritable();
-    await writable.write(JSON.stringify(cleanPrefab, null, 2));
-    await writable.close();
-
-    const prefabMetas = store.prefabs.map(p => ({
-      id: p.id,
-      projectId: projectId,
-      folderId: p.folderId,
-      name: p.name,
-      type: p.type
-    }));
-
-    const metaHandle = await workspacesDir.getFileHandle('prefabs.json', { create: true });
-    const metaWritable = await metaHandle.createWritable();
-    await metaWritable.write(JSON.stringify(prefabMetas, null, 2));
-    await metaWritable.close();
-  };
-
   const createPrefab = async (
     name = "New Prefab", 
     folderId = null, 
@@ -137,9 +104,7 @@ export function usePrefabActions() {
       ...dataPayload
     });
 
-    store.addPrefab(newPrefab);
-    
-    await _savePrefabToOPFS(newPrefab);
+    await store.addPrefab(newPrefab);
     projectStore.markAsDirty(); 
 
     const { recordCreatePrefab } = useSceneHistory();
@@ -151,9 +116,11 @@ export function usePrefabActions() {
 
   const deletePrefab = async (prefabId) => {
     const prefab = store.getPrefabById(prefabId);
+    if (!prefab) return false;
+
     const clonedPrefab = JSON.parse(JSON.stringify(prefab));
 
-    store.removePrefab(prefabId);
+    await store.removePrefab(prefabId);
     projectStore.markAsDirty();
 
     const { recordDeletePrefab } = useSceneHistory();
@@ -170,6 +137,7 @@ export function usePrefabActions() {
 
   const renamePrefab = async (prefabId) => {
     const prefab = store.getPrefabById(prefabId);
+    if (!prefab) return;
 
     const rawNewName = await prompt({
       title: 'Rename Prefab',
@@ -186,13 +154,10 @@ export function usePrefabActions() {
         const oldName = prefab.name;
         const updatedEntityData = { ...prefab.data, name: validName };
         
-        store.updatePrefab(prefabId, { 
+        await store.updatePrefab(prefabId, { 
           name: validName, 
           data: updatedEntityData 
         });
-
-        const updatedPrefab = store.getPrefabById(prefabId);
-        await _savePrefabToOPFS(updatedPrefab);
 
         projectStore.markAsDirty();
 
@@ -206,15 +171,14 @@ export function usePrefabActions() {
 
   const duplicatePrefab = async (prefabId) => {
     const original = store.getPrefabById(prefabId);
+    if (!original) return null;
 
     const clone = JSON.parse(JSON.stringify(original));
     clone.id = GenerateUUID();
     clone.name = getValidUniqueName(`${original.name}_copy`);
     clone.folderId = folderStore.activeFolderId;
 
-    store.addPrefab(clone);
-    await _savePrefabToOPFS(clone);
-
+    await store.addPrefab(clone);
     projectStore.markAsDirty();
 
     const { recordCreatePrefab } = useSceneHistory();
@@ -227,11 +191,7 @@ export function usePrefabActions() {
 
   const updatePrefab = async (prefabId, patchData) => {
     const cleanPatch = JSON.parse(JSON.stringify(patchData));
-    
-    store.updatePrefab(prefabId, cleanPatch);
-    
-    const updatedPrefab = store.getPrefabById(prefabId);
-    await _savePrefabToOPFS(updatedPrefab);
+    await store.updatePrefab(prefabId, cleanPatch);
 
     projectStore.markAsDirty();
     showPop({ title: 'Saved', message: `Prefab data updated.`, type: 'success' });
