@@ -1,5 +1,9 @@
+// helper project testing (@tests/tests.js)
 import { vi } from 'vitest'
 import { useProjectActions } from '@projects/projects.js'
+import { useSceneStore } from '@scenes/scenes.js'
+import { entitySchema, layerSchema, sceneSchema, componentSchema } from '@scenes/scenes.js'
+import { GenerateUUID } from '@utils/utils.js'
 
 /* ============================================================================
  * IN-MEMORY OPFS MOCK HELPER
@@ -111,9 +115,6 @@ export function setupMockOPFS() {
  * ============================================================================
  */
 
-/**
- * Membuat proyek kosong netral menggunakan `useProjectActions().createProject`
- */
 export async function createMockEmptyProject({
   projectName = 'Test Project',
   description = '',
@@ -121,4 +122,156 @@ export async function createMockEmptyProject({
 } = {}) {
   const projectActions = useProjectActions()
   return await projectActions.createProject({ projectName, description, type })
+}
+
+/* ============================================================================
+ * HELPER KOMPONEN, ENTITY, SCENE, DAN LAYER (PRESISI DENGAN STORE ACTIONS)
+ * ============================================================================
+ */
+
+/**
+ * Membuat data komponen tunggal berdasarkan skema
+ */
+export function createMockComponent(componentName, data = {}) {
+  return componentSchema.create(componentName, data)
+}
+
+/**
+ * Memetakan preset komponen bawaan sesuai persis dengan logika useEntityActions.createEntity
+ */
+function getComponentsByEntityType(type, rawX = 0, rawY = 0) {
+  const rawTransform = { x: rawX, y: rawY }
+  const components = {}
+
+  if (type === 'sprite') {
+    components.SpriteRenderer = { assetId: null, color: '#FFFFFF' }
+    components.Transform = { ...rawTransform }
+  } else if (type === 'shape') {
+    components.ShapeRenderer = componentSchema.create('ShapeRenderer')
+    components.Transform = { ...rawTransform }
+  } else if (type === 'text') {
+    components.TextRenderer = { value: 'New Text', fontSize: 24, color: '#FFFFFF' }
+    components.Transform = { ...rawTransform, width: 107, height: 23 }
+  } else if (type === 'tilemap') {
+    const defaultW = 40
+    const defaultH = 30
+    components.Tilemap = { 
+      tileWidth: 16, tileHeight: 16, width: defaultW, height: defaultH,
+      tilesetId: null, opacity: 1, isSolid: false, autoFit: true,
+      data: new Array(defaultW * defaultH).fill(0)
+    }
+    components.Transform = { ...rawTransform, width: 640, height: 480 }
+  } else if (type === 'audio') {
+    components.Transform = { ...rawTransform, width: 50, height: 50 }
+    components.Audio = { currentClip: null, clips: [] }
+  } else if (type === 'ui_empty') {
+    components.UITransform = { ...rawTransform, width: 100, height: 100, anchorX: 0.5, anchorY: 0.5 }
+  } else if (type === 'ui_shape') {
+    components.UITransform = { ...rawTransform, width: 300, height: 200, anchorX: 0.5, anchorY: 0.5 }
+    components.ShapeRenderer = componentSchema.create('ShapeRenderer')
+  } else if (type === 'ui_text') {
+    components.UITransform = { ...rawTransform, width: 107, height: 23, anchorX: 0.5, anchorY: 0.5 }
+    components.TextRenderer = { value: 'New Text', fontSize: 24, align: 'left', color: '#FFFFFF' }
+  } else if (type === 'ui_image') {
+    components.UITransform = { ...rawTransform, width: 100, height: 100, anchorX: 0.5, anchorY: 0.5 }
+    components.SpriteRenderer = { assetId: null, color: '#FFFFFF' }
+  }
+
+  return components
+}
+
+/**
+ * Membuat data layer sesuai skema useLayerActions
+ */
+export function createMockLayer(overrides = {}) {
+  const section = overrides.section || 'world'
+  return layerSchema({
+    id: `layer_${GenerateUUID()}`,
+    name: overrides.name || 'New Layer',
+    zIndex: overrides.zIndex ?? 0,
+    orderIndex: overrides.orderIndex ?? 0,
+    ...overrides,
+    section
+  })
+}
+
+/**
+ * Membuat data entity yang presisi dengan useEntityActions & entitySchema
+ */
+export function createMockEntity({
+  entityType = 'empty',
+  attachComponents = {},
+  ...overrides
+} = {}) {
+  const isUI = entityType.startsWith('ui_') || overrides.type === 'ui'
+  const posX = overrides.x !== undefined ? overrides.x : 0
+  const posY = overrides.y !== undefined ? overrides.y : 0
+
+  // 1. Dapatkan komponen default bawaan tipe (misal: sprite, text, dll)
+  const presetComponents = getComponentsByEntityType(entityType, posX, posY)
+
+  // 2. Gabungkan komponen preset, override komponen, dan attachComponents
+  const mergedComponents = {
+    ...presetComponents,
+    ...(overrides.components || {})
+  }
+
+  for (const [compName, compData] of Object.entries(attachComponents)) {
+    mergedComponents[compName] = componentSchema.create(compName, compData)
+  }
+
+  const displayType = entityType.startsWith('ui_') ? entityType.replace('ui_', '') : entityType
+  const namePrefix = displayType.charAt(0).toUpperCase() + displayType.slice(1)
+
+  return entitySchema({
+    id: overrides.id || `${GenerateUUID()}`,
+    scriptId: overrides.scriptId || `${entityType}_${GenerateUUID().split('-')[0]}`,
+    name: overrides.name || `${namePrefix} Entity`,
+    type: isUI ? 'ui' : (overrides.type || 'entity'),
+    layerId: overrides.layerId || (isUI ? 'layer_ui_default' : 'layer_world_default'),
+    parentId: overrides.parentId || null,
+    x: posX,
+    y: posY,
+    ...overrides,
+    components: mergedComponents
+  })
+}
+
+/**
+ * Membuat data scene presisi dengan sceneSchema & useSceneActions
+ */
+export function createMockScene(overrides = {}) {
+  return sceneSchema({
+    id: `scene_${GenerateUUID()}`,
+    name: overrides.name || 'Untitled Scene',
+    ...overrides
+  })
+}
+
+/**
+ * Menyiapkan environment Pinia useSceneStore lengkap dengan activeScene, layersWorld, layersUI, & entities
+ */
+export function setupMockSceneEnvironment(options = {}) {
+  const sceneStore = useSceneStore()
+
+  const defaultWorldLayer = createMockLayer({ id: 'layer_world_default', name: 'World Default', section: 'world' })
+  const defaultUILayer = createMockLayer({ id: 'layer_ui_default', name: 'UI Default', section: 'ui' })
+
+  const activeScene = createMockScene({
+    id: options.sceneId || `scene_active_${GenerateUUID().split('-')[0]}`,
+    name: options.sceneName || 'Active Test Scene',
+    layersWorld: options.layersWorld || [defaultWorldLayer],
+    layersUI: options.layersUI || [defaultUILayer],
+    entities: options.entities || []
+  })
+
+  sceneStore.scenes = [activeScene]
+  sceneStore.activeSceneId = activeScene.id
+  sceneStore.selectedEntityIds = options.selectedEntityIds || []
+
+  return {
+    scene: activeScene,
+    defaultWorldLayer,
+    defaultUILayer
+  }
 }

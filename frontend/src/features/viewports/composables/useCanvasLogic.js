@@ -12,15 +12,15 @@ import {
 export function useCanvasLogic() {
   const sceneStore = useSceneStore();
   const { showPop } = usePopAlert();
-  const { paste } = useClipboard();
   const { createPrefab, linkPrefabToEntities } = usePrefabActions();
   const { prompt } = usePrompt(); 
   const { record } = useHistory();
 
-  const getSelectedIds = () => sceneStore.selectedEntityIds;
+  const getSelectedIds = () => sceneStore.selectedEntityIds || [];
 
   const createEntityAtPosition = (type, layerId, x, y) => {
-    const newEntityId = sceneStore.createEntity(type, layerId, { x, y });
+    const newEntity = sceneStore.createEntity(type, layerId, { x, y });
+    const newEntityId = typeof newEntity === 'object' ? newEntity?.id : newEntity;
     
     if (newEntityId) {
       record({
@@ -35,11 +35,13 @@ export function useCanvasLogic() {
   };    
 
   const pasteAtPosition = async (targetX, targetY) => {
-    const pastedIds = await paste(); 
+    const clipboard = useClipboard();
+    const pastedIds = await clipboard.paste(); 
     
     if (!pastedIds || !Array.isArray(pastedIds) || pastedIds.length === 0) return;
 
-    const newEntities = sceneStore.activeEntities.filter(e => pastedIds.includes(e.id));
+    const activeEnts = sceneStore.activeEntities || [];
+    const newEntities = activeEnts.filter(e => pastedIds.includes(e.id));
     if (newEntities.length === 0) return;
 
     let minX = Infinity, minY = Infinity;
@@ -72,15 +74,15 @@ export function useCanvasLogic() {
         const transform = ent.components[compName];
 
         if (transform) {
-            const oldX = transform.x;
-            const oldY = transform.y;
-            const newX = Math.round(transform.x + offsetX);
-            const newY = Math.round(transform.y + offsetY);
+            const oldX = Number(transform.x ?? 0);
+            const oldY = Number(transform.y ?? 0);
+            const newX = Math.round(oldX + offsetX);
+            const newY = Math.round(oldY + offsetY);
 
             previousPositions.push({ id: ent.id, compName, oldX, oldY, newX, newY });
 
             sceneStore.updateComponentProp(ent.id, compName, 'x', newX);
-            sceneStore.updateComponentProp(ent.id, compName, 'y', newX);
+            sceneStore.updateComponentProp(ent.id, compName, 'y', newY);
 
             engineBridge.updateComponentProp({
                 entityId: ent.id,
@@ -125,7 +127,10 @@ export function useCanvasLogic() {
   const bringToFront = () => {
     const id = getFirstId();
     if (id) {
-        const entity = sceneStore.getSceneById(sceneStore.activeSceneId).entities.find(e => e.id === id);
+        const activeScene = sceneStore.getSceneById(sceneStore.activeSceneId);
+        const entity = activeScene?.entities?.find(e => e.id === id);
+        if (!entity) return;
+
         const oldZ = entity.zIndex || 0;
         const newZ = oldZ + 1;
 
@@ -148,7 +153,10 @@ export function useCanvasLogic() {
   const sendToBack = () => {
     const id = getFirstId();
     if (id) {
-        const entity = sceneStore.getSceneById(sceneStore.activeSceneId).entities.find(e => e.id === id);
+        const activeScene = sceneStore.getSceneById(sceneStore.activeSceneId);
+        const entity = activeScene?.entities?.find(e => e.id === id);
+        if (!entity) return;
+
         const oldZ = entity.zIndex || 0;
         const newZ = oldZ - 1;
 
@@ -173,31 +181,33 @@ export function useCanvasLogic() {
     const changes = [];
 
     ids.forEach(id => {
-        const entity = sceneStore.getSceneById(sceneStore.activeSceneId).entities.find(e => e.id === id);
-        if(entity) {
-            const currentEditor = entity._editor || {};
+        const activeScene = sceneStore.getSceneById(sceneStore.activeSceneId);
+        const entity = activeScene?.entities?.find(e => e.id === id);
+        if (entity) {
+            const currentEditor = JSON.parse(JSON.stringify(entity._editor || {}));
             const oldLockState = !!currentEditor.locked;
             const newLockState = !oldLockState;
 
-            changes.push({ id, currentEditor, oldLockState, newLockState });
+            const updatedEditor = { ...currentEditor, locked: newLockState };
+            changes.push({ id, oldEditor: currentEditor, newEditor: updatedEditor });
 
-            sceneStore.updateEntityProp(id, '_editor', { ...currentEditor, locked: newLockState });
-            engineBridge.updateEntityProp({ id, prop: '_editor', value: { ...currentEditor, locked: newLockState } });
+            sceneStore.updateEntityProp(id, '_editor', updatedEditor);
+            engineBridge.updateEntityProp({ id, prop: '_editor', value: updatedEditor });
         }
     });
 
     if (changes.length > 0) {
       record({
         undo: () => {
-          changes.forEach(({ id, currentEditor, oldLockState }) => {
-            sceneStore.updateEntityProp(id, '_editor', { ...currentEditor, locked: oldLockState });
-            engineBridge.updateEntityProp({ id, prop: '_editor', value: { ...currentEditor, locked: oldLockState } });
+          changes.forEach(({ id, oldEditor }) => {
+            sceneStore.updateEntityProp(id, '_editor', oldEditor);
+            engineBridge.updateEntityProp({ id, prop: '_editor', value: oldEditor });
           });
         },
         redo: () => {
-          changes.forEach(({ id, currentEditor, newLockState }) => {
-            sceneStore.updateEntityProp(id, '_editor', { ...currentEditor, locked: newLockState });
-            engineBridge.updateEntityProp({ id, prop: '_editor', value: { ...currentEditor, locked: newLockState } });
+          changes.forEach(({ id, newEditor }) => {
+            sceneStore.updateEntityProp(id, '_editor', newEditor);
+            engineBridge.updateEntityProp({ id, prop: '_editor', value: newEditor });
           });
         }
       });
@@ -209,8 +219,9 @@ export function useCanvasLogic() {
     const changes = [];
 
     ids.forEach(id => {
-        const entity = sceneStore.getSceneById(sceneStore.activeSceneId).entities.find(e => e.id === id);
-        if(entity) {
+        const activeScene = sceneStore.getSceneById(sceneStore.activeSceneId);
+        const entity = activeScene?.entities?.find(e => e.id === id);
+        if (entity) {
             const oldVisible = entity.visible;
             const newVisible = !oldVisible;
 
@@ -244,8 +255,9 @@ export function useCanvasLogic() {
     const changes = [];
 
     ids.forEach(id => {
-        const entity = sceneStore.getSceneById(sceneStore.activeSceneId).entities.find(e => e.id === id);
-        if(entity) {
+        const activeScene = sceneStore.getSceneById(sceneStore.activeSceneId);
+        const entity = activeScene?.entities?.find(e => e.id === id);
+        if (entity) {
             const oldActive = entity.active;
             const newActive = !oldActive;
 
@@ -276,10 +288,11 @@ export function useCanvasLogic() {
 
   const deleteEntity = () => {
       const ids = getSelectedIds();
-      if(ids.length > 0) {
+      if (ids.length > 0) {
+          const activeScene = sceneStore.getSceneById(sceneStore.activeSceneId);
           const deletedEntities = ids.map(id => {
-            const entity = sceneStore.getSceneById(sceneStore.activeSceneId).entities.find(e => e.id === id);
-            return JSON.parse(JSON.stringify(entity));
+            const entity = activeScene?.entities?.find(e => e.id === id);
+            return entity ? JSON.parse(JSON.stringify(entity)) : null;
           }).filter(Boolean);
 
           [...ids].forEach(id => sceneStore.deleteEntity(id));
@@ -287,7 +300,8 @@ export function useCanvasLogic() {
           record({
             undo: () => {
               deletedEntities.forEach(ent => {
-                sceneStore.restoreEntity ? sceneStore.restoreEntity(ent) : sceneStore.activeScene.entities.push(ent);
+                if (sceneStore.restoreEntity) sceneStore.restoreEntity(ent);
+                else sceneStore.activeScene?.entities?.push(ent);
               });
             },
             redo: () => {
@@ -299,7 +313,7 @@ export function useCanvasLogic() {
 
   const duplicateEntity = () => {
       const ids = getSelectedIds();
-      if(ids.length > 0) {
+      if (ids.length > 0) {
         const duplicatedIds = sceneStore.duplicateEntity(ids);
 
         record({
@@ -319,7 +333,7 @@ export function useCanvasLogic() {
     const id = getFirstId();
     if (!id) return;
 
-    const entity = sceneStore.activeScene.entities.find(e => e.id === id);
+    const entity = sceneStore.activeScene?.entities?.find(e => e.id === id);
     if (!entity) return;
 
     const baseName = entity.name || "New Prefab";
@@ -327,7 +341,7 @@ export function useCanvasLogic() {
       .replace(/\s+/g, '_')
       .replace(/[^a-zA-Z0-9_]/g, '');
 
-    const prefabName = await prompt({
+    const response = await prompt({
         title: "Create Prefab",
         message: "Enter name for the new prefab (Alphanumeric and underscores only):",
         defaultValue: suggestedName || "New_Prefab",
@@ -335,12 +349,14 @@ export function useCanvasLogic() {
         cancelText: "Cancel"
     });
 
-    if (!prefabName || prefabName.trim() === "") return;
+    const prefabName = typeof response === 'string' ? response : response?.value;
+
+    if (!prefabName || typeof prefabName !== 'string' || prefabName.trim() === "") return;
 
     const newPrefab = await createPrefab(
-      prefabName, 
+      prefabName.trim(), 
       null, 
-      entity.type || 'world', 
+      entity.type || 'entity', 
       entity
     );
 

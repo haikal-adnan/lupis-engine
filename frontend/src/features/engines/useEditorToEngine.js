@@ -8,7 +8,7 @@ const log = (message, style, data = "") => {
   }
 };
 
-export function useEditorToEngine(projectStore, sceneStore, assetStore, editorStore, scriptStore, prefabStore) {
+export function useEditorToEngine(projectStore, sceneStore, assetStore, workspaceStore, scriptStore, prefabStore) {
 
   const listen = () => {
     
@@ -97,18 +97,18 @@ export function useEditorToEngine(projectStore, sceneStore, assetStore, editorSt
       });
     });
 
-    editorStore.$onAction(({ name, args, after }) => {
-      log(`%c[EditorStore] Action: ${name}`, "color: #FF9800; font-weight: bold;", { args });
+    workspaceStore.$onAction(({ name, args, after }) => {
+      log(`%c[WorkspaceStore] Action: ${name}`, "color: #FF9800; font-weight: bold;", { args });
       after(() => {
         switch (name) {
           case 'setActiveTab': engineBridge.updateEditorState({ activeTabId: args[0] }); break;
           case 'openTab':
-          case 'closeTab': engineBridge.updateEditorState({ tabs: JSON.parse(JSON.stringify(editorStore.tabs)) }); break;
+          case 'closeTab': engineBridge.updateEditorState({ tabs: JSON.parse(JSON.stringify(workspaceStore.tabs)) }); break;
           case 'setTool': engineBridge.updateEditorState({ activeTool: args[0] }); break;
           case 'setContextOpacity': engineBridge.updateEditorState({ tilemapContext: { opacity: args[0] } }); break;
-          case 'toggleContextVisibility': engineBridge.updateEditorState({ tilemapContext: { showOthers: editorStore.tilemapContext.showOthers } }); break;
+          case 'toggleContextVisibility': engineBridge.updateEditorState({ tilemapContext: { showOthers: workspaceStore.tilemapContext.showOthers } }); break;
           case 'setTileSelection':
-          case 'clearTileSelection': engineBridge.updateEditorState({ tileSelection: editorStore.tileSelection }); break;
+          case 'clearTileSelection': engineBridge.updateEditorState({ tileSelection: workspaceStore.tileSelection }); break;
         }
       });
     });
@@ -117,18 +117,24 @@ export function useEditorToEngine(projectStore, sceneStore, assetStore, editorSt
       log(`%c[ScriptStore] Action: ${name}`, "color: #9C27B0; font-weight: bold;", { args });
       after((result) => {
         switch (name) {
-          case 'createScript': if (result) engineBridge.createScript(result); break;
-          case 'updateScript': engineBridge.updateScript(args[0], args[1]); break;
-          case 'deleteScript': engineBridge.deleteScript(args[0]); break;
+          case 'addScript': 
+            if (args[0]) engineBridge.createScript(args[0]); 
+            break;
+          case 'updateScriptInList': 
+            engineBridge.updateScript(args[0], args[1]); 
+            break;
+          case 'removeScript': 
+            engineBridge.deleteScript(args[0]); 
+            break;
           case 'saveActiveScript': 
-              if (scriptStore.activeScript) {
-                  engineBridge.updateScript(scriptStore.activeScript.id, {
-                      nodes: scriptStore.activeScript.nodes,
-                      edges: scriptStore.activeScript.edges,
-                      localVariables: scriptStore.activeScript.localVariables
-                  });
-              }
-              break;
+            if (scriptStore.activeScript) {
+              engineBridge.updateScript(scriptStore.activeScript.id, {
+                nodes: scriptStore.activeScript.nodes,
+                edges: scriptStore.activeScript.edges,
+                localVariables: scriptStore.activeScript.localVariables
+              });
+            }
+            break;
         }
       });
     });

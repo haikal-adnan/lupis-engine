@@ -1,6 +1,5 @@
-import { ref, computed } from 'vue'; 
+import { ref } from 'vue'; 
 import { useWorkspaceStore } from '@workspaces/workspaces.js';
-import { useProjectStore } from '@projects/projects.js';
 import { useClipboard } from '@composables/composables.js';
 import { useSceneStore } from '@scenes/scenes.js';
 

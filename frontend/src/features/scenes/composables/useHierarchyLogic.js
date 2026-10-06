@@ -51,12 +51,12 @@ export function useHierarchyLogic() {
     });
 
     const recursiveSort = (nodes) => {
-        nodes.forEach(node => {
-            if (node.children && node.children.length > 0) {
-                node.children = sortNodes(node.children);
-                recursiveSort(node.children);
-            }
-        });
+      nodes.forEach(node => {
+        if (node.children && node.children.length > 0) {
+          node.children = sortNodes(node.children);
+          recursiveSort(node.children);
+        }
+      });
     };
     recursiveSort(processedNodes);
 
@@ -72,7 +72,7 @@ export function useHierarchyLogic() {
         locked: layer.locked,
         zIndex: Number(layer.zIndex ?? 0),
         orderIndex: layer.orderIndex ?? index,
-        _section: layer._section,
+        _section: layer._section || layer.section || 'world',
         children: sortNodes(layerChildren), 
         isContainer: true
       };
@@ -103,6 +103,14 @@ export function useHierarchyLogic() {
   const getLayerById = (id) => layers.value.find(l => l.id === id);
   const getEntityById = (id) => entities.value.find(e => e.id === id);
 
+  const isLayerUI = (layer) => {
+    if (!layer) return false;
+    const section = layer._section || layer.section;
+    if (section === 'ui') return true;
+    if (layer.scriptId === 'l_hud' || layer.scriptId === 'l_menu') return true;
+    return Boolean(layer.name && layer.name.toLowerCase().includes('ui'));
+  };
+
   const isAncestor = (ancestorId, potentialDescendantId) => {
     if (ancestorId === potentialDescendantId) return true;
     let current = entities.value.find(e => e.id === potentialDescendantId);
@@ -119,97 +127,102 @@ export function useHierarchyLogic() {
     const draggedLayer = getLayerById(draggedId);
     const draggedEntity = getEntityById(draggedId);
     
+    // 1. Reorder Layer
     if (draggedLayer) {
-        if (!targetNode || targetNode.type !== 'layer') return;
-        const draggedIsUI = draggedLayer._section === 'ui' || (draggedLayer.name && draggedLayer.name.includes('UI'));
-        const targetIsUI = targetNode._section === 'ui' || (targetNode.name && targetNode.name.includes('UI'));
+      if (!targetNode || targetNode.type !== 'layer') return;
+      const draggedIsUI = isLayerUI(draggedLayer);
+      const targetIsUI = isLayerUI(targetNode);
 
-        if (draggedIsUI !== targetIsUI) {
-             showPop({ title: 'Invalid Move', message: 'Cannot move Layer between World and UI sections.', type: 'error' });
-             return;
-        }
-        sceneStore.reorderLayer(draggedId, targetNode.id, position);
+      if (draggedIsUI !== targetIsUI) {
+        showPop({ title: 'Invalid Move', message: 'Cannot move Layer between World and UI sections.', type: 'error' });
         return;
+      }
+      sceneStore.reorderLayer(draggedId, targetNode.id, position);
+      return;
     }
 
+    // 2. Move Entity
     if (draggedEntity) {
-        if (!targetNode) {
-             sceneStore.moveEntity(draggedId, {
-                newParentId: null, 
-                newLayerId: draggedEntity.layerId, 
-                insertionType: 'append' 
-             });
-             return; 
+      // Kasus tanpa targetNode: pindah ke root
+      if (!targetNode) {
+        sceneStore.moveEntity(draggedId, {
+          newParentId: null, 
+          newLayerId: draggedEntity.layerId, 
+          insertionType: 'append',
+          referenceId: null
+        });
+        return; 
+      }
+
+      const targetId = targetNode.id;
+      if (draggedId === targetId) return;
+
+      if (targetNode.type !== 'layer' && isAncestor(draggedId, targetId)) {
+        showPop({ title: 'Invalid Move', message: 'Cannot move an entity inside its own child.', type: 'error' });
+        return;
+      }
+
+      let targetLayerId = null;
+      let isTargetUI = false;
+
+      if (targetNode.type === 'layer') {
+        targetLayerId = targetNode.id;
+        isTargetUI = isLayerUI(targetNode); 
+      } else {
+        targetLayerId = targetNode.layerId || draggedEntity.layerId;
+        const rootLayer = getLayerById(targetLayerId);
+        isTargetUI = isLayerUI(rootLayer);
+      }
+
+      const isDraggedUI = draggedEntity.type === 'ui' || Boolean(draggedEntity.components && draggedEntity.components.UITransform);
+
+      if (isDraggedUI && !isTargetUI) {
+        showPop({ title: 'Invalid Move', message: 'UI Entity cannot go to World Layer.', type: 'error' });
+        return;
+      }
+      if (!isDraggedUI && isTargetUI) {
+        showPop({ title: 'Invalid Move', message: 'World Entity cannot go to UI Layer.', type: 'error' });
+        return;
+      }
+
+      const isSameParent = (draggedEntity.parentId || null) === (targetNode.parentId || null);
+      if (targetNode.type !== 'layer' && (position === 'top' || position === 'bottom') && isSameParent) {
+        const targetZ = targetNode.zIndex ?? 0;
+        const draggedZ = draggedEntity.zIndex ?? 0;
+
+        if (targetZ !== draggedZ) {
+          showPop({ 
+            title: 'Action Restricted', 
+            message: `Cannot reorder siblings with different Z-Index (${draggedZ} vs ${targetZ}).`, 
+            type: 'warning'
+          });
+          return;
         }
+      }
 
-        const targetId = targetNode.id;
-        if (draggedId === targetId) return;
-        if (targetNode.type !== 'layer' && isAncestor(draggedId, targetId)) {
-            showPop({ title: 'Invalid Move', message: 'Cannot move an entity inside its own child.', type: 'error' });
-            return;
-        }
+      const context = {
+        newParentId: null,
+        newLayerId: targetLayerId,
+        insertionType: 'append',
+        referenceId: null 
+      };
 
-        let targetLayerId = null;
-        let isTargetUI = false;
+      if (targetNode.type === 'layer') {
+        context.newLayerId = targetNode.id;
+        context.newParentId = null; 
+        context.insertionType = 'append';
+      } else if (position === 'inside') {
+        context.newParentId = targetNode.id;
+        context.newLayerId = targetLayerId;
+        context.insertionType = 'inside';
+      } else {
+        context.newParentId = targetNode.parentId || null;
+        context.newLayerId = targetLayerId;
+        context.referenceId = targetNode.id;
+        context.insertionType = position === 'top' ? 'before' : 'after';
+      }
 
-        if (targetNode.type === 'layer') {
-            targetLayerId = targetNode.id;
-            isTargetUI = targetNode._section === 'ui' || (targetNode.name && targetNode.name.includes('UI')); 
-        } else {
-            targetLayerId = targetNode.layerId;
-            const rootLayer = getLayerById(targetLayerId);
-            isTargetUI = rootLayer ? (rootLayer._section === 'ui' || rootLayer.name.includes('UI')) : false;
-        }
-
-        const isDraggedUI = draggedEntity.type === 'ui' || (draggedEntity.components && draggedEntity.components.UITransform);
-
-        if (isDraggedUI && !isTargetUI) {
-            showPop({ title: 'Invalid Move', message: 'UI Entity cannot go to World Layer.', type: 'error' });
-            return;
-        }
-        if (!isDraggedUI && isTargetUI) {
-            showPop({ title: 'Invalid Move', message: 'World Entity cannot go to UI Layer.', type: 'error' });
-            return;
-        }
-
-        const isSameParent = (draggedEntity.parentId || null) === (targetNode.parentId || null);
-        if (targetNode.type !== 'layer' && (position === 'top' || position === 'bottom') && isSameParent) {
-            const targetZ = targetNode.zIndex ?? 0;
-            const draggedZ = draggedEntity.zIndex ?? 0;
-
-            if (targetZ !== draggedZ) {
-                showPop({ 
-                    title: 'Action Restricted', 
-                    message: `Cannot reorder siblings with different Z-Index (${draggedZ} vs ${targetZ}).`, 
-                    type: 'warning'
-                });
-                return;
-            }
-        }
-
-        const context = {
-            newParentId: null,
-            newLayerId: null,
-            insertionType: 'append',
-            referenceId: null 
-        };
-
-        if (targetNode.type === 'layer') {
-            context.newLayerId = targetNode.id;
-            context.newParentId = null; 
-            context.insertionType = 'append';
-        } else if (position === 'inside') {
-            context.newParentId = targetNode.id;
-            context.newLayerId = targetNode.layerId;
-            context.insertionType = 'append';
-        } else {
-             context.newParentId = targetNode.parentId || null;
-             context.newLayerId = targetNode.layerId;
-             context.referenceId = targetNode.id;
-             context.insertionType = position === 'top' ? 'before' : 'after';
-        }
-
-        sceneStore.moveEntity(draggedId, context);
+      sceneStore.moveEntity(draggedId, context);
     }
   };
 

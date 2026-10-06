@@ -15,7 +15,6 @@ export function useEngineSync() {
   const scriptStore = useScriptStore();
   const prefabStore = usePrefabStore();
 
-
   const outgoing = useEditorToEngine(projectStore, sceneStore, assetStore, workspaceStore, scriptStore, prefabStore);
   const incoming = useEngineToEditor(sceneStore);
 

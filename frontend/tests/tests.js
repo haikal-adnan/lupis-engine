@@ -2,4 +2,10 @@ export {
   createValidLupisProjectFile,
   createMockDirectoryHandle,
   setupMockOPFS,
-  createMockEmptyProject } from '@tests/helper/projectMockHelper.js'
+  createMockEmptyProject,
+  createMockComponent,
+  createMockLayer,
+  createMockEntity,
+  createMockScene,
+  setupMockSceneEnvironment
+} from '@tests/helper/projectMockHelper.js'
