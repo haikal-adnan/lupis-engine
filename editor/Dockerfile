@@ -2,13 +2,13 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-COPY frontend/package*.json ./
+COPY editor/package*.json ./
 
 RUN npm install
 
-COPY frontend/ .
+COPY editor/ .
 
-COPY engine/ /engine/
+COPY core/ /core/
 
 EXPOSE 6500
 

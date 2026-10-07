@@ -22,6 +22,7 @@ export default defineConfig({
     allowedHosts: [
       'localhost',
       '127.0.0.1',
+      'editor'
     ],
     hmr: {
       overlay: true,
@@ -86,7 +87,7 @@ export default defineConfig({
       '@historys': fileURLToPath(new URL('./src/features/historys', import.meta.url)),
       '@utils': fileURLToPath(new URL('./src/utils', import.meta.url)),
       '@tests': path.resolve(__dirname, './tests'),
-      '@core': path.resolve(__dirname, '../engine'),
+      '@core': path.resolve(__dirname, '../core'),
       '@engines': fileURLToPath(new URL('./src/features/engines', import.meta.url)),
       'vue': 'vue/dist/vue.esm-bundler.js',
     },

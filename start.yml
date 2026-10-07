@@ -1,43 +1,44 @@
 x-ports:
-  frontend_mapping: &frontend_port "6500:6500"
-  engine_mapping: &engine_port "8080:80"
-  backend_mapping: &backend_port "4000:4000"
+  editor_mapping: &editor_port "6500:6500"
+  core_mapping: &core_port "8080:80"
+  service_mapping: &service_port "4000:4000"
 
-  frontend_raw_port: &frontend_raw_port "6500"
-  backend_raw_port: &backend_raw_port "4000"
+  editor_raw_port: &editor_raw_port "6500"
+  service_raw_port: &service_raw_port "4000"
 
 x-urls:
-  vite_engine_url: &engine_url "http://localhost:8080"
-  vite_backend_url: &backend_url "http://localhost:4000"
+  vite_core_url: &core_url "http://localhost:8080"
+  vite_service_url: &service_url "http://localhost:4000"
+  playwright_target_url: &e2e_editor_url "http://editor:6500"
 
 services:
-  engine:
+  core:
     build:
-      context: ./engine
+      context: ./core
       dockerfile: Dockerfile
-    container_name: lupis-engines
+    container_name: lupis-core
     restart: always
     ports:
-      - *engine_port
+      - *core_port
     networks:
       - lupis-network
     develop:
       watch:
         - action: sync
-          path: ./engine
+          path: ./core
           target: /usr/share/nginx/html
 
-  backend:
+  service:
     build:
-      context: ./backend 
+      context: ./service 
       dockerfile: Dockerfile
-    container_name: lupis-backend
+    container_name: lupis-service
     restart: always
     ports:
-      - *backend_port
+      - *service_port
     environment:
       NODE_ENV: development
-      PORT: *backend_raw_port
+      PORT: *service_raw_port
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:4000/api/health"]
       interval: 5s
@@ -48,54 +49,70 @@ services:
     develop:
       watch:
         - action: sync
-          path: ./backend
+          path: ./service
           target: /app
           ignore:
             - node_modules/
             - temp/
         - action: sync
-          path: ./engine
+          path: ./core
           target: /engine
         - action: rebuild
-          path: ./backend/package.json
+          path: ./service/package.json
         - action: rebuild
-          path: ./backend/package-lock.json
+          path: ./service/package-lock.json
 
-  frontend:
+  editor:
     build:
       context: .
-      dockerfile: ./frontend/Dockerfile
-    container_name: lupis-frontends
+      dockerfile: ./editor/Dockerfile
+    container_name: lupis-editor
     restart: always
     ports:
-      - *frontend_port
+      - *editor_port
     environment:
       NODE_ENV: development
-      PORT: *frontend_raw_port
-      VITE_ENGINE_URL: *engine_url
-      VITE_BACKEND_URL: *backend_url
+      PORT: *editor_raw_port
+      VITE_ENGINE_URL: *core_url
+      VITE_BACKEND_URL: *service_url
       VITE_GAME_DEBUG: "true"
       VITE_ENV: development
     depends_on:
-      - engine
-      - backend
+      - core
+      - service
     networks:
       - lupis-network
     develop:
       watch:
         - action: sync
-          path: ./frontend
+          path: ./editor
           target: /app
           ignore:
             - node_modules/
             - dist/
         - action: sync
-          path: ./engine
+          path: ./core
           target: /engine
         - action: rebuild
-          path: ./frontend/package.json
+          path: ./editor/package.json
         - action: rebuild
-          path: ./frontend/package-lock.json
+          path: ./editor/package-lock.json
+
+  e2e:
+    build:
+      context: ./tests
+      dockerfile: Dockerfile
+    container_name: lupis-e2e
+    profiles: ["testing"]
+    environment:
+      PLAYWRIGHT_BASE_URL: *e2e_editor_url
+    depends_on:
+      editor:
+        condition: service_started
+      service:
+        condition: service_started
+    networks:
+      - lupis-network
 
 networks:
   lupis-network:
