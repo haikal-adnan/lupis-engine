@@ -27,8 +27,7 @@ export const BlueprintList = {
         settings: { headerTitle: 'Get Item', headerColor: '#4DD0E1', category: 'List' },
         data: { 
           values: { index: 0 },
-          code: `
-const list = inputs['list'];
+          code: `const list = inputs['list'];
 const index = inputs['index'];
 
 if (Array.isArray(list) && index !== undefined && index >= 0 && index < list.length) {
@@ -36,7 +35,7 @@ if (Array.isArray(list) && index !== undefined && index >= 0 && index < list.len
 } else {
     outputs['item'] = null;
 }
-`
+return;`
         },
         inputs: [
           { id: 'list', label: 'List', dataType: 'list', color: '#4DD0E1' },
@@ -58,8 +57,7 @@ if (Array.isArray(list) && index !== undefined && index >= 0 && index < list.len
         settings: { headerTitle: 'Set Item', headerColor: '#4DD0E1', category: 'List' },
         data: { 
           values: { index: 0, value: "" },
-          code: `
-const list = inputs['list'];
+          code: `const list = inputs['list'];
 const index = inputs['index'];
 const value = inputs['value'];
 
@@ -69,7 +67,7 @@ if (Array.isArray(list) && index !== undefined && index >= 0 && index < list.len
 
 outputs['list_out'] = list;
 outputs['exec_out'] = true;
-`
+return;`
         },
         inputs: [
           { id: 'exec_in', label: 'In', dataType: 'execution', color: '#FFFFFF' },
@@ -94,8 +92,7 @@ outputs['exec_out'] = true;
         settings: { headerTitle: 'Push', headerColor: '#4DD0E1', category: 'List' },
         data: { 
           values: { value: "" },
-          code: `
-const list = inputs['list'];
+          code: `const list = inputs['list'];
 const value = inputs['value'];
 
 if (Array.isArray(list)) {
@@ -104,7 +101,7 @@ if (Array.isArray(list)) {
 
 outputs['list_out'] = list;
 outputs['exec_out'] = true;
-`
+return;`
         },
         inputs: [
           { id: 'exec_in', label: 'In', dataType: 'execution', color: '#FFFFFF' },
@@ -128,8 +125,7 @@ outputs['exec_out'] = true;
         settings: { headerTitle: 'Insert', headerColor: '#4DD0E1', category: 'List' },
         data: { 
           values: { index: 0, value: "" },
-          code: `
-const list = inputs['list'];
+          code: `const list = inputs['list'];
 const index = inputs['index'];
 const value = inputs['value'];
 
@@ -139,7 +135,7 @@ if (Array.isArray(list) && index !== undefined && index >= 0 && index <= list.le
 
 outputs['list_out'] = list;
 outputs['exec_out'] = true;
-`
+return;`
         },
         inputs: [
           { id: 'exec_in', label: 'In', dataType: 'execution', color: '#FFFFFF' },
@@ -164,8 +160,7 @@ outputs['exec_out'] = true;
         settings: { headerTitle: 'Remove At', headerColor: '#4DD0E1', category: 'List' },
         data: { 
           values: { index: 0 },
-          code: `
-const list = inputs['list'];
+          code: `const list = inputs['list'];
 const index = inputs['index'];
 
 if (Array.isArray(list) && index !== undefined && index >= 0 && index < list.length) {
@@ -174,7 +169,7 @@ if (Array.isArray(list) && index !== undefined && index >= 0 && index < list.len
 
 outputs['list_out'] = list;
 outputs['exec_out'] = true;
-`
+return;`
         },
         inputs: [
           { id: 'exec_in', label: 'In', dataType: 'execution', color: '#FFFFFF' },
@@ -197,10 +192,9 @@ outputs['exec_out'] = true;
       defaultData: { 
         settings: { headerTitle: 'Length', headerColor: '#4DD0E1', category: 'List' },
         data: {
-          code: `
-const list = inputs['list'];
+          code: `const list = inputs['list'];
 outputs['length'] = Array.isArray(list) ? list.length : 0;
-`
+return;`
         },
         inputs: [
           { id: 'list', label: 'List', dataType: 'list', color: '#4DD0E1' }
@@ -221,12 +215,11 @@ outputs['length'] = Array.isArray(list) ? list.length : 0;
         settings: { headerTitle: 'Contains', headerColor: '#4DD0E1', category: 'List' },
         data: { 
           values: { value: "" },
-          code: `
-const list = inputs['list'];
+          code: `const list = inputs['list'];
 const value = inputs['value'];
 
 outputs['result'] = Array.isArray(list) ? list.includes(value) : false;
-`
+return;`
         },
         inputs: [
           { id: 'list', label: 'List', dataType: 'list', color: '#4DD0E1' },
@@ -248,12 +241,11 @@ outputs['result'] = Array.isArray(list) ? list.includes(value) : false;
         settings: { headerTitle: 'IndexOf', headerColor: '#4DD0E1', category: 'List' },
         data: { 
           values: { value: "" },
-          code: `
-const list = inputs['list'];
+          code: `const list = inputs['list'];
 const value = inputs['value'];
 
 outputs['index'] = Array.isArray(list) ? list.indexOf(value) : -1;
-`
+return;`
         },
         inputs: [
           { id: 'list', label: 'List', dataType: 'list', color: '#4DD0E1' },
@@ -274,8 +266,7 @@ outputs['index'] = Array.isArray(list) ? list.indexOf(value) : -1;
       defaultData: { 
         settings: { headerTitle: 'Concat', headerColor: '#4DD0E1', category: 'List' },
         data: {
-          code: `
-const listA = inputs['list_a'] || [];
+          code: `const listA = inputs['list_a'] || [];
 const listB = inputs['list_b'] || [];
 
 if (Array.isArray(listA) && Array.isArray(listB)) {
@@ -283,7 +274,7 @@ if (Array.isArray(listA) && Array.isArray(listB)) {
 } else {
     outputs['result_list'] = [];
 }
-`
+return;`
         },
         inputs: [
           { id: 'list_a', label: 'List A', dataType: 'list', color: '#4DD0E1' },
@@ -304,8 +295,7 @@ if (Array.isArray(listA) && Array.isArray(listB)) {
       defaultData: { 
         settings: { headerTitle: 'Shuffle', headerColor: '#4DD0E1', category: 'List' },
         data: {
-          code: `
-const list = inputs['list'];
+          code: `const list = inputs['list'];
 
 if (Array.isArray(list)) {
     for (let i = list.length - 1; i > 0; i--) {
@@ -316,7 +306,7 @@ if (Array.isArray(list)) {
 
 outputs['list_out'] = list;
 outputs['exec_out'] = true;
-`
+return;`
         },
         inputs: [
           { id: 'exec_in', label: 'In', dataType: 'execution', color: '#FFFFFF' },
@@ -330,4 +320,3 @@ outputs['exec_out'] = true;
     }
   ]
 };
-

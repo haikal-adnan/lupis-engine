@@ -5,7 +5,75 @@ import { useSceneStore } from '@scenes/scenes.js'
 import { useWorkspaceStore } from '@workspaces/workspaces.js'
 import { useAssetStore } from '@assets/assets.js'
 import { useAnimatorHistory } from '@historys/historys.js'
-import { setupMockSceneEnvironment, createMockAnimatorEntity } from '@tests/tests.js'
+import { setupMockSceneEnvironment, createMockEntity } from '@tests/tests.js'
+import { GenerateUUID } from '@utils/utils.js'
+
+/**
+ * Helper untuk membuat mock entity yang dilengkapi dengan SpriteAnimator
+ * dan data Asset dummy untuk pengujian Animator.
+ */
+function createMockAnimatorEntity({
+  entityId = `entity_anim_${GenerateUUID().split('-')[0]}`,
+  assetId = `asset_tex_${GenerateUUID().split('-')[0]}`,
+  assetName = 'hero_spritesheet.png',
+  clipId = `clip_${GenerateUUID().split('-')[0]}`,
+  ...overrides
+} = {}) {
+  const mockAsset = {
+    id: assetId,
+    name: assetName,
+    type: 'texture',
+    fileKey: `fk_${assetId}`,
+    meta: {
+      extension: '.png',
+      dimensions: { w: 128, h: 32 }
+    }
+  }
+
+  const defaultClip = {
+    id: clipId,
+    name: 'Idle_Clip',
+    type: 'clip',
+    scriptId: `script_${clipId}`,
+    assetId: assetId,
+    parentId: null,
+    fps: 12,
+    isLooping: true,
+    frames: ['s_0', 's_1'],
+    sources: {
+      s_0: { x: 0, y: 0, w: 32, h: 32 },
+      s_1: { x: 32, y: 0, w: 32, h: 32 }
+    },
+    baseSize: { w: 32, h: 32 },
+    pivot: { x: 0.5, y: 1 },
+    frameIndex: 0,
+    filterMode: 'pixelated',
+    useSDF: false
+  }
+
+  const entity = createMockEntity({
+    id: entityId,
+    name: overrides.name || 'Animator Entity',
+    entityType: 'sprite',
+    ...overrides,
+    attachComponents: {
+      SpriteAnimator: {
+        active: true,
+        isPlaying: false,
+        currentClip: clipId,
+        clips: overrides.clips || [defaultClip],
+        ...(overrides.animatorComponent || {})
+      },
+      ...(overrides.attachComponents || {})
+    }
+  })
+
+  return {
+    entity,
+    mockAsset,
+    defaultClip
+  }
+}
 
 // Mock external Engine Bridge & Composables UI Alert / Prompt / Confirm
 vi.mock('@engines/engines.js', () => ({
@@ -208,22 +276,22 @@ describe('useAnimatorLogic Integration', () => {
     })
 
     it('plays and steps forward frame timeline over intervals', () => {
-        // Arrange
-        const logic = useAnimatorLogic()
-        logic.selectClip(mockEntityData.defaultClip.id)
-        expect(logic.currentFrameIndex.value).toBe(0)
+      // Arrange
+      const logic = useAnimatorLogic()
+      logic.selectClip(mockEntityData.defaultClip.id)
+      expect(logic.currentFrameIndex.value).toBe(0)
 
-        // Act: Start Playback via togglePlay
-        logic.togglePlay()
-        expect(logic.isPlaying.value).toBe(true)
+      // Act: Start Playback via togglePlay
+      logic.togglePlay()
+      expect(logic.isPlaying.value).toBe(true)
 
-        // Advance time (fps: 12 -> interval ~83.3ms)
-        vi.advanceTimersByTime(100)
-        expect(logic.currentFrameIndex.value).toBe(1)
+      // Advance time (fps: 12 -> interval ~83.3ms)
+      vi.advanceTimersByTime(100)
+      expect(logic.currentFrameIndex.value).toBe(1)
 
-        // Act: Stop Playback via stopPlayback atau togglePlay
-        logic.stopPlayback()
-        expect(logic.isPlaying.value).toBe(false)
+      // Act: Stop Playback via stopPlayback atau togglePlay
+      logic.stopPlayback()
+      expect(logic.isPlaying.value).toBe(false)
     })
 
     it('clears timeline after user confirmation', async () => {
@@ -253,7 +321,7 @@ describe('useAnimatorLogic Integration', () => {
 
       // Assert
       expect(logic.activeClipData.value.fps).toBe(24)
-      
+
       // Act: Undo via history
       logic.undo()
       expect(logic.activeClipData.value.fps).toBe(12)
@@ -265,7 +333,7 @@ describe('useAnimatorLogic Integration', () => {
       // Arrange
       const logic = useAnimatorLogic()
       logic.selectClip(mockEntityData.defaultClip.id)
-      
+
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       vi.spyOn(assetStore, 'getAssetUrlById').mockRejectedValueOnce(new Error('OPFS Read Error'))
 
@@ -276,7 +344,7 @@ describe('useAnimatorLogic Integration', () => {
       // Assert
       expect(logic.resolvedAssetUrl.value).toBe('')
       expect(consoleErrorSpy).toHaveBeenCalled()
-      
+
       consoleErrorSpy.mockRestore()
     })
 
@@ -299,7 +367,7 @@ describe('useAnimatorLogic Integration', () => {
       // Arrange
       const logic = useAnimatorLogic()
       logic.selectClip(mockEntityData.defaultClip.id)
-      
+
       // Asset tanpa dimensions dan prompt dibatalkan
       logic.activeClipData.value.assetId = null
       mockPrompt.mockResolvedValueOnce(null)

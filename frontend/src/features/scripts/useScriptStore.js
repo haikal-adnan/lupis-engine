@@ -11,8 +11,6 @@ import { useWorkspaceStore } from '@workspaces/workspaces.js';
 import { useProjectStore } from '@projects/projects.js';
 import { useOPFSActions } from '@opfs/opfs.js';
 
-const { syncDynamicInputsAndCode } = useNodeBlueprint();
-
 export const useScriptStore = defineStore('script', {
   state: () => ({
     scripts: [],
@@ -293,6 +291,7 @@ export const useScriptStore = defineStore('script', {
         node.inputs.push(newPort);
 
         if (node.allowDynamicInputs) {
+          const { syncDynamicInputsAndCode } = useNodeBlueprint();
           syncDynamicInputsAndCode(node);
         }
       } else {
@@ -315,6 +314,7 @@ export const useScriptStore = defineStore('script', {
         );
 
         if (node.allowDynamicInputs) {
+          const { syncDynamicInputsAndCode } = useNodeBlueprint();
           syncDynamicInputsAndCode(node);
         }
       } else {

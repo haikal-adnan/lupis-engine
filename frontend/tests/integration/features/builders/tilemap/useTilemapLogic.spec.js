@@ -6,7 +6,71 @@ import { useSceneStore } from '@scenes/scenes.js'
 import { useWorkspaceStore } from '@workspaces/workspaces.js'
 import { useAssetStore } from '@assets/assets.js'
 import { engineBridge } from '@engines/engines.js'
-import { setupMockSceneEnvironment, createMockTilemapEntity } from '@tests/tests.js'
+import { setupMockSceneEnvironment, createMockEntity } from '@tests/tests.js'
+import { GenerateUUID } from '@utils/utils.js'
+
+/**
+ * Helper untuk membuat mock entity yang dilengkapi dengan komponen Tilemap
+ * dan data Asset dummy untuk pengujian Tilemap Logic & Tools.
+ */
+function createMockTilemapEntity({
+  entityId = `entity_tilemap_${GenerateUUID().split('-')[0]}`,
+  assetId = `asset_tileset_${GenerateUUID().split('-')[0]}`,
+  assetName = 'world_tileset.png',
+  tileWidth = 16,
+  tileHeight = 16,
+  mapWidth = 10,
+  mapHeight = 10,
+  ...overrides
+} = {}) {
+  const mockAsset = {
+    id: assetId,
+    name: assetName,
+    type: 'texture',
+    fileKey: `fk_${assetId}`,
+    meta: {
+      extension: '.png',
+      dimensions: { w: 160, h: 160 }
+    }
+  }
+
+  const initialData = overrides.data || new Array(mapWidth * mapHeight).fill(0)
+
+  const entity = createMockEntity({
+    id: entityId,
+    name: overrides.name || 'Tilemap Entity',
+    entityType: 'tilemap',
+    ...overrides,
+    attachComponents: {
+      Tilemap: {
+        assetId,
+        tileWidth,
+        tileHeight,
+        width: mapWidth,
+        height: mapHeight,
+        opacity: 1,
+        isSolid: false,
+        autoFit: true,
+        filterMode: 'pixelated',
+        data: initialData,
+        ...(overrides.tilemapComponent || {})
+      },
+      ...(overrides.attachComponents || {})
+    }
+  })
+
+  return {
+    entity,
+    mockAsset,
+    defaultTilemapConfig: {
+      tileWidth,
+      tileHeight,
+      mapWidth,
+      mapHeight,
+      data: initialData
+    }
+  }
+}
 
 vi.mock('@engines/engines.js', () => ({
   engineBridge: {

@@ -2,6 +2,7 @@
 import { vi } from 'vitest'
 import { useProjectActions } from '@projects/projects.js'
 import { useSceneStore } from '@scenes/scenes.js'
+import { useScriptStore } from '@scripts/scripts.js'
 import { entitySchema, layerSchema, sceneSchema, componentSchema } from '@scenes/scenes.js'
 import { GenerateUUID } from '@utils/utils.js'
 
@@ -236,136 +237,6 @@ export function createMockEntity({
 }
 
 /**
- * Helper untuk membuat mock entity yang dilengkapi dengan SpriteAnimator
- * dan data Asset dummy untuk pengujian Animator.
- */
-export function createMockAnimatorEntity({
-  entityId = `entity_anim_${GenerateUUID().split('-')[0]}`,
-  assetId = `asset_tex_${GenerateUUID().split('-')[0]}`,
-  assetName = 'hero_spritesheet.png',
-  clipId = `clip_${GenerateUUID().split('-')[0]}`,
-  ...overrides
-} = {}) {
-  const mockAsset = {
-    id: assetId,
-    name: assetName,
-    type: 'texture',
-    fileKey: `fk_${assetId}`,
-    meta: {
-      extension: '.png',
-      dimensions: { w: 128, h: 32 }
-    }
-  }
-
-  const defaultClip = {
-    id: clipId,
-    name: 'Idle_Clip',
-    type: 'clip',
-    scriptId: `script_${clipId}`,
-    assetId: assetId,
-    parentId: null,
-    fps: 12,
-    isLooping: true,
-    frames: ['s_0', 's_1'],
-    sources: {
-      s_0: { x: 0, y: 0, w: 32, h: 32 },
-      s_1: { x: 32, y: 0, w: 32, h: 32 }
-    },
-    baseSize: { w: 32, h: 32 },
-    pivot: { x: 0.5, y: 1 },
-    frameIndex: 0,
-    filterMode: 'pixelated',
-    useSDF: false
-  }
-
-  const entity = createMockEntity({
-    id: entityId,
-    name: overrides.name || 'Animator Entity',
-    entityType: 'sprite',
-    ...overrides,
-    attachComponents: {
-      SpriteAnimator: {
-        active: true,
-        isPlaying: false,
-        currentClip: clipId,
-        clips: overrides.clips || [defaultClip],
-        ...(overrides.animatorComponent || {})
-      },
-      ...(overrides.attachComponents || {})
-    }
-  })
-
-  return {
-    entity,
-    mockAsset,
-    defaultClip
-  }
-}
-
-/**
- * Helper untuk membuat mock entity yang dilengkapi dengan komponen Tilemap
- * dan data Asset dummy untuk pengujian Tilemap Logic & Tools.
- */
-export function createMockTilemapEntity({
-  entityId = `entity_tilemap_${GenerateUUID().split('-')[0]}`,
-  assetId = `asset_tileset_${GenerateUUID().split('-')[0]}`,
-  assetName = 'world_tileset.png',
-  tileWidth = 16,
-  tileHeight = 16,
-  mapWidth = 10,
-  mapHeight = 10,
-  ...overrides
-} = {}) {
-  const mockAsset = {
-    id: assetId,
-    name: assetName,
-    type: 'texture',
-    fileKey: `fk_${assetId}`,
-    meta: {
-      extension: '.png',
-      dimensions: { w: 160, h: 160 }
-    }
-  }
-
-  const initialData = overrides.data || new Array(mapWidth * mapHeight).fill(0)
-
-  const entity = createMockEntity({
-    id: entityId,
-    name: overrides.name || 'Tilemap Entity',
-    entityType: 'tilemap',
-    ...overrides,
-    attachComponents: {
-      Tilemap: {
-        assetId,
-        tileWidth,
-        tileHeight,
-        width: mapWidth,
-        height: mapHeight,
-        opacity: 1,
-        isSolid: false,
-        autoFit: true,
-        filterMode: 'pixelated',
-        data: initialData,
-        ...(overrides.tilemapComponent || {})
-      },
-      ...(overrides.attachComponents || {})
-    }
-  })
-
-  return {
-    entity,
-    mockAsset,
-    defaultTilemapConfig: {
-      tileWidth,
-      tileHeight,
-      mapWidth,
-      mapHeight,
-      data: initialData
-    }
-  }
-}
-
-/**
  * Membuat data scene presisi dengan sceneSchema & useSceneActions
  */
 export function createMockScene(overrides = {}) {
@@ -404,53 +275,83 @@ export function setupMockSceneEnvironment(options = {}) {
   }
 }
 
-/**
- * Helper untuk membuat mock entity yang dilengkapi dengan komponen ShapeRenderer
- * dan elemen default (point & polygon) untuk pengujian Shape Editor.
- */
-export function createMockShapeEntity({
-  entityId = `entity_shape_${GenerateUUID().split('-')[0]}`,
-  ...overrides
-} = {}) {
-  const p1 = `pt_${GenerateUUID().split('-')[0]}`
-  const p2 = `pt_${GenerateUUID().split('-')[0]}`
-  const p3 = `pt_${GenerateUUID().split('-')[0]}`
+export async function setupMockScriptEnvironment(options = {}) {
+  const scriptStore = useScriptStore()
 
-  const defaultElements = [
-    { id: p1, type: 'point', x: -50, y: -50, size: 6, enabled: true },
-    { id: p2, type: 'point', x: 50, y: -50, size: 6, enabled: true },
-    { id: p3, type: 'point', x: 0, y: 50, size: 6, enabled: true },
-    {
-      id: `poly_${GenerateUUID().split('-')[0]}`,
-      type: 'polygon',
-      points: [p1, p2, p3],
-      enabled: true
-    }
+  // 1. Opsi Script Default
+  const scriptId = options.scriptId || `sc_${GenerateUUID().split('-')[0]}`
+  const scriptName = options.scriptName || 'TestScript'
+  const scriptType = options.scriptType || 'component'
+  const localVariables = options.localVariables || [
+    { id: 'v1', name: 'speed', defaultValue: 10 },
+    { id: 'v2', name: 'active', defaultValue: true }
   ]
+  const scriptContent = options.scriptContent || `// Script: ${scriptName}\nconsole.log("Hello Script");`
 
-  const entity = createMockEntity({
-    id: entityId,
-    name: overrides.name || 'Custom Shape Entity',
-    entityType: 'shape',
-    ...overrides,
+  const mockScript = {
+    id: scriptId,
+    name: scriptName,
+    type: scriptType,
+    folderId: options.folderId || null,
+    localVariables,
+    nodes: options.nodes || [{ id: 'node_start', type: 'start' }],
+    edges: options.edges || []
+  }
+
+  // 2. Registrasi Script ke Store
+  scriptStore.initScripts([mockScript])
+
+  // 3. Simpan File Script ke OPFS (In-Memory Mock Directory)
+  const navStorage = await navigator.storage.getDirectory()
+  const scriptsDir = await navStorage.getDirectoryHandle('scripts', { create: true })
+  const fileHandle = await scriptsDir.getFileHandle(`${scriptId}.js`, { create: true })
+  const writable = await fileHandle.createWritable()
+  await writable.write(scriptContent)
+  await writable.close()
+
+  // 4. Inisialisasi Variable Map untuk Instance Entity
+  const instanceVariables = {}
+  localVariables.forEach((v) => {
+    instanceVariables[v.name] = v.defaultValue
+  })
+
+  // 5. Buat Entity dengan ScriptController Component Terpasang
+  const scriptInstanceId = `inst_${GenerateUUID().split('-')[0]}`
+  const scriptControllerData = {
+    data: [
+      {
+        id: scriptInstanceId,
+        assetId: scriptId,
+        active: true,
+        variables: options.instanceVariables || instanceVariables
+      }
+    ]
+  }
+
+  const mockEntity = createMockEntity({
+    id: options.entityId || `entity_${GenerateUUID().split('-')[0]}`,
+    name: options.entityName || 'Scripted Entity',
+    entityType: options.entityType || 'sprite',
     attachComponents: {
-      ShapeRenderer: {
-        type: 'custom',
-        color: '#FF1E00',
-        fillOpacity: 1,
-        opacity: 1,
-        isFilled: true,
-        outlineWidth: 2,
-        outlineColor: '#0066FF',
-        elements: overrides.elements || defaultElements,
-        ...(overrides.shapeComponent || {})
-      },
-      ...(overrides.attachComponents || {})
-    }
+      ScriptController: scriptControllerData
+    },
+    ...options.entityOverrides
+  })
+
+  // 6. Setup Scene Environment & Pasangkan Entity
+  const sceneEnv = setupMockSceneEnvironment({
+    ...options.sceneOptions,
+    entities: [mockEntity, ...(options.sceneOptions?.entities || [])]
   })
 
   return {
-    entity,
-    defaultElements
+    script: mockScript,
+    scriptId,
+    fileHandle,
+    entity: mockEntity,
+    scriptInstanceId,
+    sceneStore: useSceneStore(),
+    scriptStore,
+    ...sceneEnv
   }
 }

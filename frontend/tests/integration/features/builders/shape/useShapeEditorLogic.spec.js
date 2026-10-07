@@ -5,7 +5,59 @@ import { mount } from '@vue/test-utils'
 import { useShapeEditorLogic } from '@builders/builders.js'
 import { useSceneStore } from '@scenes/scenes.js'
 import { engineBridge } from '@engines/engines.js'
-import { setupMockSceneEnvironment, createMockShapeEntity } from '@tests/tests.js'
+import { setupMockSceneEnvironment, createMockEntity } from '@tests/tests.js'
+import { GenerateUUID } from '@utils/utils.js'
+
+/**
+ * Helper untuk membuat mock entity yang dilengkapi dengan komponen ShapeRenderer
+ * dan elemen default (point & polygon) untuk pengujian Shape Editor.
+ */
+function createMockShapeEntity({
+  entityId = `entity_shape_${GenerateUUID().split('-')[0]}`,
+  ...overrides
+} = {}) {
+  const p1 = `pt_${GenerateUUID().split('-')[0]}`
+  const p2 = `pt_${GenerateUUID().split('-')[0]}`
+  const p3 = `pt_${GenerateUUID().split('-')[0]}`
+
+  const defaultElements = [
+    { id: p1, type: 'point', x: -50, y: -50, size: 6, enabled: true },
+    { id: p2, type: 'point', x: 50, y: -50, size: 6, enabled: true },
+    { id: p3, type: 'point', x: 0, y: 50, size: 6, enabled: true },
+    {
+      id: `poly_${GenerateUUID().split('-')[0]}`,
+      type: 'polygon',
+      points: [p1, p2, p3],
+      enabled: true
+    }
+  ]
+
+  const entity = createMockEntity({
+    id: entityId,
+    name: overrides.name || 'Custom Shape Entity',
+    entityType: 'shape',
+    ...overrides,
+    attachComponents: {
+      ShapeRenderer: {
+        type: 'custom',
+        color: '#FF1E00',
+        fillOpacity: 1,
+        opacity: 1,
+        isFilled: true,
+        outlineWidth: 2,
+        outlineColor: '#0066FF',
+        elements: overrides.elements || defaultElements,
+        ...(overrides.shapeComponent || {})
+      },
+      ...(overrides.attachComponents || {})
+    }
+  })
+
+  return {
+    entity,
+    defaultElements
+  }
+}
 
 // Mock engineBridge methods
 vi.mock('@engines/engines.js', () => ({

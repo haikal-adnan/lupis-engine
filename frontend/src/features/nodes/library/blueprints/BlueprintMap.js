@@ -27,8 +27,7 @@ export const BlueprintMap = {
         settings: { headerTitle: 'Get', headerColor: '#FF8A65', category: 'Map' },
         data: { 
           values: { key: "" },
-          code: `
-const mapData = inputs['map'];
+          code: `const mapData = inputs['map'];
 const key = inputs['key'];
 
 if (mapData && typeof mapData === 'object' && key != null && key !== "") {
@@ -36,7 +35,7 @@ if (mapData && typeof mapData === 'object' && key != null && key !== "") {
 } else {
     outputs['value'] = null;
 }
-`
+return;`
         },
         inputs: [
           { id: 'map', label: 'Map', dataType: 'map', color: '#FF8A65' },
@@ -58,8 +57,7 @@ if (mapData && typeof mapData === 'object' && key != null && key !== "") {
         settings: { headerTitle: 'Set', headerColor: '#FF8A65', category: 'Map' },
         data: { 
           values: { key: "", value: "" },
-          code: `
-const mapData = inputs['map'];
+          code: `const mapData = inputs['map'];
 const key = inputs['key'];
 const value = inputs['value'];
 
@@ -69,7 +67,7 @@ if (mapData && typeof mapData === 'object' && key != null && key !== "") {
 
 outputs['map_out'] = mapData;
 outputs['exec_out'] = true;
-`
+return;`
         },
         inputs: [
           { id: 'exec_in', label: 'In', dataType: 'execution', color: '#FFFFFF' },
@@ -94,8 +92,7 @@ outputs['exec_out'] = true;
         settings: { headerTitle: 'Remove', headerColor: '#FF8A65', category: 'Map' },
         data: { 
           values: { key: "" },
-          code: `
-const mapData = inputs['map'];
+          code: `const mapData = inputs['map'];
 const key = inputs['key'];
 
 if (mapData && typeof mapData === 'object' && key != null && key !== "") {
@@ -104,7 +101,7 @@ if (mapData && typeof mapData === 'object' && key != null && key !== "") {
 
 outputs['map_out'] = mapData;
 outputs['exec_out'] = true;
-`
+return;`
         },
         inputs: [
           { id: 'exec_in', label: 'In', dataType: 'execution', color: '#FFFFFF' },
@@ -128,8 +125,7 @@ outputs['exec_out'] = true;
         settings: { headerTitle: 'Has Key', headerColor: '#FF8A65', category: 'Map' },
         data: { 
           values: { key: "" },
-          code: `
-const mapData = inputs['map'];
+          code: `const mapData = inputs['map'];
 const key = inputs['key'];
 
 if (mapData && typeof mapData === 'object' && key != null && key !== "") {
@@ -137,7 +133,7 @@ if (mapData && typeof mapData === 'object' && key != null && key !== "") {
 } else {
     outputs['result'] = false;
 }
-`
+return;`
         },
         inputs: [
           { id: 'map', label: 'Map', dataType: 'map', color: '#FF8A65' },
@@ -158,8 +154,7 @@ if (mapData && typeof mapData === 'object' && key != null && key !== "") {
       defaultData: { 
         settings: { headerTitle: 'Merge', headerColor: '#FF8A65', category: 'Map' },
         data: {
-          code: `
-const mapA = inputs['map_a'] || {};
+          code: `const mapA = inputs['map_a'] || {};
 const mapB = inputs['map_b'] || {};
 
 if (typeof mapA === 'object' && typeof mapB === 'object') {
@@ -167,7 +162,7 @@ if (typeof mapA === 'object' && typeof mapB === 'object') {
 } else {
     outputs['result_map'] = null;
 }
-`
+return;`
         },
         inputs: [
           { id: 'map_a', label: 'Map A', dataType: 'map', color: '#FF8A65' },
@@ -188,15 +183,14 @@ if (typeof mapA === 'object' && typeof mapB === 'object') {
       defaultData: { 
         settings: { headerTitle: 'Keys', headerColor: '#FF8A65', category: 'Map' },
         data: {
-          code: `
-const mapData = inputs['map'];
+          code: `const mapData = inputs['map'];
 
 if (mapData && typeof mapData === 'object') {
     outputs['keys_list'] = Object.keys(mapData);
 } else {
     outputs['keys_list'] = [];
 }
-`
+return;`
         },
         inputs: [
           { id: 'map', label: 'Map', dataType: 'map', color: '#FF8A65' }
@@ -216,15 +210,14 @@ if (mapData && typeof mapData === 'object') {
       defaultData: { 
         settings: { headerTitle: 'Values', headerColor: '#FF8A65', category: 'Map' },
         data: {
-          code: `
-const mapData = inputs['map'];
+          code: `const mapData = inputs['map'];
 
 if (mapData && typeof mapData === 'object') {
     outputs['values_list'] = Object.values(mapData);
 } else {
     outputs['values_list'] = [];
 }
-`
+return;`
         },
         inputs: [
           { id: 'map', label: 'Map', dataType: 'map', color: '#FF8A65' }
@@ -244,15 +237,14 @@ if (mapData && typeof mapData === 'object') {
       defaultData: { 
         settings: { headerTitle: 'Size', headerColor: '#FF8A65', category: 'Map' },
         data: {
-          code: `
-const mapData = inputs['map'];
+          code: `const mapData = inputs['map'];
 
 if (mapData && typeof mapData === 'object') {
     outputs['size'] = Object.keys(mapData).length;
 } else {
     outputs['size'] = 0;
 }
-`
+return;`
         },
         inputs: [
           { id: 'map', label: 'Map', dataType: 'map', color: '#FF8A65' }

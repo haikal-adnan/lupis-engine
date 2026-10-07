@@ -1,3 +1,4 @@
+//@nodes/nodes.js
 export { useGraphEditor } from '@nodes/graph/composables/useGraphEditor.js'
 export { useNodeMenu } from '@nodes/graph/composables/useNodeMenu.js'
 
