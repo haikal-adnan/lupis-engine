@@ -7,5 +7,8 @@ export {
   createMockLayer,
   createMockEntity,
   createMockScene,
-  setupMockSceneEnvironment
+  setupMockSceneEnvironment,
+  createMockAnimatorEntity,
+  createMockTilemapEntity,
+  createMockShapeEntity
 } from '@tests/helper/projectMockHelper.js'

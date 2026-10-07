@@ -207,10 +207,8 @@ export function createMockEntity({
   const posX = overrides.x !== undefined ? overrides.x : 0
   const posY = overrides.y !== undefined ? overrides.y : 0
 
-  // 1. Dapatkan komponen default bawaan tipe (misal: sprite, text, dll)
   const presetComponents = getComponentsByEntityType(entityType, posX, posY)
 
-  // 2. Gabungkan komponen preset, override komponen, dan attachComponents
   const mergedComponents = {
     ...presetComponents,
     ...(overrides.components || {})
@@ -235,6 +233,136 @@ export function createMockEntity({
     ...overrides,
     components: mergedComponents
   })
+}
+
+/**
+ * Helper untuk membuat mock entity yang dilengkapi dengan SpriteAnimator
+ * dan data Asset dummy untuk pengujian Animator.
+ */
+export function createMockAnimatorEntity({
+  entityId = `entity_anim_${GenerateUUID().split('-')[0]}`,
+  assetId = `asset_tex_${GenerateUUID().split('-')[0]}`,
+  assetName = 'hero_spritesheet.png',
+  clipId = `clip_${GenerateUUID().split('-')[0]}`,
+  ...overrides
+} = {}) {
+  const mockAsset = {
+    id: assetId,
+    name: assetName,
+    type: 'texture',
+    fileKey: `fk_${assetId}`,
+    meta: {
+      extension: '.png',
+      dimensions: { w: 128, h: 32 }
+    }
+  }
+
+  const defaultClip = {
+    id: clipId,
+    name: 'Idle_Clip',
+    type: 'clip',
+    scriptId: `script_${clipId}`,
+    assetId: assetId,
+    parentId: null,
+    fps: 12,
+    isLooping: true,
+    frames: ['s_0', 's_1'],
+    sources: {
+      s_0: { x: 0, y: 0, w: 32, h: 32 },
+      s_1: { x: 32, y: 0, w: 32, h: 32 }
+    },
+    baseSize: { w: 32, h: 32 },
+    pivot: { x: 0.5, y: 1 },
+    frameIndex: 0,
+    filterMode: 'pixelated',
+    useSDF: false
+  }
+
+  const entity = createMockEntity({
+    id: entityId,
+    name: overrides.name || 'Animator Entity',
+    entityType: 'sprite',
+    ...overrides,
+    attachComponents: {
+      SpriteAnimator: {
+        active: true,
+        isPlaying: false,
+        currentClip: clipId,
+        clips: overrides.clips || [defaultClip],
+        ...(overrides.animatorComponent || {})
+      },
+      ...(overrides.attachComponents || {})
+    }
+  })
+
+  return {
+    entity,
+    mockAsset,
+    defaultClip
+  }
+}
+
+/**
+ * Helper untuk membuat mock entity yang dilengkapi dengan komponen Tilemap
+ * dan data Asset dummy untuk pengujian Tilemap Logic & Tools.
+ */
+export function createMockTilemapEntity({
+  entityId = `entity_tilemap_${GenerateUUID().split('-')[0]}`,
+  assetId = `asset_tileset_${GenerateUUID().split('-')[0]}`,
+  assetName = 'world_tileset.png',
+  tileWidth = 16,
+  tileHeight = 16,
+  mapWidth = 10,
+  mapHeight = 10,
+  ...overrides
+} = {}) {
+  const mockAsset = {
+    id: assetId,
+    name: assetName,
+    type: 'texture',
+    fileKey: `fk_${assetId}`,
+    meta: {
+      extension: '.png',
+      dimensions: { w: 160, h: 160 }
+    }
+  }
+
+  const initialData = overrides.data || new Array(mapWidth * mapHeight).fill(0)
+
+  const entity = createMockEntity({
+    id: entityId,
+    name: overrides.name || 'Tilemap Entity',
+    entityType: 'tilemap',
+    ...overrides,
+    attachComponents: {
+      Tilemap: {
+        assetId,
+        tileWidth,
+        tileHeight,
+        width: mapWidth,
+        height: mapHeight,
+        opacity: 1,
+        isSolid: false,
+        autoFit: true,
+        filterMode: 'pixelated',
+        data: initialData,
+        ...(overrides.tilemapComponent || {})
+      },
+      ...(overrides.attachComponents || {})
+    }
+  })
+
+  return {
+    entity,
+    mockAsset,
+    defaultTilemapConfig: {
+      tileWidth,
+      tileHeight,
+      mapWidth,
+      mapHeight,
+      data: initialData
+    }
+  }
 }
 
 /**
@@ -273,5 +401,56 @@ export function setupMockSceneEnvironment(options = {}) {
     scene: activeScene,
     defaultWorldLayer,
     defaultUILayer
+  }
+}
+
+/**
+ * Helper untuk membuat mock entity yang dilengkapi dengan komponen ShapeRenderer
+ * dan elemen default (point & polygon) untuk pengujian Shape Editor.
+ */
+export function createMockShapeEntity({
+  entityId = `entity_shape_${GenerateUUID().split('-')[0]}`,
+  ...overrides
+} = {}) {
+  const p1 = `pt_${GenerateUUID().split('-')[0]}`
+  const p2 = `pt_${GenerateUUID().split('-')[0]}`
+  const p3 = `pt_${GenerateUUID().split('-')[0]}`
+
+  const defaultElements = [
+    { id: p1, type: 'point', x: -50, y: -50, size: 6, enabled: true },
+    { id: p2, type: 'point', x: 50, y: -50, size: 6, enabled: true },
+    { id: p3, type: 'point', x: 0, y: 50, size: 6, enabled: true },
+    {
+      id: `poly_${GenerateUUID().split('-')[0]}`,
+      type: 'polygon',
+      points: [p1, p2, p3],
+      enabled: true
+    }
+  ]
+
+  const entity = createMockEntity({
+    id: entityId,
+    name: overrides.name || 'Custom Shape Entity',
+    entityType: 'shape',
+    ...overrides,
+    attachComponents: {
+      ShapeRenderer: {
+        type: 'custom',
+        color: '#FF1E00',
+        fillOpacity: 1,
+        opacity: 1,
+        isFilled: true,
+        outlineWidth: 2,
+        outlineColor: '#0066FF',
+        elements: overrides.elements || defaultElements,
+        ...(overrides.shapeComponent || {})
+      },
+      ...(overrides.attachComponents || {})
+    }
+  })
+
+  return {
+    entity,
+    defaultElements
   }
 }

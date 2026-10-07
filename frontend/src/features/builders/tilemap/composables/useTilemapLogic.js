@@ -101,7 +101,6 @@ export function useTilemapLogic() {
   const isSpacePressed = ref(false);
   const isHovering = ref(false);
   const isSelecting = ref(false);
-  const isPainting = ref(false);
   const selectionStart = ref({ x: 0, y: 0 });
   const selectionEnd = ref({ x: 0, y: 0 });
   const hasSelection = ref(false);
@@ -164,7 +163,7 @@ export function useTilemapLogic() {
       if (lastSize.w !== 0 && (lastSize.w !== width || lastSize.h !== height)) {
         const dx = (width - lastSize.w) / 2;
         const dy = (height - lastSize.h) / 2;
-        if (navigation.panOffset.value) {
+        if (navigation.panOffset?.value) {
           navigation.panOffset.value.x += dx;
           navigation.panOffset.value.y += dy;
         }
@@ -188,7 +187,7 @@ export function useTilemapLogic() {
   }
 
   function onPointerDown(e) {
-    navigation.viewportRef.value?.setPointerCapture(e.pointerId);
+    navigation.viewportRef.value?.setPointerCapture?.(e.pointerId);
     const isMiddleClick = e.button === 1;
     const isLeftClick = e.button === 0;
 
@@ -197,24 +196,18 @@ export function useTilemapLogic() {
       return;
     }
 
-    if (isLeftClick) {
-      if (effectiveMode.value === 'select') {
-        isSelecting.value = true;
-        hasSelection.value = true;
-        const gridPos = navigation.getGridPos(e.clientX, e.clientY, tileWidth.value, tileHeight.value);
+    if (isLeftClick && effectiveMode.value === 'select') {
+      isSelecting.value = true;
+      hasSelection.value = true;
+      const gridPos = navigation.getGridPos(e.clientX, e.clientY, tileWidth.value, tileHeight.value);
 
-        if (gridPos.x < 0 || gridPos.y < 0) {
-          hasSelection.value = false;
-          isSelecting.value = false;
-          return;
-        }
-        selectionStart.value = { ...gridPos };
-        selectionEnd.value = { ...gridPos };
-      } else if (selectedEntity.value) {
-        isPainting.value = true;
-        const initialTileData = selectedEntity.value.components?.Tilemap?.data || [];
-        tilemapHistory.startStrokeTransaction(selectedEntity.value.id, initialTileData);
+      if (gridPos.x < 0 || gridPos.y < 0) {
+        hasSelection.value = false;
+        isSelecting.value = false;
+        return;
       }
+      selectionStart.value = { ...gridPos };
+      selectionEnd.value = { ...gridPos };
     }
   }
 
@@ -232,7 +225,7 @@ export function useTilemapLogic() {
   }
 
   function onPointerUp(e) {
-    navigation.viewportRef.value?.releasePointerCapture(e.pointerId);
+    navigation.viewportRef.value?.releasePointerCapture?.(e.pointerId);
     navigation.endPan();
 
     if (isSelecting.value) {
@@ -243,21 +236,11 @@ export function useTilemapLogic() {
         workspaceStore.setTool('brush');
       }
     }
-
-    if (isPainting.value) {
-      isPainting.value = false;
-      tilemapHistory.endStrokeTransaction(`Paint Tilemap (${activeTool.value})`);
-    }
   }
 
   function onPointerLeave() {
     navigation.endPan();
     isSelecting.value = false;
-
-    if (isPainting.value) {
-      isPainting.value = false;
-      tilemapHistory.endStrokeTransaction(`Paint Tilemap (${activeTool.value})`);
-    }
   }
 
   function setPaletteMode(mode) {
@@ -299,8 +282,10 @@ export function useTilemapLogic() {
     window.addEventListener('keydown', handleKeydown, { passive: false });
     window.addEventListener('keyup', handleKeyup);
 
-    resizeObserver = new ResizeObserver(handleResize);
-    if (navigation.viewportRef.value) resizeObserver.observe(navigation.viewportRef.value);
+    if (typeof ResizeObserver !== 'undefined') {
+      resizeObserver = new ResizeObserver(handleResize);
+      if (navigation.viewportRef.value) resizeObserver.observe(navigation.viewportRef.value);
+    }
 
     engineBridge.onToolPickup(handleToolPickupFromEngine);
   });
@@ -338,6 +323,7 @@ export function useTilemapLogic() {
     effectiveMode,
     cursorClass,
     hasSelection,
+    isSelecting,
     selectionRect,
     selectionStyle,
     gridOverlayStyle,
