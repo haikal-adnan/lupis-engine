@@ -89,11 +89,12 @@ const {
   hasSelection, 
   selectedEntity, 
   selectedLayerId, 
-  isMultiSelection 
+  isMultiSelection,
+  isEditingMasterPrefab 
 } = useInspectorSelection();
 
-// 2. Component Addition Actions
-const { addComponentToSelection } = useInspectorPrefab();
+// 2. Component Addition Actions (OPER PARAMETER KE COMPOSABLE)
+const { addComponentToSelection } = useInspectorPrefab(selectedEntity, isEditingMasterPrefab);
 
 // Stores & State
 const addComponentWrapper = ref(null);

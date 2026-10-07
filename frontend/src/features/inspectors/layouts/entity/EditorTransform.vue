@@ -175,7 +175,6 @@ import {
   RotateCcw, RefreshCw, Info, Link, Maximize
 } from 'lucide-vue-next'
 
-// Barrel import dari @inspectors/inspectors.js
 import { 
   useInspectorSelection, 
   useInspectorPrefab, 
@@ -193,14 +192,15 @@ import {
 } from '@components/components.js';
 
 // 1. Selection State
-const { selectedEntity, locked } = useInspectorSelection()
+const { selectedEntity, isEditingMasterPrefab, locked } = useInspectorSelection();
 
 // 2. Prefab Operations
 const { 
   prefabId, 
   getComponentOverrideStatus, 
-  syncComponent 
-} = useInspectorPrefab()
+  syncComponent,
+  markAsOverridden
+} = useInspectorPrefab(selectedEntity, isEditingMasterPrefab);
 
 // 3. Transform Calculations & Actions
 const { 
@@ -213,10 +213,15 @@ const {
   globalRotation, 
   hasChildren, 
   fitToChildren 
-} = useInspectorTransform()
+} = useInspectorTransform(selectedEntity, isEditingMasterPrefab);
 
-// 4. Property Bindings
-const { bindComponentProp } = useInspectorBinding()
+// 4. Property Bindings (OPERKAN PARAMETER YANG DIBUTUHKAN)
+const { bindComponentProp } = useInspectorBinding(
+  selectedEntity, 
+  isEditingMasterPrefab, 
+  prefabId, 
+  markAsOverridden
+);
 
 // --- Logic Komponen ---
 const overridden = getComponentOverrideStatus('Transform');

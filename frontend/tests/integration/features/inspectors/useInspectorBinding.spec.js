@@ -2,7 +2,11 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { ref } from 'vue'
 
-import { useInspectorBinding } from '@inspectors/inspectors.js'
+import { 
+  useInspectorBinding, 
+  useInspectorSelection, 
+  useInspectorPrefab 
+} from '@inspectors/inspectors.js'
 import { useSceneStore } from '@scenes/scenes.js'
 import { useProjectStore } from '@projects/projects.js'
 import { useAssetStore } from '@assets/assets.js'
@@ -62,49 +66,115 @@ describe('useInspectorBinding Integration', () => {
     )
   }
 
+  /* ========================================================================
+   * RECREATION & REGRESSION PREVENTION TEST SUITE (OPSI 1 FALLBACK TEST)
+   * ======================================================================== */
+  describe('Option 1 Architecture: Implicit Arguments Fallback (Prevention for Unbound Editors)', () => {
+    it('successfully binds component properties when called WITH NO ARGUMENTS (Zero-Argument Signature)', () => {
+      // Arrange - Setup entity di sceneStore dan pilih melalui selection store
+      const entity = createMockEntity({
+        id: 'ent_audio_unbound',
+        components: { Audio: { currentClip: 'clip_101', clips: [{ id: 'clip_101', volume: 0.8 }] } }
+      })
+      setupMockSceneEnvironment({ entities: [entity] })
+      
+      // Simulasikan pemilihan entitas pada global selection store
+      sceneStore.selectedEntityIds = ['ent_audio_unbound']
+
+      // Act - Panggil useInspectorBinding TANPA ARGUMEN (Gaya EditorAudio.vue / EditorScript.vue)
+      const { bindComponentProp } = useInspectorBinding()
+      const clipBinding = bindComponentProp('Audio', 'currentClip')
+
+      // Assert - Memastikan getter membaca data entitas terpilih tanpa melempar TypeError/undefined
+      expect(clipBinding.value).toBe('clip_101')
+
+      // Act - Lakukan perubahan via setter
+      clipBinding.value = 'clip_102'
+
+      // Assert - Memastikan mutasi berhasil direfleksikan ke sceneStore
+      expect(sceneStore.activeScene.entities[0].components.Audio.currentClip).toBe('clip_102')
+    })
+
+    it('dynamically adapts when selectedEntity changes via useInspectorSelection without passing refs', () => {
+      // Arrange - Buat dua entitas berbeda
+      const entityA = createMockEntity({ id: 'ent_A', name: 'Entity A', components: { SpriteRenderer: { opacity: 0.5 } } })
+      const entityB = createMockEntity({ id: 'ent_B', name: 'Entity B', components: { SpriteRenderer: { opacity: 1.0 } } })
+      setupMockSceneEnvironment({ entities: [entityA, entityB] })
+
+      // Panggil binding tanpa argumen pada level komputasi
+      sceneStore.selectedEntityIds = ['ent_A']
+      const { bindComponentProp } = useInspectorBinding()
+      const opacityBinding = bindComponentProp('SpriteRenderer', 'opacity')
+
+      // Assert awal - Membaca entitas A
+      expect(opacityBinding.value).toBe(0.5)
+
+      // Act - Ubah seleksi global ke entitas B
+      sceneStore.selectedEntityIds = ['ent_B']
+
+      // Assert - Reactive getter otomatis beralih ke entitas B
+      expect(opacityBinding.value).toBe(1.0)
+    })
+
+    it('triggers markAsOverridden fallback when editing prefab instance component without explicit parameters', () => {
+      // Arrange
+      const entity = createMockEntity({
+        id: 'ent_prefab_fallback',
+        prefabId: 'prefab_master_001',
+        components: { Physics: { gravityScale: 1.0, overridden: false } }
+      })
+      setupMockSceneEnvironment({ entities: [entity] })
+      sceneStore.selectedEntityIds = ['ent_prefab_fallback']
+
+      // Act - Panggil tanpa argumen
+      const { bindComponentProp } = useInspectorBinding()
+      const gravityBinding = bindComponentProp('Physics', 'gravityScale')
+      gravityBinding.value = 2.5
+
+      // Assert
+      const updatedComp = sceneStore.activeScene.entities[0].components.Physics
+      expect(updatedComp.gravityScale).toBe(2.5)
+      expect(updatedComp.overridden).toBe(true)
+    })
+  })
+
+  /* ========================================================================
+   * ORIGINAL INTEGRATION TESTS
+   * ======================================================================== */
   describe('Project and Scene Setting Prop Bindings (bindSettingProp)', () => {
     it('reads and updates project grid settings through computed binding', () => {
-      // Arrange
       const { bindSettingProp } = setupBinding()
       const gridWidthBinding = bindSettingProp('grid', 'width')
       const gridSnapBinding = bindSettingProp('grid', 'snap')
 
-      // Act & Assert - Get initial values (default grid width is 32, snap is true)
       expect(gridWidthBinding.value).toBe(32)
       expect(gridSnapBinding.value).toBe(true)
 
-      // Act - Update values
       gridWidthBinding.value = 64
       gridSnapBinding.value = false
 
-      // Assert - Verify project store state updated
       expect(projectStore.project.settings.grid.width).toBe(64)
       expect(projectStore.project.settings.grid.snap).toBe(false)
       expect(projectStore.syncStatus).toBe('dirty')
     })
 
     it('reads and updates active scene background color settings through computed binding', () => {
-      // Arrange
       setupMockSceneEnvironment()
       const { bindSettingProp } = setupBinding()
       const bgBinding = bindSettingProp(null, 'backgroundColor')
 
-      // Act
       bgBinding.value = '#FF0000'
 
-      // Assert
       expect(sceneStore.activeScene.settings.backgroundColor).toBe('#FF0000')
     })
 
     it('[Bad Path] returns undefined and ignores setters when category is scene-based but activeScene is null', () => {
-      // Arrange
       setupMockSceneEnvironment()
       sceneStore.activeSceneId = null
 
       const { bindSettingProp } = setupBinding()
       const bgBinding = bindSettingProp(null, 'backgroundColor')
 
-      // Act & Assert
       expect(bgBinding.value).toBeUndefined()
       expect(() => {
         bgBinding.value = '#00FF00'
@@ -114,7 +184,6 @@ describe('useInspectorBinding Integration', () => {
 
   describe('Entity Prop Bindings (bindEntityProp)', () => {
     it('updates entity name in sceneStore and records prop change history when editing regular entity', () => {
-      // Arrange
       const entity = createMockEntity({ id: 'ent_1', name: 'Original Name' })
       setupMockSceneEnvironment({ entities: [entity] })
       selectedEntityRef.value = sceneStore.activeScene.entities[0]
@@ -122,15 +191,12 @@ describe('useInspectorBinding Integration', () => {
       const { bindEntityProp } = setupBinding()
       const nameBinding = bindEntityProp('name')
 
-      // Act
       nameBinding.value = 'Updated Name'
 
-      // Assert
       expect(sceneStore.activeScene.entities[0].name).toBe('Updated Name')
     })
 
     it('updates prefab store and dispatches engineBridge call when editing master prefab entity', () => {
-      // Arrange
       setupMockSceneEnvironment()
       isEditingMasterPrefabRef.value = true
 
@@ -144,17 +210,14 @@ describe('useInspectorBinding Integration', () => {
       workspaceStore.openTab({ id: 'prefab_101', name: 'Prefab', type: 'prefab' })
       selectedEntityRef.value = prefabStore.getPrefabById('prefab_101').data
 
-      // Pastikan method terdefinisi sebelum di-spy
       engineBridge.updatePrefabMasterProp = () => {}
       const spyBridge = vi.spyOn(engineBridge, 'updatePrefabMasterProp')
 
       const { bindEntityProp } = setupBinding()
       const nameBinding = bindEntityProp('name')
 
-      // Act
       nameBinding.value = 'New Prefab Name'
 
-      // Assert
       expect(prefabStore.getPrefabById('prefab_101').name).toBe('New Prefab Name')
       expect(spyBridge).toHaveBeenCalledWith({
         prefabId: 'prefab_101',
@@ -164,12 +227,10 @@ describe('useInspectorBinding Integration', () => {
     })
 
     it('[Bad Path] returns empty string and skips update when selectedEntity is null', () => {
-      // Arrange
       selectedEntityRef.value = null
       const { bindEntityProp } = setupBinding()
       const nameBinding = bindEntityProp('name')
 
-      // Act & Assert
       expect(nameBinding.value).toBe('')
       expect(() => {
         nameBinding.value = 'Any Name'
@@ -179,7 +240,6 @@ describe('useInspectorBinding Integration', () => {
 
   describe('Component Prop Bindings (bindComponentProp)', () => {
     it('updates component property with precision rounding and notifies engineBridge', () => {
-      // Arrange
       const entity = createMockEntity({
         id: 'ent_transform',
         entityType: 'sprite',
@@ -193,10 +253,8 @@ describe('useInspectorBinding Integration', () => {
       const { bindComponentProp } = setupBinding()
       const xBinding = bindComponentProp('Transform', 'x', 2)
 
-      // Act
       xBinding.value = 45.6789
 
-      // Assert (45.6789 rounded to precision 2 is 45.68)
       expect(sceneStore.activeScene.entities[0].components.Transform.x).toBe(45.68)
       expect(spyBridge).toHaveBeenCalledWith({
         entityId: 'ent_transform',
@@ -207,7 +265,6 @@ describe('useInspectorBinding Integration', () => {
     })
 
     it('synchronizes linked scale properties when scale locking is enabled on Transform', () => {
-      // Arrange
       const entity = createMockEntity({
         id: 'ent_scale',
         entityType: 'sprite',
@@ -219,17 +276,14 @@ describe('useInspectorBinding Integration', () => {
       const { bindComponentProp } = setupBinding()
       const scaleXBinding = bindComponentProp('Transform', 'scaleX')
 
-      // Act - scale values are clamped using Math.max(1, Math.round(val))
       scaleXBinding.value = 3.4
 
-      // Assert
       const transform = sceneStore.activeScene.entities[0].components.Transform
       expect(transform.scaleX).toBe(3)
       expect(transform.scaleY).toBe(3)
     })
 
     it('marks prefab instance component as overridden when edited outside master prefab mode', () => {
-      // Arrange
       const entity = createMockEntity({
         id: 'ent_prefab_inst',
         prefabId: 'prefab_99',
@@ -242,17 +296,14 @@ describe('useInspectorBinding Integration', () => {
       const { bindComponentProp } = setupBinding()
       const colorBinding = bindComponentProp('SpriteRenderer', 'color')
 
-      // Act
       colorBinding.value = '#00FF00'
 
-      // Assert
       expect(sceneStore.activeScene.entities[0].components.SpriteRenderer.overridden).toBe(true)
     })
   })
 
   describe('Script Controller Operations (Script Instances)', () => {
     it('adds and removes script instances while invoking markAsOverridden when attached to prefab instance', () => {
-      // Arrange
       const entity = createMockEntity({
         id: 'ent_script',
         components: { ScriptController: { data: [] } }
@@ -263,24 +314,19 @@ describe('useInspectorBinding Integration', () => {
 
       const { addScript, removeScript, scriptsData } = setupBinding()
 
-      // Act 1 - Add Script
       addScript('asset_script_1')
 
-      // Assert 1
       expect(scriptsData.value.length).toBe(1)
       expect(scriptsData.value[0].assetId).toBe('asset_script_1')
       expect(markAsOverriddenMock).toHaveBeenCalledTimes(1)
 
-      // Act 2 - Remove Script
       removeScript(0)
 
-      // Assert 2
       expect(scriptsData.value.length).toBe(0)
       expect(markAsOverriddenMock).toHaveBeenCalledTimes(2)
     })
 
     it('updates script instance field path in sceneStore', () => {
-      // Arrange
       const entity = createMockEntity({
         id: 'ent_script_mod',
         components: {
@@ -294,10 +340,8 @@ describe('useInspectorBinding Integration', () => {
 
       const { updateScriptInstance } = setupBinding()
 
-      // Act
       updateScriptInstance(0, 'active', false)
 
-      // Assert
       const scriptInst = sceneStore.activeScene.entities[0].components.ScriptController.data[0]
       expect(scriptInst.active).toBe(false)
     })
@@ -305,7 +349,6 @@ describe('useInspectorBinding Integration', () => {
 
   describe('Texture URL and Helper Utilities', () => {
     it('resolves texture URL from asset store using sprite renderer asset ID', async () => {
-      // Arrange
       const entity = createMockEntity({
         id: 'ent_sprite',
         components: { SpriteRenderer: { assetId: 'asset_tex_1' } }
@@ -321,36 +364,28 @@ describe('useInspectorBinding Integration', () => {
 
       const { currentTextureUrl } = setupBinding()
 
-      // Act
       const url = await currentTextureUrl.value
 
-      // Assert
       expect(url).toBe('blob:http://localhost/mock-blob-uuid')
       expect(assetStore.getAssetUrlById).toHaveBeenCalledWith('asset_tex_1')
     })
 
     it('[Bad Path] returns null currentTextureUrl when entity or assetId is missing', () => {
-      // Arrange
       selectedEntityRef.value = null
       const { currentTextureUrl } = setupBinding()
 
-      // Act & Assert
       expect(currentTextureUrl.value).toBeNull()
     })
 
     it('updates UI settings in bulk through project store', () => {
-      // Arrange
       const { updateUISettingsBulk } = setupBinding()
 
-      // Act
       updateUISettingsBulk({ showUIBorder: true })
 
-      // Assert
       expect(projectStore.project.settings.ui.showUIBorder).toBe(true)
     })
 
     it('resets text ratio by reapplying text renderer font size', () => {
-      // Arrange
       const entity = createMockEntity({
         id: 'ent_text',
         components: { TextRenderer: { fontSize: 32 } }
@@ -360,10 +395,8 @@ describe('useInspectorBinding Integration', () => {
 
       const { resetTextRatio } = setupBinding()
 
-      // Act
       resetTextRatio()
 
-      // Assert
       expect(sceneStore.activeScene.entities[0].components.TextRenderer.fontSize).toBe(32)
     })
   })

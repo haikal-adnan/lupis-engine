@@ -14,31 +14,42 @@ export function useInspectorTransform(selectedEntity, isEditingMasterPrefab) {
   const { showPop } = usePopAlert();
   const { recordTransformChange } = useSceneHistory();
 
+  const getEntity = () => selectedEntity?.value || selectedEntity || null;
+  const getEditingMaster = () => {
+    if (typeof isEditingMasterPrefab === 'boolean') return isEditingMasterPrefab;
+    return !!isEditingMasterPrefab?.value;
+  };
+
   const getTransformCompName = (entity) => {
     if (!entity) return 'Transform';
     return entity.components?.UITransform ? 'UITransform' : 'Transform';
   };
 
   const isSizeLockedByText = computed(() => {
-    if (!selectedEntity.value) return false;
-    const textComp = selectedEntity.value.components?.TextRenderer;
+    const ent = getEntity();
+    if (!ent) return false;
+    const textComp = ent.components?.TextRenderer;
     return !!(textComp && textComp.autoFit);
   });
 
   const isSizeLockedByTilemap = computed(() => {
-    if (!selectedEntity.value) return false;
-    const tilemapComp = selectedEntity.value.components?.Tilemap;
+    const ent = getEntity();
+    if (!ent) return false;
+    const tilemapComp = ent.components?.Tilemap;
     return !!(tilemapComp && tilemapComp.autoFit);
   });
 
   const getGlobalTransform = (entityId) => {
-    const entity = sceneStore.activeScene?.entities.find(e => e.id === entityId);
-    return computeGlobalTransform(entity, (id) => sceneStore.activeScene?.entities.find(e => e.id === id));
+    // FIX: Gunakan optional chaining pada activeScene?.entities
+    const entities = sceneStore.activeScene?.entities || [];
+    const entity = entities.find(e => e.id === entityId);
+    return computeGlobalTransform(entity, (id) => entities.find(e => e.id === id));
   };
 
   const globalTransformData = computed(() => {
-    if (!selectedEntity.value || !selectedEntity.value.parentId) return null; 
-    return getGlobalTransform(selectedEntity.value.id);
+    const ent = getEntity();
+    if (!ent || !ent.parentId) return null; 
+    return getGlobalTransform(ent.id);
   });
 
   const globalScaleX = computed(() => globalTransformData.value ? Number(globalTransformData.value.scaleX).toFixed(2) : null);
@@ -52,17 +63,22 @@ export function useInspectorTransform(selectedEntity, isEditingMasterPrefab) {
   });
 
   const hasChildren = computed(() => {
-    if (!selectedEntity.value || !sceneStore.activeScene) return false;
-    return sceneStore.activeScene.entities.some(e => e.parentId === selectedEntity.value.id);
+    const ent = getEntity();
+    const entities = sceneStore.activeScene?.entities;
+    if (!ent || !entities) return false;
+    return entities.some(e => e.parentId === ent.id);
   });
 
   const fitToChildren = () => {
-    if (!selectedEntity.value) return;
-    const parentId = selectedEntity.value.id;
+    const ent = getEntity();
+    const entities = sceneStore.activeScene?.entities;
+    if (!ent || !entities) return; // FIX: Early return jika entitas atau activeScene.entities null
+    
+    const parentId = ent.id;
     
     const getDescendants = (pId) => {
       let arr = [];
-      const children = sceneStore.activeScene.entities.filter(e => e.parentId === pId);
+      const children = entities.filter(e => e.parentId === pId);
       for (const c of children) {
         arr.push(c);
         arr = arr.concat(getDescendants(c.id));
@@ -123,7 +139,7 @@ export function useInspectorTransform(selectedEntity, isEditingMasterPrefab) {
 
     if (minX === Infinity) return;
 
-    const oldSnapshot = JSON.parse(JSON.stringify(selectedEntity.value));
+    const oldSnapshot = JSON.parse(JSON.stringify(ent));
 
     const newWidth = Math.max(1, Math.round(maxX - minX));
     const newHeight = Math.max(1, Math.round(maxY - minY));
@@ -131,7 +147,7 @@ export function useInspectorTransform(selectedEntity, isEditingMasterPrefab) {
     const newPivotX = newWidth > 0 ? -minX / newWidth : 0.5;
     const newPivotY = newHeight > 0 ? -minY / newHeight : 0.5;
 
-    const compName = getTransformCompName(selectedEntity.value);
+    const compName = getTransformCompName(ent);
     
     sceneStore.updateComponentProp(parentId, compName, 'width', newWidth);
     sceneStore.updateComponentProp(parentId, compName, 'height', newHeight);
@@ -144,15 +160,16 @@ export function useInspectorTransform(selectedEntity, isEditingMasterPrefab) {
       updates: { width: newWidth, height: newHeight, pivotX: newPivotX, pivotY: newPivotY }
     });
 
-    const newSnapshot = JSON.parse(JSON.stringify(selectedEntity.value));
+    const newSnapshot = JSON.parse(JSON.stringify(getEntity()));
     recordTransformChange([{ id: parentId, oldSnapshot, newSnapshot }]);
 
     showPop({ title: 'Fit to Children', message: 'Parent size successfully adjusted.', type: 'success' });
   };
 
   function resetTransform() {
-    if (!selectedEntity.value) return;
-    const compName = getTransformCompName(selectedEntity.value);
+    const ent = getEntity();
+    if (!ent) return;
+    const compName = getTransformCompName(ent);
     const updates = { x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1, pivotX: 0.5, pivotY: 0.5, flipX: false, flipY: false };
     
     if (compName === 'UITransform') {
@@ -160,28 +177,28 @@ export function useInspectorTransform(selectedEntity, isEditingMasterPrefab) {
       updates.anchorY = 0.5;
     }
 
-    if (isEditingMasterPrefab.value) {
+    if (getEditingMaster()) {
       Object.entries(updates).forEach(([prop, val]) => {
         prefabStore.updateComponentProp(workspaceStore.activeTab.id, compName, prop, val);
       });
     } else {
-      const oldSnapshot = JSON.parse(JSON.stringify(selectedEntity.value));
-      const id = selectedEntity.value.id;
+      const oldSnapshot = JSON.parse(JSON.stringify(ent));
+      const id = ent.id;
 
       Object.entries(updates).forEach(([prop, val]) => {
         sceneStore.updateComponentProp(id, compName, prop, val);
       });
 
-      const newSnapshot = JSON.parse(JSON.stringify(selectedEntity.value));
+      const newSnapshot = JSON.parse(JSON.stringify(ent));
       recordTransformChange([{ id, oldSnapshot, newSnapshot }]);
     }
   }
 
   function updatePivot({ x: newPx, y: newPy }) {
-    if (!selectedEntity.value) return;
-    const ent = selectedEntity.value;
+    const ent = getEntity();
+    if (!ent) return;
     const compName = getTransformCompName(ent);
-    const t = ent.components[compName];
+    const t = ent.components?.[compName];
     if (!t) return;
 
     const oldPx = t.pivotX ?? 0.5;
@@ -202,7 +219,7 @@ export function useInspectorTransform(selectedEntity, isEditingMasterPrefab) {
     const worldDx = localDx * cos - localDy * sin;
     const worldDy = localDx * sin + localDy * cos;
 
-    if (isEditingMasterPrefab.value) {
+    if (getEditingMaster()) {
       prefabStore.updateComponentProp(workspaceStore.activeTab.id, compName, 'pivotX', newPx);
       prefabStore.updateComponentProp(workspaceStore.activeTab.id, compName, 'pivotY', newPy);
       prefabStore.updateComponentProp(workspaceStore.activeTab.id, compName, 'x', currentX + worldDx);
@@ -222,24 +239,25 @@ export function useInspectorTransform(selectedEntity, isEditingMasterPrefab) {
   }
 
   function resetTilemapTransform() {
-    if (!selectedEntity.value) return;
-    const tm = selectedEntity.value.components?.Tilemap;
+    const ent = getEntity();
+    if (!ent) return;
+    const tm = ent.components?.Tilemap;
     if (!tm) return;
     
-    const compName = getTransformCompName(selectedEntity.value);
+    const compName = getTransformCompName(ent);
 
     const targetWidth = (tm.width || 0) * (tm.tileWidth || 0);
     const targetHeight = (tm.height || 0) * (tm.tileHeight || 0);
 
-    if (isEditingMasterPrefab.value) {
+    if (getEditingMaster()) {
       prefabStore.updateComponentProp(workspaceStore.activeTab.id, compName, 'width', targetWidth);
       prefabStore.updateComponentProp(workspaceStore.activeTab.id, compName, 'height', targetHeight);
       
       engineBridge.updatePrefabMasterComponentProp?.({ prefabId: workspaceStore.activeTab.id, componentName: compName, prop: 'width', value: targetWidth });
       engineBridge.updatePrefabMasterComponentProp?.({ prefabId: workspaceStore.activeTab.id, componentName: compName, prop: 'height', value: targetHeight });
     } else {
-      const id = selectedEntity.value.id;
-      const oldSnapshot = JSON.parse(JSON.stringify(selectedEntity.value));
+      const id = ent.id;
+      const oldSnapshot = JSON.parse(JSON.stringify(ent));
 
       sceneStore.updateComponentProp(id, compName, 'width', targetWidth);
       sceneStore.updateComponentProp(id, compName, 'height', targetHeight);
@@ -251,7 +269,7 @@ export function useInspectorTransform(selectedEntity, isEditingMasterPrefab) {
         engineBridge.patchComponent({ entityId: id, componentName: compName, updates: { width: targetWidth, height: targetHeight } });
       }
 
-      const newSnapshot = JSON.parse(JSON.stringify(selectedEntity.value));
+      const newSnapshot = JSON.parse(JSON.stringify(ent));
       recordTransformChange([{ id, oldSnapshot, newSnapshot }]);
     }
   }

@@ -278,6 +278,7 @@ import {
 } from "@inspectors/inspectors.js";
 
 import { useAssetStore } from '@assets/assets.js'
+import { useSceneStore } from '@scenes/scenes.js'
 
 import { 
   usePopAudio,
@@ -294,6 +295,7 @@ import {
   BaseDropdown
 } from '@components/components.js';
 
+const sceneStore = useSceneStore()
 const { selectedEntity } = useInspectorSelection()
 
 const { 
@@ -338,8 +340,11 @@ const clipOptions = computed(() => {
 });
 
 function addClip() {
-  const newId = crypto.randomUUID().split('-')[0];
-  const currentArray = clips.value ? [...clips.value] : [];
+  const ent = selectedEntity.value;
+  if (!ent) return;
+
+  const newId = `clip_${crypto.randomUUID().split('-')[0]}`;
+  const currentArray = clips.value ? JSON.parse(JSON.stringify(clips.value)) : [];
   
   const newClip = {
     id: newId,
@@ -359,13 +364,15 @@ function addClip() {
   };
 
   currentArray.push(newClip);
-  clips.value = currentArray;
-  currentClipId.value = newId;
+
+  sceneStore.updateComponentProp(ent.id, 'Audio', 'clips', currentArray);
+  sceneStore.updateComponentProp(ent.id, 'Audio', 'currentClip', newId);
 }
 
 async function removeCurrentClip() {
+  const ent = selectedEntity.value;
   const idx = activeClipIndex.value;
-  if (idx === -1) return;
+  if (!ent || idx === -1) return;
 
   const scriptName = currentClipData.value.scriptId || 'Unnamed Clip';
   const isConfirmed = await confirm({
@@ -376,26 +383,37 @@ async function removeCurrentClip() {
   });
 
   if (isConfirmed) {
-    const currentArray = [...clips.value];
+    const currentArray = JSON.parse(JSON.stringify(clips.value));
     currentArray.splice(idx, 1);
-    clips.value = currentArray;
     
-    currentClipId.value = currentArray.length > 0 ? currentArray[0].id : null;
+    const nextClipId = currentArray.length > 0 ? currentArray[0].id : null;
+    
+    sceneStore.updateComponentProp(ent.id, 'Audio', 'clips', currentArray);
+    sceneStore.updateComponentProp(ent.id, 'Audio', 'currentClip', nextClipId);
   }
 }
 
+// DI FILE: EditorAudio.vue
 function createClipProp(propName) {
   return computed({
     get: () => {
-      if (!currentClipData.value) return null;
-      return currentClipData.value[propName];
+      const ent = selectedEntity.value;
+      if (!ent || !ent.components?.Audio?.clips) return null;
+      const clip = ent.components.Audio.clips.find(c => c.id === currentClipId.value);
+      return clip ? clip[propName] : null;
     },
     set: (val) => {
-      const idx = activeClipIndex.value;
+      const ent = selectedEntity.value;
+      if (!ent || !ent.components?.Audio?.clips) return;
+      
+      const currentClips = ent.components.Audio.clips;
+      const idx = currentClips.findIndex(c => c.id === currentClipId.value);
       if (idx === -1) return;
-      const newClips = [...clips.value];
-      newClips[idx] = { ...newClips[idx], [propName]: val };
-      clips.value = newClips; 
+
+      const newClips = JSON.parse(JSON.stringify(currentClips));
+      newClips[idx][propName] = val;
+
+      sceneStore.updateComponentProp(ent.id, 'Audio', 'clips', newClips);
     }
   });
 }
@@ -422,7 +440,7 @@ const maxDistance = createClipProp('maxDistance');
 
 const audioAsset = computed(() => {
   if (!clipAssetId.value) return null;
-  return assetStore.assets.find(a => a.id === clipAssetId.value || a.id === clipAssetId.value);
+  return assetStore.assets.find(a => a.id === clipAssetId.value);
 });
 
 const displayAssetName = computed(() => {

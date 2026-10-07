@@ -5,12 +5,20 @@ import { useWorkspaceStore } from '@workspaces/workspaces.js';
 import { usePopAlert } from '@composables/composables.js';
 import { engineBridge } from "@engines/engines.js";
 import { useSceneHistory } from '@historys/historys.js';
+import { useInspectorSelection } from './useInspectorSelection.js';
 
-export function useInspectorPrefab(selectedEntity, isEditingMasterPrefab) {
+export function useInspectorPrefab(selectedEntityParam, isEditingMasterPrefabParam) {
   const sceneStore = useSceneStore();
   const prefabStore = usePrefabStore();
   const workspaceStore = useWorkspaceStore();
   const { showPop } = usePopAlert();
+
+  // FALLBACK INTERNAL: Ambil selection secara otomatis jika parameter tidak dipassing
+  const selection = useInspectorSelection();
+  const selectedEntity = selectedEntityParam || selection.selectedEntity;
+  const isEditingMasterPrefab = isEditingMasterPrefabParam !== undefined 
+    ? isEditingMasterPrefabParam 
+    : selection.isEditingMasterPrefab;
 
   const {
     recordAddComponent,
@@ -19,10 +27,18 @@ export function useInspectorPrefab(selectedEntity, isEditingMasterPrefab) {
     recordTransformChange
   } = useSceneHistory();
 
+  const getEditingMaster = () => {
+    if (typeof isEditingMasterPrefab === 'boolean') return isEditingMasterPrefab;
+    return !!isEditingMasterPrefab?.value;
+  };
+
+  const getEntity = () => selectedEntity?.value || null;
+
   const isLockedByPrefab = computed(() => {
-    if (isEditingMasterPrefab.value || !selectedEntity.value) return false;
+    const ent = getEntity();
+    if (getEditingMaster() || !ent) return false;
     
-    let current = selectedEntity.value;
+    let current = ent;
     while (current) {
       if (current.prefabId) return true; 
       if (!current.parentId) break;
@@ -31,9 +47,13 @@ export function useInspectorPrefab(selectedEntity, isEditingMasterPrefab) {
     return false;
   });
 
-  const prefabId = computed(() => isEditingMasterPrefab.value ? null : selectedEntity.value?.prefabId);
-  const overridden = computed(() => isEditingMasterPrefab.value ? false : (selectedEntity.value?.overridden || false));
-  const showSyncControls = computed(() => !isEditingMasterPrefab.value && !!prefabId.value);
+  const prefabId = computed(() => {
+    if (getEditingMaster()) return null;
+    return getEntity()?.prefabId || null;
+  });
+
+  const overridden = computed(() => getEditingMaster() ? false : (getEntity()?.overridden || false));
+  const showSyncControls = computed(() => !getEditingMaster() && !!prefabId.value);
 
   const getPrefabMaster = () => {
     if (!prefabId.value) return null;
@@ -41,25 +61,27 @@ export function useInspectorPrefab(selectedEntity, isEditingMasterPrefab) {
   };
 
   function getComponentOverrideStatus(compName) { 
-    return computed(() => selectedEntity.value?.components?.[compName]?.overridden || false); 
+    return computed(() => getEntity()?.components?.[compName]?.overridden || false); 
   }
 
   function markAsOverridden() { 
-    if (selectedEntity.value && prefabId.value && !overridden.value && !isEditingMasterPrefab.value) {
-      sceneStore.updateEntityProp(selectedEntity.value.id, 'overridden', true); 
+    const ent = getEntity();
+    if (ent && prefabId.value && !overridden.value && !getEditingMaster()) {
+      sceneStore.updateEntityProp(ent.id, 'overridden', true); 
     }
   }
 
   function syncObject() {
-    if (!selectedEntity.value || !prefabId.value || isEditingMasterPrefab.value) return;
+    const ent = getEntity();
+    if (!ent || !prefabId.value || getEditingMaster()) return;
     const master = getPrefabMaster();
     if (!master) return;
-    const id = selectedEntity.value.id;
+    const id = ent.id;
     const tag = master.data.tag || 'Untagged';
     const active = master.data.active ?? true;
 
-    const oldTag = selectedEntity.value.tag;
-    const oldActive = selectedEntity.value.active;
+    const oldTag = ent.tag;
+    const oldActive = ent.active;
 
     sceneStore.updateEntityProp(id, 'tag', tag);
     sceneStore.updateEntityProp(id, 'active', active);
@@ -74,19 +96,20 @@ export function useInspectorPrefab(selectedEntity, isEditingMasterPrefab) {
   }
 
   async function syncComponent(compName) {
-    if (!selectedEntity.value || !prefabId.value || isEditingMasterPrefab.value) return;
+    const ent = getEntity();
+    if (!ent || !prefabId.value || getEditingMaster()) return;
     const master = getPrefabMaster();
     if (!master) return;
     const masterCompData = master.data.components[compName];
-    const id = selectedEntity.value.id;
+    const id = ent.id;
 
     if (masterCompData) {
-      const oldSnapshot = JSON.parse(JSON.stringify(selectedEntity.value));
+      const oldSnapshot = JSON.parse(JSON.stringify(ent));
 
       const cleanData = JSON.parse(JSON.stringify(masterCompData));
       if (compName === 'Transform' || compName === 'UITransform') {
-        const currentEntity = sceneStore.activeScene.entities.find(e => e.id === id);
-        const currentComp = currentEntity?.components[compName];
+        const currentEntity = sceneStore.activeScene?.entities.find(e => e.id === id);
+        const currentComp = currentEntity?.components?.[compName];
         if (currentComp) { cleanData.x = currentComp.x; cleanData.y = currentComp.y; }
       }
       cleanData.overridden = false;
@@ -96,7 +119,7 @@ export function useInspectorPrefab(selectedEntity, isEditingMasterPrefab) {
       }
       engineBridge.patchComponent({ entityId: id, componentName: compName, updates: cleanData });
 
-      const newSnapshot = JSON.parse(JSON.stringify(selectedEntity.value));
+      const newSnapshot = JSON.parse(JSON.stringify(getEntity()));
       recordTransformChange([{ id, oldSnapshot, newSnapshot }]);
 
       showPop({ title: 'Component Synced', message: `${compName} reset (Position kept).`, type: 'success' });
@@ -106,16 +129,16 @@ export function useInspectorPrefab(selectedEntity, isEditingMasterPrefab) {
   }
 
   function syncAllComponents() {
-    if (!selectedEntity.value || !prefabId.value || isEditingMasterPrefab.value) return;
+    const ent = getEntity();
+    if (!ent || !prefabId.value || getEditingMaster()) return;
     const master = getPrefabMaster();
     if (!master) return;
-    const id = selectedEntity.value.id;
+    const id = ent.id;
     const masterComps = master.data.components || {};
-    const instanceComps = selectedEntity.value.components || {};
+    const instanceComps = ent.components || {};
 
-    const oldSnapshot = JSON.parse(JSON.stringify(selectedEntity.value));
+    const oldSnapshot = JSON.parse(JSON.stringify(ent));
 
-    // 1. Buat objek komponen baru murni berdasarkan master
     const newComps = {};
 
     Object.keys(masterComps).forEach(key => {
@@ -136,14 +159,12 @@ export function useInspectorPrefab(selectedEntity, isEditingMasterPrefab) {
       }
     });
 
-    // 2. Beritahu engineBridge untuk komponen yang terhapus (tidak ada di master)
     Object.keys(instanceComps).forEach(key => {
       if (!masterComps[key]) {
         engineBridge.removeComponent?.({ entityId: id, componentName: key });
       }
     });
 
-    // 3. Langsung timpa objek components pada activeScene entity
     if (sceneStore.activeScene) {
       const entity = sceneStore.activeScene.entities.find(e => e.id === id);
       if (entity) {
@@ -153,21 +174,22 @@ export function useInspectorPrefab(selectedEntity, isEditingMasterPrefab) {
 
     sceneStore.updateEntityProp(id, 'overridden', false);
 
-    const newSnapshot = JSON.parse(JSON.stringify(selectedEntity.value));
+    const newSnapshot = JSON.parse(JSON.stringify(getEntity()));
     recordTransformChange([{ id, oldSnapshot, newSnapshot }]);
 
     showPop({ title: 'All Synced', type: 'success' });
   }
 
   function unpackPrefab() {
-    if (!selectedEntity.value || isEditingMasterPrefab.value) return;
-    const id = selectedEntity.value.id;
-    const oldPrefabId = selectedEntity.value.prefabId;
+    const ent = getEntity();
+    if (!ent || getEditingMaster()) return;
+    const id = ent.id;
+    const oldPrefabId = ent.prefabId;
 
     sceneStore.updateEntityProp(id, 'prefabId', null);
     sceneStore.updateEntityProp(id, 'overridden', false);
     
-    const comps = selectedEntity.value.components || {};
+    const comps = ent.components || {};
     Object.keys(comps).forEach(compName => sceneStore.updateComponentProp(id, compName, 'overridden', false));
     engineBridge.updateEntityProp({ id, prop: 'prefabId', value: null });
 
@@ -177,41 +199,43 @@ export function useInspectorPrefab(selectedEntity, isEditingMasterPrefab) {
   }
 
   function addComponentToSelection(componentName) {
-    if (!selectedEntity.value) return;
+    const ent = getEntity();
+    if (!ent) return;
     
     if (isLockedByPrefab.value) {
       showPop({ title: 'Restricted', message: 'Cannot add components to a Prefab instance or its children. Unpack it first.', type: 'warning' });
       return;
     }
 
-    if (isEditingMasterPrefab.value) {
-      const hasComponent = selectedEntity.value.components && selectedEntity.value.components[componentName];
+    if (getEditingMaster()) {
+      const hasComponent = ent.components && ent.components[componentName];
       if (hasComponent) return;
       prefabStore.addComponent(workspaceStore.activeTab.id, componentName);
       engineBridge.addPrefabMasterComponent?.({ prefabId: workspaceStore.activeTab.id, componentName: componentName });
     } else {
-      const hasComponent = selectedEntity.value.components && selectedEntity.value.components[componentName];
+      const hasComponent = ent.components && ent.components[componentName];
       if (hasComponent) return;
-      sceneStore.addComponent(selectedEntity.value.id, componentName);
-      recordAddComponent(selectedEntity.value.id, componentName);
+      sceneStore.addComponent(ent.id, componentName);
+      recordAddComponent(ent.id, componentName);
     }
   }
 
   async function removeComponent(compName) {
-    if (!selectedEntity.value) return;
+    const ent = getEntity();
+    if (!ent) return;
     
     if (isLockedByPrefab.value) {
       showPop({ title: 'Restricted', message: 'Cannot remove components from a Prefab instance or its children. Unpack it first.', type: 'warning' });
       return;
     }
 
-    if (isEditingMasterPrefab.value) {
+    if (getEditingMaster()) {
       prefabStore.removeComponent(workspaceStore.activeTab.id, compName);
       engineBridge.removePrefabMasterComponent?.({ prefabId: workspaceStore.activeTab.id, componentName: compName });
     } else {
-      const savedComponentData = selectedEntity.value.components?.[compName];
-      await sceneStore.removeComponent(selectedEntity.value.id, compName);
-      recordRemoveComponent(selectedEntity.value.id, compName, savedComponentData);
+      const savedComponentData = ent.components?.[compName];
+      await sceneStore.removeComponent(ent.id, compName);
+      recordRemoveComponent(ent.id, compName, savedComponentData);
     }
   }
 

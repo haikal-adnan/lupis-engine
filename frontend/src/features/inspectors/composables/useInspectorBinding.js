@@ -7,14 +7,48 @@ import { useWorkspaceStore } from '@workspaces/workspaces.js';
 import { engineBridge } from "@engines/engines.js";
 import { useSceneHistory } from '@historys/historys.js';
 
-export function useInspectorBinding(selectedEntity, isEditingMasterPrefab, prefabId, markAsOverridden) {
+// Import composables internal sebagai fallback jika parameter tidak di-pass eksplisit
+import { useInspectorSelection } from './useInspectorSelection.js';
+import { useInspectorPrefab } from './useInspectorPrefab.js';
+
+export function useInspectorBinding(
+  selectedEntityParam, 
+  isEditingMasterPrefabParam, 
+  prefabIdParam, 
+  markAsOverriddenParam
+) {
+  // Fallback internal jika tidak dipassing dari komponen Vue
+  const selection = useInspectorSelection();
+  const prefab = useInspectorPrefab();
+
+  const selectedEntity = selectedEntityParam || selection.selectedEntity;
+  const isEditingMasterPrefab = isEditingMasterPrefabParam !== undefined 
+    ? isEditingMasterPrefabParam 
+    : selection.isEditingMasterPrefab;
+  
+  const prefabId = prefabIdParam || prefab.prefabId;
+  const markAsOverridden = markAsOverriddenParam || prefab.markAsOverridden;
+
   const sceneStore = useSceneStore();
   const projectStore = useProjectStore();
   const assetStore = useAssetStore();
   const prefabStore = usePrefabStore();
   const workspaceStore = useWorkspaceStore();
 
-  const { recordComponentChange, recordPropChange } = useSceneHistory();
+  const { recordComponentChange } = useSceneHistory();
+
+  const getEditingMaster = () => {
+    if (typeof isEditingMasterPrefab === 'boolean') return isEditingMasterPrefab;
+    return !!isEditingMasterPrefab?.value;
+  };
+
+  const getEntity = () => selectedEntity?.value || null;
+  const getPrefabIdVal = () => {
+    const idVal = typeof prefabId === 'string' ? prefabId : prefabId?.value;
+    if (idVal) return idVal;
+    // Fallback langsung ke entitas terpilih
+    return getEntity()?.prefabId || null;
+  };
 
   function bindSettingProp(category, propName) {
     return computed({
@@ -55,18 +89,18 @@ export function useInspectorBinding(selectedEntity, isEditingMasterPrefab, prefa
 
   function bindEntityProp(propName) {
     return computed({
-      get: () => selectedEntity.value ? selectedEntity.value[propName] : '',
+      get: () => getEntity() ? getEntity()[propName] : '',
       set: (val) => {
-        if (!selectedEntity.value) return;
-        const oldVal = selectedEntity.value[propName];
+        const ent = getEntity();
+        if (!ent) return;
+        const oldVal = ent[propName];
         if (oldVal === val) return;
 
-        if (isEditingMasterPrefab.value) {
+        if (getEditingMaster()) {
           prefabStore.updatePrefab(workspaceStore.activeTab.id, { [propName]: val });
           engineBridge.updatePrefabMasterProp?.({ prefabId: workspaceStore.activeTab.id, prop: propName, value: val });
         } else {
-          sceneStore.updateEntityProp(selectedEntity.value.id, propName, val);
-          recordPropChange(selectedEntity.value.id, propName, oldVal, val);
+          sceneStore.updateEntityProp(ent.id, propName, val);
         }
       }
     });
@@ -74,9 +108,20 @@ export function useInspectorBinding(selectedEntity, isEditingMasterPrefab, prefa
 
   function bindComponentProp(compName, propName, precision = null) {
     return computed({
-      get: () => selectedEntity.value?.components?.[compName]?.[propName],
+      get: () => {
+        const comp = getEntity()?.components?.[compName];
+        if (!comp || !propName) return undefined;
+        const keys = String(propName).split('.');
+        let current = comp;
+        for (const key of keys) {
+          if (current === null || current === undefined) return undefined;
+          current = current[key];
+        }
+        return current;
+      },
       set: (val) => {
-        if (!selectedEntity.value) return;
+        const ent = getEntity();
+        if (!ent) return;
 
         let finalVal = val;
         if (propName === 'scaleX' || propName === 'scaleY') finalVal = Math.max(1, Math.round(val));
@@ -85,21 +130,32 @@ export function useInspectorBinding(selectedEntity, isEditingMasterPrefab, prefa
           finalVal = Math.round(val * factor) / factor;
         }
 
-        const oldVal = selectedEntity.value?.components?.[compName]?.[propName];
+        const comp = ent.components?.[compName];
+        let oldVal = comp;
+        if (comp && propName) {
+          const keys = String(propName).split('.');
+          for (const key of keys) {
+            if (oldVal === null || oldVal === undefined) { oldVal = undefined; break; }
+            oldVal = oldVal[key];
+          }
+        } else {
+          oldVal = undefined;
+        }
+
         if (oldVal === finalVal) return;
 
         const applyUpdate = (pName, pValue) => {
-          if (isEditingMasterPrefab.value) {
+          if (getEditingMaster()) {
             prefabStore.updateComponentProp(workspaceStore.activeTab.id, compName, pName, pValue);
             engineBridge.updatePrefabMasterComponentProp?.({ prefabId: workspaceStore.activeTab.id, componentName: compName, prop: pName, value: pValue });
           } else {
-            const id = selectedEntity.value.id;
+            const id = ent.id;
             sceneStore.updateComponentProp(id, compName, pName, pValue);
-            if (prefabId.value) {
+            if (getPrefabIdVal()) {
               if (pName !== 'x' && pName !== 'y') sceneStore.updateComponentProp(id, compName, 'overridden', true);
             }
 
-            engineBridge.updateComponentProp({
+            engineBridge.updateComponentProp?.({
               entityId: id,
               componentName: compName,
               path: pName,
@@ -111,8 +167,8 @@ export function useInspectorBinding(selectedEntity, isEditingMasterPrefab, prefa
         };
 
         applyUpdate(propName, finalVal);
+
         if (propName === 'scaleX' || propName === 'scaleY') {
-          const comp = selectedEntity.value.components[compName];
           if (comp && comp.isScaleLocked) {
             const linkedProp = propName === 'scaleX' ? 'scaleY' : 'scaleX';
             applyUpdate(linkedProp, finalVal);
@@ -123,61 +179,74 @@ export function useInspectorBinding(selectedEntity, isEditingMasterPrefab, prefa
   }
 
   function updateScriptInstance(index, fieldPath, value) {
-    if (!selectedEntity.value) return;
+    const ent = getEntity();
+    if (!ent) return;
     const fullPath = `data.${index}.${fieldPath}`;
 
-    if (isEditingMasterPrefab.value) {
+    if (getEditingMaster()) {
       prefabStore.updateComponentProp(workspaceStore.activeTab.id, 'ScriptController', fullPath, value);
     } else {
-      const id = selectedEntity.value.id;
-      const oldVal = selectedEntity.value.components?.ScriptController?.data?.[index]?.[fieldPath];
+      const id = ent.id;
+      const oldVal = ent.components?.ScriptController?.data?.[index]?.[fieldPath];
 
       sceneStore.updateComponentProp(id, 'ScriptController', fullPath, value);
       recordComponentChange(id, 'ScriptController', fullPath, oldVal, value);
     }
   }
 
-  const scriptsData = computed(() => selectedEntity.value?.components?.ScriptController?.data || []);
+  const scriptsData = computed(() => getEntity()?.components?.ScriptController?.data || []);
 
   function addScript(assetId) {
-    if (!selectedEntity.value) return;
-    const newInstance = { id: `inst_${crypto.randomUUID().split('-')[0]}`, assetId, active: true, variables: {} };
-    const currentList = [...scriptsData.value, newInstance];
+    const ent = getEntity();
+    if (!ent) return;
+    const newInstance = { id: `inst_${Date.now()}_${crypto.randomUUID().split('-')[0]}`, assetId, active: true, variables: {} };
+    
+    const currentList = scriptsData.value ? JSON.parse(JSON.stringify(scriptsData.value)) : [];
+    currentList.push(newInstance);
 
-    if (isEditingMasterPrefab.value) {
+    if (getEditingMaster()) {
       prefabStore.updateComponentProp(workspaceStore.activeTab.id, 'ScriptController', 'data', currentList);
     } else {
-      const id = selectedEntity.value.id;
+      const id = ent.id;
       const oldList = JSON.parse(JSON.stringify(scriptsData.value));
 
       sceneStore.updateComponentProp(id, 'ScriptController', 'data', currentList);
       recordComponentChange(id, 'ScriptController', 'data', oldList, currentList);
 
-      if (prefabId.value) markAsOverridden();
+      if (getPrefabIdVal()) {
+        sceneStore.updateComponentProp(id, 'ScriptController', 'overridden', true);
+        if (typeof markAsOverridden === 'function') markAsOverridden();
+      }
     }
   }
 
   function removeScript(index) {
-    if (!selectedEntity.value) return;
-    const currentList = [...scriptsData.value];
+    const ent = getEntity();
+    if (!ent) return;
+    
+    const currentList = JSON.parse(JSON.stringify(scriptsData.value));
     currentList.splice(index, 1);
 
-    if (isEditingMasterPrefab.value) {
+    if (getEditingMaster()) {
       prefabStore.updateComponentProp(workspaceStore.activeTab.id, 'ScriptController', 'data', currentList);
     } else {
-      const id = selectedEntity.value.id;
+      const id = ent.id;
       const oldList = JSON.parse(JSON.stringify(scriptsData.value));
 
       sceneStore.updateComponentProp(id, 'ScriptController', 'data', currentList);
       recordComponentChange(id, 'ScriptController', 'data', oldList, currentList);
 
-      if (prefabId.value) markAsOverridden();
+      if (getPrefabIdVal()) {
+        sceneStore.updateComponentProp(id, 'ScriptController', 'overridden', true);
+        if (typeof markAsOverridden === 'function') markAsOverridden();
+      }
     }
   }
 
   const currentTextureUrl = computed(() => {
-    if (!selectedEntity.value) return null;
-    const comp = selectedEntity.value.components?.SpriteRenderer || selectedEntity.value.components?.Tilemap;
+    const ent = getEntity();
+    if (!ent) return null;
+    const comp = ent.components?.SpriteRenderer || ent.components?.Tilemap;
     if (!comp?.assetId) return null;
     return assetStore.getAssetUrlById(comp.assetId);
   });
@@ -187,11 +256,12 @@ export function useInspectorBinding(selectedEntity, isEditingMasterPrefab, prefa
   }
 
   function resetTextRatio() {
-    if (!selectedEntity.value) return;
-    const tr = selectedEntity.value.components?.TextRenderer;
+    const ent = getEntity();
+    if (!ent) return;
+    const tr = ent.components?.TextRenderer;
     if (!tr) return;
 
-    const id = selectedEntity.value.id;
+    const id = ent.id;
     const oldVal = tr.fontSize;
 
     sceneStore.updateComponentProp(id, 'TextRenderer', 'fontSize', tr.fontSize);

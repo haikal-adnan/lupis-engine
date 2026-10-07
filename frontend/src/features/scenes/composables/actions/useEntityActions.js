@@ -439,7 +439,6 @@ export const useEntityActions = {
     );
     const oldSiblingOrders = affectedEntitiesBefore.map(e => ({ id: e.id, orderIndex: e.orderIndex ?? 0 }));
 
-    // PASTI PERBARUI PARENT ID DAN LAYER ID
     const resolvedParentId = (newParentId !== undefined && newParentId !== null) ? newParentId : null;
     entity.parentId = resolvedParentId;
     if (newLayerId) {
@@ -523,7 +522,7 @@ export const useEntityActions = {
           });
         }
       } catch (err) {
-        // Ignore if history module is uninitialized in isolated test environment
+        // Ignore if history module is uninitialized in test
       }
     }
 
@@ -534,7 +533,7 @@ export const useEntityActions = {
     if (!this.activeScene) return false;
 
     const entity = this.activeScene.entities.find(e => e.id === entityId);
-    if (!entity || !entity.components[componentName]) return false;
+    if (!entity || !entity.components || !entity.components[componentName]) return false;
     
     const comp = entity.components[componentName];
     
@@ -545,11 +544,11 @@ export const useEntityActions = {
             if (path === 'width') {
                 const newHeight = round(numValue / ratio);
                 comp.height = newHeight; 
-                engineBridge.updateComponentProp({ entityId, componentName, path: 'height', value: newHeight }); 
+                engineBridge.updateComponentProp?.({ entityId, componentName, path: 'height', value: newHeight }); 
             } else if (path === 'height') {
                 const newWidth = round(numValue * ratio);
                 comp.width = newWidth; 
-                engineBridge.updateComponentProp({ entityId, componentName, path: 'width', value: newWidth }); 
+                engineBridge.updateComponentProp?.({ entityId, componentName, path: 'width', value: newWidth }); 
             }
         }
     }
@@ -558,11 +557,18 @@ export const useEntityActions = {
     let target = comp;
     
     for (let i = 0; i < keys.length - 1; i++) {
-      if (!target[keys[i]]) target[keys[i]] = {};
+      if (!target[keys[i]] || typeof target[keys[i]] !== 'object') {
+        target[keys[i]] = {};
+      }
       target = target[keys[i]];
     }
     
     target[keys[keys.length - 1]] = value;
+
+    // RE-TRIGGER REAKTIVITAS VUE PINIA: Paksa penciptaan referensi baru pada objek components
+    entity.components[componentName] = JSON.parse(JSON.stringify(comp));
+    entity.components = { ...entity.components };
+
     return { entityId, componentName, path, value };
   },
 
@@ -618,6 +624,7 @@ export const useEntityActions = {
     if (!entity.components) entity.components = {};
     
     entity.components[componentName] = newComponentData;
+    entity.components = { ...entity.components };
 
     if (recordHistory) {
       const { recordAddComponent } = useSceneHistory();
@@ -662,7 +669,9 @@ export const useEntityActions = {
     try {
         const savedData = JSON.parse(JSON.stringify(entity.components[componentName]));
         delete entity.components[componentName];
-        engineBridge.removeComponent({ entityId, componentName });
+        entity.components = { ...entity.components };
+
+        engineBridge.removeComponent?.({ entityId, componentName });
 
         if (recordHistory) {
           const { recordRemoveComponent } = useSceneHistory();

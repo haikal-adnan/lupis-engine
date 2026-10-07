@@ -1,6 +1,7 @@
 <script setup>
 import { onMounted, onUnmounted, ref, nextTick, watch } from "vue";
 import { useWorkspaceStore } from '@workspaces/workspaces.js';
+import { useProjectStore } from '@projects/projects.js';
 import { useSceneStore } from '@scenes/scenes.js';
 import { startEngine } from "@core/RuntimeEditor.js"; 
 import { useTheme } from '@composables/composables.js';
@@ -11,6 +12,7 @@ import { BaseContextMenu } from "@components/components.js";
 import { useCanvasLogic, useCanvasMenu } from '@viewports/viewports.js';
 
 const workspaceStore = useWorkspaceStore();
+const projectStore = useProjectStore();
 const sceneStore = useSceneStore();
 
 const { listen: listenEngineToEditor } = useEngineToEditor(sceneStore);
@@ -22,6 +24,7 @@ initSync();
 const { isDark } = useTheme();
 const gameCanvas = ref(null);
 const initError = ref(null);
+const isRestarting = ref(false);
 let isInitializing = false; 
 
 const canvasLogic = useCanvasLogic();
@@ -192,9 +195,11 @@ const handleWindowBlur = () => {
     }
 };
 
+// Fungsi Inisialisasi Canvas / Engine
 const initializeCanvas = async () => {
     if (isInitializing || workspaceStore.isEngineReady) return;
 
+    initError.value = null;
     isInitializing = true;
     await nextTick();
 
@@ -204,17 +209,23 @@ const initializeCanvas = async () => {
         return;
     }
 
-    if (workspaceStore.engine) {
-        workspaceStore.engine.destroy();
-        workspaceStore.setEngine(null);
-    }
-
-    const currentProjectId = workspaceStore.activeProjectId;
+    // Pastikan ID Project diambil dari store / localStorage
+    let currentProjectId = workspaceStore.activeProjectId;
 
     if (!currentProjectId) {
         initError.value = "Project ID is not initialized in Store.";
         isInitializing = false;
         return;
+    }
+
+    // Apabila instans engine lama masih menggantung, bersihkan dulu
+    if (workspaceStore.engine) {
+        try {
+            workspaceStore.engine.destroy?.();
+        } catch (e) {
+            console.warn("Destroy engine error:", e);
+        }
+        workspaceStore.setEngine(null);
     }
 
     try {
@@ -235,9 +246,35 @@ const initializeCanvas = async () => {
 
     } catch (err) {
         console.error("Engine Init Failed:", err);
-        initError.value = err.message;
+        initError.value = err.message || "Failed to start Engine.";
     } finally {
         isInitializing = false;
+    }
+};
+
+// Handler untuk Restart Engine secara manual via Tombol
+const restartEngine = async () => {
+    isRestarting.value = true;
+    initError.value = null;
+
+    try {
+        // Jika project store tersedia, muat ulang scene dari OPFS untuk merefresh data
+        if (projectStore.project?.id) {
+            await projectStore.syncFromServer();
+        } else {
+            if (workspaceStore.engine) {
+                try {
+                    workspaceStore.engine.destroy?.();
+                } catch (e) {}
+                workspaceStore.setEngine(null);
+            }
+            await initializeCanvas();
+        }
+    } catch (err) {
+        console.error("Failed to restart engine:", err);
+        initError.value = "Restart failed: " + (err.message || "Unknown error");
+    } finally {
+        isRestarting.value = false;
     }
 };
 
@@ -246,6 +283,16 @@ watch(isDark, (newVal) => {
         engineBridge.updateTheme(newVal);
     }
 });
+
+watch(
+    () => workspaceStore.activeProjectId,
+    async (newId) => {
+        if (newId && !workspaceStore.isEngineReady) {
+            await nextTick();
+            await initializeCanvas();
+        }
+    }
+);
 
 const getWorldPosition = (pointerX, pointerY) => {
     const engine = workspaceStore.engine;
@@ -319,7 +366,9 @@ onUnmounted(() => {
 
     if (engine) {
         engine.bus.off("entity:modified", handleEntityModified);
-        engine.game.destroy(); 
+        try {
+            engine.game.destroy(); 
+        } catch (e) {}
         workspaceStore.setEngine(null);
     }
 
@@ -333,10 +382,36 @@ onUnmounted(() => {
     @contextmenu.prevent="handleContextMenu"
     @click="closeMenu"
   >
-    <div v-if="initError" class="absolute inset-0 z-50 flex items-center justify-center bg-black/80 text-red-500 pointer-events-none">
-        <p class="font-bold bg-black px-4 py-2 rounded border border-red-900">
-            Error: {{ initError }}
+    <!-- Overlay Error & Tombol Restart Engine -->
+    <div 
+      v-if="initError" 
+      class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 text-red-400 p-4 gap-4 pointer-events-auto"
+    >
+      <div class="flex flex-col items-center max-w-md bg-slate-900/90 border border-red-900/80 p-6 rounded-lg shadow-xl text-center">
+        <svg class="w-12 h-12 text-red-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+        </svg>
+
+        <h3 class="text-lg font-bold text-white mb-1">Engine Disconnected / Failed</h3>
+        <p class="text-xs text-red-300 bg-red-950/50 p-2.5 rounded border border-red-900/50 w-full break-words mb-4 font-mono">
+          {{ initError }}
         </p>
+
+        <button 
+          @click="restartEngine"
+          :disabled="isRestarting"
+          class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white text-sm font-semibold rounded-md shadow transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed pointer-events-auto"
+        >
+          <svg v-if="isRestarting" class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+          </svg>
+          {{ isRestarting ? 'Restarting Engine...' : 'Restart Engine' }}
+        </button>
+      </div>
     </div>
 
     <canvas 

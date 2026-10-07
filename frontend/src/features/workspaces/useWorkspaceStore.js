@@ -10,7 +10,9 @@ export const useWorkspaceStore = defineStore('workspace', {
     loadingMessage: '',
     error: null,
 
-    activeProjectId: null,
+    // PERSISTENSI: Ambil fallback nilai awal dari localStorage
+    activeProjectId: localStorage.getItem('lupis_activeProjectId') || null,
+    
     clipboard: {
       type: null, 
       data: null, 
@@ -88,7 +90,12 @@ export const useWorkspaceStore = defineStore('workspace', {
     },
 
     setProjectId(id) {
-        this.activeProjectId = id;
+      this.activeProjectId = id;
+      if (id) {
+        localStorage.setItem('lupis_activeProjectId', id);
+      } else {
+        localStorage.removeItem('lupis_activeProjectId');
+      }
     },
     
     setTool(toolName) {

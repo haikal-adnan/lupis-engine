@@ -237,12 +237,13 @@ import {
 
 const { selectedEntity, isEditingMasterPrefab } = useInspectorSelection()
 
+// FIX: Pas kedua parameter ke useInspectorPrefab agar tidak undefined
 const { 
   prefabId, 
   getComponentOverrideStatus, 
   syncComponent, 
   removeComponent 
-} = useInspectorPrefab()
+} = useInspectorPrefab(selectedEntity, isEditingMasterPrefab)
 
 const sceneStore = useSceneStore()
 const workspaceStore = useWorkspaceStore()
@@ -354,8 +355,14 @@ async function removeCurrentCollider() {
    }
 }
 
-const transformWidth = computed(() => selectedEntity.value?.components?.Transform?.width)
-const transformHeight = computed(() => selectedEntity.value?.components?.Transform?.height)
+// FIX: Mengambil transform baik dari UITransform maupun Transform
+const activeTransform = computed(() => {
+  if (!selectedEntity.value?.components) return null
+  return selectedEntity.value.components.UITransform || selectedEntity.value.components.Transform
+})
+
+const transformWidth = computed(() => activeTransform.value?.width)
+const transformHeight = computed(() => activeTransform.value?.height)
 
 function updateColliderPivot({ x: newPx, y: newPy }) {
   if (!currentCollider.value || !selectedEntity.value) return
@@ -396,7 +403,7 @@ function updateColliderPivot({ x: newPx, y: newPy }) {
 
 const syncSizeToTransform = () => {
   if (!selectedEntity.value || !currentCollider.value) return
-  const transform = selectedEntity.value.components.Transform
+  const transform = activeTransform.value
   if (!transform) return
 
   width.value = transform.width
