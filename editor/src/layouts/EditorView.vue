@@ -15,13 +15,13 @@ import { useSceneStore } from '@scenes/scenes.js';
 import EditorLayout from '@layouts/EditorLayout.vue';
 import TopBar from '@layouts/parts/TopBar.vue';
 import LeftPanel from '@layouts/parts/LeftPanel.vue';
+import AppLoading from '@layouts/AppLoading.vue';
 import RightPanel from '@layouts/parts/RightPanel.vue';
 import BottomBar from '@layouts/parts/BottomBar.vue';
 import BottomOverlay from '@layouts/parts/BottomOverlay.vue';
 import { useHistory } from '@historys/historys.js'
 
 import { AssetPanel } from '@assets/assets.js';
-import { AppLoading } from '@components/components.js';
 import { EditorSettingsModal } from '@settings/settings.js';
 
 const { setupListeners, cleanupListeners } = useHistory();

@@ -15,8 +15,6 @@ export class PopupHelper {
    */
   async selectContextMenu(targetLocator, itemLabelOrPath) {
     await targetLocator.scrollIntoViewIfNeeded();
-
-    // Trigger context menu via Playwright API
     await targetLocator.click({ button: 'right' });
 
     const menuPath = Array.isArray(itemLabelOrPath) ? itemLabelOrPath : [itemLabelOrPath];
@@ -26,10 +24,9 @@ export class PopupHelper {
       const label = menuPath[i];
       if (!label) continue;
 
-      // Prioritaskan role menu semantik, fallback ke CSS class
       const contextMenu = this.page
         .getByRole('menu')
-        .or(this.page.locator('.base-context-menu-fixed'))
+        .or(this.page.getByTestId('project-context-menu'))
         .last();
 
       await expect(contextMenu).toBeVisible();
@@ -59,72 +56,82 @@ export class PopupHelper {
   async fillPromptAndSubmit(title, value, confirmButtonText = 'Save') {
     const promptModal = this.page
       .getByRole('dialog', { name: title })
-      .or(this.page.locator('div[role="dialog"]'))
-      .or(this.page.locator('div.fixed.inset-0').filter({ has: this.page.locator('input') }))
+      .or(this.page.getByRole('dialog'))
+      .or(this.page.getByRole('alertdialog'))
       .first();
 
     await expect(promptModal).toBeVisible();
 
-    const input = promptModal.getByRole('textbox').or(promptModal.locator('input')).first();
+    const input = promptModal
+      .getByRole('textbox')
+      .or(promptModal.getByTestId('prompt-input'))
+      .or(promptModal.locator('input'))
+      .first();
+
     await input.fill(value);
 
     const submitBtn = promptModal
       .getByRole('button', { name: confirmButtonText })
+      .or(promptModal.getByTestId('submit-prompt-btn'))
       .or(promptModal.locator('button', { hasText: new RegExp(`^\\s*${confirmButtonText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*$`, 'i') }))
       .first();
 
     await submitBtn.click();
-    await expect(promptModal).not.toBeVisible();
+    await expect(promptModal).toHaveCount(0);
   }
 
   async fillPromptAndCancel(title, cancelButtonText = 'Cancel') {
     const promptModal = this.page
       .getByRole('dialog', { name: title })
-      .or(this.page.locator('div[role="dialog"]'))
-      .or(this.page.locator('div.fixed.inset-0').filter({ has: this.page.locator('input') }))
+      .or(this.page.getByRole('dialog'))
+      .or(this.page.getByRole('alertdialog'))
       .first();
 
     await expect(promptModal).toBeVisible();
 
     const cancelBtn = promptModal
       .getByRole('button', { name: cancelButtonText })
+      .or(promptModal.getByTestId('cancel-prompt-btn'))
       .or(promptModal.locator('button', { hasText: new RegExp(`^\\s*${cancelButtonText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*$`, 'i') }))
       .first();
 
     await cancelBtn.click();
-    await expect(promptModal).not.toBeVisible();
+    await expect(promptModal).toHaveCount(0);
   }
 
   // ==========================================
-  // BASE CONFIRM HELPER
+  // BASE CONFIRM HELPER (Diperbarui untuk BaseConfirm)
   // ==========================================
-  async confirmAction(title, options = {}) {
+  async confirmAction(titleOrText, options = {}) {
     const action = options.action ?? 'confirm';
+
+    // Mendukung role="alertdialog" dan role="dialog" serta data-testid="base-confirm"
     const modal = this.page
-      .getByRole('dialog', { name: title })
-      .or(this.page.locator('div[role="dialog"]', { hasText: title }))
-      .or(this.page.locator('div.fixed.inset-0', { hasText: title }))
+      .getByRole('alertdialog')
+      .or(this.page.getByRole('dialog'))
+      .or(this.page.getByTestId('base-confirm'))
+      .filter({ hasText: titleOrText })
       .first();
 
     await expect(modal).toBeVisible();
 
     const buttonText = action === 'confirm' ? (options.confirmText || 'Confirm') : (options.cancelText || 'Cancel');
-    const targetBtn = modal
-      .getByRole('button', { name: buttonText })
-      .or(modal.locator('button', { hasText: new RegExp(buttonText, 'i') }))
-      .first();
+
+    const targetBtn = action === 'confirm'
+      ? modal.getByTestId('confirm-action-button').or(modal.getByRole('button', { name: buttonText })).or(modal.locator('button', { hasText: new RegExp(buttonText, 'i') })).first()
+      : modal.getByTestId('confirm-cancel-button').or(modal.getByRole('button', { name: buttonText })).or(modal.locator('button', { hasText: new RegExp(buttonText, 'i') })).first();
 
     await targetBtn.click();
-    await expect(modal).not.toBeVisible();
+    await expect(modal).toHaveCount(0);
   }
 
   // ==========================================
-  // BASE POP ALERT HELPER
+  // BASE POP ALERT HELPER (Diperbarui untuk BasePopAlert)
   // ==========================================
   async expectPopAlert(title, options = {}) {
     const alertBox = this.page
       .getByRole('alert')
-      .or(this.page.locator('div.fixed.top-6, .pop-alert', { hasText: title }))
+      .or(this.page.getByTestId('pop-alert'))
       .filter({ hasText: title })
       .first();
 
@@ -138,16 +145,19 @@ export class PopupHelper {
   async closePopAlert(title) {
     const alertBox = this.page
       .getByRole('alert')
-      .or(this.page.locator('div.fixed.top-6, .pop-alert', { hasText: title }))
+      .or(this.page.getByTestId('pop-alert'))
       .filter({ hasText: title })
       .first();
 
     const closeBtn = alertBox
-      .getByRole('button', { name: /close/i })
+      .getByTestId('pop-alert-close-btn')
+      .or(alertBox.getByRole('button', { name: /close/i }))
       .or(alertBox.locator('button'))
       .first();
 
     await closeBtn.click();
-    await expect(alertBox).not.toBeVisible();
+    await expect(alertBox).toHaveCount(0);
   }
 }
+
+

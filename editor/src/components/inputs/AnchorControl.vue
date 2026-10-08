@@ -1,18 +1,29 @@
 <template>
-  <div class="flex flex-col gap-1.5 items-center">
+  <div 
+    class="flex flex-col gap-1.5 items-center"
+    data-testid="anchor-control"
+  >
     <span class="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">
       Anchor
     </span>
     
-    <div class="grid grid-cols-3 gap-1 p-1 bg-muted/40 rounded-md border border-border shadow-sm w-[52px] h-[52px]" 
-         :class="{ 'opacity-50 pointer-events-none': disabled }">
-      
+    <div 
+      class="grid grid-cols-3 gap-1 p-1 bg-muted/40 rounded-md border border-border shadow-sm w-[52px] h-[52px]" 
+      :class="{ 'opacity-50 pointer-events-none': disabled }"
+      :aria-disabled="disabled"
+    >
       <button 
         v-for="(p, index) in anchorPoints" 
         :key="index" 
         type="button" 
         @click="selectAnchor(p)"
         :title="`X: ${p.x}, Y: ${p.y}`"
+        :aria-label="`Anchor X ${p.x} Y ${p.y}`"
+        :aria-selected="active(p)"
+        :disabled="disabled"
+        data-part="anchor-point"
+        :data-x="p.x"
+        :data-y="p.y"
         class="w-full h-full rounded-[2px] transition-all duration-200 focus:outline-none focus:ring-1 focus:ring-primary/50"
         :class="[
           active(p) 

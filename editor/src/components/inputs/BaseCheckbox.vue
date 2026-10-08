@@ -2,12 +2,15 @@
   <label 
     class="flex items-center gap-2 cursor-pointer group select-none py-1"
     :class="{ 'opacity-50 cursor-not-allowed': disabled }"
+    data-testid="base-checkbox"
   >
     <div class="relative flex items-center justify-center">
       <input 
         type="checkbox" 
         v-model="model"
         :disabled="disabled"
+        :aria-disabled="disabled"
+        data-part="checkbox-input"
         class="
           peer appearance-none rounded-[3px] border border-input bg-background 
           checked:bg-primary checked:border-primary 
@@ -35,6 +38,7 @@
       v-if="label" 
       class="font-medium text-muted-foreground group-hover:text-foreground transition-colors"
       :class="[textSize]"
+      data-part="checkbox-label"
     >
       {{ label }}
     </span>

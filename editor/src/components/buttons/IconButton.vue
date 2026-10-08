@@ -2,13 +2,17 @@
   <button
     type="button"
     @click="handleClick"
-    class="group flex items-center justify-center shrink-0 transition-all duration-200 border outline-none 
+    data-component="icon-button"
+    :aria-pressed="isActive"
+    :aria-disabled="disabled || undefined"
+    :disabled="disabled"
+    class="group relative flex items-center justify-center shrink-0 transition-all duration-200 border outline-none 
            focus:outline-none focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary 
            disabled:opacity-50 disabled:cursor-not-allowed"
     :class="[
       'h-8 w-8',
       
-      active 
+      isActive 
         ? 'bg-primary/10 text-primary border-primary shadow-sm' 
         : ghost
           ? 'bg-transparent border-transparent text-muted-foreground hover:bg-muted/20 hover:text-foreground'
@@ -20,6 +24,8 @@
 
     <span
       v-if="tooltip"
+      role="tooltip"
+      data-element="button-tooltip"
       class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 
              bg-popover text-popover-foreground border border-border text-[10px] font-medium 
              rounded shadow-sm whitespace-nowrap z-50 pointer-events-none
@@ -39,17 +45,19 @@ const props = defineProps({
   tooltip: { type: String, default: null },
   radius: { type: String, default: '0.375rem' },
   active: { type: Boolean, default: false },
-  ghost: { type: Boolean, default: false } 
+  ghost: { type: Boolean, default: false },
+  disabled: { type: Boolean, default: false }
 })
 
 const model = defineModel({ type: Boolean, default: undefined })
 
-const active = computed(() => {
+const isActive = computed(() => {
   if (model.value !== undefined) return model.value
   return props.active
 })
 
 function handleClick() {
+  if (props.disabled) return
   if (model.value !== undefined) {
     model.value = !model.value
   }

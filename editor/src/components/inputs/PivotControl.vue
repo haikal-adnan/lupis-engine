@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col gap-1.5 items-center">
+  <div class="flex flex-col gap-1.5 items-center" data-testid="pivot-control">
     <span class="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Pivot</span>
     
     <div class="grid grid-cols-3 gap-1 p-1 bg-muted/40 rounded-md border border-border shadow-sm w-[52px] h-[52px]">
@@ -7,6 +7,11 @@
         v-for="(p, index) in pivotPoints" 
         :key="index" 
         type="button" 
+        :aria-label="`Pivot ${p.x}, ${p.y}`"
+        :aria-selected="active(p)"
+        :data-pivot-x="p.x"
+        :data-pivot-y="p.y"
+        data-testid="pivot-point"
         @click="selectPivot(p)"
         class="w-full h-full rounded-[2px] transition-all duration-200 focus:outline-none focus:ring-1 focus:ring-primary/50"
         :class="[

@@ -4,7 +4,7 @@ import { PopupHelper } from './components/PopupHelper.js';
 import { HierarchyPage } from './pages/HierarchyPage.js';
 import { ensureProject } from './helpers/dashboard.js';
 
-test.describe('Hierarchy Scene E2E Management', () => {
+test.describe('Hierarchy & Scene E2E Management', () => {
   let controls;
   let popup;
   let hierarchy;
@@ -16,12 +16,79 @@ test.describe('Hierarchy Scene E2E Management', () => {
 
     await ensureProject(page, {
       name: `Hierarchy E2E ${testInfo.testId}`,
-      description: 'Workspace isolasi untuk E2E Scene Hierarchy Testing',
+      description: 'Workspace isolasi untuk E2E Hierarchy dan Scene Management Testing',
     });
   });
 
   // =========================================================================
-  // 1. LAYER OPERATIONS & SECTION SEPARATION
+  // 1. SCENE MANAGEMENT OPERATIONS
+  // =========================================================================
+  test.describe('Scene Management Operations', () => {
+    test('creates a new scene via Scene Options dropdown', async () => {
+      const newSceneName = 'Level 2 - Forest';
+      await hierarchy.createScene(controls, popup, newSceneName);
+    });
+
+    test('switches active scene back and forth', async () => {
+      const sceneBName = 'Level 3 - Dungeon';
+
+      await expect(hierarchy.sceneSelect).not.toHaveText('Select Scene...');
+      const initialSceneName = (await hierarchy.sceneSelect.textContent()).trim();
+
+      await hierarchy.createScene(controls, popup, sceneBName);
+      await hierarchy.switchScene(initialSceneName);
+    });
+
+    test('renames the currently active scene', async () => {
+      const renamedSceneName = 'Main Menu Renamed';
+
+      await controls.clickSelectAction('Scene Options', 'Rename Scene');
+      await popup.fillPromptAndSubmit('Rename Scene', renamedSceneName, 'OK');
+
+      await expect(hierarchy.sceneSelect).toContainText(renamedSceneName);
+    });
+
+    test('duplicates an existing scene', async ({ page }) => {
+      await expect(hierarchy.sceneSelect).not.toHaveText('Select Scene...');
+      const originalName = (await hierarchy.sceneSelect.textContent()).trim();
+
+      await controls.clickSelectAction('Scene Options', 'Duplicate Scene');
+
+      const promptModal = page.getByRole('dialog').or(page.getByTestId('base-prompt-overlay')).first();
+      if ((await promptModal.count()) > 0 && (await promptModal.isVisible())) {
+        await popup.fillPromptAndSubmit('Duplicate Scene', `${originalName} Copy`, 'OK');
+      }
+
+      await expect(hierarchy.sceneSelect).toBeVisible();
+    });
+
+    test('deletes a scene when more than one scene exists', async () => {
+      const tempSceneName = 'Scene To Be Deleted';
+
+      await hierarchy.createScene(controls, popup, tempSceneName);
+      await hierarchy.deleteCurrentScene(controls, popup);
+    });
+
+    test('[Bad Path] prevents deleting the last remaining scene', async ({ page }) => {
+      await expect(hierarchy.sceneSelect).not.toHaveText('Select Scene...');
+      const initialSceneName = (await hierarchy.sceneSelect.textContent()).trim();
+
+      await controls.clickSelectAction('Scene Options', 'Delete Scene');
+
+      const modal = page.getByTestId('base-confirm').or(page.getByRole('alertdialog')).first();
+      if ((await modal.count()) > 0 && (await modal.isVisible())) {
+        const confirmBtn = modal.getByTestId('confirm-action-button').or(modal.getByRole('button')).first();
+        if (await confirmBtn.isVisible()) {
+          await confirmBtn.click();
+        }
+      }
+
+      await expect(hierarchy.sceneSelect).toContainText(initialSceneName);
+    });
+  });
+
+  // =========================================================================
+  // 2. LAYER OPERATIONS & SECTION SEPARATION
   // =========================================================================
   test.describe('Layer Operations & Section Separation', () => {
     test('creates layers in World and UI sections separately', async () => {
@@ -31,11 +98,20 @@ test.describe('Hierarchy Scene E2E Management', () => {
       const worldSection = hierarchy.section('World');
       const uiSection = hierarchy.section('User Interface');
 
-      await expect(worldSection.locator('[data-node-name="Custom World Layer"]').or(worldSection.locator('.group\\/node', { hasText: 'Custom World Layer' }))).toBeVisible();
-      await expect(uiSection.locator('[data-node-name="HUD Layer"]').or(uiSection.locator('.group\\/node', { hasText: 'HUD Layer' }))).toBeVisible();
+      await expect(
+        worldSection
+          .locator('[data-node-name="Custom World Layer"]')
+          .or(worldSection.locator('.group\\/node', { hasText: 'Custom World Layer' }))
+      ).toBeVisible();
+
+      await expect(
+        uiSection
+          .locator('[data-node-name="HUD Layer"]')
+          .or(uiSection.locator('.group\\/node', { hasText: 'HUD Layer' }))
+      ).toBeVisible();
     });
 
-    test('renames existing layer using context menu', async ({ page }) => {
+    test('renames existing layer using context menu', async () => {
       const layerNode = hierarchy.nodeByName('World Layer');
       await expect(layerNode).toBeVisible();
 
@@ -44,7 +120,6 @@ test.describe('Hierarchy Scene E2E Management', () => {
       await popup.selectContextMenu(layerNode, 'Rename Layer');
       await popup.fillPromptAndSubmit('Rename Layer', 'Background Layer', 'Rename');
 
-      // Re-locate berdasarkan ID stabil atau name baru
       const renamedNode = nodeId ? hierarchy.nodeById(nodeId) : hierarchy.nodeByName('Background Layer');
       await expect(renamedNode).toBeVisible();
       await expect(renamedNode).toHaveAttribute('data-node-name', 'Background Layer');
@@ -83,14 +158,13 @@ test.describe('Hierarchy Scene E2E Management', () => {
 
       await popup.selectContextMenu(soleWorldLayer, 'Delete Layer');
 
-      // Memastikan UI menampilkan peringatan atau struktur tetap sama persis
       await expect(soleWorldLayer).toBeVisible();
       await expect.poll(() => hierarchy.snapshot()).toEqual(beforeState);
     });
   });
 
   // =========================================================================
-  // 2. ENTITY CREATION & PARENT-CHILD HIERARCHY
+  // 3. ENTITY CREATION & PARENT-CHILD HIERARCHY
   // =========================================================================
   test.describe('Entity Creation & Parent-Child Hierarchy', () => {
     test('creates new entity types within a target layer', async () => {
@@ -100,7 +174,7 @@ test.describe('Hierarchy Scene E2E Management', () => {
       await expect(hierarchy.nodesByText(/Sprite/i).first()).toBeVisible();
     });
 
-    test('reparents entity under another entity via drag and drop', async ({ page }) => {
+    test('reparents entity under another entity via drag and drop', async () => {
       const layerNode = hierarchy.nodeByName('World Layer');
       await popup.selectContextMenu(layerNode, ['Add Entity', 'Empty Entity']);
       await popup.selectContextMenu(layerNode, ['Add Entity', 'Sprite']);
@@ -137,16 +211,14 @@ test.describe('Hierarchy Scene E2E Management', () => {
 
       const beforeState = await hierarchy.snapshot();
 
-      // Tindakan ilegal: drag parent ke dalam anak sendiri
       await hierarchy.dragAndDropNodes(parentNode, childNode);
 
-      // Verifikasi struktur tidak berubah
       await expect.poll(() => hierarchy.snapshot()).toEqual(beforeState);
     });
   });
 
   // =========================================================================
-  // 3. SECTION BOUNDARIES & PREFAB RESTRICTIONS
+  // 4. SECTION BOUNDARIES & PREFAB RESTRICTIONS
   // =========================================================================
   test.describe('Section Boundaries & Prefab Restrictions', () => {
     test('creates a Prefab instance from an entity', async () => {
@@ -206,7 +278,7 @@ test.describe('Hierarchy Scene E2E Management', () => {
   });
 
   // =========================================================================
-  // 4. SORTING & ORDER INDEXING
+  // 5. SORTING & ORDER INDEXING
   // =========================================================================
   test.describe('Sorting & Order Indexing', () => {
     test('reorders layers and recalculates visual sequence', async () => {
@@ -224,7 +296,7 @@ test.describe('Hierarchy Scene E2E Management', () => {
   });
 
   // =========================================================================
-  // 5. CLIPBOARD & DUPLICATION OPERATIONS
+  // 6. CLIPBOARD & DUPLICATION OPERATIONS
   // =========================================================================
   test.describe('Clipboard & Duplication Operations', () => {
     test('duplicates an entity with auto-selection', async () => {
@@ -265,7 +337,7 @@ test.describe('Hierarchy Scene E2E Management', () => {
   });
 
   // =========================================================================
-  // 6. VISIBILITY & LOCK STATE CONTROLS
+  // 7. VISIBILITY & LOCK STATE CONTROLS
   // =========================================================================
   test.describe('Visibility & Lock State Controls', () => {
     test('toggles entity visibility and lock status reactively', async () => {
@@ -277,7 +349,6 @@ test.describe('Hierarchy Scene E2E Management', () => {
 
       await entityNode.hover();
 
-      // Act 1: Lock
       const lockBtn = entityNode
         .getByRole('button', { name: /lock/i })
         .or(entityNode.getByTitle('Toggle Lock'))
@@ -287,7 +358,6 @@ test.describe('Hierarchy Scene E2E Management', () => {
 
       await expect(entityNode).toHaveAttribute('data-locked', 'true');
 
-      // Act 2: Visibility
       const eyeBtn = entityNode
         .getByRole('button', { name: /visibility/i })
         .or(entityNode.getByTitle('Toggle Visibility'))

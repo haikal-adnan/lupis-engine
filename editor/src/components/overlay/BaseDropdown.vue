@@ -1,6 +1,11 @@
 <template>
-  <div ref="triggerRef" class="relative inline-block text-left h-full">
-    <div @click.stop="toggle" class="h-full cursor-pointer outline-none">
+  <div ref="triggerRef" class="relative inline-block text-left h-full" data-testid="dropdown-container">
+    <div 
+      @click="toggle" 
+      class="h-full cursor-pointer outline-none"
+      :aria-expanded="isOpen"
+      data-testid="dropdown-trigger"
+    >
       <slot name="trigger" :isOpen="isOpen"></slot>
     </div>
 
@@ -9,10 +14,12 @@
         <div
           v-if="isOpen"
           ref="menuRef"
+          role="menu"
+          data-testid="dropdown-menu"
+          :data-state="isOpen ? 'open' : 'closed'"
           class="fixed z-[9999] w-auto whitespace-nowrap rounded-md border border-border bg-popover text-popover-foreground shadow-lg focus:outline-none flex flex-col overflow-hidden py-1"
           :style="menuStyle"
           tabindex="-1"
-          @click.stop 
         >
           <slot :close="close" />
         </div>
@@ -32,10 +39,9 @@ const props = defineProps({
 const isOpen = ref(false);
 const triggerRef = ref(null);
 const menuRef = ref(null);
-const menuStyle = ref({ top: '0px', left: '0px' });
+const menuStyle = ref({ top: '-9999px', left: '-9999px', visibility: 'hidden' });
 
-const calculatePosition = async () => {
-  await nextTick();
+const calculatePosition = () => {
   if (!triggerRef.value || !menuRef.value) return;
 
   const triggerRect = triggerRef.value.getBoundingClientRect();
@@ -61,7 +67,8 @@ const calculatePosition = async () => {
 
   menuStyle.value = {
     top: `${top}px`,
-    left: `${left}px`
+    left: `${left}px`,
+    visibility: 'visible'
   };
 };
 
@@ -90,23 +97,24 @@ const handleScrollOrResize = () => {
   if (isOpen.value) close();
 };
 
-watch(isOpen, (val) => {
+watch(isOpen, async (val) => {
   if (val) {
+    menuStyle.value = { top: '-9999px', left: '-9999px', visibility: 'hidden' };
+    await nextTick();
     calculatePosition();
-    setTimeout(() => {
-      document.addEventListener('click', handleClickOutside);
-      window.addEventListener('resize', handleScrollOrResize);
-      window.addEventListener('scroll', handleScrollOrResize, true);
-    }, 10);
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    window.addEventListener('resize', handleScrollOrResize);
+    window.addEventListener('scroll', handleScrollOrResize, true);
   } else {
-    document.removeEventListener('click', handleClickOutside);
+    document.removeEventListener('mousedown', handleClickOutside);
     window.removeEventListener('resize', handleScrollOrResize);
     window.removeEventListener('scroll', handleScrollOrResize, true);
   }
 });
 
 onUnmounted(() => {
-  document.removeEventListener('click', handleClickOutside);
+  document.removeEventListener('mousedown', handleClickOutside);
   window.removeEventListener('resize', handleScrollOrResize);
   window.removeEventListener('scroll', handleScrollOrResize, true);
 });

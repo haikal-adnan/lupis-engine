@@ -1,7 +1,10 @@
 <template>
-  <div class="relative inline-block">
+  <div class="relative inline-block" data-component="base-thumbnail">
     <button 
       type="button"
+      data-element="thumbnail-trigger"
+      :data-loaded="!!resolvedSrc && imgMeta.w > 0"
+      :aria-label="`Preview ${name}`"
       class="
         relative flex items-center justify-center overflow-hidden
         rounded border border-border bg-muted/50 
@@ -14,10 +17,11 @@
       <div 
         v-if="resolvedSrc && imgMeta.w > 0" 
         class="w-full h-full"
+        data-element="thumbnail-image"
         :style="thumbnailStyle"
       ></div>
       
-      <span v-else class="text-[9px] text-muted-foreground">Empty</span>
+      <span v-else class="text-[9px] text-muted-foreground" data-element="thumbnail-empty">Empty</span>
 
       <div class="absolute inset-0 bg-black/40 hidden group-hover:flex items-center justify-center z-10">
         <Maximize2 class="w-3.5 h-3.5 text-white drop-shadow-md" />

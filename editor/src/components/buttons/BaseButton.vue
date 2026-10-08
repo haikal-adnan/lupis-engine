@@ -2,13 +2,17 @@
   <button
     type="button"
     @click="handleClick"
+    data-component="base-button"
+    :aria-pressed="isActive"
+    :aria-disabled="disabled || undefined"
+    :disabled="disabled"
     class="group relative flex items-center gap-2 px-3 text-xs font-medium transition-all duration-200 border outline-none 
            focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30
            disabled:opacity-50 disabled:cursor-not-allowed select-none"
     :class="[
       alignmentClass,
       heightClass,
-      active 
+      isActive 
         ? 'bg-blue-500/10 text-blue-600 border-blue-500/40 dark:bg-blue-500/20 dark:text-blue-400 dark:border-blue-500/50 shadow-sm ' +
           'hover:bg-blue-500/20 hover:border-blue-500/60' 
         : ghost
@@ -23,6 +27,8 @@
 
     <span
       v-if="tooltip"
+      role="tooltip"
+      data-element="button-tooltip"
       class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 
              bg-popover text-popover-foreground border border-border text-[10px] font-medium 
              rounded shadow-sm whitespace-nowrap z-50 pointer-events-none
@@ -44,7 +50,8 @@ const props = defineProps({
   radius: { type: String, default: '0.375rem' },
   tooltip: { type: String, default: null },
   active: { type: Boolean, default: false },
-  ghost: { type: Boolean, default: false } 
+  ghost: { type: Boolean, default: false },
+  disabled: { type: Boolean, default: false }
 })
 
 const model = defineModel({ type: Boolean, default: undefined })
@@ -65,6 +72,7 @@ const alignmentClass = computed(() => {
 })
 
 function handleClick(e) {
+  if (props.disabled) return
   if (model.value !== undefined) {
     model.value = !model.value
   }

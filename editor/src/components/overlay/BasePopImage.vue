@@ -12,21 +12,27 @@
         v-if="state.isOpen" 
         class="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 sm:p-6"
         @click.self="closeImage"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="pop-image-title"
+        data-testid="pop-image-dialog"
       >
         <div 
           class="bg-background border border-border rounded-lg shadow-2xl flex flex-col transform transition-all max-w-3xl w-full"
           :class="{ 'scale-100': state.isOpen, 'scale-95': !state.isOpen }"
         >
           <div class="px-4 py-3 border-b border-border bg-muted/30 flex justify-between items-center shrink-0">
-            <h3 class="text-sm font-semibold text-foreground truncate pr-4">
+            <h3 id="pop-image-title" class="text-sm font-semibold text-foreground truncate pr-4" data-testid="pop-image-title">
               {{ state.title }}
             </h3>
             <button 
               @click="closeImage"
               class="text-muted-foreground hover:text-foreground hover:bg-destructive/10 hover:text-destructive p-1 rounded transition-colors"
               title="Close (Esc)"
+              aria-label="Close image modal"
+              data-testid="pop-image-close-btn"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
               </svg>
             </button>
@@ -41,29 +47,57 @@
             @mouseup="stopDrag"
             @mouseleave="stopDrag"
             @dblclick="resetView"
+            data-testid="pop-image-viewport"
+            :data-zoom="Math.round(scale * 100)"
           >
             <img 
               :src="state.imageUrl" 
+              :alt="state.title || 'Preview image'"
               class="max-w-full max-h-full object-contain pixelated pointer-events-none transition-transform duration-75 ease-out"
               :style="{ transform: `translate(${position.x}px, ${position.y}px) scale(${scale})` }"
               draggable="false"
+              data-testid="pop-image-element"
             />
 
-            <div class="absolute top-4 left-4 text-[10px] text-white/50 bg-black/40 px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+            <div class="absolute top-4 left-4 text-[10px] text-white/50 bg-black/40 px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" aria-hidden="true">
               Scroll to zoom • Drag to pan • Double click to reset
             </div>
 
-            <div class="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-background/80 backdrop-blur-md p-1 rounded-md border border-border shadow-lg" @mousedown.stop>
-              <button @click="zoomOut" class="p-1.5 hover:bg-secondary rounded text-muted-foreground hover:text-foreground transition-colors" title="Zoom Out">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/></svg>
+            <div 
+              class="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-background/80 backdrop-blur-md p-1 rounded-md border border-border shadow-lg" 
+              @mousedown.stop
+              role="toolbar"
+              aria-label="Image zoom controls"
+              data-testid="pop-image-toolbar"
+            >
+              <button 
+                @click="zoomOut" 
+                class="p-1.5 hover:bg-secondary rounded text-muted-foreground hover:text-foreground transition-colors" 
+                title="Zoom Out"
+                aria-label="Zoom out"
+                data-testid="pop-image-zoom-out-btn"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14"/></svg>
               </button>
               
-              <div class="w-16 text-center text-xs font-bold text-foreground tabular-nums cursor-pointer hover:text-primary transition-colors" @click="resetView">
-                 {{ Math.round(scale * 100) }}%
-               </div>
+              <button 
+                type="button"
+                class="w-16 text-center text-xs font-bold text-foreground tabular-nums cursor-pointer hover:text-primary transition-colors bg-transparent border-0 p-0" 
+                @click="resetView"
+                aria-label="Reset zoom scale"
+                data-testid="pop-image-zoom-reset-btn"
+              >
+                {{ Math.round(scale * 100) }}%
+              </button>
 
-              <button @click="zoomIn" class="p-1.5 hover:bg-secondary rounded text-muted-foreground hover:text-foreground transition-colors" title="Zoom In">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+              <button 
+                @click="zoomIn" 
+                class="p-1.5 hover:bg-secondary rounded text-muted-foreground hover:text-foreground transition-colors" 
+                title="Zoom In"
+                aria-label="Zoom in"
+                data-testid="pop-image-zoom-in-btn"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
               </button>
             </div>
           </div>
@@ -154,5 +188,4 @@ onBeforeUnmount(() => {
 .aspect-square {
   aspect-ratio: 1 / 1;
 }
-
 </style>

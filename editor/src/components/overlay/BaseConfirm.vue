@@ -12,21 +12,28 @@
         v-if="state.isOpen" 
         class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
         @click.self="handleCancel"
+        data-testid="base-confirm-overlay"
       >
         
         <div 
           class="w-full max-w-sm bg-background border border-border rounded-lg shadow-xl overflow-hidden transform transition-all"
           :class="{ 'scale-100': state.isOpen, 'scale-95': !state.isOpen }"
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby="confirm-title"
+          aria-describedby="confirm-message"
+          data-testid="base-confirm"
+          :data-type="state.type"
         >
           
           <div class="px-4 py-3 border-b border-border bg-muted/30">
-            <h3 class="text-sm font-semibold text-foreground">
+            <h3 id="confirm-title" class="text-sm font-semibold text-foreground" data-testid="confirm-title">
               {{ state.title }}
             </h3>
           </div>
 
           <div class="px-4 py-4">
-            <p class="text-sm text-muted-foreground leading-relaxed">
+            <p id="confirm-message" class="text-sm text-muted-foreground leading-relaxed" data-testid="confirm-message">
               {{ state.message }}
             </p>
           </div>
@@ -34,6 +41,8 @@
           <div class="px-4 py-3 bg-muted/30 border-t border-border flex justify-end gap-2">
             <button 
               @click="handleCancel"
+              type="button"
+              data-testid="confirm-cancel-button"
               class="px-3 py-1.5 text-xs font-medium text-foreground bg-transparent hover:bg-muted border border-border rounded transition-colors"
             >
               {{ state.cancelText }}
@@ -41,6 +50,8 @@
             
             <button 
               @click="handleConfirm"
+              type="button"
+              data-testid="confirm-action-button"
               class="px-3 py-1.5 text-xs font-medium text-white rounded transition-colors shadow-sm"
               :class="state.type === 'danger' ? 'bg-destructive hover:bg-destructive/90' : 'bg-primary hover:bg-primary/90'"
             >

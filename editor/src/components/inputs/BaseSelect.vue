@@ -2,6 +2,7 @@
   <div 
     class="flex flex-col space-y-1.5 relative inline-block w-full"
     v-click-outside="close"
+    data-testid="select-container"
   >
     <label
       v-if="label"
@@ -16,6 +17,9 @@
         ref="buttonRef"
         :id="id"
         type="button"
+        role="combobox"
+        :aria-expanded="isOpen"
+        data-testid="select-trigger"
         @click="toggle"
         class="flex items-center justify-between w-full px-3 text-sm transition-all duration-200 border rounded-md bg-background 
                focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary
@@ -50,6 +54,8 @@
           <div
             v-if="isOpen"
             ref="dropdownRef"
+            role="listbox"
+            data-testid="select-dropdown"
             class="fixed z-[9999] overflow-hidden border flex flex-col rounded-md shadow-md bg-popover border-border text-popover-foreground w-max max-w-[300px]"
             :style="[dropdownStyle, { borderRadius: radius }]"
           >
@@ -57,6 +63,8 @@
               
               <li 
                 v-if="editable"
+                role="option"
+                data-testid="select-action-item"
                 @click="triggerAction"
                 class="relative flex items-center w-full px-3 py-2 text-sm cursor-pointer select-none outline-none transition-colors
                        text-primary font-medium hover:bg-primary/10 border-b border-border mb-1"
@@ -70,6 +78,11 @@
               <li
                 v-for="option in options"
                 :key="option.value"
+                role="option"
+                :aria-selected="model === option.value"
+                :aria-disabled="option.disabled"
+                :data-option-value="option.value"
+                data-testid="select-option"
                 @click="!option.disabled && select(option)"
                 class="relative flex items-center w-full px-3 py-1.5 text-sm select-none outline-none transition-colors group"
                 :class="[
@@ -94,6 +107,9 @@
 
                 <button 
                   v-if="editable && option.value !== 'untagged' && !option.disabled"
+                  type="button"
+                  :aria-label="`Delete ${option.label}`"
+                  :data-testid="`delete-option-${option.value}`"
                   @click.stop="triggerDelete(option)"
                   class="absolute right-2 hidden group-hover:flex items-center justify-center h-6 w-6 rounded-sm hover:bg-destructive hover:text-destructive-foreground text-muted-foreground transition-colors"
                   title="Delete Tag"
@@ -104,7 +120,7 @@
                 </button>
               </li>
               
-              <li v-if="options.length === 0" class="px-3 py-2.5 text-xs text-muted-foreground text-center">
+              <li v-if="options.length === 0" class="px-3 py-2.5 text-xs text-muted-foreground text-center" data-testid="select-empty">
                 No options available
               </li>
             </ul>

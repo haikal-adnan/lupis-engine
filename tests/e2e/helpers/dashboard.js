@@ -7,34 +7,41 @@ export async function ensureProject(page, { name, description = '' }) {
   await page.goto('/');
   await page.waitForLoadState('domcontentloaded');
 
-  const card = page.locator('.group.bg-card').filter({ hasText: name }).first();
+  // 1. Bidik card menggunakan data-testid dan data-project-name
+  const card = page.locator(`[data-testid="project-card"][data-project-name="${name}"]`);
 
-  // Cek apakah proyek sudah ada tanpa memicu timeout Playwright
+  // 2. Gabungkan locator tombol pembuat proyek (Empty state & Header actions)
+  const createBtn = page
+    .getByTestId('empty-create-project-btn')
+    .or(page.getByTestId('create-project-btn'))
+    .or(page.getByRole('button', { name: /create|new/i }))
+    .first();
+
+  // 3. SETTLE CHECK (Sangat Penting! Section 5.1)
+  // Tunggu sampai dashboard merender SALAH SATU: kartu proyek yang ada ATAU tombol buat proyek.
+  // Tanpa ini, count() di bawah akan membaca 0 saat aplikasi Vue sedang loading async data.
+  await expect(card.or(createBtn).first()).toBeVisible();
+
+  // 4. Aman dipanggil: count() sekarang merefleksikan state aktual DOM
   if ((await card.count()) === 0) {
-    // Gabungkan locator tombol "Create First Project" dan "New Project"
-    const createBtn = page
-      .getByRole('button', { name: 'Create First Project' })
-      .or(page.locator('button:has-text("New Project"), button:has-text("New")').filter({ visible: true }))
-      .first();
-
-    // Playwright otomatis menunggu tombol hingga terinteraksi sesuai timeout default config
     await createBtn.click();
 
-    // Verifikasi modal/form telah siap
-    const modalHeading = page.locator('h3', { hasText: 'Buat Proyek Baru' });
-    await expect(modalHeading).toBeVisible();
+    // Verifikasi modal siap via role semantik atau testid
+    const modal = page.getByRole('dialog', { name: 'Buat Proyek Baru' });
+    await expect(modal).toBeVisible();
 
-    await controls.fillInput('Game Keren Saya', name);
+    // Mengisi form modal via BaseControlHelper
+    await controls.fillInput('project-name-input', name, modal);
     if (description) {
-      await controls.fillInput('Deskripsi singkat tentang game Anda...', description);
+      await controls.fillInput('project-desc-input', description, modal);
     }
 
-    await controls.clickButton('Buat');
+    await controls.clickButton('submit-create-project-btn', modal);
   } else {
     await card.click();
   }
 
-  // Gunakan regex bawaan expect(page) untuk penantian URL yang stabil
+  // 5. Verifikasi navigasi URL ke editor workspace
   await expect(page).toHaveURL(/\/editor\/.+/);
 
   const projectId = page.url().match(/\/editor\/([^/?#]+)/)?.[1];

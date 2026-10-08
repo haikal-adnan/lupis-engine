@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col w-full space-y-1.5">
+  <div class="flex flex-col w-full space-y-1.5" data-testid="textarea-container">
     <label
       v-if="label"
       :for="id"
@@ -30,8 +30,9 @@
       <textarea
         :id="id"
         v-model="model"
+        data-testid="textarea-input"
         class="
-          w-full h-0 bg-transparent border-none outline-none text-sm text-foreground 
+          w-full bg-transparent border-none outline-none text-sm text-foreground 
           placeholder:text-muted-foreground/40 focus:ring-0 py-2 custom-scrollbar resize-none
         "
         :placeholder="placeholder"

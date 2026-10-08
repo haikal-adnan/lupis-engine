@@ -1,9 +1,13 @@
 <template>
-  <div class="flex flex-col w-full space-y-1.5">
+  <div 
+    class="flex flex-col w-full space-y-1.5"
+    data-testid="base-color"
+  >
     <label
       v-if="label"
       :for="id"
       class="text-xs font-medium text-muted-foreground select-none"
+      data-part="color-label"
     >
       {{ label }}
     </label>
@@ -19,11 +23,13 @@
     >
       <div
         class="relative h-full flex items-center justify-center px-2 border-r border-transparent 
-                bg-muted/20 group-focus-within:border-border transition-colors"
+               bg-muted/20 group-focus-within:border-border transition-colors"
       >
         <div 
           class="w-5 h-5 rounded-[2px] border border-border shadow-sm transition-transform active:scale-95"
           :style="{ backgroundColor: model }"
+          data-part="color-swatch"
+          :data-color="model"
         ></div>
 
         <input
@@ -32,6 +38,8 @@
           @input="onColorPickerChange"
           class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
           title="Choose color"
+          aria-label="Color picker input"
+          data-part="native-color-picker"
         />
       </div>
 
@@ -44,6 +52,8 @@
         class="w-full h-full bg-transparent border-none outline-none text-sm text-foreground font-mono uppercase 
                placeholder:text-muted-foreground/40 focus:ring-0 px-3"
         placeholder="#000000"
+        aria-label="Hex color value"
+        data-part="hex-input"
         @keydown.enter="validateAndSync"
         @blur="validateAndSync"
       />
@@ -95,7 +105,7 @@ function validateAndSync() {
 </script>
 
 <style scoped>
-    input {
-        font-variant-numeric: tabular-nums;
-    }
+  input {
+    font-variant-numeric: tabular-nums;
+  }
 </style>

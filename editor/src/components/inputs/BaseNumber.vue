@@ -1,11 +1,15 @@
-<!-- 📄 lokasi: BaseNumber.vue -->
 <template>
-  <div class="flex flex-col w-full space-y-1.5" :class="{ 'opacity-50 pointer-events-none': disabled }">
+  <div 
+    class="flex flex-col w-full space-y-1.5" 
+    :class="{ 'opacity-50 pointer-events-none': disabled }"
+    data-testid="base-number"
+  >
     <label
       v-if="label"
       :for="id"
       class="font-medium text-muted-foreground select-none"
       :class="[labelSize]"
+      data-part="number-label"
     >
       {{ label }}
     </label>
@@ -27,6 +31,9 @@
           disabled ? 'cursor-not-allowed' : 'cursor-ew-resize hover:bg-muted/40 hover:text-primary',
           isDragging ? '!bg-primary/20 !text-primary border-primary/20' : 'group-focus-within:border-border/50'
         ]"
+        data-part="scrub-handle"
+        :data-dragging="isDragging"
+        aria-label="Scrub control"
       >
         <span
           class="font-bold font-mono text-muted-foreground transition-colors whitespace-nowrap"
@@ -44,9 +51,12 @@
         type="text"
         inputmode="decimal" 
         :disabled="disabled"
+        :aria-disabled="disabled"
         class="w-full h-full bg-transparent border-none outline-none text-foreground px-2 disabled:cursor-not-allowed font-mono"
         :class="[textSize]"
         :placeholder="placeholder"
+        :aria-label="label || prefix || placeholder || 'Numeric Input'"
+        data-part="number-input"
         :style="{ paddingLeft: prefix ? '0px' : paddingX }"
         @input="validateInput"
         @keydown.up.prevent="increment(step)"
@@ -57,7 +67,12 @@
         @change="handleChange"
       />
       
-      <div v-if="suffix" class="h-full flex items-center pr-3 pl-1 text-muted-foreground bg-muted/20" :class="[labelSize]">
+      <div 
+        v-if="suffix" 
+        class="h-full flex items-center pr-3 pl-1 text-muted-foreground bg-muted/20" 
+        :class="[labelSize]"
+        data-part="number-suffix"
+      >
         {{ suffix }}
       </div>
     </div>

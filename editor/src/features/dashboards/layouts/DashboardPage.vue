@@ -17,6 +17,8 @@ const props = defineProps({
   }
 });
 
+const emit = defineEmits(['update:searchQuery']);
+
 const router = useRouter();
 const { getProjects, createProject } = useProjectActions();
 const { importFromLupisProject } = useOPFSActions();
@@ -85,7 +87,11 @@ const handleCreateProject = async (projectData) => {
 
   } catch (error) {
     console.error(error);
-    alert(`Error: ${error.message}`);
+    showPop({
+      title: 'Error Creating Project',
+      message: error.message,
+      type: 'error'
+    });
     workspaceStore.isLoading = false;
   }
 };
@@ -198,13 +204,14 @@ const getStatusStyle = (status) => {
 <template>
   <div 
     class="relative min-h-[calc(100vh-80px)] w-full transition-all duration-200"
+    data-testid="dashboard-container"
     @dragenter="handleDragEnter"
     @dragover="handleDragOver"
     @dragleave="handleDragLeave"
     @drop="handleDrop"
     @click="closeMenu"
   >
-    <!-- Teleport Overlay & Modal Content -->
+    <!-- Teleport Overlay Drag & Drop Zone -->
     <Teleport to="body">
       <Transition
         enter-active-class="transition-all duration-300 ease-out"
@@ -216,6 +223,10 @@ const getStatusStyle = (status) => {
       >
         <div 
           v-if="isDraggingOver" 
+          role="region"
+          aria-label="File Drop Zone"
+          data-testid="drop-zone-overlay"
+          :data-invalid="isInvalidFileDragged"
           class="fixed inset-0 z-50 bg-background/85 backdrop-blur-md flex flex-col items-center justify-center p-6 pointer-events-none select-none"
         >
           <div 
@@ -241,7 +252,7 @@ const getStatusStyle = (status) => {
               <FileCode2 v-else class="w-10 h-10" :stroke-width="2" />
             </div>
 
-            <h2 class="text-2xl font-black tracking-tight text-white mb-2.5">
+            <h2 class="text-2xl font-black tracking-tight text-white mb-2.5" data-testid="drop-zone-title">
               {{ isInvalidFileDragged ? 'Unsupported File Format' : 'Drop .lupisproject File' }}
             </h2>
 
@@ -273,6 +284,7 @@ const getStatusStyle = (status) => {
       type="file" 
       accept=".lupisproject" 
       class="hidden" 
+      data-testid="file-import-input"
       @change="handleFileSelect" 
     />
 
@@ -284,6 +296,8 @@ const getStatusStyle = (status) => {
             
             <div class="hidden sm:flex items-center gap-2 mt-1">
               <button 
+                type="button"
+                data-testid="create-project-btn"
                 @click="isCreatePopupOpen = true"
                 class="flex items-center gap-1.5 bg-cyan-500 hover:bg-cyan-600 text-white px-3.5 py-1.5 rounded-full text-xs font-bold transition-all active:scale-95 shadow-sm shadow-cyan-500/20"
               >
@@ -292,6 +306,8 @@ const getStatusStyle = (status) => {
               </button>
 
               <button 
+                type="button"
+                data-testid="load-project-btn"
                 @click="triggerFileInput"
                 class="flex items-center gap-1.5 bg-secondary hover:bg-secondary/80 text-foreground border border-border px-3.5 py-1.5 rounded-full text-xs font-bold transition-all active:scale-95"
                 title="Load project from .lupisproject file"
@@ -302,7 +318,7 @@ const getStatusStyle = (status) => {
             </div>
           </div>
           
-          <p class="text-muted-foreground text-sm font-medium">
+          <p class="text-muted-foreground text-sm font-medium" data-testid="project-summary-text">
             <span v-if="props.searchQuery">
               Showing {{ filteredProjects.length }} result(s) for "{{ props.searchQuery }}"
             </span>
@@ -314,6 +330,8 @@ const getStatusStyle = (status) => {
 
         <div class="flex sm:hidden items-center gap-2 w-full">
           <button 
+            type="button"
+            data-testid="create-project-btn-mobile"
             @click="isCreatePopupOpen = true"
             class="flex-1 flex justify-center items-center gap-2 bg-cyan-500 hover:bg-cyan-600 text-white px-4 py-2.5 rounded-xl text-sm font-bold transition-all active:scale-95 shadow-sm shadow-cyan-500/20"
           >
@@ -322,6 +340,8 @@ const getStatusStyle = (status) => {
           </button>
 
           <button 
+            type="button"
+            data-testid="load-project-btn-mobile"
             @click="triggerFileInput"
             class="flex items-center justify-center gap-2 bg-secondary text-foreground border border-border px-4 py-2.5 rounded-xl text-sm font-bold transition-all active:scale-95"
           >
@@ -332,21 +352,38 @@ const getStatusStyle = (status) => {
       </div>
 
       <!-- Loading State -->
-      <div v-if="isLoading" class="h-64 flex flex-col items-center justify-center">
+      <div 
+        v-if="isLoading" 
+        data-testid="projects-loading-state"
+        class="h-64 flex flex-col items-center justify-center"
+      >
         <div class="w-10 h-10 border-4 border-cyan-500/20 border-t-cyan-500 rounded-full animate-spin mb-4"></div>
         <p class="text-muted-foreground font-medium animate-pulse text-sm">Loading your projects...</p>
       </div>
 
       <!-- Error State -->
-      <div v-else-if="errorMessage" class="h-64 flex flex-col items-center justify-center bg-destructive/5 border border-destructive/20 rounded-2xl">
-        <p class="text-destructive font-semibold mb-4">{{ errorMessage }}</p>
-        <button @click="fetchProjects" class="px-5 py-2 bg-background border border-border rounded-lg text-sm hover:bg-secondary transition-colors font-medium">
+      <div 
+        v-else-if="errorMessage" 
+        data-testid="projects-error-state"
+        class="h-64 flex flex-col items-center justify-center bg-destructive/5 border border-destructive/20 rounded-2xl"
+      >
+        <p class="text-destructive font-semibold mb-4" data-testid="error-message">{{ errorMessage }}</p>
+        <button 
+          type="button"
+          data-testid="retry-fetch-btn"
+          @click="fetchProjects" 
+          class="px-5 py-2 bg-background border border-border rounded-lg text-sm hover:bg-secondary transition-colors font-medium"
+        >
           Try Again
         </button>
       </div>
 
       <!-- Empty State -->
-      <div v-else-if="projects.length === 0" class="h-80 flex flex-col items-center justify-center border-2 border-dashed border-border rounded-3xl bg-muted/10 p-6">
+      <div 
+        v-else-if="projects.length === 0" 
+        data-testid="projects-empty-state"
+        class="h-80 flex flex-col items-center justify-center border-2 border-dashed border-border rounded-3xl bg-muted/10 p-6"
+      >
         <div class="w-16 h-16 bg-muted/50 rounded-2xl flex items-center justify-center mb-5">
           <FolderOpen class="w-8 h-8 text-muted-foreground/50" :stroke-width="1.5" />
         </div>
@@ -357,6 +394,8 @@ const getStatusStyle = (status) => {
         
         <div class="flex items-center gap-3">
           <button 
+            type="button"
+            data-testid="empty-create-project-btn"
             @click="isCreatePopupOpen = true"
             class="bg-cyan-500 hover:bg-cyan-600 text-white px-6 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg shadow-cyan-500/20 flex items-center gap-2"
           >
@@ -364,6 +403,8 @@ const getStatusStyle = (status) => {
           </button>
 
           <button 
+            type="button"
+            data-testid="empty-load-project-btn"
             @click="triggerFileInput"
             class="bg-background hover:bg-secondary text-foreground border border-border px-5 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2"
           >
@@ -373,16 +414,35 @@ const getStatusStyle = (status) => {
       </div>
 
       <!-- Filter Empty State -->
-      <div v-else-if="filteredProjects.length === 0" class="h-64 flex flex-col items-center justify-center border border-border rounded-3xl bg-card">
+      <div 
+        v-else-if="filteredProjects.length === 0" 
+        data-testid="filter-empty-state"
+        class="h-64 flex flex-col items-center justify-center border border-border rounded-3xl bg-card"
+      >
         <p class="text-muted-foreground mb-2">No projects matching "{{ props.searchQuery }}"</p>
-        <button @click="$emit('update:searchQuery', '')" class="text-sm text-cyan-500 hover:underline">Clear search</button>
+        <button 
+          type="button"
+          data-testid="clear-search-btn"
+          @click="$emit('update:searchQuery', '')" 
+          class="text-sm text-cyan-500 hover:underline"
+        >
+          Clear search
+        </button>
       </div>
 
       <!-- Projects Grid -->
-      <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div 
+        v-else 
+        data-testid="projects-grid"
+        class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+      >
         <div 
           v-for="project in filteredProjects" 
           :key="project.id"
+          data-testid="project-card"
+          :data-project-id="project.id"
+          :data-project-name="project.name"
+          :data-status="project.status || 'DRAFT'"
           class="group bg-card border border-border rounded-2xl overflow-hidden cursor-pointer hover:border-cyan-500/40 transition-all duration-300 hover:-translate-y-1 shadow-sm hover:shadow-xl hover:shadow-cyan-500/5 flex flex-col"
           @click="openProject(project.id)"
           @contextmenu.prevent="handleContextMenu($event, project)"
@@ -391,6 +451,7 @@ const getStatusStyle = (status) => {
             <img 
               v-if="project.thumbnailUrl" 
               :src="project.thumbnailUrl" 
+              :alt="project.name"
               class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
             />
             <div v-else class="w-full h-full flex items-center justify-center text-muted-foreground/20 group-hover:text-cyan-500/20 transition-colors">
@@ -405,20 +466,21 @@ const getStatusStyle = (status) => {
           </div>
 
           <div class="p-5 flex-1 flex flex-col">
-            <h3 class="font-bold text-lg group-hover:text-cyan-500 transition-colors line-clamp-1">
+            <h3 class="font-bold text-lg group-hover:text-cyan-500 transition-colors line-clamp-1" data-testid="project-title">
               {{ project.name }}
             </h3>
-            <p class="text-muted-foreground text-xs mt-1.5 line-clamp-2 leading-relaxed flex-1">
+            <p class="text-muted-foreground text-xs mt-1.5 line-clamp-2 leading-relaxed flex-1" data-testid="project-description">
               {{ project.description || 'A 2D game project created with Lupis Engine.' }}
             </p>
             
             <div class="flex items-center justify-between mt-4 pt-4 border-t border-border">
-              <span class="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">
+              <span class="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider" data-testid="project-updated-at">
                 Updated {{ new Date(project.updatedAt || Date.now()).toLocaleDateString('en-US') }}
               </span>
               <span 
                 class="text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider border"
                 :class="getStatusStyle(project.status)"
+                data-testid="project-status-badge"
               >
                 {{ (project.status || 'DRAFT').replace('_', ' ') }}
               </span>
@@ -439,6 +501,7 @@ const getStatusStyle = (status) => {
     <Teleport to="body">
       <BaseContextMenu 
         v-if="menu.visible"
+        data-testid="project-context-menu"
         :position="{ x: menu.x, y: menu.y }"
         :items="contextMenuItems"
         @close="closeMenu"

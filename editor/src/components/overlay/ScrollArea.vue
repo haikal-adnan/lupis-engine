@@ -1,11 +1,17 @@
 <template>
-  <div class="relative w-full h-full overflow-hidden" ref="containerRef">
+  <div 
+    class="relative w-full h-full overflow-hidden" 
+    ref="containerRef"
+    data-testid="scroll-area"
+    :data-orientation="orientation"
+  >
     
     <div
       ref="viewportRef"
       class="h-full w-full scrollbar-hide"
       :class="isVertical ? 'overflow-y-auto overflow-x-hidden' : 'overflow-x-auto overflow-y-hidden'"
       @scroll="handleScroll"
+      data-testid="scroll-viewport"
     >
       <div ref="contentRef" :class="isVertical ? '' : 'w-max h-full'">
         <slot />
@@ -15,6 +21,10 @@
     <Teleport to="body">
       <div
         v-if="showScrollbar"
+        role="scrollbar"
+        :aria-orientation="orientation"
+        :aria-valuenow="Math.round(thumbPos)"
+        data-testid="scroll-track"
         class="fixed z-[9999] transition-opacity duration-200 flex"
         :class="isScrolling || isHovering ? 'opacity-100' : 'opacity-0'"
         :style="{
@@ -27,6 +37,7 @@
         @mouseleave="handleMouseLeave"
       >
         <div
+          data-testid="scroll-thumb"
           class="rounded-full cursor-pointer select-none transition-colors"
           :class="[
             isHovering || isDragging ? 'bg-white/40' : 'bg-white/20',

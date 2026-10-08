@@ -11,46 +11,50 @@
       <div 
         v-if="isOpen" 
         class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+        data-testid="create-project-modal-overlay"
         @click.self="handleCancel"
       >
         <div 
+          role="dialog"
+          aria-modal="true"
+          aria-label="Buat Proyek Baru"
+          data-testid="create-project-modal"
           class="w-full max-w-sm bg-background border border-border rounded-lg shadow-xl overflow-hidden transform transition-all"
           :class="{ 'scale-100': isOpen, 'scale-95': !isOpen }"
         >
           <div class="px-4 py-3 border-b border-border bg-muted/30">
-            <h3 class="text-sm font-semibold text-foreground">
+            <h3 class="text-sm font-semibold text-foreground" data-testid="modal-title">
               Buat Proyek Baru
             </h3>
           </div>
 
           <div class="px-4 py-4 space-y-4">
             <div class="space-y-1.5">
-              <label class="text-xs font-medium text-muted-foreground ml-1">Nama Proyek</label>
               <BaseInput 
                 ref="inputRef"
                 v-model="projectName" 
+                label="Nama Proyek"
                 placeholder="Game Keren Saya"
-                @input="projectName = $event.target.value"
-                @keyup.enter="handleConfirm"
+                data-testid="project-name-input"
+                @keydown.enter="handleConfirm"
               />
             </div>
 
             <div class="space-y-1.5">
-              <div class="flex items-center justify-between ml-1">
-                <label class="text-xs font-medium text-muted-foreground">Deskripsi</label>
-                <span class="text-[10px] text-muted-foreground/60">Opsional</span>
-              </div>
               <BaseInput 
                 v-model="projectDescription" 
+                label="Deskripsi"
                 placeholder="Deskripsi singkat tentang game Anda..."
-                @input="projectDescription = $event.target.value"
-                @keyup.enter="handleConfirm"
+                data-testid="project-desc-input"
+                @keydown.enter="handleConfirm"
               />
             </div>
           </div>
 
           <div class="px-4 py-3 bg-muted/30 border-t border-border flex justify-end gap-2">
             <button 
+              type="button"
+              data-testid="cancel-create-project-btn"
               @click="handleCancel"
               class="px-3 py-1.5 text-xs font-medium text-foreground bg-transparent hover:bg-muted border border-border rounded transition-colors"
             >
@@ -58,6 +62,8 @@
             </button>
             
             <button 
+              type="button"
+              data-testid="submit-create-project-btn"
               @click="handleConfirm"
               :disabled="!projectName.trim()"
               class="px-3 py-1.5 text-xs font-medium text-white bg-emerald-500 hover:bg-emerald-600 rounded transition-all duration-200 shadow-sm disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-emerald-500"

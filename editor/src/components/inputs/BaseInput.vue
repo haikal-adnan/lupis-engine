@@ -1,10 +1,15 @@
 <template>
-  <div class="flex flex-col w-full space-y-1.5" :class="{ 'opacity-50 pointer-events-none': disabled }">
+  <div 
+    class="flex flex-col w-full space-y-1.5" 
+    :class="{ 'opacity-50 pointer-events-none': disabled }"
+    data-testid="base-input"
+  >
     <label
       v-if="label"
       :for="id"
       class="font-medium text-muted-foreground select-none"
       :class="[labelSize]"
+      data-part="input-label"
     >
       {{ label }}
     </label>
@@ -22,6 +27,7 @@
         v-if="prefix"
         class="h-full flex items-center justify-center pl-3 pr-2 select-none border-r border-transparent 
                bg-muted/20 text-muted-foreground group-focus-within:text-primary group-focus-within:border-border/50 transition-colors"
+        data-part="input-prefix"
       >
         <span class="font-bold font-mono" :class="[labelSize]">
           {{ prefix }}
@@ -34,9 +40,12 @@
         v-model="localValue"
         :type="type"
         :disabled="disabled"
+        :aria-disabled="disabled"
         class="w-full h-full bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground/40 focus:ring-0 px-2 disabled:cursor-not-allowed"
         :class="[textSize]"
         :placeholder="placeholder"
+        :aria-label="label || placeholder || 'Text Input'"
+        data-part="text-input"
         :style="{
           paddingLeft: prefix ? '0px' : paddingX
         }"
@@ -49,6 +58,7 @@
         v-if="suffix" 
         class="h-full flex items-center pr-3 pl-1 text-muted-foreground select-none bg-muted/20"
         :class="[labelSize]"
+        data-part="input-suffix"
       >
         {{ suffix }}
       </div>

@@ -11,12 +11,16 @@
       <div 
         v-if="popState.isOpen" 
         class="fixed top-6 left-1/2 -translate-x-1/2 z-[200] w-full max-w-sm px-4 md:px-0"
+        role="alert"
+        aria-live="assertive"
+        data-testid="pop-alert"
+        :data-pop-type="popState.type"
       >
         <div 
           class="flex items-start gap-3 p-4 bg-background border border-border rounded-lg shadow-xl"
           :class="borderClass[popState.type]"
         >
-          <div class="flex-shrink-0 mt-0.5">
+          <div class="flex-shrink-0 mt-0.5" aria-hidden="true">
             <component 
               :is="iconMap[popState.type]" 
               class="w-5 h-5"
@@ -25,10 +29,10 @@
           </div>
 
           <div class="flex-1 min-w-0">
-            <h3 class="text-sm font-medium text-foreground">
+            <h3 class="text-sm font-medium text-foreground" data-testid="pop-alert-title">
               {{ popState.title }}
             </h3>
-            <p v-if="popState.message" class="mt-1 text-sm text-muted-foreground leading-snug">
+            <p v-if="popState.message" class="mt-1 text-sm text-muted-foreground leading-snug" data-testid="pop-alert-message">
               {{ popState.message }}
             </p>
           </div>
@@ -36,6 +40,8 @@
           <button 
             @click="closePop"
             class="flex-shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+            aria-label="Close alert"
+            data-testid="pop-alert-close-btn"
           >
             <X class="w-4 h-4" />
           </button>

@@ -17,7 +17,6 @@ export { default as PivotControl } from '@components/inputs/PivotControl.vue'
 
 export { default as BaseTab } from '@components/navigations/BaseTab.vue'
 
-export { default as AppLoading } from '@components/overlay/AppLoading.vue'
 export { default as BaseAlert } from '@components/overlay/BaseAlert.vue'
 export { default as BaseConfirm } from '@components/overlay/BaseConfirm.vue'
 export { default as BaseContextMenu } from '@components/overlay/BaseContextMenu.vue'

@@ -1,7 +1,10 @@
 <template>
-  <div class="relative group w-full max-w-xs transition-all duration-300">
+  <div 
+    class="relative group w-full max-w-xs transition-all duration-300"
+    data-testid="search-input-container"
+  >
     <Search 
-      class="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 transition-colors z-10"
+      class="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 transition-colors z-10 pointer-events-none"
       :class="isFocused ? 'text-primary' : 'text-muted-foreground'"
     />
 
@@ -9,6 +12,8 @@
       v-model="model"
       type="text" 
       :placeholder="placeholder"
+      :aria-expanded="isFocused"
+      data-testid="search-input"
       @focus="isFocused = true"
       @blur="isFocused = false"
       class="w-full h-7 pl-8 pr-7 text-xs bg-background border border-border rounded-md outline-none 
@@ -18,7 +23,10 @@
 
     <button 
       v-if="model"
+      type="button"
       @click="model = ''"
+      aria-label="Clear search"
+      data-testid="search-clear-button"
       class="absolute right-1 top-1/2 -translate-y-1/2 p-0.5 rounded-sm 
              text-muted-foreground hover:text-foreground hover:bg-secondary 
              transition-colors"

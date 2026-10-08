@@ -8,7 +8,20 @@ export class HierarchyPage {
     this.page = page;
   }
 
-  // Locators
+  // ==========================================
+  // LOCATORS - SCENE MANAGEMENT
+  // ==========================================
+  get sceneSelect() {
+    return this.page.getByTestId('scene-select');
+  }
+
+  get sceneOptionsButton() {
+    return this.page.getByTestId('scene-options-button');
+  }
+
+  // ==========================================
+  // LOCATORS - HIERARCHY & LAYERS
+  // ==========================================
   section(name) {
     return this.page
       .getByRole('region', { name })
@@ -32,7 +45,65 @@ export class HierarchyPage {
     return this.page.locator('[data-node-name]').or(this.page.locator('.group\\/node')).filter({ hasText: pattern });
   }
 
-  // Actions
+  // ==========================================
+  // ACTIONS - SCENE MANAGEMENT
+  // ==========================================
+  async switchScene(sceneName) {
+    await expect(this.sceneSelect).toBeVisible();
+
+    // 1. Trigger click pada select button
+    const triggerBtn = this.sceneSelect.getByRole('combobox').or(this.sceneSelect.locator('button')).first();
+    await triggerBtn.click();
+
+    // 2. Pastikan dropdown menu ter-teleport dan terbuka
+    const dropdown = this.page.getByTestId('select-dropdown');
+    await expect(dropdown).toBeVisible();
+
+    // 3. Pilih option berdasarkan teks
+    const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const optionItem = dropdown
+      .getByTestId('select-option')
+      .filter({ hasText: new RegExp(`^\\s*${escapeRegex(sceneName)}\\s*$`, 'i') })
+      .or(dropdown.getByRole('option', { name: sceneName }))
+      .first();
+
+    await expect(optionItem).toBeVisible();
+    await optionItem.click();
+
+    // 4. Assert active scene berhasil berganti
+    await expect(this.sceneSelect).toContainText(sceneName);
+  }
+
+  async createScene(controls, popup, sceneName) {
+    await controls.clickSelectAction('Scene Options', 'New Scene');
+    await popup.fillPromptAndSubmit('New Scene', sceneName, 'OK');
+    await expect(this.sceneSelect).toContainText(sceneName);
+  }
+
+  async deleteCurrentScene(controls, popup) {
+    await expect(this.sceneSelect).toBeVisible();
+    const currentSceneName = (await this.sceneSelect.textContent()).trim();
+
+    // Trigger action Delete Scene dari dropdown
+    await controls.clickSelectAction('Scene Options', 'Delete Scene');
+
+    // Tangani BaseConfirm Dialog secara presisi
+    const confirmModal = this.page.getByTestId('base-confirm');
+    await expect(confirmModal).toBeVisible();
+
+    const confirmBtn = confirmModal.getByTestId('confirm-action-button');
+    await expect(confirmBtn).toBeVisible();
+    await confirmBtn.click();
+
+    // Pastikan dialog tertutup
+    await expect(confirmModal).toHaveCount(0);
+
+    // Assert scene terhapus dari select
+    await expect(this.sceneSelect).not.toContainText(currentSceneName);
+  }
+  // ==========================================
+  // ACTIONS - HIERARCHY & LAYERS
+  // ==========================================
   async addLayerToSection(popup, sectionName = 'World', layerName = 'New Layer') {
     const sectionContainer = this.section(sectionName);
     await sectionContainer.scrollIntoViewIfNeeded();
@@ -51,7 +122,10 @@ export class HierarchyPage {
     await expect(option).toBeVisible();
     await option.click();
 
-    const created = sectionContainer.locator('[data-node-name="New Layer"]').or(sectionContainer.locator('.group\\/node', { hasText: 'New Layer' })).first();
+    const created = sectionContainer
+      .locator('[data-node-name="New Layer"]')
+      .or(sectionContainer.locator('.group\\/node', { hasText: 'New Layer' }))
+      .first();
     await expect(created).toBeVisible();
 
     if (layerName !== 'New Layer') {
@@ -67,9 +141,6 @@ export class HierarchyPage {
     await sourceLocator.dragTo(targetLocator);
   }
 
-  /**
-   * Mengambil snapshot struktur hirarki untuk perbandingan Before/After pada [Bad Path]
-   */
   async snapshot() {
     return await this.page.evaluate(() => {
       const nodes = Array.from(document.querySelectorAll('[data-node-id]'));
@@ -82,3 +153,4 @@ export class HierarchyPage {
     });
   }
 }
+

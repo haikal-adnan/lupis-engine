@@ -8,14 +8,20 @@ export class BaseControlHelper {
     this.page = page;
   }
 
+  // Helper internal untuk mengisolasi elemen editable jika terdeteksi div pembungkus
+  _resolveEditableElement(targetLocator) {
+    return targetLocator.locator('input, textarea').or(targetLocator).first();
+  }
+
   // ==========================================
   // BASE BUTTON & ICON BUTTON
   // ==========================================
-  async clickButton(labelOrText, container) {
+  async clickButton(labelOrTestId, container) {
     const scope = container || this.page;
     const button = scope
-      .getByRole('button', { name: labelOrText })
-      .or(scope.locator('button', { hasText: labelOrText }))
+      .getByTestId(labelOrTestId)
+      .or(scope.getByRole('button', { name: labelOrTestId }))
+      .or(scope.locator('button', { hasText: labelOrTestId }))
       .first();
 
     await button.click();
@@ -24,7 +30,8 @@ export class BaseControlHelper {
   async clickIconButtonByTooltip(tooltipText, container) {
     const scope = container || this.page;
     const button = scope
-      .getByRole('button', { name: tooltipText })
+      .getByTestId(tooltipText)
+      .or(scope.getByRole('button', { name: tooltipText }))
       .or(scope.locator('button', { hasText: tooltipText }))
       .first();
 
@@ -32,13 +39,23 @@ export class BaseControlHelper {
   }
 
   // ==========================================
-  // BASE INPUT
+  // BASE INPUT & TEXTAREA
   // ==========================================
-  async fillInput(labelOrPlaceholder, value, container) {
+  // BaseControlHelper.js
+  async fillInput(labelOrTestIdOrPlaceholder, value, container) {
     const scope = container || this.page;
+
+    // Mencari input berdasarkan data-testid/placeholder/label
     const input = scope
-      .getByLabel(labelOrPlaceholder, { exact: false })
-      .or(scope.getByPlaceholder(labelOrPlaceholder))
+      .locator('input, textarea')
+      .filter({
+        has: scope.getByTestId(labelOrTestIdOrPlaceholder)
+          .or(scope.getByPlaceholder(labelOrTestIdOrPlaceholder))
+          .or(scope.getByLabel(labelOrTestIdOrPlaceholder))
+      })
+      .or(scope.getByTestId(labelOrTestIdOrPlaceholder).locator('input, textarea'))
+      .or(scope.getByPlaceholder(labelOrTestIdOrPlaceholder))
+      .or(scope.getByLabel(labelOrTestIdOrPlaceholder))
       .first();
 
     await input.fill(value);
@@ -46,22 +63,55 @@ export class BaseControlHelper {
     await expect(input).toHaveValue(value);
   }
 
+  async clearInput(labelOrTestIdOrPlaceholder, container) {
+    const scope = container || this.page;
+    const rawTarget = scope
+      .getByTestId(labelOrTestIdOrPlaceholder)
+      .or(scope.getByLabel(labelOrTestIdOrPlaceholder, { exact: false }))
+      .or(scope.getByPlaceholder(labelOrTestIdOrPlaceholder))
+      .first();
+
+    const input = this._resolveEditableElement(rawTarget);
+
+    await input.clear();
+    await input.blur();
+    await expect(input).toHaveValue('');
+  }
+
+  async fillTextarea(labelOrTestIdOrPlaceholder, value, container) {
+    const scope = container || this.page;
+    const rawTarget = scope
+      .getByTestId(labelOrTestIdOrPlaceholder)
+      .or(scope.getByLabel(labelOrTestIdOrPlaceholder, { exact: false }))
+      .or(scope.getByPlaceholder(labelOrTestIdOrPlaceholder))
+      .first();
+
+    const textarea = this._resolveEditableElement(rawTarget);
+
+    await textarea.fill(value);
+    await textarea.blur();
+    await expect(textarea).toHaveValue(value);
+  }
+
   // ==========================================
   // BASE NUMBER
   // ==========================================
-  async fillNumber(labelOrPlaceholder, value, container) {
+  async fillNumber(labelOrTestIdOrPlaceholder, value, container) {
     const scope = container || this.page;
-    const input = scope
-      .getByLabel(labelOrPlaceholder, { exact: false })
-      .or(scope.getByPlaceholder(labelOrPlaceholder))
+    const rawTarget = scope
+      .getByTestId(labelOrTestIdOrPlaceholder)
+      .or(scope.getByLabel(labelOrTestIdOrPlaceholder, { exact: false }))
+      .or(scope.getByPlaceholder(labelOrTestIdOrPlaceholder))
       .first();
+
+    const input = this._resolveEditableElement(rawTarget);
 
     await input.fill(String(value));
     await input.press('Enter');
     await expect(input).toHaveValue(String(value));
   }
 
-  async scrubNumber(prefixText, dragDistanceX, container) {
+  async scrubNumber(prefixText, dragDistanceX, targetInputLocator, container) {
     const scope = container || this.page;
     const prefixElement = scope
       .locator('div, span, label')
@@ -79,16 +129,22 @@ export class BaseControlHelper {
     await this.page.mouse.down();
     await this.page.mouse.move(startX + dragDistanceX, startY);
     await this.page.mouse.up();
+
+    if (targetInputLocator) {
+      await expect(targetInputLocator).not.toHaveValue('');
+    }
   }
 
   // ==========================================
   // BASE CHECKBOX
   // ==========================================
-  async setCheckbox(label, checked = true, container) {
+  async setCheckbox(labelOrTestId, checked = true, container) {
     const scope = container || this.page;
-    const checkbox = scope.getByLabel(label, { exact: false }).or(
-      scope.locator('label', { hasText: label }).locator('input[type="checkbox"]')
-    ).first();
+    const checkbox = scope
+      .getByTestId(labelOrTestId)
+      .or(scope.getByLabel(labelOrTestId, { exact: false }))
+      .or(scope.locator('label', { hasText: labelOrTestId }).locator('input[type="checkbox"]'))
+      .first();
 
     if (checked) {
       await checkbox.check();
@@ -102,84 +158,122 @@ export class BaseControlHelper {
   // ==========================================
   // BASE COLOR
   // ==========================================
-  async fillHexColor(label, hexCode, container) {
+  async fillHexColor(labelOrTestId, hexCode, container) {
     const scope = container || this.page;
-    const inputByLabel = scope.getByLabel(label, { exact: false }).first();
+    const rawTarget = scope
+      .getByTestId(labelOrTestId)
+      .or(scope.getByLabel(labelOrTestId, { exact: false }))
+      .first();
 
-    await inputByLabel.fill(hexCode);
-    await inputByLabel.press('Enter');
-    await expect(inputByLabel).toHaveValue(hexCode);
+    const input = this._resolveEditableElement(rawTarget);
+
+    await input.fill(hexCode);
+    await input.press('Enter');
+    await expect(input).toHaveValue(hexCode);
   }
 
   // ==========================================
   // BASE SEARCH INPUT
   // ==========================================
-  async fillSearch(placeholder, query, container) {
+  async fillSearch(placeholderOrTestId, query, container) {
     const scope = container || this.page;
-    const searchInput = scope.getByPlaceholder(placeholder);
+    const rawTarget = scope
+      .getByTestId(placeholderOrTestId)
+      .or(scope.getByPlaceholder(placeholderOrTestId))
+      .first();
+
+    const searchInput = this._resolveEditableElement(rawTarget);
 
     await searchInput.fill(query);
     await expect(searchInput).toHaveValue(query);
   }
 
-  async clearSearch(placeholder, container) {
+  async clearSearch(placeholderOrTestId, container) {
     const scope = container || this.page;
-    const containerEl = scope.locator('div', { has: scope.getByPlaceholder(placeholder) }).first();
+    const containerEl = scope
+      .locator('div', {
+        has: scope.getByTestId(placeholderOrTestId).or(scope.getByPlaceholder(placeholderOrTestId))
+      })
+      .first();
+
     const clearButton = containerEl.getByRole('button').or(containerEl.locator('button')).first();
 
     await clearButton.click();
-    await expect(scope.getByPlaceholder(placeholder)).toHaveValue('');
+
+    const searchInput = this._resolveEditableElement(
+      scope.getByTestId(placeholderOrTestId).or(scope.getByPlaceholder(placeholderOrTestId))
+    );
+    await expect(searchInput).toHaveValue('');
   }
 
   // ==========================================
   // BASE SELECT
   // ==========================================
-  async selectOption(labelOrPlaceholder, optionLabel, container) {
+  // BaseControlHelper.js
+  async selectOption(labelOrTestId, optionLabel, container) {
     const scope = container || this.page;
 
+    // 1. Trigger Dropdown
     const trigger = scope
-      .getByLabel(labelOrPlaceholder, { exact: false })
-      .or(scope.getByRole('button', { name: labelOrPlaceholder }))
-      .or(scope.locator('button', { hasText: labelOrPlaceholder }))
+      .getByTestId(labelOrTestId)
+      .or(scope.getByTestId('select-trigger'))
+      .or(scope.getByRole('combobox', { name: labelOrTestId }))
+      .or(scope.locator('button', { hasText: labelOrTestId }))
       .first();
 
     await trigger.click();
 
-    // Teleported UI diletakkan pada page level
+    // 2. Cari Opsi spesifik di dalam Teleport Dropdown menggunakan regex fleksibel untuk whitespace
+    const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const optionItem = this.page
-      .getByRole('option', { name: optionLabel })
-      .or(this.page.locator('li, div', { hasText: optionLabel }))
+      .getByTestId('select-option')
+      .filter({ hasText: new RegExp(`^\\s*${escapeRegex(optionLabel)}\\s*$`, 'i') })
+      .or(this.page.getByRole('option', { name: optionLabel }))
       .first();
 
+    await expect(optionItem).toBeVisible();
     await optionItem.click();
   }
 
-  async clickSelectAction(labelOrPlaceholder, actionText, container) {
+  // tests/e2e/components/BaseControlHelper.js
+
+  // tests/e2e/components/BaseControlHelper.js
+  async clickSelectAction(labelOrTestId, actionText, container) {
     const scope = container || this.page;
 
     const trigger = scope
-      .getByLabel(labelOrPlaceholder, { exact: false })
-      .or(scope.getByRole('button', { name: labelOrPlaceholder }))
-      .or(scope.locator('button', { hasText: labelOrPlaceholder }))
+      .getByTestId(labelOrTestId)
+      .or(scope.getByTestId('scene-options-button'))
+      .or(scope.getByLabel(labelOrTestId, { exact: false }))
+      .or(scope.getByRole('button', { name: labelOrTestId }))
+      .or(scope.locator(`button[title="${labelOrTestId}"], button[aria-label="${labelOrTestId}"]`))
+      .or(scope.locator('button', { hasText: labelOrTestId }))
       .first();
 
+    await expect(trigger).toBeVisible();
     await trigger.click();
 
-    const actionItem = this.page
-      .getByRole('button', { name: actionText })
-      .or(this.page.locator('li, div', { hasText: actionText }))
+    // Cari item aksi dari menu dropdown yang terbuka
+    const menu = this.page.getByTestId('scene-options-menu').or(this.page.getByRole('menu')).last();
+    await expect(menu).toBeVisible();
+
+    const actionItem = menu
+      .getByRole('menuitem', { name: actionText })
+      .or(menu.locator('button, li, div', { hasText: actionText }))
       .first();
 
+    await expect(actionItem).toBeVisible();
     await actionItem.click();
   }
 
-  async deleteSelectOption(labelOrPlaceholder, optionLabel, container) {
+  async deleteSelectOption(labelOrTestId, optionLabel, container) {
     const scope = container || this.page;
 
     const trigger = scope
-      .getByLabel(labelOrPlaceholder, { exact: false })
-      .or(scope.getByRole('button', { name: labelOrPlaceholder }))
-      .or(scope.locator('button', { hasText: labelOrPlaceholder }))
+      .getByTestId(labelOrTestId)
+      .or(scope.getByLabel(labelOrTestId, { exact: false }))
+      .or(scope.getByRole('button', { name: labelOrTestId }))
+      .or(scope.locator('button', { hasText: labelOrTestId }))
       .first();
 
     await trigger.click();
@@ -198,20 +292,5 @@ export class BaseControlHelper {
 
     await deleteBtn.click();
   }
-
-  // ==========================================
-  // BASE TEXTAREA
-  // ==========================================
-  async fillTextarea(labelOrPlaceholder, value, container) {
-    const scope = container || this.page;
-
-    const textarea = scope
-      .getByLabel(labelOrPlaceholder, { exact: false })
-      .or(scope.getByPlaceholder(labelOrPlaceholder))
-      .first();
-
-    await textarea.fill(value);
-    await textarea.blur();
-    await expect(textarea).toHaveValue(value);
-  }
 }
+

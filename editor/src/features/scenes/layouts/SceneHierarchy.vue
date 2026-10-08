@@ -1,5 +1,11 @@
+<!-- SceneHierarchy.vue -->
 <template>
-  <div class="flex flex-col h-full bg-background select-none" @click="closeMenu">
+  <div 
+    class="flex flex-col h-full bg-background select-none" 
+    @click="closeMenu"
+    data-testid="scene-hierarchy-container"
+    :data-selected-count="sceneStore.selectedEntityIds.length"
+  >
     <HierarchyToolbar 
       v-model="searchQuery" 
       :is-refreshing="isRefreshing"
@@ -7,7 +13,7 @@
       @refresh="handlers.refresh"
     />
 
-    <div class="flex-1 min-h-0 relative w-full">
+    <div class="flex-1 min-h-0 relative w-full" data-section="tree-viewport">
       <ScrollArea>
         <div class="px-1 pt-2 pb-32"> 
           <SceneTree 
@@ -16,6 +22,7 @@
             @select="handleSelect"
             @contextmenu="handleContextMenu"
             @drop="handleDrop"
+            data-testid="scene-tree"
           />
         </div>
       </ScrollArea>
@@ -26,6 +33,8 @@
       :position="{ x: contextMenu.x, y: contextMenu.y }"
       :items="contextMenu.items"
       @close="closeMenu"
+      data-testid="hierarchy-context-menu"
+      role="menu"
     />
   </div>
 </template>

@@ -1,7 +1,12 @@
+<!-- HierarchyToolbar.vue -->
 <template>
-  <div class="px-2 py-2 border-b border-border bg-background space-y-2">
-    
-    <div class="flex items-center gap-1.5">
+  <div 
+    class="px-2 py-2 border-b border-border bg-background space-y-2"
+    data-testid="hierarchy-toolbar"
+    :data-active-scene-id="sceneStore.activeSceneId"
+  >
+    <!-- Scene Selector & Actions Section -->
+    <div class="flex items-center gap-1.5" data-section="scene-selector-section">
       <div class="flex-1 min-w-0">
         <BaseSelect 
           :modelValue="sceneStore.activeSceneId" 
@@ -10,6 +15,7 @@
           placeholder="Select Scene..."
           height="1.75rem"
           class="w-full"
+          data-testid="scene-select"
         />
       </div>
 
@@ -19,27 +25,66 @@
             class="h-7 w-7 flex items-center justify-center rounded-md border border-transparent hover:bg-muted text-muted-foreground transition-colors"
             :class="{ 'bg-muted text-foreground': isOpen }"
             title="Scene Options"
+            data-testid="scene-options-button"
+            aria-label="Scene Options"
+            :aria-expanded="isOpen"
           >
             <MoreVertical class="w-4 h-4" />
           </button>
         </template>
 
         <template #default="{ close }">
-          <div class="flex flex-col text-xs min-w-[160px]">
+          <div 
+            class="flex flex-col text-xs min-w-[160px]"
+            role="menu"
+            aria-label="Scene Actions Menu"
+            data-testid="scene-options-menu"
+          >
             <div class="px-2 py-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
               Scene Actions
             </div>
-            <button @click="handleCreate(close)" class="dropdown-item">
+            
+            <button 
+              @click="handleCreate(close)" 
+              class="dropdown-item"
+              role="menuitem"
+              data-testid="action-new-scene"
+            >
               <Plus class="w-3.5 h-3.5 mr-2 text-muted-foreground" /> <span>New Scene</span>
             </button>
-            <button @click="handleRename(close)" :disabled="!sceneStore.activeSceneId" class="dropdown-item">
+
+            <button 
+              @click="handleRename(close)" 
+              :disabled="!sceneStore.activeSceneId" 
+              class="dropdown-item"
+              role="menuitem"
+              data-testid="action-rename-scene"
+              :aria-disabled="!sceneStore.activeSceneId"
+            >
               <Edit2 class="w-3.5 h-3.5 mr-2 text-muted-foreground" /> <span>Rename Scene</span>
             </button>
-            <button @click="handleDuplicate(close)" :disabled="!sceneStore.activeSceneId" class="dropdown-item">
+
+            <button 
+              @click="handleDuplicate(close)" 
+              :disabled="!sceneStore.activeSceneId" 
+              class="dropdown-item"
+              role="menuitem"
+              data-testid="action-duplicate-scene"
+              :aria-disabled="!sceneStore.activeSceneId"
+            >
               <Copy class="w-3.5 h-3.5 mr-2 text-muted-foreground" /> <span>Duplicate Scene</span>
             </button>
+
             <div class="h-[1px] bg-border my-1"></div>
-            <button @click="handleDelete(close)" :disabled="!sceneStore.activeSceneId" class="dropdown-item text-destructive hover:text-destructive hover:bg-destructive/10">
+
+            <button 
+              @click="handleDelete(close)" 
+              :disabled="!sceneStore.activeSceneId" 
+              class="dropdown-item text-destructive hover:text-destructive hover:bg-destructive/10"
+              role="menuitem"
+              data-testid="action-delete-scene"
+              :aria-disabled="!sceneStore.activeSceneId"
+            >
               <Trash2 class="w-3.5 h-3.5 mr-2" /> <span>Delete Scene</span>
             </button>
           </div>
@@ -47,20 +92,25 @@
       </BaseDropdown>
     </div>
 
-    <div class="flex items-center gap-1.5">
+    <!-- Search & Refresh Section -->
+    <div class="flex items-center gap-1.5" data-section="search-and-controls">
       <div class="relative flex-1">
         <Search class="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
         <input 
           type="text" 
           :value="modelValue"
-          @input="$emit('update:modelValue', $event.target.value)"
+          @input="$emit('update:modelValue',$event.target.value)"
           placeholder="Search..." 
           class="w-full h-7 pl-7 pr-2 text-xs bg-background border border-input rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary placeholder:text-muted-foreground/50"
+          data-testid="hierarchy-search-input"
+          aria-label="Search Hierarchy"
         />
         <button 
           v-if="modelValue"
           @click="$emit('update:modelValue', '')"
           class="absolute right-1 top-1/2 -translate-y-1/2 p-0.5 hover:bg-muted rounded-full"
+          data-testid="hierarchy-search-clear-button"
+          aria-label="Clear Search"
         >
           <X class="w-3 h-3 text-muted-foreground" />
         </button>
@@ -71,6 +121,9 @@
         class="h-7 w-7 flex items-center justify-center rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors"
         :class="{ 'animate-spin': isRefreshing }"
         title="Refresh Engine Scene"
+        aria-label="Refresh Engine Scene"
+        data-testid="refresh-scene-button"
+        :data-refreshing="isRefreshing ? 'true' : 'false'"
       >
         <RefreshCw class="w-3.5 h-3.5" />
       </button>
@@ -160,7 +213,18 @@ const handleCreate = async (close) => {
   
   if (name) {
     try {
-      sceneStore.addScene({ name });
+      // Perbaikan: Ambil scene baru yang dibuat lalu set sebagai active scene
+      const newScene = sceneStore.addScene({ name });
+      
+      // Jika addScene mengembalikan object scene/id, gunakan ID tersebut.
+      // Jika tidak mengembalikan, pastikan sceneStore mengeset active scene atau ambil ID-nya dari store.
+      if (newScene?.id) {
+        sceneStore.setActiveScene(newScene.id);
+      } else if (sceneStore.scenes?.length) {
+        const created = sceneStore.scenes.find(s => s.name === name);
+        if (created) sceneStore.setActiveScene(created.id);
+      }
+
       syncSceneWithEngine();
       showPop({ title: 'Success', message: `Scene "${name}" created.`, type: 'success' });
     } catch (e) {
@@ -198,6 +262,7 @@ const handleDuplicate = async (close) => {
   }
 };
 
+// HierarchyToolbar.vue (pada handleDelete)
 const handleDelete = async (close) => {
   close();
   
@@ -221,27 +286,26 @@ const handleDelete = async (close) => {
   if (confirmed) {
     try {
       const targetDeleteId = sceneStore.activeSceneId;
-      
       const remainingScene = sceneStore.scenes.find(s => s.id !== targetDeleteId);
       
+      // Hapus scene terlebih dahulu lalu atur active scene baru
+      sceneStore.removeScene(targetDeleteId);
       if (remainingScene) {
         sceneStore.setActiveScene(remainingScene.id);
       }
-
-      sceneStore.removeScene(targetDeleteId);
       
       syncSceneWithEngine();
-      
       showPop({ title: 'Deleted', message: `Scene "${sceneName}" removed.`, type: 'success' });
     } catch (e) {
       showPop({ title: 'Error', message: 'Failed to delete scene.', type: 'error' });
     }
   }
 };
+
 </script>
 
 <style scoped>
 .dropdown-item {
-    @apply flex items-center px-2 py-1.5 mx-1 rounded-sm hover:bg-accent hover:text-accent-foreground text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+  @apply flex items-center px-2 py-1.5 mx-1 rounded-sm hover:bg-accent hover:text-accent-foreground text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
 }
 </style>
