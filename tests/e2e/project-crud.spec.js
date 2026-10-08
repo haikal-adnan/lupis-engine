@@ -1,8 +1,14 @@
 import { test, expect } from '@playwright/test';
+import { BaseControlHelper } from './components/BaseControlHelper.js';
+import { PopupHelper } from './components/PopupHelper.js';
 
 test.describe('E2E - Management CRUD Project Game Engine', () => {
+  let controls;
+  let popup;
 
   test.beforeEach(async ({ page }) => {
+    controls = new BaseControlHelper(page);
+    popup = new PopupHelper(page);
     await page.goto('/');
   });
 
@@ -16,12 +22,12 @@ test.describe('E2E - Management CRUD Project Game Engine', () => {
     // ==========================================
     // 1. CREATE PROJECT
     // ==========================================
-    await page.click('button:has-text("New Project"), button:has-text("New")');
+    await controls.clickButton('New');
     await expect(page.locator('h3:has-text("Buat Proyek Baru")')).toBeVisible();
 
-    await page.fill('input[placeholder="Game Keren Saya"]', initialProjectName);
-    await page.fill('input[placeholder="Deskripsi singkat tentang game Anda..."]', initialProjectDesc);
-    await page.click('button:has-text("Buat")');
+    await controls.fillInput('Game Keren Saya', initialProjectName);
+    await controls.fillInput('Deskripsi singkat tentang game Anda...', initialProjectDesc);
+    await controls.clickButton('Buat');
 
     // ==========================================
     // 2. REDIRECT CHECK
@@ -39,57 +45,33 @@ test.describe('E2E - Management CRUD Project Game Engine', () => {
     await expect(projectCard).toContainText(initialProjectDesc);
 
     // ==========================================
-    // 4. RENAME PROJECT (BasePrompt)
+    // 4. RENAME PROJECT (BaseContextMenu -> BasePrompt)
     // ==========================================
-    await projectCard.click({ button: 'right' });
-    await page.click('.base-context-menu-fixed >> text=Rename');
-
-    // Pastikan modal Rename Project dari BasePrompt muncul
-    await expect(page.locator('h3:has-text("Rename Project")')).toBeVisible();
-    
-    // Target input native di BasePrompt
-    const promptModal = page.locator('div.z-\\[100\\]', { hasText: 'Rename Project' }).first();
-    const promptInput = promptModal.locator('input[type="text"]');
-    
-    // Fill nama baru dan klik tombol Save
-    await promptInput.fill(updatedProjectName);
-    await promptModal.locator('button:has-text("Save")').click();
+    await popup.selectContextMenu(projectCard, 'Rename');
+    await popup.fillPromptAndSubmit('Rename Project', updatedProjectName, 'Save');
 
     // Verifikasi perbaikan nama card di dashboard
     const updatedCardName = page.locator('.group.bg-card', { hasText: updatedProjectName });
     await expect(updatedCardName).toBeVisible();
 
     // ==========================================
-    // 5. EDIT DESCRIPTION (BasePrompt)
+    // 5. EDIT DESCRIPTION (BaseContextMenu -> BasePrompt)
     // ==========================================
-    await updatedCardName.click({ button: 'right' });
-    await page.click('.base-context-menu-fixed >> text=Edit Description');
-
-    await expect(page.locator('h3:has-text("Edit Description")')).toBeVisible();
-
-    const descModal = page.locator('div.z-\\[100\\]', { hasText: 'Edit Description' }).first();
-    const descInput = descModal.locator('input[type="text"]');
-    
-    await descInput.fill(updatedProjectDesc);
-    await descModal.locator('button:has-text("Save")').click();
+    await popup.selectContextMenu(updatedCardName, 'Edit Description');
+    await popup.fillPromptAndSubmit('Edit Description', updatedProjectDesc, 'Save');
 
     await expect(updatedCardName).toContainText(updatedProjectDesc);
 
     // ==========================================
-    // 6. DELETE PROJECT
+    // 6. DELETE PROJECT (BaseContextMenu -> BaseConfirm)
     // ==========================================
-    await updatedCardName.click({ button: 'right' });
-    await page.click('.base-context-menu-fixed >> text=Delete Project');
-
-    await expect(page.locator('h3:has-text("Delete Project?")')).toBeVisible();
-
-    const confirmModal = page.locator('div.z-\\[100\\]', { hasText: 'Delete Project?' }).first();
-    await confirmModal.locator('button:has-text("Delete")').click();
+    await popup.selectContextMenu(updatedCardName, 'Delete Project');
+    await popup.confirmAction('Delete Project?', { confirmText: 'Delete' });
 
     // ==========================================
     // 7. VERIFY DELETE
     // ==========================================
-    await expect(page.locator('.group.bg-card', { hasText: updatedProjectName })).not.toBeVisible();
+    await expect(updatedCardName).not.toBeVisible();
   });
 
 });

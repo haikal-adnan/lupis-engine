@@ -1,10 +1,22 @@
 <template>
   <div class="flex flex-col h-full w-full relative outline-none select-none">
     
-    <PropertySection title="World" :defaultOpen="true" class="border-b border-border/50">
+    <PropertySection 
+      title="World" 
+      :defaultOpen="true" 
+      class="border-b border-border/50"
+      data-section="world"
+      role="region"
+      aria-label="World"
+    >
       <template #menu="{ close }">
         <div class="p-1 space-y-0.5 min-w-[140px]">
-           <button @click="handleAddLayer('world'); close()" class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-accent hover:text-accent-foreground transition-colors">
+           <button 
+             type="button"
+             @click="handleAddLayer('world'); close()" 
+             class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-accent hover:text-accent-foreground transition-colors"
+             aria-label="Add World Layer"
+           >
               <Plus class="w-3.5 h-3.5 mr-2 text-muted-foreground" />
               <span>Add World Layer</span>
            </button>
@@ -21,8 +33,8 @@
           :key="node.id" 
           :node="node" 
           :selected-ids="selectedIds"
-          @select="$emit('select', $event)"
-          @contextmenu="$emit('contextmenu', $event)"
+          @select="$emit('select',$event)"
+          @contextmenu="$emit('contextmenu',$event)"
           @node-drop="handleDrop"
         />
         
@@ -32,19 +44,41 @@
       </div>
     </PropertySection>
 
-    <PropertySection title="User Interface" :defaultOpen="true">
+    <PropertySection 
+      title="User Interface" 
+      :defaultOpen="true"
+      data-section="ui"
+      role="region"
+      aria-label="User Interface"
+    >
       <template #menu="{ close }">
         <div class="p-1 space-y-0.5 min-w-[150px]">
-           <button @click="openUIEditor(); close()" :disabled="workspaceStore.activeTab?.type === 'ui'" class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-accent hover:text-accent-foreground transition-colors disabled:opacity-50">
+           <button 
+             type="button"
+             @click="openUIEditor(); close()" 
+             :disabled="workspaceStore.activeTab?.type === 'ui'" 
+             class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-accent hover:text-accent-foreground transition-colors disabled:opacity-50"
+             aria-label="Open UI Editor"
+           >
                <LayoutTemplate class="w-3.5 h-3.5 mr-2 text-blue-500" />
                <span>Open UI Editor</span>
            </button>
-           <button @click="sceneStore.toggleUIBorder(); close()" class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-accent hover:text-accent-foreground transition-colors">
+           <button 
+             type="button"
+             @click="sceneStore.toggleUIBorder(); close()" 
+             class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-accent hover:text-accent-foreground transition-colors"
+             aria-label="Toggle UI Border"
+           >
                <AppWindow class="w-3.5 h-3.5 mr-2 text-muted-foreground" />
                <span>{{ (sceneStore.activeScene?.settings?.ui?.showUIBorder ?? true) ? 'Hide UI Border' : 'Show UI Border' }}</span>
            </button>
            <div class="h-[1px] bg-border my-1"></div>
-           <button @click="handleAddLayer('ui'); close()" class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-accent hover:text-accent-foreground transition-colors">
+           <button 
+             type="button"
+             @click="handleAddLayer('ui'); close()" 
+             class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-accent hover:text-accent-foreground transition-colors"
+             aria-label="Add UI Layer"
+           >
               <Plus class="w-3.5 h-3.5 mr-2 text-muted-foreground" />
               <span>Add UI Layer</span>
            </button>
@@ -61,8 +95,8 @@
           :key="node.id" 
           :node="node" 
           :selected-ids="selectedIds"
-          @select="$emit('select', $event)"
-          @contextmenu="$emit('contextmenu', $event)"
+          @select="$emit('select',$event)"
+          @contextmenu="$emit('contextmenu',$event)"
           @node-drop="handleDrop"
         />
         
@@ -74,7 +108,7 @@
 
     <div 
       class="h-32 w-full cursor-default" 
-      @contextmenu.prevent="$emit('contextmenu', { event: $event, node: null })"
+      @contextmenu.prevent="$emit('contextmenu', { event:$event, node: null })"
     ></div>
 
   </div>

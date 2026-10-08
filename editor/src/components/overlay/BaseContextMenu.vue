@@ -4,6 +4,8 @@
       <div
         v-if="visible"
         ref="menuRef"
+        role="menu"
+        aria-label="Context Menu"
         class="base-context-menu-fixed fixed min-w-[160px] max-w-[240px] p-1 bg-popover border border-border shadow-lg rounded-md flex flex-col gap-0.5 text-popover-foreground z-[9999] max-h-[85vh] overflow-y-auto overflow-x-hidden scrollbar-thin"
         :style="menuStyle"
         @contextmenu.prevent
@@ -11,13 +13,21 @@
         @click.stop
       >
         <template v-for="(item, index) in items" :key="index">
-          <div v-if="item.separator" class="h-[1px] bg-border my-1 mx-1"></div>
+          <div 
+            v-if="item.separator" 
+            role="separator" 
+            class="h-[1px] bg-border my-1 mx-1"
+          ></div>
 
-          <div
+          <button
             v-else
-            class="relative flex items-center justify-between px-2 py-1.5 text-xs rounded-sm cursor-pointer select-none transition-colors"
+            type="button"
+            role="menuitem"
+            :aria-disabled="item.disabled ? 'true' : undefined"
+            :data-menu-item="item.label"
+            class="relative flex items-center justify-between px-2 py-1.5 text-xs rounded-sm cursor-pointer select-none transition-colors border-none bg-transparent w-full text-left"
             :class="[
-              item.disabled ? 'pointer-events-none text-muted-foreground' : 'hover:bg-accent hover:text-accent-foreground',
+              item.disabled ? 'opacity-50 cursor-not-allowed text-muted-foreground' : 'hover:bg-accent hover:text-accent-foreground',
               activeSubmenuIndex === index ? 'bg-accent text-accent-foreground' : ''
             ]"
             @click.stop="handleAction(item)"
@@ -40,7 +50,7 @@
               :position="submenuPos" 
               @close="$emit('close')"
             />
-          </div>
+          </button>
         </template>
       </div>
     </Transition>

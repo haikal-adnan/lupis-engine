@@ -17,6 +17,15 @@
 
     <div
       class="group/node relative flex items-center w-full border border-transparent py-0.5 pr-2 text-xs cursor-default transition-none whitespace-nowrap"
+      :data-node-id="node.id"
+      :data-node-name="node.name"
+      :data-node-type="node.type"
+      :data-parent-id="node.parentId || null"
+      :data-prefab="isPrefab ? 'true' : 'false'"
+      :data-locked="locked ? 'true' : 'false'"
+      :data-visible="visible ? 'true' : 'false'"
+      :aria-selected="isSelected ? 'true' : 'false'"
+      :aria-disabled="isInactive ? 'true' : 'false'"
       :class="[
         isSelected
           ? 'bg-blue-600/20 text-white'
@@ -35,8 +44,10 @@
       @dragleave="onDragLeave"
       @drop.prevent.stop="onDrop"
     >
-      <div
-        class="w-4 h-5 flex items-center justify-center -ml-1 mr-0.5 shrink-0 cursor-pointer hover:bg-white/10 rounded"
+      <button
+        type="button"
+        class="w-4 h-5 flex items-center justify-center -ml-1 mr-0.5 shrink-0 cursor-pointer hover:bg-white/10 rounded border-none bg-transparent p-0"
+        :aria-label="isOpen ? 'Collapse node' : 'Expand node'"
         @click.stop="toggle"
         @mousedown.stop
       >
@@ -48,7 +59,7 @@
             isSelected ? 'text-white' : 'text-muted-foreground'
           ]"
         />
-      </div>
+      </button>
 
       <component
         :is="getIcon"
@@ -75,6 +86,7 @@
           v-if="node.zIndex !== undefined && node.zIndex !== null" 
           class="text-[9px] bg-white/10 px-1 rounded text-muted-foreground font-mono min-w-[14px] text-center"
           title="Z-Index Layer"
+          data-z-index
         >
           {{ node.zIndex }}
         </span>
@@ -84,14 +96,26 @@
         class="flex items-center gap-1 opacity-0 group-hover/node:opacity-100 transition-opacity"
         :class="{ 'opacity-100': locked || !visible }"
       >
-        <div class="p-1 rounded hover:bg-white/20 cursor-pointer" @click.stop="toggleLock" title="Toggle Lock">
+        <button 
+          type="button"
+          class="p-1 rounded hover:bg-white/20 cursor-pointer border-none bg-transparent" 
+          :aria-label="locked ? 'Unlock node' : 'Lock node'"
+          title="Toggle Lock"
+          @click.stop="toggleLock"
+        >
             <Lock v-if="locked" class="w-3 h-3 text-amber-500" />
             <Unlock v-else class="w-3 h-3 text-muted-foreground opacity-50 hover:opacity-100" />
-        </div>
-        <div class="p-1 rounded hover:bg-white/20 cursor-pointer" @click.stop="toggleVisibility" title="Toggle Visibility">
+        </button>
+        <button 
+          type="button"
+          class="p-1 rounded hover:bg-white/20 cursor-pointer border-none bg-transparent" 
+          :aria-label="visible ? 'Hide node' : 'Show node'"
+          title="Toggle Visibility"
+          @click.stop="toggleVisibility"
+        >
             <EyeOff v-if="!visible" class="w-3.5 h-3.5 text-muted-foreground" />
             <Eye v-else class="w-3.5 h-3.5 text-muted-foreground opacity-50 hover:opacity-100" />
-        </div>
+        </button>
       </div>
     </div>
 
@@ -118,7 +142,7 @@
           :node="child"
           :depth="depth + 1"
           :selected-ids="selectedIds"
-          @select="$emit('select', $event)"
+          @select="$emit('select',$event)"
           @contextmenu="(p) => $emit('contextmenu', p)"
           @node-drop="(p) => $emit('node-drop', p)"
         />
