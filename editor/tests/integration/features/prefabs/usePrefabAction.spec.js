@@ -84,7 +84,7 @@ describe('Integrasi PrefabActions', () => {
     workspaceStore.setProjectId(project.id)
     folderStore.activeFolderId = 'folder-root'
 
-    // ✅ Mengisi state scenes dengan benar agar getter activeScene berfungsi
+    // Mengisi state scenes dengan benar agar getter activeScene berfungsi
     sceneStore.initScenes([
       {
         id: 'scene-1',
@@ -105,7 +105,7 @@ describe('Integrasi PrefabActions', () => {
 
   describe('Integrasi Pembuatan dan Duplikasi Prefab', () => {
     it('membuat prefab baru dari data entity beserta anaknya dan menyimpannya ke OPFS', async () => {
-      // Arrange: Set entities langsung di activeScene
+      // Arrange
       sceneStore.activeScene.entities = [
         { id: 'ent-1', name: 'ParentEntity', type: 'world', layerId: 'l1', orderIndex: 0, components: { Transform: { x: 10, y: 10 } } },
         { id: 'ent-2', parentId: 'ent-1', name: 'ChildEntity', type: 'world', layerId: 'l1', orderIndex: 1, components: {} }
@@ -132,19 +132,19 @@ describe('Integrasi PrefabActions', () => {
       // Act
       const secondEnemy = await actions.createPrefab('Enemy')
 
-      // Assert
-      expect(secondEnemy.name).toBe('Enemy_1')
+      // Assert: Sesuai logika baru getValidUniqueName, jika "Enemy" ada, nama berikutnya adalah "Enemy_2"
+      expect(secondEnemy.name).toBe('Enemy_2')
       expect(prefabStore.prefabs).toHaveLength(2)
     })
 
-    it('Menduplikasi prefab yang ada dan menyimpan salinan baru', async () => {
+    it('menduplikasi prefab yang ada dan menyimpan salinan baru', async () => {
       // Arrange
       const original = await actions.createPrefab('Collectible')
 
       // Act
       const duplicated = await actions.duplicatePrefab(original.id)
 
-      // Assert
+      // Assert: Nama duplikat pertama kali bernilai "Collectible_copy"
       expect(duplicated).not.toBeNull()
       expect(duplicated.name).toBe('Collectible_copy')
       expect(prefabStore.prefabs).toHaveLength(2)

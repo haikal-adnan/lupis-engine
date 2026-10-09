@@ -26,27 +26,60 @@ export function usePrefabActions() {
   const { showPop } = usePopAlert();
   const { prompt } = usePrompt();
 
-  const getValidUniqueName = (desiredName, excludeId = null) => {
+  const getValidUniqueName = (desiredName, excludeId = null, targetType = null) => {
+    // 1. Clean nama dari spasi dan karakter ilegal
     let cleanName = desiredName
       .replace(/\s+/g, '_')
       .replace(/[^a-zA-Z0-9_]/g, '');
 
-    let finalName = cleanName;
-    let counter = 1;
-
-    const isNameTaken = (nameToCheck) => {
-      return store.prefabs.some(p => 
-        p.id !== excludeId && 
-        p.name.toLowerCase() === nameToCheck.toLowerCase()
-      );
-    };
-
-    while (isNameTaken(finalName)) {
-      finalName = `${cleanName}_${counter}`;
-      counter++;
+    // Jika nama berakhir dengan angka (misal New_Prefab_1 atau Item_2), 
+    // pisahkan base name dan suffix-nya
+    let baseName = cleanName;
+    const match = cleanName.match(/^(.*?)(?:_(\d+))?$/);
+    if (match && match[1]) {
+      baseName = match[1];
     }
 
-    return finalName;
+    // 2. Filter prefab berdasarkan ID eksklusi dan Type (world / ui) jika diberikan
+    const existingPrefabs = store.prefabs.filter(p => {
+      if (p.id === excludeId) return false;
+      if (targetType) {
+        const pType = p.type || p.data?.type || 'world';
+        return pType === targetType;
+      }
+      return true;
+    });
+
+    // Check apakah nama persis sama sudah dipakai
+    const isExactTaken = existingPrefabs.some(
+      p => p.name.toLowerCase() === cleanName.toLowerCase()
+    );
+
+    // Jika nama dasar belum dipakai sama sekali, langsung gunakan nama tersebut
+    if (!isExactTaken) {
+      return cleanName;
+    }
+
+    // 3. Jika nama sudah dipakai, cari suffix angka tertinggi yang ada
+    // Contoh regex: mencari yang bernama "New_Prefab" atau "New_Prefab_1", "New_Prefab_2"
+    const regex = new RegExp(`^${baseName}(?:_(\\d+))?$`, 'i');
+    let maxIndex = 0;
+
+    existingPrefabs.forEach(p => {
+      const m = p.name.match(regex);
+      if (m) {
+        if (m[1] !== undefined) {
+          const num = parseInt(m[1], 10);
+          if (num > maxIndex) maxIndex = num;
+        } else {
+          // Jika persis "New_Prefab" tanpa angka, anggap setara index 1 jika belum ada index yang lebih tinggi
+          if (maxIndex < 1) maxIndex = 1;
+        }
+      }
+    });
+
+    const nextIndex = maxIndex + 1;
+    return `${baseName}_${nextIndex}`;
   };
 
   const createPrefab = async (
@@ -93,7 +126,7 @@ export function usePrefabActions() {
       dataPayload = { data: cleanData, children: cleanChildren };
     }
 
-    const validName = getValidUniqueName(name);
+    const validName = getValidUniqueName(name, null, type);
 
     const newPrefab = prefabSchema({
       id: GenerateUUID(), 

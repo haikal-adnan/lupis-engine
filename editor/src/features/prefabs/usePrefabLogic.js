@@ -59,8 +59,9 @@ export function usePrefabLogic() {
     let list = prefabStore.prefabs.filter(p => p.folderId === currentFolderId.value);
 
     list = list.filter(p => {
-      const type = p.type || p.originalData?.type;
-      return activeTab.value === 'ui' ? type === 'ui' : type !== 'ui';
+      // Resolve type dengan fallback yang lengkap
+      const resolvedType = p.type || p.data?.type || p.originalData?.type || 'world';
+      return activeTab.value === 'ui' ? resolvedType === 'ui' : resolvedType !== 'ui';
     });
 
     if (searchQuery.value) {

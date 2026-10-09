@@ -10,6 +10,10 @@ timeouts, and defines a testability contract between components and tests so the
 suite stays fast, stable, and resistant to the failure patterns listed in
 Section 14.
 
+It also defines the project layout, the shared fixtures, and the helper
+contract tests (Sections 4.5, 4.6, 11) that keep a change made for one spec from
+silently breaking another.
+
 
 --------------------------------------------------------------------------------
 1. PURPOSE
@@ -24,10 +28,12 @@ Primary focuses include:
 - Validating state persistence and UI reactivity across user operations.
 - Ensuring popups, modals, alerts, and context menus render and respond
   correctly.
-- Abstracting direct DOM operations through structured Helper classes (Page
-  Objects & Control Helpers).
+- Abstracting direct DOM operations through structured layers (Control Helpers,
+  Page Objects, Flows) with a one-way dependency direction (Section 4.5).
 - Leveraging Playwright's native auto-waiting and assertion engines for fast,
   resilient, and non-flaky execution.
+- Protecting shared helpers with contract tests, so a helper changed for one
+  feature cannot break another feature unnoticed (Section 11.3).
 
 
 --------------------------------------------------------------------------------
@@ -49,6 +55,12 @@ E2E tests must follow these rules:
     Playwright to use the global configuration defined in playwright.config.js.
     For a genuinely slow test, use test.slow() or test.setTimeout() once at the
     top of that test, with a comment explaining why.
+
+    The single allowed exception: the context-menu open probe in
+    helpers/PopupHelper.js, expressed only through the named constant
+    MENU_OPEN_PROBE_MS. It is a short probe that decides whether to fall back to
+    a dispatched contextmenu event; it is not a wait for the UI to settle. No
+    other explicit timeout is allowed anywhere in tests/e2e.
 
   * Avoid page.waitForTimeout(): Never use artificial sleeps or static waits.
 
@@ -93,17 +105,23 @@ E2E tests must follow these rules:
   on execution order or shared run-state. See Section 12.
 
 - Helper Abstraction:
-  Abstract common control operations and UI overlays into dedicated helper
-  classes (BaseControlHelper, PopupHelper, ProjectHelper). Avoid raw locator
-  repetition in spec files. Helpers must follow the contract in Section 11.
+  Abstract common control operations and UI overlays into the dedicated layers
+  of Section 4.5 (helpers/, pages/, flows/). Avoid raw locator repetition in
+  spec files. Helpers must follow the contract in Section 11.
+
+- Shared Fixtures:
+  Spec files import test and expect from the shared fixtures.js (Section 4.6),
+  not directly from @playwright/test, and receive helpers, page objects, and the
+  isolated project through fixtures instead of beforeEach plus let variables.
 
 - Prefix Bad Paths:
   Prefix negative scenario test cases or validation failures with [Bad Path].
 
 - Project Bypass Pattern:
-  Skip redundant login or dashboard setups in feature tests by utilizing
-  standard project initialization helpers (e.g., ensureProject) to navigate
-  directly to the target environment.
+  Skip redundant login or dashboard setups in feature tests. The auto "project"
+  fixture runs ensureProject (flows/dashboard.js) before every test, so each
+  test starts inside its own editor workspace. Specs that test the dashboard or
+  project creation themselves opt out (Section 4.6).
 
 
 --------------------------------------------------------------------------------
@@ -146,10 +164,10 @@ scenarios:
 4. HELPER & CONTROL ARCHITECTURE
 --------------------------------------------------------------------------------
 
-E2E tests rely on structured Helper layers to isolate selector logic from test
+E2E tests rely on structured layers to isolate selector logic from test
 specifications.
 
-4.1 Control Helpers (BaseControlHelper)
+4.1 Control Helpers (BaseControlHelper)  -> helpers/
 
     Wraps common UI component primitives, including:
     - Custom inputs
@@ -161,7 +179,7 @@ specifications.
     Architecture:
     Spec File -> BaseControlHelper -> Custom UI Component
 
-4.2 Popup & Overlay Helpers (PopupHelper)
+4.2 Popup & Overlay Helpers (PopupHelper)  -> helpers/
 
     Handles global overlays including:
     - Modal prompts
@@ -172,36 +190,118 @@ specifications.
     Architecture:
     Spec File -> PopupHelper -> Modal / Alert Banners
 
-4.3 Flow Helpers (ProjectHelper / DashboardHelper)
+4.3 Flow Helpers (ensureProject, HierarchyCrudObject)  -> flows/
 
-    Handles multi-step navigation routines, workspace provisioning, or page
-    setup preconditions using Playwright native APIs before running
-    feature-specific tests.
+    Handle multi-step navigation routines, workspace provisioning, or setup
+    preconditions using Playwright native APIs before running feature-specific
+    tests.
 
     Architecture:
-    beforeEach -> ProjectHelper -> Pre-conditioned Target Page
+    project fixture (auto) -> ensureProject -> Pre-conditioned Target Page
+    Spec File -> HierarchyCrudObject (setup only) -> Pre-conditioned Entities
 
-4.4 Screen Page Objects (e.g. HierarchyPage)
+4.4 Screen Page Objects (HierarchyPage, AssetPanelPage, DashboardPage)  -> pages/
 
-    Complex screens (hierarchy, inspector) are encapsulated in a dedicated Page
-    Object that owns locators, actions, and state snapshots. See Section 11.
+    Complex screens and panels (hierarchy, assets, dashboard, inspector) are
+    each encapsulated in one dedicated Page Object that owns locators, actions,
+    and state snapshots. See Section 11.
 
     Architecture:
     Spec File -> HierarchyPage -> Screen Components
+
+4.5 Folder Structure & Dependency Rules
+
+    tests/
+      e2e/
+        contract/     Helper contract tests (Section 11.3), project "contract"
+        flows/        Multi-step flows: dashboard.js (ensureProject),
+                      hierarchy.js (HierarchyCrudObject facade)
+        helpers/      Generic controls, no domain knowledge:
+                      BaseControlHelper, PopupHelper
+        pages/        One Page Object per screen/panel: HierarchyPage,
+                      AssetPanelPage, DashboardPage
+        specs/        Feature specs (*.spec.js)
+        fixtures.js   Shared Playwright fixtures (test.extend), Section 4.6
+      fixtures/       Static test data (e.g. files to upload), read-only
+      playwright.config.js
+
+    Dependency direction (one way only, never upward):
+
+        spec  ->  fixtures / flows  ->  pages  ->  helpers
+
+    - helpers/ never import pages/ or flows/.
+    - pages/ may import helpers/, never flows/ or specs/.
+    - flows/ may import pages/ and helpers/.
+    - specs/ import from fixtures.js and, when needed, flows/. Contract specs
+      import only from fixtures.js.
+
+    Pure specs vs setup facades:
+    - A spec that tests feature X is "pure": it drives X through its own Page
+      Object and helpers only. It must not use a flow facade for X.
+      Example: hierarchy-management.spec.js must not use flows/hierarchy.js.
+    - Flow facades exist so that OTHER specs can set up X cheaply.
+      Example: asset-management.spec.js uses hierarchyCrud to create the entity
+      that an asset is applied to.
+
+    Naming note: fixtures.js (Playwright fixtures) and tests/fixtures/ (data
+    files) are different things. Do not put data files in e2e/ or fixture code
+    in tests/fixtures/.
+
+    After moving or renaming files, search for stale relative imports before
+    running anything, for example:
+        Get-ChildItem e2e -Recurse -Filter *.js | Select-String "components/"
+
+4.6 Shared Fixtures (e2e/fixtures.js)
+
+    fixtures.js extends Playwright's test object and is the only place where
+    helpers, page objects, and the isolated project are wired together.
+
+      Fixture          Kind    Purpose
+      ---------------  ------  ----------------------------------------------
+      controls         lazy    BaseControlHelper
+      popup            lazy    PopupHelper
+      hierarchy        lazy    HierarchyPage (depends on project)
+      assets           lazy    AssetPanelPage (depends on project)
+      dashboard        lazy    DashboardPage (no project dependency)
+      hierarchyCrud    lazy    Flow facade, setup only (depends on project)
+      projectOptions   option  { prefix, description } for the project name
+      isolatedProject  option  default true; false opts out of project setup
+      project          auto    Runs ensureProject before EVERY test, using
+                               `${prefix} ${testInfo.testId}` as the name
+
+    Rules:
+    - Specs import { test, expect } from '../fixtures.js'.
+    - Configure the workspace per spec with test.use({ projectOptions: {...} }).
+    - Fixtures that touch the editor UI (hierarchy, assets, hierarchyCrud) must
+      list `project` as a dependency, so ordering is guaranteed even when they
+      are first used inside test.beforeEach.
+    - Specs that test the dashboard or project creation themselves must set
+      test.use({ isolatedProject: false }); otherwise the auto project fixture
+      would create a project before the test starts and interfere with it.
+      Such specs create their own data (UI for the flow under test, ensureProject
+      for setup of unrelated steps).
+    - New helper, page object, or flow: register it in fixtures.js. Do not
+      instantiate it in beforeEach with a mutable let variable.
+
+    Example (non-fixture access is a violation):
+
+        import { test, expect } from '../fixtures.js';
+
+        test('example', async ({ hierarchy, popup }) => { ... });
 
 
 --------------------------------------------------------------------------------
 5. TEST & HELPER STRUCTURE EXAMPLES
 --------------------------------------------------------------------------------
 
-5.1 Project Helper Pattern (ensureProject)
+5.1 Project Flow Pattern (ensureProject, flows/dashboard.js)
 
 Demonstrates native locator checks (count()), union locators (.or()), a settle
 check before the existence check, and native assertions without explicit
 timeouts.
 
     import { expect } from '@playwright/test';
-    import { BaseControlHelper } from '../components/BaseControlHelper.js';
+    import { BaseControlHelper } from '../helpers/BaseControlHelper.js';
 
     export async function ensureProject(page, { name, description = '' }) {
       const controls = new BaseControlHelper(page);
@@ -209,13 +309,15 @@ timeouts.
       await page.goto('/');
       await page.waitForLoadState('domcontentloaded');
 
-      // TODO: replace class-based selector with data-testid="project-card"
-      const card = page.locator('.group.bg-card').filter({ hasText: name }).first();
+      const card = page.locator(
+        `[data-testid="project-card"][data-project-name="${name}"]`
+      );
 
-      // Combine dual buttons using native Playwright .or() locator
+      // Combine dual buttons (empty state and header) using .or()
       const createBtn = page
-        .getByRole('button', { name: 'Create First Project' })
-        .or(page.locator('button:has-text("New Project"), button:has-text("New")').filter({ visible: true }))
+        .getByTestId('empty-create-project-btn')
+        .or(page.getByTestId('create-project-btn'))
+        .or(page.getByRole('button', { name: /create|new/i }))
         .first();
 
       // Settle check: wait until the dashboard rendered EITHER an existing card
@@ -227,15 +329,15 @@ timeouts.
       if ((await card.count()) === 0) {
         await createBtn.click();
 
-        // Web-first assertion relies on global config timeout
-        await expect(page.locator('h3', { hasText: 'Buat Proyek Baru' })).toBeVisible();
+        const modal = page.getByRole('dialog', { name: 'Buat Proyek Baru' });
+        await expect(modal).toBeVisible();
 
-        await controls.fillInput('Game Keren Saya', name);
+        await controls.fillInput('project-name-input', name, modal);
         if (description) {
-          await controls.fillInput('Deskripsi singkat tentang game Anda...', description);
+          await controls.fillInput('project-desc-input', description, modal);
         }
 
-        await controls.clickButton('Buat');
+        await controls.clickButton('submit-create-project-btn', modal);
       } else {
         await card.click();
       }
@@ -249,30 +351,21 @@ timeouts.
 
 5.2 Feature Spec File
 
-Demonstrates clean test specs adhering to AAA, auto-waiting, and helper
-integration.
+Demonstrates a clean spec adhering to AAA, auto-waiting, shared fixtures, and
+the isolated project. No beforeEach, no let variables.
 
-    import { test, expect } from '@playwright/test';
-    import { BaseControlHelper } from './components/BaseControlHelper.js';
-    import { PopupHelper } from './components/PopupHelper.js';
-    import { ensureProject } from './helpers/dashboard.js';
+    import { test, expect } from '../fixtures.js';
+
+    // The auto `project` fixture creates a uniquely named workspace per test.
+    test.use({
+      projectOptions: {
+        prefix: 'Feature E2E',
+        description: 'Isolated project for browser testing',
+      },
+    });
 
     test.describe('Feature Management E2E', () => {
-      let controls;
-      let popup;
-
-      test.beforeEach(async ({ page }, testInfo) => {
-        controls = new BaseControlHelper(page);
-        popup = new PopupHelper(page);
-
-        // Arrange: unique workspace per test, jump directly into the editor
-        await ensureProject(page, {
-          name: `E2E ${testInfo.testId}`,
-          description: 'Isolated project for browser testing',
-        });
-      });
-
-      test('creates a new item and updates container reactively', async ({ page }) => {
+      test('creates a new item and updates container reactively', async ({ page, popup }) => {
         // Act: Trigger creation flow via UI
         await page.locator('button[title="Options"]').click();
         await page.locator('button', { hasText: 'New Item' }).click();
@@ -301,12 +394,10 @@ integration.
 Demonstrates Section 8 (re-locate by ID after a rename) and Section 10
 (before/after comparison for a rejected action).
 
-    test('creates a Prefab from an entity', async ({ page }) => {
-      const hierarchy = new HierarchyPage(page);
-      const popup = new PopupHelper(page);
-
+    test('creates a Prefab from an entity', async ({ hierarchy, popup }) => {
       // Arrange: capture the stable ID BEFORE the name can change
-      await hierarchy.addEntity('World Layer', 'Empty Entity');
+      const layer = hierarchy.nodeByName('World Layer');
+      await popup.selectContextMenu(layer, ['Add Entity', 'Empty Entity']);
       const node = hierarchy.nodeByName('Empty Entity');
       const nodeId = await node.getAttribute('data-node-id');
 
@@ -318,18 +409,53 @@ Demonstrates Section 8 (re-locate by ID after a rename) and Section 10
       await expect(hierarchy.nodeById(nodeId)).toHaveAttribute('data-prefab', 'true');
     });
 
-    test('[Bad Path] prevents moving an entity into its own descendant', async ({ page }) => {
-      const hierarchy = new HierarchyPage(page);
-
+    test('[Bad Path] prevents moving an entity into its own descendant', async ({ hierarchy, popup }) => {
       // Arrange
-      const { parentId, childId } = await hierarchy.createParentWithChild();
+      const layer = hierarchy.nodeByName('World Layer');
+      await popup.selectContextMenu(layer, ['Add Entity', 'Empty Entity']);
+      const parent = hierarchy.nodeByName('Empty Entity');
+      await popup.selectContextMenu(parent, ['Add Child', 'Sprite']);
+      const child = hierarchy.nodeByName('Sprite');
       const before = await hierarchy.snapshot();
 
       // Act: invalid move
-      await hierarchy.dragNode(parentId, childId);
+      await hierarchy.dragAndDropNodes(parent, child);
 
       // Assert: structure is unchanged
       await expect.poll(() => hierarchy.snapshot()).toEqual(before);
+    });
+
+5.4 Spec That Tests the Dashboard Itself
+
+Opts out of the auto project fixture (Section 4.6). The flow under test goes
+through the UI; unrelated setup uses ensureProject.
+
+    import { test, expect } from '../fixtures.js';
+    import { ensureProject } from '../flows/dashboard.js';
+
+    test.use({ isolatedProject: false });
+
+    test.describe('Project Management E2E', () => {
+      test.beforeEach(async ({ dashboard }) => {
+        await dashboard.goto();
+      });
+
+      test('renames an existing project via context menu', async ({ page, dashboard, popup }, testInfo) => {
+        // Arrange: setup, not the subject of this test
+        const initialName = `Old Name ${testInfo.testId}`;
+        const updatedName = `New Name ${testInfo.testId}`;
+        await ensureProject(page, { name: initialName });
+        await dashboard.goto();
+        const card = dashboard.card(initialName);
+
+        // Act
+        await popup.selectContextMenu(card, 'Rename');
+        await popup.fillPromptAndSubmit('Rename Project', updatedName, 'Save');
+
+        // Assert
+        await expect(dashboard.card(updatedName)).toBeVisible();
+        await expect(card).toHaveCount(0);
+      });
     });
 
 
@@ -343,10 +469,16 @@ E2E tests must:
   getByText, getByLabel).
 - Follow the locator priority in Section 7.1 and never use Tailwind utility
   classes or partial name regex to find or verify elements.
-- Encapsulate selector strategies and complex UI flows using helper classes
-  (BaseControlHelper, PopupHelper, ProjectHelper, screen Page Objects).
+- Encapsulate selector strategies and complex UI flows in the layers of
+  Section 4.5 (BaseControlHelper, PopupHelper, flows, screen Page Objects) and
+  respect the dependency direction.
+- Import test and expect from fixtures.js and receive helpers through fixtures
+  (Section 4.6). Specs that test the dashboard or project creation set
+  isolatedProject: false.
+- Keep pure specs pure: a spec for feature X does not use X's flow facade.
 - Eliminate hardcoded/custom { timeout } options and artificial
-  page.waitForTimeout() delays.
+  page.waitForTimeout() delays. The only exception is MENU_OPEN_PROBE_MS
+  (Section 2).
 - Use locator.count() for conditional checks only after the page has settled,
   and .or() / .filter() for alternative element matching.
 - Rely on Playwright Web-First Assertions (expect(locator).toBeVisible(),
@@ -359,6 +491,8 @@ E2E tests must:
 - Compare state before and after in every [Bad Path] test (Section 10).
 - Use helpers that assert their own postconditions and scope their locators to
   their container (Section 11).
+- Change shared helper behavior only additively, and keep the helper contract
+  tests green (Sections 11.1 and 11.3).
 - Maintain test independence, using a uniquely named workspace per test and not
   relying on state left by previous tests (Section 12).
 - Include [Bad Path] coverage for modal validations, minimum boundary limits,
@@ -392,7 +526,8 @@ Components that appear in E2E tests must expose identity and state as
 attributes.
 
   Identity (used to FIND an element):
-    data-node-id, data-node-name, data-node-type, data-section="world"
+    data-node-id, data-node-name, data-node-type, data-section="world",
+    data-menu-item (context menu items), data-project-name (project cards)
 
   State (used to VERIFY a condition):
     aria-selected, aria-expanded, aria-disabled,
@@ -403,10 +538,15 @@ Rules:
   none does.
 - Overlays must use semantic roles:
     role="dialog" with aria-label for modals
-    role="menu" / role="menuitem" for context menus
+    role="menu" / role="menuitem" for context menus (every submenu level is
+    its own role="menu")
     role="alert" for toasts
   Helpers must locate overlays by role, not by structure such as
   div.fixed.inset-0.
+- Context menu items expose data-menu-item="<label>" so helpers can match them
+  exactly instead of by partial text.
+- Panels that tests operate on (e.g. the asset panel) expose a data-testid
+  instead of being found through layout classes.
 - Naming convention: kebab-case, pattern <component>-<element>
   (e.g. scene-node, layer-menu-button).
 - Use stable values (IDs from data), never values derived from render order or
@@ -461,7 +601,7 @@ Forbidden practices and what to use instead:
 
 - click({ force: true })
   Why forbidden: skips actionability checks, so a click can land on the wrong
-  element and the test still passes.
+  element and the test still passes, or hides a real overlay/positioning bug.
   Use instead: fix the real blocker (hover first, scroll, wait for an overlay
   to close).
 
@@ -491,6 +631,11 @@ specific blocker and a linked issue. Any other use fails review.
   force.
 - Teleported UI (dropdowns, modals, context menus) lives under body. Locate it
   from page, never from the component container.
+- Context menus are position: fixed. A menu opened near the viewport edge can
+  be clipped, and Playwright then retries "element is outside of the viewport"
+  until the test times out. This is an app or viewport problem: clamp the menu
+  position inside the window, or use an adequate viewport in the config. Never
+  fix it with force.
 - v-show vs v-if: v-show keeps the node in the DOM, so use not.toBeVisible().
   v-if removes it, so use toHaveCount(0).
 - Drag and drop with drop zones (top / inside / bottom): dragTo drops at the
@@ -516,7 +661,7 @@ broken.
   must leave the structure unchanged:
 
     const before = await hierarchy.snapshot();   // [{ id, parentId, section, order }]
-    await hierarchy.dragNode(parentId, childId); // invalid: move into own descendant
+    await hierarchy.dragAndDropNodes(parent, child); // invalid: move into own descendant
     await expect.poll(() => hierarchy.snapshot()).toEqual(before);
 
 - Where the app shows a rejection message, assert the message AND the unchanged
@@ -557,24 +702,95 @@ Page Object for complex screens:
       async snapshot() { /* evaluateAll: id, parentId, section, order */ }
     }
 
+11.1 Additive Change Rule
+
+The behavior of an existing shared helper method is a contract with every spec
+that uses it.
+
+- Change a helper by ADDING a method or an optional parameter. Do not alter what
+  an existing call does for existing callers.
+- If a behavior change is unavoidable, run the whole suite
+  (npx playwright test), not only the spec being worked on, before committing.
+- A helper changed to satisfy one spec must not be validated by that spec alone.
+  This is the source of the "fixed one spec, broke another" failures in
+  Section 14.1.
+
+11.2 Pre/Postconditions: Context Menu Helper
+
+PopupHelper.selectContextMenu(target, pathOrLabel) is the reference for how a
+helper states its contract:
+
+- Precondition: no context menu is open from a previous action. The helper
+  asserts this up front, so a leftover menu fails loudly at its source.
+- Action: right-click the target (no force). If the menu does not open within
+  the short probe (MENU_OPEN_PROBE_MS), dispatch a contextmenu event WITH the
+  target's coordinates, not at (0,0).
+- Multi-level paths: after hovering a parent item, assert that the next menu
+  level is open (menu count increases) before selecting the next item.
+- Item matching: exact via data-menu-item, falling back to the accessible name.
+  Never match by partial text or through broad "button, div, span" selectors.
+- Postcondition: after the last item is clicked, ALL menu levels are closed.
+  Consecutive calls on the same target depend on this.
+- An empty path ([]) opens the menu and intentionally leaves it open (used to
+  inspect disabled items).
+
+Other overlay helpers follow the same pattern: fillPromptAndSubmit and
+confirmAction return only after their dialog is gone.
+
+11.3 Helper Contract Tests (e2e/contract/)
+
+Contract tests verify the behavior of shared helpers themselves, not product
+features. They are a separate Playwright project that must pass before any
+feature spec runs.
+
+- Location: e2e/contract/*.spec.js, tagged @contract in describe titles.
+- Project setup: the "contract" project runs first; the main project
+  ("chromium") declares dependencies: ['contract']. If contract fails, feature
+  specs are skipped, so a broken helper is visible as one failure in one place
+  instead of many failures spread over features. Both projects share the same
+  browser configuration.
+- Minimum scenarios for the overlay/control helpers:
+    * context menu, single level: item selected, menu closed, follow-up prompt
+      can be submitted
+    * context menu, multi-level: submenu opens, leaf selected, all levels closed
+    * two consecutive context-menu calls on the same target
+    * empty menu path leaves the menu open
+    * prompt: submit and cancel
+    * confirm: cancel keeps state, confirm applies the action
+    * pop alert (add when a stable, cheap trigger exists)
+- Keep scenarios minimal and independent of feature logic. Use the simplest
+  stable UI available (e.g. the default World Layer node).
+- Every time a helper bug is found, add the scenario that would have caught it.
+- Debugging shortcuts:
+    npx playwright test --project=contract            (contract only)
+    npx playwright test e2e/specs/<file> --no-deps    (skip contract)
+  Do not use --no-deps for pre-merge runs.
+
 
 --------------------------------------------------------------------------------
 12. TEST DATA & ISOLATION
 --------------------------------------------------------------------------------
 
-- Unique workspace per test. Never share a fixed project name across tests that
-  may run in parallel:
-
-    await ensureProject(page, { name: `E2E ${testInfo.testId}`, description: '...' });
-
+- Unique workspace per test. This is provided by the auto "project" fixture
+  (Section 4.6), which names the project `${prefix} ${testInfo.testId}`. Never
+  share a fixed project name across tests that may run in parallel. When a spec
+  creates projects itself (isolatedProject: false), names must include
+  testInfo.testId.
 - Tests must not assume a default state they did not create or verify (for
   example "exactly one World Layer exists"). Assert the precondition in Arrange,
   or create the data explicitly.
-- Prefer Playwright fixtures (test.extend) over beforeEach plus mutable let
-  variables, so setup is scoped per test and parallel-safe.
+- Use Playwright fixtures (fixtures.js) instead of beforeEach plus mutable let
+  variables, so setup is scoped per test and parallel-safe. test.beforeEach is
+  acceptable only for stateless steps that use fixtures (e.g.
+  assets.ensureOpen(), dashboard.goto()).
 - Setup that is not the subject of the test (project, scene, seed entities)
-  should use the fastest reliable path. Use the UI only for the flow being
-  tested.
+  should use the fastest reliable path (ensureProject, flow facades). Use the UI
+  only for the flow being tested.
+- Static data files (images, fonts, audio) live in tests/fixtures/ and are
+  read-only. Tests upload copies; they never modify or delete the originals.
+- Data-file paths currently resolve from process.cwd(). Run Playwright from the
+  tests/ directory (and set the same WORKDIR in Docker/CI) so that
+  fixtures/assets resolves correctly.
 - Parallel execution is the default. Do not use serial mode to hide shared
   state. If tests interfere with each other, fix the isolation.
 
@@ -596,12 +812,30 @@ and enable at least:
   - playwright/missing-playwright-await
   - playwright/no-useless-not
 
-Add a CI check that fails on "{ timeout:" inside tests/e2e (outside
-playwright.config.js), since this standard bans it.
+Enforce the dependency direction of Section 4.5 with no-restricted-imports, for
+example:
 
-Recommended playwright.config.js baseline:
+  - specs/ and contract/: restrict importing test/expect from
+    '@playwright/test' (use '../fixtures.js').
+  - helpers/: restrict imports of '../pages/*' and '../flows/*'.
+  - pages/: restrict imports of '../flows/*' and '../specs/*'.
+  - specs/hierarchy-management.spec.js: restrict '../flows/hierarchy.js'
+    (pure spec).
+
+Add a CI check that fails on "timeout:" inside tests/e2e (outside
+playwright.config.js), since this standard bans it. The check must ignore the
+single documented exception (lines containing MENU_OPEN_PROBE_MS).
+
+Recommended playwright.config.js baseline (project "contract" runs first and
+shares the browser configuration with the main project):
+
+    const chromiumUse = {
+      ...devices['Desktop Chrome'],
+      launchOptions: { args: [ /* same flags for both projects */ ] },
+    };
 
     export default defineConfig({
+      testDir: './e2e',
       forbidOnly: !!process.env.CI,
       fullyParallel: true,
       retries: process.env.CI ? 1 : 0,
@@ -613,6 +847,19 @@ Recommended playwright.config.js baseline:
         screenshot: 'only-on-failure',
         video: 'retain-on-failure',
       },
+      projects: [
+        {
+          name: 'contract',
+          testMatch: /[\\/]contract[\\/].*\.spec\.js$/,
+          use: chromiumUse,
+        },
+        {
+          name: 'chromium',
+          testIgnore: /[\\/]contract[\\/]/,
+          dependencies: ['contract'],
+          use: chromiumUse,
+        },
+      ],
     });
 
 
@@ -626,6 +873,19 @@ Recommended playwright.config.js baseline:
     modal that was removed), failing every test that uses it.
     -> Section 11 (helper contract, fan-out rule)
 
+  - A helper is changed for one new spec and breaks an older spec that used it
+    differently (e.g. the context menu helper changed for the asset specs broke
+    hierarchy specs that use multi-level menus).
+    -> Sections 11.1 (additive change) and 11.3 (contract tests)
+
+  - A helper does not wait for its own overlay to close, so the next call
+    targets the old, still-closing menu.
+    -> Section 11.2 (postconditions)
+
+  - A positional role query (getByRole('menu').first()/.nth()) points at the
+    wrong menu or leftover popup.
+    -> Sections 7.3 and 11.2 (exact match via data-menu-item, precondition)
+
   - A locator built from a node's name stops matching after the name changes
     (e.g. rename, "Use as Prefab").
     -> Section 8 (stable identity)
@@ -634,8 +894,9 @@ Recommended playwright.config.js baseline:
     -> Sections 7.1, 7.2 (state attributes instead of classes)
 
   - force: true clicks land on a wrapper element, so the test fails or passes
-    for the wrong reason.
-    -> Section 9 (forbidden shortcuts)
+    for the wrong reason; or a clipped context menu makes click() retry
+    "outside of the viewport" until the 30 s test timeout.
+    -> Sections 9 and 9.1 (forbidden shortcuts, clipped menus)
 
   - Bad-path tests only check that an element is still visible and pass even if
     the guard rule is broken.
@@ -645,11 +906,21 @@ Recommended playwright.config.js baseline:
     rendering, creating duplicate data.
     -> Section 2 (settle check) and Section 5.1
 
+  - The auto project fixture creates a project before a spec that tests project
+    creation itself, interfering with it.
+    -> Section 4.6 (isolatedProject: false)
+
+  - Files were moved but relative imports or data-file paths still point at the
+    old location, failing a whole spec at load time or on upload.
+    -> Sections 4.5 (search for stale imports) and 12 (data-file paths)
+
 14.2 When a Test Fails, Classify Before Fixing
 
+  0. Run the contract project first (npx playwright test --project=contract).
+     If it fails, fix the helper before looking at any feature spec.
   1. Same stack in several tests? Fix the shared helper.
   2. Open the trace (npx playwright show-trace). Check whether the element
-     existed, was covered, or had changed text.
+     existed, was covered, had changed text, or was outside the viewport.
   3. App bug or test bug? If the UI behavior is correct per spec, fix the test.
      If not, fix the app. Never loosen an assertion just to make it pass.
   4. Never "fix" a failure by adding a wait, force, or .first(). These hide the
@@ -659,6 +930,11 @@ Recommended playwright.config.js baseline:
 
 - Any change to a Vue component that E2E tests touch requires running that
   module's E2E suite before merge.
+- Any change to helpers/, pages/, flows/, or fixtures.js requires running the
+  WHOLE suite (contract + all specs) before merge, because these files are
+  shared by every spec.
+- A failing contract test blocks feature specs by design. Do not bypass it with
+  --no-deps in pre-merge runs.
 - New features ship with the data-* / ARIA attributes their tests need, in the
   same change.
 - Check flakiness before merging a new test:
@@ -678,4 +954,6 @@ helper abstractions, leveraging Playwright's native auto-waiting and web-first
 assertions while avoiding explicit timeout overrides and fragile manual polling.
 Tests bind to behavior and stable identity (roles, IDs, state attributes), never
 to styling or display text, and every assertion must be able to fail when the
-feature breaks.
+feature breaks. Shared helpers are contracts: they change additively, state
+their own pre/postconditions, and are guarded by contract tests so that no spec
+can break another.

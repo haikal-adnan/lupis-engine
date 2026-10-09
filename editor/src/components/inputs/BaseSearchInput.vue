@@ -1,3 +1,4 @@
+<!-- BaseSearchInput.vue -->
 <template>
   <div 
     class="relative group w-full max-w-xs transition-all duration-300"
@@ -13,7 +14,7 @@
       type="text" 
       :placeholder="placeholder"
       :aria-expanded="isFocused"
-      data-testid="search-input"
+      :data-testid="inputTestId || 'search-input'"
       @focus="isFocused = true"
       @blur="isFocused = false"
       class="w-full h-7 pl-8 pr-7 text-xs bg-background border border-border rounded-md outline-none 
@@ -41,7 +42,8 @@ import { ref } from 'vue'
 import { Search, X } from 'lucide-vue-next'
 
 const props = defineProps({
-  placeholder: { type: String, default: 'Search...' }
+  placeholder: { type: String, default: 'Search...' },
+  inputTestId: { type: String, default: '' }
 })
 
 const model = defineModel({ type: String, default: '' })

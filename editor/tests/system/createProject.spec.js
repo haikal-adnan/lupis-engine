@@ -11,6 +11,19 @@ vi.mock('vue-router', () => ({
   })
 }))
 
+const mockShowPop = vi.fn()
+
+// 2. Gunakan importOriginal agar export lain seperti usePrompt dan useConfirm tetap terbaca
+vi.mock('@composables/composables.js', async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...actual,
+    usePopAlert: () => ({
+      showPop: mockShowPop
+    })
+  }
+})
+
 // Isolated Mock OPFS Storage
 let mockOPFSStore = new Map()
 
@@ -167,9 +180,7 @@ describe('Sistem pembuatan dan pembuatan ulang proyek', () => {
 
   describe('Alur Penanganan Kegagalan Penyimpanan OPFS', () => {
     it('menampilkan alert kesalahan jika browser tidak mendukung atau gagal menulis ke OPFS', async () => {
-      const originalAlert = window.alert
-      window.alert = vi.fn()
-
+      // Arrange
       navigator.storage.getDirectory = vi.fn().mockRejectedValue(
         new Error('Gagal mengakses penyimpanan OPFS.')
       )
@@ -186,11 +197,13 @@ describe('Sistem pembuatan dan pembuatan ulang proyek', () => {
         description: 'Uji coba kegagalan'
       })
 
-      // Assert: Alert dipanggil dengan pesan error dan navigasi tidak terjadi
-      expect(window.alert).toHaveBeenCalledWith('Error: Gagal mengakses penyimpanan OPFS.')
+      // Assert: Verifikasi showPop dipanggil dengan parameter yang sesuai
+      expect(mockShowPop).toHaveBeenCalledWith({
+        title: 'Error Creating Project',
+        message: 'Gagal mengakses penyimpanan OPFS.',
+        type: 'error'
+      })
       expect(mockPush).not.toHaveBeenCalled()
-
-      window.alert = originalAlert
     })
   })
 })

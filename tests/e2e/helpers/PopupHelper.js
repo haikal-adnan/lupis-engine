@@ -1,5 +1,14 @@
 import { expect } from '@playwright/test';
 
+/**
+ * Satu-satunya pengecualian aturan "tanpa hardcoded timeout":
+ * waktu singkat untuk memeriksa apakah klik kanan biasa sudah membuka menu,
+ * sebelum beralih ke fallback dispatchEvent. Bukan untuk menunggu UI settle.
+ */
+const MENU_OPEN_PROBE_MS = 2000;
+
+const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 export class PopupHelper {
   /**
    * @param {import('@playwright/test').Page} page
@@ -8,44 +17,70 @@ export class PopupHelper {
     this.page = page;
   }
 
+  /** Semua level context menu yang sedang terbuka (menu utama + submenu). */
+  get menus() {
+    return this.page.getByRole('menu');
+  }
+
+  // ==========================================
+  // CONTEXT MENU
+  // Kontrak:
+  //  - Precondition : tidak ada menu terbuka dari aksi sebelumnya
+  //  - Postcondition: semua level menu tertutup setelah item terakhir diklik
+  //                   (kecuali path kosong [], menu sengaja dibiarkan terbuka)
+  // ==========================================
   /**
-   * Mengklik kanan target element lalu memilih item dari context menu
-   * @param {import('@playwright/test').Locator} targetLocator 
-   * @param {string | string[]} itemLabelOrPath 
+   * Klik kanan target lalu pilih item context menu (bisa bertingkat).
+   * @param {import('@playwright/test').Locator} targetLocator
+   * @param {string | string[]} itemLabelOrPath
    */
   async selectContextMenu(targetLocator, itemLabelOrPath) {
+    const menuPath = Array.isArray(itemLabelOrPath) ? itemLabelOrPath : [itemLabelOrPath];
+    const menus = this.menus;
+
     await targetLocator.scrollIntoViewIfNeeded();
+    await expect(targetLocator).toBeVisible();
+
+    // Gagal lebih awal dan jelas jika ada menu sisa dari aksi sebelumnya
+    await expect(menus).toHaveCount(0);
+
     await targetLocator.click({ button: 'right' });
 
-    const menuPath = Array.isArray(itemLabelOrPath) ? itemLabelOrPath : [itemLabelOrPath];
+    try {
+      await expect(menus.first()).toBeVisible({ timeout: MENU_OPEN_PROBE_MS });
+    } catch (e) {
+      // Fallback dengan koordinat, agar menu muncul di posisi node, bukan (0,0)
+      const box = await targetLocator.boundingBox();
+      await targetLocator.dispatchEvent('contextmenu', {
+        bubbles: true,
+        cancelable: true,
+        button: 2,
+        clientX: box.x + box.width / 2,
+        clientY: box.y + box.height / 2,
+      });
+      await expect(menus.first()).toBeVisible();
+    }
+
     if (menuPath.length === 0) return;
 
     for (let i = 0; i < menuPath.length; i++) {
       const label = menuPath[i];
-      if (!label) continue;
 
-      const contextMenu = this.page
-        .getByRole('menu')
-        .or(this.page.getByTestId('project-context-menu'))
+      // Cocokkan persis lewat data-menu-item; fallback ke nama accessible
+      const menuItem = this.page
+        .getByRole('menuitem')
+        .and(this.page.locator(`[data-menu-item="${label}"]`))
+        .or(menus.getByRole('menuitem', { name: label }))
         .last();
-
-      await expect(contextMenu).toBeVisible();
-
-      const menuItem = contextMenu
-        .getByRole('menuitem', { name: label })
-        .or(
-          contextMenu.locator('div, button, li, span').filter({
-            hasText: new RegExp(`^\\s*${label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*$`, 'i')
-          })
-        )
-        .first();
 
       await expect(menuItem).toBeVisible();
 
       if (i < menuPath.length - 1) {
         await menuItem.hover();
+        await expect(menus).toHaveCount(i + 2); // submenu level berikutnya terbuka
       } else {
         await menuItem.click();
+        await expect(menus).toHaveCount(0); // menu tertutup sebelum aksi berikutnya
       }
     }
   }
@@ -73,7 +108,7 @@ export class PopupHelper {
     const submitBtn = promptModal
       .getByRole('button', { name: confirmButtonText })
       .or(promptModal.getByTestId('submit-prompt-btn'))
-      .or(promptModal.locator('button', { hasText: new RegExp(`^\\s*${confirmButtonText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*$`, 'i') }))
+      .or(promptModal.locator('button', { hasText: new RegExp(`^\\s*${escapeRegex(confirmButtonText)}\\s*$`, 'i') }))
       .first();
 
     await submitBtn.click();
@@ -92,7 +127,7 @@ export class PopupHelper {
     const cancelBtn = promptModal
       .getByRole('button', { name: cancelButtonText })
       .or(promptModal.getByTestId('cancel-prompt-btn'))
-      .or(promptModal.locator('button', { hasText: new RegExp(`^\\s*${cancelButtonText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*$`, 'i') }))
+      .or(promptModal.locator('button', { hasText: new RegExp(`^\\s*${escapeRegex(cancelButtonText)}\\s*$`, 'i') }))
       .first();
 
     await cancelBtn.click();
@@ -100,12 +135,11 @@ export class PopupHelper {
   }
 
   // ==========================================
-  // BASE CONFIRM HELPER (Diperbarui untuk BaseConfirm)
+  // BASE CONFIRM HELPER
   // ==========================================
   async confirmAction(titleOrText, options = {}) {
     const action = options.action ?? 'confirm';
 
-    // Mendukung role="alertdialog" dan role="dialog" serta data-testid="base-confirm"
     const modal = this.page
       .getByRole('alertdialog')
       .or(this.page.getByRole('dialog'))
@@ -126,7 +160,7 @@ export class PopupHelper {
   }
 
   // ==========================================
-  // BASE POP ALERT HELPER (Diperbarui untuk BasePopAlert)
+  // BASE POP ALERT HELPER
   // ==========================================
   async expectPopAlert(title, options = {}) {
     const alertBox = this.page
@@ -159,5 +193,3 @@ export class PopupHelper {
     await expect(alertBox).toHaveCount(0);
   }
 }
-
-

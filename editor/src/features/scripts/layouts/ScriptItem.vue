@@ -1,5 +1,11 @@
 <template>
   <div 
+    data-testid="script-item"
+    :data-node-id="data.id"
+    :data-node-name="data.name"
+    :data-node-type="isFolder ? 'folder' : 'script'"
+    :aria-selected="active ? 'true' : 'false'"
+    :data-cut="isCut ? 'true' : 'false'"
     class="group relative select-none rounded-md border border-transparent cursor-pointer transition-all duration-200"
     :class="[
       containerClass,

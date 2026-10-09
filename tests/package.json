@@ -4,9 +4,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "playwright test",
-    "test:headed": "playwright test --headed",
-    "test:ui": "playwright test --ui",
+    "test": "playwright test --project=chromium",
+    "test:with-contract": "playwright test --project=chromium-with-contract",
+    "test:ui": "playwright test --project=chromium --ui",
+    "test:ui:with-contract": "playwright test --project=chromium-with-contract --ui",
+    "test:contract": "playwright test --project=contract",
     "test:report": "playwright show-report"
   },
   "devDependencies": {

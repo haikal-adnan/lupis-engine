@@ -4,19 +4,24 @@
     @click="closeMenu"
     @contextmenu.prevent="handleContextMenu($event, null)"
     tabindex="0"
+    data-testid="prefab-panel"
+    :data-section="`prefabs-${activeTab}`"
+    :data-current-folder="currentFolderId || 'root'"
   >
     <div class="flex items-center gap-2 px-3 h-10 border-b border-border shrink-0">
       <button 
         @click.stop="toggleViewMode" 
         class="p-1.5 hover:bg-secondary rounded-md text-muted-foreground hover:text-foreground transition-colors"
         :title="viewMode === 'grid' ? 'Switch to List View' : 'Switch to Grid View'"
+        data-testid="toggle-view-mode-btn"
+        :aria-label="viewMode === 'grid' ? 'Switch to List View' : 'Switch to Grid View'"
       >
         <component :is="viewMode === 'grid' ? List : LayoutGrid" class="w-4 h-4" />
       </button>
 
       <div class="w-px h-4 bg-border mx-1"></div>
 
-      <div class="flex items-center text-xs text-muted-foreground overflow-x-auto whitespace-nowrap hide-scrollbar">
+      <div class="flex items-center text-xs text-muted-foreground overflow-x-auto whitespace-nowrap hide-scrollbar" data-testid="prefab-breadcrumbs">
         <button 
           @click.stop="navigateTo(null)"
           @dragover.prevent="dragOverBreadcrumb = 'root'"
@@ -27,6 +32,7 @@
             'font-bold text-foreground': !currentFolder,
             'bg-primary/20 text-primary ring-1 ring-primary': dragOverBreadcrumb === 'root'
           }"
+          data-testid="breadcrumb-root"
         >
           <Box class="w-3.5 h-3.5 text-purple-500" />
           <span>Prefabs</span>
@@ -45,6 +51,8 @@
               'bg-primary/20 text-primary ring-1 ring-primary': dragOverBreadcrumb === folder.id
             }"
             :title="folder.name"
+            data-testid="breadcrumb-item"
+            :data-folder-id="folder.id"
           >
             {{ folder.name }}
           </button>
@@ -53,11 +61,13 @@
 
       <div class="flex-1"></div>
 
-      <div class="flex bg-secondary/50 p-0.5 rounded-md h-7 shrink-0">
+      <div class="flex bg-secondary/50 p-0.5 rounded-md h-7 shrink-0" data-testid="prefab-tabs">
         <button 
           @click="activeTab = 'world'"
           class="px-2 flex items-center justify-center text-[10px] rounded-sm transition-colors font-medium"
           :class="activeTab === 'world' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'"
+          data-testid="tab-world"
+          :aria-selected="activeTab === 'world'"
         >
           World
         </button>
@@ -65,12 +75,18 @@
           @click="activeTab = 'ui'"
           class="px-2 flex items-center justify-center text-[10px] rounded-sm transition-colors font-medium"
           :class="activeTab === 'ui' ? 'bg-pink-600 text-white shadow-sm' : 'text-muted-foreground hover:text-foreground'"
+          data-testid="tab-ui"
+          :aria-selected="activeTab === 'ui'"
         >
           UI
         </button>
       </div>
 
-      <BaseSearchInput v-model="searchQuery" placeholder="Search prefabs..." />
+      <BaseSearchInput 
+        v-model="searchQuery" 
+        placeholder="Search prefabs..." 
+        input-test-id="search-prefab-input" 
+      />
     </div>
 
     <div 
@@ -78,9 +94,13 @@
       @contextmenu.prevent
       @dragover.prevent
       @drop.prevent="handleDrop"
+      data-testid="prefab-content-area"
     >
-      <div :class="viewMode === 'grid' ? 'grid grid-cols-[repeat(auto-fill,minmax(90px,1fr))] gap-2' : 'flex flex-col gap-0.5'">
-        
+      <div 
+        :class="viewMode === 'grid' ? 'grid grid-cols-[repeat(auto-fill,minmax(90px,1fr))] gap-2' : 'flex flex-col gap-0.5'"
+        data-testid="prefab-items-container"
+        :data-view-mode="viewMode"
+      >
         <PrefabItem 
           v-for="folder in visibleFolders" 
           :key="folder.id" 
@@ -107,7 +127,7 @@
           :data="{
             id: prefab.id,
             name: prefab.name,
-            type: prefab.type || prefab.originalData.type,
+            type: prefab.type || prefab.data?.type || prefab.originalData?.type || 'world',
             thumbnailUrl: prefab.thumbnailUrl,
             folderId: prefab.folderId
           }"
@@ -118,10 +138,9 @@
           @contextmenu="handleContextMenu($event, prefab)" 
           @move-item="({ id, type, targetFolderId }) => moveItem(id, type, targetFolderId)"
         />
-
       </div>
 
-      <div v-if="visibleFolders.length === 0 && visiblePrefabs.length === 0" class="h-full flex flex-col items-center justify-center text-muted-foreground/50">
+      <div v-if="visibleFolders.length === 0 && visiblePrefabs.length === 0" class="h-full flex flex-col items-center justify-center text-muted-foreground/50" data-testid="empty-prefab-state">
         <Box class="w-8 h-8 mb-2 opacity-20" />
         <span class="text-xs">No {{ activeTab }} prefabs or folders found.</span>
         <span class="text-[10px] mt-1">Right-click to create a new folder or prefab.</span>
@@ -161,6 +180,7 @@ const {
   searchQuery,
   selectedId,
   activeTab,
+  currentFolderId,
   currentFolder,
   folderBreadcrumbs,
   visibleFolders,
@@ -210,20 +230,24 @@ const handleKeyDown = (e) => {
         if (selectedId.value) {
           const item = visibleFolders.value.find(f => f.id === selectedId.value) || 
                        visiblePrefabs.value.find(p => p.id === selectedId.value);
-          clipboard.value = { 
-            action: 'copy', 
-            item: { id: item.id, type: item.isFolder || item.type === 'folder' ? 'folder' : 'prefab' } 
-          };
+          if (item) {
+            clipboard.value = { 
+              action: 'copy', 
+              item: { id: item.id, type: item.isFolder || item.type === 'folder' ? 'folder' : 'prefab' } 
+            };
+          }
         }
         break;
       case 'x':
         if (selectedId.value) {
           const item = visibleFolders.value.find(f => f.id === selectedId.value) || 
                        visiblePrefabs.value.find(p => p.id === selectedId.value);
-          clipboard.value = { 
-            action: 'cut', 
-            item: { id: item.id, type: item.isFolder || item.type === 'folder' ? 'folder' : 'prefab' } 
-          };
+          if (item) {
+            clipboard.value = { 
+              action: 'cut', 
+              item: { id: item.id, type: item.isFolder || item.type === 'folder' ? 'folder' : 'prefab' } 
+            };
+          }
         }
         break;
       case 'v':

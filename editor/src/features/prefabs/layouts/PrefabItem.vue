@@ -16,6 +16,12 @@
     @click.stop="$emit('click', data.id)" 
     @dblclick.stop="$emit('dblclick', data)"
     @contextmenu.prevent.stop="$emit('contextmenu', $event, data)"
+    data-testid="prefab-item"
+    :data-node-id="data.id"
+    :data-node-name="data.name"
+    :data-node-type="isFolder ? 'folder' : (data.type || 'world')"
+    :aria-selected="active ? 'true' : 'false'"
+    :data-cut="isCut ? 'true' : 'false'"
   >
     <div 
       class="flex items-center justify-center overflow-hidden shrink-0 relative transition-transform duration-200"

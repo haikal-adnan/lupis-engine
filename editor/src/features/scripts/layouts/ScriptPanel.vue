@@ -1,5 +1,7 @@
 <template>
   <div 
+    data-testid="script-panel"
+    :data-view-mode="viewMode"
     class="relative h-full flex flex-col bg-background text-foreground select-none overflow-hidden"
     @click="closeMenu"
     @contextmenu.prevent="handleContextMenu($event, null)"
@@ -53,8 +55,9 @@
 
       <div class="flex-1"></div>
 
-      <BaseSearchInput v-model="searchQuery" placeholder="Search scripts..." />
+      <BaseSearchInput data-testid="search-script-input" v-model="searchQuery" placeholder="Search scripts..." />
       <button 
+        data-testid="create-script-btn"
         @click.stop="createScript('component')" 
         class="p-1.5 hover:bg-primary/10 text-muted-foreground hover:text-primary rounded-md transition-colors"
         title="New Script"
@@ -64,6 +67,8 @@
     </div>
 
     <div 
+      data-testid="script-container"
+      :data-view-mode="viewMode"
       class="flex-1 overflow-y-auto p-2 bg-background/50" 
       @contextmenu.prevent
       @dragover.prevent

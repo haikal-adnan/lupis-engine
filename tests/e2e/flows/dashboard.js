@@ -1,5 +1,5 @@
 import { expect } from '@playwright/test';
-import { BaseControlHelper } from '../components/BaseControlHelper.js';
+import { BaseControlHelper } from '../helpers/BaseControlHelper.js';
 
 export async function ensureProject(page, { name, description = '' }) {
   const controls = new BaseControlHelper(page);

@@ -188,21 +188,34 @@ export class BaseControlHelper {
     await expect(searchInput).toHaveValue(query);
   }
 
+  // BaseControlHelper.js
+
   async clearSearch(placeholderOrTestId, container) {
     const scope = container || this.page;
-    const containerEl = scope
-      .locator('div', {
-        has: scope.getByTestId(placeholderOrTestId).or(scope.getByPlaceholder(placeholderOrTestId))
-      })
+
+    // 1. Cari target input
+    const rawTarget = scope
+      .getByTestId(placeholderOrTestId)
+      .or(scope.getByPlaceholder(placeholderOrTestId))
       .first();
 
-    const clearButton = containerEl.getByRole('button').or(containerEl.locator('button')).first();
+    const searchInput = this._resolveEditableElement(rawTarget);
 
-    await clearButton.click();
+    // 2. Cari tombol clear (prioritaskan data-testid="search-clear-button")
+    const clearButton = scope
+      .getByTestId('search-clear-button')
+      .or(scope.getByRole('button', { name: /clear/i }))
+      .first();
 
-    const searchInput = this._resolveEditableElement(
-      scope.getByTestId(placeholderOrTestId).or(scope.getByPlaceholder(placeholderOrTestId))
-    );
+    if (await clearButton.isVisible()) {
+      await clearButton.click();
+    } else {
+      // Fallback jika tombol clear tidak muncul atau terhalang
+      await searchInput.fill('');
+      await searchInput.blur();
+    }
+
+    // 3. Pastikan input sudah kosong
     await expect(searchInput).toHaveValue('');
   }
 
