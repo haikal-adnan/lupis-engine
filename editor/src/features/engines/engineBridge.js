@@ -18,8 +18,6 @@ export const engineBridge = {
 
     engine.bus.on("entity:modified", (entities) => {
         if (engine.syncComponent?.isInternalUpdate) return;
-
-        const sceneStore = useSceneStore();
         const list = Array.isArray(entities) ? entities : [entities];
         
         list.forEach(entity => {

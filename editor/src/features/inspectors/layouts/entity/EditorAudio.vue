@@ -1,5 +1,5 @@
 <template>
-  <PropertySection title="Audio Bank" :icon="Volume2" v-if="hasComponent">
+  <PropertySection title="Audio Bank" :icon="Volume2" v-if="hasComponent" data-testid="editor-audio-section">
     
     <template #header-extra>
       <div 
@@ -8,6 +8,7 @@
         :class="overridden 
           ? 'bg-amber-500/10 text-amber-500 border-amber-500/30' 
           : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30'"
+        data-testid="audio-prefab-status"
       >
         {{ overridden ? 'Override' : 'Sync' }}
       </div>
@@ -20,6 +21,7 @@
             @click="syncComponent('Audio'); close()" 
             :disabled="!overridden"
             class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-accent hover:text-accent-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            data-testid="audio-menu-sync"
           >
             <RefreshCw class="w-3.5 h-3.5 mr-2 opacity-70" /> 
             Sync Component
@@ -30,6 +32,7 @@
         <button 
           @click="removeComponent('Audio'); close()" 
           class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-destructive hover:text-destructive-foreground text-destructive font-medium transition-colors"
+          data-testid="audio-menu-remove"
         >
           <Trash2 class="w-3.5 h-3.5 mr-2" /> Remove Component
         </button>
@@ -47,6 +50,7 @@
           placeholder="No clips available"
           class="w-full"
           :disabled="clipOptions.length === 0"
+          data-testid="audio-clip-select"
         />
       </div>
 
@@ -56,6 +60,7 @@
             class="h-7 w-7 flex items-center justify-center rounded-md border border-input hover:bg-accent text-muted-foreground transition-colors"
             :class="{ 'bg-accent text-foreground': isOpen }"
             title="Clip Options"
+            data-testid="audio-clip-options-trigger"
           >
             <MoreVertical class="w-4 h-4" />
           </button>
@@ -65,6 +70,7 @@
             <button 
               @click="addClip(); close()"
               class="flex items-center px-2 py-1.5 mx-1 rounded-sm hover:bg-accent hover:text-accent-foreground text-left transition-colors"
+              data-testid="audio-add-clip-btn"
             >
               <Plus class="w-3.5 h-3.5 mr-2 text-muted-foreground" />
               <span>Add Clip...</span>
@@ -73,6 +79,7 @@
               v-if="currentClipId"
               @click="removeCurrentClip(); close()"
               class="flex items-center px-2 py-1.5 mx-1 rounded-sm hover:bg-destructive/10 text-destructive hover:text-destructive text-left transition-colors"
+              data-testid="audio-remove-clip-btn"
             >
               <Trash2 class="w-3.5 h-3.5 mr-2" />
               <span>Remove Current</span>
@@ -90,6 +97,8 @@
           @click="isMute = !isMute"
           class="w-full h-7 text-xs gap-2 justify-start px-3 border border-border/50 bg-background/50 hover:bg-accent transition-all"
           ghost
+          data-testid="audio-active-toggle"
+          :data-active="!isMute"
         >
           {{ !isMute ? 'Active' : 'Muted' }}
         </BaseButton>
@@ -102,6 +111,7 @@
           v-model="clipScriptId" 
           placeholder="e.g. JUMP_SFX" 
           class="font-mono text-xs w-full" 
+          data-testid="audio-script-id-input"
         />
       </PropertyRow>
 
@@ -121,6 +131,7 @@
             class="flex-1 h-full px-2 text-left text-[11px] font-mono truncate select-none transition-colors outline-none"
             :class="clipAssetId ? 'text-muted-foreground/90 hover:text-primary cursor-pointer' : 'text-muted-foreground/50 cursor-default'"
             :title="clipAssetId ? 'Click to play audio' : 'No asset selected'"
+            data-testid="audio-play-btn"
           >
             {{ displayAssetName }}
           </button>
@@ -130,6 +141,7 @@
             @click="openAssetSelector"
             class="px-2 h-full flex items-center justify-center border-l border-border bg-muted/10 text-muted-foreground/50 hover:text-primary hover:bg-primary/5 transition-colors cursor-pointer outline-none"
             title="Click to select audio asset"
+            data-testid="audio-asset-select-btn"
           >
             <FolderSearch class="w-3 h-3" />
           </button>
@@ -144,6 +156,7 @@
           prefix="%" 
           :min="0" :max="200" :step="1"
           class="font-mono w-full" 
+          data-testid="audio-volume-input"
         />
       </PropertyRow>
 
@@ -153,6 +166,7 @@
           prefix="X" 
           :min="0.1" :max="3.0" :step="0.1" :precision="1"
           class="font-mono w-full" 
+          data-testid="audio-pitch-input"
         />
       </PropertyRow>
 
@@ -162,6 +176,8 @@
           @click="autoplay = !autoplay"
           class="h-7 text-xs flex justify-center items-center border border-border/50 bg-background/50 hover:bg-accent transition-all"
           ghost
+          data-testid="audio-autoplay-toggle"
+          :data-active="autoplay"
         >
           Play on Awake
         </BaseButton>
@@ -171,6 +187,8 @@
           @click="loop = !loop"
           class="h-7 text-xs flex justify-center items-center border border-border/50 bg-background/50 hover:bg-accent transition-all"
           ghost
+          data-testid="audio-loop-toggle"
+          :data-active="loop"
         >
           <Repeat class="w-3.5 h-3.5 mr-1" :class="loop ? 'text-primary' : 'text-muted-foreground'" />
           <span :class="loop ? 'text-primary font-medium' : 'text-muted-foreground'">
@@ -187,6 +205,8 @@
           @click="persist = !persist"
           class="w-full h-7 text-xs gap-2 justify-start px-3 border border-border/50 bg-background/50 hover:bg-accent transition-all"
           ghost
+          data-testid="audio-persist-toggle"
+          :data-active="persist"
         >
           {{ persist ? 'Persist Across Scenes' : 'Destroy on Load' }}
         </BaseButton>
@@ -198,6 +218,7 @@
             v-model="fadeIn" 
             :min="0" :max="10" :step="0.1" :precision="1"
             class="font-mono w-full text-xs" 
+            data-testid="audio-fade-in-input"
           />
         </PropertyRow>
         <PropertyRow label="Fade Out (s)" :no-margin="true">
@@ -205,6 +226,7 @@
             v-model="fadeOut" 
             :min="0" :max="10" :step="0.1" :precision="1"
             class="font-mono w-full text-xs" 
+            data-testid="audio-fade-out-input"
           />
         </PropertyRow>
       </div>
@@ -224,6 +246,8 @@
             class="w-full h-7 text-xs gap-2 justify-start px-3 border border-border/50 bg-background/50 hover:bg-accent transition-all"
             ghost
             :disabled="persist"
+            data-testid="audio-spatial-toggle"
+            :data-active="spatial"
           >
             {{ spatial ? 'Enabled (Positional)' : 'Disabled (Global)' }}
           </BaseButton>
@@ -237,6 +261,7 @@
               :min="0" :step="10"
               class="font-mono w-full" 
               :disabled="persist"
+              data-testid="audio-ref-distance-input"
             />
           </PropertyRow>
 
@@ -247,6 +272,7 @@
               :min="refDistance + 1" :step="10"
               class="font-mono w-full" 
               :disabled="persist"
+              data-testid="audio-max-distance-input"
             />
           </PropertyRow>
         </template>
@@ -260,7 +286,7 @@
 
     </div>
 
-    <div v-else class="text-xs text-muted-foreground text-center py-4 border border-dashed border-border rounded">
+    <div v-else class="text-xs text-muted-foreground text-center py-4 border border-dashed border-border rounded" data-testid="audio-empty-state">
         Select "Add Clip..." from menu to start.
     </div>
 

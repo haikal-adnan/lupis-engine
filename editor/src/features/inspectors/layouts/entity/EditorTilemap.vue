@@ -1,5 +1,5 @@
 <template>
-  <PropertySection title="Tilemap" :icon="Grid3X3" v-if="hasComponent">
+  <PropertySection title="Tilemap" :icon="Grid3X3" v-if="hasComponent" data-testid="editor-tilemap-section">
     
     <template #header-extra>
       <div class="flex items-center gap-2">
@@ -9,11 +9,12 @@
           :class="overridden 
             ? 'bg-amber-500/10 text-amber-500 border-amber-500/30' 
             : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30'"
+          data-testid="tilemap-prefab-status"
         >
           {{ overridden ? 'Override' : 'Sync' }}
         </div>
 
-        <div class="px-2 py-0.5 rounded text-[10px] font-medium bg-secondary text-secondary-foreground border border-border font-mono">
+        <div class="px-2 py-0.5 rounded text-[10px] font-medium bg-secondary text-secondary-foreground border border-border font-mono" data-testid="tilemap-dimensions-badge">
           {{ totalWidth }}px × {{ totalHeight }}px
         </div>
       </div>
@@ -27,6 +28,7 @@
             @click="syncComponent('Tilemap'); close()" 
             :disabled="!overridden"
             class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-accent hover:text-accent-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            data-testid="tilemap-menu-sync"
           >
             <RefreshCw class="w-3.5 h-3.5 mr-2 opacity-70" /> 
             Sync Component
@@ -37,6 +39,7 @@
         <button 
           @click="removeComponent('Tilemap'); close()" 
           class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-destructive hover:text-destructive-foreground text-destructive font-medium transition-colors"
+          data-testid="tilemap-menu-remove"
         >
           <Trash2 class="w-3.5 h-3.5 mr-2" />
           Remove Tilemap
@@ -51,12 +54,14 @@
           fallback-text="None"
           sizeClass="w-9 h-9 bg-muted/20 border-border/60 shrink-0 rounded"
           class="object-contain"
+          data-testid="tilemap-thumbnail"
         />
 
         <BaseButton 
           @click="openTilemapEditor" 
           class="flex-1 h-9 text-xs gap-2 justify-center"
           variant="outline" 
+          data-testid="tilemap-open-editor-btn"
         >
           <Brush class="w-3.5 h-3.5 text-primary" />
           <span>Open Editor</span>
@@ -70,6 +75,7 @@
             v-model="displayOpacity" 
             :min="0" :max="100" :step="1" 
             class="font-mono w-full" 
+            data-testid="tilemap-opacity-input"
         />
     </PropertyRow>
 
@@ -78,6 +84,7 @@
         v-model="safeFilterMode" 
         :options="filterOptions" 
         class="w-full"
+        data-testid="tilemap-filter-select"
       />
     </PropertyRow>
 
@@ -87,6 +94,8 @@
           :active="autoFit"
           @click="toggleAutoFit"
           class="flex-1 h-7 text-xs gap-2" ghost
+          data-testid="tilemap-autofit-btn"
+          :data-active="autoFit"
         >
           <Maximize class="w-3.5 h-3.5" /> <span>Auto Fit</span>
         </BaseButton>
@@ -94,6 +103,7 @@
         <IconButton 
           @click="resetTilemapTransform"
           tooltip="Reset Transform to Tilemap"
+          data-testid="tilemap-reset-transform-btn"
         >
           <RefreshCcw class="w-3.5 h-3.5" />
         </IconButton>
@@ -106,6 +116,7 @@
             label="Solid" 
             description="Enable collision"
             class="w-full"
+            data-testid="tilemap-solid-checkbox"
           />
     </PropertyRow>
 

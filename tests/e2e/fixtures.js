@@ -4,11 +4,15 @@ import { PopupHelper } from './helpers/PopupHelper.js';
 import { HierarchyPage } from './pages/HierarchyPage.js';
 import { AssetPanelPage } from './pages/AssetPanelPage.js';
 import { DashboardPage } from './pages/DashboardPage.js';
+import { InspectorPage } from './pages/InspectorPage.js';
 import { PrefabPage } from './pages/PrefabPage.js';
+import { ScriptPanelPage } from './pages/ScriptPanelPage.js';
+
 import { HierarchyCrudObject } from './flows/hierarchy.js';
 import { PrefabCrudObject } from './flows/prefabs.js';
+import { ScriptCrudObject } from './flows/scripts.js';
+import { AssetCrudObject } from './flows/assets.js';
 import { ensureProject } from './flows/dashboard.js';
-import { ScriptPanelPage } from './pages/ScriptPanelPage.js';
 
 export const test = base.extend({
   projectOptions: [
@@ -71,6 +75,18 @@ export const test = base.extend({
 
   prefabCrud: async ({ page, project }, use) => {
     await use(new PrefabCrudObject(page));
+  },
+
+  scriptCrud: async ({ page, project }, use) => {
+    await use(new ScriptCrudObject(page));
+  },
+
+  assetCrud: async ({ page, project }, use) => {
+    await use(new AssetCrudObject(page));
+  },
+
+  inspector: async ({ page, project }, use) => {
+    await use(new InspectorPage(page));
   },
 });
 

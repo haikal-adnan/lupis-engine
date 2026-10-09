@@ -1,13 +1,13 @@
 <template>
-  <div class="flex flex-col h-full w-full relative outline-none select-none">
+  <div class="flex flex-col h-full w-full relative outline-none select-none" data-testid="editor-project-section">
     
-    <PropertySection title="Quick Actions" :icon="Zap" :default-open="true">
+    <PropertySection title="Quick Actions" :icon="Zap" :default-open="true" data-testid="project-quick-actions-section">
       <div class="flex flex-col gap-2 px-1 py-1">
-        <BaseCheckbox v-model="visible" label="Show Grid Guide" text-size="text-xs" />
-        <BaseCheckbox v-model="snap" label="Snap to Grid" text-size="text-xs" />
-        <BaseCheckbox v-model="showRulers" label="Show Editor Rulers" text-size="text-xs" />
-        <BaseCheckbox v-model="active" label="Enable UI Layer" text-size="text-xs" />
-        <BaseCheckbox v-model="showBorder" label="Show UI Bounds" :disabled="!active" text-size="text-xs" />
+        <BaseCheckbox v-model="visible" label="Show Grid Guide" text-size="text-xs" data-testid="project-show-grid-toggle" />
+        <BaseCheckbox v-model="snap" label="Snap to Grid" text-size="text-xs" data-testid="project-snap-grid-toggle" />
+        <BaseCheckbox v-model="showRulers" label="Show Editor Rulers" text-size="text-xs" data-testid="project-show-rulers-toggle" />
+        <BaseCheckbox v-model="active" label="Enable UI Layer" text-size="text-xs" data-testid="project-enable-ui-toggle" />
+        <BaseCheckbox v-model="showBorder" label="Show UI Bounds" :disabled="!active" text-size="text-xs" data-testid="project-show-ui-bounds-toggle" />
       </div>
     </PropertySection>
   </div>

@@ -1,5 +1,10 @@
 <template>
-  <PropertySection title="Layer" :icon="Layers" v-if="layer">
+  <PropertySection 
+    title="Layer" 
+    :icon="Layers" 
+    v-if="layer"
+    data-testid="editor-layer-section"
+  >
     <template #header-extra>
       <div class="flex items-center gap-2 max-w-[180px]">
         <div 
@@ -7,6 +12,7 @@
           :class="isUISection 
             ? 'bg-blue-500/10 text-blue-500 border-blue-500/30' 
             : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30'"
+          data-testid="layer-type-badge"
         >
           {{ isUISection ? 'UI Layer' : 'World Layer' }}
         </div>
@@ -14,12 +20,16 @@
     </template>
 
     <template #menu="{ close }">
-      <div class="p-1 space-y-0.5 min-w-[160px]">
-        <button @click="onCopyId(); close()" class="menu-item">
+      <div class="p-1 space-y-0.5 min-w-[160px]" data-testid="layer-menu-content">
+        <button @click="onCopyId(); close()" class="menu-item" data-testid="layer-copy-id-btn">
           <Copy class="w-3.5 h-3.5 mr-2 opacity-70" /> Copy ID
         </button>
         <div class="h-px bg-border my-1"></div>
-        <button @click="onDelete(); close()" class="menu-item text-destructive hover:bg-destructive hover:text-destructive-foreground font-medium">
+        <button 
+          @click="onDelete(); close()" 
+          class="menu-item text-destructive hover:bg-destructive hover:text-destructive-foreground font-medium"
+          data-testid="layer-delete-btn"
+        >
           <Trash2 class="w-3.5 h-3.5 mr-2" /> Delete Layer
         </button>
       </div>
@@ -31,29 +41,49 @@
         placeholder="layer_unique_id" 
         :error="hasIdError"
         @blur="commitScriptId"
+        data-testid="layer-script-id-input"
       />
     </PropertyRow>
 
     <PropertyRow label="Name">
-      <BaseInput v-model="name" placeholder="Layer Name" />
+      <BaseInput v-model="name" placeholder="Layer Name" data-testid="layer-name-input" />
     </PropertyRow>
 
     <PropertyRow label="Z-Index">
-      <BaseNumber v-model="zIndex" :step="1" :precision="0" class="font-mono w-full" placeholder="0" />
+      <BaseNumber v-model="zIndex" :step="1" :precision="0" class="font-mono w-full" placeholder="0" data-testid="layer-z-index-input" />
     </PropertyRow>
 
     <PropertyRow label="Appearance">
       <div class="flex gap-1 items-center w-full">
-        <BaseButton :active="active" @click="active = !active" class="flex-1 h-7 text-xs gap-2 justify-center" ghost>
+        <BaseButton 
+          :active="active" 
+          @click="active = !active" 
+          class="flex-1 h-7 text-xs gap-2 justify-center" 
+          ghost
+          data-testid="layer-active-toggle"
+          :data-active="active"
+        >
           <Power class="w-3.5 h-3.5" :class="active ? 'text-primary' : 'text-muted-foreground'" />
           <span>{{ active ? 'Active' : 'Inactive' }}</span>
         </BaseButton>
         <div class="w-px h-4 bg-border mx-1"></div>
-        <IconButton :active="visible" @click="visible = !visible" :tooltip="visible ? 'Hide Layer' : 'Show Layer'">
+        <IconButton 
+          :active="visible" 
+          @click="visible = !visible" 
+          :tooltip="visible ? 'Hide Layer' : 'Show Layer'"
+          data-testid="layer-visible-toggle"
+          :data-visible="visible"
+        >
           <Eye v-if="visible" class="w-4 h-4 text-primary" />
           <EyeOff v-else class="w-4 h-4 text-muted-foreground" />
         </IconButton>
-        <IconButton :active="locked" @click="locked = !locked" :tooltip="locked ? 'Unlock Layer' : 'Lock Layer'">
+        <IconButton 
+          :active="locked" 
+          @click="locked = !locked" 
+          :tooltip="locked ? 'Unlock Layer' : 'Lock Layer'"
+          data-testid="layer-lock-toggle"
+          :data-locked="locked"
+        >
           <Lock v-if="locked" class="w-3.5 h-3.5 text-primary" />
           <Unlock v-else class="w-3.5 h-3.5 text-muted-foreground" />
         </IconButton>
@@ -61,13 +91,14 @@
     </PropertyRow>
 
     <PropertyRow label="Opacity">
-        <BaseNumber 
-            prefix="%"
-            v-model="displayOpacity" 
-            :min="0" :max="100" :step="1" 
-            :scrubbable="true"
-            class="font-mono w-full" 
-        />
+      <BaseNumber 
+        prefix="%"
+        v-model="displayOpacity" 
+        :min="0" :max="100" :step="1" 
+        :scrubbable="true"
+        class="font-mono w-full" 
+        data-testid="layer-opacity-input"
+      />
     </PropertyRow>
   </PropertySection>
 </template>

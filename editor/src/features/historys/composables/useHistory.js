@@ -2,6 +2,9 @@ import { reactive, watch } from 'vue';
 import { useWorkspaceStore } from '@workspaces/workspaces.js';
 import { useSceneStore } from '@scenes/scenes.js';
 
+// Setel ke `false` untuk menonaktifkan seluruh console log di file ini
+const ENABLE_LOGS = true; 
+
 export const historyStore = reactive({});
 
 export function useHistory(options = {}) {
@@ -33,6 +36,8 @@ export function useHistory(options = {}) {
   };
 
   const logHistory = (actionType = '') => {
+    if (!ENABLE_LOGS) return; // Menghentikan log jika saklar mati
+
     const key = getHistoryKey();
     console.group(`[useHistory] ${actionType} | Key: "${key}"`);
     console.log('Active History Stack:', JSON.parse(JSON.stringify(historyStore[key] || {})));
@@ -75,7 +80,7 @@ export function useHistory(options = {}) {
     const key = getHistoryKey();
 
     if (!history || history.undoStack.length === 0) {
-      console.log('[useHistory] Undo stack empty for key:', key);
+      if (ENABLE_LOGS) console.log('[useHistory] Undo stack empty for key:', key);
       return;
     }
 
@@ -92,7 +97,7 @@ export function useHistory(options = {}) {
     const key = getHistoryKey();
 
     if (!history || history.redoStack.length === 0) {
-      console.log('[useHistory] Redo stack empty for key:', key);
+      if (ENABLE_LOGS) console.log('[useHistory] Redo stack empty for key:', key);
       return;
     }
 
@@ -115,13 +120,13 @@ export function useHistory(options = {}) {
           const sceneId = key.replace('scene_', '');
           if (!currentSceneIds.includes(sceneId)) {
             delete historyStore[key];
-            console.log(`[useHistory] Cleaned up history for deleted scene: "${sceneId}"`);
+            if (ENABLE_LOGS) console.log(`[useHistory] Cleaned up history for deleted scene: "${sceneId}"`);
           }
         } else if (key.startsWith('tab_')) {
           const tabId = key.replace('tab_', '');
           if (!currentTabIds.includes(tabId)) {
             delete historyStore[key];
-            console.log(`[useHistory] Cleaned up history for closed tab: "${tabId}"`);
+            if (ENABLE_LOGS) console.log(`[useHistory] Cleaned up history for closed tab: "${tabId}"`);
           }
         }
       });

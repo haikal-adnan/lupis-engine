@@ -18,8 +18,11 @@ class EventBus {
   emit(event, ...args) {
     if (!this.events.has(event)) return;
     for (const handler of this.events.get(event)) {
-      try { handler(...args); }
-      catch (err) { console.warn(`[EventBus] Error in "${event}" handler:`, err); }
+      try {
+        handler(...args);
+      } catch (err) {
+        console.warn(`[EventBus] Error in "${event}" handler:`, err);
+      }
     }
   }
 
@@ -33,4 +36,19 @@ class EventBus {
 }
 
 export const bus = new EventBus();
+
+// Ekspos ke window untuk kebutuhan E2E Testing & Dev
+if (typeof window !== "undefined") {
+  const isDevOrTest = 
+    import.meta.env?.DEV || 
+    import.meta.env?.MODE === 'test' || 
+    window.__E2E__ || 
+    window.playwright;
+
+  if (isDevOrTest) {
+    window.bus = bus;
+    window.$bus = bus;
+  }
+}
+
 export default EventBus;

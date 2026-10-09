@@ -1,5 +1,5 @@
 <template>
-  <PropertySection title="Physics" :icon="Atom" v-if="hasComponent">
+  <PropertySection title="Physics" :icon="Atom" v-if="hasComponent" data-testid="editor-physics-section">
     
     <template #header-extra>
       <div 
@@ -8,6 +8,7 @@
         :class="overridden 
           ? 'bg-amber-500/10 text-amber-500 border-amber-500/30' 
           : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30'"
+        data-testid="physics-prefab-badge"
       >
         {{ overridden ? 'Override' : 'Sync' }}
       </div>
@@ -20,6 +21,7 @@
             @click="syncComponent('Physics'); close()" 
             :disabled="!overridden"
             class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-accent hover:text-accent-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            data-testid="physics-sync-btn"
           >
             <RefreshCw class="w-3.5 h-3.5 mr-2 opacity-70" /> 
             Sync Component
@@ -30,6 +32,7 @@
         <button 
           @click="removeComponent('Physics'); close()" 
           class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-destructive hover:text-destructive-foreground text-destructive font-medium transition-colors"
+          data-testid="physics-remove-btn"
         >
           <Trash2 class="w-3.5 h-3.5 mr-2" /> Remove Physics
         </button>
@@ -43,6 +46,8 @@
           @click="enabled = !enabled"
           class="w-full h-7 text-xs gap-2 justify-start px-3 border border-border/50 bg-background/50 hover:bg-accent transition-all"
           ghost
+          data-testid="physics-enabled-toggle"
+          :data-active="enabled"
         >
           {{ enabled ? 'Running' : 'Paused' }}
         </BaseButton>
@@ -54,6 +59,7 @@
           :options="typeOptions" 
           placeholder="Select Type"
           class="w-full"
+          data-testid="physics-type-select"
         />
       </PropertyRow>
 
@@ -67,6 +73,7 @@
           :step="0.01" 
           :precision="2" 
           class="font-mono w-full"
+          data-testid="physics-mass-input"
         />
       </PropertyRow>
 
@@ -78,6 +85,7 @@
           :step="0.01" 
           :precision="2" 
           class="font-mono w-full" 
+          data-testid="physics-drag-input"
         />
       </PropertyRow>
 
@@ -88,6 +96,7 @@
           :step="0.01" 
           :precision="2" 
           class="font-mono w-full" 
+          data-testid="physics-gravity-scale-input"
         />
       </PropertyRow>
     </div>
@@ -139,3 +148,9 @@ const typeOptions = [
   { label: 'Kinematic (Scripted)', value: 'kinematic' }
 ]
 </script>
+
+<style scoped>
+.menu-item {
+  @apply relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-accent hover:text-accent-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+}
+</style>

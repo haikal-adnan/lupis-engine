@@ -1,5 +1,5 @@
 <template>
-  <PropertySection title="Shape Renderer" :icon="Square" v-if="hasComponent">
+  <PropertySection title="Shape Renderer" :icon="Square" v-if="hasComponent" data-testid="editor-shape-renderer-section">
     
     <template #header-extra>
       <div 
@@ -8,6 +8,7 @@
         :class="overridden 
           ? 'bg-amber-500/10 text-amber-500 border-amber-500/30' 
           : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30'"
+        data-testid="shape-renderer-prefab-status"
       >
         {{ overridden ? 'Override' : 'Sync' }}
       </div>
@@ -20,6 +21,7 @@
             @click="syncComponent('ShapeRenderer'); close()" 
             :disabled="!overridden"
             class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-accent hover:text-accent-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            data-testid="shape-renderer-menu-sync"
           >
             <RefreshCw class="w-3.5 h-3.5 mr-2 opacity-70" /> 
             Sync Component
@@ -29,6 +31,7 @@
         <button 
           @click="removeComponent('ShapeRenderer'); close()" 
           class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-destructive hover:text-destructive-foreground text-destructive font-medium transition-colors"
+          data-testid="shape-renderer-menu-remove"
         >
           <Trash2 class="w-3.5 h-3.5 mr-2" />
           Remove Component
@@ -39,14 +42,14 @@
     <div class="pt-2 pb-1">
       <div class="px-1 mb-2 flex items-center justify-between">
         <div class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Fill</div>
-        <BaseCheckbox v-model="isFilled" />
+        <BaseCheckbox v-model="isFilled" data-testid="shape-renderer-fill-toggle" />
       </div>
       <div :class="{ 'opacity-40 pointer-events-none grayscale': !isFilled }" class="transition-all duration-300">
         <PropertyRow label="Color">
-          <BaseColor v-model="color" :show-input="true" class="w-full" />
+          <BaseColor v-model="color" :show-input="true" class="w-full" data-testid="shape-renderer-fill-color" />
         </PropertyRow>
         <PropertyRow label="Opacity">
-          <BaseNumber prefix="%" v-model="displayFillOpacity" :min="0" :max="100" :step="1" :scrubbable="true" class="font-mono w-full" />
+          <BaseNumber prefix="%" v-model="displayFillOpacity" :min="0" :max="100" :step="1" :scrubbable="true" class="font-mono w-full" data-testid="shape-renderer-fill-opacity" />
         </PropertyRow>
       </div>
     </div>
@@ -54,13 +57,13 @@
     <div class="pt-3 pb-1 border-t border-border mt-1">
       <div class="px-1 mb-2 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Outline</div>
       <PropertyRow label="Width">
-        <BaseNumber v-model="outlineWidth" prefix="W" :min="0" :step="1" :scrubbable="true" class="font-mono w-full" tooltip="Tebal Garis Segment/Polygon" />
+        <BaseNumber v-model="outlineWidth" prefix="W" :min="0" :step="1" :scrubbable="true" class="font-mono w-full" tooltip="Tebal Garis Segment/Polygon" data-testid="shape-renderer-outline-width" />
       </PropertyRow>
       <PropertyRow label="Color">
-        <BaseColor v-model="outlineColor" :show-input="true" class="w-full" />
+        <BaseColor v-model="outlineColor" :show-input="true" class="w-full" data-testid="shape-renderer-outline-color" />
       </PropertyRow>
       <PropertyRow label="Opacity">
-        <BaseNumber prefix="%" v-model="displayOutlineOpacity" :min="0" :max="100" :step="1" :scrubbable="true" class="font-mono w-full" />
+        <BaseNumber prefix="%" v-model="displayOutlineOpacity" :min="0" :max="100" :step="1" :scrubbable="true" class="font-mono w-full" data-testid="shape-renderer-outline-opacity" />
       </PropertyRow>
     </div>
 
@@ -70,6 +73,7 @@
           @click="openShapeEditor" 
           class="w-full h-9 text-xs gap-2 justify-center"
           variant="outline" 
+          data-testid="shape-renderer-open-editor-btn"
         >
           <Pencil class="w-3.5 h-3.5 text-primary" />
           <span>Open Shape Editor</span>
@@ -85,18 +89,21 @@
             label="Polygon Physics" 
             description="Enable solid collision for polygons"
             class="w-full"
+            data-testid="shape-renderer-polygon-collision"
           />
           <BaseCheckbox 
             v-model="enableSegmentCollision" 
             label="Segment Physics" 
             description="Enable edge collision for lines/segments"
             class="w-full"
+            data-testid="shape-renderer-segment-collision"
           />
           <BaseCheckbox 
             v-model="enableCircleCollision" 
             label="Circle Physics" 
             description="Enable circular collision for circles"
             class="w-full"
+            data-testid="shape-renderer-circle-collision"
           />
         </div>
       </PropertyRow>

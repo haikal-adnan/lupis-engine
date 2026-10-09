@@ -1,5 +1,5 @@
 <template>
-  <PropertySection title="UI Transform" :icon="LayoutTemplate" v-if="selectedEntity">
+  <PropertySection title="UI Transform" :icon="LayoutTemplate" v-if="selectedEntity" data-testid="editor-ui-transform-section">
     
     <template #header-extra>
       <div 
@@ -8,6 +8,7 @@
         :class="overridden 
           ? 'bg-amber-500/10 text-amber-500 border-amber-500/30' 
           : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30'"
+          data-testid="ui-transform-prefab-badge"
       >
         {{ overridden ? 'Override' : 'Sync' }}
       </div>
@@ -21,6 +22,7 @@
             @click="syncComponent(COMPONENT_NAME); close()" 
             :disabled="!overridden"
             class="menu-item"
+            data-testid="ui-transform-sync-btn"
           >
             <RefreshCw class="w-3.5 h-3.5 mr-2 opacity-70" /> 
             Sync Component
@@ -31,6 +33,7 @@
         <button 
           @click="handleReset(); close()" 
           class="menu-item"
+          data-testid="ui-transform-reset-btn"
         >
           <RotateCcw class="w-3.5 h-3.5 mr-2 opacity-70" /> Reset Position
         </button>
@@ -38,6 +41,7 @@
         <button 
           @click="centerAnchors(); close()" 
           class="menu-item"
+          data-testid="ui-transform-center-anchors-btn"
         >
           <Crosshair class="w-3.5 h-3.5 mr-2 opacity-70" /> Center Anchors
         </button>
@@ -58,22 +62,8 @@
       <div class="flex-grow pt-[1px]">
         <PropertyRow label="Position (Offset)">
           <div class="grid grid-cols-2 gap-2">
-            <BaseNumber 
-              v-model="x" 
-              prefix="X" 
-              :step="1" 
-              :precision="2"
-              class="font-mono" 
-              :disabled="locked" 
-            />
-            <BaseNumber 
-              v-model="y" 
-              prefix="Y" 
-              :step="1" 
-              :precision="2"
-              class="font-mono" 
-              :disabled="locked" 
-            />
+            <BaseNumber v-model="x" prefix="X" :step="1" :precision="2" class="font-mono" :disabled="locked" data-testid="ui-transform-pos-x" />
+            <BaseNumber v-model="y" prefix="Y" :step="1" :precision="2" class="font-mono" :disabled="locked" data-testid="ui-transform-pos-y" />
           </div>
         </PropertyRow>
         <div class="text-[10px] text-muted-foreground mt-1 ml-1 opacity-70 italic">
@@ -81,12 +71,7 @@
         </div>
       </div>
 
-      <AnchorControl 
-        :x="anchorX" 
-        :y="anchorY" 
-        :disabled="locked"
-        @update="updateAnchorFromControl"
-      />
+      <AnchorControl :x="anchorX" :y="anchorY" :disabled="locked" @update="updateAnchorFromControl" data-testid="ui-transform-anchor-control" />
     </div>
 
     <div 
@@ -98,15 +83,15 @@
       <PropertyRow label="Size (px)">
         <div class="flex items-center gap-2">
           <div class="grid grid-cols-2 gap-2 flex-grow">
-            <BaseNumber v-model="width" prefix="W" :min="1" :step="1" :precision="2" class="font-mono" :disabled="locked" />
-            <BaseNumber v-model="height" prefix="H" :min="1" :step="1" :precision="2" class="font-mono" :disabled="locked" />
+            <BaseNumber v-model="width" prefix="W" :min="1" :step="1" :precision="2" class="font-mono" :disabled="locked" data-testid="ui-transform-size-w" />
+            <BaseNumber v-model="height" prefix="H" :min="1" :step="1" :precision="2" class="font-mono" :disabled="locked" data-testid="ui-transform-size-h" />
           </div>
-
           <IconButton 
             :active="isRatioLocked" 
-            @click="isRatioLocked = !isRatioLocked"
-            :tooltip="isRatioLocked ? 'Unlock Ratio' : 'Lock Ratio'"
-            :disabled="locked"
+            @click="isRatioLocked = !isRatioLocked" 
+            :disabled="locked" 
+            data-testid="ui-transform-ratio-lock-toggle" 
+            :data-locked="isRatioLocked"
           >
             <Lock v-if="isRatioLocked" class="w-3.5 h-3.5" />
             <Unlock v-else class="w-3.5 h-3.5 opacity-50" />
@@ -135,7 +120,8 @@
             prefix="R" suffix="°" :step="1" :precision="2"
             class="font-mono flex-grow"
             :min="0" :max="359" :cyclic="true"
-            :disabled="locked" 
+            :disabled="locked"
+            data-testid="ui-transform-rotation" 
           />
         </PropertyRow>
         
@@ -158,15 +144,16 @@
       <PropertyRow label="Scale">
         <div class="flex items-center gap-2">
           <div class="grid grid-cols-2 gap-2 flex-grow">
-            <BaseNumber v-model="scaleX" prefix="X" :min="1" :step="1" :precision="0" class="font-mono" :disabled="locked" />
-            <BaseNumber v-model="scaleY" prefix="Y" :min="1" :step="1" :precision="0" class="font-mono" :disabled="locked" />
+            <BaseNumber v-model="scaleX" prefix="X" :min="1" :step="1" :precision="0" class="font-mono" :disabled="locked" data-testid="ui-transform-scale-x" />
+            <BaseNumber v-model="scaleY" prefix="Y" :min="1" :step="1" :precision="0" class="font-mono" :disabled="locked" data-testid="ui-transform-scale-y" />
           </div>
 
           <IconButton 
             :active="isScaleLocked" 
-            @click="isScaleLocked = !isScaleLocked"
-            :tooltip="isScaleLocked ? 'Unlock Scale' : 'Lock Scale Uniformly'"
-            :disabled="locked"
+            @click="isScaleLocked = !isScaleLocked" 
+            :disabled="locked" 
+            data-testid="ui-transform-scale-lock-toggle" 
+            :data-locked="isScaleLocked"
           >
             <Lock v-if="isScaleLocked" class="w-3.5 h-3.5" />
             <Unlock v-else class="w-3.5 h-3.5 opacity-50" />
@@ -183,21 +170,10 @@
 
     <PropertyRow label="Flip">
       <div class="grid grid-cols-2 gap-2">
-        <BaseButton 
-          :active="flipX"
-          @click="flipX = !flipX"
-          class="h-7 text-xs gap-2" ghost
-          :disabled="locked"
-        >
+        <BaseButton :active="flipX" @click="flipX = !flipX" class="h-7 text-xs gap-2" ghost :disabled="locked" data-testid="ui-transform-flip-x" :data-active="flipX">
           <FlipHorizontal class="w-3.5 h-3.5" /> <span>Horz</span>
         </BaseButton>
-
-        <BaseButton 
-          :active="flipY"
-          @click="flipY = !flipY"
-          class="h-7 text-xs gap-2" ghost
-          :disabled="locked"
-        >
+        <BaseButton :active="flipY" @click="flipY = !flipY" class="h-7 text-xs gap-2" ghost :disabled="locked" data-testid="ui-transform-flip-y" :data-active="flipY">
           <FlipVertical class="w-3.5 h-3.5" /> <span>Vert</span>
         </BaseButton>
       </div>

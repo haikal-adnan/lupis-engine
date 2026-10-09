@@ -3,6 +3,7 @@
     title="Script Controller" 
     :icon="FileCode2" 
     v-if="hasComponent"
+    data-testid="editor-script-controller-section"
   >
 
     <template #header-extra>
@@ -12,6 +13,7 @@
         :class="overridden 
           ? 'bg-amber-500/10 text-amber-500 border-amber-500/30' 
           : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30'"
+        data-testid="script-controller-prefab-status"
       >
         {{ overridden ? 'Override' : 'Sync' }}
       </div>
@@ -24,6 +26,7 @@
             @click="syncComponent('ScriptController'); close()" 
             :disabled="!overridden"
             class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-accent hover:text-accent-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            data-testid="script-controller-menu-sync"
           >
             <RefreshCw class="w-3.5 h-3.5 mr-2 opacity-70" /> 
             Sync Component
@@ -34,6 +37,7 @@
         <button 
           @click="removeComponent('ScriptController'); close()" 
           class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-destructive hover:text-destructive-foreground text-destructive font-medium transition-colors"
+          data-testid="script-controller-menu-remove"
         >
           <Trash2 class="w-3.5 h-3.5 mr-2" /> Remove Component
         </button>
@@ -59,6 +63,7 @@
                 isOpen ? 'border-primary ring-1 ring-primary' : 'border-input hover:bg-accent hover:text-accent-foreground',
                 !currentScript ? 'text-muted-foreground' : 'text-foreground'
               ]"
+              data-testid="script-controller-dropdown-trigger"
             >
               <span class="truncate font-medium">
                 {{ scriptsData.length > 0 ? currentScriptName : 'No Scripts Attached' }}
@@ -68,8 +73,8 @@
           </template>
 
           <template #default="{ close }">
-            <div class="w-[220px] flex flex-col py-1">
-              <div v-if="scriptsData.length === 0" class="px-3 py-2 text-[10px] text-muted-foreground text-center italic">
+            <div class="w-[220px] flex flex-col py-1" data-testid="script-controller-dropdown-list">
+              <div v-if="scriptsData.length === 0" class="px-3 py-2 text-[10px] text-muted-foreground text-center italic" data-testid="script-controller-empty-msg">
                 List is empty.
               </div>
 
@@ -81,6 +86,9 @@
                 :class="[
                   script.active ? 'text-foreground font-medium' : 'text-muted-foreground'
                 ]"
+                data-testid="script-controller-item"
+                :data-script-id="script.id"
+                :data-index="idx"
               >
                 <div class="flex items-center gap-2 truncate">
                    <div class="w-1 h-1 rounded-full" :class="idx === selectedIndex ? 'bg-primary' : 'bg-transparent'"></div>
@@ -99,6 +107,7 @@
             class="h-7 w-7 flex items-center justify-center rounded-md border border-transparent hover:bg-muted text-muted-foreground transition-colors"
             :class="{ 'bg-muted text-foreground': isOpen }"
             title="Script Options"
+            data-testid="script-controller-options-trigger"
           >
             <MoreVertical class="w-4 h-4" />
           </button>
@@ -109,6 +118,7 @@
             <button 
               @click="openScriptBottomBar(); close()"
               class="flex items-center px-2 py-1.5 mx-1 rounded-sm hover:bg-accent hover:text-accent-foreground text-left transition-colors"
+              data-testid="script-controller-add-btn"
             >
               <Plus class="w-3.5 h-3.5 mr-2 text-muted-foreground" />
               <span>Add Script...</span>
@@ -118,6 +128,7 @@
               v-if="currentScript"
               @click="handleRemoveCurrent(); close()"
               class="flex items-center px-2 py-1.5 mx-1 rounded-sm hover:bg-destructive/10 text-destructive hover:text-destructive text-left transition-colors"
+              data-testid="script-controller-remove-btn"
             >
               <Trash2 class="w-3.5 h-3.5 mr-2" />
               <span>Remove Current</span>
@@ -127,13 +138,15 @@
       </BaseDropdown>
     </div>
 
-    <div v-if="currentScript" class="flex flex-col gap-2">
+    <div v-if="currentScript" class="flex flex-col gap-2" data-testid="script-controller-active-container">
         <PropertyRow label="Active Status">
           <BaseButton 
              :active="currentActive"
              @click="toggleScriptActive"
              class="w-full h-7 text-xs gap-2 justify-start px-3 border border-border/50 bg-background/50 hover:bg-accent transition-all"
              ghost
+             data-testid="script-controller-active-toggle"
+             :data-active="currentActive"
            >
             {{ currentActive ? 'Active' : 'Inactive' }}
            </BaseButton>
@@ -144,6 +157,7 @@
             @click="openScriptEditor"
             class="w-full h-7 text-xs gap-2 justify-center"
             variant="outline" 
+            data-testid="script-controller-open-graph-btn"
           >
             <span>Open Visual Script</span>
           </BaseButton>
@@ -151,8 +165,8 @@
 
         <div class="h-px bg-border my-1"></div>
 
-        <div class="space-y-1">
-          <div v-if="currentVariables.length === 0" class="text-[10px] text-muted-foreground italic pl-2">
+        <div class="space-y-1" data-testid="script-controller-variables-list">
+          <div v-if="currentVariables.length === 0" class="text-[10px] text-muted-foreground italic pl-2" data-testid="script-variables-empty-msg">
             No variables exposed in this script.
           </div>
 
@@ -160,6 +174,8 @@
             v-for="v in currentVariables" 
             :key="v.name" 
             :label="v.name"
+            data-testid="script-variable-row"
+            :data-variable-name="v.name"
           >
             <div class="flex items-center gap-1 w-full">
                <div class="flex-1 min-w-0">
@@ -169,13 +185,15 @@
                     :scrubbable="true" 
                     class="w-full text-xs font-mono" 
                     :class="{ 'border-amber-500/50 text-amber-500 bg-amber-500/5': v.overridden }" 
+                    data-testid="script-variable-number"
                   />
-                  <BaseCheckbox v-else-if="v.type === 'Boolean'" v-model="v.model.value" />
+                  <BaseCheckbox v-else-if="v.type === 'Boolean'" v-model="v.model.value" data-testid="script-variable-boolean" />
                   <BaseInput 
                     v-else 
                     v-model="v.model.value" 
                     class="w-full text-xs" 
                     :class="{ 'border-amber-500/50 text-amber-500 bg-amber-500/5': v.overridden }" 
+                    data-testid="script-variable-input"
                   />
                </div>
                
@@ -184,6 +202,7 @@
                  @click="v.reset()" 
                  title="Reset to default value"
                  class="w-6 h-6 flex items-center justify-center hover:bg-amber-500/10 rounded text-amber-500 transition-colors"
+                 data-testid="script-variable-reset-btn"
                >
                   <RotateCcw class="w-3 h-3" />
                </button>
@@ -193,7 +212,7 @@
         </div>
     </div>
 
-    <div v-else class="text-xs text-muted-foreground text-center py-4 border border-dashed border-border rounded">
+    <div v-else class="text-xs text-muted-foreground text-center py-4 border border-dashed border-border rounded" data-testid="script-controller-empty-state">
         Select "Add Script" from menu to start.
     </div>
   </PropertySection>

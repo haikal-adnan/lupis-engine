@@ -1,5 +1,5 @@
 <template>
-  <PropertySection title="Object" :icon="Box" v-if="selectedEntity">
+  <PropertySection title="Object" :icon="Box" v-if="selectedEntity" data-testid="editor-object-section">
     <template #header-extra>
       <div class="flex items-center gap-2 max-w-[180px]">
         <div 
@@ -47,7 +47,13 @@
     </template>
 
     <PropertyRow label="ID">
-      <BaseInput v-model="localScriptId" placeholder="unique_id_name" :error="hasIdError" @blur="commitScriptId" />
+      <BaseInput 
+        v-model="localScriptId" 
+        placeholder="unique_id_name" 
+        :error="hasIdError" 
+        @blur="commitScriptId" 
+        data-testid="object-script-id-input"
+      />
     </PropertyRow>
 
     <PropertyRow v-if="prefabId" label="Prefab">
@@ -74,28 +80,68 @@
     </PropertyRow>
 
     <PropertyRow label="Name">
-      <BaseInput v-model="name" placeholder="ObjectName" />
+      <BaseInput 
+        v-model="name" 
+        placeholder="ObjectName" 
+        data-testid="object-name-input"
+      />
     </PropertyRow>
 
     <PropertyRow label="Tag">
-      <BaseSelect v-model="safeTag" :options="tagOptions" :editable="true" action-label="Create New Tag..." placeholder="Select Tag" @action="handleAddTag" @delete="handleDeleteTag" />
+      <BaseSelect 
+        v-model="safeTag" 
+        :options="tagOptions" 
+        :editable="true" 
+        action-label="Create New Tag..." 
+        placeholder="Select Tag" 
+        @action="handleAddTag" 
+        @delete="handleDeleteTag" 
+        data-testid="object-tag-select"
+      />
     </PropertyRow>
 
     <PropertyRow label="Z-Index">
-      <BaseNumber v-model="zIndex" :step="1" :precision="0" class="font-mono w-full" :disabled="locked" placeholder="0" />
+      <BaseNumber 
+        v-model="zIndex" 
+        :step="1" 
+        :precision="0" 
+        class="font-mono w-full" 
+        :disabled="locked" 
+        placeholder="0" 
+        data-testid="object-zindex-input"
+      />
     </PropertyRow>
 
     <PropertyRow label="Appearance">
       <div class="flex gap-1 items-center w-full">
-        <BaseButton :active="active" @click="toggleActive" class="flex-1 h-7 text-xs gap-2 justify-center" ghost>
+        <BaseButton 
+          :active="active" 
+          @click="toggleActive" 
+          class="flex-1 h-7 text-xs gap-2 justify-center" 
+          ghost
+          data-testid="object-active-toggle"
+          :data-active="active"
+        >
           <span>{{ active ? 'Active' : 'Inactive' }}</span>
         </BaseButton>
         <div class="w-px h-4 bg-border mx-1"></div>
-        <IconButton :active="visible" @click="visible = !visible" :tooltip="visible ? 'Hide Object' : 'Show Object'">
+        <IconButton 
+          :active="visible" 
+          @click="visible = !visible" 
+          :tooltip="visible ? 'Hide Object' : 'Show Object'"
+          data-testid="object-visible-toggle"
+          :data-visible="visible"
+        >
           <Eye v-if="visible" class="w-4 h-4" />
           <EyeOff v-else class="w-4 h-4 text-muted-foreground" />
         </IconButton>
-        <IconButton :active="locked" @click="locked = !locked" :tooltip="locked ? 'Unlock Object' : 'Lock Object'">
+        <IconButton 
+          :active="locked" 
+          @click="locked = !locked" 
+          :tooltip="locked ? 'Unlock Object' : 'Lock Object'"
+          data-testid="object-lock-toggle"
+          :data-locked="locked"
+        >
           <Lock v-if="locked" class="w-3.5 h-3.5 text-primary" />
           <Unlock v-else class="w-3.5 h-3.5" />
         </IconButton>

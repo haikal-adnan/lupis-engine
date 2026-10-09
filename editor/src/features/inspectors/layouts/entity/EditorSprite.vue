@@ -1,5 +1,5 @@
 <template>
-  <PropertySection title="Image Renderer" :icon="Image" v-if="hasComponent">
+  <PropertySection title="Image Renderer" :icon="Image" v-if="hasComponent" data-testid="editor-sprite-renderer-section">
     
     <template #header-extra>
       <div 
@@ -8,6 +8,7 @@
         :class="overridden 
           ? 'bg-amber-500/10 text-amber-500 border-amber-500/30' 
           : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30'"
+        data-testid="sprite-renderer-prefab-status"
       >
         {{ overridden ? 'Override' : 'Sync' }}
       </div>
@@ -19,6 +20,7 @@
           @click="resetToOriginalSize(); close()" 
           :disabled="!assetId || isControlledByAnimator"
           class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-accent hover:text-accent-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          data-testid="sprite-renderer-reset-size-btn"
         >
           <Maximize class="w-3.5 h-3.5 mr-2 opacity-70" /> 
           Reset to Native Size
@@ -30,6 +32,7 @@
             @click="syncComponent('SpriteRenderer'); close()" 
             :disabled="!overridden || isControlledByAnimator"
             class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-accent hover:text-accent-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            data-testid="sprite-renderer-menu-sync"
           >
             <RefreshCw class="w-3.5 h-3.5 mr-2 opacity-70" /> 
             Sync Component
@@ -40,6 +43,7 @@
         <button 
           @click="removeComponent('SpriteRenderer'); close()" 
           class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-destructive hover:text-destructive-foreground text-destructive font-medium transition-colors"
+          data-testid="sprite-renderer-menu-remove"
         >
           <Trash2 class="w-3.5 h-3.5 mr-2" />
           Remove Component
@@ -52,6 +56,7 @@
       <div 
         v-if="isControlledByAnimator" 
         class="absolute -inset-1.5 z-10 bg-black/70 backdrop-blur-[1px] flex flex-col items-center justify-center rounded-md text-center"
+        data-testid="sprite-renderer-animator-overlay"
       >
         <Film class="w-6 h-6 text-white/80 mb-1.5" />
         <span class="text-xs text-white">
@@ -69,6 +74,7 @@
             :rect="currentRect" 
             fallback-text="No Tex"
             sizeClass="w-[52px] h-[52px] bg-muted/20 border-border/60 shrink-0"
+            data-testid="sprite-renderer-thumbnail"
           />
 
           <div class="flex-1 flex flex-col justify-center gap-1.5 min-w-0">
@@ -84,6 +90,7 @@
                   cursor-pointer h-7 overflow-hidden
                 "
                 title="Click to select asset"
+                data-testid="sprite-renderer-asset-btn"
               >
                 <span class="flex-1 px-2 text-[11px] font-mono text-muted-foreground/90 truncate select-none group-hover:text-foreground transition-colors">
                   {{ assetId || 'None' }}
@@ -99,10 +106,10 @@
 
         <PropertyRow label="Source Rect" :no-margin="true">
             <div class="grid grid-cols-2 gap-2">
-              <BaseNumber v-model="sourceX" prefix="X" :scrubbable="true" class="font-mono" />
-              <BaseNumber v-model="sourceY" prefix="Y" :scrubbable="true" class="font-mono" />
-              <BaseNumber v-model="sourceW" prefix="W" :min="0" :scrubbable="true" class="font-mono" />
-              <BaseNumber v-model="sourceH" prefix="H" :min="0" :scrubbable="true" class="font-mono" />
+              <BaseNumber v-model="sourceX" prefix="X" :scrubbable="true" class="font-mono" data-testid="sprite-renderer-source-x" />
+              <BaseNumber v-model="sourceY" prefix="Y" :scrubbable="true" class="font-mono" data-testid="sprite-renderer-source-y" />
+              <BaseNumber v-model="sourceW" prefix="W" :min="0" :scrubbable="true" class="font-mono" data-testid="sprite-renderer-source-w" />
+              <BaseNumber v-model="sourceH" prefix="H" :min="0" :scrubbable="true" class="font-mono" data-testid="sprite-renderer-source-h" />
             </div>
         </PropertyRow>
 
@@ -112,6 +119,7 @@
                 v-model="displayOpacity" 
                 :min="0" :max="100" :step="1" 
                 class="font-mono w-full" 
+                data-testid="sprite-renderer-opacity"
             />
         </PropertyRow>
 
@@ -121,6 +129,7 @@
               v-model="safeFilterMode" 
               :options="filterOptions" 
               class="flex-1"
+              data-testid="sprite-renderer-filter-select"
             />
             
             <BaseButton 
@@ -129,6 +138,8 @@
               class="h-7 text-xs px-2.5 gap-1 shrink-0" 
               ghost
               tooltip="Enable Signed Distance Field rendering for sharp vector-like edges"
+              data-testid="sprite-renderer-sdf-toggle"
+              :data-active="useSDF"
             >
               <span>SDF</span>
             </BaseButton>

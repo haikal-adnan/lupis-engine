@@ -1,10 +1,10 @@
 <template>
-  <div class="flex flex-col h-full w-full relative outline-none select-none">
+  <div class="flex flex-col h-full w-full relative outline-none select-none" data-testid="editor-scene-section">
     
-    <PropertySection title="Scene Properties" :icon="Monitor" :default-open="true">
+    <PropertySection title="Scene Properties" :icon="Monitor" :default-open="true" data-testid="scene-properties-section">
       <div class="py-1">
         <PropertyRow label="Background Color">
-          <BaseColor v-model="backgroundColor" :show-input="true" class="w-full" />
+          <BaseColor v-model="backgroundColor" :show-input="true" class="w-full" data-testid="scene-bg-color-picker" />
         </PropertyRow>
       </div>
     </PropertySection>

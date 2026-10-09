@@ -1,5 +1,5 @@
 <template>
-  <PropertySection title="Collider" :icon="Cuboid" v-if="hasComponent">
+  <PropertySection title="Collider" :icon="Cuboid" v-if="hasComponent" data-testid="editor-collider-section">
     
     <template #header-extra>
       <div 
@@ -8,6 +8,7 @@
         :class="overridden 
           ? 'bg-amber-500/10 text-amber-500 border-amber-500/30' 
           : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30'"
+        data-testid="collider-prefab-badge"
       >
         {{ overridden ? 'Override' : 'Sync' }}
       </div>
@@ -21,6 +22,7 @@
             @click="syncComponent('Collider'); close()" 
             :disabled="!overridden"
             class="menu-item"
+            data-testid="collider-sync-btn"
           >
             <RefreshCw class="w-3.5 h-3.5 mr-2 opacity-70" /> 
             Sync Component
@@ -31,6 +33,7 @@
         <button 
           @click="removeComponent('Collider'); close()" 
           class="menu-item text-destructive hover:bg-destructive hover:text-destructive-foreground font-medium"
+          data-testid="collider-remove-all-btn"
         >
           <Trash2 class="w-3.5 h-3.5 mr-2" /> Remove All Colliders
         </button>
@@ -40,10 +43,10 @@
     <div class="flex items-end gap-1.5 mb-3">
       <div class="flex-1 min-w-0">
         <div class="mb-1 text-[10px] font-bold text-muted-foreground uppercase flex justify-between items-center">
-            <span>Attached Colliders</span>
+          <span>Attached Colliders</span>
         </div>
         
-        <BaseDropdown class="w-full">
+        <BaseDropdown class="w-full" data-testid="collider-select-dropdown">
           <template #trigger="{ isOpen }">
             <button 
               type="button"
@@ -57,6 +60,7 @@
                 !currentCollider ? 'text-muted-foreground' : 'text-foreground',
                 currentCollider && !currentCollider.enabled ? 'opacity-50' : ''
               ]"
+              data-testid="collider-dropdown-trigger"
             >
               <span class="truncate font-medium">
                 {{ collidersData.length > 0 ? `Collider ${selectedIndex + 1} (${currentCollider?.type})` : 'No Colliders Attached' }}
@@ -80,6 +84,7 @@
                   idx === selectedIndex ? 'text-foreground font-medium' : 'text-muted-foreground',
                   !col.enabled ? 'opacity-50' : ''
                 ]"
+                :data-testid="`collider-option-${idx}`"
               >
                 <div class="flex items-center gap-2 truncate">
                    <div class="w-1 h-1 rounded-full" :class="idx === selectedIndex ? 'bg-primary' : 'bg-transparent'"></div>
@@ -98,6 +103,7 @@
             class="h-7 w-7 flex items-center justify-center rounded-md border border-transparent hover:bg-muted text-muted-foreground transition-colors"
             :class="{ 'bg-muted text-foreground': isOpen }"
             title="Collider Options"
+            data-testid="collider-options-menu-trigger"
           >
             <MoreVertical class="w-4 h-4" />
           </button>
@@ -108,6 +114,7 @@
             <button 
               @click="addNewCollider(); close()"
               class="flex items-center px-2 py-1.5 mx-1 rounded-sm hover:bg-accent hover:text-accent-foreground text-left transition-colors"
+              data-testid="collider-add-btn"
             >
               <Plus class="w-3.5 h-3.5 mr-2 text-muted-foreground" />
               <span>Add Collider</span>
@@ -117,6 +124,7 @@
               v-if="currentCollider"
               @click="removeCurrentCollider(); close()"
               class="flex items-center px-2 py-1.5 mx-1 rounded-sm hover:bg-destructive/10 text-destructive hover:text-destructive text-left transition-colors"
+              data-testid="collider-remove-current-btn"
             >
               <Trash2 class="w-3.5 h-3.5 mr-2" />
               <span>Remove Current</span>
@@ -133,6 +141,8 @@
           @click="enabled = !enabled"
           class="w-full h-7 text-xs gap-2 justify-start px-3 border border-border/50 bg-background/50 hover:bg-accent transition-all"
           ghost
+          data-testid="collider-enabled-toggle"
+          :data-active="enabled"
         >
           {{ enabled ? 'Enabled' : 'Disabled' }}
         </BaseButton>
@@ -144,20 +154,21 @@
           :options="typeOptions" 
           placeholder="Select Type"
           class="w-full"
+          data-testid="collider-type-select"
         />
       </PropertyRow>
 
       <PropertyRow label="Offset">
         <div class="grid grid-cols-2 gap-2 transition-all duration-300" :class="{ 'opacity-50 grayscale pointer-events-none': autoFit }">
-          <BaseNumber v-model="offsetX" prefix="X" :step="1" :precision="2" class="font-mono" :disabled="autoFit" />
-          <BaseNumber v-model="offsetY" prefix="Y" :step="1" :precision="2" class="font-mono" :disabled="autoFit" />
+          <BaseNumber v-model="offsetX" prefix="X" :step="1" :precision="2" class="font-mono" :disabled="autoFit" data-testid="collider-offset-x" />
+          <BaseNumber v-model="offsetY" prefix="Y" :step="1" :precision="2" class="font-mono" :disabled="autoFit" data-testid="collider-offset-y" />
         </div>
       </PropertyRow>
 
       <PropertyRow label="Size (px)">
         <div class="grid grid-cols-2 gap-2 transition-all duration-300" :class="{ 'opacity-50 grayscale pointer-events-none': autoFit }">
-          <BaseNumber v-model="width" prefix="W" :min="0" :step="1" :precision="2" class="font-mono" :disabled="autoFit" />
-          <BaseNumber v-model="height" prefix="H" :min="0" :step="1" :precision="2" class="font-mono" :disabled="autoFit" />
+          <BaseNumber v-model="width" prefix="W" :min="0" :step="1" :precision="2" class="font-mono" :disabled="autoFit" data-testid="collider-size-w" />
+          <BaseNumber v-model="height" prefix="H" :min="0" :step="1" :precision="2" class="font-mono" :disabled="autoFit" data-testid="collider-size-h" />
         </div>
       </PropertyRow>
 
@@ -171,6 +182,7 @@
               :min="0" :max="359" :cyclic="true"
               :class="{ 'opacity-50 grayscale pointer-events-none': autoFit }"
               :disabled="autoFit" 
+              data-testid="collider-rotation"
             />
           </PropertyRow>
         </div>
@@ -182,6 +194,7 @@
           class="transition-all duration-300"
           :class="{ 'opacity-50 grayscale pointer-events-none': autoFit }"
           @update="updateColliderPivot" 
+          data-testid="collider-pivot-control"
         />
       </div>
 
@@ -189,6 +202,7 @@
         <BaseCheckbox 
           v-model="autoFit" 
           label="Fit to Transform Size & Rotation" 
+          data-testid="collider-autofit-toggle"
         />
       </div>
 
@@ -237,7 +251,6 @@ import {
 
 const { selectedEntity, isEditingMasterPrefab } = useInspectorSelection()
 
-// FIX: Pas kedua parameter ke useInspectorPrefab agar tidak undefined
 const { 
   prefabId, 
   getComponentOverrideStatus, 
@@ -355,7 +368,6 @@ async function removeCurrentCollider() {
    }
 }
 
-// FIX: Mengambil transform baik dari UITransform maupun Transform
 const activeTransform = computed(() => {
   if (!selectedEntity.value?.components) return null
   return selectedEntity.value.components.UITransform || selectedEntity.value.components.Transform

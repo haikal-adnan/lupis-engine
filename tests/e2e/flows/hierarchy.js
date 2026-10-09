@@ -3,14 +3,6 @@ import { BaseControlHelper } from '../helpers/BaseControlHelper.js';
 import { PopupHelper } from '../helpers/PopupHelper.js';
 import { HierarchyPage } from '../pages/HierarchyPage.js';
 
-/**
- * FLOW (facade) untuk setup hierarchy di spec NON-murni (mis. asset management).
- * Spec hierarchy-management bersifat murni dan TIDAK boleh memakai file ini.
- */
-
-/**
- * Sub-Helper untuk Scene CRUD Operations
- */
 export class SceneCrud {
   constructor(page, controls, popup, hierarchy) {
     this.page = page;
@@ -22,11 +14,15 @@ export class SceneCrud {
   async create(parentLayerNode, entityType = 'Sprite') {
     await expect(parentLayerNode).toBeVisible();
 
-    // Pilih menu bertingkat: ['Add Entity', entityType]
-    await this.popup.selectContextMenu(parentLayerNode, ['Add Entity', entityType]);
+    // Deteksi apakah ini UI Context atau World Context
+    const isUI = entityType.startsWith('ui_') || entityType.toLowerCase().includes('ui');
+    const menuPath = isUI 
+      ? ['Add UI Element', entityType === 'ui_empty' ? 'Empty UI' : entityType]
+      : ['Add Entity', entityType];
 
-    // Cari node entitas yang baru saja dibuat di DOM
-    const createdNode = this.hierarchy.nodesByText(new RegExp(entityType, 'i')).first();
+    await this.popup.selectContextMenu(parentLayerNode, menuPath);
+
+    const createdNode = this.hierarchy.nodesByText(/Empty|UI/i).first();
     await expect(createdNode).toBeVisible();
     return createdNode;
   }
@@ -76,9 +72,6 @@ export class SceneCrud {
   }
 }
 
-/**
- * Sub-Helper untuk Layer CRUD Operations
- */
 export class LayerCrud {
   constructor(page, popup, hierarchy) {
     this.page = page;
@@ -136,9 +129,6 @@ export class LayerCrud {
   }
 }
 
-/**
- * Sub-Helper untuk Entity CRUD Operations
- */
 export class EntityCrud {
   constructor(page, popup, hierarchy) {
     this.page = page;
@@ -148,9 +138,16 @@ export class EntityCrud {
 
   async create(parentLayerNode, entityType) {
     await expect(parentLayerNode).toBeVisible();
-    await this.popup.selectContextMenu(parentLayerNode, ['Add Entity', entityType]);
+    
+    // Penanganan otomatis untuk konteks UI atau World
+    const isUI = entityType.startsWith('ui_') || entityType.toLowerCase().includes('ui');
+    const menuPath = isUI
+      ? ['Add UI Element', entityType === 'ui_empty' ? 'Empty UI' : entityType]
+      : ['Add Entity', entityType];
 
-    const createdNode = this.hierarchy.nodesByText(new RegExp(entityType, 'i')).first();
+    await this.popup.selectContextMenu(parentLayerNode, menuPath);
+
+    const createdNode = this.hierarchy.nodesByText(new RegExp(entityType.replace('ui_', ''), 'i')).first();
     await expect(createdNode).toBeVisible();
     return createdNode;
   }
@@ -188,7 +185,7 @@ export class EntityCrud {
     await expect(entityNode).toBeVisible();
     await this.popup.selectContextMenu(entityNode, 'Duplicate');
 
-    const duplicatedNode = this.hierarchy.nodesByText(/Sprite/i).nth(1);
+    const duplicatedNode = this.hierarchy.nodesByText(/Sprite|UI|Empty/i).nth(1);
     await expect(duplicatedNode).toBeVisible();
     await expect(duplicatedNode).toHaveAttribute('aria-selected', 'true');
     return duplicatedNode;
@@ -223,22 +220,13 @@ export class EntityCrud {
   }
 }
 
-/**
- * Main Facade Object (cukup menerima 'page')
- */
 export class HierarchyCrudObject {
-  /**
-   * @param {import('@playwright/test').Page} page
-   */
   constructor(page) {
     this.page = page;
-
-    // Auto-instantiate dependensi bawaan
     this.controls = new BaseControlHelper(page);
     this.popup = new PopupHelper(page);
     this.hierarchy = new HierarchyPage(page);
 
-    // Expose sub-modules
     this.scene = new SceneCrud(page, this.controls, this.popup, this.hierarchy);
     this.layer = new LayerCrud(page, this.popup, this.hierarchy);
     this.entity = new EntityCrud(page, this.popup, this.hierarchy);

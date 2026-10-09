@@ -3,6 +3,7 @@
     title="Sprite Animator" 
     :icon="Film" 
     v-if="hasComponent"
+    data-testid="editor-sprite-animator-section"
   >
     <template #header-extra>
       <div 
@@ -11,6 +12,7 @@
         :class="overridden 
           ? 'bg-amber-500/10 text-amber-500 border-amber-500/30' 
           : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30'"
+        data-testid="animator-prefab-status"
       >
         {{ overridden ? 'Override' : 'Sync' }}
       </div>
@@ -23,6 +25,7 @@
             @click="syncComponent('SpriteAnimator'); close()" 
             :disabled="!overridden"
             class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-accent hover:text-accent-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            data-testid="animator-menu-sync"
           >
             <RefreshCw class="w-3.5 h-3.5 mr-2 opacity-70" /> 
             Sync Component
@@ -33,6 +36,7 @@
         <button 
           @click="removeComponent('SpriteAnimator'); close()" 
           class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-destructive hover:text-destructive-foreground text-destructive font-medium transition-colors"
+          data-testid="animator-menu-remove"
         >
           <Trash2 class="w-3.5 h-3.5 mr-2" /> Remove Animator
         </button>
@@ -40,13 +44,14 @@
     </template>
 
     <div class="flex flex-col gap-2">
-      
       <PropertyRow label="Status">
         <BaseButton 
           :active="active"
           @click="active = !active"
           class="w-full h-7 text-xs gap-2 justify-start px-3 border border-border/50 bg-background/50 hover:bg-accent transition-all"
           ghost
+          data-testid="animator-active-toggle"
+          :data-active="active"
         >
           {{ active ? 'Enabled' : 'Disabled' }}
         </BaseButton>
@@ -59,6 +64,8 @@
           @click="togglePlay"
           class="w-full h-7 text-xs gap-2 justify-start px-3 border border-border/50 bg-background/50 hover:bg-accent transition-all disabled:opacity-40"
           ghost
+          data-testid="animator-play-toggle"
+          :data-active="isPlaying && active"
         >
           {{ isPlaying ? 'Playing' : 'Paused' }}
         </BaseButton>
@@ -75,8 +82,9 @@
             :disabled="isPlaying"
             :cyclic="true"
             class="font-mono w-full" 
+            data-testid="animator-current-frame-input"
           />
-          <div class="text-[10px] text-muted-foreground whitespace-nowrap opacity-70">
+          <div class="text-[10px] text-muted-foreground whitespace-nowrap opacity-70" data-testid="animator-max-frames-text">
             of {{ maxFrames }}
           </div>
         </div>
@@ -89,6 +97,7 @@
           placeholder="Select Clip..."
           class="w-full"
           :disabled="clipOptions.length === 0 || !active"
+          data-testid="animator-clip-select"
         />
       </PropertyRow>
 
@@ -96,13 +105,14 @@
 
       <PropertyRow label="Clips Data">
         <div class="flex items-center gap-2 w-full">
-          <div class="text-xs text-muted-foreground flex-1 truncate">
+          <div class="text-xs text-muted-foreground flex-1 truncate" data-testid="animator-clip-count-text">
             {{ clipCount }} clip(s) defined
           </div>
           <BaseButton 
             @click="openAnimatorEditor"
             class="h-7 text-xs gap-2 shrink-0 px-3"
             variant="outline" 
+            data-testid="animator-open-editor-btn"
           >
             <Film class="w-3.5 h-3.5 text-primary" />
             <span>Open Editor</span>

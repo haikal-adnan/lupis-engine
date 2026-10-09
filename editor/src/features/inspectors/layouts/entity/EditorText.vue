@@ -1,11 +1,12 @@
 <template>
-  <PropertySection title="Text Renderer" :icon="Type" v-if="hasComponent">
+  <PropertySection title="Text Renderer" :icon="Type" v-if="hasComponent" data-testid="editor-text-renderer-section">
     
     <template #header-extra>
       <div 
         v-if="prefabId"
         class="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border select-none shrink-0"
         :class="overridden ? 'bg-amber-500/10 text-amber-500 border-amber-500/30' : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30'"
+        data-testid="text-renderer-prefab-status"
       >
         {{ overridden ? 'Override' : 'Sync' }}
       </div>
@@ -14,12 +15,12 @@
     <template #menu="{ close }">
       <div class="p-1 space-y-0.5 min-w-[160px]">
         <template v-if="prefabId">
-          <button @click="syncComponent('TextRenderer'); close()" :disabled="!overridden" class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-accent hover:text-accent-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          <button @click="syncComponent('TextRenderer'); close()" :disabled="!overridden" class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-accent hover:text-accent-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed" data-testid="text-renderer-menu-sync">
             <RefreshCw class="w-3.5 h-3.5 mr-2 opacity-70" /> Sync Component
           </button>
           <div class="h-px bg-border my-1"></div>
         </template>
-        <button @click="removeComponent('TextRenderer'); close()" class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-destructive hover:text-destructive-foreground text-destructive font-medium transition-colors">
+        <button @click="removeComponent('TextRenderer'); close()" class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-destructive hover:text-destructive-foreground text-destructive font-medium transition-colors" data-testid="text-renderer-menu-remove">
           <Trash2 class="w-3.5 h-3.5 mr-2" /> Remove Component
         </button>
       </div>
@@ -33,58 +34,58 @@
 
       <div class="w-full space-y-1.5">
         <PropertyRow label="Font" :no-margin="true">
-          <button type="button" class="group flex items-center w-full relative text-left bg-secondary/40 border border-border rounded-md h-7 overflow-hidden">
+          <button type="button" class="group flex items-center w-full relative text-left bg-secondary/40 border border-border rounded-md h-7 overflow-hidden" data-testid="text-renderer-font-btn">
             <span class="flex-1 px-2 text-[11px] font-mono text-muted-foreground/90 truncate">Inter</span>
             <div class="px-2 h-full flex items-center justify-center border-l border-border bg-muted/10"><FolderSearch class="w-3 h-3" /></div>
           </button>
         </PropertyRow>
         <PropertyRow label="Mode" :no-margin="true">
-          <BaseSelect v-model="mode" :options="[{ label: 'Static', value: 'static' }, { label: 'Rich Text', value: 'rich' }]" />
+          <BaseSelect v-model="mode" :options="[{ label: 'Static', value: 'static' }, { label: 'Rich Text', value: 'rich' }]" data-testid="text-renderer-mode-select" />
         </PropertyRow>
       </div>
     </div>
 
     <PropertyRow label="Text">
-      <BaseTextArea v-model="textValue" placeholder="Type something..." height="auto" minHeight="64px" resize="vertical" class="w-full" />
+      <BaseTextArea v-model="textValue" placeholder="Type something..." height="auto" minHeight="64px" resize="vertical" class="w-full" data-testid="text-renderer-text-input" />
     </PropertyRow>
 
     <div class="grid grid-cols-2 gap-2 mt-2">
       <PropertyRow label="Font Size">
         <div class="flex items-center gap-1">
-          <BaseNumber v-model="fontSize" prefix="SZ" :min="1" :scrubbable="true" class="flex-grow font-mono" />
-          <IconButton @click="resetTextRatio" tooltip="Reset / Auto-fit Size"><RefreshCcw class="w-3.5 h-3.5" /></IconButton>
+          <BaseNumber v-model="fontSize" prefix="SZ" :min="1" :scrubbable="true" class="flex-grow font-mono" data-testid="text-renderer-font-size" />
+          <IconButton @click="resetTextRatio" tooltip="Reset / Auto-fit Size" data-testid="text-renderer-reset-ratio-btn"><RefreshCcw class="w-3.5 h-3.5" /></IconButton>
         </div>
       </PropertyRow>
       <PropertyRow label="Max Width">
-        <BaseNumber v-model="maxWidth" prefix="W" :min="0" :scrubbable="true" class="w-full font-mono" />
+        <BaseNumber v-model="maxWidth" prefix="W" :min="0" :scrubbable="true" class="w-full font-mono" data-testid="text-renderer-max-width" />
       </PropertyRow>
     </div>
 
     <div class="grid grid-cols-2 gap-2">
       <PropertyRow label="Max Line">
-        <BaseNumber v-model="maxLine" prefix="L" :min="0" :step="1" :precision="0" :scrubbable="true" class="w-full font-mono" />
+        <BaseNumber v-model="maxLine" prefix="L" :min="0" :step="1" :precision="0" :scrubbable="true" class="w-full font-mono" data-testid="text-renderer-max-line" />
       </PropertyRow>
       <PropertyRow label="Overflow">
-        <BaseSelect v-model="overflow" :options="[{ label: 'Wrap', value: 'wrap' }, { label: 'Ellipsis', value: 'ellipsis' }]" />
+        <BaseSelect v-model="overflow" :options="[{ label: 'Wrap', value: 'wrap' }, { label: 'Ellipsis', value: 'ellipsis' }]" data-testid="text-renderer-overflow-select" />
       </PropertyRow>
     </div>
 
     <div class="grid grid-cols-2 gap-2">
       <PropertyRow label="Line Space">
-        <BaseNumber v-model="lineSpacing" prefix="H" :step="0.1" :precision="2" :scrubbable="true" class="w-full font-mono" />
+        <BaseNumber v-model="lineSpacing" prefix="H" :step="0.1" :precision="2" :scrubbable="true" class="w-full font-mono" data-testid="text-renderer-line-spacing" />
       </PropertyRow>
       <PropertyRow label="Char Space">
-        <BaseNumber v-model="letterSpacing" prefix="S" :step="0.1" :precision="2" :scrubbable="true" class="w-full font-mono" />
+        <BaseNumber v-model="letterSpacing" prefix="S" :step="0.1" :precision="2" :scrubbable="true" class="w-full font-mono" data-testid="text-renderer-char-spacing" />
       </PropertyRow>
     </div>
 
     <div class="px-1 mb-2 mt-1">
-      <BaseCheckbox v-model="autoFit" label="Auto Fit Transform to Text" />
+      <BaseCheckbox v-model="autoFit" label="Auto Fit Transform to Text" data-testid="text-renderer-autofit-checkbox" />
     </div>
 
     <PropertyRow label="Alignment">
       <div class="flex bg-secondary/30 rounded-md border border-border w-full">
-        <BaseButton v-for="opt in alignOptions" :key="opt.value" ghost :active="align === opt.value" @click="align = opt.value" class="flex-1 h-7 !rounded-[3px]">
+        <BaseButton v-for="opt in alignOptions" :key="opt.value" ghost :active="align === opt.value" @click="align = opt.value" class="flex-1 h-7 !rounded-[3px]" :data-testid="`text-renderer-align-${opt.value}`" :data-active="align === opt.value">
           <component :is="opt.icon" class="w-3.5 h-3.5" />
         </BaseButton>
       </div>
@@ -95,22 +96,22 @@
     <div class="space-y-2">
       <PropertyRow label="Text Color">
         <div class="flex gap-2">
-          <BaseColor v-model="color" :show-label="false" height="1.75rem" class="flex-1" />
-          <BaseNumber prefix="OP" v-model="displayOpacity" :min="0" :max="100" :step="1" :scrubbable="true" class="font-mono w-[45%]" />
+          <BaseColor v-model="color" :show-label="false" height="1.75rem" class="flex-1" data-testid="text-renderer-color-picker" />
+          <BaseNumber prefix="OP" v-model="displayOpacity" :min="0" :max="100" :step="1" :scrubbable="true" class="font-mono w-[45%]" data-testid="text-renderer-opacity" />
         </div>
       </PropertyRow>
 
       <PropertyRow label="Outline">
         <div class="flex gap-2">
-          <BaseColor v-model="outlineColor" :show-label="false" height="1.75rem" class="flex-1" />
-          <BaseNumber v-model="outlineWidth" prefix="W" :min="0" :max="1" :step="0.05" :precision="2" :scrubbable="true" class="font-mono w-[45%]" />
+          <BaseColor v-model="outlineColor" :show-label="false" height="1.75rem" class="flex-1" data-testid="text-renderer-outline-color-picker" />
+          <BaseNumber v-model="outlineWidth" prefix="W" :min="0" :max="1" :step="0.05" :precision="2" :scrubbable="true" class="font-mono w-[45%]" data-testid="text-renderer-outline-width" />
         </div>
       </PropertyRow>
 
       <PropertyRow label="Advanced">
         <div class="grid grid-cols-2 gap-2">
-          <BaseNumber v-model="smoothing" prefix="SM" :min="0.01" :max="1" :step="0.05" :precision="2" :scrubbable="true" class="font-mono" tooltip="Anti-aliasing / Smoothing" />
-          <BaseNumber v-model="bias" prefix="BS" :min="-0.2" :max="0.2" :step="0.01" :precision="2" :scrubbable="true" class="font-mono" tooltip="Font Bias (Fix holes / Bold effect)" />
+          <BaseNumber v-model="smoothing" prefix="SM" :min="0.01" :max="1" :step="0.05" :precision="2" :scrubbable="true" class="font-mono" tooltip="Anti-aliasing / Smoothing" data-testid="text-renderer-smoothing" />
+          <BaseNumber v-model="bias" prefix="BS" :min="-0.2" :max="0.2" :step="0.01" :precision="2" :scrubbable="true" class="font-mono" tooltip="Font Bias (Fix holes / Bold effect)" data-testid="text-renderer-bias" />
         </div>
       </PropertyRow>
     </div>
@@ -120,24 +121,24 @@
     <div class="space-y-2">
       <div class="flex items-center justify-between">
         <span class="text-xs font-medium text-muted-foreground">Drop Shadow</span>
-        <BaseCheckbox v-model="shadowEnabled" label="" />
+        <BaseCheckbox v-model="shadowEnabled" label="" data-testid="text-renderer-shadow-toggle" />
       </div>
 
       <div v-if="shadowEnabled" class="space-y-2">
         <PropertyRow label="Color">
           <div class="flex gap-2">
-            <BaseColor v-model="shadowColor" :show-label="false" height="1.75rem" class="flex-1" />
-            <BaseNumber v-model="displayShadowOpacity" prefix="OP" :min="0" :max="100" :step="1" :scrubbable="true" class="font-mono w-[45%]" />
+            <BaseColor v-model="shadowColor" :show-label="false" height="1.75rem" class="flex-1" data-testid="text-renderer-shadow-color-picker" />
+            <BaseNumber v-model="displayShadowOpacity" prefix="OP" :min="0" :max="100" :step="1" :scrubbable="true" class="font-mono w-[45%]" data-testid="text-renderer-shadow-opacity" />
           </div>
         </PropertyRow>
         <PropertyRow label="Offset">
           <div class="grid grid-cols-2 gap-2">
-            <BaseNumber v-model="shadowOffsetX" prefix="X" :step="1" :scrubbable="true" class="font-mono" />
-            <BaseNumber v-model="shadowOffsetY" prefix="Y" :step="1" :scrubbable="true" class="font-mono" />
+            <BaseNumber v-model="shadowOffsetX" prefix="X" :step="1" :scrubbable="true" class="font-mono" data-testid="text-renderer-shadow-offset-x" />
+            <BaseNumber v-model="shadowOffsetY" prefix="Y" :step="1" :scrubbable="true" class="font-mono" data-testid="text-renderer-shadow-offset-y" />
           </div>
         </PropertyRow>
         <PropertyRow label="Blur">
-          <BaseNumber v-model="shadowBlur" prefix="B" :min="0" :max="20" :step="1" :scrubbable="true" class="font-mono w-full" />
+          <BaseNumber v-model="shadowBlur" prefix="B" :min="0" :max="20" :step="1" :scrubbable="true" class="font-mono w-full" data-testid="text-renderer-shadow-blur" />
         </PropertyRow>
       </div>
     </div>

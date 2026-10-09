@@ -32,6 +32,7 @@
                   :model-value="null" 
                   @update:model-value="handleAddComponent"
                   @click="scrollToBottom"
+                  data-testid="add-component-select"
                 />
               </div>
           </div>

@@ -1,5 +1,5 @@
 <template>
-  <PropertySection title="Transform" :icon="BoxSelect" v-if="selectedEntity">
+  <PropertySection title="Transform" :icon="BoxSelect" v-if="selectedEntity" data-testid="editor-transform-section">
     
     <template #header-extra>
       <div 
@@ -47,8 +47,24 @@
 
     <PropertyRow label="Position">
       <div class="grid grid-cols-2 gap-2">
-        <BaseNumber v-model="x" prefix="X" :step="1" :precision="2" class="font-mono" :disabled="locked" />
-        <BaseNumber v-model="y" prefix="Y" :step="1" :precision="2" class="font-mono" :disabled="locked" />
+        <BaseNumber 
+          v-model="x" 
+          prefix="X" 
+          :step="1" 
+          :precision="2" 
+          class="font-mono" 
+          :disabled="locked" 
+          data-testid="transform-pos-x"
+        />
+        <BaseNumber 
+          v-model="y" 
+          prefix="Y" 
+          :step="1" 
+          :precision="2" 
+          class="font-mono" 
+          :disabled="locked" 
+          data-testid="transform-pos-y"
+        />
       </div>
     </PropertyRow>
 
@@ -61,6 +77,7 @@
             class="font-mono flex-grow"
             :min="0" :max="359" :cyclic="true"
             :disabled="locked" 
+            data-testid="transform-rotation"
           />
         </PropertyRow>
         
@@ -88,8 +105,26 @@
       <PropertyRow label="Size (px)">
         <div class="flex items-center gap-2">
           <div class="grid grid-cols-2 gap-2 flex-grow">
-            <BaseNumber v-model="width" prefix="W" :min="1" :step="1" :precision="2" class="font-mono" :disabled="locked" />
-            <BaseNumber v-model="height" prefix="H" :min="1" :step="1" :precision="2" class="font-mono" :disabled="locked" />
+            <BaseNumber 
+              v-model="width" 
+              prefix="W" 
+              :min="1" 
+              :step="1" 
+              :precision="2" 
+              class="font-mono" 
+              :disabled="locked" 
+              data-testid="transform-size-w"
+            />
+            <BaseNumber 
+              v-model="height" 
+              prefix="H" 
+              :min="1" 
+              :step="1" 
+              :precision="2" 
+              class="font-mono" 
+              :disabled="locked" 
+              data-testid="transform-size-h"
+            />
           </div>
 
           <IconButton 
@@ -97,6 +132,8 @@
             @click="isRatioLocked = !isRatioLocked"
             :tooltip="isRatioLocked ? 'Unlock Ratio' : 'Lock Ratio'"
             :disabled="locked"
+            data-testid="transform-ratio-lock-toggle"
+            :data-locked="isRatioLocked"
           >
             <Lock v-if="isRatioLocked" class="w-3.5 h-3.5" />
             <Unlock v-else class="w-3.5 h-3.5 opacity-50" />
@@ -121,8 +158,26 @@
       <PropertyRow label="Scale">
         <div class="flex items-center gap-2">
           <div class="grid grid-cols-2 gap-2 flex-grow">
-            <BaseNumber v-model="scaleX" prefix="X" :min="1" :step="1" :precision="0" class="font-mono" :disabled="locked" />
-            <BaseNumber v-model="scaleY" prefix="Y" :min="1" :step="1" :precision="0" class="font-mono" :disabled="locked" />
+            <BaseNumber 
+              v-model="scaleX" 
+              prefix="X" 
+              :min="1" 
+              :step="1" 
+              :precision="0" 
+              class="font-mono" 
+              :disabled="locked" 
+              data-testid="transform-scale-x"
+            />
+            <BaseNumber 
+              v-model="scaleY" 
+              prefix="Y" 
+              :min="1" 
+              :step="1" 
+              :precision="0" 
+              class="font-mono" 
+              :disabled="locked" 
+              data-testid="transform-scale-y"
+            />
           </div>
 
           <IconButton 
@@ -130,6 +185,8 @@
             @click="isScaleLocked = !isScaleLocked"
             :tooltip="isScaleLocked ? 'Unlock Scale' : 'Lock Scale Uniformly'"
             :disabled="locked"
+            data-testid="transform-scale-lock-toggle"
+            :data-locked="isScaleLocked"
           >
             <Lock v-if="isScaleLocked" class="w-3.5 h-3.5" />
             <Unlock v-else class="w-3.5 h-3.5 opacity-50" />
@@ -151,6 +208,8 @@
           @click="flipX = !flipX"
           class="h-7 text-xs gap-2" ghost
           :disabled="locked"
+          data-testid="transform-flip-x"
+          :data-active="flipX"
         >
           <FlipHorizontal class="w-3.5 h-3.5" /> <span>Horz</span>
         </BaseButton>
@@ -160,6 +219,8 @@
           @click="flipY = !flipY"
           class="h-7 text-xs gap-2" ghost
           :disabled="locked"
+          data-testid="transform-flip-y"
+          :data-active="flipY"
         >
           <FlipVertical class="w-3.5 h-3.5" /> <span>Vert</span>
         </BaseButton>
@@ -215,7 +276,7 @@ const {
   fitToChildren 
 } = useInspectorTransform(selectedEntity, isEditingMasterPrefab);
 
-// 4. Property Bindings (OPERKAN PARAMETER YANG DIBUTUHKAN)
+// 4. Property Bindings
 const { bindComponentProp } = useInspectorBinding(
   selectedEntity, 
   isEditingMasterPrefab, 
