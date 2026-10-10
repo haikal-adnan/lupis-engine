@@ -92,7 +92,7 @@
       </BaseDropdown>
     </div>
 
-    <!-- Search & Refresh Section -->
+    <!-- Search Section -->
     <div class="flex items-center gap-1.5" data-section="search-and-controls">
       <div class="relative flex-1">
         <Search class="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
@@ -115,18 +115,6 @@
           <X class="w-3 h-3 text-muted-foreground" />
         </button>
       </div>
-      
-      <button 
-        @click="handleRefresh"
-        class="h-7 w-7 flex items-center justify-center rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors"
-        :class="{ 'animate-spin': isRefreshing }"
-        title="Refresh Engine Scene"
-        aria-label="Refresh Engine Scene"
-        data-testid="refresh-scene-button"
-        :data-refreshing="isRefreshing ? 'true' : 'false'"
-      >
-        <RefreshCw class="w-3.5 h-3.5" />
-      </button>
     </div>
 
   </div>
@@ -134,7 +122,7 @@
 
 <script setup>
 import { 
-  Search, X, RefreshCw, MoreVertical, 
+  Search, X, MoreVertical, 
   Plus, Trash2, Edit2, Copy
 } from 'lucide-vue-next'
 
@@ -158,12 +146,11 @@ import {
   usePopAlert
 } from '@composables/composables.js'
 
-const props = defineProps({
-  modelValue: String, 
-  isRefreshing: Boolean
+defineProps({
+  modelValue: String
 });
 
-const emit = defineEmits(['update:modelValue', 'add-layer', 'refresh']);
+defineEmits(['update:modelValue', 'add-layer']);
 
 const projectStore = useProjectStore();
 const sceneStore = useSceneStore();
@@ -201,23 +188,14 @@ const handleSwitchScene = (sceneId) => {
   syncSceneWithEngine();
 };
 
-const handleRefresh = () => {
-  emit('refresh');
-  syncSceneWithEngine();
-  showPop({ title: 'Refreshed', message: 'Engine scene has been reset.', type: 'success' });
-};
-
 const handleCreate = async (close) => {
   close();
   const name = await prompt({ title: 'New Scene', message: 'Enter scene name:', defaultValue: 'New Scene' });
   
   if (name) {
     try {
-      // Perbaikan: Ambil scene baru yang dibuat lalu set sebagai active scene
       const newScene = sceneStore.addScene({ name });
       
-      // Jika addScene mengembalikan object scene/id, gunakan ID tersebut.
-      // Jika tidak mengembalikan, pastikan sceneStore mengeset active scene atau ambil ID-nya dari store.
       if (newScene?.id) {
         sceneStore.setActiveScene(newScene.id);
       } else if (sceneStore.scenes?.length) {
@@ -262,7 +240,6 @@ const handleDuplicate = async (close) => {
   }
 };
 
-// HierarchyToolbar.vue (pada handleDelete)
 const handleDelete = async (close) => {
   close();
   
@@ -288,7 +265,6 @@ const handleDelete = async (close) => {
       const targetDeleteId = sceneStore.activeSceneId;
       const remainingScene = sceneStore.scenes.find(s => s.id !== targetDeleteId);
       
-      // Hapus scene terlebih dahulu lalu atur active scene baru
       sceneStore.removeScene(targetDeleteId);
       if (remainingScene) {
         sceneStore.setActiveScene(remainingScene.id);
@@ -301,7 +277,6 @@ const handleDelete = async (close) => {
     }
   }
 };
-
 </script>
 
 <style scoped>

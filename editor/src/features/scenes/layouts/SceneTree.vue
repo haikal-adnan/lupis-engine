@@ -63,15 +63,7 @@
                <LayoutTemplate class="w-3.5 h-3.5 mr-2 text-blue-500" />
                <span>Open UI Editor</span>
            </button>
-           <button 
-             type="button"
-             @click="sceneStore.toggleUIBorder(); close()" 
-             class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-accent hover:text-accent-foreground transition-colors"
-             aria-label="Toggle UI Border"
-           >
-               <AppWindow class="w-3.5 h-3.5 mr-2 text-muted-foreground" />
-               <span>{{ (sceneStore.activeScene?.settings?.ui?.showUIBorder ?? true) ? 'Hide UI Border' : 'Show UI Border' }}</span>
-           </button>
+
            <div class="h-[1px] bg-border my-1"></div>
            <button 
              type="button"

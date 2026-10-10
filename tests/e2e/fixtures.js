@@ -8,6 +8,7 @@ import { InspectorPage } from './pages/InspectorPage.js';
 import { PrefabPage } from './pages/PrefabPage.js';
 import { ScriptPanelPage } from './pages/ScriptPanelPage.js';
 
+import { InspectorCrudObject } from './flows/inspector.js';
 import { HierarchyCrudObject } from './flows/hierarchy.js';
 import { PrefabCrudObject } from './flows/prefabs.js';
 import { ScriptCrudObject } from './flows/scripts.js';
@@ -15,6 +16,24 @@ import { AssetCrudObject } from './flows/assets.js';
 import { ensureProject } from './flows/dashboard.js';
 
 export const test = base.extend({
+  // Nonaktifkan semua animasi dan transisi CSS di browser untuk isolasi pengujian E2E
+  page: async ({ page }, use) => {
+    await page.addInitScript(() => {
+      window.addEventListener('DOMContentLoaded', () => {
+        const style = document.createElement('style');
+        style.id = 'disable-e2e-animations';
+        style.innerHTML = `
+          *, *::before, *::after {
+            transition: none !important;
+            animation: none !important;
+          }
+        `;
+        document.head.appendChild(style);
+      });
+    });
+    await use(page);
+  },
+
   projectOptions: [
     { prefix: 'E2E', description: 'Workspace isolasi untuk E2E testing' },
     { option: true },
@@ -87,6 +106,10 @@ export const test = base.extend({
 
   inspector: async ({ page, project }, use) => {
     await use(new InspectorPage(page));
+  },
+
+  inspectorCrud: async ({ page, project }, use) => {
+    await use(new InspectorCrudObject(page));
   },
 });
 

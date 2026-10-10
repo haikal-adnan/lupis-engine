@@ -1,19 +1,9 @@
 import { calculateQuadVertices } from "../../Util/calculateQuadVertices.js";
 
 export class SelectionRenderer {
-    constructor(game) {
+    constructor(game, transformEngine) {
         this.game = game;
-    }
-
-    _findEntityById(id) {
-        const allLayers = [...(this.game.world.layersWorld || []), ...(this.game.world.layersUI || [])];
-        for (const layer of allLayers) {
-            if (layer?.entities) {
-                const found = layer.entities.find(e => String(e.id) === String(id));
-                if (found) return found;
-            }
-        }
-        return null;
+        this.engine = transformEngine;
     }
 
     _getEntityDimensions(e) {
@@ -28,9 +18,10 @@ export class SelectionRenderer {
             const tileW = Number(tm.tileWidth) || 32;
             const tileH = Number(tm.tileHeight) || 32;
 
-            const width = t?.width || (cols * tileW);
-            const height = t?.height || (rows * tileH);
-            return { width, height };
+            return {
+                width: t?.width || (cols * tileW),
+                height: t?.height || (rows * tileH)
+            };
         }
 
         return {
@@ -39,58 +30,13 @@ export class SelectionRenderer {
         };
     }
 
-    getGlobalTransform(e) {
-        const t = e?.components?.UITransform || e?.components?.Transform;
-        if (!t) return { x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1, pivotX: 0.5, pivotY: 0.5, width: 100, height: 100 };
-
-        if (!e.parentId) {
-            return {
-                x: t.x || 0,
-                y: t.y || 0,
-                rotation: t.rotation || 0,
-                scaleX: t.scaleX ?? 1,
-                scaleY: t.scaleY ?? 1,
-                pivotX: t.pivotX ?? 0.5,
-                pivotY: t.pivotY ?? 0.5,
-                width: t.width || 0,
-                height: t.height || 0
-            };
-        }
-
-        const parentEntity = this._findEntityById(e.parentId);
-        if (!parentEntity) return { ...t };
-
-        const parentGlobal = this.getGlobalTransform(parentEntity);
-        const parentRad = parentGlobal.rotation * (Math.PI / 180);
-        const cos = Math.cos(parentRad);
-        const sin = Math.sin(parentRad);
-
-        const scaledLocalX = (t.x || 0) * parentGlobal.scaleX;
-        const scaledLocalY = (t.y || 0) * parentGlobal.scaleY;
-
-        const rotatedX = (scaledLocalX * cos) - (scaledLocalY * sin);
-        const rotatedY = (scaledLocalX * sin) + (scaledLocalY * cos);
-
-        return {
-            x: parentGlobal.x + rotatedX,
-            y: parentGlobal.y + rotatedY,
-            rotation: parentGlobal.rotation + (t.rotation || 0),
-            scaleX: parentGlobal.scaleX * (t.scaleX ?? 1),
-            scaleY: parentGlobal.scaleY * (t.scaleY ?? 1),
-            pivotX: t.pivotX ?? 0.5,
-            pivotY: t.pivotY ?? 0.5,
-            width: t.width || 0,
-            height: t.height || 0
-        };
-    }
-
     _calculateAbsolutePosition(e) {
-        const t = e?.components?.UITransform || e?.components?.Transform;
+        const t = this.engine.getTransform(e);
         if (!t) return { x: 0, y: 0 };
 
-        const globalT = this.getGlobalTransform(e);
+        const globalT = this.engine.getGlobalTransform(e);
 
-        if (!e.components.UITransform) {
+        if (!e.components?.UITransform) {
             return { x: globalT.x || 0, y: globalT.y || 0 };
         }
 
@@ -106,7 +52,7 @@ export class SelectionRenderer {
         };
     }
 
-    draw(shape, proj, selectedList, hoveredEntity, marqueeBox, transformTool) {
+    draw(shape, proj, selectedList, hoveredEntity, marqueeBox) {
         const scale = this.game.camera.scale || 1;
         const lineThick = 2 / scale;
 
@@ -149,10 +95,10 @@ export class SelectionRenderer {
 
     drawObb(shape, e, color, proj, thickness = 2) {
         if (!e || !e.visible || e.type === 'layer' || !e.components) return;
-        const t = e.components.UITransform || e.components.Transform;
+        const t = this.engine.getTransform(e);
         if (!t) return;
 
-        const globalT = this.getGlobalTransform(e);
+        const globalT = this.engine.getGlobalTransform(e);
         const absPos = this._calculateAbsolutePosition(e);
         const dims = this._getEntityDimensions(e);
 

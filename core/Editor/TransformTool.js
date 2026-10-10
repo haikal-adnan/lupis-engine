@@ -3,7 +3,7 @@ import { ApplyResizeToEntity } from "../Util/ApplyResizeToEntity.js";
 import { bus } from "../Util/EventBus.js";
 import { TransformGeometry } from "./Transform/TransformGeometry.js";
 import { TransformRenderer } from "./Transform/TransformRenderer.js";
-import { TransformOperator } from "./Transform/TransformOperator.js";
+import { TransformMediator } from "./Transform/TransformMediator.js";
 
 export default class TransformTool {
     constructor(selectionTool, world, game, canvas, renderer, input) {
@@ -19,7 +19,7 @@ export default class TransformTool {
 
         this.geometry = new TransformGeometry(game, world);
         this.drawer = new TransformRenderer(game, selectionTool);
-        this.operator = new TransformOperator(world, game, input);
+        this.mediator = new TransformMediator(world, game, input);
 
         this.draggingMove = false;
         this.draggingResize = false;
@@ -34,10 +34,6 @@ export default class TransformTool {
         this.moveStartData = null;
         this.resizeEntityStarts = null;
         this.initialState = [];
-    }
-
-    _getTransform(e) {
-        return e?.components && (e.components.UITransform || e.components.Transform);
     }
 
     _isInteractive(e) {
@@ -87,23 +83,12 @@ export default class TransformTool {
         return false;
     }
 
-    _findEntityInWorld(id) {
-        const allLayers = [...(this.world?.layersWorld || []), ...(this.world?.layersUI || [])];
-        for (const layer of allLayers) {
-            if (layer?.entities) {
-                const found = layer.entities.find(e => String(e.id) === String(id));
-                if (found) return found;
-            }
-        }
-        return null;
-    }
-
     _getTopLevelEntities(entities) {
         return entities.filter(e => {
-            let curr = this._findEntityInWorld(e.parentId);
+            let curr = this.mediator.engine.findEntityInWorld(e.parentId);
             while (curr) {
                 if (entities.some(sel => String(sel.id) === String(curr.id))) return false;
-                curr = this._findEntityInWorld(curr.parentId);
+                curr = this.mediator.engine.findEntityInWorld(curr.parentId);
             }
             return true;
         });
@@ -141,7 +126,7 @@ export default class TransformTool {
     _applyState(list) {
         const affected = [];
         list.forEach(s => {
-            const ent = this._findEntityInWorld(s.id);
+            const ent = this.mediator.engine.findEntityInWorld(s.id);
             if (ent) {
                 ent.components = JSON.parse(JSON.stringify(s.components || {}));
                 ent.active = s.active;
@@ -157,32 +142,31 @@ export default class TransformTool {
         }
     }
 
-    beginMove(px, py, isTouch) {
+    beginMove(px, py) {
         const validEntities = (this.selection?.selectedList || []).filter(e => this._isInteractive(e));
         if (!validEntities.length) return;
 
         this.initialState = this._createSnapshot();
-
         this.startWorld = this.toWorld(px, py);
         this.draggingMove = true;
         this.draggingResize = false;
         this.draggingRotate = false;
 
         const topLevelEntities = this._getTopLevelEntities(validEntities);
-
         this.moveStartData = topLevelEntities.map(e => {
-            const t = this._getTransform(e);
+            const t = this.mediator.engine.getTransform(e);
             return { e, x: t.x || 0, y: t.y || 0 };
         });
     }
+
+    // Editor/TransformTool.js
 
     beginResize(handle, px, py) {
         const validEntities = (this.selection?.selectedList || []).filter(e => this._isInteractive(e));
         if (!validEntities.length) return;
 
         this.initialState = this._createSnapshot();
-        this.startWorld = this.toWorld(px, py);
-
+        this.startWorld = this.toWorld(px, py); // Simpan titik acuan World Space awal
         const topLevelEntities = this._getTopLevelEntities(validEntities);
 
         if (handle.mode === 'rotate') {
@@ -198,11 +182,11 @@ export default class TransformTool {
             this.rotateStartAngle = Math.atan2(this.startWorld.y - cy, this.startWorld.x - cx);
 
             if (topLevelEntities.length === 1) {
-                const t = this._getTransform(topLevelEntities[0]);
+                const t = this.mediator.engine.getTransform(topLevelEntities[0]);
                 this.entityStartRotation = t.rotation || 0;
             } else {
                 this.resizeEntityStarts = topLevelEntities.map(e => {
-                    const t = this._getTransform(e);
+                    const t = this.mediator.engine.getTransform(e);
                     return { e, startRotation: t.rotation || 0, startX: t.x || 0, startY: t.y || 0 };
                 });
             }
@@ -212,8 +196,9 @@ export default class TransformTool {
             this.draggingMove = false;
             this.resizeType = handle.type;
 
+            // Salin nilai awal secara eksplisit sebagai nilai primitif
             this.resizeEntityStarts = topLevelEntities.map(e => {
-                const t = this._getTransform(e);
+                const t = this.mediator.engine.getTransform(e);
                 let sx = t.scaleX ?? 1, sy = t.scaleY ?? 1;
                 let fx = Boolean(t.flipX), fy = Boolean(t.flipY);
 
@@ -221,7 +206,12 @@ export default class TransformTool {
                 if (sy < 0) { sy *= -1; fy = !fy; }
 
                 return {
-                    e, x: t.x || 0, y: t.y || 0, w: t.width || 0, h: t.height || 0, r: t.rotation || 0,
+                    e,
+                    x: Number(t.x || 0),
+                    y: Number(t.y || 0),
+                    w: Number(t.width || 0),
+                    h: Number(t.height || 0),
+                    r: Number(t.rotation || 0),
                     sx, sy, flipX: fx, flipY: fy
                 };
             });
@@ -266,14 +256,14 @@ export default class TransformTool {
         const worldP = this.toWorld(p.x, p.y);
 
         if (this.draggingMove && this.moveStartData) {
-            this.operator.move(worldP, this.startWorld, this.moveStartData, list, isUIMode);
+            this.mediator.processMove(worldP, this.startWorld, this.moveStartData, list, isUIMode);
         } else if (this.draggingResize && this.resizeEntityStarts) {
-            this.operator.resize(worldP, this.startWorld, this.resizeType, this.resizeEntityStarts, list, isUIMode);
+            this.mediator.processResize(worldP, this.startWorld, this.resizeType, this.resizeEntityStarts, list, isUIMode);
         } else if (this.draggingRotate) {
             if (this.resizeEntityStarts && this.resizeEntityStarts.length > 1) {
-                this.operator.rotateMulti(worldP, this.rotateCenter, this.rotateStartAngle, this.resizeEntityStarts, list, isUIMode);
+                this.mediator.processRotateMulti(worldP, this.rotateCenter, this.rotateStartAngle, this.resizeEntityStarts, list, isUIMode);
             } else {
-                this.operator.rotateSingle(worldP, this.rotateCenter, this.rotateStartAngle, this.entityStartRotation, list, isUIMode);
+                this.mediator.processRotateSingle(worldP, this.rotateCenter, this.rotateStartAngle, this.entityStartRotation, list, isUIMode);
             }
         }
 

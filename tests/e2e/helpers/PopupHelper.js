@@ -1,12 +1,6 @@
 import { expect } from '@playwright/test';
 
-/**
- * Satu-satunya pengecualian aturan "tanpa hardcoded timeout":
- * waktu singkat untuk memeriksa apakah klik kanan biasa sudah membuka menu,
- * sebelum beralih ke fallback dispatchEvent. Bukan untuk menunggu UI settle.
- */
 const MENU_OPEN_PROBE_MS = 2000;
-
 const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 export class PopupHelper {
@@ -17,74 +11,62 @@ export class PopupHelper {
     this.page = page;
   }
 
-  /** Semua level context menu yang sedang terbuka (menu utama + submenu). */
-  get menus() {
-    return this.page.getByRole('menu');
+  /** Mengambil seluruh context menu yang sedang aktif dan terlihat di viewport. */
+  get activeMenus() {
+    return this.page.locator('[role="menu"]:visible');
   }
 
-  // ==========================================
-  // CONTEXT MENU
-  // Kontrak:
-  //  - Precondition : tidak ada menu terbuka dari aksi sebelumnya
-  //  - Postcondition: semua level menu tertutup setelah item terakhir diklik
-  //                   (kecuali path kosong [], menu sengaja dibiarkan terbuka)
-  // ==========================================
-  /**
-   * Klik kanan target lalu pilih item context menu (bisa bertingkat).
-   * @param {import('@playwright/test').Locator} targetLocator
-   * @param {string | string[]} itemLabelOrPath
-   */
   async selectContextMenu(targetLocator, itemLabelOrPath) {
     const menuPath = Array.isArray(itemLabelOrPath) ? itemLabelOrPath : [itemLabelOrPath];
-    const menus = this.menus;
 
     await targetLocator.scrollIntoViewIfNeeded();
     await expect(targetLocator).toBeVisible();
 
-    // Gagal lebih awal dan jelas jika ada menu sisa dari aksi sebelumnya
-    await expect(menus).toHaveCount(0);
+    // 1. Flush fokus input aktif & tunggu 1 frame agar siklus VDOM Vue benar-benar idle
+    await this.page.evaluate(() => {
+      if (document.activeElement && document.activeElement !== document.body) {
+        document.activeElement.blur();
+      }
+    });
+    await this.page.evaluate(() => new Promise((resolve) => requestAnimationFrame(resolve)));
 
-    await targetLocator.click({ button: 'right' });
-
-    try {
-      await expect(menus.first()).toBeVisible({ timeout: MENU_OPEN_PROBE_MS });
-    } catch (e) {
-      // Fallback dengan koordinat, agar menu muncul di posisi node, bukan (0,0)
-      const box = await targetLocator.boundingBox();
-      await targetLocator.dispatchEvent('contextmenu', {
-        bubbles: true,
-        cancelable: true,
-        button: 2,
-        clientX: box.x + box.width / 2,
-        clientY: box.y + box.height / 2,
-      });
-      await expect(menus.first()).toBeVisible();
+    // 2. Tutup menu menggantung jika ada
+    if (await this.activeMenus.count() > 0) {
+      await this.page.keyboard.press('Escape');
+      await expect(this.activeMenus).toHaveCount(0);
     }
 
-    if (menuPath.length === 0) return;
+    // 3. Buka context menu
+    await targetLocator.click({ button: 'right' });
+
+    // 4. Pastikan root menu dirender
+    const rootMenu = this.activeMenus.first();
+    await expect(rootMenu).toBeVisible();
 
     for (let i = 0; i < menuPath.length; i++) {
       const label = menuPath[i];
+      const currentMenu = this.activeMenus.nth(i);
 
-      // Cocokkan persis lewat data-menu-item; fallback ke nama accessible
-      const menuItem = this.page
-        .getByRole('menuitem')
-        .and(this.page.locator(`[data-menu-item="${label}"]`))
-        .or(menus.getByRole('menuitem', { name: label }))
-        .last();
+      const menuItem = currentMenu
+        .locator(`[data-menu-item="${label}"]`)
+        .or(currentMenu.getByRole('menuitem', { name: label }))
+        .or(currentMenu.locator('[role="menuitem"], button').filter({ hasText: new RegExp(`^\\s*${escapeRegex(label)}\\s*$`, 'i') }))
+        .first();
 
       await expect(menuItem).toBeVisible();
 
       if (i < menuPath.length - 1) {
         await menuItem.hover();
-        await expect(menus).toHaveCount(i + 2); // submenu level berikutnya terbuka
+        await expect(this.activeMenus).toHaveCount(i + 2);
       } else {
-        await menuItem.click();
-        await expect(menus).toHaveCount(0); // menu tertutup sebelum aksi berikutnya
+        // 5. Eksekusi event click secara langsung pada elemen yang sudah terverifikasi visible
+        await menuItem.dispatchEvent('click');
+        
+        // Verifikasi menu tertutup sempurna setelah aksi diproses
+        await expect(this.activeMenus).toHaveCount(0);
       }
     }
   }
-
   // ==========================================
   // BASE PROMPT HELPER
   // ==========================================

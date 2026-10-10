@@ -110,6 +110,7 @@
           </div>
           <BaseButton 
             @click="openAnimatorEditor"
+            :disabled="!!prefabId"
             class="h-7 text-xs gap-2 shrink-0 px-3"
             variant="outline" 
             data-testid="animator-open-editor-btn"
@@ -126,7 +127,7 @@
 
 <script setup>
 import { computed } from 'vue'
-import { Film, Trash2, RefreshCw, Play, Pause, Power } from 'lucide-vue-next'
+import { Film, Trash2, RefreshCw } from 'lucide-vue-next'
 
 import { 
   useInspectorSelection, 
@@ -153,7 +154,6 @@ const {
 } = useInspectorPrefab()
 
 const { bindComponentProp } = useInspectorBinding()
-
 const { openAnimatorEditor } = useAnimatorLogic()
 
 const hasComponent = computed(() => !!selectedEntity.value?.components?.SpriteAnimator)

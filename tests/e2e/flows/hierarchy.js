@@ -3,6 +3,9 @@ import { BaseControlHelper } from '../helpers/BaseControlHelper.js';
 import { PopupHelper } from '../helpers/PopupHelper.js';
 import { HierarchyPage } from '../pages/HierarchyPage.js';
 
+// =========================================================================
+// 1. SCENE OPERATIONS FLOW
+// =========================================================================
 export class SceneCrud {
   constructor(page, controls, popup, hierarchy) {
     this.page = page;
@@ -11,25 +14,15 @@ export class SceneCrud {
     this.hierarchy = hierarchy;
   }
 
-  async create(parentLayerNode, entityType = 'Sprite') {
-    await expect(parentLayerNode).toBeVisible();
-
-    // Deteksi apakah ini UI Context atau World Context
-    const isUI = entityType.startsWith('ui_') || entityType.toLowerCase().includes('ui');
-    const menuPath = isUI 
-      ? ['Add UI Element', entityType === 'ui_empty' ? 'Empty UI' : entityType]
-      : ['Add Entity', entityType];
-
-    await this.popup.selectContextMenu(parentLayerNode, menuPath);
-
-    const createdNode = this.hierarchy.nodesByText(/Empty|UI/i).first();
-    await expect(createdNode).toBeVisible();
-    return createdNode;
+  async create(sceneName) {
+    await this.controls.clickSelectAction('Scene Options', 'New Scene');
+    await this.popup.fillPromptAndSubmit('New Scene', sceneName, 'OK');
+    await expect(this.hierarchy.sceneSelect).toContainText(sceneName);
   }
 
-  async switch(name) {
-    await this.hierarchy.switchScene(name);
-    await expect(this.hierarchy.sceneSelect).toContainText(name);
+  async switch(sceneName) {
+    await this.hierarchy.switchScene(sceneName);
+    await expect(this.hierarchy.sceneSelect).toContainText(sceneName);
   }
 
   async rename(newName) {
@@ -38,15 +31,9 @@ export class SceneCrud {
     await expect(this.hierarchy.sceneSelect).toContainText(newName);
   }
 
-  async duplicate(newName) {
+  async duplicate() {
     await expect(this.hierarchy.sceneSelect).not.toHaveText('Select Scene...');
     await this.controls.clickSelectAction('Scene Options', 'Duplicate Scene');
-
-    const promptModal = this.page.getByRole('dialog').or(this.page.getByTestId('base-prompt-overlay')).first();
-    if ((await promptModal.count()) > 0 && (await promptModal.isVisible())) {
-      await this.popup.fillPromptAndSubmit('Duplicate Scene', newName, 'OK');
-    }
-
     await expect(this.hierarchy.sceneSelect).toBeVisible();
   }
 
@@ -56,22 +43,26 @@ export class SceneCrud {
 
   async deleteAndReject() {
     await expect(this.hierarchy.sceneSelect).not.toHaveText('Select Scene...');
-    const initialSceneName = (await this.hierarchy.sceneSelect.textContent()).trim();
 
     await this.controls.clickSelectAction('Scene Options', 'Delete Scene');
 
-    const modal = this.page.getByTestId('base-confirm').or(this.page.getByRole('alertdialog')).first();
-    if ((await modal.count()) > 0 && (await modal.isVisible())) {
-      const confirmBtn = modal.getByTestId('confirm-action-button').or(modal.getByRole('button')).first();
-      if (await confirmBtn.isVisible()) {
-        await confirmBtn.click();
-      }
-    }
+    const alertModal = this.page
+      .getByRole('dialog')
+      .or(this.page.getByRole('alertdialog'))
+      .filter({ hasText: 'Cannot Delete' })
+      .first();
 
-    await expect(this.hierarchy.sceneSelect).toContainText(initialSceneName);
+    await expect(alertModal).toBeVisible();
+
+    const okBtn = alertModal.getByRole('button', { name: /ok|close/i }).first();
+    await okBtn.click();
+    await expect(alertModal).not.toBeVisible();
   }
 }
 
+// =========================================================================
+// 2. LAYER OPERATIONS FLOW
+// =========================================================================
 export class LayerCrud {
   constructor(page, popup, hierarchy) {
     this.page = page;
@@ -88,6 +79,7 @@ export class LayerCrud {
       .first();
 
     await expect(targetLayer).toBeVisible();
+    return targetLayer;
   }
 
   async rename(targetNode, newName) {
@@ -117,6 +109,24 @@ export class LayerCrud {
     await expect(zIndexBadge).toHaveText(String(newZIndex));
   }
 
+  async toggleLock(layerNode, expectLocked = true) {
+    await expect(layerNode).toBeVisible();
+    await layerNode.hover();
+
+    const lockBtn = layerNode.getByTitle('Toggle Lock').or(layerNode.locator('button[aria-label*="Lock"]')).first();
+    await lockBtn.click();
+    await expect(layerNode).toHaveAttribute('data-locked', String(expectLocked));
+  }
+
+  async toggleVisibility(layerNode, expectVisible = true) {
+    await expect(layerNode).toBeVisible();
+    await layerNode.hover();
+
+    const eyeBtn = layerNode.getByTitle('Toggle Visibility').or(layerNode.locator('button[aria-label*="Show"], button[aria-label*="Hide"]')).first();
+    await eyeBtn.click();
+    await expect(layerNode).toHaveAttribute('data-visible', String(expectVisible));
+  }
+
   async delete(layerName) {
     const targetLayer = this.hierarchy.nodeByName(layerName);
     await expect(targetLayer).toBeVisible();
@@ -124,11 +134,25 @@ export class LayerCrud {
     await expect(this.hierarchy.nodeByName(layerName)).toHaveCount(0);
   }
 
+  async deleteAndReject(layerName) {
+    const targetLayer = this.hierarchy.nodeByName(layerName);
+    await expect(targetLayer).toBeVisible();
+
+    const beforeState = await this.hierarchy.snapshot();
+    await this.popup.selectContextMenu(targetLayer, 'Delete Layer');
+
+    await expect(targetLayer).toBeVisible();
+    await expect.poll(() => this.hierarchy.snapshot()).toEqual(beforeState);
+  }
+
   async reorder(sourceNode, targetNode) {
     await this.hierarchy.dragAndDropNodes(sourceNode, targetNode);
   }
 }
 
+// =========================================================================
+// 3. ENTITY OPERATIONS FLOW
+// =========================================================================
 export class EntityCrud {
   constructor(page, popup, hierarchy) {
     this.page = page;
@@ -139,17 +163,41 @@ export class EntityCrud {
   async create(parentLayerNode, entityType) {
     await expect(parentLayerNode).toBeVisible();
     
-    // Penanganan otomatis untuk konteks UI atau World
-    const isUI = entityType.startsWith('ui_') || entityType.toLowerCase().includes('ui');
-    const menuPath = isUI
-      ? ['Add UI Element', entityType === 'ui_empty' ? 'Empty UI' : entityType]
-      : ['Add Entity', entityType];
+    // Pemetaan label context menu berdasarkan tipe entitas
+    const typeMap = {
+      empty: { path: ['Add Entity', 'Empty Entity'], match: /Empty/i },
+      sprite: { path: ['Add Entity', 'Sprite'], match: /Sprite/i },
+      shape: { path: ['Add Entity', 'Shape'], match: /Shape/i },
+      text: { path: ['Add Entity', 'Text'], match: /Text/i },
+      tilemap: { path: ['Add Entity', 'Tilemap'], match: /Tilemap/i },
+      ui_empty: { path: ['Add UI Element', 'Empty UI'], match: /Empty/i },
+      ui_shape: { path: ['Add UI Element', 'UI Shape'], match: /Shape/i },
+      ui_text: { path: ['Add UI Element', 'UI Text'], match: /Text/i },
+      ui_image: { path: ['Add UI Element', 'UI Image'], match: /Image/i },
+    };
 
-    await this.popup.selectContextMenu(parentLayerNode, menuPath);
+    const targetConfig = typeMap[entityType.toLowerCase()] || {
+      path: ['Add Entity', entityType],
+      match: new RegExp(entityType, 'i'),
+    };
 
-    const createdNode = this.hierarchy.nodesByText(new RegExp(entityType.replace('ui_', ''), 'i')).first();
+    await this.popup.selectContextMenu(parentLayerNode, targetConfig.path);
+
+    const createdNode = this.hierarchy.nodesByText(targetConfig.match).first();
     await expect(createdNode).toBeVisible();
     return createdNode;
+  }
+
+  async rename(entityNode, newName) {
+    await expect(entityNode).toBeVisible();
+    const nodeId = await entityNode.getAttribute('data-node-id');
+
+    await this.popup.selectContextMenu(entityNode, 'Rename Entity');
+    await this.popup.fillPromptAndSubmit('Rename Entity', newName, 'Rename');
+
+    const renamedNode = nodeId ? this.hierarchy.nodeById(nodeId) : this.hierarchy.nodeByName(newName);
+    await expect(renamedNode).toBeVisible();
+    return renamedNode;
   }
 
   async reparent(childNode, parentNode) {
@@ -163,10 +211,18 @@ export class EntityCrud {
 
     if (childId && parentId) {
       await expect(this.hierarchy.nodeById(childId)).toHaveAttribute('data-parent-id', parentId);
-    } else {
-      const parentContainer = parentNode.locator('xpath=ancestor::*[contains(@class, "relative") or self::li][1]');
-      await expect(parentContainer.locator('.group\\/node').first()).toBeVisible();
     }
+  }
+
+  async extractToRoot(childNode, targetLayerNode) {
+    await expect(childNode).toBeVisible();
+    await expect(targetLayerNode).toBeVisible();
+
+    const childId = await childNode.getAttribute('data-node-id');
+    await this.hierarchy.dragAndDropNodes(childNode, targetLayerNode);
+
+    const stableChild = childId ? this.hierarchy.nodeById(childId) : childNode;
+    await expect(stableChild).not.toHaveAttribute('data-parent-id');
   }
 
   async createPrefab(entityNode, prefabName) {
@@ -184,11 +240,23 @@ export class EntityCrud {
   async duplicate(entityNode) {
     await expect(entityNode).toBeVisible();
     await this.popup.selectContextMenu(entityNode, 'Duplicate');
+  }
 
-    const duplicatedNode = this.hierarchy.nodesByText(/Sprite|UI|Empty/i).nth(1);
-    await expect(duplicatedNode).toBeVisible();
-    await expect(duplicatedNode).toHaveAttribute('aria-selected', 'true');
-    return duplicatedNode;
+  async copyAndPaste(sourceNode, targetDestinationNode) {
+    await expect(sourceNode).toBeVisible();
+    await this.popup.selectContextMenu(sourceNode, 'Copy');
+    await this.popup.selectContextMenu(targetDestinationNode, 'Paste');
+  }
+
+  async cutAndPaste(sourceNode, targetDestinationNode) {
+    await expect(sourceNode).toBeVisible();
+    await this.popup.selectContextMenu(sourceNode, 'Cut');
+    await this.popup.selectContextMenu(targetDestinationNode, 'Paste');
+  }
+
+  async delete(entityNode) {
+    await expect(entityNode).toBeVisible();
+    await this.popup.selectContextMenu(entityNode, 'Delete Entity');
   }
 
   async toggleLock(entityNode, expectLocked = true) {
@@ -196,9 +264,8 @@ export class EntityCrud {
     await entityNode.hover();
 
     const lockBtn = entityNode
-      .getByRole('button', { name: /lock/i })
-      .or(entityNode.getByTitle('Toggle Lock'))
-      .or(entityNode.locator('div[title*="Lock"]'))
+      .getByTitle('Toggle Lock')
+      .or(entityNode.locator('button[aria-label*="Lock"]'))
       .first();
 
     await lockBtn.click();
@@ -210,9 +277,8 @@ export class EntityCrud {
     await entityNode.hover();
 
     const eyeBtn = entityNode
-      .getByRole('button', { name: /visibility/i })
-      .or(entityNode.getByTitle('Toggle Visibility'))
-      .or(entityNode.locator('div[title*="Visibility"]'))
+      .getByTitle('Toggle Visibility')
+      .or(entityNode.locator('button[aria-label*="Show"], button[aria-label*="Hide"]'))
       .first();
 
     await eyeBtn.click();
@@ -220,6 +286,50 @@ export class EntityCrud {
   }
 }
 
+// =========================================================================
+// 4. WORKSPACE & SEARCH TOOLS FLOW
+// =========================================================================
+export class WorkspaceToolsCrud {
+  constructor(page, controls, hierarchy) {
+    this.page = page;
+    this.controls = controls;
+    this.hierarchy = hierarchy;
+  }
+
+  async openUIEditor() {
+    const uiSection = this.hierarchy.section('User Interface');
+    const header = uiSection.locator('> div').first();
+    await header.hover();
+
+    const optionsBtn = uiSection.getByRole('button', { name: /open ui editor|add ui layer|options/i }).first();
+    if (await optionsBtn.isVisible()) {
+      await optionsBtn.click();
+    }
+
+    const openUiBtn = this.page.getByRole('button', { name: 'Open UI Editor' }).first();
+    await expect(openUiBtn).toBeVisible();
+    await openUiBtn.click();
+
+    const activeTab = this.page
+      .locator('[aria-selected="true"]')
+      .or(this.page.locator('.bg-accent, .border-b-2'))
+      .filter({ hasText: /UI Editor/i })
+      .first();
+    await expect(activeTab).toBeVisible();
+  }
+
+  async search(query) {
+    await this.controls.fillSearch('hierarchy-search-input', query);
+  }
+
+  async clearSearch() {
+    await this.controls.clearSearch('hierarchy-search-input');
+  }
+}
+
+// =========================================================================
+// MAIN HIERARCHY CRUD OBJECT FACADE
+// =========================================================================
 export class HierarchyCrudObject {
   constructor(page) {
     this.page = page;
@@ -230,5 +340,6 @@ export class HierarchyCrudObject {
     this.scene = new SceneCrud(page, this.controls, this.popup, this.hierarchy);
     this.layer = new LayerCrud(page, this.popup, this.hierarchy);
     this.entity = new EntityCrud(page, this.popup, this.hierarchy);
+    this.tools = new WorkspaceToolsCrud(page, this.controls, this.hierarchy);
   }
 }

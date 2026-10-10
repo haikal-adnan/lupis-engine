@@ -1,7 +1,7 @@
 <template>
   <div ref="triggerRef" class="relative inline-block text-left h-full" data-testid="dropdown-container">
     <div 
-      @click="toggle" 
+      @click.stop="toggle" 
       class="h-full cursor-pointer outline-none"
       :aria-expanded="isOpen"
       data-testid="dropdown-trigger"
@@ -10,26 +10,25 @@
     </div>
 
     <Teleport to="body">
-      <transition name="fade-scale">
+      <Transition name="fade-scale" @enter="calculatePosition">
         <div
           v-if="isOpen"
           ref="menuRef"
           role="menu"
           data-testid="dropdown-menu"
-          :data-state="isOpen ? 'open' : 'closed'"
           class="fixed z-[9999] w-auto whitespace-nowrap rounded-md border border-border bg-popover text-popover-foreground shadow-lg focus:outline-none flex flex-col overflow-hidden py-1"
           :style="menuStyle"
           tabindex="-1"
         >
           <slot :close="close" />
         </div>
-      </transition>
+      </Transition>
     </Teleport>
   </div>
 </template>
 
 <script setup>
-import { ref, watch, nextTick, onUnmounted } from 'vue';
+import { ref, watch, onUnmounted } from 'vue';
 
 const props = defineProps({
   align: { type: String, default: 'left' },
@@ -39,7 +38,7 @@ const props = defineProps({
 const isOpen = ref(false);
 const triggerRef = ref(null);
 const menuRef = ref(null);
-const menuStyle = ref({ top: '-9999px', left: '-9999px', visibility: 'hidden' });
+const menuStyle = ref({ top: '0px', left: '0px' });
 
 const calculatePosition = () => {
   if (!triggerRef.value || !menuRef.value) return;
@@ -49,7 +48,6 @@ const calculatePosition = () => {
   const { innerWidth, innerHeight } = window;
 
   let top = triggerRect.bottom + props.offset;
-  
   let left = props.align === 'right' 
     ? triggerRect.right - menuRect.width 
     : triggerRect.left;
@@ -67,8 +65,7 @@ const calculatePosition = () => {
 
   menuStyle.value = {
     top: `${top}px`,
-    left: `${left}px`,
-    visibility: 'visible'
+    left: `${left}px`
   };
 };
 
@@ -84,7 +81,6 @@ defineExpose({ close, open: toggle });
 
 const handleClickOutside = (event) => {
   if (!isOpen.value) return;
-  
   const clickedInTrigger = triggerRef.value?.contains(event.target);
   const clickedInMenu = menuRef.value?.contains(event.target);
   
@@ -93,16 +89,29 @@ const handleClickOutside = (event) => {
   }
 };
 
-const handleScrollOrResize = () => {
-  if (isOpen.value) close();
+const handleScrollOrResize = (event) => {
+  if (!isOpen.value) return;
+
+  // Abaikan event scroll yang terjadi di dalam menu dropdown itu sendiri
+  if (event && event.target && menuRef.value?.contains(event.target)) {
+    return;
+  }
+
+  // Jika scroll terjadi di container luar tetapi trigger masih dalam viewport, update posisi tanpa menutup menu
+  if (event && event.type === 'scroll' && triggerRef.value) {
+    const rect = triggerRef.value.getBoundingClientRect();
+    const inViewport = rect.top < window.innerHeight && rect.bottom > 0;
+    if (inViewport) {
+      calculatePosition();
+      return;
+    }
+  }
+
+  close();
 };
 
-watch(isOpen, async (val) => {
+watch(isOpen, (val) => {
   if (val) {
-    menuStyle.value = { top: '-9999px', left: '-9999px', visibility: 'hidden' };
-    await nextTick();
-    calculatePosition();
-    
     document.addEventListener('mousedown', handleClickOutside);
     window.addEventListener('resize', handleScrollOrResize);
     window.addEventListener('scroll', handleScrollOrResize, true);

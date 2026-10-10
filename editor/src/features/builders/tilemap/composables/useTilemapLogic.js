@@ -29,6 +29,18 @@ export function useTilemapLogic() {
     return sceneStore.activeScene.entities.find(e => String(e.id) === String(id)) || null;
   });
 
+  // AUTO-CLOSE jika entitas saat ini berubah menjadi PREFAB
+  watch(
+    [() => workspaceStore.activeTab, selectedEntity],
+    ([activeTab, entity]) => {
+      if (activeTab?.type !== 'tilemap') return;
+      if (!entity || entity.prefabId) {
+        workspaceStore.closeTab(activeTab.id);
+      }
+    },
+    { immediate: true, deep: true }
+  );
+
   const hasTilemap = computed(() => !!selectedEntity.value?.components?.Tilemap);
 
   function bindComponentProp(compName, propName) {
@@ -81,7 +93,7 @@ export function useTilemapLogic() {
 
   function openTilemapEditor() {
     const entity = selectedEntity.value;
-    if (!entity) return;
+    if (!entity || entity.prefabId) return;
 
     workspaceStore.openTab({
       id: entity.id,

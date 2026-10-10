@@ -277,7 +277,7 @@ export class TransformGeometry {
         for (const h of this.handles) {
             const dx = wx - h.x;
             const dy = wy - h.y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
+            const dist = Math.hypot(dx, dy);
 
             if (dist <= sizes.rResize && !this.isSizeLocked) {
                 return { ...h, mode: 'resize', type: h.type };

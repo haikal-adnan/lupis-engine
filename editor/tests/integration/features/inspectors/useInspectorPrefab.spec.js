@@ -57,7 +57,6 @@ describe('useInspectorPrefab Integration', () => {
 
   describe('Prefab State and Lock Resolution', () => {
     it('detects locked state when entity or its ancestor has a prefabId', () => {
-      // Arrange
       const parentPrefabEntity = createMockEntity({ id: 'parent_p1', prefabId: 'prefab_master_1' })
       const childEntity = createMockEntity({ id: 'child_c1', parentId: 'parent_p1' })
 
@@ -66,14 +65,12 @@ describe('useInspectorPrefab Integration', () => {
 
       const { isLockedByPrefab, prefabId, showSyncControls } = setupPrefabBinding()
 
-      // Act & Assert
       expect(isLockedByPrefab.value).toBe(true)
       expect(prefabId.value).toBeNull()
       expect(showSyncControls.value).toBe(false)
     })
 
     it('resolves direct prefabId and sync controls when selected entity is a prefab instance', () => {
-      // Arrange
       const prefabInstance = createMockEntity({
         id: 'inst_1',
         prefabId: 'prefab_hero',
@@ -85,7 +82,6 @@ describe('useInspectorPrefab Integration', () => {
 
       const { prefabId, overridden, showSyncControls, isLockedByPrefab } = setupPrefabBinding()
 
-      // Act & Assert
       expect(isLockedByPrefab.value).toBe(true)
       expect(prefabId.value).toBe('prefab_hero')
       expect(overridden.value).toBe(true)
@@ -93,14 +89,12 @@ describe('useInspectorPrefab Integration', () => {
     })
 
     it('[Bad Path] returns false for locks and sync controls in master prefab editing mode', () => {
-      // Arrange
       setupMockSceneEnvironment()
       isEditingMasterPrefabRef.value = true
       selectedEntityRef.value = createMockEntity({ id: 'p_master_ent', prefabId: 'prefab_hero' })
 
       const { isLockedByPrefab, prefabId, overridden, showSyncControls } = setupPrefabBinding()
 
-      // Act & Assert
       expect(isLockedByPrefab.value).toBe(false)
       expect(prefabId.value).toBeNull()
       expect(overridden.value).toBe(false)
@@ -108,9 +102,8 @@ describe('useInspectorPrefab Integration', () => {
     })
   })
 
-  describe('Syncing Operations (syncObject, syncComponent, syncAllComponents)', () => {
+  describe('Syncing Operations (syncObject, syncComponent)', () => {
     it('syncs entity tags and active status from master prefab to instance', () => {
-      // Arrange
       prefabStore.initPrefabs([
         {
           id: 'prefab_tree',
@@ -134,10 +127,8 @@ describe('useInspectorPrefab Integration', () => {
 
       const { syncObject } = setupPrefabBinding()
 
-      // Act
       syncObject()
 
-      // Assert
       const updatedEntity = sceneStore.activeScene.entities[0]
       expect(updatedEntity.tag).toBe('Environment')
       expect(updatedEntity.active).toBe(true)
@@ -146,7 +137,6 @@ describe('useInspectorPrefab Integration', () => {
     })
 
     it('syncs specific component from master prefab while preserving current position on Transform', async () => {
-      // Arrange
       prefabStore.initPrefabs([
         {
           id: 'prefab_wall',
@@ -174,10 +164,8 @@ describe('useInspectorPrefab Integration', () => {
 
       const { syncComponent } = setupPrefabBinding()
 
-      // Act
       await syncComponent('Transform')
 
-      // Assert
       const updatedTransform = sceneStore.activeScene.entities[0].components.Transform
       expect(updatedTransform.x).toBe(150)
       expect(updatedTransform.y).toBe(300)
@@ -192,8 +180,7 @@ describe('useInspectorPrefab Integration', () => {
       )
     })
 
-    it('syncs all components from master prefab and removes missing instance-only components', () => {
-      // Arrange
+    it('syncs all components from master prefab using syncObject and removes missing instance-only components', () => {
       prefabStore.initPrefabs([
         {
           id: 'prefab_box',
@@ -220,22 +207,19 @@ describe('useInspectorPrefab Integration', () => {
 
       vi.spyOn(engineBridge, 'patchComponent').mockImplementation(() => {})
 
-      const { syncAllComponents } = setupPrefabBinding()
+      const { syncObject } = setupPrefabBinding()
 
-      // Act
-      syncAllComponents()
+      syncObject()
 
-      // Assert
       const updatedEntity = sceneStore.activeScene.entities[0]
       expect(updatedEntity.components.SpriteRenderer.color).toBe('#FF0000')
       expect(updatedEntity.components.SpriteRenderer.overridden).toBe(false)
-      expect(updatedEntity.components.Audio).toBeUndefined() // Berhasil terhapus!
+      expect(updatedEntity.components.Audio).toBeUndefined()
     })
   })
 
   describe('Unpack Operations (unpackPrefab)', () => {
     it('detaches entity from prefab master and clears override flags', () => {
-      // Arrange
       const instance = createMockEntity({
         id: 'ent_unpack',
         prefabId: 'prefab_item',
@@ -252,10 +236,8 @@ describe('useInspectorPrefab Integration', () => {
 
       const { unpackPrefab } = setupPrefabBinding()
 
-      // Act
       unpackPrefab()
 
-      // Assert
       const unpackedEntity = sceneStore.activeScene.entities[0]
       expect(unpackedEntity.prefabId).toBeNull()
       expect(unpackedEntity.overridden).toBe(false)
@@ -266,7 +248,6 @@ describe('useInspectorPrefab Integration', () => {
 
   describe('Component Addition & Removal Restrictions', () => {
     it('[Bad Path] blocks component addition when selected entity is locked by prefab hierarchy', () => {
-      // Arrange
       const parentPrefab = createMockEntity({ id: 'p_lock', prefabId: 'prefab_master_x' })
       const child = createMockEntity({ id: 'c_lock', parentId: 'p_lock' })
 
@@ -277,15 +258,12 @@ describe('useInspectorPrefab Integration', () => {
 
       const { addComponentToSelection } = setupPrefabBinding()
 
-      // Act
       addComponentToSelection('Audio')
 
-      // Assert
       expect(spyAdd).not.toHaveBeenCalled()
     })
 
     it('adds component directly to sceneStore when modifying non-prefab entity', () => {
-      // Arrange
       const regularEntity = createMockEntity({ id: 'ent_free', components: {} })
       setupMockSceneEnvironment({ entities: [regularEntity] })
       selectedEntityRef.value = sceneStore.activeScene.entities[0]
@@ -294,15 +272,12 @@ describe('useInspectorPrefab Integration', () => {
 
       const { addComponentToSelection } = setupPrefabBinding()
 
-      // Act
       addComponentToSelection('Audio')
 
-      // Assert
       expect(spyAdd).toHaveBeenCalledWith('ent_free', 'Audio')
     })
 
     it('removes component from master prefab when editing in master prefab mode', async () => {
-      // Arrange
       setupMockSceneEnvironment()
       isEditingMasterPrefabRef.value = true
 
@@ -324,10 +299,8 @@ describe('useInspectorPrefab Integration', () => {
 
       const { removeComponent } = setupPrefabBinding()
 
-      // Act
       await removeComponent('Audio')
 
-      // Assert
       expect(spyPrefabStore).toHaveBeenCalledWith('prefab_tab_1', 'Audio')
       expect(spyBridge).toHaveBeenCalledWith({ prefabId: 'prefab_tab_1', componentName: 'Audio' })
     })

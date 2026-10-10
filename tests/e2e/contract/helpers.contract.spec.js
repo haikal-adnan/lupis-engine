@@ -25,7 +25,7 @@ test.describe('@contract PopupHelper.selectContextMenu', () => {
     const nodeId = await layer.getAttribute('data-node-id');
 
     await popup.selectContextMenu(layer, 'Rename Layer');
-    await expect(popup.menus).toHaveCount(0);
+    await expect(popup.activeMenus).toHaveCount(0);
 
     await popup.fillPromptAndSubmit('Rename Layer', 'Contract Layer', 'Rename');
     await expect(hierarchy.nodeById(nodeId)).toHaveAttribute('data-node-name', 'Contract Layer');
@@ -35,7 +35,7 @@ test.describe('@contract PopupHelper.selectContextMenu', () => {
     const layer = hierarchy.nodeByName('World Layer');
 
     await popup.selectContextMenu(layer, ['Add Entity', 'Empty Entity']);
-    await expect(popup.menus).toHaveCount(0);
+    await expect(popup.activeMenus).toHaveCount(0);
 
     await expect(hierarchy.nodesByText(/Empty/i).first()).toBeVisible();
   });
@@ -55,7 +55,7 @@ test.describe('@contract PopupHelper.selectContextMenu', () => {
 
     await popup.selectContextMenu(layer, []);
 
-    await expect(popup.menus.first()).toBeVisible();
+    await expect(popup.activeMenus.first()).toBeVisible();
   });
 });
 
@@ -72,8 +72,6 @@ test.describe('@contract PopupHelper prompt & confirm', () => {
   test('confirmAction: cancel mempertahankan state, confirm menerapkan aksi', async ({ popup, hierarchy, controls }) => {
     await hierarchy.createScene(controls, popup, 'Contract Scene');
 
-    // Asumsi: teks dialog konfirmasi hapus scene mengandung kata "scene".
-    // Jika judulnya berbeda, ganti regex di bawah dengan judul aslinya.
     await controls.clickSelectAction('Scene Options', 'Delete Scene');
     await popup.confirmAction(/scene/i, { action: 'cancel' });
     await expect(hierarchy.sceneSelect).toContainText('Contract Scene');

@@ -64,35 +64,120 @@ export function useInspectorPrefab(selectedEntityParam, isEditingMasterPrefabPar
     return computed(() => getEntity()?.components?.[compName]?.overridden || false); 
   }
 
-  function markAsOverridden() { 
+  function markAsOverridden(componentName) {
     const ent = getEntity();
-    if (ent && prefabId.value && !overridden.value && !getEditingMaster()) {
-      sceneStore.updateEntityProp(ent.id, 'overridden', true); 
+    if (ent && prefabId.value && !getEditingMaster()) {
+      sceneStore.updateEntityProp(ent.id, 'overridden', true);
+      if (componentName && ent.components?.[componentName]) {
+        sceneStore.updateComponentProp(ent.id, componentName, 'overridden', true);
+      }
     }
   }
 
   function syncObject() {
     const ent = getEntity();
-    if (!ent || !prefabId.value || getEditingMaster()) return;
+    if (!ent || !prefabId.value || getEditingMaster()) {
+      console.warn('[syncObject] Aborted: Entity missing, not a prefab instance, or currently editing master prefab.', {
+        entity: ent,
+        prefabId: prefabId.value,
+        isEditingMaster: getEditingMaster()
+      });
+      return;
+    }
+
     const master = getPrefabMaster();
-    if (!master) return;
+    if (!master) {
+      console.error('[syncObject] Aborted: Master Prefab data not found for ID:', prefabId.value);
+      return;
+    }
+
     const id = ent.id;
+    console.group(`[syncObject] Executing Sync for Entity: "${ent.name || id}" (${id})`);
+    console.log('📍 Master Prefab Source:', master);
+    console.log('📍 Entity Snapshot Before Sync:', JSON.parse(JSON.stringify(ent)));
+
+    const oldSnapshot = JSON.parse(JSON.stringify(ent));
+
+    // 1. Reset Komponen ke Master Prefab
+    console.groupCollapsed('⚙️ Step 1: Syncing Components');
+    const masterComps = master.data.components || {};
+    const instanceComps = ent.components || {};
+    const newComps = {};
+
+    // Patch atau Tambahkan Komponen dari Master
+    Object.keys(masterComps).forEach(key => {
+      const cleanData = JSON.parse(JSON.stringify(masterComps[key]));
+
+      // Proteksi Transform & UITransform agar Posisi Instance Tidak Berubah
+      if (key === 'Transform' || key === 'UITransform') {
+        if (instanceComps[key]) {
+          cleanData.x = instanceComps[key].x;
+          cleanData.y = instanceComps[key].y;
+          console.log(`  └─ [${key}] Preserving instance position: (${cleanData.x}, ${cleanData.y})`);
+        }
+      }
+
+      cleanData.overridden = false;
+      newComps[key] = cleanData;
+
+      if (instanceComps[key]) {
+        console.log(`  ├─ Patching component [${key}]:`, cleanData);
+        engineBridge.patchComponent({ entityId: id, componentName: key, updates: cleanData });
+      } else {
+        console.log(`  ├─ Adding missing component [${key}]:`, cleanData);
+        engineBridge.addComponent({ entityId: id, componentName: key, data: cleanData });
+      }
+    });
+
+    // Hapus Komponen Ekstra yang Hanya Ada di Instance
+    Object.keys(instanceComps).forEach(key => {
+      if (!masterComps[key]) {
+        console.log(`  └─ Removing extra instance component [${key}]`);
+        engineBridge.removeComponent?.({ entityId: id, componentName: key });
+      }
+    });
+
+    // Update State Scene Store untuk Komponen
+    if (sceneStore.activeScene) {
+      const entity = sceneStore.activeScene.entities.find(e => e.id === id);
+      if (entity) {
+        entity.components = newComps;
+        console.log('  ✔ SceneStore entity.components updated to:', newComps);
+      }
+    }
+    console.groupEnd();
+
+    // 2. Reset Entity Properties (tag, active, overridden)
+    console.groupCollapsed('🏷️ Step 2: Syncing Entity Properties & Recording History');
     const tag = master.data.tag || 'Untagged';
     const active = master.data.active ?? true;
 
     const oldTag = ent.tag;
     const oldActive = ent.active;
 
+    console.log(`  ├─ Tag: "${oldTag}" ➔ "${tag}"`);
+    console.log(`  ├─ Active: ${oldActive} ➔ ${active}`);
+    console.log('  └─ Overridden Flag: true ➔ false');
+
     sceneStore.updateEntityProp(id, 'tag', tag);
     sceneStore.updateEntityProp(id, 'active', active);
     sceneStore.updateEntityProp(id, 'overridden', false);
+
     engineBridge.updateEntityProp({ id, prop: 'tag', value: tag });
     engineBridge.updateEntityProp({ id, prop: 'active', value: active });
 
+    // Record History Undo/Redo
     recordPropChange(id, 'tag', oldTag, tag);
     recordPropChange(id, 'active', oldActive, active);
 
-    showPop({ title: 'Object Synced', type: 'success' });
+    const newSnapshot = JSON.parse(JSON.stringify(getEntity()));
+    recordTransformChange([{ id, oldSnapshot, newSnapshot }]);
+    console.log('  ✔ Recorded history undo/redo snapshot.');
+    console.groupEnd();
+
+    showPop({ title: 'Reverted to Prefab', type: 'success' });
+    console.log('✅ [syncObject] Sync Completed Successfully.');
+    console.groupEnd();
   }
 
   async function syncComponent(compName) {
@@ -104,80 +189,37 @@ export function useInspectorPrefab(selectedEntityParam, isEditingMasterPrefabPar
     const id = ent.id;
 
     if (masterCompData) {
-      const oldSnapshot = JSON.parse(JSON.stringify(ent));
+        const oldSnapshot = JSON.parse(JSON.stringify(ent));
+        const cleanData = JSON.parse(JSON.stringify(masterCompData));
 
-      const cleanData = JSON.parse(JSON.stringify(masterCompData));
-      if (compName === 'Transform' || compName === 'UITransform') {
-        const currentEntity = sceneStore.activeScene?.entities.find(e => e.id === id);
-        const currentComp = currentEntity?.components?.[compName];
-        if (currentComp) { cleanData.x = currentComp.x; cleanData.y = currentComp.y; }
-      }
-      cleanData.overridden = false;
-      if (sceneStore.activeScene) {
-        const entity = sceneStore.activeScene.entities.find(e => e.id === id);
-        if (entity && entity.components) entity.components[compName] = cleanData;
-      }
-      engineBridge.patchComponent({ entityId: id, componentName: compName, updates: cleanData });
-
-      const newSnapshot = JSON.parse(JSON.stringify(getEntity()));
-      recordTransformChange([{ id, oldSnapshot, newSnapshot }]);
-
-      showPop({ title: 'Component Synced', message: `${compName} reset (Position kept).`, type: 'success' });
-    } else {
-      await removeComponent(compName);
-    }
-  }
-
-  function syncAllComponents() {
-    const ent = getEntity();
-    if (!ent || !prefabId.value || getEditingMaster()) return;
-    const master = getPrefabMaster();
-    if (!master) return;
-    const id = ent.id;
-    const masterComps = master.data.components || {};
-    const instanceComps = ent.components || {};
-
-    const oldSnapshot = JSON.parse(JSON.stringify(ent));
-
-    const newComps = {};
-
-    Object.keys(masterComps).forEach(key => {
-      const cleanData = JSON.parse(JSON.stringify(masterComps[key]));
-      if (key === 'Transform' || key === 'UITransform') {
-        if (instanceComps[key]) { 
-          cleanData.x = instanceComps[key].x; 
-          cleanData.y = instanceComps[key].y; 
+        if (compName === 'Transform' || compName === 'UITransform') {
+            const currentEntity = sceneStore.activeScene?.entities.find(e => e.id === id);
+            const currentComp = currentEntity?.components?.[compName];
+            if (currentComp) { 
+                cleanData.x = currentComp.x; 
+                cleanData.y = currentComp.y; 
+            }
         }
-      }
-      cleanData.overridden = false;
-      newComps[key] = cleanData;
+        
+        cleanData.overridden = false;
 
-      if (instanceComps[key]) {
-        engineBridge.patchComponent({ entityId: id, componentName: key, updates: cleanData });
-      } else {
-        engineBridge.addComponent({ entityId: id, componentName: key, data: cleanData });
-      }
-    });
+        if (sceneStore.activeScene) {
+            const entity = sceneStore.activeScene.entities.find(e => e.id === id);
+            if (entity && entity.components) {
+                entity.components[compName] = cleanData;
+            }
+        }
 
-    Object.keys(instanceComps).forEach(key => {
-      if (!masterComps[key]) {
-        engineBridge.removeComponent?.({ entityId: id, componentName: key });
-      }
-    });
+        // Kirim pembaruan lengkap ke engine
+        engineBridge.patchComponent({ entityId: id, componentName: compName, updates: cleanData });
 
-    if (sceneStore.activeScene) {
-      const entity = sceneStore.activeScene.entities.find(e => e.id === id);
-      if (entity) {
-        entity.components = newComps;
-      }
+        const newSnapshot = JSON.parse(JSON.stringify(getEntity()));
+        recordTransformChange([{ id, oldSnapshot, newSnapshot }]);
+
+        showPop({ title: 'Component Synced', message: `${compName} reset (Position kept).`, type: 'success' });
+    } else {
+        await removeComponent(compName);
     }
-
-    sceneStore.updateEntityProp(id, 'overridden', false);
-
-    const newSnapshot = JSON.parse(JSON.stringify(getEntity()));
-    recordTransformChange([{ id, oldSnapshot, newSnapshot }]);
-
-    showPop({ title: 'All Synced', type: 'success' });
   }
 
   function unpackPrefab() {
@@ -231,7 +273,11 @@ export function useInspectorPrefab(selectedEntityParam, isEditingMasterPrefabPar
 
     if (getEditingMaster()) {
       prefabStore.removeComponent(workspaceStore.activeTab.id, compName);
-      engineBridge.removePrefabMasterComponent?.({ prefabId: workspaceStore.activeTab.id, componentName: compName });
+      // UBAH compName menjadi componentName agar konsisten dengan payload lainnya
+      engineBridge.removePrefabMasterComponent?.({ 
+        prefabId: workspaceStore.activeTab.id, 
+        componentName: compName 
+      });
     } else {
       const savedComponentData = ent.components?.[compName];
       await sceneStore.removeComponent(ent.id, compName);
@@ -249,7 +295,6 @@ export function useInspectorPrefab(selectedEntityParam, isEditingMasterPrefabPar
     markAsOverridden,
     syncObject,
     syncComponent,
-    syncAllComponents,
     unpackPrefab,
     addComponentToSelection,
     removeComponent

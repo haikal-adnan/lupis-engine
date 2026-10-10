@@ -9,7 +9,7 @@ export default class AudioSystem {
         this.masterGain.connect(this.context.destination);
 
         this.activeNodes = new Map();
-        this.pendingAutoplayClips = [];
+        this.pendingAutoplayAudio = [];
         this.isUnlocked = this.context.state === 'running';
 
         this._canvas = null;
@@ -62,13 +62,18 @@ export default class AudioSystem {
     }
 
     _flushPendingAutoplay() {
-        while (this.pendingAutoplayClips.length > 0) {
-            const { entity, clipData } = this.pendingAutoplayClips.shift();
-            this.play(entity, clipData);
+        while (this.pendingAutoplayAudio.length > 0) {
+            const { entity, audioData } = this.pendingAutoplayAudio.shift();
+            this.play(entity, audioData);
         }
     }
 
-    play(entity, clipData) {
+    /**
+     * Memutar audio berdasarkan entitas dan data komponen Audio (atau data override opsional)
+     * @param {Object} entity 
+     * @param {Object} [overrideAudioData] 
+     */
+    play(entity, overrideAudioData = null) {
         if (this.context.state === 'suspended') {
             this.context.resume().then(() => {
                 if (this.context.state === 'running') {
@@ -77,29 +82,32 @@ export default class AudioSystem {
             }).catch(() => {});
         }
 
+        const audioData = overrideAudioData || entity.components?.Audio;
+        if (!audioData || !audioData.assetId) return null;
+
         if (this.context.state === 'suspended' && !this.isUnlocked) {
-            const isAlreadyPending = this.pendingAutoplayClips.some(
-                item => item.clipData.assetId === clipData.assetId
+            const isAlreadyPending = this.pendingAutoplayAudio.some(
+                item => item.entity.id === entity.id && item.audioData.assetId === audioData.assetId
             );
             if (!isAlreadyPending) {
-                this.pendingAutoplayClips.push({ entity, clipData });
+                this.pendingAutoplayAudio.push({ entity, audioData });
             }
 
             this._attachUnlockListenersIfNeeded();
             return null;
         }
 
-        const audioBuffer = this.game.world.audios?.[clipData.assetId];
+        const audioBuffer = this.game.world.audios?.[audioData.assetId];
         if (!audioBuffer) return null;
 
         const source = this.context.createBufferSource();
         source.buffer = audioBuffer;
-        source.playbackRate.value = clipData.pitch ?? 1.0;
-        source.loop = clipData.loop ?? false;
+        source.playbackRate.value = audioData.pitch ?? 1.0;
+        source.loop = audioData.loop ?? false;
 
         const gainNode = this.context.createGain();
-        const targetVolume = clipData.isMute ? 0 : (clipData.volume ?? 1.0);
-        const fadeInDuration = clipData.fadeIn || 0;
+        const targetVolume = audioData.isMute ? 0 : (audioData.volume ?? 1.0);
+        const fadeInDuration = audioData.fadeIn || 0;
 
         if (fadeInDuration > 0) {
             gainNode.gain.setValueAtTime(0, this.context.currentTime);
@@ -113,12 +121,12 @@ export default class AudioSystem {
         let finalNode = gainNode;
         let pannerNode = null;
 
-        if (clipData.spatial && !clipData.persist) {
+        if (audioData.spatial && !audioData.persist) {
             pannerNode = this.context.createPanner();
             pannerNode.panningModel = 'HRTF';
             pannerNode.distanceModel = 'inverse';
-            pannerNode.refDistance = clipData.refDistance ?? 100;
-            pannerNode.maxDistance = clipData.maxDistance ?? 1000;
+            pannerNode.refDistance = audioData.refDistance ?? 100;
+            pannerNode.maxDistance = audioData.maxDistance ?? 1000;
             pannerNode.rolloffFactor = 1;
 
             const transform = entity.components?.Transform;
@@ -136,10 +144,41 @@ export default class AudioSystem {
         source.start();
 
         const nodeId = crypto.randomUUID();
-        this.activeNodes.set(nodeId, { entity, source, gainNode, pannerNode, targetVolume, clipData });
+        this.activeNodes.set(nodeId, { entity, source, gainNode, pannerNode, targetVolume, audioData });
 
         source.onended = () => this.activeNodes.delete(nodeId);
         return nodeId;
+    }
+
+    /**
+     * Menghentikan audio yang sedang diputar untuk entitas tertentu
+     * @param {Object|string} entityOrId 
+     */
+    stop(entityOrId) {
+        const targetId = typeof entityOrId === 'string' ? entityOrId : entityOrId?.id;
+        if (!targetId) return;
+
+        const now = this.context.currentTime;
+
+        for (const [nodeId, nodeData] of this.activeNodes.entries()) {
+            if (nodeData.entity?.id === targetId) {
+                const { source, gainNode, audioData } = nodeData;
+                const fadeOutDuration = audioData.fadeOut || 0;
+
+                if (fadeOutDuration > 0) {
+                    gainNode.gain.setValueAtTime(gainNode.gain.value, now);
+                    gainNode.gain.linearRampToValueAtTime(0, now + fadeOutDuration);
+                    
+                    setTimeout(() => {
+                        try { source.stop(); } catch(e) {}
+                    }, fadeOutDuration * 1000);
+                } else {
+                    try { source.stop(); } catch(e) {}
+                }
+
+                this.activeNodes.delete(nodeId);
+            }
+        }
     }
 
     handleSceneTransition(newEntities) {
@@ -147,26 +186,22 @@ export default class AudioSystem {
         
         newEntities.forEach(entity => {
             const audioComp = entity.components?.Audio;
-            if (audioComp && Array.isArray(audioComp.clips)) {
-                audioComp.clips.forEach(clip => {
-                    if (clip.persist && clip.autoplay) {
-                        upcomingPersistentAssets.add(clip.assetId);
-                    }
-                });
+            if (audioComp && audioComp.persist && audioComp.autoplay && audioComp.assetId) {
+                upcomingPersistentAssets.add(audioComp.assetId);
             }
         });
 
         const now = this.context.currentTime;
 
         for (const [nodeId, nodeData] of this.activeNodes.entries()) {
-            const { source, gainNode, clipData } = nodeData;
+            const { source, gainNode, audioData } = nodeData;
 
-            if (clipData.persist) {
-                if (upcomingPersistentAssets.has(clipData.assetId)) {
+            if (audioData.persist) {
+                if (upcomingPersistentAssets.has(audioData.assetId)) {
                     nodeData.keptAlive = true; 
                 }
             } else {
-                const fadeOutDuration = clipData.fadeOut || 0;
+                const fadeOutDuration = audioData.fadeOut || 0;
                 
                 if (fadeOutDuration > 0) {
                     gainNode.gain.setValueAtTime(gainNode.gain.value, now);
@@ -187,24 +222,21 @@ export default class AudioSystem {
     startSceneAutoplay(world) {
         world.entities.forEach(entity => {
             const audioComp = entity.components?.Audio;
-            if (audioComp && Array.isArray(audioComp.clips)) {
-                audioComp.clips.forEach(clip => {
-                    if (clip.autoplay) {
-                        let isAlreadyPlaying = false;
-                        for (const nodeData of this.activeNodes.values()) {
-                            if (nodeData.clipData.assetId === clip.assetId && nodeData.keptAlive) {
-                                isAlreadyPlaying = true;
-                                nodeData.keptAlive = false; 
-                                nodeData.entity = entity;   
-                                break;
-                            }
-                        }
+            if (audioComp && audioComp.autoplay && audioComp.assetId) {
+                let isAlreadyPlaying = false;
 
-                        if (!isAlreadyPlaying) {
-                            this.play(entity, clip);
-                        }
+                for (const nodeData of this.activeNodes.values()) {
+                    if (nodeData.audioData.assetId === audioComp.assetId && nodeData.keptAlive) {
+                        isAlreadyPlaying = true;
+                        nodeData.keptAlive = false; 
+                        nodeData.entity = entity;   
+                        break;
                     }
-                });
+                }
+
+                if (!isAlreadyPlaying) {
+                    this.play(entity, audioComp);
+                }
             }
         });
     }
@@ -218,9 +250,9 @@ export default class AudioSystem {
         listener.positionZ.value = 300; 
 
         for (const [nodeId, nodeData] of this.activeNodes.entries()) {
-            const { entity, pannerNode, clipData } = nodeData;
+            const { entity, pannerNode, audioData } = nodeData;
 
-            if (clipData.persist || !entity || !entity.components?.Transform) {
+            if (audioData.persist || !entity || !entity.components?.Transform) {
                 continue; 
             }
 

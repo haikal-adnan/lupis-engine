@@ -1,20 +1,41 @@
-import { computed, ref, onMounted } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useSceneStore } from '@scenes/scenes.js';
+import { useWorkspaceStore } from '@workspaces/workspaces.js';
 import { engineBridge } from "@engines/engines.js";
 import { useSceneHistory } from '@historys/historys.js';
 
 export function useShapeEditorLogic() {
   const sceneStore = useSceneStore();
+  const workspaceStore = useWorkspaceStore();
   const { recordComponentChange } = useSceneHistory();
   const trigger = ref(0);
 
   const selectedEntity = computed(() => {
     trigger.value;
     if (!sceneStore.activeScene) return null;
+
+    const activeTab = workspaceStore.activeTab;
+    if (activeTab && activeTab.type === 'shape_editor' && activeTab.id) {
+      const entByTab = sceneStore.activeScene.entities.find(e => String(e.id) === String(activeTab.id));
+      if (entByTab) return entByTab;
+    }
+
     const id = sceneStore.selectedEntityIds?.[0];
     if (!id) return null;
     return sceneStore.activeScene.entities?.find(e => String(e.id) === String(id)) || null;
   });
+
+  // AUTO-CLOSE jika entitas saat ini berubah menjadi PREFAB
+  watch(
+    [() => workspaceStore.activeTab, selectedEntity],
+    ([activeTab, entity]) => {
+      if (activeTab?.type !== 'shape_editor') return;
+      if (!entity || entity.prefabId) {
+        workspaceStore.closeTab(activeTab.id);
+      }
+    },
+    { immediate: true, deep: true }
+  );
 
   const hasShapeRenderer = computed(() => {
     return selectedEntity.value?.components?.ShapeRenderer?.type === 'custom' || 
@@ -91,14 +112,6 @@ export function useShapeEditorLogic() {
       bindComponentProp('ShapeRenderer', 'elements').value = currentElems;
     }
   }
-
-  const onEntityUpdate = () => { trigger.value++; };
-
-  onMounted(() => {
-    if (engineBridge?.onEntityModified) {
-      engineBridge.onEntityModified(onEntityUpdate);
-    }
-  });
 
   return {
     selectedEntity,

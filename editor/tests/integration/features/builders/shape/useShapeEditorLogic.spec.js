@@ -221,24 +221,6 @@ describe('useShapeEditorLogic Integration', () => {
     })
   })
 
-  describe('Engine Event Listeners', () => {
-    it('registers onEntityModified listener on mount', () => {
-      // Arrange
-      const TestComponent = defineComponent({
-        setup() {
-          useShapeEditorLogic()
-          return () => null
-        }
-      })
-
-      // Act
-      mount(TestComponent)
-
-      // Assert
-      expect(engineBridge.onEntityModified).toHaveBeenCalledWith(expect.any(Function))
-    })
-  })
-
   describe('[Bad Path] Edge Cases and Error Handling', () => {
     it('[Bad Path] ignores removeElement call if index is out of bounds', () => {
       // Arrange

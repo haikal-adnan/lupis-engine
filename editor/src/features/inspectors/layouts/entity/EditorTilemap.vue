@@ -59,6 +59,7 @@
 
         <BaseButton 
           @click="openTilemapEditor" 
+          :disabled="!!prefabId"
           class="flex-1 h-9 text-xs gap-2 justify-center"
           variant="outline" 
           data-testid="tilemap-open-editor-btn"
@@ -111,7 +112,7 @@
     </PropertyRow>
 
     <PropertyRow label="Collision">
-         <BaseCheckbox 
+          <BaseCheckbox 
             v-model="isSolid" 
             label="Solid" 
             description="Enable collision"
@@ -128,7 +129,6 @@ import { computed } from "vue";
 import { Grid3X3, Brush, Trash2, RefreshCw, Maximize, RefreshCcw } from "lucide-vue-next";
 import { useTilemapLogic } from "@builders/builders.js";
 
-// Barrel import dari @inspectors/inspectors.js
 import { 
   useInspectorPrefab, 
   useInspectorTransform 
@@ -145,7 +145,6 @@ import {
   BaseThumbnail
 } from '@components/components.js';
 
-// Tilemap Builder Logic
 const { 
   hasTilemap, 
   currentTextureUrl, 
@@ -153,7 +152,6 @@ const {
   openTilemapEditor,
 } = useTilemapLogic();
 
-// 1. Prefab & Component Operations
 const { 
   prefabId, 
   getComponentOverrideStatus, 
@@ -161,12 +159,9 @@ const {
   removeComponent 
 } = useInspectorPrefab();
 
-// 2. Transform Operations
 const { resetTilemapTransform } = useInspectorTransform();
 
-// --- Logic Komponen ---
 const hasComponent = hasTilemap;
-
 const autoFit = bindComponentProp('Tilemap', 'autoFit');
 
 const toggleAutoFit = () => {
@@ -185,9 +180,7 @@ const isSolid = bindComponentProp('Tilemap', 'isSolid');
 const rawOpacity = bindComponentProp('Tilemap', 'opacity');
 
 const displayOpacity = computed({
-  get: () => {
-    return Math.round((rawOpacity.value ?? 1) * 100);
-  },
+  get: () => Math.round((rawOpacity.value ?? 1) * 100),
   set: (newValue) => {
     rawOpacity.value = parseFloat((newValue / 100).toFixed(2));
   }

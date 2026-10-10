@@ -37,7 +37,7 @@ export class AssetCrudObject {
   /**
    * Helper facade untuk menerapkan asset yang dipilih ke entity aktif via context menu
    * @param {import('@playwright/test').Locator|string} assetCardElement Elemen card asset atau nama asset
-   * @param {string} actionLabel Menu item (e.g., 'Apply to SpriteRenderer', 'Apply to TextRenderer', 'Apply to Active Audio Clip')
+   * @param {string} actionLabel Menu item (e.g., 'Apply to SpriteRenderer', 'Apply to TextRenderer', 'Apply to Audio Component')
    */
   async applyToActiveEntity(assetCardElement, actionLabel) {
     await this.ensureReady();
@@ -63,4 +63,76 @@ export class AssetCrudObject {
     await expect(folderItem).toBeVisible();
     return folderItem;
   }
+
+  // =========================================================================
+  // PENAMBAHAN FLOW FACADE UNTUK UNCOVERAGE TEST SCENARIOS
+  // =========================================================================
+
+  /**
+   * Helper facade untuk navigasi masuk ke dalam folder
+   * @param {string} folderName 
+   */
+  async openFolder(folderName) {
+    await this.ensureReady();
+    const folderCard = this.assetPage.card(folderName);
+    await expect(folderCard).toBeVisible();
+    await folderCard.dblclick();
+    await expect(this.assetPage.breadcrumb(folderName)).toBeVisible();
+  }
+
+  /**
+   * Helper facade untuk navigasi kembali ke Root Asset folder via Breadcrumbs
+   */
+  async navigateToRoot() {
+    await this.ensureReady();
+    await this.assetPage.breadcrumbRoot.click();
+    await expect(this.assetPage.breadcrumbRoot).toBeVisible();
+  }
+
+  /**
+   * Helper facade untuk mengganti nama asset atau folder
+   * @param {import('@playwright/test').Locator|string} itemTarget Card elemen atau nama item saat ini
+   * @param {string} newName Nama baru
+   */
+  async rename(itemTarget, newName) {
+    await this.ensureReady();
+    const card = typeof itemTarget === 'string' ? this.assetPage.card(itemTarget) : itemTarget;
+    await expect(card).toBeVisible();
+
+    await this.popup.selectContextMenu(card, 'Rename');
+    await this.popup.fillPromptAndSubmit(/Rename/i, newName, 'Rename');
+    await this.popup.expectPopAlert('Success');
+
+    const renamedCard = this.assetPage.card(newName);
+    await expect(renamedCard).toBeVisible();
+    return renamedCard;
+  }
+
+  /**
+   * Helper facade untuk menghapus asset atau folder
+   * @param {import('@playwright/test').Locator|string} itemTarget 
+   */
+  async delete(itemTarget) {
+    await this.ensureReady();
+    const card = typeof itemTarget === 'string' ? this.assetPage.card(itemTarget) : itemTarget;
+    await expect(card).toBeVisible();
+
+    const title = await card.getAttribute('title');
+    await this.popup.selectContextMenu(card, 'Delete');
+    await this.popup.confirmAction(/Delete/i, { action: 'confirm', confirmText: 'Confirm' });
+
+    if (title) {
+      await expect(this.assetPage.cardsByTitle(title)).toHaveCount(0);
+    }
+  }
+
+  /**
+   * Helper facade untuk melakukan pencarian asset
+   * @param {string} query 
+   */
+  async search(query) {
+    await this.ensureReady();
+    await this.assetPage.searchInput.fill(query);
+  }
 }
+

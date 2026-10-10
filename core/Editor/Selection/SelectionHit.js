@@ -1,27 +1,13 @@
 import { calculateQuadVertices } from "../../Util/calculateQuadVertices.js";
 
-export class HitTester {
-    constructor(game) {
+export class SelectionHit {
+    constructor(game, transformEngine) {
         this.game = game;
-    }
-
-    _getTransform(e) {
-        return e?.components && (e.components.UITransform || e.components.Transform);
+        this.engine = transformEngine;
     }
 
     locked(e) {
         return Boolean(e?.locked || (e?._editor && e._editor.locked));
-    }
-
-    _findEntityById(id) {
-        const allLayers = [...(this.game.world.layersWorld || []), ...(this.game.world.layersUI || [])];
-        for (const layer of allLayers) {
-            if (layer?.entities) {
-                const found = layer.entities.find(e => String(e.id) === String(id));
-                if (found) return found;
-            }
-        }
-        return null;
     }
 
     _getEntityDimensions(e) {
@@ -36,9 +22,10 @@ export class HitTester {
             const tileW = Number(tm.tileWidth) || 32;
             const tileH = Number(tm.tileHeight) || 32;
 
-            const width = t?.width || (cols * tileW);
-            const height = t?.height || (rows * tileH);
-            return { width, height };
+            return {
+                width: t?.width || (cols * tileW),
+                height: t?.height || (rows * tileH)
+            };
         }
 
         return {
@@ -47,58 +34,13 @@ export class HitTester {
         };
     }
 
-    getGlobalTransform(e) {
-        const t = this._getTransform(e);
-        if (!t) return { x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1, pivotX: 0.5, pivotY: 0.5, width: 100, height: 100 };
-
-        if (!e.parentId) {
-            return {
-                x: t.x || 0,
-                y: t.y || 0,
-                rotation: t.rotation || 0,
-                scaleX: t.scaleX ?? 1,
-                scaleY: t.scaleY ?? 1,
-                pivotX: t.pivotX ?? 0.5,
-                pivotY: t.pivotY ?? 0.5,
-                width: t.width || 0,
-                height: t.height || 0
-            };
-        }
-
-        const parentEntity = this._findEntityById(e.parentId);
-        if (!parentEntity) return { ...t };
-
-        const parentGlobal = this.getGlobalTransform(parentEntity);
-        const parentRad = parentGlobal.rotation * (Math.PI / 180);
-        const cos = Math.cos(parentRad);
-        const sin = Math.sin(parentRad);
-
-        const scaledLocalX = (t.x || 0) * parentGlobal.scaleX;
-        const scaledLocalY = (t.y || 0) * parentGlobal.scaleY;
-
-        const rotatedX = (scaledLocalX * cos) - (scaledLocalY * sin);
-        const rotatedY = (scaledLocalX * sin) + (scaledLocalY * cos);
-
-        return {
-            x: parentGlobal.x + rotatedX,
-            y: parentGlobal.y + rotatedY,
-            rotation: parentGlobal.rotation + (t.rotation || 0),
-            scaleX: parentGlobal.scaleX * (t.scaleX ?? 1),
-            scaleY: parentGlobal.scaleY * (t.scaleY ?? 1),
-            pivotX: t.pivotX ?? 0.5,
-            pivotY: t.pivotY ?? 0.5,
-            width: t.width || 0,
-            height: t.height || 0
-        };
-    }
-
     _calculateAbsolutePosition(e, parentBounds) {
-        const t = this._getTransform(e);
+        const t = this.engine.getTransform(e);
         if (!t) return { x: 0, y: 0 };
 
-        const globalT = this.getGlobalTransform(e);
+        const globalT = this.engine.getGlobalTransform(e);
 
-        if (e.components.UITransform) {
+        if (e.components?.UITransform) {
             if (!parentBounds) {
                 const uiSettings = this.game.world.settings?.ui || { width: 1920, height: 1080 };
                 parentBounds = { x: 0, y: 0, width: uiSettings.width, height: uiSettings.height };
@@ -114,10 +56,10 @@ export class HitTester {
     }
 
     _isPointInEntity(wx, wy, e, parentBounds) {
-        const t = this._getTransform(e);
+        const t = this.engine.getTransform(e);
         if (!t) return false;
 
-        const globalT = this.getGlobalTransform(e);
+        const globalT = this.engine.getGlobalTransform(e);
         const absPos = this._calculateAbsolutePosition(e, parentBounds);
         const dims = this._getEntityDimensions(e);
 
@@ -126,8 +68,6 @@ export class HitTester {
         const sy = globalT.scaleY ?? 1;
         const px = globalT.pivotX ?? 0.5;
         const py = globalT.pivotY ?? 0.5;
-        const w = dims.width;
-        const h = dims.height;
 
         const dx = wx - absPos.x;
         const dy = wy - absPos.y;
@@ -140,23 +80,18 @@ export class HitTester {
         const unscaledMouseX = sx !== 0 ? localX / sx : 0;
         const unscaledMouseY = sy !== 0 ? localY / sy : 0;
 
-        const left = -px * w;
-        const right = w - (px * w);
-        const top = -py * h;
-        const bottom = h - (py * h);
-
-        const minX = Math.min(left, right);
-        const maxX = Math.max(left, right);
-        const minY = Math.min(top, bottom);
-        const maxY = Math.max(top, bottom);
+        const left = -px * dims.width;
+        const right = dims.width - (px * dims.width);
+        const top = -py * dims.height;
+        const bottom = dims.height - (py * dims.height);
 
         const buffer = 5;
 
         return (
-            unscaledMouseX >= minX - buffer &&
-            unscaledMouseX <= maxX + buffer &&
-            unscaledMouseY >= minY - buffer &&
-            unscaledMouseY <= maxY + buffer
+            unscaledMouseX >= Math.min(left, right) - buffer &&
+            unscaledMouseX <= Math.max(left, right) + buffer &&
+            unscaledMouseY >= Math.min(top, bottom) - buffer &&
+            unscaledMouseY <= Math.max(top, bottom) + buffer
         );
     }
 
@@ -225,10 +160,10 @@ export class HitTester {
                 if (!e.visible || this.locked(e)) continue;
                 if (filter && !filter(e, layer)) continue;
 
-                const t = this._getTransform(e);
+                const t = this.engine.getTransform(e);
                 if (!t) continue;
 
-                const globalT = this.getGlobalTransform(e);
+                const globalT = this.engine.getGlobalTransform(e);
                 const absPos = this._calculateAbsolutePosition(e, rootBounds);
                 const dims = this._getEntityDimensions(e);
 
@@ -262,21 +197,5 @@ export class HitTester {
         }
 
         return results;
-    }
-
-    getGlobalPosition(e) {
-        const isUI = (this.game.world.layersUI || []).some(l => l.id === e.layerId);
-        let rootBounds = null;
-
-        if (isUI) {
-            const uiSettings = this.game.world.settings?.ui || { width: 1920, height: 1080 };
-            rootBounds = { x: 0, y: 0, width: uiSettings.width, height: uiSettings.height };
-        }
-
-        return this._calculateAbsolutePosition(e, rootBounds);
-    }
-
-    solveLocalPosition(parentEntity, worldX, worldY) {
-        return { x: worldX, y: worldY };
     }
 }

@@ -12,6 +12,7 @@ import Grid from "../Editor/Grid.js";
 import Rulers from "../Editor/Rulers.js";
 import EditorRenderer from "../Renderer/Scene/EditorRenderer.js";
 
+import { TransformEngine } from "../Editor/Transform/TransformEngine.js";
 import { bus } from "../Util/EventBus.js";
 
 export default class EditorLoader extends RuntimeLoader {
@@ -45,6 +46,9 @@ export default class EditorLoader extends RuntimeLoader {
         const { world, renderer, camera, input } = game;
         const { EDITOR } = Config;
 
+        // Inisialisasi TransformEngine sebagai Single Source of Truth
+        game.transformEngine = new TransformEngine(world);
+
         const editorRenderer = new EditorRenderer(
             renderer.image, 
             renderer.shape, 
@@ -63,8 +67,14 @@ export default class EditorLoader extends RuntimeLoader {
             };
         }
 
-        if (EDITOR.SELECTION) game.selection = new SelectionTool(world, game, canvas, renderer, input);
-        if (EDITOR.TRANSFORM) game.transform = new TransformTool(game.selection, world, game, canvas, renderer, input);
+        // Oper game.transformEngine ke SelectionTool
+        if (EDITOR.SELECTION) {
+            game.selection = new SelectionTool(world, game, canvas, renderer, input, game.transformEngine);
+        }
+
+        if (EDITOR.TRANSFORM) {
+            game.transform = new TransformTool(game.selection, world, game, canvas, renderer, input);
+        }
 
         if (EDITOR.RULERS) {
             game.rulers = new Rulers(game);
@@ -77,6 +87,6 @@ export default class EditorLoader extends RuntimeLoader {
 
         game.tilemapTool = new TilemapTool(game);
         game.shapeTool = new ShapeTool(game);
-        game.syncSystem = new SyncComponent(world, bus, game);
+        game.syncSystem = new SyncComponent(world, bus, game); 
     }
 }

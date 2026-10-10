@@ -195,36 +195,6 @@ export class InspectorPage {
     }
   }
 
-  async selectAudioClip(clipLabel) {
-    await this.controls.selectOption('audio-clip-select', clipLabel, this.audioSection);
-  }
-
-  async addAudioClip() {
-    const trigger = this.page.getByTestId('audio-clip-options-trigger');
-    await trigger.scrollIntoViewIfNeeded();
-    await trigger.click();
-
-    const addBtn = this.page.getByTestId('audio-add-clip-btn');
-    await expect(addBtn).toBeVisible();
-    await addBtn.click();
-  }
-
-  async removeAudioClip() {
-    const trigger = this.page.getByTestId('audio-clip-options-trigger');
-    await trigger.scrollIntoViewIfNeeded();
-    await trigger.click();
-
-    const removeBtn = this.page.getByTestId('audio-remove-clip-btn');
-    await expect(removeBtn).toBeVisible();
-    await removeBtn.click();
-  }
-
-  async setClipScriptId(scriptId) {
-    const input = this.page.getByTestId('audio-script-id-input').locator('input').first();
-    await input.fill(scriptId);
-    await input.blur();
-  }
-
   async setAudioVolume(volumePercent) {
     const input = this.page.getByTestId('audio-volume-input').locator('input').first();
     await input.fill(String(volumePercent));

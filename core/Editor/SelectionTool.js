@@ -1,22 +1,23 @@
 import Config from "../Core/Config.js";
 import { bus } from "../Util/EventBus.js";
-import { HitTester } from "./Selection/HitTester.js";
+import { SelectionHit } from "./Selection/SelectionHit.js";
 import { SelectionRenderer } from "./Selection/SelectionRenderer.js";
-import { AutoPanner } from "./Selection/AutoPanner.js";
+import { SelectionPanner } from "./Selection/SelectionPanner.js";
 
 export default class SelectionTool {
-    constructor(world, game, canvas, renderer, input) {
+    constructor(world, game, canvas, renderer, input, transformEngine) {
         this.world = world;
         this.game = game;
         this.canvas = canvas;
         this.renderer = renderer;
         this.input = input;
+        this.engine = transformEngine;
 
         this.active = Config.EDITOR.SELECTION;
 
-        this.hitTester = new HitTester(game);
-        this.drawer = new SelectionRenderer(game);
-        this.panner = new AutoPanner(game, canvas);
+        this.hitTester = new SelectionHit(game, transformEngine);
+        this.drawer = new SelectionRenderer(game, transformEngine);
+        this.panner = new SelectionPanner(game, canvas);
 
         this.hovered = null;
         this.hoverMarqueeList = [];
@@ -34,10 +35,11 @@ export default class SelectionTool {
         this.onExternalSelect = (list) => { this.syncSelectionFromBus(list); };
         this.onEditorSelect = (ids) => { this.handleEditorSelect(ids); };
         this.onPrefabSelect = () => { this.setSelection([], "prefab"); };
+        this.onDeselect = () => { this.setSelection([], "deselect"); };
 
         bus.on("entity:selected", this.onExternalSelect);
         bus.on("prefab:selected", this.onPrefabSelect);
-        bus.on("entity:deselected", () => { this.setSelection([], "deselect"); });
+        bus.on("entity:deselected", this.onDeselect);
 
         world.selectionRenderer = (image, shape, text, proj) => {
             if (!this.active) return;
@@ -60,7 +62,7 @@ export default class SelectionTool {
             const drawableSelection = this.selectedList;
             const drawableHover = (this.hovered && this._isClickable(this.hovered)) ? this.hovered : null;
 
-            this.drawer.draw(shape, proj, drawableSelection, drawableHover, marqueeBox, this.transform);
+            this.drawer.draw(shape, proj, drawableSelection, drawableHover, marqueeBox);
 
             if (this.transform && this.selectedList.length > 0) {
                 this.transform.draw(shape, proj);
@@ -81,21 +83,10 @@ export default class SelectionTool {
         return true;
     }
 
-    _findEntityInWorld(id) {
-        const allLayers = [...(this.world.layersWorld || []), ...(this.world.layersUI || [])];
-        for (const layer of allLayers) {
-            if (layer?.entities) {
-                const found = layer.entities.find(e => String(e.id) === String(id));
-                if (found) return found;
-            }
-        }
-        return null;
-    }
-
     _getRootParent(entity) {
         let current = entity;
         while (current && current.parentId) {
-            const parent = this._findEntityInWorld(current.parentId);
+            const parent = this.engine.findEntityInWorld(current.parentId);
             if (parent) {
                 current = parent;
             } else {
@@ -152,6 +143,7 @@ export default class SelectionTool {
     destroy() {
         bus.off("entity:selected", this.onExternalSelect);
         bus.off("prefab:selected", this.onPrefabSelect);
+        bus.off("entity:deselected", this.onDeselect);
     }
 
     attachTransform(t) {

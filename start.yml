@@ -27,6 +27,9 @@ services:
         - action: sync
           path: ./core
           target: /usr/share/nginx/html
+          ignore:
+            - Dockerfile
+            - nginx.conf
 
   service:
     build:
@@ -77,6 +80,8 @@ services:
       VITE_BACKEND_URL: *service_url
       VITE_GAME_DEBUG: "true"
       VITE_ENV: development
+      # Mengaktifkan polling jika event file system Docker Host tidak terdeteksi langsung oleh Vite
+      CHOKIDAR_USEPOLLING: "true"
     depends_on:
       - core
       - service
@@ -92,7 +97,7 @@ services:
             - dist/
         - action: sync
           path: ./core
-          target: /engine
+          target: /core
         - action: rebuild
           path: ./editor/package.json
         - action: rebuild

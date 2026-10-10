@@ -71,6 +71,7 @@
       <PropertyRow label="Editor">
         <BaseButton 
           @click="openShapeEditor" 
+          :disabled="!!prefabId"
           class="w-full h-9 text-xs gap-2 justify-center"
           variant="outline" 
           data-testid="shape-renderer-open-editor-btn"
@@ -116,15 +117,13 @@
 import { computed } from "vue";
 import { Square, Trash2, RefreshCw, Pencil } from "lucide-vue-next"; 
 
-// Barrel import dari @inspectors/inspectors.js
 import { 
   useInspectorSelection, 
-  useInspectorPrefab 
+  useInspectorPrefab,
+  useInspectorBinding 
 } from "@inspectors/inspectors.js";
 
 import { useWorkspaceStore } from '@workspaces/workspaces.js';
-import { useSceneStore } from '@scenes/scenes.js';
-import { engineBridge } from "@engines/engines.js";
 
 import {
   PropertySection,
@@ -135,58 +134,32 @@ import {
   BaseCheckbox,
 } from '@components/components.js';
 
-// 1. Selection State
-const { selectedEntity } = useInspectorSelection()
+const { selectedEntity } = useInspectorSelection();
 
-// 2. Prefab & Component Operations
 const { 
   prefabId, 
   getComponentOverrideStatus, 
   syncComponent, 
   removeComponent 
-} = useInspectorPrefab()
+} = useInspectorPrefab();
 
-// Stores & Composables
+const { bindComponentProp } = useInspectorBinding();
 const workspaceStore = useWorkspaceStore();
-const sceneStore = useSceneStore();
 
-// --- Logic Komponen ---
 const hasComponent = computed(() => !!selectedEntity.value?.components?.ShapeRenderer);
 const overridden = getComponentOverrideStatus('ShapeRenderer');
 
-function bindProp(propName, defaultValue = null) {
-  return computed({
-    get: () => {
-      const comp = selectedEntity.value?.components?.ShapeRenderer;
-      return comp?.[propName] !== undefined ? comp[propName] : defaultValue;
-    },
-    set: (val) => {
-      const entity = selectedEntity.value;
-      if (entity) {
-        const targetId = entity.id;
-        sceneStore.updateComponentProp(targetId, 'ShapeRenderer', propName, val);
-        engineBridge.updateComponentProp({
-          entityId: targetId,
-          componentName: 'ShapeRenderer',
-          path: propName,
-          value: val
-        });
-      }
-    }
-  });
-}
+const isFilled = bindComponentProp('ShapeRenderer', 'isFilled');
+const color = bindComponentProp('ShapeRenderer', 'color');
+const rawFillOpacity = bindComponentProp('ShapeRenderer', 'fillOpacity');
 
-const isFilled = bindProp('isFilled', true);
-const color = bindProp('color', '#0066FF');
-const rawFillOpacity = bindProp('fillOpacity', 0.3);
+const outlineWidth = bindComponentProp('ShapeRenderer', 'outlineWidth');
+const outlineColor = bindComponentProp('ShapeRenderer', 'outlineColor');
+const rawOutlineOpacity = bindComponentProp('ShapeRenderer', 'outlineOpacity');
 
-const outlineWidth = bindProp('outlineWidth', 2);
-const outlineColor = bindProp('outlineColor', '#0066FF');
-const rawOutlineOpacity = bindProp('outlineOpacity', 1.0);
-
-const enablePolygonCollision = bindProp('enablePolygonCollision', true);
-const enableSegmentCollision = bindProp('enableSegmentCollision', true);
-const enableCircleCollision = bindProp('enableCircleCollision', true);
+const enablePolygonCollision = bindComponentProp('ShapeRenderer', 'enablePolygonCollision');
+const enableSegmentCollision = bindComponentProp('ShapeRenderer', 'enableSegmentCollision');
+const enableCircleCollision = bindComponentProp('ShapeRenderer', 'enableCircleCollision');
 
 const displayFillOpacity = computed({
   get: () => Math.round((rawFillOpacity.value ?? 0.3) * 100),
@@ -199,6 +172,7 @@ const displayOutlineOpacity = computed({
 });
 
 function openShapeEditor() {
+  if (prefabId.value) return;
   const entity = selectedEntity.value;
   if (!entity) return;
 

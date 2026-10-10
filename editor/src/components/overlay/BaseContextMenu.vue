@@ -14,46 +14,50 @@
         @click.stop
       >
         <template v-for="(item, index) in items" :key="index">
+          <!-- Separator -->
           <div 
             v-if="item.separator" 
             role="separator" 
             class="h-[1px] bg-border my-1 mx-1"
           ></div>
 
-          <button
-            v-else
-            type="button"
-            role="menuitem"
-            :aria-disabled="item.disabled ? 'true' : undefined"
-            :aria-expanded="item.children?.length ? (activeSubmenuIndex === index ? 'true' : 'false') : undefined"
-            :data-menu-item="item.label"
-            :data-disabled="item.disabled ? 'true' : 'false'"
-            class="relative flex items-center justify-between px-2 py-1.5 text-xs rounded-sm cursor-pointer select-none transition-colors border-none bg-transparent w-full text-left"
-            :class="[
-              item.disabled ? 'opacity-50 cursor-not-allowed text-muted-foreground' : 'hover:bg-accent hover:text-accent-foreground',
-              activeSubmenuIndex === index ? 'bg-accent text-accent-foreground' : ''
-            ]"
-            @click.stop="handleAction(item)"
-            @mouseenter="onItemEnter(index, $event)"
-            @mouseleave="onItemLeave(item)"
-          >
-            <div class="flex items-center gap-2">
-              <component v-if="item.icon" :is="item.icon" class="w-3.5 h-3.5 opacity-70" aria-hidden="true" />
-              <span>{{ item.label }}</span>
-            </div>
+          <!-- Menu Item Button -->
+          <template v-else>
+            <button
+              type="button"
+              role="menuitem"
+              :aria-disabled="item.disabled ? 'true' : undefined"
+              :aria-expanded="item.children?.length ? (activeSubmenuIndex === index ? 'true' : 'false') : undefined"
+              :data-menu-item="item.label"
+              :data-disabled="item.disabled ? 'true' : 'false'"
+              class="relative flex items-center justify-between px-2 py-1.5 text-xs rounded-sm cursor-pointer select-none transition-colors border-none bg-transparent w-full text-left"
+              :class="[
+                item.disabled ? 'opacity-50 cursor-not-allowed text-muted-foreground' : 'hover:bg-accent hover:text-accent-foreground',
+                activeSubmenuIndex === index ? 'bg-accent text-accent-foreground' : ''
+              ]"
+              @click.stop="handleAction(item)"
+              @mouseenter="onItemEnter(index, $event)"
+              @mouseleave="onItemLeave(item)"
+            >
+              <div class="flex items-center gap-2">
+                <component v-if="item.icon" :is="item.icon" class="w-3.5 h-3.5 opacity-70" aria-hidden="true" />
+                <span>{{ item.label }}</span>
+              </div>
 
-            <div class="flex items-center gap-3 ml-4">
-              <span v-if="item.shortcut" class="text-[10px] text-muted-foreground font-mono tracking-wider">{{ item.shortcut }}</span>
-              <ChevronRight v-if="item.children?.length" class="w-3.5 h-3.5 text-muted-foreground/70" aria-hidden="true" />
-            </div>
+              <div class="flex items-center gap-3 ml-4">
+                <span v-if="item.shortcut" class="text-[10px] text-muted-foreground font-mono tracking-wider">{{ item.shortcut }}</span>
+                <ChevronRight v-if="item.children?.length" class="w-3.5 h-3.5 text-muted-foreground/70" aria-hidden="true" />
+              </div>
+            </button>
 
+            <!-- Submenu dipindah ke LUAR button -->
             <BaseContextMenu
               v-if="item.children?.length && activeSubmenuIndex === index"
               :items="item.children"
               :position="submenuPos" 
               @close="$emit('close')"
             />
-          </button>
+          </template>
         </template>
       </div>
     </Transition>
@@ -136,6 +140,14 @@ const handleClickOutside = (event) => {
   if (event.target?.closest?.('.base-context-menu-fixed')) return;
   emit('close');
 };
+
+// const handleClickOutside = (event) => {
+//   // Jika mousedown terjadi di dalam menu itu sendiri, JANGAN tutup menu secara prematur!
+//   if (event.target?.closest?.('.base-context-menu-fixed') || event.target?.closest?.('[role="menu"]')) {
+//     return;
+//   }
+//   emit('close');
+// };
 
 const handleScroll = (event) => {
   if (event.target?.closest?.('.base-context-menu-fixed')) return;

@@ -1,4 +1,4 @@
-export class AutoPanner {
+export class SelectionPanner {
     constructor(game, canvas) {
         this.game = game;
         this.canvas = canvas;

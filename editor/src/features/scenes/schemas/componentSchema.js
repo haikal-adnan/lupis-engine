@@ -24,8 +24,18 @@ export const componentSchema = {
   }),
 
   Audio: (data = {}) => ({
-    currentClip: data.currentClip || null,
-    clips: Array.isArray(data.clips) ? data.clips : [],
+    assetId: data.assetId || null,
+    isMute: Boolean(data.isMute ?? false),
+    volume: Number(data.volume ?? 1.0),
+    pitch: Number(data.pitch ?? 1.0),
+    loop: Boolean(data.loop ?? false),
+    autoplay: Boolean(data.autoplay ?? false),
+    spatial: Boolean(data.spatial ?? false),
+    persist: Boolean(data.persist ?? false),
+    fadeIn: Number(data.fadeIn ?? 0.0),
+    fadeOut: Number(data.fadeOut ?? 0.0),
+    refDistance: Number(data.refDistance ?? 100),
+    maxDistance: Number(data.maxDistance ?? 1000),
     ...data,
     overridden: Boolean(data.overridden ?? false)
   }),

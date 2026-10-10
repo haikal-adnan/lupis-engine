@@ -1,188 +1,261 @@
 import { test, expect } from '../fixtures.js';
 
-// Spec ini boleh memakai flow hierarchy (hierarchyCrud) hanya untuk SETUP entity.
 test.use({
   projectOptions: {
-    prefix: 'Asset E2E',
-    description: 'E2E testing workspace for Asset Management features',
+    prefix: 'Asset E2E Complete',
+    description: 'Comprehensive E2E coverage for Asset Management & Entity Assignments',
   },
 });
 
-test.describe('Asset Management E2E Tests', () => {
+test.describe('Asset Management Comprehensive E2E Tests', () => {
   test.beforeEach(async ({ assets }) => {
-    // Pastikan tab Assets aktif dan panel settle sebelum test berjalan
     await assets.ensureOpen();
   });
 
-  test('uploads image asset and attaches to entity via SpriteRenderer', async ({ assets, hierarchyCrud, popup }) => {
-    // Arrange: Create target entity with SpriteRenderer capability in World section
-    const worldSection = hierarchyCrud.hierarchy.section('World');
-    await expect(worldSection).toBeVisible();
-
-    await hierarchyCrud.layer.create('World', 'Main Layer');
-    const mainLayer = hierarchyCrud.hierarchy.nodeByName('Main Layer');
-    const spriteEntity = await hierarchyCrud.entity.create(mainLayer, 'Sprite');
-    const entityId = await spriteEntity.getAttribute('data-node-id');
-
-    // Act: Upload real image asset
+  // =========================================================================
+  // 1. UPLOAD ASSET AT ROOT & INSIDE FOLDERS (IMAGE, FONT, AUDIO)
+  // =========================================================================
+  test('uploads image, font, and audio assets to root and subfolder', async ({ assets, popup }) => {
+    // Upload & Auto-wait via AssetPanelPage.upload
     await assets.upload('sample_image.png');
+    await assets.upload('sample_font.ttf');
+    await assets.upload('sample_audio.ogg');
 
-    // Assert: Verify asset renders in Asset Panel by exact title attribute
+    await expect(assets.card('sample_image')).toBeVisible();
+    await expect(assets.card('sample_font')).toBeVisible();
+    await expect(assets.card('sample_audio')).toBeVisible();
+
+    // Create a target folder via context menu
+    await popup.selectContextMenu(assets.grid, 'New Folder');
+    await popup.fillPromptAndSubmit('New Folder', 'MediaVault', 'Create');
+    const folderCard = assets.card('MediaVault');
+    await expect(folderCard).toBeVisible();
+
+    // Enter subfolder and upload assets inside
+    await folderCard.dblclick();
+    await expect(assets.breadcrumb('MediaVault')).toBeVisible();
+
+    await assets.upload('sample_image.png');
+    await expect(assets.cardContaining('sample_image')).toBeVisible();
+
+    // Return to root folder
+    await assets.breadcrumbRoot.click();
+    await expect(folderCard).toBeVisible();
+  });
+
+  // =========================================================================
+  // 2. FOLDER DEPTH 5 & BREADCRUMB NAVIGATION
+  // =========================================================================
+  test('creates a folder tree of depth 5 and navigates breadcrumbs accurately', async ({ assets, popup }) => {
+    const folderTree = ['Level1', 'Level2', 'Level3', 'Level4', 'Level5'];
+
+    await assets.createNestedFolders(folderTree, popup);
+
+    for (const name of folderTree) {
+      await expect(assets.breadcrumb(name)).toBeVisible();
+    }
+
+    await assets.upload('sample_image.png');
+    await expect(assets.card('sample_image')).toBeVisible();
+
+    await assets.breadcrumb('Level3').click();
+    await expect(assets.breadcrumb('Level3')).toBeVisible();
+    await expect(assets.breadcrumb('Level4')).not.toBeVisible();
+    await expect(assets.card('Level4')).toBeVisible();
+
+    await assets.breadcrumbRoot.click();
+    await expect(assets.card('Level1')).toBeVisible();
+  });
+
+  // =========================================================================
+  // 3. MOVE ASSET TO DIFFERENT FOLDER DEPTHS
+  // =========================================================================
+  test('moves asset across different folder depth levels using Cut & Paste', async ({ assets, popup }) => {
+    await assets.createNestedFolders(['Level1', 'Level2'], popup);
+
+    await assets.upload('sample_image.png');
     const assetCard = assets.card('sample_image');
     await expect(assetCard).toBeVisible();
 
-    // Act: Select entity in Hierarchy and attach asset via Context Menu
-    await spriteEntity.click();
-    await popup.selectContextMenu(assetCard, 'Apply to SpriteRenderer');
+    await popup.selectContextMenu(assetCard, 'Cut');
 
-    // Assert: Verify feedback pop alert and ensure stable target entity remains intact
-    await popup.expectPopAlert('Success');
-    const targetEntity = hierarchyCrud.hierarchy.nodeById(entityId);
-    await expect(targetEntity).toBeVisible();
-  });
+    await assets.breadcrumbRoot.click();
+    await expect(assets.card('Level1')).toBeVisible();
 
-  test('uploads font asset and attaches to text entity via TextRenderer', async ({ page, assets, hierarchyCrud, popup }) => {
-    // Arrange: Create layer and Text entity in World section
-    const worldSection = hierarchyCrud.hierarchy.section('World');
-    await expect(worldSection).toBeVisible();
+    await popup.selectContextMenu(assets.grid, 'Paste');
 
-    await hierarchyCrud.layer.create('World', 'Main Layer');
-    const mainLayer = hierarchyCrud.hierarchy.nodeByName('Main Layer');
-
-    await hierarchyCrud.entity.create(mainLayer, 'Text');
-
-    // Re-locate specific non-layer entity node to avoid strict mode collisions
-    const textEntity = page
-      .locator('.group\\/node:not([data-node-type="layer"])')
-      .filter({ hasText: /Text|Entity/i })
-      .first();
-
-    await expect(textEntity).toBeVisible();
-    const entityId = await textEntity.getAttribute('data-node-id');
-
-    // Act: Upload real font asset
-    await assets.upload('sample_font.ttf');
-
-    // Assert: Verify font card visibility
-    const fontCard = assets.card('sample_font');
-    await expect(fontCard).toBeVisible();
-
-    // Act: Select text entity and attach font via Context Menu
-    await textEntity.click();
-    await popup.selectContextMenu(fontCard, 'Apply to TextRenderer');
-
-    // Assert: Verify feedback pop alert and stable target entity
-    await popup.expectPopAlert('Success');
-    const targetEntity = hierarchyCrud.hierarchy.nodeById(entityId);
-    await expect(targetEntity).toBeVisible();
-  });
-
-  test('uploads audio asset and verifies rendering in Asset Panel', async ({ assets }) => {
-    // Act: Upload real audio asset
-    await assets.upload('sample_audio.ogg');
-
-    // Assert: Verify audio card is visible in workspace
-    await expect(assets.card('sample_audio')).toBeVisible();
-  });
-
-  test('creates new folder, moves asset inside, and navigates via breadcrumbs', async ({ page, assets, popup }) => {
-    // Arrange: Upload initial image asset
-    await assets.upload('sample_image.png');
-
-    const assetItem = assets.card('sample_image');
-    await expect(assetItem).toBeVisible();
-
-    // Act: Create new folder via Asset Grid Context Menu
-    await popup.selectContextMenu(assets.grid, 'New Folder');
-    await popup.fillPromptAndSubmit('New Folder', 'Textures', 'Create');
-
-    const folderItem = assets.card('Textures');
-    await expect(folderItem).toBeVisible();
-
-    // Act: Drag and drop asset item into folder
-    await assetItem.dragTo(folderItem);
-
-    // Assert: Asset moved out of root container
-    await expect(assetItem).toHaveCount(0);
-
-    // Act: Navigate inside folder
-    await folderItem.dblclick();
-
-    // Assert: Breadcrumb updates and asset is visible inside folder
-    await expect(assets.breadcrumb('Textures')).toBeVisible();
     await expect(assets.card('sample_image')).toBeVisible();
 
-    // Act: Navigate back to root via Asset Panel specific breadcrumb
-    await assets.breadcrumbRoot.click();
-
-    // Assert: Folder item is visible at root level
-    await expect(folderItem).toBeVisible();
-  });
-
-  test('renames asset and updates label reactively', async ({ assets, popup }) => {
-    // Arrange: Upload target image asset
-    await assets.upload('sample_image.png');
-
-    const assetItem = assets.card('sample_image');
-    await expect(assetItem).toBeVisible();
-
-    // Act: Trigger Rename operation
-    await popup.selectContextMenu(assetItem, 'Rename');
-    await popup.fillPromptAndSubmit('Rename Asset', 'sample_image_renamed', 'Rename');
-
-    // Assert: Verify pop alert and reactive DOM updates
-    await popup.expectPopAlert('Success');
-    await expect(assets.card('sample_image_renamed')).toBeVisible();
+    await assets.card('Level1').dblclick();
+    await assets.card('Level2').dblclick();
     await expect(assets.cardsByTitle('sample_image')).toHaveCount(0);
   });
 
-  test('duplicates asset using clipboard operations', async ({ page, assets }) => {
-    // Arrange: Upload font asset
-    await assets.upload('sample_font.ttf');
+  // =========================================================================
+  // 4. ALL CONTEXT MENU OPERATIONS (COPY ID, CUT, COPY, RENAME, DELETE)
+  // =========================================================================
+  test('executes Copy ID, Cut, Copy, Rename, and Delete context menu actions', async ({ page, context, assets, popup }) => {
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
 
-    const assetItem = assets.card('sample_font');
-    await expect(assetItem).toBeVisible();
+    await assets.upload('sample_image.png');
+    const assetCard = assets.card('sample_image');
+    await expect(assetCard).toBeVisible();
 
-    // Act: Klik item untuk memilihnya (aktifkan active/selected state di UI)
-    await assetItem.click();
+    // 1. Copy ID
+    await popup.selectContextMenu(assetCard, 'Copy ID');
+    await popup.expectPopAlert('Success');
 
-    // Tentukan modifier keyboard berdasarkan OS (Control untuk Win/Linux, Meta/Cmd untuk macOS)
-    const modifier = process.platform === 'darwin' ? 'Meta' : 'Control';
-    await page.keyboard.press(`${modifier}+c`);
-    await page.keyboard.press(`${modifier}+v`);
+    const clipboardText = await page.evaluate(() => navigator.clipboard.readText());
+    expect(clipboardText).not.toBe('');
 
-    // Assert: Asset hasil duplikasi muncul dengan suffix "(Copy)"
-    const duplicatedCard = assets.cardContaining('sample_font (Copy)');
-    await expect(duplicatedCard).toBeVisible({ timeout: 10000 });
+    // 2. Rename
+    await popup.selectContextMenu(assetCard, 'Rename');
+    await popup.fillPromptAndSubmit('Rename Asset', 'renamed_hero_bg', 'Rename');
+
+    const renamedCard = assets.card('renamed_hero_bg');
+    await expect(renamedCard).toBeVisible();
+    await expect(assets.cardsByTitle('sample_image')).toHaveCount(0);
+
+    // 3. Copy & Paste (Duplicate)
+    await popup.selectContextMenu(renamedCard, 'Copy');
+    await popup.selectContextMenu(assets.grid, 'Paste');
+    const duplicatedCard = assets.cardContaining('renamed_hero_bg (Copy)');
+    await expect(duplicatedCard).toBeVisible();
+
+    // 4. Delete
+    await popup.selectContextMenu(duplicatedCard, 'Delete');
+    await popup.confirmAction('Delete Asset?', { action: 'confirm', confirmText: 'Confirm' });
+    await expect(duplicatedCard).not.toBeVisible();
   });
 
-  test('deletes asset from workspace following modal confirmation', async ({ assets, popup }) => {
-    // Arrange: Upload audio asset
+  // =========================================================================
+  // 5. SEARCH ASSET
+  // =========================================================================
+  test('filters assets by search query reactively and clears filter', async ({ page, assets }) => {
+    await assets.upload('sample_image.png');
+    await assets.upload('sample_font.ttf');
     await assets.upload('sample_audio.ogg');
 
-    const assetItem = assets.card('sample_audio');
-    await expect(assetItem).toBeVisible();
+    await expect(assets.card('sample_image')).toBeVisible();
+    await expect(assets.card('sample_font')).toBeVisible();
+    await expect(assets.card('sample_audio')).toBeVisible();
 
-    // Act: Trigger Delete operation and confirm modal
-    await popup.selectContextMenu(assetItem, 'Delete');
-    await popup.confirmAction('Delete Asset?', { action: 'confirm', confirmText: 'Confirm' });
-
-    // Assert: Asset removed from DOM
+    await assets.searchInput.fill('font');
+    await expect(assets.card('sample_font')).toBeVisible();
+    await expect(assets.cardsByTitle('sample_image')).toHaveCount(0);
     await expect(assets.cardsByTitle('sample_audio')).toHaveCount(0);
+
+    const clearBtn = page.getByTestId('search-clear-button').or(page.getByRole('button', { name: /clear/i })).first();
+    if (await clearBtn.isVisible()) {
+      await clearBtn.click();
+    } else {
+      await assets.searchInput.fill('');
+    }
+
+    await expect(assets.card('sample_image')).toBeVisible();
+    await expect(assets.card('sample_font')).toBeVisible();
+    await expect(assets.card('sample_audio')).toBeVisible();
   });
 
-  test('[Bad Path] cancels asset deletion and verifies state remains unchanged', async ({ assets, popup }) => {
-    // Arrange: Upload target image asset
+  // =========================================================================
+  // 6. ASSET ATTACHMENT TO ENTITIES
+  // =========================================================================
+  test('attaches Audio asset to an Empty Entity with Audio Component', async ({ assets, hierarchyCrud, inspectorCrud, popup }) => {
+    const mainLayer = await hierarchyCrud.layer.create('World', 'Main Layer');
+    const emptyEntity = await hierarchyCrud.entity.create(mainLayer, 'empty');
+    const entityId = await emptyEntity.getAttribute('data-node-id');
+
+    await emptyEntity.click();
+    await inspectorCrud.configureAudioComponent({
+      volume: 90,
+      assetId: null,
+    });
+
+    await assets.upload('sample_audio.ogg');
+    const audioCard = assets.card('sample_audio');
+    await expect(audioCard).toBeVisible();
+
+    await emptyEntity.click();
+    await popup.selectContextMenu(audioCard, 'Apply to Audio Component');
+
+    await popup.expectPopAlert('Success');
+    const targetEntity = hierarchyCrud.hierarchy.nodeById(entityId);
+    await expect(targetEntity).toBeVisible();
+  });
+
+  test('attaches Image asset to Empty Sprite and Tilemap entities', async ({ assets, hierarchyCrud, popup }) => {
+    const mainLayer = await hierarchyCrud.layer.create('World', 'Main Layer');
+
+    const spriteEntity = await hierarchyCrud.entity.create(mainLayer, 'sprite');
+    const spriteId = await spriteEntity.getAttribute('data-node-id');
+
+    const tilemapEntity = await hierarchyCrud.entity.create(mainLayer, 'tilemap');
+    const tilemapId = await tilemapEntity.getAttribute('data-node-id');
+
     await assets.upload('sample_image.png');
+    const imageCard = assets.card('sample_image');
+    await expect(imageCard).toBeVisible();
 
-    const assetItem = assets.card('sample_image');
-    await expect(assetItem).toBeVisible();
+    await spriteEntity.click();
+    await popup.selectContextMenu(imageCard, 'Apply to SpriteRenderer');
+    await popup.expectPopAlert('Success');
+    await expect(hierarchyCrud.hierarchy.nodeById(spriteId)).toBeVisible();
 
-    // Act: Trigger Delete action but cancel on modal dialog
-    await popup.selectContextMenu(assetItem, 'Delete');
+    await tilemapEntity.click();
+    await popup.selectContextMenu(imageCard, 'Apply to Tilemap');
+    await popup.expectPopAlert('Success');
+    await expect(hierarchyCrud.hierarchy.nodeById(tilemapId)).toBeVisible();
+  });
+
+  test('attaches Font asset to Text entity via TextRenderer', async ({ assets, hierarchyCrud, popup }) => {
+    const mainLayer = await hierarchyCrud.layer.create('World', 'Main Layer');
+    const textEntity = await hierarchyCrud.entity.create(mainLayer, 'text');
+    const entityId = await textEntity.getAttribute('data-node-id');
+
+    await assets.upload('sample_font.ttf');
+    const fontCard = assets.card('sample_font');
+    await expect(fontCard).toBeVisible();
+
+    await textEntity.click();
+    await expect(textEntity).toHaveAttribute('aria-selected', 'true');
+
+    await popup.selectContextMenu(fontCard, 'Apply to TextRenderer');
+
+    await popup.expectPopAlert('Success');
+    const updatedEntity = hierarchyCrud.hierarchy.nodeById(entityId);
+    await expect(updatedEntity).toBeVisible();
+  });
+
+  // =========================================================================
+  // 7. [BAD PATH] SCENARIOS
+  // =========================================================================
+  test('[Bad Path] cancels deletion modal and ensures asset state remains intact', async ({ assets, popup }) => {
+    await assets.upload('sample_image.png');
+    const assetCard = assets.card('sample_image');
+    await expect(assetCard).toBeVisible();
+
+    await popup.selectContextMenu(assetCard, 'Delete');
     await popup.confirmAction('Delete Asset?', { action: 'cancel', cancelText: 'Cancel' });
 
-    // Assert: Asset remains visible in DOM
-    await expect(assetItem).toBeVisible();
+    await expect(assetCard).toBeVisible();
+  });
+
+  test('[Bad Path] verifies audio applier option is hidden when target entity lacks Audio Component', async ({ page, assets, hierarchyCrud, popup }) => {
+    const mainLayer = await hierarchyCrud.layer.create('World', 'Main Layer');
+    const emptyEntity = await hierarchyCrud.entity.create(mainLayer, 'empty');
+    await emptyEntity.click();
+
+    await assets.upload('sample_audio.ogg');
+    const audioCard = assets.card('sample_audio');
+    await expect(audioCard).toBeVisible();
+
+    await emptyEntity.click();
+    await popup.selectContextMenu(audioCard, []);
+
+    const menuItem = popup.activeMenus.getByRole('menuitem', { name: 'Apply to Audio Component' });
+    await expect(menuItem).toHaveCount(0);
+
+    // Cleanup open context menu
+    await page.keyboard.press('Escape');
   });
 });

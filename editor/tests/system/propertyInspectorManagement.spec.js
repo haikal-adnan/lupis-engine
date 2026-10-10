@@ -338,7 +338,7 @@ describe('Inspector Property Management Integration Suite', () => {
       })
     })
 
-    it('syncs all components from master prefab to instance, resetting overrides', () => {
+    it('syncs all components from master prefab to instance, resetting overrides via syncObject', () => {
       const masterEntity = createMockEntity({
         tag: 'Enemy',
         components: {
@@ -361,9 +361,9 @@ describe('Inspector Property Management Integration Suite', () => {
       sceneStore.selectedEntityIds = [instanceEntity.id]
 
       const { selectedEntity, isEditingMasterPrefab } = useInspectorSelection()
-      const { syncAllComponents } = useInspectorPrefab(selectedEntity, isEditingMasterPrefab)
+      const { syncObject } = useInspectorPrefab(selectedEntity, isEditingMasterPrefab)
 
-      syncAllComponents()
+      syncObject()
 
       const updatedComp = sceneStore.activeScene.entities[0].components
       expect(updatedComp.Transform.scaleX).toBe(2)

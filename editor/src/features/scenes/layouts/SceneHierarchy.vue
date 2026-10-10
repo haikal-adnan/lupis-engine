@@ -1,4 +1,3 @@
-<!-- SceneHierarchy.vue -->
 <template>
   <div 
     class="flex flex-col h-full bg-background select-none" 
@@ -28,13 +27,12 @@
       </ScrollArea>
     </div>
 
+    <!-- Hapus data-testid dan role di sini -->
     <BaseContextMenu 
       v-if="contextMenu.visible"
       :position="{ x: contextMenu.x, y: contextMenu.y }"
       :items="contextMenu.items"
       @close="closeMenu"
-      data-testid="hierarchy-context-menu"
-      role="menu"
     />
   </div>
 </template>

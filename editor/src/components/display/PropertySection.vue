@@ -3,12 +3,14 @@
     class="w-full select-none border-b border-border mb-1 last:border-0 group/section"
     data-component="property-section"
     :data-section-title="title"
+    data-testid="property-section"
   >
     <div class="flex items-center justify-between py-1 px-1 pr-2 hover:bg-muted/30 transition-colors">
       
       <div 
         @click="toggle"
         data-element="section-header"
+        data-testid="section-header"
         :aria-expanded="collapsible ? isOpen : undefined"
         :role="collapsible ? 'button' : undefined"
         class="flex items-center gap-1 flex-grow overflow-hidden py-1"
@@ -34,6 +36,7 @@
             <button 
               type="button"
               data-element="section-menu-trigger"
+              data-testid="section-menu-trigger"
               aria-label="Section Options"
               class="
                 p-0.5 rounded text-muted-foreground/0 
@@ -47,7 +50,7 @@
           </template>
 
           <template #default="{ close }">
-            <div class="flex flex-col text-sm min-w-[160px]" role="menu" data-element="section-menu-items">
+            <div class="flex flex-col text-sm min-w-[160px]" role="menu" data-element="section-menu-items" data-testid="property-section-menu">
               <slot name="menu" :close="close">
                 <div class="px-2 py-1.5 text-xs text-muted-foreground">No actions</div>
               </slot>

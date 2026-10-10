@@ -1,3 +1,5 @@
+// useAssetMenu.js
+
 import { ref, computed } from 'vue'
 import { 
   FolderPlus, Download, RefreshCw, Edit2, Trash2, 
@@ -57,27 +59,8 @@ export function useAssetMenu(selectedIdRef, triggerUploadCb, logicActions) {
     }
 
     try {
-      if (componentName === 'Audio') {
-        const audioComp = entity.components.Audio
-        if (!audioComp.currentClip) {
-          showPop({ title: 'Failed', message: 'No active clip selected in Audio Bank.', type: 'warning' })
-          return
-        }
-
-        const clips = [...(audioComp.clips || [])]
-        const clipIndex = clips.findIndex(c => c.id === audioComp.currentClip)
-
-        if (clipIndex !== -1) {
-          clips[clipIndex] = { ...clips[clipIndex], assetId: asset.id }
-          sceneStore.updateComponentProp(entityId, 'Audio', 'clips', clips)
-          showPop({ title: 'Success', message: `Applied "${asset.name}" to active audio clip.`, type: 'success' })
-        } else {
-          showPop({ title: 'Error', message: 'Active clip not found.', type: 'error' })
-        }
-      } else {
-        sceneStore.updateComponentProp(entityId, componentName, 'assetId', asset.id)
-        showPop({ title: 'Success', message: `Applied "${asset.name}" to ${componentName}.`, type: 'success' })
-      }
+      sceneStore.updateComponentProp(entityId, componentName, 'assetId', asset.id)
+      showPop({ title: 'Success', message: `Applied "${asset.name}" to ${componentName}.`, type: 'success' })
     } catch (error) {
       showPop({ title: 'Failed', message: 'Failed to apply asset.', type: 'error' })
     }
@@ -192,12 +175,10 @@ export function useAssetMenu(selectedIdRef, triggerUploadCb, logicActions) {
         }
 
         if (isAudio && entity.components.Audio) {
-          const hasActiveClip = !!entity.components.Audio.currentClip
           items.push({ 
-            label: hasActiveClip ? 'Apply to Active Audio Clip' : 'No Active Audio Clip', 
+            label: 'Apply to Audio Component', 
             icon: Volume2, 
-            disabled: !hasActiveClip,
-            action: () => { if (hasActiveClip) applyAsset(targetItem, entity.id, 'Audio') } 
+            action: () => applyAsset(targetItem, entity.id, 'Audio')
           })
           hasAddedAppliers = true
         }
@@ -215,11 +196,11 @@ export function useAssetMenu(selectedIdRef, triggerUploadCb, logicActions) {
 
     if (hasAddedAppliers) items.push({ separator: true })
 
+    // Urutan diperbarui: Cut & Copy ditempatkan sebelum Copy ID
     items.push(
-      { label: 'Copy ID', icon: Hash, action: () => handleCopyId(targetItem) }, 
-      { separator: true },
       { label: 'Cut', icon: Scissors, shortcut: 'Ctrl+X', action: () => handleCutCopy('cut', targetItem) },
       { label: 'Copy', icon: Copy, shortcut: 'Ctrl+C', action: () => handleCutCopy('copy', targetItem) },
+      { label: 'Copy ID', icon: Hash, action: () => handleCopyId(targetItem) }, 
       { separator: true },
       { label: 'Rename', icon: Edit2, shortcut: 'F2', action: () => handleRename(targetItem) },
       { separator: true },

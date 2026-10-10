@@ -1,5 +1,10 @@
 <template>
-  <PropertySection title="Object" :icon="Box" v-if="selectedEntity" data-testid="editor-object-section">
+  <PropertySection 
+    title="Object" 
+    :icon="Box" 
+    v-if="selectedEntity" 
+    data-testid="editor-object-section"
+  >
     <template #header-extra>
       <div class="flex items-center gap-2 max-w-[180px]">
         <div 
@@ -19,28 +24,62 @@
     </template>
 
     <template #menu="{ close }">
-      <div class="p-1 space-y-0.5 min-w-[160px]">
+      <div class="p-1 space-y-0.5 min-w-[160px]" role="menu" data-testid="object-section-menu">
         <template v-if="prefabId">
           <div class="px-2 py-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-tight">Prefab Actions</div>
-          <button @click="onApplyToMaster(); close()" :disabled="!hasAnyOverride" class="menu-item text-emerald-500 font-medium">
+          <button 
+            type="button"
+            role="menuitem"
+            data-menu-item="Apply to Master"
+            data-testid="menu-item-apply-to-master"
+            :disabled="!hasAnyOverride"
+            @click="onApplyToMaster(); close()" 
+            class="menu-item text-emerald-500 font-medium"
+          >
             <Upload class="w-3.5 h-3.5 mr-2" /> Apply to Master
           </button>
-          <button @click="syncObject(); close()" :disabled="!hasAnyOverride" class="menu-item">
+          <button 
+            type="button"
+            role="menuitem"
+            data-menu-item="Revert to Sync"
+            data-testid="menu-item-revert-to-sync"
+            :disabled="!hasAnyOverride"
+            @click="syncObject(); close()" 
+            class="menu-item"
+          >
             <RefreshCw class="w-3.5 h-3.5 mr-2 opacity-70" /> Revert to Sync
           </button>
-          <button @click="syncAllComponents(); close()" class="menu-item">
-            <Layers2 class="w-3.5 h-3.5 mr-2 opacity-70" /> Sync All Components
-          </button>
-          <button @click="unpackPrefab(); close()" class="menu-item text-amber-500">
+          <button 
+            type="button"
+            role="menuitem"
+            data-menu-item="Unpack Prefab"
+            data-testid="menu-item-unpack-prefab"
+            @click="unpackPrefab(); close()" 
+            class="menu-item text-amber-500"
+          >
             <PackageOpen class="w-3.5 h-3.5 mr-2" /> Unpack Prefab
           </button>
-          <div class="h-px bg-border my-1"></div>
+          <div class="h-px bg-border my-1" role="separator"></div>
         </template>
-        <button @click="onCopyId(); close()" class="menu-item">
+        <button 
+          type="button"
+          role="menuitem"
+          data-menu-item="Copy ID"
+          data-testid="menu-item-copy-id"
+          @click="onCopyId(); close()" 
+          class="menu-item"
+        >
           <Copy class="w-3.5 h-3.5 mr-2 opacity-70" /> Copy ID
         </button>
-        <div class="h-px bg-border my-1"></div>
-        <button @click="onDelete(); close()" class="menu-item text-destructive hover:bg-destructive hover:text-destructive-foreground font-medium">
+        <div class="h-px bg-border my-1" role="separator"></div>
+        <button 
+          type="button"
+          role="menuitem"
+          data-menu-item="Delete Entity"
+          data-testid="menu-item-delete-entity"
+          @click="onDelete(); close()" 
+          class="menu-item text-destructive hover:bg-destructive hover:text-destructive-foreground font-medium"
+        >
           <Trash2 class="w-3.5 h-3.5 mr-2" /> Delete Entity
         </button>
       </div>
@@ -191,7 +230,6 @@ const { selectedEntity } = useInspectorSelection()
 const { 
   prefabId, 
   syncObject, 
-  syncAllComponents, 
   unpackPrefab, 
   markAsOverridden 
 } = useInspectorPrefab()
@@ -216,9 +254,18 @@ const isProcessing = ref(false)
 const name = bindEntityProp('name')
 const zIndex = bindEntityProp('zIndex')
 
+// Komputasi deep-checking override flag di level entitas maupun komponen
 const hasAnyOverride = computed(() => {
-  if (!selectedEntity.value || !selectedEntity.value.components) return false
-  return Object.values(selectedEntity.value.components).some(comp => comp.overridden === true)
+  const entity = selectedEntity.value
+  if (!entity) return false
+
+  if (entity.overridden) return true
+
+  if (entity.components) {
+    return Object.values(entity.components).some(comp => comp && comp.overridden === true)
+  }
+
+  return false
 })
 
 const onApplyToMaster = async () => {

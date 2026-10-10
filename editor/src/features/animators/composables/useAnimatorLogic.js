@@ -34,15 +34,16 @@ export function useAnimatorLogic() {
   const activeEntityId = computed(() => selectedEntity.value?.id);
   const hasAnimator = computed(() => !!selectedEntity.value?.components?.SpriteAnimator);
 
+  // AUTO-CLOSE jika entitas saat ini berubah menjadi PREFAB atau hilang
   watch(
-    [() => workspaceStore.activeTab, selectedEntity, hasAnimator],
+    [() => workspaceStore.activeTab, selectedEntity],
     ([activeTab, entity]) => {
       if (activeTab?.type !== 'animator') return;
-      if (!entity) {
+      if (!entity || entity.prefabId) {
         workspaceStore.closeTab(activeTab.id);
       }
     },
-    { immediate: true }
+    { immediate: true, deep: true }
   );
 
   watch(activeEntityId, (newId) => {
@@ -523,7 +524,7 @@ export function useAnimatorLogic() {
 
   function openAnimatorEditor() {
     const entity = selectedEntityForOpenTab.value;
-    if (!entity) return;
+    if (!entity || entity.prefabId) return;
     workspaceStore.openTab({
       id: entity.id,
       name: entity.name || 'Animator',
