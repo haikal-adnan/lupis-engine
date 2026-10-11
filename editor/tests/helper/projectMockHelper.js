@@ -154,13 +154,15 @@ function getComponentsByEntityType(type, rawX = 0, rawY = 0) {
     components.TextRenderer = { value: 'New Text', fontSize: 24, color: '#FFFFFF' }
     components.Transform = { ...rawTransform, width: 107, height: 23 }
   } else if (type === 'tilemap') {
-    const defaultW = 40
-    const defaultH = 30
-    components.Tilemap = { 
-      tileWidth: 16, tileHeight: 16, width: defaultW, height: defaultH,
-      tilesetId: null, opacity: 1, isSolid: false, autoFit: true,
-      data: new Array(defaultW * defaultH).fill(0)
-    }
+    components.Tilemap = componentSchema.create('Tilemap', {
+      width: 16,
+      height: 16,
+      assetId: null,
+      opacity: 1,
+      isSolid: false,
+      filterMode: 'pixelated',
+      data: {}
+    })
     components.Transform = { ...rawTransform, width: 640, height: 480 }
   } else if (type === 'audio') {
     components.Transform = { ...rawTransform, width: 50, height: 50 }

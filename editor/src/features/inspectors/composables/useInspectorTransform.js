@@ -35,8 +35,7 @@ export function useInspectorTransform(selectedEntity, isEditingMasterPrefab) {
   const isSizeLockedByTilemap = computed(() => {
     const ent = getEntity();
     if (!ent) return false;
-    const tilemapComp = ent.components?.Tilemap;
-    return !!(tilemapComp && tilemapComp.autoFit);
+    return !!ent.components?.Tilemap;
   });
 
   const getGlobalTransform = (entityId) => {

@@ -89,28 +89,6 @@
       />
     </PropertyRow>
 
-    <PropertyRow label="Auto Fit">
-      <div class="flex items-center gap-2 w-full">
-        <BaseButton 
-          :active="autoFit"
-          @click="toggleAutoFit"
-          class="flex-1 h-7 text-xs gap-2" ghost
-          data-testid="tilemap-autofit-btn"
-          :data-active="autoFit"
-        >
-          <Maximize class="w-3.5 h-3.5" /> <span>Auto Fit</span>
-        </BaseButton>
-
-        <IconButton 
-          @click="resetTilemapTransform"
-          tooltip="Reset Transform to Tilemap"
-          data-testid="tilemap-reset-transform-btn"
-        >
-          <RefreshCcw class="w-3.5 h-3.5" />
-        </IconButton>
-      </div>
-    </PropertyRow>
-
     <PropertyRow label="Collision">
           <BaseCheckbox 
             v-model="isSolid" 

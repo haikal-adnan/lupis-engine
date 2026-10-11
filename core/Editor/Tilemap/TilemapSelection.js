@@ -4,12 +4,16 @@ export class TilemapSelection {
         this.mouseDownPos = null;
         this.isWaitingForDrop = false;
         this.lockSelection = false;
+        this.isSelecting = false;
+        this.startGridPos = null;
     }
 
     reset(editors) {
         this.mouseDownPos = null;
         this.isWaitingForDrop = false;
         this.lockSelection = false;
+        this.isSelecting = false;
+        this.startGridPos = null;
         if (editors) {
             editors.dragState = null;
             editors.marqueeSelection = null;
@@ -18,12 +22,16 @@ export class TilemapSelection {
 
     handleEraser(input, entity, tm, gridPos, editors) {
         const isMouseDown = Boolean(input?.mouse?.isDown(0));
-        const isCtrl = Boolean(input?.keyboard?.ctrl);
+        const isCtrl = Boolean(
+            input?.keyboard?.isDown?.('Control') || 
+            input?.keyboard?.isDown?.('Meta') || 
+            input?.keyboard?.ctrl
+        );
 
         if (!isMouseDown) {
             if (editors.marqueeSelection && this.mouseDownPos) {
                 const ms = editors.marqueeSelection;
-                this.operations.paint(entity.world, entity, tm, ms.x, ms.y, tm.assetId, { x: 0, y: 0, w: ms.w, h: ms.h }, true);
+                this.operations.deleteArea(entity, tm, ms.x, ms.y, ms.w, ms.h);
                 editors.marqueeSelection = null;
             }
             this.mouseDownPos = null;
@@ -43,60 +51,67 @@ export class TilemapSelection {
 
                 editors.marqueeSelection = { x, y, w, h };
             } else {
-                this.operations.paint(entity.world, entity, tm, gridPos.x, gridPos.y, tm.assetId, { x: 0, y: 0, w: 1, h: 1 }, true);
+                this.operations.paint(
+                    entity.world, 
+                    entity, 
+                    tm, 
+                    gridPos.x, 
+                    gridPos.y, 
+                    tm.assetId, 
+                    { x: 0, y: 0, w: 1, h: 1 }, 
+                    true
+                );
                 this.mouseDownPos = null;
             }
         }
     }
 
-    handleSelectionAndMove(input, entity, tm, gridPos, editors) {
-        const isMouseDown = Boolean(input?.mouse?.isDown(0));
+    handleSelectionAndMove(input, entity, tm, gridPos, editors, isCtrlDown = false) {
+        if (!gridPos || !input || !editors) return;
+
+        const isMouseDown = Boolean(input.mouse?.isDown(0));
 
         if (!isMouseDown) {
             this.lockSelection = false;
         }
 
-        if (!gridPos || this.lockSelection) {
+        if (this.lockSelection) {
             if (!isMouseDown) this.mouseDownPos = null;
             return;
         }
 
-        const isCtrl = Boolean(input?.keyboard?.ctrl);
+        // --- FASE 1: MENJATUHKAN / DROP TILE (Jika sedang membawa dragState) ---
+        if (editors.dragState) {
+            if (isMouseDown && !this.mouseDownPos) {
+                const ds = editors.dragState;
+                const targetX = gridPos.x - (ds.offX || 0);
+                const targetY = gridPos.y - (ds.offY || 0);
 
-        if (isMouseDown && !this.mouseDownPos && !editors.dragState) {
-            this.mouseDownPos = { ...gridPos };
-            return;
-        }
-
-        if (isMouseDown && this.mouseDownPos && !editors.dragState) {
-            const hasMoved = this.mouseDownPos.x !== gridPos.x || this.mouseDownPos.y !== gridPos.y;
-
-            if (isCtrl) {
-                const x = Math.min(this.mouseDownPos.x, gridPos.x);
-                const y = Math.min(this.mouseDownPos.y, gridPos.y);
-                const w = Math.abs(gridPos.x - this.mouseDownPos.x) + 1;
-                const h = Math.abs(gridPos.y - this.mouseDownPos.y) + 1;
-                editors.marqueeSelection = { x, y, w, h };
-            } else if (hasMoved) {
-                const idx = this.mouseDownPos.y * tm.width + this.mouseDownPos.x;
-                const tileId = tm.data ? tm.data[idx] : 0;
-
-                if (tileId !== 0) {
-                    editors.dragState = {
-                        data: [tileId],
-                        w: 1,
-                        h: 1,
-                        sourceX: this.mouseDownPos.x,
-                        sourceY: this.mouseDownPos.y,
-                        offX: 0,
-                        offY: 0
-                    };
-                    this.isWaitingForDrop = false;
-                }
+                this.commitMove(entity, tm, ds, targetX, targetY);
+                this.reset(editors);
+                this.lockSelection = true;
             }
             return;
         }
 
+        // --- FASE 2: MULAI DRAG PADA GRID ---
+        if (isMouseDown && !this.mouseDownPos) {
+            this.mouseDownPos = { ...gridPos };
+            return;
+        }
+
+        // --- FASE 3: MEMPERBARUI MARQUEE BOX SAAT MOUSE DITARIK ---
+        if (isMouseDown && this.mouseDownPos) {
+            const x = Math.min(this.mouseDownPos.x, gridPos.x);
+            const y = Math.min(this.mouseDownPos.y, gridPos.y);
+            const w = Math.abs(gridPos.x - this.mouseDownPos.x) + 1;
+            const h = Math.abs(gridPos.y - this.mouseDownPos.y) + 1;
+
+            editors.marqueeSelection = { x, y, w, h };
+            return;
+        }
+
+        // --- FASE 4: SAAT KLIK DILEPAS (MOUSE UP) -> TANGKAP TILE MENJADI DRAG STATE ---
         if (!isMouseDown && this.mouseDownPos) {
             if (editors.marqueeSelection) {
                 const ms = editors.marqueeSelection;
@@ -105,12 +120,13 @@ export class TilemapSelection {
 
                 const capturedData = [];
                 let hasContent = false;
+
                 for (let dy = 0; dy < ms.h; dy++) {
                     for (let dx = 0; dx < ms.w; dx++) {
-                        const idx = (ms.y + dy) * tm.width + (ms.x + dx);
-                        const id = tm.data ? tm.data[idx] : 0;
-                        capturedData.push(id);
-                        if (id !== 0) hasContent = true;
+                        const key = `${ms.x + dx},${ms.y + dy}`;
+                        const tileId = tm.data ? (tm.data[key] || 0) : 0;
+                        capturedData.push(tileId);
+                        if (tileId > 0) hasContent = true;
                     }
                 }
 
@@ -121,16 +137,15 @@ export class TilemapSelection {
                         h: ms.h,
                         sourceX: ms.x,
                         sourceY: ms.y,
-                        offX: offX,
-                        offY: offY
+                        offX: Math.max(0, Math.min(ms.w - 1, offX)),
+                        offY: Math.max(0, Math.min(ms.h - 1, offY))
                     };
-                    this.isWaitingForDrop = true;
                 }
                 editors.marqueeSelection = null;
-            } else if (!editors.dragState) {
-                const idx = this.mouseDownPos.y * tm.width + this.mouseDownPos.x;
-                const tileId = tm.data ? tm.data[idx] : 0;
-                if (tileId !== 0) {
+            } else {
+                const key = `${this.mouseDownPos.x},${this.mouseDownPos.y}`;
+                const tileId = tm.data ? (tm.data[key] || 0) : 0;
+                if (tileId > 0) {
                     editors.dragState = {
                         data: [tileId],
                         w: 1,
@@ -140,27 +155,10 @@ export class TilemapSelection {
                         offX: 0,
                         offY: 0
                     };
-                    this.isWaitingForDrop = true;
                 }
-            } else if (editors.dragState && !this.isWaitingForDrop) {
-                const ds = editors.dragState;
-                this.commitMove(entity, tm, ds, gridPos.x, gridPos.y);
-                this.reset(editors);
-                this.lockSelection = true;
             }
 
             this.mouseDownPos = null;
-            return;
-        }
-
-        if (isMouseDown && editors.dragState && this.isWaitingForDrop && !this.mouseDownPos) {
-            const ds = editors.dragState;
-            const targetX = gridPos.x - (ds.offX || 0);
-            const targetY = gridPos.y - (ds.offY || 0);
-
-            this.commitMove(entity, tm, ds, targetX, targetY);
-            this.reset(editors);
-            this.lockSelection = true;
         }
     }
 
@@ -168,26 +166,29 @@ export class TilemapSelection {
         if (!dragState || !tm.data) return;
         if (dragState.sourceX === targetX && dragState.sourceY === targetY) return;
 
-        const newData = [...tm.data];
+        const newData = { ...tm.data };
 
+        // 1. Hapus tile dari lokasi awal
         for (let dy = 0; dy < dragState.h; dy++) {
             for (let dx = 0; dx < dragState.w; dx++) {
-                const srcIdx = (dragState.sourceY + dy) * tm.width + (dragState.sourceX + dx);
-                newData[srcIdx] = 0;
+                const srcKey = `${dragState.sourceX + dx},${dragState.sourceY + dy}`;
+                delete newData[srcKey];
             }
         }
 
+        // 2. Tulis tile ke lokasi tujuan baru
         for (let dy = 0; dy < dragState.h; dy++) {
             for (let dx = 0; dx < dragState.w; dx++) {
                 const tx = targetX + dx;
                 const ty = targetY + dy;
-                if (tx >= 0 && tx < tm.width && ty >= 0 && ty < tm.height) {
-                    const targetIdx = ty * tm.width + tx;
-                    const tileId = dragState.data[dy * dragState.w + dx];
-                    if (tileId !== 0) newData[targetIdx] = tileId;
+                const tileId = dragState.data[dy * dragState.w + dx];
+                const dstKey = `${tx},${ty}`;
+                if (tileId !== 0) {
+                    newData[dstKey] = tileId;
                 }
             }
         }
+
         this.operations.applyDataChange(entity, tm, newData);
     }
 }

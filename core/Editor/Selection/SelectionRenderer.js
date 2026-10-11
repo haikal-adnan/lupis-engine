@@ -1,4 +1,5 @@
 import { calculateQuadVertices } from "../../Util/calculateQuadVertices.js";
+import { TilemapMath } from "../../Editor/Tilemap/TilemapMath.js";
 
 export class SelectionRenderer {
     constructor(game, transformEngine) {
@@ -12,15 +13,10 @@ export class SelectionRenderer {
         const t = comps.UITransform || comps.Transform;
 
         if (comps.Tilemap) {
-            const tm = comps.Tilemap;
-            const cols = Number(tm.width) || 10;
-            const rows = Number(tm.height) || 10;
-            const tileW = Number(tm.tileWidth) || 32;
-            const tileH = Number(tm.tileHeight) || 32;
-
+            const bounds = TilemapMath.getBounds(comps.Tilemap);
             return {
-                width: t?.width || (cols * tileW),
-                height: t?.height || (rows * tileH)
+                width: bounds.width,
+                height: bounds.height
             };
         }
 
@@ -100,15 +96,25 @@ export class SelectionRenderer {
 
         const globalT = this.engine.getGlobalTransform(e);
         const absPos = this._calculateAbsolutePosition(e);
-        const dims = this._getEntityDimensions(e);
+        const rRad = (globalT.rotation || 0) * (Math.PI / 180);
 
-        const r = (globalT.rotation || 0) * (Math.PI / 180);
-        const sx = globalT.scaleX ?? 1;
-        const sy = globalT.scaleY ?? 1;
-        const px = globalT.pivotX ?? 0.5;
-        const py = globalT.pivotY ?? 0.5;
-
-        const v = calculateQuadVertices(absPos.x, absPos.y, dims.width, dims.height, r, sx, sy, px, py);
+        let v;
+        if (e.components?.Tilemap) {
+            v = TilemapMath.getTilemapQuadVertices(
+                absPos, 
+                e.components.Tilemap, 
+                rRad, 
+                globalT.scaleX ?? 1, 
+                globalT.scaleY ?? 1
+            );
+        } else {
+            const dims = this._getEntityDimensions(e);
+            const sx = globalT.scaleX ?? 1;
+            const sy = globalT.scaleY ?? 1;
+            const px = globalT.pivotX ?? 0.5;
+            const py = globalT.pivotY ?? 0.5;
+            v = calculateQuadVertices(absPos.x, absPos.y, dims.width, dims.height, rRad, sx, sy, px, py);
+        }
 
         shape.drawLine(v.tl.x, v.tl.y, v.tr.x, v.tr.y, color, thickness, proj);
         shape.drawLine(v.tr.x, v.tr.y, v.br.x, v.br.y, color, thickness, proj);

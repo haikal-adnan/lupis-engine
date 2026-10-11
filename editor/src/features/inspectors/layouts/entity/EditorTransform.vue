@@ -112,7 +112,7 @@
               :step="1" 
               :precision="2" 
               class="font-mono" 
-              :disabled="locked" 
+              :disabled="locked || isSizeLockedByText || isSizeLockedByTilemap" 
               data-testid="transform-size-w"
             />
             <BaseNumber 
@@ -122,7 +122,7 @@
               :step="1" 
               :precision="2" 
               class="font-mono" 
-              :disabled="locked" 
+              :disabled="locked || isSizeLockedByText || isSizeLockedByTilemap" 
               data-testid="transform-size-h"
             />
           </div>
@@ -131,7 +131,7 @@
             :active="isRatioLocked" 
             @click="isRatioLocked = !isRatioLocked"
             :tooltip="isRatioLocked ? 'Unlock Ratio' : 'Lock Ratio'"
-            :disabled="locked"
+            :disabled="locked || isSizeLockedByText || isSizeLockedByTilemap"
             data-testid="transform-ratio-lock-toggle"
             :data-locked="isRatioLocked"
           >

@@ -164,25 +164,19 @@ export const componentSchema = {
     };
   },
 
-  Tilemap: (inputData = {}) => {
-    const mapW = Number(inputData.width || 40);
-    const mapH = Number(inputData.height || 30);
-
-    return {
-      tileWidth: Number(inputData.tileWidth || 16),
-      tileHeight: Number(inputData.tileHeight || 16),
-      width: mapW,
-      height: mapH,
-      assetId: inputData.assetId || null,
-      opacity: Number(inputData.opacity ?? 1),
-      isSolid: Boolean(inputData.isSolid ?? false),
-      autoFit: Boolean(inputData.autoFit ?? true),
-      filterMode: inputData.filterMode || "pixelated",
-      data: inputData.data || new Array(mapW * mapH).fill(0),
-      ...inputData,
-      overridden: Boolean(inputData.overridden ?? false)
-    };
-  },
+  Tilemap: (inputData = {}) => ({
+    width: Number(inputData.width ?? inputData.tileWidth ?? 16),
+    height: Number(inputData.height ?? inputData.tileHeight ?? 16),
+    assetId: inputData.assetId || null,
+    opacity: Number(inputData.opacity ?? 1),
+    isSolid: Boolean(inputData.isSolid ?? false),
+    filterMode: inputData.filterMode || "pixelated",
+    data: (inputData.data && typeof inputData.data === 'object' && !Array.isArray(inputData.data))
+      ? inputData.data 
+      : {},
+    ...inputData,
+    overridden: Boolean(inputData.overridden ?? false)
+  }),
 
   ScriptController: (inputData = {}) => ({
     data: Array.isArray(inputData.data) ? inputData.data : [],

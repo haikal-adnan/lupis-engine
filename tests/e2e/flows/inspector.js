@@ -195,14 +195,9 @@ export class InspectorCrudObject {
   // =========================================================================
   // 10. EDITOR TILEMAP
   // =========================================================================
-  async configureTilemap({ opacity = 100, autoFit = false, sampleImageName = null, openEditor = false } = {}) {
+  async configureTilemap({ opacity = 100, sampleImageName = null, openEditor = false } = {}) {
     await this.inspector.ensureTilemapComponent();
     if (opacity !== undefined) await this.inspector.setTilemapOpacity(opacity);
-
-    if (autoFit) {
-      const autoFitBtn = this.page.getByTestId('tilemap-autofit-btn');
-      await autoFitBtn.click();
-    }
 
     if (sampleImageName) {
       const assetCard = await this.assetCrud.uploadAsset(sampleImageName);
@@ -278,7 +273,7 @@ export class InspectorCrudObject {
     fadeIn,
     fadeOut,
     refDistance,
-    maxDistance,
+ MAXDistance,
     audioFileName = null,
   } = {}) {
     await this.inspector.ensureAudioComponent();
@@ -302,7 +297,7 @@ export class InspectorCrudObject {
     if (fadeIn !== undefined) await this.inspector.setAudioFadeIn(fadeIn);
     if (fadeOut !== undefined) await this.inspector.setAudioFadeOut(fadeOut);
     if (refDistance !== undefined && spatial && !persist) await this.inspector.setAudioRefDistance(refDistance);
-    if (maxDistance !== undefined && spatial && !persist) await this.inspector.setAudioMaxDistance(maxDistance);
+    if (MAXDistance !== undefined && spatial && !persist) await this.inspector.setAudioMaxDistance(MAXDistance);
 
     if (audioFileName) {
       const audioCard = await this.assetCrud.uploadAsset(audioFileName);

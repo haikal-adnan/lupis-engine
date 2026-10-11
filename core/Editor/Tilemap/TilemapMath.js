@@ -19,41 +19,113 @@ export class TilemapMath {
         const localX = (dx * cos) - (dy * sin);
         const localY = (dx * sin) + (dy * cos);
 
-        const cols = Number(tm.width) || 10;
-        const rows = Number(tm.height) || 10;
-        const baseTileW = Number(tm.tileWidth) || 32;
-        const baseTileH = Number(tm.tileHeight) || 32;
+        const scaleX = (globalT.flipX ? -1 : 1) * (globalT.scaleX ?? 1);
+        const scaleY = (globalT.flipY ? -1 : 1) * (globalT.scaleY ?? 1);
 
-        const scaleX = globalT.scaleX ?? 1;
-        const scaleY = globalT.scaleY ?? 1;
+        const tileW = (Number(tm.width) || 32) * scaleX;
+        const tileH = (Number(tm.height) || 32) * scaleY;
 
-        const scaledTileW = baseTileW * scaleX;
-        const scaledTileH = baseTileH * scaleY;
+        if (tileW === 0 || tileH === 0) return null;
 
-        if (scaledTileW === 0 || scaledTileH === 0) return null;
+        const gx = Math.floor(localX / tileW);
+        const gy = Math.floor(localY / tileH);
 
-        const totalW = cols * scaledTileW;
-        const totalH = rows * scaledTileH;
+        return { x: gx, y: gy };
+    }
 
-        const mapLocalX = localX + (totalW * (globalT.pivotX ?? 0));
-        const mapLocalY = localY + (totalH * (globalT.pivotY ?? 0));
+    /**
+     * Hitung Bounding Box aktual berdasarkan sebaran tile terisi.
+     */
+    static getBounds(tm) {
+        const tileW = Number(tm.width) || 32;
+        const tileH = Number(tm.height) || 32;
 
-        const gx = Math.floor(mapLocalX / scaledTileW);
-        const gy = Math.floor(mapLocalY / scaledTileH);
+        const keys = Object.keys(tm?.data || {});
+        const activeKeys = [];
 
-        return (gx < 0 || gy < 0 || gx >= cols || gy >= rows) ? null : { x: gx, y: gy };
+        for (const key of keys) {
+            const id = tm.data[key];
+            if (id && id > 0) activeKeys.push(key);
+        }
+
+        if (activeKeys.length === 0) {
+            return {
+                minX: 0, maxX: 0, minY: 0, maxY: 0,
+                offsetX: 0, offsetY: 0,
+                width: tileW,
+                height: tileH,
+                hasTiles: false
+            };
+        }
+
+        let minX = Infinity, maxX = -Infinity;
+        let minY = Infinity, maxY = -Infinity;
+
+        for (const key of activeKeys) {
+            const [xStr, yStr] = key.split(',');
+            const x = Number(xStr);
+            const y = Number(yStr);
+
+            if (x < minX) minX = x;
+            if (x > maxX) maxX = x;
+            if (y < minY) minY = y;
+            if (y > maxY) maxY = y;
+        }
+
+        const cols = maxX - minX + 1;
+        const rows = maxY - minY + 1;
+
+        return {
+            minX, maxX, minY, maxY,
+            offsetX: minX * tileW,
+            offsetY: minY * tileH,
+            width: cols * tileW,
+            height: rows * tileH,
+            hasTiles: true
+        };
+    }
+
+    static getTilemapQuadVertices(absPos, tm, rotationRad, scaleX, scaleY) {
+        const bounds = this.getBounds(tm);
+        const tileW = Number(tm?.width) || 32;
+        const tileH = Number(tm?.height) || 32;
+
+        const localMinX = bounds.minX * tileW * scaleX;
+        const localMinY = bounds.minY * tileH * scaleY;
+        const localW = bounds.width * scaleX;
+        const localH = bounds.height * scaleY;
+
+        const localCorners = [
+            { x: localMinX,          y: localMinY },          
+            { x: localMinX + localW, y: localMinY },          
+            { x: localMinX + localW, y: localMinY + localH }, 
+            { x: localMinX,          y: localMinY + localH }  
+        ];
+
+        const cos = Math.cos(rotationRad);
+        const sin = Math.sin(rotationRad);
+
+        const worldCorners = localCorners.map(pt => ({
+            x: absPos.x + (pt.x * cos - pt.y * sin),
+            y: absPos.y + (pt.x * sin + pt.y * cos)
+        }));
+
+        return {
+            tl: worldCorners[0],
+            tr: worldCorners[1],
+            br: worldCorners[2],
+            bl: worldCorners[3]
+        };
     }
 
     static findEntity(world, activeId) {
+        if (!activeId) return null;
         const allLayers = [...(world?.layersWorld || []), ...(world?.layersUI || [])];
-
         for (const layer of allLayers) {
             if (!layer?.entities) continue;
-
             for (const e of layer.entities) {
-                if (e.id === activeId) return e;
-
-                if (e.children && e.children.length > 0) {
+                if (String(e.id) === String(activeId)) return e;
+                if (e.children?.length) {
                     const found = this._findInChildren(e, activeId);
                     if (found) return found;
                 }
@@ -64,9 +136,8 @@ export class TilemapMath {
 
     static _findInChildren(entity, id) {
         for (const child of entity.children) {
-            if (child.id === id) return child;
-
-            if (child.children && child.children.length > 0) {
+            if (String(child.id) === String(id)) return child;
+            if (child.children?.length) {
                 const found = this._findInChildren(child, id);
                 if (found) return found;
             }

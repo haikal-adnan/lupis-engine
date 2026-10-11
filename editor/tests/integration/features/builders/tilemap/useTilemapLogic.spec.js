@@ -19,8 +19,7 @@ function createMockTilemapEntity({
   assetName = 'world_tileset.png',
   tileWidth = 16,
   tileHeight = 16,
-  mapWidth = 10,
-  mapHeight = 10,
+  data = {},
   ...overrides
 } = {}) {
   const mockAsset = {
@@ -34,7 +33,7 @@ function createMockTilemapEntity({
     }
   }
 
-  const initialData = overrides.data || new Array(mapWidth * mapHeight).fill(0)
+  const initialData = overrides.data || data
 
   const entity = createMockEntity({
     id: entityId,
@@ -44,13 +43,10 @@ function createMockTilemapEntity({
     attachComponents: {
       Tilemap: {
         assetId,
-        tileWidth,
-        tileHeight,
-        width: mapWidth,
-        height: mapHeight,
+        width: tileWidth,
+        height: tileHeight,
         opacity: 1,
         isSolid: false,
-        autoFit: true,
         filterMode: 'pixelated',
         data: initialData,
         ...(overrides.tilemapComponent || {})
@@ -63,10 +59,8 @@ function createMockTilemapEntity({
     entity,
     mockAsset,
     defaultTilemapConfig: {
-      tileWidth,
-      tileHeight,
-      mapWidth,
-      mapHeight,
+      width: tileWidth,
+      height: tileHeight,
       data: initialData
     }
   }
@@ -121,10 +115,8 @@ describe('useTilemapLogic Integration', () => {
       // Assert
       expect(logic.selectedEntity.value?.id).toBe(mockTilemapData.entity.id)
       expect(logic.hasTilemap.value).toBe(true)
-      expect(logic.tileWidth.value).toBe(16)
-      expect(logic.tileHeight.value).toBe(16)
-      expect(logic.width.value).toBe(10)
-      expect(logic.height.value).toBe(10)
+      expect(logic.width.value).toBe(16)
+      expect(logic.height.value).toBe(16)
     })
 
     it('opens tilemap editor tab in workspace store', () => {
@@ -147,16 +139,16 @@ describe('useTilemapLogic Integration', () => {
       const entityId = mockTilemapData.entity.id
 
       // Act
-      logic.tileWidth.value = 32
+      logic.width.value = 32
 
       // Assert
       const entityInStore = sceneStore.activeScene.entities.find(e => e.id === entityId)
-      expect(entityInStore.components.Tilemap.tileWidth).toBe(32)
+      expect(entityInStore.components.Tilemap.width).toBe(32)
 
       expect(engineBridge.updateComponentProp).toHaveBeenCalledWith({
         entityId,
         componentName: 'Tilemap',
-        path: 'tileWidth',
+        path: 'width',
         value: 32
       })
 
@@ -164,7 +156,7 @@ describe('useTilemapLogic Integration', () => {
       logic.undo()
 
       // Assert
-      expect(entityInStore.components.Tilemap.tileWidth).toBe(16)
+      expect(entityInStore.components.Tilemap.width).toBe(16)
     })
 
     it('fetches texture URL when assetId changes', async () => {
@@ -189,7 +181,7 @@ describe('useTilemapLogic Integration', () => {
       // Arrange
       const logic = useTilemapLogic()
       const entityId = mockTilemapData.entity.id
-      const newMapData = new Array(100).fill(1)
+      const newMapData = { '0,0': 1, '1,0': 2 }
 
       // Act
       logic.applyTileDataMutation(newMapData)
@@ -287,8 +279,8 @@ describe('useTilemapLogic Integration', () => {
       sceneStore.selectedEntityIds = []
 
       // Act
-      logic.tileWidth.value = 64
-      logic.applyTileDataMutation([1, 2, 3])
+      logic.width.value = 64
+      logic.applyTileDataMutation({ '0,0': 1 })
 
       // Assert
       expect(logic.selectedEntity.value).toBeNull()

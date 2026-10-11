@@ -167,15 +167,9 @@ export const useEntityActions = {
       components.Transform = { ...rawTransform, width: 107, height: 23 };
     } 
     else if (type === 'tilemap') {
-      const defaultW = 40; 
-      const defaultH = 30;
-      components.Tilemap = { 
-         tileWidth: 16, tileHeight: 16, width: defaultW, height: defaultH,
-         tilesetId: null, opacity: 1, isSolid: false,
-         autoFit: true,
-         data: new Array(defaultW * defaultH).fill(0)
-      };
-      components.Transform = { ...rawTransform, width: 640, height: 480 };
+      components.Tilemap = componentSchema.create('Tilemap');
+      // Tidak mengeset width/height kaku pada Transform agar bounds dinamis menyerupai Shape
+      components.Transform = { ...rawTransform };
     }
     else if (type === 'audio') {
       components.Transform = { ...rawTransform, width: 50, height: 50 };

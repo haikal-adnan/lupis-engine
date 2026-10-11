@@ -1,5 +1,6 @@
 import Config from "../../Core/Config.js";
 import RenderUtils from "./RenderUtils.js";
+import { TilemapMath } from "../../Editor/Tilemap/TilemapMath.js";
 
 export default class WorldRenderer { 
     constructor(image, text, shape, game, tilemapRenderer) {
@@ -97,15 +98,11 @@ export default class WorldRenderer {
 
             if (comps.Tilemap && this.tilemapRenderer) {
                 const tm = comps.Tilemap;
+                const bounds = TilemapMath.getBounds(tm);
                 
-                if (tm.autoFit) {
-                    const targetW = (tm.width || 0) * (tm.tileWidth || 0);
-                    const targetH = (tm.height || 0) * (tm.tileHeight || 0);
-                    
-                    if (rawT.width !== targetW || rawT.height !== targetH) {
-                        rawT.width = targetW;
-                        rawT.height = targetH;
-                    }
+                if (rawT.width !== bounds.width || rawT.height !== bounds.height) {
+                    rawT.width = bounds.width;
+                    rawT.height = bounds.height;
                 }
 
                 RenderUtils.executeRenderQueue(this.renderQueue, this.renderer, proj, world);

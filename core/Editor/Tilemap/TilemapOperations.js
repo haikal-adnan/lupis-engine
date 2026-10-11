@@ -1,82 +1,175 @@
 import { bus } from '../../Util/EventBus.js';
+import { TilemapMath } from './TilemapMath.js';
 
 export class TilemapOperations {
     constructor() {
         this.blockBucket = false;
     }
 
+    /**
+     * Melukis atau Menghapus Tile pada koordinat grid tertentu
+     */
     paint(world, entity, tm, gridX, gridY, assetId, selection, isEraser = false) {
-        if (!selection || !tm.data) return;
-        const cols = tm.width;
-        const asset = world?.assets?.textures?.[assetId];
-        if (!asset) return;
+        if (!tm || !tm.data) return;
 
-        const tileW = Number(tm.tileWidth) || 32;
-        const tilesetCols = Math.floor(asset.width / tileW);
-        const newData = [...tm.data];
+        const newData = { ...tm.data };
         let isChanged = false;
 
-        for (let dy = 0; dy < selection.h; dy++) {
-            for (let dx = 0; dx < selection.w; dx++) {
-                const tx = gridX + dx;
-                const ty = gridY + dy;
-                if (tx >= 0 && tx < cols && ty >= 0 && ty < tm.height) {
-                    const idx = ty * cols + tx;
-                    const tileId = isEraser ? 0 : (selection.y + dy) * tilesetCols + (selection.x + dx) + 1;
-                    if (newData[idx] !== tileId) {
-                        newData[idx] = tileId;
+        // --- MODE ERASER / HAPUS ---
+        if (isEraser) {
+            const eraserW = selection?.w || 1;
+            const eraserH = selection?.h || 1;
+
+            for (let dy = 0; dy < eraserH; dy++) {
+                for (let dx = 0; dx < eraserW; dx++) {
+                    const tx = Math.floor(gridX + dx);
+                    const ty = Math.floor(gridY + dy);
+                    const key = `${tx},${ty}`;
+
+                    if (newData[key] !== undefined) {
+                        delete newData[key];
                         isChanged = true;
                     }
                 }
             }
+
+            if (isChanged) this.applyDataChange(entity, tm, newData);
+            return;
         }
+
+        // --- MODE BRUSH / PAINT ---
+        if (!selection) return;
+        const asset = world?.assets?.textures?.[assetId];
+        if (!asset) return;
+
+        const tileW = Number(tm.width) || 32;
+        const tilesetCols = Math.floor(asset.width / tileW);
+        if (tilesetCols <= 0) return;
+
+        for (let dy = 0; dy < selection.h; dy++) {
+            for (let dx = 0; dx < selection.w; dx++) {
+                const tx = Math.floor(gridX + dx);
+                const ty = Math.floor(gridY + dy);
+                const key = `${tx},${ty}`;
+                const tileId = (selection.y + dy) * tilesetCols + (selection.x + dx) + 1;
+
+                if (newData[key] !== tileId) {
+                    newData[key] = tileId;
+                    isChanged = true;
+                }
+            }
+        }
+
         if (isChanged) this.applyDataChange(entity, tm, newData);
     }
 
+    /**
+     * Menghapus seluruh tile dalam area blok persegi (Marquee / Area Selection)
+     */
+    deleteArea(entity, tm, startX, startY, width = 1, height = 1) {
+        if (!tm || !tm.data) return;
+
+        const newData = { ...tm.data };
+        let isChanged = false;
+
+        const minX = Math.floor(startX);
+        const minY = Math.floor(startY);
+        const maxX = minX + Math.floor(width);
+        const maxY = minY + Math.floor(height);
+
+        for (let y = minY; y < maxY; y++) {
+            for (let x = minX; x < maxX; x++) {
+                const key = `${x},${y}`;
+                if (newData[key] !== undefined) {
+                    delete newData[key];
+                    isChanged = true;
+                }
+            }
+        }
+
+        if (isChanged) this.applyDataChange(entity, tm, newData);
+    }
+
+    /**
+     * Strict Bounded Bucket Fill
+     */
     handleBucket(world, entity, tm, gridX, gridY, selection) {
         if (!selection || !tm.data) return;
-
         if (this.blockBucket) return;
+
+        const bounds = TilemapMath.getBounds(tm);
+
+        if (!bounds || !bounds.hasTiles) return;
+
+        if (gridX < bounds.minX || gridX > bounds.maxX || gridY < bounds.minY || gridY > bounds.maxY) {
+            return;
+        }
+
         this.blockBucket = true;
         setTimeout(() => this.blockBucket = false, 200);
 
-        const cols = tm.width;
-        const rows = tm.height;
-        const targetId = tm.data[gridY * cols + gridX];
+        const targetX = Math.floor(gridX);
+        const targetY = Math.floor(gridY);
+        const targetKey = `${targetX},${targetY}`;
+        const targetId = tm.data[targetKey] || 0;
+
         const asset = world?.assets?.textures?.[tm.assetId];
         if (!asset) return;
 
-        const tileW = Number(tm.tileWidth) || 32;
+        const tileW = Number(tm.width) || 32;
         const tilesetCols = Math.floor(asset.width / tileW);
+        if (tilesetCols <= 0) return;
         const replaceId = (selection.y * tilesetCols) + selection.x + 1;
         if (targetId === replaceId) return;
 
-        const newData = [...tm.data];
-        const stack = [{ x: gridX, y: gridY }];
-        while (stack.length) {
+        const newData = { ...tm.data };
+        const stack = [{ x: targetX, y: targetY }];
+        const visited = new Set();
+        const MAX_FILL = 20000;
+        let count = 0;
+
+        while (stack.length && count < MAX_FILL) {
             const p = stack.pop();
-            const idx = p.y * cols + p.x;
-            if (newData[idx] === targetId) {
-                newData[idx] = replaceId;
-                if (p.x > 0) stack.push({ x: p.x - 1, y: p.y });
-                if (p.x < cols - 1) stack.push({ x: p.x + 1, y: p.y });
-                if (p.y > 0) stack.push({ x: p.x, y: p.y - 1 });
-                if (p.y < rows - 1) stack.push({ x: p.x, y: p.y + 1 });
+            const key = `${p.x},${p.y}`;
+
+            if (visited.has(key)) continue;
+            visited.add(key);
+
+            if (p.x < bounds.minX || p.x > bounds.maxX || p.y < bounds.minY || p.y > bounds.maxY) {
+                continue;
+            }
+
+            const currVal = newData[key] || 0;
+            if (currVal === targetId) {
+                if (replaceId === 0) {
+                    delete newData[key];
+                } else {
+                    newData[key] = replaceId;
+                }
+                count++;
+
+                stack.push({ x: p.x - 1, y: p.y });
+                stack.push({ x: p.x + 1, y: p.y });
+                stack.push({ x: p.x, y: p.y - 1 });
+                stack.push({ x: p.x, y: p.y + 1 });
             }
         }
+
         this.applyDataChange(entity, tm, newData);
     }
 
     handleEyedropper(world, tm, gridX, gridY) {
         if (!tm.data) return;
-        const tileId = tm.data[gridY * tm.width + gridX];
+        const key = `${Math.floor(gridX)},${Math.floor(gridY)}`;
+        const tileId = tm.data[key] || 0;
         if (tileId === 0) return;
 
         const asset = world?.assets?.textures?.[tm.assetId];
         if (!asset) return;
 
-        const tileW = Number(tm.tileWidth) || 32;
+        const tileW = Number(tm.width) || 32;
         const tilesetCols = Math.floor(asset.width / tileW);
+        if (tilesetCols <= 0) return;
         const id = tileId - 1;
         bus.emit("editor:tool:pickup", { x: id % tilesetCols, y: Math.floor(id / tilesetCols), w: 1, h: 1 });
     }

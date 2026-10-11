@@ -1,4 +1,5 @@
 import { calculateQuadVertices } from "../../Util/calculateQuadVertices.js";
+import { TilemapMath } from "../../Editor/Tilemap/TilemapMath.js";
 
 export class SelectionHit {
     constructor(game, transformEngine) {
@@ -16,15 +17,10 @@ export class SelectionHit {
         const t = comps.UITransform || comps.Transform;
 
         if (comps.Tilemap) {
-            const tm = comps.Tilemap;
-            const cols = Number(tm.width) || 10;
-            const rows = Number(tm.height) || 10;
-            const tileW = Number(tm.tileWidth) || 32;
-            const tileH = Number(tm.tileHeight) || 32;
-
+            const bounds = TilemapMath.getBounds(comps.Tilemap);
             return {
-                width: t?.width || (cols * tileW),
-                height: t?.height || (rows * tileH)
+                width: bounds.width,
+                height: bounds.height
             };
         }
 
@@ -66,8 +62,10 @@ export class SelectionHit {
         const r = (globalT.rotation || 0) * (Math.PI / 180);
         const sx = globalT.scaleX ?? 1;
         const sy = globalT.scaleY ?? 1;
-        const px = globalT.pivotX ?? 0.5;
-        const py = globalT.pivotY ?? 0.5;
+
+        const isTilemap = Boolean(e?.components?.Tilemap);
+        const px = globalT.pivotX ?? (isTilemap ? 0 : 0.5);
+        const py = globalT.pivotY ?? (isTilemap ? 0 : 0.5);
 
         const dx = wx - absPos.x;
         const dy = wy - absPos.y;
@@ -80,10 +78,20 @@ export class SelectionHit {
         const unscaledMouseX = sx !== 0 ? localX / sx : 0;
         const unscaledMouseY = sy !== 0 ? localY / sy : 0;
 
-        const left = -px * dims.width;
-        const right = dims.width - (px * dims.width);
-        const top = -py * dims.height;
-        const bottom = dims.height - (py * dims.height);
+        let left = -px * dims.width;
+        let right = dims.width - (px * dims.width);
+        let top = -py * dims.height;
+        let bottom = dims.height - (py * dims.height);
+
+        if (isTilemap) {
+            const bounds = TilemapMath.getBounds(e.components.Tilemap);
+            const tileW = Number(e.components.Tilemap.width) || 32;
+            const tileH = Number(e.components.Tilemap.height) || 32;
+            left = bounds.minX * tileW;
+            right = (bounds.maxX + 1) * tileW;
+            top = bounds.minY * tileH;
+            bottom = (bounds.maxY + 1) * tileH;
+        }
 
         const buffer = 5;
 
@@ -165,15 +173,25 @@ export class SelectionHit {
 
                 const globalT = this.engine.getGlobalTransform(e);
                 const absPos = this._calculateAbsolutePosition(e, rootBounds);
-                const dims = this._getEntityDimensions(e);
-
                 const r = (globalT.rotation || 0) * (Math.PI / 180);
-                const sx = globalT.scaleX ?? 1;
-                const sy = globalT.scaleY ?? 1;
-                const px = globalT.pivotX ?? 0.5;
-                const py = globalT.pivotY ?? 0.5;
 
-                const v = calculateQuadVertices(absPos.x, absPos.y, dims.width, dims.height, r, sx, sy, px, py);
+                let v;
+                if (e.components?.Tilemap) {
+                    v = TilemapMath.getTilemapQuadVertices(
+                        absPos, 
+                        e.components.Tilemap, 
+                        r, 
+                        globalT.scaleX ?? 1, 
+                        globalT.scaleY ?? 1
+                    );
+                } else {
+                    const dims = this._getEntityDimensions(e);
+                    const sx = globalT.scaleX ?? 1;
+                    const sy = globalT.scaleY ?? 1;
+                    const px = globalT.pivotX ?? 0.5;
+                    const py = globalT.pivotY ?? 0.5;
+                    v = calculateQuadVertices(absPos.x, absPos.y, dims.width, dims.height, r, sx, sy, px, py);
+                }
 
                 const xs = [v.tl.x, v.tr.x, v.br.x, v.bl.x];
                 const ys = [v.tl.y, v.tr.y, v.br.y, v.bl.y];

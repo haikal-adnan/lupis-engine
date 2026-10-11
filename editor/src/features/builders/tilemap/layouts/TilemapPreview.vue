@@ -35,55 +35,31 @@
       </div>
     </div>
 
-    <!-- Tile Size (Px) - Disabled saat ada tile terisi -->
+    <!-- Tile Size (Px) -->
     <PropertyRow label="Tile Size (Px)">
         <div class="grid grid-cols-2 gap-2">
           <BaseNumber 
-            v-model="tileWidth" 
+            v-model="width" 
             prefix="W" 
             :min="1" 
             :step="1" 
             class="font-mono" 
             :disabled="hasPaintedTiles"
-            :title="hasPaintedTiles ? 'Reset tilemap terlebih dahulu untuk mengubah ukuran tile' : 'Tile Width'" 
+            :title="hasPaintedTiles ? 'Clear tilemap terlebih dahulu untuk mengubah ukuran tile' : 'Tile Width'" 
           />
           <BaseNumber 
-            v-model="tileHeight" 
+            v-model="height" 
             prefix="H" 
             :min="1" 
             :step="1" 
             class="font-mono" 
             :disabled="hasPaintedTiles"
-            :title="hasPaintedTiles ? 'Reset tilemap terlebih dahulu untuk mengubah ukuran tile' : 'Tile Height'" 
+            :title="hasPaintedTiles ? 'Clear tilemap terlebih dahulu untuk mengubah ukuran tile' : 'Tile Height'" 
           />
         </div>
     </PropertyRow>
 
-    <!-- Map Size (Grid) - Disabled saat ada tile terisi -->
-    <PropertyRow label="Map Size (Grid)">
-        <div class="grid grid-cols-2 gap-2">
-          <BaseNumber 
-            v-model="width" 
-            prefix="Col" 
-            :min="1" 
-            :step="1" 
-            class="font-mono" 
-            :disabled="hasPaintedTiles"
-            :title="hasPaintedTiles ? 'Reset tilemap terlebih dahulu untuk mengubah ukuran grid' : 'Total Columns'" 
-          />
-          <BaseNumber 
-            v-model="height" 
-            prefix="Row" 
-            :min="1" 
-            :step="1" 
-            class="font-mono" 
-            :disabled="hasPaintedTiles"
-            :title="hasPaintedTiles ? 'Reset tilemap terlebih dahulu untuk mengubah ukuran grid' : 'Total Rows'" 
-          />
-        </div>
-    </PropertyRow>
-
-    <!-- BaseButton Reset Tilemap -->
+    <!-- Clear Tilemap Data -->
     <div class="pt-2 border-t border-border/40 mt-3">
       <BaseButton 
         variant="danger" 
@@ -93,7 +69,7 @@
         @click="handleResetTilemap"
       >
         <RotateCcw class="w-3.5 h-3.5 mr-1.5" />
-        Reset Tilemap Data
+        Clear Tilemap Data
       </BaseButton>
     </div>
 
@@ -112,8 +88,6 @@ const {
   selectedEntity,
   currentTextureUrl, 
   assetId, 
-  tileWidth, 
-  tileHeight, 
   width, 
   height, 
   openAssetSelector,
@@ -124,31 +98,20 @@ const { confirm } = useConfirm();
 
 const hasPaintedTiles = computed(() => {
   const data = selectedEntity.value?.components?.Tilemap?.data;
-  if (!data) return false;
-
-  if (Array.isArray(data)) {
-    return data.some(tile => tile !== 0 && tile !== null && tile !== -1);
-  }
-
-  if (typeof data === 'object') {
-    return Object.values(data).some(tile => tile !== 0 && tile !== null && tile !== -1);
-  }
-
-  return false;
+  if (!data || typeof data !== 'object') return false;
+  return Object.keys(data).length > 0;
 });
 
 const handleResetTilemap = async () => {
   const isConfirmed = await confirm({
-    title: 'Reset Tilemap',
-    message: 'Apakah kamu yakin ingin menghapus semua tile dari tilemap ini? Aksi ini dapat di-undo.',
+    title: 'Clear Tilemap',
+    message: 'Apakah kamu yakin ingin menghapus semua tile dari tilemap ini?',
     type: 'danger',
-    confirmText: 'Reset'
+    confirmText: 'Clear'
   });
 
   if (isConfirmed) {
-    const totalTiles = (width.value || 0) * (height.value || 0);
-    const emptyData = new Array(totalTiles).fill(0);
-    applyTileDataMutation(emptyData);
+    applyTileDataMutation({});
   }
 };
 </script>

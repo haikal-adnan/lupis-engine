@@ -33,11 +33,6 @@ async function installBusSpy(page) {
 
 /**
  * Tab workspace yang sedang aktif.
- *
- * PERBAIKAN: sebelumnya `[aria-selected="true"]` dipakai polos. Sekarang baris
- * hierarchy-node juga ber-aria-selected="true" saat dipilih, jadi locator lama
- * selalu cocok dengan node yang baru diklik dan assertion-nya lolos tanpa
- * benar-benar memverifikasi tab. Node hierarchy dikecualikan di sini.
  */
 function activeWorkspaceTab(page, entityId) {
   return page
@@ -52,7 +47,6 @@ async function createPrefabFromEntity(page, hierarchy, popup, entityNode, prefab
   await expect(entityNode).toBeVisible();
   const nodeId = await entityNode.getAttribute('data-node-id');
 
-  // Pastikan node ter-select dan aria-selected aktif sebelum klik kanan
   await entityNode.click();
   await expect(entityNode).toHaveAttribute('aria-selected', 'true');
 
@@ -269,7 +263,6 @@ test.describe('Property Inspector: Basic Components & Prefab E2E', () => {
     const { stableNode, nodeId } = await createPrefabFromEntity(page, hierarchy, popup, entityNode, prefabName);
     await stableNode.click();
 
-    // 1. Ubah nilai Physics Mass & flush fokus input aktif
     await inspector.setPhysicsMass(80);
     await page.evaluate(() => {
       if (document.activeElement && document.activeElement !== document.body) {
@@ -284,7 +277,6 @@ test.describe('Property Inspector: Basic Components & Prefab E2E', () => {
     const overrideBadge = objectSection.getByText('Override', { exact: true });
     await expect(overrideBadge).toBeVisible();
 
-    // Helper deterministik untuk membuka Object Section menu
     const openObjectMenu = async () => {
       await page.evaluate(() => {
         if (document.activeElement && document.activeElement !== document.body) {
@@ -298,10 +290,6 @@ test.describe('Property Inspector: Basic Components & Prefab E2E', () => {
         return menuContainer;
       }
 
-      // PERBAIKAN: testid trigger sekarang diturunkan dari testid section
-      // (`${base}-menu-trigger`), bukan lagi 'section-menu-trigger' statis.
-      // Base-nya = data-testid yang dipasang EditorObject pada PropertySection
-      // ('editor-object-section').
       const menuTrigger = objectSection.locator('[data-element="section-menu-trigger"]').first();
       await expect(menuTrigger).toBeVisible();
       await menuTrigger.click();
@@ -318,7 +306,6 @@ test.describe('Property Inspector: Basic Components & Prefab E2E', () => {
       await expect(menu).toBeHidden();
     };
 
-    // Verifikasi keberadaan seluruh item menu saat pertama kali dibuka
     const menu = await openObjectMenu();
     await expect(menu.getByTestId('menu-item-apply-to-master')).toBeVisible();
     await expect(menu.getByTestId('menu-item-revert-to-sync')).toBeVisible();
@@ -326,19 +313,15 @@ test.describe('Property Inspector: Basic Components & Prefab E2E', () => {
     await expect(menu.getByTestId('menu-item-copy-id')).toBeVisible();
     await expect(menu.getByTestId('menu-item-delete-entity')).toBeVisible();
 
-    // Revert to Sync
     await clickObjectMenuItem('menu-item-revert-to-sync');
     const massInput = page.getByTestId('physics-mass-input').locator('input').first();
     await expect(massInput).toHaveValue('1');
 
-    // Unpack Prefab
     await clickObjectMenuItem('menu-item-unpack-prefab');
     await expect(page.getByTestId('editor-object-section').getByText('Prefab')).toHaveCount(0);
 
-    // Copy ID
     await clickObjectMenuItem('menu-item-copy-id');
 
-    // Delete Entity
     await clickObjectMenuItem('menu-item-delete-entity');
     await popup.confirmAction('Delete Entity', { confirmText: 'Delete' });
 
@@ -595,7 +578,7 @@ test.describe('Property Inspector: Assets, Scripts & Tab Navigation Components E
   // =========================================================================
   // 15. TILEMAP COMPONENT & TAB NAVIGATION
   // =========================================================================
-  test('attaches sample image, tests tilemap properties, auto-fit, and open tilemap tab', async ({ page, hierarchy, popup, inspector, assetCrud }) => {
+  test('attaches sample image, tests tilemap properties, and open tilemap tab', async ({ page, hierarchy, popup, inspector, assetCrud }) => {
     const sampleImageName = 'sample_image.png';
 
     const worldLayer = hierarchy.nodeByName('World Layer');
@@ -617,10 +600,6 @@ test.describe('Property Inspector: Assets, Scripts & Tab Navigation Components E
     await inspector.setTilemapOpacity(75);
     const opacityInput = page.getByTestId('tilemap-opacity-input').locator('input').first();
     await expect(opacityInput).toHaveValue('75');
-
-    const autoFitBtn = page.getByTestId('tilemap-autofit-btn');
-    await autoFitBtn.click();
-    await expect(autoFitBtn).toHaveAttribute('data-active', 'false');
 
     await inspector.openTilemapEditor();
 

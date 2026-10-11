@@ -1,4 +1,5 @@
 import { calculateQuadVertices } from "../../Util/calculateQuadVertices.js";
+import { TilemapMath } from "../Tilemap/TilemapMath.js";
 
 export class TransformGeometry {
     constructor(game, world) {
@@ -19,15 +20,11 @@ export class TransformGeometry {
         const t = comps.UITransform || comps.Transform;
 
         if (comps.Tilemap) {
-            const tm = comps.Tilemap;
-            const cols = Number(tm.width) || 10;
-            const rows = Number(tm.height) || 10;
-            const tileW = Number(tm.tileWidth) || 32;
-            const tileH = Number(tm.tileHeight) || 32;
-
-            const width = t?.width || (cols * tileW);
-            const height = t?.height || (rows * tileH);
-            return { width, height };
+            const bounds = TilemapMath.getBounds(comps.Tilemap);
+            return {
+                width: bounds.width,
+                height: bounds.height
+            };
         }
 
         return {
@@ -53,7 +50,11 @@ export class TransformGeometry {
 
     getGlobalTransform(e) {
         const t = this._getTransform(e);
-        if (!t) return { x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1, pivotX: 0.5, pivotY: 0.5, width: 100, height: 100 };
+        const isTilemap = Boolean(e?.components?.Tilemap);
+        const defaultPivotX = isTilemap ? 0 : 0.5;
+        const defaultPivotY = isTilemap ? 0 : 0.5;
+
+        if (!t) return { x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1, pivotX: defaultPivotX, pivotY: defaultPivotY, width: 100, height: 100 };
 
         if (!e.parentId) {
             return {
@@ -62,8 +63,8 @@ export class TransformGeometry {
                 rotation: t.rotation || 0,
                 scaleX: t.scaleX ?? 1,
                 scaleY: t.scaleY ?? 1,
-                pivotX: t.pivotX ?? 0.5,
-                pivotY: t.pivotY ?? 0.5,
+                pivotX: t.pivotX ?? defaultPivotX,
+                pivotY: t.pivotY ?? defaultPivotY,
                 width: t.width || 0,
                 height: t.height || 0
             };
@@ -89,8 +90,8 @@ export class TransformGeometry {
             rotation: parentGlobal.rotation + (t.rotation || 0),
             scaleX: parentGlobal.scaleX * (t.scaleX ?? 1),
             scaleY: parentGlobal.scaleY * (t.scaleY ?? 1),
-            pivotX: t.pivotX ?? 0.5,
-            pivotY: t.pivotY ?? 0.5,
+            pivotX: t.pivotX ?? defaultPivotX,
+            pivotY: t.pivotY ?? defaultPivotY,
             width: t.width || 0,
             height: t.height || 0
         };
@@ -129,7 +130,7 @@ export class TransformGeometry {
 
         this.isSizeLocked = selectedList.some(e =>
             e?.components?.TextRenderer?.autoFit ||
-            e?.components?.Tilemap?.autoFit
+            e?.components?.Tilemap
         );
 
         if (selectedList.length === 1) {
@@ -139,16 +140,27 @@ export class TransformGeometry {
 
             const globalT = this.getGlobalTransform(e);
             const absPos = this.calculateAbsolutePosition(e);
-            const dims = this._getEntityDimensions(e);
             const rRad = (globalT.rotation || 0) * (Math.PI / 180);
 
-            const v = calculateQuadVertices(
-                absPos.x, absPos.y,
-                dims.width, dims.height,
-                rRad,
-                globalT.scaleX ?? 1, globalT.scaleY ?? 1,
-                globalT.pivotX ?? 0.5, globalT.pivotY ?? 0.5
-            );
+            let v;
+            if (e.components?.Tilemap) {
+                v = TilemapMath.getTilemapQuadVertices(
+                    absPos, 
+                    e.components.Tilemap, 
+                    rRad, 
+                    globalT.scaleX ?? 1, 
+                    globalT.scaleY ?? 1
+                );
+            } else {
+                const dims = this._getEntityDimensions(e);
+                v = calculateQuadVertices(
+                    absPos.x, absPos.y,
+                    dims.width, dims.height,
+                    rRad,
+                    globalT.scaleX ?? 1, globalT.scaleY ?? 1,
+                    globalT.pivotX ?? 0.5, globalT.pivotY ?? 0.5
+                );
+            }
 
             const nw = { type: "nw", x: v.tl.x, y: v.tl.y };
             const ne = { type: "ne", x: v.tr.x, y: v.tr.y };
@@ -175,16 +187,27 @@ export class TransformGeometry {
 
             const globalT = this.getGlobalTransform(e);
             const absPos = this.calculateAbsolutePosition(e);
-            const dims = this._getEntityDimensions(e);
             const rRad = (globalT.rotation || 0) * (Math.PI / 180);
 
-            const v = calculateQuadVertices(
-                absPos.x, absPos.y,
-                dims.width, dims.height,
-                rRad,
-                globalT.scaleX ?? 1, globalT.scaleY ?? 1,
-                globalT.pivotX ?? 0.5, globalT.pivotY ?? 0.5
-            );
+            let v;
+            if (e.components?.Tilemap) {
+                v = TilemapMath.getTilemapQuadVertices(
+                    absPos, 
+                    e.components.Tilemap, 
+                    rRad, 
+                    globalT.scaleX ?? 1, 
+                    globalT.scaleY ?? 1
+                );
+            } else {
+                const dims = this._getEntityDimensions(e);
+                v = calculateQuadVertices(
+                    absPos.x, absPos.y,
+                    dims.width, dims.height,
+                    rRad,
+                    globalT.scaleX ?? 1, globalT.scaleY ?? 1,
+                    globalT.pivotX ?? 0.5, globalT.pivotY ?? 0.5
+                );
+            }
 
             const xs = [v.tl.x, v.tr.x, v.bl.x, v.br.x];
             const ys = [v.tl.y, v.tr.y, v.bl.y, v.br.y];

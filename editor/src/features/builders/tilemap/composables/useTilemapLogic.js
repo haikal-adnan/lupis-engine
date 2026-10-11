@@ -29,7 +29,7 @@ export function useTilemapLogic() {
     return sceneStore.activeScene.entities.find(e => String(e.id) === String(id)) || null;
   });
 
-  // AUTO-CLOSE jika entitas saat ini berubah menjadi PREFAB
+  // Auto-close tab jika entitas berubah menjadi prefab
   watch(
     [() => workspaceStore.activeTab, selectedEntity],
     ([activeTab, entity]) => {
@@ -68,10 +68,8 @@ export function useTilemapLogic() {
 
   const currentTextureUrl = ref(null);
   const assetId = bindComponentProp('Tilemap', 'assetId');
-  const tileWidth = bindComponentProp('Tilemap', 'tileWidth');
-  const tileHeight = bindComponentProp('Tilemap', 'tileHeight');
-  const width = bindComponentProp('Tilemap', 'width');
-  const height = bindComponentProp('Tilemap', 'height');
+  const width = bindComponentProp('Tilemap', 'width');   // Lebar 1 Tile (Px)
+  const height = bindComponentProp('Tilemap', 'height'); // Tinggi 1 Tile (Px)
 
   watch(
     () => assetId.value,
@@ -138,8 +136,8 @@ export function useTilemapLogic() {
 
   const selectionStyle = computed(() => {
     if (!hasSelection.value) return {};
-    const tw = tileWidth.value || 32;
-    const th = tileHeight.value || 32;
+    const tw = width.value || 32;
+    const th = height.value || 32;
     const rect = selectionRect.value;
     return {
       left: `${rect.x * tw}px`,
@@ -150,8 +148,8 @@ export function useTilemapLogic() {
   });
 
   const gridOverlayStyle = computed(() => {
-    const w = tileWidth.value || 32;
-    const h = tileHeight.value || 32;
+    const w = width.value || 32;
+    const h = height.value || 32;
     return {
       backgroundImage: `linear-gradient(to right, rgba(255, 255, 255, 0.3) 1px, transparent 1px), linear-gradient(to bottom, rgba(255, 255, 255, 0.3) 1px, transparent 1px)`,
       backgroundSize: `${w}px ${h}px`
@@ -171,17 +169,17 @@ export function useTilemapLogic() {
 
   function handleResize(entries) {
     for (let entry of entries) {
-      const { width, height } = entry.contentRect;
-      if (lastSize.w !== 0 && (lastSize.w !== width || lastSize.h !== height)) {
-        const dx = (width - lastSize.w) / 2;
-        const dy = (height - lastSize.h) / 2;
+      const { width: w, height: h } = entry.contentRect;
+      if (lastSize.w !== 0 && (lastSize.w !== w || lastSize.h !== h)) {
+        const dx = (w - lastSize.w) / 2;
+        const dy = (h - lastSize.h) / 2;
         if (navigation.panOffset?.value) {
           navigation.panOffset.value.x += dx;
           navigation.panOffset.value.y += dy;
         }
       }
-      lastSize.w = width;
-      lastSize.h = height;
+      lastSize.w = w;
+      lastSize.h = h;
     }
   }
 
@@ -211,7 +209,7 @@ export function useTilemapLogic() {
     if (isLeftClick && effectiveMode.value === 'select') {
       isSelecting.value = true;
       hasSelection.value = true;
-      const gridPos = navigation.getGridPos(e.clientX, e.clientY, tileWidth.value, tileHeight.value);
+      const gridPos = navigation.getGridPos(e.clientX, e.clientY, width.value, height.value);
 
       if (gridPos.x < 0 || gridPos.y < 0) {
         hasSelection.value = false;
@@ -229,7 +227,7 @@ export function useTilemapLogic() {
       return;
     }
     if (isSelecting.value) {
-      const gridPos = navigation.getGridPos(e.clientX, e.clientY, tileWidth.value, tileHeight.value);
+      const gridPos = navigation.getGridPos(e.clientX, e.clientY, width.value, height.value);
       if (gridPos.x >= 0 && gridPos.y >= 0) {
         selectionEnd.value = { ...gridPos };
       }
@@ -314,8 +312,6 @@ export function useTilemapLogic() {
     hasTilemap,
     currentTextureUrl,
     assetId,
-    tileWidth,
-    tileHeight,
     width,
     height,
     bindComponentProp,

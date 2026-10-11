@@ -48,7 +48,7 @@ export function useTab() {
       right: markRaw(TilemapPanel),
       rightTitle: 'Tile Palette',
       center: markRaw(CanvasView),
-      showBottom: true,
+      showBottom: false,
       overlay: {
         showCoords: true,
         showGrid: false,

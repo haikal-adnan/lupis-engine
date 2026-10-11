@@ -24,11 +24,13 @@ export default class TilemapTool {
         const activeId = editors.activeTabId;
         const entity = TilemapMath.findEntity(this.world, activeId);
 
+        // Klik kanan untuk membatalkan seleksi / pemindahan
         if (this.input?.mouse?.isDown(2)) {
             this._resetState(editors);
             return;
         }
 
+        // Mode Hand / Spacebar Panning
         if (activeTool === 'hand' || this.input?.keyboard?.isDown('Space')) {
             this._handlePan();
             return;
@@ -38,11 +40,31 @@ export default class TilemapTool {
         const tm = entity.components.Tilemap;
         const gridPos = TilemapMath.getMouseGridPosition(this.game, entity, tm);
 
-        if (activeTool === 'select' || activeTool === 'move') {
-            this.selection.handleSelectionAndMove(this.input, entity, tm, gridPos, editors);
+        // Delete / Backspace untuk menghapus area marquee
+        if (this.input?.keyboard?.isPressed('Delete') || this.input?.keyboard?.isPressed('Backspace')) {
+            if (editors.marqueeSelection) {
+                const ms = editors.marqueeSelection;
+                this.operations.deleteArea(entity, tm, ms.x, ms.y, ms.w, ms.h);
+                editors.marqueeSelection = null;
+                return;
+            }
+        }
+
+        const isCtrlDown = Boolean(
+            this.input?.keyboard?.isDown?.('Control') || 
+            this.input?.keyboard?.isDown?.('Meta') || 
+            this.input?.keyboard?.ctrl
+        );
+
+        // --- BILA SEDANG MEMBAWA DRAG STATE ATAU TOOL SELECT/CTRL DITEKAN ---
+        if (editors.dragState || activeTool === 'select' || (isCtrlDown && activeTool !== 'eraser')) {
+            if (gridPos) {
+                this.selection.handleSelectionAndMove(this.input, entity, tm, gridPos, editors, isCtrlDown);
+            }
             return;
         }
 
+        // --- ERASER TOOL ---
         if (activeTool === 'eraser') {
             this.selection.handleEraser(this.input, entity, tm, gridPos, editors);
             return;
@@ -50,11 +72,17 @@ export default class TilemapTool {
 
         if (editors.dragState) this._resetState(editors);
 
+        // Clear marquee jika melukis biasa tanpa Ctrl
+        if (this.input?.mouse?.isPressed?.(0) && !isCtrlDown) {
+            editors.marqueeSelection = null;
+        }
+
+        // --- BRUSH / BUCKET / EYEDROPPER ---
         if (this.input?.mouse?.isDown(0) && gridPos) {
             switch (activeTool) {
                 case 'brush':
                     if (editors.tileSelection) {
-                        this.operations.paint(this.world, entity, tm, gridPos.x, gridPos.y, tm.assetId, editors.tileSelection);
+                        this.operations.paint(this.world, entity, tm, gridPos.x, gridPos.y, tm.assetId, editors.tileSelection, false);
                     }
                     break;
                 case 'bucket':

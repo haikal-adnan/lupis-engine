@@ -46,11 +46,9 @@ describe('Tilemap Panel System Integration Test', () => {
       attachComponents: {
         Tilemap: {
           assetId: null,
-          tileWidth: 16,
-          tileHeight: 16,
-          width: 10,
-          height: 10,
-          data: new Array(100).fill(0)
+          width: 16,
+          height: 16,
+          data: {}
         }
       }
     })
@@ -85,34 +83,34 @@ describe('Tilemap Panel System Integration Test', () => {
       // Arrange
       const logic = useTilemapLogic()
       const widthBinding = logic.width
-      const tileWidthBinding = logic.tileWidth
+      const heightBinding = logic.height
 
       // Act
-      widthBinding.value = 20
-      tileWidthBinding.value = 32
+      widthBinding.value = 32
+      heightBinding.value = 32
 
       // Assert Reactive State di SceneStore
       const tilemapComp = sceneStore.activeScene.entities[0].components.Tilemap
-      expect(tilemapComp.width).toBe(20)
-      expect(tilemapComp.tileWidth).toBe(32)
+      expect(tilemapComp.width).toBe(32)
+      expect(tilemapComp.height).toBe(32)
 
       // Assert EngineBridge Transmission
       expect(engineBridge.updateComponentProp).toHaveBeenCalledWith({
         entityId,
         componentName: 'Tilemap',
         path: 'width',
-        value: 20
+        value: 32
       })
       expect(engineBridge.updateComponentProp).toHaveBeenCalledWith({
         entityId,
         componentName: 'Tilemap',
-        path: 'tileWidth',
+        path: 'height',
         value: 32
       })
 
       // Assert History Integration (Undo)
       logic.undo()
-      expect(sceneStore.activeScene.entities[0].components.Tilemap.tileWidth).toBe(16)
+      expect(sceneStore.activeScene.entities[0].components.Tilemap.height).toBe(16)
     })
 
     it('loads asset texture URL when assetId is updated', async () => {
@@ -140,14 +138,13 @@ describe('Tilemap Panel System Integration Test', () => {
     it('mutates tile array data across scene store and engine bridge', () => {
       // Arrange
       const logic = useTilemapLogic()
-      const newTileData = new Array(100).fill(1)
-      newTileData[0] = 5
+      const newTileData = { '0,0': 5, '1,0': 1 }
 
       // Act
       logic.applyTileDataMutation(newTileData)
 
       // Assert
-      expect(sceneStore.activeScene.entities[0].components.Tilemap.data[0]).toBe(5)
+      expect(sceneStore.activeScene.entities[0].components.Tilemap.data['0,0']).toBe(5)
       expect(engineBridge.updateComponentProp).toHaveBeenCalledWith({
         entityId,
         componentName: 'Tilemap',
@@ -313,7 +310,7 @@ describe('Tilemap Panel System Integration Test', () => {
 
       // Act & Assert
       expect(() => {
-        logic.applyTileDataMutation([1, 2, 3])
+        logic.applyTileDataMutation({ '0,0': 1 })
         logic.openTilemapEditor()
       }).not.toThrow()
 
