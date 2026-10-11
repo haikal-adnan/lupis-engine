@@ -273,7 +273,7 @@ export class InspectorCrudObject {
     fadeIn,
     fadeOut,
     refDistance,
- MAXDistance,
+    MAXDistance,
     audioFileName = null,
   } = {}) {
     await this.inspector.ensureAudioComponent();
