@@ -3,6 +3,8 @@ import { BaseControlHelper } from '../helpers/BaseControlHelper.js';
 import { PopupHelper } from '../helpers/PopupHelper.js';
 import { HierarchyPage } from '../pages/HierarchyPage.js';
 
+const SCENE_OPTIONS = 'hierarchy-scene-options-button';
+
 // =========================================================================
 // 1. SCENE OPERATIONS FLOW
 // =========================================================================
@@ -15,7 +17,7 @@ export class SceneCrud {
   }
 
   async create(sceneName) {
-    await this.controls.clickSelectAction('Scene Options', 'New Scene');
+    await this.controls.clickSelectAction(SCENE_OPTIONS, 'New Scene');
     await this.popup.fillPromptAndSubmit('New Scene', sceneName, 'OK');
     await expect(this.hierarchy.sceneSelect).toContainText(sceneName);
   }
@@ -26,14 +28,14 @@ export class SceneCrud {
   }
 
   async rename(newName) {
-    await this.controls.clickSelectAction('Scene Options', 'Rename Scene');
+    await this.controls.clickSelectAction(SCENE_OPTIONS, 'Rename Scene');
     await this.popup.fillPromptAndSubmit('Rename Scene', newName, 'OK');
     await expect(this.hierarchy.sceneSelect).toContainText(newName);
   }
 
   async duplicate() {
     await expect(this.hierarchy.sceneSelect).not.toHaveText('Select Scene...');
-    await this.controls.clickSelectAction('Scene Options', 'Duplicate Scene');
+    await this.controls.clickSelectAction(SCENE_OPTIONS, 'Duplicate Scene');
     await expect(this.hierarchy.sceneSelect).toBeVisible();
   }
 
@@ -44,7 +46,7 @@ export class SceneCrud {
   async deleteAndReject() {
     await expect(this.hierarchy.sceneSelect).not.toHaveText('Select Scene...');
 
-    await this.controls.clickSelectAction('Scene Options', 'Delete Scene');
+    await this.controls.clickSelectAction(SCENE_OPTIONS, 'Delete Scene');
 
     const alertModal = this.page
       .getByRole('dialog')
@@ -72,10 +74,9 @@ export class LayerCrud {
 
   async create(sectionName, layerName) {
     await this.hierarchy.addLayerToSection(this.popup, sectionName, layerName);
-    const section = this.hierarchy.section(sectionName);
-    const targetLayer = section
-      .locator(`[data-node-name="${layerName}"]`)
-      .or(section.locator('.group\\/node', { hasText: layerName }))
+    const targetLayer = this.hierarchy
+      .section(sectionName)
+      .locator(`[data-testid="hierarchy-node"][data-node-name="${layerName}"]`)
       .first();
 
     await expect(targetLayer).toBeVisible();
@@ -100,21 +101,14 @@ export class LayerCrud {
     await this.popup.selectContextMenu(layerNode, 'Change Z-Index');
     await this.popup.fillPromptAndSubmit('Change Z-Index', String(newZIndex), 'Update');
 
-    const zIndexBadge = layerNode
-      .getByTitle('Z-Index Layer')
-      .or(layerNode.locator('[data-z-index]'))
-      .or(layerNode.locator('span[title*="Z-Index"]'))
-      .first();
-
-    await expect(zIndexBadge).toHaveText(String(newZIndex));
+    await expect(layerNode.locator('[data-z-index]').first()).toHaveText(String(newZIndex));
   }
 
   async toggleLock(layerNode, expectLocked = true) {
     await expect(layerNode).toBeVisible();
     await layerNode.hover();
 
-    const lockBtn = layerNode.getByTitle('Toggle Lock').or(layerNode.locator('button[aria-label*="Lock"]')).first();
-    await lockBtn.click();
+    await layerNode.getByTestId('hierarchy-node-lock-button').click();
     await expect(layerNode).toHaveAttribute('data-locked', String(expectLocked));
   }
 
@@ -122,8 +116,7 @@ export class LayerCrud {
     await expect(layerNode).toBeVisible();
     await layerNode.hover();
 
-    const eyeBtn = layerNode.getByTitle('Toggle Visibility').or(layerNode.locator('button[aria-label*="Show"], button[aria-label*="Hide"]')).first();
-    await eyeBtn.click();
+    await layerNode.getByTestId('hierarchy-node-visibility-button').click();
     await expect(layerNode).toHaveAttribute('data-visible', String(expectVisible));
   }
 
@@ -162,7 +155,7 @@ export class EntityCrud {
 
   async create(parentLayerNode, entityType) {
     await expect(parentLayerNode).toBeVisible();
-    
+
     // Pemetaan label context menu berdasarkan tipe entitas
     const typeMap = {
       empty: { path: ['Add Entity', 'Empty Entity'], match: /Empty/i },
@@ -263,12 +256,7 @@ export class EntityCrud {
     await expect(entityNode).toBeVisible();
     await entityNode.hover();
 
-    const lockBtn = entityNode
-      .getByTitle('Toggle Lock')
-      .or(entityNode.locator('button[aria-label*="Lock"]'))
-      .first();
-
-    await lockBtn.click();
+    await entityNode.getByTestId('hierarchy-node-lock-button').click();
     await expect(entityNode).toHaveAttribute('data-locked', String(expectLocked));
   }
 
@@ -276,12 +264,7 @@ export class EntityCrud {
     await expect(entityNode).toBeVisible();
     await entityNode.hover();
 
-    const eyeBtn = entityNode
-      .getByTitle('Toggle Visibility')
-      .or(entityNode.locator('button[aria-label*="Show"], button[aria-label*="Hide"]'))
-      .first();
-
-    await eyeBtn.click();
+    await entityNode.getByTestId('hierarchy-node-visibility-button').click();
     await expect(entityNode).toHaveAttribute('data-visible', String(expectVisible));
   }
 }
@@ -297,18 +280,11 @@ export class WorkspaceToolsCrud {
   }
 
   async openUIEditor() {
-    const uiSection = this.hierarchy.section('User Interface');
-    const header = uiSection.locator('> div').first();
-    await header.hover();
-
-    const optionsBtn = uiSection.getByRole('button', { name: /open ui editor|add ui layer|options/i }).first();
-    if (await optionsBtn.isVisible()) {
-      await optionsBtn.click();
-    }
-
-    const openUiBtn = this.page.getByRole('button', { name: 'Open UI Editor' }).first();
-    await expect(openUiBtn).toBeVisible();
-    await openUiBtn.click();
+    const menu = await this.hierarchy.openSectionMenu('User Interface');
+    const openBtn = menu.getByTestId('hierarchy-ui-open-editor-button');
+    // Tombol disabled kalau tab aktif sudah bertipe 'ui'
+    await expect(openBtn).toBeEnabled();
+    await openBtn.click();
 
     const activeTab = this.page
       .locator('[aria-selected="true"]')

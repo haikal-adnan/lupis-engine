@@ -26,7 +26,7 @@ export class AssetCrudObject {
   async uploadAsset(fileName) {
     await this.ensureReady();
     await this.assetPage.upload(fileName);
-    
+
     // Extract nama dasar tanpa ekstensi untuk verifikasi card
     const baseTitle = fileName.substring(0, fileName.lastIndexOf('.')) || fileName;
     const assetCard = this.assetPage.card(baseTitle);
@@ -41,8 +41,8 @@ export class AssetCrudObject {
    */
   async applyToActiveEntity(assetCardElement, actionLabel) {
     await this.ensureReady();
-    const assetCard = typeof assetCardElement === 'string' 
-      ? this.assetPage.card(assetCardElement) 
+    const assetCard = typeof assetCardElement === 'string'
+      ? this.assetPage.card(assetCardElement)
       : assetCardElement;
 
     await expect(assetCard).toBeVisible();
@@ -52,7 +52,7 @@ export class AssetCrudObject {
 
   /**
    * Helper facade untuk membuat folder asset baru
-   * @param {string} folderName 
+   * @param {string} folderName
    */
   async createFolder(folderName = 'New Folder') {
     await this.ensureReady();
@@ -70,7 +70,7 @@ export class AssetCrudObject {
 
   /**
    * Helper facade untuk navigasi masuk ke dalam folder
-   * @param {string} folderName 
+   * @param {string} folderName
    */
   async openFolder(folderName) {
     await this.ensureReady();
@@ -110,7 +110,7 @@ export class AssetCrudObject {
 
   /**
    * Helper facade untuk menghapus asset atau folder
-   * @param {import('@playwright/test').Locator|string} itemTarget 
+   * @param {import('@playwright/test').Locator|string} itemTarget
    */
   async delete(itemTarget) {
     await this.ensureReady();
@@ -128,11 +128,10 @@ export class AssetCrudObject {
 
   /**
    * Helper facade untuk melakukan pencarian asset
-   * @param {string} query 
+   * @param {string} query
    */
   async search(query) {
     await this.ensureReady();
     await this.assetPage.searchInput.fill(query);
   }
 }
-

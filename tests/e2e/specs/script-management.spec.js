@@ -178,9 +178,8 @@ test.describe('Script Panel E2E Management', () => {
   // =========================================================================
   // 5. SEARCH & VIEW MODE CONTROLS
   // =========================================================================
-  // =========================================================================
-  // 5. SEARCH & VIEW MODE CONTROLS
-  // =========================================================================
+  // PERBAIKAN: komentar section ini sebelumnya terduplikasi 2x berturut-turut
+  // (sisa copy-paste) — dirapikan jadi satu.
   test.describe('Search & View Controls', () => {
     test('filters visible scripts reactively via search input', async ({ scripts, popup, controls }) => {
       // Arrange: Buat dua script
@@ -193,13 +192,17 @@ test.describe('Script Panel E2E Management', () => {
       const playerScript = scripts.itemByName('PlayerMotor');
       const enemyScript = scripts.itemByName('EnemyAI');
 
-      // Act: Gunakan placeholder 'Search scripts...' agar BaseControlHelper langsung menargetkan elemen <input>
-      await controls.fillSearch('Search scripts...', 'Player');
+      // PERBAIKAN: sebelumnya `controls.fillSearch('Search scripts...', 'Player')`
+      // dipanggil TANPA `container`, jadi default-nya scope = seluruh halaman
+      // (this.page), bukan di-scope ke panel Script. Kalau ada panel lain
+      // dengan placeholder yang mirip, Playwright bisa salah pilih input.
+      // Sekarang di-scope eksplisit ke `scripts.panel`.
+      await controls.fillSearch('Search scripts...', 'Player', scripts.panel);
       await expect(playerScript).toBeVisible();
       await expect(enemyScript).not.toBeVisible();
 
-      // Act: Clear search query menggunakan placeholder yang sama
-      await controls.clearSearch('Search scripts...');
+      // Act: Clear search query menggunakan placeholder yang sama, tetap di-scope ke panel
+      await controls.clearSearch('Search scripts...', scripts.panel);
       await expect(playerScript).toBeVisible();
       await expect(enemyScript).toBeVisible();
     });

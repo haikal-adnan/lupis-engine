@@ -27,7 +27,7 @@ export class PrefabCrudObject {
   async createEmptyPrefab(name = 'New_Prefab', tab = 'world') {
     await this.prefabPage.switchTab(tab);
     await this.popup.selectContextMenu(this.prefabPage.panel, 'Create Empty Prefab');
-    
+
     const createdItem = this.prefabPage.itemByName(name);
     await expect(createdItem).toBeVisible();
     return createdItem;
@@ -50,12 +50,12 @@ export class PrefabCrudObject {
 
   /**
    * Helper facade untuk masuk ke dalam folder tertentu
-   * @param {string} folderName 
+   * @param {string} folderName
    */
   async enterFolder(folderName) {
     const folderItem = this.prefabPage.itemByName(folderName);
     await expect(folderItem).toBeVisible();
-    
+
     const folderId = await folderItem.getAttribute('data-node-id');
     await folderItem.dblclick();
 

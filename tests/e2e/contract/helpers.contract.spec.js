@@ -81,3 +81,36 @@ test.describe('@contract PopupHelper prompt & confirm', () => {
     await expect(hierarchy.sceneSelect).not.toContainText('Contract Scene');
   });
 });
+
+test.describe('@contract BaseControlHelper.clickSelectAction', () => {
+  // Regresi untuk bug yang pernah ada: clickSelectAction sebelumnya punya
+  // fallback hardcode `.or(scope.getByTestId('scene-options-button'))` di
+  // dalam locator trigger-nya. Itu generic helper — kalau label/testid yang
+  // diminta salah, helper akan diam-diam fallback ke tombol Scene Options
+  // kalau kebetulan ada di scope yang sama, dan test tetap lolos padahal
+  // mengklik elemen yang salah.
+  //
+  // Test ini memastikan: trigger yang benar-benar TIDAK ADA di scope harus
+  // membuat pemanggilan GAGAL dengan jelas, bukan diam-diam fallback ke
+  // tombol lain yang kebetulan ada.
+  test('trigger dengan testid yang tidak ada di scope harus gagal, bukan fallback ke tombol lain', async ({ page, controls, hierarchy }) => {
+    // Scene Options button memang ada di halaman (di luar scope layer section),
+    // jadi ini skenario paling representatif untuk bug lama di atas.
+    await expect(hierarchy.sceneSelect).toBeVisible();
+
+    const worldLayer = hierarchy.nodeByName('World Layer');
+    await expect(worldLayer).toBeVisible();
+
+    // 'Nonexistent Trigger Label' sengaja tidak match apa pun di dalam scope
+    // worldLayer. Sebelum perbaikan, bug ini bisa membuat Playwright jatuh ke
+    // tombol Scene Options di luar scope ini dan membuka menu Scene Options
+    // alih-alih gagal. Scope di sini dibatasi ke worldLayer agar assersi ini
+    // benar-benar menguji isolasi scope, bukan sekadar label yang salah.
+    await expect(
+      controls.clickSelectAction('Nonexistent Trigger Label', 'Some Action', worldLayer)
+    ).rejects.toThrow();
+
+    // Scene Options menu TIDAK boleh ikut kebuka akibat fallback yang salah.
+    await expect(page.getByRole('menu')).toHaveCount(0);
+  });
+});

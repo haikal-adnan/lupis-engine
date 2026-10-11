@@ -87,14 +87,10 @@ export class AssetPanelPage {
    * Upload file nyata dan tunggu hingga proses async upload selesai serta card muncul di DOM.
    * @param {string} fileName Nama file di folder test-data/assets
    */
-  /**
-   * Upload file nyata dan tunggu hingga proses async upload selesai serta card muncul di DOM.
-   * @param {string} fileName Nama file di folder test-data/assets
-   */
   async upload(fileName) {
     const fileInput = this.page.locator('input[type="file"]').first();
     const filePath = path.resolve(process.cwd(), 'test-data/assets', fileName);
-    
+
     // 1. Trigger upload file
     await fileInput.setInputFiles(filePath);
 

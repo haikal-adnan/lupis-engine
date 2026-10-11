@@ -1,8 +1,9 @@
 <template>
-  <div class="flex flex-col h-full w-full relative outline-none select-none">
+  <div class="flex flex-col h-full w-full relative outline-none select-none" data-testid="hierarchy-tree-root">
     
     <PropertySection 
       title="World" 
+      test-id="hierarchy-section-world"
       :defaultOpen="true" 
       class="border-b border-border/50"
       data-section="world"
@@ -16,6 +17,7 @@
              @click="handleAddLayer('world'); close()" 
              class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-accent hover:text-accent-foreground transition-colors"
              aria-label="Add World Layer"
+             data-testid="hierarchy-world-add-layer-button"
            >
               <Plus class="w-3.5 h-3.5 mr-2 text-muted-foreground" />
               <span>Add World Layer</span>
@@ -27,6 +29,7 @@
         class="min-h-[80px] relative pb-4 transition-colors duration-200" 
         @dragover.prevent="allowDrop" 
         @drop.prevent="(e) => handleEmptyDrop(e, 'world')"
+        data-testid="hierarchy-world-tree"
       >
         <SceneNode 
           v-for="node in sortedWorldTree" 
@@ -38,7 +41,11 @@
           @node-drop="handleDrop"
         />
         
-        <div v-if="data.worldTree.length === 0" class="text-[10px] text-muted-foreground/50 italic p-4 text-center border border-dashed border-border/20 m-2 rounded-md">
+        <div 
+          v-if="data.worldTree.length === 0" 
+          class="text-[10px] text-muted-foreground/50 italic p-4 text-center border border-dashed border-border/20 m-2 rounded-md"
+          data-testid="hierarchy-world-empty-state"
+        >
           No world layers. Drag entities here.
         </div>
       </div>
@@ -46,6 +53,7 @@
 
     <PropertySection 
       title="User Interface" 
+      test-id="hierarchy-section-ui"
       :defaultOpen="true"
       data-section="ui"
       role="region"
@@ -59,6 +67,7 @@
              :disabled="workspaceStore.activeTab?.type === 'ui'" 
              class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-accent hover:text-accent-foreground transition-colors disabled:opacity-50"
              aria-label="Open UI Editor"
+             data-testid="hierarchy-ui-open-editor-button"
            >
                <LayoutTemplate class="w-3.5 h-3.5 mr-2 text-blue-500" />
                <span>Open UI Editor</span>
@@ -70,6 +79,7 @@
              @click="handleAddLayer('ui'); close()" 
              class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-accent hover:text-accent-foreground transition-colors"
              aria-label="Add UI Layer"
+             data-testid="hierarchy-ui-add-layer-button"
            >
               <Plus class="w-3.5 h-3.5 mr-2 text-muted-foreground" />
               <span>Add UI Layer</span>
@@ -81,6 +91,7 @@
         class="min-h-[120px] relative pb-6" 
         @dragover.prevent="allowDrop" 
         @drop.prevent="(e) => handleEmptyDrop(e, 'ui')"
+        data-testid="hierarchy-ui-tree"
       >
         <SceneNode 
           v-for="node in sortedUiTree" 
@@ -92,7 +103,11 @@
           @node-drop="handleDrop"
         />
         
-        <div v-if="data.uiTree.length === 0" class="text-[10px] text-muted-foreground/50 italic p-4 text-center border border-dashed border-border/20 m-2 rounded-md">
+        <div 
+          v-if="data.uiTree.length === 0" 
+          class="text-[10px] text-muted-foreground/50 italic p-4 text-center border border-dashed border-border/20 m-2 rounded-md"
+          data-testid="hierarchy-ui-empty-state"
+        >
           No UI layers. Drag UI elements here.
         </div>
       </div>
@@ -101,6 +116,7 @@
     <div 
       class="h-32 w-full cursor-default" 
       @contextmenu.prevent="$emit('contextmenu', { event:$event, node: null })"
+      data-testid="hierarchy-empty-space"
     ></div>
 
   </div>

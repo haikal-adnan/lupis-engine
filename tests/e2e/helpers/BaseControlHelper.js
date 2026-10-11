@@ -41,7 +41,6 @@ export class BaseControlHelper {
   // ==========================================
   // BASE INPUT & TEXTAREA
   // ==========================================
-  // BaseControlHelper.js
   async fillInput(labelOrTestIdOrPlaceholder, value, container) {
     const scope = container || this.page;
 
@@ -188,12 +187,13 @@ export class BaseControlHelper {
     await expect(searchInput).toHaveValue(query);
   }
 
-  // BaseControlHelper.js
-
+  /**
+   * Konvensi testid: input `X-input` berpasangan dengan tombol `X-clear-button`
+   * (mis. `hierarchy-search-input` -> `hierarchy-search-clear-button`).
+   */
   async clearSearch(placeholderOrTestId, container) {
     const scope = container || this.page;
 
-    // 1. Cari target input
     const rawTarget = scope
       .getByTestId(placeholderOrTestId)
       .or(scope.getByPlaceholder(placeholderOrTestId))
@@ -201,28 +201,26 @@ export class BaseControlHelper {
 
     const searchInput = this._resolveEditableElement(rawTarget);
 
-    // 2. Cari tombol clear (prioritaskan data-testid="search-clear-button")
+    const clearTestId = placeholderOrTestId.replace(/-input$/, '-clear-button');
     const clearButton = scope
-      .getByTestId('search-clear-button')
+      .getByTestId(clearTestId)
       .or(scope.getByRole('button', { name: /clear/i }))
       .first();
 
-    if (await clearButton.isVisible()) {
+    // count() sinkron; tombol clear memakai v-if="modelValue" sehingga memang opsional
+    if ((await clearButton.count()) > 0) {
       await clearButton.click();
     } else {
-      // Fallback jika tombol clear tidak muncul atau terhalang
       await searchInput.fill('');
       await searchInput.blur();
     }
 
-    // 3. Pastikan input sudah kosong
     await expect(searchInput).toHaveValue('');
   }
 
   // ==========================================
   // BASE SELECT
   // ==========================================
-  // BaseControlHelper.js
   async selectOption(labelOrTestId, optionLabel, container) {
     const scope = container || this.page;
 
@@ -248,15 +246,19 @@ export class BaseControlHelper {
     await optionItem.click();
   }
 
-  // tests/e2e/components/BaseControlHelper.js
-
-  // tests/e2e/components/BaseControlHelper.js
+  /**
+   * Membuka trigger "select action" (mis. tombol opsi yang menampilkan dropdown
+   * menu berisi beberapa aksi) lalu mengklik salah satu item di dalamnya.
+   *
+   * GENERIK: tidak ada fallback ke testid widget tertentu. Kirim testid trigger
+   * secara eksplisit, mis. clickSelectAction('hierarchy-scene-options-button', 'New Scene'),
+   * atau aria-label/title-nya ('Scene Options').
+   */
   async clickSelectAction(labelOrTestId, actionText, container) {
     const scope = container || this.page;
 
     const trigger = scope
       .getByTestId(labelOrTestId)
-      .or(scope.getByTestId('scene-options-button'))
       .or(scope.getByLabel(labelOrTestId, { exact: false }))
       .or(scope.getByRole('button', { name: labelOrTestId }))
       .or(scope.locator(`button[title="${labelOrTestId}"], button[aria-label="${labelOrTestId}"]`))
@@ -266,8 +268,8 @@ export class BaseControlHelper {
     await expect(trigger).toBeVisible();
     await trigger.click();
 
-    // Cari item aksi dari menu dropdown yang terbuka
-    const menu = this.page.getByTestId('scene-options-menu').or(this.page.getByRole('menu')).last();
+    // Menu dropdown biasanya di-teleport ke akhir DOM saat terbuka.
+    const menu = this.page.getByRole('menu').last();
     await expect(menu).toBeVisible();
 
     const actionItem = menu
@@ -306,4 +308,3 @@ export class BaseControlHelper {
     await deleteBtn.click();
   }
 }
-

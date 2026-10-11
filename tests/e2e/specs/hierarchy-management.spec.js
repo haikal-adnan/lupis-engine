@@ -1,5 +1,7 @@
 import { test, expect } from '../fixtures.js';
 
+const SCENE_OPTIONS = 'hierarchy-scene-options-button';
+
 test.use({
   projectOptions: {
     prefix: 'Hierarchy E2E Exhaustive',
@@ -18,18 +20,14 @@ test.describe('Hierarchy & Scene Comprehensive E2E Management', () => {
       await hierarchy.addLayerToSection(popup, 'World', 'Custom World Layer');
       const worldSection = hierarchy.section('World');
       await expect(
-        worldSection
-          .locator('[data-node-name="Custom World Layer"]')
-          .or(worldSection.locator('.group\\/node', { hasText: 'Custom World Layer' }))
+        worldSection.locator('[data-testid="hierarchy-node"][data-node-name="Custom World Layer"]')
       ).toBeVisible();
 
       // 2. Tambah UI Layer via Header Section
       await hierarchy.addLayerToSection(popup, 'User Interface', 'Custom UI Layer');
       const uiSection = hierarchy.section('User Interface');
       await expect(
-        uiSection
-          .locator('[data-node-name="Custom UI Layer"]')
-          .or(uiSection.locator('.group\\/node', { hasText: 'Custom UI Layer' }))
+        uiSection.locator('[data-testid="hierarchy-node"][data-node-name="Custom UI Layer"]')
       ).toBeVisible();
     });
 
@@ -73,8 +71,8 @@ test.describe('Hierarchy & Scene Comprehensive E2E Management', () => {
       if (childId && parentId) {
         await expect(hierarchy.nodeById(childId)).toHaveAttribute('data-parent-id', parentId);
       } else {
-        const parentContainer = parentEntity.locator('xpath=ancestor::*[contains(@class, "relative") or self::li][1]');
-        await expect(parentContainer.locator('.group\\/node', { hasText: /Sprite/i })).toBeVisible();
+        const parentContainer = parentEntity.locator('xpath=ancestor::*[@data-testid="hierarchy-node-root"][1]');
+        await expect(parentContainer.getByTestId('hierarchy-node').filter({ hasText: /Sprite/i })).toBeVisible();
       }
     });
 
@@ -92,14 +90,13 @@ test.describe('Hierarchy & Scene Comprehensive E2E Management', () => {
       await hierarchy.dragAndDropNodes(childEntity, worldLayer);
 
       const stableChild = childId ? hierarchy.nodeById(childId) : hierarchy.nodesByText(/Sprite/i).first();
-      
-      // FIX: Menggunakan .not.toHaveAttribute('data-parent-id')
+
       await expect(stableChild).not.toHaveAttribute('data-parent-id');
     });
 
     test('moves entity with its child tree together to another parent', async ({ hierarchy, popup }) => {
       const worldLayer = hierarchy.nodeByName('World Layer');
-      
+
       // Target parent
       await popup.selectContextMenu(worldLayer, ['Add Entity', 'Shape']);
       const targetParent = hierarchy.nodesByText(/Shape/i).first();
@@ -108,7 +105,7 @@ test.describe('Hierarchy & Scene Comprehensive E2E Management', () => {
       await popup.selectContextMenu(worldLayer, ['Add Entity', 'Empty Entity']);
       const movingParent = hierarchy.nodesByText(/Empty/i).first();
       await popup.selectContextMenu(movingParent, ['Add Child', 'Text']);
-      
+
       const movingChild = hierarchy.nodesByText(/Text/i).first();
       const movingParentId = await movingParent.getAttribute('data-node-id');
       const movingChildId = await movingChild.getAttribute('data-node-id');
@@ -231,13 +228,15 @@ test.describe('Hierarchy & Scene Comprehensive E2E Management', () => {
 
         await popup.selectContextMenu(uiLayer, item.path);
         const uiSection = hierarchy.section('User Interface');
-        await expect(uiSection.locator('.group\\/node', { hasText: item.labelMatch }).first()).toBeVisible();
+        await expect(
+          uiSection.getByTestId('hierarchy-node').filter({ hasText: item.labelMatch }).first()
+        ).toBeVisible();
       });
     }
 
     test('tests duplicate, copy, cut, paste, rename, change z-index, and delete operations via Context Menu', async ({ hierarchy, popup }) => {
       const worldLayer = hierarchy.nodeByName('World Layer');
-      
+
       // 1. Tambah Sprite
       await popup.selectContextMenu(worldLayer, ['Add Entity', 'Sprite']);
       const spriteNode = hierarchy.nodesByText(/Sprite/i).first();
@@ -275,7 +274,7 @@ test.describe('Hierarchy & Scene Comprehensive E2E Management', () => {
       await expect(hierarchy.nodesByText('Hero Sprite')).toHaveCount(1);
     });
 
-    test('creates Prefab and restricts "Use as Prefab" menu on prefab descendants', async ({ page, hierarchy, popup }) => {
+    test('creates Prefab and restricts "Use as Prefab" menu on prefab descendants', async ({ hierarchy, popup }) => {
       const worldLayer = hierarchy.nodeByName('World Layer');
       await popup.selectContextMenu(worldLayer, ['Add Entity', 'Empty Entity']);
 
@@ -290,14 +289,12 @@ test.describe('Hierarchy & Scene Comprehensive E2E Management', () => {
 
       // Buka context menu pada child di dalam Prefab
       await childNode.click({ button: 'right' });
-      const menu = page.getByRole('menu').last();
-      const prefabMenuItem = menu
-        .getByRole('menuitem', { name: 'Use as Prefab' })
-        .or(menu.locator('div, button', { hasText: 'Use as Prefab' }))
-        .first();
+      const prefabMenuItem = popup.contextMenuItem('Use as Prefab');
 
       // Pastikan opsi 'Use as Prefab' ter-disable untuk anak prefab
+      await expect(prefabMenuItem).toBeVisible();
       await expect(prefabMenuItem).toHaveAttribute('aria-disabled', 'true');
+      await expect(prefabMenuItem).toHaveAttribute('data-disabled', 'true');
     });
   });
 
@@ -313,19 +310,11 @@ test.describe('Hierarchy & Scene Comprehensive E2E Management', () => {
       await entityNode.hover();
 
       // Toggle Lock
-      const lockBtn = entityNode
-        .getByTitle('Toggle Lock')
-        .or(entityNode.locator('button[aria-label*="Lock"]'))
-        .first();
-      await lockBtn.click();
+      await entityNode.getByTestId('hierarchy-node-lock-button').click();
       await expect(entityNode).toHaveAttribute('data-locked', 'true');
 
       // Toggle Visibility
-      const eyeBtn = entityNode
-        .getByTitle('Toggle Visibility')
-        .or(entityNode.locator('button[aria-label*="Show"], button[aria-label*="Hide"]'))
-        .first();
-      await eyeBtn.click();
+      await entityNode.getByTestId('hierarchy-node-visibility-button').click();
       await expect(entityNode).toHaveAttribute('data-visible', 'false');
     });
 
@@ -334,13 +323,11 @@ test.describe('Hierarchy & Scene Comprehensive E2E Management', () => {
       await worldLayer.hover();
 
       // Toggle Layer Lock
-      const lockBtn = worldLayer.getByTitle('Toggle Lock').first();
-      await lockBtn.click();
+      await worldLayer.getByTestId('hierarchy-node-lock-button').click();
       await expect(worldLayer).toHaveAttribute('data-locked', 'true');
 
       // Toggle Layer Visibility
-      const eyeBtn = worldLayer.getByTitle('Toggle Visibility').first();
-      await eyeBtn.click();
+      await worldLayer.getByTestId('hierarchy-node-visibility-button').click();
       await expect(worldLayer).toHaveAttribute('data-visible', 'false');
     });
   });
@@ -351,18 +338,11 @@ test.describe('Hierarchy & Scene Comprehensive E2E Management', () => {
   test.describe('6. UI Editor Workspace Integration', () => {
     test('opens UI Editor tab via User Interface section context header menu', async ({ page, hierarchy, popup }) => {
       await hierarchy.addLayerToSection(popup, 'User Interface', 'Canvas HUD');
-      
-      const uiSection = hierarchy.section('User Interface');
-      const header = uiSection.locator('> div').first();
-      await header.hover();
 
-      const optionsBtn = uiSection.getByRole('button', { name: /open ui editor|add ui layer|options/i }).first();
-      if (await optionsBtn.isVisible()) {
-        await optionsBtn.click();
-      }
-
-      const openUiBtn = page.getByRole('button', { name: 'Open UI Editor' }).first();
-      await expect(openUiBtn).toBeVisible();
+      // Trigger menu section selalu ada (testid turunan dari hierarchy-section-ui)
+      const menu = await hierarchy.openSectionMenu('User Interface');
+      const openUiBtn = menu.getByTestId('hierarchy-ui-open-editor-button');
+      await expect(openUiBtn).toBeEnabled();
       await openUiBtn.click();
 
       // Verifikasi tab aktif berganti ke UI Editor
@@ -388,12 +368,12 @@ test.describe('Hierarchy & Scene Comprehensive E2E Management', () => {
       await expect(hierarchy.sceneSelect).toContainText(scene1Name);
 
       // Rename Active Scene
-      await controls.clickSelectAction('Scene Options', 'Rename Scene');
+      await controls.clickSelectAction(SCENE_OPTIONS, 'Rename Scene');
       await popup.fillPromptAndSubmit('Rename Scene', scene2Name, 'OK');
       await expect(hierarchy.sceneSelect).toContainText(scene2Name);
 
       // Duplicate Active Scene
-      await controls.clickSelectAction('Scene Options', 'Duplicate Scene');
+      await controls.clickSelectAction(SCENE_OPTIONS, 'Duplicate Scene');
       await expect(hierarchy.sceneSelect).toBeVisible();
     });
 
@@ -407,9 +387,9 @@ test.describe('Hierarchy & Scene Comprehensive E2E Management', () => {
       await expect(hierarchy.sceneSelect).not.toContainText(tempScene);
 
       // Bad Path: Coba hapus scene terakhir yang tersisa
-      await controls.clickSelectAction('Scene Options', 'Delete Scene');
+      await controls.clickSelectAction(SCENE_OPTIONS, 'Delete Scene');
 
-      // FIX: Memeriksa Modal Dialog (useAlert), bukan PopAlert toast
+      // Memeriksa Modal Dialog (useAlert), bukan PopAlert toast
       const alertModal = page
         .getByRole('dialog')
         .or(page.getByRole('alertdialog'))
@@ -441,10 +421,9 @@ test.describe('Hierarchy & Scene Comprehensive E2E Management', () => {
       await expect(spriteNode).not.toBeVisible();
 
       // Verifikasi Tampilan Placeholder Empty State
-      const emptyStateText = page.getByText(/No world layers|No UI layers/i).first();
-      await expect(emptyStateText).toBeVisible();
+      await expect(page.getByTestId('hierarchy-world-empty-state')).toBeVisible();
 
-      // Clear Search via tombol silang
+      // Clear Search via tombol silang (hierarchy-search-clear-button)
       await controls.clearSearch('hierarchy-search-input');
       await expect(spriteNode).toBeVisible();
     });

@@ -27,7 +27,7 @@ export class ScriptCrudObject {
     await this.ensureReady();
     await this.scriptPage.createBtn.click();
     await this.popup.fillPromptAndSubmit('Create New Component', scriptName, 'Create');
-    
+
     await this.popup.expectPopAlert('Script Created');
     const scriptItem = this.scriptPage.itemByName(scriptName);
     await expect(scriptItem).toBeVisible();
@@ -64,7 +64,7 @@ export class ScriptCrudObject {
 
   /**
    * Helper facade untuk navigasi masuk ke dalam folder script
-   * @param {string} folderName 
+   * @param {string} folderName
    */
   async enterFolder(folderName) {
     const folderItem = this.scriptPage.itemByName(folderName);

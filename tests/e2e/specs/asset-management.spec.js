@@ -160,7 +160,15 @@ test.describe('Asset Management Comprehensive E2E Tests', () => {
   // =========================================================================
   // 6. ASSET ATTACHMENT TO ENTITIES
   // =========================================================================
-  test('attaches Audio asset to an Empty Entity with Audio Component', async ({ assets, hierarchyCrud, inspectorCrud, popup }) => {
+  // PERBAIKAN: sebelumnya test ini memanggil
+  //   inspectorCrud.configureAudioComponent({ volume: 90, assetId: null })
+  // lalu MELAKUKAN SENDIRI upload + apply secara manual di bawahnya.
+  // `configureAudioComponent` tidak pernah punya parameter `assetId` — jadi
+  // baris itu diam-diam tidak melakukan apa pun (dead code) dan menyesatkan
+  // pembaca seolah attach sudah terjadi di titik itu. configureAudioComponent
+  // sudah mendukung `audioFileName` untuk melakukan upload+apply dalam satu
+  // langkah, jadi langkah manual di bawahnya dihapus karena duplikat.
+  test('attaches Audio asset to an Empty Entity with Audio Component', async ({ hierarchyCrud, inspectorCrud, popup }) => {
     const mainLayer = await hierarchyCrud.layer.create('World', 'Main Layer');
     const emptyEntity = await hierarchyCrud.entity.create(mainLayer, 'empty');
     const entityId = await emptyEntity.getAttribute('data-node-id');
@@ -168,15 +176,8 @@ test.describe('Asset Management Comprehensive E2E Tests', () => {
     await emptyEntity.click();
     await inspectorCrud.configureAudioComponent({
       volume: 90,
-      assetId: null,
+      audioFileName: 'sample_audio.ogg',
     });
-
-    await assets.upload('sample_audio.ogg');
-    const audioCard = assets.card('sample_audio');
-    await expect(audioCard).toBeVisible();
-
-    await emptyEntity.click();
-    await popup.selectContextMenu(audioCard, 'Apply to Audio Component');
 
     await popup.expectPopAlert('Success');
     const targetEntity = hierarchyCrud.hierarchy.nodeById(entityId);

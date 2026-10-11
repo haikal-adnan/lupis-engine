@@ -1,5 +1,5 @@
 <template>
-  <div class="select-none font-sans relative min-w-max">
+  <div class="select-none font-sans relative min-w-max" data-testid="hierarchy-node-root">
     <div
       ref="dragGhostRef"
       class="fixed -top-[9999px] bg-foreground text-background px-2 py-1 rounded text-xs font-bold z-50 shadow-md border border-border"
@@ -17,6 +17,7 @@
 
     <div
       class="group/node relative flex items-center w-full border border-transparent py-0.5 pr-2 text-xs cursor-default transition-none whitespace-nowrap"
+      data-testid="hierarchy-node"
       :data-node-id="node.id"
       :data-node-name="node.name"
       :data-node-type="node.type"
@@ -47,6 +48,7 @@
       <button
         type="button"
         class="w-4 h-5 flex items-center justify-center -ml-1 mr-0.5 shrink-0 cursor-pointer hover:bg-white/10 rounded border-none bg-transparent p-0"
+        data-testid="hierarchy-node-toggle"
         :aria-label="isOpen ? 'Collapse node' : 'Expand node'"
         @click.stop="toggle"
         @mousedown.stop
@@ -99,6 +101,7 @@
         <button 
           type="button"
           class="p-1 rounded hover:bg-white/20 cursor-pointer border-none bg-transparent" 
+          data-testid="hierarchy-node-lock-button"
           :aria-label="locked ? 'Unlock node' : 'Lock node'"
           title="Toggle Lock"
           @click.stop="toggleLock"
@@ -109,6 +112,7 @@
         <button 
           type="button"
           class="p-1 rounded hover:bg-white/20 cursor-pointer border-none bg-transparent" 
+          data-testid="hierarchy-node-visibility-button"
           :aria-label="visible ? 'Hide node' : 'Show node'"
           title="Toggle Visibility"
           @click.stop="toggleVisibility"

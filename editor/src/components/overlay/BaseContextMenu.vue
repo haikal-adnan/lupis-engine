@@ -18,6 +18,7 @@
           <div 
             v-if="item.separator" 
             role="separator" 
+            data-testid="context-menu-separator"
             class="h-[1px] bg-border my-1 mx-1"
           ></div>
 
@@ -26,6 +27,7 @@
             <button
               type="button"
               role="menuitem"
+              data-testid="context-menu-item"
               :aria-disabled="item.disabled ? 'true' : undefined"
               :aria-expanded="item.children?.length ? (activeSubmenuIndex === index ? 'true' : 'false') : undefined"
               :data-menu-item="item.label"
@@ -140,14 +142,6 @@ const handleClickOutside = (event) => {
   if (event.target?.closest?.('.base-context-menu-fixed')) return;
   emit('close');
 };
-
-// const handleClickOutside = (event) => {
-//   // Jika mousedown terjadi di dalam menu itu sendiri, JANGAN tutup menu secara prematur!
-//   if (event.target?.closest?.('.base-context-menu-fixed') || event.target?.closest?.('[role="menu"]')) {
-//     return;
-//   }
-//   emit('close');
-// };
 
 const handleScroll = (event) => {
   if (event.target?.closest?.('.base-context-menu-fixed')) return;

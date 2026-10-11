@@ -2,7 +2,7 @@
   <div 
     class="flex flex-col h-full bg-background select-none" 
     @click="closeMenu"
-    data-testid="scene-hierarchy-container"
+    data-testid="hierarchy-container"
     :data-selected-count="sceneStore.selectedEntityIds.length"
   >
     <HierarchyToolbar 
@@ -12,22 +12,25 @@
       @refresh="handlers.refresh"
     />
 
-    <div class="flex-1 min-h-0 relative w-full" data-section="tree-viewport">
+    <div
+      class="flex-1 min-h-0 relative w-full"
+      data-section="tree-viewport"
+      data-testid="hierarchy-tree-viewport"
+    >
       <ScrollArea>
         <div class="px-1 pt-2 pb-32"> 
+          <!-- data-testid sengaja TIDAK dipasang di sini: akan menimpa root testid SceneTree -->
           <SceneTree 
             :data="filteredData" 
             :selected-ids="sceneStore.selectedEntityIds"
             @select="handleSelect"
             @contextmenu="handleContextMenu"
             @drop="handleDrop"
-            data-testid="scene-tree"
           />
         </div>
       </ScrollArea>
     </div>
 
-    <!-- Hapus data-testid dan role di sini -->
     <BaseContextMenu 
       v-if="contextMenu.visible"
       :position="{ x: contextMenu.x, y: contextMenu.y }"

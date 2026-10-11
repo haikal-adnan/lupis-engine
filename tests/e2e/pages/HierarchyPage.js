@@ -1,5 +1,12 @@
 import { expect } from '@playwright/test';
 
+// Peta nama section -> testid PropertySection (lihat SceneTree.vue)
+const SECTION_IDS = {
+  world: 'hierarchy-section-world',
+  ui: 'hierarchy-section-ui',
+  'user interface': 'hierarchy-section-ui',
+};
+
 export class HierarchyPage {
   /**
    * @param {import('@playwright/test').Page} page
@@ -12,37 +19,41 @@ export class HierarchyPage {
   // LOCATORS - SCENE MANAGEMENT
   // ==========================================
   get sceneSelect() {
-    return this.page.getByTestId('scene-select');
+    return this.page.getByTestId('hierarchy-scene-select');
   }
 
   get sceneOptionsButton() {
-    return this.page.getByTestId('scene-options-button');
+    return this.page.getByTestId('hierarchy-scene-options-button');
   }
 
   // ==========================================
   // LOCATORS - HIERARCHY & LAYERS
   // ==========================================
+  _sectionId(name) {
+    const id = SECTION_IDS[name.toLowerCase()];
+    if (!id) throw new Error(`Section '${name}' tidak dikenal. Pilihan: World, User Interface`);
+    return id;
+  }
+
   section(name) {
-    return this.page
-      .getByRole('region', { name })
-      .or(this.page.locator(`[data-section="${name.toLowerCase()}"]`))
-      .or(this.page.locator('.group\\/section').filter({ hasText: name }))
-      .first();
+    return this.page.getByTestId(this._sectionId(name));
+  }
+
+  get nodes() {
+    return this.page.getByTestId('hierarchy-node');
   }
 
   nodeByName(name) {
-    return this.page
-      .locator(`[data-node-name="${name}"]`)
-      .or(this.page.locator('.group\\/node', { hasText: name }))
-      .first();
+    const safe = name.replace(/"/g, '\\"');
+    return this.page.locator(`[data-testid="hierarchy-node"][data-node-name="${safe}"]`).first();
   }
 
   nodeById(id) {
-    return this.page.locator(`[data-node-id="${id}"]`);
+    return this.page.locator(`[data-testid="hierarchy-node"][data-node-id="${id}"]`);
   }
 
   nodesByText(pattern) {
-    return this.page.locator('[data-node-name]').or(this.page.locator('.group\\/node')).filter({ hasText: pattern });
+    return this.nodes.filter({ hasText: pattern });
   }
 
   // ==========================================
@@ -75,7 +86,7 @@ export class HierarchyPage {
   }
 
   async createScene(controls, popup, sceneName) {
-    await controls.clickSelectAction('Scene Options', 'New Scene');
+    await controls.clickSelectAction('hierarchy-scene-options-button', 'New Scene');
     await popup.fillPromptAndSubmit('New Scene', sceneName, 'OK');
     await expect(this.sceneSelect).toContainText(sceneName);
   }
@@ -85,7 +96,7 @@ export class HierarchyPage {
     const currentSceneName = (await this.sceneSelect.textContent()).trim();
 
     // Trigger action Delete Scene dari dropdown
-    await controls.clickSelectAction('Scene Options', 'Delete Scene');
+    await controls.clickSelectAction('hierarchy-scene-options-button', 'Delete Scene');
 
     // Tangani BaseConfirm Dialog secara presisi
     const confirmModal = this.page.getByTestId('base-confirm');
@@ -101,30 +112,37 @@ export class HierarchyPage {
     // Assert scene terhapus dari select
     await expect(this.sceneSelect).not.toContainText(currentSceneName);
   }
+
   // ==========================================
   // ACTIONS - HIERARCHY & LAYERS
   // ==========================================
+
+  /**
+   * Hover header section -> klik trigger menu (titik tiga) -> kembalikan locator menu.
+   * Menu dicari lewat page (bukan section) karena BaseDropdown bisa me-teleport kontennya.
+   */
+  async openSectionMenu(sectionName) {
+    const id = this._sectionId(sectionName);
+    const section = this.section(sectionName);
+    await section.scrollIntoViewIfNeeded();
+    await section.getByTestId(`${id}-header`).hover();
+
+    const trigger = section.getByTestId(`${id}-menu-trigger`);
+    await expect(trigger).toBeVisible();
+    await trigger.click();
+
+    const menu = this.page.getByTestId(`${id}-menu`);
+    await expect(menu).toBeVisible();
+    return menu;
+  }
+
   async addLayerToSection(popup, sectionName = 'World', layerName = 'New Layer') {
-    const sectionContainer = this.section(sectionName);
-    await sectionContainer.scrollIntoViewIfNeeded();
+    const kind = this._sectionId(sectionName).replace('hierarchy-section-', ''); // 'world' | 'ui'
+    const menu = await this.openSectionMenu(sectionName);
+    await menu.getByTestId(`hierarchy-${kind}-add-layer-button`).click();
 
-    const header = sectionContainer.locator('> div').first();
-    await header.hover();
-
-    const addBtn = sectionContainer
-      .getByRole('button', { name: /add layer/i })
-      .or(sectionContainer.locator('button'))
-      .first();
-    await addBtn.click();
-
-    const isUI = /user interface|ui/i.test(sectionName);
-    const option = this.page.getByRole('button', { name: isUI ? /^Add UI Layer$/i : /^Add World Layer$/i });
-    await expect(option).toBeVisible();
-    await option.click();
-
-    const created = sectionContainer
-      .locator('[data-node-name="New Layer"]')
-      .or(sectionContainer.locator('.group\\/node', { hasText: 'New Layer' }))
+    const created = this.section(sectionName)
+      .locator('[data-testid="hierarchy-node"][data-node-name="New Layer"]')
       .first();
     await expect(created).toBeVisible();
 
@@ -142,8 +160,13 @@ export class HierarchyPage {
   }
 
   async snapshot() {
+    // CATATAN: fallback `|| node.textContent?.trim()` dipertahankan untuk saat
+    // ini karena belum dikonfirmasi apakah SEMUA node selalu punya atribut
+    // data-node-name. Kalau sudah dipastikan selalu ada, hapus fallback ini —
+    // textContent ikut menangkap badge/ikon yang bisa berubah render dan
+    // membuat expect.poll(snapshot) di bad-path test jadi flaky.
     return await this.page.evaluate(() => {
-      const nodes = Array.from(document.querySelectorAll('[data-node-id]'));
+      const nodes = Array.from(document.querySelectorAll('[data-testid="hierarchy-node"]'));
       return nodes.map((node) => ({
         id: node.getAttribute('data-node-id'),
         name: node.getAttribute('data-node-name') || node.textContent?.trim(),
@@ -153,4 +176,3 @@ export class HierarchyPage {
     });
   }
 }
-

@@ -1,4 +1,3 @@
-<!-- HierarchyToolbar.vue -->
 <template>
   <div 
     class="px-2 py-2 border-b border-border bg-background space-y-2"
@@ -15,7 +14,7 @@
           placeholder="Select Scene..."
           height="1.75rem"
           class="w-full"
-          data-testid="scene-select"
+          data-testid="hierarchy-scene-select"
         />
       </div>
 
@@ -25,7 +24,7 @@
             class="h-7 w-7 flex items-center justify-center rounded-md border border-transparent hover:bg-muted text-muted-foreground transition-colors"
             :class="{ 'bg-muted text-foreground': isOpen }"
             title="Scene Options"
-            data-testid="scene-options-button"
+            data-testid="hierarchy-scene-options-button"
             aria-label="Scene Options"
             :aria-expanded="isOpen"
           >
@@ -38,7 +37,7 @@
             class="flex flex-col text-xs min-w-[160px]"
             role="menu"
             aria-label="Scene Actions Menu"
-            data-testid="scene-options-menu"
+            data-testid="hierarchy-scene-options-menu"
           >
             <div class="px-2 py-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
               Scene Actions
@@ -48,7 +47,7 @@
               @click="handleCreate(close)" 
               class="dropdown-item"
               role="menuitem"
-              data-testid="action-new-scene"
+              data-testid="hierarchy-scene-action-new"
             >
               <Plus class="w-3.5 h-3.5 mr-2 text-muted-foreground" /> <span>New Scene</span>
             </button>
@@ -58,7 +57,7 @@
               :disabled="!sceneStore.activeSceneId" 
               class="dropdown-item"
               role="menuitem"
-              data-testid="action-rename-scene"
+              data-testid="hierarchy-scene-action-rename"
               :aria-disabled="!sceneStore.activeSceneId"
             >
               <Edit2 class="w-3.5 h-3.5 mr-2 text-muted-foreground" /> <span>Rename Scene</span>
@@ -69,7 +68,7 @@
               :disabled="!sceneStore.activeSceneId" 
               class="dropdown-item"
               role="menuitem"
-              data-testid="action-duplicate-scene"
+              data-testid="hierarchy-scene-action-duplicate"
               :aria-disabled="!sceneStore.activeSceneId"
             >
               <Copy class="w-3.5 h-3.5 mr-2 text-muted-foreground" /> <span>Duplicate Scene</span>
@@ -82,7 +81,7 @@
               :disabled="!sceneStore.activeSceneId" 
               class="dropdown-item text-destructive hover:text-destructive hover:bg-destructive/10"
               role="menuitem"
-              data-testid="action-delete-scene"
+              data-testid="hierarchy-scene-action-delete"
               :aria-disabled="!sceneStore.activeSceneId"
             >
               <Trash2 class="w-3.5 h-3.5 mr-2" /> <span>Delete Scene</span>

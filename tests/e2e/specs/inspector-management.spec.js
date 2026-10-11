@@ -32,6 +32,20 @@ async function installBusSpy(page) {
 }
 
 /**
+ * Tab workspace yang sedang aktif.
+ *
+ * PERBAIKAN: sebelumnya `[aria-selected="true"]` dipakai polos. Sekarang baris
+ * hierarchy-node juga ber-aria-selected="true" saat dipilih, jadi locator lama
+ * selalu cocok dengan node yang baru diklik dan assertion-nya lolos tanpa
+ * benar-benar memverifikasi tab. Node hierarchy dikecualikan di sini.
+ */
+function activeWorkspaceTab(page, entityId) {
+  return page
+    .locator(`[data-tab-id="${entityId}"], [aria-selected="true"]:not([data-testid="hierarchy-node"])`)
+    .first();
+}
+
+/**
  * Helper internal untuk membuat Prefab via Context Menu Hierarchy secara stabil
  */
 async function createPrefabFromEntity(page, hierarchy, popup, entityNode, prefabName) {
@@ -69,7 +83,7 @@ test.describe('Property Inspector: Basic Components & Prefab E2E', () => {
 
     const showGridCheckbox = page.getByTestId('project-show-grid-toggle').locator('input[type="checkbox"]').or(page.getByTestId('project-show-grid-toggle')).first();
     const initialGridChecked = await showGridCheckbox.isChecked();
-    
+
     await inspector.toggleProjectGridGuide();
     await expect(showGridCheckbox).toBeChecked({ checked: !initialGridChecked });
 
@@ -163,7 +177,7 @@ test.describe('Property Inspector: Basic Components & Prefab E2E', () => {
   test('configures collider component and verifies AutoFit disable state', async ({ page, hierarchy, popup, inspector }) => {
     const worldLayer = hierarchy.nodeByName('World Layer');
     await popup.selectContextMenu(worldLayer, ['Add Entity', 'Empty Entity']);
-    
+
     const entityNode = hierarchy.nodesByText(/Empty/i).first();
     await expect(entityNode).toBeVisible();
     await entityNode.click();
@@ -183,7 +197,7 @@ test.describe('Property Inspector: Basic Components & Prefab E2E', () => {
   test('modifies physics simulation properties', async ({ page, hierarchy, popup, inspector }) => {
     const worldLayer = hierarchy.nodeByName('World Layer');
     await popup.selectContextMenu(worldLayer, ['Add Entity', 'Empty Entity']);
-    
+
     const entityNode = hierarchy.nodesByText(/Empty/i).first();
     await expect(entityNode).toBeVisible();
     await entityNode.click();
@@ -239,39 +253,6 @@ test.describe('Property Inspector: Basic Components & Prefab E2E', () => {
   // =========================================================================
   // 8. PREFAB ACTIONS MENU (APPLY, REVERT, UNPACK, COPY ID, DELETE)
   // =========================================================================
-  // =========================================================================
-  // 8. PREFAB ACTIONS MENU (APPLY, REVERT, UNPACK, COPY ID, DELETE)
-  // =========================================================================
-  // =========================================================================
-  // 8. PREFAB ACTIONS MENU (APPLY, REVERT, UNPACK, COPY ID, DELETE)
-  // =========================================================================
-  // =========================================================================
-  // 8. PREFAB ACTIONS MENU (APPLY, REVERT, UNPACK, COPY ID, DELETE)
-  // =========================================================================
-  // =========================================================================
-  // 8. PREFAB ACTIONS MENU (APPLY, REVERT, UNPACK, COPY ID, DELETE)
-  // =========================================================================
-  // =========================================================================
-  // 8. PREFAB ACTIONS MENU (APPLY, REVERT, UNPACK, COPY ID, DELETE)
-  // =========================================================================
-  // =========================================================================
-  // 8. PREFAB ACTIONS MENU (APPLY, REVERT, UNPACK, COPY ID, DELETE)
-  // =========================================================================
-  // =========================================================================
-  // 8. PREFAB ACTIONS MENU (APPLY, REVERT, UNPACK, COPY ID, DELETE)
-  // =========================================================================
-  // =========================================================================
-  // 8. PREFAB ACTIONS MENU (APPLY, REVERT, UNPACK, COPY ID, DELETE)
-  // =========================================================================
-  // =========================================================================
-  // 8. PREFAB ACTIONS MENU (APPLY, REVERT, UNPACK, COPY ID, DELETE)
-  // =========================================================================
-  // =========================================================================
-  // 8. PREFAB ACTIONS MENU (APPLY, REVERT, UNPACK, COPY ID, DELETE)
-  // =========================================================================
-  // =========================================================================
-  // 8. PREFAB ACTIONS MENU (APPLY, REVERT, UNPACK, COPY ID, DELETE)
-  // =========================================================================
   test('tests all prefab context menu actions: Apply to Master, Revert to Sync, Unpack Prefab, Copy ID, and Delete Entity', async ({ page, hierarchy, popup, inspector }) => {
     const prefabName = 'PlayerMasterPrefab';
 
@@ -317,7 +298,11 @@ test.describe('Property Inspector: Basic Components & Prefab E2E', () => {
         return menuContainer;
       }
 
-      const menuTrigger = objectSection.getByTestId('section-menu-trigger').first();
+      // PERBAIKAN: testid trigger sekarang diturunkan dari testid section
+      // (`${base}-menu-trigger`), bukan lagi 'section-menu-trigger' statis.
+      // Base-nya = data-testid yang dipasang EditorObject pada PropertySection
+      // ('editor-object-section').
+      const menuTrigger = objectSection.locator('[data-element="section-menu-trigger"]').first();
       await expect(menuTrigger).toBeVisible();
       await menuTrigger.click();
 
@@ -360,13 +345,14 @@ test.describe('Property Inspector: Basic Components & Prefab E2E', () => {
     const deletedNode = hierarchy.nodeById(nodeId);
     await expect(deletedNode).toHaveCount(0);
   });
+
   // =========================================================================
   // 9. [Bad Path] DUPLICATE SCRIPT ID REJECTION
   // =========================================================================
   test('[Bad Path] rejects assigning duplicate Script ID and triggers warning alert', async ({ popup, hierarchy, inspector }) => {
     const worldLayer = hierarchy.nodeByName('World Layer');
     await popup.selectContextMenu(worldLayer, ['Add Entity', 'Empty Entity']);
-    
+
     const firstEntity = hierarchy.nodesByText(/Empty/i).first();
     await expect(firstEntity).toBeVisible();
     await firstEntity.click();
@@ -592,8 +578,7 @@ test.describe('Property Inspector: Assets, Scripts & Tab Navigation Components E
 
     await inspector.openShapeEditor();
 
-    const activeTab = page.locator(`[data-tab-id="${entityId}"], [aria-selected="true"]`).first();
-    await expect(activeTab).toBeVisible();
+    await expect(activeWorkspaceTab(page, entityId)).toBeVisible();
 
     const shapePanelTitle = page.getByText(/Custom Shape Inspector|Shape Editor/i).first();
     await expect(shapePanelTitle).toBeVisible();
@@ -639,8 +624,7 @@ test.describe('Property Inspector: Assets, Scripts & Tab Navigation Components E
 
     await inspector.openTilemapEditor();
 
-    const activeTab = page.locator(`[data-tab-id="${entityId}"], [aria-selected="true"]`).first();
-    await expect(activeTab).toBeVisible();
+    await expect(activeWorkspaceTab(page, entityId)).toBeVisible();
 
     const tilePaletteTitle = page.getByText(/Tile Palette|Tilemap/i).first();
     await expect(tilePaletteTitle).toBeVisible();
@@ -687,8 +671,7 @@ test.describe('Property Inspector: Assets, Scripts & Tab Navigation Components E
 
     await inspector.openAnimatorEditor();
 
-    const activeTab = page.locator(`[data-tab-id="${entityId}"], [aria-selected="true"]`).first();
-    await expect(activeTab).toBeVisible();
+    await expect(activeWorkspaceTab(page, entityId)).toBeVisible();
 
     const animatorTitle = page.getByText(/Clip|Properties/i).first();
     await expect(animatorTitle).toBeVisible();
