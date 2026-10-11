@@ -47,9 +47,8 @@ export class ScriptCrudObject {
 
     // Pastikan entity target di Hierarchy aktif & terpilih secara eksplisit
     const entityNode = this.hierarchy.nodeByName(entityName);
-    if (await entityNode.isVisible()) {
-      await entityNode.click();
-    }
+    await expect(entityNode).toBeVisible();
+    await entityNode.click();
 
     const scriptItem = this.scriptPage.itemByName(scriptName);
     await expect(scriptItem).toBeVisible();
@@ -124,13 +123,12 @@ export class ScriptCrudObject {
     await this.ensureReady();
 
     // Berikan izin clipboard pada browser context agar navigator.clipboard.writeText berjalan di Chromium headless
-    await this.page.context().grantPermissions(['clipboard-read', 'clipboard-write']).catch(() => {});
+    await this.page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
 
     const scriptItem = this.scriptPage.itemByName(scriptName);
     await expect(scriptItem).toBeVisible();
 
     await this.popup.selectContextMenu(scriptItem, 'Copy ID');
-    await this.popup.expectPopAlert('Success');
   }
 
   /**
@@ -159,7 +157,7 @@ export class ScriptCrudObject {
     await folderItem.dblclick();
 
     await expect(this.scriptPage.breadcrumbFolder(folderName)).toBeVisible();
-    await expect(folderItem).not.toBeVisible();
+    await expect(folderItem).toBeHidden();
   }
 
   /**

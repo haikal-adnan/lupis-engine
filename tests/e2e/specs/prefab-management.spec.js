@@ -27,7 +27,7 @@ test.describe('Prefab Panel E2E Management', () => {
 
       // Switch to UI Tab
       await prefabs.switchTab('ui');
-      await expect(worldItem).not.toBeVisible();
+      await expect(worldItem).toBeHidden();
 
       // Create UI Prefab
       await popup.selectContextMenu(prefabs.panel, 'Create Empty Prefab');
@@ -44,17 +44,17 @@ test.describe('Prefab Panel E2E Management', () => {
 
       const folderItem = prefabs.itemByName('Characters');
       await expect(folderItem).toBeVisible();
+      
+      await expect(folderItem).toHaveAttribute('data-node-id', /.+/);
       const folderId = await folderItem.getAttribute('data-node-id');
 
       // Navigate inside folder
       await folderItem.dblclick();
 
       // Assert breadcrumb updated
-      if (folderId) {
-        const breadcrumbItem = prefabs.breadcrumbFolder(folderId);
-        await expect(breadcrumbItem).toBeVisible();
-      }
-      await expect(folderItem).not.toBeVisible();
+      const breadcrumbItem = prefabs.breadcrumbFolder(folderId);
+      await expect(breadcrumbItem).toBeVisible();
+      await expect(folderItem).toBeHidden();
     });
   });
 
@@ -165,7 +165,7 @@ test.describe('Prefab Panel E2E Management', () => {
 
       // Filter with non-matching query
       await controls.fillSearch('search-prefab-input', 'NonExistent');
-      await expect(item).not.toBeVisible();
+      await expect(item).toBeHidden();
 
       // Clear search query
       await controls.clearSearch('search-prefab-input');

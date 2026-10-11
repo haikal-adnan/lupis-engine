@@ -60,7 +60,7 @@ test.describe('Asset Management Comprehensive E2E Tests', () => {
 
     await assets.breadcrumb('Level3').click();
     await expect(assets.breadcrumb('Level3')).toBeVisible();
-    await expect(assets.breadcrumb('Level4')).not.toBeVisible();
+    await expect(assets.breadcrumb('Level4')).toBeHidden();
     await expect(assets.card('Level4')).toBeVisible();
 
     await assets.breadcrumbRoot.click();
@@ -125,13 +125,13 @@ test.describe('Asset Management Comprehensive E2E Tests', () => {
     // 4. Delete
     await popup.selectContextMenu(duplicatedCard, 'Delete');
     await popup.confirmAction('Delete Asset?', { action: 'confirm', confirmText: 'Confirm' });
-    await expect(duplicatedCard).not.toBeVisible();
+    await expect(duplicatedCard).toBeHidden();
   });
 
   // =========================================================================
   // 5. SEARCH ASSET
   // =========================================================================
-  test('filters assets by search query reactively and clears filter', async ({ page, assets }) => {
+  test('filters assets by search query reactively and clears filter', async ({ assets, controls }) => {
     await assets.upload('sample_image.png');
     await assets.upload('sample_font.ttf');
     await assets.upload('sample_audio.ogg');
@@ -145,12 +145,8 @@ test.describe('Asset Management Comprehensive E2E Tests', () => {
     await expect(assets.cardsByTitle('sample_image')).toHaveCount(0);
     await expect(assets.cardsByTitle('sample_audio')).toHaveCount(0);
 
-    const clearBtn = page.getByTestId('search-clear-button').or(page.getByRole('button', { name: /clear/i })).first();
-    if (await clearBtn.isVisible()) {
-      await clearBtn.click();
-    } else {
-      await assets.searchInput.fill('');
-    }
+    // Pairing Section 7.4: search-input <-> search-clear-button (dipakai BaseControlHelper.clearSearch)
+    await controls.clearSearch('search-input', assets.panel);
 
     await expect(assets.card('sample_image')).toBeVisible();
     await expect(assets.card('sample_font')).toBeVisible();

@@ -29,8 +29,10 @@ export class InspectorCrudObject {
     });
     await this.page.evaluate(() => new Promise((resolve) => requestAnimationFrame(resolve)));
 
-    const menuContainer = this.page.getByTestId('object-section-menu').first();
-    if (await menuContainer.isVisible()) {
+    // Menu di-teleport & dirender hanya saat terbuka -> count() setelah blur+frame (Section 9.1)
+    const menuContainer = this.page.getByTestId('object-section-menu');
+    if ((await menuContainer.count()) > 0) {
+      await expect(menuContainer).toBeVisible();
       return menuContainer;
     }
 
@@ -157,12 +159,7 @@ export class InspectorCrudObject {
     if (outlineWidth !== undefined) await this.inspector.setShapeOutlineWidth(outlineWidth);
     
     if (polygonCollision) {
-      const polygonPhysicsBtn = this.page
-        .getByTestId('shape-renderer-polygon-collision')
-        .locator('input[type="checkbox"]')
-        .or(this.page.getByTestId('shape-renderer-polygon-collision'))
-        .first();
-      await polygonPhysicsBtn.click();
+      await this.inspector.checkbox('shape-renderer-polygon-collision').click();
     }
 
     if (openEditor) await this.inspector.openShapeEditor();
@@ -216,7 +213,7 @@ export class InspectorCrudObject {
     await this.scriptCrud.createScript(scriptName);
     await this.scriptCrud.attachScriptToEntity(scriptName, entityName);
 
-    const entityNode = this.hierarchy.nodesByText(entityName).first();
+    const entityNode = this.hierarchy.nodeByName(entityName);
     await expect(entityNode).toBeVisible();
     await entityNode.click();
 

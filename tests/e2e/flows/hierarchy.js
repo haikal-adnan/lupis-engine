@@ -51,14 +51,12 @@ export class SceneCrud {
     const alertModal = this.page
       .getByRole('dialog')
       .or(this.page.getByRole('alertdialog'))
-      .filter({ hasText: 'Cannot Delete' })
-      .first();
+      .filter({ hasText: 'Cannot Delete' });
 
     await expect(alertModal).toBeVisible();
 
-    const okBtn = alertModal.getByRole('button', { name: /ok|close/i }).first();
-    await okBtn.click();
-    await expect(alertModal).not.toBeVisible();
+    await alertModal.getByRole('button', { name: 'OK', exact: true }).click();
+    await expect(alertModal).toHaveCount(0);
   }
 }
 
@@ -76,8 +74,7 @@ export class LayerCrud {
     await this.hierarchy.addLayerToSection(this.popup, sectionName, layerName);
     const targetLayer = this.hierarchy
       .section(sectionName)
-      .locator(`[data-testid="hierarchy-node"][data-node-name="${layerName}"]`)
-      .first();
+      .locator(`[data-testid="hierarchy-node"][data-node-name="${layerName}"]`);
 
     await expect(targetLayer).toBeVisible();
     return targetLayer;
@@ -90,8 +87,7 @@ export class LayerCrud {
     await this.popup.selectContextMenu(targetNode, 'Rename Layer');
     await this.popup.fillPromptAndSubmit('Rename Layer', newName, 'Rename');
 
-    const renamedNode = nodeId ? this.hierarchy.nodeById(nodeId) : this.hierarchy.nodeByName(newName);
-    await expect(renamedNode).toBeVisible();
+    const renamedNode = this.hierarchy.nodeById(nodeId);
     await expect(renamedNode).toHaveAttribute('data-node-name', newName);
     return renamedNode;
   }
@@ -101,7 +97,7 @@ export class LayerCrud {
     await this.popup.selectContextMenu(layerNode, 'Change Z-Index');
     await this.popup.fillPromptAndSubmit('Change Z-Index', String(newZIndex), 'Update');
 
-    await expect(layerNode.locator('[data-z-index]').first()).toHaveText(String(newZIndex));
+    await expect(layerNode.locator('[data-z-index]')).toHaveText(String(newZIndex));
   }
 
   async toggleLock(layerNode, expectLocked = true) {
@@ -158,27 +154,21 @@ export class EntityCrud {
 
     // Pemetaan label context menu berdasarkan tipe entitas
     const typeMap = {
-      empty: { path: ['Add Entity', 'Empty Entity'], match: /Empty/i },
-      sprite: { path: ['Add Entity', 'Sprite'], match: /Sprite/i },
-      shape: { path: ['Add Entity', 'Shape'], match: /Shape/i },
-      text: { path: ['Add Entity', 'Text'], match: /Text/i },
-      tilemap: { path: ['Add Entity', 'Tilemap'], match: /Tilemap/i },
-      ui_empty: { path: ['Add UI Element', 'Empty UI'], match: /Empty/i },
-      ui_shape: { path: ['Add UI Element', 'UI Shape'], match: /Shape/i },
-      ui_text: { path: ['Add UI Element', 'UI Text'], match: /Text/i },
-      ui_image: { path: ['Add UI Element', 'UI Image'], match: /Image/i },
+      empty: ['Add Entity', 'Empty Entity'],
+      sprite: ['Add Entity', 'Sprite'],
+      shape: ['Add Entity', 'Shape'],
+      text: ['Add Entity', 'Text'],
+      tilemap: ['Add Entity', 'Tilemap'],
+      ui_empty: ['Add UI Element', 'Empty UI'],
+      ui_shape: ['Add UI Element', 'UI Shape'],
+      ui_text: ['Add UI Element', 'UI Text'],
+      ui_image: ['Add UI Element', 'UI Image'],
     };
 
-    const targetConfig = typeMap[entityType.toLowerCase()] || {
-      path: ['Add Entity', entityType],
-      match: new RegExp(entityType, 'i'),
-    };
+    const menuPath = typeMap[entityType.toLowerCase()] || ['Add Entity', entityType];
 
-    await this.popup.selectContextMenu(parentLayerNode, targetConfig.path);
-
-    const createdNode = this.hierarchy.nodesByText(targetConfig.match).first();
-    await expect(createdNode).toBeVisible();
-    return createdNode;
+    // Node baru ditemukan lewat perbandingan data-node-id (Section 8), bukan regex teks.
+    return this.hierarchy.addEntity(this.popup, parentLayerNode, menuPath);
   }
 
   async rename(entityNode, newName) {
@@ -188,8 +178,8 @@ export class EntityCrud {
     await this.popup.selectContextMenu(entityNode, 'Rename Entity');
     await this.popup.fillPromptAndSubmit('Rename Entity', newName, 'Rename');
 
-    const renamedNode = nodeId ? this.hierarchy.nodeById(nodeId) : this.hierarchy.nodeByName(newName);
-    await expect(renamedNode).toBeVisible();
+    const renamedNode = this.hierarchy.nodeById(nodeId);
+    await expect(renamedNode).toHaveAttribute('data-node-name', newName);
     return renamedNode;
   }
 
@@ -202,9 +192,7 @@ export class EntityCrud {
 
     await this.hierarchy.dragAndDropNodes(childNode, parentNode);
 
-    if (childId && parentId) {
-      await expect(this.hierarchy.nodeById(childId)).toHaveAttribute('data-parent-id', parentId);
-    }
+    await expect(this.hierarchy.nodeById(childId)).toHaveAttribute('data-parent-id', parentId);
   }
 
   async extractToRoot(childNode, targetLayerNode) {
@@ -214,8 +202,7 @@ export class EntityCrud {
     const childId = await childNode.getAttribute('data-node-id');
     await this.hierarchy.dragAndDropNodes(childNode, targetLayerNode);
 
-    const stableChild = childId ? this.hierarchy.nodeById(childId) : childNode;
-    await expect(stableChild).not.toHaveAttribute('data-parent-id');
+    await expect(this.hierarchy.nodeById(childId)).not.toHaveAttribute('data-parent-id');
   }
 
   async createPrefab(entityNode, prefabName) {
@@ -225,7 +212,7 @@ export class EntityCrud {
     await this.popup.selectContextMenu(entityNode, 'Use as Prefab');
     await this.popup.fillPromptAndSubmit('Create Prefab', prefabName, 'Create');
 
-    const stableNode = nodeId ? this.hierarchy.nodeById(nodeId) : entityNode;
+    const stableNode = this.hierarchy.nodeById(nodeId);
     await expect(stableNode).toHaveAttribute('data-prefab', 'true');
     return stableNode;
   }
@@ -286,11 +273,11 @@ export class WorkspaceToolsCrud {
     await expect(openBtn).toBeEnabled();
     await openBtn.click();
 
+    // Kecualikan baris hierarchy agar assert tidak vacuous (Section 7.3).
+    // TODO kontrak: beri tab editor test ID sendiri (mis. editor-tab) lalu ganti selector ini.
     const activeTab = this.page
-      .locator('[aria-selected="true"]')
-      .or(this.page.locator('.bg-accent, .border-b-2'))
-      .filter({ hasText: /UI Editor/i })
-      .first();
+      .locator('[aria-selected="true"]:not([data-testid="hierarchy-node"])')
+      .filter({ hasText: 'UI Editor' });
     await expect(activeTab).toBeVisible();
   }
 

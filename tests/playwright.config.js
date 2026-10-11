@@ -19,7 +19,11 @@ export default defineConfig({
   testMatch: '**/*.spec.js',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
+  retries: process.env.CI ? 1 : 0,
+  // Timeout GLOBAL (Standar Section 2 & 13). Jangan override per-locator; untuk test
+  // yang memang lambat gunakan test.slow() sekali di awal test beserta komentar alasannya.
+  timeout: 30_000,
+  expect: { timeout: 15_000 },
   workers: process.env.CI ? 1 : undefined,
   reporter: [
     ['html', { outputFolder: 'playwright-report', open: 'never' }],
@@ -27,6 +31,7 @@ export default defineConfig({
   ],
   use: {
     baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:6500',
+    actionTimeout: 15_000,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
@@ -38,12 +43,10 @@ export default defineConfig({
       use: chromiumUse,
     },
     {
-      name: 'chromium', // Running cepat TANPA mendahului test contract
-      testIgnore: '**/contract/**',
-      use: chromiumUse,
-    },
-    {
-      name: 'chromium-with-contract', // Running OTOMATIS mengeksekusi contract lebih dulu
+      // Contract project dijalankan lebih dulu (Section 11.3). Kegagalan helper
+      // menghentikan spec fitur lebih awal. Untuk iterasi cepat tanpa contract:
+      //   npx playwright test --project=chromium --no-deps
+      name: 'chromium',
       testIgnore: '**/contract/**',
       dependencies: ['contract'],
       use: chromiumUse,

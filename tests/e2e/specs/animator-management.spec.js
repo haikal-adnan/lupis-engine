@@ -33,9 +33,8 @@ test.describe('Animator Panel System E2E Workflow Tests', () => {
       openEditor: true,
     });
 
-    const activeTab = page
-      .locator(`[data-tab-id="${entityId}"], [aria-selected="true"]:not([data-testid="hierarchy-node"])`)
-      .first();
+    // Tab workspace dikunci lewat identitas stabil (entityId), bukan sembarang [aria-selected].
+    const activeTab = page.locator(`[data-tab-id="${entityId}"]`);
     await expect(activeTab).toBeVisible();
 
     // 3. Act: Buat Hirarki Kategori & Clip
@@ -64,7 +63,8 @@ test.describe('Animator Panel System E2E Workflow Tests', () => {
     await expect(animatorPage.scriptIdInput).toHaveValue('walk_01');
     await expect(animatorPage.clipNameInput).toHaveValue('Hero_Walk');
     await expect(animatorPage.fpsInput).toHaveValue('24');
-    await expect(animatorPage.flipXButton).toHaveClass(/bg-primary\/20/);
+    // State lewat ARIA, bukan class Tailwind (Section 7.1/7.2). Kontrak komponen: aria-pressed.
+    await expect(animatorPage.flipXButton).toHaveAttribute('aria-pressed', 'true');
 
     // 5. Act & Assert: Manipulasi Timeline Frame & Control Playback
     await animatorCrud.addFrameToTimeline();
@@ -88,10 +88,10 @@ test.describe('Animator Panel System E2E Workflow Tests', () => {
     // Toggle Playback
     await expect(animatorPage.timelinePlayToggle).toBeVisible();
     await animatorPage.timelinePlayToggle.click();
-    await expect(animatorPage.timelinePlayToggle).toHaveClass(/bg-amber-500/);
+    await expect(animatorPage.timelinePlayToggle).toHaveAttribute('aria-pressed', 'true');
 
     await animatorPage.timelinePlayToggle.click();
-    await expect(animatorPage.timelinePlayToggle).not.toHaveClass(/bg-amber-500/);
+    await expect(animatorPage.timelinePlayToggle).toHaveAttribute('aria-pressed', 'false');
   });
 
   // =========================================================================
@@ -133,13 +133,14 @@ test.describe('Animator Panel System E2E Workflow Tests', () => {
 
     // Search Filter
     await animatorPage.treeSearchInput.fill('Idle');
-    await expect(animatorPage.treeNodesByName('Idle_Anim').first()).toBeVisible();
+    // Kedua duplikat harus tetap cocok dengan filter 'Idle'
+    await expect(animatorPage.treeNodesByName('Idle_Anim')).toHaveCount(2);
 
     await animatorPage.treeSearchInput.fill('NonExistentAnim');
     await expect(animatorPage.treeEmptyState).toBeVisible();
 
     await animatorPage.treeSearchInput.fill('');
-    await expect(animatorPage.treeNodesByName('Idle_Anim').first()).toBeVisible();
+    await expect(animatorPage.treeNodesByName('Idle_Anim')).toHaveCount(2);
 
     // Keyboard Shortcut (Copy & Paste)
     await animatorPage.treeSearchInput.blur();
@@ -192,19 +193,12 @@ test.describe('Animator Panel System E2E Workflow Tests', () => {
     // Create New Source via Select Action
     const sourceTrigger = animatorPage.sourceSelect
       .getByTestId('select-trigger')
-      .or(animatorPage.sourceSelect.locator('button, [role="combobox"]'))
-      .or(animatorPage.sourceSelect)
-      .first();
+      .or(animatorPage.sourceSelect.getByRole('combobox'));
     await expect(sourceTrigger).toBeVisible();
     await sourceTrigger.click();
 
-    const createSourceAction = page
-      .getByTestId('select-action')
-      .or(page.getByTestId('select-option').filter({ hasText: /Create New Source/i }))
-      .or(page.locator('button', { hasText: /Create New Source/i }))
-      .or(page.getByRole('option', { name: /Create New Source/i }))
-      .first();
-
+    // Aksi dipilih lewat teks eksak, bukan "select-action" pertama yang kebetulan ada
+    const createSourceAction = page.getByText('Create New Source...', { exact: true });
     await expect(createSourceAction).toBeVisible();
     await createSourceAction.click();
 
@@ -320,7 +314,7 @@ test.describe('Animator Panel System E2E Workflow Tests', () => {
 
       await expect(animatorPage.timelinePlayToggle).toBeVisible();
       await animatorPage.timelinePlayToggle.click();
-      await expect(animatorPage.timelinePlayToggle).not.toHaveClass(/bg-amber-500/);
+      await expect(animatorPage.timelinePlayToggle).toHaveAttribute('aria-pressed', 'false');
     });
 
     test('[Bad Path] cancels delete all sources action and preserves active sources', async ({

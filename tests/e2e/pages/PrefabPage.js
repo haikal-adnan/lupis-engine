@@ -50,17 +50,16 @@ export class PrefabPage {
    * Jika panel belum terlihat, mengklik tombol tab bottom bar untuk membukanya.
    */
   async ensureVisible() {
-    if ((await this.panel.count()) === 0 || !(await this.panel.isVisible())) {
-      const toggleBtn = this.togglePanelBtn;
-      if ((await toggleBtn.count()) > 0) {
-        await toggleBtn.click();
-      }
+    // Settle: bottom bar harus sudah dirender sebelum count() dipakai (Section 2)
+    await expect(this.togglePanelBtn).toBeVisible();
+    if ((await this.panel.count()) === 0) {
+      await this.togglePanelBtn.click();
     }
     await expect(this.panel).toBeVisible();
   }
 
   itemByName(name) {
-    return this.page.locator(`[data-testid="prefab-item"][data-node-name="${name}"]`).first();
+    return this.page.locator(`[data-testid="prefab-item"][data-node-name="${name}"]`);
   }
 
   itemById(id) {

@@ -69,11 +69,10 @@ export class ScriptPanelPage {
    * Jika panel belum terlihat, klik tombol tab di bottom bar terlebih dahulu.
    */
   async ensureVisible() {
-    if ((await this.panel.count()) === 0 || !(await this.panel.isVisible())) {
-      const btn = this.tabButton;
-      if ((await btn.count()) > 0) {
-        await btn.click();
-      }
+    // Settle: bottom bar harus sudah dirender sebelum count() dipakai (Section 2)
+    await expect(this.tabButton).toBeVisible();
+    if ((await this.panel.count()) === 0) {
+      await this.tabButton.click();
     }
     await expect(this.panel).toBeVisible();
   }

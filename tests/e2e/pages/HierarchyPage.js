@@ -52,10 +52,6 @@ export class HierarchyPage {
     return this.page.locator(`[data-testid="hierarchy-node"][data-node-id="${id}"]`);
   }
 
-  nodesByText(pattern) {
-    return this.nodes.filter({ hasText: pattern });
-  }
-
   // ==========================================
   // ACTIONS - SCENE MANAGEMENT
   // ==========================================
@@ -141,9 +137,9 @@ export class HierarchyPage {
     const menu = await this.openSectionMenu(sectionName);
     await menu.getByTestId(`hierarchy-${kind}-add-layer-button`).click();
 
+    // Tanpa .first(): jika ada dua "New Layer", strict mode harus gagal, bukan menyembunyikan ambiguitas.
     const created = this.section(sectionName)
-      .locator('[data-testid="hierarchy-node"][data-node-name="New Layer"]')
-      .first();
+      .locator('[data-testid="hierarchy-node"][data-node-name="New Layer"]');
     await expect(created).toBeVisible();
 
     if (layerName !== 'New Layer') {
@@ -153,23 +149,68 @@ export class HierarchyPage {
     }
   }
 
+  /** Himpunan data-node-id yang ada saat ini (dipakai sebagai "before" untuk expectNewNode). */
+  async nodeIds() {
+    let previous = null;
+    await expect
+      .poll(async () => {
+        const ids = (await this.snapshot()).map((n) => n.id).sort().join('|');
+        const stable = ids === previous;
+        previous = ids;
+        return stable;
+      })
+      .toBe(true);
+
+    return new Set((await this.snapshot()).map((n) => n.id));
+  }
+
+  /**
+   * Menunggu TEPAT satu node baru dibanding `beforeIds`, lalu mengembalikan locator-nya
+   * berdasarkan data-node-id (Section 8). Tidak bergantung pada nama default atau
+   * regex teks parsial (Section 7.3). Postcondition: node baru terlihat.
+   */
+  async expectNewNode(beforeIds) {
+    let newId = null;
+    await expect
+      .poll(async () => {
+        const added = (await this.snapshot()).filter((n) => !beforeIds.has(n.id));
+        newId = added.length === 1 ? added[0].id : null;
+        return added.length;
+      })
+      .toBe(1);
+
+    const created = this.nodeById(newId);
+    await expect(created).toBeVisible();
+    return created;
+  }
+
+  /**
+   * Membuat entity lewat context menu (mis. ['Add Entity', 'Sprite'] atau
+   * ['Add Child', 'Sprite']) dan mengembalikan node barunya via identitas stabil.
+   */
+  async addEntity(popup, targetNode, menuPath) {
+    const beforeIds = await this.nodeIds();
+    await popup.selectContextMenu(targetNode, menuPath);
+    return this.expectNewNode(beforeIds);
+  }
+
   async dragAndDropNodes(sourceLocator, targetLocator) {
     await sourceLocator.scrollIntoViewIfNeeded();
     await targetLocator.scrollIntoViewIfNeeded();
     await sourceLocator.dragTo(targetLocator);
   }
 
+  /**
+   * Snapshot identitas seluruh node (id, name, parent, section) untuk perbandingan
+   * before/after (Section 10). Hanya memakai atribut kontrak (Section 7.2); tidak ada
+   * fallback ke textContent karena ikut menangkap badge/ikon dan membuat poll flaky.
+   */
   async snapshot() {
-    // CATATAN: fallback `|| node.textContent?.trim()` dipertahankan untuk saat
-    // ini karena belum dikonfirmasi apakah SEMUA node selalu punya atribut
-    // data-node-name. Kalau sudah dipastikan selalu ada, hapus fallback ini —
-    // textContent ikut menangkap badge/ikon yang bisa berubah render dan
-    // membuat expect.poll(snapshot) di bad-path test jadi flaky.
     return await this.page.evaluate(() => {
       const nodes = Array.from(document.querySelectorAll('[data-testid="hierarchy-node"]'));
       return nodes.map((node) => ({
         id: node.getAttribute('data-node-id'),
-        name: node.getAttribute('data-node-name') || node.textContent?.trim(),
+        name: node.getAttribute('data-node-name'),
         parentId: node.getAttribute('data-parent-id') || null,
         section: node.closest('[data-section]')?.getAttribute('data-section') || null,
       }));

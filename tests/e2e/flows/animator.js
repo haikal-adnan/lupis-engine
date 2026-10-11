@@ -15,28 +15,17 @@ export class AnimatorCrudObject {
   }
 
   async ensureTimelineFocused() {
-    if (await this.animatorPage.timelineSection.isVisible().catch(() => false)) {
-      return;
+    if ((await this.animatorPage.timelineSection.count()) === 0) {
+      await this.page.getByTestId('bottom-tab-timeline').click();
     }
-
-    const timelineDockTab = this.page
-      .getByTestId('dock-tab-timeline')
-      .or(this.page.getByTestId('tab-timeline'))
-      .or(this.page.locator('button, [role="tab"]').filter({ hasText: /^Timeline$|^Animator Timeline$/i }))
-      .or(this.page.locator('button, [role="tab"]').filter({ hasText: /Timeline/i }))
-      .first();
-
-    if (await timelineDockTab.isVisible().catch(() => false)) {
-      await timelineDockTab.click();
-    }
-
     await expect(this.animatorPage.timelineSection).toBeVisible();
   }
 
   async ensureClipSelected(clipNode) {
     await expect(clipNode).toBeVisible();
-    const isSelected = (await clipNode.getAttribute('class'))?.includes('bg-primary') || false;
-    if (!isSelected || !(await this.animatorPage.clipNameInput.isVisible().catch(() => false))) {
+    // selectClip() men-toggle (klik clip aktif = deselect), jadi klik hanya jika properti belum tampil.
+    // TODO kontrak: beri animator-tree-node atribut aria-selected agar bisa pindah antar-clip dengan benar.
+    if ((await this.animatorPage.clipNameInput.count()) === 0) {
       await clipNode.click();
     }
     await expect(this.animatorPage.clipNameInput).toBeVisible();

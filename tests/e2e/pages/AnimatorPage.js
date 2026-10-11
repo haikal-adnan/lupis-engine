@@ -12,11 +12,11 @@ export class AnimatorPage {
   // 1. TREE HIERARCHY (AnimatorTree.vue)
   // ==========================================
   get treeSection() {
-    return this.page.getByTestId('animator-tree-section').first();
+    return this.page.getByTestId('animator-tree-section');
   }
 
   get treeContent() {
-    return this.page.getByTestId('animator-tree-content').first();
+    return this.page.getByTestId('animator-tree-content');
   }
 
   get treeSearchInput() {
@@ -28,23 +28,23 @@ export class AnimatorPage {
   }
 
   get treeMoreMenuTrigger() {
-    return this.page.getByTestId('animator-tree-more-menu').first();
+    return this.page.getByTestId('animator-tree-more-menu');
   }
 
   get treeNewCategoryBtn() {
-    return this.page.getByTestId('animator-tree-new-category-btn').first();
+    return this.page.getByTestId('animator-tree-new-category-btn');
   }
 
   get treeNewClipBtn() {
-    return this.page.getByTestId('animator-tree-new-clip-btn').first();
+    return this.page.getByTestId('animator-tree-new-clip-btn');
   }
 
   get treeDeleteSelectedBtn() {
-    return this.page.getByTestId('animator-tree-delete-selected-btn').first();
+    return this.page.getByTestId('animator-tree-delete-selected-btn');
   }
 
   get treeEmptyState() {
-    return this.page.getByTestId('animator-tree-empty-state').first();
+    return this.page.getByTestId('animator-tree-empty-state');
   }
 
   treeNodeByName(name) {
@@ -56,14 +56,14 @@ export class AnimatorPage {
   }
 
   treeNodeById(id) {
-    return this.page.locator(`[data-testid="animator-tree-node"][data-node-id="${id}"]`).first();
+    return this.page.locator(`[data-testid="animator-tree-node"][data-node-id="${id}"]`);
   }
 
   // ==========================================
   // 2. CLIP PROPERTY INSPECTOR (AnimatorProperty.vue)
   // ==========================================
   get propertySection() {
-    return this.page.getByTestId('animator-property-section').first();
+    return this.page.getByTestId('animator-property-section');
   }
 
   get scriptIdInput() {
@@ -75,19 +75,19 @@ export class AnimatorPage {
   }
 
   get textureButton() {
-    return this.page.getByTestId('animator-property-texture-btn').first();
+    return this.page.getByTestId('animator-property-texture-btn');
   }
 
   get textureThumbnail() {
-    return this.page.getByTestId('animator-property-texture-thumbnail').first();
+    return this.page.getByTestId('animator-property-texture-thumbnail');
   }
 
   get filterSelect() {
-    return this.page.getByTestId('animator-property-filter-select').first();
+    return this.page.getByTestId('animator-property-filter-select');
   }
 
   get sdfToggleButton() {
-    return this.page.getByTestId('animator-property-sdf-toggle').first();
+    return this.page.getByTestId('animator-property-sdf-toggle');
   }
 
   get baseWidthInput() {
@@ -99,7 +99,7 @@ export class AnimatorPage {
   }
 
   get pivotControl() {
-    return this.page.getByTestId('animator-property-pivot').first();
+    return this.page.getByTestId('animator-property-pivot');
   }
 
   get fpsInput() {
@@ -107,58 +107,46 @@ export class AnimatorPage {
   }
 
   get loopSelect() {
-    return this.page.getByTestId('animator-property-loop-select').first();
+    return this.page.getByTestId('animator-property-loop-select');
   }
 
   get flipXButton() {
-    return this.page.getByTestId('animator-property-flipx-btn').first();
+    return this.page.getByTestId('animator-property-flipx-btn');
   }
 
   // ==========================================
   // 3. TIMELINE & SOURCE INSPECTOR (AnimatorTimeline.vue)
   // ==========================================
   get timelineSection() {
-    return this.page.getByTestId('animator-timeline-section').first();
+    return this.page.getByTestId('animator-timeline-section');
   }
 
   get timelinePlayToggle() {
-    return this.page
-      .getByTestId('animator-timeline-play-toggle')
-      .or(this.page.locator('button:has(.lucide-play), button:has(.lucide-pause)'))
-      .first();
+    return this.page.getByTestId('animator-timeline-play-toggle');
   }
 
   get timelineStepBackBtn() {
-    return this.page.getByTestId('animator-timeline-step-back-btn').first();
+    return this.page.getByTestId('animator-timeline-step-back-btn');
   }
 
   get timelineStepForwardBtn() {
-    return this.page.getByTestId('animator-timeline-step-forward-btn').first();
+    return this.page.getByTestId('animator-timeline-step-forward-btn');
   }
 
   get timelineFrameCounter() {
-    return this.page.getByTestId('animator-timeline-frame-counter').first();
+    return this.page.getByTestId('animator-timeline-frame-counter');
   }
 
   get timelineAddFrameBtn() {
-    return this.page
-      .getByTestId('animator-timeline-add-frame-btn')
-      .or(this.page.locator('button:has-text("Add Frame")'))
-      .first();
+    return this.page.getByTestId('animator-timeline-add-frame-btn');
   }
 
   get timelineAutoFillBtn() {
-    return this.page
-      .getByTestId('animator-timeline-autofill-btn')
-      .or(this.page.locator('button:has-text("Auto Fill")'))
-      .first();
+    return this.page.getByTestId('animator-timeline-autofill-btn');
   }
 
   get timelineClearBtn() {
-    return this.page
-      .getByTestId('animator-timeline-clear-btn')
-      .or(this.page.locator('button:has-text("Clear")'))
-      .first();
+    return this.page.getByTestId('animator-timeline-clear-btn');
   }
 
   get timelineFrameItems() {
@@ -166,27 +154,27 @@ export class AnimatorPage {
   }
 
   timelineFrameByIndex(index) {
-    return this.page.locator(`[data-testid="animator-timeline-frame-item"][data-frame-index="${index}"]`).first();
+    return this.page.locator(`[data-testid="animator-timeline-frame-item"][data-frame-index="${index}"]`);
   }
 
   timelineRemoveFrameBtnByIndex(index) {
-    return this.timelineFrameByIndex(index).getByTestId('animator-timeline-remove-frame-btn').first();
+    return this.timelineFrameByIndex(index).getByTestId('animator-timeline-remove-frame-btn');
   }
 
   get sourceSelect() {
-    return this.page.getByTestId('animator-timeline-source-select').first();
+    return this.page.getByTestId('animator-timeline-source-select');
   }
 
   get sourceMoreMenuTrigger() {
-    return this.page.getByTestId('animator-timeline-source-more-menu').first();
+    return this.page.getByTestId('animator-timeline-source-more-menu');
   }
 
   get timelineRenameClipBtn() {
-    return this.page.getByTestId('animator-timeline-rename-clip-btn').first();
+    return this.page.getByTestId('animator-timeline-rename-clip-btn');
   }
 
   get timelineDeleteAllSourcesBtn() {
-    return this.page.getByTestId('animator-timeline-delete-all-sources-btn').first();
+    return this.page.getByTestId('animator-timeline-delete-all-sources-btn');
   }
 
   get sourceRectX() {
@@ -209,26 +197,26 @@ export class AnimatorPage {
   // 4. EDITOR PANEL VIEWPORT (AnimatorPanel.vue)
   // ==========================================
   get panelViewport() {
-    return this.page.getByTestId('animator-panel-viewport').first();
+    return this.page.getByTestId('animator-panel-viewport');
   }
 
   get panelZoomText() {
-    return this.page.getByTestId('animator-panel-zoom-text').first();
+    return this.page.getByTestId('animator-panel-zoom-text');
   }
 
   get panelEntityText() {
-    return this.page.getByTestId('animator-panel-entity-text').first();
+    return this.page.getByTestId('animator-panel-entity-text');
   }
 
   // ==========================================
   // 5. EDITOR SETTINGS (AnimatorSetting.vue)
   // ==========================================
   get settingSection() {
-    return this.page.getByTestId('animator-setting-section').first();
+    return this.page.getByTestId('animator-setting-section');
   }
 
   get settingShadowCheckbox() {
-    return this.page.getByTestId('animator-setting-shadow-checkbox').first();
+    return this.page.getByTestId('animator-setting-shadow-checkbox');
   }
 
   get settingShadowCountInput() {
@@ -240,7 +228,7 @@ export class AnimatorPage {
   }
 
   get settingGridCheckbox() {
-    return this.page.getByTestId('animator-setting-grid-checkbox').first();
+    return this.page.getByTestId('animator-setting-grid-checkbox');
   }
 
   get settingGridSizeInput() {
@@ -248,7 +236,10 @@ export class AnimatorPage {
   }
 
   async openSettingSection() {
-    if (!(await this.settingShadowCheckbox.isVisible().catch(() => false))) {
+    await expect(this.settingSection).toBeVisible();
+    // Section collapsed hanya disembunyikan (tetap ada di DOM), jadi hitung yang TERLIHAT
+    const visibleCheckbox = this.settingShadowCheckbox.and(this.page.locator(':visible'));
+    if ((await visibleCheckbox.count()) === 0) {
       await this.settingSection.getByText('Editor Settings', { exact: true }).click();
     }
     await expect(this.settingShadowCheckbox).toBeVisible();
@@ -258,18 +249,18 @@ export class AnimatorPage {
   // 6. HELPER CONTAINER & EMPTY STATES (AnimatorHelper.vue)
   // ==========================================
   get helperContainer() {
-    return this.page.getByTestId('animator-helper-container').first();
+    return this.page.getByTestId('animator-helper-container');
   }
 
   get helperNoComponentState() {
-    return this.page.getByTestId('animator-helper-no-component').first();
+    return this.page.getByTestId('animator-helper-no-component');
   }
 
   get helperNoClipSettings() {
-    return this.page.getByTestId('animator-helper-no-clip-settings').first();
+    return this.page.getByTestId('animator-helper-no-clip-settings');
   }
 
   get helperContent() {
-    return this.page.getByTestId('animator-helper-content').first();
+    return this.page.getByTestId('animator-helper-content');
   }
 }

@@ -77,7 +77,7 @@ export class AssetPanelPage {
   // ==========================================
   async ensureOpen() {
     await expect(this.tabButton).toBeVisible();
-    if (!(await this.panel.isVisible())) {
+    if ((await this.panel.count()) === 0) {
       await this.tabButton.click();
     }
     await expect(this.panel).toBeVisible();
@@ -94,11 +94,13 @@ export class AssetPanelPage {
     // 1. Trigger upload file
     await fileInput.setInputFiles(filePath);
 
-    // 2. Tunggu kartu aset muncul di DOM (indikator utama bahwa file selesai diproses)
-    await expect(this.card(fileName)).toBeVisible({ timeout: 10000 });
+    // 2. Tunggu kartu aset muncul di DOM (indikator utama bahwa file selesai diproses).
+    //    Tanpa { timeout } eksplisit (Section 2): jika upload memang lambat, naikkan
+    //    expect.timeout global di playwright.config.js, jangan per-call.
+    await expect(this.card(fileName)).toBeVisible();
 
     // 3. Pastikan overlay loading sudah bersih
-    await expect(this.uploadOverlay).not.toBeVisible();
+    await expect(this.uploadOverlay).toBeHidden();
   }
 
   /**

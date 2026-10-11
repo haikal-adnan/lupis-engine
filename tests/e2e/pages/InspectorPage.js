@@ -12,6 +12,28 @@ export class InspectorPage {
     this.popup = new PopupHelper(page);
   }
 
+  /**
+   * Elemen editable di dalam wrapper test ID (PropertyInput/BaseInput membungkus <input>).
+   * Spec tidak boleh mengulang `.locator('input').first()`; gunakan accessor ini.
+   */
+  field(testId, inner = 'input') {
+    return this.page.getByTestId(testId).locator(inner).first();
+  }
+
+  /** Checkbox/toggle: <input type=checkbox> di dalam wrapper, atau wrapper itu sendiri jika toggle kustom. */
+  checkbox(testId) {
+    return this.page.getByTestId(testId).locator('input[type="checkbox"]');
+  }
+
+  /**
+   * Pastikan inspector sudah dirender sebelum memakai count() (Section 2: count() tidak menunggu).
+   * Tanpa ini, inspector yang masih loading terlihat sama dengan "komponen belum ada" dan
+   * ensure*Component bisa menambah komponen ganda.
+   */
+  async _settle() {
+    await expect(this.objectSection).toBeVisible();
+  }
+
   // =========================================================================
   // SECTIONS LOCATORS
   // =========================================================================
@@ -189,7 +211,8 @@ export class InspectorPage {
   // AUDIO INSPECTOR ACTIONS
   // =========================================================================
   async ensureAudioComponent() {
-    if ((await this.audioSection.count()) === 0 || !(await this.audioSection.isVisible())) {
+    await this._settle();
+    if ((await this.audioSection.count()) === 0) {
       await this.addComponent('Audio');
       await expect(this.audioSection).toBeVisible();
     }
@@ -231,7 +254,8 @@ export class InspectorPage {
   // SCRIPT CONTROLLER ACTIONS
   // =========================================================================
   async ensureScriptControllerComponent() {
-    if ((await this.scriptControllerSection.count()) === 0 || !(await this.scriptControllerSection.isVisible())) {
+    await this._settle();
+    if ((await this.scriptControllerSection.count()) === 0) {
       await this.addComponent('Script Controller');
       await expect(this.scriptControllerSection).toBeVisible();
     }
@@ -252,7 +276,8 @@ export class InspectorPage {
   // SPRITE RENDERER ACTIONS
   // =========================================================================
   async ensureSpriteRendererComponent() {
-    if ((await this.spriteRendererSection.count()) === 0 || !(await this.spriteRendererSection.isVisible())) {
+    await this._settle();
+    if ((await this.spriteRendererSection.count()) === 0) {
       await this.addComponent('Image Renderer');
       await expect(this.spriteRendererSection).toBeVisible();
     }
@@ -292,7 +317,8 @@ export class InspectorPage {
   // TEXT RENDERER ACTIONS
   // =========================================================================
   async ensureTextRendererComponent() {
-    if ((await this.textRendererSection.count()) === 0 || !(await this.textRendererSection.isVisible())) {
+    await this._settle();
+    if ((await this.textRendererSection.count()) === 0) {
       await this.addComponent('Text Renderer');
       await expect(this.textRendererSection).toBeVisible();
     }
@@ -320,17 +346,16 @@ export class InspectorPage {
 
   async toggleTextShadow(checked) {
     const checkbox = this.page.getByTestId('text-renderer-shadow-toggle').locator('input[type="checkbox"]').or(this.page.getByTestId('text-renderer-shadow-toggle')).first();
-    const isChecked = await checkbox.isChecked();
-    if (isChecked !== checked) {
-      await checkbox.click();
-    }
+    await checkbox.setChecked(checked);
+    await expect(checkbox).toBeChecked({ checked });
   }
 
   // =========================================================================
   // SPRITE ANIMATOR ACTIONS
   // =========================================================================
   async ensureSpriteAnimatorComponent() {
-    if ((await this.spriteAnimatorSection.count()) === 0 || !(await this.spriteAnimatorSection.isVisible())) {
+    await this._settle();
+    if ((await this.spriteAnimatorSection.count()) === 0) {
       await this.addComponent('Sprite Animator');
       await expect(this.spriteAnimatorSection).toBeVisible();
     }
@@ -352,7 +377,8 @@ export class InspectorPage {
   // SHAPE RENDERER ACTIONS
   // =========================================================================
   async ensureShapeRendererComponent() {
-    if ((await this.shapeRendererSection.count()) === 0 || !(await this.shapeRendererSection.isVisible())) {
+    await this._settle();
+    if ((await this.shapeRendererSection.count()) === 0) {
       await this.addComponent('Shape Renderer');
       await expect(this.shapeRendererSection).toBeVisible();
     }
@@ -372,7 +398,8 @@ export class InspectorPage {
   // TILEMAP ACTIONS
   // =========================================================================
   async ensureTilemapComponent() {
-    if ((await this.tilemapSection.count()) === 0 || !(await this.tilemapSection.isVisible())) {
+    await this._settle();
+    if ((await this.tilemapSection.count()) === 0) {
       await this.addComponent('Tilemap');
       await expect(this.tilemapSection).toBeVisible();
     }
@@ -392,7 +419,8 @@ export class InspectorPage {
   // COLLIDER ACTIONS
   // =========================================================================
   async ensureColliderComponent() {
-    if ((await this.colliderSection.count()) === 0 || !(await this.colliderSection.isVisible())) {
+    await this._settle();
+    if ((await this.colliderSection.count()) === 0) {
       await this.addComponent('Collider');
       await expect(this.colliderSection).toBeVisible();
     }
@@ -404,17 +432,16 @@ export class InspectorPage {
 
   async toggleColliderAutoFit(checked) {
     const checkbox = this.page.getByTestId('collider-autofit-toggle').locator('input[type="checkbox"]').or(this.page.getByTestId('collider-autofit-toggle')).first();
-    const isChecked = await checkbox.isChecked();
-    if (isChecked !== checked) {
-      await checkbox.click();
-    }
+    await checkbox.setChecked(checked);
+    await expect(checkbox).toBeChecked({ checked });
   }
 
   // =========================================================================
   // PHYSICS ACTIONS
   // =========================================================================
   async ensurePhysicsComponent() {
-    if ((await this.physicsSection.count()) === 0 || !(await this.physicsSection.isVisible())) {
+    await this._settle();
+    if ((await this.physicsSection.count()) === 0) {
       await this.addComponent('Physics');
       await expect(this.physicsSection).toBeVisible();
     }

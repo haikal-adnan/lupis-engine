@@ -53,14 +53,8 @@ test.describe('Hierarchy & Scene Comprehensive E2E Management', () => {
   test.describe('2. Indexing, Reparenting, Z-Index & Hierarchy Rules', () => {
     test('handles entity-to-entity reparenting via drag and drop', async ({ hierarchy, popup }) => {
       const worldLayer = hierarchy.nodeByName('World Layer');
-      await popup.selectContextMenu(worldLayer, ['Add Entity', 'Empty Entity']);
-      await popup.selectContextMenu(worldLayer, ['Add Entity', 'Sprite']);
-
-      const parentEntity = hierarchy.nodesByText(/Empty/i).first();
-      const childEntity = hierarchy.nodesByText(/Sprite/i).first();
-
-      await expect(parentEntity).toBeVisible();
-      await expect(childEntity).toBeVisible();
+      const parentEntity = await hierarchy.addEntity(popup, worldLayer, ['Add Entity', 'Empty Entity']);
+      const childEntity = await hierarchy.addEntity(popup, worldLayer, ['Add Entity', 'Sprite']);
 
       const parentId = await parentEntity.getAttribute('data-node-id');
       const childId = await childEntity.getAttribute('data-node-id');
@@ -68,63 +62,48 @@ test.describe('Hierarchy & Scene Comprehensive E2E Management', () => {
       // Drag child ke parent (drop inside)
       await hierarchy.dragAndDropNodes(childEntity, parentEntity);
 
-      if (childId && parentId) {
-        await expect(hierarchy.nodeById(childId)).toHaveAttribute('data-parent-id', parentId);
-      } else {
-        const parentContainer = parentEntity.locator('xpath=ancestor::*[@data-testid="hierarchy-node-root"][1]');
-        await expect(parentContainer.getByTestId('hierarchy-node').filter({ hasText: /Sprite/i })).toBeVisible();
-      }
+      await expect(hierarchy.nodeById(childId)).toHaveAttribute('data-parent-id', parentId);
     });
 
     test('extracts child entity back to root layer level', async ({ hierarchy, popup }) => {
       const worldLayer = hierarchy.nodeByName('World Layer');
-      await popup.selectContextMenu(worldLayer, ['Add Entity', 'Empty Entity']);
+      const parentEntity = await hierarchy.addEntity(popup, worldLayer, ['Add Entity', 'Empty Entity']);
+      const childEntity = await hierarchy.addEntity(popup, parentEntity, ['Add Child', 'Sprite']);
 
-      const parentEntity = hierarchy.nodesByText(/Empty/i).first();
-      await popup.selectContextMenu(parentEntity, ['Add Child', 'Sprite']);
-
-      const childEntity = hierarchy.nodesByText(/Sprite/i).first();
-      const childId = await childEntity.getAttribute('data-node-id');
+      const parentId = await parentEntity.getAttribute('data-node-id');
+      // Precondition: child benar-benar berada di dalam parent, sehingga assert akhir tidak vacuous
+      await expect(childEntity).toHaveAttribute('data-parent-id', parentId);
 
       // Drag child keluar dari parent menuju root layer
       await hierarchy.dragAndDropNodes(childEntity, worldLayer);
 
-      const stableChild = childId ? hierarchy.nodeById(childId) : hierarchy.nodesByText(/Sprite/i).first();
-
-      await expect(stableChild).not.toHaveAttribute('data-parent-id');
+      await expect(childEntity).not.toHaveAttribute('data-parent-id');
     });
 
     test('moves entity with its child tree together to another parent', async ({ hierarchy, popup }) => {
       const worldLayer = hierarchy.nodeByName('World Layer');
 
       // Target parent
-      await popup.selectContextMenu(worldLayer, ['Add Entity', 'Shape']);
-      const targetParent = hierarchy.nodesByText(/Shape/i).first();
+      const targetParent = await hierarchy.addEntity(popup, worldLayer, ['Add Entity', 'Shape']);
 
       // Parent beserta Child-nya
-      await popup.selectContextMenu(worldLayer, ['Add Entity', 'Empty Entity']);
-      const movingParent = hierarchy.nodesByText(/Empty/i).first();
-      await popup.selectContextMenu(movingParent, ['Add Child', 'Text']);
+      const movingParent = await hierarchy.addEntity(popup, worldLayer, ['Add Entity', 'Empty Entity']);
+      const movingChild = await hierarchy.addEntity(popup, movingParent, ['Add Child', 'Text']);
 
-      const movingChild = hierarchy.nodesByText(/Text/i).first();
+      const targetParentId = await targetParent.getAttribute('data-node-id');
       const movingParentId = await movingParent.getAttribute('data-node-id');
-      const movingChildId = await movingChild.getAttribute('data-node-id');
 
       // Pindahkan movingParent ke dalam targetParent
       await hierarchy.dragAndDropNodes(movingParent, targetParent);
 
-      const targetParentId = await targetParent.getAttribute('data-node-id');
-      await expect(hierarchy.nodeById(movingParentId)).toHaveAttribute('data-parent-id', targetParentId);
-      await expect(hierarchy.nodeById(movingChildId)).toHaveAttribute('data-parent-id', movingParentId);
+      await expect(movingParent).toHaveAttribute('data-parent-id', targetParentId);
+      await expect(movingChild).toHaveAttribute('data-parent-id', movingParentId);
     });
 
     test('[Bad Path] prevents moving an entity into its own descendant child', async ({ hierarchy, popup }) => {
       const worldLayer = hierarchy.nodeByName('World Layer');
-      await popup.selectContextMenu(worldLayer, ['Add Entity', 'Empty Entity']);
-
-      const parentNode = hierarchy.nodesByText(/Empty/i).first();
-      await popup.selectContextMenu(parentNode, ['Add Child', 'Sprite']);
-      const childNode = hierarchy.nodesByText(/Sprite/i).first();
+      const parentNode = await hierarchy.addEntity(popup, worldLayer, ['Add Entity', 'Empty Entity']);
+      const childNode = await hierarchy.addEntity(popup, parentNode, ['Add Child', 'Sprite']);
 
       const beforeState = await hierarchy.snapshot();
       await hierarchy.dragAndDropNodes(parentNode, childNode);
@@ -134,9 +113,8 @@ test.describe('Hierarchy & Scene Comprehensive E2E Management', () => {
 
     test('[Bad Path] prevents moving World entity into UI Layer section', async ({ hierarchy, popup }) => {
       const worldLayer = hierarchy.nodeByName('World Layer');
-      await popup.selectContextMenu(worldLayer, ['Add Entity', 'Empty Entity']);
+      const worldEntity = await hierarchy.addEntity(popup, worldLayer, ['Add Entity', 'Empty Entity']);
 
-      const worldEntity = hierarchy.nodesByText(/Empty/i).first();
       await hierarchy.addLayerToSection(popup, 'User Interface', 'UI Canvas Layer');
       const uiLayer = hierarchy.nodeByName('UI Canvas Layer');
 
@@ -153,11 +131,8 @@ test.describe('Hierarchy & Scene Comprehensive E2E Management', () => {
   test.describe('3. Selection Dynamics & Keyboard Shortcuts', () => {
     test('selects parent entity along with all descendant children using Ctrl/Cmd click', async ({ page, hierarchy, popup }) => {
       const worldLayer = hierarchy.nodeByName('World Layer');
-      await popup.selectContextMenu(worldLayer, ['Add Entity', 'Empty Entity']);
-
-      const parentNode = hierarchy.nodesByText(/Empty/i).first();
-      await popup.selectContextMenu(parentNode, ['Add Child', 'Sprite']);
-      const childNode = hierarchy.nodesByText(/Sprite/i).first();
+      const parentNode = await hierarchy.addEntity(popup, worldLayer, ['Add Entity', 'Empty Entity']);
+      const childNode = await hierarchy.addEntity(popup, parentNode, ['Add Child', 'Sprite']);
 
       // Control + Click pada Parent
       await page.keyboard.down('Control');
@@ -170,25 +145,26 @@ test.describe('Hierarchy & Scene Comprehensive E2E Management', () => {
 
     test('executes copy, cut, paste, duplicate, and delete via global Keyboard Shortcuts', async ({ page, hierarchy, popup }) => {
       const worldLayer = hierarchy.nodeByName('World Layer');
-      await popup.selectContextMenu(worldLayer, ['Add Entity', 'Text']);
-
-      const textNode = hierarchy.nodesByText(/Text/i).first();
+      const textNode = await hierarchy.addEntity(popup, worldLayer, ['Add Entity', 'Text']);
       await textNode.click();
 
-      // Ctrl+C & Ctrl+V
+      // Ctrl+C & Ctrl+V -> tepat satu node baru
+      const idsBeforePaste = await hierarchy.nodeIds();
       await page.keyboard.press('Control+c');
       await page.keyboard.press('Control+v');
-      await expect(hierarchy.nodesByText(/Text/i)).toHaveCount(2);
+      const pastedNode = await hierarchy.expectNewNode(idsBeforePaste);
 
-      // Ctrl+D (Duplicate)
+      // Ctrl+D (Duplicate) -> tepat satu node baru lagi
+      const idsBeforeDuplicate = await hierarchy.nodeIds();
       await page.keyboard.press('Control+d');
-      await expect(hierarchy.nodesByText(/Text/i)).toHaveCount(3);
+      const duplicatedNode = await hierarchy.expectNewNode(idsBeforeDuplicate);
 
-      // Delete key
-      const thirdText = hierarchy.nodesByText(/Text/i).nth(2);
-      await thirdText.click();
+      // Delete key menghapus node terpilih, node lain tetap ada
+      await duplicatedNode.click();
       await page.keyboard.press('Delete');
-      await expect(hierarchy.nodesByText(/Text/i)).toHaveCount(2);
+      await expect(duplicatedNode).toHaveCount(0);
+      await expect(pastedNode).toBeVisible();
+      await expect(textNode).toBeVisible();
     });
   });
 
@@ -198,27 +174,29 @@ test.describe('Hierarchy & Scene Comprehensive E2E Management', () => {
   test.describe('4. Context Menu Exhaustive Verification & Prefab Rules', () => {
     // Pengujian 5 Tipe Entity World
     const worldEntityTypes = [
-      { name: 'Empty Entity', path: ['Add Entity', 'Empty Entity'], labelMatch: /Empty/i },
-      { name: 'Sprite', path: ['Add Entity', 'Sprite'], labelMatch: /Sprite/i },
-      { name: 'Shape', path: ['Add Entity', 'Shape'], labelMatch: /Shape/i },
-      { name: 'Text', path: ['Add Entity', 'Text'], labelMatch: /Text/i },
-      { name: 'Tilemap', path: ['Add Entity', 'Tilemap'], labelMatch: /Tilemap/i },
+      { name: 'Empty Entity', path: ['Add Entity', 'Empty Entity'] },
+      { name: 'Sprite', path: ['Add Entity', 'Sprite'] },
+      { name: 'Shape', path: ['Add Entity', 'Shape'] },
+      { name: 'Text', path: ['Add Entity', 'Text'] },
+      { name: 'Tilemap', path: ['Add Entity', 'Tilemap'] },
     ];
 
     for (const item of worldEntityTypes) {
       test(`creates World Entity type: ${item.name}`, async ({ hierarchy, popup }) => {
         const worldLayer = hierarchy.nodeByName('World Layer');
-        await popup.selectContextMenu(worldLayer, item.path);
-        await expect(hierarchy.nodesByText(item.labelMatch).first()).toBeVisible();
+        const created = await hierarchy.addEntity(popup, worldLayer, item.path);
+
+        // Entity baru harus berada di section World
+        await expect(hierarchy.section('World').getByTestId('hierarchy-node').and(created)).toBeVisible();
       });
     }
 
     // Pengujian 4 Tipe Entity UI
     const uiEntityTypes = [
-      { name: 'Empty UI', path: ['Add UI Element', 'Empty UI'], labelMatch: /Empty/i },
-      { name: 'UI Shape', path: ['Add UI Element', 'UI Shape'], labelMatch: /Shape/i },
-      { name: 'UI Text', path: ['Add UI Element', 'UI Text'], labelMatch: /Text/i },
-      { name: 'UI Image', path: ['Add UI Element', 'UI Image'], labelMatch: /Image/i },
+      { name: 'Empty UI', path: ['Add UI Element', 'Empty UI'] },
+      { name: 'UI Shape', path: ['Add UI Element', 'UI Shape'] },
+      { name: 'UI Text', path: ['Add UI Element', 'UI Text'] },
+      { name: 'UI Image', path: ['Add UI Element', 'UI Image'] },
     ];
 
     for (const item of uiEntityTypes) {
@@ -226,11 +204,10 @@ test.describe('Hierarchy & Scene Comprehensive E2E Management', () => {
         await hierarchy.addLayerToSection(popup, 'User Interface', 'HUD Layer');
         const uiLayer = hierarchy.nodeByName('HUD Layer');
 
-        await popup.selectContextMenu(uiLayer, item.path);
-        const uiSection = hierarchy.section('User Interface');
-        await expect(
-          uiSection.getByTestId('hierarchy-node').filter({ hasText: item.labelMatch }).first()
-        ).toBeVisible();
+        const created = await hierarchy.addEntity(popup, uiLayer, item.path);
+
+        // Entity baru harus berada di section User Interface
+        await expect(hierarchy.section('User Interface').getByTestId('hierarchy-node').and(created)).toBeVisible();
       });
     }
 
@@ -238,49 +215,45 @@ test.describe('Hierarchy & Scene Comprehensive E2E Management', () => {
       const worldLayer = hierarchy.nodeByName('World Layer');
 
       // 1. Tambah Sprite
-      await popup.selectContextMenu(worldLayer, ['Add Entity', 'Sprite']);
-      const spriteNode = hierarchy.nodesByText(/Sprite/i).first();
-      await expect(spriteNode).toBeVisible();
+      const spriteNode = await hierarchy.addEntity(popup, worldLayer, ['Add Entity', 'Sprite']);
+      const spriteId = await spriteNode.getAttribute('data-node-id');
 
-      // 2. Rename Entity
+      // 2. Rename Entity (identitas dikunci lewat data-node-id, Section 8)
       await popup.selectContextMenu(spriteNode, 'Rename Entity');
       await popup.fillPromptAndSubmit('Rename Entity', 'Hero Sprite', 'Rename');
-      const renamedNode = hierarchy.nodeByName('Hero Sprite');
-      await expect(renamedNode).toBeVisible();
+      const renamedNode = hierarchy.nodeById(spriteId);
+      await expect(renamedNode).toHaveAttribute('data-node-name', 'Hero Sprite');
 
       // 3. Duplicate
+      const idsBeforeDuplicate = await hierarchy.nodeIds();
       await popup.selectContextMenu(renamedNode, 'Duplicate');
-      await expect(hierarchy.nodesByText('Hero Sprite')).toHaveCount(2);
+      const duplicatedNode = await hierarchy.expectNewNode(idsBeforeDuplicate);
 
       // 4. Copy & Paste
-      const secondNode = hierarchy.nodesByText('Hero Sprite').nth(1);
-      await popup.selectContextMenu(secondNode, 'Copy');
+      await popup.selectContextMenu(duplicatedNode, 'Copy');
+      const idsBeforePaste = await hierarchy.nodeIds();
       await popup.selectContextMenu(worldLayer, 'Paste');
-      await expect(hierarchy.nodesByText('Hero Sprite')).toHaveCount(3);
+      const pastedNode = await hierarchy.expectNewNode(idsBeforePaste);
 
-      // 5. Cut
-      const thirdNode = hierarchy.nodesByText('Hero Sprite').nth(2);
-      await popup.selectContextMenu(thirdNode, 'Cut');
-      await expect(hierarchy.nodesByText('Hero Sprite')).toHaveCount(2);
+      // 5. Cut (node yang di-cut hilang dari tree sampai di-paste)
+      await popup.selectContextMenu(pastedNode, 'Cut');
+      await expect(pastedNode).toHaveCount(0);
 
       // 6. Change Z-Index pada Layer
       await popup.selectContextMenu(worldLayer, 'Change Z-Index');
       await popup.fillPromptAndSubmit('Change Z-Index', '8', 'Update');
-      const zIndexBadge = worldLayer.locator('[data-z-index]').first();
-      await expect(zIndexBadge).toHaveText('8');
+      await expect(worldLayer.locator('[data-z-index]')).toHaveText('8');
 
-      // 7. Delete Entity
-      await popup.selectContextMenu(secondNode, 'Delete Entity');
-      await expect(hierarchy.nodesByText('Hero Sprite')).toHaveCount(1);
+      // 7. Delete Entity: hanya duplikat yang hilang, node asli tetap ada
+      await popup.selectContextMenu(duplicatedNode, 'Delete Entity');
+      await expect(duplicatedNode).toHaveCount(0);
+      await expect(renamedNode).toBeVisible();
     });
 
     test('creates Prefab and restricts "Use as Prefab" menu on prefab descendants', async ({ hierarchy, popup }) => {
       const worldLayer = hierarchy.nodeByName('World Layer');
-      await popup.selectContextMenu(worldLayer, ['Add Entity', 'Empty Entity']);
-
-      const parentNode = hierarchy.nodesByText(/Empty/i).first();
-      await popup.selectContextMenu(parentNode, ['Add Child', 'Sprite']);
-      const childNode = hierarchy.nodesByText(/Sprite/i).first();
+      const parentNode = await hierarchy.addEntity(popup, worldLayer, ['Add Entity', 'Empty Entity']);
+      const childNode = await hierarchy.addEntity(popup, parentNode, ['Add Child', 'Sprite']);
 
       // Konversi Parent menjadi Prefab
       await popup.selectContextMenu(parentNode, 'Use as Prefab');
@@ -304,9 +277,7 @@ test.describe('Hierarchy & Scene Comprehensive E2E Management', () => {
   test.describe('5. Visibility & Lock Controls', () => {
     test('toggles lock and visibility status on entities reactively', async ({ hierarchy, popup }) => {
       const worldLayer = hierarchy.nodeByName('World Layer');
-      await popup.selectContextMenu(worldLayer, ['Add Entity', 'Shape']);
-
-      const entityNode = hierarchy.nodesByText(/Shape/i).first();
+      const entityNode = await hierarchy.addEntity(popup, worldLayer, ['Add Entity', 'Shape']);
       await entityNode.hover();
 
       // Toggle Lock
@@ -345,12 +316,12 @@ test.describe('Hierarchy & Scene Comprehensive E2E Management', () => {
       await expect(openUiBtn).toBeEnabled();
       await openUiBtn.click();
 
-      // Verifikasi tab aktif berganti ke UI Editor
+      // Verifikasi tab aktif berganti ke UI Editor. Baris hierarchy dikecualikan
+      // agar assert tidak lolos secara vacuous (Section 7.3).
+      // TODO kontrak: beri tab editor test ID sendiri lalu ganti selector ini.
       const activeTab = page
-        .locator('[aria-selected="true"]')
-        .or(page.locator('.bg-accent, .border-b-2'))
-        .filter({ hasText: /UI Editor/i })
-        .first();
+        .locator('[aria-selected="true"]:not([data-testid="hierarchy-node"])')
+        .filter({ hasText: 'UI Editor' });
       await expect(activeTab).toBeVisible();
     });
   });
@@ -377,7 +348,7 @@ test.describe('Hierarchy & Scene Comprehensive E2E Management', () => {
       await expect(hierarchy.sceneSelect).toBeVisible();
     });
 
-    test('deletes secondary scene and prevents deleting the last remaining scene', async ({ page, hierarchy, controls, popup }) => {
+    test('[Bad Path] deletes secondary scene and prevents deleting the last remaining scene', async ({ page, hierarchy, controls, popup }) => {
       const tempScene = 'Temp Scene';
       await hierarchy.createScene(controls, popup, tempScene);
       await expect(hierarchy.sceneSelect).toContainText(tempScene);
@@ -393,15 +364,13 @@ test.describe('Hierarchy & Scene Comprehensive E2E Management', () => {
       const alertModal = page
         .getByRole('dialog')
         .or(page.getByRole('alertdialog'))
-        .filter({ hasText: 'Cannot Delete' })
-        .first();
+        .filter({ hasText: 'Cannot Delete' });
 
       await expect(alertModal).toBeVisible();
 
       // Tutup dialog modal
-      const okBtn = alertModal.getByRole('button', { name: /ok|close/i }).first();
-      await okBtn.click();
-      await expect(alertModal).not.toBeVisible();
+      await alertModal.getByRole('button', { name: 'OK', exact: true }).click();
+      await expect(alertModal).toHaveCount(0);
     });
   });
 
@@ -411,14 +380,11 @@ test.describe('Hierarchy & Scene Comprehensive E2E Management', () => {
   test.describe('8. Hierarchy Search Engine & Empty States', () => {
     test('filters hierarchy tree reactively by Name/ScriptID and shows empty state placeholder when no matches exist', async ({ page, hierarchy, controls, popup }) => {
       const worldLayer = hierarchy.nodeByName('World Layer');
-      await popup.selectContextMenu(worldLayer, ['Add Entity', 'Sprite']);
-
-      const spriteNode = hierarchy.nodesByText(/Sprite/i).first();
-      await expect(spriteNode).toBeVisible();
+      const spriteNode = await hierarchy.addEntity(popup, worldLayer, ['Add Entity', 'Sprite']);
 
       // Cari nama yang tidak ada
       await controls.fillSearch('hierarchy-search-input', 'NonExistentNode123');
-      await expect(spriteNode).not.toBeVisible();
+      await expect(spriteNode).toBeHidden();
 
       // Verifikasi Tampilan Placeholder Empty State
       await expect(page.getByTestId('hierarchy-world-empty-state')).toBeVisible();

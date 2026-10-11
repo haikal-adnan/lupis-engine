@@ -11,6 +11,8 @@ import { test, expect } from '../fixtures.js';
  * Gunakan skenario sesederhana mungkin dan tambah skenario baru setiap kali sebuah
  * bug helper ditemukan.
  */
+const SCENE_OPTIONS = 'hierarchy-scene-options-button';
+
 test.use({
   projectOptions: {
     prefix: 'Contract E2E',
@@ -34,20 +36,22 @@ test.describe('@contract PopupHelper.selectContextMenu', () => {
   test('menu bertingkat: submenu terbuka, item leaf terpilih, semua level tertutup', async ({ popup, hierarchy }) => {
     const layer = hierarchy.nodeByName('World Layer');
 
-    await popup.selectContextMenu(layer, ['Add Entity', 'Empty Entity']);
+    // addEntity mengunci node baru lewat data-node-id; postcondition menu diperiksa setelahnya
+    const created = await hierarchy.addEntity(popup, layer, ['Add Entity', 'Empty Entity']);
     await expect(popup.activeMenus).toHaveCount(0);
-
-    await expect(hierarchy.nodesByText(/Empty/i).first()).toBeVisible();
+    await expect(created).toBeVisible();
   });
 
   test('dua panggilan beruntun pada node yang sama tidak saling mengganggu', async ({ popup, hierarchy }) => {
     const layer = hierarchy.nodeByName('World Layer');
 
-    await popup.selectContextMenu(layer, ['Add Entity', 'Empty Entity']);
-    await popup.selectContextMenu(layer, ['Add Entity', 'Sprite']);
+    const first = await hierarchy.addEntity(popup, layer, ['Add Entity', 'Empty Entity']);
+    const second = await hierarchy.addEntity(popup, layer, ['Add Entity', 'Sprite']);
 
-    await expect(hierarchy.nodesByText(/Empty/i).first()).toBeVisible();
-    await expect(hierarchy.nodesByText(/Sprite/i).first()).toBeVisible();
+    // Dua node berbeda dan keduanya tetap ada
+    await expect(first).toBeVisible();
+    await expect(second).toBeVisible();
+    await expect(first).not.toHaveAttribute('data-node-id', await second.getAttribute('data-node-id'));
   });
 
   test('path kosong membuka menu dan membiarkannya terbuka', async ({ popup, hierarchy }) => {
@@ -55,7 +59,8 @@ test.describe('@contract PopupHelper.selectContextMenu', () => {
 
     await popup.selectContextMenu(layer, []);
 
-    await expect(popup.activeMenus.first()).toBeVisible();
+    await expect(popup.activeMenus).toHaveCount(1);
+    await expect(popup.activeMenus).toBeVisible();
   });
 });
 
@@ -72,11 +77,12 @@ test.describe('@contract PopupHelper prompt & confirm', () => {
   test('confirmAction: cancel mempertahankan state, confirm menerapkan aksi', async ({ popup, hierarchy, controls }) => {
     await hierarchy.createScene(controls, popup, 'Contract Scene');
 
-    await controls.clickSelectAction('Scene Options', 'Delete Scene');
+    // Section 11 poin 6: caller mengirim test ID trigger secara eksplisit
+    await controls.clickSelectAction(SCENE_OPTIONS, 'Delete Scene');
     await popup.confirmAction(/scene/i, { action: 'cancel' });
     await expect(hierarchy.sceneSelect).toContainText('Contract Scene');
 
-    await controls.clickSelectAction('Scene Options', 'Delete Scene');
+    await controls.clickSelectAction(SCENE_OPTIONS, 'Delete Scene');
     await popup.confirmAction(/scene/i, { action: 'confirm' });
     await expect(hierarchy.sceneSelect).not.toContainText('Contract Scene');
   });
