@@ -7,16 +7,18 @@ import { DashboardPage } from './pages/DashboardPage.js';
 import { InspectorPage } from './pages/InspectorPage.js';
 import { PrefabPage } from './pages/PrefabPage.js';
 import { ScriptPanelPage } from './pages/ScriptPanelPage.js';
+import { AnimatorPage } from './pages/AnimatorPage.js';
 
 import { InspectorCrudObject } from './flows/inspector.js';
 import { HierarchyCrudObject } from './flows/hierarchy.js';
 import { PrefabCrudObject } from './flows/prefabs.js';
 import { ScriptCrudObject } from './flows/scripts.js';
 import { AssetCrudObject } from './flows/assets.js';
+import { AnimatorCrudObject } from './flows/animator.js';
 import { ensureProject } from './flows/dashboard.js';
 
 export const test = base.extend({
-  // Nonaktifkan semua animasi dan transisi CSS di browser untuk isolasi pengujian E2E
+  // Nonaktifkan animasi dan transisi CSS di browser untuk isolasi pengujian E2E
   page: async ({ page }, use) => {
     await page.addInitScript(() => {
       window.addEventListener('DOMContentLoaded', () => {
@@ -88,6 +90,10 @@ export const test = base.extend({
     await use(scriptsPage);
   },
 
+  animatorPage: async ({ page, project }, use) => {
+    await use(new AnimatorPage(page));
+  },
+
   hierarchyCrud: async ({ page, project }, use) => {
     await use(new HierarchyCrudObject(page));
   },
@@ -110,6 +116,10 @@ export const test = base.extend({
 
   inspectorCrud: async ({ page, project }, use) => {
     await use(new InspectorCrudObject(page));
+  },
+
+  animatorCrud: async ({ page, project }, use) => {
+    await use(new AnimatorCrudObject(page));
   },
 });
 

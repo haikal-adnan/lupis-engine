@@ -11,8 +11,10 @@ suite stays fast, stable, and resistant to the failure patterns listed in
 Section 14.
 
 It also defines the project layout, shared fixtures, helper contract tests
-(Sections 4.5, 4.6, and 11), and the Engine Bus Monitoring Strategy (Section 15)
-that keep a change made for one spec from silently breaking another.
+(Sections 4.5, 4.6, and 11), the test ID naming convention and its change
+process (Sections 7.4 - 7.6), and the Engine Bus Monitoring Strategy
+(Section 15) that keep a change made for one spec from silently breaking
+another.
 
 
 --------------------------------------------------------------------------------
@@ -34,6 +36,8 @@ Primary focuses include:
   resilient, and non-flaky execution.
 - Protecting shared helpers with contract tests, so a helper changed for one
   feature cannot break another feature unnoticed (Section 11.3).
+- Keeping test IDs consistent and predictable, so components and tests agree on
+  one naming contract (Sections 7.4 - 7.6).
 - Capturing and asserting asynchronous Engine Canvas synchronization payloads
   using isolated Event Bus Spies (Section 15).
 
@@ -48,6 +52,12 @@ E2E tests must follow these rules:
   Interact with the application using visual elements, buttons, inputs, and
   accessible roles (getByRole, getByText, getByLabel) rather than internal
   implementation state. Locator priority is defined in Section 7.
+
+- Test ID Contract:
+  data-testid values follow the naming convention in Section 7.4. Reusable
+  components derive their inner test IDs from a base (Section 7.5). Specs and
+  helpers only use test IDs that exist in the component contract; they never
+  guess a derived ID. Renaming an ID follows Section 7.6.
 
 - Native Playwright Mechanics & No Hardcoded Timeouts:
 
@@ -88,6 +98,8 @@ E2E tests must follow these rules:
     built-in .or() and .filter() methods instead of manual polling loops or
     complex conditional branches. When encountering identical data-testid
     attributes, ALWAYS scope locators through their parent container.
+    A union must never include a fallback that can match a different element
+    than the primary locator (Section 7.3).
 
 - Description Language:
   Use clear English for test.describe() and test() block descriptions.
@@ -185,6 +197,8 @@ specifications.
     Wraps UI primitives (inputs, selects, scrubbable fields, color pickers, context menus).
     HOLY RULE: Helpers must remain generic, atomic, and strictly devoid of domain logic.
     Pass explicit container locators from Page Objects to eliminate selector collisions.
+    Helpers receive test IDs from the caller; they never hardcode the test ID of a
+    specific widget as a fallback (Section 11).
 
 4.2 Popup & Overlay Helpers (PopupHelper) -> helpers/
     Handles global overlays (modal prompts, alert banners, confirmation dialogs, context menus).
@@ -195,6 +209,11 @@ specifications.
 4.4 Screen Page Objects (HierarchyPage, AssetPanelPage, etc.) -> pages/
     Encapsulates complex panels/screens. Targets internal inputs (e.g., .locator('input').first())
     when components use custom wrapper divs instead of altering atomic helpers.
+    Page Objects resolve panels and sections by test ID through an explicit map
+    (e.g. section('World') -> hierarchy-section-world) and THROW on an unknown name,
+    instead of falling back to fuzzy role/class/text matching. Multi-step interactions
+    on a panel (e.g. openSectionMenu: hover header -> click trigger -> return menu)
+    live in the Page Object, not in specs.
 
 4.5 Folder Structure & Dependency Rules
 
@@ -352,6 +371,35 @@ specifications.
       });
     });
 
+5.5 Section Menu Through a Page Object (derived test IDs)
+
+    // pages/HierarchyPage.js
+    const SECTION_IDS = {
+      world: 'hierarchy-section-world',
+      ui: 'hierarchy-section-ui',
+      'user interface': 'hierarchy-section-ui',
+    };
+
+    section(name) {
+      const id = SECTION_IDS[name.toLowerCase()];
+      if (!id) throw new Error(`Unknown section '${name}'`);
+      return this.page.getByTestId(id);
+    }
+
+    async openSectionMenu(name) {
+      const id = SECTION_IDS[name.toLowerCase()];
+      const section = this.section(name);
+      await section.getByTestId(`${id}-header`).hover();
+      await section.getByTestId(`${id}-menu-trigger`).click();
+      const menu = this.page.getByTestId(`${id}-menu`);   // may be teleported
+      await expect(menu).toBeVisible();
+      return menu;
+    }
+
+    // spec
+    const menu = await hierarchy.openSectionMenu('User Interface');
+    await menu.getByTestId('hierarchy-ui-add-layer-button').click();
+
 
 --------------------------------------------------------------------------------
 6. QUALITY CHECKLIST
@@ -361,17 +409,23 @@ E2E tests must:
 
 - Interact with the app through UI controls and user-visible roles (getByRole, getByText, getByLabel).
 - Follow locator priority (Section 7.1); never use Tailwind utility classes or partial name regex.
+- Use test IDs that follow Section 7.4; reusable components derive child IDs from a
+  base and never hardcode IDs that repeat per instance (Section 7.5).
+- Scope role/state queries ([role="menu"], [role="dialog"], [aria-selected]) whenever
+  more than one component can produce that role or state (Section 7.3).
 - Encapsulate selector strategies in Section 4.5 layers and respect dependency direction.
 - Import test/expect from fixtures.js; use isolatedProject: false when testing creation/dashboard.
 - Keep pure specs pure without using setup flow facades for the tested feature.
 - Eliminate custom { timeout } options and page.waitForTimeout(). (Exception: MENU_OPEN_PROBE_MS).
-- Use count() only after settling; use .or() / .filter() for alternative element matching.
+- Use count() only after settling; use .or() / .filter() for alternative element matching,
+  never with a fallback that can match a different element.
 - Rely on Playwright Web-First Assertions for automatic retries.
 - Re-locate elements by stable ID when actions change their text (Section 8).
 - Avoid force: true, .catch(() => {}), and ambiguity-hiding .first()/.nth() (Section 9).
 - Contain at least one assertion that fails if the feature breaks; compare before/after in [Bad Path].
 - Use helpers that assert postconditions and scope locators to containers (Section 11).
 - Change shared helpers additively and keep contract tests green (Sections 11.1, 11.3).
+- Rename test IDs only through the process in Section 7.6.
 - Maintain test independence using unique workspace names per test (Section 12).
 - Include [Bad Path] coverage for validations, boundary limits, and restricted actions.
 - Verify feedback channels (toasts, modals, state switchers) and write clear English descriptions.
@@ -391,14 +445,125 @@ E2E tests must:
 7.2 Testability Contract for Components
   Identity attributes: data-node-id, data-node-name, data-node-type, data-section, data-menu-item, data-project-name.
   State attributes: aria-selected, aria-expanded, aria-disabled, data-prefab, data-locked, data-visible.
+  Structural hooks: data-element (static, never derived; see Section 7.5).
   Rules: Prefer ARIA for state. Overlays must use semantic roles (role="dialog", role="menu", role="alert").
-  Use kebab-case (<component>-<element>). Use stable IDs, never values derived from render order.
+  Test IDs follow Section 7.4. Use stable IDs, never values derived from render order.
 
 7.3 Forbidden Locator Patterns
   - Visual state via CSS classes (toHaveClass).
   - Partial name regex matching (hasText: /Empty/i). Use exact attributes or IDs.
   - Using .first()/.nth() to bypass strict-mode violations.
   - Broad selectors like locator('button, div, span').filter(...).
+  - Fuzzy fallbacks in a union. Examples:
+        .or(page.locator('.group\\/node', { hasText: name }))
+        .or(section.locator('button'))
+    The first can match a different node whose text merely contains the name
+    (e.g. "World" matches "World Layer"); the second can click an unrelated
+    button and still pass. A Page Object resolves ONE contract (a test ID plus
+    identity attributes). If the contract is missing, add it to the component.
+  - Unscoped role/state selectors when several components share them:
+      * [role="menu"] also matches dropdowns (scene options, section menus), not
+        only context menus. Scope to the component's test ID (Section 11.2).
+      * [aria-selected="true"] also matches selected hierarchy rows. Asserting an
+        "active tab" with the unscoped selector passes vacuously because the
+        node you just clicked satisfies it. Exclude the other component:
+            page.locator('[aria-selected="true"]:not([data-testid="hierarchy-node"])')
+        or, better, give the tab its own test ID.
+
+7.4 Test ID Naming Convention
+  Format (lowercase kebab-case):
+
+      <feature>-<area>-<element>[-<kind>]
+
+  feature   Owning panel/module: hierarchy, inspector, assets, dashboard, ...
+  area      Sub-region or domain object: scene, world, ui, search, node, tree.
+  element   The thing: select, options, add-layer, open-editor, lock, ...
+  kind      One of the suffixes below, when it clarifies the element.
+
+  Kind suffixes:
+      -button        clickable control
+      -input         text/number input (-select for selects, -toggle for switches)
+      -menu          dropdown or context menu container
+      -tree, -container, -viewport, -content    structural containers
+      -empty-state   placeholder shown when a collection is empty
+      -header, -root
+
+  Specific rules:
+  - Menu actions: <feature>-<area>-action-<verb>
+        hierarchy-scene-action-new / -rename / -duplicate / -delete
+  - Pairing: an input "<x>-input" pairs with its clear control "<x>-clear-button"
+        hierarchy-search-input <-> hierarchy-search-clear-button
+    (BaseControlHelper.clearSearch relies on this pairing.)
+  - Section scoping: a section root "<feature>-section-<name>" owns its derived
+    IDs "-header", "-menu-trigger", "-menu", "-content" (Section 7.5).
+  - Singleton IDs are unique on the page at any moment.
+  - Collection IDs (rows/items that repeat) share one ID and are told apart by
+    identity attributes, not by suffixing an index:
+        hierarchy-node        + data-node-id / data-node-name
+        context-menu-item     + data-menu-item
+  - Never encode state in the ID (no "-active", "-open"); use ARIA/data-* state.
+  - Never encode render order or position.
+
+  Legacy: inspector IDs (editor-*-section, object-*, transform-*, physics-*, ...)
+  predate this convention. Migrate them as a dedicated change (Section 7.6),
+  not mixed into feature work. New inspector IDs follow Section 7.4.
+
+7.5 Test IDs in Reusable Components
+  Reusable components (PropertySection, BaseSelect, BaseContextMenu, BaseDropdown,
+  ...) are instantiated many times. Their test IDs must not collide.
+
+  a) Derive, do not hardcode. A component that has inner parts takes a base and
+     derives from it. PropertySection resolves its base in this order:
+         prop testId  >  caller's data-testid attribute  >  'property-section'
+     and renders:  <base> (root), <base>-header, <base>-menu-trigger,
+                   <base>-menu, <base>-content.
+
+  b) Attribute fallthrough overrides the root ID. A data-testid passed to a
+     component replaces the root element's own data-testid. Consequences:
+       - Do not pass data-testid to a component whose root already has a
+         meaningful ID unless you intend to rename that root. (Example of the
+         bug: <SceneTree data-testid="scene-tree"> silently replaced the
+         intended root ID, so the original ID never appeared in the DOM.)
+       - When a component derives children from a base, pass the base with the
+         explicit prop (test-id="hierarchy-section-world"), not with a
+         fallthrough attribute, so the intent is visible in the template.
+
+  c) The base may be owned by a wrapper. A feature component can wrap a section
+     in its own element that carries the feature test ID while the section
+     inside still uses the default base. Example: the Object inspector exposes
+     editor-object-section on a wrapper, but the inner PropertySection's
+     trigger is property-section-menu-trigger, NOT
+     editor-object-section-menu-trigger. Never guess a derived ID. Confirm it
+     in the trace/DOM, or pass test-id explicitly in the feature component.
+
+  d) Structural hooks as the safe fallback. When the derived ID is uncertain or
+     owned elsewhere, locate by the static structural hook inside a scoped
+     container:
+         objectSection.locator('[data-element="section-menu-trigger"]').first()
+     data-element values are fixed by the component and are not renamed with
+     test IDs. They are a test hook only; never style against them. The
+     .first() here is justified only because the container may hold several
+     sections; scope tighter when possible.
+
+  e) Teleported content (dropdowns, context menus, selects) lives outside its
+     trigger's container. Locate it from page, by its own test ID, not from the
+     component container.
+
+7.6 Changing or Renaming a Test ID
+  A test ID is part of the testability contract. Changing it follows this
+  process, in a single PR:
+
+  1. Search every consumer: grep tests/e2e (specs, pages, flows, helpers,
+     contract) for the old ID, including IDs built by string templates and IDs
+     passed as arguments (clickSelectAction('...'), fillSearch('...')).
+  2. Rename the component and ALL consumers together. Do not keep the old ID
+     alive through a .or() fallback; it hides future breakage.
+  3. For reusable components, also search for derived IDs (the old static
+     "section-menu-trigger" style IDs) and update them (Section 7.5).
+  4. Put an old -> new mapping table in the PR description.
+  5. Run the contract project first, then the full suite (Section 14.3).
+  6. Look for assertions that became vacuous because a locator now matches more
+     (or less) than before (Section 7.3, aria-selected example).
 
 
 --------------------------------------------------------------------------------
@@ -407,13 +572,13 @@ E2E tests must:
 
 Playwright locators re-evaluate on every use. If an action changes an element's text (rename, prefab conversion), capture its stable ID BEFORE the action and re-locate by ID afterwards.
 
-    const node = page.getByTestId('scene-node').filter({ hasText: 'Empty Entity' });
+    const node = page.getByTestId('hierarchy-node').filter({ hasText: 'Empty Entity' });
     const nodeId = await node.getAttribute('data-node-id');
 
     await popup.selectContextMenu(node, 'Use as Prefab');
     await popup.fillPromptAndSubmit('Create Prefab', 'Player_Prefab', 'Create');
 
-    const sameNode = page.locator(`[data-node-id="${nodeId}"]`);
+    const sameNode = page.locator(`[data-testid="hierarchy-node"][data-node-id="${nodeId}"]`);
     await expect(sameNode).toHaveAttribute('data-prefab', 'true');
 
 
@@ -433,6 +598,9 @@ Playwright locators re-evaluate on every use. If an action changes an element's 
 - v-show vs v-if: v-show uses not.toBeVisible(); v-if uses toHaveCount(0).
 - Drag & Drop: default dragTo drops at center ("inside"). Use targetPosition for other zones.
 - Async Reactivity: avoid manual value comparison; use web-first assertions or expect.poll.
+- Optional elements gated by v-if (e.g. a clear button shown only when the field
+  has a value): use (await locator.count()) > 0 after the page settled, then
+  assert visibility with expect; do not use a point-in-time isVisible() probe.
 
 
 --------------------------------------------------------------------------------
@@ -440,6 +608,8 @@ Playwright locators re-evaluate on every use. If an action changes an element's 
 --------------------------------------------------------------------------------
 
 - No vacuous assertions (asserting mere visibility after complex operations proves nothing).
+- A locator that can match something unrelated makes its assertion vacuous.
+  Check that the locator would NOT match before the action under test.
 - Assert explicit outcomes (new order after reorder, new parent after reparenting).
 - [Bad Path] tests must compare state before and after using snapshot comparisons:
 
@@ -460,6 +630,13 @@ Helper methods must:
   3. Match current UI state.
   4. Avoid hiding failures (no force, catch, or sleeps).
   5. Stay small and single-purpose.
+  6. Receive test IDs from the caller. A generic helper never hardcodes the test
+     ID of a specific widget as a fallback (e.g. clickSelectAction must not fall
+     back to a Scene Options button): a wrong argument would silently click the
+     wrong control. Callers pass the ID explicitly:
+         clickSelectAction('hierarchy-scene-options-button', 'New Scene')
+  7. Document any naming pairing it relies on (clearSearch derives
+     "<x>-clear-button" from "<x>-input", Section 7.4).
 
 11.1 Additive Change Rule
   Change helpers by ADDING methods or optional parameters. Never break existing callers. Run the full test suite when modifying shared helpers.
@@ -471,6 +648,14 @@ Helper methods must:
   - Multi-level: Asserts next menu level is open before selecting sub-items.
   - Matching: Exact match via data-menu-item or accessible name.
   - Postcondition: Asserts ALL menu levels are closed after selection.
+  - Scope: context menus are located by their own test IDs
+    (context-menu for each level, context-menu-item + data-menu-item for items),
+    never by [role="menu"]:visible. Dropdowns (scene options, section menus) also
+    use role="menu" and would corrupt level counting.
+  - Disabled items: selecting a disabled item leaves the menu open, so the
+    postcondition does not hold. Tests of disabled items open the menu and
+    assert aria-disabled / data-disabled on the item
+    (popup.contextMenuItem(label)) instead of calling selectContextMenu.
 
 11.3 Helper Contract Tests (e2e/contract/)
   Dedicated test suite in e2e/contract/*.spec.js tagged @contract. The "contract" project runs before feature specs ("chromium"). A helper failure stops feature specs early, isolating infrastructure breakage.
@@ -499,6 +684,12 @@ Enforce standard via eslint-plugin-playwright rules:
 
 Enforce dependency direction in Section 4.5 using no-restricted-imports.
 CI check must fail on "timeout:" inside tests/e2e (excluding MENU_OPEN_PROBE_MS).
+
+Recommended test ID check (CI script): collect every literal data-testid in
+src/**/*.vue (static values and the documented derived patterns), then fail when
+a literal getByTestId('...') in tests/e2e references an ID that no longer exists.
+Dynamic IDs (template strings) are excluded and covered by Section 7.6 review.
+This catches renames that left a consumer behind before the suite runs.
 
 Baseline playwright.config.js setup:
 
@@ -544,6 +735,19 @@ Baseline playwright.config.js setup:
   - Auto project fixture interfering with dashboard tests -> Section 4.6.
   - Stale relative import paths -> Sections 4.5 & 12.
   - Unpolled engine bus assertions -> Section 15.
+  - "element(s) not found" on an ID that looks right: a derived test ID that was
+    guessed from the wrong base (wrapper vs inner component) -> Section 7.5(c).
+  - A root test ID that never appears in the DOM: overridden by a data-testid
+    passed to the component (attribute fallthrough) -> Section 7.5(b).
+  - A reusable component's static test ID now missing after a refactor to derived
+    IDs (e.g. section-menu-trigger) -> Sections 7.5 & 7.6.
+  - An assertion that always passes after a UI change: role/state selector now
+    matches another component (e.g. aria-selected on hierarchy rows) -> Sections
+    7.3 & 10.
+  - Wrong element clicked without an error: fuzzy .or() fallback or a hardcoded
+    widget fallback in a helper -> Sections 7.3 & 11.
+  - Menu level counts off by one: [role="menu"] matching dropdowns as well as
+    context menus -> Section 11.2.
 
 14.2 Classification Rules
   0. Run contract project first (npx playwright test --project=contract).
@@ -551,11 +755,15 @@ Baseline playwright.config.js setup:
   2. Inspect trace logs (npx playwright show-trace).
   3. App bug vs test bug: fix app if UI is incorrect; never loosen assertions.
   4. Never add sleeps, force options, or .first() to patch test failures.
+  5. "Not found" on a test ID: inspect the real DOM in the trace and compare with
+     the component source before editing the spec. Fix the contract
+     (Section 7.5/7.6), do not stack another fallback.
 
 14.3 Maintenance Rules
   - Run module E2E suite on Vue component updates.
   - Run full suite (contract + specs) on helper, page, flow, or fixture changes.
   - Ensure new features ship with required data-* / ARIA attributes in the same PR.
+  - Test ID renames follow Section 7.6 and are never split across PRs.
   - Check flakiness pre-merge using --repeat-each=10.
 
 
@@ -626,5 +834,7 @@ Tests bind to behavior and stable identity (roles, IDs, state attributes), never
 to styling or display text, and every assertion must be able to fail when the
 feature breaks. Shared helpers are contracts: they change additively, state
 their own pre/postconditions, and are guarded by contract tests so that no spec
-can break another. Asynchronous Engine Canvas synchronization is validated
-through isolated, pollable Event Bus Spies.
+can break another. Test IDs are contracts too: they follow one naming
+convention, reusable components derive them from a base instead of hardcoding
+them, and they change only together with every consumer. Asynchronous Engine
+Canvas synchronization is validated through isolated, pollable Event Bus Spies.

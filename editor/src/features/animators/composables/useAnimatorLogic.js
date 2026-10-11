@@ -5,8 +5,13 @@ import { useAssetStore } from '@assets/assets.js';
 import { usePopAlert, usePrompt, useConfirm } from '@composables/composables.js';
 import { useAnimatorHistory } from '@historys/historys.js';
 
-const activeClipId = ref(null);
-let lastEntityId = null;
+// State Lokal Sesi (Tidak disimpan ke Pinia/OPFS)
+const activeClipByEntity = ref({});
+const showShadow = ref(false);
+const shadowFrameCount = ref(3);
+const shadowOpacity = ref(80);
+const showGrid = ref(true);
+const gridSize = ref(32);
 
 export function useAnimatorLogic() {
   const sceneStore = useSceneStore();
@@ -34,6 +39,18 @@ export function useAnimatorLogic() {
   const activeEntityId = computed(() => selectedEntity.value?.id);
   const hasAnimator = computed(() => !!selectedEntity.value?.components?.SpriteAnimator);
 
+  const activeClipId = computed({
+    get: () => {
+      if (!activeEntityId.value) return null;
+      return activeClipByEntity.value[activeEntityId.value] || null;
+    },
+    set: (val) => {
+      if (activeEntityId.value) {
+        activeClipByEntity.value[activeEntityId.value] = val;
+      }
+    }
+  });
+
   // AUTO-CLOSE jika entitas saat ini berubah menjadi PREFAB atau hilang
   watch(
     [() => workspaceStore.activeTab, selectedEntity],
@@ -45,13 +62,6 @@ export function useAnimatorLogic() {
     },
     { immediate: true, deep: true }
   );
-
-  watch(activeEntityId, (newId) => {
-    if (newId !== lastEntityId) {
-      activeClipId.value = null;
-      lastEntityId = newId;
-    }
-  }, { immediate: true });
 
   const realClipsData = computed(() => selectedEntity.value?.components?.SpriteAnimator?.clips || []);
 
@@ -70,6 +80,14 @@ export function useAnimatorLogic() {
       }
       try {
         resolvedAssetUrl.value = (await assetStore.getAssetUrlById(newAssetId)) || '';
+
+        // Otomatis buat 1 frame pertama jika clip belum memiliki frame sama sekali
+        if (
+          activeClipData.value && 
+          (!activeClipData.value.frames || activeClipData.value.frames.length === 0)
+        ) {
+          addFrame();
+        }
       } catch (err) {
         console.error('Gagal memuat tekstur animator:', err);
         resolvedAssetUrl.value = '';
@@ -547,6 +565,13 @@ export function useAnimatorLogic() {
     sources,
     fps,
     isPlaying,
+    
+    showShadow,
+    shadowFrameCount,
+    shadowOpacity,
+    showGrid,
+    gridSize,
+
     hasClipboard: computed(() => workspaceStore.hasClipboardData && workspaceStore.clipboard.type === 'animator_node'),
     
     bindClipProp,
@@ -554,7 +579,14 @@ export function useAnimatorLogic() {
     undo: animatorHistory.undo,
     redo: animatorHistory.redo,
 
-    selectClip: (id) => { activeClipId.value = id; },
+    selectClip: (id) => {
+      if (id !== null && activeClipId.value === id) {
+        activeClipId.value = null;
+      } else {
+        activeClipId.value = id;
+      }
+    },
+
     openAnimatorEditor,
     syncAnimatorData,
     toggleCategory,

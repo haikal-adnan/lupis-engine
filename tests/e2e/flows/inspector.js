@@ -19,6 +19,64 @@ export class InspectorCrudObject {
   }
 
   // =========================================================================
+  // HELPER INTERNAL: OBJECT SECTION MENU (PREFAB & ENTITY ACTIONS)
+  // =========================================================================
+  async openObjectSectionMenu() {
+    await this.page.evaluate(() => {
+      if (document.activeElement && document.activeElement !== document.body) {
+        document.activeElement.blur();
+      }
+    });
+    await this.page.evaluate(() => new Promise((resolve) => requestAnimationFrame(resolve)));
+
+    const menuContainer = this.page.getByTestId('object-section-menu').first();
+    if (await menuContainer.isVisible()) {
+      return menuContainer;
+    }
+
+    const menuTrigger = this.inspector.objectSection.locator('[data-element="section-menu-trigger"]').first();
+    await expect(menuTrigger).toBeVisible();
+    await menuTrigger.click();
+
+    await expect(menuContainer).toBeVisible();
+    return menuContainer;
+  }
+
+  async clickObjectSectionMenuItem(testId) {
+    const menu = await this.openObjectSectionMenu();
+    const item = menu.getByTestId(testId).first();
+    await expect(item).toBeVisible();
+    await item.dispatchEvent('click');
+    await expect(menu).toBeHidden();
+  }
+
+  // =========================================================================
+  // PREFAB ACTIONS
+  // =========================================================================
+  async applyPrefabToMaster() {
+    await this.clickObjectSectionMenuItem('menu-item-apply-to-master');
+  }
+
+  async revertPrefabToSync() {
+    await this.clickObjectSectionMenuItem('menu-item-revert-to-sync');
+  }
+
+  async unpackPrefab() {
+    await this.clickObjectSectionMenuItem('menu-item-unpack-prefab');
+  }
+
+  async copyEntityId() {
+    await this.clickObjectSectionMenuItem('menu-item-copy-id');
+  }
+
+  async deleteEntityViaMenu({ confirm = true } = {}) {
+    await this.clickObjectSectionMenuItem('menu-item-delete-entity');
+    if (confirm) {
+      await this.popup.confirmAction('Delete Entity', { confirmText: 'Delete' });
+    }
+  }
+
+  // =========================================================================
   // 1. EDITOR PROJECT & 2. EDITOR SCENE (DESELECTED STATE)
   // =========================================================================
   async configureProjectQuickActions({ grid = true, snap = false, rulers = false, uiLayer = true } = {}) {
@@ -94,9 +152,19 @@ export class InspectorCrudObject {
   // =========================================================================
   // 8. EDITOR SHAPE (SHAPE RENDERER)
   // =========================================================================
-  async configureShapeRenderer({ outlineWidth = 1, openEditor = false } = {}) {
+  async configureShapeRenderer({ outlineWidth = 1, polygonCollision = false, openEditor = false } = {}) {
     await this.inspector.ensureShapeRendererComponent();
     if (outlineWidth !== undefined) await this.inspector.setShapeOutlineWidth(outlineWidth);
+    
+    if (polygonCollision) {
+      const polygonPhysicsBtn = this.page
+        .getByTestId('shape-renderer-polygon-collision')
+        .locator('input[type="checkbox"]')
+        .or(this.page.getByTestId('shape-renderer-polygon-collision'))
+        .first();
+      await polygonPhysicsBtn.click();
+    }
+
     if (openEditor) await this.inspector.openShapeEditor();
   }
 
@@ -127,9 +195,14 @@ export class InspectorCrudObject {
   // =========================================================================
   // 10. EDITOR TILEMAP
   // =========================================================================
-  async configureTilemap({ opacity = 100, sampleImageName = null, openEditor = false } = {}) {
+  async configureTilemap({ opacity = 100, autoFit = false, sampleImageName = null, openEditor = false } = {}) {
     await this.inspector.ensureTilemapComponent();
     if (opacity !== undefined) await this.inspector.setTilemapOpacity(opacity);
+
+    if (autoFit) {
+      const autoFitBtn = this.page.getByTestId('tilemap-autofit-btn');
+      await autoFitBtn.click();
+    }
 
     if (sampleImageName) {
       const assetCard = await this.assetCrud.uploadAsset(sampleImageName);
@@ -142,7 +215,7 @@ export class InspectorCrudObject {
   // =========================================================================
   // 11. EDITOR SCRIPT (SCRIPT CONTROLLER)
   // =========================================================================
-  async attachScriptToEntity(entityName, scriptName) {
+  async attachScriptToEntity(entityName, scriptName, { toggleActive = false } = {}) {
     await this.inspector.setEntityName(entityName);
     await this.inspector.ensureScriptControllerComponent();
     await this.scriptCrud.createScript(scriptName);
@@ -154,6 +227,10 @@ export class InspectorCrudObject {
 
     const dropdownTrigger = this.inspector.scriptControllerSection.getByTestId('script-controller-dropdown-trigger');
     await expect(dropdownTrigger).toContainText(scriptName);
+
+    if (toggleActive) {
+      await this.inspector.toggleScriptActive();
+    }
   }
 
   // =========================================================================
@@ -216,7 +293,6 @@ export class InspectorCrudObject {
 
     if (persist) {
       await this.inspector.toggleAudioPersist();
-      // Verifikasi bahwa Spatial 2D ter-disable saat Persist aktif
       const spatialBtn = this.page.getByTestId('audio-spatial-toggle');
       await expect(spatialBtn).toBeDisabled();
     } else if (spatial) {

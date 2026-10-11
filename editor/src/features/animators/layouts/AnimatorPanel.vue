@@ -1,20 +1,48 @@
-<!-- AnimatorPanel.vue -->
 <template>
-  <div ref="panelRef" class="relative w-full h-full bg-[#111] overflow-hidden select-none" @mousedown.middle="startPan" @wheel.prevent="handleWheel">
-    <div class="absolute inset-0 opacity-10 pointer-events-none" :style="{ backgroundImage: 'radial-gradient(#fff 1px, transparent 1px)', backgroundSize: `${20 * camera.scale}px ${20 * camera.scale}px`, backgroundPosition: `${camera.x}px ${camera.y}px` }"></div>
+  <div 
+    ref="panelRef" 
+    class="relative w-full h-full bg-[#111] overflow-hidden select-none" 
+    :class="[ isSpacePressed ? (isPanning ? 'cursor-grabbing' : 'cursor-grab') : 'cursor-default' ]"
+    @mousedown="handleMouseDown" 
+    @wheel.prevent="handleWheel" 
+    data-testid="animator-panel-viewport"
+  >
+    <!-- Grid Overlay Custom -->
+    <div 
+      v-if="showGrid" 
+      class="absolute inset-0 opacity-15 pointer-events-none" 
+      :style="gridStyle"
+    ></div>
     
-    <div class="absolute top-0 left-0 w-full h-full origin-top-left pointer-events-none" :style="{ transform: `translate3d(${Math.round(camera.x)}px, ${Math.round(camera.y)}px, 0) scale(${camera.scale})` }">
+    <div 
+      class="absolute top-0 left-0 w-full h-full origin-top-left pointer-events-none" 
+      :style="{ transform: `translate3d(${Math.round(camera.x)}px, ${Math.round(camera.y)}px, 0) scale(${camera.scale})` }"
+    >
       <div class="absolute top-0 left-0">
         <div v-if="!activeClipData || !activeClipData.assetId" class="chess-pattern absolute border border-muted/30 shadow-lg" :style="fallbackStyle">
           <Film class="w-8 h-8 text-muted-foreground/30 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
         </div>
-        <div v-else class="absolute bg-no-repeat shadow-lg" :style="frameStyle"></div>
+        
+        <template v-else>
+          <!-- Shadow Frames -->
+          <template v-if="showShadow">
+            <div 
+              v-for="shadow in shadowFramesList" 
+              :key="shadow.key" 
+              class="absolute bg-no-repeat filter brightness-125 contrast-75 pointer-events-none z-0" 
+              :style="shadow.style"
+            ></div>
+          </template>
+
+          <!-- Current Active Frame -->
+          <div class="absolute bg-no-repeat shadow-lg z-10" :style="frameStyle"></div>
+        </template>
       </div>
     </div>
 
     <div class="absolute bottom-4 left-4 right-4 flex justify-between items-center text-[10px] text-muted-foreground uppercase font-bold tracking-widest pointer-events-none">
-      <span>Zoom: {{ Math.round(camera.scale * 100) }}%</span>
-      <span>Entity ID: {{ activeEntityId || 'None' }}</span>
+      <span data-testid="animator-panel-zoom-text">Zoom: {{ Math.round(camera.scale * 100) }}%</span>
+      <span data-testid="animator-panel-entity-text">Entity ID: {{ activeEntityId || 'None' }}</span>
     </div>
   </div>
 </template>
@@ -25,20 +53,36 @@ import { Film } from 'lucide-vue-next';
 import { useAnimatorLogic } from '@animators/animators.js';
 
 const panelRef = ref(null);
-const { activeClipData, activeEntityId, currentFrameIndex, resolvedAssetUrl } = useAnimatorLogic();
+const { activeClipData, activeEntityId, currentFrameIndex, resolvedAssetUrl, showShadow, shadowFrameCount, shadowOpacity, showGrid, gridSize } = useAnimatorLogic();
 
 const camera = ref({ x: 0, y: 0, scale: 1 });
 const isPanning = ref(false);
+const isSpacePressed = ref(false);
 const startMouse = { x: 0, y: 0 };
 const startCam = { x: 0, y: 0 };
 let cachedRect = null;
 
-const startPan = (e) => {
-  isPanning.value = true;
-  startMouse.x = e.clientX;
-  startMouse.y = e.clientY;
-  startCam.x = camera.value.x;
-  startCam.y = camera.value.y;
+const handleKeyDown = (e) => {
+  if (e.code === 'Space' && !e.repeat && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+    isSpacePressed.value = true;
+  }
+};
+
+const handleKeyUp = (e) => {
+  if (e.code === 'Space') {
+    isSpacePressed.value = false;
+    isPanning.value = false;
+  }
+};
+
+const handleMouseDown = (e) => {
+  if ((e.button === 0 && isSpacePressed.value) || e.button === 1) {
+    isPanning.value = true;
+    startMouse.x = e.clientX;
+    startMouse.y = e.clientY;
+    startCam.x = camera.value.x;
+    startCam.y = camera.value.y;
+  }
 };
 
 const handleGlobalMouseMove = (e) => {
@@ -48,7 +92,9 @@ const handleGlobalMouseMove = (e) => {
   }
 };
 
-const handleGlobalMouseUp = () => { isPanning.value = false; };
+const handleGlobalMouseUp = () => {
+  isPanning.value = false;
+};
 
 const handleWheel = (e) => {
   if (!panelRef.value) return;
@@ -83,12 +129,16 @@ const centerCamera = () => {
 
 onMounted(() => {
   centerCamera();
+  window.addEventListener('keydown', handleKeyDown);
+  window.addEventListener('keyup', handleKeyUp);
   window.addEventListener('mousemove', handleGlobalMouseMove);
   window.addEventListener('mouseup', handleGlobalMouseUp);
   window.addEventListener('resize', centerCamera);
 });
 
 onBeforeUnmount(() => {
+  window.removeEventListener('keydown', handleKeyDown);
+  window.removeEventListener('keyup', handleKeyUp);
   window.removeEventListener('mousemove', handleGlobalMouseMove);
   window.removeEventListener('mouseup', handleGlobalMouseUp);
   window.removeEventListener('resize', centerCamera);
@@ -102,10 +152,9 @@ const currentFrameData = computed(() => {
   return clip.sources ? clip.sources[sourceId] : null;
 });
 
-const frameStyle = computed(() => {
+const buildFrameStyle = (frame, opacityVal = 1) => {
   const clip = activeClipData.value;
-  const frame = currentFrameData.value || { x: 0, y: 0, w: 0, h: 0 };
-  if (!clip || frame.w === 0 || frame.h === 0) return { display: 'none' };
+  if (!clip || !frame || frame.w === 0 || frame.h === 0) return { display: 'none' };
 
   const isFlipped = clip.flipX || false;
   const px = isFlipped ? (1.0 - (clip.pivot?.x ?? 0.5)) : (clip.pivot?.x ?? 0.5);
@@ -117,7 +166,55 @@ const frameStyle = computed(() => {
     backgroundImage: resolvedAssetUrl.value ? `url("${resolvedAssetUrl.value}")` : 'none',
     backgroundPosition: `-${frame.x}px -${frame.y}px`,
     transform: `translate(-${px * 100}%, -${py * 100}%)${isFlipped ? ' scaleX(-1)' : ''}`,
-    imageRendering: 'pixelated'
+    imageRendering: 'pixelated',
+    opacity: opacityVal
+  };
+};
+
+const frameStyle = computed(() => buildFrameStyle(currentFrameData.value || { x: 0, y: 0, w: 0, h: 0 }, 1));
+
+const shadowFramesList = computed(() => {
+  if (!showShadow.value || !activeClipData.value || !activeClipData.value.frames) return [];
+  const clip = activeClipData.value;
+  const totalFrames = clip.frames.length;
+  if (totalFrames <= 1) return [];
+
+  const currIdx = Math.min(Math.max(0, currentFrameIndex.value), totalFrames - 1);
+  const count = Math.max(1, shadowFrameCount.value || 1);
+  const baseOpacity = (shadowOpacity.value ?? 80) / 100;
+
+  const results = [];
+
+  for (let step = 1; step <= count; step++) {
+    let targetIdx = currIdx - step;
+    if (targetIdx < 0) {
+      if (clip.isLooping) {
+        targetIdx = (targetIdx % totalFrames + totalFrames) % totalFrames;
+      } else {
+        break;
+      }
+    }
+
+    const sourceId = clip.frames[targetIdx];
+    const frame = clip.sources ? clip.sources[sourceId] : null;
+    if (frame && frame.w > 0 && frame.h > 0) {
+      const calcOpacity = baseOpacity * Math.pow(0.5, step - 1);
+      results.push({
+        key: `shadow_${step}_${sourceId}`,
+        style: buildFrameStyle(frame, calcOpacity)
+      });
+    }
+  }
+
+  return results;
+});
+
+const gridStyle = computed(() => {
+  const sz = (gridSize.value || 32) * camera.value.scale;
+  return {
+    backgroundImage: 'radial-gradient(#fff 1px, transparent 1px)',
+    backgroundSize: `${sz}px ${sz}px`,
+    backgroundPosition: `${camera.value.x}px ${camera.value.y}px`
   };
 });
 

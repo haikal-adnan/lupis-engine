@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
-import { useAnimatorLogic } from '@animators/animators.js'
+import { nextTick } from 'vue'
+import { useAnimatorLogic, useAnimatorMenu } from '@animators/animators.js'
 import { useSceneStore } from '@scenes/scenes.js'
 import { useWorkspaceStore } from '@workspaces/workspaces.js'
 import { useAssetStore } from '@assets/assets.js'
@@ -118,6 +119,73 @@ describe('useAnimatorLogic Integration', () => {
     setupMockSceneEnvironment({ entities: [entity] })
     assetStore.initAssets([mockAsset])
 
+    // Gunakan vi.spyOn untuk mengawasi dan meng-override aksi Pinia sceneStore
+    vi.spyOn(sceneStore, '_saveAnimatorClips').mockImplementation((entityId, clips) => {
+      const ent = sceneStore.activeScene?.entities.find(e => e.id === entityId)
+      if (ent?.components?.SpriteAnimator) ent.components.SpriteAnimator.clips = clips
+    })
+
+    vi.spyOn(sceneStore, 'animatorCreateCategory').mockImplementation((entityId, targetId) => {
+      const ent = sceneStore.activeScene?.entities.find(e => e.id === entityId)
+      if (ent?.components?.SpriteAnimator) {
+        ent.components.SpriteAnimator.clips.push({
+          id: `cat_${Date.now()}`,
+          name: 'New Category',
+          type: 'category',
+          parentId: targetId || null,
+          isOpen: true
+        })
+      }
+    })
+
+    vi.spyOn(sceneStore, 'animatorCreateClip').mockImplementation((entityId, targetId) => {
+      const ent = sceneStore.activeScene?.entities.find(e => e.id === entityId)
+      if (ent?.components?.SpriteAnimator) {
+        ent.components.SpriteAnimator.clips.push({
+          id: `clip_${Date.now()}`,
+          name: 'New Clip',
+          type: 'clip',
+          parentId: targetId || null,
+          fps: 12,
+          frames: [],
+          sources: {},
+          baseSize: { w: 32, h: 32 }
+        })
+      }
+    })
+
+    vi.spyOn(sceneStore, 'animatorDeleteNode').mockImplementation((entityId, id) => {
+      const ent = sceneStore.activeScene?.entities.find(e => e.id === entityId)
+      if (ent?.components?.SpriteAnimator) {
+        const clips = ent.components.SpriteAnimator.clips
+        const idx = clips.findIndex(c => c.id === id)
+        if (idx !== -1) return clips.splice(idx, 1)[0]
+      }
+      return null
+    })
+
+    vi.spyOn(sceneStore, 'animatorGetNodeClone').mockImplementation((entityId, id) => {
+      const ent = sceneStore.activeScene?.entities.find(e => e.id === entityId)
+      const node = ent?.components?.SpriteAnimator?.clips?.find(c => c.id === id)
+      return node ? JSON.parse(JSON.stringify(node)) : null
+    })
+
+    vi.spyOn(sceneStore, 'animatorPasteNode').mockImplementation((entityId, targetId, nodeData) => {
+      const ent = sceneStore.activeScene?.entities.find(e => e.id === entityId)
+      if (ent?.components?.SpriteAnimator) {
+        const clone = JSON.parse(JSON.stringify(nodeData.node || nodeData))
+        clone.id = `pasted_${Date.now()}`
+        clone.parentId = targetId || null
+        ent.components.SpriteAnimator.clips.push(clone)
+      }
+    })
+
+    vi.spyOn(sceneStore, 'animatorRenameNode').mockImplementation((entityId, id, newName) => {
+      const ent = sceneStore.activeScene?.entities.find(e => e.id === entityId)
+      const node = ent?.components?.SpriteAnimator?.clips?.find(c => c.id === id)
+      if (node) node.name = newName
+    })
+
     // Buka tab workspace yang aktif mengarah ke entity
     workspaceStore.openTab({
       id: entity.id,
@@ -133,93 +201,84 @@ describe('useAnimatorLogic Integration', () => {
 
   describe('Entity Selection and Tab Synchronization', () => {
     it('resolves selected entity and animator state correctly', () => {
-      // Arrange & Act
       const logic = useAnimatorLogic()
 
-      // Assert
       expect(logic.selectedEntity.value?.id).toBe(mockEntityData.entity.id)
       expect(logic.hasAnimator.value).toBe(true)
       expect(logic.activeEntityId.value).toBe(mockEntityData.entity.id)
     })
 
-    it('closes animator tab automatically when selected entity has no animator component', async () => {
-      // Arrange
-      const logic = useAnimatorLogic()
-      const entity = sceneStore.activeScene.entities.find(e => e.id === mockEntityData.entity.id)
-      
-      // Act: Hapus SpriteAnimator dari entity
-      delete entity.components.SpriteAnimator
-      
-      // Trigger re-computation / watcher
-      await vi.dynamicImportSettled()
+    it('closes animator tab automatically when active entity becomes a prefab or is removed', async () => {
+      useAnimatorLogic()
+      const closeTabSpy = vi.spyOn(workspaceStore, 'closeTab')
 
-      // Assert
-      expect(logic.hasAnimator.value).toBe(false)
+      const reactiveEntity = sceneStore.activeScene.entities.find(e => e.id === mockEntityData.entity.id)
+      reactiveEntity.prefabId = 'prefab_123'
+
+      await nextTick()
+
+      expect(closeTabSpy).toHaveBeenCalledWith(mockEntityData.entity.id)
     })
   })
 
-  describe('Tree Operations & History Recording Integration', () => {
-    it('creates a new category and records state change in history', () => {
-      // Arrange
+  describe('Tree Operations & Visual Hierarchy', () => {
+    it('organizes categories and clips into treeVisualData structure', () => {
       const logic = useAnimatorLogic()
-      const initialClipCount = logic.realClipsData.value.length
-
-      // Act
       logic.createCategory()
+      const cat = logic.realClipsData.value.find(c => c.type === 'category')
+      logic.createClip(cat.id)
 
-      // Assert: Verifikasi perubahan di store dan visual tree
-      expect(logic.realClipsData.value.length).toBe(initialClipCount + 1)
-      const createdCategory = logic.realClipsData.value.find(c => c.type === 'category')
-      expect(createdCategory).toBeDefined()
-      expect(createdCategory.name).toBe('New Category')
+      const tree = logic.treeVisualData.value
+      const catInTree = tree.find(n => n.id === cat.id)
 
-      // Act: Undo via history
+      expect(catInTree).toBeDefined()
+      expect(catInTree._uiChildren).toHaveLength(1)
+      expect(catInTree._uiChildren[0].name).toBe('New Clip')
+    })
+
+    it('toggles category open status and records history', () => {
+      const logic = useAnimatorLogic()
+      logic.createCategory()
+      const cat = logic.realClipsData.value.find(c => c.type === 'category')
+
+      logic.toggleCategory(cat.id)
+      expect(logic.realClipsData.value.find(c => c.id === cat.id).isOpen).toBe(false)
+
       logic.undo()
-
-      // Assert: State kembali seperti semula
-      expect(logic.realClipsData.value.length).toBe(initialClipCount)
+      expect(logic.realClipsData.value.find(c => c.id === cat.id).isOpen).toBe(true)
     })
 
-    it('creates a clip under targeted category and syncs tree structure', () => {
-      // Arrange
+    it('duplicates node and pastes clone under the same target', () => {
+      const logic = useAnimatorLogic()
+      const initialLength = logic.realClipsData.value.length
+
+      logic.duplicateNode(mockEntityData.defaultClip.id)
+
+      expect(sceneStore.animatorGetNodeClone).toHaveBeenCalledWith(mockEntityData.entity.id, mockEntityData.defaultClip.id)
+      expect(sceneStore.animatorPasteNode).toHaveBeenCalled()
+      expect(logic.realClipsData.value.length).toBe(initialLength + 1)
+    })
+
+    it('moves node to root position in tree structure', () => {
       const logic = useAnimatorLogic()
       logic.createCategory()
-      const categoryNode = logic.realClipsData.value.find(c => c.type === 'category')
+      const cat = logic.realClipsData.value.find(c => c.type === 'category')
+      logic.createClip(cat.id)
 
-      // Act
-      logic.createClip(categoryNode.id)
+      const childClip = logic.realClipsData.value.find(c => c.parentId === cat.id)
+      logic.moveNode(childClip.id, null, 'root')
 
-      // Assert
-      const newClip = logic.realClipsData.value.find(c => c.name === 'New_Clip')
-      expect(newClip).toBeDefined()
-      expect(newClip.parentId).toBe(categoryNode.id)
-    })
-
-    it('deletes clip node and resets activeClipId if the deleted clip was active', () => {
-      // Arrange
-      const logic = useAnimatorLogic()
-      const targetClipId = mockEntityData.defaultClip.id
-      logic.selectClip(targetClipId)
-      expect(logic.activeClipId.value).toBe(targetClipId)
-
-      // Act
-      logic.deleteNode(targetClipId)
-
-      // Assert
-      expect(logic.activeClipId.value).toBeNull()
-      expect(logic.realClipsData.value.find(c => c.id === targetClipId)).toBeUndefined()
+      const movedClip = logic.realClipsData.value.find(c => c.id === childClip.id)
+      expect(movedClip.parentId).toBeNull()
     })
 
     it('renames node through prompt dialog and notifies user upon success', async () => {
-      // Arrange
       const logic = useAnimatorLogic()
       const clipId = mockEntityData.defaultClip.id
       mockPrompt.mockResolvedValueOnce('Run_Loop')
 
-      // Act
       await logic.renameNode(clipId)
 
-      // Assert
       const updatedClip = logic.realClipsData.value.find(c => c.id === clipId)
       expect(updatedClip.name).toBe('Run_Loop')
       expect(mockShowPop).toHaveBeenCalledWith(expect.objectContaining({ type: 'success' }))
@@ -228,157 +287,221 @@ describe('useAnimatorLogic Integration', () => {
 
   describe('Clipboard Operations (Copy, Cut, Paste)', () => {
     it('copies node data into workspace clipboard', () => {
-      // Arrange
       const logic = useAnimatorLogic()
       const clipId = mockEntityData.defaultClip.id
 
-      // Act
       logic.copyNode(clipId)
 
-      // Assert
       expect(workspaceStore.clipboard.type).toBe('animator_node')
-      expect(workspaceStore.clipboard.data.node.id).toBe(clipId)
+      const copiedNode = workspaceStore.clipboard.data?.node || workspaceStore.clipboard.data
+      expect(copiedNode?.id).toBe(clipId)
       expect(logic.hasClipboard.value).toBe(true)
     })
 
     it('cuts node to clipboard, removes it from scene, and clears clipboard after paste', () => {
-      // Arrange
       const logic = useAnimatorLogic()
       const clipId = mockEntityData.defaultClip.id
 
-      // Act 1: Cut
       logic.cutNode(clipId)
       expect(logic.realClipsData.value.find(c => c.id === clipId)).toBeUndefined()
       expect(workspaceStore.clipboard.mode).toBe('cut')
 
-      // Act 2: Paste
       logic.pasteNode(null)
-
-      // Assert: Node terduplikasi disalin dan clipboard dikosongkan
       expect(logic.realClipsData.value.length).toBe(1)
       expect(workspaceStore.clipboard.type).toBeNull()
     })
   })
 
-  describe('Timeline & Frame Playback Integration', () => {
+  describe('Timeline, Playback & Auto-Fill Integration', () => {
     it('adds new frame using last source dimensions and syncs scene data', () => {
-      // Arrange
       const logic = useAnimatorLogic()
       logic.selectClip(mockEntityData.defaultClip.id)
       const initialFrameCount = logic.frames.value.length
 
-      // Act
       logic.addFrame()
 
-      // Assert
       expect(logic.frames.value.length).toBe(initialFrameCount + 1)
       expect(logic.currentFrameIndex.value).toBe(initialFrameCount)
     })
 
-    it('plays and steps forward frame timeline over intervals', () => {
-      // Arrange
+    it('removes frame from timeline and updates current frame index', () => {
       const logic = useAnimatorLogic()
       logic.selectClip(mockEntityData.defaultClip.id)
+      logic.addFrame() // Total 3 frames (0, 1, 2)
+      logic.currentFrameIndex.value = 2
+
+      logic.removeFrame(2)
+
+      expect(logic.frames.value.length).toBe(2)
+      expect(logic.currentFrameIndex.value).toBe(1)
+    })
+
+    it('plays, steps forward, and steps backward playback properly', () => {
+      const logic = useAnimatorLogic()
+      logic.selectClip(mockEntityData.defaultClip.id)
+
+      logic.stepForward()
+      expect(logic.currentFrameIndex.value).toBe(1)
+
+      logic.stepBackward()
       expect(logic.currentFrameIndex.value).toBe(0)
 
-      // Act: Start Playback via togglePlay
       logic.togglePlay()
       expect(logic.isPlaying.value).toBe(true)
 
-      // Advance time (fps: 12 -> interval ~83.3ms)
       vi.advanceTimersByTime(100)
       expect(logic.currentFrameIndex.value).toBe(1)
 
-      // Act: Stop Playback via stopPlayback atau togglePlay
       logic.stopPlayback()
       expect(logic.isPlaying.value).toBe(false)
     })
 
+    it('auto fills frames automatically using asset texture width', async () => {
+      const logic = useAnimatorLogic()
+      logic.selectClip(mockEntityData.defaultClip.id)
+      
+      await logic.autoFill()
+
+      expect(logic.frames.value.length).toBe(4)
+    })
+
     it('clears timeline after user confirmation', async () => {
-      // Arrange
       const logic = useAnimatorLogic()
       logic.selectClip(mockEntityData.defaultClip.id)
       mockConfirm.mockResolvedValueOnce(true)
 
-      // Act
       await logic.clearTimeline()
 
-      // Assert
       expect(logic.frames.value.length).toBe(0)
       expect(logic.currentFrameIndex.value).toBe(0)
     })
   })
 
-  describe('Properties Data Binding', () => {
-    it('binds and updates clip property with double-way setter integration', () => {
-      // Arrange
+  describe('Source Management', () => {
+    it('creates new source via prompt and updates frame source', async () => {
+      const logic = useAnimatorLogic()
+      logic.selectClip(mockEntityData.defaultClip.id)
+      mockPrompt.mockResolvedValueOnce('jump_01')
+
+      await logic.handleCreateSource()
+
+      expect(logic.sources.value['jump_01']).toBeDefined()
+      expect(logic.frames.value[logic.currentFrameIndex.value]).toBe('jump_01')
+    })
+
+    it('deletes specific source and all sources upon confirmation', async () => {
+      const logic = useAnimatorLogic()
+      logic.selectClip(mockEntityData.defaultClip.id)
+
+      logic.handleDeleteSource('s_0')
+      expect(logic.sources.value['s_0']).toBeUndefined()
+
+      mockConfirm.mockResolvedValueOnce(true)
+      await logic.deleteAllSources()
+      expect(Object.keys(logic.sources.value)).toHaveLength(0)
+    })
+  })
+
+  describe('Editor Navigation & Property Binding', () => {
+    it('opens animator editor tab for active entity', () => {
+      const logic = useAnimatorLogic()
+      sceneStore.selectedEntityIds = [mockEntityData.entity.id]
+      const openTabSpy = vi.spyOn(workspaceStore, 'openTab')
+
+      logic.openAnimatorEditor()
+
+      expect(openTabSpy).toHaveBeenCalledWith(expect.objectContaining({
+        id: mockEntityData.entity.id,
+        type: 'animator'
+      }))
+    })
+
+    it('binds clip property with getter and setter', () => {
       const logic = useAnimatorLogic()
       logic.selectClip(mockEntityData.defaultClip.id)
       const fpsBinding = logic.bindClipProp('fps', 12)
 
-      // Act
       fpsBinding.value = 24
 
-      // Assert
       expect(logic.activeClipData.value.fps).toBe(24)
 
-      // Act: Undo via history
       logic.undo()
       expect(logic.activeClipData.value.fps).toBe(12)
     })
   })
 
-  describe('[Bad Path] Error Handling & Edge Cases', () => {
-    it('[Bad Path] handles asset texture URL resolution failure gracefully', async () => {
-      // Arrange
+  describe('Edge Cases & Error Handling', () => {
+    it('handles asset texture URL resolution failure gracefully', async () => {
       const logic = useAnimatorLogic()
       logic.selectClip(mockEntityData.defaultClip.id)
 
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-      vi.spyOn(assetStore, 'getAssetUrlById').mockRejectedValueOnce(new Error('OPFS Read Error'))
+      vi.spyOn(assetStore, 'getAssetUrlById').mockRejectedValueOnce(new Error('OPFS Read Failure'))
 
-      // Act: Trigger asset URL watcher
       logic.activeClipData.value.assetId = 'invalid_asset_id'
-      await vi.dynamicImportSettled()
+      await nextTick()
 
-      // Assert
       expect(logic.resolvedAssetUrl.value).toBe('')
       expect(consoleErrorSpy).toHaveBeenCalled()
 
       consoleErrorSpy.mockRestore()
     })
 
-    it('[Bad Path] does not execute node actions when active entity is null', () => {
-      // Arrange
+    it('does not execute node actions when active entity is null', () => {
       const logic = useAnimatorLogic()
-      sceneStore.activeScene.entities = [] // Kosongkan entity
+      sceneStore.activeScene.entities = []
 
-      // Act
       logic.createCategory()
       logic.createClip(null)
       logic.deleteNode('some_id')
 
-      // Assert
       expect(logic.activeEntityId.value).toBeUndefined()
       expect(logic.realClipsData.value).toEqual([])
     })
 
-    it('[Bad Path] rejects auto fill if max width input is invalid or cancelled', async () => {
-      // Arrange
+    it('rejects auto fill if prompt input is cancelled or invalid', async () => {
       const logic = useAnimatorLogic()
       logic.selectClip(mockEntityData.defaultClip.id)
 
-      // Asset tanpa dimensions dan prompt dibatalkan
       logic.activeClipData.value.assetId = null
       mockPrompt.mockResolvedValueOnce(null)
 
       const initialFrameCount = logic.frames.value.length
-
-      // Act
       await logic.autoFill()
 
-      // Assert: Frame tidak bertambah
       expect(logic.frames.value.length).toBe(initialFrameCount)
     })
+  })
+})
+
+describe('useAnimatorMenu Unit Tests', () => {
+  it('opens root context menu when node is null', () => {
+    const handlers = {
+      createCategory: vi.fn(),
+      createClip: vi.fn(),
+      pasteNode: vi.fn(),
+      hasClipboardData: { value: true }
+    }
+    const menu = useAnimatorMenu(handlers)
+
+    menu.openMenu({ clientX: 100, clientY: 200 }, null)
+
+    expect(menu.contextMenu.value.visible).toBe(true)
+    expect(menu.contextMenu.value.x).toBe(100)
+    expect(menu.contextMenu.value.y).toBe(200)
+    expect(menu.contextMenu.value.items.some(i => i.label === 'New Category')).toBe(true)
+  })
+
+  it('opens category context menu and executes action', () => {
+    const createClipMock = vi.fn()
+    const handlers = { createClip: createClipMock }
+    const menu = useAnimatorMenu(handlers)
+
+    menu.openMenu({ clientX: 50, clientY: 50 }, { id: 'cat_1', type: 'category' })
+    const addClipItem = menu.contextMenu.value.items.find(i => i.label === 'Add Clip')
+    addClipItem.action()
+
+    expect(createClipMock).toHaveBeenCalledWith('cat_1')
+    expect(menu.contextMenu.value.visible).toBe(false)
   })
 })

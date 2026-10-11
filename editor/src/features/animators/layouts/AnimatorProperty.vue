@@ -1,5 +1,5 @@
 <template>
-  <PropertySection title="Clip Properties" :icon="Film" :default-open="true">
+  <PropertySection title="Clip Properties" :icon="Film" :default-open="true" data-testid="animator-property-section">
     
     <PropertyRow label="Clip ID">
       <BaseInput 
@@ -7,6 +7,7 @@
         placeholder="e.g. walk_anim" 
         class="w-full font-mono text-xs text-blue-400" 
         :disabled="!activeClipData"
+        data-testid="animator-property-script-id"
       />
     </PropertyRow>
 
@@ -16,6 +17,7 @@
         placeholder="e.g. Walk_Up" 
         class="w-full font-mono text-xs" 
         :disabled="!activeClipData"
+        data-testid="animator-property-clip-name"
       />
     </PropertyRow>
     
@@ -24,6 +26,7 @@
         :src="currentTextureUrl"
         fallback-text="No Tex"
         sizeClass="w-[52px] h-[52px] bg-muted/20 border-border/60 shrink-0 rounded-md shadow-inner"
+        data-testid="animator-property-texture-thumbnail"
       />
 
       <div class="flex-1 flex flex-col justify-center gap-1.5 min-w-0">
@@ -40,6 +43,7 @@
               cursor-pointer h-7 overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed
             "
             title="Click to select asset"
+            data-testid="animator-property-texture-btn"
           >
             <span class="flex-1 px-2 text-[10px] font-mono text-muted-foreground/90 truncate select-none group-hover:text-foreground transition-colors">
               {{ activeClipData?.assetId || 'None' }}
@@ -60,6 +64,7 @@
           :options="filterOptions" 
           class="flex-1"
           :disabled="!activeClipData"
+          data-testid="animator-property-filter-select"
         />
         
         <BaseButton 
@@ -69,6 +74,7 @@
           ghost
           :disabled="!activeClipData"
           tooltip="Enable Signed Distance Field rendering"
+          data-testid="animator-property-sdf-toggle"
         >
           <span>SDF</span>
         </BaseButton>
@@ -79,8 +85,8 @@
       <div class="flex-grow pt-[1px]">
         <PropertyRow label="Base Size">
           <div class="grid grid-cols-2 gap-2 flex-grow">
-            <BaseNumber v-model="baseWidth" prefix="W" :min="1" :step="1" class="font-mono" :disabled="!activeClipData" />
-            <BaseNumber v-model="baseHeight" prefix="H" :min="1" :step="1" class="font-mono" :disabled="!activeClipData" />
+            <BaseNumber v-model="baseWidth" prefix="W" :min="1" :step="1" class="font-mono" :disabled="!activeClipData" data-testid="animator-property-base-w" />
+            <BaseNumber v-model="baseHeight" prefix="H" :min="1" :step="1" class="font-mono" :disabled="!activeClipData" data-testid="animator-property-base-h" />
           </div>
         </PropertyRow>
       </div>
@@ -91,12 +97,13 @@
           :y="pivotY" 
           :disabled="!activeClipData"
           @update="handlePivotUpdate" 
+          data-testid="animator-property-pivot"
         />
       </div>
     </div>
 
     <PropertyRow label="Frame Rate (FPS)">
-      <BaseNumber v-model="fps" :min="1" :max="60" :step="1" class="font-mono w-full" :disabled="!activeClipData" />
+      <BaseNumber v-model="fps" :min="1" :max="60" :step="1" class="font-mono w-full" :disabled="!activeClipData" data-testid="animator-property-fps" />
     </PropertyRow>
 
     <PropertyRow label="Loop Animation">
@@ -105,6 +112,7 @@
         :options="loopOptions" 
         class="w-full" 
         :disabled="!activeClipData"
+        data-testid="animator-property-loop-select"
       />
     </PropertyRow>
 
@@ -114,6 +122,7 @@
         :disabled="!activeClipData"
         class="w-full py-1.5 flex items-center justify-center gap-2 border rounded-md transition-all text-xs font-bold outline-none"
         :class="flipX ? 'bg-primary/20 text-primary border-primary shadow-sm' : 'bg-secondary/40 text-muted-foreground border-border hover:bg-secondary/60'"
+        data-testid="animator-property-flipx-btn"
       >
         <FlipHorizontal class="w-3.5 h-3.5" />
         {{ flipX ? 'Active (Reverted)' : 'Inactive (Normal)' }}

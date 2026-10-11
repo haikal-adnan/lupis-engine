@@ -1,34 +1,57 @@
 <template>
-  <PropertySection title="Editor Settings" :icon="Settings2" :default-open="false">
+  <PropertySection title="Editor Settings" :icon="Settings2" :default-open="false" data-testid="animator-setting-section">
     
-    <PropertyRow label="Background">
-      <BaseColor v-model="bgColor" :show-input="true" class="w-full" />
+    <PropertyRow label="Show Shadow (Onion Skin)">
+      <BaseCheckbox 
+        v-model="showShadow" 
+        :label="showShadow ? 'Enabled' : 'Disabled'"
+        data-testid="animator-setting-shadow-checkbox"
+      />
     </PropertyRow>
+
+    <template v-if="showShadow">
+      <PropertyRow label="Shadow Frames">
+        <BaseNumber 
+          v-model="shadowFrameCount" 
+          :min="1" 
+          :max="10" 
+          :step="1" 
+          prefix="F" 
+          class="font-mono w-full" 
+          data-testid="animator-setting-shadow-count"
+        />
+      </PropertyRow>
+
+      <PropertyRow label="Base Opacity (%)">
+        <BaseNumber 
+          v-model="shadowOpacity" 
+          :min="5" 
+          :max="100" 
+          :step="5" 
+          prefix="%" 
+          class="font-mono w-full" 
+          data-testid="animator-setting-shadow-opacity"
+        />
+      </PropertyRow>
+    </template>
 
     <PropertyRow label="Grid Overlay">
-      <BaseSelect 
+      <BaseCheckbox 
         v-model="showGrid" 
-        :options="toggleOptions" 
-        class="w-full" 
+        :label="showGrid ? 'Enabled' : 'Disabled'"
+        data-testid="animator-setting-grid-checkbox"
       />
     </PropertyRow>
 
-    <PropertyRow label="Onion Skin">
-      <BaseSelect 
-        v-model="onionSkin" 
-        :options="toggleOptions" 
-        class="w-full" 
-      />
-    </PropertyRow>
-
-    <PropertyRow label="Zoom Level">
+    <PropertyRow v-if="showGrid" label="Grid Size (px)">
       <BaseNumber 
-        v-model="zoom" 
-        :step="0.1" 
-        :min="0.1" 
-        :max="5" 
-        prefix="Z" 
+        v-model="gridSize" 
+        :min="4" 
+        :max="256" 
+        :step="4" 
+        prefix="px" 
         class="font-mono w-full" 
+        data-testid="animator-setting-grid-size"
       />
     </PropertyRow>
 
@@ -36,23 +59,9 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { Settings2 } from 'lucide-vue-next'
-import {
-  PropertySection,
-  PropertyRow,
-  BaseColor,
-  BaseNumber,
-  BaseSelect
-} from '@components/components.js'
+import { Settings2 } from 'lucide-vue-next';
+import { PropertySection, PropertyRow, BaseNumber, BaseCheckbox } from '@components/components.js';
+import { useAnimatorLogic } from '@animators/animators.js';
 
-const bgColor = ref('#1a1a1a')
-const showGrid = ref(true)
-const onionSkin = ref(false)
-const zoom = ref(1.0)
-
-const toggleOptions = [
-  { label: 'Enabled', value: true },
-  { label: 'Disabled', value: false }
-]
+const { showShadow, shadowFrameCount, shadowOpacity, showGrid, gridSize } = useAnimatorLogic();
 </script>

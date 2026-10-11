@@ -1,6 +1,10 @@
 import { defineStore } from 'pinia';
 import { markRaw } from 'vue'; 
 
+const TAB_SPECIFIC_BOTTOM_TABS = {
+  animator: ['timeline']
+}
+
 export const useWorkspaceStore = defineStore('workspace', {
   state: () => ({
     engine: null, 
@@ -139,7 +143,23 @@ export const useWorkspaceStore = defineStore('workspace', {
     },
 
     setActiveTab(id) {
-        this.activeTabId = id;
+      const currentTab = this.tabs.find(t => t.id === this.activeTabId)
+      const nextTab = this.tabs.find(t => t.id === id)
+
+      if (!nextTab) return
+
+      // Jika berpindah antar tipe tab yang berbeda
+      if (currentTab && currentTab.type !== nextTab.type) {
+        const specificTabs = TAB_SPECIFIC_BOTTOM_TABS[currentTab.type] || []
+
+        // Jika bottom bar saat ini adalah fitur khusus editor sebelumnya (misal timeline di animator)
+        if (specificTabs.includes(this.activeBottomTabId)) {
+          this.isBottomBarOpen = false
+          this.activeBottomTabId = 'assets' // reset ke tab umum
+        }
+      }
+
+      this.activeTabId = id
     },
   
     closeTab(id) {

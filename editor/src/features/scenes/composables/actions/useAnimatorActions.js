@@ -68,7 +68,7 @@ export const useAnimatorActions = {
 
     const newNode = { 
       id: GenerateUUID(), 
-      name: 'New_Clip', 
+      name: 'New Clip', // <-- Ubah 'New_Clip' menjadi 'New Clip'
       type: 'clip', 
       scriptId: `clip_${GenerateUUID()}`,
       assetId: null,

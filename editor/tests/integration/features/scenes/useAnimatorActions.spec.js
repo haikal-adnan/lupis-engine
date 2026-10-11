@@ -1,183 +1,270 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
-import { useAnimatorActions, entitySchema, layerSchema } from '@scenes/scenes.js'
+import { useAnimatorActions } from '@scenes/scenes.js' // Sesuaikan path alias ke useAnimatorActions
+import { useSceneStore } from '@scenes/scenes.js'
 import { engineBridge } from '@engines/engines.js'
+import { setupMockSceneEnvironment, createMockEntity } from '@tests/tests.js'
+import { GenerateUUID } from '@utils/utils.js'
 
-// Mock dependency eksternal sesuai batas sistem
+// Mock engineBridge untuk memverifikasi sync ke runtime engine
 vi.mock('@engines/engines.js', () => ({
   engineBridge: {
     patchComponent: vi.fn()
   }
 }))
 
-describe('Integrasi Animator Actions', () => {
-  let sceneStoreState
+/**
+ * Helper untuk membuat mock entity dengan SpriteAnimator
+ */
+function createMockEntityWithAnimator({
+  entityId = `entity_${GenerateUUID().split('-')[0]}`,
+  clipId = `clip_${GenerateUUID().split('-')[0]}`,
+  catId = `cat_${GenerateUUID().split('-')[0]}`,
+  ...overrides
+} = {}) {
+  const defaultCategory = {
+    id: catId,
+    name: 'Locomotion',
+    type: 'category',
+    parentId: null,
+    isOpen: true
+  }
 
-  beforeEach(() => {
-    setActivePinia(createPinia())
-    vi.clearAllMocks()
+  const defaultClip = {
+    id: clipId,
+    name: 'Idle',
+    type: 'clip',
+    scriptId: `clip_${clipId}`,
+    assetId: null,
+    parentId: catId,
+    fps: 12,
+    isLooping: true,
+    frames: ['s_0'],
+    sources: { s_0: { x: 0, y: 0, w: 32, h: 32 } },
+    baseSize: { w: 32, h: 32 },
+    pivot: { x: 0.5, y: 1 },
+    frameIndex: 0,
+    filterMode: 'pixelated',
+    useSDF: false
+  }
 
-    // Mempersiapkan mock state untuk sceneStore yang mengadopsi useAnimatorActions
-    sceneStoreState = {
-      activeScene: {
-        id: 'scene_1',
-        layersWorld: [
-          layerSchema({ id: 'layer_world_1', name: 'World Root' })
-        ],
-        layersUI: [],
-        entities: [
-          entitySchema({
-            id: 'ent_1',
-            name: 'Animated Character',
-            components: {
-              SpriteAnimator: {
-                currentClip: null,
-                clips: [
-                  {
-                    id: 'cat_1',
-                    name: 'Movement',
-                    type: 'category',
-                    parentId: null,
-                    isOpen: true
-                  },
-                  {
-                    id: 'clip_1',
-                    name: 'Walk',
-                    type: 'clip',
-                    parentId: 'cat_1',
-                    fps: 12,
-                    isLooping: true,
-                    frames: []
-                  }
-                ]
-              }
-            }
-          })
-        ]
-      },
-      // Stub method patchComponent yang dipanggil internal oleh _saveAnimatorClips
-      patchComponent(entityId, componentName, updates) {
-        const entity = this.activeScene?.entities.find(e => e.id === entityId)
-        if (entity && entity.components[componentName]) {
-          Object.assign(entity.components[componentName], updates)
-        }
-      },
-      ...useAnimatorActions
+  const entity = createMockEntity({
+    id: entityId,
+    name: overrides.name || 'Test Entity',
+    attachComponents: {
+      SpriteAnimator: {
+        active: true,
+        clips: overrides.clips || [defaultCategory, defaultClip]
+      }
     }
   })
 
-  describe('Pembuatan Node Animator (animatorCreateCategory & animatorCreateClip)', () => {
-    it('membuat kategori animator baru, menyimpan ke state store, dan memicu patchComponent ke engine bridge', () => {
-      // Act
-      sceneStoreState.animatorCreateCategory('ent_1')
+  return { entity, defaultCategory, defaultClip }
+}
 
-      // Assert
-      const animator = sceneStoreState.activeScene.entities[0].components.SpriteAnimator
-      expect(animator.clips.length).toBe(3)
+describe('useAnimatorActions Unit & Integration Tests', () => {
+  let sceneStore
+  let mockData
 
-      const newCategory = animator.clips[2]
-      expect(newCategory.name).toBe('New Category')
-      expect(newCategory.type).toBe('category')
-      expect(newCategory.parentId).toBeNull()
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    sceneStore = useSceneStore()
 
+    mockData = createMockEntityWithAnimator()
+    setupMockSceneEnvironment({ entities: [mockData.entity] })
+
+    // Stub patchComponent pada store jika belum di-bind otomatis
+    if (!sceneStore.patchComponent) {
+      sceneStore.patchComponent = vi.fn((entityId, compName, updates) => {
+        const ent = sceneStore.activeScene?.entities.find(e => e.id === entityId)
+        if (ent?.components?.[compName]) {
+          Object.assign(ent.components[compName], updates)
+        }
+      })
+    }
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  describe('Internal Helper Methods (_getAnimatorClips, _saveAnimatorClips, _cloneAnimatorNode)', () => {
+    it('_getAnimatorClips returns array of clips for valid entity', () => {
+      const clips = sceneStore._getAnimatorClips(mockData.entity.id)
+      expect(clips).toHaveLength(2)
+      expect(clips[0].id).toBe(mockData.defaultCategory.id)
+    })
+
+    it('_getAnimatorClips returns empty array if entity or animator is missing', () => {
+      expect(sceneStore._getAnimatorClips('invalid_id')).toEqual([])
+      
+      const noAnimatorEntity = createMockEntity({ id: 'no_anim' })
+      sceneStore.activeScene.entities.push(noAnimatorEntity)
+      
+      expect(sceneStore._getAnimatorClips('no_anim')).toEqual([])
+    })
+
+    it('_saveAnimatorClips strips _uiChildren and syncs with engineBridge', () => {
+      const clipsWithUiChildren = [
+        {
+          ...mockData.defaultCategory,
+          _uiChildren: [mockData.defaultClip]
+        }
+      ]
+
+      sceneStore._saveAnimatorClips(mockData.entity.id, clipsWithUiChildren)
+
+      const savedClips = sceneStore._getAnimatorClips(mockData.entity.id)
+      expect(savedClips[0]._uiChildren).toBeUndefined()
       expect(engineBridge.patchComponent).toHaveBeenCalledWith({
-        entityId: 'ent_1',
+        entityId: mockData.entity.id,
         componentName: 'SpriteAnimator',
-        updates: { clips: animator.clips }
+        updates: { clips: [expect.not.objectContaining({ _uiChildren: expect.anything() })] }
       })
     })
 
-    it('membuat clip animator di bawah kategori yang ditentukan', () => {
-      // Act
-      sceneStoreState.animatorCreateClip('ent_1', 'cat_1')
+    it('_cloneAnimatorNode generates a new ID and strips children properties', () => {
+      const sourceNode = {
+        ...mockData.defaultClip,
+        children: [{ id: 'child_1' }],
+        _uiChildren: [{ id: 'ui_child_1' }]
+      }
 
-      // Assert
-      const animator = sceneStoreState.activeScene.entities[0].components.SpriteAnimator
-      expect(animator.clips.length).toBe(3)
+      const cloned = sceneStore._cloneAnimatorNode(sourceNode)
 
-      const newClip = animator.clips[2]
-      expect(newClip.name).toBe('New_Clip')
+      expect(cloned.id).toBeDefined()
+      expect(cloned.id).not.toBe(sourceNode.id)
+      expect(cloned.id.startsWith('anim_')).toBe(true)
+      expect(cloned.children).toBeUndefined()
+      expect(cloned._uiChildren).toBeUndefined()
+      expect(cloned.name).toBe(sourceNode.name)
+    })
+  })
+
+  describe('Category & Clip Creation (animatorCreateCategory, animatorCreateClip)', () => {
+    it('animatorCreateCategory appends a new category node to entity clips', () => {
+      const initialCount = sceneStore._getAnimatorClips(mockData.entity.id).length
+
+      sceneStore.animatorCreateCategory(mockData.entity.id)
+
+      const updatedClips = sceneStore._getAnimatorClips(mockData.entity.id)
+      expect(updatedClips).toHaveLength(initialCount + 1)
+      
+      const newCategory = updatedClips[updatedClips.length - 1]
+      expect(newCategory.type).toBe('category')
+      expect(newCategory.name).toBe('New Category')
+      expect(newCategory.parentId).toBeNull()
+    })
+
+    it('animatorCreateClip creates a clip under target category when target is a category', () => {
+      sceneStore.animatorCreateClip(mockData.entity.id, mockData.defaultCategory.id)
+
+      const updatedClips = sceneStore._getAnimatorClips(mockData.entity.id)
+      const newClip = updatedClips.find(c => c.name === 'New Clip')
+
+      expect(newClip).toBeDefined()
+      expect(newClip.parentId).toBe(mockData.defaultCategory.id)
       expect(newClip.type).toBe('clip')
-      expect(newClip.parentId).toBe('cat_1')
+    })
+
+    it('animatorCreateClip creates a clip under same parent when target is another clip', () => {
+      sceneStore.animatorCreateClip(mockData.entity.id, mockData.defaultClip.id)
+
+      const updatedClips = sceneStore._getAnimatorClips(mockData.entity.id)
+      const newClip = updatedClips[updatedClips.length - 1]
+
+      expect(newClip.name).toBe('New Clip')
+      expect(newClip.parentId).toBe(mockData.defaultClip.parentId)
+    })
+
+    it('animatorCreateClip creates a root clip when targetId is null', () => {
+      sceneStore.animatorCreateClip(mockData.entity.id, null)
+
+      const updatedClips = sceneStore._getAnimatorClips(mockData.entity.id)
+      const newClip = updatedClips[updatedClips.length - 1]
+
+      expect(newClip.parentId).toBeNull()
     })
   })
 
-  describe('Penghapusan & Pengubahan Nama Node (animatorDeleteNode & animatorRenameNode)', () => {
-    it('menghapus kategori animator beserta seluruh clip di bawahnya', () => {
-      // Act
-      const deletedNode = sceneStoreState.animatorDeleteNode('ent_1', 'cat_1')
+  describe('Node Deletion & Renaming (animatorDeleteNode, animatorRenameNode)', () => {
+    it('animatorDeleteNode removes single clip node and returns it', () => {
+      const deleted = sceneStore.animatorDeleteNode(mockData.entity.id, mockData.defaultClip.id)
 
-      // Assert
-      expect(deletedNode.id).toBe('cat_1')
-      const animator = sceneStoreState.activeScene.entities[0].components.SpriteAnimator
-      expect(animator.clips.length).toBe(0)
-
-      expect(engineBridge.patchComponent).toHaveBeenCalled()
+      expect(deleted.id).toBe(mockData.defaultClip.id)
+      
+      const remainingClips = sceneStore._getAnimatorClips(mockData.entity.id)
+      expect(remainingClips.find(c => c.id === mockData.defaultClip.id)).toBeUndefined()
     })
 
-    it('mengubah nama node animator jika nodeId ditemukan', () => {
-      // Act
-      sceneStoreState.animatorRenameNode('ent_1', 'clip_1', 'Run_Fast')
+    it('animatorDeleteNode removes category and cascades deletion to child clips', () => {
+      // Menghapus category harus menghapus defaultClip juga karena defaultClip.parentId === category.id
+      const deletedCategory = sceneStore.animatorDeleteNode(mockData.entity.id, mockData.defaultCategory.id)
 
-      // Assert
-      const animator = sceneStoreState.activeScene.entities[0].components.SpriteAnimator
-      const clip = animator.clips.find(c => c.id === 'clip_1')
-      expect(clip.name).toBe('Run_Fast')
+      expect(deletedCategory.id).toBe(mockData.defaultCategory.id)
+
+      const remainingClips = sceneStore._getAnimatorClips(mockData.entity.id)
+      expect(remainingClips).toHaveLength(0)
     })
 
-    it('[Bad Path] mengembalikan null saat menghapus nodeId yang tidak ada', () => {
-      // Act
-      const result = sceneStoreState.animatorDeleteNode('ent_1', 'non_existent_id')
+    it('animatorRenameNode updates node name successfully', () => {
+      sceneStore.animatorRenameNode(mockData.entity.id, mockData.defaultClip.id, 'Run_Animation')
 
-      // Assert
-      expect(result).toBeNull()
-      const animator = sceneStoreState.activeScene.entities[0].components.SpriteAnimator
-      expect(animator.clips.length).toBe(2)
+      const clips = sceneStore._getAnimatorClips(mockData.entity.id)
+      const target = clips.find(c => c.id === mockData.defaultClip.id)
+
+      expect(target.name).toBe('Run_Animation')
     })
   })
 
-  describe('Kloning & Tempel Node (animatorGetNodeClone & animatorPasteNode)', () => {
-    it('mengambil paket klon kategori beserta seluruh anak-anaknya', () => {
-      // Act
-      const bundle = sceneStoreState.animatorGetNodeClone('ent_1', 'cat_1')
+  describe('Node Cloning & Pasting (animatorGetNodeClone, animatorPasteNode)', () => {
+    it('animatorGetNodeClone returns bundle with child clips for category node', () => {
+      const bundle = sceneStore.animatorGetNodeClone(mockData.entity.id, mockData.defaultCategory.id)
 
-      // Assert
       expect(bundle).not.toBeNull()
-      expect(bundle.node.id).toBe('cat_1')
-      expect(bundle.children.length).toBe(1)
-      expect(bundle.children[0].id).toBe('clip_1')
+      expect(bundle.node.id).toBe(mockData.defaultCategory.id)
+      expect(bundle.children).toHaveLength(1)
+      expect(bundle.children[0].id).toBe(mockData.defaultClip.id)
     })
 
-    it('menempelkan paket klon kategori dan memperbarui ID anak-anaknya', () => {
-      // Arrange
-      const bundle = sceneStoreState.animatorGetNodeClone('ent_1', 'cat_1')
+    it('animatorGetNodeClone returns bundle with empty children array for clip node', () => {
+      const bundle = sceneStore.animatorGetNodeClone(mockData.entity.id, mockData.defaultClip.id)
 
-      // Act
-      sceneStoreState.animatorPasteNode('ent_1', null, bundle)
-
-      // Assert
-      const animator = sceneStoreState.activeScene.entities[0].components.SpriteAnimator
-      expect(animator.clips.length).toBe(4)
-
-      const pastedCategory = animator.clips[2]
-      const pastedClip = animator.clips[3]
-
-      expect(pastedCategory.id).not.toBe('cat_1')
-      expect(pastedClip.id).not.toBe('clip_1')
-      expect(pastedClip.parentId).toBe(pastedCategory.id)
+      expect(bundle).not.toBeNull()
+      expect(bundle.node.id).toBe(mockData.defaultClip.id)
+      expect(bundle.children).toHaveLength(0)
     })
 
-    it('[Bad Path] mengembalikan array kosong atau null jika SpriteAnimator tidak ditemukan', () => {
-      // Arrange
-      sceneStoreState.activeScene.entities[0].components = {}
+    it('animatorPasteNode pastes single clip node under target category', () => {
+      const bundle = sceneStore.animatorGetNodeClone(mockData.entity.id, mockData.defaultClip.id)
+      const initialCount = sceneStore._getAnimatorClips(mockData.entity.id).length
 
-      // Act
-      const clips = sceneStoreState._getAnimatorClips('ent_1')
-      const clone = sceneStoreState.animatorGetNodeClone('ent_1', 'cat_1')
+      sceneStore.animatorPasteNode(mockData.entity.id, mockData.defaultCategory.id, bundle)
 
-      // Assert
-      expect(clips).toEqual([])
-      expect(clone).toBeNull()
+      const updatedClips = sceneStore._getAnimatorClips(mockData.entity.id)
+      expect(updatedClips).toHaveLength(initialCount + 1)
+
+      const pastedClip = updatedClips[updatedClips.length - 1]
+      expect(pastedClip.id).not.toBe(mockData.defaultClip.id)
+      expect(pastedClip.parentId).toBe(mockData.defaultCategory.id)
+    })
+
+    it('animatorPasteNode pastes category with its children at root level', () => {
+      const categoryBundle = sceneStore.animatorGetNodeClone(mockData.entity.id, mockData.defaultCategory.id)
+      const initialCount = sceneStore._getAnimatorClips(mockData.entity.id).length
+
+      sceneStore.animatorPasteNode(mockData.entity.id, null, categoryBundle)
+
+      const updatedClips = sceneStore._getAnimatorClips(mockData.entity.id)
+      // Kategori + 1 anak disalin = +2 nodes total
+      expect(updatedClips).toHaveLength(initialCount + 2)
+
+      const pastedCategory = updatedClips.find(c => c.type === 'category' && c.id !== mockData.defaultCategory.id)
+      expect(pastedCategory).toBeDefined()
+      expect(pastedCategory.parentId).toBeNull()
+
+      const pastedChildClip = updatedClips.find(c => c.type === 'clip' && c.parentId === pastedCategory.id)
+      expect(pastedChildClip).toBeDefined()
     })
   })
 })
