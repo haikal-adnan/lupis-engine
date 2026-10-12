@@ -1,21 +1,21 @@
 <template>
   <div v-if="selectedEdge" class="w-full space-y-3">
-    <!-- Section Header Edge -->
-    <PropertySection title="Edge Modifier" :icon="GitCommit">
+    <PropertySection title="Edge Modifier" :icon="GitCommit" data-testid="node-inspector-edge-section">
       <!-- Info Port Koneksi -->
-      <div class="px-2 py-1.5 bg-secondary/20 border border-border rounded text-[10px] space-y-1 font-mono">
+      <div class="px-2 py-1.5 bg-secondary/20 border border-border rounded text-[10px] space-y-1 font-mono" data-testid="node-inspector-edge-info">
         <div class="flex items-center justify-between text-muted-foreground">
-          <span>From: <strong class="text-foreground">{{ sourceNodeTitle }}</strong> ({{ selectedEdge.sourceHandle }})</span>
+          <span>From: <strong class="text-foreground" data-testid="node-inspector-edge-source-title">{{ sourceNodeTitle }}</strong> ({{ selectedEdge.sourceHandle }})</span>
         </div>
         <div class="flex items-center justify-between text-muted-foreground">
-          <span>To: <strong class="text-foreground">{{ targetNodeTitle }}</strong> ({{ selectedEdge.targetHandle }})</span>
+          <span>To: <strong class="text-foreground" data-testid="node-inspector-edge-target-title">{{ targetNodeTitle }}</strong> ({{ selectedEdge.targetHandle }})</span>
         </div>
       </div>
 
-      <!-- Callout / Panduan untuk Tipe Data List & Map -->
+      <!-- Callout -->
       <div 
         v-if="['list', 'map'].includes(edgeDataType)" 
         class="p-2 bg-amber-500/10 border border-amber-500/30 rounded text-[11px] text-amber-500 leading-tight space-y-1"
+        data-testid="node-inspector-edge-collection-callout"
       >
         <p class="font-medium">Opsi Operasi Ditutup</p>
         <p class="text-[10px] opacity-90">
@@ -23,22 +23,24 @@
         </p>
       </div>
 
-      <!-- Tipe Operasi / Modifier (Hanya Muncul untuk Tipe Data Non-Koleksi) -->
-      <PropertyRow v-else label="Operation">
+      <!-- Tipe Operasi -->
+      <PropertyRow v-else label="Operation" data-testid="node-inspector-edge-operation-row">
         <BaseSelect
           :model-value="selectedEdge.modifier?.type || 'none'"
           :options="availableModifierOptions"
           @update:model-value="updateModifierType"
+          data-testid="node-inspector-edge-operation-select"
         />
       </PropertyRow>
 
-      <!-- Input Value untuk Operasi Number / String -->
-      <PropertyRow v-if="needsValueInput" :label="valueInputLabel">
+      <!-- Input Value -->
+      <PropertyRow v-if="needsValueInput" :label="valueInputLabel" data-testid="node-inspector-edge-operand-row">
         <BaseNumber
           v-if="edgeDataType === 'number'"
           :model-value="selectedEdge.modifier?.value ?? 0"
           @update:model-value="updateModifierValue"
           class="font-mono w-full"
+          data-testid="node-inspector-edge-operand-number-input"
         />
         <BaseInput
           v-else
@@ -46,18 +48,20 @@
           @update:model-value="updateModifierValue"
           placeholder="Enter value..."
           class="w-full"
+          data-testid="node-inspector-edge-operand-text-input"
         />
       </PropertyRow>
 
       <!-- Quick Action: Remove Edge -->
       <div class="pt-2 border-t border-border flex justify-between items-center text-[10px]">
-        <span class="text-muted-foreground font-mono truncate max-w-[120px]">ID: {{ selectedEdge.id }}</span>
+        <span class="text-muted-foreground font-mono truncate max-w-[120px]" data-testid="node-inspector-edge-id">ID: {{ selectedEdge.id }}</span>
         <IconButton
           @click="deleteSelectedEdge"
           tooltip="Remove Connection"
           variant="ghost"
           size="xs"
           class="text-destructive hover:bg-destructive/10"
+          data-testid="node-inspector-edge-delete-btn"
         >
           <Trash2 class="w-3.5 h-3.5" />
         </IconButton>

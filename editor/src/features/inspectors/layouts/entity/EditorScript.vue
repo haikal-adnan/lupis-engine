@@ -180,14 +180,18 @@
             <div class="flex items-center gap-1 w-full">
                <div class="flex-1 min-w-0">
                   <BaseNumber 
-                    v-if="v.type === 'Number'" 
+                    v-if="v.type?.toLowerCase() === 'number'" 
                     v-model="v.model.value" 
                     :scrubbable="true" 
                     class="w-full text-xs font-mono" 
                     :class="{ 'border-amber-500/50 text-amber-500 bg-amber-500/5': v.overridden }" 
                     data-testid="script-variable-number"
                   />
-                  <BaseCheckbox v-else-if="v.type === 'Boolean'" v-model="v.model.value" data-testid="script-variable-boolean" />
+                  <BaseCheckbox 
+                    v-else-if="v.type?.toLowerCase() === 'boolean'" 
+                    v-model="v.model.value" 
+                    data-testid="script-variable-boolean" 
+                  />
                   <BaseInput 
                     v-else 
                     v-model="v.model.value" 

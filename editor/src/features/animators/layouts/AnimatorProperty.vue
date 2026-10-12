@@ -119,6 +119,7 @@
     <PropertyRow label="Flip Horizontal">
       <button
         @click="flipX = !flipX"
+        :aria-pressed="flipX"
         :disabled="!activeClipData"
         class="w-full py-1.5 flex items-center justify-center gap-2 border rounded-md transition-all text-xs font-bold outline-none"
         :class="flipX ? 'bg-primary/20 text-primary border-primary shadow-sm' : 'bg-secondary/40 text-muted-foreground border-border hover:bg-secondary/60'"

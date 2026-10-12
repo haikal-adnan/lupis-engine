@@ -9,6 +9,7 @@
         <IconButton 
           @click.stop="openManager(activeScope)"
           tooltip="Manage Variables"
+          data-testid="variable-panel-manage-btn"
           class="ml-auto"
         >
           <SlidersHorizontal class="w-3.5 h-3.5" />
@@ -20,14 +21,14 @@
         <div class="flex items-center gap-1.5">
           <div class="flex items-center bg-muted/50 p-0.5 rounded-md border border-border flex-1">
             <button 
-              @click="activeScope = 'All'"
+              @click="activeScope = 'All'" data-testid="variable-panel-scope-all-btn"
               class="flex-1 py-1 text-[10px] font-medium rounded transition-all text-center"
               :class="activeScope === 'All' ? 'bg-background text-foreground font-bold shadow-sm' : 'text-muted-foreground hover:text-foreground'"
             >
               All
             </button>
             <button 
-              @click="activeScope = 'Global'"
+              @click="activeScope = 'Global'" data-testid="variable-panel-scope-global-btn"
               class="flex-1 py-1 text-[10px] font-medium rounded transition-all flex items-center justify-center gap-1"
               :class="activeScope === 'Global' ? 'bg-background text-primary font-bold shadow-sm' : 'text-muted-foreground hover:text-foreground'"
             >
@@ -35,7 +36,7 @@
               <span>Global</span>
             </button>
             <button 
-              @click="activeScope = 'Local'"
+              @click="activeScope = 'Local'" data-testid="variable-panel-scope-local-btn"
               class="flex-1 py-1 text-[10px] font-medium rounded transition-all flex items-center justify-center gap-1"
               :class="activeScope === 'Local' ? 'bg-background text-primary font-bold shadow-sm' : 'text-muted-foreground hover:text-foreground'"
             >
@@ -56,6 +57,9 @@
           <div 
             v-for="item in exposedVariables" 
             :key="item.id"
+            data-testid="variable-panel-item-row"
+            :data-variable-name="item.name"
+            :data-scope="item.scope"
             draggable="true"
             @dragstart="handleDragStart($event, item)"
             class="flex flex-col gap-1.5 p-2 rounded-lg border bg-card/60 shadow-sm transition-all cursor-grab active:cursor-grabbing select-none hover:border-primary/50"
@@ -85,6 +89,7 @@
             <div class="mt-0.5" @mousedown.stop>
               <BaseSelect 
                 v-if="item.type?.toLowerCase() === 'boolean'" 
+                data-testid="variable-panel-value-bool-select"
                 :model-value="item.defaultValue"
                 @update:model-value="val => handleValueUpdate(item, val)"
                 :options="[
@@ -95,12 +100,14 @@
               />
               <BaseNumber 
                 v-else-if="item.type?.toLowerCase() === 'number'" 
+                data-testid="variable-panel-value-number-input"
                 :model-value="item.defaultValue"
                 @update:model-value="val => handleValueUpdate(item, val)"
                 class="font-mono text-xs h-7" 
               />
               <BaseInput 
                 v-else-if="item.type?.toLowerCase() === 'string'"
+                data-testid="variable-panel-value-string-input"
                 :model-value="item.defaultValue"
                 @update:model-value="val => handleValueUpdate(item, val)"
                 placeholder="Value..." 

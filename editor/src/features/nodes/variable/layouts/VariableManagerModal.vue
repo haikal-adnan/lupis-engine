@@ -23,6 +23,7 @@
             <div class="flex items-center bg-muted/60 p-1 rounded-lg border border-border shrink-0">
               <button 
                 @click="switchScope('Global')"
+                data-testid="variable-modal-scope-global-btn"
                 class="px-3 py-1 rounded-md text-xs font-medium transition-all duration-150 flex items-center gap-1.5"
                 :class="currentScope === 'Global' ? 'bg-background text-primary shadow-sm font-bold' : 'text-muted-foreground hover:text-foreground'"
               >
@@ -31,6 +32,7 @@
               </button>
               <button 
                 @click="switchScope('Local')"
+                data-testid="variable-modal-scope-local-btn"
                 class="px-3 py-1 rounded-md text-xs font-medium transition-all duration-150 flex items-center gap-1.5"
                 :class="currentScope === 'Local' ? 'bg-background text-primary shadow-sm font-bold' : 'text-muted-foreground hover:text-foreground'"
               >
@@ -64,12 +66,14 @@
               <BaseSearchInput 
                 v-model="searchQuery" 
                 placeholder="Search variables..." 
+                data-testid="variable-modal-search-input"
                 class="w-40 sm:w-52"
               />
 
               <button 
                 v-if="!isRootLevel"
                 @click="openRawEditor" 
+                data-testid="variable-modal-raw-editor-btn"
                 class="w-7 h-7 flex items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-primary transition-colors" 
                 title="Edit Raw JSON"
               >
@@ -78,6 +82,7 @@
 
               <button 
                 @click="handleClose" 
+                data-testid="variable-modal-close-btn"
                 class="w-7 h-7 flex items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground transition-colors ml-1"
               >
                 <X class="w-4 h-4" />
@@ -105,6 +110,9 @@
                 <div 
                   v-for="(item, idx) in displayItems" 
                   :key="item.keyId || item.id || idx"
+                  data-testid="variable-modal-item-row"
+                  :data-variable-name="item.name"
+                  :data-variable-type="item.type"
                   draggable="true"
                   @dragstart="onDragStart($event, idx)"
                   @dragover.prevent
@@ -123,6 +131,7 @@
                       type="checkbox"
                       :checked="!!item.isExposed"
                       @change="e => handleUpdateField(idx, 'isExposed', e.target.checked)"
+                      data-testid="variable-modal-expose-checkbox"
                       class="w-4 h-4 rounded border-border text-primary focus:ring-primary/50 cursor-pointer accent-primary"
                     />
                   </div>
@@ -132,6 +141,7 @@
                     <input 
                       :value="item.name"
                       @change="e => handleUpdateField(idx, 'name', e.target.value)"
+                      data-testid="variable-modal-name-input"
                       placeholder="Var Name..."
                       class="w-full bg-transparent border-b border-transparent hover:border-border focus:border-primary outline-none font-bold text-xs py-1 text-foreground"
                     />
@@ -157,6 +167,7 @@
                       :model-value="item.type"
                       :options="typeOptions"
                       @update:model-value="val => handleTypeChange(item, idx, val)"
+                      data-testid="variable-modal-type-select"
                       class="w-full text-xs"
                     />
                   </div>
@@ -167,6 +178,7 @@
                     <BaseButton 
                       v-if="isCollectionType(item.type)"
                       @click="enterNestedLevel(item, idx)"
+                      data-testid="variable-modal-configure-collection-btn"
                       variant="outline"
                       class="w-full justify-center border-dashed gap-2 hover:bg-primary/5 hover:border-primary/40 text-xs h-9"
                     >
@@ -178,11 +190,13 @@
                     <!-- Primitive Type Editors -->
                     <BaseSelect 
                       v-else-if="item.type?.toLowerCase() === 'boolean'" 
+                      data-testid="variable-modal-value-bool-select"
                       :model-value="item.value"
                       @update:model-value="val => handleValueChange(item, idx, val)"
                       :options="boolOptions" 
                     />
                     <BaseNumber 
+                      data-testid="variable-modal-value-number-input"
                       v-else-if="item.type?.toLowerCase() === 'number'" 
                       :model-value="item.value"
                       @update:model-value="val => handleValueChange(item, idx, val)"
@@ -190,6 +204,7 @@
                     />
                     <BaseInput 
                       v-else 
+                      data-testid="variable-modal-value-string-input"
                       :model-value="item.value"
                       @update:model-value="val => handleValueChange(item, idx, val)"
                       placeholder="Value..." 
@@ -201,18 +216,18 @@
                   <div class="flex items-center shrink-0 ml-1">
                     <BaseDropdown align="right">
                       <template #trigger>
-                        <button class="p-1.5 rounded text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                        <button data-testid="variable-modal-row-menu-trigger" class="p-1.5 rounded text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
                           <MoreVertical class="w-4 h-4" />
                         </button>
                       </template>
 
                       <template #default="{ close }">
                         <div class="w-auto whitespace-nowrap flex flex-col py-1 text-xs min-w-[130px]">
-                          <button @click="handleDuplicate(item, idx); close()" class="flex items-center px-2 py-1.5 hover:bg-accent hover:text-accent-foreground text-left transition-colors">
+                          <button @click="handleDuplicate(item, idx); close()" data-testid="variable-modal-duplicate-btn" class="flex items-center px-2 py-1.5 hover:bg-accent hover:text-accent-foreground text-left transition-colors">
                             <Copy class="w-3.5 h-3.5 mr-2 text-muted-foreground" /> Duplicate
                           </button>
                           <div class="h-px bg-border my-1"></div>
-                          <button @click="handleRemove(item, idx); close()" class="flex items-center px-2 py-1.5 hover:bg-destructive/10 text-destructive text-left transition-colors">
+                          <button @click="handleRemove(item, idx); close()" data-testid="variable-modal-delete-btn" class="flex items-center px-2 py-1.5 hover:bg-destructive/10 text-destructive text-left transition-colors">
                             <Trash2 class="w-3.5 h-3.5 mr-2" /> Delete
                           </button>
                         </div>
@@ -233,6 +248,7 @@
               <!-- Add New Button -->
               <BaseButton 
                 @click="addNewItem"
+                data-testid="variable-modal-add-btn"
                 variant="outline"
                 class="mt-4 w-full py-5 border-dashed border-2 transition-all group hover:border-primary/50 hover:bg-primary/5 text-primary"
               >
@@ -271,6 +287,7 @@
               <div class="flex-1 p-4 bg-muted/5">
                 <textarea 
                   v-model="rawJsonString" 
+                  data-testid="variable-modal-raw-json-textarea"
                   class="text-foreground w-full h-full p-4 font-mono text-sm bg-card border border-border rounded-lg resize-none focus:outline-none focus:ring-1 focus:ring-primary/50 custom-scroll"
                   placeholder="Paste your JSON here..."
                   spellcheck="false"
@@ -278,7 +295,7 @@
               </div>
               <div class="flex items-center justify-end px-5 py-4 border-t border-border bg-muted/20 gap-3">
                 <BaseButton @click="isRawEditorOpen = false" variant="ghost" class="px-5">Cancel</BaseButton>
-                <BaseButton @click="saveRawJson" class="px-8 bg-primary hover:bg-primary/90 text-primary-foreground">Apply JSON</BaseButton>
+                <BaseButton @click="saveRawJson" data-testid="variable-modal-raw-json-apply-btn" class="px-8 bg-primary hover:bg-primary/90 text-primary-foreground">Apply JSON</BaseButton>
               </div>
             </div>
           </Transition>
@@ -353,32 +370,32 @@ const detectTypeFromValue = (val) => {
 };
 
 const displayItems = computed(() => {
+  let items = [];
+
   if (isRootLevel.value) {
-    return (variables.value || []).map(v => ({
+    items = (variables.value || []).map(v => ({
       ...v,
       type: (v.type || 'string').toLowerCase(),
       value: v.defaultValue
     }));
-  }
+  } else {
+    const parentRef = currentLevel.value.targetRef;
+    const cType = currentType.value?.toLowerCase();
 
-  const parentRef = currentLevel.value.targetRef;
-  const cType = currentType.value?.toLowerCase();
-
-  let items = [];
-
-  if (cType === 'list' && Array.isArray(parentRef)) {
-    items = parentRef.map((val, idx) => ({
-      keyId: `list_${idx}`,
-      type: detectTypeFromValue(val),
-      value: val
-    }));
-  } else if (cType === 'map' && parentRef && typeof parentRef === 'object') {
-    items = Object.entries(parentRef).map(([k, val]) => ({
-      keyId: `map_${k}`,
-      key: k,
-      type: detectTypeFromValue(val),
-      value: val
-    }));
+    if (cType === 'list' && Array.isArray(parentRef)) {
+      items = parentRef.map((val, idx) => ({
+        keyId: `list_${idx}`,
+        type: detectTypeFromValue(val),
+        value: val
+      }));
+    } else if (cType === 'map' && parentRef && typeof parentRef === 'object') {
+      items = Object.entries(parentRef).map(([k, val]) => ({
+        keyId: `map_${k}`,
+        key: k,
+        type: detectTypeFromValue(val),
+        value: val
+      }));
+    }
   }
 
   const query = searchQuery.value.trim().toLowerCase();

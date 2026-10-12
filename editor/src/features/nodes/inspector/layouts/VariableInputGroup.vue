@@ -1,18 +1,17 @@
 <template>
-  <div class="w-full space-y-1.5">
+  <div class="w-full space-y-1.5" data-testid="node-inspector-variable-input-group">
     <!-- Main Control Row -->
     <div class="flex items-center gap-1.5 w-full">
-      <!-- Selector Variabel Utama -->
       <div class="flex-1 min-w-0">
         <VariableSelect
           :model-value="bindingValue"
           :data-type="dataType"
           :disabled="disabled"
           @update:model-value="$emit('update:bindingValue', $event)"
+          data-testid="node-inspector-var-group-select"
         />
       </div>
 
-      <!-- Action Dropdown untuk Tipe Non-String -->
       <BaseDropdown v-if="!isStringType" align="right">
         <template #trigger="{ isOpen }">
           <button 
@@ -21,13 +20,14 @@
             class="h-[30px] w-7 flex items-center justify-center rounded-md border border-input bg-background hover:bg-accent text-muted-foreground transition-colors shrink-0 disabled:opacity-50 outline-none"
             :class="{ 'bg-accent text-foreground border-primary': isOpen || hasActiveModifier }"
             title="Variable Modifier Options"
+            data-testid="node-inspector-var-group-modifier-trigger"
           >
             <MoreVertical class="w-3.5 h-3.5" />
           </button>
         </template>
 
         <template #default="{ close }">
-          <div class="flex flex-col text-xs min-w-[160px] p-1 space-y-0.5">
+          <div class="flex flex-col text-xs min-w-[160px] p-1 space-y-0.5" data-testid="node-inspector-var-group-modifier-menu">
             <div class="px-2 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
               Apply Modifier ({{ dataType }})
             </div>
@@ -38,6 +38,8 @@
               @click="handleApplyModifier(opt.value, close)"
               class="dropdown-item"
               :class="{ 'font-bold text-primary': modifier.type === opt.value }"
+              data-testid="node-inspector-var-group-modifier-option"
+              :data-modifier-value="opt.value"
             >
               <span>{{ opt.label }}</span>
             </button>
@@ -48,6 +50,7 @@
               v-if="hasActiveModifier"
               @click="handleClearModifier(close)" 
               class="dropdown-item text-destructive hover:text-destructive hover:bg-destructive/10"
+              data-testid="node-inspector-var-group-clear-modifier-btn"
             >
               <Trash2 class="w-3.5 h-3.5 mr-2" /> <span>Remove Modifier</span>
             </button>
@@ -63,6 +66,7 @@
         :disabled="disabled"
         placeholder="{value} {value.upper} {value.lower}"
         @update:model-value="handleUpdateCustomText"
+        data-testid="node-inspector-var-group-custom-text-input"
       />
     </div>
 
@@ -73,6 +77,7 @@
         :disabled="disabled || isValueInputDisabled"
         @update:model-value="handleUpdateModifierValue"
         class="font-mono text-xs w-full"
+        data-testid="node-inspector-var-group-modifier-number-input"
       />
     </div>
   </div>

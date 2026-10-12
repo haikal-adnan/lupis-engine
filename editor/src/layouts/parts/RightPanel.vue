@@ -23,7 +23,10 @@ defineEmits(['toggle'])
       v-if="!collapsed"
       class="h-10 shrink-0 flex items-center justify-between px-2 border-b border-border bg-muted/40 backdrop-blur-sm"
     >
-      <h3 class="pl-2 text-xs font-bold uppercase tracking-wider text-foreground/90 select-none truncate">
+      <h3
+        data-testid="right-panel-title"
+        class="pl-2 text-xs font-bold uppercase tracking-wider text-foreground/90 select-none truncate"
+      >
         {{ title }}
       </h3>
 

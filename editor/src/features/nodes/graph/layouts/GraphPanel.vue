@@ -1,6 +1,7 @@
 <template>
   <div 
     ref="panelRef"
+    data-testid="graph-canvas-panel"
     class="w-full h-screen relative overflow-hidden font-sans select-none transition-colors duration-300"
     :class="[
       isDark ? 'bg-[#1e1e1e]' : 'bg-gray-50',
@@ -46,6 +47,8 @@
           />
 
           <path 
+            data-testid="graph-canvas-edge"
+            :data-edge-id="edge.id"
             :d="getEdgeData(edge).path"
             stroke-width="2.5" 
             fill="none"
@@ -145,6 +148,7 @@
 
     <div class="absolute bottom-5 right-5 flex gap-2 pointer-events-none z-30">
       <div 
+        data-testid="graph-canvas-camera-badge"
         class="px-3 py-1 text-[10px] rounded border backdrop-blur font-mono tabular-nums shadow-sm transition-all"
         :class="isDark 
           ? 'bg-black/50 text-slate-300 border-white/10' 

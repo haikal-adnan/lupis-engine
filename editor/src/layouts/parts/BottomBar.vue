@@ -5,6 +5,7 @@
       <button 
         v-for="tab in visibleTabs" 
         :key="tab.id"
+        :data-testid="`bottom-tab-${tab.id}`"
         @click="handleTabClick(tab)"
         class="group relative flex items-center gap-2 px-4 h-full text-xs font-medium border-x border-t transition-all duration-200 outline-none focus:outline-none"
         :class="[

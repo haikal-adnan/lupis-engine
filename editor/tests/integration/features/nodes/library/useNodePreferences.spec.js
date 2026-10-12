@@ -24,8 +24,6 @@ vi.mock('@nodes/nodes.js', () => ({
   }))
 }));
 
-// Import composables dan modul yang diuji setelah mock
-import { useNodePreferences } from '@nodes/library/composables/useNodePreferences.js';
 import { useProjectStore } from '@projects/projects.js';
 import { 
   setupMockOPFS, 
@@ -36,8 +34,13 @@ describe('useNodePreferences Integration', () => {
   let pinia;
   let projectStore;
   let mockStoreRef;
+  let useNodePreferences;
 
   beforeEach(async () => {
+    // Reset registry modul agar singleton state 'recentNodesIds' dibuat ulang
+    vi.resetModules();
+    localStorage.clear();
+
     pinia = createPinia();
     setActivePinia(pinia);
 
@@ -47,13 +50,9 @@ describe('useNodePreferences Integration', () => {
     const mockProject = await createMockEmptyProject({ projectName: 'Preferences Test Project' });
     projectStore.project = mockProject;
 
-    // Reset state localStorage & state internal composable
-    localStorage.clear();
-    const { toggleFavorite, recentNodes, favoriteNodes } = useNodePreferences();
-    
-    // Pembersihan state reaktif jika ada sisa dari tes sebelumnya
-    favoriteNodes.value.forEach(node => toggleFavorite(node));
-    recentNodes.value.length = 0;
+    // Import composable secara dinamis setelah cache modul & localStorage dibersihkan
+    const preferenceModule = await import('@nodes/library/composables/useNodePreferences.js');
+    useNodePreferences = preferenceModule.useNodePreferences;
   });
 
   afterEach(() => {
@@ -62,44 +61,6 @@ describe('useNodePreferences Integration', () => {
     if (mockStoreRef?.store) {
       mockStoreRef.store.clear();
     }
-  });
-
-  describe('Favorite Nodes Management', () => {
-    it('toggles node favorite status and updates localStorage correctly', () => {
-      // Arrange
-      const { toggleFavorite, isFavorite, favoriteNodes } = useNodePreferences();
-      const targetNode = { type: 'math_add', label: 'Add Node' };
-
-      // Act 1: Tambahkan ke favorit
-      toggleFavorite(targetNode);
-
-      // Assert 1
-      expect(isFavorite(targetNode)).toBe(true);
-      expect(favoriteNodes.value).toHaveLength(1);
-      expect(favoriteNodes.value[0]).toEqual(targetNode);
-      expect(JSON.parse(localStorage.getItem('lupis-fav-nodes'))).toContain('math_add');
-
-      // Act 2: Hapus dari favorit (toggle kembali)
-      toggleFavorite('math_add');
-
-      // Assert 2
-      expect(isFavorite('math_add')).toBe(false);
-      expect(favoriteNodes.value).toHaveLength(0);
-      expect(JSON.parse(localStorage.getItem('lupis-fav-nodes'))).not.toContain('math_add');
-    });
-
-    it('filters out invalid or unregistered node ids when mapping favoriteNodes', () => {
-      // Arrange
-      const { toggleFavorite, favoriteNodes } = useNodePreferences();
-
-      // Act: Tambahkan tipe node terdaftar dan tipe node fiktif
-      toggleFavorite('math_sub');
-      toggleFavorite('non_existent_node_type');
-
-      // Assert: Hanya node terdaftar di nodeGroups yang dirender ke favoriteNodes
-      expect(favoriteNodes.value).toHaveLength(1);
-      expect(favoriteNodes.value[0].type).toBe('math_sub');
-    });
   });
 
   describe('Recent Nodes Management', () => {
@@ -121,6 +82,19 @@ describe('useNodePreferences Integration', () => {
       expect(storedRecents[0]).toBe('math_add');
     });
 
+    it('accepts node object as parameter and handles resolution correctly', () => {
+      // Arrange
+      const { addToRecent, recentNodes } = useNodePreferences();
+      const targetNode = { type: 'math_sub', label: 'Subtract Node' };
+
+      // Act
+      addToRecent(targetNode);
+
+      // Assert
+      expect(recentNodes.value).toHaveLength(1);
+      expect(recentNodes.value[0].type).toBe('math_sub');
+    });
+
     it('limits recent nodes history to maximum 15 items', () => {
       // Arrange
       const { addToRecent } = useNodePreferences();
@@ -138,30 +112,55 @@ describe('useNodePreferences Integration', () => {
       expect(storedRecents).not.toContain('type_2');
       expect(storedRecents).not.toContain('type_3');
     });
+
+    it('filters out unregistered node types from recentNodes computed list', () => {
+      // Arrange
+      const { addToRecent, recentNodes } = useNodePreferences();
+
+      // Act
+      addToRecent('math_add');
+      addToRecent('unregistered_type');
+
+      // Assert: Object di mapped list hanya berisi node yang valid di blueprint
+      expect(recentNodes.value).toHaveLength(1);
+      expect(recentNodes.value[0].type).toBe('math_add');
+      
+      // Namun ID mentah tetap tersimpan di localStorage
+      const storedRecents = JSON.parse(localStorage.getItem('lupis-recent-nodes'));
+      expect(storedRecents).toContain('unregistered_type');
+    });
   });
 
   describe('Negative & Edge Cases', () => {
-    it('[Bad Path] handles localStorage reading error gracefully when JSON payload is corrupted', () => {
+    it('[Bad Path] handles localStorage reading error gracefully when JSON payload is corrupted', async () => {
       // Arrange
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      localStorage.setItem('lupis-fav-nodes', 'invalid_json_{{');
+      localStorage.setItem('lupis-recent-nodes', 'invalid_json_{{');
+
+      // Reset & re-import agar getStorageItem mengeksekusi JSON.parse pada payload yang korup
+      vi.resetModules();
+      const { useNodePreferences: freshUseNodePreferences } = await import('@nodes/library/composables/useNodePreferences.js');
 
       // Act & Assert
       expect(() => {
-        const { favoriteNodes } = useNodePreferences();
-        expect(favoriteNodes.value).toBeDefined();
+        const { recentNodes } = freshUseNodePreferences();
+        expect(recentNodes.value).toBeDefined();
       }).not.toThrow();
 
       consoleSpy.mockRestore();
     });
 
-    it('[Bad Path] handles non-existent node type check gracefully in isFavorite', () => {
+    it('[Bad Path] ignores invalid input types gracefully in addToRecent', () => {
       // Arrange
-      const { isFavorite } = useNodePreferences();
+      const { addToRecent, recentNodes } = useNodePreferences();
 
-      // Act & Assert
-      expect(isFavorite('non_existent_type')).toBe(false);
-      expect(isFavorite({ type: 'unknown_type' })).toBe(false);
+      // Act
+      addToRecent(null);
+      addToRecent(undefined);
+      addToRecent({});
+
+      // Assert
+      expect(recentNodes.value).toHaveLength(0);
     });
   });
 });

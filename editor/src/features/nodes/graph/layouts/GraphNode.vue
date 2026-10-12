@@ -1,6 +1,9 @@
 <template>
   <div 
     ref="nodeRef"
+    data-testid="graph-node"
+    :data-node-id="data.id"
+    :data-node-type="data.type"
     class="node-container absolute w-[200px] flex flex-col select-none border-2 rounded-lg transition-all duration-300 ease-in-out" 
     :class="[
       isDragging ? 'transition-none' : '',
@@ -21,17 +24,17 @@
   >
     
     <div 
+      data-testid="graph-node-header"
       class="h-8 px-3 flex items-center justify-between border-b rounded-t-[4px] shrink-0 border-black/5 dark:border-white/5"
       :style="{ backgroundColor: headerBackground }"
     >
        <div class="flex items-center gap-2 truncate">
          <div class="w-2 h-2 rounded-full bg-white/50 shadow-sm shrink-0"></div>
-         <span class="text-[11px] font-bold text-white uppercase tracking-wide truncate shadow-sm">
+         <span data-testid="graph-node-title" class="text-[11px] font-bold text-white uppercase tracking-wide truncate shadow-sm">
            {{ data.settings?.headerTitle || 'Node' }}
          </span>
        </div>
-       <!-- Indikator bahwa node mengandung skrip -->
-       <Code v-if="data.data?.code" class="w-3.5 h-3.5 text-white/70 hover:text-white shrink-0 cursor-pointer" @click.stop="openEditor" />
+       <Code v-if="data.data?.code" data-testid="graph-node-code-icon" class="w-3.5 h-3.5 text-white/70 hover:text-white shrink-0 cursor-pointer" @click.stop="openEditor" />
     </div>
 
     <div 
@@ -42,6 +45,8 @@
          <div v-for="fieldKey in visibleFields" :key="fieldKey" class="n-field-row" @mousedown.stop>
             <span class="n-label capitalize truncate flex-1">{{ fieldKey }}</span>
             <div 
+              data-testid="graph-node-field-value"
+              :data-field-key="fieldKey"
               class="n-value-box cursor-pointer hover:bg-black/5 dark:hover:bg-white/10 truncate max-w-[80px] text-right"
               :class="typeof data.data[fieldKey] === 'boolean' 
                 ? 'text-red-500 dark:text-red-400' 
@@ -66,6 +71,9 @@
           :style="{ top: (12 + (index * 24) - 6) + 'px' }" 
         >
           <div 
+            data-testid="graph-node-input-port"
+            :data-port-id="input.id"
+            :data-port-type="input.dataType"
             class="relative -left-1.5 w-3 h-3 rounded-full border-2 transition-transform hover:scale-125 cursor-crosshair pointer-events-auto z-30 border-white dark:border-[#18181b]"
             :style="{ backgroundColor: input.color }" 
             @mousedown.stop="$emit('connect-start',$event, input.id, 'input')" 
@@ -92,6 +100,9 @@
           </span>
 
           <div 
+            data-testid="graph-node-output-port"
+            :data-port-id="output.id"
+            :data-port-type="output.dataType"
             class="relative -right-1.5 w-3 h-3 rounded-full border-2 transition-transform hover:scale-125 cursor-crosshair pointer-events-auto z-30 border-white dark:border-[#18181b]"
             :style="{ backgroundColor: output.color }" 
             @mousedown.stop="$emit('connect-start',$event, output.id, 'output')"
@@ -105,6 +116,7 @@
     <Teleport to="body">
         <div 
             v-if="tooltip.visible"
+            data-testid="graph-node-tooltip"
             class="fixed z-[9999] px-2 py-1 text-[10px] font-mono rounded border pointer-events-none transform -translate-x-1/2 -translate-y-full mt-[-8px] shadow-lg capitalize bg-white/95 text-slate-800 border-slate-200 shadow-xl dark:bg-black/80 dark:text-white dark:border-white/10"
             :style="{ left: tooltip.x + 'px', top: tooltip.y + 'px' }"
         >

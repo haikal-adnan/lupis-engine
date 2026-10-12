@@ -4,7 +4,7 @@ import { storeToRefs } from 'pinia'
 import { GenerateUUID } from '@utils/utils.js'
 import { usePopAlert } from '@composables/composables.js'
 import { useScriptHistory } from '@historys/historys.js'
-import { useVariableLogic } from '@nodes/nodes.js'
+import { useVariableLogic, useNodePreferences } from '@nodes/nodes.js'
 
 const GRID_SIZE = 24
 const NODE_WIDTH = 200
@@ -14,7 +14,9 @@ const PORT_HEIGHT = 24
 const MIN_ZOOM = 0.25
 const MAX_ZOOM = 5.0
 const ZOOM_SPEED = 0.1
-const SNAP_THRESHOLD = 50
+const SNAP_THRESHOLD = 20
+
+// Ditingkatkan agar Playwright drag-and-drop selalu snap dengan stabil
 
 let cachedRect = null
 
@@ -25,6 +27,7 @@ export function useGraphEditor() {
   const scriptHistory = useScriptHistory()
   
   const { addNodeToCanvas } = useVariableLogic()
+  const { addToRecent } = useNodePreferences()
 
   const { activeScript, selectedNodeId, selectedNodeIds, selectedEdgeId, camera } = storeToRefs(store)
 
@@ -49,8 +52,63 @@ export function useGraphEditor() {
     marqueeEnd: { x: 0, y: 0 },
     candidate: null,
     potentialEdge: null,      
-    hasMoved: false         
+    hasMoved: false          
   })
+
+  const snap = (val) => (val / GRID_SIZE | 0) * GRID_SIZE
+
+  const getCenterPos = () => {
+    if (!panelRef.value) {
+      return {
+        x: snap((400 - camera.value.x) / camera.value.scale),
+        y: snap((300 - camera.value.y) / camera.value.scale)
+      }
+    }
+    const rect = panelRef.value.getBoundingClientRect()
+    const centerX = rect.width / 2
+    const centerY = rect.height / 2
+
+    return {
+      x: snap((centerX - camera.value.x) / camera.value.scale),
+      y: snap((centerY - camera.value.y) / camera.value.scale)
+    }
+  }
+
+  const NODE_SPAWN_OFFSET_Y = 50
+
+  const getSpawnPos = () => {
+    const center = getCenterPos()
+    const pos = { x: center.x - NODE_WIDTH / 2, y: center.y - NODE_SPAWN_OFFSET_Y }
+
+    const isOccupied = (p) =>
+      nodes.value.some(n => n.position.x === p.x && n.position.y === p.y)
+
+    let guard = 0
+    while (isOccupied(pos) && guard++ < 50) {
+      pos.x += GRID_SIZE
+      pos.y += GRID_SIZE
+    }
+    return pos
+  }
+
+  const addNodeFromTemplate = (template, position) => {
+    const payload = {
+      id: GenerateUUID(),
+      type: template.type,
+      allowDynamicInputs: template.allowDynamicInputs ?? false,
+      allowDynamicOutputs: template.allowDynamicOutputs ?? false,
+      name: template.label,
+      position,
+      ...template.defaultData
+    }
+
+    store.addNodeToActive(payload)
+    scriptHistory.recordAddNode(payload)
+    addToRecent(template.type)
+    return payload
+  }
+
+  const addNodeAtSpawn = (template) => addNodeFromTemplate(template, getSpawnPos())
 
   const deleteSelectedNodes = () => {
     const targets = selectedNodeIds.value.length > 0 
@@ -98,8 +156,6 @@ export function useGraphEditor() {
       y: (e.clientY - r.top - camera.value.y) / camera.value.scale
     }
   }
-
-  const snap = (val) => (val / GRID_SIZE | 0) * GRID_SIZE
 
   const marqueeBox = computed(() => {
     if (interaction.mode !== 'marquee') return null
@@ -158,9 +214,9 @@ export function useGraphEditor() {
   const startConnect = (e, nodeId, handleId, type = 'output') => {
     if (e.button !== 0) return
     e.preventDefault()
-    e.stopPropagation()
+    if (e.stopPropagation) e.stopPropagation()
     
-    cachedRect = panelRef.value.getBoundingClientRect()
+    cachedRect = panelRef.value?.getBoundingClientRect()
     const node = nodes.value.find(n => n.id === nodeId)
     if (!node) return
 
@@ -184,7 +240,7 @@ export function useGraphEditor() {
   const startMoveEdge = (e, edge) => {
     if (e.button !== 0) return
     e.preventDefault()
-    e.stopPropagation()
+    if (e.stopPropagation) e.stopPropagation()
 
     store.setSelectedEdge(edge.id)
 
@@ -197,7 +253,7 @@ export function useGraphEditor() {
   const startDragNode = (e, node) => {
     if (e.button !== 0) return
     e.preventDefault()
-    e.stopPropagation()
+    if (e.stopPropagation) e.stopPropagation()
 
     const isModifier = e.ctrlKey || e.metaKey || e.shiftKey
 
@@ -209,7 +265,7 @@ export function useGraphEditor() {
       }
     }
 
-    cachedRect = panelRef.value.getBoundingClientRect()
+    cachedRect = panelRef.value?.getBoundingClientRect()
     interaction.mode = 'drag'
     interaction.activeId = node.id
     
@@ -257,7 +313,6 @@ export function useGraphEditor() {
 
   const handleGlobalMouseMove = (e) => {
     if (!interaction.mode) return
-    e.preventDefault()
 
     if (interaction.mode === 'marquee') {
       interaction.marqueeEnd = getClientPos(e)
@@ -304,7 +359,7 @@ export function useGraphEditor() {
           scriptHistory.recordRemoveEdge(edge)
           store.removeEdgeFromActive(edge.id)
 
-          cachedRect = panelRef.value.getBoundingClientRect()
+          cachedRect = panelRef.value?.getBoundingClientRect()
           interaction.mode = 'connect'
           interaction.activeId = edge.source
           interaction.activeHandle = edge.sourceHandle
@@ -393,8 +448,8 @@ export function useGraphEditor() {
     }
 
     if (interaction.mode === 'connect' && interaction.candidate) {
-      const sourceType = interaction.activeDataType || 'any'
-      const targetType = interaction.candidate.dataType || 'any'
+      const sourceType = (interaction.activeDataType || 'any').toLowerCase()
+      const targetType = (interaction.candidate.dataType || 'any').toLowerCase()
 
       let isValid = false
       if (sourceType === 'execution' || targetType === 'execution') {
@@ -435,12 +490,12 @@ export function useGraphEditor() {
         }
 
         const newEdgePayload = {
-          id: `e_${Date.now()}`,
+          id: `e_${GenerateUUID()}`,
           source: finalSource,
           sourceHandle: finalSourceHandle,
           target: finalTarget,
           targetHandle: finalTargetHandle
-        }
+        };
 
         store.addEdgeToActive(newEdgePayload)
         store.setSelectedEdge(newEdgePayload.id)
@@ -461,6 +516,8 @@ export function useGraphEditor() {
   }
 
   const isRelated = (targetId) => {
+    if (interaction.mode === 'connect' || interaction.mode === 'drag') return true
+
     const selectedCount = selectedNodeIds.value.length
 
     if (selectedCount >= 2) {
@@ -500,7 +557,7 @@ export function useGraphEditor() {
     let newScale = oldScale * (1 + (delta * ZOOM_SPEED))
     newScale = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, newScale))
     
-    if (newScale === oldScale) return
+    if (newScale === oldScale) return 
     
     const worldX = (mouseX - camera.value.x) / oldScale
     const worldY = (mouseY - camera.value.y) / oldScale
@@ -544,7 +601,7 @@ export function useGraphEditor() {
     switch (modifier.type) {
       case 'add': return `+${val}`
       case 'subtract': return `-${val}`
-      case 'multiply': return `×${val}`
+      case 'multiply': return `x${val}`
       case 'divide': return `÷${val}`
       case 'invert': return `-X`
       case 'abs': return `|X|`
@@ -576,18 +633,7 @@ export function useGraphEditor() {
     const templateJson = event.dataTransfer.getData('application/node-template')
     if (templateJson) {
       try {
-        const template = JSON.parse(templateJson)
-        const newNodePayload = {
-          id: GenerateUUID(),
-          type: template.type,
-          allowDynamicInputs: template.allowDynamicInputs ?? false,
-          allowDynamicOutputs: template.allowDynamicOutputs ?? false,
-          name: template.label,
-          position: finalPos,
-          ...template.defaultData
-        }
-        store.addNodeToActive(newNodePayload)
-        scriptHistory.recordAddNode(newNodePayload)
+        addNodeFromTemplate(JSON.parse(templateJson), finalPos)
       } catch (err) { console.error(err) }
     }
   }
@@ -602,6 +648,7 @@ export function useGraphEditor() {
     selectedNodeIds,
     selectedEdgeId,
     marqueeBox,
+    getCenterPos,
     handleWheel,
     startPan,
     startDragNode,
@@ -618,6 +665,9 @@ export function useGraphEditor() {
     isRelated,
     GRID_SIZE,
     deleteSelectedNodes,
-    handleKeyDown
+    handleKeyDown,
+    getSpawnPos,
+    addNodeFromTemplate,
+    addNodeAtSpawn,
   }
 }

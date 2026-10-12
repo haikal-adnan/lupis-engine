@@ -12,7 +12,6 @@ const getStorageItem = (key, fallback = []) => {
   return fallback;
 };
 
-const favoriteNodesIds = ref(getStorageItem('lupis-fav-nodes'));
 const recentNodesIds = ref(getStorageItem('lupis-recent-nodes'));
 
 export function useNodePreferences() {
@@ -26,28 +25,14 @@ export function useNodePreferences() {
     return map;
   });
 
-  const favoriteNodes = computed(() => 
-    favoriteNodesIds.value.map(id => allNodesMap.value.get(id)).filter(Boolean)
-  );
-  
   const recentNodes = computed(() => 
     recentNodesIds.value.map(id => allNodesMap.value.get(id)).filter(Boolean)
   );
 
-  const toggleFavorite = (node) => {
-    const type = node.type || node;
-    const isFav = favoriteNodesIds.value.includes(type);
-    
-    if (isFav) {
-      favoriteNodesIds.value = favoriteNodesIds.value.filter(id => id !== type);
-    } else {
-      favoriteNodesIds.value = [...favoriteNodesIds.value, type];
-    }
-    
-    localStorage.setItem('lupis-fav-nodes', JSON.stringify(favoriteNodesIds.value));
-  };
+  const addToRecent = (nodeOrType) => {
+    const type = typeof nodeOrType === 'object' ? nodeOrType?.type : nodeOrType;
+    if (!type) return;
 
-  const addToRecent = (type) => {
     let recents = recentNodesIds.value.filter(id => id !== type);
     recents.unshift(type); 
     if (recents.length > 15) recents.pop(); 
@@ -56,13 +41,8 @@ export function useNodePreferences() {
     localStorage.setItem('lupis-recent-nodes', JSON.stringify(recents));
   };
 
-  const isFavorite = (node) => favoriteNodesIds.value.includes(node.type || node);
-
   return {
-    favoriteNodes,
     recentNodes,
-    toggleFavorite,
-    addToRecent,
-    isFavorite
+    addToRecent
   };
 }

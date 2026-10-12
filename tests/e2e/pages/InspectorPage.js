@@ -134,10 +134,14 @@ export class InspectorPage {
   // =========================================================================
   // OBJECT INSPECTOR ACTIONS
   // =========================================================================
+  // =========================================================================
+  // OBJECT INSPECTOR ACTIONS
+  // =========================================================================
   async setEntityName(newName) {
     const input = this.page.getByTestId('object-name-input').locator('input').first();
     await input.fill(newName);
     await input.press('Enter');
+    await input.blur();
   }
 
   async setScriptId(newId) {
@@ -262,7 +266,15 @@ export class InspectorPage {
   }
 
   async selectAttachedScript(scriptName) {
-    await this.page.getByTestId('script-controller-dropdown-trigger').click();
+    await this._settle();
+    await this.scriptControllerSection.scrollIntoViewIfNeeded();
+    await expect(this.scriptControllerSection).toBeVisible();
+
+    const trigger = this.page.getByTestId('script-controller-dropdown-trigger');
+    await trigger.scrollIntoViewIfNeeded();
+    await expect(trigger).toBeVisible();
+    await trigger.click();
+
     const list = this.page.getByTestId('script-controller-dropdown-list');
     await expect(list).toBeVisible();
     await list.getByTestId('script-controller-item').filter({ hasText: scriptName }).click();

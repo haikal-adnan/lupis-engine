@@ -5,6 +5,7 @@
       <BaseTab
         v-for="tab in tabs"
         :key="tab.id"
+        :data-tab-id="tab.id"
         :label="tab.name"
         :active="activeTabId === tab.id"
         :icon="tab.icon"

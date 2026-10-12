@@ -11,7 +11,7 @@
             <SkipBack class="w-4 h-4 text-muted-foreground group-hover:text-foreground" />
           </button>
           
-          <button @click="togglePlay" class="p-2.5 rounded-md transition-all shadow-md" :class="isPlaying ? 'bg-amber-500 text-white animate-pulse' : 'bg-primary text-primary-foreground hover:bg-primary/90'" data-testid="animator-timeline-play-toggle">
+          <button @click="togglePlay" :aria-pressed="isPlaying" class="p-2.5 rounded-md transition-all shadow-md" :class="isPlaying ? 'bg-amber-500 text-white animate-pulse' : 'bg-primary text-primary-foreground hover:bg-primary/90'" data-testid="animator-timeline-play-toggle">
             <Pause v-if="isPlaying" class="w-4 h-4" />
             <Play v-else class="w-4 h-4" />
           </button>

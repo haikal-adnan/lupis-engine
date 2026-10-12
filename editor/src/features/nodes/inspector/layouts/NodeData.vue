@@ -1,4 +1,3 @@
-<!-- 📄 lokasi: NodeInspector.vue -->
 <template>
   <div class="w-full">
     <!-- Inspector Property Section -->
@@ -6,35 +5,36 @@
       v-if="node && (isVariableNode || hasTopData || hasInputPorts)" 
       title="Parameters" 
       :icon="Sliders"
+      data-testid="node-inspector-parameters-section"
     >
-      <!-- ========================================== -->
-      <!-- KHUSUS: NODE VARIABLE (GET & SET VARIABLE) -->
-      <!-- ========================================== -->
+      <!-- KHUSUS: NODE VARIABLE -->
       <template v-if="isVariableNode">
-        <PropertyRow label="Variable">
+        <PropertyRow label="Variable" data-testid="node-inspector-variable-row">
           <VariableSelect
             :model-value="node.data?.variableId"
             :filter-by-type="false"
             @update:model-value="onSelectVariable"
+            data-testid="node-inspector-variable-select"
           />
         </PropertyRow>
       </template>
 
-      <!-- ========================================== -->
-      <!-- GENERIC NODE INSPECTOR (Properti Ekstra)    -->
-      <!-- ========================================== -->
+      <!-- GENERIC NODE INSPECTOR -->
       <template v-else>
         <!-- 1. Top Level Data Fields -->
         <template v-for="(value, key) in node.data" :key="'data-'+key">
           <PropertyRow 
             v-if="shouldShowDataField(key)" 
             :label="formatLabel(key)"
+            data-testid="node-inspector-data-row"
+            :data-field-key="key"
           >
             <BaseSelect 
               v-if="typeof value === 'boolean'"
               :model-value="value"
               :options="booleanOptions"
               @update:model-value="updateData(key, $event)"
+              data-testid="node-inspector-data-boolean-select"
             />
 
             <BaseNumber 
@@ -44,25 +44,39 @@
               @blur="endScriptTransactionWithDelay(0)"
               @update:model-value="updateData(key, $event)"
               class="font-mono"
+              data-testid="node-inspector-data-number-input"
             />
 
             <BaseInput 
               v-else-if="isPrimitive(value)"
               :model-value="value"
               @update:model-value="updateData(key, $event)"
+              data-testid="node-inspector-data-text-input"
             />
           </PropertyRow>
         </template>
 
         <!-- 2. Node Port Values / Inputs Dynamic Controls -->
         <template v-for="port in nonExecutionInputs" :key="'port-'+port.id">
-          <PropertyRow :label="port.label || formatLabel(port.id)">
+          <PropertyRow 
+            :label="port.label || formatLabel(port.id)"
+            data-testid="node-inspector-port-row"
+            :data-port-id="port.id"
+          >
             <!-- Badge LINKED / NOT SET -->
             <template #actions>
-              <span v-if="isInputConnected(port.id)" class="text-[9px] font-mono text-green-400 animate-pulse font-bold">
+              <span 
+                v-if="isInputConnected(port.id)" 
+                class="text-[9px] font-mono text-green-400 animate-pulse font-bold"
+                data-testid="node-inspector-port-linked-badge"
+              >
                 LINKED
               </span>
-              <span v-else-if="isErrorNotSet(port.id, getPortValue(port))" class="text-[9px] font-mono text-red-500 font-bold uppercase tracking-tighter">
+              <span 
+                v-else-if="isErrorNotSet(port.id, getPortValue(port))" 
+                class="text-[9px] font-mono text-red-500 font-bold uppercase tracking-tighter"
+                data-testid="node-inspector-port-not-set-badge"
+              >
                 NOT SET
               </span>
             </template>
@@ -82,6 +96,7 @@
                 :active="getMode(port.id) === 'variable'"
                 :tooltip="getMode(port.id) === 'variable' ? 'Switch to Direct Input' : 'Switch to Variable'"
                 class="shrink-0"
+                data-testid="node-inspector-port-mode-toggle"
               >
                 <Variable v-if="getMode(port.id) === 'variable'" class="w-3.5 h-3.5 text-purple-400" />
                 <Edit3 v-else class="w-3.5 h-3.5" />
@@ -97,6 +112,7 @@
                   @update:binding-value="setVariableBinding(port.id, $event)"
                   @update:modifier="setVariableModifier(port.id, $event)"
                   @clear:modifier="clearVariableModifier(port.id)"
+                  data-testid="node-inspector-port-variable-group"
                 />
               </div>
 
@@ -108,6 +124,7 @@
                   :options="getOptions(port.id)"
                   placeholder="Choose option..."
                   @update:model-value="updateNodeValue(port.id, $event)"
+                  data-testid="node-inspector-port-options-select"
                 />
 
                 <BaseSelect 
@@ -116,6 +133,7 @@
                   :options="booleanOptions"
                   placeholder="Choose..."
                   @update:model-value="updateNodeValue(port.id, $event)"
+                  data-testid="node-inspector-port-boolean-select"
                 />
 
                 <BaseNumber 
@@ -126,6 +144,7 @@
                   @update:model-value="updateNodeValue(port.id, $event)"
                   class="font-mono w-full"
                   :placeholder="getPlaceholder(port.id, getPortValue(port), 'Number')"
+                  data-testid="node-inspector-port-number-input"
                 />
 
                 <BaseInput 
@@ -135,6 +154,7 @@
                   @update:model-value="updateNodeValue(port.id, $event)"
                   class="w-full"
                   :placeholder="getPlaceholder(port.id, getPortValue(port), 'String')"
+                  data-testid="node-inspector-port-text-input"
                 />
               </div>
             </div>
@@ -146,6 +166,7 @@
       <div 
         v-if="!isVariableNode && !hasTopData && !hasInputPorts" 
         class="px-2 py-4 text-center text-xs text-muted-foreground italic"
+        data-testid="node-inspector-parameters-empty-state"
       >
         No editable parameters.
       </div>

@@ -201,6 +201,8 @@ test.describe('Script Panel E2E Management', () => {
       await playerNode.click();
 
       const scriptItem = scripts.itemByName('PlayerControllerScript');
+      await scripts.ensureVisible();
+      await scriptItem.scrollIntoViewIfNeeded();
       await popup.selectContextMenu(scriptItem, 'Add to PlayerCharacter');
 
       await playerNode.click();
@@ -230,9 +232,13 @@ test.describe('Script Panel E2E Management', () => {
       await bossNode.click();
 
       const baseScript = scripts.itemByName('BaseEnemyLogic');
+      await scripts.ensureVisible();
+      await baseScript.scrollIntoViewIfNeeded();
       await popup.selectContextMenu(baseScript, 'Add to EnemyBoss');
 
       const bossScript = scripts.itemByName('BossSpecialAttack');
+      await scripts.ensureVisible();
+      await bossScript.scrollIntoViewIfNeeded();
       await popup.selectContextMenu(bossScript, 'Add to EnemyBoss');
 
       await bossNode.click();
@@ -289,9 +295,12 @@ test.describe('Script Panel E2E Management', () => {
 
       const heroNode = hierarchy.nodeByName('HeroCharacter');
       await expect(heroNode).toBeVisible();
+      await heroNode.scrollIntoViewIfNeeded();
       await heroNode.click();
 
       const scriptItem = scripts.itemByName('OldHeroScript');
+      await expect(scriptItem).toBeVisible();
+      await scriptItem.scrollIntoViewIfNeeded();
       await popup.selectContextMenu(scriptItem, 'Add to HeroCharacter');
 
       await popup.selectContextMenu(scriptItem, 'Rename');
@@ -328,6 +337,8 @@ test.describe('Script Panel E2E Management', () => {
         await popup.expectPopAlert('Script Created');
 
         const scriptItem = scripts.itemByName(scriptName);
+        await scripts.ensureVisible();
+        await scriptItem.scrollIntoViewIfNeeded();
         await popup.selectContextMenu(scriptItem, 'Add to MegaEntity');
       }
 
@@ -358,6 +369,8 @@ test.describe('Script Panel E2E Management', () => {
       const spriteEntity = hierarchy.nodeByName('HeroSprite');
       await spriteEntity.click();
       await inspector.ensureScriptControllerComponent();
+      await scripts.ensureVisible();
+      await scriptItem.scrollIntoViewIfNeeded();
       await popup.selectContextMenu(scriptItem, 'Add to HeroSprite');
 
       const shapeRaw = await hierarchy.addEntity(popup, worldLayer, ['Add Entity', 'Shape']);
@@ -366,6 +379,8 @@ test.describe('Script Panel E2E Management', () => {
       const shapeEntity = hierarchy.nodeByName('BoundaryShape');
       await shapeEntity.click();
       await inspector.ensureScriptControllerComponent();
+      await scripts.ensureVisible();
+      await scriptItem.scrollIntoViewIfNeeded();
       await popup.selectContextMenu(scriptItem, 'Add to BoundaryShape');
 
       const textRaw = await hierarchy.addEntity(popup, worldLayer, ['Add Entity', 'Text']);
@@ -374,6 +389,8 @@ test.describe('Script Panel E2E Management', () => {
       const textEntity = hierarchy.nodeByName('StatusText');
       await textEntity.click();
       await inspector.ensureScriptControllerComponent();
+      await scripts.ensureVisible();
+      await scriptItem.scrollIntoViewIfNeeded();
       await popup.selectContextMenu(scriptItem, 'Add to StatusText');
 
       await spriteEntity.click();
