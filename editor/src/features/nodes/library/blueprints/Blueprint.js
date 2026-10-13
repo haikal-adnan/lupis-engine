@@ -1,53 +1,32 @@
-import { Boxes, Zap, Play, Calculator } from 'lucide-vue-next';
-
-
-/** TODO: 
-
-Check script for newer
-
-ANIMATOR :
-
-BOOLEAN :
-logic_and (Done)
-logic_or (Done)
-logic_not (Done)
-
-CAMERA :
-action_camera_follow (Smoothness)
-action_camera_stop_follow (Done)
-
-COLLECTION HELPER :
-
-COLLIDER : 
-solid_collision (Critical)
-trigger_zone (Done)
-
-
- */
+import { Boxes } from 'lucide-vue-next';
 
 /**
  * ============================================================================
- * TEMPLATE PANDUAN BLUEPRINT CATEGORY (LUPIS ENGINE)
+ * TEMPLATE PANDUAN BLUEPRINT CATEGORY (LUPIS ENGINE) - STANDAR BARU
  * ============================================================================
  *
  * Standar & Aturan Kode Blueprint:
  * 1. Tanpa Komentar Kode: Jangan menyertakan komentar (// atau /*) di dalam `data.code`.
- * 2. Tanpa Pengecekan / Guarding Berlebih: Langsung baca dari `inputs['Label Port']`.
- *    Pencegahan error / fallback nilai kosong ditangani langsung di level Engine.
- * 3. Node Dinamis (allowDynamicInputs: true):
- *    - Port default harus diberi label berurutan: 'Val 1', 'Val 2', dst.
- *    - Deklarasikan variabel satu per satu secara eksplisit: `const val1 = inputs['Val 1'];`
- *    - Kelompokkan ke dalam array: `const collection = [val1, val2];`
- *    - Engine/Store akan otomatis meregenerasi deklarasi & collection saat port ditambah/dihapus.
- * 4. Penutup Fungsi: Setiap string `data.code` WAJIB diakhiri dengan `return;`.
+ * 2. Tanpa Icon per Item: Icon hanya digunakan pada level Kategori (`icon: Boxes`).
+ * 3. Format Code New Line: Penulisan string `code` selalu dimulai langsung dari baris baru (\n).
+ * 4. Standar Mode Dinamis (`dynamicMode`):
+ *    - 'none'           : Port statis (fixed).
+ *    - 'sequential'     : Tambah port berurutan otomatis (Val 1, Val 2, ... / v0, v1, ...).
+ *    - 'inputProperty'  : Membuka dropdown opsi `data.propertyOptions` untuk menambah INPUT PORT.
+ *    - 'outputProperty' : Membuka dropdown opsi `data.propertyOptions` untuk menambah OUTPUT PORT.
+ * 5. Pembacaan Inputs Runtime:
+ *    - Akses inputs mendukung fallback ID maupun Label: `inputs['Target Entity'] ?? inputs['target_in']`.
+ *    - Pada node 'sequential', evaluasi seluruh koleksi via `Object.values(inputs)`.
+ * 6. Penutup Fungsi: Setiap string `data.code` WAJIB diakhiri dengan `return;`.
  *
- * DataType Port & Warna Standar:
- * - 'execution' : Alur eksekusi (Warna: #ffffff)
- * - 'string'    : Teks (Warna: #FFB74D)
- * - 'number'    : Angka/Float/Int (Warna: #B2FF59)
- * - 'boolean'   : True/False (Warna: #f472b6)
- * - 'entity'    : Entity Reference (Warna: #fbbf24)
- * - 'any'       : Tipe Data Bebas (Warna: #ffffff)
+ * DataType Port & Kode Warna Standar (Sesuai VAR_COLORS):
+ * - 'execution' : Alur eksekusi        (Warna: #FFFFFF)
+ * - 'string'    : Teks                 (Warna: #F48FB1)
+ * - 'number'    : Angka/Float/Int      (Warna: #64B5F6)
+ * - 'boolean'   : True/False           (Warna: #E57373)
+ * - 'list'      : Array/Koleksi        (Warna: #4DD0E1)
+ * - 'map'       : Object/Dictionary    (Warna: #FF8A65)
+ * - 'any'       : Tipe Data Bebas      (Warna: #B0BEC5)
  * ============================================================================
  */
 
@@ -66,10 +45,8 @@ export const BlueprintCategoryTemplate = {
     {
       type: 'event_example_node',
       label: 'On Custom Event',
-      description: 'Dicuplik/dijalankan saat event tertentu dipicu.',
-      icon: Zap,
-      allowDynamicInputs: false,
-      allowDynamicOutputs: false,
+      description: 'Dipicu saat event tertentu dieksekusi oleh sistem.',
+      dynamicMode: 'none',
 
       defaultData: {
         settings: {
@@ -85,18 +62,19 @@ export const BlueprintCategoryTemplate = {
             id: 'out',
             label: 'Out',
             dataType: 'execution',
-            color: '#ffffff'
+            color: '#FFFFFF'
           },
           {
             id: 'event_data',
             label: 'Data',
             dataType: 'string',
-            color: '#FFB74D'
+            color: '#F48FB1'
           }
         ],
 
         data: {
-          code: `const eventData = node._tempData?.dataValue;
+          code: 
+`const eventData = node._tempData?.dataValue;
 
 outputs['Data'] = eventData;
 outputs['Out'] = true;
@@ -112,9 +90,7 @@ return;`
       type: 'action_example_node',
       label: 'Do Something',
       description: 'Mengeksekusi aksi pada target entity atau sistem.',
-      icon: Play,
-      allowDynamicInputs: false,
-      allowDynamicOutputs: false,
+      dynamicMode: 'none',
 
       defaultData: {
         settings: {
@@ -128,45 +104,53 @@ return;`
             id: 'exec_in',
             label: 'In',
             dataType: 'execution',
-            color: '#ffffff'
+            color: '#FFFFFF'
           },
           {
-            id: 'target_entity',
+            id: 'target_in',
             label: 'Target Entity',
             dataType: 'string',
             color: '#FFB74D',
             defaultValue: 'self'
           },
           {
-            id: 'value_amount',
+            id: 'amount',
             label: 'Amount',
             dataType: 'number',
-            color: '#B2FF59',
+            color: '#64B5F6',
             defaultValue: 100
           }
         ],
 
         outputs: [
           {
-            id: 'out',
+            id: 'exec_out',
             label: 'Out',
             dataType: 'execution',
-            color: '#ffffff'
+            color: '#FFFFFF'
           },
           {
             id: 'result',
             label: 'Result',
             dataType: 'boolean',
-            color: '#f472b6'
+            color: '#E57373'
           }
         ],
 
         data: {
-          code: `const target = inputs['Target Entity'];
-const amount = inputs['Amount'];
-const entity = context.getEntity(target);
+          values: {
+            target_in: 'self',
+            amount: 100
+          },
 
-entity.applyAmount(amount);
+          code: 
+`const target = inputs['Target Entity'] ?? inputs['target_in'] ?? 'self';
+const amount = Number(inputs['Amount'] ?? inputs['amount'] ?? 0);
+const entity = context.entity.get(target);
+
+if (entity && typeof entity.applyAmount === 'function') {
+    entity.applyAmount(amount);
+}
 
 outputs['Result'] = true;
 outputs['Out'] = true;
@@ -176,19 +160,17 @@ return;`
     },
 
     // ------------------------------------------------------------------------
-    // TIPE C: DYNAMIC INPUTS NODE (Pengolahan Variabel Banyak/Koleksi)
+    // TIPE C: SEQUENTIAL DYNAMIC NODE (Operasi Beruntun N-Input)
     // ------------------------------------------------------------------------
     {
-      type: 'dynamic_example_node',
-      label: 'Dynamic Collection',
-      description: 'Menerima port input dinamis yang dapat ditambah atau dikurangi.',
-      icon: Calculator,
-      allowDynamicInputs: true,
-      allowDynamicOutputs: false,
+      type: 'dynamic_sequential_node',
+      label: 'Sequential Collection',
+      description: 'Menambah/mengurangi port berurutan otomatis (Val 1, Val 2, ...).',
+      dynamicMode: 'sequential',
 
       defaultData: {
         settings: {
-          headerTitle: 'Dynamic Collection',
+          headerTitle: 'Sequential Collection',
           headerColor: '#00796B',
           category: 'Category Name'
         },
@@ -198,13 +180,13 @@ return;`
             id: 'v0',
             label: 'Val 1',
             dataType: 'number',
-            color: '#B2FF59'
+            color: '#64B5F6'
           },
           {
             id: 'v1',
             label: 'Val 2',
             dataType: 'number',
-            color: '#B2FF59'
+            color: '#64B5F6'
           }
         ],
 
@@ -213,7 +195,7 @@ return;`
             id: 'res',
             label: 'Result',
             dataType: 'number',
-            color: '#B2FF59'
+            color: '#64B5F6'
           }
         ],
 
@@ -223,11 +205,111 @@ return;`
             v1: 0
           },
 
-          code: `const val1 = inputs['Val 1'];
-const val2 = inputs['Val 2'];
-const collection = [val1, val2];
+          code: 
+`const numbers = Object.values(inputs).map(v => Number(v) || 0);
+outputs['Result'] = numbers.reduce((acc, curr) => acc + curr, 0);
+outputs['res'] = outputs['Result'];
+return;`
+        }
+      }
+    },
 
-outputs['Result'] = collection.reduce((acc, curr) => acc + curr, 0);
+    // ------------------------------------------------------------------------
+    // TIPE D: INPUT PROPERTY DYNAMIC NODE (Opsi Input Properti dari Dropdown)
+    // ------------------------------------------------------------------------
+    {
+      type: 'dynamic_set_property_node',
+      label: 'Set Entity Property',
+      description: 'Menambah port input secara dinamis berdasarkan opsi properti.',
+      dynamicMode: 'inputProperty',
+
+      defaultData: {
+        settings: {
+          headerTitle: 'Set Property',
+          headerColor: '#2E7D32',
+          category: 'Category Name'
+        },
+
+        inputs: [
+          { id: 'exec_in', label: 'In', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'target_in', label: 'Target Entity', dataType: 'string', color: '#FFB74D', defaultValue: 'self' }
+        ],
+
+        outputs: [
+          { id: 'exec_out', label: 'Out', dataType: 'execution', color: '#FFFFFF' }
+        ],
+
+        data: {
+          values: { target_in: 'self' },
+          propertyOptions: [
+            { value: 'speed', label: 'Move Speed', type: 'number', color: '#64B5F6' },
+            { value: 'health', label: 'Health', type: 'number', color: '#64B5F6' },
+            { value: 'visible', label: 'Visible', type: 'boolean', color: '#E57373' }
+          ],
+
+          code: 
+`const targetId = inputs['Target Entity'] ?? inputs['target_in'] ?? 'self';
+const entity = context.entity.get(targetId);
+
+if (entity) {
+    const speed = inputs['Move Speed'] ?? inputs['speed'];
+    const health = inputs['Health'] ?? inputs['health'];
+    const visible = inputs['Visible'] ?? inputs['visible'];
+
+    if (speed !== undefined && speed !== null && speed !== '') entity.speed = Number(speed);
+    if (health !== undefined && health !== null && health !== '') entity.health = Number(health);
+    if (visible !== undefined && visible !== null) entity.visible = Boolean(visible);
+}
+
+outputs['Out'] = true;
+outputs['exec_out'] = true;
+return;`
+        }
+      }
+    },
+
+    // ------------------------------------------------------------------------
+    // TIPE E: OUTPUT PROPERTY DYNAMIC NODE (Opsi Output Properti dari Dropdown)
+    // ------------------------------------------------------------------------
+    {
+      type: 'dynamic_get_property_node',
+      label: 'Get Entity Property',
+      description: 'Menambah port output secara dinamis berdasarkan opsi properti.',
+      dynamicMode: 'outputProperty',
+
+      defaultData: {
+        settings: {
+          headerTitle: 'Get Property',
+          headerColor: '#2E7D32',
+          category: 'Category Name'
+        },
+
+        inputs: [
+          { id: 'target_in', label: 'Target Entity', dataType: 'string', color: '#FFB74D', defaultValue: 'self' }
+        ],
+
+        outputs: [],
+
+        data: {
+          values: { target_in: 'self' },
+          propertyOptions: [
+            { value: 'speed', label: 'Move Speed', type: 'number', color: '#64B5F6' },
+            { value: 'health', label: 'Health', type: 'number', color: '#64B5F6' },
+            { value: 'visible', label: 'Visible', type: 'boolean', color: '#E57373' }
+          ],
+
+          code: 
+`const targetId = inputs['Target Entity'] ?? inputs['target_in'] ?? 'self';
+const entity = context.entity.get(targetId);
+
+if (entity) {
+    outputs['Move Speed'] = entity.speed ?? 0;
+    outputs['speed'] = entity.speed ?? 0;
+    outputs['Health'] = entity.health ?? 0;
+    outputs['health'] = entity.health ?? 0;
+    outputs['Visible'] = entity.visible ?? true;
+    outputs['visible'] = entity.visible ?? true;
+}
 return;`
         }
       }

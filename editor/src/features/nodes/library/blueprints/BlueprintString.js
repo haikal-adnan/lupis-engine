@@ -1,5 +1,10 @@
-import { FileText, Plus, Hash, ArrowRightLeft } from 'lucide-vue-next';
+import { FileText } from 'lucide-vue-next';
 
+/**
+ * ============================================================================
+ * BLUEPRINT: STRING UTILS
+ * ============================================================================
+ */
 export const BlueprintString = {
   id: 'basic_string',
   label: 'String Utils',
@@ -10,115 +15,161 @@ export const BlueprintString = {
       type: 'string_format', 
       label: 'Format String', 
       description: 'Hub for multiple text formats using {variables}', 
-      icon: FileText,
-      allowDynamicInputs: true,
-      allowDynamicOutputs: true,
+      dynamicMode: 'sequential',
       defaultData: { 
-        settings: { headerTitle: 'Format String', headerColor: '#F57C00', category: 'String Utils' },
+        settings: { 
+          headerTitle: 'Format String', 
+          headerColor: '#F57C00', 
+          category: 'String Utils' 
+        },
         inputs: [
-          { id: 'format', label: 'Format', dataType: 'string', color: '#FFB74D', defaultValue: 'Score: {score} / {max}' },
-          { id: 'score', label: 'score', dataType: 'any', color: '#ffffff' },
-          { id: 'max', label: 'max', dataType: 'any', color: '#ffffff' },
+          { id: 'format', label: 'Format', dataType: 'string', color: '#F48FB1', defaultValue: 'Score: {score} / {max}' },
+          { id: 'score', label: 'score', dataType: 'any', color: '#B0BEC5' },
+          { id: 'max', label: 'max', dataType: 'any', color: '#B0BEC5' }
         ],
         outputs: [
-          { id: 'res_0', label: 'Format 1', dataType: 'any', color: '#FFB74D' }
+          { id: 'res_0', label: 'Format 1', dataType: 'string', color: '#F48FB1' }
         ],
         data: { 
-          code: `const formatStr = inputs['Format'];
+          values: {
+            format: 'Score: {score} / {max}'
+          },
+          code: 
+`const formatStr = String(inputs['Format'] ?? inputs['format'] ?? '');
 
-outputs['Format 1'] = formatStr.replace(/{([^{}]+)}/g, (_, path) => {
+const formatted = formatStr.replace(/{([^{}]+)}/g, (_, path) => {
   const parts = path.split('.');
-  let val = inputs[parts[0].trim()];
+  const rootKey = parts[0].trim();
+  let val = inputs[rootKey];
 
   for (let i = 1; i < parts.length; i++) {
-    val = val[parts[i].trim()];
+    if (val !== undefined && val !== null) {
+      val = val[parts[i].trim()];
+    }
   }
 
-  return typeof val === 'object' ? JSON.stringify(val) : val;
+  if (val === undefined || val === null) return '';
+  return typeof val === 'object' ? JSON.stringify(val) : String(val);
 });
+
+outputs['Format 1'] = formatted;
+outputs['res_0'] = formatted;
 return;`
         }
       } 
     },
+
     { 
       type: 'string_join', 
       label: 'Join Strings', 
       description: 'Join multiple strings with a separator', 
-      icon: Plus,
-      allowDynamicInputs: true, 
-      allowDynamicOutputs: false,
+      dynamicMode: 'sequential', 
       defaultData: { 
-        settings: { headerTitle: 'Join Strings', headerColor: '#F57C00', category: 'String Utils' },
+        settings: { 
+          headerTitle: 'Join Strings', 
+          headerColor: '#F57C00', 
+          category: 'String Utils' 
+        },
         inputs: [
-          { id: 'separator', label: 'Separator', dataType: 'string', color: '#FFB74D', defaultValue: ', ' },
-          { id: 'v0', label: 'Val 1', dataType: 'string', color: '#FFB74D' },
-          { id: 'v1', label: 'Val 2', dataType: 'string', color: '#FFB74D' },
+          { id: 'separator', label: 'Separator', dataType: 'string', color: '#F48FB1', defaultValue: ', ' },
+          { id: 'v0', label: 'Val 1', dataType: 'string', color: '#F48FB1' },
+          { id: 'v1', label: 'Val 2', dataType: 'string', color: '#F48FB1' }
         ],
         outputs: [
-          { id: 'res', label: 'Result', dataType: 'string', color: '#FFB74D' }
+          { id: 'res', label: 'Result', dataType: 'string', color: '#F48FB1' }
         ],
         data: { 
-          code: `const separator = inputs['Separator'];
-const val1 = inputs['Val 1'];
-const val2 = inputs['Val 2'];
+          values: {
+            separator: ', ',
+            v0: '',
+            v1: ''
+          },
+          code: 
+`const sep = inputs['Separator'] ?? inputs['separator'] ?? '';
 
-const collection = [val1, val2];
+const collection = Object.entries(inputs)
+  .filter(([key]) => key !== 'Separator' && key !== 'separator')
+  .map(([, val]) => String(val ?? ''));
 
-outputs['Result'] = collection.join(separator);
+const result = collection.join(sep);
+outputs['Result'] = result;
+outputs['res'] = result;
 return;`
         }
       } 
     },
+
     { 
       type: 'string_length', 
       label: 'String Length', 
       description: 'Get the number of characters in a string', 
-      icon: Hash,
-      allowDynamicInputs: false,
-      allowDynamicOutputs: false,
+      dynamicMode: 'none',
       defaultData: { 
-        settings: { headerTitle: 'Length', headerColor: '#F57C00', category: 'String Utils' },
+        settings: { 
+          headerTitle: 'Length', 
+          headerColor: '#F57C00', 
+          category: 'String Utils' 
+        },
         inputs: [
-          { id: 'str_in', label: 'String', dataType: 'string', color: '#FFB74D' }
+          { id: 'str_in', label: 'String', dataType: 'string', color: '#F48FB1' }
         ],
         outputs: [
-          { id: 'len_out', label: 'Length', dataType: 'number', color: '#B2FF59' }
+          { id: 'len_out', label: 'Length', dataType: 'number', color: '#64B5F6' }
         ],
         data: { 
-          code: `const val = inputs['String'];
-outputs['Length'] = val.length;
+          values: {
+            str_in: ''
+          },
+          code: 
+`const val = String(inputs['String'] ?? inputs['str_in'] ?? '');
+const len = val.length;
+
+outputs['Length'] = len;
+outputs['len_out'] = len;
 return;`
         }
       } 
     },
-    { 
-    type: 'any_to_string', 
-    label: 'Any To String', 
-    description: 'Convert any data type (including List & Map) to a readable string', 
-    icon: ArrowRightLeft,
-    allowDynamicInputs: false,
-    allowDynamicOutputs: false,
-    defaultData: { 
-      settings: { 
-        headerTitle: 'Any > Str', 
-        headerColor: '#F57C00', 
-        category: 'String Utils' 
-      },
-      inputs: [
-        { id: 'in_val', label: 'Input', dataType: 'any', color: '#ffffff' },
-        { id: 'pretty', label: 'Pretty', dataType: 'boolean', color: '#f472b6', defaultValue: true }
-      ],
-      outputs: [
-        { id: 'res', label: 'String', dataType: 'string', color: '#FFB74D' }
-      ],
-      data: {
-        code: `const val = inputs['Input'];
-  const isPretty = inputs['Pretty'];
 
-  outputs['String'] = typeof val === 'object' && val !== null ? JSON.stringify(val, null, isPretty ? 2 : 0) : String(val ?? '');
-  return;`
-      }
-    } 
-  }
+    { 
+      type: 'any_to_string', 
+      label: 'Any To String', 
+      description: 'Convert any data type (including List & Map) to a readable string', 
+      dynamicMode: 'none',
+      defaultData: { 
+        settings: { 
+          headerTitle: 'Any > Str', 
+          headerColor: '#F57C00', 
+          category: 'String Utils' 
+        },
+        inputs: [
+          { id: 'in_val', label: 'Input', dataType: 'any', color: '#B0BEC5' },
+          { id: 'pretty', label: 'Pretty', dataType: 'boolean', color: '#E57373', defaultValue: true }
+        ],
+        outputs: [
+          { id: 'res', label: 'String', dataType: 'string', color: '#F48FB1' }
+        ],
+        data: {
+          values: {
+            in_val: null,
+            pretty: true
+          },
+          code: 
+`const val = inputs['Input'] ?? inputs['in_val'];
+const isPretty = Boolean(inputs['Pretty'] ?? inputs['pretty'] ?? true);
+
+let formatted = '';
+if (typeof val === 'object' && val !== null) {
+  formatted = JSON.stringify(val, null, isPretty ? 2 : 0);
+} else {
+  formatted = String(val ?? '');
+}
+
+outputs['String'] = formatted;
+outputs['res'] = formatted;
+return;`
+        }
+      } 
+    }
   ]
 };

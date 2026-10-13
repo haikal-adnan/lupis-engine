@@ -95,7 +95,7 @@ describe('useNodePreferences Integration', () => {
       expect(recentNodes.value[0].type).toBe('math_sub');
     });
 
-    it('limits recent nodes history to maximum 15 items', () => {
+    it('limits recent nodes history to maximum 10 items', () => {
       // Arrange
       const { addToRecent } = useNodePreferences();
 
@@ -104,9 +104,9 @@ describe('useNodePreferences Integration', () => {
         addToRecent(`type_${i}`);
       }
 
-      // Assert: Jumlah riwayat di-cap maksimal 15
+      // Assert: Jumlah riwayat di-cap maksimal 10
       const storedRecents = JSON.parse(localStorage.getItem('lupis-recent-nodes'));
-      expect(storedRecents).toHaveLength(15);
+      expect(storedRecents).toHaveLength(10);
       expect(storedRecents[0]).toBe('type_18');
       expect(storedRecents).not.toContain('type_1');
       expect(storedRecents).not.toContain('type_2');

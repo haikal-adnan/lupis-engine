@@ -2,7 +2,7 @@ import { expect } from '@playwright/test';
 
 export class BlueprintTestRunner {
   /**
-   * @param {Object} fixtures - Fixture dari Playwright
+   * @param {Object} fixtures Fixture dari Playwright
    */
   constructor({ page, nodeGraphCrud, nodeGraph, variableCrud, nodeInspectorCrud, previewPage, popup }) {
     this.page = page;
@@ -18,14 +18,15 @@ export class BlueprintTestRunner {
     testName,
     entityName = 'TestEntity',
     scriptName = 'TestScript',
-    variables = [],         // [{ name, type, value, scope, rawJson }]
-    nodes = [],             // [{ id, type, label, pos, inspectorValues }]
-    variableBindings = [],  // [{ nodeId, varName }]
-    connections = [],       // [{ source, sourceHandle, target, targetHandle }]
-    expectedLog,            // Log pesan yang diharapkan
+    variables = [],          // [{ name, type, value, isExposed, scope, rawJson }]
+    nodes = [],              // [{ id, type, label, pos, dynamicInputs, dynamicOutputs, topLevelData, inspectorValues }]
+    variableBindings = [],   // [{ nodeId, portId, varName, modifier: { label, value } }]
+    connections = [],        // [{ source, sourceHandle, target, targetHandle, modifier: { operation, value, isNumber } }]
+    expectedLog,             // Log pesan yang diharapkan
     expectedSource = 'Notification',
   }) {
     let stage = 'GRAPH_BUILD';
+    let previewPopup = null;
 
     try {
       // ---------------------------------------------------------------------
@@ -34,10 +35,15 @@ export class BlueprintTestRunner {
       stage = 'GRAPH_BUILD';
       await this.nodeGraphCrud.openGraphForEntity({ entityName, scriptName });
 
-      // Inisialisasi Variabel
+      // 1.1 Inisialisasi Variabel
       for (const v of variables) {
         if (v.type === 'list' || v.type === 'map') {
-          await this.variableCrud.createVariable({ name: v.name, type: v.type, scope: v.scope || 'Local' });
+          await this.variableCrud.createVariable({
+            name: v.name,
+            type: v.type,
+            isExposed: v.isExposed || false,
+            scope: v.scope || 'Local'
+          });
           if (v.rawJson) {
             await this.variableCrud.updateRawJson(v.name, v.rawJson, this.popup, v.scope || 'Local');
           }
@@ -46,45 +52,97 @@ export class BlueprintTestRunner {
             name: v.name,
             type: v.type,
             value: v.value,
+            isExposed: v.isExposed || false,
             scope: v.scope || 'Local',
           });
         }
       }
 
-      // Spawn Node & Set Inspector
+      // 1.2 Spawn Nodes & Konfigurasi Parameters
       const spawnedMap = {};
       for (const n of nodes) {
-        const nodeId = await this.nodeGraphCrud.spawnDirect(n.type, n.label || n.type, n.pos || { x: 100, y: 100 });
+        const nodeId = await this.nodeGraphCrud.spawnDirect(
+          n.type,
+          n.label || n.type,
+          n.pos || { x: 100, y: 100 }
+        );
         spawnedMap[n.id] = nodeId;
 
-        if (n.inspectorValues) {
-          await this.nodeGraph.nodeById(nodeId).click();
-          for (const [portId, cfg] of Object.entries(n.inspectorValues)) {
-            await this.nodeInspectorCrud.setDirectValue(portId, cfg.value, cfg.type);
+        const hasInspectorChanges = n.dynamicInputs || n.dynamicOutputs || n.topLevelData || n.inspectorValues;
+        if (hasInspectorChanges) {
+          await this.nodeGraph.selectNodeById(nodeId);
+
+          // Tambah Port Dinamis jika didefinisikan
+          if (n.dynamicInputs) {
+            const inputs = Array.isArray(n.dynamicInputs) ? n.dynamicInputs : [n.dynamicInputs];
+            for (const prop of inputs) {
+              await this.nodeInspectorCrud.addDynamicInputPort(typeof prop === 'string' ? prop : null);
+            }
+          }
+
+          if (n.dynamicOutputs) {
+            const outputs = Array.isArray(n.dynamicOutputs) ? n.dynamicOutputs : [n.dynamicOutputs];
+            for (const prop of outputs) {
+              await this.nodeInspectorCrud.addDynamicOutputPort(typeof prop === 'string' ? prop : null);
+            }
+          }
+
+          // Top-level Node Data
+          if (n.topLevelData) {
+            for (const [key, cfg] of Object.entries(n.topLevelData)) {
+              await this.nodeInspectorCrud.setTopLevelData(key, cfg.value ?? cfg, cfg.type || 'text');
+            }
+          }
+
+          // Nilai Parameter Port
+          if (n.inspectorValues) {
+            for (const [portId, cfg] of Object.entries(n.inspectorValues)) {
+              await this.nodeInspectorCrud.setDirectValue(portId, cfg.value, cfg.type);
+            }
           }
         }
       }
 
-      // Bind Variabel ke Get Nodes
+      // 1.3 Binding Variabel (Node-level maupun Port-level)
       for (const binding of variableBindings) {
         const nodeId = spawnedMap[binding.nodeId];
-        await this.nodeGraph.nodeById(nodeId).click();
-        const trigger = this.page.getByTestId('node-inspector-variable-select-trigger');
-        await expect(trigger).toBeVisible();
-        await trigger.click();
+        await this.nodeGraph.selectNodeById(nodeId);
 
-        const option = this.page
-          .getByTestId('node-inspector-variable-select-option')
-          .filter({ hasText: binding.varName });
-        await expect(option).toBeVisible();
-        await option.click();
+        if (binding.portId) {
+          // Binding langsung ke Port input node reguler
+          await this.nodeInspectorCrud.bindVariableToPort(binding.portId, binding.varName);
+          if (binding.modifier) {
+            await this.nodeInspectorCrud.applyVariableModifier(
+              binding.portId,
+              binding.modifier.label || binding.modifier.type,
+              binding.modifier.value
+            );
+          }
+        } else {
+          // Node Variable Get / Set
+          await this.nodeInspectorCrud.selectVariableForNode(binding.varName);
+        }
       }
 
-      // Hubungkan Edge
+      // 1.4 Hubungkan Edge & Terapkan Modifier Edge (Jika Ada)
       for (const conn of connections) {
         const sourceId = spawnedMap[conn.source];
         const targetId = spawnedMap[conn.target];
-        await this.nodeGraphCrud.connectDirect(sourceId, conn.sourceHandle, targetId, conn.targetHandle);
+        const edgeId = await this.nodeGraphCrud.connectDirect(
+          sourceId,
+          conn.sourceHandle,
+          targetId,
+          conn.targetHandle
+        );
+
+        if (conn.modifier) {
+          await this.nodeGraph.selectEdgeById(edgeId);
+          await this.nodeInspectorCrud.configureEdgeModifier(
+            conn.modifier.operation || conn.modifier.type,
+            conn.modifier.value,
+            conn.modifier.isNumber ?? (typeof conn.modifier.value === 'number')
+          );
+        }
       }
 
       await this.nodeGraphCrud.saveGraphState();
@@ -94,7 +152,7 @@ export class BlueprintTestRunner {
       // ---------------------------------------------------------------------
       stage = 'PREVIEW_BOOT';
       await this.previewPage.startLogCapture();
-      const previewPopup = await this.previewPage.openPreview();
+      previewPopup = await this.previewPage.openPreview();
       await this.previewPage.expectEngineReady(previewPopup);
 
       // ---------------------------------------------------------------------
@@ -102,10 +160,8 @@ export class BlueprintTestRunner {
       // ---------------------------------------------------------------------
       stage = 'LOGIC_EVALUATION';
       await this.previewPage.expectLog(expectedLog, expectedSource);
-      await previewPopup.close();
 
     } catch (error) {
-      // Pemetaan Lokasi Kegagalan Secara Eksplisit
       if (stage === 'GRAPH_BUILD') {
         throw new Error(`[LAYOUT / GRAPH CONFIG ERROR] Gagal menyusun Canvas/Node/Edge/Variable pada [${testName}]: ${error.message}`);
       } else if (stage === 'PREVIEW_BOOT') {
@@ -114,6 +170,11 @@ export class BlueprintTestRunner {
         throw new Error(`[BLUEPRINT LOGIC VALUE ERROR] Output evaluasi logika Blueprint tidak sesuai pada [${testName}]: Ekspektasi "${expectedLog}". Detail: ${error.message}`);
       }
       throw error;
+    } finally {
+      // Menjamin popup preview selalu ditutup meskipun assertion gagal
+      if (previewPopup && !previewPopup.isClosed()) {
+        await previewPopup.close();
+      }
     }
   }
 }

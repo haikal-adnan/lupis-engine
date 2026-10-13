@@ -12,24 +12,14 @@ export class InspectorPage {
     this.popup = new PopupHelper(page);
   }
 
-  /**
-   * Elemen editable di dalam wrapper test ID (PropertyInput/BaseInput membungkus <input>).
-   * Spec tidak boleh mengulang `.locator('input').first()`; gunakan accessor ini.
-   */
   field(testId, inner = 'input') {
     return this.page.getByTestId(testId).locator(inner).first();
   }
 
-  /** Checkbox/toggle: <input type=checkbox> di dalam wrapper, atau wrapper itu sendiri jika toggle kustom. */
   checkbox(testId) {
     return this.page.getByTestId(testId).locator('input[type="checkbox"]');
   }
 
-  /**
-   * Pastikan inspector sudah dirender sebelum memakai count() (Section 2: count() tidak menunggu).
-   * Tanpa ini, inspector yang masih loading terlihat sama dengan "komponen belum ada" dan
-   * ensure*Component bisa menambah komponen ganda.
-   */
   async _settle() {
     await expect(this.objectSection).toBeVisible();
   }
@@ -134,9 +124,6 @@ export class InspectorPage {
   // =========================================================================
   // OBJECT INSPECTOR ACTIONS
   // =========================================================================
-  // =========================================================================
-  // OBJECT INSPECTOR ACTIONS
-  // =========================================================================
   async setEntityName(newName) {
     const input = this.page.getByTestId('object-name-input').locator('input').first();
     await input.fill(newName);
@@ -148,6 +135,54 @@ export class InspectorPage {
     const input = this.page.getByTestId('object-script-id-input').locator('input').first();
     await input.fill(newId);
     await input.blur();
+  }
+
+  async setEntityTag(tag) {
+    // 1. Pastikan tag terdaftar pada metadata proyek Pinia
+    await this.page.evaluate(({ t }) => {
+      const app = document.querySelector('#app')?.__vue_app__;
+      const pinia = app?.config?.globalProperties?.$pinia;
+      const projectStore = pinia?._s?.get('project');
+      if (projectStore?.project) {
+        projectStore.project.tags = projectStore.project.tags || [];
+        if (!projectStore.project.tags.includes(t)) {
+          projectStore.project.tags.push(t);
+        }
+      }
+    }, { t: tag });
+
+    // 2. Pilih tag dari dropdown BaseSelect di Object Inspector
+    const tagSelect = this.objectSection.getByTestId('object-tag-select');
+    await expect(tagSelect).toBeVisible();
+
+    const trigger = tagSelect
+      .getByTestId('select-trigger')
+      .or(tagSelect.locator('button'))
+      .or(tagSelect)
+      .first();
+    await trigger.click();
+
+    const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const option = this.page
+      .getByTestId('select-option')
+      .filter({ hasText: new RegExp(`^\\s*${escapeRegex(tag)}\\s*$`, 'i') })
+      .or(this.page.getByRole('option', { name: tag }))
+      .first();
+
+    await expect(option).toBeVisible();
+    await option.click();
+  }
+
+  async toggleEntityActive() {
+    await this.page.getByTestId('object-active-toggle').click();
+  }
+
+  async toggleEntityVisible() {
+    await this.page.getByTestId('object-visible-toggle').click();
+  }
+
+  async toggleEntityLock() {
+    await this.page.getByTestId('object-lock-toggle').click();
   }
 
   // =========================================================================

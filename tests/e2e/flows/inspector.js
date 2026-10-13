@@ -108,10 +108,18 @@ export class InspectorCrudObject {
   // =========================================================================
   // 4. EDITOR OBJECT
   // =========================================================================
-  async configureObjectMetaData({ name, scriptId } = {}) {
+  async configureObjectMetaData({ name, scriptId, tag, active } = {}) {
     await expect(this.inspector.objectSection).toBeVisible();
     if (name) await this.inspector.setEntityName(name);
     if (scriptId) await this.inspector.setScriptId(scriptId);
+    if (tag) await this.inspector.setEntityTag(tag);
+    if (active !== undefined) {
+      const activeToggle = this.page.getByTestId('object-active-toggle');
+      const currentActive = await activeToggle.getAttribute('data-active');
+      if ((currentActive === 'true') !== active) {
+        await this.inspector.toggleEntityActive();
+      }
+    }
   }
 
   // =========================================================================

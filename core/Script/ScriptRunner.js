@@ -64,14 +64,9 @@ export default class ScriptRunner {
             if (!rawCode || typeof rawCode !== 'string') return;
 
             try {
-                const factory = new Function(`
-                    return function execute(inputs, outputs, context, node) {
-                        ${rawCode}
-                        return outputs;
-                    }
-                `);
-
-                this._compiledFunctions.set(nodeId, factory());
+                // Gunakan argumen terpisah agar aman dari konflik tanda kutip/backtick
+                const fn = new Function('inputs', 'outputs', 'context', 'node', String(rawCode) + '\nreturn outputs;');
+                this._compiledFunctions.set(nodeId, fn);
             } catch (err) {
                 const headerTitle = node.settings ? node.settings.headerTitle : undefined;
                 console.error(`[ScriptRunner] Syntax error di node '${headerTitle || nodeId}':`, err);
@@ -79,10 +74,12 @@ export default class ScriptRunner {
         });
     }
 
-    getLocalVariable(varName) {
-        const id = this.nameToIdMap.get(varName);
+    // Mendukung pencarian via ID maupun Name
+    getLocalVariable(key) {
+        if (!key) return null;
+        const id = this.localVariables.has(key) ? key : this.nameToIdMap.get(key);
         if (!id) {
-            console.warn(`[ScriptRunner] Variabel '${varName}' tidak terdaftar pada schema Script.`);
+            console.warn(`[ScriptRunner] Variabel '${key}' tidak terdaftar pada schema Script.`);
             return null;
         }
 
@@ -90,14 +87,99 @@ export default class ScriptRunner {
         return (val !== undefined && val !== null) ? val : null;
     }
 
-    setLocalVariable(varName, value) {
-        const id = this.nameToIdMap.get(varName);
+    setLocalVariable(key, value) {
+        if (!key) return;
+        const id = this.localVariables.has(key) ? key : this.nameToIdMap.get(key);
         if (!id) {
-            console.error(`[Runtime Error] Dilarang membuat variabel baru '${varName}' saat runtime. Buat variabel melalui Editor!`);
+            console.error(`[Runtime Error] Dilarang membuat variabel baru '${key}' saat runtime. Buat variabel melalui Editor!`);
             return;
         }
 
         this.localVariables.set(id, value);
+    }
+
+    // Resolusi umum: Cek Local terlebih dahulu, lalu Global
+    getVariable(key) {
+        if (!key) return null;
+
+        if (this.localVariables.has(key) || this.nameToIdMap.has(key)) {
+            return this.getLocalVariable(key);
+        }
+
+        if (this.game && this.game.variables) {
+            const varMgr = this.game.variables;
+            if (varMgr.hasGlobal(key) || varMgr.globals?.has(key)) {
+                return varMgr.getGlobal(key);
+            }
+        }
+
+        return null;
+    }
+
+    // Penerapan modifier operasi matematika, boolean, koleksi, dan template string
+    _applyVariableModifier(rawVal, modifier) {
+        if (!modifier) return rawVal;
+
+        let val = rawVal;
+        const modType = modifier.type;
+        const modValue = modifier.value;
+
+        if (modType && modType !== 'none') {
+            switch (modType) {
+                case 'add':
+                    val = (Number(val) || 0) + (Number(modValue) || 0);
+                    break;
+                case 'subtract':
+                    val = (Number(val) || 0) - (Number(modValue) || 0);
+                    break;
+                case 'multiply':
+                    val = (Number(val) || 0) * (Number(modValue) || 0);
+                    break;
+                case 'divide': {
+                    const divisor = Number(modValue) || 0;
+                    val = divisor !== 0 ? (Number(val) || 0) / divisor : 0;
+                    break;
+                }
+                case 'invert':
+                    val = -(Number(val) || 0);
+                    break;
+                case 'abs':
+                    val = Math.abs(Number(val) || 0);
+                    break;
+                case 'not':
+                    val = !val;
+                    break;
+                case 'at_index':
+                    val = Array.isArray(val) ? val[Number(modValue) || 0] : null;
+                    break;
+                case 'first':
+                    val = Array.isArray(val) ? val[0] : null;
+                    break;
+                case 'last':
+                    val = Array.isArray(val) && val.length > 0 ? val[val.length - 1] : null;
+                    break;
+                case 'random':
+                    val = Array.isArray(val) && val.length > 0 
+                        ? val[Math.floor(Math.random() * val.length)] 
+                        : null;
+                    break;
+                case 'count':
+                    val = Array.isArray(val) ? val.length : 0;
+                    break;
+            }
+        }
+
+        // Format template teks: "Hey : {value}"
+        const format = modifier.format || modifier.customText;
+        if (format && typeof format === 'string') {
+            const strVal = String(val ?? '');
+            val = format
+                .replace(/\{value\.upper\}/g, strVal.toUpperCase())
+                .replace(/\{value\.lower\}/g, strVal.toLowerCase())
+                .replace(/\{value\}/g, strVal);
+        }
+
+        return val;
     }
 
     start() {
@@ -122,9 +204,6 @@ export default class ScriptRunner {
         }
     }
 
-    // =========================================================================
-    // RESOLVER PORT & ALIAS (Engine Level Handling)
-    // =========================================================================
     _resolvePortValue(dictionary, node, key) {
         if (!dictionary || !key) return undefined;
         
@@ -147,8 +226,10 @@ export default class ScriptRunner {
     }
 
     getAllInputValues(node) {
-        const inputs = {};
-        if (!node.inputs) return inputs;
+        if (!node.inputs) return {};
+
+        const rawValues = {};
+        const aliasMap = new Map();
 
         node.inputs.forEach(port => {
             if (port.dataType === 'execution') return;
@@ -164,6 +245,28 @@ export default class ScriptRunner {
                 val = this._getNodeOutputValue(sourceNode, edge.sourceHandle);
             }
 
+            // 1. Cek Mode Variabel jika tidak ada kabel
+            if (val === undefined) {
+                const portId = port.id;
+                const portLabel = port.label;
+
+                const valueModes = node.data?.valueModes;
+                const mode = (valueModes && (valueModes[portId] || valueModes[portLabel])) || 'input';
+
+                if (mode === 'variable') {
+                    const varBindings = node.data?.variableBindings;
+                    const boundVar = varBindings && (varBindings[portId] || varBindings[portLabel]);
+
+                    if (boundVar) {
+                        const rawVarVal = this.getVariable(boundVar);
+                        const varModifiers = node.data?.variableModifiers;
+                        const modifier = varModifiers && (varModifiers[portId] || varModifiers[portLabel]);
+                        val = this._applyVariableModifier(rawVarVal, modifier);
+                    }
+                }
+            }
+
+            // 2. Fallback ke Direct Input Values
             if (val === undefined) {
                 const values = node.data ? node.data.values : undefined;
                 if (values) {
@@ -174,14 +277,50 @@ export default class ScriptRunner {
                 }
             }
 
-            // Mendaftarkan seluruh alias key ke objek inputs
-            if (port.id) inputs[port.id] = val;
-            if (port.label) inputs[port.label] = val;
-            if (port.id) inputs[port.id.toLowerCase()] = val;
-            if (port.label) inputs[port.label.toLowerCase()] = val;
+            const canonicalKey = port.id || port.label;
+            rawValues[canonicalKey] = val;
+
+            if (port.id) {
+                aliasMap.set(port.id, canonicalKey);
+                aliasMap.set(port.id.toLowerCase(), canonicalKey);
+            }
+            if (port.label) {
+                aliasMap.set(port.label, canonicalKey);
+                aliasMap.set(port.label.toLowerCase(), canonicalKey);
+            }
         });
 
-        return inputs;
+        return new Proxy(rawValues, {
+            get(target, prop) {
+                if (typeof prop === 'string') {
+                    if (prop in target) return target[prop];
+                    const mappedKey = aliasMap.get(prop) || aliasMap.get(prop.toLowerCase());
+                    if (mappedKey && mappedKey in target) {
+                        return target[mappedKey];
+                    }
+                }
+                return target[prop];
+            },
+            has(target, prop) {
+                if (typeof prop === 'string') {
+                    if (prop in target) return true;
+                    const mappedKey = aliasMap.get(prop) || aliasMap.get(prop.toLowerCase());
+                    return Boolean(mappedKey && mappedKey in target);
+                }
+                return prop in target;
+            },
+            set(target, prop, value) {
+                if (typeof prop === 'string') {
+                    const mappedKey = aliasMap.get(prop) || aliasMap.get(prop.toLowerCase());
+                    if (mappedKey) {
+                        target[mappedKey] = value;
+                        return true;
+                    }
+                }
+                target[prop] = value;
+                return true;
+            }
+        });
     }
 
     executeFlow(sourceNodeId, sourcePortName) {
@@ -225,7 +364,6 @@ export default class ScriptRunner {
 
                 compiledFn(inputs, outputs, context, node);
 
-                // Normalisasi output ke ID & Label
                 if (node.outputs && Array.isArray(node.outputs)) {
                     node.outputs.forEach(port => {
                         const val = this._resolvePortValue(outputs, node, port.id) ?? 
@@ -275,6 +413,9 @@ export default class ScriptRunner {
                 const context = this.game.contextSystem.createExecutionContext(this, node);
 
                 compiledFn(inputs, outputs, context, node);
+
+                node._tempData = node._tempData || {};
+                Object.assign(node._tempData, outputs);
                 
                 const val = this._resolvePortValue(outputs, node, outputKey);
                 if (val !== undefined) return val;

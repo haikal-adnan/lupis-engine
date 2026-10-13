@@ -1,5 +1,10 @@
-import { MessageSquare, Bell } from 'lucide-vue-next';
+import { MessageSquare } from 'lucide-vue-next';
 
+/**
+ * ============================================================================
+ * BLUEPRINT: SYSTEM INTERFACE
+ * ============================================================================
+ */
 export const BlueprintSystem = {
   id: 'system_interface',
   label: 'Interface',
@@ -10,9 +15,7 @@ export const BlueprintSystem = {
       type: 'ui_notification', 
       label: 'Notification', 
       description: 'Display a UI notification toast to the player when triggered by execution flow',
-      icon: Bell,
-      allowDynamicInputs: false,
-      allowDynamicOutputs: false,
+      dynamicMode: 'none',
       defaultData: { 
         settings: { 
           headerTitle: 'Notification', 
@@ -20,28 +23,32 @@ export const BlueprintSystem = {
           category: 'Interface' 
         },
         inputs: [
-          { id: 'exec_in', label: 'In', dataType: 'execution', color: '#ffffff' },
-          { id: 'in_source', label: 'Source', dataType: 'string', color: '#4FC3F7', defaultValue: 'Notification' },
-          { id: 'in_msg', label: 'Message', dataType: 'string', color: '#FFB74D', defaultValue: 'Hello World' }
+          { id: 'exec_in', label: 'In', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'in_source', label: 'Source', dataType: 'string', color: '#F48FB1', defaultValue: 'Notification' },
+          { id: 'in_msg', label: 'Message', dataType: 'string', color: '#F48FB1', defaultValue: 'Hello World' }
         ],
         outputs: [
-          { id: 'exec_out', label: 'Out', dataType: 'execution', color: '#ffffff' }
+          { id: 'exec_out', label: 'Out', dataType: 'execution', color: '#FFFFFF' }
         ],
         data: { 
           values: {
             in_source: 'Notification',
             in_msg: 'Hello World'
           },
-          code: `const source = inputs['in_source'] ?? inputs['Source'] ?? 'Notification';
-const message = inputs['in_msg'] ?? inputs['Message'] ?? '';
+          code: 
+`const source = inputs['Source'] ?? inputs['in_source'] ?? 'Notification';
+const message = inputs['Message'] ?? inputs['in_msg'] ?? '';
 
-context.game.events.emit('console:log', {
-  type: 'log',
-  time: Date.now(),
-  message: message, 
-  source: source    
-});
+if (context.game?.events) {
+  context.game.events.emit('console:log', {
+    type: 'log',
+    time: Date.now(),
+    message: message, 
+    source: source    
+  });
+}
 
+outputs['Out'] = true;
 outputs['exec_out'] = true;
 return;`
         }
@@ -52,9 +59,7 @@ return;`
       type: 'debug_notification', 
       label: 'Debug Notification', 
       description: 'Automatically evaluates and displays notification on tick update loop without execution pin',
-      icon: Bell,
-      allowDynamicInputs: false,
-      allowDynamicOutputs: false,
+      dynamicMode: 'none',
       defaultData: { 
         settings: { 
           headerTitle: 'Debug Notification', 
@@ -62,20 +67,21 @@ return;`
           category: 'Interface' 
         },
         inputs: [
-          { id: 'in_source', label: 'Source', dataType: 'string', color: '#4FC3F7', defaultValue: 'Debug' },
-          { id: 'in_data', label: 'Data', dataType: 'any', color: '#ffffff' }
+          { id: 'in_source', label: 'Source', dataType: 'string', color: '#F48FB1', defaultValue: 'Debug' },
+          { id: 'in_data', label: 'Data', dataType: 'any', color: '#B0BEC5' }
         ],
         outputs: [
-          { id: 'res_out', label: 'Result', dataType: 'string', color: '#FFB74D' }
+          { id: 'res_out', label: 'Result', dataType: 'string', color: '#F48FB1' }
         ],
         data: { 
           values: {
             in_source: 'Debug',
             in_data: null
           },
-          code: `context.onTick(() => {
-  const source = inputs['in_source'] ?? inputs['Source'] ?? 'Debug';
-  const dataVal = inputs['in_data'] ?? inputs['Data'];
+          code: 
+`context.onTick(() => {
+  const source = inputs['Source'] ?? inputs['in_source'] ?? 'Debug';
+  const dataVal = inputs['Data'] ?? inputs['in_data'];
 
   let formattedMsg = '';
   if (dataVal !== undefined && dataVal !== null) {
@@ -84,12 +90,14 @@ return;`
     formattedMsg = String(dataVal ?? '');
   }
 
-  context.game.events.emit('console:log', {
-    type: 'log',
-    time: Date.now(),
-    message: formattedMsg, 
-    source: source    
-  });
+  if (context.game?.events) {
+    context.game.events.emit('console:log', {
+      type: 'log',
+      time: Date.now(),
+      message: formattedMsg, 
+      source: source    
+    });
+  }
 
   outputs['Result'] = formattedMsg;
   outputs['res_out'] = formattedMsg;

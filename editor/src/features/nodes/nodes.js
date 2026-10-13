@@ -19,9 +19,10 @@ export { default as NodeBlueprintModal } from '@nodes/library/layouts/NodeBluepr
 export { default as NodeLibrary } from '@nodes/library/layouts/NodeLibrary.vue'
 export { default as NodeListItem } from '@nodes/library/layouts/NodeListItem.vue'
 
+export { useDynamicPortManager } from '@nodes/inspector/composables/useDynamicPortManager.js';
+
 export { useNodeLogic } from '@nodes/inspector/composables/useNodeLogic.js'
 export { useNodeInspector } from '@nodes/inspector/composables/useNodeInspector.js'
-export { useCustomNodeHandlers } from '@nodes/inspector/composables/useCustomNodeHandlers.js'
 
 export { default as VariableSelect } from '@nodes/inspector/layouts/VariableSelect.vue'
 export { default as VariableInputGroup } from '@nodes/inspector/layouts/VariableInputGroup.vue'

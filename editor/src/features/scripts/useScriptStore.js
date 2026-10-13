@@ -1,3 +1,5 @@
+// lokasi: src/editor/scripts/stores/useScriptStore.js
+
 import { defineStore } from 'pinia';
 import { toRaw } from 'vue';
 import { 
@@ -226,9 +228,6 @@ export const useScriptStore = defineStore('script', {
       }
     },
 
-    /**
-     * Memunculkan node baru berdasarkan type menggunakan template resmi dari useNodeBlueprint
-     */
     spawnNodeByType(type, customLabel, position = { x: 300, y: 200 }, extraData = {}) {
       if (!this.activeScript) return null;
 
@@ -245,8 +244,7 @@ export const useScriptStore = defineStore('script', {
       const newNode = createScriptNode({
         id,
         type: blueprint.type || type,
-        allowDynamicInputs: blueprint.allowDynamicInputs ?? false,
-        allowDynamicOutputs: blueprint.allowDynamicOutputs ?? false,
+        dynamicMode: blueprint.dynamicMode || 'none',
         position,
         settings: {
           headerTitle: customLabel || blueprint.label || 'Node',
@@ -311,8 +309,21 @@ export const useScriptStore = defineStore('script', {
       const node = this.activeScript.nodes.find(n => n.id === nodeId);
       if (!node) return;
 
-      if (type === 'input' && !node.allowDynamicInputs) return;
-      if (type === 'output' && !node.allowDynamicOutputs) return;
+      const { getNodeBlueprint } = useNodeBlueprint();
+      const blueprintItem = getNodeBlueprint(node.type);
+      const effectiveMode = (node.dynamicMode && node.dynamicMode !== 'none')
+        ? node.dynamicMode
+        : (blueprintItem?.dynamicMode || 'none');
+
+      const isDynamicInput = effectiveMode === 'sequential' || effectiveMode === 'inputProperty';
+      const isDynamicOutput = effectiveMode === 'outputProperty';
+
+      if (type === 'input' && !isDynamicInput) return;
+      if (type === 'output' && !isDynamicOutput) return;
+
+      if (!node.dynamicMode || node.dynamicMode === 'none') {
+        node.dynamicMode = effectiveMode;
+      }
 
       const newPort = createScriptPort(portData);
 
@@ -320,9 +331,11 @@ export const useScriptStore = defineStore('script', {
         if (node.inputs.some(p => p.id === newPort.id)) return;
         node.inputs.push(newPort);
 
-        if (node.allowDynamicInputs) {
+        if (effectiveMode === 'sequential') {
           const { syncDynamicInputsAndCode } = useNodeBlueprint();
-          syncDynamicInputsAndCode(node);
+          if (typeof syncDynamicInputsAndCode === 'function') {
+            syncDynamicInputsAndCode(node);
+          }
         }
       } else {
         if (node.outputs.some(p => p.id === newPort.id)) return;
@@ -337,15 +350,29 @@ export const useScriptStore = defineStore('script', {
       const node = this.activeScript.nodes.find(n => n.id === nodeId);
       if (!node) return;
 
+      const { getNodeBlueprint } = useNodeBlueprint();
+      const blueprintItem = getNodeBlueprint(node.type);
+      const effectiveMode = (node.dynamicMode && node.dynamicMode !== 'none')
+        ? node.dynamicMode
+        : (blueprintItem?.dynamicMode || 'none');
+
+      const isDynamicInput = effectiveMode === 'sequential' || effectiveMode === 'inputProperty';
+      const isDynamicOutput = effectiveMode === 'outputProperty';
+
+      if (type === 'input' && !isDynamicInput) return;
+      if (type === 'output' && !isDynamicOutput) return;
+
       if (type === 'input') {
         node.inputs = node.inputs.filter(p => p.id !== portId);
         this.activeScript.edges = this.activeScript.edges.filter(e => 
           !(e.target === nodeId && e.targetHandle === portId)
         );
 
-        if (node.allowDynamicInputs) {
+        if (effectiveMode === 'sequential') {
           const { syncDynamicInputsAndCode } = useNodeBlueprint();
-          syncDynamicInputsAndCode(node);
+          if (typeof syncDynamicInputsAndCode === 'function') {
+            syncDynamicInputsAndCode(node);
+          }
         }
       } else {
         node.outputs = node.outputs.filter(p => p.id !== portId);

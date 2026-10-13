@@ -1,7 +1,14 @@
 import { test } from '../fixtures.js';
 
+test.use({
+  projectOptions: {
+    prefix: 'Blueprint Boolean Logic E2E',
+    description: 'E2E runtime logic evaluation for Boolean operations (AND, OR, NOT) in engine preview',
+  },
+});
+
 test.describe('Blueprint Boolean Logic E2E Testing', () => {
-  test('1. Pengujian logic_and dengan 2 variabel boolean (true AND true)', async ({ blueprintRunner }) => {
+  test('1. Evaluates logic_and with two boolean variables (true AND true)', async ({ blueprintRunner }) => {
     await blueprintRunner.runTest({
       testName: 'Boolean AND Test',
       entityName: 'BoolEntity1',
@@ -31,14 +38,14 @@ test.describe('Blueprint Boolean Logic E2E Testing', () => {
         { source: 'var1', sourceHandle: 'out_0', target: 'andNode', targetHandle: 'v0' },
         { source: 'var2', sourceHandle: 'out_0', target: 'andNode', targetHandle: 'v1' },
         { source: 'andNode', sourceHandle: 'result', target: 'branch', targetHandle: 'cond_0' },
-        { source: 'start', sourceHandle: 'out', target: 'branch', targetHandle: 'exec_in' },
+        { source: 'start', sourceHandle: 'exec_out', target: 'branch', targetHandle: 'exec_in' },
         { source: 'branch', sourceHandle: 'out_0', target: 'notif', targetHandle: 'exec_in' },
       ],
       expectedLog: 'AND Logic Berhasil',
     });
   });
 
-  test('2. Pengujian logic_or dengan 2 variabel boolean (false OR true)', async ({ blueprintRunner }) => {
+  test('2. Evaluates logic_or with two boolean variables (false OR true)', async ({ blueprintRunner }) => {
     await blueprintRunner.runTest({
       testName: 'Boolean OR Test',
       entityName: 'BoolEntity2',
@@ -68,14 +75,14 @@ test.describe('Blueprint Boolean Logic E2E Testing', () => {
         { source: 'var1', sourceHandle: 'out_0', target: 'orNode', targetHandle: 'v0' },
         { source: 'var2', sourceHandle: 'out_0', target: 'orNode', targetHandle: 'v1' },
         { source: 'orNode', sourceHandle: 'result', target: 'branch', targetHandle: 'cond_0' },
-        { source: 'start', sourceHandle: 'out', target: 'branch', targetHandle: 'exec_in' },
+        { source: 'start', sourceHandle: 'exec_out', target: 'branch', targetHandle: 'exec_in' },
         { source: 'branch', sourceHandle: 'out_0', target: 'notif', targetHandle: 'exec_in' },
       ],
       expectedLog: 'OR Logic Berhasil',
     });
   });
 
-  test('3. Pengujian logic_not dengan variabel boolean (!false = true)', async ({ blueprintRunner }) => {
+  test('3. Evaluates logic_not with inverted boolean value (!false = true)', async ({ blueprintRunner }) => {
     await blueprintRunner.runTest({
       testName: 'Boolean NOT Test',
       entityName: 'BoolEntity3',
@@ -97,7 +104,7 @@ test.describe('Blueprint Boolean Logic E2E Testing', () => {
       connections: [
         { source: 'varNode', sourceHandle: 'out_0', target: 'notNode', targetHandle: 'in_val' },
         { source: 'notNode', sourceHandle: 'result', target: 'branch', targetHandle: 'cond_0' },
-        { source: 'start', sourceHandle: 'out', target: 'branch', targetHandle: 'exec_in' },
+        { source: 'start', sourceHandle: 'exec_out', target: 'branch', targetHandle: 'exec_in' },
         { source: 'branch', sourceHandle: 'out_0', target: 'notif', targetHandle: 'exec_in' },
       ],
       expectedLog: 'NOT Logic Berhasil',

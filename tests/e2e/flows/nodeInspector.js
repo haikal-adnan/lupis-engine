@@ -2,9 +2,7 @@ import { expect } from '@playwright/test';
 import { NodeInspectorPage } from '../pages/NodeInspectorPage.js';
 
 export class NodeInspectorCrudObject {
-  /**
-   * @param {import('@playwright/test').Page} page
-   */
+  /** @param {import('@playwright/test').Page} page */
   constructor(page) {
     this.page = page;
     this.inspector = new NodeInspectorPage(page);
@@ -22,7 +20,7 @@ export class NodeInspectorCrudObject {
     await expect(this.inspector.emptySelectionState).toBeVisible();
   }
 
-  // Ports Configuration Operations
+  // Ports Configuration Operations (NodePorts.vue)
   async renameInputPort(portId, newLabel) {
     await this.inspector.renameInputPort(portId, newLabel);
   }
@@ -47,13 +45,26 @@ export class NodeInspectorCrudObject {
     }
   }
 
-  // Parameters & Variable Binding Operations
+  // Parameters & Top-level Node Data Operations (NodeData.vue)
+  async setTopLevelData(key, value, type = 'text') {
+    const lowerType = String(type).toLowerCase();
+    if (lowerType === 'number') {
+      await this.inspector.setNumberDataField(key, value);
+    } else {
+      await this.inspector.setTextDataField(key, value);
+    }
+  }
+
+  async selectVariableForNode(varName) {
+    await this.inspector.selectVariableForNode(varName);
+  }
+
   async setDirectValue(portId, value, type = 'number') {
     const lowerType = String(type).toLowerCase();
 
-    if (lowerType === 'select' || lowerType === 'option' || lowerType === 'dropdown') {
+    if (['select', 'option', 'dropdown'].includes(lowerType)) {
       await this.inspector.setPortDirectSelect(portId, value);
-    } else if (lowerType === 'boolean' || lowerType === 'bool') {
+    } else if (['boolean', 'bool'].includes(lowerType)) {
       await this.inspector.setPortDirectSelect(portId, value ? 'True' : 'False');
     } else if (lowerType === 'number') {
       await this.inspector.setPortDirectNumber(portId, value);
@@ -73,6 +84,10 @@ export class NodeInspectorCrudObject {
 
   async clearVariableModifier(portId) {
     await this.inspector.clearPortVariableModifier(portId);
+  }
+
+  async removeDynamicPortFromParameters(portId) {
+    await this.inspector.removeDynamicPortFromParameters(portId);
   }
 
   // Edge Modifier Operations

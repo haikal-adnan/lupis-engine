@@ -1,8 +1,10 @@
+// lokasi: src/editor/nodes/composables/useNodeInspector.js
+
 import { computed } from 'vue';
 import { useScriptStore } from '@scripts/scripts.js';
 import { useScriptHistory } from '@historys/historys.js';
 import { usePopAlert } from '@composables/composables.js';
-import { useVariableConfig, useNodeLogic, useCustomNodeHandlers } from '@nodes/nodes.js';
+import { useVariableConfig, useNodeLogic, useDynamicPortManager } from '@nodes/nodes.js';
 import { GenerateUUID } from '@utils/utils.js';
 
 export function useNodeInspector(props = {}) {
@@ -10,14 +12,18 @@ export function useNodeInspector(props = {}) {
   const scriptHistory = useScriptHistory();
   const { showPop } = usePopAlert();
   const { getVarColor } = useVariableConfig();
-  const { handleNodeValueSync } = useCustomNodeHandlers(); // Integrated
+
+  // Sinkronisasi value kustom didelegasikan langsung ke Dynamic Port Manager terpadu
+  const { handleNodeValueSync } = useDynamicPortManager();
 
   const { 
+    handleAddPort,
     addFromDropdown, 
     removeDynamicInput, 
     updatePortLabel,
     availableOptions,
-    activeDropdownTarget
+    activeDropdownTarget,
+    effectiveDynamicMode
   } = useNodeLogic();
 
   const startScriptTransaction = scriptHistory.startTransaction;
@@ -112,7 +118,7 @@ export function useNodeInspector(props = {}) {
     const currentValues = node.value?.data?.values || {};
     updateNodeDataField('data.values', { ...currentValues, [key]: value });
 
-    // Delegasi logika kustom (Multi-key sync, dll)
+    // Delegasi sinkronisasi nilai kustom (misal: parse keys untuk event_on_key)
     handleNodeValueSync(node.value, key, value, disconnectInvalidEdges);
   }
 
@@ -197,8 +203,6 @@ export function useNodeInspector(props = {}) {
     showPop,
     getVarColor,
     GenerateUUID,
-    activeDropdownTarget,
-    availableOptions,
     startScriptTransaction,
     endScriptTransactionWithDelay,
     isInputConnected,
@@ -217,9 +221,15 @@ export function useNodeInspector(props = {}) {
     clearVariableModifier,
     bindNodeProp,
     disconnectInvalidEdges,
+    deleteSelectedNode,
+
+    // Dynamic Port Controls
+    activeDropdownTarget,
+    availableOptions,
+    effectiveDynamicMode,
+    handleAddPort,
     addFromDropdown,
     removeDynamicInput,
-    updatePortLabel,
-    deleteSelectedNode
+    updatePortLabel
   };
 }

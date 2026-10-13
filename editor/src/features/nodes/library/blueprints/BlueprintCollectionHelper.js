@@ -1,33 +1,39 @@
-import { 
-  ListTree, 
-  Network, 
-  Copy, 
-  BoxSelect 
-} from 'lucide-vue-next';
+import { Network } from 'lucide-vue-next';
 
 export const BlueprintCollectionHelper = {
   id: 'helper_list_map',
   label: 'Collection Helpers',
-  color: '#673AB7', 
+  color: '#673AB7',
   icon: Network,
   items: [
-    { 
-      type: 'get_from_path', 
-      label: 'Get From Path', 
+    {
+      type: 'get_from_path',
+      label: 'Get From Path',
       description: 'Retrieves nested data using a path string (e.g., players[0].stats.hp).',
-      icon: ListTree,
-      allowDynamicInputs: false,
-      allowDynamicOutputs: false,
-      defaultData: { 
-        settings: { headerTitle: 'Get Path', headerColor: '#673AB7', category: 'Helper' },
+      dynamicMode: 'none',
+      defaultData: {
+        settings: {
+          headerTitle: 'Get Path',
+          headerColor: '#673AB7',
+          category: 'Collection Helpers'
+        },
+        inputs: [
+          { id: 'collection', label: 'Collection (List/Map)', dataType: 'any', color: '#B0BEC5' },
+          { id: 'path_in', label: 'Path', dataType: 'string', color: '#F48FB1', defaultValue: '' }
+        ],
+        outputs: [
+          { id: 'result', label: 'Value', dataType: 'any', color: '#B0BEC5' }
+        ],
         data: {
-          values: { path: "" },
-          code: `const collection = inputs['Collection (List/Map)'] ?? inputs.collection;
-const pathString = inputs['Path 0'] ?? inputs.path_in;
+          values: { path_in: '' },
+          code: 
+`const collection = inputs['Collection (List/Map)'] ?? inputs['collection'];
+const pathString = inputs['Path'] ?? inputs['path_in'];
 
 if (!collection || !pathString) {
-  outputs.result = collection ?? null;
-  outputs.Value = outputs.result;
+  const fallbackVal = collection ?? null;
+  outputs['Value'] = fallbackVal;
+  outputs['result'] = fallbackVal;
   return;
 }
 
@@ -60,46 +66,55 @@ try {
     }
   }
 
-  outputs.result = current !== undefined ? current : null;
-  outputs.Value = outputs.result;
+  const finalVal = current !== undefined ? current : null;
+  outputs['Value'] = finalVal;
+  outputs['result'] = finalVal;
 } catch (err) {
-  outputs.result = null;
-  outputs.Value = null;
+  outputs['Value'] = null;
+  outputs['result'] = null;
 }
 return;`
+        }
+      }
+    },
+    {
+      type: 'set_from_path',
+      label: 'Set From Path',
+      description: 'Updates nested data using a path. If the path does not exist, it will be automatically created.',
+      dynamicMode: 'none',
+      defaultData: {
+        settings: {
+          headerTitle: 'Set Path',
+          headerColor: '#673AB7',
+          category: 'Collection Helpers'
         },
         inputs: [
-          { id: 'collection', label: 'Collection (List/Map)', dataType: 'any', color: '#673AB7' },
-          { id: 'path_in', label: 'Path 0', dataType: 'string', color: '#FFB74D' }
-        ], 
+          { id: 'exec_in', label: 'In', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'collection', label: 'Collection (List/Map)', dataType: 'any', color: '#B0BEC5' },
+          { id: 'path_in', label: 'Path String', dataType: 'string', color: '#F48FB1', defaultValue: '' },
+          { id: 'value', label: 'New Value', dataType: 'any', color: '#B0BEC5' }
+        ],
         outputs: [
-          { id: 'result', label: 'Value', dataType: 'any', color: '#FFFFFF' }
-        ]
-      } 
-    },
-    { 
-      type: 'set_from_path', 
-      label: 'Set From Path', 
-      description: 'Updates nested data using a path. If the path does not exist, it will be automatically created.',
-      icon: Network,
-      allowDynamicInputs: false,
-      allowDynamicOutputs: false,
-      defaultData: { 
-        settings: { headerTitle: 'Set Path', headerColor: '#673AB7', category: 'Helper' },
+          { id: 'exec_out', label: 'Out', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'collection_out', label: 'Collection', dataType: 'any', color: '#B0BEC5' },
+          { id: 'value_out', label: 'Value', dataType: 'any', color: '#B0BEC5' }
+        ],
         data: {
-          values: { path: "", value: "" },
-          code: `const collection = inputs['Collection (List/Map)'] ?? inputs.collection;
-const pathString = inputs['Path String'] ?? inputs.path_in;
-const newValue = inputs['New Value'] ?? inputs.value;
+          values: { path_in: '', value: '' },
+          code: 
+`const collection = inputs['Collection (List/Map)'] ?? inputs['collection'];
+const pathString = inputs['Path String'] ?? inputs['path_in'];
+const newValue = inputs['New Value'] ?? inputs['value'];
 
-outputs.exec_out = true;
-outputs.Out = true;
+outputs['Out'] = true;
+outputs['exec_out'] = true;
 
 if (!collection || typeof collection !== 'object' || !pathString) {
-  outputs.collection_out = collection ?? null;
-  outputs.Collection = outputs.collection_out;
-  outputs.value_out = null;
-  outputs.Value = null;
+  const fallbackCol = collection ?? null;
+  outputs['Collection'] = fallbackCol;
+  outputs['collection_out'] = fallbackCol;
+  outputs['Value'] = null;
+  outputs['value_out'] = null;
   return;
 }
 
@@ -137,110 +152,105 @@ try {
     }
   }
 
-  outputs.collection_out = collection;
-  outputs.Collection = collection;
-  outputs.value_out = newValue;
-  outputs.Value = newValue;
+  outputs['Collection'] = collection;
+  outputs['collection_out'] = collection;
+  outputs['Value'] = newValue;
+  outputs['value_out'] = newValue;
 } catch (err) {
-  outputs.collection_out = collection;
-  outputs.Collection = collection;
-  outputs.value_out = null;
-  outputs.Value = null;
+  outputs['Collection'] = collection;
+  outputs['collection_out'] = collection;
+  outputs['Value'] = null;
+  outputs['value_out'] = null;
 }
 return;`
+        }
+      }
+    },
+    {
+      type: 'clone_collection',
+      label: 'Clone Collection',
+      description: 'Duplicates (Deep Copy) a List or Map so the original reference remains unchanged when modified.',
+      dynamicMode: 'none',
+      defaultData: {
+        settings: {
+          headerTitle: 'Clone Data',
+          headerColor: '#673AB7',
+          category: 'Collection Helpers'
         },
         inputs: [
-          { id: 'exec_in', label: 'In', dataType: 'execution', color: '#FFFFFF' },
-          { id: 'collection', label: 'Collection (List/Map)', dataType: 'any', color: '#673AB7' },
-          { id: 'path_in', label: 'Path String', dataType: 'string', color: '#FFB74D' },
-          { id: 'value', label: 'New Value', dataType: 'any', color: '#FFFFFF' }
-        ], 
+          { id: 'collection', label: 'Input Collection', dataType: 'any', color: '#B0BEC5' }
+        ],
         outputs: [
-          { id: 'exec_out', label: 'Out', dataType: 'execution', color: '#FFFFFF' },
-          { id: 'collection_out', label: 'Collection', dataType: 'any', color: '#673AB7' },
-          { id: 'value_out', label: 'Value', dataType: 'any', color: '#FFFFFF' }
-        ]
-      } 
-    },
-    { 
-      type: 'clone_collection', 
-      label: 'Clone Collection', 
-      description: 'Duplicates (Deep Copy) a List or Map so the original reference remains unchanged when modified.',
-      icon: Copy,
-      allowDynamicInputs: false,
-      allowDynamicOutputs: false,
-      defaultData: { 
-        settings: { headerTitle: 'Clone Data', headerColor: '#673AB7', category: 'Helper' },
+          { id: 'cloned', label: 'Cloned Collection', dataType: 'any', color: '#B0BEC5' }
+        ],
         data: {
-          code: `const collection = inputs['Input Collection'] ?? inputs.collection;
+          code: 
+`const collection = inputs['Input Collection'] ?? inputs['collection'];
 
 if (collection === undefined || collection === null) {
-  outputs.cloned = collection;
   outputs['Cloned Collection'] = collection;
+  outputs['cloned'] = collection;
   return;
 }
 
 try {
   const clonedData = JSON.parse(JSON.stringify(collection));
-  outputs.cloned = clonedData;
   outputs['Cloned Collection'] = clonedData;
+  outputs['cloned'] = clonedData;
 } catch (err) {
-  outputs.cloned = collection;
   outputs['Cloned Collection'] = collection;
+  outputs['cloned'] = collection;
 }
 return;`
+        }
+      }
+    },
+    {
+      type: 'is_collection_empty',
+      label: 'Is Empty',
+      description: 'Checks whether a List is empty (length 0) or a Map is empty (has no keys).',
+      dynamicMode: 'none',
+      defaultData: {
+        settings: {
+          headerTitle: 'Is Empty',
+          headerColor: '#673AB7',
+          category: 'Collection Helpers'
         },
         inputs: [
-          { id: 'collection', label: 'Input Collection', dataType: 'any', color: '#673AB7' }
-        ], 
+          { id: 'collection', label: 'Collection', dataType: 'any', color: '#B0BEC5' }
+        ],
         outputs: [
-          { id: 'cloned', label: 'Cloned Collection', dataType: 'any', color: '#673AB7' }
-        ]
-      } 
-    },
-    { 
-      type: 'is_collection_empty', 
-      label: 'Is Empty', 
-      description: 'Checks whether a List is empty (length 0) or a Map is empty (has no keys).',
-      icon: BoxSelect,
-      allowDynamicInputs: false,
-      allowDynamicOutputs: false,
-      defaultData: { 
-        settings: { headerTitle: 'Is Empty', headerColor: '#673AB7', category: 'Helper' },
+          { id: 'result', label: 'Is Empty', dataType: 'boolean', color: '#E57373' }
+        ],
         data: {
-          code: `const collection = inputs.Collection ?? inputs.collection;
+          code: 
+`const collection = inputs['Collection'] ?? inputs['collection'];
 
 if (!collection) {
-  outputs.result = true;
   outputs['Is Empty'] = true;
+  outputs['result'] = true;
   return;
 }
 
 if (Array.isArray(collection)) {
   const isEmpty = collection.length === 0;
-  outputs.result = isEmpty;
   outputs['Is Empty'] = isEmpty;
+  outputs['result'] = isEmpty;
   return;
 }
 
 if (typeof collection === 'object') {
   const isEmpty = Object.keys(collection).length === 0;
-  outputs.result = isEmpty;
   outputs['Is Empty'] = isEmpty;
+  outputs['result'] = isEmpty;
   return;
 }
 
-outputs.result = false;
 outputs['Is Empty'] = false;
+outputs['result'] = false;
 return;`
-        },
-        inputs: [
-          { id: 'collection', label: 'Collection', dataType: 'any', color: '#673AB7' }
-        ], 
-        outputs: [
-          { id: 'result', label: 'Is Empty', dataType: 'boolean', color: '#4CAF50' }
-        ]
-      } 
+        }
+      }
     }
   ]
 };

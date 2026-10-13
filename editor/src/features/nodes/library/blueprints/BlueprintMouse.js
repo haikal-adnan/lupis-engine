@@ -1,4 +1,4 @@
-import { MousePointer2, Move, MousePointerClick, Target } from 'lucide-vue-next';
+import { MousePointer2 } from 'lucide-vue-next';
 
 export const BlueprintMouse = {
   id: 'mouse_events',
@@ -6,24 +6,27 @@ export const BlueprintMouse = {
   color: '#4CAF50',
   icon: MousePointer2,
   items: [
-    { 
-      type: 'event_pointer_click', 
-      label: 'Global Mouse Click', 
+    {
+      type: 'event_pointer_click',
+      label: 'Global Mouse Click',
       description: 'Triggered when a mouse button is clicked anywhere on the screen.',
-      icon: MousePointer2,
-      allowDynamicInputs: false,
-      allowDynamicOutputs: false,
-      defaultData: { 
-        settings: { headerTitle: 'Global Click', headerColor: '#388E3C', category: 'Mouse Events' },
-        data: { button: 'left' }, 
+      dynamicMode: 'none',
+      defaultData: {
+        settings: {
+          headerTitle: 'Global Click',
+          headerColor: '#388E3C',
+          category: 'Mouse Events'
+        },
         inputs: [],
         outputs: [
-          { id: 'ptr_click_main', label: 'On Click', dataType: 'execution', color: '#ffffff' },
-          { id: 'pos_x', label: 'X Position', dataType: 'number', color: '#4CAF50' },
-          { id: 'pos_y', label: 'Y Position', dataType: 'number', color: '#4CAF50' }
+          { id: 'ptr_click_main', label: 'On Click', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'pos_x', label: 'X Position', dataType: 'number', color: '#64B5F6' },
+          { id: 'pos_y', label: 'Y Position', dataType: 'number', color: '#64B5F6' }
         ],
         data: {
-          code: `context.onTick(() => {
+          button: 'left',
+          code: 
+`context.onTick(() => {
   const mouse = context.game?.input?.mouse;
   const pointer = context.game?.input?.getPointer?.() || { x: 0, y: 0 };
   const config = Array.isArray(node.data) ? node.data[0] : node.data;
@@ -31,56 +34,112 @@ export const BlueprintMouse = {
 
   if (mouse && mouse.isPressed && mouse.isPressed(btnTarget)) {
     outputs['X Position'] = pointer.x;
-    outputs['Y Position'] = pointer.y;
     outputs['pos_x'] = pointer.x;
+    outputs['Y Position'] = pointer.y;
     outputs['pos_y'] = pointer.y;
+    outputs['On Click'] = true;
+    outputs['ptr_click_main'] = true;
     context.triggerFlow((config && config.id) || 'ptr_click_main');
   }
 });
 return;`
         }
-      } 
+      }
     },
-    { 
-      type: 'event_pointer_drag', 
-      label: 'Global Mouse Drag', 
+    {
+      type: 'event_pointer_drag',
+      label: 'Global Mouse Drag',
       description: 'Triggered continuously while mouse is held down and moving.',
-      icon: Move,
-      allowDynamicInputs: false,
-      allowDynamicOutputs: false, 
-      defaultData: { 
-        settings: { headerTitle: 'Global Drag', headerColor: '#388E3C', category: 'Mouse Events' },
-        data: {}, 
+      dynamicMode: 'none',
+      defaultData: {
+        settings: {
+          headerTitle: 'Global Drag',
+          headerColor: '#388E3C',
+          category: 'Mouse Events'
+        },
         inputs: [],
         outputs: [
-          { id: 'drag_active', label: 'On Drag', dataType: 'execution', color: '#ffffff' },
-          { id: 'pos_x', label: 'X', dataType: 'number', color: '#4CAF50' },
-          { id: 'pos_y', label: 'Y', dataType: 'number', color: '#4CAF50' },
-          { id: 'delta_x', label: 'Delta X', dataType: 'number', color: '#4CAF50' },
-          { id: 'delta_y', label: 'Delta Y', dataType: 'number', color: '#4CAF50' }
-        ]
-      } 
+          { id: 'drag_active', label: 'On Drag', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'pos_x', label: 'X', dataType: 'number', color: '#64B5F6' },
+          { id: 'pos_y', label: 'Y', dataType: 'number', color: '#64B5F6' },
+          { id: 'delta_x', label: 'Delta X', dataType: 'number', color: '#64B5F6' },
+          { id: 'delta_y', label: 'Delta Y', dataType: 'number', color: '#64B5F6' }
+        ],
+        data: {
+          code: 
+`context.onTick(() => {
+  const pointer = context.game?.input?.getPointer?.() || { x: 0, y: 0, down: false };
+  const mouse = context.game?.input?.mouse;
+  const isDown = pointer.down || (mouse && mouse.isDown && mouse.isDown('left'));
+
+  if (!node._dragState) {
+    node._dragState = { lastX: pointer.x, lastY: pointer.y };
+  }
+
+  const deltaX = pointer.x - node._dragState.lastX;
+  const deltaY = pointer.y - node._dragState.lastY;
+
+  node._dragState.lastX = pointer.x;
+  node._dragState.lastY = pointer.y;
+
+  if (isDown && (deltaX !== 0 || deltaY !== 0)) {
+    outputs['X'] = pointer.x;
+    outputs['pos_x'] = pointer.x;
+    outputs['Y'] = pointer.y;
+    outputs['pos_y'] = pointer.y;
+    outputs['Delta X'] = deltaX;
+    outputs['delta_x'] = deltaX;
+    outputs['Delta Y'] = deltaY;
+    outputs['delta_y'] = deltaY;
+    outputs['On Drag'] = true;
+    outputs['drag_active'] = true;
+    context.triggerFlow('drag_active');
+  }
+});
+return;`
+        }
+      }
     },
     {
       type: 'mouse_entity_interact',
       label: 'Entity Mouse Event',
       description: 'Checks if the mouse is interacting with an entity. Can use Raycast (respects Z-Index/blocking) or Direct bounds check.',
-      icon: MousePointerClick,
-      allowDynamicInputs: false,
-      allowDynamicOutputs: false,
+      dynamicMode: 'none',
       defaultData: {
-        settings: { headerTitle: 'Entity Mouse Event', headerColor: '#2E7D32', category: 'Mouse Events' },
+        settings: {
+          headerTitle: 'Entity Mouse Event',
+          headerColor: '#2E7D32',
+          category: 'Mouse Events'
+        },
+        inputs: [
+          { id: 'exec_in', label: 'In', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'target_in', label: 'Target ID (Self)', dataType: 'string', color: '#F48FB1', defaultValue: 'self' },
+          { id: 'use_raycast', label: 'Use Raycast?', dataType: 'boolean', color: '#E57373', defaultValue: true },
+          { id: 'based_collider', label: 'Use Collider Bounds?', dataType: 'boolean', color: '#E57373', defaultValue: false }
+        ],
+        outputs: [
+          { id: 'exec_out', label: 'Out', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'on_hover', label: 'On Hover', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'on_down', label: 'On Mouse Down', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'on_hold', label: 'On Mouse Hold', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'on_up', label: 'On Mouse Up', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'is_hovering', label: 'Is Hovering?', dataType: 'boolean', color: '#E57373' },
+          { id: 'is_holding', label: 'Is Holding?', dataType: 'boolean', color: '#E57373' },
+          { id: 'entityId', label: 'Entity ID', dataType: 'string', color: '#F48FB1' }
+        ],
         data: {
           values: {
             target_in: 'self',
             based_collider: false,
-            use_raycast: true 
+            use_raycast: true
           },
-          code: `const targetId = inputs['Target ID (Self)'] ?? inputs['target_in'] ?? 'self';
+          code: 
+`const targetId = inputs['Target ID (Self)'] ?? inputs['target_in'] ?? 'self';
 const entity = context.getEntity(targetId);
 
 if (!entity) {
   outputs['Out'] = true;
+  outputs['exec_out'] = true;
   return;
 }
 
@@ -89,6 +148,7 @@ const hasUITransform = entity.components && entity.components.UITransform;
 
 if (!hasTransform && !hasUITransform) {
   outputs['Out'] = true;
+  outputs['exec_out'] = true;
   return;
 }
 
@@ -176,23 +236,33 @@ if (!node._interactStates) node._interactStates = new Map();
 let state = node._interactStates.get(entityId) || { wasHovering: false, wasDown: false };
 
 outputs['Is Hovering?'] = isHovering;
+outputs['is_hovering'] = isHovering;
 outputs['Is Holding?'] = isHovering && isPointerDown;
+outputs['is_holding'] = isHovering && isPointerDown;
 outputs['Entity ID'] = outputEntityScriptId;
+outputs['entityId'] = outputEntityScriptId;
 
 outputs['Out'] = true;
+outputs['exec_out'] = true;
 
-if (isHovering) outputs['On Hover'] = true;
+if (isHovering) {
+  outputs['On Hover'] = true;
+  outputs['on_hover'] = true;
+}
 
 if (isHovering && isPointerDown) {
   if (!state.wasDown) {
     outputs['On Mouse Down'] = true;
+    outputs['on_down'] = true;
   } else {
     outputs['On Mouse Hold'] = true;
+    outputs['on_hold'] = true;
   }
 }
 
 if (!isPointerDown && state.wasDown) {
   outputs['On Mouse Up'] = true;
+  outputs['on_up'] = true;
 }
 
 state.wasHovering = isHovering;
@@ -200,26 +270,7 @@ state.wasDown = isPointerDown;
 node._interactStates.set(entityId, state);
 
 return;`
-        },
-        inputs: [
-          { id: 'exec_in', label: 'In', dataType: 'execution' },
-          { id: 'target_in', label: 'Target ID (Self)', dataType: 'string', icon: Target, defaultValue: 'self' },
-          { id: 'use_raycast', label: 'Use Raycast?', dataType: 'boolean', defaultValue: true },
-          { id: 'based_collider', label: 'Use Collider Bounds?', dataType: 'boolean', defaultValue: false }
-        ],
-        outputs: [
-          { id: 'exec_out', label: 'Out', dataType: 'execution' },
-          
-          { id: 'on_hover', label: 'On Hover', dataType: 'execution', color: '#FFEB3B' },
-          { id: 'on_down', label: 'On Mouse Down', dataType: 'execution', color: '#69F0AE' },
-          { id: 'on_hold', label: 'On Mouse Hold', dataType: 'execution', color: '#4FC3F7' },
-          { id: 'on_up', label: 'On Mouse Up', dataType: 'execution', color: '#FFAB91' },
-          
-          { id: 'is_hovering', label: 'Is Hovering?', dataType: 'boolean', color: '#FFEB3B' },
-          { id: 'is_holding', label: 'Is Holding?', dataType: 'boolean', color: '#4FC3F7' },
-          
-          { id: 'entityId', label: 'Entity ID', dataType: 'string', color: '#B0BEC5' } 
-        ]
+        }
       }
     }
   ]

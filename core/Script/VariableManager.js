@@ -32,28 +32,31 @@ export default class VariableManager {
         }
     }
 
-    getGlobal(varName) {
-        const id = this.nameToIdMap.get(varName);
+    getGlobal(varNameOrId) {
+        if (!varNameOrId) return null;
+        const id = this.globals.has(varNameOrId) ? varNameOrId : this.nameToIdMap.get(varNameOrId);
         if (!id) {
-            console.warn(`[VariableManager] Global variable '${varName}' tidak terdaftar pada schema Global.`);
+            console.warn(`[VariableManager] Global variable '${varNameOrId}' tidak terdaftar pada schema Global.`);
             return null;
         }
 
         return this.globals.get(id) ?? null;
     }
 
-    setGlobal(varName, value) {
-        const id = this.nameToIdMap.get(varName);
+    setGlobal(varNameOrId, value) {
+        if (!varNameOrId) return;
+        const id = this.globals.has(varNameOrId) ? varNameOrId : this.nameToIdMap.get(varNameOrId);
         if (!id) {
-            console.error(`[Runtime Error] Global variable '${varName}' tidak terdaftar pada Global Schema!`);
+            console.error(`[Runtime Error] Global variable '${varNameOrId}' tidak terdaftar pada Global Schema!`);
             return;
         }
 
         this.globals.set(id, value);
     }
 
-    hasGlobal(varName) {
-        return this.nameToIdMap.has(varName);
+    hasGlobal(varNameOrId) {
+        if (!varNameOrId) return false;
+        return this.globals.has(varNameOrId) || this.nameToIdMap.has(varNameOrId);
     }
 
     registerScriptSchema(scriptId, variablesArray) {

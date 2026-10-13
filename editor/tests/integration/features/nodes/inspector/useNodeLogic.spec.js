@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
 
-// 1. Mock composables dengan implementasi Spy/Mock Function yang stabil
+// 1. Mock composables UI
 const mockShowPop = vi.fn();
 const mockPrompt = vi.fn();
 
@@ -10,7 +10,7 @@ vi.mock('@composables/composables.js', () => ({
   usePrompt: () => ({ prompt: mockPrompt })
 }));
 
-// 2. Import composables, stores, dan helper pengujian setelah mock
+// 2. Import composables, store, dan testing helpers
 import { useNodeLogic } from '@nodes/nodes.js';
 import { useScriptStore } from '@scripts/scripts.js';
 import { useWorkspaceStore } from '@workspaces/workspaces.js';
@@ -48,7 +48,6 @@ describe('useNodeLogic Integration', () => {
 
   describe('Selected Node Resolution with Workspace Integration', () => {
     it('resolves active node based on selectedNodeId when tab is default scene', async () => {
-      // Arrange
       const targetNode = { id: 'node_scene_1', type: 'math_add', data: {} };
       const env = await setupMockScriptEnvironment({ nodes: [targetNode] });
       const scriptStore = useScriptStore();
@@ -56,16 +55,13 @@ describe('useNodeLogic Integration', () => {
       scriptStore.setActiveScript(env.script);
       scriptStore.setSelectedNode('node_scene_1');
 
-      // Act
       const { selectedNode } = useNodeLogic();
 
-      // Assert
       expect(selectedNode.value).not.toBeNull();
       expect(selectedNode.value.id).toBe('node_scene_1');
     });
 
     it('resolves active node from code_editor tab override in workspace store', async () => {
-      // Arrange
       const node1 = { id: 'node_canvas', type: 'math_add' };
       const node2 = { id: 'node_editor', type: 'code_custom' };
       const env = await setupMockScriptEnvironment({ nodes: [node1, node2] });
@@ -83,17 +79,14 @@ describe('useNodeLogic Integration', () => {
         nodeId: 'node_editor'
       });
 
-      // Act
       const { selectedNode } = useNodeLogic();
 
-      // Assert
       expect(selectedNode.value.id).toBe('node_editor');
     });
   });
 
   describe('Node Property Binding and Mutation', () => {
     it('updates nested node data field and pushes change to history stack', async () => {
-      // Arrange
       const targetNode = {
         id: 'node_data_1',
         type: 'test_node',
@@ -108,21 +101,16 @@ describe('useNodeLogic Integration', () => {
 
       const { updateNodeDataField } = useNodeLogic();
 
-      // Act
       updateNodeDataField('data.values.threshold', 50);
 
-      // Assert
       expect(scriptStore.activeScript.nodes[0].data.values.threshold).toBe(50);
 
-      // Act: Undo perubahan
       scriptHistory.undo();
 
-      // Assert
       expect(scriptStore.activeScript.nodes[0].data.values.threshold).toBe(10);
     });
 
     it('provides reactive two-way binding using bindNodeProp', async () => {
-      // Arrange
       const targetNode = { id: 'node_bind_1', label: 'Initial Name' };
       const env = await setupMockScriptEnvironment({ nodes: [targetNode] });
       const scriptStore = useScriptStore();
@@ -133,21 +121,38 @@ describe('useNodeLogic Integration', () => {
       const { bindNodeProp } = useNodeLogic();
       const labelProp = bindNodeProp('label');
 
-      // Act
       labelProp.value = 'Updated Name';
 
-      // Assert
       expect(scriptStore.activeScript.nodes[0].label).toBe('Updated Name');
+    });
+
+    it('updates node structure payload including inputs, outputs, and data', async () => {
+      const targetNode = { id: 'node_struct_1', inputs: [], outputs: [], data: {} };
+      const env = await setupMockScriptEnvironment({ nodes: [targetNode] });
+      const scriptStore = useScriptStore();
+
+      scriptStore.setActiveScript(env.script);
+      scriptStore.setSelectedNode('node_struct_1');
+
+      const { updateNodeStructure } = useNodeLogic();
+
+      updateNodeStructure({
+        inputs: [{ id: 'in_new', label: 'In' }],
+        data: { customVal: 42 }
+      });
+
+      const updated = scriptStore.activeScript.nodes[0];
+      expect(updated.inputs).toHaveLength(1);
+      expect(updated.data.customVal).toBe(42);
     });
   });
 
-  describe('Dynamic Port Management', () => {
-    it('adds dynamic input port for math nodes with default datatype and color', async () => {
-      // Arrange
+  describe('Dynamic Port Management & Manager Delegation', () => {
+    it('adds dynamic input port sequentially for math nodes and initializes default value', async () => {
       const targetNode = {
         id: 'node_math_1',
         type: 'math_add',
-        allowDynamicInputs: true,
+        dynamicMode: 'sequential',
         inputs: [{ id: 'in_0', label: 'A', dataType: 'number' }],
         data: { values: {} }
       };
@@ -157,56 +162,30 @@ describe('useNodeLogic Integration', () => {
       scriptStore.setActiveScript(env.script);
       scriptStore.setSelectedNode('node_math_1');
 
-      const { handleAddPort } = useNodeLogic();
+      const { handleAddPort, effectiveDynamicMode } = useNodeLogic();
 
-      // Act
+      expect(effectiveDynamicMode.value).toBe('sequential');
+
       await handleAddPort('input');
 
-      // Assert
       const updatedNode = scriptStore.activeScript.nodes[0];
       expect(updatedNode.inputs).toHaveLength(2);
+      expect(updatedNode.inputs[1].id).toBe('v1');
       expect(updatedNode.inputs[1].dataType).toBe('number');
-      expect(updatedNode.inputs[1].label).toBeDefined();
+      expect(updatedNode.inputs[1].color).toBe('#64B5F6');
     });
 
-    it('adds case output port when handleAddPort is called on compare_switch node', async () => {
-      // Arrange
-      mockPrompt.mockResolvedValueOnce('Success');
-
-      const targetNode = {
-        id: 'node_switch',
-        type: 'compare_switch',
-        allowDynamicOutputs: true,
-        outputs: []
-      };
-      const env = await setupMockScriptEnvironment({ nodes: [targetNode] });
-      const scriptStore = useScriptStore();
-
-      scriptStore.setActiveScript(env.script);
-      scriptStore.setSelectedNode('node_switch');
-
-      const { handleAddPort } = useNodeLogic();
-
-      // Act
-      await handleAddPort('output');
-
-      // Assert
-      const updatedNode = scriptStore.activeScript.nodes[0];
-      expect(updatedNode.outputs).toHaveLength(1);
-      expect(updatedNode.outputs[0].id).toBe('case_Success');
-      expect(updatedNode.outputs[0].dataType).toBe('execution');
-    });
-
-    it('adds port from dropdown options and clears dropdown target state', async () => {
-      // Arrange
+    it('manages property options and toggles dropdown target state in inputProperty mode', async () => {
       const targetNode = {
         id: 'node_opt',
         type: 'get_transform',
-        allowDynamicInputs: true,
+        dynamicMode: 'inputProperty',
         data: {
           propertyOptions: [
-            { value: 'pos_x', label: 'Position X', type: 'number', color: '#ff0000' }
-          ]
+            { value: 'pos_x', label: 'Position X', type: 'number', color: '#ff0000' },
+            { value: 'pos_y', label: 'Position Y', type: 'number', color: '#00ff00' }
+          ],
+          values: {}
         },
         inputs: []
       };
@@ -216,27 +195,30 @@ describe('useNodeLogic Integration', () => {
       scriptStore.setActiveScript(env.script);
       scriptStore.setSelectedNode('node_opt');
 
-      const { handleAddPort, addFromDropdown, activeDropdownTarget } = useNodeLogic();
+      const { handleAddPort, addFromDropdown, activeDropdownTarget, availableOptions } = useNodeLogic();
 
-      // Act 1: Buka target dropdown
+      expect(availableOptions.value).toHaveLength(2);
+
       await handleAddPort('input');
       expect(activeDropdownTarget.value).toBe('input');
 
-      // Act 2: Pilih opsi dari dropdown
-      addFromDropdown('pos_x');
+      await addFromDropdown('pos_x');
 
-      // Assert
       const updatedNode = scriptStore.activeScript.nodes[0];
       expect(updatedNode.inputs).toHaveLength(1);
-      expect(updatedNode.inputs[0]).toBeDefined();
+      expect(updatedNode.inputs[0].id).toBe('pos_x');
+      expect(updatedNode.inputs[0].label).toBe('Position X');
+
+      expect(availableOptions.value).toHaveLength(1);
+      expect(availableOptions.value[0].value).toBe('pos_y');
       expect(activeDropdownTarget.value).toBeNull();
     });
 
     it('removes dynamic input port, cleans node value, and records edge removal history', async () => {
-      // Arrange
       const targetNode = {
         id: 'node_dyn',
         type: 'string_join',
+        dynamicMode: 'sequential',
         inputs: [{ id: 'port_temp', label: 'Str 1' }],
         data: { values: { port_temp: 'hello' } }
       };
@@ -250,10 +232,8 @@ describe('useNodeLogic Integration', () => {
 
       const { removeDynamicInput } = useNodeLogic();
 
-      // Act
       removeDynamicInput('port_temp', 'input');
 
-      // Assert
       const updatedNode = scriptStore.activeScript.nodes[0];
       expect(updatedNode.inputs).toHaveLength(0);
       expect(updatedNode.data.values.port_temp).toBeUndefined();
@@ -261,7 +241,6 @@ describe('useNodeLogic Integration', () => {
     });
 
     it('updates port label in script store and records change in history', async () => {
-      // Arrange
       const targetNode = {
         id: 'node_port_rename',
         type: 'custom_node',
@@ -275,20 +254,57 @@ describe('useNodeLogic Integration', () => {
 
       const { updatePortLabel } = useNodeLogic();
 
-      // Act
       updatePortLabel('in_1', 'input', 'New Label');
 
-      // Assert
       expect(scriptStore.activeScript.nodes[0].inputs[0].label).toBe('New Label');
+    });
+  });
+
+  describe('Node Deletion & Edge Verification', () => {
+    it('deletes selected node along with connected edges upon confirmation', async () => {
+      const nodeA = { id: 'node_a', type: 'test_node' };
+      const nodeB = { id: 'node_b', type: 'test_node' };
+      const edge = { id: 'edge_ab', source: 'node_a', target: 'node_b' };
+
+      const env = await setupMockScriptEnvironment({ nodes: [nodeA, nodeB], edges: [edge] });
+      const scriptStore = useScriptStore();
+
+      scriptStore.setActiveScript(env.script);
+      scriptStore.setSelectedNode('node_a');
+
+      const { deleteSelectedNode } = useNodeLogic();
+
+      deleteSelectedNode();
+
+      expect(scriptStore.activeScript.nodes).toHaveLength(1);
+      expect(scriptStore.activeScript.nodes[0].id).toBe('node_b');
+      expect(scriptStore.activeScript.edges).toHaveLength(0);
+      expect(scriptStore.selectedNodeId).toBeNull();
+    });
+
+    it('checks whether an input port is currently connected via isInputConnected', async () => {
+      const targetNode = { id: 'node_target', type: 'test_node' };
+      const edge = { id: 'edge_1', source: 'node_src', target: 'node_target', targetHandle: 'in_val' };
+
+      const env = await setupMockScriptEnvironment({ nodes: [targetNode], edges: [edge] });
+      const scriptStore = useScriptStore();
+
+      scriptStore.setActiveScript(env.script);
+      scriptStore.setSelectedNode('node_target');
+
+      const { isInputConnected } = useNodeLogic();
+
+      expect(isInputConnected('in_val')).toBe(true);
+      expect(isInputConnected('in_other')).toBe(false);
     });
   });
 
   describe('Negative & Edge Cases', () => {
     it('[Bad Path] prevents deletion of protected system ports and shows pop alert', async () => {
-      // Arrange
       const targetNode = {
         id: 'node_protected',
         type: 'test_node',
+        dynamicMode: 'sequential',
         inputs: [{ id: 'exec_in', label: 'Execute' }]
       };
       const env = await setupMockScriptEnvironment({ nodes: [targetNode] });
@@ -299,10 +315,8 @@ describe('useNodeLogic Integration', () => {
 
       const { removeDynamicInput } = useNodeLogic();
 
-      // Act
       removeDynamicInput('exec_in', 'input');
 
-      // Assert
       expect(scriptStore.activeScript.nodes[0].inputs).toHaveLength(1);
       expect(mockShowPop).toHaveBeenCalledWith(expect.objectContaining({
         title: 'Protected Port',
@@ -310,32 +324,7 @@ describe('useNodeLogic Integration', () => {
       }));
     });
 
-    it('[Bad Path] handles prompt cancellation when adding compare_switch case', async () => {
-      // Arrange
-      mockPrompt.mockResolvedValueOnce(null);
-
-      const targetNode = {
-        id: 'node_switch_cancel',
-        type: 'compare_switch',
-        outputs: []
-      };
-      const env = await setupMockScriptEnvironment({ nodes: [targetNode] });
-      const scriptStore = useScriptStore();
-
-      scriptStore.setActiveScript(env.script);
-      scriptStore.setSelectedNode('node_switch_cancel');
-
-      const { handleAddPort } = useNodeLogic();
-
-      // Act
-      await handleAddPort('output');
-
-      // Assert
-      expect(scriptStore.activeScript.nodes[0].outputs).toHaveLength(0);
-    });
-
     it('[Bad Path] does not perform edge disconnection if active script has no edges', async () => {
-      // Arrange
       const targetNode = { id: 'node_no_edge', type: 'test_node' };
       const env = await setupMockScriptEnvironment({ nodes: [targetNode], edges: [] });
       const scriptStore = useScriptStore();
@@ -345,7 +334,6 @@ describe('useNodeLogic Integration', () => {
 
       const { disconnectInvalidEdges } = useNodeLogic();
 
-      // Act & Assert
       expect(() => {
         disconnectInvalidEdges('port_unknown');
       }).not.toThrow();

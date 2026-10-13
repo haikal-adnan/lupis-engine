@@ -1,12 +1,4 @@
-import { 
-  Box, 
-  PlusCircle, 
-  Trash2, 
-  Copy, 
-  ListTree, 
-  FolderTree,
-  Tag
-} from 'lucide-vue-next';
+import { Box } from 'lucide-vue-next';
 
 export const BlueprintEntity = {
   id: 'game_entity',
@@ -14,63 +6,83 @@ export const BlueprintEntity = {
   color: '#E91E63',
   icon: Box,
   items: [
-    { 
-      type: 'entity_spawn', 
-      label: 'Spawn Prefab', 
+    {
+      type: 'entity_spawn',
+      label: 'Spawn Prefab',
       description: 'Instantiates a new entity prefab into the world at specified position.',
-      icon: PlusCircle,
-      allowDynamicInputs: false,
-      allowDynamicOutputs: false,
-      defaultData: { 
-        settings: { headerTitle: 'Spawn Prefab', headerColor: '#E91E63', category: 'Entity' },
+      dynamicMode: 'none',
+      defaultData: {
+        settings: {
+          headerTitle: 'Spawn Prefab',
+          headerColor: '#E91E63',
+          category: 'Entity Management'
+        },
         inputs: [
-          { id: 'exec_in', label: 'In', dataType: 'execution', color: '#ffffff' },
-          { id: 'prefab', label: 'Prefab Name', dataType: 'string', color: '#FFB74D' },
-          { id: 'pos_x', label: 'Pos X', dataType: 'number', color: '#B2FF59', defaultValue: 0 },
-          { id: 'pos_y', label: 'Pos Y', dataType: 'number', color: '#B2FF59', defaultValue: 0 },
-          { id: 'layer_id', label: 'Layer ID', dataType: 'string', color: '#FFB74D' },
-          { id: 'zindex', label: 'Z-Index', dataType: 'number', color: '#B2FF59', defaultValue: 0 },
-          { id: 'custom_id', label: 'Custom ID', dataType: 'string', color: '#FFB74D' }
+          { id: 'exec_in', label: 'In', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'prefab', label: 'Prefab Name', dataType: 'string', color: '#F48FB1', defaultValue: '' },
+          { id: 'pos_x', label: 'Pos X', dataType: 'number', color: '#64B5F6', defaultValue: 0 },
+          { id: 'pos_y', label: 'Pos Y', dataType: 'number', color: '#64B5F6', defaultValue: 0 },
+          { id: 'layer_id', label: 'Layer ID', dataType: 'string', color: '#F48FB1', defaultValue: '' },
+          { id: 'zindex', label: 'Z-Index', dataType: 'number', color: '#64B5F6', defaultValue: 0 },
+          { id: 'custom_id', label: 'Custom ID', dataType: 'string', color: '#F48FB1', defaultValue: '' }
         ],
         outputs: [
-          { id: 'exec_out', label: 'Out', dataType: 'execution', color: '#ffffff' },
-          { id: 'entity', label: 'Entity ID', dataType: 'string', color: '#fbbf24' }
+          { id: 'exec_out', label: 'Out', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'entity', label: 'Entity ID', dataType: 'string', color: '#F48FB1' }
         ],
         data: {
-          code: `const prefabName = inputs['Prefab Name'] || node.data?.values?.prefabName;
-const posX = Number(inputs['Pos X']) || 0;
-const posY = Number(inputs['Pos Y']) || 0;
-const layerScriptId = inputs['Layer ID'];
-const zIndex = Number(inputs['Z-Index']) || 0;
-const customScriptId = inputs['Custom ID'] || node.data?.values?.custom_id;
+          values: {
+            prefab: '',
+            pos_x: 0,
+            pos_y: 0,
+            layer_id: '',
+            zindex: 0,
+            custom_id: ''
+          },
+          code: 
+`const prefabName = inputs['Prefab Name'] ?? inputs['prefab'] ?? node.data?.values?.prefabName;
+const posX = Number(inputs['Pos X'] ?? inputs['pos_x'] ?? 0);
+const posY = Number(inputs['Pos Y'] ?? inputs['pos_y'] ?? 0);
+const layerScriptId = inputs['Layer ID'] ?? inputs['layer_id'];
+const zIndex = Number(inputs['Z-Index'] ?? inputs['zindex'] ?? 0);
+const customScriptId = inputs['Custom ID'] ?? inputs['custom_id'] ?? node.data?.values?.custom_id;
 
 let newEntity = null;
 if (context.game && typeof context.game.spawnPrefab === 'function') {
   newEntity = context.game.spawnPrefab(prefabName, posX, posY, layerScriptId, zIndex, customScriptId);
 }
 
-outputs['Entity ID'] = newEntity ? newEntity.scriptId : null;
+const entityId = newEntity ? newEntity.scriptId : null;
+outputs['Entity ID'] = entityId;
+outputs['entity'] = entityId;
 outputs['Out'] = true;
+outputs['exec_out'] = true;
 return;`
         }
-      } 
+      }
     },
-    { 
-      type: 'entity_destroy', 
-      label: 'Destroy Entity', 
+    {
+      type: 'entity_destroy',
+      label: 'Destroy Entity',
       description: 'Removes an entity from the world.',
-      icon: Trash2,
-      allowDynamicInputs: false,
-      allowDynamicOutputs: false,
-      defaultData: { 
-        settings: { headerTitle: 'Destroy Entity', headerColor: '#D32F2F', category: 'Entity' },
+      dynamicMode: 'none',
+      defaultData: {
+        settings: {
+          headerTitle: 'Destroy Entity',
+          headerColor: '#D32F2F',
+          category: 'Entity Management'
+        },
         inputs: [
-          { id: 'exec_in', label: 'In', dataType: 'execution', color: '#ffffff' },
-          { id: 'entity', label: 'Target Entity', dataType: 'string', color: '#fbbf24', defaultValue: 'self' }
+          { id: 'exec_in', label: 'In', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'entity', label: 'Target Entity', dataType: 'string', color: '#F48FB1', defaultValue: 'self' }
         ],
-        outputs: [{ id: 'exec_out', label: 'Out', dataType: 'execution', color: '#ffffff' }],
+        outputs: [
+          { id: 'exec_out', label: 'Out', dataType: 'execution', color: '#FFFFFF' }
+        ],
         data: {
-          code: `const targetScriptId = inputs['Target Entity'];
+          values: { entity: 'self' },
+          code: 
+`const targetScriptId = inputs['Target Entity'] ?? inputs['entity'] ?? 'self';
 const targetEntity = context.getEntity(targetScriptId);
 
 if (targetEntity && context.game && typeof context.game.destroyEntity === 'function') {
@@ -78,26 +90,33 @@ if (targetEntity && context.game && typeof context.game.destroyEntity === 'funct
 }
 
 outputs['Out'] = true;
+outputs['exec_out'] = true;
 return;`
         }
-      } 
+      }
     },
-    { 
-      type: 'entity_destroy_with_parent', 
-      label: 'Destroy With Parent', 
+    {
+      type: 'entity_destroy_with_parent',
+      label: 'Destroy With Parent',
       description: 'Destroys the top-level parent entity if available, otherwise destroys target entity.',
-      icon: Trash2,
-      allowDynamicInputs: false,
-      allowDynamicOutputs: false,
-      defaultData: { 
-        settings: { headerTitle: 'Destroy With Parent', headerColor: '#D32F2F', category: 'Entity' },
+      dynamicMode: 'none',
+      defaultData: {
+        settings: {
+          headerTitle: 'Destroy With Parent',
+          headerColor: '#D32F2F',
+          category: 'Entity Management'
+        },
         inputs: [
-          { id: 'exec_in', label: 'In', dataType: 'execution', color: '#ffffff' },
-          { id: 'entity', label: 'Target Entity', dataType: 'string', color: '#fbbf24', defaultValue: 'self' }
+          { id: 'exec_in', label: 'In', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'entity', label: 'Target Entity', dataType: 'string', color: '#F48FB1', defaultValue: 'self' }
         ],
-        outputs: [{ id: 'exec_out', label: 'Out', dataType: 'execution', color: '#ffffff' }],
+        outputs: [
+          { id: 'exec_out', label: 'Out', dataType: 'execution', color: '#FFFFFF' }
+        ],
         data: {
-          code: `const targetScriptId = inputs['Target Entity'];
+          values: { entity: 'self' },
+          code: 
+`const targetScriptId = inputs['Target Entity'] ?? inputs['entity'] ?? 'self';
 const targetEntity = context.getEntity(targetScriptId);
 
 if (targetEntity && context.game && typeof context.game.destroyEntity === 'function') {
@@ -116,29 +135,34 @@ if (targetEntity && context.game && typeof context.game.destroyEntity === 'funct
 }
 
 outputs['Out'] = true;
+outputs['exec_out'] = true;
 return;`
         }
-      } 
+      }
     },
-    { 
-      type: 'entity_clone', 
-      label: 'Clone Entity', 
+    {
+      type: 'entity_clone',
+      label: 'Clone Entity',
       description: 'Creates a duplicate of an existing entity.',
-      icon: Copy,
-      allowDynamicInputs: false,
-      allowDynamicOutputs: false,
-      defaultData: { 
-        settings: { headerTitle: 'Clone Entity', headerColor: '#E91E63', category: 'Entity' },
+      dynamicMode: 'none',
+      defaultData: {
+        settings: {
+          headerTitle: 'Clone Entity',
+          headerColor: '#E91E63',
+          category: 'Entity Management'
+        },
         inputs: [
-          { id: 'exec_in', label: 'In', dataType: 'execution', color: '#ffffff' },
-          { id: 'entity', label: 'Source Entity', dataType: 'string', color: '#fbbf24', defaultValue: 'self' }
+          { id: 'exec_in', label: 'In', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'entity', label: 'Source Entity', dataType: 'string', color: '#F48FB1', defaultValue: 'self' }
         ],
         outputs: [
-          { id: 'exec_out', label: 'Out', dataType: 'execution', color: '#ffffff' },
-          { id: 'clone', label: 'Clone ID', dataType: 'string', color: '#fbbf24' }
+          { id: 'exec_out', label: 'Out', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'clone', label: 'Clone ID', dataType: 'string', color: '#F48FB1' }
         ],
         data: {
-          code: `const sourceScriptId = inputs['Source Entity'];
+          values: { entity: 'self' },
+          code: 
+`const sourceScriptId = inputs['Source Entity'] ?? inputs['entity'] ?? 'self';
 const sourceEntity = context.getEntity(sourceScriptId);
 let clone = null;
 
@@ -146,34 +170,41 @@ if (sourceEntity && context.game && typeof context.game.cloneEntity === 'functio
   clone = await context.game.cloneEntity(sourceEntity);
 }
 
-outputs['Clone ID'] = clone ? clone.scriptId : null;
+const cloneId = clone ? clone.scriptId : null;
+outputs['Clone ID'] = cloneId;
+outputs['clone'] = cloneId;
 outputs['Out'] = true;
+outputs['exec_out'] = true;
 return;`
         }
-      } 
+      }
     },
-    { 
-      type: 'entity_get_children', 
-      label: 'Get Entity Children', 
+    {
+      type: 'entity_get_children',
+      label: 'Get Entity Children',
       description: 'Retrieves all child entities or a specific child by index.',
-      icon: ListTree,
-      allowDynamicInputs: false,
-      allowDynamicOutputs: false,
-      defaultData: { 
-        settings: { headerTitle: 'Get Entity Children', headerColor: '#8E24AA', category: 'Entity' },
+      dynamicMode: 'none',
+      defaultData: {
+        settings: {
+          headerTitle: 'Get Entity Children',
+          headerColor: '#8E24AA',
+          category: 'Entity Management'
+        },
         inputs: [
-          { id: 'exec_in', label: 'In', dataType: 'execution', color: '#ffffff' },
-          { id: 'parent', label: 'Parent Entity', dataType: 'string', color: '#fbbf24', defaultValue: 'self' },
-          { id: 'index', label: 'Child Index', dataType: 'number', color: '#B2FF59' }
+          { id: 'exec_in', label: 'In', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'parent', label: 'Parent Entity', dataType: 'string', color: '#F48FB1', defaultValue: 'self' },
+          { id: 'index', label: 'Child Index', dataType: 'number', color: '#64B5F6', defaultValue: 0 }
         ],
         outputs: [
-          { id: 'exec_out', label: 'Out', dataType: 'execution', color: '#ffffff' },
-          { id: 'children', label: 'Children IDs', dataType: 'any', color: '#FFB74D' },
-          { id: 'child_id', label: 'Child ID', dataType: 'string', color: '#fbbf24' }
+          { id: 'exec_out', label: 'Out', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'children', label: 'Children IDs', dataType: 'list', color: '#4DD0E1' },
+          { id: 'child_id', label: 'Child ID', dataType: 'string', color: '#F48FB1' }
         ],
         data: {
-          code: `const parentScriptId = inputs['Parent Entity'];
-const indexVal = inputs['Child Index'];
+          values: { parent: 'self', index: 0 },
+          code: 
+`const parentScriptId = inputs['Parent Entity'] ?? inputs['parent'] ?? 'self';
+const indexVal = inputs['Child Index'] ?? inputs['index'];
 
 const parentEntity = context.getEntity(parentScriptId);
 
@@ -195,31 +226,38 @@ if (parentEntity && context.game?.world) {
 }
 
 outputs['Children IDs'] = childrenIds;
+outputs['children'] = childrenIds;
 outputs['Child ID'] = specificChildId;
+outputs['child_id'] = specificChildId;
 outputs['Out'] = true;
+outputs['exec_out'] = true;
 return;`
         }
-      } 
+      }
     },
-    { 
-      type: 'entity_get_parent', 
-      label: 'Get Entity Parent', 
+    {
+      type: 'entity_get_parent',
+      label: 'Get Entity Parent',
       description: 'Retrieves the parent entity ID of the target entity.',
-      icon: FolderTree,
-      allowDynamicInputs: false,
-      allowDynamicOutputs: false,
-      defaultData: { 
-        settings: { headerTitle: 'Get Entity Parent', headerColor: '#8E24AA', category: 'Entity' },
+      dynamicMode: 'none',
+      defaultData: {
+        settings: {
+          headerTitle: 'Get Entity Parent',
+          headerColor: '#8E24AA',
+          category: 'Entity Management'
+        },
         inputs: [
-          { id: 'exec_in', label: 'In', dataType: 'execution', color: '#ffffff' },
-          { id: 'entity', label: 'Target Entity', dataType: 'string', color: '#fbbf24', defaultValue: 'self' }
+          { id: 'exec_in', label: 'In', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'entity', label: 'Target Entity', dataType: 'string', color: '#F48FB1', defaultValue: 'self' }
         ],
         outputs: [
-          { id: 'exec_out', label: 'Out', dataType: 'execution', color: '#ffffff' },
-          { id: 'parent_id', label: 'Parent ID', dataType: 'string', color: '#fbbf24' }
+          { id: 'exec_out', label: 'Out', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'parent_id', label: 'Parent ID', dataType: 'string', color: '#F48FB1' }
         ],
         data: {
-          code: `const childScriptId = inputs['Target Entity'];
+          values: { entity: 'self' },
+          code: 
+`const childScriptId = inputs['Target Entity'] ?? inputs['entity'] ?? 'self';
 const childEntity = context.getEntity(childScriptId);
 
 let parentScriptId = null;
@@ -234,10 +272,13 @@ if (childEntity && childEntity.parentId && context.game?.world) {
 }
 
 outputs['Parent ID'] = parentScriptId;
+outputs['parent_id'] = parentScriptId;
 outputs['Out'] = true;
+outputs['exec_out'] = true;
 return;`
         }
-      } 
+      }
     }
   ]
 };
+

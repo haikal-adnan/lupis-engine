@@ -1,19 +1,16 @@
-import { ref, computed } from 'vue';
+// lokasi: src/editor/nodes/composables/useNodeLogic.js
+
+import { computed } from 'vue';
 import { useScriptStore } from '@scripts/scripts.js';
 import { useScriptHistory } from '@historys/historys.js';
 import { useWorkspaceStore } from '@workspaces/workspaces.js';
-import { usePopAlert, usePrompt } from '@composables/composables.js';
-import { useCustomNodeHandlers } from '@nodes/nodes.js';
+import { useDynamicPortManager } from '@nodes/nodes.js';
 
 export function useNodeLogic() {
   const scriptStore = useScriptStore();
   const scriptHistory = useScriptHistory();
   const workspaceStore = useWorkspaceStore();
-  const { prompt } = usePrompt();
-  const { showPop } = usePopAlert();
-  const { handleNodeAddPort, getDynamicPortDefaults } = useCustomNodeHandlers(); // Integrated
-
-  const activeDropdownTarget = ref(null);
+  const dynamicManager = useDynamicPortManager();
 
   const startScriptTransaction = scriptHistory.startTransaction;
   const endScriptTransactionWithDelay = scriptHistory.endTransactionWithDelay;
@@ -31,13 +28,22 @@ export function useNodeLogic() {
     return scriptStore.activeScript.nodes.find(n => n.id === scriptStore.selectedNodeId) || null;
   });
 
+  // Delegasi dynamicMode & opsi properti ke useDynamicPortManager
+  const availableOptions = computed(() => {
+    return dynamicManager.getAvailableProperties(selectedNode.value);
+  });
+
+  const effectiveDynamicMode = computed(() => {
+    return dynamicManager.getDynamicMode(selectedNode.value);
+  });
+
   function updateNodeDataField(path, newValue) {
     if (!selectedNode.value) return;
     const oldValue = path.split('.').reduce((o, i) => o?.[i], selectedNode.value);
     if (JSON.stringify(oldValue) === JSON.stringify(newValue)) return;
-    
+
     scriptHistory.recordNodeDataChange(selectedNode.value.id, path, oldValue, newValue);
-    
+
     const keys = path.split('.');
     const lastKey = keys.pop();
     const deepObj = keys.reduceRight((obj, key) => ({ [key]: obj }), { [lastKey]: newValue });
@@ -105,142 +111,14 @@ export function useNodeLogic() {
     edgesToRemove.forEach(edge => scriptStore.removeEdgeFromActive(edge.id));
   }
 
-  const availableOptions = computed(() => {
-    if (!selectedNode.value) return [];
-    const options = selectedNode.value.data?.propertyOptions || [];
-    const existingPorts = [
-      ...(selectedNode.value.inputs || []),
-      ...(selectedNode.value.outputs || [])
-    ];
-    return options.filter(opt => !existingPorts.some(p => p.id === opt.value));
-  });
-
-  const handleAddPort = async (type = 'input') => {
-    if (!selectedNode.value) return;
-    const node = selectedNode.value;
-
-    const hasPropertyOptions = Array.isArray(node.data?.propertyOptions) && node.data.propertyOptions.length > 0;
-
-    const dynamicTypes = [
-      'translate', 'get_object', 'set_object', 'get_layer', 'set_layer',
-      'get_transform', 'set_transform', 'get_physics', 'set_physics',
-      'get_sprite', 'set_sprite', 'get_shape', 'set_shape',
-      'get_tilemap', 'set_tilemap', 'get_text', 'set_text',
-      'get_animator', 'set_animator', 'get_clip_prop', 'set_clip_prop'
-    ];
-    
-    if (hasPropertyOptions || dynamicTypes.includes(node.type)) {
-      activeDropdownTarget.value = activeDropdownTarget.value === type ? null : type;
-      return;
-    }
-
-    // 1. Delegasi ke Custom Node Handler
-    const wasHandled = await handleNodeAddPort(node, { prompt, scriptHistory });
-    if (wasHandled) return;
-
-    // 2. Logic Default Tambah Dynamic Port
-    const currentPorts = type === 'input' ? (node.inputs || []) : (node.outputs || []);
-    const nextIndex = currentPorts.length;
-
-    const blueprintItem = scriptStore.blueprints
-      ?.flatMap(group => group.items || [])
-      .find(item => item.type === node.type || item.id === node.type);
-
-    const bpPorts = type === 'input' 
-      ? (blueprintItem?.defaultData?.inputs || [])
-      : (blueprintItem?.defaultData?.outputs || []);
-
-    const { label: newLabel, dataType: newDataType, color: newColor } = getDynamicPortDefaults(node.type, nextIndex, bpPorts);
-
-    const newPort = {
-      id: `port_${Date.now()}_${nextIndex}`,
-      label: newLabel,
-      dataType: newDataType,
-      color: newColor
-    };
-
-    scriptStore.addNodePort(node.id, type, newPort);
-
-    if (type === 'input') {
-      const currentValues = node.data?.values || {};
-      const defaultVal = newDataType === 'number' ? 0 : newDataType === 'boolean' ? false : '';
-      updateNodeDataField('data.values', { ...currentValues, [newPort.id]: defaultVal });
-    }
-
-    scriptHistory.recordPortChange(node.id, 'ADD', newPort, type, []);
-  };
-
-  const addFromDropdown = (optionValue) => {
-    if (!selectedNode.value || !activeDropdownTarget.value) return;
-    const type = activeDropdownTarget.value;
-    const options = selectedNode.value.data?.propertyOptions || [];
-    const selectedOpt = options.find(o => o.value === optionValue);
-
-    if (selectedOpt) {
-      const newPort = {
-        id: selectedOpt.value,
-        label: selectedOpt.label,
-        dataType: selectedOpt.type || 'number',
-        color: selectedOpt.color || '#fff'
-      };
-
-      scriptStore.addNodePort(selectedNode.value.id, type, newPort);
-
-      if (type === 'input') {
-        const currentValues = selectedNode.value.data?.values || {};
-        updateNodeDataField('data.values', { ...currentValues, [selectedOpt.value]: null });
-      }
-
-      scriptHistory.recordPortChange(selectedNode.value.id, 'ADD', newPort, type, []);
-    }
-
-    activeDropdownTarget.value = null;
-  };
-
-  const removeDynamicInput = (portId, type = 'input') => {
+  function updatePortLabel(portId, type = 'input', newLabel) {
     if (!selectedNode.value) return;
 
-    const permanentPorts = ['exec_in', 'exec_out', 'in_target', 'sk_main', 'ptr_click_main'];
-
-    if (permanentPorts.includes(portId)) {
-      showPop({
-        title: 'Protected Port',
-        message: `The port "${portId}" is a core part of this node and cannot be removed.`,
-        type: 'warning',
-        duration: 3000
-      });
-      return;
-    }
-
-    const portList = type === 'input' ? selectedNode.value.inputs : selectedNode.value.outputs;
-    const portToRemove = portList.find(p => p.id === portId);
-
-    const connectedEdges = scriptStore.activeScript.edges.filter(e => 
-      (type === 'input' && e.target === selectedNode.value.id && e.targetHandle === portId) ||
-      (type === 'output' && e.source === selectedNode.value.id && e.sourceHandle === portId)
-    );
-
-    scriptStore.removeNodePort(selectedNode.value.id, type, portId);
-    
-    if (type === 'input') {
-       const currentValues = { ...(selectedNode.value.data?.values || {}) };
-       delete currentValues[portId];
-       updateNodeDataField('data.values', currentValues);
-    }
-
-    if (portToRemove) {
-      scriptHistory.recordPortChange(selectedNode.value.id, 'REMOVE', portToRemove, type, connectedEdges);
-    }
-  };
-
-  const updatePortLabel = (portId, type = 'input', newLabel) => {
-    if (!selectedNode.value) return;
-    
     const node = selectedNode.value;
     const portsKey = type === 'input' ? 'inputs' : 'outputs';
     const updatedPorts = [...(node[portsKey] || [])];
     const portIndex = updatedPorts.findIndex(p => p.id === portId);
-    
+
     if (portIndex > -1) {
       const oldLabel = updatedPorts[portIndex].label;
       if (oldLabel === newLabel) return;
@@ -249,6 +127,23 @@ export function useNodeLogic() {
       scriptHistory.recordNodeDataChange(node.id, `${portsKey}.${portIndex}.label`, oldLabel, newLabel);
       scriptStore.updateNodeInActive(node.id, { [portsKey]: updatedPorts });
     }
+  }
+
+  // =========================================================================
+  // OPERASI PORT DINAMIS (DELEGASI KE useDynamicPortManager)
+  // =========================================================================
+  const handleAddPort = async (type = 'input') => {
+    await dynamicManager.addDynamicPort(selectedNode.value, type);
+  };
+
+  const addFromDropdown = async (optionValue) => {
+    const targetType = dynamicManager.activeDropdownTarget.value || 
+      (effectiveDynamicMode.value === 'outputProperty' ? 'output' : 'input');
+    await dynamicManager.addDynamicPort(selectedNode.value, targetType, optionValue);
+  };
+
+  const removeDynamicInput = (portId, type = 'input') => {
+    dynamicManager.removeDynamicPort(selectedNode.value, portId, type);
   };
 
   return {
@@ -260,13 +155,15 @@ export function useNodeLogic() {
     deleteSelectedNode,
     isInputConnected,
     disconnectInvalidEdges,
-    activeDropdownTarget,
-    availableOptions,
-    handleAddPort,
-    addFromDropdown,
-    removeDynamicInput,
     updatePortLabel,
     startScriptTransaction,
-    endScriptTransactionWithDelay
+    endScriptTransactionWithDelay,
+
+    activeDropdownTarget: dynamicManager.activeDropdownTarget,
+    availableOptions,
+    effectiveDynamicMode,
+    handleAddPort,
+    addFromDropdown,
+    removeDynamicInput
   };
 }

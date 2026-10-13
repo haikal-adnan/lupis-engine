@@ -1,5 +1,12 @@
 import { test } from '../fixtures.js';
 
+test.use({
+  projectOptions: {
+    prefix: 'Blueprint Logic Comparison E2E',
+    description: 'E2E runtime logic evaluation for comparison, branch, and switch nodes in engine preview',
+  },
+});
+
 test.describe('Blueprint Logic & Comparison Expanded E2E Testing', () => {
   test('1. COMPARE - Equal (10 == 10) -> True', async ({ blueprintRunner }) => {
     await blueprintRunner.runTest({
@@ -36,7 +43,7 @@ test.describe('Blueprint Logic & Comparison Expanded E2E Testing', () => {
         { source: 'var1', sourceHandle: 'out_0', target: 'compare', targetHandle: 'a' },
         { source: 'var2', sourceHandle: 'out_0', target: 'compare', targetHandle: 'b' },
         { source: 'compare', sourceHandle: 'res', target: 'branch', targetHandle: 'cond_0' },
-        { source: 'start', sourceHandle: 'out', target: 'branch', targetHandle: 'exec_in' },
+        { source: 'start', sourceHandle: 'exec_out', target: 'branch', targetHandle: 'exec_in' },
         { source: 'branch', sourceHandle: 'out_0', target: 'notif', targetHandle: 'exec_in' },
       ],
       expectedLog: 'Equal Success',
@@ -78,7 +85,7 @@ test.describe('Blueprint Logic & Comparison Expanded E2E Testing', () => {
         { source: 'var1', sourceHandle: 'out_0', target: 'compare', targetHandle: 'a' },
         { source: 'var2', sourceHandle: 'out_0', target: 'compare', targetHandle: 'b' },
         { source: 'compare', sourceHandle: 'res', target: 'branch', targetHandle: 'cond_0' },
-        { source: 'start', sourceHandle: 'out', target: 'branch', targetHandle: 'exec_in' },
+        { source: 'start', sourceHandle: 'exec_out', target: 'branch', targetHandle: 'exec_in' },
         { source: 'branch', sourceHandle: 'out_0', target: 'notif', targetHandle: 'exec_in' },
       ],
       expectedLog: 'Not Equal Success',
@@ -115,7 +122,7 @@ test.describe('Blueprint Logic & Comparison Expanded E2E Testing', () => {
       connections: [
         { source: 'varNode', sourceHandle: 'out_0', target: 'compare', targetHandle: 'a' },
         { source: 'compare', sourceHandle: 'res', target: 'branch', targetHandle: 'cond_0' },
-        { source: 'start', sourceHandle: 'out', target: 'branch', targetHandle: 'exec_in' },
+        { source: 'start', sourceHandle: 'exec_out', target: 'branch', targetHandle: 'exec_in' },
         { source: 'branch', sourceHandle: 'out_0', target: 'notif', targetHandle: 'exec_in' },
       ],
       expectedLog: 'Greater Success',
@@ -152,7 +159,7 @@ test.describe('Blueprint Logic & Comparison Expanded E2E Testing', () => {
       connections: [
         { source: 'varNode', sourceHandle: 'out_0', target: 'compare', targetHandle: 'a' },
         { source: 'compare', sourceHandle: 'res', target: 'branch', targetHandle: 'cond_0' },
-        { source: 'start', sourceHandle: 'out', target: 'branch', targetHandle: 'exec_in' },
+        { source: 'start', sourceHandle: 'exec_out', target: 'branch', targetHandle: 'exec_in' },
         { source: 'branch', sourceHandle: 'out_0', target: 'notif', targetHandle: 'exec_in' },
       ],
       expectedLog: 'Less Success',
@@ -189,7 +196,7 @@ test.describe('Blueprint Logic & Comparison Expanded E2E Testing', () => {
       connections: [
         { source: 'varNode', sourceHandle: 'out_0', target: 'compare', targetHandle: 'a' },
         { source: 'compare', sourceHandle: 'res', target: 'branch', targetHandle: 'cond_0' },
-        { source: 'start', sourceHandle: 'out', target: 'branch', targetHandle: 'exec_in' },
+        { source: 'start', sourceHandle: 'exec_out', target: 'branch', targetHandle: 'exec_in' },
         { source: 'branch', sourceHandle: 'out_0', target: 'notif', targetHandle: 'exec_in' },
       ],
       expectedLog: 'Greater Equal Success',
@@ -226,7 +233,7 @@ test.describe('Blueprint Logic & Comparison Expanded E2E Testing', () => {
       connections: [
         { source: 'varNode', sourceHandle: 'out_0', target: 'compare', targetHandle: 'a' },
         { source: 'compare', sourceHandle: 'res', target: 'branch', targetHandle: 'cond_0' },
-        { source: 'start', sourceHandle: 'out', target: 'branch', targetHandle: 'exec_in' },
+        { source: 'start', sourceHandle: 'exec_out', target: 'branch', targetHandle: 'exec_in' },
         { source: 'branch', sourceHandle: 'out_0', target: 'notif', targetHandle: 'exec_in' },
       ],
       expectedLog: 'Less Equal Success',
@@ -263,7 +270,7 @@ test.describe('Blueprint Logic & Comparison Expanded E2E Testing', () => {
       connections: [
         { source: 'varNode', sourceHandle: 'out_0', target: 'compare', targetHandle: 'a' },
         { source: 'compare', sourceHandle: 'res', target: 'branch', targetHandle: 'cond_0' },
-        { source: 'start', sourceHandle: 'out', target: 'branch', targetHandle: 'exec_in' },
+        { source: 'start', sourceHandle: 'exec_out', target: 'branch', targetHandle: 'exec_in' },
         { source: 'branch', sourceHandle: 'out_false', target: 'notif', targetHandle: 'exec_in' },
       ],
       expectedLog: 'False Branch Executed',
@@ -290,7 +297,7 @@ test.describe('Blueprint Logic & Comparison Expanded E2E Testing', () => {
       variableBindings: [{ nodeId: 'varNode', varName: 'dir' }],
       connections: [
         { source: 'varNode', sourceHandle: 'out_0', target: 'switch', targetHandle: 'value' },
-        { source: 'start', sourceHandle: 'out', target: 'switch', targetHandle: 'exec_in' },
+        { source: 'start', sourceHandle: 'exec_out', target: 'switch', targetHandle: 'exec_in' },
         { source: 'switch', sourceHandle: 'out_case_0', target: 'notif', targetHandle: 'exec_in' },
       ],
       expectedLog: 'Switch Match Case Right',
@@ -317,7 +324,7 @@ test.describe('Blueprint Logic & Comparison Expanded E2E Testing', () => {
       variableBindings: [{ nodeId: 'varNode', varName: 'dir' }],
       connections: [
         { source: 'varNode', sourceHandle: 'out_0', target: 'switch', targetHandle: 'value' },
-        { source: 'start', sourceHandle: 'out', target: 'switch', targetHandle: 'exec_in' },
+        { source: 'start', sourceHandle: 'exec_out', target: 'switch', targetHandle: 'exec_in' },
         { source: 'switch', sourceHandle: 'out_default', target: 'notif', targetHandle: 'exec_in' },
       ],
       expectedLog: 'Switch Default Triggered',

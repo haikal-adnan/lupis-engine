@@ -7,6 +7,7 @@ export function useVariableConfig() {
     BOOLEAN: 'boolean',
     LIST: 'list',
     MAP: 'map',
+    ANY: 'any'
   });
 
   const VAR_COLORS = Object.freeze({
@@ -15,16 +16,24 @@ export function useVariableConfig() {
     [VAR_TYPES.BOOLEAN]: '#E57373',
     [VAR_TYPES.LIST]: '#4DD0E1',
     [VAR_TYPES.MAP]: '#FF8A65',
+    [VAR_TYPES.ANY]: '#B0BEC5'
   });
 
   const getVarColor = (type) => {
     if (!type) return VAR_COLORS[VAR_TYPES.ANY];
-    return VAR_COLORS[type.toLowerCase()] || VAR_COLORS[VAR_TYPES.ANY];
+    const cleanType = String(type).toLowerCase();
+    return VAR_COLORS[cleanType] || VAR_COLORS[VAR_TYPES.ANY];
   };
 
   const typeOptions = computed(() => {
-    return Object.values(VAR_TYPES).map(type => ({
-      value: type, // 'string', 'number', 'list', 'map', dll.
+    return [
+      VAR_TYPES.STRING,
+      VAR_TYPES.NUMBER,
+      VAR_TYPES.BOOLEAN,
+      VAR_TYPES.LIST,
+      VAR_TYPES.MAP
+    ].map(type => ({
+      value: type,
       label: type.charAt(0).toUpperCase() + type.slice(1),
       color: VAR_COLORS[type]
     }));
@@ -45,7 +54,6 @@ export function useVariableConfig() {
         return 0;
       case VAR_TYPES.BOOLEAN:
         return false;
-      case VAR_TYPES.OBJECT:
       case VAR_TYPES.MAP:
         return {}; 
       case VAR_TYPES.LIST:

@@ -41,14 +41,13 @@ export const createScriptNode = (data = {}) => {
   });
 
   if (typeof safeData.code !== 'string') {
-    safeData.code = safeData.code || `/**\n * Node: ${data.settings?.headerTitle || 'Node'}\n */\nfunction execute(inputs, outputs, context) {\n   return outputs;\n}`;
+    safeData.code = safeData.code || `return;`;
   }
 
   return {
     id: data.id || GenerateUUID(),
     type: data.type || "unknown_node",
-    allowDynamicInputs: data.allowDynamicInputs ?? false, 
-    allowDynamicOutputs: data.allowDynamicOutputs ?? false, 
+    dynamicMode: data.dynamicMode || "none", 
     position: {
       x: data.position?.x ?? 0,
       y: data.position?.y ?? 0
@@ -75,7 +74,8 @@ export const createScriptEdge = (data = {}) => ({
   source: data.source,
   sourceHandle: data.sourceHandle || null,
   target: data.target,
-  targetHandle: data.targetHandle || null
+  targetHandle: data.targetHandle || null,
+  modifier: data.modifier ? { ...data.modifier } : {} // <-- Tambahkan baris ini
 });
 
 export const scriptSchema = (data = {}) => {

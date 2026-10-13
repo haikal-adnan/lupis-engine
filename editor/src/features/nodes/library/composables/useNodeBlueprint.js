@@ -26,6 +26,7 @@ import { BlueprintLoop } from '@nodes/library/blueprints/BlueprintLoop.js';
 import { BlueprintHelper } from '@nodes/library/blueprints/BlueprintHelper.js';
 import { BlueprintEntity } from '@nodes/library/blueprints/BlueprintEntity.js';
 import { BlueprintRandom } from '@nodes/library/blueprints/BlueprintRandom.js';
+import { BlueprintVariable } from '@nodes/library/blueprints/BlueprintVariable.js';
 
 const rawGroups = [
   BlueprintRandom, BlueprintEntity, BlueprintLoop, BlueprintHelper,
@@ -34,7 +35,7 @@ const rawGroups = [
   BlueprintPointer, BlueprintTransform, BlueprintMath, BlueprintSystem,
   BlueprintString, BlueprintObject, BlueprintCamera, BlueprintCollider,
   BlueprintPhysics, BlueprintLayer, BlueprintScene, BlueprintMouse,
-  BlueprintAnimator, BlueprintTransition, BlueprintEvent
+  BlueprintAnimator, BlueprintTransition, BlueprintEvent, BlueprintVariable
 ];
 
 export function useNodeBlueprint() {

@@ -1,10 +1,13 @@
+<!-- lokasi: src/editor/nodes/components/NodePorts.vue -->
 <template>
   <PropertySection title="Ports Configuration" :icon="Network" v-if="selectedNode" data-testid="node-inspector-ports-section">
     <!-- INPUT PORTS -->
     <div class="mb-3">
       <div class="px-2 mb-1 flex justify-between items-center">
         <span class="text-[10px] font-bold text-muted-foreground uppercase">Inputs</span>
-        <span v-if="selectedNode.allowDynamicInputs" class="text-[9px] text-blue-400 bg-blue-400/10 px-1 rounded">Dynamic</span>
+        <span v-if="isInputDynamic" class="text-[9px] text-blue-400 bg-blue-400/10 px-1 rounded uppercase">
+          {{ dynamicModeLabel }}
+        </span>
       </div>
 
       <div class="space-y-1">
@@ -32,7 +35,7 @@
           </div>
 
           <IconButton 
-            v-if="selectedNode.allowDynamicInputs"
+            v-if="isInputDynamic && isRemovablePort(port.id)"
             @click="removeDynamicInput(port.id, 'input')"
             class="opacity-30 group-hover:opacity-100 transition-opacity w-6 h-6 shrink-0"
             variant="ghost" 
@@ -48,7 +51,9 @@
           No inputs.
         </div>
 
-        <div v-if="selectedNode.allowDynamicInputs" class="mt-2">
+        <!-- Input Dynamic Controls -->
+        <div v-if="isInputDynamic" class="mt-2">
+          <!-- Dropdown Tambah Input Property -->
           <div v-if="activeDropdownTarget === 'input'" class="animate-in fade-in slide-in-from-top-1 bg-secondary/20 p-2 rounded border border-dashed border-border" data-testid="node-inspector-add-input-port-dropdown-container">
             <div class="text-[10px] text-muted-foreground mb-1.5 ml-1">Select Property:</div>
             <BaseSelect 
@@ -59,6 +64,7 @@
               data-testid="node-inspector-add-input-port-select"
             />
             <button 
+              type="button"
               @click="activeDropdownTarget = null" 
               class="text-[10px] text-muted-foreground w-full text-center mt-2 hover:text-foreground underline decoration-dashed underline-offset-2"
               data-testid="node-inspector-cancel-add-input-port-btn"
@@ -67,14 +73,16 @@
             </button>
           </div>
 
+          <!-- Tombol Pemicu Tambah Input Port -->
           <button 
             v-else
+            type="button"
             @click="handleAddPort('input')"
             class="w-full flex items-center justify-center gap-1 py-1.5 text-[10px] border border-dashed border-border text-muted-foreground hover:text-foreground hover:border-foreground/50 rounded transition-colors group"
             data-testid="node-inspector-add-input-port-btn"
           >
             <Plus class="w-3 h-3 group-hover:scale-110 transition-transform" />
-            <span>Add Input Port</span>
+            <span>{{ effectiveDynamicMode === 'sequential' ? '+ Add Value' : 'Add Input Port' }}</span>
           </button>
         </div>
       </div>
@@ -84,7 +92,9 @@
     <div>
       <div class="px-2 mb-1 flex justify-between items-center">
         <span class="text-[10px] font-bold text-muted-foreground uppercase">Outputs</span>
-        <span v-if="selectedNode.allowDynamicOutputs" class="text-[9px] text-blue-400 bg-blue-400/10 px-1 rounded">Dynamic</span>
+        <span v-if="isOutputDynamic" class="text-[9px] text-blue-400 bg-blue-400/10 px-1 rounded uppercase">
+          {{ dynamicModeLabel }}
+        </span>
       </div>
       
       <div class="space-y-1">
@@ -112,7 +122,7 @@
           </div>
           
           <IconButton 
-            v-if="selectedNode.allowDynamicOutputs"
+            v-if="isOutputDynamic && isRemovablePort(port.id)"
             @click="removeDynamicInput(port.id, 'output')"
             class="opacity-30 group-hover:opacity-100 transition-opacity w-6 h-6 shrink-0"
             variant="ghost" 
@@ -128,7 +138,9 @@
           No outputs.
         </div>
         
-        <div v-if="selectedNode.allowDynamicOutputs" class="mt-2">
+        <!-- Output Dynamic Controls -->
+        <div v-if="isOutputDynamic" class="mt-2">
+          <!-- Dropdown Tambah Output Property -->
           <div v-if="activeDropdownTarget === 'output'" class="animate-in fade-in slide-in-from-top-1 bg-secondary/20 p-2 rounded border border-dashed border-border" data-testid="node-inspector-add-output-port-dropdown-container">
             <div class="text-[10px] text-muted-foreground mb-1.5 ml-1">Select Property:</div>
             <BaseSelect 
@@ -139,6 +151,7 @@
               data-testid="node-inspector-add-output-port-select"
             />
             <button 
+              type="button"
               @click="activeDropdownTarget = null" 
               class="text-[10px] text-muted-foreground w-full text-center mt-2 hover:text-foreground underline decoration-dashed underline-offset-2"
               data-testid="node-inspector-cancel-add-output-port-btn"
@@ -147,8 +160,10 @@
             </button>
           </div>
 
+          <!-- Tombol Pemicu Tambah Output Port -->
           <button 
             v-else
+            type="button"
             @click="handleAddPort('output')"
             class="w-full flex items-center justify-center gap-1 py-1.5 text-[10px] border border-dashed border-border text-muted-foreground hover:text-foreground hover:border-foreground/50 rounded transition-colors group"
             data-testid="node-inspector-add-output-port-btn"
@@ -163,38 +178,52 @@
 </template>
 
 <script setup>
+import { computed } from 'vue';
 import { Network, Trash2, Plus } from 'lucide-vue-next';
 import { useNodeLogic } from '@nodes/nodes.js';
-import {
-  PropertySection,
-  IconButton,
-  BaseSelect
-} from '@components/components.js';
+import { PropertySection, IconButton, BaseSelect } from '@components/components.js';
 
 const { 
   selectedNode, 
   activeDropdownTarget,
-  availableOptions,   
+  availableOptions,
+  effectiveDynamicMode,   
   handleAddPort,   
   addFromDropdown,   
   removeDynamicInput,
   updatePortLabel
 } = useNodeLogic();
 
+const dynamicModeLabel = computed(() => effectiveDynamicMode.value);
+
+const isInputDynamic = computed(() => {
+  const mode = effectiveDynamicMode.value;
+  return mode === 'sequential' || mode === 'inputProperty';
+});
+
+const isOutputDynamic = computed(() => {
+  return effectiveDynamicMode.value === 'outputProperty';
+});
+
+function isRemovablePort(portId) {
+  const protectedPorts = ['exec_in', 'exec_out', 'in_target', 'target_in', 'sk_main', 'ptr_click_main'];
+  return !protectedPorts.includes(portId);
+}
+
 function getPortColor(port) {
-   if (port.color) return port.color;
-   
-   const type = (port.dataType || port.type || 'any').toLowerCase();
-   
-   switch(type) {
-       case 'execution': return '#ffffff'; 
-       case 'boolean':   return '#f44336';
-       case 'string':    return '#9c27b0'; 
-       case 'number':    return '#00e676'; 
-       case 'list':      return '#00bcd4'; 
-       case 'map':       return '#ff9800'; 
-       case 'any':       return '#9ca3af'; 
-       default:          return '#777777';
-   }
+  if (port.color) return port.color;
+  
+  const type = (port.dataType || port.type || 'any').toLowerCase();
+  
+  switch(type) {
+    case 'execution': return '#ffffff'; 
+    case 'boolean':   return '#f44336';
+    case 'string':    return '#9c27b0'; 
+    case 'number':    return '#00e676'; 
+    case 'list':      return '#00bcd4'; 
+    case 'map':       return '#ff9800'; 
+    case 'any':       return '#9ca3af'; 
+    default:          return '#777777';
+  }
 }
 </script>

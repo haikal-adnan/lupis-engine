@@ -16,8 +16,6 @@ const MAX_ZOOM = 5.0
 const ZOOM_SPEED = 0.1
 const SNAP_THRESHOLD = 20
 
-// Ditingkatkan agar Playwright drag-and-drop selalu snap dengan stabil
-
 let cachedRect = null
 
 export function useGraphEditor() {
@@ -95,8 +93,7 @@ export function useGraphEditor() {
     const payload = {
       id: GenerateUUID(),
       type: template.type,
-      allowDynamicInputs: template.allowDynamicInputs ?? false,
-      allowDynamicOutputs: template.allowDynamicOutputs ?? false,
+      dynamicMode: template.dynamicMode ?? 'none',
       name: template.label,
       position,
       ...template.defaultData

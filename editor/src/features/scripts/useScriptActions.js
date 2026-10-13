@@ -1,3 +1,5 @@
+// lokasi: src/editor/scripts/composables/useScriptActions.js
+
 import { useScriptStore } from '@scripts/scripts.js';
 import { useSceneStore } from '@scenes/scenes.js';
 import { useProjectStore } from '@projects/projects.js';
@@ -49,7 +51,7 @@ export function useScriptActions() {
   };
 
   const createScript = async (type = 'component', folderId = null) => {
-    const projectId = projectStore.project?.id || null;
+    const projectId = projectStore.activeProject?.id || projectStore.project?.id || null;
     const targetFolderId = folderId !== null ? folderId : (folderStore.activeFolderId || null);
 
     const defaultName = type === 'component' ? 'NewComponent' : 'NewSceneLogic';
@@ -124,13 +126,8 @@ export function useScriptActions() {
     if (rawNewName && rawNewName.trim() !== '') {
       const validName = getValidUniqueName(rawNewName.trim(), scriptId);
       if (validName !== script.name) {
-        // 1. Update state di RAM
         scriptStore.updateScriptInList(scriptId, { name: validName });
-
-        // 2. Persist metadata nama baru ke OPFS (Tambahkan baris ini)
         await scriptStore.syncScriptsMetaToOPFS();
-
-        // 3. Mark project dirty
         projectStore.markAsDirty();
 
         showPop({

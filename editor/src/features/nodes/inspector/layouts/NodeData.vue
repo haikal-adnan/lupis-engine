@@ -1,173 +1,307 @@
-<!-- lokasi: NodeInspector.vue -->
+<!-- lokasi: src/editor/nodes/components/NodeData.vue -->
 <template>
-  <div class="w-full">
-    <!-- Inspector Property Section -->
-    <PropertySection 
-      v-if="node && (isVariableNode || hasTopData || hasInputPorts)" 
-      title="Parameters" 
-      :icon="Sliders"
-    >
-      <!-- ========================================== -->
-      <!-- KHUSUS: NODE VARIABLE (GET & SET VARIABLE) -->
-      <!-- ========================================== -->
-      <template v-if="isVariableNode">
-        <PropertyRow label="Variable">
-          <VariableSelect
-            :model-value="node.data?.variableId"
-            :filter-by-type="false"
-            @update:model-value="onSelectVariable"
+  <PropertySection 
+    v-if="node && (isVariableNode || hasTopData || hasInputPorts || isDynamicNode)" 
+    title="Parameters" 
+    :icon="Sliders"
+  >
+    <!-- ================================================================= -->
+    <!-- KHUSUS: NODE VARIABLE (GET & SET VARIABLE)                        -->
+    <!-- ================================================================= -->
+    <template v-if="isVariableNode">
+      <!-- 1. Pemilihan Target Variabel -->
+      <PropertyRow label="Variable">
+        <VariableSelect
+          :model-value="node.data?.variableId"
+          :filter-by-type="false"
+          @update:model-value="onSelectVariable"
+        />
+      </PropertyRow>
+
+      <!-- 2. Khusus Variable Set: Kontrol Value Input (Direct / Variable Binding) -->
+      <template v-if="node.type === 'variable_set' && variableSetInputPort">
+        <PropertyRow 
+          label="Value"
+          data-testid="node-inspector-port-row"
+          :data-port-id="variableSetInputPort.id"
+        >
+          <!-- Badge LINKED / NOT SET -->
+          <template #actions>
+            <span v-if="isInputConnected(variableSetInputPort.id)" class="text-[9px] font-mono text-green-400 animate-pulse font-bold" data-testid="node-inspector-port-linked-badge">
+              LINKED
+            </span>
+            <span v-else-if="isErrorNotSet(variableSetInputPort.id, getPortValue(variableSetInputPort))" class="text-[9px] font-mono text-red-500 font-bold uppercase tracking-tighter">
+              NOT SET
+            </span>
+          </template>
+
+          <!-- Control Wrapper -->
+          <div 
+            class="flex items-start gap-1.5 w-full rounded-md transition-all"
+            :class="{ 
+              'opacity-40 pointer-events-none filter grayscale': isInputConnected(variableSetInputPort.id),
+              'ring-1 ring-red-500/30': !isInputConnected(variableSetInputPort.id) && isErrorNotSet(variableSetInputPort.id, getPortValue(variableSetInputPort)) 
+            }"
+          >
+            <!-- Switch Mode Button -->
+            <IconButton
+              @click="handleToggleMode(variableSetInputPort.id)"
+              :disabled="isInputConnected(variableSetInputPort.id)"
+              :active="getMode(variableSetInputPort.id) === 'variable'"
+              :tooltip="getMode(variableSetInputPort.id) === 'variable' ? 'Switch to Direct Input' : 'Switch to Variable'"
+              class="shrink-0"
+              data-testid="node-inspector-port-mode-toggle"
+            >
+              <Variable v-if="getMode(variableSetInputPort.id) === 'variable'" class="w-3.5 h-3.5 text-purple-400" />
+              <Edit3 v-else class="w-3.5 h-3.5" />
+            </IconButton>
+
+            <!-- MODE 1: VARIABLE BINDING (Ambil Nilai dari Variabel Lain) -->
+            <div v-if="getMode(variableSetInputPort.id) === 'variable'" class="flex-1 min-w-0" data-testid="node-inspector-port-variable-group">
+              <VariableInputGroup
+                :binding-value="getVariableBinding(variableSetInputPort.id)"
+                :data-type="getInputDataType(variableSetInputPort, getPortValue(variableSetInputPort))"
+                :modifier="getVariableModifier(variableSetInputPort.id)"
+                :custom-text="getCustomText(variableSetInputPort.id)"
+                :disabled="isInputConnected(variableSetInputPort.id)"
+                @update:binding-value="handleSetVariableBinding(variableSetInputPort.id, $event)"
+                @update:modifier="handleSetVariableModifier(variableSetInputPort.id, $event)"
+                @update:custom-text="handleSetCustomText(variableSetInputPort.id, $event)"
+                @clear:modifier="handleClearVariableModifier(variableSetInputPort.id)"
+              />
+            </div>
+
+            <!-- MODE 2: DIRECT VALUE INPUT (BaseNumber, BaseSelect, BaseInput) -->
+            <div v-else class="flex-1 min-w-0">
+              <BaseSelect 
+                v-if="getInputDataType(variableSetInputPort, getPortValue(variableSetInputPort)) === 'boolean'"
+                :model-value="getPortValue(variableSetInputPort)"
+                :options="booleanOptions"
+                placeholder="Choose..."
+                @update:model-value="handleUpdateDirectValue(variableSetInputPort.id, $event)"
+                data-testid="node-inspector-port-boolean-select"
+              />
+
+              <BaseNumber 
+                v-else-if="getInputDataType(variableSetInputPort, getPortValue(variableSetInputPort)) === 'number'"
+                :model-value="getPortValue(variableSetInputPort)"
+                @focus="startScriptTransaction"
+                @blur="endScriptTransactionWithDelay(0)"
+                @update:model-value="handleUpdateDirectValue(variableSetInputPort.id, $event)"
+                class="font-mono w-full"
+                :placeholder="getPlaceholder(variableSetInputPort.id, getPortValue(variableSetInputPort), 'Number')"
+                data-testid="node-inspector-port-number-input"
+              />
+
+              <BaseInput 
+                v-else
+                :model-value="getPortValue(variableSetInputPort)"
+                :model-value-live="getPortValue(variableSetInputPort)"
+                @update:model-value="handleUpdateDirectValue(variableSetInputPort.id, $event)"
+                class="w-full"
+                :placeholder="getPlaceholder(variableSetInputPort.id, getPortValue(variableSetInputPort), 'String')"
+                data-testid="node-inspector-port-text-input"
+              />
+            </div>
+          </div>
+        </PropertyRow>
+      </template>
+    </template>
+
+    <!-- ================================================================= -->
+    <!-- GENERIC NODE INSPECTOR                                            -->
+    <!-- ================================================================= -->
+    <template v-else>
+      <template v-for="(value, key) in node.data" :key="'data-'+key">
+        <PropertyRow 
+          v-if="shouldShowDataField(key)" 
+          :label="formatLabel(key)"
+          data-testid="node-inspector-data-row"
+          :data-field-key="key"
+        >
+          <BaseSelect 
+            v-if="typeof value === 'boolean'"
+            :model-value="value"
+            :options="booleanOptions"
+            @update:model-value="updateData(key, $event)"
+          />
+
+          <BaseNumber 
+            v-else-if="typeof value === 'number'"
+            :model-value="value"
+            @focus="startScriptTransaction"
+            @blur="endScriptTransactionWithDelay(0)"
+            @update:model-value="updateData(key, $event)"
+            class="font-mono"
+          />
+
+          <BaseInput 
+            v-else-if="isPrimitive(value)"
+            :model-value="value"
+            @update:model-value="updateData(key, $event)"
           />
         </PropertyRow>
       </template>
 
-      <!-- ========================================== -->
-      <!-- GENERIC NODE INSPECTOR (Properti Ekstra)    -->
-      <!-- ========================================== -->
-      <template v-else>
-        <!-- 1. Top Level Data Fields -->
-        <template v-for="(value, key) in node.data" :key="'data-'+key">
-          <PropertyRow 
-            v-if="shouldShowDataField(key)" 
-            :label="formatLabel(key)"
-            data-testid="node-inspector-data-row"
-            :data-field-key="key"
-          >
-            <BaseSelect 
-              v-if="typeof value === 'boolean'"
-              :model-value="value"
-              :options="booleanOptions"
-              @update:model-value="updateData(key, $event)"
-            />
+      <template v-for="(port, idx) in nonExecutionInputs" :key="'port-'+port.id">
+        <PropertyRow 
+          :label="port.label || formatLabel(port.id)"
+          data-testid="node-inspector-port-row"
+          :data-port-id="port.id"
+          :data-port-index="idx"
+        >
+          <template #actions>
+            <span v-if="isInputConnected(port.id)" class="text-[9px] font-mono text-green-400 animate-pulse font-bold" data-testid="node-inspector-port-linked-badge">
+              LINKED
+            </span>
+            <span v-else-if="isErrorNotSet(port.id, getPortValue(port))" class="text-[9px] font-mono text-red-500 font-bold uppercase tracking-tighter">
+              NOT SET
+            </span>
 
-            <BaseNumber 
-              v-else-if="typeof value === 'number'"
-              :model-value="value"
-              @focus="startScriptTransaction"
-              @blur="endScriptTransactionWithDelay(0)"
-              @update:model-value="updateData(key, $event)"
-              class="font-mono"
-            />
-
-            <BaseInput 
-              v-else-if="isPrimitive(value)"
-              :model-value="value"
-              @update:model-value="updateData(key, $event)"
-            />
-          </PropertyRow>
-        </template>
-
-        <!-- 2. Node Port Values / Inputs Dynamic Controls -->
-        <template v-for="(port, idx) in nonExecutionInputs" :key="'port-'+port.id">
-          <PropertyRow 
-            :label="port.label || formatLabel(port.id)"
-            data-testid="node-inspector-port-row"
-            :data-port-id="port.id"
-            :data-port-index="idx"
-          >
-            <!-- Badge LINKED / NOT SET -->
-            <template #actions>
-              <span v-if="isInputConnected(port.id)" class="text-[9px] font-mono text-green-400 animate-pulse font-bold" data-testid="node-inspector-port-linked-badge">
-                LINKED
-              </span>
-              <span v-else-if="isErrorNotSet(port.id, getPortValue(port))" class="text-[9px] font-mono text-red-500 font-bold uppercase tracking-tighter">
-                NOT SET
-              </span>
-            </template>
-
-            <!-- Control Wrapper -->
-            <div 
-              class="flex items-start gap-1.5 w-full rounded-md transition-all"
-              :class="{ 
-                'opacity-40 pointer-events-none filter grayscale': isInputConnected(port.id),
-                'ring-1 ring-red-500/30': !isInputConnected(port.id) && isErrorNotSet(port.id, getPortValue(port)) 
-              }"
+            <button 
+              v-if="isDynamicPort(port.id)" 
+              type="button"
+              @click="removeDynamicInput(port.id, 'input')"
+              class="text-xs text-muted-foreground hover:text-red-400 transition-colors px-1"
+              title="Remove Port"
             >
-              <!-- Switch Button -->
-              <IconButton
-                @click="toggleMode(port.id)"
+              &times;
+            </button>
+          </template>
+
+          <div 
+            class="flex items-start gap-1.5 w-full rounded-md transition-all"
+            :class="{ 
+              'opacity-40 pointer-events-none filter grayscale': isInputConnected(port.id),
+              'ring-1 ring-red-500/30': !isInputConnected(port.id) && isErrorNotSet(port.id, getPortValue(port)) 
+            }"
+          >
+            <IconButton
+              @click="toggleMode(port.id)"
+              :disabled="isInputConnected(port.id)"
+              :active="getMode(port.id) === 'variable'"
+              :tooltip="getMode(port.id) === 'variable' ? 'Switch to Direct Input' : 'Switch to Variable'"
+              class="shrink-0"
+              data-testid="node-inspector-port-mode-toggle"
+            >
+              <Variable v-if="getMode(port.id) === 'variable'" class="w-3.5 h-3.5 text-purple-400" />
+              <Edit3 v-else class="w-3.5 h-3.5" />
+            </IconButton>
+
+            <div v-if="getMode(port.id) === 'variable'" class="flex-1 min-w-0" data-testid="node-inspector-port-variable-group">
+              <VariableInputGroup
+                :binding-value="getVariableBinding(port.id)"
+                :data-type="getInputDataType(port, getPortValue(port))"
+                :modifier="getVariableModifier(port.id)"
+                :custom-text="getCustomText(port.id)"
                 :disabled="isInputConnected(port.id)"
-                :active="getMode(port.id) === 'variable'"
-                :tooltip="getMode(port.id) === 'variable' ? 'Switch to Direct Input' : 'Switch to Variable'"
-                class="shrink-0"
-                data-testid="node-inspector-port-mode-toggle"
+                @update:binding-value="setVariableBinding(port.id, $event)"
+                @update:modifier="setVariableModifier(port.id, $event)"
+                @update:custom-text="handleSetCustomText(port.id, $event)"
+                @clear:modifier="clearVariableModifier(port.id)"
+              />
+            </div>
+
+            <div v-else class="flex-1 min-w-0">
+              <BaseSelect 
+                v-if="hasOptions(port.id)"
+                :model-value="getPortValue(port)"
+                :options="getOptions(port.id)"
+                placeholder="Choose option..."
+                @update:model-value="updateNodeValue(port.id, $event)"
+                data-testid="node-inspector-port-options-select"
+              />
+
+              <BaseSelect 
+                v-else-if="getInputDataType(port, getPortValue(port)) === 'boolean'"
+                :model-value="getPortValue(port)"
+                :options="booleanOptions"
+                placeholder="Choose..."
+                @update:model-value="updateNodeValue(port.id, $event)"
+                data-testid="node-inspector-port-boolean-select"
+              />
+
+              <BaseNumber 
+                v-else-if="getInputDataType(port, getPortValue(port)) === 'number'"
+                :model-value="getPortValue(port)"
+                @focus="startScriptTransaction"
+                @blur="endScriptTransactionWithDelay(0)"
+                @update:model-value="updateNodeValue(port.id, $event)"
+                class="font-mono w-full"
+                :placeholder="getPlaceholder(port.id, getPortValue(port), 'Number')"
+                data-testid="node-inspector-port-number-input"
+              />
+
+              <BaseInput 
+                v-else
+                :model-value="getPortValue(port)"
+                :model-value-live="getPortValue(port)"
+                @update:model-value="updateNodeValue(port.id, $event)"
+                class="w-full"
+                :placeholder="getPlaceholder(port.id, getPortValue(port), 'String')"
+                data-testid="node-inspector-port-text-input"
+              />
+            </div>
+          </div>
+        </PropertyRow>
+      </template>
+
+      <template v-if="effectiveDynamicMode === 'outputProperty'">
+        <template v-for="port in nonExecutionOutputs" :key="'out-port-'+port.id">
+          <PropertyRow :label="port.label || formatLabel(port.id)">
+            <template #actions>
+              <button 
+                type="button"
+                @click="removeDynamicInput(port.id, 'output')"
+                class="text-xs text-muted-foreground hover:text-red-400 transition-colors px-1"
+                title="Remove Port"
               >
-                <Variable v-if="getMode(port.id) === 'variable'" class="w-3.5 h-3.5 text-purple-400" />
-                <Edit3 v-else class="w-3.5 h-3.5" />
-              </IconButton>
-
-              <!-- MODE 1: VARIABLE INPUT GROUP -->
-              <div v-if="getMode(port.id) === 'variable'" class="flex-1 min-w-0" data-testid="node-inspector-port-variable-group">
-                <VariableInputGroup
-                  :binding-value="getVariableBinding(port.id)"
-                  :data-type="getInputDataType(port, getPortValue(port))"
-                  :modifier="getVariableModifier(port.id)"
-                  :disabled="isInputConnected(port.id)"
-                  @update:binding-value="setVariableBinding(port.id, $event)"
-                  @update:modifier="setVariableModifier(port.id, $event)"
-                  @clear:modifier="clearVariableModifier(port.id)"
-                />
-              </div>
-
-              <!-- MODE 2: DIRECT VALUE INPUT -->
-              <div v-else class="flex-1 min-w-0">
-                <BaseSelect 
-                  v-if="hasOptions(port.id)"
-                  :model-value="getPortValue(port)"
-                  :options="getOptions(port.id)"
-                  placeholder="Choose option..."
-                  @update:model-value="updateNodeValue(port.id, $event)"
-                  data-testid="node-inspector-port-options-select"
-                />
-
-                <BaseSelect 
-                  v-else-if="getInputDataType(port, getPortValue(port)) === 'boolean'"
-                  :model-value="getPortValue(port)"
-                  :options="booleanOptions"
-                  placeholder="Choose..."
-                  @update:model-value="updateNodeValue(port.id, $event)"
-                  data-testid="node-inspector-port-boolean-select"
-                />
-
-                <BaseNumber 
-                  v-else-if="getInputDataType(port, getPortValue(port)) === 'number'"
-                  :model-value="getPortValue(port)"
-                  @focus="startScriptTransaction"
-                  @blur="endScriptTransactionWithDelay(0)"
-                  @update:model-value="updateNodeValue(port.id, $event)"
-                  class="font-mono w-full"
-                  :placeholder="getPlaceholder(port.id, getPortValue(port), 'Number')"
-                  data-testid="node-inspector-port-number-input"
-                />
-
-                <BaseInput 
-                  v-else
-                  :model-value="getPortValue(port)"
-                  :model-value-live="getPortValue(port)"
-                  @update:model-value="updateNodeValue(port.id, $event)"
-                  class="w-full"
-                  :placeholder="getPlaceholder(port.id, getPortValue(port), 'String')"
-                  data-testid="node-inspector-port-text-input"
-                />
-              </div>
+                &times;
+              </button>
+            </template>
+            <div class="text-xs text-muted-foreground font-mono py-1 px-2 rounded bg-muted/40 border border-border/40">
+              Output: {{ port.dataType }}
             </div>
           </PropertyRow>
         </template>
       </template>
 
-      <!-- Empty State -->
-      <div 
-        v-if="!isVariableNode && !hasTopData && !hasInputPorts" 
-        class="px-2 py-4 text-center text-xs text-muted-foreground italic"
-      >
-        No editable parameters.
+      <div v-if="isPropertyNode && availableOptions.length > 0" class="pt-2 border-t border-border/40">
+        <PropertyRow label="Add Property">
+          <BaseSelect
+            :model-value="''"
+            :options="availableOptions"
+            placeholder="+ Select property..."
+            @update:model-value="onAddPropertySelected"
+          />
+        </PropertyRow>
       </div>
-    </PropertySection>
-  </div>
+
+      <div v-if="isSequentialNode" class="pt-2 border-t border-border/40">
+        <button
+          type="button"
+          @click="handleAddPort('input')"
+          class="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 text-xs font-mono border border-dashed border-border rounded-md text-muted-foreground hover:text-foreground hover:border-foreground/50 transition-colors bg-secondary/10 hover:bg-secondary/20"
+        >
+          <Plus class="w-3.5 h-3.5" />
+          <span>+ Add Value (Val {{ nextSequentialNumber }})</span>
+        </button>
+      </div>
+    </template>
+
+    <!-- Empty State -->
+    <div 
+      v-if="!isVariableNode && !hasTopData && !hasInputPorts && !isDynamicNode" 
+      class="px-2 py-4 text-center text-xs text-muted-foreground italic"
+    >
+      No editable parameters.
+    </div>
+  </PropertySection>
 </template>
 
 <script setup>
 import { computed } from 'vue';
-import { Sliders, Variable, Edit3 } from 'lucide-vue-next';
+import { Sliders, Variable, Edit3, Plus } from 'lucide-vue-next';
 import { VariableInputGroup, VariableSelect, useNodeInspector, useVariableConfig } from '@nodes/nodes.js';
 import { PropertySection, PropertyRow, BaseInput, BaseNumber, BaseSelect, IconButton } from '@components/components.js';
 import { useScriptStore } from '@scripts/scripts.js';
@@ -176,7 +310,7 @@ import { useProjectStore } from '@projects/projects.js';
 const props = defineProps({ node: Object });
 const scriptStore = useScriptStore();
 const projectStore = useProjectStore();
-const { getVarColor } = useVariableConfig();
+const { getVarColor, getDefaultValueForType, sanitizeVariableValue } = useVariableConfig();
 
 const { 
   node, 
@@ -192,7 +326,13 @@ const {
   updateNodeDataField, 
   updateNodeValue, 
   startScriptTransaction, 
-  endScriptTransactionWithDelay 
+  endScriptTransactionWithDelay,
+  availableOptions,
+  activeDropdownTarget,
+  effectiveDynamicMode,
+  handleAddPort,
+  addFromDropdown,
+  removeDynamicInput
 } = useNodeInspector(props);
 
 const booleanOptions = [
@@ -201,7 +341,7 @@ const booleanOptions = [
 ];
 
 const IGNORED_KEYS = [
-  'code', 'values', 'propertyOptions', 'allowDynamicInputs', 'allowDynamicOutputs', 
+  'code', 'values', 'propertyOptions', 'dynamicMode', 
   'mappings', 'options', 'valueModes', 'variableBindings', 'variableModifiers',
   'variableId', 'scope', 'items'
 ];
@@ -210,13 +350,141 @@ const isVariableNode = computed(() => {
   return node.value?.type === 'variable_get' || node.value?.type === 'variable_set';
 });
 
+const variableSetInputPort = computed(() => {
+  if (node.value?.type !== 'variable_set' || !node.value.inputs) return null;
+  return node.value.inputs.find(port => {
+    const dType = String(port.dataType || '').toLowerCase();
+    const pId = String(port.id || '').toLowerCase();
+    return dType !== 'execution' && pId !== 'exec_in';
+  }) || null;
+});
+
+const isDynamicNode = computed(() => {
+  const mode = effectiveDynamicMode.value;
+  return mode === 'inputProperty' || mode === 'outputProperty' || mode === 'sequential';
+});
+
+const isPropertyNode = computed(() => {
+  const mode = effectiveDynamicMode.value;
+  return mode === 'inputProperty' || mode === 'outputProperty';
+});
+
+const isSequentialNode = computed(() => {
+  return effectiveDynamicMode.value === 'sequential';
+});
+
+const nextSequentialNumber = computed(() => {
+  if (!node.value?.inputs) return 1;
+  return node.value.inputs.filter(p => !['exec_in', 'target_in'].includes(p.id)).length + 1;
+});
+
+const nonExecutionInputs = computed(() => {
+  if (!node.value || !Array.isArray(node.value.inputs)) return [];
+  return node.value.inputs.filter(port => {
+    const dType = String(port.dataType || '').toLowerCase();
+    const pId = String(port.id || '').toLowerCase();
+    return dType !== 'execution' && pId !== 'exec_in' && pId !== 'exec_out';
+  });
+});
+
+const nonExecutionOutputs = computed(() => {
+  if (!node.value || !Array.isArray(node.value.outputs)) return [];
+  return node.value.outputs.filter(port => {
+    const dType = String(port.dataType || '').toLowerCase();
+    const pId = String(port.id || '').toLowerCase();
+    return dType !== 'execution' && pId !== 'exec_in' && pId !== 'exec_out';
+  });
+});
+
+const hasInputPorts = computed(() => nonExecutionInputs.value.length > 0);
+
+const hasTopData = computed(() => {
+  const data = node.value?.data || {};
+  return Object.keys(data).filter(k => shouldShowDataField(k)).length > 0;
+});
+
+function isDynamicPort(portId) {
+  const protectedPorts = ['exec_in', 'exec_out', 'in_target', 'target_in', 'sk_main', 'ptr_click_main'];
+  return !protectedPorts.includes(portId);
+}
+
+function onAddPropertySelected(optionValue) {
+  if (!optionValue || !node.value) return;
+  activeDropdownTarget.value = effectiveDynamicMode.value === 'outputProperty' ? 'output' : 'input';
+  addFromDropdown(optionValue);
+}
+
+function getCustomText(portId) {
+  return node.value?.data?.variableModifiers?.[portId]?.format || '';
+}
+
+function handleSetCustomText(portId, text) {
+  const currentMods = node.value?.data?.variableModifiers || {};
+  const existing = currentMods[portId] || { type: 'none', value: 0 };
+  updateNodeDataField('data.variableModifiers', {
+    ...currentMods,
+    [portId]: { ...existing, format: text }
+  });
+  regenerateVariableSetCode();
+}
+
+function handleToggleMode(portId) {
+  toggleMode(portId);
+  regenerateVariableSetCode();
+}
+
+function handleSetVariableBinding(portId, varId) {
+  setVariableBinding(portId, varId);
+  regenerateVariableSetCode();
+}
+
+function handleSetVariableModifier(portId, modifier) {
+  setVariableModifier(portId, modifier);
+  regenerateVariableSetCode();
+}
+
+function handleClearVariableModifier(portId) {
+  clearVariableModifier(portId);
+  regenerateVariableSetCode();
+}
+
+function handleUpdateDirectValue(portId, value) {
+  updateNodeValue(portId, value);
+  regenerateVariableSetCode();
+}
+
+function findVariableMeta(varId) {
+  if (!varId) return null;
+  const globals = (projectStore.activeProject?.globalVariables || []).map(v => ({ ...v, scope: 'Global' }));
+  const locals = (scriptStore.activeScript?.localVariables || []).map(v => ({ ...v, scope: 'Local' }));
+  return [...globals, ...locals].find(v => v.id === varId) || null;
+}
+
+function regenerateVariableSetCode() {
+  if (!node.value || node.value.type !== 'variable_set') return;
+
+  const targetVarId = node.value.data?.variableId;
+  const targetVar = findVariableMeta(targetVarId);
+  if (!targetVar) return;
+
+  const varName = targetVar.name;
+  const setMethod = targetVar.scope === 'Global' ? 'setGlobal' : 'setLocal';
+  const portId = variableSetInputPort.value?.id || 'val_0';
+
+  node.value.data.code = 
+`const val = inputs['${portId}'] ?? inputs['${varName}'];
+context.${setMethod}('${varName}', val);
+outputs['out_0'] = val;
+outputs['exec_out'] = true;
+return;`;
+
+  scriptStore.saveActiveScript();
+}
+
 function onSelectVariable(newVarId) {
   if (!node.value || !newVarId) return;
 
-  const globals = (projectStore.activeProject?.globalVariables || []).map(v => ({ ...v, scope: 'Global' }));
-  const locals = (scriptStore.activeScript?.localVariables || []).map(v => ({ ...v, scope: 'Local' }));
-  const targetVar = [...globals, ...locals].find(v => v.id === newVarId);
-
+  const targetVar = findVariableMeta(newVarId);
   if (!targetVar) return;
 
   const isGet = node.value.type === 'variable_get';
@@ -226,16 +494,10 @@ function onSelectVariable(newVarId) {
   const scope = targetVar.scope;
 
   const getMethod = scope === 'Global' ? 'getGlobal' : 'getLocal';
-  const setMethod = scope === 'Global' ? 'setGlobal' : 'setLocal';
-
   const newTitle = isGet ? `Get ${varName}` : `Set ${varName}`;
-  const nodeCode = isGet
-    ? `outputs['out_0'] = context.${getMethod}('${varName}');\nreturn;`
-    : `const val = inputs['val_0'];\ncontext.${setMethod}('${varName}', val);\noutputs['out_0'] = val;\noutputs['exec_out'] = true;\nreturn;`;
 
   node.value.data.variableId = targetVar.id;
   node.value.data.scope = scope;
-  node.value.data.code = nodeCode;
 
   node.value.label = newTitle;
   if (node.value.settings) {
@@ -243,24 +505,63 @@ function onSelectVariable(newVarId) {
     node.value.settings.headerColor = varColor;
   }
 
-  if (node.value.inputs) {
-    node.value.inputs.forEach(inp => {
-      if (inp.dataType !== 'execution') {
-        inp.dataType = varType;
-        inp.color = varColor;
-        inp.label = varName;
-      }
-    });
-  }
+  if (!node.value.inputs) node.value.inputs = [];
+  if (!node.value.outputs) node.value.outputs = [];
 
-  if (node.value.outputs) {
-    node.value.outputs.forEach(out => {
-      if (out.dataType !== 'execution') {
-        out.dataType = varType;
-        out.color = varColor;
-        out.label = varName;
+  if (isGet) {
+    node.value.inputs = [];
+    const outPort = node.value.outputs.find(o => o.id === 'out_0');
+    if (outPort) {
+      outPort.dataType = varType;
+      outPort.color = varColor;
+      outPort.label = varName;
+    } else {
+      node.value.outputs = [
+        { id: 'out_0', label: varName, dataType: varType, color: varColor }
+      ];
+    }
+    node.value.data.code = `outputs['out_0'] = context.${getMethod}('${varName}');\nreturn;`;
+  } else {
+    const valPort = node.value.inputs.find(i => i.id === 'val_0');
+    if (valPort) {
+      valPort.dataType = varType;
+      valPort.color = varColor;
+      valPort.label = varName;
+    } else {
+      node.value.inputs.push({
+        id: 'val_0',
+        label: varName,
+        dataType: varType,
+        color: varColor
+      });
+    }
+
+    const outPort = node.value.outputs.find(o => o.id === 'out_0');
+    if (outPort) {
+      outPort.dataType = varType;
+      outPort.color = varColor;
+      outPort.label = varName;
+    }
+
+    if (!node.value.data.values) {
+      node.value.data.values = {};
+    }
+    const defaultVal = targetVar.defaultValue !== undefined
+      ? (typeof sanitizeVariableValue === 'function' ? sanitizeVariableValue(targetVar.defaultValue, targetVar.type) : targetVar.defaultValue)
+      : (typeof getDefaultValueForType === 'function' ? getDefaultValueForType(varType) : '');
+
+    node.value.data.values['val_0'] = defaultVal;
+    node.value.data.values[varName] = defaultVal;
+
+    node.value.data.items = [
+      {
+        variableId: targetVar.id,
+        value: defaultVal,
+        dataType: varType
       }
-    });
+    ];
+
+    regenerateVariableSetCode();
   }
 
   scriptStore.saveActiveScript();
@@ -274,28 +575,12 @@ function getPortValue(port) {
   return port.defaultValue ?? '';
 }
 
-const nonExecutionInputs = computed(() => {
-  if (!node.value || !Array.isArray(node.value.inputs)) return [];
-  return node.value.inputs.filter(port => {
-    const dType = String(port.dataType || '').toLowerCase();
-    const pId = String(port.id || '').toLowerCase();
-    return dType !== 'execution' && pId !== 'exec_in' && pId !== 'exec_out';
-  });
-});
-
-const hasInputPorts = computed(() => nonExecutionInputs.value.length > 0);
-
 function shouldShowDataField(key) {
   if (IGNORED_KEYS.includes(key)) return false;
   const fields = node.value?.settings?.visibleDataFields;
   if (Array.isArray(fields) && fields.length > 0) return fields.includes(key);
   return true;
 }
-
-const hasTopData = computed(() => {
-  const data = node.value?.data || {};
-  return Object.keys(data).filter(k => shouldShowDataField(k)).length > 0;
-});
 
 function isNotSet(value) {
   return value === undefined || value === null || value === '';
@@ -320,13 +605,17 @@ function isPrimitive(val) {
 }
 
 function getInputDataType(port, val) {
-  if (val !== null && val !== undefined && val !== '') return typeof val;
   if (port && (port.dataType || port.type)) {
-    const type = (port.dataType || port.type).toLowerCase();
-    if (['number', 'float', 'int'].includes(type)) return 'number';
-    if (['boolean', 'bool'].includes(type)) return 'boolean';
-    if (['string', 'text'].includes(type)) return 'string';
+    const type = String(port.dataType || port.type).toLowerCase();
+    if (type !== 'any') {
+      if (['number', 'float', 'int'].includes(type)) return 'number';
+      if (['boolean', 'bool'].includes(type)) return 'boolean';
+      if (['string', 'text'].includes(type)) return 'string';
+      if (['list', 'array'].includes(type)) return 'list';
+      if (['map', 'object'].includes(type)) return 'map';
+    }
   }
+  if (val !== null && val !== undefined && val !== '') return typeof val;
   return 'string';
 }
 

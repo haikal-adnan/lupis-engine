@@ -6,9 +6,7 @@ import { HierarchyCrudObject } from './hierarchy.js';
 import { ScriptCrudObject } from './scripts.js';
 
 export class NodeGraphCrudObject {
-  /**
-   * @param {import('@playwright/test').Page} page
-   */
+  /** @param {import('@playwright/test').Page} page */
   constructor(page) {
     this.page = page;
     this.nodeGraph = new NodeGraphPage(page);
@@ -61,13 +59,11 @@ export class NodeGraphCrudObject {
     await this.nodeGraph.deleteNodeById(nodeId);
   }
 
-  /**
-   * Memastikan perubahan node/edge tersimpan di Pinia Store / OPFS
-   * sebelum data diekstrak oleh prepareEngineData() untuk Preview.
-   */
   async saveGraphState() {
     await this.page.evaluate(() => {
-      const scriptStore = window.$pinia?.state.value?.script;
+      const app = document.querySelector('#app')?.__vue_app__;
+      const pinia = app?.config?.globalProperties?.$pinia;
+      const scriptStore = pinia?._s?.get('script');
       if (scriptStore && typeof scriptStore.saveActiveScript === 'function') {
         scriptStore.saveActiveScript();
       }

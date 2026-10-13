@@ -12,7 +12,8 @@ const getStorageItem = (key, fallback = []) => {
   return fallback;
 };
 
-const recentNodesIds = ref(getStorageItem('lupis-recent-nodes'));
+// Batasi maksimal 10 item saat memuat dari localStorage
+const recentNodesIds = ref(getStorageItem('lupis-recent-nodes').slice(0, 10));
 
 export function useNodePreferences() {
   const { nodeGroups } = useNodeBlueprint();
@@ -35,7 +36,9 @@ export function useNodePreferences() {
 
     let recents = recentNodesIds.value.filter(id => id !== type);
     recents.unshift(type); 
-    if (recents.length > 15) recents.pop(); 
+    
+    // Batasi hingga 10 item
+    if (recents.length > 10) recents.pop(); 
     
     recentNodesIds.value = recents;
     localStorage.setItem('lupis-recent-nodes', JSON.stringify(recents));

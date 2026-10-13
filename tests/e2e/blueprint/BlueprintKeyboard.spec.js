@@ -1,7 +1,14 @@
 import { test } from '../fixtures.js';
 
+test.use({
+  projectOptions: {
+    prefix: 'Blueprint Keyboard Events E2E',
+    description: 'E2E runtime logic evaluation for Keyboard events, key simulation, state checks, and 2D axis calculation in engine preview',
+  },
+});
+
 test.describe('Blueprint Keyboard Events E2E Testing', () => {
-  test('1. Pengujian event_on_key & simulate_key', async ({ blueprintRunner }) => {
+  test('1. Evaluates event_on_key triggering via simulate_key', async ({ blueprintRunner }) => {
     await blueprintRunner.runTest({
       testName: 'Keyboard OnKey & Simulate Test',
       entityName: 'KeyboardEntity1',
@@ -30,7 +37,7 @@ test.describe('Blueprint Keyboard Events E2E Testing', () => {
     });
   });
 
-  test('2. Pengujian get_key_state dengan Branch & Notification', async ({ blueprintRunner }) => {
+  test('2. Evaluates get_key_state with Branch condition and Notification', async ({ blueprintRunner }) => {
     await blueprintRunner.runTest({
       testName: 'Get Key State Test',
       entityName: 'KeyboardEntity2',
@@ -67,7 +74,7 @@ test.describe('Blueprint Keyboard Events E2E Testing', () => {
     });
   });
 
-  test('3. Pengujian calculate_axis_2d dengan Branch & Notification', async ({ blueprintRunner }) => {
+  test('3. Evaluates calculate_axis_2d direction with Branch and Notification', async ({ blueprintRunner }) => {
     await blueprintRunner.runTest({
       testName: 'Calculate Axis 2D Test',
       entityName: 'KeyboardEntity3',

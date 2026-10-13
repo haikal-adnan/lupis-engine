@@ -44,16 +44,12 @@ describe('useScriptHistory Integration', () => {
   let activeScript;
 
   beforeEach(async () => {
-    // Inisialisasi OPFS Mock pada global navigator.storage
     setupMockOPFS();
-
-    // Inisialisasi Pinia instans baru untuk isolasi test
     setActivePinia(createPinia());
 
     scriptStore = useScriptStore();
     workspaceStore = useWorkspaceStore();
 
-    // Setup environment script mock
     const env = await setupMockScriptEnvironment({
       scriptName: 'Test Visual Script',
       nodes: [
@@ -68,9 +64,7 @@ describe('useScriptHistory Integration', () => {
     activeScript = env.script;
     scriptStore.setActiveScript(activeScript);
 
-    // Setup tab di workspaceStore agar useHistory dapat menentukan key yang valid (`tab_${id}`)
     workspaceStore.tabs = [{ id: 'tab_script_1', type: 'script', scriptId: activeScript.id }];
-
     scriptHistory = useScriptHistory();
   });
 
@@ -80,90 +74,81 @@ describe('useScriptHistory Integration', () => {
 
   describe('Node Manipulations Recording and Undo/Redo Integration', () => {
     it('records node movement and restores node position on undo, then reapplies on redo', () => {
-      // Arrange
       const nodeToMove = scriptStore.activeScript.nodes.find(n => n.id === 'node_log');
       const oldPos = { x: 100, y: 100 };
       const newPos = { x: 300, y: 400 };
 
       const movedNodes = [{ id: 'node_log', oldPos, newPos }];
 
-      // Act
       nodeToMove.position = newPos;
       scriptStore.saveActiveScript();
       scriptHistory.recordMoveNodes(movedNodes);
 
       expect(scriptStore.activeScript.nodes.find(n => n.id === 'node_log').position).toEqual({ x: 300, y: 400 });
 
-      // Assert Undo
       scriptHistory.undo();
       expect(scriptStore.activeScript.nodes.find(n => n.id === 'node_log').position).toEqual({ x: 100, y: 100 });
       expect(scriptStore.selectedNodeId).toBe('node_log');
 
-      // Assert Redo
       scriptHistory.redo();
       expect(scriptStore.activeScript.nodes.find(n => n.id === 'node_log').position).toEqual({ x: 300, y: 400 });
     });
 
     it('records node addition and removes it on undo, then restores on redo', () => {
-      // Arrange
-      const newRawNode = { id: 'node_new', type: 'variable', label: 'VarNode', position: { x: 50, y: 50 } };
+      const newRawNode = {
+        id: 'node_new',
+        type: 'variable',
+        label: 'VarNode',
+        dynamicMode: 'none',
+        dynamicData: null,
+        position: { x: 50, y: 50 }
+      };
 
-      // Act
       scriptStore.addNodeToActive(newRawNode);
       scriptHistory.recordAddNode(newRawNode);
 
       expect(scriptStore.activeScript.nodes.some(n => n.id === 'node_new')).toBe(true);
 
-      // Assert Undo
       scriptHistory.undo();
       expect(scriptStore.activeScript.nodes.some(n => n.id === 'node_new')).toBe(false);
 
-      // Assert Redo
       scriptHistory.redo();
       expect(scriptStore.activeScript.nodes.some(n => n.id === 'node_new')).toBe(true);
       expect(scriptStore.selectedNodeId).toBe('node_new');
     });
 
     it('records node removal along with connected edges and restores them on undo', () => {
-      // Arrange
       const nodeToRemove = scriptStore.activeScript.nodes.find(n => n.id === 'node_log');
       const connectedEdges = scriptStore.activeScript.edges.filter(e => e.target === 'node_log' || e.source === 'node_log');
 
-      // Act
       scriptHistory.recordRemoveNodes([nodeToRemove], connectedEdges);
       scriptStore.removeNodeFromActive('node_log');
 
       expect(scriptStore.activeScript.nodes.some(n => n.id === 'node_log')).toBe(false);
       expect(scriptStore.activeScript.edges.some(e => e.id === 'edge_1')).toBe(false);
 
-      // Assert Undo
       scriptHistory.undo();
       expect(scriptStore.activeScript.nodes.some(n => n.id === 'node_log')).toBe(true);
       expect(scriptStore.activeScript.edges.some(e => e.id === 'edge_1')).toBe(true);
 
-      // Assert Redo
       scriptHistory.redo();
       expect(scriptStore.activeScript.nodes.some(n => n.id === 'node_log')).toBe(false);
       expect(scriptStore.activeScript.edges.some(e => e.id === 'edge_1')).toBe(false);
     });
 
     it('records node data property changes and reverts node state on undo', () => {
-      // Arrange
       const nodeId = 'node_log';
       const oldLabel = 'Log';
       const newLabel = 'Log Message';
 
-      // Act
       scriptHistory.recordNodeDataChange(nodeId, 'label', oldLabel, newLabel);
       scriptStore.updateNodeInActive(nodeId, { label: newLabel });
 
       expect(scriptStore.activeScript.nodes.find(n => n.id === nodeId).label).toBe('Log Message');
 
-      // Assert Undo
       scriptHistory.undo();
       expect(scriptStore.activeScript.nodes.find(n => n.id === nodeId).label).toBe('Log');
 
-      // Assert Redo
       scriptHistory.redo();
       expect(scriptStore.activeScript.nodes.find(n => n.id === nodeId).label).toBe('Log Message');
     });
@@ -171,30 +156,26 @@ describe('useScriptHistory Integration', () => {
 
   describe('Edge and Port Manipulations Recording and Undo/Redo Integration', () => {
     it('records edge creation and removes edge on undo, then reconnects on redo', () => {
-      // Arrange
       const newEdge = { id: 'edge_new', source: 'node_start', target: 'node_log', sourceHandle: 'out_2', targetHandle: 'in_2' };
 
-      // Act
       scriptStore.addEdgeToActive(newEdge);
       scriptHistory.recordAddEdge(newEdge);
 
       expect(scriptStore.activeScript.edges.some(e => e.id === 'edge_new')).toBe(true);
 
-      // Assert Undo
       scriptHistory.undo();
       expect(scriptStore.activeScript.edges.some(e => e.id === 'edge_new')).toBe(false);
 
-      // Assert Redo
       scriptHistory.redo();
       expect(scriptStore.activeScript.edges.some(e => e.id === 'edge_new')).toBe(true);
       expect(scriptStore.selectedEdgeId).toBe('edge_new');
     });
 
     it('records port addition on a node and removes port on undo', () => {
-      // Arrange
       const nodeId = 'node_log';
       const node = scriptStore.activeScript.nodes.find(n => n.id === nodeId);
-      node.allowDynamicInputs = true;
+      node.dynamicMode = 'sequential';
+      node.dynamicData = null;
 
       const newPort = {
         id: 'in_dynamic_1',
@@ -204,18 +185,15 @@ describe('useScriptHistory Integration', () => {
         dataType: 'number'
       };
 
-      // Act: Tambahkan port langsung ke node inputs untuk mempertahankan referensi ID objek
       node.inputs.push(newPort);
       scriptStore.saveActiveScript();
       scriptHistory.recordPortChange(nodeId, 'ADD', newPort, 'input', []);
 
       expect(node.inputs.some(p => p.id === 'in_dynamic_1')).toBe(true);
 
-      // Assert Undo
       scriptHistory.undo();
       expect(scriptStore.activeScript.nodes.find(n => n.id === nodeId).inputs.some(p => p.id === 'in_dynamic_1')).toBe(false);
 
-      // Assert Redo
       scriptHistory.redo();
       expect(scriptStore.activeScript.nodes.find(n => n.id === nodeId).inputs.some(p => p.id === 'in_dynamic_1')).toBe(true);
     });
@@ -223,23 +201,19 @@ describe('useScriptHistory Integration', () => {
 
   describe('Local Variables Management Integration', () => {
     it('records local variables changes and syncs scriptStore state on undo/redo', () => {
-      // Arrange
       const oldVars = [{ id: 'v1', name: 'speed', defaultValue: 10 }];
       const newVars = [{ id: 'v1', name: 'speed', defaultValue: 10 }, { id: 'v2', name: 'health', defaultValue: 100 }];
 
-      // Act
       scriptHistory.recordLocalVariableChange(oldVars, newVars);
       scriptStore.activeScript.localVariables = newVars;
       scriptStore.saveActiveScript();
 
       expect(scriptStore.activeScript.localVariables).toHaveLength(2);
 
-      // Assert Undo
       scriptHistory.undo();
       expect(scriptStore.activeScript.localVariables).toHaveLength(1);
       expect(scriptStore.activeScript.localVariables[0].name).toBe('speed');
 
-      // Assert Redo
       scriptHistory.redo();
       expect(scriptStore.activeScript.localVariables).toHaveLength(2);
       expect(scriptStore.activeScript.localVariables[1].name).toBe('health');
@@ -248,14 +222,11 @@ describe('useScriptHistory Integration', () => {
 
   describe('Edge Cases and Inactive Script Handling', () => {
     it('[Bad Path] ignores history recording when no active script is set in scriptStore', () => {
-      // Arrange
       scriptStore.activeScript = null;
       const rawNode = { id: 'node_orphan', label: 'Orphan' };
 
-      // Act
       scriptHistory.recordAddNode(rawNode);
 
-      // Assert: Set active script back and verify undo performs no operation
       scriptStore.setActiveScript(activeScript);
       const initialNodesCount = activeScript.nodes.length;
 
@@ -264,13 +235,10 @@ describe('useScriptHistory Integration', () => {
     });
 
     it('[Bad Path] ignores node data change recording when old and new values are identical', () => {
-      // Arrange
       const currentValue = 'Start';
 
-      // Act
       scriptHistory.recordNodeDataChange('node_start', 'label', currentValue, currentValue);
 
-      // Assert: Undo shouldn't modify store state
       const initialLabel = scriptStore.activeScript.nodes.find(n => n.id === 'node_start').label;
       scriptHistory.undo();
       const afterUndoLabel = scriptStore.activeScript.nodes.find(n => n.id === 'node_start').label;

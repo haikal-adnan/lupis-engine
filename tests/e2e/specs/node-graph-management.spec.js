@@ -1,3 +1,4 @@
+// lokasi: tests/e2e/specs/node-library-graph.spec.js
 import { test, expect } from '../fixtures.js';
 
 test.use({
@@ -58,7 +59,7 @@ test.describe('Node Library & Graph Editor Unified E2E Testing', () => {
   // =========================================================================
   test('memfilter node secara reaktif pada modal library dan sidebar panel', async ({ nodeLibrary }) => {
     await nodeLibrary.searchInSidebar('Keyboard Events');
-    await expect(nodeLibrary.sidebarSearchItems).not.toHaveCount(0);
+    await expect(nodeLibrary.sidebarSearchItems.first()).toBeVisible();
 
     await nodeLibrary.searchInSidebar('zzz-node-tidak-ada');
     await expect(nodeLibrary.sidebarNoResults).toBeVisible();

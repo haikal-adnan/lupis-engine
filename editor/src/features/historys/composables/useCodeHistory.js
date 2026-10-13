@@ -36,9 +36,10 @@ export function useCodeHistory(extractedNodeId, targetNode, options = {}) {
       const node = targetNode.value
       if (!node || !oldOutputs) return
 
+      const isOutputProperty = node.dynamicMode === 'outputProperty'
       const hasPropertyOptions = Array.isArray(node.data?.propertyOptions) && node.data.propertyOptions.length > 0
 
-      if (node.allowDynamicOutputs && !hasPropertyOptions) {
+      if (node.dynamicMode && node.dynamicMode !== 'none' && !isOutputProperty && !hasPropertyOptions) {
         resetCodeToBlueprint()
       }
     },

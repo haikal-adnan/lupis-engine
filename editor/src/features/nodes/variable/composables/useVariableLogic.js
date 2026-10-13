@@ -295,40 +295,39 @@ export function useVariableLogic(scopeProps) {
     const cleanDefaultValue = sanitizeVariableValue(variable.defaultValue, variable.type);
 
     const newNodePayload = {
-      id: GenerateUUID(),
-      type: actionType,
-      label: isGet ? `Get ${varName}` : `Set ${varName}`,
-      allowDynamicInputs: false,
-      allowDynamicOutputs: false,
-      position: finalPosition,
-      data: { 
-        scope: scope,
-        variableId: varId,
-        code: nodeCode,
-        items: [
-          {
-            variableId: varId,
-            value: cleanDefaultValue,
-            dataType: varType
-          }
-        ]
-      },
-      settings: {
-        headerTitle: isGet ? `Get ${varName}` : `Set ${varName}`,
-        headerColor: varColor,
-        category: 'Variable'
-      },
-      inputs: isGet ? [] : [
-        { id: 'exec_in', label: 'In', dataType: 'execution', color: '#fff' },
-        { id: 'val_0', label: varName, dataType: varType, color: varColor }
-      ],
-      outputs: isGet ? [
-        { id: 'out_0', label: varName, dataType: varType, color: varColor }
-      ] : [
-        { id: 'exec_out', label: 'Out', dataType: 'execution', color: '#fff' },
-        { id: 'out_0', label: varName, dataType: varType, color: varColor }
+    id: GenerateUUID(),
+    type: actionType,
+    label: isGet ? `Get ${varName}` : `Set ${varName}`,
+    dynamicData: null,
+    position: finalPosition,
+    data: { 
+      scope: scope,
+      variableId: varId,
+      code: nodeCode,
+      items: [
+        {
+          variableId: varId,
+          value: cleanDefaultValue,
+          dataType: varType
+        }
       ]
-    };
+    },
+    settings: {
+      headerTitle: isGet ? `Get ${varName}` : `Set ${varName}`,
+      headerColor: varColor,
+      category: 'Variable'
+    },
+    inputs: isGet ? [] : [
+      { id: 'exec_in', label: 'In', dataType: 'execution', color: '#fff' },
+      { id: 'val_0', label: varName, dataType: varType, color: varColor }
+    ],
+    outputs: isGet ? [
+      { id: 'out_0', label: varName, dataType: varType, color: varColor }
+    ] : [
+      { id: 'exec_out', label: 'Out', dataType: 'execution', color: '#fff' },
+      { id: 'out_0', label: varName, dataType: varType, color: varColor }
+    ]
+  };
 
     scriptStore.addNodeToActive(newNodePayload);
     

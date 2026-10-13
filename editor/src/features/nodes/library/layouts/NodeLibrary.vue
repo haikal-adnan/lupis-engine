@@ -159,8 +159,7 @@ const handleAddNodeToCanvas = (template) => {
   const newNodePayload = {
     id: GenerateUUID(),
     type: template.type,
-    allowDynamicInputs: template.allowDynamicInputs ?? false,
-    allowDynamicOutputs: template.allowDynamicOutputs ?? false,
+    dynamicData: template.dynamicData ? JSON.parse(JSON.stringify(template.dynamicData)) : null,
     name: template.label,
     position: { x: centerPos.x - 100, y: centerPos.y - 50 },
     ...template.defaultData
@@ -169,6 +168,7 @@ const handleAddNodeToCanvas = (template) => {
   store.addNodeToActive(newNodePayload);
   addToRecent(template.type);
 };
+
 </script>
 
 <style scoped>
