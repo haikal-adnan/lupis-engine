@@ -363,36 +363,52 @@ test.describe('Script Panel E2E Management', () => {
       const scriptItem = scripts.itemByName(sharedScriptName);
       const worldLayer = hierarchy.nodeByName('World Layer');
 
+      // 1. Sprite Entity
       const spriteRaw = await hierarchy.addEntity(popup, worldLayer, ['Add Entity', 'Sprite']);
+      const spriteId = await spriteRaw.getAttribute('data-node-id');
       await popup.selectContextMenu(spriteRaw, 'Rename Entity');
       await popup.fillPromptAndSubmit('Rename Entity', 'HeroSprite', 'Rename');
-      const spriteEntity = hierarchy.nodeByName('HeroSprite');
+
+      const spriteEntity = hierarchy.nodeById(spriteId);
+      await expect(spriteEntity).toHaveAttribute('data-node-name', 'HeroSprite');
+      await expect(spriteEntity).toBeVisible();
       await spriteEntity.click();
       await inspector.ensureScriptControllerComponent();
       await scripts.ensureVisible();
       await scriptItem.scrollIntoViewIfNeeded();
       await popup.selectContextMenu(scriptItem, 'Add to HeroSprite');
 
+      // 2. Shape Entity
       const shapeRaw = await hierarchy.addEntity(popup, worldLayer, ['Add Entity', 'Shape']);
+      const shapeId = await shapeRaw.getAttribute('data-node-id');
       await popup.selectContextMenu(shapeRaw, 'Rename Entity');
       await popup.fillPromptAndSubmit('Rename Entity', 'BoundaryShape', 'Rename');
-      const shapeEntity = hierarchy.nodeByName('BoundaryShape');
+
+      const shapeEntity = hierarchy.nodeById(shapeId);
+      await expect(shapeEntity).toHaveAttribute('data-node-name', 'BoundaryShape');
+      await expect(shapeEntity).toBeVisible();
       await shapeEntity.click();
       await inspector.ensureScriptControllerComponent();
       await scripts.ensureVisible();
       await scriptItem.scrollIntoViewIfNeeded();
       await popup.selectContextMenu(scriptItem, 'Add to BoundaryShape');
 
+      // 3. Text Entity
       const textRaw = await hierarchy.addEntity(popup, worldLayer, ['Add Entity', 'Text']);
+      const textId = await textRaw.getAttribute('data-node-id');
       await popup.selectContextMenu(textRaw, 'Rename Entity');
       await popup.fillPromptAndSubmit('Rename Entity', 'StatusText', 'Rename');
-      const textEntity = hierarchy.nodeByName('StatusText');
+
+      const textEntity = hierarchy.nodeById(textId);
+      await expect(textEntity).toHaveAttribute('data-node-name', 'StatusText');
+      await expect(textEntity).toBeVisible();
       await textEntity.click();
       await inspector.ensureScriptControllerComponent();
       await scripts.ensureVisible();
       await scriptItem.scrollIntoViewIfNeeded();
       await popup.selectContextMenu(scriptItem, 'Add to StatusText');
 
+      // Verifikasi seluruh attachment script
       await spriteEntity.click();
       await expect(inspector.scriptControllerSection).toBeVisible();
       await expect(inspector.scriptControllerSection.getByTestId('script-controller-dropdown-trigger')).toContainText(sharedScriptName);

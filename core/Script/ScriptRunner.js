@@ -233,35 +233,32 @@ export default class ScriptRunner {
 
         const hasExecutionInput = node.inputs ? node.inputs.some(i => i.dataType === 'execution') : false;
 
-        if (node._tempData) {
-            if (outputKey in node._tempData) return node._tempData[outputKey];
-            
-            const matchedPort = node.outputs ? node.outputs.find(p => p.id === outputKey || p.label === outputKey) : undefined;
-            if (matchedPort) {
-                if (matchedPort.id in node._tempData) return node._tempData[matchedPort.id];
-                if (matchedPort.label in node._tempData) return node._tempData[matchedPort.label];
-            }
-        }
-        
         if (!hasExecutionInput) {
             const compiledFn = this._compiledFunctions.get(node.id);
             if (typeof compiledFn === 'function') {
                 const inputs = this.getAllInputValues(node);
                 const outputs = {};
-                
                 const context = this.game.contextSystem.createExecutionContext(this, node);
 
                 compiledFn(inputs, outputs, context, node);
-                
-                if (outputKey in outputs) {
-                    return outputs[outputKey];
-                }
 
-                const targetPort = node.outputs ? node.outputs.find(p => p.id === outputKey || p.label === outputKey) : undefined;
-                if (targetPort) {
-                    if (targetPort.label in outputs) return outputs[targetPort.label];
-                    if (targetPort.id in outputs) return outputs[targetPort.id];
+                if (outputKey in outputs) return outputs[outputKey];
+
+                const matchedPort = node.outputs ? node.outputs.find(p => p.id === outputKey || p.label === outputKey) : undefined;
+                if (matchedPort) {
+                    if (matchedPort.id in outputs) return outputs[matchedPort.id];
+                    if (matchedPort.label in outputs) return outputs[matchedPort.label];
                 }
+            }
+        }
+
+        if (node._tempData) {
+            if (outputKey in node._tempData) return node._tempData[outputKey];
+
+            const matchedPort = node.outputs ? node.outputs.find(p => p.id === outputKey || p.label === outputKey) : undefined;
+            if (matchedPort) {
+                if (matchedPort.id in node._tempData) return node._tempData[matchedPort.id];
+                if (matchedPort.label in node._tempData) return node._tempData[matchedPort.label];
             }
         }
 

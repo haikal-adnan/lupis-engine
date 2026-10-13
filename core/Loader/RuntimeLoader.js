@@ -14,7 +14,6 @@ import { DEFAULT_PROJECT_PAYLOAD } from "../Schema/defaultProject.js";
 
 export default class RuntimeLoader {
     async initializeGame(game, canvas, baseURL, mode = "runtime", userPayload = {}) {
-        // Safe sanitization: Merge userPayload dengan DEFAULT_PROJECT_PAYLOAD
         const payload = this._mergeWithDefaultPayload(userPayload);
         const { project, assets, scenes, prefabs, scripts, onProgress } = payload;
 
@@ -40,11 +39,9 @@ export default class RuntimeLoader {
             
             game.consoleBroadcaster = new ConsoleBroadcaster();
 
-            // Setup Prefabs
             reportProgress("Membangun Prefab Library...", 30);
             game.prefabSystem.initLibrary(prefabs);
             
-            // Setup Scripts & Blueprints
             const totalScripts = Array.isArray(scripts) ? scripts.length : Object.keys(scripts).length;
             bus.emit('console:log', {
                 type: 'log',
@@ -56,7 +53,6 @@ export default class RuntimeLoader {
             reportProgress("Mengkompilasi Blueprint Script...", 50);
             ScriptLoader.load(game, payload); 
             
-            // Setup & Load GPU Assets
             const totalAssets = Array.isArray(assets) ? assets.length : Object.keys(assets).length;
             bus.emit('console:log', {
                 type: 'log',
@@ -86,14 +82,12 @@ export default class RuntimeLoader {
                 message: `All assets successfully cached into GPU memory.`
             });
 
-            // Prepare Scenes & Scripts
             reportProgress("Menyiapkan Scene Awal...", 90);
             this._initScriptLibrary(game.world, scripts);
             game.sceneSystem.setSceneCache(scenes);
 
             this._onPostInit(game, canvas, payload);
 
-            // Start Main Loop
             reportProgress("Memulai Game Loop...", 98);
             game.initLoop();
 
@@ -106,21 +100,19 @@ export default class RuntimeLoader {
                 message: `${mode.toUpperCase()} engine successfully initialized and running!`
             });
 
-            this.start(game);
-
-            // Load Initial Scene (Pasti tersedia minimal 1 scene berkat default payload)
             const initialScene = scenes[0];
             this._setupWorldSettings(game, project.settings, initialScene.settings);
             
-            queueMicrotask(() => {
-                bus.emit('console:log', {
-                    type: 'log',
-                    time: Date.now(),
-                    source: 'SceneManager',
-                    message: `Loading initial scene: "${initialScene.name || initialScene.id}"`
-                });
-                game.sceneSystem.loadScene(initialScene.id);
+            bus.emit('console:log', {
+                type: 'log',
+                time: Date.now(),
+                source: 'SceneManager',
+                message: `Loading initial scene: "${initialScene.name || initialScene.id}"`
             });
+
+            await game.sceneSystem.loadScene(initialScene.id);
+
+            this.start(game);
 
         } catch (err) {
             console.error("Critical initialization failure:", err);
@@ -133,9 +125,6 @@ export default class RuntimeLoader {
         }
     }
 
-    /**
-     * Menggabungkan payload pengguna dengan default payload secara rekursif/defensif.
-     */
     _mergeWithDefaultPayload(userPayload = {}) {
         const userProj = userPayload.project || {};
         const userSettings = userProj.settings || {};
@@ -280,7 +269,7 @@ export default class RuntimeLoader {
             }
         }
 
-        if (game.consoleBroadcaster) {
+    if (game.consoleBroadcaster) {
             game.consoleBroadcaster.destroy();
         }
         

@@ -7,12 +7,14 @@ export class VariablePage {
   constructor(page) {
     this.page = page;
     this.manageBtn = page.getByTestId('variable-panel-manage-btn');
-    this.modal = page.locator('.fixed.inset-0').filter({ hasText: 'Variables' });
+    this.modal = page.getByTestId('variable-modal')
+      .or(page.locator('.fixed.inset-0').filter({ hasText: 'Variables' }))
+      .first();
 
     this.globalScopeBtn = page.getByTestId('variable-modal-scope-global-btn');
     this.localScopeBtn = page.getByTestId('variable-modal-scope-local-btn');
     
-    // Direct target ke elemen input internal di dalam BaseSearchInput
+    // Target langsung elemen input internal di dalam komponen BaseSearchInput
     this.searchInput = page.getByTestId('variable-modal-search-input').locator('input');
     
     this.addBtn = page.getByTestId('variable-modal-add-btn');
@@ -43,50 +45,57 @@ export class VariablePage {
     }
   }
 
-  /**
-   * Mengambil elemen baris variabel berdasarkan atribut data-variable-name atau nilai input nama
-   */
   itemRowByName(name) {
     return this.modal
-      .locator(`[data-testid="variable-modal-item-row"][data-variable-name="${name}"]`)
+      .getByTestId('variable-modal-item-row')
+      .filter({
+        has: this.page.locator(`[data-testid="variable-modal-name-input"][value="${name}"], input[value="${name}"]`)
+      })
       .or(
-        this.modal.getByTestId('variable-modal-item-row').filter({
-          has: this.page.locator(`input[value="${name}"]`)
-        })
+        this.modal.locator(`[data-testid="variable-modal-item-row"][data-variable-name="${name}"]`)
       )
-      .locator('nth=0');
+      .first();
   }
 
-  /**
-   * Mengambil elemen baris variabel exposed pada Property Inspector panel
-   */
   panelItemRow(name, scope) {
     return this.page
       .locator(`[data-testid="variable-panel-item-row"][data-variable-name="${name}"][data-scope="${scope}"]`)
-      .locator('nth=0');
+      .or(this.page.locator(`[data-testid="variable-panel-item-row"][data-variable-name="${name}"]`))
+      .first();
   }
 
   async createVariable({ name = 'NewVar', type = 'string', isExposed = false, scope = 'Local' }) {
     await this.switchModalScope(scope);
     await this.addBtn.click();
 
-    const lastRow = this.modal.getByTestId('variable-modal-item-row').locator('nth=-1');
+    const lastRow = this.modal.getByTestId('variable-modal-item-row').last();
     await expect(lastRow).toBeVisible();
 
     const nameInput = lastRow.getByTestId('variable-modal-name-input');
+    await expect(nameInput).toBeVisible();
     await nameInput.fill(name);
     await nameInput.blur();
 
     if (type !== 'string') {
-      const typeSelect = lastRow.getByTestId('variable-modal-type-select');
-      await typeSelect.click();
-      const option = this.page.getByTestId('select-option').filter({ hasText: new RegExp(`^\\s*${type}\\s*$`, 'i') }).locator('nth=0');
-      await option.click();
+      const typeSelect = lastRow.getByTestId('variable-modal-type-select').first();
+      const isSelect = await typeSelect.evaluate(el => el.tagName.toLowerCase() === 'select').catch(() => false);
+      
+      if (isSelect) {
+        await typeSelect.selectOption({ label: type }).catch(async () => {
+          await typeSelect.selectOption(type);
+        });
+      } else {
+        await typeSelect.click();
+        const option = this.page.getByTestId('select-option')
+          .filter({ hasText: new RegExp(`^\\s*${type}\\s*$`, 'i') })
+          .first();
+        await option.click();
+      }
     }
 
     if (isExposed) {
       const exposeCheckbox = lastRow.getByTestId('variable-modal-expose-checkbox');
-      await exposeCheckbox.check();
+      await exposeCheckbox.check().catch(async () => await exposeCheckbox.click());
     }
 
     return lastRow;

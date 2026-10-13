@@ -10,18 +10,12 @@ export class VariableCrudObject {
     this.variablePage = new VariablePage(page);
   }
 
-  /**
-   * Memastikan Graph/Editor aktif dan tombol manager variabel siap diinteraksi
-   */
   async ensureReady() {
     const manageBtn = this.page.getByTestId('variable-panel-manage-btn');
     await manageBtn.scrollIntoViewIfNeeded();
     await expect(manageBtn).toBeVisible();
   }
 
-  /**
-   * Flow kustom untuk membuat variabel baru beserta konfigurasinya (type, value, scope, expose)
-   */
   async createVariable({
     name = 'NewVar',
     type = 'string',
@@ -35,7 +29,6 @@ export class VariableCrudObject {
     const row = this.variablePage.itemRowByName(name);
     await expect(row).toBeVisible();
 
-    // Set nilai awal jika disediakan
     if (value !== null) {
       const lowerType = type.toLowerCase();
       if (lowerType === 'string') {
@@ -60,9 +53,6 @@ export class VariableCrudObject {
     return row;
   }
 
-  /**
-   * Menghapus variabel berdasarkan nama dan scope
-   */
   async deleteVariable(name, scope = 'Local') {
     await this.variablePage.openManager();
     await this.variablePage.switchModalScope(scope);
@@ -77,9 +67,27 @@ export class VariableCrudObject {
     await this.variablePage.closeManager();
   }
 
-  /**
-   * Memperbarui variabel bertipe List/Map menggunakan Raw JSON Editor
-   */
+  async duplicateVariable(name, scope = 'Local') {
+    await this.variablePage.openManager();
+    await this.variablePage.switchModalScope(scope);
+
+    const row = this.variablePage.itemRowByName(name);
+    await expect(row).toBeVisible();
+
+    await row.getByTestId('variable-modal-row-menu-trigger').click();
+    await this.page.getByTestId('variable-modal-duplicate-btn').click();
+
+    const duplicatedRow = this.variablePage.itemRowByName(`${name}_copy`);
+    await expect(duplicatedRow).toBeVisible();
+    await this.variablePage.closeManager();
+    return duplicatedRow;
+  }
+
+  async searchVariable(query) {
+    await this.variablePage.openManager();
+    await this.variablePage.searchInput.fill(query);
+  }
+
   async updateRawJson(variableName, jsonPayload, popupHelper) {
     await this.variablePage.openManager();
 
@@ -101,9 +109,6 @@ export class VariableCrudObject {
     await this.variablePage.closeManager();
   }
 
-  /**
-   * Memverifikasi keberadaan dan nilai variabel exposed pada Property Inspector
-   */
   async verifyExposedValue(name, scope, expectedValue) {
     const row = this.variablePage.panelItemRow(name, scope);
     await expect(row).toBeVisible();

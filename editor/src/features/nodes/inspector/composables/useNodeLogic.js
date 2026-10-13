@@ -2,10 +2,8 @@ import { ref, computed } from 'vue';
 import { useScriptStore } from '@scripts/scripts.js';
 import { useScriptHistory } from '@historys/historys.js';
 import { useWorkspaceStore } from '@workspaces/workspaces.js';
-import { 
-  usePopAlert,
-  usePrompt
-} from '@composables/composables.js';
+import { usePopAlert, usePrompt } from '@composables/composables.js';
+import { useCustomNodeHandlers } from '@nodes/nodes.js';
 
 export function useNodeLogic() {
   const scriptStore = useScriptStore();
@@ -13,6 +11,7 @@ export function useNodeLogic() {
   const workspaceStore = useWorkspaceStore();
   const { prompt } = usePrompt();
   const { showPop } = usePopAlert();
+  const { handleNodeAddPort, getDynamicPortDefaults } = useCustomNodeHandlers(); // Integrated
 
   const activeDropdownTarget = ref(null);
 
@@ -135,63 +134,23 @@ export function useNodeLogic() {
       return;
     }
 
-    if (node.type === 'compare_switch') {
-      const res = await prompt({
-        title: 'Add Case',
-        message: 'Enter value to compare (string/number):',
-        defaultValue: ''
-      });
-      if (res === null || res.trim() === '') return;
-      const newPort = {
-        id: `case_${res}`,
-        label: `Case ${res}`,
-        dataType: 'execution',
-        color: '#ffffff'
-      };
-      scriptStore.addNodePort(node.id, 'output', newPort);
-      scriptHistory.recordPortChange(node.id, 'ADD', newPort, 'output', []);
-      return;
-    }
+    // 1. Delegasi ke Custom Node Handler
+    const wasHandled = await handleNodeAddPort(node, { prompt, scriptHistory });
+    if (wasHandled) return;
 
+    // 2. Logic Default Tambah Dynamic Port
     const currentPorts = type === 'input' ? (node.inputs || []) : (node.outputs || []);
     const nextIndex = currentPorts.length;
 
-    let newLabel = `{${nextIndex}}`;
-    let newDataType = 'any';
-    let newColor = '#ffffff';
+    const blueprintItem = scriptStore.blueprints
+      ?.flatMap(group => group.items || [])
+      .find(item => item.type === node.type || item.id === node.type);
 
-    if (node.type === 'event_advanced_key') {
-      newLabel = `Key_${nextIndex + 1}`;
-      newDataType = 'execution';
-      newColor = '#FFEB3B';
-    } else if (node.type.startsWith('math_')) {
-      newLabel = String.fromCharCode(65 + nextIndex);
-      newDataType = 'number';
-      newColor = '#B2FF59';
-    } else if (node.type === 'string_join') {
-      newLabel = `Str ${nextIndex + 1}`;
-      newDataType = 'string';
-      newColor = '#FFEB3B';
-    } else if (node.type === 'logic_and' || node.type === 'logic_or') {
-      newLabel = `In ${nextIndex + 1}`;
-      newDataType = 'boolean';
-      newColor = '#f472b6';
-    } else {
-      const blueprintItem = scriptStore.blueprints
-        ?.flatMap(group => group.items || [])
-        .find(item => item.type === node.type || item.id === node.type);
+    const bpPorts = type === 'input' 
+      ? (blueprintItem?.defaultData?.inputs || [])
+      : (blueprintItem?.defaultData?.outputs || []);
 
-      const bpPorts = type === 'input' 
-        ? (blueprintItem?.defaultData?.inputs || [])
-        : (blueprintItem?.defaultData?.outputs || []);
-
-      if (bpPorts.length > 0) {
-        const lastBpPort = bpPorts[bpPorts.length - 1];
-        newDataType = lastBpPort.dataType || lastBpPort.type || 'any';
-        newColor = lastBpPort.color || '#ffffff';
-        newLabel = `Key_${nextIndex + 1}`;
-      }
-    }
+    const { label: newLabel, dataType: newDataType, color: newColor } = getDynamicPortDefaults(node.type, nextIndex, bpPorts);
 
     const newPort = {
       id: `port_${Date.now()}_${nextIndex}`,

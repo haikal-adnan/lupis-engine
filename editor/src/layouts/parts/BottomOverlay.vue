@@ -1,12 +1,13 @@
 <template>
   <div 
     v-if="overlayConfig"
+    data-testid="viewport-overlay-container"
     class="absolute left-0 right-0 pointer-events-none flex items-center justify-center z-50 transition-all duration-300 ease-out"
     :class="{ 'translate-y-10 opacity-0': !overlayConfig.showGrid && !overlayConfig.showPlay }"
   >
     <div class="flex items-center p-1 bg-background rounded-xl border border-border shadow-lg pointer-events-auto gap-1">
       
-      <div v-if="overlayConfig.showCoords" class="flex items-center gap-3 px-3 mr-1">
+      <div v-if="overlayConfig.showCoords" data-testid="viewport-overlay-coords" class="flex items-center gap-3 px-3 mr-1">
         <span class="font-mono text-[10px] font-bold flex items-center gap-1 text-muted-foreground">
           <span class="text-emerald-500">X</span> {{ coords.x.toFixed(0) }}
         </span>
@@ -19,6 +20,7 @@
 
       <IconButton 
         v-if="overlayConfig.showGrid && projectStore.project"
+        data-testid="viewport-overlay-snap-button"
         @click="projectStore.toggleMagnet()"
         :active="projectStore.project.settings.grid.snap"
         :tooltip="projectStore.project.settings.grid.snap ? 'Snap On' : 'Snap Off'"
@@ -29,6 +31,7 @@
 
       <IconButton 
         v-if="overlayConfig.showGrid && projectStore.project"
+        data-testid="viewport-overlay-grid-button"
         @click="projectStore.toggleGrid()"
         :active="projectStore.project.settings.grid.visible"
         tooltip="Toggle Grid"
@@ -42,6 +45,7 @@
         v-if="overlayConfig.showPlay"
         @click="openOrUpdatePreview"
         :active="isPreviewing" 
+        data-testid="viewport-overlay-play-button"
         class="h-8 rounded-full px-4 gap-2 text-xs font-bold"
       >
         <RefreshCw v-if="isPreviewing" class="w-3.5 h-3.5 animate-spin-slow" />

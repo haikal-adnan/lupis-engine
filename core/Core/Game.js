@@ -14,6 +14,8 @@ import SceneSystem from "../System/SceneSystem.js";
 import PrefabSystem from "../System/PrefabSystem.js";
 import EntitySystem from "../System/EntitySystem.js";
 import ContextSystem from "../Script/ContextSystem.js";
+import EventManager from "../Script/EventManager.js";
+import InputManager from "../Input/InputManager.js";
 
 export default class Game {
     constructor() {
@@ -23,6 +25,9 @@ export default class Game {
         this.camera.scale = 1;
         this.renderer = null;
         this.deltaTime = 0;
+
+        this.events = new EventManager();
+        this.input = null; 
 
         this.colliderSystem = new ColliderSystem(this);
         this.variables = new VariableManager();
@@ -49,7 +54,16 @@ export default class Game {
         this.syncSystem = null;
         this.isPaused = false;
         this.isRunning = false;
+        this.hasStarted = false;
         this.loop = null;
+    }
+
+    setCanvas(canvasElement) {
+        if (!canvasElement) return;
+        if (this.input && typeof this.input.destroy === 'function') {
+            this.input.destroy();
+        }
+        this.input = new InputManager(canvasElement, this.events);
     }
 
     initLoop() {
@@ -57,22 +71,37 @@ export default class Game {
     }
 
     start() {
-        this.loop.start();
-
+        this.hasStarted = true;
+        if (this.loop) {
+            this.loop.start();
+        }
         this.events.emit('game:start');
     }
 
     quitGame() {
-        this.loop.stop();
+        if (this.loop && typeof this.loop.stop === 'function') {
+            this.loop.stop();
+        }
     }
 
     destroy() {
         this.quitGame();
+
+        if (this.input && typeof this.input.destroy === 'function') {
+            this.input.destroy();
+            this.input = null;
+        }
+
         if (this.renderer && typeof this.renderer.destroy === 'function') {
             this.renderer.destroy();
+            this.renderer = null;
         }
+
+        if (this.events && typeof this.events.clearAll === 'function') {
+            this.events.clearAll();
+        }
+
         this.world = null; 
-        this.renderer = null;
         this.syncSystem = null;
     }
 
@@ -90,8 +119,18 @@ export default class Game {
             this.physicsSystem.update(dt);
             
             this.audioSystem.update();
-            if (this.camera && this.renderer) {
+
+            if (this.camera && this.renderer && this.renderer.gl) {
                 this.camera.update(dt, this.world, this.renderer.gl.canvas);
+            }
+
+            if (this.input) {
+                if (this.input.keyboard && typeof this.input.keyboard.endFrame === 'function') {
+                    this.input.keyboard.endFrame();
+                }
+                if (this.input.mouse && typeof this.input.mouse.endFrame === 'function') {
+                    this.input.mouse.endFrame();
+                }
             }
         }
     }

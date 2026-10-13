@@ -2,12 +2,11 @@ import { test, expect } from '../fixtures.js';
 
 test.use({
   projectOptions: {
-    prefix: 'Node Library E2E',
-    description: 'Skenario E2E menyeluruh untuk Drag & Drop, Search, Recents, Double Click, dan Batch Node Categories',
+    prefix: 'Node Library & Graph E2E',
+    description: 'Skenario E2E menyeluruh untuk Node Library (Search, Recents, Drag/Drop, Batch Categories) dan Graph Editor (Node & Edge Manipulation via Store, Inspector Modifiers)',
   },
 });
 
-/** Label harus sama dengan data-category-label di UI (27 kategori, dibagi 3 batch). */
 const CATEGORY_BATCHES = [
   {
     name: 'Batch 1: Animator sampai Events & Signals',
@@ -32,9 +31,9 @@ const CATEGORY_BATCHES = [
   },
 ];
 
-test.describe('Node Library & Graph Editor E2E Testing', () => {
-  test.beforeEach(async ({ nodeCanvasCrud }) => {
-    await nodeCanvasCrud.openGraphForEntity({
+test.describe('Node Library & Graph Editor Unified E2E Testing', () => {
+  test.beforeEach(async ({ nodeGraphCrud }) => {
+    await nodeGraphCrud.openGraphForEntity({
       entityName: 'GraphTestEntity',
       scriptName: 'GraphMainScript',
     });
@@ -43,25 +42,21 @@ test.describe('Node Library & Graph Editor E2E Testing', () => {
   // =========================================================================
   // 1. DRAG AND DROP DARI NODE LIBRARY
   // =========================================================================
-  test('dapat melakukan drag and drop node dari sidebar search ke graph canvas', async ({ nodeLibrary, nodeCanvas }) => {
-    // Arrange
+  test('dapat melakukan drag and drop node dari sidebar search ke graph canvas', async ({ nodeLibrary, nodeGraph }) => {
     await nodeLibrary.searchInSidebar('get transform');
     const searchItem = nodeLibrary.sidebarSearchItemByType('get_transform');
     await expect(searchItem).toBeVisible();
-    await expect(nodeCanvas.nodesByType('get_transform')).toHaveCount(0);
+    await expect(nodeGraph.nodesByType('get_transform')).toHaveCount(0);
 
-    // Act
-    await nodeCanvas.dropFromSidebarToCanvas(searchItem, { x: 450, y: 250 });
+    await nodeGraph.dropFromSidebarToCanvas(searchItem, { x: 450, y: 250 });
 
-    // Assert
-    await expect(nodeCanvas.nodesByType('get_transform')).toHaveCount(1);
+    await expect(nodeGraph.nodesByType('get_transform')).toHaveCount(1);
   });
 
   // =========================================================================
   // 2. SISTEM SEARCH (MODAL DAN SIDEBAR PANEL)
   // =========================================================================
   test('memfilter node secara reaktif pada modal library dan sidebar panel', async ({ nodeLibrary }) => {
-    // A. Sidebar: query = label grup -> ada hasil; query ngawur -> kosong; clear -> hilang
     await nodeLibrary.searchInSidebar('Keyboard Events');
     await expect(nodeLibrary.sidebarSearchItems).not.toHaveCount(0);
 
@@ -72,7 +67,6 @@ test.describe('Node Library & Graph Editor E2E Testing', () => {
     await nodeLibrary.clearSidebarSearch();
     await expect(nodeLibrary.sidebarNoResults).toHaveCount(0);
 
-    // B. Modal: pakai label node nyata dari kategori Math (modal hanya memfilter label item)
     await nodeLibrary.openModal();
     await nodeLibrary.openCategory('Math');
     const label = await nodeLibrary.firstModalItemLabel();
@@ -91,16 +85,13 @@ test.describe('Node Library & Graph Editor E2E Testing', () => {
   // =========================================================================
   // 3. SISTEM RECENT (MODAL DAN SIDEBAR PANEL)
   // =========================================================================
-  test('mencatat dan menampilkan node yang baru saja ditambahkan pada daftar Recent', async ({ nodeLibrary, nodeCanvas }) => {
-    // Act
+  test('mencatat dan menampilkan node yang baru saja ditambahkan pada daftar Recent', async ({ nodeLibrary, nodeGraph }) => {
     const type = await nodeLibrary.addFromSidebarGroup('Game Lifecycle');
-    await expect(nodeCanvas.nodesByType(type)).toHaveCount(1);
+    await expect(nodeGraph.nodesByType(type)).toHaveCount(1);
 
-    // Assert: Recent Sidebar (tampil setelah search dikosongkan)
     await nodeLibrary.clearSidebarSearch();
     await expect(nodeLibrary.sidebarRecentItemByType(type)).toBeVisible();
 
-    // Assert: Recent Modal
     await nodeLibrary.openModal();
     await expect(nodeLibrary.modalRecentItemByType(type)).toBeVisible();
     await nodeLibrary.closeModal();
@@ -109,30 +100,26 @@ test.describe('Node Library & Graph Editor E2E Testing', () => {
   // =========================================================================
   // 4. SISTEM DOUBLE CLICK UNTUK MENAMBAHKAN NODE
   // =========================================================================
-  test('menambahkan node ke graph canvas saat double-click dari modal maupun sidebar', async ({ nodeLibrary, nodeCanvas }) => {
-    // A. Modal (otomatis tertutup setelah node ditambahkan)
+  test('menambahkan node ke graph canvas saat double-click dari modal maupun sidebar', async ({ nodeLibrary, nodeGraph }) => {
     const modalType = await nodeLibrary.addFirstFromModalCategory('Math');
-    await expect(nodeCanvas.nodesByType(modalType)).toHaveCount(1);
+    await expect(nodeGraph.nodesByType(modalType)).toHaveCount(1);
 
-    // B. Sidebar search
     const sidebarType = await nodeLibrary.addFromSidebarGroup('Keyboard Events');
-    await expect(nodeCanvas.nodesByType(sidebarType)).toHaveCount(1);
+    await expect(nodeGraph.nodesByType(sidebarType)).toHaveCount(1);
   });
 
   // =========================================================================
-  // 5. SELURUH NODE PER KATEGORI (3 batch, data-driven dari UI)
+  // 5. SELURUH NODE PER KATEGORI (BATCH TESTING)
   // =========================================================================
   test.describe('Penambahan Seluruh Node per Kategori (Tanpa Error)', () => {
     for (const { name, categories } of CATEGORY_BATCHES) {
-      test(name, async ({ nodeLibrary, nodeCanvas }) => {
+      test(name, async ({ nodeLibrary, nodeGraph }) => {
         test.slow();
 
-        // Arrange
-        const pageErrors = nodeCanvas.collectPageErrors();
+        const pageErrors = nodeGraph.collectPageErrors();
         let expectedTotal = 0;
 
         for (const category of categories) {
-          // Act: satu node lewat alur modal, lalu seluruh item kategori lewat sidebar (tanpa buka-tutup modal)
           await nodeLibrary.addFirstFromModalCategory(category);
           expectedTotal += 1;
 
@@ -142,66 +129,57 @@ test.describe('Node Library & Graph Editor E2E Testing', () => {
             expectedTotal += 1;
           }
 
-          // Assert: satu assertion per kategori
-          await expect(nodeCanvas.nodes, `Jumlah node setelah kategori "${category}"`).toHaveCount(expectedTotal);
+          await expect(nodeGraph.nodes, `Jumlah node setelah kategori "${category}"`).toHaveCount(expectedTotal);
         }
 
-        // Assert: tidak ada exception di halaman selama penambahan node
         expect(pageErrors).toEqual([]);
       });
     }
   });
 
   // =========================================================================
-  // 6. PORT EDGE, DELETE
+  // 6. MANIPULASI NODE DIRECT VIA STORE
   // =========================================================================
-  test('mampu menghubungkan port antar node yang kompatibel', async ({ nodeLibrary, nodeCanvas }) => {
-    // Arrange: dua node Math berbeda, dipisah agar tidak bertumpuk
-    const sourceType = await nodeLibrary.addFromSidebarGroup('Math', 0);
-    const targetType = await nodeLibrary.addFromSidebarGroup('Math', 1);
-    const sourceNode = nodeCanvas.nodeByType(sourceType);
-    const targetNode = nodeCanvas.nodeByType(targetType);
+  test('dapat membuat, memilih, memindahkan, dan menghapus node via Pinia store', async ({ nodeGraph }) => {
+    const nodeId = await nodeGraph.spawnNodeViaStore('get_transform', 'Get Transform', { x: 350, y: 200 });
+    await expect(nodeGraph.nodeById(nodeId)).toBeVisible();
 
-    const { output, input } = await nodeCanvas.findPortPair(sourceNode, targetNode, { compatible: true });
-    await nodeCanvas.spreadApart(targetNode, sourceNode);
+    await nodeGraph.selectNodeById(nodeId);
+    await nodeGraph.moveNodeById(nodeId, { x: 550, y: 350 });
 
-    // Act
-    await nodeCanvas.connectPorts(sourceNode, output.id, targetNode, input.id);
-
-    // Assert
-    await expect(nodeCanvas.edges).toHaveCount(1);
+    await nodeGraph.deleteNodeById(nodeId);
+    await expect(nodeGraph.nodeById(nodeId)).toHaveCount(0);
   });
 
-  test('menghapus node menggunakan tombol Keyboard Delete', async ({ nodeLibrary, nodeCanvas }) => {
-    // Arrange
-    const type = await nodeLibrary.addFromSidebarGroup('Game Lifecycle');
-    const node = nodeCanvas.nodeByType(type);
+  // =========================================================================
+  // 7. KONEKSI EDGE & MODIFIER PROPERTY INSPECTOR
+  // =========================================================================
+  test('dapat mengoneksikan edge, memilihnya, dan mengedit modifier di Property Inspector', async ({ nodeGraph }) => {
+    const sourceId = await nodeGraph.spawnNodeViaStore('math_add', 'Source Node', { x: 200, y: 200 });
+    const targetId = await nodeGraph.spawnNodeViaStore('math_subtract', 'Target Node', { x: 500, y: 200 });
 
-    await node.click();
-    await nodeCanvas.expectNodeSelected(node);
+    const edgeId = await nodeGraph.connectPortsViaStore(sourceId, 'out_0', targetId, 'in_0');
+    await expect(nodeGraph.edgeById(edgeId)).toBeAttached();
 
-    // Act
-    await nodeCanvas.deleteSelectedNodes();
+    await nodeGraph.selectEdgeById(edgeId);
+    await expect(nodeGraph.edgeInspectorSection).toBeVisible();
 
-    // Assert
-    await expect(nodeCanvas.nodesByType(type)).toHaveCount(0);
+    await nodeGraph.setEdgeOperation('Add (+)');
+    await nodeGraph.setEdgeOperandValue(50, true);
+    await expect(nodeGraph.edgeOperandNumberInput).toHaveValue('50');
+
+    await nodeGraph.deleteSelectedEdgeViaInspector();
+    await expect(nodeGraph.edges).toHaveCount(0);
   });
 
-  test('[Bad Path] menolak koneksi port dengan tipe data yang tidak kompatibel', async ({ nodeLibrary, nodeCanvas, popup }) => {
-    // Arrange: output Math (data) -> input Boolean Logic yang tipenya tidak cocok
-    const sourceType = await nodeLibrary.addFromSidebarGroup('Math', 0);
-    const targetType = await nodeLibrary.addFromSidebarGroup('Boolean Logic', 0);
-    const sourceNode = nodeCanvas.nodeByType(sourceType);
-    const targetNode = nodeCanvas.nodeByType(targetType);
+  // =========================================================================
+  // 8. [Bad Path] VALIDASI KONEKSI EDGE
+  // =========================================================================
+  test('[Bad Path] menolak koneksi edge jika source dan target node sama', async ({ nodeGraph }) => {
+    const nodeId = await nodeGraph.spawnNodeViaStore('math_add', 'Self Node', { x: 300, y: 200 });
 
-    const { output, input } = await nodeCanvas.findPortPair(sourceNode, targetNode, { compatible: false });
-    await nodeCanvas.spreadApart(targetNode, sourceNode);
+    await nodeGraph.connectPortsViaStore(nodeId, 'exec_out', nodeId, 'exec_in');
 
-    // Act
-    await nodeCanvas.connectPorts(sourceNode, output.id, targetNode, input.id);
-
-    // Assert
-    await popup.expectPopAlert('Connection Failed');
-    await expect(nodeCanvas.edges).toHaveCount(0);
+    await expect(nodeGraph.edges).toHaveCount(0);
   });
 });

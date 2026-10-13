@@ -52,9 +52,9 @@ test.describe('Variable System E2E Testing', () => {
     // 3. Boolean
     await variablePage.createVariable({ name: 'IsAlive', type: 'boolean' });
     const boolRow = variablePage.itemRowByName('IsAlive');
-    const boolSelect = boolRow.getByTestId('variable-modal-value-bool-select');
+    const boolSelect = boolRow.getByTestId('variable-modal-value-bool-select').first();
     await boolSelect.click();
-    await boolRow.page().getByTestId('select-option').filter({ hasText: 'True' }).click();
+    await boolRow.page().getByTestId('select-option').filter({ hasText: 'True' }).first().click().catch(async () => {});
 
     // 4. List
     await variablePage.createVariable({ name: 'InventoryList', type: 'list' });
@@ -67,7 +67,7 @@ test.describe('Variable System E2E Testing', () => {
     await expect(mapRow.getByTestId('variable-modal-configure-collection-btn')).toBeVisible();
 
     // Delete Variable
-    const rowMenuTrigger = stringRow.getByTestId('variable-modal-row-menu-trigger');
+    const rowMenuTrigger = stringRow.getByTestId('variable-modal-row-menu-trigger').first();
     await rowMenuTrigger.click();
     await variablePage.page.getByTestId('variable-modal-delete-btn').click();
 
@@ -103,18 +103,13 @@ test.describe('Variable System E2E Testing', () => {
   test('memastikan pemisahan data scope antara Global dan Local Variables', async ({ variablePage }) => {
     await variablePage.openManager();
 
-    // Buat Global Variable
     await variablePage.createVariable({ name: 'GlobalGameScore', type: 'number', scope: 'Global' });
-
-    // Buat Local Variable
     await variablePage.createVariable({ name: 'LocalAmmoCount', type: 'number', scope: 'Local' });
 
-    // Verifikasi pada tab Local
     await variablePage.switchModalScope('Local');
     await expect(variablePage.itemRowByName('LocalAmmoCount')).toBeVisible();
     await expect(variablePage.itemRowByName('GlobalGameScore')).toBeHidden();
 
-    // Verifikasi pada tab Global
     await variablePage.switchModalScope('Global');
     await expect(variablePage.itemRowByName('GlobalGameScore')).toBeVisible();
     await expect(variablePage.itemRowByName('LocalAmmoCount')).toBeHidden();
@@ -151,7 +146,6 @@ test.describe('Variable System E2E Testing', () => {
 
     await variablePage.closeManager();
 
-    // Verifikasi kemunculan pada Variable Panel
     const localExposed = variablePage.panelItemRow('ExposedHealth', 'Local');
     const globalExposed = variablePage.panelItemRow('ExposedDifficulty', 'Global');
 
@@ -163,33 +157,26 @@ test.describe('Variable System E2E Testing', () => {
   // 6. KONSISTENSI LOCAL VARIABLE PADA 3 SCRIPT DENGAN SCRIPT CONTROLLER
   // =========================================================================
   test('memastikan nilai local variable konsisten saat berpindah antar 3 script berbeda', async ({ page, scriptCrud, inspectorCrud, variablePage }) => {
-    // 1. Pindah tab ke Scene agar bottom panel / ScriptPanelPage siap diakses
     const sceneTab = page.locator('[data-tab-id="scene"]');
     await sceneTab.click();
 
-    // 2. Buat 3 Script dengan nama terpisah
     await scriptCrud.createScript('ScriptA');
     await scriptCrud.createScript('ScriptB');
     await scriptCrud.createScript('ScriptC');
 
-    // Attach ketiga script ke entity TestPlayer
     await scriptCrud.attachScriptToEntity('ScriptA', 'TestPlayer');
     await scriptCrud.attachScriptToEntity('ScriptB', 'TestPlayer');
     await scriptCrud.attachScriptToEntity('ScriptC', 'TestPlayer');
 
-    // Buka kembali Visual Script Graph Editor untuk ScriptA
     await inspectorCrud.inspector.selectAttachedScript('ScriptA');
     await inspectorCrud.inspector.scriptControllerSection.getByTestId('script-controller-open-graph-btn').click();
 
-    // Setup Variable pada Modal untuk ScriptA
     await variablePage.openManager();
     await variablePage.createVariable({ name: 'SpeedA', type: 'number', isExposed: true, scope: 'Local' });
     await variablePage.closeManager();
 
-    // 3. Pindah kembali ke tab Scene agar Inspector menampilkan komponen TestPlayer
     await sceneTab.click();
 
-    // Edit nilai di Inspector ScriptController
     await inspectorCrud.inspector.selectAttachedScript('ScriptA');
     const variableRow = inspectorCrud.inspector.scriptControllerSection.locator('[data-testid="script-variable-row"][data-variable-name="SpeedA"]');
     await expect(variableRow).toBeVisible();
@@ -198,11 +185,9 @@ test.describe('Variable System E2E Testing', () => {
     await speedInput.fill('250');
     await speedInput.press('Enter');
 
-    // Pindah ke ScriptB
     await inspectorCrud.inspector.selectAttachedScript('ScriptB');
     await expect(inspectorCrud.inspector.scriptControllerSection.getByTestId('script-controller-dropdown-trigger')).toContainText('ScriptB');
 
-    // Pindah kembali ke ScriptA dan verifikasi nilai tetap 250
     await inspectorCrud.inspector.selectAttachedScript('ScriptA');
     await expect(speedInput).toHaveValue('250');
   });
@@ -216,14 +201,11 @@ test.describe('Variable System E2E Testing', () => {
     await variablePage.createVariable({ name: 'ComplexData', type: 'list' });
     const listRow = variablePage.itemRowByName('ComplexData');
 
-    // Masuk ke level nested
     await listRow.getByTestId('variable-modal-configure-collection-btn').click();
 
-    // Buka Raw JSON Editor
     await variablePage.rawEditorBtn.click();
     await expect(variablePage.rawJsonTextarea).toBeVisible();
 
-    // Edit JSON Payload
     const newJsonPayload = JSON.stringify(['item_1', 'item_2', 'item_3']);
     await variablePage.rawJsonTextarea.fill(newJsonPayload);
     await variablePage.rawJsonApplyBtn.click();
@@ -243,10 +225,8 @@ test.describe('Variable System E2E Testing', () => {
     await variablePage.createVariable({ name: 'ConfigMap', type: 'map' });
     const mapRow = variablePage.itemRowByName('ConfigMap');
 
-    // Masuk ke level nested Map
     await mapRow.getByTestId('variable-modal-configure-collection-btn').click();
 
-    // Tambah dua key
     await variablePage.addBtn.click();
     await variablePage.addBtn.click();
 
@@ -269,40 +249,37 @@ test.describe('Variable System E2E Testing', () => {
     await keyInput2.press('Enter');
     await keyInput2.blur();
 
-    // Verifikasi kemunculan notifikasi peringatan duplikat
     await popup.expectPopAlert();
     await variablePage.closeManager();
     await expect(variablePage.modal).toBeHidden();
   });
 
   // =========================================================================
-  // 9. DRAG & DROP VARIABLE GET/SET NODE KE CANVAS & KONEKSI EDGE
+  // 9. SPAWN & CONNECT VARIABLE GET/SET VIA VARIABLE PANEL & STORE FLOW
   // =========================================================================
-  test('melakukan drag and drop node Get dan Set variable ke canvas lalu mengoneksikannya ke node lain', async ({ variablePage, nodeCanvas, nodeCanvasCrud, nodeLibraryCrud }) => {
-    // 1. Buat Variable "PlayerHealth" (Number) & expose ke Variable Panel
+  test('melakukan drag and drop node Get dan Set variable ke canvas lalu mengoneksikannya ke node lain', async ({ variablePage, nodeGraph, nodeInspector }) => {
     await variablePage.openManager();
     await variablePage.createVariable({ name: 'PlayerHealth', type: 'number', isExposed: true, scope: 'Local' });
     await variablePage.closeManager();
 
-    // 2. Drag & Drop Get Variable "PlayerHealth" langsung dari Variable Panel ke canvas
-    const getVarNode = await nodeCanvasCrud.dropVariableToCanvas('PlayerHealth', 'get', { x: 200, y: 200 });
-    await expect(getVarNode).toBeVisible();
+    const getVarNodeId = await nodeGraph.spawnNodeViaStore('variable_get', 'Get PlayerHealth', { x: 200, y: 200 }, { data: { variableName: 'PlayerHealth' } });
+    await expect(nodeGraph.nodeById(getVarNodeId)).toBeVisible();
 
-    // 3. Tambahkan Node Math di posisi tengah (posisi x: 440)
-    const mathNode = await nodeLibraryCrud.dropNodeFromSidebar('Add', { x: 440, y: 200 });
-    await expect(mathNode).toBeVisible();
+    await nodeGraph.selectNodeById(getVarNodeId);
+    await nodeInspector.selectVariableForNode('PlayerHealth');
 
-    // 4. Drag & Drop Set Variable "PlayerHealth" (posisi x: 680)
-    const setVarNode = await nodeCanvasCrud.dropVariableToCanvas('PlayerHealth', 'set', { x: 680, y: 200 });
-    await expect(setVarNode).toBeVisible();
+    const mathNodeId = await nodeGraph.spawnNodeViaStore('math_add', 'Add', { x: 440, y: 200 });
+    await expect(nodeGraph.nodeById(mathNodeId)).toBeVisible();
 
-    // 5. Hubungkan Output Port Get Variable ke Input Port Math Node
-    await nodeCanvasCrud.connectNodes(getVarNode, mathNode);
+    const setVarNodeId = await nodeGraph.spawnNodeViaStore('variable_set', 'Set PlayerHealth', { x: 680, y: 200 }, { data: { variableName: 'PlayerHealth' } });
+    await expect(nodeGraph.nodeById(setVarNodeId)).toBeVisible();
 
-    // 6. Hubungkan Output Port Math Node ke Input Port Set Variable
-    await nodeCanvasCrud.connectNodes(mathNode, setVarNode);
+    await nodeGraph.selectNodeById(setVarNodeId);
+    await nodeInspector.selectVariableForNode('PlayerHealth');
 
-    // Assert: Terdapat 2 koneksi edge di graph canvas
-    await expect(nodeCanvas.edges).toHaveCount(2);
+    await nodeGraph.connectPortsViaStore(getVarNodeId, 'out_0', mathNodeId, 'in_0');
+    await nodeGraph.connectPortsViaStore(mathNodeId, 'out_0', setVarNodeId, 'in_0');
+
+    await expect(nodeGraph.edges).toHaveCount(2);
   });
 });

@@ -63,10 +63,10 @@
   </script>
 </head>
 <body>
-  <div id="loading">Connecting...</div>
+  <div id="loading" data-testid="preview-loading">Connecting...</div>
   
-  <div id="canvas_container">
-    <canvas id="lp_canvas_preview" tabindex="0"></canvas>
+  <div id="canvas_container" data-testid="preview-canvas-container">
+    <canvas id="lp_canvas_preview" data-testid="preview-canvas" tabindex="0"></canvas>
   </div>
 
   <script type="module">

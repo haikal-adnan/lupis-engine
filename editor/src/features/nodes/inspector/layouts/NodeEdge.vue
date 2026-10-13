@@ -1,7 +1,8 @@
+<!-- lokasi: NodeEdge.vue -->
 <template>
   <div v-if="selectedEdge" class="w-full space-y-3">
+    <!-- Info Port Koneksi -->
     <PropertySection title="Edge Modifier" :icon="GitCommit" data-testid="node-inspector-edge-section">
-      <!-- Info Port Koneksi -->
       <div class="px-2 py-1.5 bg-secondary/20 border border-border rounded text-[10px] space-y-1 font-mono" data-testid="node-inspector-edge-info">
         <div class="flex items-center justify-between text-muted-foreground">
           <span>From: <strong class="text-foreground" data-testid="node-inspector-edge-source-title">{{ sourceNodeTitle }}</strong> ({{ selectedEdge.sourceHandle }})</span>
@@ -11,7 +12,7 @@
         </div>
       </div>
 
-      <!-- Callout -->
+      <!-- Callout untuk Collection -->
       <div 
         v-if="['list', 'map'].includes(edgeDataType)" 
         class="p-2 bg-amber-500/10 border border-amber-500/30 rounded text-[11px] text-amber-500 leading-tight space-y-1"
@@ -104,9 +105,30 @@ const sourceNodeTitle = computed(() => sourceNode.value?.settings?.headerTitle |
 const targetNodeTitle = computed(() => targetNode.value?.settings?.headerTitle || targetNode.value?.type || 'Node');
 
 const edgeDataType = computed(() => {
-  if (!sourceNode.value || !selectedEdge.value) return 'any';
-  const port = sourceNode.value.outputs?.find(p => p.id === selectedEdge.value.sourceHandle);
-  return (port?.dataType || 'any').toLowerCase();
+  if (!sourceNode.value || !selectedEdge.value) return 'number';
+
+  const handle = selectedEdge.value.sourceHandle;
+  const outputs = sourceNode.value.outputs || [];
+  const inputs = sourceNode.value.inputs || [];
+
+  const port = outputs.find(p => p.id === handle || p.label === handle) ||
+               inputs.find(p => p.id === handle || p.label === handle) ||
+               outputs[0];
+
+  const rawType = String(port?.dataType || port?.type || '').toLowerCase();
+  const srcType = String(sourceNode.value.type || '').toLowerCase();
+
+  if (['list', 'array'].includes(rawType)) return 'list';
+  if (['map', 'object', 'dictionary'].includes(rawType)) return 'map';
+
+  if (['boolean', 'bool'].includes(rawType) || srcType.startsWith('logic_') || srcType.includes('bool')) {
+    return 'boolean';
+  }
+  if (['string', 'text', 'str'].includes(rawType) || srcType.includes('string') || srcType.includes('text')) {
+    return 'string';
+  }
+
+  return 'number';
 });
 
 const availableModifierOptions = computed(() => {
@@ -146,15 +168,15 @@ const needsValueInput = computed(() => {
   return ['add', 'subtract', 'multiply', 'divide', 'append', 'prepend'].includes(modType);
 });
 
-const valueInputLabel = computed(() => {
-  return 'Operand Value';
-});
+const valueInputLabel = computed(() => 'Operand Value');
 
 function updateModifierType(type) {
   if (!selectedEdge.value) return;
+  const defaultValue = edgeDataType.value === 'number' ? 0 : '';
+  const currentVal = selectedEdge.value.modifier?.value;
   scriptStore.updateEdgeModifier(selectedEdge.value.id, {
     type,
-    value: selectedEdge.value.modifier?.value ?? (edgeDataType.value === 'number' ? 0 : '')
+    value: (currentVal !== undefined && currentVal !== null && currentVal !== '') ? currentVal : defaultValue
   });
 }
 

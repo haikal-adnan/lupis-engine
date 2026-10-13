@@ -9,9 +9,9 @@ import { PrefabPage } from './pages/PrefabPage.js';
 import { ScriptPanelPage } from './pages/ScriptPanelPage.js';
 import { AnimatorPage } from './pages/AnimatorPage.js';
 import { VariablePage } from './pages/VariablePage.js';
-import { NodeLibraryPage } from './pages/NodeLibraryPage.js';
-import { NodeCanvasPage } from './pages/NodeCanvasPage.js';
+import { NodeGraphPage } from './pages/NodeGraphPage.js';
 import { NodeInspectorPage } from './pages/NodeInspectorPage.js';
+import { PreviewPage } from './pages/PreviewPage.js';
 
 import { VariableCrudObject } from './flows/variables.js';
 import { InspectorCrudObject } from './flows/inspector.js';
@@ -20,8 +20,8 @@ import { PrefabCrudObject } from './flows/prefabs.js';
 import { ScriptCrudObject } from './flows/scripts.js';
 import { AssetCrudObject } from './flows/assets.js';
 import { AnimatorCrudObject } from './flows/animator.js';
-import { NodeCanvasCrudObject } from './flows/nodeCanvas.js';
-import { NodeLibraryCrudObject } from './flows/nodeLibrary.js';
+import { NodeGraphCrudObject } from './flows/nodeGraph.js';
+import { NodeInspectorCrudObject } from './flows/nodeInspector.js';
 import { ensureProject } from './flows/dashboard.js';
 
 export const test = base.extend({
@@ -105,12 +105,16 @@ export const test = base.extend({
     await use(new VariablePage(page));
   },
 
-  nodeLibrary: async ({ page, project }, use) => {
-    await use(new NodeLibraryPage(page));
+  nodeGraph: async ({ page, project }, use) => {
+    await use(new NodeGraphPage(page));
   },
 
-  nodeCanvas: async ({ page, project }, use) => {
-    await use(new NodeCanvasPage(page));
+  previewPage: async ({ page, project }, use) => {
+  await use(new PreviewPage(page));
+},
+  // Alias nodeLibrary ke instance nodeGraph setelah penggabungan Page Object
+  nodeLibrary: async ({ nodeGraph }, use) => {
+    await use(nodeGraph);
   },
 
   nodeInspector: async ({ page, project }, use) => {
@@ -149,12 +153,12 @@ export const test = base.extend({
     await use(new VariableCrudObject(page));
   },
 
-  nodeCanvasCrud: async ({ page, project }, use) => {
-    await use(new NodeCanvasCrudObject(page));
+  nodeGraphCrud: async ({ page, project }, use) => {
+    await use(new NodeGraphCrudObject(page));
   },
 
-  nodeLibraryCrud: async ({ page, project }, use) => {
-    await use(new NodeLibraryCrudObject(page));
+  nodeInspectorCrud: async ({ page, project }, use) => {
+    await use(new NodeInspectorCrudObject(page));
   },
 });
 

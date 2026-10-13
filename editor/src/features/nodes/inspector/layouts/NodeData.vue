@@ -1,3 +1,4 @@
+<!-- lokasi: NodeInspector.vue -->
 <template>
   <div class="w-full">
     <!-- Inspector Property Section -->
@@ -5,21 +6,23 @@
       v-if="node && (isVariableNode || hasTopData || hasInputPorts)" 
       title="Parameters" 
       :icon="Sliders"
-      data-testid="node-inspector-parameters-section"
     >
-      <!-- KHUSUS: NODE VARIABLE -->
+      <!-- ========================================== -->
+      <!-- KHUSUS: NODE VARIABLE (GET & SET VARIABLE) -->
+      <!-- ========================================== -->
       <template v-if="isVariableNode">
-        <PropertyRow label="Variable" data-testid="node-inspector-variable-row">
+        <PropertyRow label="Variable">
           <VariableSelect
             :model-value="node.data?.variableId"
             :filter-by-type="false"
             @update:model-value="onSelectVariable"
-            data-testid="node-inspector-variable-select"
           />
         </PropertyRow>
       </template>
 
-      <!-- GENERIC NODE INSPECTOR -->
+      <!-- ========================================== -->
+      <!-- GENERIC NODE INSPECTOR (Properti Ekstra)    -->
+      <!-- ========================================== -->
       <template v-else>
         <!-- 1. Top Level Data Fields -->
         <template v-for="(value, key) in node.data" :key="'data-'+key">
@@ -34,7 +37,6 @@
               :model-value="value"
               :options="booleanOptions"
               @update:model-value="updateData(key, $event)"
-              data-testid="node-inspector-data-boolean-select"
             />
 
             <BaseNumber 
@@ -44,39 +46,30 @@
               @blur="endScriptTransactionWithDelay(0)"
               @update:model-value="updateData(key, $event)"
               class="font-mono"
-              data-testid="node-inspector-data-number-input"
             />
 
             <BaseInput 
               v-else-if="isPrimitive(value)"
               :model-value="value"
               @update:model-value="updateData(key, $event)"
-              data-testid="node-inspector-data-text-input"
             />
           </PropertyRow>
         </template>
 
         <!-- 2. Node Port Values / Inputs Dynamic Controls -->
-        <template v-for="port in nonExecutionInputs" :key="'port-'+port.id">
+        <template v-for="(port, idx) in nonExecutionInputs" :key="'port-'+port.id">
           <PropertyRow 
             :label="port.label || formatLabel(port.id)"
             data-testid="node-inspector-port-row"
             :data-port-id="port.id"
+            :data-port-index="idx"
           >
             <!-- Badge LINKED / NOT SET -->
             <template #actions>
-              <span 
-                v-if="isInputConnected(port.id)" 
-                class="text-[9px] font-mono text-green-400 animate-pulse font-bold"
-                data-testid="node-inspector-port-linked-badge"
-              >
+              <span v-if="isInputConnected(port.id)" class="text-[9px] font-mono text-green-400 animate-pulse font-bold" data-testid="node-inspector-port-linked-badge">
                 LINKED
               </span>
-              <span 
-                v-else-if="isErrorNotSet(port.id, getPortValue(port))" 
-                class="text-[9px] font-mono text-red-500 font-bold uppercase tracking-tighter"
-                data-testid="node-inspector-port-not-set-badge"
-              >
+              <span v-else-if="isErrorNotSet(port.id, getPortValue(port))" class="text-[9px] font-mono text-red-500 font-bold uppercase tracking-tighter">
                 NOT SET
               </span>
             </template>
@@ -103,7 +96,7 @@
               </IconButton>
 
               <!-- MODE 1: VARIABLE INPUT GROUP -->
-              <div v-if="getMode(port.id) === 'variable'" class="flex-1 min-w-0">
+              <div v-if="getMode(port.id) === 'variable'" class="flex-1 min-w-0" data-testid="node-inspector-port-variable-group">
                 <VariableInputGroup
                   :binding-value="getVariableBinding(port.id)"
                   :data-type="getInputDataType(port, getPortValue(port))"
@@ -112,7 +105,6 @@
                   @update:binding-value="setVariableBinding(port.id, $event)"
                   @update:modifier="setVariableModifier(port.id, $event)"
                   @clear:modifier="clearVariableModifier(port.id)"
-                  data-testid="node-inspector-port-variable-group"
                 />
               </div>
 
@@ -166,7 +158,6 @@
       <div 
         v-if="!isVariableNode && !hasTopData && !hasInputPorts" 
         class="px-2 py-4 text-center text-xs text-muted-foreground italic"
-        data-testid="node-inspector-parameters-empty-state"
       >
         No editable parameters.
       </div>
@@ -330,8 +321,8 @@ function isPrimitive(val) {
 
 function getInputDataType(port, val) {
   if (val !== null && val !== undefined && val !== '') return typeof val;
-  if (port && port.dataType) {
-    const type = port.dataType.toLowerCase();
+  if (port && (port.dataType || port.type)) {
+    const type = (port.dataType || port.type).toLowerCase();
     if (['number', 'float', 'int'].includes(type)) return 'number';
     if (['boolean', 'bool'].includes(type)) return 'boolean';
     if (['string', 'text'].includes(type)) return 'string';

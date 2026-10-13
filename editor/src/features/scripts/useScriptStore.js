@@ -99,9 +99,6 @@ export const useScriptStore = defineStore('script', {
       await opfs.writeFileToHandle(workspacesDir, 'scripts.json', JSON.stringify(scriptMetas, null, 2));
     },
 
-    /**
-     * Membekukan dan menulis single script ke OPFS (Dipanggil saat Save Proyek / Add Script)
-     */
     async saveScriptToOPFS(script) {
       const opfs = useOPFSActions();
       const { scriptsDir } = await this._getScriptDirectories();
@@ -114,9 +111,6 @@ export const useScriptStore = defineStore('script', {
       await this.syncScriptsMetaToOPFS();
     },
 
-    /**
-     * Menyimpan SELURUH script di RAM ke OPFS (Gunakan ini pada tombol Save Project)
-     */
     async syncAllScriptsToOPFS() {
       if (this.activeScript) {
         this.saveActiveScript();
@@ -148,9 +142,6 @@ export const useScriptStore = defineStore('script', {
       return false;
     },
 
-    /**
-     * Hanya memperbarui state di RAM
-     */
     updateScriptInList(scriptId, updates) {
       const index = this.scripts.findIndex(s => s.id === scriptId);
       if (index !== -1) {
@@ -233,6 +224,45 @@ export const useScriptStore = defineStore('script', {
         edge.modifier = { ...edge.modifier, ...modifierData };
         this.saveActiveScript();
       }
+    },
+
+    /**
+     * Memunculkan node baru berdasarkan type menggunakan template resmi dari useNodeBlueprint
+     */
+    spawnNodeByType(type, customLabel, position = { x: 300, y: 200 }, extraData = {}) {
+      if (!this.activeScript) return null;
+
+      const { getNodeBlueprint } = useNodeBlueprint();
+      const blueprint = getNodeBlueprint(type);
+
+      if (!blueprint) {
+        throw new Error(`[ScriptStore] Blueprint type "${type}" tidak ditemukan pada catalog!`);
+      }
+
+      const id = `node_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+      const defaultData = blueprint.defaultData || {};
+
+      const newNode = createScriptNode({
+        id,
+        type: blueprint.type || type,
+        allowDynamicInputs: blueprint.allowDynamicInputs ?? false,
+        allowDynamicOutputs: blueprint.allowDynamicOutputs ?? false,
+        position,
+        settings: {
+          headerTitle: customLabel || blueprint.label || 'Node',
+          headerColor: defaultData.settings?.headerColor || '#3b82f6',
+          ...defaultData.settings
+        },
+        inputs: defaultData.inputs,
+        outputs: defaultData.outputs,
+        data: {
+          ...(defaultData.data ? JSON.parse(JSON.stringify(defaultData.data)) : {}),
+          ...extraData
+        }
+      });
+
+      this.addNodeToActive(newNode);
+      return id;
     },
 
     addNodeToActive(rawNodeData) {
@@ -366,9 +396,6 @@ export const useScriptStore = defineStore('script', {
       }
     },
 
-    /**
-     * Menyimpan perubahan node ke RAM & Menandai Proyek dirty
-     */
     saveActiveScript() {
       if (!this.activeScript) return;
       const projectStore = useProjectStore();

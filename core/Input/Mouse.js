@@ -12,6 +12,8 @@ export default class Mouse {
         this.wheel = 0;
 
         this._move = e => {
+            if (!this.canvas || typeof this.canvas.getBoundingClientRect !== "function") return;
+
             const p = MapToCanvasPixels(e, this.canvas);
             this.x = p.px;
             this.y = p.py;
@@ -26,14 +28,21 @@ export default class Mouse {
                 this.pressedButtons.add(e.button);
             }
             this.buttons.add(e.button);
-            const p = MapToCanvasPixels(e, this.canvas);
+
+            let px = this.x;
+            let py = this.y;
+            if (this.canvas && typeof this.canvas.getBoundingClientRect === "function") {
+                const p = MapToCanvasPixels(e, this.canvas);
+                px = p.px;
+                py = p.py;
+            }
             
             if (this.eventManager) {
                 const btnLabel = e.button === 0 ? 'left' : (e.button === 2 ? 'right' : 'middle');
                 this.eventManager.emit("input:pointerdown", { 
                     button: btnLabel, 
-                    x: p.px, 
-                    y: p.py 
+                    x: px, 
+                    y: py 
                 });
             }
         };
@@ -42,13 +51,20 @@ export default class Mouse {
             if (this.buttons.has(e.button)) {
                 this.buttons.delete(e.button);
                 this.releasedButtons.add(e.button);
-                const p = MapToCanvasPixels(e, this.canvas);
+
+                let px = this.x;
+                let py = this.y;
+                if (this.canvas && typeof this.canvas.getBoundingClientRect === "function") {
+                    const p = MapToCanvasPixels(e, this.canvas);
+                    px = p.px;
+                    py = p.py;
+                }
                 
                 if (this.eventManager) {
                     this.eventManager.emit("input:pointerup", { 
                         button: e.button, 
-                        x: p.px, 
-                        y: p.py 
+                        x: px, 
+                        y: py 
                     });
                 }
             }
@@ -60,18 +76,21 @@ export default class Mouse {
         };
 
         this._contextMenu = e => e.preventDefault();
-        this.canvas.addEventListener("contextmenu", this._contextMenu);
-        this.canvas.addEventListener("mousemove", this._move);
-        this.canvas.addEventListener("mousedown", this._down);
-        this.canvas.addEventListener("wheel", this._wheel, { passive: false });
-        window.addEventListener("mouseup", this._up);
-        
+
         this._blur = () => {
             this.buttons.clear();
             this.pressedButtons.clear();
             this.releasedButtons.clear();
         };
         window.addEventListener("blur", this._blur);
+
+        if (this.canvas && typeof this.canvas.addEventListener === "function") {
+            this.canvas.addEventListener("contextmenu", this._contextMenu);
+            this.canvas.addEventListener("mousemove", this._move);
+            this.canvas.addEventListener("mousedown", this._down);
+            this.canvas.addEventListener("wheel", this._wheel, { passive: false });
+            window.addEventListener("mouseup", this._up);
+        }
     }
 
     isDown(btn) {
@@ -101,10 +120,12 @@ export default class Mouse {
     }
 
     destroy() {
-        this.canvas.removeEventListener("mousemove", this._move);
-        this.canvas.removeEventListener("mousedown", this._down);
-        this.canvas.removeEventListener("wheel", this._wheel);
-        this.canvas.removeEventListener("contextmenu", this._contextMenu);
+        if (this.canvas && typeof this.canvas.removeEventListener === "function") {
+            this.canvas.removeEventListener("mousemove", this._move);
+            this.canvas.removeEventListener("mousedown", this._down);
+            this.canvas.removeEventListener("wheel", this._wheel);
+            this.canvas.removeEventListener("contextmenu", this._contextMenu);
+        }
         window.removeEventListener("mouseup", this._up);
         window.removeEventListener("blur", this._blur);
     }

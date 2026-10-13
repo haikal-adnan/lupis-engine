@@ -2,7 +2,7 @@ import { computed } from 'vue';
 import { useScriptStore } from '@scripts/scripts.js';
 import { useScriptHistory } from '@historys/historys.js';
 import { usePopAlert } from '@composables/composables.js';
-import { useVariableConfig, useNodeLogic } from '@nodes/nodes.js';
+import { useVariableConfig, useNodeLogic, useCustomNodeHandlers } from '@nodes/nodes.js';
 import { GenerateUUID } from '@utils/utils.js';
 
 export function useNodeInspector(props = {}) {
@@ -10,6 +10,7 @@ export function useNodeInspector(props = {}) {
   const scriptHistory = useScriptHistory();
   const { showPop } = usePopAlert();
   const { getVarColor } = useVariableConfig();
+  const { handleNodeValueSync } = useCustomNodeHandlers(); // Integrated
 
   const { 
     addFromDropdown, 
@@ -110,6 +111,9 @@ export function useNodeInspector(props = {}) {
     if (isInputConnected(key)) return;
     const currentValues = node.value?.data?.values || {};
     updateNodeDataField('data.values', { ...currentValues, [key]: value });
+
+    // Delegasi logika kustom (Multi-key sync, dll)
+    handleNodeValueSync(node.value, key, value, disconnectInvalidEdges);
   }
 
   function toggleMode(key) {
