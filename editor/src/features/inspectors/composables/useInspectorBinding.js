@@ -56,7 +56,8 @@ export function useInspectorBinding(
         if (category === 'ui' || category === 'grid' || category === 'camera') {
           return projectStore.project?.settings?.[category]?.[propName];
         }
-        if (!category && propName === 'tickRate') {
+        // Ditingkatkan: sertakan initialSceneId sebagai property project settings
+        if (!category && (propName === 'tickRate' || propName === 'initialSceneId')) {
           return projectStore.project?.settings?.[propName];
         }
         const s = sceneStore.activeScene?.settings;
@@ -76,6 +77,15 @@ export function useInspectorBinding(
         }
         else if (category === 'camera') projectStore.updateCameraSettings({ [propName]: val });
         else if (!category && propName === 'tickRate') projectStore.setTickRate(val);
+        // Ditingkatkan: handle simpan initialSceneId ke projectStore
+        else if (!category && propName === 'initialSceneId') {
+          if (typeof projectStore.setInitialSceneId === 'function') {
+            projectStore.setInitialSceneId(val);
+          } else {
+            projectStore.project.settings.initialSceneId = val;
+            projectStore.markAsDirty();
+          }
+        }
         else if (!sceneStore.activeScene) return;
         else if (category === 'worldBounds') sceneStore.updateWorldBounds({ [propName]: val });
         else if (category === 'physics') sceneStore.updatePhysicsSettings({ [propName]: val });

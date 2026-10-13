@@ -11,32 +11,55 @@ export const BlueprintComparison = {
   color: '#3F51B5', 
   icon: Scale,
   items: [
-    { 
-      type: 'logic_compare', 
-      label: 'Compare', 
-      description: 'Compares two values (A vs B).', 
-      icon: ArrowRightLeft,
-      allowDynamicInputs: false,
-      allowDynamicOutputs: false,
-      defaultData: { 
-        settings: { headerTitle: 'Compare', headerColor: '#3F51B5', category: 'Logic' },
-        data: { op: 'equal', values: { a: 0, b: 0 } }, 
-        inputs: [
-          { id: 'a', label: 'A', dataType: 'any', color: '#ffffff' },
-          { id: 'b', label: 'B', dataType: 'any', color: '#ffffff' }
-        ], 
-        outputs: [
-          { id: 'res', label: 'Result', dataType: 'boolean', color: '#4CAF50' }
-        ],
-        data: {
-          op: 'equal',
-          values: { a: 0, b: 0 },
-          code: `const a = inputs['A'];
-const b = inputs['B'];
-const op = node.data?.op || 'equal';
+    /**
+     * =========================================================================
+     * 1. LOGIC: COMPARE (Relational Operator Evaluator)
+     * =========================================================================
+     * 
+     * CARA PENGGUNAAN:
+     * - Hubungkan data yang ingin dibandingkan ke port 'A' dan port 'B'.
+     * - Pilih operator pembanding dari opsi dropdown pada Inspector.
+     * - Ambil nilai hasil evaluasi boolean pada port output 'Result'.
+     */
+{ 
+  type: 'logic_compare', 
+  label: 'Compare', 
+  description: 'Compares two values (A vs B).', 
+  icon: ArrowRightLeft,
+  allowDynamicInputs: false,
+  allowDynamicOutputs: false,
+  defaultData: { 
+    settings: { headerTitle: 'Compare', headerColor: '#3F51B5', category: 'Logic' },
+    inputs: [
+      { id: 'a', label: 'A', dataType: 'any', color: '#ffffff' },
+      { id: 'b', label: 'B', dataType: 'any', color: '#ffffff' },
+      { id: 'compare', label: 'Compare', dataType: 'string', color: '#FFEB3B', defaultValue: 'equal' }
+    ], 
+    outputs: [
+      { id: 'res', label: 'Result', dataType: 'boolean', color: '#4CAF50' }
+    ],
+    data: {
+      values: {
+        a: 0,
+        b: 0,
+        compare: 'equal'
+      },
+      options: {
+        compare: [
+          { label: 'Equal (==)', value: 'equal' },
+          { label: 'Not Equal (!=)', value: 'not_equal' },
+          { label: 'Greater Than (>)', value: 'greater' },
+          { label: 'Less Than (<)', value: 'less' },
+          { label: 'Greater Than or Equal (>=)', value: 'greater_equal' },
+          { label: 'Less Than or Equal (<=)', value: 'less_equal' }
+        ]
+      },
+      code: `const a = inputs.a;
+const b = inputs.b;
+const op = inputs.compare || node.data?.values?.compare || node.data?.compare || 'equal';
 
-const valA = isNaN(Number(a)) || a === "" ? a : Number(a);
-const valB = isNaN(Number(b)) || b === "" ? b : Number(b);
+const valA = isNaN(Number(a)) || a === "" || a === null ? a : Number(a);
+const valB = isNaN(Number(b)) || b === "" || b === null ? b : Number(b);
 
 let res = false;
 switch (op) {
@@ -49,11 +72,17 @@ switch (op) {
   default: res = false;
 }
 
-outputs['Result'] = res;
+outputs.res = res;
 return;`
-        }
-      } 
-    },
+    }
+  } 
+},
+
+    /**
+     * =========================================================================
+     * 2. LOGIC: BRANCH (If / Else Flow Control)
+     * =========================================================================
+     */
     { 
       type: 'logic_branch', 
       label: 'Branch (If/Else)', 
@@ -63,7 +92,6 @@ return;`
       allowDynamicOutputs: true,
       defaultData: { 
         settings: { headerTitle: 'Branch', headerColor: '#3F51B5', category: 'Logic' },
-        data: { branches: [] }, 
         inputs: [
           { id: 'exec_in', label: 'In', dataType: 'execution', color: '#ffffff' },
           { id: 'cond_0', label: 'If Condition', dataType: 'boolean', color: '#4CAF50' }
@@ -75,33 +103,38 @@ return;`
         data: {
           branches: [],
           code: `const branches = node.data?.branches || [];
+const cond0 = inputs.cond_0;
 
-if (Boolean(inputs['If Condition'])) {
-  outputs['If True'] = true;
+if (Boolean(cond0)) {
+  outputs.out_0 = true;
   return;
 }
 
 for (let i = 0; i < branches.length; i++) {
   const bType = branches[i];
   if (bType === 'else_if') {
-    const portLabel = \`Else If Condition \${i + 1}\`;
-    const condVal = inputs[portLabel] ?? inputs[\`cond_\${i + 1}\`];
+    const condVal = inputs[\`cond_\${i + 1}\`];
     if (Boolean(condVal)) {
-      const outLabel = \`Else If \${i + 1}\`;
-      outputs[outLabel] = true;
+      outputs[\`out_\${i + 1}\`] = true;
       return;
     }
   } else if (bType === 'else') {
-    outputs['Else'] = true;
+    outputs.out_else = true;
     return;
   }
 }
 
-outputs['False'] = true;
+outputs.out_false = true;
 return;`
         }
       } 
     },
+
+    /**
+     * =========================================================================
+     * 3. LOGIC: SWITCH (Multi-Value Execution Router)
+     * =========================================================================
+     */
     { 
       type: 'logic_switch', 
       label: 'Switch', 
@@ -111,7 +144,6 @@ return;`
       allowDynamicOutputs: true,
       defaultData: { 
         settings: { headerTitle: 'Switch', headerColor: '#3F51B5', category: 'Logic' },
-        data: { dataType: 'string', cases: ['right', 'left'] }, 
         inputs: [
           { id: 'exec_in', label: 'In', dataType: 'execution', color: '#ffffff' },
           { id: 'value', label: 'Value', dataType: 'string', color: '#03A9F4' } 
@@ -124,7 +156,7 @@ return;`
         data: {
           dataType: 'string',
           cases: ['right', 'left'],
-          code: `const rawValue = inputs['Value'] ?? node.data?.value;
+          code: `const rawValue = inputs.value ?? node.data?.value;
 const cases = node.data?.cases || [];
 const dataType = node.data?.dataType || 'string';
 
@@ -148,13 +180,11 @@ if (dataType === 'boolean') {
 }
 
 if (matchIndex !== -1) {
-  const caseVal = cases[matchIndex];
-  const portLabel = \`Case "\${caseVal}"\`;
-  outputs[portLabel] = true;
+  outputs[\`out_case_\${matchIndex}\`] = true;
 } else {
-  outputs['Default'] = true;
+  outputs.out_default = true;
 }
-return;`
+return;` 
         }
       } 
     }

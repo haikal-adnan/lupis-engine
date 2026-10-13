@@ -55,6 +55,13 @@ export const useSceneActions = {
         this.activeSceneId = fallbackScene ? fallbackScene.id : null;
         this.selectedEntityIds = [];
       }
+
+      // Validasi penyesuaian Initial Scene jika scene yang dihapus adalah initialScene
+      const projectStore = useProjectStore();
+      if (projectStore.project?.settings?.initialSceneId === sceneId) {
+        projectStore.project.settings.initialSceneId = this.scenes[0].id;
+        projectStore.markAsDirty();
+      }
     }
   },
 

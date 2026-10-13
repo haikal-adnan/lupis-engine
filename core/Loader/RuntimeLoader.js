@@ -36,6 +36,11 @@ export default class RuntimeLoader {
             game.id = project.id;
             
             this._initMain(game, canvas, mode);
+
+            // Inisialisasi variabel global ke VariableManager
+            if (project.globalVariables && game.variables) {
+                game.variables.initGlobals(project.globalVariables);
+            }
             
             game.consoleBroadcaster = new ConsoleBroadcaster();
 
@@ -84,7 +89,10 @@ export default class RuntimeLoader {
 
             reportProgress("Menyiapkan Scene Awal...", 90);
             this._initScriptLibrary(game.world, scripts);
-            game.sceneSystem.setSceneCache(scenes);
+
+            // Set scene cache sekaligus initialSceneId ke SceneSystem
+            const targetSceneId = project.settings?.initialSceneId;
+            game.sceneSystem.setSceneCache(scenes, targetSceneId);
 
             this._onPostInit(game, canvas, payload);
 
@@ -100,7 +108,9 @@ export default class RuntimeLoader {
                 message: `${mode.toUpperCase()} engine successfully initialized and running!`
             });
 
-            const initialScene = scenes[0];
+            // Cari target scene berdasarkan initialSceneId, fallback ke scenes[0]
+            const initialScene = scenes.find(s => s.id === targetSceneId) || scenes[0];
+
             this._setupWorldSettings(game, project.settings, initialScene.settings);
             
             bus.emit('console:log', {
@@ -269,7 +279,7 @@ export default class RuntimeLoader {
             }
         }
 
-    if (game.consoleBroadcaster) {
+        if (game.consoleBroadcaster) {
             game.consoleBroadcaster.destroy();
         }
         

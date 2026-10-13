@@ -1,4 +1,4 @@
-import { Play, Pause, Square, Power, Flag, Clock } from 'lucide-vue-next';
+import { Play, Pause, Square, Power, Flag, Clock, RotateCcw } from 'lucide-vue-next';
 
 export const BlueprintLifecycle = {
   id: 'category_game_flow',
@@ -57,6 +57,7 @@ return;`
         }
       }
     },
+
     {
       type: 'event_scene_start',
       label: 'On Scene Start',
@@ -88,9 +89,87 @@ return;`
     },
 
     {
+      type: 'event_game_pause',
+      label: 'On Game Pause',
+      description: 'Triggered when the game is paused.',
+      icon: Pause,
+      allowDynamicInputs: false,
+      allowDynamicOutputs: false,
+      defaultData: {
+        settings: {
+          headerTitle: 'On Game Pause',
+          headerColor: '#EF4444',
+          category: 'Events'
+        },
+        inputs: [],
+        outputs: [
+          { id: 'out', label: 'Out', dataType: 'execution', color: '#ffffff' }
+        ],
+        data: {
+          code: `context.onGamePause(() => {
+  context.triggerFlow('out');
+});
+return;`
+        }
+      }
+    },
+
+    {
+      type: 'event_game_resume',
+      label: 'On Game Resume',
+      description: 'Triggered when the game is resumed.',
+      icon: Play,
+      allowDynamicInputs: false,
+      allowDynamicOutputs: false,
+      defaultData: {
+        settings: {
+          headerTitle: 'On Game Resume',
+          headerColor: '#10B981',
+          category: 'Events'
+        },
+        inputs: [],
+        outputs: [
+          { id: 'out', label: 'Out', dataType: 'execution', color: '#ffffff' }
+        ],
+        data: {
+          code: `context.onGameResume(() => {
+  context.triggerFlow('out');
+});
+return;`
+        }
+      }
+    },
+
+    {
+      type: 'event_game_restart',
+      label: 'On Game Restart',
+      description: 'Triggered when the entire game is restarted.',
+      icon: RotateCcw,
+      allowDynamicInputs: false,
+      allowDynamicOutputs: false,
+      defaultData: {
+        settings: {
+          headerTitle: 'On Game Restart',
+          headerColor: '#F59E0B',
+          category: 'Events'
+        },
+        inputs: [],
+        outputs: [
+          { id: 'out', label: 'Out', dataType: 'execution', color: '#ffffff' }
+        ],
+        data: {
+          code: `context.onGameRestart(() => {
+  context.triggerFlow('out');
+});
+return;`
+        }
+      }
+    },
+
+    {
       type: 'action_game_pause',
       label: 'Pause Game',
-      description: 'Freezes the game loop update.',
+      description: 'Freezes gameplay physics and logic update.',
       icon: Pause,
       defaultData: {
         settings: {
@@ -115,12 +194,12 @@ return;`
     {
       type: 'action_game_resume',
       label: 'Resume Game',
-      description: 'Resumes the game loop update.',
+      description: 'Resumes gameplay physics and logic update.',
       icon: Play,
       defaultData: {
         settings: {
           headerTitle: 'Resume Game',
-          headerColor: '#EF4444',
+          headerColor: '#10B981',
           category: 'Game Flow'
         },
         inputs: [
@@ -138,13 +217,38 @@ return;`
     },
 
     {
-      type: 'action_game_toggle_pause',
-      label: 'Toggle Pause',
-      description: 'Switches between Pause and Resume.',
-      icon: Pause,
+      type: 'action_game_restart',
+      label: 'Restart Game',
+      description: 'Resets all global variables and reloads the initial scene.',
+      icon: RotateCcw,
       defaultData: {
         settings: {
-          headerTitle: 'Toggle Pause',
+          headerTitle: 'Restart Game',
+          headerColor: '#EF4444',
+          category: 'Game Flow'
+        },
+        inputs: [
+          { id: 'exec_in', label: 'In', dataType: 'execution', color: '#ffffff' }
+        ],
+        outputs: [
+          { id: 'out', label: 'Out', dataType: 'execution', color: '#ffffff' }
+        ],
+        data: {
+          code: `context.game.restartGame();
+outputs['out'] = true;
+return;`
+        }
+      }
+    },
+
+    {
+      type: 'action_scene_restart',
+      label: 'Restart Scene',
+      description: 'Reloads the current active scene without resetting global variables.',
+      icon: RotateCcw,
+      defaultData: {
+        settings: {
+          headerTitle: 'Restart Scene',
           headerColor: '#F59E0B',
           category: 'Game Flow'
         },
@@ -155,30 +259,8 @@ return;`
           { id: 'out', label: 'Out', dataType: 'execution', color: '#ffffff' }
         ],
         data: {
-          code: `context.game.togglePause();
+          code: `context.scene.restart();
 outputs['out'] = true;
-return;`
-        }
-      }
-    },
-
-    {
-      type: 'action_game_quit',
-      label: 'Quit Game',
-      description: 'Stops the game execution.',
-      icon: Square,
-      defaultData: {
-        settings: {
-          headerTitle: 'Quit / End Game',
-          headerColor: '#000000',
-          category: 'Game Flow'
-        },
-        inputs: [
-          { id: 'exec_in', label: 'In', dataType: 'execution', color: '#ffffff' }
-        ],
-        outputs: [],
-        data: {
-          code: `context.game.quitGame();
 return;`
         }
       }

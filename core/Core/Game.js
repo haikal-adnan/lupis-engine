@@ -78,6 +78,22 @@ export default class Game {
         this.events.emit('game:start');
     }
 
+    restartGame() {
+        this.isPaused = false;
+
+        // Reset semua variabel global kembali ke nilai awal
+        if (this.variables && typeof this.variables.resetGlobals === 'function') {
+            this.variables.resetGlobals();
+        }
+
+        // Antrekan pemuatan Initial Scene
+        if (this.sceneSystem) {
+            this.sceneSystem.loadInitialScene();
+        }
+
+        this.events.emit('game:restart');
+    }
+
     quitGame() {
         if (this.loop && typeof this.loop.stop === 'function') {
             this.loop.stop();
@@ -112,16 +128,16 @@ export default class Game {
 
         if (Config.ENGINE_MODE === "runtime") {
             this.transitionSystem.update(dt);
-            this.animatorSystem.update(dt);
-            
-            this.scriptSystem.update(dt);
-            
-            this.physicsSystem.update(dt);
             
             this.audioSystem.update();
 
+            this.animatorSystem.update(dt);
+            this.scriptSystem.update(dt);
+            
+            this.physicsSystem.update(dt);
+
             if (this.camera && this.renderer && this.renderer.gl) {
-                this.camera.update(dt, this.world, this.renderer.gl.canvas);
+                this.camera.update(this.isPaused ? 0 : dt, this.world, this.renderer.gl.canvas);
             }
 
             if (this.input) {
@@ -154,7 +170,13 @@ export default class Game {
         }
     }
 
-    pauseGame() { this.isPaused = true; }
-    resumeGame() { this.isPaused = false; }
-    togglePause() { if (this.isPaused) this.resumeGame(); else this.pauseGame(); }
+    pauseGame() { 
+        this.isPaused = true; 
+        this.events.emit('game:pause');
+    }
+
+    resumeGame() { 
+        this.isPaused = false; 
+        this.events.emit('game:resume');
+    }
 }

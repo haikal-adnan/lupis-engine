@@ -6,6 +6,8 @@ export default class PhysicsSystem {
     }
 
     update(dt) {
+        if (this.game.isPaused) return;
+
         const sceneSettings = this.game.world.settings.physics || { gravity: 1200, drag: 5 };
         const GLOBAL_GRAVITY = sceneSettings.gravity;
         const GLOBAL_DRAG = sceneSettings.drag;

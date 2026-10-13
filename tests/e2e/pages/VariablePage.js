@@ -7,16 +7,14 @@ export class VariablePage {
   constructor(page) {
     this.page = page;
     this.manageBtn = page.getByTestId('variable-panel-manage-btn');
-    this.modal = page.getByTestId('variable-modal')
+    this.modal = page
+      .getByTestId('variable-modal')
       .or(page.locator('.fixed.inset-0').filter({ hasText: 'Variables' }))
       .first();
 
     this.globalScopeBtn = page.getByTestId('variable-modal-scope-global-btn');
     this.localScopeBtn = page.getByTestId('variable-modal-scope-local-btn');
-    
-    // Target langsung elemen input internal di dalam komponen BaseSearchInput
     this.searchInput = page.getByTestId('variable-modal-search-input').locator('input');
-    
     this.addBtn = page.getByTestId('variable-modal-add-btn');
     this.closeBtn = page.getByTestId('variable-modal-close-btn');
 
@@ -49,7 +47,7 @@ export class VariablePage {
     return this.modal
       .getByTestId('variable-modal-item-row')
       .filter({
-        has: this.page.locator(`[data-testid="variable-modal-name-input"][value="${name}"], input[value="${name}"]`)
+        has: this.page.locator(`[data-testid="variable-modal-name-input"][value="${name}"], input[value="${name}"]`),
       })
       .or(
         this.modal.locator(`[data-testid="variable-modal-item-row"][data-variable-name="${name}"]`)
@@ -58,10 +56,11 @@ export class VariablePage {
   }
 
   panelItemRow(name, scope) {
-    return this.page
-      .locator(`[data-testid="variable-panel-item-row"][data-variable-name="${name}"][data-scope="${scope}"]`)
-      .or(this.page.locator(`[data-testid="variable-panel-item-row"][data-variable-name="${name}"]`))
-      .first();
+    let selector = `[data-testid="variable-panel-item-row"][data-variable-name="${name}"]`;
+    if (scope) {
+      selector += `[data-scope="${scope}"]`;
+    }
+    return this.page.locator(selector).first();
   }
 
   async createVariable({ name = 'NewVar', type = 'string', isExposed = false, scope = 'Local' }) {
@@ -79,7 +78,7 @@ export class VariablePage {
     if (type !== 'string') {
       const typeSelect = lastRow.getByTestId('variable-modal-type-select').first();
       const isSelect = await typeSelect.evaluate(el => el.tagName.toLowerCase() === 'select').catch(() => false);
-      
+
       if (isSelect) {
         await typeSelect.selectOption({ label: type }).catch(async () => {
           await typeSelect.selectOption(type);
@@ -99,5 +98,22 @@ export class VariablePage {
     }
 
     return lastRow;
+  }
+
+  async openRowMenu(name) {
+    const row = this.itemRowByName(name);
+    await expect(row).toBeVisible();
+    await row.getByTestId('variable-modal-row-menu-trigger').first().click();
+  }
+
+  async fillCollectionMapKey(index, key) {
+    const keyInput = this.modal.locator('input[placeholder*="Key"]').locator(`nth=${index}`);
+    await expect(keyInput).toBeVisible();
+    await keyInput.focus();
+    await keyInput.fill(key);
+    await keyInput.dispatchEvent('input');
+    await keyInput.dispatchEvent('change');
+    await keyInput.press('Enter');
+    await keyInput.blur();
   }
 }

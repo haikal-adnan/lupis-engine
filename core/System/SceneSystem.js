@@ -8,11 +8,19 @@ export default class SceneSystem {
         this._sceneDataCache = []; 
         this._currentSceneData = null; 
         this._pendingSceneLoad = null;
+        this._initialSceneId = null;
     }
 
-    setSceneCache(scenesArray) {
+    setInitialSceneId(sceneId) {
+        this._initialSceneId = sceneId;
+    }
+
+    setSceneCache(scenesArray, initialSceneId = null) {
         if (Array.isArray(scenesArray)) {
             this._sceneDataCache = scenesArray;
+        }
+        if (initialSceneId) {
+            this._initialSceneId = initialSceneId;
         }
     }
 
@@ -23,6 +31,7 @@ export default class SceneSystem {
             scriptId: s.scriptId
         }));
     }
+
     getCurrentScene() {
         return this._currentSceneData;
     }
@@ -37,6 +46,20 @@ export default class SceneSystem {
 
     queueLoadScene(sceneIdentifier) {
         this._pendingSceneLoad = sceneIdentifier;
+    }
+
+    loadInitialScene() {
+        if (!this._sceneDataCache || this._sceneDataCache.length === 0) {
+            console.warn("[SceneSystem] Tidak dapat restart: Cache scene kosong.");
+            return;
+        }
+
+        // Memprioritaskan _initialSceneId, jika tidak ada fallback ke scene pertama
+        const targetScene = this._sceneDataCache.find(s => s.id === this._initialSceneId) || this._sceneDataCache[0];
+
+        if (targetScene) {
+            this.queueLoadScene(targetScene.id);
+        }
     }
 
     loadScene(sceneIdentifier) {

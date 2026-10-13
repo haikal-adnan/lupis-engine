@@ -1,6 +1,11 @@
 import { GenerateUUID } from '@utils/utils.js';
 
 export const projectSchema = (data = {}) => {
+  const defaultScenes = data.scenes || [];
+  const firstSceneId = defaultScenes.length > 0 
+    ? (typeof defaultScenes[0] === 'object' ? defaultScenes[0].id : defaultScenes[0]) 
+    : null;
+
   return {
     id: data.id, 
     name: data.name || "Untitled Project",
@@ -10,6 +15,7 @@ export const projectSchema = (data = {}) => {
     thumbnailUrl: data.thumbnailUrl || null,
     
     settings: {
+      initialSceneId: data.settings?.initialSceneId || firstSceneId,
       tickRate: Number(data.settings?.tickRate || 60),
       
       debug: {
@@ -57,6 +63,6 @@ export const projectSchema = (data = {}) => {
       ? data.tags 
       : ['Untagged', 'Player', 'Enemy'],
 
-    scenes: data.scenes || [] 
+    scenes: defaultScenes 
   };
 };

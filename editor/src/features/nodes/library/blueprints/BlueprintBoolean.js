@@ -6,6 +6,19 @@ export const BlueprintBoolean = {
   color: '#4CAF50',
   icon: ShieldCheck,
   items: [
+    /**
+     * =========================================================================
+     * 1. LOGIC: AND (Logical Conjunction)
+     * =========================================================================
+     * 
+     * CARA PENGGUNAAN:
+     * - Hubungkan nilai-nilai boolean ke port input 'Val 1', 'Val 2' (dan input tambahan jika ada).
+     * - Ambil output boolean pada port 'Result'.
+     * 
+     * CARA KERJA & EKSEKUSI:
+     * - Memeriksa seluruh masukan boolean.
+     * - Mengembalikan `true` HANYA jika semua masukan bernilai true.
+     */
     { 
       type: 'logic_and', 
       label: 'And', 
@@ -27,16 +40,28 @@ export const BlueprintBoolean = {
             v0: false,
             v1: false
           },
-          code: `const val1 = inputs['Val 1'];
-const val2 = inputs['Val 2'];
-const collection = [val1, val2];
+          code: `const val1 = inputs.v0;
+const val2 = inputs.v1;
 
-outputs['Result'] = collection.every(Boolean);
+outputs.result = [val1, val2].every(Boolean);
 return;`
         }
       } 
     },
 
+    /**
+     * =========================================================================
+     * 2. LOGIC: OR (Logical Disjunction)
+     * =========================================================================
+     * 
+     * CARA PENGGUNAAN:
+     * - Hubungkan nilai-nilai boolean ke port input 'Val 1', 'Val 2' (dan input tambahan jika ada).
+     * - Ambil output boolean pada port 'Result'.
+     * 
+     * CARA KERJA & EKSEKUSI:
+     * - Memeriksa seluruh masukan boolean.
+     * - Mengembalikan `true` jika minimal SATU masukan bernilai true.
+     */
     { 
       type: 'logic_or', 
       label: 'Or', 
@@ -58,16 +83,27 @@ return;`
             v0: false,
             v1: false
           },
-          code: `const val1 = inputs['Val 1'];
-const val2 = inputs['Val 2'];
-const collection = [val1, val2];
+          code: `const val1 = inputs.v0;
+const val2 = inputs.v1;
 
-outputs['Result'] = collection.some(Boolean);
+outputs.result = [val1, val2].some(Boolean);
 return;`
         }
       } 
     },
 
+    /**
+     * =========================================================================
+     * 3. LOGIC: NOT (Logical Inversion)
+     * =========================================================================
+     * 
+     * CARA PENGGUNAAN:
+     * - Hubungkan nilai boolean yang ingin dibalik pada port input 'In'.
+     * - Ambil nilai kebalikan boolean pada port output 'Out'.
+     * 
+     * CARA KERJA & EKSEKUSI:
+     * - Membalik nilai masukan boolean (`true` menjadi `false`, `false` menjadi `true`).
+     */
     { 
       type: 'logic_not', 
       label: 'Not', 
@@ -87,9 +123,9 @@ return;`
           values: {
             in_val: false
           },
-          code: `const inVal = inputs['In'];
+          code: `const inVal = inputs.in_val;
 
-outputs['Out'] = !inVal;
+outputs.result = !inVal;
 return;`
         }
       } 

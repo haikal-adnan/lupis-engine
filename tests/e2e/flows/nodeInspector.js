@@ -49,12 +49,16 @@ export class NodeInspectorCrudObject {
 
   // Parameters & Variable Binding Operations
   async setDirectValue(portId, value, type = 'number') {
-    if (type === 'number') {
-      await this.inspector.setPortDirectNumber(portId, value);
-    } else if (type === 'string') {
-      await this.inspector.setPortDirectText(portId, value);
-    } else if (type === 'boolean') {
+    const lowerType = String(type).toLowerCase();
+
+    if (lowerType === 'select' || lowerType === 'option' || lowerType === 'dropdown') {
+      await this.inspector.setPortDirectSelect(portId, value);
+    } else if (lowerType === 'boolean' || lowerType === 'bool') {
       await this.inspector.setPortDirectSelect(portId, value ? 'True' : 'False');
+    } else if (lowerType === 'number') {
+      await this.inspector.setPortDirectNumber(portId, value);
+    } else {
+      await this.inspector.setPortDirectText(portId, value);
     }
   }
 

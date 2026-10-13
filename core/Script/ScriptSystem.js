@@ -17,7 +17,20 @@ export default class ScriptSystem {
     }
 
     update(dt) {
-        this.runners.forEach(runner => runner.update(dt));
+        const isPaused = this.game.isPaused;
+        const uiLayerIds = new Set((this.game.world.layersUI || []).map(l => l.id));
+
+        this.runners.forEach(runner => {
+            const isUIEntity = runner.owner && (
+                uiLayerIds.has(runner.owner.layerId) || 
+                runner.owner.tag === 'ui'
+            );
+
+            // Script UI atau script dengan flag runInPause tetap berjalan saat pause
+            if (!isPaused || isUIEntity || runner.runInPause) {
+                runner.update(dt);
+            }
+        });
     }
 
     removeEntityScripts(entity) {

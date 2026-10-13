@@ -7,6 +7,17 @@
       </div>
       
       <div class="space-y-6">
+        <!-- Initial Scene Selector -->
+        <PropertyRow label="Initial Scene">
+          <BaseSelect 
+            v-model="initialSceneId" 
+            :options="sceneStore.sceneOptions"
+            placeholder="Select Startup Scene..."
+            height="2.5rem"
+            class="w-full"
+          />
+        </PropertyRow>
+
         <PropertyRow label="Simulation Tick Rate">
           <div class="flex items-center gap-3">
             <BaseNumber v-model="tickRate" prefix="FPS" :min="1" :max="240" :step="1" height="2.5rem" text-size="text-sm" label-size="text-sm" class="font-mono flex-1" />
@@ -79,24 +90,25 @@
 <script setup>
 import { computed } from 'vue';
 import { MonitorPlay, Check, ArrowRightLeft } from 'lucide-vue-next';
-
-// Barrel import dari @inspectors/inspectors.js
 import { useInspectorBinding } from "@inspectors/inspectors.js";
+import { useSceneStore } from '@scenes/scenes.js';
 
 import {
   PropertyRow,
   BaseColor,
   BaseNumber,
   BaseCheckbox,
-  BaseDropdown
+  BaseDropdown,
+  BaseSelect
 } from '@components/components.js';
 
 defineProps({ info: Object });
 
-// 1. Setting Bindings & Bulk Updates
+const sceneStore = useSceneStore();
 const { bindSettingProp, updateUISettingsBulk } = useInspectorBinding();
 
-// --- Logic Komponen ---
+// Setting Bindings
+const initialSceneId = bindSettingProp(null, 'initialSceneId');
 const tickRate = bindSettingProp(null, 'tickRate');
 const backgroundColor = bindSettingProp(null, 'backgroundColor');
 const active = bindSettingProp('ui', 'active');
@@ -122,7 +134,3 @@ const swapDimensions = () => {
   refHeight.value = temp;
 };
 </script>
-
-<style scoped>
-:deep(.property-row) { margin-bottom: 0; }
-</style>

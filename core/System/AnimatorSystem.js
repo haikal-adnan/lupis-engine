@@ -8,9 +8,13 @@ export default class AnimatorSystem {
     update(dt) {
         if (Config.ENGINE_MODE !== "runtime") return;
 
-
         const world = this.game.world;
-        const layers = [...(world.layersWorld || []), ...(world.layersUI || [])];
+        const isPaused = this.game.isPaused;
+
+        // Hanya ambil layer UI saat kondisi pause
+        const layers = isPaused 
+            ? (world.layersUI || [])
+            : [...(world.layersWorld || []), ...(world.layersUI || [])];
 
         for (const layer of layers) {
             if (layer.active === false || layer.visible === false || !layer.entities) continue;

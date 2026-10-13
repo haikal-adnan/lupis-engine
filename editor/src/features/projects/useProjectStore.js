@@ -183,6 +183,13 @@ export const useProjectStore = defineStore('project', {
       this.markAsDirty();
     },
 
+    setInitialSceneId(sceneId) {
+      if (this.project?.settings) {
+        this.project.settings.initialSceneId = sceneId;
+        this.markAsDirty();
+      }
+    },
+
     addTag(newTag) {
       const cleanTag = newTag.trim();
       const exists = this.project.tags.some(t => t.toLowerCase() === cleanTag.toLowerCase());

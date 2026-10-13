@@ -60,7 +60,6 @@ export const BlueprintKeyboard = {
   const rawKeys = inputs.keys || '';
   const action = (inputs.action || 'pressed').toLowerCase();
 
-  // Parsing token keys (termasuk pasangan koma ganda)
   const rawTokens = rawKeys.split(',').map(t => t.trim().toLowerCase());
   const parsedKeys = [];
 
@@ -99,7 +98,6 @@ export const BlueprintKeyboard = {
     }
 
     if (triggered) {
-      outputs.key_pressed = keyName.toUpperCase();
       context.triggerFlow(output.id);
     }
   });
@@ -140,15 +138,11 @@ return;`
           { id: 'isDown', label: 'Is Down', dataType: 'boolean', color: '#f472b6' }
         ],
         data: {
-          code: `const key = inputs.key || inputs.Key;
+          code: `const key = inputs.key;
 const keyboard = context.game?.input?.keyboard;
-let formattedKey = (key || '').toLowerCase();
-if (formattedKey === ' ') formattedKey = 'space';
+const formattedKey = key === ' ' ? 'space' : (key || '').toLowerCase();
 
-const isPressed = (formattedKey && keyboard) ? keyboard.isDown(formattedKey) : false;
-
-outputs.isDown = isPressed;
-outputs['Is Down'] = isPressed;
+outputs.isDown = (formattedKey && keyboard) ? keyboard.isDown(formattedKey) : false;
 return;`
         }
       } 

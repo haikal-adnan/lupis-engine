@@ -30,20 +30,11 @@ export default class GameLoop {
             this.game.update(delta / 1000);
             this.game.render(1);
         } else {
-            if (!this.game.isPaused) {
-                if (this.isFirstFrame) {
-                    this.game.update(0);
-                    this.accumulator = 0;
-                    this.isFirstFrame = false;
-                }
-
-                this.accumulator += delta;
-                while (this.accumulator >= this.interval) {
-                    this.game.update(this.interval / 1000);
-                    this.accumulator -= this.interval;
-                }
-            } else {
-                this.accumulator = 0;
+            // Update dipanggil secara berkelanjutan
+            this.accumulator += delta;
+            while (this.accumulator >= this.interval) {
+                this.game.update(this.interval / 1000);
+                this.accumulator -= this.interval;
             }
 
             const alpha = this.interval > 0 ? this.accumulator / this.interval : 1;

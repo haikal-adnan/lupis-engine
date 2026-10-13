@@ -73,6 +73,41 @@ export default class ContextSystem {
         runner._registeredEvents.push({ eventName: 'scene:start', callback: handler });
       },
 
+      onGamePause: (callback) => {
+        const handler = () => {
+          if (runner._isScriptActive()) {
+            callback();
+          }
+        };
+
+        this.game.events.on('game:pause', handler);
+        runner._registeredEvents.push({ eventName: 'game:pause', callback: handler });
+      },
+
+      onGameResume: (callback) => {
+        const handler = () => {
+          if (runner._isScriptActive()) {
+            callback();
+          }
+        };
+
+        this.game.events.on('game:resume', handler);
+        runner._registeredEvents.push({ eventName: 'game:resume', callback: handler });
+      },
+
+      onGameRestart: (callback) => {
+        const handler = () => {
+          if (runner._isScriptActive()) {
+            callback();
+          }
+        };
+
+        this.game.events.on('game:restart', handler);
+        runner._registeredEvents.push({ eventName: 'game:restart', callback: handler });
+      },
+
+      isPaused: () => this.game.isPaused,
+
       entity: {
         destroy: (entity) => this.game.entitySystem.destroyEntity(entity),
         clone: (entity) => this.game.entitySystem.cloneEntity(entity),

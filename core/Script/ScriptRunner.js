@@ -1,3 +1,4 @@
+// ScriptRunner.js
 export default class ScriptRunner {
     constructor(game, scriptData, ownerEntity = null) {
         this.game = game;
@@ -5,25 +6,17 @@ export default class ScriptRunner {
         this.owner = ownerEntity;
 
         this.nodeMap = new Map();
-        
         if (this.data.nodes) {
             this.data.nodes.forEach(node => this.nodeMap.set(node.id, node));
         }
         
         this.edges = this.data.edges || [];
-        
         this.localVariables = new Map();
         this.nameToIdMap = new Map();
 
         this._compiledFunctions = new Map();
-
-        this._holdNodes = [];
-        this._dragNodes = [];
-        this._tickNodes = [];
         this._registeredEvents = []; 
         this._customTickListeners = new Map();
-
-        this._lastPointer = { x: 0, y: 0 };
 
         this._initVariables();
         this._compileAllNodes();
@@ -129,6 +122,68 @@ export default class ScriptRunner {
         }
     }
 
+    // =========================================================================
+    // RESOLVER PORT & ALIAS (Engine Level Handling)
+    // =========================================================================
+    _resolvePortValue(dictionary, node, key) {
+        if (!dictionary || !key) return undefined;
+        
+        if (dictionary[key] !== undefined) return dictionary[key];
+
+        if (node && node.outputs) {
+            const port = node.outputs.find(p => p.id === key || p.label === key);
+            if (port) {
+                if (dictionary[port.id] !== undefined) return dictionary[port.id];
+                if (dictionary[port.label] !== undefined) return dictionary[port.label];
+            }
+        }
+
+        const lowerKey = String(key).toLowerCase();
+        for (const dictKey of Object.keys(dictionary)) {
+            if (dictKey.toLowerCase() === lowerKey) return dictionary[dictKey];
+        }
+
+        return undefined;
+    }
+
+    getAllInputValues(node) {
+        const inputs = {};
+        if (!node.inputs) return inputs;
+
+        node.inputs.forEach(port => {
+            if (port.dataType === 'execution') return;
+
+            const edge = this.edges.find(e => 
+                e.target === node.id && 
+                (e.targetHandle === port.id || e.targetHandle === port.label)
+            );
+            
+            let val = undefined;
+            if (edge) {
+                const sourceNode = this.nodeMap.get(edge.source);
+                val = this._getNodeOutputValue(sourceNode, edge.sourceHandle);
+            }
+
+            if (val === undefined) {
+                const values = node.data ? node.data.values : undefined;
+                if (values) {
+                    val = values[port.id] !== undefined ? values[port.id] : values[port.label];
+                }
+                if (val === undefined || val === null) {
+                    val = port.defaultValue;
+                }
+            }
+
+            // Mendaftarkan seluruh alias key ke objek inputs
+            if (port.id) inputs[port.id] = val;
+            if (port.label) inputs[port.label] = val;
+            if (port.id) inputs[port.id.toLowerCase()] = val;
+            if (port.label) inputs[port.label.toLowerCase()] = val;
+        });
+
+        return inputs;
+    }
+
     executeFlow(sourceNodeId, sourcePortName) {
         if (!this._isScriptActive()) return;
 
@@ -166,16 +221,27 @@ export default class ScriptRunner {
             if (typeof compiledFn === 'function') {
                 const inputs = this.getAllInputValues(node);
                 const outputs = {};
-                
                 const context = this.game.contextSystem.createExecutionContext(this, node);
 
                 compiledFn(inputs, outputs, context, node);
+
+                // Normalisasi output ke ID & Label
+                if (node.outputs && Array.isArray(node.outputs)) {
+                    node.outputs.forEach(port => {
+                        const val = this._resolvePortValue(outputs, node, port.id) ?? 
+                                    this._resolvePortValue(outputs, node, port.label);
+                        
+                        if (val !== undefined) {
+                            outputs[port.id] = val;
+                            outputs[port.label] = val;
+                        }
+                    });
+                }
 
                 node._tempData = node._tempData || {};
                 Object.assign(node._tempData, outputs);
 
                 const executedPortIds = new Set();
-
                 if (node.outputs && Array.isArray(node.outputs)) {
                     node.outputs.forEach(port => {
                         if (port.dataType !== 'execution') return;
@@ -196,38 +262,6 @@ export default class ScriptRunner {
         }
     }
 
-    getAllInputValues(node) {
-        const inputs = {};
-        if (!node.inputs) return inputs;
-
-        node.inputs.forEach(port => {
-            if (port.dataType === 'execution') return;
-
-            const edge = this.edges.find(e => e.target === node.id && (e.targetHandle === port.id || e.targetHandle === port.label));
-            let val = undefined;
-
-            if (edge) {
-                const sourceNode = this.nodeMap.get(edge.source);
-                val = this._getNodeOutputValue(sourceNode, edge.sourceHandle);
-            }
-
-            if (val === undefined) {
-                const values = node.data ? node.data.values : undefined;
-                if (values) {
-                    val = values[port.id] !== undefined ? values[port.id] : values[port.label];
-                }
-                if (val === undefined || val === null) {
-                    val = port.defaultValue;
-                }
-            }
-
-            inputs[port.label] = val;
-            inputs[port.id] = val;
-        });
-
-        return inputs;
-    }
-
     _getNodeOutputValue(node, outputKey) {
         if (!node) return null;
 
@@ -241,25 +275,15 @@ export default class ScriptRunner {
                 const context = this.game.contextSystem.createExecutionContext(this, node);
 
                 compiledFn(inputs, outputs, context, node);
-
-                if (outputKey in outputs) return outputs[outputKey];
-
-                const matchedPort = node.outputs ? node.outputs.find(p => p.id === outputKey || p.label === outputKey) : undefined;
-                if (matchedPort) {
-                    if (matchedPort.id in outputs) return outputs[matchedPort.id];
-                    if (matchedPort.label in outputs) return outputs[matchedPort.label];
-                }
+                
+                const val = this._resolvePortValue(outputs, node, outputKey);
+                if (val !== undefined) return val;
             }
         }
 
         if (node._tempData) {
-            if (outputKey in node._tempData) return node._tempData[outputKey];
-
-            const matchedPort = node.outputs ? node.outputs.find(p => p.id === outputKey || p.label === outputKey) : undefined;
-            if (matchedPort) {
-                if (matchedPort.id in node._tempData) return node._tempData[matchedPort.id];
-                if (matchedPort.label in node._tempData) return node._tempData[matchedPort.label];
-            }
+            const val = this._resolvePortValue(node._tempData, node, outputKey);
+            if (val !== undefined) return val;
         }
 
         const values = node.data ? node.data.values : undefined;

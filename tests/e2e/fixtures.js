@@ -24,6 +24,8 @@ import { NodeGraphCrudObject } from './flows/nodeGraph.js';
 import { NodeInspectorCrudObject } from './flows/nodeInspector.js';
 import { ensureProject } from './flows/dashboard.js';
 
+import { BlueprintTestRunner } from './flows/blueprint.js';
+
 export const test = base.extend({
   // Nonaktifkan animasi dan transisi CSS di browser untuk isolasi pengujian E2E
   page: async ({ page }, use) => {
@@ -159,6 +161,19 @@ export const test = base.extend({
 
   nodeInspectorCrud: async ({ page, project }, use) => {
     await use(new NodeInspectorCrudObject(page));
+  },
+
+  blueprintRunner: async ({ page, nodeGraphCrud, nodeGraph, variableCrud, nodeInspectorCrud, previewPage, popup }, use) => {
+    const runner = new BlueprintTestRunner({
+      page,
+      nodeGraphCrud,
+      nodeGraph,
+      variableCrud,
+      nodeInspectorCrud,
+      previewPage,
+      popup,
+    });
+    await use(runner);
   },
 });
 

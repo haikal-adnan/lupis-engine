@@ -3,14 +3,22 @@ export default class VariableManager {
         this.globals = new Map();
         this.nameToIdMap = new Map();
         this.scriptSchemas = new Map();
+        this._initialGlobalsBackup = [];
     }
 
     initGlobals(globalVarsArray) {
+        this._initialGlobalsBackup = Array.isArray(globalVarsArray)
+            ? JSON.parse(JSON.stringify(globalVarsArray))
+            : [];
+        this.resetGlobals();
+    }
+
+    resetGlobals() {
         this.globals.clear();
         this.nameToIdMap.clear();
 
-        if (Array.isArray(globalVarsArray)) {
-            globalVarsArray.forEach(v => {
+        if (Array.isArray(this._initialGlobalsBackup)) {
+            this._initialGlobalsBackup.forEach(v => {
                 if (!v.name || !v.id) return;
 
                 let val = v.defaultValue;

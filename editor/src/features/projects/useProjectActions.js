@@ -148,6 +148,7 @@ export function useProjectActions() {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       settings: {
+        initialSceneId: defaultSceneId, // Set initialSceneId ke default scene
         tickRate: 60,
         grid: { visible: true, snap: true, width: 32, height: 32, color: '#333333', opacity: 0.5 },
         ui: { showUIBorder: true },
