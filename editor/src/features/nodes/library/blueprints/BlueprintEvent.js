@@ -28,9 +28,10 @@ export const BlueprintEvent = {
           values: { sig_name: '' },
           code: 
 `const sigName = inputs['Signal Name'] ?? inputs['sig_name'] ?? node.data?.values?.sig_name;
+const eventMgr = context.game?.events || context.game?.signalSystem;
 
-if (sigName && context.game?.signalSystem && typeof context.game.signalSystem.emit === 'function') {
-  context.game.signalSystem.emit(sigName);
+if (sigName && eventMgr && typeof eventMgr.emit === 'function') {
+  eventMgr.emit(sigName);
 }
 
 outputs['Out'] = true;
@@ -59,12 +60,22 @@ return;`
         data: {
           values: { sig_name: '' },
           code: 
-`outputs['Out'] = true;
-outputs['exec_out'] = true;
+`const sigName = inputs['Signal Name'] ?? inputs['sig_name'] ?? node.data?.values?.sig_name;
+const eventMgr = context.game?.events || context.game?.signalSystem;
+
+if (sigName && eventMgr && typeof eventMgr.on === 'function') {
+  if (!node._signalListenerRegistered) {
+    node._signalListenerRegistered = true;
+    eventMgr.on(sigName, () => {
+      if (typeof context.triggerFlow === 'function') {
+        context.triggerFlow('exec_out');
+      }
+    });
+  }
+}
 return;`
         }
       }
     }
   ]
 };
-

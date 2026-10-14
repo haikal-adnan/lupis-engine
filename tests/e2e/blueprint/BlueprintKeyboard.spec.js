@@ -8,7 +8,7 @@ test.use({
 });
 
 test.describe('Blueprint Keyboard Events E2E Testing', () => {
-  test('1. Evaluates event_on_key triggering via simulate_key', async ({ blueprintRunner }) => {
+  test('Evaluates event_on_key triggering via simulate_key', async ({ blueprintRunner }) => {
     await blueprintRunner.runTest({
       testName: 'Keyboard OnKey & Simulate Test',
       entityName: 'KeyboardEntity1',
@@ -37,7 +37,7 @@ test.describe('Blueprint Keyboard Events E2E Testing', () => {
     });
   });
 
-  test('2. Evaluates get_key_state with Branch condition and Notification', async ({ blueprintRunner }) => {
+  test('Evaluates get_key_state with Branch condition and Notification', async ({ blueprintRunner }) => {
     await blueprintRunner.runTest({
       testName: 'Get Key State Test',
       entityName: 'KeyboardEntity2',
@@ -74,7 +74,7 @@ test.describe('Blueprint Keyboard Events E2E Testing', () => {
     });
   });
 
-  test('3. Evaluates calculate_axis_2d direction with Branch and Notification', async ({ blueprintRunner }) => {
+  test('Evaluates calculate_axis_2d direction with Branch and Notification', async ({ blueprintRunner }) => {
     await blueprintRunner.runTest({
       testName: 'Calculate Axis 2D Test',
       entityName: 'KeyboardEntity3',

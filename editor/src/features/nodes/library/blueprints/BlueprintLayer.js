@@ -36,7 +36,30 @@ export const BlueprintLayer = {
           ],
           code: 
 `const targetId = inputs['Layer Target'] ?? inputs['target_in'] ?? 'self';
-const layer = context.layer.get(targetId);
+let layer = null;
+
+if (context.layer && typeof context.layer.get === 'function') {
+  try {
+    layer = context.layer.get(targetId);
+  } catch (e) {
+    layer = null;
+  }
+}
+
+if (!layer && context.game?.world?.allLayers) {
+  const allLayers = context.game.world.allLayers;
+  if (!targetId || targetId === 'self') {
+    const ownerLayerId = context.owner?.layerId;
+    layer = allLayers.find(l => l.id === ownerLayerId || l.scriptId === ownerLayerId) || allLayers[0] || null;
+  } else {
+    const search = String(targetId).trim().toLowerCase();
+    layer = allLayers.find(l => 
+      l.id === targetId || 
+      l.scriptId === targetId || 
+      (l.name && l.name.toLowerCase() === search)
+    ) || null;
+  }
+}
 
 if (layer) {
   const layerIdVal = layer.scriptId || layer.id || 'Unknown_ID';
@@ -98,7 +121,30 @@ return;`
           ],
           code: 
 `const targetId = inputs['Layer Target'] ?? inputs['target_in'] ?? 'self';
-const layer = context.layer.get(targetId);
+let layer = null;
+
+if (context.layer && typeof context.layer.get === 'function') {
+  try {
+    layer = context.layer.get(targetId);
+  } catch (e) {
+    layer = null;
+  }
+}
+
+if (!layer && context.game?.world?.allLayers) {
+  const allLayers = context.game.world.allLayers;
+  if (!targetId || targetId === 'self') {
+    const ownerLayerId = context.owner?.layerId;
+    layer = allLayers.find(l => l.id === ownerLayerId || l.scriptId === ownerLayerId) || allLayers[0] || null;
+  } else {
+    const search = String(targetId).trim().toLowerCase();
+    layer = allLayers.find(l => 
+      l.id === targetId || 
+      l.scriptId === targetId || 
+      (l.name && l.name.toLowerCase() === search)
+    ) || null;
+  }
+}
 
 if (layer) {
   const newName = inputs['Name'] ?? inputs['name'];
@@ -136,4 +182,3 @@ return;`
     }
   ]
 };
-

@@ -11,11 +11,11 @@ test.use({
 test.describe('Blueprint Transform (game_transform) E2E Testing', () => {
 
   // =========================================================================
-  // 1. GET TRANSFORM NODE TESTS
+  // GET TRANSFORM NODE TESTS
   // =========================================================================
-  test.describe('1. GET TRANSFORM NODE', () => {
+  test.describe('Get transform node', () => {
 
-    test('1.1 Reads basic Transform properties on World Entity (Position, Rotation, Scale)', async ({ 
+    test('Reads basic transform properties on world entity (Position, Rotation, Scale)', async ({ 
       blueprintRunner,
       hierarchyCrud,
       inspectorCrud,
@@ -57,7 +57,7 @@ test.describe('Blueprint Transform (game_transform) E2E Testing', () => {
       });
     });
 
-    test('1.2 Reads UITransform properties on UI Entity (Fallback chain: UITransform || Transform)', async ({ 
+    test('Reads UI transform properties on UI entity (Fallback chain: UITransform || Transform)', async ({ 
       blueprintRunner,
       hierarchyCrud,
       inspectorCrud,
@@ -100,7 +100,7 @@ test.describe('Blueprint Transform (game_transform) E2E Testing', () => {
       });
     });
 
-    test('1.3 Handles non-existent target entity safely (null target guard)', async ({ 
+    test('Handles non-existent target entity safely (null target guard)', async ({ 
       blueprintRunner 
     }) => {
       await blueprintRunner.runTest({
@@ -134,11 +134,11 @@ test.describe('Blueprint Transform (game_transform) E2E Testing', () => {
   });
 
   // =========================================================================
-  // 2. SET TRANSFORM NODE TESTS
+  // SET TRANSFORM NODE TESTS
   // =========================================================================
-  test.describe('2. SET TRANSFORM NODE', () => {
+  test.describe('Set transform node', () => {
 
-    test('2.1 Modifies coordinates of World Entity (Position X and Y)', async ({ 
+    test('Modifies coordinates of world entity (Position X and Y)', async ({ 
       blueprintRunner,
       hierarchyCrud,
       inspectorCrud,
@@ -196,7 +196,7 @@ test.describe('Blueprint Transform (game_transform) E2E Testing', () => {
       });
     });
 
-    test('2.2 Modifies dimensions of UI Entity (Width and Height)', async ({ 
+    test('Modifies dimensions of UI entity (Width and Height)', async ({ 
       blueprintRunner,
       hierarchyCrud,
       inspectorCrud,
@@ -255,7 +255,7 @@ test.describe('Blueprint Transform (game_transform) E2E Testing', () => {
       });
     });
 
-    test('2.3 Ignores empty string and undefined inputs without overwriting original values', async ({ 
+    test('Ignores empty string and undefined inputs without overwriting original values', async ({ 
       blueprintRunner,
       hierarchyCrud,
       inspectorCrud,
@@ -309,7 +309,7 @@ test.describe('Blueprint Transform (game_transform) E2E Testing', () => {
       });
     });
 
-    test('2.4 Non-existent target entity executes Out pin safely', async ({ 
+    test('Non-existent target entity executes Out pin safely', async ({ 
       blueprintRunner 
     }) => {
       await blueprintRunner.runTest({

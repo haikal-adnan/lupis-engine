@@ -48,8 +48,9 @@ const zIndex = Number(inputs['Z-Index'] ?? inputs['zindex'] ?? 0);
 const customScriptId = inputs['Custom ID'] ?? inputs['custom_id'] ?? node.data?.values?.custom_id;
 
 let newEntity = null;
-if (context.game && typeof context.game.spawnPrefab === 'function') {
-  newEntity = context.game.spawnPrefab(prefabName, posX, posY, layerScriptId, zIndex, customScriptId);
+const spawnFn = context.prefab?.spawn || context.game?.spawnPrefab || context.game?.prefabSystem?.spawnPrefab;
+if (typeof spawnFn === 'function') {
+  newEntity = spawnFn(prefabName, posX, posY, layerScriptId, zIndex, customScriptId);
 }
 
 const entityId = newEntity ? newEntity.scriptId : null;
@@ -83,10 +84,22 @@ return;`
           values: { entity: 'self' },
           code: 
 `const targetScriptId = inputs['Target Entity'] ?? inputs['entity'] ?? 'self';
-const targetEntity = context.getEntity(targetScriptId);
+const getEntityFn = context.entity?.get || context.getEntity;
+let targetEntity = typeof getEntityFn === 'function' ? getEntityFn(targetScriptId) : null;
 
-if (targetEntity && context.game && typeof context.game.destroyEntity === 'function') {
-  context.game.destroyEntity(targetEntity);
+// Validasi guard: Jika ID bukan 'self', pastikan entitas yang ditemukan benar-benar cocok
+if (targetEntity && targetScriptId !== 'self' && targetScriptId !== '') {
+  const matches = targetEntity.id === targetScriptId || 
+                  targetEntity.scriptId === targetScriptId || 
+                  (targetEntity.name && targetEntity.name.toLowerCase() === String(targetScriptId).toLowerCase());
+  if (!matches) {
+    targetEntity = null;
+  }
+}
+
+const destroyFn = context.entity?.destroy || context.game?.destroyEntity || context.game?.entitySystem?.destroyEntity;
+if (targetEntity && typeof destroyFn === 'function') {
+  destroyFn(targetEntity);
 }
 
 outputs['Out'] = true;
@@ -117,20 +130,32 @@ return;`
           values: { entity: 'self' },
           code: 
 `const targetScriptId = inputs['Target Entity'] ?? inputs['entity'] ?? 'self';
-const targetEntity = context.getEntity(targetScriptId);
+const getEntityFn = context.entity?.get || context.getEntity;
+let targetEntity = typeof getEntityFn === 'function' ? getEntityFn(targetScriptId) : null;
 
-if (targetEntity && context.game && typeof context.game.destroyEntity === 'function') {
+if (targetEntity && targetScriptId !== 'self' && targetScriptId !== '') {
+  const matches = targetEntity.id === targetScriptId || 
+                  targetEntity.scriptId === targetScriptId || 
+                  (targetEntity.name && targetEntity.name.toLowerCase() === String(targetScriptId).toLowerCase());
+  if (!matches) {
+    targetEntity = null;
+  }
+}
+
+const destroyFn = context.entity?.destroy || context.game?.destroyEntity || context.game?.entitySystem?.destroyEntity;
+
+if (targetEntity && typeof destroyFn === 'function') {
   if (targetEntity.parentId) {
     const parentId = targetEntity.parentId;
-    const parentEntity = context.game.world?.entities?.find(e => e.id === parentId);
+    const parentEntity = context.game?.world?.entities?.find(e => e.id === parentId);
     
     if (parentEntity) {
-      context.game.destroyEntity(parentEntity);
+      destroyFn(parentEntity);
     } else {
-      context.game.destroyEntity(targetEntity);
+      destroyFn(targetEntity);
     }
   } else {
-    context.game.destroyEntity(targetEntity);
+    destroyFn(targetEntity);
   }
 }
 
@@ -163,11 +188,32 @@ return;`
           values: { entity: 'self' },
           code: 
 `const sourceScriptId = inputs['Source Entity'] ?? inputs['entity'] ?? 'self';
-const sourceEntity = context.getEntity(sourceScriptId);
-let clone = null;
+const getEntityFn = context.entity?.get || context.getEntity;
+let sourceEntity = typeof getEntityFn === 'function' ? getEntityFn(sourceScriptId) : null;
 
-if (sourceEntity && context.game && typeof context.game.cloneEntity === 'function') {
-  clone = await context.game.cloneEntity(sourceEntity);
+if (sourceEntity && sourceScriptId !== 'self' && sourceScriptId !== '') {
+  const matches = sourceEntity.id === sourceScriptId || 
+                  sourceEntity.scriptId === sourceScriptId || 
+                  (sourceEntity.name && sourceEntity.name.toLowerCase() === String(sourceScriptId).toLowerCase());
+  if (!matches) {
+    sourceEntity = null;
+  }
+}
+
+let clone = null;
+const cloneFn = context.entity?.clone || context.game?.cloneEntity || context.game?.entitySystem?.cloneEntity;
+
+if (sourceEntity && typeof cloneFn === 'function') {
+  const res = cloneFn(sourceEntity);
+  if (res && typeof res.then === 'function') {
+    res.then(cloned => {
+      const cloneId = cloned ? cloned.scriptId : null;
+      outputs['Clone ID'] = cloneId;
+      outputs['clone'] = cloneId;
+    });
+  } else if (res) {
+    clone = res;
+  }
 }
 
 const cloneId = clone ? clone.scriptId : null;
@@ -206,14 +252,25 @@ return;`
 `const parentScriptId = inputs['Parent Entity'] ?? inputs['parent'] ?? 'self';
 const indexVal = inputs['Child Index'] ?? inputs['index'];
 
-const parentEntity = context.getEntity(parentScriptId);
+const getEntityFn = context.entity?.get || context.getEntity;
+let parentEntity = typeof getEntityFn === 'function' ? getEntityFn(parentScriptId) : null;
+
+if (parentEntity && parentScriptId !== 'self' && parentScriptId !== '') {
+  const matches = parentEntity.id === parentScriptId || 
+                  parentEntity.scriptId === parentScriptId || 
+                  (parentEntity.name && parentEntity.name.toLowerCase() === String(parentScriptId).toLowerCase());
+  if (!matches) {
+    parentEntity = null;
+  }
+}
 
 let childrenIds = [];
 let specificChildId = null;
 
-if (parentEntity && context.game?.world) {
+if (parentEntity) {
   const parentInternalId = parentEntity.id;
-  const children = context.game.world.entities.filter(e => e.parentId === parentInternalId);
+  const entities = context.game?.world?.entities || [];
+  const children = entities.filter(e => e.parentId === parentInternalId);
   
   childrenIds = children.map(c => c.scriptId).filter(id => id != null);
   
@@ -258,11 +315,21 @@ return;`
           values: { entity: 'self' },
           code: 
 `const childScriptId = inputs['Target Entity'] ?? inputs['entity'] ?? 'self';
-const childEntity = context.getEntity(childScriptId);
+const getEntityFn = context.entity?.get || context.getEntity;
+let childEntity = typeof getEntityFn === 'function' ? getEntityFn(childScriptId) : null;
+
+if (childEntity && childScriptId !== 'self' && childScriptId !== '') {
+  const matches = childEntity.id === childScriptId || 
+                  childEntity.scriptId === childScriptId || 
+                  (childEntity.name && childEntity.name.toLowerCase() === String(childScriptId).toLowerCase());
+  if (!matches) {
+    childEntity = null;
+  }
+}
 
 let parentScriptId = null;
 
-if (childEntity && childEntity.parentId && context.game?.world) {
+if (childEntity && childEntity.parentId && context.game?.world?.entities) {
   const parentInternalId = childEntity.parentId;
   const parentEntity = context.game.world.entities.find(e => e.id === parentInternalId);
   
@@ -281,4 +348,3 @@ return;`
     }
   ]
 };
-

@@ -1,3 +1,4 @@
+// lokasi: tests/e2e/blueprint/BlueprintSceneManagement.spec.js
 import { test } from '../fixtures.js';
 
 test.use({
@@ -26,11 +27,11 @@ test.describe('Blueprint Scene Management (game_scene) E2E Testing', () => {
   }
 
   // =========================================================================
-  // 1. EVENT ON SCENE START & GET CURRENT SCENE NODE TESTS
+  // EVENT ON SCENE START & GET CURRENT SCENE NODE TESTS
   // =========================================================================
-  test.describe('1. ON SCENE START & GET CURRENT SCENE', () => {
+  test.describe('On scene start and get current scene', () => {
 
-    test('1.1 Triggers On Scene Start and reads Scene Name when loaded', async ({ 
+    test('Triggers on scene start and reads scene name when loaded', async ({ 
       blueprintRunner, 
       hierarchyCrud,
       controls,
@@ -54,7 +55,7 @@ test.describe('Blueprint Scene Management (game_scene) E2E Testing', () => {
       });
     });
 
-    test('1.2 Reads active scene name using Get Current Scene node', async ({ 
+    test('Reads active scene name using get current scene node', async ({ 
       blueprintRunner, 
       hierarchyCrud,
       controls,
@@ -81,11 +82,11 @@ test.describe('Blueprint Scene Management (game_scene) E2E Testing', () => {
   });
 
   // =========================================================================
-  // 2. CHANGE SCENE NODE TESTS (HAPPY PATH & EDGE CASES)
+  // CHANGE SCENE NODE TESTS (HAPPY PATH & EDGE CASES)
   // =========================================================================
-  test.describe('2. CHANGE SCENE NODE', () => {
+  test.describe('Change scene node', () => {
 
-    test('2.1 Transitions to another valid target scene (Scene_Alpha -> Scene_Beta)', async ({ 
+    test('Transitions to another valid target scene (Scene_Alpha -> Scene_Beta)', async ({ 
       blueprintRunner, 
       hierarchyCrud,
       controls,
@@ -123,7 +124,7 @@ test.describe('Blueprint Scene Management (game_scene) E2E Testing', () => {
       });
     });
 
-    test('2.2 Handles non-existent target scene safely without interrupting flow', async ({ 
+    test('Handles non-existent target scene safely without interrupting flow', async ({ 
       blueprintRunner, 
       hierarchyCrud,
       controls,
@@ -161,7 +162,7 @@ test.describe('Blueprint Scene Management (game_scene) E2E Testing', () => {
       });
     });
 
-    test('2.3 Handles empty Scene Name input safely with fallback execution', async ({ 
+    test('Handles empty scene name input safely with fallback execution', async ({ 
       blueprintRunner, 
       hierarchyCrud,
       controls,
@@ -201,11 +202,11 @@ test.describe('Blueprint Scene Management (game_scene) E2E Testing', () => {
   });
 
   // =========================================================================
-  // 3. RESTART SCENE NODE TESTS
+  // RESTART SCENE NODE TESTS
   // =========================================================================
-  test.describe('3. RESTART SCENE NODE', () => {
+  test.describe('Restart scene node', () => {
 
-    test('3.1 Reloads currently active scene using Restart Scene node', async ({ 
+    test('Reloads currently active scene using restart scene node', async ({ 
       blueprintRunner, 
       hierarchyCrud,
       controls,
@@ -237,11 +238,11 @@ test.describe('Blueprint Scene Management (game_scene) E2E Testing', () => {
   });
 
   // =========================================================================
-  // 4. CROSS-SCENE ENTITY ISOLATION TESTS
+  // CROSS-SCENE ENTITY ISOLATION TESTS
   // =========================================================================
-  test.describe('4. CROSS-SCENE ENTITY ISOLATION', () => {
+  test.describe('Cross-scene entity isolation', () => {
 
-    test('4.1 Verifies entity search in another scene fails as expected', async ({ 
+    test('Verifies entity search in another scene fails as expected', async ({ 
       blueprintRunner, 
       hierarchyCrud, 
       inspectorCrud, 

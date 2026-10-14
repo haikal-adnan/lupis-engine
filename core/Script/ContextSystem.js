@@ -128,7 +128,22 @@ export default class ContextSystem {
       },
 
       layer: {
-        get: (layerId) => this.game.layerSystem.getLayer(layerId)
+        get: (layerId) => {
+          if (this.game?.layerSystem && typeof this.game.layerSystem.getLayer === 'function') {
+            return this.game.layerSystem.getLayer(layerId);
+          }
+          const allLayers = this.game?.world?.allLayers || [];
+          if (!layerId || layerId === 'self') {
+            const ownerLayerId = runner.owner?.layerId;
+            return allLayers.find(l => l.id === ownerLayerId || l.scriptId === ownerLayerId) || allLayers[0] || null;
+          }
+          const search = String(layerId).trim().toLowerCase();
+          return allLayers.find(l => 
+            l.id === layerId || 
+            l.scriptId === layerId || 
+            (l.name && l.name.toLowerCase() === search)
+          ) || null;
+        }
       },
 
       getLocal: (key) => runner.getLocalVariable(key),

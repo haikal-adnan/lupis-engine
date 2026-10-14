@@ -1,7 +1,7 @@
 import { test } from '../fixtures.js';
 
 test.describe('Game Preview & Blueprint Execution E2E Testing', () => {
-  test('dapat membuat variabel string, memilihnya di node Get Variable, dan menghubungkan ke Notification in_msg', async ({ blueprintRunner }) => {
+  test('create a string variable, select it in the Get Variable node, and connect it to the Notifications in_msg', async ({ blueprintRunner }) => {
     await blueprintRunner.runTest({
       testName: 'String Variable to Notification Test',
       entityName: 'VariableTestEntity',

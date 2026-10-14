@@ -14,9 +14,14 @@ export default [
       'playwright/prefer-web-first-assertions': 'error',
       'playwright/no-nth-methods': 'error',
       'playwright/no-conditional-in-test': 'error',
-      'playwright/expect-expect': 'error',
       'playwright/missing-playwright-await': 'error',
       'playwright/no-useless-not': 'error',
+      'playwright/expect-expect': [
+        'error',
+          {
+            assertFunctionNames: ['expect', 'blueprintRunner.runTest', 'runTest'],
+          },
+        ],
     },
   },
 

@@ -214,7 +214,7 @@ return;`
           values: { speed: 50, target_in: 'self', text_in: '' },
           code: 
 `const targetId = inputs['Target ID (Self)'] ?? inputs['target_in'] ?? 'self';
-const entity = context.getEntity(targetId);
+const entity = context.entity?.get(targetId);
 const comp = entity?.components?.TextRenderer;
 
 if (!comp) {
@@ -225,13 +225,13 @@ if (!comp) {
   return;
 }
 
-const speed = Number(inputs['Speed (ms)'] ?? inputs['speed'] ?? 50);
+const speed = Math.max(1, Number(inputs['Speed (ms)'] ?? inputs['speed'] ?? 50));
 const inputText = inputs['New Text'] ?? inputs['text_in'];
-const targetText = (inputText !== undefined && inputText !== null && inputText !== '') 
-  ? String(inputText) 
-  : (comp.value || '');
 
 if (node._typewriterIndex === undefined) {
+  node._cachedTarget = (inputText !== undefined && inputText !== null && inputText !== '')
+    ? String(inputText)
+    : (comp.value || '');
   node._typewriterIndex = 0;
   node._typewriterTimer = 0;
   comp.value = '';
@@ -240,22 +240,26 @@ if (node._typewriterIndex === undefined) {
 const dt = (context.dt || 0.016) * 1000;
 node._typewriterTimer += dt;
 
-if (node._typewriterTimer >= speed) {
+while (node._typewriterTimer >= speed && node._typewriterIndex < node._cachedTarget.length) {
+  node._typewriterTimer -= speed;
+  node._typewriterIndex++;
+}
+
+comp.value = node._cachedTarget.slice(0, node._typewriterIndex);
+
+if (node._typewriterIndex >= node._cachedTarget.length) {
+  node._typewriterIndex = undefined;
+  node._cachedTarget = undefined;
   node._typewriterTimer = 0;
-  if (node._typewriterIndex < targetText.length) {
-    node._typewriterIndex++;
-    comp.value = targetText.slice(0, node._typewriterIndex);
-    outputs['Is Typing'] = true;
-    outputs['is_typing'] = true;
-    outputs['Out'] = true;
-    outputs['exec_out'] = true;
-  } else {
-    node._typewriterIndex = undefined;
-    outputs['Is Typing'] = false;
-    outputs['is_typing'] = false;
-    outputs['Completed'] = true;
-    outputs['on_complete'] = true;
-  }
+  outputs['Is Typing'] = false;
+  outputs['is_typing'] = false;
+  outputs['Completed'] = true;
+  outputs['on_complete'] = true;
+} else {
+  outputs['Is Typing'] = true;
+  outputs['is_typing'] = true;
+  outputs['Out'] = true;
+  outputs['exec_out'] = true;
 }
 return;`
         }
@@ -297,7 +301,7 @@ return;`
           },
           code: 
 `const targetId = inputs['Target ID (Self)'] ?? inputs['target_in'] ?? 'self';
-const entity = context.getEntity(targetId);
+const entity = context.entity?.get(targetId);
 
 const hasTransform = entity?.components?.Transform;
 const hasUITransform = entity?.components?.UITransform;
@@ -317,14 +321,13 @@ const lerpSpeed = Number(inputs['Lerp Speed'] ?? inputs['lerpSpeed'] ?? 0.2);
 const useRaycast = inputs['Use Raycast?'] ?? inputs['use_raycast'] ?? true;
 
 const pointer = context.game?.input?.getPointer?.() || { x: 0, y: 0, down: false };
-const isPointerDown = pointer.down;
+const isPointerDown = Boolean(pointer.down);
 
 let isHovering = false;
 const RaycastSystem = context.game?.pointerRaycast;
 
 if (useRaycast && RaycastSystem) {
   const topEntity = RaycastSystem.getTopEntityUnderPointer(context.game);
-  
   if (topEntity) {
     if (topEntity.id === entityId) {
       isHovering = true;
@@ -373,11 +376,11 @@ if (useRaycast && RaycastSystem) {
   }
 
   isHovering = RaycastSystem._checkIntersection(
-    entity, 
-    globalT, 
-    drawX, 
-    drawY, 
-    targetPointer.x, 
+    entity,
+    globalT,
+    drawX,
+    drawY,
+    targetPointer.x,
     targetPointer.y
   );
 }

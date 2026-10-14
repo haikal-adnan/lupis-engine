@@ -12,9 +12,9 @@ test.describe('Blueprint Object Basic (Game Object) E2E Testing', () => {
   // =========================================================================
   // 1. GET_OBJECT NODE TESTS
   // =========================================================================
-  test.describe('1. GET OBJECT NODE', () => {
+  test.describe('Get Object Node', () => {
 
-    test('1.1 Reads properties from target entity (self)', async ({ blueprintRunner }) => {
+    test('Reads properties from target entity (self)', async ({ blueprintRunner }) => {
       await blueprintRunner.runTest({
         testName: 'Get Object - Valid Entity',
         entityName: 'PlayerEntity',
@@ -45,7 +45,7 @@ test.describe('Blueprint Object Basic (Game Object) E2E Testing', () => {
       });
     });
 
-    test('1.2 Reads default tag property (untagged) from empty entity', async ({ blueprintRunner }) => {
+    test('Reads default tag property (untagged) from empty entity', async ({ blueprintRunner }) => {
       await blueprintRunner.runTest({
         testName: 'Get Object - Fallback Tag',
         entityName: 'EmptyEntity_NoTag',
@@ -76,7 +76,7 @@ test.describe('Blueprint Object Basic (Game Object) E2E Testing', () => {
       });
     });
 
-    test('1.3 Handles non-existent target entity safely (null entity guard)', async ({ blueprintRunner }) => {
+    test('Handles non-existent target entity safely (null entity guard)', async ({ blueprintRunner }) => {
       await blueprintRunner.runTest({
         testName: 'Get Object - Non Existent Entity Guard',
         entityName: 'MainEntity',
@@ -110,9 +110,9 @@ test.describe('Blueprint Object Basic (Game Object) E2E Testing', () => {
   // =========================================================================
   // 2. SET_OBJECT NODE TESTS
   // =========================================================================
-  test.describe('2. SET OBJECT NODE', () => {
+  test.describe('Set Object Node', () => {
 
-    test('2.1 Modifies valid target entity properties (Name and Tag)', async ({ blueprintRunner }) => {
+    test('Modifies valid target entity properties (Name and Tag)', async ({ blueprintRunner }) => {
       await blueprintRunner.runTest({
         testName: 'Set Object - Modify All Properties',
         entityName: 'ControlEntity',
@@ -156,7 +156,7 @@ test.describe('Blueprint Object Basic (Game Object) E2E Testing', () => {
       });
     });
 
-    test('2.2 Ignores empty string values without overwriting properties', async ({ blueprintRunner }) => {
+    test('Ignores empty string values without overwriting properties', async ({ blueprintRunner }) => {
       await blueprintRunner.runTest({
         testName: 'Set Object - Ignore Empty Values Coverage',
         entityName: 'ControlEntity',
@@ -196,7 +196,7 @@ test.describe('Blueprint Object Basic (Game Object) E2E Testing', () => {
       });
     });
 
-    test('2.3 Non-existent target entity executes Out pin safely', async ({ blueprintRunner }) => {
+    test('Non-existent target entity executes Out pin safely', async ({ blueprintRunner }) => {
       await blueprintRunner.runTest({
         testName: 'Set Object - Non Existent Target Execution Out',
         entityName: 'ControlEntity',
@@ -231,9 +231,9 @@ test.describe('Blueprint Object Basic (Game Object) E2E Testing', () => {
   // =========================================================================
   // 3. FIND_CLOSEST_BY_TAG NODE TESTS
   // =========================================================================
-  test.describe('3. FIND CLOSEST BY TAG NODE', () => {
+  test.describe('Find Closest by tag node', () => {
 
-    test('3.1 Finds closest active entity among multiple entities with matching tag', async ({
+    test('Finds closest active entity among multiple entities with matching tag', async ({
       blueprintRunner,
       hierarchyCrud,
       inspectorCrud,
@@ -287,7 +287,7 @@ test.describe('Blueprint Object Basic (Game Object) E2E Testing', () => {
       });
     });
 
-    test('3.2 Returns Found = false and triggers False Branch when tag is not found', async ({
+    test('Returns Found = false and triggers False Branch when tag is not found', async ({
       blueprintRunner,
       hierarchyCrud,
       inspectorCrud,
@@ -332,7 +332,7 @@ test.describe('Blueprint Object Basic (Game Object) E2E Testing', () => {
       });
     });
 
-    test('3.3 Ignores inactive target entities even if closer in distance', async ({
+    test('Ignores inactive target entities even if closer in distance', async ({
       blueprintRunner,
       hierarchyCrud,
       inspectorCrud,
@@ -390,7 +390,7 @@ test.describe('Blueprint Object Basic (Game Object) E2E Testing', () => {
       });
     });
 
-    test('3.4 Calculates distance accurately relative to From X and From Y inputs', async ({
+    test('Calculates distance accurately relative to From X and From Y inputs', async ({
       blueprintRunner,
       hierarchyCrud,
       inspectorCrud,

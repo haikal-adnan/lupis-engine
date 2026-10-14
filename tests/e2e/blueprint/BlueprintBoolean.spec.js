@@ -8,7 +8,7 @@ test.use({
 });
 
 test.describe('Blueprint Boolean Logic E2E Testing', () => {
-  test('1. Evaluates logic_and with two boolean variables (true AND true)', async ({ blueprintRunner }) => {
+  test('Evaluates logic_and with two boolean variables (true AND true)', async ({ blueprintRunner }) => {
     await blueprintRunner.runTest({
       testName: 'Boolean AND Test',
       entityName: 'BoolEntity1',
@@ -45,7 +45,7 @@ test.describe('Blueprint Boolean Logic E2E Testing', () => {
     });
   });
 
-  test('2. Evaluates logic_or with two boolean variables (false OR true)', async ({ blueprintRunner }) => {
+  test('Evaluates logic_or with two boolean variables (false OR true)', async ({ blueprintRunner }) => {
     await blueprintRunner.runTest({
       testName: 'Boolean OR Test',
       entityName: 'BoolEntity2',
@@ -82,7 +82,7 @@ test.describe('Blueprint Boolean Logic E2E Testing', () => {
     });
   });
 
-  test('3. Evaluates logic_not with inverted boolean value (!false = true)', async ({ blueprintRunner }) => {
+  test('Evaluates logic_not with inverted boolean value (!false = true)', async ({ blueprintRunner }) => {
     await blueprintRunner.runTest({
       testName: 'Boolean NOT Test',
       entityName: 'BoolEntity3',

@@ -41,6 +41,7 @@ export class BlueprintTestRunner {
     nodes = [],
     variableBindings = [],
     connections = [],
+    action, // <-- Tambahkan parameter ini
     expectedLog,
     expectedSource = 'Notification',
   }) {
@@ -60,13 +61,16 @@ export class BlueprintTestRunner {
         await this.previewPage.startLogCapture();
         previewPopup = await this.previewPage.openPreview();
         await this.previewPage.expectEngineReady(previewPopup);
+        // Jalankan interaksi Playwright jika disediakan
+        if (typeof action === 'function') {
+          await action(previewPopup);
+        }
       });
 
       await this.#stage('LOGIC VALUE', `Evaluate logic [${testName}] -> "${expectedLog}"`, testName, async () => {
         await this.previewPage.expectLog(expectedLog, expectedSource);
       });
     } finally {
-      // Always close the preview popup, even when an assertion failed.
       if (previewPopup && !previewPopup.isClosed()) {
         await previewPopup.close();
       }

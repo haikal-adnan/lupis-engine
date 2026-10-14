@@ -8,7 +8,7 @@ test.use({
 });
 
 test.describe('Blueprint Logic & Comparison Expanded E2E Testing', () => {
-  test('1. COMPARE - Equal (10 == 10) -> True', async ({ blueprintRunner }) => {
+  test('Compare - Equal (10 == 10) -> True', async ({ blueprintRunner }) => {
     await blueprintRunner.runTest({
       testName: 'Compare Equal Test',
       entityName: 'CompareEntity_Equal',
@@ -50,7 +50,7 @@ test.describe('Blueprint Logic & Comparison Expanded E2E Testing', () => {
     });
   });
 
-  test('2. COMPARE - Not Equal (10 != 5) -> True', async ({ blueprintRunner }) => {
+  test('Compare - Not Equal (10 != 5) -> True', async ({ blueprintRunner }) => {
     await blueprintRunner.runTest({
       testName: 'Compare Not Equal Test',
       entityName: 'CompareEntity_NotEqual',
@@ -92,7 +92,7 @@ test.describe('Blueprint Logic & Comparison Expanded E2E Testing', () => {
     });
   });
 
-  test('3. COMPARE - Greater Than (15 > 8) -> True', async ({ blueprintRunner }) => {
+  test('Compare - Greater Than (15 > 8) -> True', async ({ blueprintRunner }) => {
     await blueprintRunner.runTest({
       testName: 'Compare Greater Than Test',
       entityName: 'CompareEntity_Greater',
@@ -129,7 +129,7 @@ test.describe('Blueprint Logic & Comparison Expanded E2E Testing', () => {
     });
   });
 
-  test('4. COMPARE - Less Than (3 < 10) -> True', async ({ blueprintRunner }) => {
+  test('Compare - Less Than (3 < 10) -> True', async ({ blueprintRunner }) => {
     await blueprintRunner.runTest({
       testName: 'Compare Less Than Test',
       entityName: 'CompareEntity_Less',
@@ -166,7 +166,7 @@ test.describe('Blueprint Logic & Comparison Expanded E2E Testing', () => {
     });
   });
 
-  test('5. COMPARE - Greater Than or Equal (10 >= 10) -> True', async ({ blueprintRunner }) => {
+  test('Compare - Greater Than or Equal (10 >= 10) -> True', async ({ blueprintRunner }) => {
     await blueprintRunner.runTest({
       testName: 'Compare Greater Equal Test',
       entityName: 'CompareEntity_GreaterEqual',
@@ -203,7 +203,7 @@ test.describe('Blueprint Logic & Comparison Expanded E2E Testing', () => {
     });
   });
 
-  test('6. COMPARE - Less Than or Equal (5 <= 5) -> True', async ({ blueprintRunner }) => {
+  test('Compare - Less Than or Equal (5 <= 5) -> True', async ({ blueprintRunner }) => {
     await blueprintRunner.runTest({
       testName: 'Compare Less Equal Test',
       entityName: 'CompareEntity_LessEqual',
@@ -240,7 +240,7 @@ test.describe('Blueprint Logic & Comparison Expanded E2E Testing', () => {
     });
   });
 
-  test('7. BRANCH - False Path Execution (10 < 2 -> False)', async ({ blueprintRunner }) => {
+  test('Branch - False path execution (10 < 2 -> False)', async ({ blueprintRunner }) => {
     await blueprintRunner.runTest({
       testName: 'Branch False Path Test',
       entityName: 'BranchEntity_FalsePath',
@@ -277,7 +277,7 @@ test.describe('Blueprint Logic & Comparison Expanded E2E Testing', () => {
     });
   });
 
-  test('8. SWITCH - Match Case String ("right")', async ({ blueprintRunner }) => {
+  test('Switch - Match case string ("right")', async ({ blueprintRunner }) => {
     await blueprintRunner.runTest({
       testName: 'Switch Match Case Test',
       entityName: 'SwitchEntity_Match',
@@ -304,7 +304,7 @@ test.describe('Blueprint Logic & Comparison Expanded E2E Testing', () => {
     });
   });
 
-  test('9. SWITCH - Default Fallback Path', async ({ blueprintRunner }) => {
+  test('Switch - Default fallback path', async ({ blueprintRunner }) => {
     await blueprintRunner.runTest({
       testName: 'Switch Default Path Test',
       entityName: 'SwitchEntity_Default',

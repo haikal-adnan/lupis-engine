@@ -135,7 +135,8 @@ return;`
           },
           code: 
 `const targetId = inputs['Target ID (Self)'] ?? inputs['target_in'] ?? 'self';
-const entity = context.getEntity(targetId);
+const getEntityFn = context.entity?.get || context.getEntity;
+const entity = typeof getEntityFn === 'function' ? getEntityFn(targetId) : null;
 
 if (!entity) {
   outputs['Out'] = true;

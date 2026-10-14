@@ -9,7 +9,7 @@ test.use({
 });
 
 test.describe('Blueprint List Operations E2E Testing', () => {
-  test('1. LIST GET - Retrieves element by index', async ({ blueprintRunner }) => {
+  test('List get - Retrieves element by index', async ({ blueprintRunner }) => {
     await blueprintRunner.runTest({
       testName: 'List Get Test',
       entityName: 'ListEntity_Get',
@@ -36,7 +36,7 @@ test.describe('Blueprint List Operations E2E Testing', () => {
     });
   });
 
-  test('2. LIST SET - Updates element value at specified index', async ({ blueprintRunner }) => {
+  test('List set - Updates element value at specified index', async ({ blueprintRunner }) => {
     await blueprintRunner.runTest({
       testName: 'List Set Test',
       entityName: 'ListEntity_Set',
@@ -74,7 +74,7 @@ test.describe('Blueprint List Operations E2E Testing', () => {
     });
   });
 
-  test('3. LIST PUSH - Appends new item to end of list', async ({ blueprintRunner }) => {
+  test('List push - Appends new item to end of list', async ({ blueprintRunner }) => {
     await blueprintRunner.runTest({
       testName: 'List Push Test',
       entityName: 'ListEntity_Push',
@@ -104,7 +104,7 @@ test.describe('Blueprint List Operations E2E Testing', () => {
     });
   });
 
-  test('4. LIST INSERT - Inserts item at specified index', async ({ blueprintRunner }) => {
+  test('List insert - Inserts item at specified index', async ({ blueprintRunner }) => {
     await blueprintRunner.runTest({
       testName: 'List Insert Test',
       entityName: 'ListEntity_Insert',
@@ -142,7 +142,7 @@ test.describe('Blueprint List Operations E2E Testing', () => {
     });
   });
 
-  test('5. LIST REMOVE AT - Removes item at specified index', async ({ blueprintRunner }) => {
+  test('List remove at - Removes item at specified index', async ({ blueprintRunner }) => {
     await blueprintRunner.runTest({
       testName: 'List Remove At Test',
       entityName: 'ListEntity_RemoveAt',
@@ -177,7 +177,7 @@ test.describe('Blueprint List Operations E2E Testing', () => {
     });
   });
 
-  test('6. LIST LENGTH - Measures total elements in list', async ({ blueprintRunner }) => {
+  test('List length - Measures total elements in list', async ({ blueprintRunner }) => {
     await blueprintRunner.runTest({
       testName: 'List Length Test',
       entityName: 'ListEntity_Length',
@@ -199,7 +199,7 @@ test.describe('Blueprint List Operations E2E Testing', () => {
     });
   });
 
-  test('7. LIST CONTAINS - Checks existence of element in list', async ({ blueprintRunner }) => {
+  test('List contains - Checks existence of element in list', async ({ blueprintRunner }) => {
     await blueprintRunner.runTest({
       testName: 'List Contains Test',
       entityName: 'ListEntity_Contains',
@@ -233,7 +233,7 @@ test.describe('Blueprint List Operations E2E Testing', () => {
     });
   });
 
-  test('8. LIST INDEX OF - Returns index of target value', async ({ blueprintRunner }) => {
+  test('List index of - Returns index of target value', async ({ blueprintRunner }) => {
     await blueprintRunner.runTest({
       testName: 'List Index Of Test',
       entityName: 'ListEntity_IndexOf',
@@ -260,7 +260,7 @@ test.describe('Blueprint List Operations E2E Testing', () => {
     });
   });
 
-  test('9. LIST CONCAT - Merges two lists into a new list', async ({ blueprintRunner }) => {
+  test('List concat - Merges two lists into a new list', async ({ blueprintRunner }) => {
     await blueprintRunner.runTest({
       testName: 'List Concat Test',
       entityName: 'ListEntity_Concat',
@@ -292,7 +292,7 @@ test.describe('Blueprint List Operations E2E Testing', () => {
     });
   });
 
-  test('10. LIST SHUFFLE - Shuffles element order while preserving length', async ({ blueprintRunner }) => {
+  test('List shuffle - Shuffles element order while preserving length', async ({ blueprintRunner }) => {
     await blueprintRunner.runTest({
       testName: 'List Shuffle Test',
       entityName: 'ListEntity_Shuffle',
