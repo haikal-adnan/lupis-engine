@@ -15,15 +15,15 @@ export class ScriptCrudObject {
   }
 
   /**
-   * Memastikan tab/panel script aktif dan siap diinteraksi
+   * Makes sure the script tab/panel is active and ready for interaction
    */
   async ensureReady() {
     await this.scriptPage.ensureVisible();
   }
 
   /**
-   * Helper facade untuk membuat script baru via tombol action top bar
-   * @param {string} scriptName Nama script/komponen baru
+   * Facade helper that creates a new script via the top bar action button
+   * @param {string} scriptName Name of the new script/component
    * @returns {Promise<import('@playwright/test').Locator>}
    */
   async createScript(scriptName = 'NewScript') {
@@ -38,14 +38,14 @@ export class ScriptCrudObject {
   }
 
   /**
-   * Helper facade untuk menempelkan script ke entity target menggunakan menu "Add to {EntityName}"
-   * @param {string} scriptName Nama script yang ingin ditempelkan
-   * @param {string} entityName Nama entity target di Hierarchy
+   * Facade helper that attaches a script to the target entity through the "Add to {EntityName}" menu
+   * @param {string} scriptName Name of the script to attach
+   * @param {string} entityName Name of the target entity in the Hierarchy
    */
   async attachScriptToEntity(scriptName, entityName) {
     await this.ensureReady();
 
-    // Pastikan entity target di Hierarchy aktif & terpilih secara eksplisit
+    // Make sure the target entity in the Hierarchy is active and explicitly selected
     const entityNode = this.hierarchy.nodeByName(entityName);
     await expect(entityNode).toBeVisible();
     await entityNode.click();
@@ -57,9 +57,9 @@ export class ScriptCrudObject {
   }
 
   /**
-   * Helper facade untuk merename script via context menu
-   * @param {string} currentName Nama script saat ini
-   * @param {string} newName Nama script baru
+   * Facade helper that renames a script via the context menu
+   * @param {string} currentName Current script name
+   * @param {string} newName New script name
    * @returns {Promise<import('@playwright/test').Locator>}
    */
   async renameScript(currentName, newName) {
@@ -77,8 +77,8 @@ export class ScriptCrudObject {
   }
 
   /**
-   * Helper facade untuk menduplikasi script via context menu
-   * @param {string} scriptName Nama script yang akan diduplikasi
+   * Facade helper that duplicates a script via the context menu
+   * @param {string} scriptName Name of the script to duplicate
    * @returns {Promise<import('@playwright/test').Locator>}
    */
   async duplicateScript(scriptName) {
@@ -95,10 +95,10 @@ export class ScriptCrudObject {
   }
 
   /**
-   * Helper facade untuk menghapus script via context menu dan konfirmasi modal
-   * @param {string} scriptName Nama script yang akan dihapus
-   * @param {object} options Options hapus
-   * @param {boolean} [options.confirm=true] Apakah mengkonfirmasi modal dialog hapus
+   * Facade helper that deletes a script via the context menu and confirmation modal
+   * @param {string} scriptName Name of the script to delete
+   * @param {object} options Delete options
+   * @param {boolean} [options.confirm=true] Whether to confirm the delete dialog
    */
   async deleteScript(scriptName, { confirm = true } = {}) {
     await this.ensureReady();
@@ -116,13 +116,13 @@ export class ScriptCrudObject {
   }
 
   /**
-   * Helper facade untuk menyalin ID script ke clipboard
-   * @param {string} scriptName Nama script
+   * Facade helper that copies the script ID to the clipboard
+   * @param {string} scriptName Script name
    */
   async copyScriptId(scriptName) {
     await this.ensureReady();
 
-    // Berikan izin clipboard pada browser context agar navigator.clipboard.writeText berjalan di Chromium headless
+    // Grant clipboard permissions to the browser context so navigator.clipboard.writeText works in headless Chromium
     await this.page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
 
     const scriptItem = this.scriptPage.itemByName(scriptName);
@@ -132,8 +132,8 @@ export class ScriptCrudObject {
   }
 
   /**
-   * Helper facade untuk membuat folder script baru via context menu
-   * @param {string} folderName Nama folder script
+   * Facade helper that creates a new script folder via the context menu
+   * @param {string} folderName Script folder name
    * @returns {Promise<import('@playwright/test').Locator>}
    */
   async createFolder(folderName = 'NewFolder') {
@@ -147,8 +147,8 @@ export class ScriptCrudObject {
   }
 
   /**
-   * Helper facade untuk navigasi masuk ke dalam folder script
-   * @param {string} folderName Nama folder target
+   * Facade helper that navigates into a script folder
+   * @param {string} folderName Target folder name
    */
   async enterFolder(folderName) {
     await this.ensureReady();
@@ -161,7 +161,7 @@ export class ScriptCrudObject {
   }
 
   /**
-   * Helper facade untuk kembali ke folder root via breadcrumb
+   * Facade helper that returns to the root folder via breadcrumb
    */
   async navigateToRoot() {
     await this.ensureReady();

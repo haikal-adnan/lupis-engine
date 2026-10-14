@@ -1,4 +1,5 @@
 import { expect } from '@playwright/test';
+import { BaseControlHelper } from '../helpers/BaseControlHelper.js';
 
 export class VariablePage {
   /**
@@ -6,6 +7,7 @@ export class VariablePage {
    */
   constructor(page) {
     this.page = page;
+    this.controls = new BaseControlHelper(page);
     this.manageBtn = page.getByTestId('variable-panel-manage-btn');
     this.modal = page
       .getByTestId('variable-modal')
@@ -76,25 +78,31 @@ export class VariablePage {
     await nameInput.blur();
 
     if (type !== 'string') {
+      // The type control is either a native <select> or the custom BaseSelect dropdown.
+      // The branch is decided deterministically from the element itself (no swallowed errors).
       const typeSelect = lastRow.getByTestId('variable-modal-type-select').first();
-      const isSelect = await typeSelect.evaluate(el => el.tagName.toLowerCase() === 'select').catch(() => false);
+      const isNativeSelect = await typeSelect.evaluate((el) => el instanceof HTMLSelectElement);
 
-      if (isSelect) {
-        await typeSelect.selectOption({ label: type }).catch(async () => {
-          await typeSelect.selectOption(type);
-        });
+      if (isNativeSelect) {
+        // A string argument matches either the option value or its label.
+        await typeSelect.selectOption(type);
       } else {
-        await typeSelect.click();
-        const option = this.page.getByTestId('select-option')
-          .filter({ hasText: new RegExp(`^\\s*${type}\\s*$`, 'i') })
-          .first();
-        await option.click();
+        await this.controls.selectOption('variable-modal-type-select', type, lastRow);
       }
     }
 
     if (isExposed) {
+      // The test ID sits either on a native checkbox or on a custom wrapper element.
       const exposeCheckbox = lastRow.getByTestId('variable-modal-expose-checkbox');
-      await exposeCheckbox.check().catch(async () => await exposeCheckbox.click());
+      const isNativeCheckbox = await exposeCheckbox.evaluate(
+        (el) => el instanceof HTMLInputElement && el.type === 'checkbox',
+      );
+
+      if (isNativeCheckbox) {
+        await exposeCheckbox.setChecked(true);
+      } else {
+        await exposeCheckbox.click();
+      }
     }
 
     return lastRow;
@@ -106,8 +114,30 @@ export class VariablePage {
     await row.getByTestId('variable-modal-row-menu-trigger').first().click();
   }
 
+  /**
+   * Chooses True/False in the boolean value select of a variable row.
+   *
+   * Scoped to the boolean select itself on purpose: a row also contains the type select,
+   * and a row-wide `select-trigger` lookup would match the type select first (it comes
+   * earlier in the DOM). The component root carries `variable-modal-value-bool-select`
+   * (attribute fallthrough replaces BaseSelect's own `select-container` ID, Section 7.5b).
+   * Postcondition: the trigger displays the chosen label.
+   */
+  async setBooleanValue(row, value) {
+    const label = value ? 'True' : 'False';
+    const trigger = row.getByTestId('variable-modal-value-bool-select').getByTestId('select-trigger');
+
+    await trigger.click();
+    // The dropdown is teleported to <body>, so the option is located from the page.
+    const option = this.page.getByTestId('select-option').filter({ hasText: new RegExp(`^\\s*${label}\\s*$`) });
+    await expect(option).toBeVisible();
+    await option.click();
+
+    await expect(trigger).toContainText(label);
+  }
+
   async fillCollectionMapKey(index, key) {
-    const keyInput = this.modal.locator('input[placeholder*="Key"]').locator(`nth=${index}`);
+    const keyInput = this.modal.locator('input[placeholder*="Key"]').nth(index);
     await expect(keyInput).toBeVisible();
     await keyInput.focus();
     await keyInput.fill(key);

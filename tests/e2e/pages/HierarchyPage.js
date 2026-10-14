@@ -31,7 +31,7 @@ export class HierarchyPage {
   // ==========================================
   _sectionId(name) {
     const id = SECTION_IDS[name.toLowerCase()];
-    if (!id) throw new Error(`Section '${name}' tidak dikenal. Pilihan: World, User Interface`);
+    if (!id) throw new Error(`Unknown section '${name}'. Options: World, User Interface`);
     return id;
   }
 
@@ -58,15 +58,15 @@ export class HierarchyPage {
   async switchScene(sceneName) {
     await expect(this.sceneSelect).toBeVisible();
 
-    // 1. Trigger click pada select button
+    // 1. Click the select button
     const triggerBtn = this.sceneSelect.getByRole('combobox').or(this.sceneSelect.locator('button')).first();
     await triggerBtn.click();
 
-    // 2. Pastikan dropdown menu ter-teleport dan terbuka
+    // 2. Make sure the teleported dropdown menu is open
     const dropdown = this.page.getByTestId('select-dropdown');
     await expect(dropdown).toBeVisible();
 
-    // 3. Pilih option berdasarkan teks
+    // 3. Choose the option by its text
     const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const optionItem = dropdown
       .getByTestId('select-option')
@@ -77,7 +77,7 @@ export class HierarchyPage {
     await expect(optionItem).toBeVisible();
     await optionItem.click();
 
-    // 4. Assert active scene berhasil berganti
+    // 4. Assert the active scene changed
     await expect(this.sceneSelect).toContainText(sceneName);
   }
 
@@ -91,10 +91,10 @@ export class HierarchyPage {
     await expect(this.sceneSelect).toBeVisible();
     const currentSceneName = (await this.sceneSelect.textContent()).trim();
 
-    // Trigger action Delete Scene dari dropdown
+    // Trigger the Delete Scene action from the dropdown
     await controls.clickSelectAction('hierarchy-scene-options-button', 'Delete Scene');
 
-    // Tangani BaseConfirm Dialog secara presisi
+    // Handle the BaseConfirm dialog precisely
     const confirmModal = this.page.getByTestId('base-confirm');
     await expect(confirmModal).toBeVisible();
 
@@ -102,10 +102,10 @@ export class HierarchyPage {
     await expect(confirmBtn).toBeVisible();
     await confirmBtn.click();
 
-    // Pastikan dialog tertutup
+    // Make sure the dialog is closed
     await expect(confirmModal).toHaveCount(0);
 
-    // Assert scene terhapus dari select
+    // Assert the scene is gone from the select
     await expect(this.sceneSelect).not.toContainText(currentSceneName);
   }
 
@@ -114,8 +114,8 @@ export class HierarchyPage {
   // ==========================================
 
   /**
-   * Hover header section -> klik trigger menu (titik tiga) -> kembalikan locator menu.
-   * Menu dicari lewat page (bukan section) karena BaseDropdown bisa me-teleport kontennya.
+   * Hover the section header -> click the menu trigger (three dots) -> return the menu locator.
+   * The menu is located from the page (not the section) because BaseDropdown may teleport its content.
    */
   async openSectionMenu(sectionName) {
     const id = this._sectionId(sectionName);
@@ -137,7 +137,7 @@ export class HierarchyPage {
     const menu = await this.openSectionMenu(sectionName);
     await menu.getByTestId(`hierarchy-${kind}-add-layer-button`).click();
 
-    // Tanpa .first(): jika ada dua "New Layer", strict mode harus gagal, bukan menyembunyikan ambiguitas.
+    // No .first(): if two "New Layer" items exist, strict mode must fail instead of hiding the ambiguity.
     const created = this.section(sectionName)
       .locator('[data-testid="hierarchy-node"][data-node-name="New Layer"]');
     await expect(created).toBeVisible();
@@ -149,7 +149,7 @@ export class HierarchyPage {
     }
   }
 
-  /** Himpunan data-node-id yang ada saat ini (dipakai sebagai "before" untuk expectNewNode). */
+  /** Set of data-node-id values currently present (used as the "before" state for expectNewNode). */
   async nodeIds() {
     let previous = null;
     await expect
@@ -165,9 +165,9 @@ export class HierarchyPage {
   }
 
   /**
-   * Menunggu TEPAT satu node baru dibanding `beforeIds`, lalu mengembalikan locator-nya
-   * berdasarkan data-node-id (Section 8). Tidak bergantung pada nama default atau
-   * regex teks parsial (Section 7.3). Postcondition: node baru terlihat.
+   * Waits for EXACTLY one new node compared with `beforeIds`, then returns its locator
+   * by data-node-id (Section 8). It does not depend on the default name or on
+   * partial text regex (Section 7.3). Postcondition: the new node is visible.
    */
   async expectNewNode(beforeIds) {
     let newId = null;
@@ -185,8 +185,8 @@ export class HierarchyPage {
   }
 
   /**
-   * Membuat entity lewat context menu (mis. ['Add Entity', 'Sprite'] atau
-   * ['Add Child', 'Sprite']) dan mengembalikan node barunya via identitas stabil.
+   * Creates an entity through the context menu (e.g. ['Add Entity', 'Sprite'] or
+   * ['Add Child', 'Sprite']) and returns the new node through its stable identity.
    */
   async addEntity(popup, targetNode, menuPath) {
     const beforeIds = await this.nodeIds();
@@ -201,9 +201,9 @@ export class HierarchyPage {
   }
 
   /**
-   * Snapshot identitas seluruh node (id, name, parent, section) untuk perbandingan
-   * before/after (Section 10). Hanya memakai atribut kontrak (Section 7.2); tidak ada
-   * fallback ke textContent karena ikut menangkap badge/ikon dan membuat poll flaky.
+   * Identity snapshot of every node (id, name, parent, section) for
+   * before/after comparison (Section 10). Uses contract attributes only (Section 7.2); no
+   * textContent fallback, because it also captures badges/icons and makes the poll flaky.
    */
   async snapshot() {
     return await this.page.evaluate(() => {

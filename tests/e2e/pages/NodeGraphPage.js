@@ -66,7 +66,7 @@ export class NodeGraphPage {
       const app = document.querySelector('#app')?.__vue_app__;
       const pinia = app?.config?.globalProperties?.$pinia;
       const scriptStore = pinia?._s?.get('script');
-      if (!scriptStore) throw new Error('Pinia scriptStore tidak ditemukan pada window app');
+      if (!scriptStore) throw new Error('Pinia scriptStore was not found on the app window');
 
       const action = eval(`(${actionFnStr})`);
       return action(scriptStore, payload);
@@ -95,7 +95,7 @@ export class NodeGraphPage {
 
       const id = store.spawnNodeByType(type, label, position, extraData);
       if (!id) {
-        throw new Error(`[NodeGraphPage] Gagal membuat node dengan tipe "${type}" melalui scriptStore.`);
+        throw new Error(`[NodeGraphPage] Failed to create a node of type "${type}" through scriptStore.`);
       }
       return id;
     }, { type, label, position, options });
@@ -118,7 +118,7 @@ export class NodeGraphPage {
     await this.page.mouse.down();
 
     const canvasBox = await this.canvas.boundingBox();
-    if (!canvasBox) throw new Error('Graph canvas panel tidak ditemukan pada DOM');
+    if (!canvasBox) throw new Error('Graph canvas panel was not found in the DOM');
 
     await this.page.mouse.move(
       canvasBox.x + targetPosition.x,

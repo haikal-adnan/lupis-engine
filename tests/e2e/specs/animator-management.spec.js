@@ -19,7 +19,7 @@ test.describe('Animator Panel System E2E Workflow Tests', () => {
     animatorCrud,
     animatorPage,
   }) => {
-    // 1. Arrange: Buat Layer & Entity Sprite Baru
+    // 1. Arrange: create a Layer and a new Sprite entity
     const worldLayer = await hierarchyCrud.layer.create('World', 'Character Layer');
     const spriteEntity = await hierarchyCrud.entity.create(worldLayer, 'sprite');
     const entityId = await spriteEntity.getAttribute('data-node-id');
@@ -27,17 +27,17 @@ test.describe('Animator Panel System E2E Workflow Tests', () => {
     await spriteEntity.click();
     await expect(spriteEntity).toHaveAttribute('aria-selected', 'true');
 
-    // 2. Act: Konfigurasi SpriteAnimator & Buka Workspace Tab
+    // 2. Act: configure SpriteAnimator and open the workspace tab
     await inspectorCrud.configureSpriteAnimator({
       sampleImageName: 'sample_image.png',
       openEditor: true,
     });
 
-    // Tab workspace dikunci lewat identitas stabil (entityId), bukan sembarang [aria-selected].
+    // The workspace tab is locked by a stable identity (entityId), not by any [aria-selected].
     const activeTab = page.locator(`[data-tab-id="${entityId}"]`);
     await expect(activeTab).toBeVisible();
 
-    // 3. Act: Buat Hirarki Kategori & Clip
+    // 3. Act: create the category hierarchy and a clip
     await animatorCrud.createCategoryViaContextMenu();
     const categoryNode = animatorPage.treeNodeByName('New Category');
     await expect(categoryNode).toBeVisible();
@@ -63,7 +63,7 @@ test.describe('Animator Panel System E2E Workflow Tests', () => {
     await expect(animatorPage.scriptIdInput).toHaveValue('walk_01');
     await expect(animatorPage.clipNameInput).toHaveValue('Hero_Walk');
     await expect(animatorPage.fpsInput).toHaveValue('24');
-    // State lewat ARIA, bukan class Tailwind (Section 7.1/7.2). Kontrak komponen: aria-pressed.
+    // State is read through ARIA, not Tailwind classes (Section 7.1/7.2). Component contract: aria-pressed.
     await expect(animatorPage.flipXButton).toHaveAttribute('aria-pressed', 'true');
 
     // 5. Act & Assert: Manipulasi Timeline Frame & Control Playback
@@ -115,7 +115,7 @@ test.describe('Animator Panel System E2E Workflow Tests', () => {
       openEditor: true,
     });
 
-    // Act: Buat Clip melalui Header Menu Dropdown
+    // Act: create a clip through the header menu dropdown
     await animatorPage.treeMoreMenuTrigger.click();
     await expect(animatorPage.treeNewClipBtn).toBeVisible();
     await animatorPage.treeNewClipBtn.click();
@@ -133,7 +133,7 @@ test.describe('Animator Panel System E2E Workflow Tests', () => {
 
     // Search Filter
     await animatorPage.treeSearchInput.fill('Idle');
-    // Kedua duplikat harus tetap cocok dengan filter 'Idle'
+    // Both duplicates must still match the 'Idle' filter
     await expect(animatorPage.treeNodesByName('Idle_Anim')).toHaveCount(2);
 
     await animatorPage.treeSearchInput.fill('NonExistentAnim');
@@ -149,7 +149,7 @@ test.describe('Animator Panel System E2E Workflow Tests', () => {
     await page.keyboard.press('Control+v');
     await expect(animatorPage.treeNodesByName('Idle_Anim')).toHaveCount(3);
 
-    // Deselect Clip dengan mengklik area kosong tree content
+    // Deselect the clip by clicking the empty tree content area
     await animatorPage.treeContent.click({ position: { x: 5, y: 5 } });
     await expect(animatorPage.clipNameInput).toHaveCount(0);
     await expect(animatorPage.helperNoClipSettings).toBeVisible();
@@ -197,7 +197,7 @@ test.describe('Animator Panel System E2E Workflow Tests', () => {
     await expect(sourceTrigger).toBeVisible();
     await sourceTrigger.click();
 
-    // Aksi dipilih lewat teks eksak, bukan "select-action" pertama yang kebetulan ada
+    // The action is chosen by exact text, not by whichever "select-action" happens to come first
     const createSourceAction = page.getByText('Create New Source...', { exact: true });
     await expect(createSourceAction).toBeVisible();
     await createSourceAction.click();

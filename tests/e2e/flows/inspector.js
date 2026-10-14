@@ -29,7 +29,7 @@ export class InspectorCrudObject {
     });
     await this.page.evaluate(() => new Promise((resolve) => requestAnimationFrame(resolve)));
 
-    // Menu di-teleport & dirender hanya saat terbuka -> count() setelah blur+frame (Section 9.1)
+    // The menu is teleported and rendered only while open -> count() after blur + one frame (Section 9.1)
     const menuContainer = this.page.getByTestId('object-section-menu');
     if ((await menuContainer.count()) > 0) {
       await expect(menuContainer).toBeVisible();

@@ -8,7 +8,7 @@ export class BaseControlHelper {
     this.page = page;
   }
 
-  // Helper internal untuk mengisolasi elemen editable jika terdeteksi div pembungkus
+  // Internal helper: resolves the editable element when the test ID sits on a wrapper div
   _resolveEditableElement(targetLocator) {
     return targetLocator.locator('input, textarea').or(targetLocator).first();
   }
@@ -44,7 +44,7 @@ export class BaseControlHelper {
   async fillInput(labelOrTestIdOrPlaceholder, value, container) {
     const scope = container || this.page;
 
-    // Mencari input berdasarkan data-testid/placeholder/label
+    // Find the input by data-testid / placeholder / label
     const input = scope
       .locator('input, textarea')
       .filter({
@@ -119,7 +119,7 @@ export class BaseControlHelper {
 
     await prefixElement.scrollIntoViewIfNeeded();
     const box = await prefixElement.boundingBox();
-    if (!box) throw new Error(`Prefix '${prefixText}' tidak ditemukan untuk di-scrub`);
+    if (!box) throw new Error(`Prefix '${prefixText}' was not found for scrubbing`);
 
     const startX = box.x + box.width / 2;
     const startY = box.y + box.height / 2;
@@ -188,7 +188,7 @@ export class BaseControlHelper {
   }
 
   /**
-   * Konvensi testid: input `X-input` berpasangan dengan tombol `X-clear-button`
+   * Test ID convention: input `X-input` is paired with button `X-clear-button`
    * (mis. `hierarchy-search-input` -> `hierarchy-search-clear-button`).
    */
   async clearSearch(placeholderOrTestId, container) {
@@ -207,7 +207,7 @@ export class BaseControlHelper {
       .or(scope.getByRole('button', { name: /clear/i }))
       .first();
 
-    // count() sinkron; tombol clear memakai v-if="modelValue" sehingga memang opsional
+    // count() does not wait; the clear button uses v-if="modelValue", so it is optional
     if ((await clearButton.count()) > 0) {
       await clearButton.click();
     } else {
@@ -234,7 +234,7 @@ export class BaseControlHelper {
 
     await trigger.click();
 
-    // 2. Cari Opsi spesifik di dalam Teleport Dropdown menggunakan regex fleksibel untuk whitespace
+    // 2. Find the exact option inside the teleported dropdown (whitespace-tolerant exact match)
     const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const optionItem = this.page
       .getByTestId('select-option')
@@ -247,12 +247,12 @@ export class BaseControlHelper {
   }
 
   /**
-   * Membuka trigger "select action" (mis. tombol opsi yang menampilkan dropdown
-   * menu berisi beberapa aksi) lalu mengklik salah satu item di dalamnya.
+   * Opens a "select action" trigger (e.g. an options button that shows a dropdown
+   * menu with several actions) and clicks one item inside it.
    *
-   * GENERIK: tidak ada fallback ke testid widget tertentu. Kirim testid trigger
-   * secara eksplisit, mis. clickSelectAction('hierarchy-scene-options-button', 'New Scene'),
-   * atau aria-label/title-nya ('Scene Options').
+   * GENERIC: no fallback to the test ID of a specific widget. Pass the trigger test ID
+   * explicitly, e.g. clickSelectAction('hierarchy-scene-options-button', 'New Scene'),
+   * or its aria-label/title ('Scene Options').
    */
   async clickSelectAction(labelOrTestId, actionText, container) {
     const scope = container || this.page;
@@ -268,7 +268,7 @@ export class BaseControlHelper {
     await expect(trigger).toBeVisible();
     await trigger.click();
 
-    // Menu dropdown biasanya di-teleport ke akhir DOM saat terbuka.
+    // The dropdown menu is usually teleported to the end of the DOM while open.
     const menu = this.page.getByRole('menu').last();
     await expect(menu).toBeVisible();
 

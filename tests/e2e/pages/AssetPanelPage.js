@@ -2,7 +2,7 @@ import { expect } from '@playwright/test';
 import path from 'path';
 
 /**
- * Page object untuk Asset Panel (tab bawah "Assets").
+ * Page object for the Asset Panel (bottom "Assets" tab).
  */
 export class AssetPanelPage {
   /**
@@ -26,12 +26,12 @@ export class AssetPanelPage {
     return this.page.locator('div.relative.h-full.flex.flex-col').filter({ hasText: 'Assets' }).first();
   }
 
-  /** Indikator loading overlay saat upload berlangsung */
+  /** Loading overlay shown while an upload is in progress */
   get uploadOverlay() {
     return this.panel.getByText('Processing Asset...');
   }
 
-  /** Area grid asset (target klik kanan untuk "New Folder", "Import Assets", "Paste"). */
+  /** Asset grid area (right-click target for "New Folder", "Import Assets", "Paste"). */
   get grid() {
     return this.page.locator('[data-testid="asset-grid"]').or(this.panel).first();
   }
@@ -41,7 +41,7 @@ export class AssetPanelPage {
     return this.panel.getByPlaceholder('Search assets...').or(this.panel.getByTestId('search-input')).first();
   }
 
-  /** Breadcrumb root ("Assets") di dalam panel. */
+  /** Root breadcrumb ("Assets") inside the panel. */
   get breadcrumbRoot() {
     return this.panel.getByRole('button', { name: 'Assets' }).first();
   }
@@ -51,8 +51,8 @@ export class AssetPanelPage {
   }
 
   /**
-   * Locator presisi yang mencocokkan title persis (dengan/tanpa ekstensi file).
-   * @param {string} title Nama file atau display name (misal: 'sample_font' atau 'sample_font.ttf')
+   * Precise locator that matches the exact title (with or without file extension).
+   * @param {string} title File name or display name (e.g. 'sample_font' or 'sample_font.ttf')
    */
   card(title) {
     const baseName = title.replace(/\.[^/.]+$/, '');
@@ -61,13 +61,13 @@ export class AssetPanelPage {
       .first();
   }
 
-  /** Semua elemen yang mencocokkan title (untuk assert toHaveCount). */
+  /** All elements matching the title (for toHaveCount assertions). */
   cardsByTitle(title) {
     const baseName = title.replace(/\.[^/.]+$/, '');
     return this.panel.locator(`[title="${title}"], [title="${baseName}"], [title^="${baseName}."]`);
   }
 
-  /** Card pertama yang title-nya mengandung teks tertentu. */
+  /** First card whose title contains the given text. */
   cardContaining(text) {
     return this.panel.locator(`[title*="${text}"]`).first();
   }
@@ -84,8 +84,8 @@ export class AssetPanelPage {
   }
 
   /**
-   * Upload file nyata dan tunggu hingga proses async upload selesai serta card muncul di DOM.
-   * @param {string} fileName Nama file di folder test-data/assets
+   * Uploads a real file and waits until the async upload finishes and the card appears in the DOM.
+   * @param {string} fileName File name in the test-data/assets folder
    */
   async upload(fileName) {
     const fileInput = this.page.locator('input[type="file"]').first();
@@ -94,18 +94,18 @@ export class AssetPanelPage {
     // 1. Trigger upload file
     await fileInput.setInputFiles(filePath);
 
-    // 2. Tunggu kartu aset muncul di DOM (indikator utama bahwa file selesai diproses).
-    //    Tanpa { timeout } eksplisit (Section 2): jika upload memang lambat, naikkan
-    //    expect.timeout global di playwright.config.js, jangan per-call.
+    // 2. Wait for the asset card to appear in the DOM (main signal that the file was processed).
+    //    No explicit { timeout } (Section 2): if uploads are genuinely slow, raise the
+    //    global expect.timeout in playwright.config.js instead of per call.
     await expect(this.card(fileName)).toBeVisible();
 
-    // 3. Pastikan overlay loading sudah bersih
+    // 3. Make sure the loading overlay is gone
     await expect(this.uploadOverlay).toBeHidden();
   }
 
   /**
-   * Membuat struktur folder bersarang sampai kedalaman tertentu.
-   * @param {string[]} folderPath Array nama folder dari luar ke dalam
+   * Creates a nested folder structure down to the given depth.
+   * @param {string[]} folderPath Folder names from the outermost to the innermost
    * @param {import('../helpers/PopupHelper.js').PopupHelper} popup
    */
   async createNestedFolders(folderPath, popup) {

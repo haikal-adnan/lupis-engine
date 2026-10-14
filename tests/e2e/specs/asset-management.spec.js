@@ -145,7 +145,7 @@ test.describe('Asset Management Comprehensive E2E Tests', () => {
     await expect(assets.cardsByTitle('sample_image')).toHaveCount(0);
     await expect(assets.cardsByTitle('sample_audio')).toHaveCount(0);
 
-    // Pairing Section 7.4: search-input <-> search-clear-button (dipakai BaseControlHelper.clearSearch)
+    // Section 7.4 pairing: search-input <-> search-clear-button (used by BaseControlHelper.clearSearch)
     await controls.clearSearch('search-input', assets.panel);
 
     await expect(assets.card('sample_image')).toBeVisible();
@@ -156,14 +156,9 @@ test.describe('Asset Management Comprehensive E2E Tests', () => {
   // =========================================================================
   // 6. ASSET ATTACHMENT TO ENTITIES
   // =========================================================================
-  // PERBAIKAN: sebelumnya test ini memanggil
-  //   inspectorCrud.configureAudioComponent({ volume: 90, assetId: null })
-  // lalu MELAKUKAN SENDIRI upload + apply secara manual di bawahnya.
-  // `configureAudioComponent` tidak pernah punya parameter `assetId` — jadi
-  // baris itu diam-diam tidak melakukan apa pun (dead code) dan menyesatkan
-  // pembaca seolah attach sudah terjadi di titik itu. configureAudioComponent
-  // sudah mendukung `audioFileName` untuk melakukan upload+apply dalam satu
-  // langkah, jadi langkah manual di bawahnya dihapus karena duplikat.
+  // NOTE: configureAudioComponent has no `assetId` parameter. It supports
+  // `audioFileName`, which uploads and applies the file in a single step, so the
+  // test relies on that instead of a separate manual upload + apply.
   test('attaches Audio asset to an Empty Entity with Audio Component', async ({ hierarchyCrud, inspectorCrud, popup }) => {
     const mainLayer = await hierarchyCrud.layer.create('World', 'Main Layer');
     const emptyEntity = await hierarchyCrud.entity.create(mainLayer, 'empty');

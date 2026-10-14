@@ -1,9 +1,9 @@
 import { test, expect } from '../fixtures.js';
 import { ensureProject } from '../flows/dashboard.js';
 
-// Spec ini menguji alur dashboard/pembuatan project, jadi TIDAK memakai isolasi project
-// otomatis dari fixtures. Project dibuat oleh test itu sendiri (UI di test 1 & 6,
-// flow ensureProject sebagai setup di test 2-5).
+// This spec tests the dashboard / project creation flow, so it does NOT use the automatic
+// project isolation from fixtures. Each test creates its own project (via the UI in tests 1 & 6,
+// via the ensureProject flow as setup in tests 2-5).
 test.use({ isolatedProject: false });
 
 test.describe('Project Management E2E', () => {
@@ -96,10 +96,10 @@ test.describe('Project Management E2E', () => {
     // Act: Trigger delete via context menu
     await popup.selectContextMenu(card, 'Delete Project');
 
-    // Assert & Confirm (Cocokkan dengan teks judul/pesan confirm pada composable)
+    // Assert & confirm (match the confirm title/message text from the composable)
     await popup.confirmAction('Delete', { confirmText: 'Delete' });
 
-    // Assert: Node terhapus dari DOM
+    // Assert: the node is removed from the DOM
     await expect(card).toHaveCount(0);
   });
 

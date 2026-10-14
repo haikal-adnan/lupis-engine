@@ -1,6 +1,6 @@
 /**
- * Page object untuk Dashboard (daftar project).
- * Hanya locator dan navigasi; aksi alur (buat/buka project) ada di flows/dashboard.js.
+ * Page object for the Dashboard (project list).
+ * Locators and navigation only; flow actions (create/open project) live in flows/dashboard.js.
  */
 export class DashboardPage {
   /**

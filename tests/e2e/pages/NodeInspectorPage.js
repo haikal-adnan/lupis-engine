@@ -112,6 +112,49 @@ export class NodeInspectorPage {
     return this.page.getByTestId('node-inspector-ports-section');
   }
 
+  /** All input port rows of the ports section (collection locator, no index applied). */
+  get inputPortRows() {
+    return this.portsSection.getByTestId('node-inspector-input-port-row');
+  }
+
+  /** All output port rows of the ports section (collection locator, no index applied). */
+  get outputPortRows() {
+    return this.portsSection.getByTestId('node-inspector-output-port-row');
+  }
+
+  /** All parameter port rows of the inspector panel (collection locator, no index applied). */
+  get portRows() {
+    return this.panel.getByTestId('node-inspector-port-row');
+  }
+
+  /**
+   * Resolves the stable data-port-id of the row at `index` (-1 = the last row).
+   * Index handling lives here so specs never need .first() / .nth() / .last() (Section 7.3).
+   * Postcondition: the row is visible before its identity is read.
+   */
+  async _portIdAt(rows, index) {
+    const row = index < 0 ? rows.last() : rows.nth(index);
+    await expect(row).toBeVisible();
+    return await row.getAttribute('data-port-id');
+  }
+
+  inputPortIdAt(index) {
+    return this._portIdAt(this.inputPortRows, index);
+  }
+
+  outputPortIdAt(index) {
+    return this._portIdAt(this.outputPortRows, index);
+  }
+
+  portIdAt(index) {
+    return this._portIdAt(this.portRows, index);
+  }
+
+  /** The editable field (input or textarea) inside a parameter port row. */
+  portField(portId) {
+    return this.portRowById(portId).locator('input, textarea').first();
+  }
+
   inputPortRowById(portId) {
     const cleanId = String(portId).toLowerCase();
     return this.portsSection.locator(

@@ -5,7 +5,7 @@ const SCENE_OPTIONS = 'hierarchy-scene-options-button';
 test.use({
   projectOptions: {
     prefix: 'Hierarchy E2E Exhaustive',
-    description: 'Workspace isolasi untuk E2E Hierarchy, Selection, Drag-Drop, Prefab, Context Menu, Shortcuts, dan Scene Management',
+    description: 'Isolated workspace for Hierarchy, Selection, Drag & Drop, Prefab, Context Menu, Shortcuts and Scene Management E2E tests',
   },
 });
 
@@ -16,14 +16,14 @@ test.describe('Hierarchy & Scene Comprehensive E2E Management', () => {
   // =========================================================================
   test.describe('1. Layer Creation & Section Integrity', () => {
     test('creates new World and UI layers via Section header add buttons', async ({ hierarchy, popup }) => {
-      // 1. Tambah World Layer via Header Section
+      // 1. Add a World Layer via the section header
       await hierarchy.addLayerToSection(popup, 'World', 'Custom World Layer');
       const worldSection = hierarchy.section('World');
       await expect(
         worldSection.locator('[data-testid="hierarchy-node"][data-node-name="Custom World Layer"]')
       ).toBeVisible();
 
-      // 2. Tambah UI Layer via Header Section
+      // 2. Add a UI Layer via the section header
       await hierarchy.addLayerToSection(popup, 'User Interface', 'Custom UI Layer');
       const uiSection = hierarchy.section('User Interface');
       await expect(
@@ -38,10 +38,10 @@ test.describe('Hierarchy & Scene Comprehensive E2E Management', () => {
       // Ambil snapshot awal hierarchy
       const beforeState = await hierarchy.snapshot();
 
-      // Coba hapus satu-satunya layer
+      // Try to delete the only remaining layer
       await popup.selectContextMenu(soleWorldLayer, 'Delete Layer');
 
-      // Memastikan layer tidak terhapus dan struktur tidak berubah
+      // Make sure the layer is not deleted and the structure is unchanged
       await expect(soleWorldLayer).toBeVisible();
       await expect.poll(() => hierarchy.snapshot()).toEqual(beforeState);
     });
@@ -71,10 +71,10 @@ test.describe('Hierarchy & Scene Comprehensive E2E Management', () => {
       const childEntity = await hierarchy.addEntity(popup, parentEntity, ['Add Child', 'Sprite']);
 
       const parentId = await parentEntity.getAttribute('data-node-id');
-      // Precondition: child benar-benar berada di dalam parent, sehingga assert akhir tidak vacuous
+      // Precondition: the child really sits inside the parent, so the final assertion is not vacuous
       await expect(childEntity).toHaveAttribute('data-parent-id', parentId);
 
-      // Drag child keluar dari parent menuju root layer
+      // Drag the child out of its parent to the root layer
       await hierarchy.dragAndDropNodes(childEntity, worldLayer);
 
       await expect(childEntity).not.toHaveAttribute('data-parent-id');
@@ -86,14 +86,14 @@ test.describe('Hierarchy & Scene Comprehensive E2E Management', () => {
       // Target parent
       const targetParent = await hierarchy.addEntity(popup, worldLayer, ['Add Entity', 'Shape']);
 
-      // Parent beserta Child-nya
+      // The parent together with its child
       const movingParent = await hierarchy.addEntity(popup, worldLayer, ['Add Entity', 'Empty Entity']);
       const movingChild = await hierarchy.addEntity(popup, movingParent, ['Add Child', 'Text']);
 
       const targetParentId = await targetParent.getAttribute('data-node-id');
       const movingParentId = await movingParent.getAttribute('data-node-id');
 
-      // Pindahkan movingParent ke dalam targetParent
+      // Move movingParent into targetParent
       await hierarchy.dragAndDropNodes(movingParent, targetParent);
 
       await expect(movingParent).toHaveAttribute('data-parent-id', targetParentId);
@@ -134,7 +134,7 @@ test.describe('Hierarchy & Scene Comprehensive E2E Management', () => {
       const parentNode = await hierarchy.addEntity(popup, worldLayer, ['Add Entity', 'Empty Entity']);
       const childNode = await hierarchy.addEntity(popup, parentNode, ['Add Child', 'Sprite']);
 
-      // Control + Click pada Parent
+      // Control + Click on the parent
       await page.keyboard.down('Control');
       await parentNode.click();
       await page.keyboard.up('Control');
@@ -148,18 +148,18 @@ test.describe('Hierarchy & Scene Comprehensive E2E Management', () => {
       const textNode = await hierarchy.addEntity(popup, worldLayer, ['Add Entity', 'Text']);
       await textNode.click();
 
-      // Ctrl+C & Ctrl+V -> tepat satu node baru
+      // Ctrl+C & Ctrl+V -> exactly one new node
       const idsBeforePaste = await hierarchy.nodeIds();
       await page.keyboard.press('Control+c');
       await page.keyboard.press('Control+v');
       const pastedNode = await hierarchy.expectNewNode(idsBeforePaste);
 
-      // Ctrl+D (Duplicate) -> tepat satu node baru lagi
+      // Ctrl+D (Duplicate) -> exactly one more new node
       const idsBeforeDuplicate = await hierarchy.nodeIds();
       await page.keyboard.press('Control+d');
       const duplicatedNode = await hierarchy.expectNewNode(idsBeforeDuplicate);
 
-      // Delete key menghapus node terpilih, node lain tetap ada
+      // The Delete key removes the selected node, other nodes remain
       await duplicatedNode.click();
       await page.keyboard.press('Delete');
       await expect(duplicatedNode).toHaveCount(0);
@@ -172,7 +172,7 @@ test.describe('Hierarchy & Scene Comprehensive E2E Management', () => {
   // 4. CONTEXT MENU & PREFAB RESTRICTIONS
   // =========================================================================
   test.describe('4. Context Menu Exhaustive Verification & Prefab Rules', () => {
-    // Pengujian 5 Tipe Entity World
+    // Test the 5 World entity types
     const worldEntityTypes = [
       { name: 'Empty Entity', path: ['Add Entity', 'Empty Entity'] },
       { name: 'Sprite', path: ['Add Entity', 'Sprite'] },
@@ -186,12 +186,12 @@ test.describe('Hierarchy & Scene Comprehensive E2E Management', () => {
         const worldLayer = hierarchy.nodeByName('World Layer');
         const created = await hierarchy.addEntity(popup, worldLayer, item.path);
 
-        // Entity baru harus berada di section World
+        // The new entity must be inside the World section
         await expect(hierarchy.section('World').getByTestId('hierarchy-node').and(created)).toBeVisible();
       });
     }
 
-    // Pengujian 4 Tipe Entity UI
+    // Test the 4 UI entity types
     const uiEntityTypes = [
       { name: 'Empty UI', path: ['Add UI Element', 'Empty UI'] },
       { name: 'UI Shape', path: ['Add UI Element', 'UI Shape'] },
@@ -206,7 +206,7 @@ test.describe('Hierarchy & Scene Comprehensive E2E Management', () => {
 
         const created = await hierarchy.addEntity(popup, uiLayer, item.path);
 
-        // Entity baru harus berada di section User Interface
+        // The new entity must be inside the User Interface section
         await expect(hierarchy.section('User Interface').getByTestId('hierarchy-node').and(created)).toBeVisible();
       });
     }
@@ -214,11 +214,11 @@ test.describe('Hierarchy & Scene Comprehensive E2E Management', () => {
     test('tests duplicate, copy, cut, paste, rename, change z-index, and delete operations via Context Menu', async ({ hierarchy, popup }) => {
       const worldLayer = hierarchy.nodeByName('World Layer');
 
-      // 1. Tambah Sprite
+      // 1. Add a Sprite
       const spriteNode = await hierarchy.addEntity(popup, worldLayer, ['Add Entity', 'Sprite']);
       const spriteId = await spriteNode.getAttribute('data-node-id');
 
-      // 2. Rename Entity (identitas dikunci lewat data-node-id, Section 8)
+      // 2. Rename the entity (identity locked by data-node-id, Section 8)
       await popup.selectContextMenu(spriteNode, 'Rename Entity');
       await popup.fillPromptAndSubmit('Rename Entity', 'Hero Sprite', 'Rename');
       const renamedNode = hierarchy.nodeById(spriteId);
@@ -235,16 +235,16 @@ test.describe('Hierarchy & Scene Comprehensive E2E Management', () => {
       await popup.selectContextMenu(worldLayer, 'Paste');
       const pastedNode = await hierarchy.expectNewNode(idsBeforePaste);
 
-      // 5. Cut (node yang di-cut hilang dari tree sampai di-paste)
+      // 5. Cut (a cut node disappears from the tree until it is pasted)
       await popup.selectContextMenu(pastedNode, 'Cut');
       await expect(pastedNode).toHaveCount(0);
 
-      // 6. Change Z-Index pada Layer
+      // 6. Change the Z-Index of a Layer
       await popup.selectContextMenu(worldLayer, 'Change Z-Index');
       await popup.fillPromptAndSubmit('Change Z-Index', '8', 'Update');
       await expect(worldLayer.locator('[data-z-index]')).toHaveText('8');
 
-      // 7. Delete Entity: hanya duplikat yang hilang, node asli tetap ada
+      // 7. Delete Entity: only the duplicate disappears, the original node remains
       await popup.selectContextMenu(duplicatedNode, 'Delete Entity');
       await expect(duplicatedNode).toHaveCount(0);
       await expect(renamedNode).toBeVisible();
@@ -255,16 +255,16 @@ test.describe('Hierarchy & Scene Comprehensive E2E Management', () => {
       const parentNode = await hierarchy.addEntity(popup, worldLayer, ['Add Entity', 'Empty Entity']);
       const childNode = await hierarchy.addEntity(popup, parentNode, ['Add Child', 'Sprite']);
 
-      // Konversi Parent menjadi Prefab
+      // Convert the parent into a Prefab
       await popup.selectContextMenu(parentNode, 'Use as Prefab');
       await popup.fillPromptAndSubmit('Create Prefab', 'Player_Prefab', 'Create');
       await expect(parentNode).toHaveAttribute('data-prefab', 'true');
 
-      // Buka context menu pada child di dalam Prefab
+      // Open the context menu on a child inside the Prefab
       await childNode.click({ button: 'right' });
       const prefabMenuItem = popup.contextMenuItem('Use as Prefab');
 
-      // Pastikan opsi 'Use as Prefab' ter-disable untuk anak prefab
+      // Make sure the 'Use as Prefab' option is disabled for prefab children
       await expect(prefabMenuItem).toBeVisible();
       await expect(prefabMenuItem).toHaveAttribute('aria-disabled', 'true');
       await expect(prefabMenuItem).toHaveAttribute('data-disabled', 'true');
@@ -310,15 +310,15 @@ test.describe('Hierarchy & Scene Comprehensive E2E Management', () => {
     test('opens UI Editor tab via User Interface section context header menu', async ({ page, hierarchy, popup }) => {
       await hierarchy.addLayerToSection(popup, 'User Interface', 'Canvas HUD');
 
-      // Trigger menu section selalu ada (testid turunan dari hierarchy-section-ui)
+      // The section menu trigger always exists (test ID derived from hierarchy-section-ui)
       const menu = await hierarchy.openSectionMenu('User Interface');
       const openUiBtn = menu.getByTestId('hierarchy-ui-open-editor-button');
       await expect(openUiBtn).toBeEnabled();
       await openUiBtn.click();
 
-      // Verifikasi tab aktif berganti ke UI Editor. Baris hierarchy dikecualikan
-      // agar assert tidak lolos secara vacuous (Section 7.3).
-      // TODO kontrak: beri tab editor test ID sendiri lalu ganti selector ini.
+      // Verify the active tab switched to the UI Editor. Hierarchy rows are excluded
+      // so the assertion cannot pass vacuously (Section 7.3).
+      // TODO contract: give the editor tab its own test ID and replace this selector.
       const activeTab = page
         .locator('[aria-selected="true"]:not([data-testid="hierarchy-node"])')
         .filter({ hasText: 'UI Editor' });
@@ -334,7 +334,7 @@ test.describe('Hierarchy & Scene Comprehensive E2E Management', () => {
       const scene1Name = 'Level 1 - Forest';
       const scene2Name = 'Level 2 - Volcano';
 
-      // Buat Scene 1
+      // Create Scene 1
       await hierarchy.createScene(controls, popup, scene1Name);
       await expect(hierarchy.sceneSelect).toContainText(scene1Name);
 
@@ -353,14 +353,14 @@ test.describe('Hierarchy & Scene Comprehensive E2E Management', () => {
       await hierarchy.createScene(controls, popup, tempScene);
       await expect(hierarchy.sceneSelect).toContainText(tempScene);
 
-      // Hapus scene sekunder
+      // Delete the secondary scene
       await hierarchy.deleteCurrentScene(controls, popup);
       await expect(hierarchy.sceneSelect).not.toContainText(tempScene);
 
-      // Bad Path: Coba hapus scene terakhir yang tersisa
+      // Bad Path: try to delete the last remaining scene
       await controls.clickSelectAction(SCENE_OPTIONS, 'Delete Scene');
 
-      // Memeriksa Modal Dialog (useAlert), bukan PopAlert toast
+      // Check the modal dialog (useAlert), not the PopAlert toast
       const alertModal = page
         .getByRole('dialog')
         .or(page.getByRole('alertdialog'))
@@ -368,7 +368,7 @@ test.describe('Hierarchy & Scene Comprehensive E2E Management', () => {
 
       await expect(alertModal).toBeVisible();
 
-      // Tutup dialog modal
+      // Close the modal dialog
       await alertModal.getByRole('button', { name: 'OK', exact: true }).click();
       await expect(alertModal).toHaveCount(0);
     });
@@ -382,7 +382,7 @@ test.describe('Hierarchy & Scene Comprehensive E2E Management', () => {
       const worldLayer = hierarchy.nodeByName('World Layer');
       const spriteNode = await hierarchy.addEntity(popup, worldLayer, ['Add Entity', 'Sprite']);
 
-      // Cari nama yang tidak ada
+      // Search for a name that does not exist
       await controls.fillSearch('hierarchy-search-input', 'NonExistentNode123');
       await expect(spriteNode).toBeHidden();
 

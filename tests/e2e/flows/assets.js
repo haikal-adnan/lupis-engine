@@ -13,21 +13,21 @@ export class AssetCrudObject {
   }
 
   /**
-   * Memastikan panel Asset aktif
+   * Makes sure the Asset panel is active
    */
   async ensureReady() {
     await this.assetPage.ensureOpen();
   }
 
   /**
-   * Helper facade untuk mengunggah file asset dari fixture directory
-   * @param {string} fileName Nama file asset di test-data/assets
+   * Facade helper that uploads an asset file from the fixture directory
+   * @param {string} fileName Asset file name in test-data/assets
    */
   async uploadAsset(fileName) {
     await this.ensureReady();
     await this.assetPage.upload(fileName);
 
-    // Extract nama dasar tanpa ekstensi untuk verifikasi card
+    // Extract the base name without extension to verify the card
     const baseTitle = fileName.substring(0, fileName.lastIndexOf('.')) || fileName;
     const assetCard = this.assetPage.card(baseTitle);
     await expect(assetCard).toBeVisible();
@@ -35,8 +35,8 @@ export class AssetCrudObject {
   }
 
   /**
-   * Helper facade untuk menerapkan asset yang dipilih ke entity aktif via context menu
-   * @param {import('@playwright/test').Locator|string} assetCardElement Elemen card asset atau nama asset
+   * Facade helper that applies the selected asset to the active entity via the context menu
+   * @param {import('@playwright/test').Locator|string} assetCardElement Asset card element or asset name
    * @param {string} actionLabel Menu item (e.g., 'Apply to SpriteRenderer', 'Apply to TextRenderer', 'Apply to Audio Component')
    */
   async applyToActiveEntity(assetCardElement, actionLabel) {
@@ -51,7 +51,7 @@ export class AssetCrudObject {
   }
 
   /**
-   * Helper facade untuk membuat folder asset baru
+   * Facade helper that creates a new asset folder
    * @param {string} folderName
    */
   async createFolder(folderName = 'New Folder') {
@@ -65,11 +65,11 @@ export class AssetCrudObject {
   }
 
   // =========================================================================
-  // PENAMBAHAN FLOW FACADE UNTUK UNCOVERAGE TEST SCENARIOS
+  // ADDITIONAL FLOW FACADES FOR PREVIOUSLY UNCOVERED SCENARIOS
   // =========================================================================
 
   /**
-   * Helper facade untuk navigasi masuk ke dalam folder
+   * Facade helper that navigates into a folder
    * @param {string} folderName
    */
   async openFolder(folderName) {
@@ -81,7 +81,7 @@ export class AssetCrudObject {
   }
 
   /**
-   * Helper facade untuk navigasi kembali ke Root Asset folder via Breadcrumbs
+   * Facade helper that navigates back to the Asset root folder via breadcrumbs
    */
   async navigateToRoot() {
     await this.ensureReady();
@@ -90,9 +90,9 @@ export class AssetCrudObject {
   }
 
   /**
-   * Helper facade untuk mengganti nama asset atau folder
-   * @param {import('@playwright/test').Locator|string} itemTarget Card elemen atau nama item saat ini
-   * @param {string} newName Nama baru
+   * Facade helper that renames an asset or folder
+   * @param {import('@playwright/test').Locator|string} itemTarget Card element or current item name
+   * @param {string} newName New name
    */
   async rename(itemTarget, newName) {
     await this.ensureReady();
@@ -109,7 +109,7 @@ export class AssetCrudObject {
   }
 
   /**
-   * Helper facade untuk menghapus asset atau folder
+   * Facade helper that deletes an asset or folder
    * @param {import('@playwright/test').Locator|string} itemTarget
    */
   async delete(itemTarget) {
@@ -127,7 +127,7 @@ export class AssetCrudObject {
   }
 
   /**
-   * Helper facade untuk melakukan pencarian asset
+   * Facade helper that searches assets
    * @param {string} query
    */
   async search(query) {

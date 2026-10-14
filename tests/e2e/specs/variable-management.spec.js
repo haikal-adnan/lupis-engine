@@ -3,13 +3,13 @@ import { test, expect } from '../fixtures.js';
 test.use({
   projectOptions: {
     prefix: 'Variable System E2E',
-    description: 'Skenario E2E menyeluruh untuk CRUD, Scope, Expose Panel, Multi-Script Controller, dan Raw JSON Editor',
+    description: 'End-to-end scenarios for CRUD, Scope, Expose Panel, Multi-Script Controller and Raw JSON Editor',
   },
 });
 
 test.describe('Variable System E2E Testing', () => {
   test.beforeEach(async ({ page, hierarchyCrud, inspectorCrud, scriptCrud }) => {
-    // 1. Setup Entity Kosong -> Buat Script -> Attach Script Controller
+    // 1. Set up an empty entity -> create a script -> attach a Script Controller
     const worldLayer = hierarchyCrud.hierarchy.nodeByName('World Layer');
     const entityNode = await hierarchyCrud.entity.create(worldLayer, 'empty');
     await entityNode.click();
@@ -20,7 +20,7 @@ test.describe('Variable System E2E Testing', () => {
     await scriptCrud.createScript('MainScript');
     await scriptCrud.attachScriptToEntity('MainScript', 'TestPlayer');
 
-    // 2. Buka Visual Script Graph Editor agar Variable Panel aktif
+    // 2. Open the Visual Script Graph Editor so the Variable Panel becomes active
     await entityNode.click();
     const openGraphBtn = inspectorCrud.inspector.scriptControllerSection.getByTestId('script-controller-open-graph-btn');
     await openGraphBtn.click();
@@ -29,9 +29,9 @@ test.describe('Variable System E2E Testing', () => {
   });
 
   // =========================================================================
-  // 1. CRUD SEMUA TIPE VARIABLE
+  // 1. CRUD FOR EVERY VARIABLE TYPE
   // =========================================================================
-  test('melakukan CRUD pada semua tipe data variabel (String, Number, Boolean, List, Map)', async ({ variablePage }) => {
+  test('performs CRUD on every variable type (String, Number, Boolean, List, Map)', async ({ variablePage }) => {
     await variablePage.openManager();
 
     // 1. String
@@ -52,9 +52,7 @@ test.describe('Variable System E2E Testing', () => {
     // 3. Boolean
     await variablePage.createVariable({ name: 'IsAlive', type: 'boolean' });
     const boolRow = variablePage.itemRowByName('IsAlive');
-    const boolSelect = boolRow.getByTestId('variable-modal-value-bool-select').first();
-    await boolSelect.click();
-    await boolRow.page().getByTestId('select-option').filter({ hasText: 'True' }).first().click().catch(async () => {});
+    await variablePage.setBooleanValue(boolRow, true);
 
     // 4. List
     await variablePage.createVariable({ name: 'InventoryList', type: 'list' });
@@ -67,8 +65,7 @@ test.describe('Variable System E2E Testing', () => {
     await expect(mapRow.getByTestId('variable-modal-configure-collection-btn')).toBeVisible();
 
     // Delete Variable
-    const rowMenuTrigger = stringRow.getByTestId('variable-modal-row-menu-trigger').first();
-    await rowMenuTrigger.click();
+    await variablePage.openRowMenu('PlayerName');
     await variablePage.page.getByTestId('variable-modal-delete-btn').click();
 
     await expect(variablePage.itemRowByName('PlayerName')).toHaveCount(0);
@@ -78,7 +75,7 @@ test.describe('Variable System E2E Testing', () => {
   // =========================================================================
   // 2. SEARCH VARIABLE
   // =========================================================================
-  test('memfilter variabel secara reaktif menggunakan fitur search', async ({ variablePage }) => {
+  test('filters variables reactively with the search feature', async ({ variablePage }) => {
     await variablePage.openManager();
 
     await variablePage.createVariable({ name: 'HealthPoint', type: 'number' });
@@ -100,7 +97,7 @@ test.describe('Variable System E2E Testing', () => {
   // =========================================================================
   // 3. VARIABLE GLOBAL / LOCAL
   // =========================================================================
-  test('memastikan pemisahan data scope antara Global dan Local Variables', async ({ variablePage }) => {
+  test('keeps Global and Local variable scopes separate', async ({ variablePage }) => {
     await variablePage.openManager();
 
     await variablePage.createVariable({ name: 'GlobalGameScore', type: 'number', scope: 'Global' });
@@ -120,7 +117,7 @@ test.describe('Variable System E2E Testing', () => {
   // =========================================================================
   // 4. DUPLICATE VARIABLE
   // =========================================================================
-  test('menduplikasi variabel dan menghasilkan postfix nama berurut', async ({ variablePage }) => {
+  test('duplicates a variable and produces sequential name postfixes', async ({ variablePage }) => {
     await variablePage.openManager();
 
     await variablePage.createVariable({ name: 'BaseSpeed', type: 'number' });
@@ -138,7 +135,7 @@ test.describe('Variable System E2E Testing', () => {
   // =========================================================================
   // 5. EXPOSE PANEL GLOBAL / LOCAL
   // =========================================================================
-  test('menampilkan variabel exposed di Variable Panel utama', async ({ variablePage }) => {
+  test('shows exposed variables in the main Variable Panel', async ({ variablePage }) => {
     await variablePage.openManager();
 
     await variablePage.createVariable({ name: 'ExposedHealth', type: 'number', isExposed: true, scope: 'Local' });
@@ -154,9 +151,9 @@ test.describe('Variable System E2E Testing', () => {
   });
 
   // =========================================================================
-  // 6. KONSISTENSI LOCAL VARIABLE PADA 3 SCRIPT DENGAN SCRIPT CONTROLLER
+  // 6. LOCAL VARIABLE CONSISTENCY ACROSS 3 SCRIPTS ON ONE SCRIPT CONTROLLER
   // =========================================================================
-  test('memastikan nilai local variable konsisten saat berpindah antar 3 script berbeda', async ({ page, scriptCrud, inspectorCrud, variablePage }) => {
+  test('keeps local variable values consistent when switching between 3 different scripts', async ({ page, scriptCrud, inspectorCrud, variablePage }) => {
     const sceneTab = page.locator('[data-tab-id="scene"]');
     await sceneTab.click();
 
@@ -193,9 +190,9 @@ test.describe('Variable System E2E Testing', () => {
   });
 
   // =========================================================================
-  // 7. RAW JSON EDITOR (UNTUK LIST DAN MAP)
+  // 7. RAW JSON EDITOR (FOR LIST AND MAP)
   // =========================================================================
-  test('memperbarui struktur kompleks List dan Map menggunakan Raw JSON Editor', async ({ popup, variablePage }) => {
+  test('updates complex List and Map structures through the Raw JSON Editor', async ({ popup, variablePage }) => {
     await variablePage.openManager();
 
     await variablePage.createVariable({ name: 'ComplexData', type: 'list' });
@@ -219,7 +216,7 @@ test.describe('Variable System E2E Testing', () => {
   // =========================================================================
   // 8. [Bad Path] DUPLICATE MAP KEY WARNING
   // =========================================================================
-  test('[Bad Path] menolak pembuat key duplikat pada struktur Map dan menampilkan peringatan', async ({ popup, variablePage }) => {
+  test('[Bad Path] rejects duplicate keys in a Map and shows a warning', async ({ popup, variablePage }) => {
     await variablePage.openManager();
 
     await variablePage.createVariable({ name: 'ConfigMap', type: 'map' });
@@ -230,24 +227,8 @@ test.describe('Variable System E2E Testing', () => {
     await variablePage.addBtn.click();
     await variablePage.addBtn.click();
 
-    const keyInput1 = variablePage.modal.locator('input[placeholder*="Key"]').locator('nth=0');
-    const keyInput2 = variablePage.modal.locator('input[placeholder*="Key"]').locator('nth=1');
-
-    await expect(keyInput1).toBeVisible();
-    await keyInput1.focus();
-    await keyInput1.fill('duplicate_key');
-    await keyInput1.dispatchEvent('input');
-    await keyInput1.dispatchEvent('change');
-    await keyInput1.press('Enter');
-    await keyInput1.blur();
-
-    await expect(keyInput2).toBeVisible();
-    await keyInput2.focus();
-    await keyInput2.fill('duplicate_key');
-    await keyInput2.dispatchEvent('input');
-    await keyInput2.dispatchEvent('change');
-    await keyInput2.press('Enter');
-    await keyInput2.blur();
+    await variablePage.fillCollectionMapKey(0, 'duplicate_key');
+    await variablePage.fillCollectionMapKey(1, 'duplicate_key');
 
     await popup.expectPopAlert();
     await variablePage.closeManager();
@@ -257,7 +238,7 @@ test.describe('Variable System E2E Testing', () => {
   // =========================================================================
   // 9. SPAWN & CONNECT VARIABLE GET/SET VIA VARIABLE PANEL & STORE FLOW
   // =========================================================================
-  test('melakukan drag and drop node Get dan Set variable ke canvas lalu mengoneksikannya ke node lain', async ({ variablePage, nodeGraph, nodeInspector }) => {
+  test('drags Get and Set variable nodes onto the canvas and connects them to other nodes', async ({ variablePage, nodeGraph, nodeInspector }) => {
     await variablePage.openManager();
     await variablePage.createVariable({ name: 'PlayerHealth', type: 'number', isExposed: true, scope: 'Local' });
     await variablePage.closeManager();

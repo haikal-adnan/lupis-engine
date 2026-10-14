@@ -4,7 +4,7 @@ import { test, expect } from '../fixtures.js';
 test.use({
   projectOptions: {
     prefix: 'Node Inspector E2E',
-    description: 'Skenario E2E komprehensif untuk pengujian Node Inspector, Header, Ports, Parameters, Variables, Edge, dan Node-Specific Blueprint via Store Flow',
+    description: 'Comprehensive E2E scenarios for the Node Inspector: Header, Ports, Parameters, Variables, Edge and Node-Specific Blueprint via the store flow',
   },
 });
 
@@ -19,20 +19,20 @@ test.describe('Node Inspector Panel E2E Testing Suite', () => {
   // =========================================================================
   // 1. UPDATE DATA TITLE, COLOR, & DESCRIPTION (NODE HEADER)
   // =========================================================================
-  test('dapat memperbarui Header Title, Color, dan Description pada node', async ({ nodeGraph, nodeInspector }) => {
+  test('updates the Header Title, Color and Description of a node', async ({ nodeGraph, nodeInspector }) => {
     const nodeId = await nodeGraph.spawnNodeViaStore('math_add', 'Add', { x: 300, y: 200 });
     await nodeGraph.selectNodeById(nodeId);
 
     await nodeInspector.setHeaderTitle('Custom Math Addition');
     await nodeInspector.setHeaderColor('#FF5722');
-    await nodeInspector.setHeaderDescription('Mencatat penjumlahan dengan custom header');
+    await nodeInspector.setHeaderDescription('Logs the sum with a custom header');
 
     await expect(nodeInspector.titleInput).toHaveValue('Custom Math Addition');
-    await expect(nodeInspector.descriptionTextarea).toHaveValue('Mencatat penjumlahan dengan custom header');
+    await expect(nodeInspector.descriptionTextarea).toHaveValue('Logs the sum with a custom header');
     await expect(nodeInspector.colorIndicator).toHaveAttribute('style', /rgb\(255,\s*87,\s*34\)|#ff5722/i);
   });
 
-  test('dapat menghapus node terpilih melalui menu dropdown di Header Inspector', async ({ nodeGraph, nodeInspector }) => {
+  test('deletes the selected node through the Inspector header dropdown menu', async ({ nodeGraph, nodeInspector }) => {
     const nodeId = await nodeGraph.spawnNodeViaStore('event_tick', 'On Tick', { x: 300, y: 200 });
     await nodeGraph.selectNodeById(nodeId);
 
@@ -45,39 +45,32 @@ test.describe('Node Inspector Panel E2E Testing Suite', () => {
   // =========================================================================
   // 2. RENAME PORTS DAN CRUD PORTS (DYNAMIC PORTS ON)
   // =========================================================================
-  test('dapat merename input & output ports serta melakukan CRUD pada dynamic ports', async ({ nodeGraph, nodeInspector }) => {
+  test('renames input and output ports and performs CRUD on dynamic ports', async ({ nodeGraph, nodeInspector }) => {
     const nodeId = await nodeGraph.spawnNodeViaStore('math_add', 'Add', { x: 300, y: 200 });
     await nodeGraph.selectNodeById(nodeId);
 
-    const firstInputRow = nodeInspector.portsSection.locator('[data-testid="node-inspector-input-port-row"]').first();
-    await expect(firstInputRow).toBeVisible();
-    const firstInputId = await firstInputRow.getAttribute('data-port-id');
-
-    const firstOutputRow = nodeInspector.portsSection.locator('[data-testid="node-inspector-output-port-row"]').first();
-    await expect(firstOutputRow).toBeVisible();
-    const firstOutputId = await firstOutputRow.getAttribute('data-port-id');
+    const firstInputId = await nodeInspector.inputPortIdAt(0);
+    const firstOutputId = await nodeInspector.outputPortIdAt(0);
 
     await nodeInspector.renameInputPort(firstInputId, 'Input Utama');
-    await nodeInspector.renameOutputPort(firstOutputId, 'Hasil Penjumlahan');
+    await nodeInspector.renameOutputPort(firstOutputId, 'Sum Result');
 
     await expect(nodeInspector.inputPortRowById(firstInputId).getByTestId('node-inspector-input-port-label-input')).toHaveValue('Input Utama');
-    await expect(nodeInspector.outputPortRowById(firstOutputId).getByTestId('node-inspector-output-port-label-input')).toHaveValue('Hasil Penjumlahan');
+    await expect(nodeInspector.outputPortRowById(firstOutputId).getByTestId('node-inspector-output-port-label-input')).toHaveValue('Sum Result');
 
-    const portRows = nodeInspector.portsSection.locator('[data-testid="node-inspector-input-port-row"]');
+    const portRows = nodeInspector.inputPortRows;
     const initialInputRows = await portRows.count();
 
     await nodeInspector.addDynamicInputPort();
     await expect(portRows).toHaveCount(initialInputRows + 1);
 
-    const lastPortRow = portRows.last();
-    await expect(lastPortRow).toBeVisible();
-    const lastPortId = await lastPortRow.getAttribute('data-port-id');
+    const lastPortId = await nodeInspector.inputPortIdAt(-1);
 
     await nodeInspector.removeInputPort(lastPortId);
     await expect(portRows).toHaveCount(initialInputRows);
   });
 
-  test('[Bad Path] mencegah penghapusan port permanen atau terproteksi', async ({ nodeGraph, nodeInspector }) => {
+  test('[Bad Path] prevents deleting permanent or protected ports', async ({ nodeGraph, nodeInspector }) => {
     const nodeId = await nodeGraph.spawnNodeViaStore('ui_notification', 'Notification', { x: 300, y: 200 });
     await nodeGraph.selectNodeById(nodeId);
 
@@ -87,20 +80,17 @@ test.describe('Node Inspector Panel E2E Testing Suite', () => {
   });
 
   // =========================================================================
-  // 3. TESTING PARAMETER (TERHUBUNG EDGE / VARIABLE BINDING)
+  // 3. PARAMETERS (EDGE CONNECTION / VARIABLE BINDING)
   // =========================================================================
-  test('memastikan input parameter ter-disable jika terhubung edge dan dapat menggunakan Variable mode', async ({ variableCrud, nodeGraph, nodeInspector }) => {
+  test('disables a parameter input when connected by an edge and supports Variable mode', async ({ variableCrud, nodeGraph, nodeInspector }) => {
     await variableCrud.createVariable({ name: 'PlayerSpeed', type: 'number', value: 100, scope: 'Local' });
 
     const nodeAId = await nodeGraph.spawnNodeViaStore('math_add', 'Add', { x: 200, y: 200 });
     const nodeBId = await nodeGraph.spawnNodeViaStore('math_subtract', 'Subtract', { x: 500, y: 200 });
 
     await nodeGraph.selectNodeById(nodeBId);
-    const paramRows = nodeInspector.panel.locator('[data-testid="node-inspector-port-row"]');
-    await expect(paramRows.first()).toBeVisible();
-
-    const targetPortId = await paramRows.first().getAttribute('data-port-id');
-    const unboundPortId = await paramRows.nth(1).getAttribute('data-port-id');
+    const targetPortId = await nodeInspector.portIdAt(0);
+    const unboundPortId = await nodeInspector.portIdAt(1);
 
     await nodeGraph.connectPortsViaStore(nodeAId, 'out_0', nodeBId, targetPortId);
     await nodeGraph.selectNodeById(nodeBId);
@@ -116,13 +106,13 @@ test.describe('Node Inspector Panel E2E Testing Suite', () => {
   });
 
   // =========================================================================
-  // 4. PARAMETER UNIK & GENERATE INPUT UNTUK MATH ADD DYNAMIC PORTS
+  // 4. UNIQUE PARAMETERS & GENERATED INPUTS FOR MATH ADD DYNAMIC PORTS
   // =========================================================================
-  test('memastikan parameter unik Math Add melakukan sync otomatis saat dynamic port ditambahkan', async ({ nodeGraph, nodeInspector }) => {
+  test('syncs the unique Math Add parameters automatically when a dynamic port is added', async ({ nodeGraph, nodeInspector }) => {
     const nodeId = await nodeGraph.spawnNodeViaStore('math_add', 'Add', { x: 300, y: 200 });
     await nodeGraph.selectNodeById(nodeId);
 
-    const paramRows = nodeInspector.panel.locator('[data-testid="node-inspector-port-row"]');
+    const paramRows = nodeInspector.portRows;
     const initialCount = await paramRows.count();
 
     await nodeInspector.addDynamicInputPort();
@@ -130,26 +120,22 @@ test.describe('Node Inspector Panel E2E Testing Suite', () => {
 
     await expect(paramRows).toHaveCount(initialCount + 2);
 
-    const newRow = paramRows.last();
-    await expect(newRow).toBeVisible();
-    const newPortId = await newRow.getAttribute('data-port-id');
+    const newPortId = await nodeInspector.portIdAt(-1);
 
     await nodeInspector.setPortDirectNumber(newPortId, 25);
     await expect(nodeInspector.portRowById(newPortId).getByTestId('node-inspector-port-number-input').locator('input')).toHaveValue('25');
   });
 
   // =========================================================================
-  // 5. VARIABLE MODIFIER ADD-ON (MODIFIER PADA VARIABLE INPUT)
+  // 5. VARIABLE MODIFIER ADD-ON (MODIFIER ON A VARIABLE INPUT)
   // =========================================================================
-  test('dapat mengaplikasikan dan menghapus Modifier Add-on pada Variable Parameter', async ({ variableCrud, nodeGraph, nodeInspector }) => {
+  test('applies and removes a Modifier Add-on on a Variable parameter', async ({ variableCrud, nodeGraph, nodeInspector }) => {
     await variableCrud.createVariable({ name: 'BaseDamage', type: 'number', value: 50, scope: 'Local' });
 
     const nodeId = await nodeGraph.spawnNodeViaStore('math_multiply', 'Multiply', { x: 300, y: 200 });
     await nodeGraph.selectNodeById(nodeId);
 
-    const firstParamRow = nodeInspector.panel.locator('[data-testid="node-inspector-port-row"]').first();
-    await expect(firstParamRow).toBeVisible();
-    const targetPortId = await firstParamRow.getAttribute('data-port-id');
+    const targetPortId = await nodeInspector.portIdAt(0);
 
     await nodeInspector.togglePortMode(targetPortId);
     await nodeInspector.bindVariableToPort(targetPortId, 'BaseDamage');
@@ -166,9 +152,9 @@ test.describe('Node Inspector Panel E2E Testing Suite', () => {
   });
 
   // =========================================================================
-  // 6. INSPECTOR BERUBAH SAAT EDGE TERPILIH (NODE EDGE INSPECTOR)
+  // 6. INSPECTOR SWITCHES WHEN AN EDGE IS SELECTED (NODE EDGE INSPECTOR)
   // =========================================================================
-  test('mengubah tampilan Inspector ke Edge View saat edge diklik dan mengedit Modifier Edge', async ({ nodeGraph, nodeInspector }) => {
+  test('switches the Inspector to Edge View when an edge is clicked and edits the Edge Modifier', async ({ nodeGraph, nodeInspector }) => {
     const nodeAId = await nodeGraph.spawnNodeViaStore('math_add', 'Add', { x: 200, y: 200 });
     const nodeBId = await nodeGraph.spawnNodeViaStore('math_divide', 'Divide', { x: 500, y: 200 });
 
@@ -190,7 +176,7 @@ test.describe('Node Inspector Panel E2E Testing Suite', () => {
   });
 
   // =========================================================================
-  // 7. PENGUJIAN KHUSUS SPESIFIK BLUEPRINT NODE
+  // 7. NODE-SPECIFIC BLUEPRINT TESTS
   // =========================================================================
   test.describe('Node-Specific Blueprint Inspector Tests', () => {
     test('VARIABLE: mengkonfigurasi Get dan Set Variable node', async ({ variableCrud, nodeGraph, nodeInspector }) => {
@@ -204,43 +190,38 @@ test.describe('Node Inspector Panel E2E Testing Suite', () => {
       await expect(nodeInspector.titleInput).toHaveValue('Get PlayerHealth');
     });
 
-    test('NOTIFICATION: mengedit default input value pada UI & Debug Notification', async ({ nodeGraph, nodeInspector }) => {
+    test('NOTIFICATION: edits the default input value of UI & Debug Notification', async ({ nodeGraph, nodeInspector }) => {
       const nodeId = await nodeGraph.spawnNodeViaStore('ui_notification', 'Notification', { x: 300, y: 200 });
       await nodeGraph.selectNodeById(nodeId);
 
-      const portRows = nodeInspector.panel.locator('[data-testid="node-inspector-port-row"]');
-      await expect(portRows.first()).toBeVisible();
-
-      const sourcePortId = await portRows.first().getAttribute('data-port-id');
-      const msgPortId = await portRows.nth(1).getAttribute('data-port-id');
+      const sourcePortId = await nodeInspector.portIdAt(0);
+      const msgPortId = await nodeInspector.portIdAt(1);
 
       await nodeInspector.setPortDirectText(sourcePortId, 'SystemAlert');
       await nodeInspector.setPortDirectText(msgPortId, 'Quest Completed!');
 
-      await expect(nodeInspector.portRowById(sourcePortId).locator('input, textarea').first()).toHaveValue('SystemAlert');
-      await expect(nodeInspector.portRowById(msgPortId).locator('input, textarea').first()).toHaveValue('Quest Completed!');
+      await expect(nodeInspector.portField(sourcePortId)).toHaveValue('SystemAlert');
+      await expect(nodeInspector.portField(msgPortId)).toHaveValue('Quest Completed!');
     });
 
-    test('LOGIC: mengonfigurasi boolean logic And/Or dengan dynamic boolean input', async ({ nodeGraph, nodeInspector }) => {
+    test('LOGIC: configures And/Or boolean logic with dynamic boolean inputs', async ({ nodeGraph, nodeInspector }) => {
       const nodeId = await nodeGraph.spawnNodeViaStore('logic_and', 'And', { x: 300, y: 200 });
       await nodeGraph.selectNodeById(nodeId);
 
-      const firstPortRow = nodeInspector.panel.locator('[data-testid="node-inspector-port-row"]').first();
-      await expect(firstPortRow).toBeVisible();
-      const portId = await firstPortRow.getAttribute('data-port-id');
+      const portId = await nodeInspector.portIdAt(0);
 
       await nodeInspector.setPortDirectSelect(portId, 'True');
       await expect(nodeInspector.portRowById(portId)).toContainText('True');
     });
 
-    test('LIFECYCLE: menampilkan parameter kosong pada Lifecycle node tanpa editable values', async ({ nodeGraph, nodeInspector }) => {
+    test('LIFECYCLE: shows an empty parameter list on a Lifecycle node without editable values', async ({ nodeGraph, nodeInspector }) => {
       const nodeId = await nodeGraph.spawnNodeViaStore('event_game_start', 'On Game Start', { x: 300, y: 200 });
       await nodeGraph.selectNodeById(nodeId);
 
       await expect(nodeInspector.parametersSection).toBeHidden();
     });
 
-    test('OBJECT: dapat menambah dynamic property port dari Property Options dropdown', async ({ nodeGraph, nodeInspector }) => {
+    test('OBJECT: adds a dynamic property port from the Property Options dropdown', async ({ nodeGraph, nodeInspector }) => {
       const nodeId = await nodeGraph.spawnNodeViaStore('get_object', 'Get Object Info', { x: 300, y: 200 });
       await nodeGraph.selectNodeById(nodeId);
 
@@ -255,7 +236,7 @@ test.describe('Node Inspector Panel E2E Testing Suite', () => {
   // =========================================================================
   // 8. INSPECTOR SELECTION STATES (MULTI-SELECTION & EMPTY STATE)
   // =========================================================================
-  test('menampilkan state multi-selection ketika lebih dari 1 node dipilih', async ({ nodeGraph, nodeInspector }) => {
+  test('shows the multi-selection state when more than one node is selected', async ({ nodeGraph, nodeInspector }) => {
     const node1Id = await nodeGraph.spawnNodeViaStore('math_add', 'Add', { x: 200, y: 200 });
     const node2Id = await nodeGraph.spawnNodeViaStore('math_subtract', 'Subtract', { x: 500, y: 200 });
 

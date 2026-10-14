@@ -20,8 +20,8 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
-  // Timeout GLOBAL (Standar Section 2 & 13). Jangan override per-locator; untuk test
-  // yang memang lambat gunakan test.slow() sekali di awal test beserta komentar alasannya.
+  // GLOBAL timeouts (Standard Section 2 & 13). Never override per locator; for a test
+  // that is genuinely slow use test.slow() once at its start, with a comment explaining why.
   timeout: 30_000,
   expect: { timeout: 15_000 },
   workers: process.env.CI ? 1 : undefined,
@@ -38,17 +38,30 @@ export default defineConfig({
   },
   projects: [
     {
+      // Helper contract tests (Section 11.3). They run first: a helper failure stops
+      // the feature specs early instead of scattering failures across the suite.
       name: 'contract',
       testMatch: '**/contract/**/*.spec.js',
       use: chromiumUse,
     },
     {
-      // Contract project dijalankan lebih dulu (Section 11.3). Kegagalan helper
-      // menghentikan spec fitur lebih awal. Untuk iterasi cepat tanpa contract:
+      // Feature specs. For fast iteration without the contract project:
       //   npx playwright test --project=chromium --no-deps
       name: 'chromium',
-      testIgnore: '**/contract/**',
+      testIgnore: ['**/contract/**', '**/specs/blueprint/**'],
       dependencies: ['contract'],
+      use: chromiumUse,
+    },
+    {
+      // Blueprint runtime specs: each test builds a graph, boots the WebGL preview popup
+      // and waits for engine logs, which is slower than a regular UI test. Instead of
+      // per-call { timeout } overrides (Section 2) the slower budget lives here, in the
+      // project config, so it applies uniformly to every spec of this folder.
+      name: 'blueprint',
+      testMatch: '**/specs/blueprint/**/*.spec.js',
+      dependencies: ['contract'],
+      timeout: 90_000,
+      expect: { timeout: 30_000 },
       use: chromiumUse,
     },
   ],

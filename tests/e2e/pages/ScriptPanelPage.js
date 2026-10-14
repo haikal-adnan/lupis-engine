@@ -11,7 +11,7 @@ export class ScriptPanelPage {
   // ==========================================
   // LOCATORS
   // ==========================================
-  /** Tombol toggle tab "Scripts" pada bottom bar editor */
+  /** Toggle button of the "Scripts" tab in the editor bottom bar */
   get tabButton() {
     return this.page
       .getByRole('button', { name: /^scripts?$/i })
@@ -37,21 +37,21 @@ export class ScriptPanelPage {
   }
 
   /**
-   * Mencari item (script/folder) berdasarkan nama persis
+   * Finds an item (script/folder) by its exact name
    */
   itemByName(name) {
     return this.container.locator(`[data-node-name="${name}"]`).first();
   }
 
   /**
-   * Mencari item berdasarkan ID unik
+   * Finds an item by its unique ID
    */
   itemById(id) {
     return this.container.locator(`[data-node-id="${id}"]`);
   }
 
   /**
-   * Mengambil elemen breadcrumb berdasarkan nama folder
+   * Gets the breadcrumb element by folder name
    */
   breadcrumbFolder(name) {
     return this.panel.locator('button', { hasText: name }).first();
@@ -65,11 +65,11 @@ export class ScriptPanelPage {
   // ACTIONS
   // ==========================================
   /**
-   * Memastikan tab/panel Script terbuka dan siap diinteraksi.
-   * Jika panel belum terlihat, klik tombol tab di bottom bar terlebih dahulu.
+   * Makes sure the Script tab/panel is open and ready for interaction.
+   * If the panel is not visible yet, click the bottom bar tab button first.
    */
   async ensureVisible() {
-    // Settle: bottom bar harus sudah dirender sebelum count() dipakai (Section 2)
+    // Settle: the bottom bar must be rendered before count() is used (Section 2)
     await expect(this.tabButton).toBeVisible();
     if ((await this.panel.count()) === 0) {
       await this.tabButton.click();

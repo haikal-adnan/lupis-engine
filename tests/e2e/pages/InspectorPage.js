@@ -138,7 +138,7 @@ export class InspectorPage {
   }
 
   async setEntityTag(tag) {
-    // 1. Pastikan tag terdaftar pada metadata proyek Pinia
+    // 1. Make sure the tag is registered in the Pinia project metadata
     await this.page.evaluate(({ t }) => {
       const app = document.querySelector('#app')?.__vue_app__;
       const pinia = app?.config?.globalProperties?.$pinia;
@@ -151,7 +151,7 @@ export class InspectorPage {
       }
     }, { t: tag });
 
-    // 2. Pilih tag dari dropdown BaseSelect di Object Inspector
+    // 2. Pick the tag from the BaseSelect dropdown in the Object Inspector
     const tagSelect = this.objectSection.getByTestId('object-tag-select');
     await expect(tagSelect).toBeVisible();
 

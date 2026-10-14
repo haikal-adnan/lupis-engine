@@ -4,27 +4,27 @@ import { test, expect } from '../fixtures.js';
 test.use({
   projectOptions: {
     prefix: 'Node Library & Graph E2E',
-    description: 'Skenario E2E menyeluruh untuk Node Library (Search, Recents, Drag/Drop, Batch Categories) dan Graph Editor (Node & Edge Manipulation via Store, Inspector Modifiers)',
+    description: 'End-to-end scenarios for the Node Library (Search, Recents, Drag/Drop, Batch Categories) and the Graph Editor (Node & Edge Manipulation via Store, Inspector Modifiers)',
   },
 });
 
 const CATEGORY_BATCHES = [
   {
-    name: 'Batch 1: Animator sampai Events & Signals',
+    name: 'Batch 1: Animator through Events & Signals',
     categories: [
       'Animator', 'Basic Layer', 'Basic Object', 'Boolean Logic', 'Camera',
       'Collection Helpers', 'Collider System', 'Entity Management', 'Events & Signals',
     ],
   },
   {
-    name: 'Batch 2: Flow Helpers sampai Math',
+    name: 'Batch 2: Flow Helpers through Math',
     categories: [
       'Flow Helpers', 'Game Lifecycle', 'Interface', 'Keyboard Events', 'List Operations',
       'Logic & Compare', 'Loops', 'Map Operations', 'Math',
     ],
   },
   {
-    name: 'Batch 3: Mouse Events sampai Transition',
+    name: 'Batch 3: Mouse Events through Transition',
     categories: [
       'Mouse Events', 'Physics & Collision', 'Pointer & Touch', 'Random Operations',
       'Renderer', 'Scene Management', 'String Utils', 'Transform', 'Transition',
@@ -41,9 +41,9 @@ test.describe('Node Library & Graph Editor Unified E2E Testing', () => {
   });
 
   // =========================================================================
-  // 1. DRAG AND DROP DARI NODE LIBRARY
+  // 1. DRAG AND DROP FROM THE NODE LIBRARY
   // =========================================================================
-  test('dapat melakukan drag and drop node dari sidebar search ke graph canvas', async ({ nodeLibrary, nodeGraph }) => {
+  test('drags a node from the sidebar search results onto the graph canvas', async ({ nodeLibrary, nodeGraph }) => {
     await nodeLibrary.searchInSidebar('get transform');
     const searchItem = nodeLibrary.sidebarSearchItemByType('get_transform');
     await expect(searchItem).toBeVisible();
@@ -57,11 +57,11 @@ test.describe('Node Library & Graph Editor Unified E2E Testing', () => {
   // =========================================================================
   // 2. SISTEM SEARCH (MODAL DAN SIDEBAR PANEL)
   // =========================================================================
-  test('memfilter node secara reaktif pada modal library dan sidebar panel', async ({ nodeLibrary }) => {
+  test('filters nodes reactively in the library modal and the sidebar panel', async ({ nodeLibrary }) => {
     await nodeLibrary.searchInSidebar('Keyboard Events');
-    await expect(nodeLibrary.sidebarSearchItems.first()).toBeVisible();
+    await expect(nodeLibrary.sidebarSearchItems).not.toHaveCount(0);
 
-    await nodeLibrary.searchInSidebar('zzz-node-tidak-ada');
+    await nodeLibrary.searchInSidebar('zzz-node-not-found');
     await expect(nodeLibrary.sidebarNoResults).toBeVisible();
     await expect(nodeLibrary.sidebarSearchItems).toHaveCount(0);
 
@@ -75,7 +75,7 @@ test.describe('Node Library & Graph Editor Unified E2E Testing', () => {
     await nodeLibrary.searchInModal(label);
     await expect(nodeLibrary.modalItemByLabel(label)).toBeVisible();
 
-    await nodeLibrary.searchInModal('zzz-node-tidak-ada');
+    await nodeLibrary.searchInModal('zzz-node-not-found');
     await expect(nodeLibrary.modalNoResults).toBeVisible();
 
     await nodeLibrary.clearModalSearch();
@@ -86,7 +86,7 @@ test.describe('Node Library & Graph Editor Unified E2E Testing', () => {
   // =========================================================================
   // 3. SISTEM RECENT (MODAL DAN SIDEBAR PANEL)
   // =========================================================================
-  test('mencatat dan menampilkan node yang baru saja ditambahkan pada daftar Recent', async ({ nodeLibrary, nodeGraph }) => {
+  test('records recently added nodes and lists them in Recent', async ({ nodeLibrary, nodeGraph }) => {
     const type = await nodeLibrary.addFromSidebarGroup('Game Lifecycle');
     await expect(nodeGraph.nodesByType(type)).toHaveCount(1);
 
@@ -99,9 +99,9 @@ test.describe('Node Library & Graph Editor Unified E2E Testing', () => {
   });
 
   // =========================================================================
-  // 4. SISTEM DOUBLE CLICK UNTUK MENAMBAHKAN NODE
+  // 4. DOUBLE-CLICK TO ADD A NODE
   // =========================================================================
-  test('menambahkan node ke graph canvas saat double-click dari modal maupun sidebar', async ({ nodeLibrary, nodeGraph }) => {
+  test('adds a node to the graph canvas on double-click from both the modal and the sidebar', async ({ nodeLibrary, nodeGraph }) => {
     const modalType = await nodeLibrary.addFirstFromModalCategory('Math');
     await expect(nodeGraph.nodesByType(modalType)).toHaveCount(1);
 
@@ -110,11 +110,12 @@ test.describe('Node Library & Graph Editor Unified E2E Testing', () => {
   });
 
   // =========================================================================
-  // 5. SELURUH NODE PER KATEGORI (BATCH TESTING)
+  // 5. EVERY NODE PER CATEGORY (BATCH TESTING)
   // =========================================================================
-  test.describe('Penambahan Seluruh Node per Kategori (Tanpa Error)', () => {
+  test.describe('Adding Every Node per Category (No Errors)', () => {
     for (const { name, categories } of CATEGORY_BATCHES) {
       test(name, async ({ nodeLibrary, nodeGraph }) => {
+        // Slow by design: one test adds every node of several categories, so the default budget is tripled.
         test.slow();
 
         const pageErrors = nodeGraph.collectPageErrors();
@@ -130,7 +131,7 @@ test.describe('Node Library & Graph Editor Unified E2E Testing', () => {
             expectedTotal += 1;
           }
 
-          await expect(nodeGraph.nodes, `Jumlah node setelah kategori "${category}"`).toHaveCount(expectedTotal);
+          await expect(nodeGraph.nodes, `Node count after category "${category}"`).toHaveCount(expectedTotal);
         }
 
         expect(pageErrors).toEqual([]);
@@ -141,7 +142,7 @@ test.describe('Node Library & Graph Editor Unified E2E Testing', () => {
   // =========================================================================
   // 6. MANIPULASI NODE DIRECT VIA STORE
   // =========================================================================
-  test('dapat membuat, memilih, memindahkan, dan menghapus node via Pinia store', async ({ nodeGraph }) => {
+  test('creates, selects, moves and deletes a node via the Pinia store', async ({ nodeGraph }) => {
     const nodeId = await nodeGraph.spawnNodeViaStore('get_transform', 'Get Transform', { x: 350, y: 200 });
     await expect(nodeGraph.nodeById(nodeId)).toBeVisible();
 
@@ -155,7 +156,7 @@ test.describe('Node Library & Graph Editor Unified E2E Testing', () => {
   // =========================================================================
   // 7. KONEKSI EDGE & MODIFIER PROPERTY INSPECTOR
   // =========================================================================
-  test('dapat mengoneksikan edge, memilihnya, dan mengedit modifier di Property Inspector', async ({ nodeGraph }) => {
+  test('connects an edge, selects it and edits its modifier in the Property Inspector', async ({ nodeGraph }) => {
     const sourceId = await nodeGraph.spawnNodeViaStore('math_add', 'Source Node', { x: 200, y: 200 });
     const targetId = await nodeGraph.spawnNodeViaStore('math_subtract', 'Target Node', { x: 500, y: 200 });
 
@@ -176,7 +177,7 @@ test.describe('Node Library & Graph Editor Unified E2E Testing', () => {
   // =========================================================================
   // 8. [Bad Path] VALIDASI KONEKSI EDGE
   // =========================================================================
-  test('[Bad Path] menolak koneksi edge jika source dan target node sama', async ({ nodeGraph }) => {
+  test('[Bad Path] rejects an edge connection when source and target are the same node', async ({ nodeGraph }) => {
     const nodeId = await nodeGraph.spawnNodeViaStore('math_add', 'Self Node', { x: 300, y: 200 });
 
     await nodeGraph.connectPortsViaStore(nodeId, 'exec_out', nodeId, 'exec_in');

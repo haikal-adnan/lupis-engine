@@ -13,15 +13,15 @@ export class PrefabCrudObject {
   }
 
   /**
-   * Memastikan tab/panel prefab aktif dan terbuka
+   * Makes sure the prefab tab/panel is active and open
    */
   async ensureReady() {
     await this.prefabPage.ensureVisible();
   }
 
   /**
-   * Helper facade untuk membuat Empty Prefab di tab tertentu
-   * @param {string} name - Nama prefab yang ingin dibuat
+   * Facade helper that creates an Empty Prefab in a given tab
+   * @param {string} name - Name of the prefab to create
    * @param {'world' | 'ui'} tab - Target tab section
    */
   async createEmptyPrefab(name = 'New_Prefab', tab = 'world') {
@@ -34,8 +34,8 @@ export class PrefabCrudObject {
   }
 
   /**
-   * Helper facade untuk membuat Folder Prefab baru
-   * @param {string} folderName - Nama folder yang ingin dibuat
+   * Facade helper that creates a new Prefab folder
+   * @param {string} folderName - Name of the folder to create
    * @param {'world' | 'ui'} tab - Target tab section
    */
   async createFolder(folderName = 'New Folder', tab = 'world') {
@@ -49,7 +49,7 @@ export class PrefabCrudObject {
   }
 
   /**
-   * Helper facade untuk masuk ke dalam folder tertentu
+   * Facade helper that enters a given folder
    * @param {string} folderName
    */
   async enterFolder(folderName) {

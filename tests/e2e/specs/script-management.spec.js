@@ -3,7 +3,7 @@ import { test, expect } from '../fixtures.js';
 test.use({
   projectOptions: {
     prefix: 'Script E2E',
-    description: 'Workspace isolasi untuk E2E Testing Panel Script & Script Controller Integration',
+    description: 'Isolated workspace for Script Panel & Script Controller integration E2E tests',
   },
 });
 
@@ -408,7 +408,7 @@ test.describe('Script Panel E2E Management', () => {
       await scriptItem.scrollIntoViewIfNeeded();
       await popup.selectContextMenu(scriptItem, 'Add to StatusText');
 
-      // Verifikasi seluruh attachment script
+      // Verify every script attachment
       await spriteEntity.click();
       await expect(inspector.scriptControllerSection).toBeVisible();
       await expect(inspector.scriptControllerSection.getByTestId('script-controller-dropdown-trigger')).toContainText(sharedScriptName);

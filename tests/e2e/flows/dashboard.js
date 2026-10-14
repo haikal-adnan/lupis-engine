@@ -7,10 +7,10 @@ export async function ensureProject(page, { name, description = '' }) {
   await page.goto('/');
   await page.waitForLoadState('domcontentloaded');
 
-  // 1. Bidik card menggunakan data-testid dan data-project-name
+  // 1. Target the card by data-testid and data-project-name
   const card = page.locator(`[data-testid="project-card"][data-project-name="${name}"]`);
 
-  // 2. Gabungkan locator tombol pembuat proyek (Empty state & Header actions)
+  // 2. Combine the create-project button locators (empty state and header actions)
   const createBtn = page
     .getByTestId('empty-create-project-btn')
     .or(page.getByTestId('create-project-btn'))
@@ -18,19 +18,19 @@ export async function ensureProject(page, { name, description = '' }) {
     .first();
 
   // 3. SETTLE CHECK (Sangat Penting! Section 5.1)
-  // Tunggu sampai dashboard merender SALAH SATU: kartu proyek yang ada ATAU tombol buat proyek.
-  // Tanpa ini, count() di bawah akan membaca 0 saat aplikasi Vue sedang loading async data.
+  // Wait until the dashboard renders EITHER the existing project card OR a create-project button.
+  // Without this, count() below reads 0 while the Vue app is still loading async data.
   await expect(card.or(createBtn).first()).toBeVisible();
 
-  // 4. Aman dipanggil: count() sekarang merefleksikan state aktual DOM
+  // 4. Safe to call: count() now reflects the actual DOM state
   if ((await card.count()) === 0) {
     await createBtn.click();
 
-    // Verifikasi modal siap via role semantik atau testid
+    // Verify the modal is ready through its semantic role
     const modal = page.getByRole('dialog', { name: 'Buat Proyek Baru' });
     await expect(modal).toBeVisible();
 
-    // Mengisi form modal via BaseControlHelper
+    // Fill the modal form through BaseControlHelper
     await controls.fillInput('project-name-input', name, modal);
     if (description) {
       await controls.fillInput('project-desc-input', description, modal);

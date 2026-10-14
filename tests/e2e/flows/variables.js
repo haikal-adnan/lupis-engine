@@ -15,7 +15,7 @@ export class VariableCrudObject {
   }
 
   /**
-   * Mengisi nilai variabel di dalam row modal sesuai tipe data
+   * Fills the variable value inside a modal row according to its data type
    */
   async setVariableValueInRow(row, type, value) {
     if (value === null || value === undefined) return;
@@ -30,17 +30,12 @@ export class VariableCrudObject {
       await input.fill(String(value));
       await input.press('Enter');
     } else if (lowerType === 'boolean') {
-      const boolSelect = row.getByTestId('variable-modal-value-bool-select').first();
-      await boolSelect.click();
-      const boolOption = this.page.getByTestId('select-option').filter({
-        hasText: value ? 'True' : 'False',
-      }).first();
-      await boolOption.click().catch(async () => {});
+      await this.variablePage.setBooleanValue(row, Boolean(value));
     }
   }
 
   /**
-   * Membuat variabel baru lengkap dengan penentuan nilai awal dan scope
+   * Creates a new variable, including its initial value and scope
    */
   async createVariable({
     name = 'NewVar',
@@ -62,7 +57,7 @@ export class VariableCrudObject {
   }
 
   /**
-   * Menghapus variabel berdasarkan nama dan scope
+   * Deletes a variable by name and scope
    */
   async deleteVariable(name, scope = 'Local', autoClose = true) {
     await this.variablePage.openManager();
@@ -79,7 +74,7 @@ export class VariableCrudObject {
   }
 
   /**
-   * Menduplikasi variabel dan memastikan hasil klon memiliki suffix _copy
+   * Duplicates a variable and verifies the clone has the _copy suffix
    */
   async duplicateVariable(name, scope = 'Local', autoClose = true) {
     await this.variablePage.openManager();
@@ -98,7 +93,7 @@ export class VariableCrudObject {
   }
 
   /**
-   * Melakukan pencarian variabel di modal
+   * Searches variables in the modal
    */
   async searchVariable(query) {
     await this.variablePage.openManager();
@@ -106,7 +101,7 @@ export class VariableCrudObject {
   }
 
   /**
-   * Memperbarui variabel koleksi (List/Map) melalui Raw JSON Editor
+   * Updates a collection variable (List/Map) through the Raw JSON Editor
    */
   async updateRawJson(variableName, jsonPayload, popupHelper = null, scope = 'Local', autoClose = true) {
     await this.variablePage.openManager();
@@ -134,7 +129,7 @@ export class VariableCrudObject {
   }
 
   /**
-   * Memasukkan key berulang pada variabel Map (digunakan untuk pengujian duplikasi key/bad path)
+   * Enters repeated keys on a Map variable (used for duplicate-key / bad-path tests)
    */
   async configureMapKeys(variableName, keys = [], popupHelper = null, scope = 'Local') {
     await this.variablePage.openManager();
@@ -157,7 +152,7 @@ export class VariableCrudObject {
   }
 
   /**
-   * Memverifikasi variabel yang di-expose di Variable Panel utama
+   * Verifies the variables exposed in the main Variable Panel
    */
   async verifyExposedValue(name, scope, expectedValue) {
     const row = this.variablePage.panelItemRow(name, scope);
@@ -170,7 +165,7 @@ export class VariableCrudObject {
   }
 
   /**
-   * Memperbarui nilai variabel di Inspector Script Controller
+   * Updates a variable value in the Script Controller Inspector
    */
   async setInspectorVariableValue(inspectorCrud, variableName, value, type = 'number') {
     const variableRow = inspectorCrud.inspector.scriptControllerSection.locator(

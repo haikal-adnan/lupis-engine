@@ -237,7 +237,7 @@ export class AnimatorPage {
 
   async openSettingSection() {
     await expect(this.settingSection).toBeVisible();
-    // Section collapsed hanya disembunyikan (tetap ada di DOM), jadi hitung yang TERLIHAT
+    // Collapsed sections are only hidden (still in the DOM), so count the VISIBLE ones
     const visibleCheckbox = this.settingShadowCheckbox.and(this.page.locator(':visible'));
     if ((await visibleCheckbox.count()) === 0) {
       await this.settingSection.getByText('Editor Settings', { exact: true }).click();

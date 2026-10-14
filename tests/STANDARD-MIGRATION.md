@@ -1,61 +1,64 @@
-# Penyesuaian E2E ke Testing Standard
+# E2E Testing Standard Alignment
 
-Diverifikasi hanya secara STATIS (sintaks + `node scripts/check-standard.mjs`).
-Playwright dan aplikasi tidak bisa dijalankan saat penyesuaian ini dibuat, jadi
-jalankan `npx playwright test --project=contract` lalu seluruh suite sebelum merge.
+Verification status: **static only**. Syntax of every file was checked and
+`node scripts/check-standard.mjs` passes, but Playwright and the application could not be
+run while preparing this change. Run the contract project and then the whole suite before merging:
 
-## 1. Yang diubah
+```
+node scripts/check-standard.mjs                  # static standard check (CI)
+npx eslint e2e                                   # needs: npm i -D eslint eslint-plugin-playwright
+npx playwright test --project=contract           # helper contract tests first
+npx playwright test                              # contract, then chromium + blueprint projects
+npx playwright test --repeat-each=10             # flakiness check (Section 14.3)
+```
 
-| Area | Perubahan | Section |
+## 1. What changed in this round
+
+| Area | Change | Section |
 |---|---|---|
-| `playwright.config.js` | `timeout 30s`, `expect.timeout 8s`, `actionTimeout 8s`; `retries` CI 2 -> 1; project `chromium-with-contract` dihapus, `chromium` kini `dependencies: ['contract']`. Args WebGL, baseURL, reporter, workers dipertahankan. Iterasi cepat: `--project=chromium --no-deps` | 13 |
-| `AssetPanelPage.upload` | hapus `{ timeout: 10000 }` | 2 |
-| `HierarchyPage` | tambah `nodeIds()`, `expectNewNode()`, `addEntity()` (node baru dikunci lewat `data-node-id`); hapus `nodesByText()`; hapus fallback `textContent` di `snapshot()`; hapus `.first()` di `addLayerToSection` | 7.3, 8, 10 |
-| Semua spec/flow/contract | `nodesByText(/Empty/i).first()` / `.nth()` diganti `addEntity` / `expectNewNode` / `nodeById` / `nodeByName` | 7.3, 8 |
-| `hierarchy-management.spec` | cabang `if (childId && parentId)` dihapus; hitungan nama (`'Hero Sprite'` x2/x3) diganti identitas node; tombol OK dialog eksak; `[Bad Path]` pada test hapus scene | 3.7, 8, 10 |
-| `flows/hierarchy` | `EntityCrud.create` lewat `addEntity`; fallback class Tailwind `.bg-accent, .border-b-2` pada tab UI Editor dihapus | 7.1, 7.3 |
-| `flows/animator`, `AnimatorPage` | hapus semua `.catch(() => false)` dan `isVisible()`; hapus pembacaan class `bg-primary`; hapus fallback `has-text("Clear")`, `.lucide-play`, dll.; hapus `.first()` pada test ID singleton | 7.3, 9 |
-| `animator-management.spec` | `toHaveClass(/bg-.../)` -> `aria-pressed`; fallback `[aria-selected]` dihapus; `.first()` pada hasil search diganti `toHaveCount(2)` | 7.1, 10 |
-| `script-management.spec` | `try { confirmAction } catch {}` dihapus | 9 |
-| `flows/scripts` | `.catch(() => {})` dan probe `isVisible()` dihapus | 9 |
-| `InspectorPage` | `ensure*Component` memakai `_settle()` lalu `count()`; toggle via `setChecked`; tambah `field()` dan `checkbox()` agar spec tidak mengulang `.locator('input').first()` | 2, 9.1 |
-| `PrefabPage`, `ScriptPanelPage`, `AssetPanelPage` | `ensureVisible/ensureOpen`: settle dulu, lalu `count()` | 2, 9.1 |
-| Contract spec | trigger scene options pakai test ID eksplisit | 11 poin 6 |
-| Baru | `eslint.config.js`, `scripts/check-standard.mjs` (cek CI statis) | 13 |
+| Language | Every test title, `describe` name, comment, JSDoc, error message and test-data string is now English. Only real application UI labels stay Indonesian (`Buat Proyek Baru`, `Ganti Nama`, `Simpan`) because they are matched against the app. | 2 |
+| Folder layout | `e2e/blueprint/*.spec.js` moved to `e2e/specs/blueprint/` so all feature specs follow the one layout (imports now `../../fixtures.js`). | 4.5 |
+| Test titles | Numeric prefixes (`1.`, `2.1`) removed from the blueprint specs; order is not part of a test's identity. | 2, 12 |
+| `playwright.config.js` | New `blueprint` project (`timeout 90s`, `expect.timeout 30s`) for the slow WebGL preview specs. `chromium` ignores that folder. This replaces the per-call `{ timeout: 30_000 }` / `{ timeout: 15_000 }` that lived in `PreviewPage`. | 2, 13 |
+| `PreviewPage` | Removed both explicit timeouts; rewritten with consistent formatting; grouped into editor-side capture, popup, and diagnostics. | 2 |
+| `BlueprintTestRunner` | Split into private stage methods and wrapped in `test.step` (Graph build, Preview boot, Logic evaluation). Failures keep the stage label and the original error as `cause`. Removed the unused `expect` import. | 11, 14.2 |
+| `VariablePage`, `flows/variables` | Removed every `.catch(() => {})` and `.catch(async () => ...)`. Native `<select>` / checkbox branches are decided deterministically from the element. Added `setBooleanValue()` (delegates to `BaseControlHelper.selectOption`); the flow and the spec reuse it. Map key `locator('nth=...')` replaced by `.nth()` inside the Page Object. | 9, 11 |
+| `variable-management.spec` | Spec no longer repeats locator logic: uses `setBooleanValue`, `openRowMenu`, `fillCollectionMapKey`; no `.first()`, `.nth()`, `.catch()`. | 4.4, 7.3, 9 |
+| `NodeInspectorPage` | Added `inputPortRows`, `outputPortRows`, `portRows`, `inputPortIdAt/outputPortIdAt/portIdAt(index)` (`-1` = last) and `portField(portId)`. | 4.4, 7.3 |
+| `node-inspector-management.spec`, `node-graph-management.spec` | Replaced every `.first()` / `.nth()` / `.last()` with the accessors above (ESLint `no-nth-methods` is an error in specs). | 7.3 |
+| `node-graph-management.spec` | `test.slow()` now has a comment stating why (Section 2). | 2 |
+| `PopupHelper.confirmAction` | Button text is regex-escaped before building the fallback `RegExp`. Additive, no caller changes. | 11 |
+| New `scripts/check-standard.mjs` | Dependency-free CI check: banned APIs (`waitForTimeout`, `networkidle`, `force`, swallowed `.catch`, explicit `timeout`, `toHaveClass`, `.only`, serial), `.first/.nth` and Playwright imports in specs, `should` titles, and Indonesian text. | 13 |
+| `fixtures.js` | Formatting fix, English comments. | - |
 
-## 2. Perlu perubahan komponen Vue (test akan gagal sampai ini dibuat)
+## 2. Component contract changes still needed (tests fail until the app provides them)
 
-Standar 14.2 #3: perbaiki kontraknya di aplikasi, jangan melonggarkan test.
+Standard 14.2 #3: fix the contract in the application, do not loosen the tests.
 
-1. `animator-property-flipx-btn` dan `animator-timeline-play-toggle`: render `aria-pressed="true|false"` (sebelumnya dibaca dari class `bg-primary/20` dan `bg-amber-500`).
-2. Tab workspace (Animator dan Inspector spec): atribut `data-tab-id="<entityId>"` harus ada. Tab "UI Editor": beri test ID sendiri lalu ganti selector `[aria-selected="true"]:not([data-testid="hierarchy-node"])` di `flows/hierarchy.js` dan hierarchy spec (ada penanda TODO).
-3. Asset panel: `AssetPanelPage.panel` masih memakai class Tailwind `div.relative.h-full.flex.flex-col` (dilarang 7.1). Usul: `data-testid="asset-panel"`.
+1. `animator-property-flipx-btn` and `animator-timeline-play-toggle` must render `aria-pressed="true|false"`.
+2. Workspace tabs need `data-tab-id="<entityId>"` (Animator and Inspector specs). The "UI Editor" tab needs its own test ID; then replace the `[aria-selected="true"]:not([data-testid="hierarchy-node"])` selector in `flows/hierarchy.js` and the hierarchy spec (TODO markers are in place).
+3. Asset panel: `AssetPanelPage.panel` still uses Tailwind classes. Proposal: `data-testid="asset-panel"`.
+4. `animator-tree-node` should expose `aria-selected` (TODO in `flows/animator.js`).
 
-## 3. Asumsi yang perlu Anda konfirmasi
+## 3. Assumptions to confirm
 
-- `addEntity` mengharapkan TEPAT satu node baru di DOM setelah menu dipilih (termasuk "Add Child": parent harus ter-expand otomatis).
-- Setelah **Cut**, node langsung hilang dari tree (test context menu hierarchy).
-- Menghapus Script Controller lewat section menu **selalu** memunculkan dialog konfirmasi (sebelumnya try/catch menutupi ketidakpastian ini). Jika aplikasi memang langsung menghapus, hapus baris `confirmAction` itu.
-- `.first()` yang dihapus pada test ID singleton (`AnimatorPage`, `PrefabPage.itemByName`) bisa memunculkan error strict mode jika ada ID ganda di DOM. Perbaiki ID gandanya di komponen; jangan tambah `.first()` lagi (14.2 #4).
-- Upload asset yang lambat: naikkan `expect.timeout` global, bukan per-call.
+- `addEntity` expects EXACTLY one new node in the DOM after a menu action (including "Add Child": the parent must expand automatically).
+- After **Cut**, the node disappears from the tree right away.
+- Deleting a Script Controller from the section menu always shows a confirmation dialog.
+- Removing `.first()` on singleton test IDs (`AnimatorPage`, `PrefabPage.itemByName`) can surface strict-mode errors if an ID is duplicated in the DOM. Fix the duplicate ID in the component; do not add `.first()` back.
+- Slow asset uploads: raise the global `expect.timeout`, not a per-call one.
+- Blueprint specs now run in the `blueprint` project. `npx playwright test --project=chromium` no longer includes them; run `--project=blueprint` (or no `--project`) to execute them.
+- `VariablePage.createVariable`: if `variable-modal-expose-checkbox` is a wrapper element it is clicked, if it is a native checkbox it uses `setChecked(true)`. Confirm which one the component renders and keep only that branch.
 
-## 4. Sengaja TIDAK diubah (butuh PR terpisah dengan contract test)
+## 4. Deliberately NOT changed (needs a separate PR with contract tests)
 
-Helper bersama berubah hanya secara aditif dan harus dijaga contract test (11.1, 11.3). Penyimpangan yang masih ada:
+Shared helpers change additively only and must stay guarded by contract tests (11.1, 11.3). Remaining deviations:
 
-- `PopupHelper.fillPromptAndSubmit/fillPromptAndCancel/confirmAction`: union fuzzy `getByRole('dialog', { name }).or(getByRole('dialog'))` dan fallback `hasText: new RegExp(...)`. Perlu `aria-labelledby` pada dialog agar bisa dikunci per nama.
-- `PopupHelper.selectContextMenu`: menutup menu lama dengan Escape (standar 11.2: assert tidak ada menu terbuka), memakai `dispatchEvent('click')`, dan belum ada probe `MENU_OPEN_PROBE_MS`.
-- `BaseControlHelper`: fallback `locator('button', { hasText })` pada beberapa method; `clickSelectAction` memakai `getByRole('menu').last()` (Section 11.2 melarang `[role="menu"]` tanpa scope).
-- Inspector spec: `getByText(/Restricted|Cannot add components/i)`, `/Custom Shape Inspector|Shape Editor/i`, `/Tile Palette|Tilemap/i`, `/Clip|Properties/i` masih regex parsial; butuh test ID atau teks eksak dari komponen.
-- ID inspector lama (`editor-*-section`, `transform-*`, dst.) belum dimigrasi ke 7.4 (standar meminta PR tersendiri).
-- `ensureProject` dibiarkan sama dengan contoh Section 5.1.
-
-## 4b. Menjalankan pemeriksaan
-
-```
-node scripts/check-standard.mjs         # cek statis (CI)
-npx eslint e2e                          # butuh: npm i -D eslint eslint-plugin-playwright
-npx playwright test --project=contract
-npx playwright test                     # contract dulu, lalu spec fitur
-npx playwright test --repeat-each=10    # cek flakiness (Section 14.3)
-```
+- `PopupHelper.fillPromptAndSubmit/fillPromptAndCancel/confirmAction`: fuzzy `getByRole('dialog', { name }).or(getByRole('dialog'))` union and `hasText` fallbacks. Needs `aria-labelledby` on the dialog so it can be pinned by name.
+- `PopupHelper.selectContextMenu`: closes a lingering menu with Escape (11.2 says to assert none is open), uses `dispatchEvent('click')`, no `MENU_OPEN_PROBE_MS` probe yet.
+- `BaseControlHelper`: `locator('button', { hasText })` fallbacks; `clickSelectAction` uses `getByRole('menu').last()` and `menu.locator('button, li, div', { hasText })` (7.3 / 11.2).
+- `VariablePage`: `modal` has a Tailwind-class fallback (`.fixed.inset-0`) and `itemRowByName` combines an `input[value=...]` filter with `data-variable-name` plus `.first()`. Both need the component contract to be confirmed first (`variable-modal`, `data-variable-name` on the row).
+- Inspector spec: partial-text regexes (`/Restricted|Cannot add components/i`, `/Tile Palette|Tilemap/i`, ...) need exact text or test IDs from the components.
+- Legacy inspector IDs (`editor-*-section`, `transform-*`, ...) are not migrated to 7.4 yet.
+- `ensureProject` matches the Section 5.1 example, including the `getByRole('button', { name: /create|new/i })` union and `.first()`.
+- `expect.timeout` / `actionTimeout` are `15_000` in the config (the Section 13 baseline is `8_000`). Lower them once uploads and engine boot are verified to be fast enough.

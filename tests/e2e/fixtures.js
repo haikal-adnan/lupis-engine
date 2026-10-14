@@ -27,7 +27,7 @@ import { ensureProject } from './flows/dashboard.js';
 import { BlueprintTestRunner } from './flows/blueprint.js';
 
 export const test = base.extend({
-  // Nonaktifkan animasi dan transisi CSS di browser untuk isolasi pengujian E2E
+  // Disable CSS animations and transitions so E2E runs stay deterministic
   page: async ({ page }, use) => {
     await page.addInitScript(() => {
       window.addEventListener('DOMContentLoaded', () => {
@@ -46,7 +46,7 @@ export const test = base.extend({
   },
 
   projectOptions: [
-    { prefix: 'E2E', description: 'Workspace isolasi untuk E2E testing' },
+    { prefix: 'E2E', description: 'Isolated workspace for E2E testing' },
     { option: true },
   ],
 
@@ -112,9 +112,10 @@ export const test = base.extend({
   },
 
   previewPage: async ({ page, project }, use) => {
-  await use(new PreviewPage(page));
-},
-  // Alias nodeLibrary ke instance nodeGraph setelah penggabungan Page Object
+    await use(new PreviewPage(page));
+  },
+
+  // nodeLibrary is an alias of the nodeGraph page object (they were merged into one)
   nodeLibrary: async ({ nodeGraph }, use) => {
     await use(nodeGraph);
   },

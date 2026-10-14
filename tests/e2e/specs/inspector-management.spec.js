@@ -8,7 +8,7 @@ test.use({
 });
 
 /**
- * Spy Event Bus Engine untuk memverifikasi payload data sinkronisasi WebGL secara terisolasi
+ * Engine event bus spy that verifies WebGL sync payloads in isolation
  */
 async function installBusSpy(page) {
   await page.waitForFunction(() => !!(window.bus || window.$bus));
@@ -32,14 +32,14 @@ async function installBusSpy(page) {
 }
 
 /**
- * Tab workspace yang sedang aktif dikunci via data-tab-id (dirender BaseTab di tab bar).
+ * The active workspace tab is locked via data-tab-id (rendered by BaseTab in the tab bar).
  */
 function activeWorkspaceTab(page, entityId) {
   return page.locator(`[data-tab-id="${entityId}"]`);
 }
 
 /**
- * Helper internal untuk membuat Prefab via Context Menu Hierarchy secara stabil
+ * Internal helper that creates a Prefab through the Hierarchy context menu reliably
  */
 async function createPrefabFromEntity(page, hierarchy, popup, entityNode, prefabName) {
   await expect(entityNode).toBeVisible();
@@ -75,7 +75,7 @@ test.describe('Property Inspector: Basic Components & Prefab E2E', () => {
 
     const showGridCheckbox = inspector.checkbox('project-show-grid-toggle');
 
-    // State awal dibuat deterministik (setChecked menunggu & memverifikasi), bukan dibaca sesaat
+    // The initial state is made deterministic (setChecked waits and verifies) instead of being read at a single point in time
     await showGridCheckbox.setChecked(true);
     await expect(showGridCheckbox).toBeChecked();
 
@@ -264,7 +264,7 @@ test.describe('Property Inspector: Basic Components & Prefab E2E', () => {
     const overrideBadge = objectSection.getByText('Override', { exact: true });
     await expect(overrideBadge).toBeVisible();
 
-    // Hook struktural (Section 7.5d): trigger milik PropertySection di dalam wrapper object section
+    // Structural hook (Section 7.5d): PropertySection trigger inside the object section wrapper
     const menuTrigger = objectSection.locator('[data-element="section-menu-trigger"]');
     await expect(menuTrigger).toBeVisible();
     await menuTrigger.click();
@@ -447,7 +447,7 @@ test.describe('Property Inspector: Assets, Scripts & Tab Navigation Components E
     await inspector.addComponentContainer.scrollIntoViewIfNeeded();
     await page.getByTestId('add-component-select').click();
 
-    // Opsi dropdown tidak punya test ID per-item: pakai select-option generik + teks
+    // Dropdown options have no per-item test ID: use the generic select-option + its text
     const textRendererOption = page.getByTestId('select-option').filter({ hasText: 'Text Renderer' });
     await expect(textRendererOption).toHaveAttribute('aria-disabled', 'true');
   });

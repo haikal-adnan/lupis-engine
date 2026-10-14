@@ -23,8 +23,8 @@ export class AnimatorCrudObject {
 
   async ensureClipSelected(clipNode) {
     await expect(clipNode).toBeVisible();
-    // selectClip() men-toggle (klik clip aktif = deselect), jadi klik hanya jika properti belum tampil.
-    // TODO kontrak: beri animator-tree-node atribut aria-selected agar bisa pindah antar-clip dengan benar.
+    // selectClip() toggles (clicking the active clip deselects it), so only click if the properties are not shown yet.
+    // TODO contract: give animator-tree-node an aria-selected attribute so switching between clips is reliable.
     if ((await this.animatorPage.clipNameInput.count()) === 0) {
       await clipNode.click();
     }
@@ -74,7 +74,7 @@ export class AnimatorCrudObject {
       await this.animatorPage.fpsInput.press('Enter');
     }
     if (filterMode) {
-      // Lewatkan container agar scope trigger terisolasi pada filterSelect
+      // Pass the container so the trigger scope stays isolated for filterSelect
       await this.controls.selectOption(
         'animator-property-filter-select',
         filterMode,
@@ -83,7 +83,7 @@ export class AnimatorCrudObject {
     }
     if (loop !== undefined) {
       const targetText = typeof loop === 'string' ? loop : (loop ? 'True (Loop)' : 'False (Once)');
-      // Lewatkan container agar scope trigger terisolasi pada loopSelect
+      // Pass the container so the trigger scope stays isolated for loopSelect
       await this.controls.selectOption(
         'animator-property-loop-select',
         targetText,

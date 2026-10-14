@@ -11,15 +11,15 @@ export class PopupHelper {
   }
 
   /**
-   * Seluruh context menu aktif (root + submenu), urut dari root.
-   * Scope ke testid `context-menu` (BaseContextMenu) — BUKAN `[role="menu"]`, karena
-   * dropdown toolbar/section juga ber-role="menu" dan akan ikut terhitung.
+   * All active context menus (root + submenus), ordered from the root.
+   * Scoped to the `context-menu` test ID (BaseContextMenu), NOT `[role="menu"]`, because
+   * toolbar/section dropdowns also use role="menu" and would be counted as well.
    */
   get activeMenus() {
     return this.page.getByTestId('context-menu');
   }
 
-  /** Item context menu berdasarkan label; level 0 = root, 1 = submenu, dst. */
+  /** Context menu item by label; level 0 = root, 1 = submenu, and so on. */
   contextMenuItem(label, level = 0) {
     return this.activeMenus
       .nth(level)
@@ -32,7 +32,7 @@ export class PopupHelper {
     await targetLocator.scrollIntoViewIfNeeded();
     await expect(targetLocator).toBeVisible();
 
-    // 1. Flush fokus input aktif & tunggu 1 frame agar siklus VDOM Vue benar-benar idle
+    // 1. Blur the active input and wait one frame so the Vue render cycle is idle
     await this.page.evaluate(() => {
       if (document.activeElement && document.activeElement !== document.body) {
         document.activeElement.blur();
@@ -40,16 +40,16 @@ export class PopupHelper {
     });
     await this.page.evaluate(() => new Promise((resolve) => requestAnimationFrame(resolve)));
 
-    // 2. Tutup menu menggantung jika ada
+    // 2. Close a lingering menu, if any
     if (await this.activeMenus.count() > 0) {
       await this.page.keyboard.press('Escape');
       await expect(this.activeMenus).toHaveCount(0);
     }
 
-    // 3. Buka context menu
+    // 3. Open the context menu
     await targetLocator.click({ button: 'right' });
 
-    // 4. Pastikan root menu dirender
+    // 4. Make sure the root menu is rendered
     await expect(this.activeMenus.first()).toBeVisible();
 
     for (let i = 0; i < menuPath.length; i++) {
@@ -60,10 +60,10 @@ export class PopupHelper {
         await menuItem.hover();
         await expect(this.activeMenus).toHaveCount(i + 2);
       } else {
-        // 5. Eksekusi click langsung pada elemen yang sudah terverifikasi visible
+        // 5. Click the item that was just verified as visible
         await menuItem.dispatchEvent('click');
 
-        // Verifikasi menu tertutup setelah aksi diproses
+        // Postcondition: every menu level is closed after the action
         await expect(this.activeMenus).toHaveCount(0);
       }
     }
@@ -136,8 +136,8 @@ export class PopupHelper {
     const buttonText = action === 'confirm' ? (options.confirmText || 'Confirm') : (options.cancelText || 'Cancel');
 
     const targetBtn = action === 'confirm'
-      ? modal.getByTestId('confirm-action-button').or(modal.getByRole('button', { name: buttonText })).or(modal.locator('button', { hasText: new RegExp(buttonText, 'i') })).first()
-      : modal.getByTestId('confirm-cancel-button').or(modal.getByRole('button', { name: buttonText })).or(modal.locator('button', { hasText: new RegExp(buttonText, 'i') })).first();
+      ? modal.getByTestId('confirm-action-button').or(modal.getByRole('button', { name: buttonText })).or(modal.locator('button', { hasText: new RegExp(escapeRegex(buttonText), 'i') })).first()
+      : modal.getByTestId('confirm-cancel-button').or(modal.getByRole('button', { name: buttonText })).or(modal.locator('button', { hasText: new RegExp(escapeRegex(buttonText), 'i') })).first();
 
     await targetBtn.click();
     await expect(modal).toHaveCount(0);

@@ -13,7 +13,7 @@ export class PrefabPage {
   }
 
   get togglePanelBtn() {
-    // Mencari tab toggle "Prefabs" di bottom bar editor
+    // Finds the "Prefabs" toggle tab in the editor bottom bar
     return this.page
       .getByRole('button', { name: /^prefabs?$/i })
       .or(this.page.getByTestId('tab-prefab-toggle'))
@@ -46,11 +46,11 @@ export class PrefabPage {
   }
 
   /**
-   * Memastikan halaman/panel prefab terbuka dan dirender penuh.
-   * Jika panel belum terlihat, mengklik tombol tab bottom bar untuk membukanya.
+   * Makes sure the prefab page/panel is open and fully rendered.
+   * If the panel is not visible yet, clicks the bottom bar tab button to open it.
    */
   async ensureVisible() {
-    // Settle: bottom bar harus sudah dirender sebelum count() dipakai (Section 2)
+    // Settle: the bottom bar must be rendered before count() is used (Section 2)
     await expect(this.togglePanelBtn).toBeVisible();
     if ((await this.panel.count()) === 0) {
       await this.togglePanelBtn.click();

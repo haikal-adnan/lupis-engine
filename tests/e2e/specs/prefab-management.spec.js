@@ -3,7 +3,7 @@ import { test, expect } from '../fixtures.js';
 test.use({
   projectOptions: {
     prefix: 'Prefab E2E',
-    description: 'Workspace isolasi untuk E2E Prefab Management Testing',
+    description: 'Isolated workspace for Prefab Management E2E tests',
   },
 });
 
@@ -39,7 +39,7 @@ test.describe('Prefab Panel E2E Management', () => {
     test('creates and navigates inside a prefab folder', async ({ prefabs, popup }) => {
       await popup.selectContextMenu(prefabs.panel, 'New Folder');
 
-      // Tombol prompt pembuat folder di UI bertuliskan 'Create'
+      // The folder prompt's confirm button is labelled 'Create' in the UI
       await popup.fillPromptAndSubmit(/Folder/i, 'Characters', 'Create');
 
       const folderItem = prefabs.itemByName('Characters');

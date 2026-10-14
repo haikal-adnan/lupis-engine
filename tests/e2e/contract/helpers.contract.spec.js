@@ -1,14 +1,14 @@
 import { test, expect } from '../fixtures.js';
 
 /**
- * CONTRACT TEST untuk helper bersama (PopupHelper, BaseControlHelper).
+ * CONTRACT TESTS for the shared helpers (PopupHelper, BaseControlHelper).
  *
- * Tujuan: jika helper berubah dan merusak perilaku dasarnya, kegagalan muncul DI SINI
- * (project "contract"), bukan tersebar di spec fitur. Spec fitur hanya berjalan
- * jika project ini lolos.
+ * Purpose: if a helper changes and breaks its basic behavior, the failure shows up HERE
+ * (project "contract") instead of being scattered across feature specs. Feature specs only run
+ * when this project passes.
  *
- * Aturan: hanya menguji perilaku helper (menu, prompt, confirm), bukan logika fitur.
- * Gunakan skenario sesederhana mungkin dan tambah skenario baru setiap kali sebuah
+ * Rule: only test helper behavior (menu, prompt, confirm), never feature logic.
+ * Keep scenarios as simple as possible and add a new scenario every time a
  * bug helper ditemukan.
  */
 const SCENE_OPTIONS = 'hierarchy-scene-options-button';
@@ -16,12 +16,12 @@ const SCENE_OPTIONS = 'hierarchy-scene-options-button';
 test.use({
   projectOptions: {
     prefix: 'Contract E2E',
-    description: 'Workspace isolasi untuk contract test helper',
+    description: 'Isolated workspace for helper contract tests',
   },
 });
 
 test.describe('@contract PopupHelper.selectContextMenu', () => {
-  test('menu satu level: item terpilih, menu tertutup, prompt berikutnya bisa disubmit', async ({ popup, hierarchy }) => {
+  test('single-level menu: item is selected, menu closes, next prompt can be submitted', async ({ popup, hierarchy }) => {
     const layer = hierarchy.nodeByName('World Layer');
     await expect(layer).toBeVisible();
     const nodeId = await layer.getAttribute('data-node-id');
@@ -33,28 +33,28 @@ test.describe('@contract PopupHelper.selectContextMenu', () => {
     await expect(hierarchy.nodeById(nodeId)).toHaveAttribute('data-node-name', 'Contract Layer');
   });
 
-  test('menu bertingkat: submenu terbuka, item leaf terpilih, semua level tertutup', async ({ popup, hierarchy }) => {
+  test('nested menu: submenu opens, leaf item is selected, all levels close', async ({ popup, hierarchy }) => {
     const layer = hierarchy.nodeByName('World Layer');
 
-    // addEntity mengunci node baru lewat data-node-id; postcondition menu diperiksa setelahnya
+    // addEntity locks the new node by data-node-id; the menu postcondition is checked afterwards
     const created = await hierarchy.addEntity(popup, layer, ['Add Entity', 'Empty Entity']);
     await expect(popup.activeMenus).toHaveCount(0);
     await expect(created).toBeVisible();
   });
 
-  test('dua panggilan beruntun pada node yang sama tidak saling mengganggu', async ({ popup, hierarchy }) => {
+  test('two consecutive calls on the same node do not interfere with each other', async ({ popup, hierarchy }) => {
     const layer = hierarchy.nodeByName('World Layer');
 
     const first = await hierarchy.addEntity(popup, layer, ['Add Entity', 'Empty Entity']);
     const second = await hierarchy.addEntity(popup, layer, ['Add Entity', 'Sprite']);
 
-    // Dua node berbeda dan keduanya tetap ada
+    // Two distinct nodes, and both still exist
     await expect(first).toBeVisible();
     await expect(second).toBeVisible();
     await expect(first).not.toHaveAttribute('data-node-id', await second.getAttribute('data-node-id'));
   });
 
-  test('path kosong membuka menu dan membiarkannya terbuka', async ({ popup, hierarchy }) => {
+  test('empty path opens the menu and leaves it open', async ({ popup, hierarchy }) => {
     const layer = hierarchy.nodeByName('World Layer');
 
     await popup.selectContextMenu(layer, []);
@@ -65,7 +65,7 @@ test.describe('@contract PopupHelper.selectContextMenu', () => {
 });
 
 test.describe('@contract PopupHelper prompt & confirm', () => {
-  test('fillPromptAndCancel menutup dialog tanpa efek samping', async ({ popup, hierarchy }) => {
+  test('fillPromptAndCancel closes the dialog without side effects', async ({ popup, hierarchy }) => {
     const layer = hierarchy.nodeByName('World Layer');
 
     await popup.selectContextMenu(layer, 'Rename Layer');
@@ -74,10 +74,10 @@ test.describe('@contract PopupHelper prompt & confirm', () => {
     await expect(hierarchy.nodeByName('World Layer')).toBeVisible();
   });
 
-  test('confirmAction: cancel mempertahankan state, confirm menerapkan aksi', async ({ popup, hierarchy, controls }) => {
+  test('confirmAction: cancel keeps the state, confirm applies the action', async ({ popup, hierarchy, controls }) => {
     await hierarchy.createScene(controls, popup, 'Contract Scene');
 
-    // Section 11 poin 6: caller mengirim test ID trigger secara eksplisit
+    // Section 11 point 6: the caller passes the trigger test ID explicitly
     await controls.clickSelectAction(SCENE_OPTIONS, 'Delete Scene');
     await popup.confirmAction(/scene/i, { action: 'cancel' });
     await expect(hierarchy.sceneSelect).toContainText('Contract Scene');
@@ -89,34 +89,31 @@ test.describe('@contract PopupHelper prompt & confirm', () => {
 });
 
 test.describe('@contract BaseControlHelper.clickSelectAction', () => {
-  // Regresi untuk bug yang pernah ada: clickSelectAction sebelumnya punya
-  // fallback hardcode `.or(scope.getByTestId('scene-options-button'))` di
-  // dalam locator trigger-nya. Itu generic helper — kalau label/testid yang
-  // diminta salah, helper akan diam-diam fallback ke tombol Scene Options
-  // kalau kebetulan ada di scope yang sama, dan test tetap lolos padahal
-  // mengklik elemen yang salah.
+  // Regression test for a past bug: clickSelectAction used to carry a hardcoded
+  // `.or(scope.getByTestId('scene-options-button'))` fallback inside its trigger
+  // locator. For a generic helper that is wrong: when the requested label/test ID
+  // did not exist, it silently fell back to the Scene Options button (if it happened
+  // to be in scope) and the test passed while clicking the wrong element.
   //
-  // Test ini memastikan: trigger yang benar-benar TIDAK ADA di scope harus
-  // membuat pemanggilan GAGAL dengan jelas, bukan diam-diam fallback ke
-  // tombol lain yang kebetulan ada.
-  test('trigger dengan testid yang tidak ada di scope harus gagal, bukan fallback ke tombol lain', async ({ page, controls, hierarchy }) => {
-    // Scene Options button memang ada di halaman (di luar scope layer section),
-    // jadi ini skenario paling representatif untuk bug lama di atas.
+  // This test guarantees that a trigger that does NOT exist in scope makes the call
+  // FAIL loudly instead of silently falling back to some other button.
+  test('[Bad Path] trigger with a test ID that is not in scope must fail instead of falling back to another button', async ({ page, controls, hierarchy }) => {
+    // The Scene Options button does exist on the page (outside the layer section scope),
+    // which makes this the most representative scenario for the old bug above.
     await expect(hierarchy.sceneSelect).toBeVisible();
 
     const worldLayer = hierarchy.nodeByName('World Layer');
     await expect(worldLayer).toBeVisible();
 
-    // 'Nonexistent Trigger Label' sengaja tidak match apa pun di dalam scope
-    // worldLayer. Sebelum perbaikan, bug ini bisa membuat Playwright jatuh ke
-    // tombol Scene Options di luar scope ini dan membuka menu Scene Options
-    // alih-alih gagal. Scope di sini dibatasi ke worldLayer agar assersi ini
-    // benar-benar menguji isolasi scope, bukan sekadar label yang salah.
+    // 'Nonexistent Trigger Label' intentionally matches nothing inside the worldLayer
+    // scope. Before the fix, Playwright could fall through to the Scene Options button
+    // outside this scope and open its menu instead of failing. The scope is limited to
+    // worldLayer so this assertion really tests scope isolation, not just a wrong label.
     await expect(
       controls.clickSelectAction('Nonexistent Trigger Label', 'Some Action', worldLayer)
     ).rejects.toThrow();
 
-    // Scene Options menu TIDAK boleh ikut kebuka akibat fallback yang salah.
+    // The Scene Options menu must NOT open as a side effect of a wrong fallback.
     await expect(page.getByRole('menu')).toHaveCount(0);
   });
 });

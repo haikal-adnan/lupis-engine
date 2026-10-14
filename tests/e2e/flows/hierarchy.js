@@ -167,7 +167,7 @@ export class EntityCrud {
 
     const menuPath = typeMap[entityType.toLowerCase()] || ['Add Entity', entityType];
 
-    // Node baru ditemukan lewat perbandingan data-node-id (Section 8), bukan regex teks.
+    // The new node is found by comparing data-node-id values (Section 8), not by text regex.
     return this.hierarchy.addEntity(this.popup, parentLayerNode, menuPath);
   }
 
@@ -269,12 +269,12 @@ export class WorkspaceToolsCrud {
   async openUIEditor() {
     const menu = await this.hierarchy.openSectionMenu('User Interface');
     const openBtn = menu.getByTestId('hierarchy-ui-open-editor-button');
-    // Tombol disabled kalau tab aktif sudah bertipe 'ui'
+    // The button is disabled when the active tab is already of type 'ui'
     await expect(openBtn).toBeEnabled();
     await openBtn.click();
 
-    // Kecualikan baris hierarchy agar assert tidak vacuous (Section 7.3).
-    // TODO kontrak: beri tab editor test ID sendiri (mis. editor-tab) lalu ganti selector ini.
+    // Exclude hierarchy rows so the assertion is not vacuous (Section 7.3).
+    // TODO contract: give the editor tab its own test ID (e.g. editor-tab) and replace this selector.
     const activeTab = this.page
       .locator('[aria-selected="true"]:not([data-testid="hierarchy-node"])')
       .filter({ hasText: 'UI Editor' });
