@@ -92,12 +92,12 @@ const handleClickOutside = (event) => {
 const handleScrollOrResize = (event) => {
   if (!isOpen.value) return;
 
-  // Abaikan event scroll yang terjadi di dalam menu dropdown itu sendiri
+  // Ignore scroll events originating inside the dropdown menu itself
   if (event && event.target && menuRef.value?.contains(event.target)) {
     return;
   }
 
-  // Jika scroll terjadi di container luar tetapi trigger masih dalam viewport, update posisi tanpa menutup menu
+  // If scrolling occurs in an outer container but trigger is still in viewport, update position without closing menu
   if (event && event.type === 'scroll' && triggerRef.value) {
     const rect = triggerRef.value.getBoundingClientRect();
     const inViewport = rect.top < window.innerHeight && rect.bottom > 0;

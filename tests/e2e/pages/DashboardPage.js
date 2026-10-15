@@ -11,7 +11,7 @@ export class DashboardPage {
   }
 
   get createModal() {
-    return this.page.getByRole('dialog', { name: 'Buat Proyek Baru' });
+    return this.page.getByRole('dialog', { name: 'New Project' });
   }
 
   card(name) {

@@ -79,7 +79,7 @@ describe('Node Scripting System Integration Tests', () => {
             if (type === 'application/node-template') {
               return JSON.stringify(blueprintTemplate)
             }
-            return '' // Mime type lain (seperti application/script-variable) bernilai kosong
+            return '' 
           })
         }
       }
@@ -89,7 +89,6 @@ describe('Node Scripting System Integration Tests', () => {
       expect(scriptStore.activeScript.nodes).toHaveLength(1)
       const addedNode = scriptStore.activeScript.nodes[0]
 
-      // Assert tipe dan nama node
       expect(addedNode.type).toBe(blueprintTemplate.type)
       expect(addedNode.name || addedNode.settings?.headerTitle).toBe(blueprintTemplate.label)
     })

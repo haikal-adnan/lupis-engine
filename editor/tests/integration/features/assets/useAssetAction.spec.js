@@ -7,7 +7,7 @@ import { useWorkspaceStore } from '@workspaces/workspaces.js'
 import { usePopAlert } from '@composables/composables.js'
 import { useFontConverter } from '@assets/assets.js'
 
-// Mock dependency eksternal
+// Mock external dependencies
 vi.mock('@composables/composables.js', () => ({
   usePopAlert: vi.fn()
 }))
@@ -21,7 +21,7 @@ vi.mock('@assets/assets.js', async (importOriginal) => {
   }
 })
 
-describe('Integration Test: Asset Actions dengan Stores & Composables', () => {
+describe('Integration Test: Asset Actions with Stores & Composables', () => {
   let assetStore
   let folderStore
   let workspaceStore
@@ -35,7 +35,7 @@ describe('Integration Test: Asset Actions dengan Stores & Composables', () => {
     folderStore = useFolderStore()
     workspaceStore = useWorkspaceStore()
 
-    // Setup active project dan folder ID
+    // Setup active project and folder ID
     workspaceStore.activeProjectId = 'proj-999'
     folderStore.activeFolderId = 'folder-root'
 
@@ -56,7 +56,7 @@ describe('Integration Test: Asset Actions dengan Stores & Composables', () => {
     global.URL.createObjectURL = vi.fn(() => 'blob:mock-url')
     global.URL.revokeObjectURL = vi.fn()
 
-    // Mock Class HTMLImageElement (agar `new Image()` valid)
+    // Mock HTMLImageElement class (to ensure new Image() is valid)
     global.Image = class MockImage {
       constructor() {
         this._src = ''
@@ -79,7 +79,7 @@ describe('Integration Test: Asset Actions dengan Stores & Composables', () => {
       }
     }
 
-    // Mock Class HTMLAudioElement (agar `new Audio()` valid)
+    // Mock HTMLAudioElement class (to ensure new Audio() is valid)
     global.Audio = class MockAudio {
       constructor() {
         this._src = ''
@@ -101,7 +101,7 @@ describe('Integration Test: Asset Actions dengan Stores & Composables', () => {
       }
     }
 
-    // Stub metode OPFS pada store agar fokus pada aksi
+    // Stub OPFS methods on store to focus on actions
     assetStore.addAsset = vi.fn(async (asset) => {
       assetStore.assets.push(asset)
     })
@@ -120,7 +120,7 @@ describe('Integration Test: Asset Actions dengan Stores & Composables', () => {
   })
 
   describe('Import Asset (Image / Audio / Font)', () => {
-    it('mengimpor berkas gambar (texture), mengukur resolusi, dan memperbarui state store', async () => {
+    it('imports image file (texture), measures dimensions, and updates store state', async () => {
       // Arrange
       const { importAsset } = useAssetActions()
       const mockImageFile = new File(['image-bytes'], 'background.png', { type: 'image/png' })
@@ -143,7 +143,7 @@ describe('Integration Test: Asset Actions dengan Stores & Composables', () => {
       )
     })
 
-    it('menangani duplikasi nama berkas dalam folder yang sama dengan menambahkan penomoran otomatis', async () => {
+    it('handles duplicate file names in the same folder by appending numbering automatically', async () => {
       // Arrange
       assetStore.assets = [
         { name: 'sprite', folderId: 'folder-root' },
@@ -153,7 +153,7 @@ describe('Integration Test: Asset Actions dengan Stores & Composables', () => {
       const { importAsset } = useAssetActions()
       const mockFile = new File(['image-bytes'], 'sprite.png', { type: 'image/png' })
 
-      // Custom dimensi spesifik untuk pengujian ini
+      // Specific custom dimensions for this test
       global.Image = class CustomImage extends global.Image {
         constructor() {
           super()
@@ -170,7 +170,7 @@ describe('Integration Test: Asset Actions dengan Stores & Composables', () => {
       expect(createdAsset.meta.dimensions).toEqual({ w: 64, h: 64 })
     })
 
-    it('mengimpor berkas font (.ttf), memicu konversi BMFont, dan menyimpan extra files (.fnt & .png)', async () => {
+    it('imports font file (.ttf), triggers BMFont conversion, and saves extra files (.fnt & .png)', async () => {
       // Arrange
       const { importAsset } = useAssetActions()
       const mockFontFile = new File(['font-bytes'], 'CustomFont.ttf', { type: 'font/ttf' })
@@ -196,7 +196,7 @@ describe('Integration Test: Asset Actions dengan Stores & Composables', () => {
       )
     })
 
-    it('mengimpor berkas audio, menghitung durasi, dan memperbarui state store', async () => {
+    it('imports audio file, calculates duration, and updates store state', async () => {
       // Arrange
       const { importAsset } = useAssetActions()
       const mockAudioFile = new File(['audio-bytes'], 'bgm.mp3', { type: 'audio/mpeg' })
@@ -211,8 +211,8 @@ describe('Integration Test: Asset Actions dengan Stores & Composables', () => {
     })
   })
 
-  describe('Manajemen & Modifikasi Asset', () => {
-    it('menghapus asset melalui store dan menampilkan notifikasi pop alert', async () => {
+  describe('Asset Management & Modification', () => {
+    it('deletes asset via store and shows alert pop notification', async () => {
       // Arrange
       const { deleteAsset } = useAssetActions()
       assetStore.assets = [{ id: 'ast-101', name: 'Hero' }]
@@ -230,7 +230,7 @@ describe('Integration Test: Asset Actions dengan Stores & Composables', () => {
       })
     })
 
-    it('mengubah nama asset, menghapus whitespace berlebih, dan memperbarui store', async () => {
+    it('renames asset, trims redundant whitespace, and updates store', async () => {
       // Arrange
       const { renameAsset } = useAssetActions()
       assetStore.assets = [{ id: 'ast-102', name: 'OldName' }]
@@ -250,7 +250,7 @@ describe('Integration Test: Asset Actions dengan Stores & Composables', () => {
       })
     })
 
-    it('memperbarui properti spesifik asset secara langsung', async () => {
+    it('updates specific asset properties directly', async () => {
       // Arrange
       const { updateAssetProperty } = useAssetActions()
       assetStore.assets = [{ id: 'ast-103', name: 'Asset 1', folderId: 'folder-a' }]
@@ -263,15 +263,15 @@ describe('Integration Test: Asset Actions dengan Stores & Composables', () => {
     })
   })
 
-  describe('Pencegahan Error / Bad Path', () => {
-    it('[Bad Path] menangani kegagalan layanan konversi font dan meneruskan error', async () => {
+  describe('Error Handling / Bad Path', () => {
+    it('[Bad Path] handles font conversion service failure and rethrows error', async () => {
       // Arrange
-      mockConvertTtfToBmFont.mockRejectedValueOnce(new Error('Gagal mengurai file TTF.'))
+      mockConvertTtfToBmFont.mockRejectedValueOnce(new Error('Failed to parse TTF file.'))
       const { importAsset } = useAssetActions()
       const corruptFontFile = new File(['corrupt-bytes'], 'corrupt.ttf', { type: 'font/ttf' })
 
       // Act & Assert
-      await expect(importAsset(corruptFontFile)).rejects.toThrow('Gagal mengurai file TTF.')
+      await expect(importAsset(corruptFontFile)).rejects.toThrow('Failed to parse TTF file.')
     })
   })
 })

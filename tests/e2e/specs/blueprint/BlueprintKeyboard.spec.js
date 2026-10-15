@@ -61,7 +61,7 @@ test.describe('Blueprint Keyboard Events E2E Testing', () => {
           id: 'notif',
           type: 'uiNotification',
           pos: { x: 800, y: 100 },
-          inspectorValues: { message: { value: 'Tombol Space Aktif', type: 'string' } },
+          inspectorValues: { message: { value: 'Space Key Active', type: 'string' } },
         },
       ],
       connections: [
@@ -70,7 +70,7 @@ test.describe('Blueprint Keyboard Events E2E Testing', () => {
         { source: 'getKeyState', sourceHandle: 'isDown', target: 'branch', targetHandle: 'condition' },
         { source: 'branch', sourceHandle: 'onTrue', target: 'notif', targetHandle: 'execIn' },
       ],
-      expectedLog: 'Tombol Space Aktif',
+      expectedLog: 'Space Key Active',
     });
   });
 

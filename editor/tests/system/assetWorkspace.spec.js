@@ -15,7 +15,7 @@ const {
   assetSchema 
 } = AssetModule
 
-// Mock composables eksternal UI Alerts & Dialog Prompts
+// Mock external UI Alerts & Dialog Prompts composables
 const mockPrompt = vi.fn()
 const mockConfirm = vi.fn().mockResolvedValue(true)
 
@@ -27,7 +27,7 @@ vi.mock('@composables/composables.js', () => ({
   usePopAudio: () => ({ showAudio: vi.fn() })
 }))
 
-// Mock URL API untuk lingkungan jsdom/node
+// Mock URL API for jsdom/node environment
 if (typeof window.URL.createObjectURL !== 'function') {
   window.URL.createObjectURL = vi.fn(() => 'blob:mock-url')
 }
@@ -35,11 +35,11 @@ if (typeof window.URL.revokeObjectURL !== 'function') {
   window.URL.revokeObjectURL = vi.fn()
 }
 
-describe('Pengujian Integrasi AssetWorkspace', () => {
+describe('AssetWorkspace Integration Testing', () => {
   let storeRef
   let project
 
-  // Helper pembuat asset mock instan tanpa ketergantungan elemen DOM
+  // Helper to create mock assets without DOM element dependencies
   const createMockAsset = async ({ name = 'test_asset', type = 'texture', folderId = null } = {}) => {
     const assetStore = useAssetStore()
     const workspaceStore = useWorkspaceStore()
@@ -72,7 +72,7 @@ describe('Pengujian Integrasi AssetWorkspace', () => {
     workspaceStore.activeProjectId = project.id
     workspaceStore.activeBottomTabId = 'assets'
 
-    // Mock useFontConverter via spyOn agar mengembalikan mock instan dan tidak merusak barrel import
+    // Mock useFontConverter via spyOn to return mock instance without breaking barrel import
     vi.spyOn(AssetModule, 'useFontConverter').mockImplementation(() => ({
       isConverting: false,
       convertTtfToBmFont: vi.fn().mockResolvedValue({
@@ -82,7 +82,7 @@ describe('Pengujian Integrasi AssetWorkspace', () => {
       })
     }))
 
-    // Class Mock Konstruktor yang valid untuk Image & Audio DOM
+    // Valid Mock Constructor Class for Image & Audio DOM
     globalThis.Image = class {
       constructor() {
         setTimeout(() => {
@@ -113,8 +113,8 @@ describe('Pengujian Integrasi AssetWorkspace', () => {
     }
   })
 
-  describe('Integrasi CRUD Asset', () => {
-    it('mengimpor asset baru dan menyimpannya ke state store serta OPFS', async () => {
+  describe('Asset CRUD Integration', () => {
+    it('imports new asset and saves it to store state and OPFS', async () => {
       const assetStore = useAssetStore()
       const importedAsset = await createMockAsset({ name: 'hero', type: 'texture' })
 
@@ -130,7 +130,7 @@ describe('Pengujian Integrasi AssetWorkspace', () => {
       expect(savedFileHandle).toBeDefined()
     })
 
-    it('mengubah nama asset dan memperbarui sinkronisasi OPFS', async () => {
+    it('renames asset and updates OPFS synchronization', async () => {
       const { renameAsset } = useAssetActions()
       const assetStore = useAssetStore()
 
@@ -146,7 +146,7 @@ describe('Pengujian Integrasi AssetWorkspace', () => {
       expect(content.find(a => a.id === asset.id).name).toBe('app_icon')
     })
 
-    it('menghapus asset beserta berkas fisik dari OPFS', async () => {
+    it('deletes asset along with physical files from OPFS', async () => {
       const { deleteAsset } = useAssetActions()
       const assetStore = useAssetStore()
 
@@ -158,7 +158,7 @@ describe('Pengujian Integrasi AssetWorkspace', () => {
       expect(savedFileHandle).toBeUndefined()
     })
 
-    it('[Bad Path] menangani percobaan hapus ID asset yang tidak valid secara aman', async () => {
+    it('[Bad Path] safely handles attempt to delete invalid asset ID', async () => {
       const { deleteAsset } = useAssetActions()
       const assetStore = useAssetStore()
 
@@ -169,8 +169,8 @@ describe('Pengujian Integrasi AssetWorkspace', () => {
     })
   })
 
-  describe('Integrasi CRUD Folder Asset Section', () => {
-    it('membuat folder baru pada section assets', async () => {
+  describe('Asset Section Folder CRUD Integration', () => {
+    it('creates new folder in assets section', async () => {
       const folderStore = useFolderStore()
       const { createNewFolder } = useFolderActions()
 
@@ -184,7 +184,7 @@ describe('Pengujian Integrasi AssetWorkspace', () => {
       expect(created.parentId).toBeNull()
     })
 
-    it('menghapus folder dan memperbarui state folderStore', async () => {
+    it('deletes folder and updates folderStore state', async () => {
       const folderStore = useFolderStore()
       const { createNewFolder, deleteFolder } = useFolderActions()
 
@@ -199,8 +199,8 @@ describe('Pengujian Integrasi AssetWorkspace', () => {
     })
   })
 
-  describe('Integrasi Perpindahan Asset & Navigation antar Folder', () => {
-    it('memindahkan asset ke folder target dan menyesuaikan visibleAssets', async () => {
+  describe('Asset Movement & Folder Navigation Integration', () => {
+    it('moves asset to target folder and adjusts visibleAssets', async () => {
       const folderStore = useFolderStore()
       const { createNewFolder } = useFolderActions()
       const logic = useAssetLogic()
@@ -222,7 +222,7 @@ describe('Pengujian Integrasi AssetWorkspace', () => {
       expect(logic.visibleAssets.value.some(a => a.id === asset.id)).toBe(true)
     })
 
-    it('memindahkan asset kembali ke root via breadcrumb navigation', async () => {
+    it('moves asset back to root via breadcrumb navigation', async () => {
       const folderStore = useFolderStore()
       const { createNewFolder } = useFolderActions()
       const logic = useAssetLogic()
@@ -244,8 +244,8 @@ describe('Pengujian Integrasi AssetWorkspace', () => {
     })
   })
 
-  describe('Integrasi Fitur Context Menu & Entitas Scene', () => {
-    it('menerapkan asset tekstur ke komponen SpriteRenderer pada entitas aktif', async () => {
+  describe('Context Menu & Scene Entity Feature Integration', () => {
+    it('applies texture asset to SpriteRenderer component on active entity', async () => {
       const sceneStore = useSceneStore()
       const workspaceStore = useWorkspaceStore()
       const selectedIdRef = { value: null }
@@ -280,7 +280,7 @@ describe('Pengujian Integrasi AssetWorkspace', () => {
       expect(activeEntity.components.SpriteRenderer.assetId).toBe(asset.id)
     })
 
-    it('melakukan duplikasi asset melalui clipboard copy/paste', async () => {
+    it('duplicates asset via clipboard copy/paste', async () => {
       const assetStore = useAssetStore()
       const logic = useAssetLogic()
 
@@ -294,8 +294,8 @@ describe('Pengujian Integrasi AssetWorkspace', () => {
     })
   })
 
-  describe('Integrasi Pencarian Asset', () => {
-    it('menyaring daftar visibleAssets dan visibleFolders berdasarkan searchQuery', async () => {
+  describe('Asset Search Integration', () => {
+    it('filters visibleAssets and visibleFolders based on searchQuery', async () => {
       const folderStore = useFolderStore()
       const { createNewFolder } = useFolderActions()
       const logic = useAssetLogic()
@@ -315,8 +315,8 @@ describe('Pengujian Integrasi AssetWorkspace', () => {
     })
   })
 
-  describe('Integrasi Konversi Font & BMFont', () => {
-    it('mengimpor file font .ttf, mengonversi ke BMFont, dan menyimpan file ekstra ke OPFS', async () => {
+  describe('Font & BMFont Conversion Integration', () => {
+    it('imports .ttf font file, converts to BMFont, and stores extra files in OPFS', async () => {
       const { importAsset } = useAssetActions()
 
       const fontFile = new File(['ttf content'], 'CustomFont.ttf', { type: 'font/ttf' })
@@ -333,8 +333,8 @@ describe('Pengujian Integrasi AssetWorkspace', () => {
     })
   })
 
-  describe('Integrasi Penamaan Duplikat & Clipboard Cut Operations', () => {
-    it('menambahkan suffix angka jika mengimpor asset dengan nama yang sama pada folder sama', async () => {
+  describe('Duplicate Naming & Clipboard Cut Operations Integration', () => {
+    it('appends number suffix when importing asset with duplicate name in same folder', async () => {
       const { importAsset } = useAssetActions()
 
       const file1 = new File(['data'], 'sprite.png', { type: 'image/png' })
@@ -347,7 +347,7 @@ describe('Pengujian Integrasi AssetWorkspace', () => {
       expect(asset2.name).toBe('sprite (1)')
     })
 
-    it('memindahkan asset dengan aksi Cut dan Paste, lalu mengosongkan clipboard', async () => {
+    it('moves asset with Cut and Paste action, then clears clipboard', async () => {
       const folderStore = useFolderStore()
       const { createNewFolder } = useFolderActions()
       const logic = useAssetLogic()
@@ -368,8 +368,8 @@ describe('Pengujian Integrasi AssetWorkspace', () => {
     })
   })
 
-  describe('Integrasi Double Click Preview & Utility Logic', () => {
-    it('mengubah viewMode dari grid ke list dan sebaliknya', () => {
+  describe('Double Click Preview & Utility Logic Integration', () => {
+    it('toggles viewMode between grid and list', () => {
       const logic = useAssetLogic()
       
       expect(logic.viewMode.value).toBe('grid')

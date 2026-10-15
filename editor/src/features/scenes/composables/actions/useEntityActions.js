@@ -22,13 +22,13 @@ const checkPrefabRestriction = (entities, entityId, targetParentId = null) => {
     };
 
     if (entityId && isDescendantOfPrefab(entityId)) {
-        return 'Tidak dapat memodifikasi, memindahkan, atau menghapus entitas di dalam instansi Prefab. Silakan Unpack terlebih dahulu.';
+        return 'Cannot modify, move, or delete entities inside a Prefab instance. Please unpack first.';
     }
 
     if (targetParentId) {
         const targetParent = entities.find(e => e.id === targetParentId);
         if ((targetParent && targetParent.prefabId) || isDescendantOfPrefab(targetParentId)) {
-            return 'Tidak dapat menambahkan entitas baru ke dalam hierarki instansi Prefab. Silakan Unpack terlebih dahulu.';
+            return 'Cannot add new entities into a Prefab instance hierarchy. Please unpack first.';
         }
     }
 
@@ -168,7 +168,7 @@ export const useEntityActions = {
     } 
     else if (type === 'tilemap') {
       components.Tilemap = componentSchema.create('Tilemap');
-      // Tidak mengeset width/height kaku pada Transform agar bounds dinamis menyerupai Shape
+      // Do not set rigid width/height on Transform to allow dynamic bounds similar to Shape
       components.Transform = { ...rawTransform };
     }
     else if (type === 'audio') {
@@ -559,7 +559,7 @@ export const useEntityActions = {
     
     target[keys[keys.length - 1]] = value;
 
-    // RE-TRIGGER REAKTIVITAS VUE PINIA: Paksa penciptaan referensi baru pada objek components
+    // Re-trigger Vue/Pinia reactivity: create a new reference for the components object
     entity.components[componentName] = JSON.parse(JSON.stringify(comp));
     entity.components = { ...entity.components };
 

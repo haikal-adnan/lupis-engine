@@ -19,7 +19,7 @@
     >
       <ScrollArea>
         <div class="px-1 pt-2 pb-32"> 
-          <!-- data-testid sengaja TIDAK dipasang di sini: akan menimpa root testid SceneTree -->
+          <!-- data-testid intentionally NOT attached here: would override SceneTree root testid -->
           <SceneTree 
             :data="filteredData" 
             :selected-ids="sceneStore.selectedEntityIds"

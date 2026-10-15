@@ -174,7 +174,78 @@ describe('Integration Test: useConsoleStore', () => {
   })
 
   /* =========================================================================
-   * 4. GUARD CLAUSES & BAD PATH
+   * 4. MAPPED CONTEXT LOGGING (Scene, Entity, Script, Node)
+   * ========================================================================= */
+  describe('Mapped Context Logging', () => {
+    it('processes error log mapped with scene, entity, script, and node context', () => {
+      store.addLog({
+        type: 'error',
+        message: '[Dungeon] [player_1] [PlayerController] [TakeDamage] Player health reached 0',
+        source: 'Script',
+        context: {
+          scene: 'Dungeon',
+          entityScriptId: 'player_1',
+          script: 'PlayerController',
+          node: 'TakeDamage'
+        }
+      })
+
+      expect(store.logs).toHaveLength(1)
+      const log = store.logs[0]
+      expect(log.type).toBe('error')
+      expect(log.message).toBe('[Dungeon] [player_1] [PlayerController] [TakeDamage] Player health reached 0')
+      expect(log.context).toEqual({
+        scene: 'Dungeon',
+        entityScriptId: 'player_1',
+        script: 'PlayerController',
+        node: 'TakeDamage'
+      })
+    })
+
+    it('processes warn log mapped with scene, entity, script, and node context', () => {
+      store.addLog({
+        type: 'warn',
+        message: '[MainScene] [boss_orc] [OrcAI] [PatrolNode] Target waypoint out of bounds',
+        source: 'Script',
+        context: {
+          scene: 'MainScene',
+          entityScriptId: 'boss_orc',
+          script: 'OrcAI',
+          node: 'PatrolNode'
+        }
+      })
+
+      expect(store.logs).toHaveLength(1)
+      const log = store.logs[0]
+      expect(log.type).toBe('warn')
+      expect(log.message).toContain('[MainScene] [boss_orc] [OrcAI] [PatrolNode]')
+      expect(log.context.node).toBe('PatrolNode')
+    })
+
+    it('processes user notification log mapped with context', () => {
+      store.addLog({
+        type: 'log',
+        message: '[Level_01] [ui_manager] [ScoreScript] [Notification] Achievement unlocked!',
+        source: 'Notification',
+        context: {
+          scene: 'Level_01',
+          entityScriptId: 'ui_manager',
+          script: 'ScoreScript',
+          node: 'Notification'
+        }
+      })
+
+      expect(store.logs).toHaveLength(1)
+      const log = store.logs[0]
+      expect(log.type).toBe('info') // converts log to info
+      expect(log.source).toBe('Notification')
+      expect(log.message).toBe('[Level_01] [ui_manager] [ScoreScript] [Notification] Achievement unlocked!')
+      expect(log.context.script).toBe('ScoreScript')
+    })
+  })
+
+  /* =========================================================================
+   * 5. GUARD CLAUSES & BAD PATH
    * ========================================================================= */
   describe('Edge Cases & Guard Clauses', () => {
     it('[Bad Path] prevents re-attaching listeners if isListening is already true', () => {

@@ -37,7 +37,7 @@ class EventBus {
 
 export const bus = new EventBus();
 
-// Ekspos ke window untuk kebutuhan E2E Testing & Dev
+// Expose to window for E2E Testing & Dev
 if (typeof window !== "undefined") {
   const isDevOrTest = 
     import.meta.env?.DEV || 

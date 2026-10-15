@@ -10,20 +10,20 @@ export function useHierarchyFilter(treeData) {
 
     const query = searchQuery.value.toLowerCase().trim();
 
-    // Fungsi rekursif untuk memfilter node (Layer atau Entity)
+    // Recursive function to filter nodes (Layer or Entity)
     const filterNodes = (nodes) => {
       if (!Array.isArray(nodes)) return [];
 
       return nodes.reduce((acc, node) => {
-        // Cek apakah name atau scriptId cocok dengan query
+        // Check if name or scriptId matches query
         const nameMatch = node.name && node.name.toLowerCase().includes(query);
         const scriptIdMatch = node.scriptId && node.scriptId.toLowerCase().includes(query);
         const matches = nameMatch || scriptIdMatch;
 
-        // Cari rekursif ke anak-anaknya (child entities/nodes)
+        // Search recursively into children (child entities/nodes)
         const filteredChildren = node.children ? filterNodes(node.children) : [];
 
-        // Sertakan node jika node itu sendiri cocok ATAU jika ada anak yang cocok
+        // Include node if the node itself matches OR if any child matches
         if (matches || filteredChildren.length > 0) {
           acc.push({ 
             ...node, 
@@ -34,7 +34,7 @@ export function useHierarchyFilter(treeData) {
       }, []);
     };
 
-    // Filter worldTree dan uiTree secara terpisah
+    // Filter worldTree and uiTree separately
     return {
       worldTree: filterNodes(treeData.value?.worldTree || []),
       uiTree: filterNodes(treeData.value?.uiTree || [])

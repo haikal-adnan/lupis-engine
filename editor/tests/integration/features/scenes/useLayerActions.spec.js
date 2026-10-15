@@ -5,7 +5,7 @@ import { engineBridge } from '@engines/engines.js'
 import { usePopAlert } from '@composables/composables.js'
 import { useSceneHistory } from '@historys/historys.js'
 
-// Mock dependency eksternal sesuai batas sistem
+// Mock external dependencies within system boundaries
 vi.mock('@engines/engines.js', () => ({
   engineBridge: {
     addLayer: vi.fn(),
@@ -42,14 +42,14 @@ vi.mock('@historys/historys.js', () => {
   }
 })
 
-describe('Integrasi Layer Actions', () => {
+describe('Layer Actions Integration', () => {
   let sceneStoreState
 
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
 
-    // Mempersiapkan mock state untuk sceneStore yang mengadopsi useLayerActions
+    // Prepare mock state for sceneStore adopting useLayerActions
     sceneStoreState = {
       activeScene: {
         id: 'scene_1',
@@ -67,8 +67,8 @@ describe('Integrasi Layer Actions', () => {
     }
   })
 
-  describe('Tambah Layer (addLayer)', () => {
-    it('menambahkan layer baru ke world section, memberi tahu engine bridge, dan mencatat history', () => {
+  describe('Add Layer (addLayer)', () => {
+    it('adds new layer to world section, notifies engine bridge, and records history', () => {
       // Act
       const newLayer = sceneStoreState.addLayer('Background', 'world', true)
 
@@ -78,14 +78,14 @@ describe('Integrasi Layer Actions', () => {
       expect(newLayer.section).toBe('world')
       expect(newLayer.orderIndex).toBe(1)
 
-      // Verification pada dependency eksternal
+      // Verify external dependencies
       expect(engineBridge.addLayer).toHaveBeenCalledWith(newLayer)
       
       const { recordAddLayer } = useSceneHistory()
       expect(recordAddLayer).toHaveBeenCalledWith(newLayer, 'world')
     })
 
-    it('menambahkan layer baru ke UI section tanpa mencatat history jika recordHistory = false', () => {
+    it('adds new layer to UI section without recording history if recordHistory = false', () => {
       // Act
       const newLayer = sceneStoreState.addLayer('HUD', 'ui', false)
 
@@ -98,7 +98,7 @@ describe('Integrasi Layer Actions', () => {
       expect(recordAddLayer).not.toHaveBeenCalled()
     })
 
-    it('[Bad Path] mengembalikan null jika activeScene tidak ada', () => {
+    it('[Bad Path] returns null if activeScene does not exist', () => {
       // Arrange
       sceneStoreState.activeScene = null
 
@@ -111,8 +111,8 @@ describe('Integrasi Layer Actions', () => {
     })
   })
 
-  describe('Pembaruan Properti Layer (updateLayerName & updateLayerZIndex)', () => {
-    it('memperbarui nama layer dan mengirim pembaruan ke engine bridge dan history', () => {
+  describe('Layer Property Updates (updateLayerName & updateLayerZIndex)', () => {
+    it('updates layer name and sends update to engine bridge and history', () => {
       // Act
       sceneStoreState.updateLayerName('layer_w1', 'Base World')
 
@@ -125,7 +125,7 @@ describe('Integrasi Layer Actions', () => {
       expect(recordLayerPropChange).toHaveBeenCalledWith('layer_w1', 'name', 'World Root', 'Base World')
     })
 
-    it('memperbarui zIndex layer dan mengabaikan jika nilai berupa NaN', () => {
+    it('updates layer zIndex and ignores if value is NaN', () => {
       // Act
       sceneStoreState.updateLayerZIndex('layer_w1', '10')
 
@@ -136,14 +136,14 @@ describe('Integrasi Layer Actions', () => {
       const { recordLayerPropChange } = useSceneHistory()
       expect(recordLayerPropChange).toHaveBeenCalledWith('layer_w1', 'zIndex', 0, 10)
 
-      // Act dengan input tidak valid
+      // Act with invalid input
       sceneStoreState.updateLayerZIndex('layer_w1', 'abc')
-      expect(layer.zIndex).toBe(10) // Nilai tidak berubah
+      expect(layer.zIndex).toBe(10) // Value unchanged
     })
   })
 
-  describe('Hapus Layer (deleteLayer)', () => {
-    it('menghapus layer dan entity di dalamnya jika terdapat lebih dari satu layer', () => {
+  describe('Delete Layer (deleteLayer)', () => {
+    it('deletes layer and entities within if more than one layer exists', () => {
       // Arrange
       const layer2 = sceneStoreState.addLayer('Foreground', 'world')
 
@@ -158,7 +158,7 @@ describe('Integrasi Layer Actions', () => {
       expect(recordDeleteLayer).toHaveBeenCalledWith(layer2, 'world', [])
     })
 
-    it('[Bad Path] mencegah penghapusan layer terakhir dan menampilkan alert warning', () => {
+    it('[Bad Path] prevents deleting last layer and displays warning alert', () => {
       // Act
       sceneStoreState.deleteLayer('layer_w1')
 
@@ -174,7 +174,7 @@ describe('Integrasi Layer Actions', () => {
       })
     })
 
-    it('menghapus entity yang menempel pada layer yang dihapus', () => {
+    it('deletes entities attached to the deleted layer', () => {
       // Arrange
       sceneStoreState.addLayer('Secondary World', 'world')
 
@@ -188,8 +188,8 @@ describe('Integrasi Layer Actions', () => {
     })
   })
 
-  describe('Urutan Layer (reorderLayer)', () => {
-    it('mengubah urutan layer dalam section dan menyinkronkan ke engine bridge', () => {
+  describe('Layer Ordering (reorderLayer)', () => {
+    it('changes layer order within section and synchronizes with engine bridge', () => {
       // Arrange
       const layer2 = sceneStoreState.addLayer('Layer 2', 'world')
 
@@ -211,8 +211,8 @@ describe('Integrasi Layer Actions', () => {
     })
   })
 
-  describe('Duplikasi & Paste Layer (duplicateLayer & pasteLayer)', () => {
-    it('menduplikasi layer beserta entity di dalamnya', () => {
+  describe('Layer Duplication & Paste (duplicateLayer & pasteLayer)', () => {
+    it('duplicates layer along with entities inside it', () => {
       // Act
       const createdIds = sceneStoreState.duplicateLayer('layer_w1')
 
@@ -224,12 +224,12 @@ describe('Integrasi Layer Actions', () => {
       expect(duplicatedLayer.name).toBe('World Root (Copy)')
       expect(duplicatedLayer.id).toBe(createdIds[0])
 
-      // Verifikasi entity juga ikut terduplikasi
+      // Verify entity is also duplicated
       expect(sceneStoreState.activeScene.entities.length).toBe(2)
       expect(engineBridge.createEntity).toHaveBeenCalled()
     })
 
-    it('[Bad Path] menolak paste jika section target berbeda dari section sumber', () => {
+    it('[Bad Path] rejects paste if target section differs from source section', () => {
       // Arrange
       const mockClipboard = {
         type: 'layer',

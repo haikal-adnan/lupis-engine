@@ -1,17 +1,17 @@
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 
-// Impor composable yang diuji langsung dari file sumber
+// Import composable under test directly from source file
 import { useEngineToEditor } from '@engines/useEngineToEditor.js'
 import { engineBridge } from '@engines/engines.js'
 
-// Impor store Pinia terkait
+// Import related Pinia store
 import { useSceneStore } from '@scenes/scenes.js'
 
-// Helper mock OPFS
+// OPFS mock helper
 import { setupMockOPFS } from '@tests/tests.js'
 
-// Mock engineBridge untuk mensimulasikan event dari engine
+// Mock engineBridge to simulate engine events
 vi.mock('@engines/engines.js', () => {
   let entityModifiedHandler = null
   let tilemapUpdatedHandler = null
@@ -25,7 +25,7 @@ vi.mock('@engines/engines.js', () => {
         tilemapUpdatedHandler = cb
       }),
 
-      // Helper buatan khusus test runner untuk memicu event engine
+      // Test runner helper to trigger engine events
       __triggerEntityModified: (data) => {
         if (entityModifiedHandler) entityModifiedHandler(data)
       },
@@ -40,14 +40,14 @@ describe('Integration Test: useEngineToEditor', () => {
   let sceneStore
 
   beforeEach(() => {
-    // 1. Inisialisasi Pinia & Mock Environment
+    // 1. Initialize Pinia & Mock Environment
     setActivePinia(createPinia())
     setupMockOPFS()
 
-    // 2. Inisialisasi sceneStore
+    // 2. Initialize sceneStore
     sceneStore = useSceneStore()
 
-    // Spy method sinkronisasi di sceneStore
+    // Spy synchronization methods on sceneStore
     vi.spyOn(sceneStore, 'syncTransformFromEngine').mockImplementation(() => {})
     vi.spyOn(sceneStore, 'updateComponentProp').mockImplementation(() => {})
     vi.spyOn(sceneStore, 'syncTilemapDataFromEngine').mockImplementation(() => {})
@@ -58,8 +58,8 @@ describe('Integration Test: useEngineToEditor', () => {
     vi.clearAllMocks()
   })
 
-  describe('Inisialisasi Listener Bridge Engine', () => {
-    it('mendaftarkan callback listener ke engineBridge saat listen dipanggil', () => {
+  describe('Engine Bridge Listener Initialization', () => {
+    it('registers listener callbacks to engineBridge when listen is called', () => {
       // Arrange
       const { listen } = useEngineToEditor(sceneStore)
 
@@ -72,8 +72,8 @@ describe('Integration Test: useEngineToEditor', () => {
     })
   })
 
-  describe('Sinkronisasi Event entity:modified (Transform & UITransform)', () => {
-    it('menyinkronkan transform standar dari engine ke sceneStore dengan payload lengkap', () => {
+  describe('Event Synchronization: entity:modified (Transform & UITransform)', () => {
+    it('synchronizes standard transform from engine to sceneStore with complete payload', () => {
       // Arrange
       const { listen } = useEngineToEditor(sceneStore)
       listen()
@@ -123,14 +123,14 @@ describe('Integration Test: useEngineToEditor', () => {
       expect(sceneStore.updateComponentProp).not.toHaveBeenCalled()
     })
 
-    it('menyinkronkan UITransform dengan anchorX/anchorY dan memperbarui status overridden', () => {
+    it('synchronizes UITransform with anchorX/anchorY and updates overridden status', () => {
       // Arrange
       const { listen } = useEngineToEditor(sceneStore)
       listen()
 
       const mockEntities = [
         {
-          id: 456, // Test konversi angka ke String
+          id: 456, // Test number-to-string conversion
           components: {
             UITransform: {
               x: 50,
@@ -175,7 +175,7 @@ describe('Integration Test: useEngineToEditor', () => {
       expect(sceneStore.updateComponentProp).toHaveBeenCalledWith('456', 'UITransform', 'overridden', true)
     })
 
-    it('memproses multiple entity dalam satu event payload sekaligus', () => {
+    it('processes multiple entities in a single event payload', () => {
       // Arrange
       const { listen } = useEngineToEditor(sceneStore)
       listen()
@@ -195,8 +195,8 @@ describe('Integration Test: useEngineToEditor', () => {
     })
   })
 
-  describe('Sinkronisasi Event editor:tilemap:update-data', () => {
-    it('memperbarui data tilemap di sceneStore ketika payload data valid', () => {
+  describe('Event Synchronization: editor:tilemap:update-data', () => {
+    it('updates tilemap data in sceneStore when payload data is valid', () => {
       // Arrange
       const { listen } = useEngineToEditor(sceneStore)
       listen()
@@ -220,8 +220,8 @@ describe('Integration Test: useEngineToEditor', () => {
     })
   })
 
-  describe('Penanganan Kasus Batas dan Data Tidak Valid [Bad Path]', () => {
-    it('[Bad Path] mengabaikan event entity:modified jika payload bernilai null, non-array, atau kosong', () => {
+  describe('Boundary Cases and Invalid Data Handling [Bad Path]', () => {
+    it('[Bad Path] ignores entity:modified event if payload is null, non-array, or empty', () => {
       // Arrange
       const { listen } = useEngineToEditor(sceneStore)
       listen()
@@ -236,7 +236,7 @@ describe('Integration Test: useEngineToEditor', () => {
       expect(sceneStore.syncTransformFromEngine).not.toHaveBeenCalled()
     })
 
-    it('[Bad Path] mengabaikan elemen entity yang tidak memiliki id atau components', () => {
+    it('[Bad Path] ignores entity elements that lack id or components', () => {
       // Arrange
       const { listen } = useEngineToEditor(sceneStore)
       listen()
@@ -254,7 +254,7 @@ describe('Integration Test: useEngineToEditor', () => {
       expect(sceneStore.syncTransformFromEngine).not.toHaveBeenCalled()
     })
 
-    it('[Bad Path] mengabaikan event tilemap jika payload tidak lengkap atau bernilai null', () => {
+    it('[Bad Path] ignores tilemap event if payload is incomplete or null', () => {
       // Arrange
       const { listen } = useEngineToEditor(sceneStore)
       listen()
@@ -262,8 +262,8 @@ describe('Integration Test: useEngineToEditor', () => {
       // Act
       engineBridge.__triggerTilemapUpdated(null)
       engineBridge.__triggerTilemapUpdated({})
-      engineBridge.__triggerTilemapUpdated({ entityId: 'ent-1' }) // tanpa newData
-      engineBridge.__triggerTilemapUpdated({ newData: [[1]] }) // tanpa entityId
+      engineBridge.__triggerTilemapUpdated({ entityId: 'ent-1' }) // without newData
+      engineBridge.__triggerTilemapUpdated({ newData: [[1]] }) // without entityId
 
       // Assert
       expect(sceneStore.syncTilemapDataFromEngine).not.toHaveBeenCalled()

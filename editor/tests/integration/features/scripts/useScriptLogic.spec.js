@@ -7,7 +7,7 @@ import { useFolderStore } from '@folders/folders.js'
 import { useWorkspaceStore } from '@workspaces/workspaces.js'
 import { useProjectStore } from '@projects/projects.js'
 
-// Mock composables dialog & visual alert agar tidak menghambat alur integrasi UI
+// Mock dialog & visual alert composables so they don't block UI integration flow
 const mockPrompt = vi.fn()
 const mockConfirm = vi.fn()
 const mockShowPop = vi.fn()
@@ -26,7 +26,7 @@ describe('Script Logic Composable Integration Test', () => {
     // 2. Setup Mock OPFS Simulator
     setupMockOPFS()
 
-    // 3. Inisialisasi Proyek dan Workspace
+    // 3. Initialize Project and Workspace
     const createdProject = await createMockEmptyProject({
       projectName: 'Script Logic Integration Test Project'
     })
@@ -48,14 +48,14 @@ describe('Script Logic Composable Integration Test', () => {
     vi.clearAllMocks()
   })
 
-  describe('Integrasi Navigasi, Hierarki Folder, dan Penyaringan Visual (Breadcrumb, Sorting, Filtering)', () => {
-    it('menghitung breadcrumbs folder secara terstruktur dan menyaring isi direktori berdasarkan folder aktif', () => {
+  describe('Navigation, Folder Hierarchy, and Visual Filtering Integration (Breadcrumb, Sorting, Filtering)', () => {
+    it('computes folder breadcrumbs structurally and filters directory contents based on active folder', () => {
       // Arrange
       const folderStore = useFolderStore()
       const scriptStore = useScriptStore()
       const scriptLogic = useScriptLogic()
 
-      // Buat struktur folder bertingkat: Root -> FolderA -> FolderB
+      // Create nested folder structure: Root -> FolderA -> FolderB
       folderStore.initFolders([
         { id: 'f-1', name: 'Utilities', parentId: null, section: 'scripts' },
         { id: 'f-2', name: 'MathHelpers', parentId: 'f-1', section: 'scripts' }
@@ -67,7 +67,7 @@ describe('Script Logic Composable Integration Test', () => {
         { id: 'sc-3', name: 'AlgebraMath', folderId: 'f-2' }
       ])
 
-      // Act: Navigasi ke Folder B (f-2)
+      // Act: Navigate to Folder B (f-2)
       scriptLogic.navigateTo({ id: 'f-2' })
 
       // Assert Breadcrumbs
@@ -75,13 +75,13 @@ describe('Script Logic Composable Integration Test', () => {
       expect(scriptLogic.folderBreadcrumbs.value[0].name).toBe('Utilities')
       expect(scriptLogic.folderBreadcrumbs.value[1].name).toBe('MathHelpers')
 
-      // Assert Visible Scripts terurut secara alami (AlgebraMath -> VectorMath)
+      // Assert Visible Scripts sorted naturally (AlgebraMath -> VectorMath)
       expect(scriptLogic.visibleScripts.value).toHaveLength(2)
       expect(scriptLogic.visibleScripts.value[0].name).toBe('AlgebraMath')
       expect(scriptLogic.visibleScripts.value[1].name).toBe('VectorMath')
     })
 
-    it('menyaring daftar script dan folder secara real-time saat searchQuery diisi', () => {
+    it('filters script and folder list in real-time when searchQuery is populated', () => {
       // Arrange
       const scriptStore = useScriptStore()
       const folderStore = useFolderStore()
@@ -97,7 +97,7 @@ describe('Script Logic Composable Integration Test', () => {
         { id: 'sc-2', name: 'EnemyAI', folderId: null }
       ])
 
-      // Act: Masukkan query pencarian "phys"
+      // Act: Enter search query "phys"
       scriptLogic.searchQuery.value = 'phys'
 
       // Assert
@@ -105,7 +105,7 @@ describe('Script Logic Composable Integration Test', () => {
       expect(scriptLogic.visibleFolders.value[0].name).toBe('PhysicsNodes')
       expect(scriptLogic.visibleScripts.value).toHaveLength(0)
 
-      // Act: Ganti query pencarian ke "player"
+      // Act: Change search query to "player"
       scriptLogic.searchQuery.value = 'player'
 
       // Assert
@@ -115,8 +115,8 @@ describe('Script Logic Composable Integration Test', () => {
     })
   })
 
-  describe('Integrasi Drag & Drop dan Clipboard (Move, Cut & Paste, Copy & Paste)', () => {
-    it('memindahkan script ke target folder ketika event handleDrop dipanggil', async () => {
+  describe('Drag & Drop and Clipboard Integration (Move, Cut & Paste, Copy & Paste)', () => {
+    it('moves script to target folder when handleDrop event is called', async () => {
       // Arrange
       const scriptStore = useScriptStore()
       const folderStore = useFolderStore()
@@ -136,7 +136,7 @@ describe('Script Logic Composable Integration Test', () => {
         }
       }
 
-      // Act: Drop ke folder target
+      // Act: Drop into target folder
       await scriptLogic.handleDrop(mockDropEvent, 'target-folder')
 
       // Assert
@@ -144,7 +144,7 @@ describe('Script Logic Composable Integration Test', () => {
       expect(movedScript.folderId).toBe('target-folder')
     })
 
-    it('menangani operasi Cut & Paste item menggunakan clipboard', async () => {
+    it('handles item Cut & Paste operation using clipboard', async () => {
       // Arrange
       const scriptStore = useScriptStore()
       const folderStore = useFolderStore()
@@ -158,25 +158,25 @@ describe('Script Logic Composable Integration Test', () => {
         { id: 'sc-cut-1', name: 'CutScript', folderId: null }
       ])
 
-      // 1. Simpan aksi Cut pada clipboard
+      // 1. Store Cut action in clipboard
       scriptLogic.clipboard.value = {
         action: 'cut',
         item: { id: 'sc-cut-1', type: 'script' }
       }
 
-      // 2. Navigasi ke DestinationFolder
+      // 2. Navigate to DestinationFolder
       scriptLogic.navigateTo({ id: 'f-dest' })
 
-      // Act: Jalankan Paste
+      // Act: Run Paste
       await scriptLogic.handlePaste()
 
       // Assert
       const pastedScript = scriptStore.getScriptById('sc-cut-1')
       expect(pastedScript.folderId).toBe('f-dest')
-      expect(scriptLogic.clipboard.value).toBeNull() // Clipboard dibersihkan setelah cut-paste
+      expect(scriptLogic.clipboard.value).toBeNull() // Clipboard cleared after cut-paste
     })
 
-    it('menangani operasi Copy & Paste script (duplicate) menggunakan clipboard', async () => {
+    it('handles script Copy & Paste operation (duplicate) using clipboard', async () => {
       // Arrange
       const scriptStore = useScriptStore()
       const scriptLogic = useScriptLogic()
@@ -199,8 +199,8 @@ describe('Script Logic Composable Integration Test', () => {
     })
   })
 
-  describe('Integrasi Pembukaan Editor Graph (handleOpenGraph)', () => {
-    it('mengatur activeScript di scriptStore dan membuka tab diagram baru pada workspaceStore', () => {
+  describe('Graph Editor Opening Integration (handleOpenGraph)', () => {
+    it('sets activeScript in scriptStore and opens new diagram tab in workspaceStore', () => {
       // Arrange
       const scriptStore = useScriptStore()
       const workspaceStore = useWorkspaceStore()
@@ -212,11 +212,11 @@ describe('Script Logic Composable Integration Test', () => {
       // Act
       scriptLogic.handleOpenGraph(targetScript)
 
-      // Assert State Active Script pada ScriptStore
+      // Assert Active Script State on ScriptStore
       expect(scriptStore.activeScript).not.toBeNull()
       expect(scriptStore.activeScript.id).toBe('sc-graph-1')
 
-      // Assert Workspace Tab Terbuka
+      // Assert Workspace Tab Opened
       expect(workspaceStore.tabs).toContainEqual(expect.objectContaining({
         id: 'sc-graph-1',
         name: 'CameraGraphScript',
@@ -226,8 +226,8 @@ describe('Script Logic Composable Integration Test', () => {
     })
   })
 
-  describe('Integrasi Aksi CRUD Kompleks (createScript, handleDelete, handleRename)', () => {
-    it('membuat script baru langsung di folder aktif saat ini', async () => {
+  describe('Complex CRUD Actions Integration (createScript, handleDelete, handleRename)', () => {
+    it('creates new script directly inside current active folder', async () => {
       // Arrange
       const scriptStore = useScriptStore()
       const folderStore = useFolderStore()
@@ -249,7 +249,7 @@ describe('Script Logic Composable Integration Test', () => {
       expect(scriptStore.scripts[0].folderId).toBe('active-f')
     })
 
-    it('menghapus script terpilih dan mereset selectedId jika item yang dihapus sedang dipilih', async () => {
+    it('deletes selected script and resets selectedId if deleted item was selected', async () => {
       // Arrange
       const scriptStore = useScriptStore()
       const scriptLogic = useScriptLogic()
@@ -262,7 +262,7 @@ describe('Script Logic Composable Integration Test', () => {
       scriptLogic.handleSelect('sc-select-del')
       expect(scriptLogic.selectedId.value).toBe('sc-select-del')
 
-      mockConfirm.mockResolvedValue(true) // User konfirmasi hapus
+      mockConfirm.mockResolvedValue(true) // User confirms delete
 
       // Act
       await scriptLogic.handleDelete({ id: 'sc-select-del' })
@@ -273,8 +273,8 @@ describe('Script Logic Composable Integration Test', () => {
     })
   })
 
-  describe('[Bad Path] Penanganan Payload & Operasi Tak Valid', () => {
-    it('[Bad Path] mengabaikan handleDrop secara aman jika format payload JSON tidak valid', async () => {
+  describe('[Bad Path] Invalid Payload & Operation Handling', () => {
+    it('[Bad Path] safely ignores handleDrop if JSON payload format is invalid', async () => {
       // Arrange
       const scriptLogic = useScriptLogic()
 
@@ -284,11 +284,11 @@ describe('Script Logic Composable Integration Test', () => {
         }
       }
 
-      // Act & Assert (tidak melempar exception fatal ke runtime)
+      // Act & Assert (does not throw fatal runtime exception)
       await expect(scriptLogic.handleDrop(mockInvalidDropEvent)).resolves.not.toThrow()
     })
 
-    it('[Bad Path] mengabaikan handleOpenGraph jika objek script null atau undefined', () => {
+    it('[Bad Path] ignores handleOpenGraph if script object is null or undefined', () => {
       // Arrange
       const workspaceStore = useWorkspaceStore()
       const scriptStore = useScriptStore()

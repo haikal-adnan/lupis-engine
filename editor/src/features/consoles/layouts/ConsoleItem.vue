@@ -14,18 +14,54 @@
         {{ log.formattedTime }}
       </span>
       
-      <span 
-        v-if="log.source"
-        class="font-semibold mr-2 cursor-pointer hover:underline opacity-80 group-hover:opacity-100 transition-opacity"
-        :class="sourceColorClass"
-        :title="log.source"
-      >
-        [{{ log.source }}]
-      </span>
+      <!-- Mapped Context Badges: [Scene Name] [Entity Script ID] [Script Name] [Node Name] -->
+      <template v-if="parsedContext">
+        <span class="inline-flex flex-wrap items-center gap-1 mr-2 align-middle select-none">
+          <span 
+            class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-secondary/80 text-foreground/90 border border-border/50"
+            :title="`Scene: ${parsedContext.scene}`"
+          >
+            [{{ parsedContext.scene }}]
+          </span>
+          <span 
+            class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-sky-500/10 text-sky-400 border border-sky-500/20"
+            :title="`Entity Script ID: ${parsedContext.entityScriptId}`"
+          >
+            [{{ parsedContext.entityScriptId }}]
+          </span>
+          <span 
+            class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-purple-500/10 text-purple-400 border border-purple-500/20"
+            :title="`Script: ${parsedContext.script}`"
+          >
+            [{{ parsedContext.script }}]
+          </span>
+          <span 
+            class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+            :title="`Node: ${parsedContext.node}`"
+          >
+            [{{ parsedContext.node }}]
+          </span>
+        </span>
+        <span :class="messageColorClass">
+          {{ displayMessage }}
+        </span>
+      </template>
 
-      <span :class="messageColorClass">
-        {{ log.message }}
-      </span>
+      <!-- Standard log without context mapping -->
+      <template v-else>
+        <span 
+          v-if="log.source"
+          class="font-semibold mr-2 cursor-pointer hover:underline opacity-80 group-hover:opacity-100 transition-opacity"
+          :class="sourceColorClass"
+          :title="log.source"
+        >
+          [{{ log.source }}]
+        </span>
+
+        <span :class="messageColorClass">
+          {{ log.message }}
+        </span>
+      </template>
     </div>
   </div>
 </template>
@@ -36,6 +72,38 @@ import { Info, TriangleAlert, CircleX } from 'lucide-vue-next'
 
 const props = defineProps({
   log: { type: Object, required: true } 
+})
+
+const parsedContext = computed(() => {
+  if (props.log.context && (props.log.context.scene || props.log.context.node)) {
+    return {
+      scene: props.log.context.scene || 'Scene',
+      entityScriptId: props.log.context.entityScriptId || props.log.context.entity || 'Entity',
+      script: props.log.context.script || 'Script',
+      node: props.log.context.node || 'Node'
+    }
+  }
+
+  const match = props.log.message?.match(/^\[(.*?)\]\s*\[(.*?)\]\s*\[(.*?)\]\s*\[(.*?)\]\s*([\s\S]*)$/)
+  if (match) {
+    return {
+      scene: match[1],
+      entityScriptId: match[2],
+      script: match[3],
+      node: match[4]
+    }
+  }
+  return null
+})
+
+const displayMessage = computed(() => {
+  if (parsedContext.value) {
+    const match = props.log.message?.match(/^\[(.*?)\]\s*\[(.*?)\]\s*\[(.*?)\]\s*\[(.*?)\]\s*([\s\S]*)$/)
+    if (match) {
+      return match[5]
+    }
+  }
+  return props.log.message
 })
 
 const rowColorClass = computed(() => {

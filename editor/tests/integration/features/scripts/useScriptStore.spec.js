@@ -1,5 +1,3 @@
-// lokasi: tests/integration/features/scripts/useScriptStore.spec.js
-
 import { describe, beforeEach, afterEach, it, expect, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { setupMockOPFS, createMockEmptyProject } from '@tests/tests.js'
@@ -41,8 +39,8 @@ describe('Script Store Integration Test', () => {
     }
   })
 
-  describe('Integrasi Manajemen Node Canvas dan State internal Script', () => {
-    it('menambahkan node baru ke active script dan memperbarui state pilihan serta menandai proyek dirty', () => {
+  describe('Canvas Node Management and Internal Script State Integration', () => {
+    it('adds new node to active script, updates selection state, and marks project as dirty', () => {
       const scriptStore = useScriptStore()
       const projectStore = useProjectStore()
 
@@ -66,7 +64,7 @@ describe('Script Store Integration Test', () => {
       expect(projectStore.syncStatus).toBe('dirty')
     })
 
-    it('menghubungkan edge antar node dan membersihkan edge secara otomatis jika node dihapus', () => {
+    it('connects edges between nodes and automatically cleans up edges when node is removed', () => {
       const scriptStore = useScriptStore()
       scriptStore.initScripts([
         { id: 'script-1', name: 'LogicScript', nodes: [], edges: [] }
@@ -93,7 +91,7 @@ describe('Script Store Integration Test', () => {
       expect(scriptStore.isInputConnected('node-B', 'in_1')).toBe(false)
     })
 
-    it('mengelola seleksi multi-node dan menyinkronkan getter selectedNode serta selectedNodes', () => {
+    it('manages multi-node selection and synchronizes selectedNode and selectedNodes getters', () => {
       const scriptStore = useScriptStore()
       scriptStore.initScripts([
         { id: 'script-sel', name: 'SelectionScript', nodes: [], edges: [] }
@@ -118,7 +116,7 @@ describe('Script Store Integration Test', () => {
       expect(scriptStore.selectedNode?.id).toBe('node-1')
     })
 
-    it('memperbarui properti node (data & settings) secara parsial dengan updateNodeInActive', () => {
+    it('updates node properties (data & settings) partially with updateNodeInActive', () => {
       const scriptStore = useScriptStore()
       scriptStore.initScripts([
         { id: 'script-upd', name: 'UpdateScript', nodes: [], edges: [] }
@@ -143,7 +141,7 @@ describe('Script Store Integration Test', () => {
       expect(node.data).toMatchObject({ a: 1, b: 20, c: 30 })
     })
 
-    it('memperbarui modifier pada edge dan menyimpan perubahan ke active script', () => {
+    it('updates edge modifier and saves changes to active script', () => {
       const scriptStore = useScriptStore()
       scriptStore.initScripts([
         { id: 'script-mod', name: 'ModifierScript', nodes: [], edges: [] }
@@ -166,7 +164,7 @@ describe('Script Store Integration Test', () => {
   })
 
   describe('Dynamic Port Management (Sequential & Property Modes)', () => {
-    it('menambahkan dan menghapus input port pada node sequential serta cascade delete edge', () => {
+    it('adds and removes input ports on sequential nodes and cascades edge deletion', () => {
       const scriptStore = useScriptStore()
       scriptStore.initScripts([
         { id: 'script-dynamic', name: 'DynamicScript', nodes: [], edges: [] }
@@ -214,7 +212,7 @@ describe('Script Store Integration Test', () => {
       expect(scriptStore.activeScript.edges).toHaveLength(0)
     })
 
-    it('menghapus seluruh port input pada node berjenis inputProperty hingga kosong', () => {
+    it('removes all input ports on inputProperty node until empty', () => {
       const scriptStore = useScriptStore()
       scriptStore.initScripts([
         { id: 'script-prop', name: 'PropertyScript', nodes: [], edges: [] }
@@ -241,7 +239,7 @@ describe('Script Store Integration Test', () => {
       expect(updatedNode.inputs).toHaveLength(0)
     })
 
-    it('menambahkan dan menghapus output port pada node dengan dynamicMode outputProperty', () => {
+    it('adds and removes output ports on node with outputProperty dynamicMode', () => {
       const scriptStore = useScriptStore()
       scriptStore.initScripts([
         { id: 'script-dyn-out', name: 'DynOutScript', nodes: [], edges: [] }
@@ -268,7 +266,7 @@ describe('Script Store Integration Test', () => {
       expect(updatedNode.outputs).toHaveLength(0)
     })
 
-    it('mengabaikan penambahan port jika node memiliki dynamicMode none (node statis)', () => {
+    it('ignores port addition if node has none dynamicMode (static node)', () => {
       const scriptStore = useScriptStore()
       scriptStore.initScripts([
         { id: 'script-static', name: 'StaticScript', nodes: [], edges: [] }
@@ -292,8 +290,8 @@ describe('Script Store Integration Test', () => {
     })
   })
 
-  describe('Integrasi Simpan & Hapus dengan OPFS Storage', () => {
-    it('menyimpan single script dan membuat metadata scripts.json secara terstruktur di OPFS', async () => {
+  describe('OPFS Storage Save & Delete Integration', () => {
+    it('saves single script and creates structured scripts.json metadata in OPFS', async () => {
       const scriptStore = useScriptStore()
       const workspaceStore = useWorkspaceStore()
 
@@ -330,7 +328,7 @@ describe('Script Store Integration Test', () => {
       ])
     })
 
-    it('menghapus script dari state RAM dan menghapus file fisik di OPFS', async () => {
+    it('removes script from RAM state and deletes physical file in OPFS', async () => {
       const scriptStore = useScriptStore()
       scriptStore.initScripts([
         { id: 'script-to-delete', name: 'TempScript' }
@@ -351,7 +349,7 @@ describe('Script Store Integration Test', () => {
       await expect(scriptsDir.getFileHandle('script-to-delete.json')).rejects.toThrow()
     })
 
-    it('menyelaraskan seluruh script di RAM ke OPFS saat syncAllScriptsToOPFS dipanggil', async () => {
+    it('aligns all scripts in RAM to OPFS when syncAllScriptsToOPFS is called', async () => {
       const scriptStore = useScriptStore()
       scriptStore.initScripts([
         { id: 's-1', name: 'Script Alpha' },
@@ -376,7 +374,7 @@ describe('Script Store Integration Test', () => {
       expect(file2Data.id).toBe('s-2')
     })
 
-    it('memindahkan folder script dan menyinkronkan metadata OPFS via moveScript', async () => {
+    it('moves script folder and synchronizes OPFS metadata via moveScript', async () => {
       const scriptStore = useScriptStore()
       scriptStore.initScripts([
         { id: 'script-move', name: 'MoveMe', folderId: null }
@@ -393,8 +391,8 @@ describe('Script Store Integration Test', () => {
     })
   })
 
-  describe('Integrasi Antar-Store (ProjectStore & ScriptStore via OPFS)', () => {
-    it('memuat data scripts dari storage OPFS secara penuh ketika projectStore.loadProject dipanggil', async () => {
+  describe('Cross-Store Integration (ProjectStore & ScriptStore via OPFS)', () => {
+    it('fully loads scripts data from OPFS storage when projectStore.loadProject is called', async () => {
       const projectStore = useProjectStore()
       const scriptStore = useScriptStore()
       const workspaceStore = useWorkspaceStore()
@@ -432,7 +430,7 @@ describe('Script Store Integration Test', () => {
       expect(projectStore.syncStatus).toBe('synced')
     })
 
-    it('mempertahankan konsistensi state dan menyimpan struktur script saat saveProjectToServer dijalankan', async () => {
+    it('maintains state consistency and saves script structure when saveProjectToServer is executed', async () => {
       const projectStore = useProjectStore()
       const scriptStore = useScriptStore()
 
@@ -462,8 +460,8 @@ describe('Script Store Integration Test', () => {
     })
   })
 
-  describe('[Bad Path] Penanganan Error & Skenario Tak Terduga', () => {
-    it('[Bad Path] menangani kegagalan pembacaan OPFS secara terisolasi tanpa merusak state RAM', async () => {
+  describe('[Bad Path] Error Handling & Unexpected Scenarios', () => {
+    it('[Bad Path] handles OPFS read failures in isolation without corrupting RAM state', async () => {
       const scriptStore = useScriptStore()
       scriptStore.initScripts([
         { id: 'script-ghost', name: 'GhostScript' }
@@ -473,7 +471,7 @@ describe('Script Store Integration Test', () => {
       expect(scriptStore.getScriptById('script-ghost')).toBeUndefined()
     })
 
-    it('[Bad Path] mengabaikan penambahan edge ke node yang sama (self-loop boundary)', () => {
+    it('[Bad Path] ignores adding edge to same node (self-loop boundary)', () => {
       const scriptStore = useScriptStore()
       scriptStore.initScripts([
         { id: 'script-loop', name: 'LoopScript' }
@@ -491,7 +489,7 @@ describe('Script Store Integration Test', () => {
       expect(scriptStore.activeScript.edges).toHaveLength(0)
     })
 
-    it('[Bad Path] tidak melakukan perubahan jika menghapus port pada node yang tidak terdaftar', () => {
+    it('[Bad Path] makes no changes when removing port on unregistered node', () => {
       const scriptStore = useScriptStore()
       scriptStore.initScripts([
         { id: 'script-port-err', name: 'PortErrScript' }
@@ -503,7 +501,7 @@ describe('Script Store Integration Test', () => {
       }).not.toThrow()
     })
 
-    it('[Bad Path] melempar error pada spawnNodeByType jika tipe blueprint tidak ditemukan di catalog', () => {
+    it('[Bad Path] throws error on spawnNodeByType if blueprint type is not found in catalog', () => {
       const scriptStore = useScriptStore()
       scriptStore.initScripts([
         { id: 'script-spawn', name: 'SpawnScript', nodes: [], edges: [] }
@@ -512,7 +510,7 @@ describe('Script Store Integration Test', () => {
 
       expect(() => {
         scriptStore.spawnNodeByType('blueprint_unknown_123')
-      }).toThrow('[ScriptStore] Blueprint type "blueprint_unknown_123" tidak ditemukan pada catalog!')
+      }).toThrow('[ScriptStore] Blueprint type "blueprint_unknown_123" not found in catalog!')
     })
   })
 })

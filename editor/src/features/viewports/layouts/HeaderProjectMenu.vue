@@ -119,9 +119,9 @@ async function handleSyncProject() {
 
   const isConfirmed = await confirm({
     title: 'Sync from Server?',
-    message: 'Apakah Anda yakin? Seluruh perubahan yang belum di-save akan hilang dan editor akan memuat ulang data terakhir dari server.',
+    message: 'Are you sure? All unsaved changes will be lost and the editor will reload the latest data from the server.',
     type: 'warning',
-    confirmText: 'Ya, Sinkronisasi'
+    confirmText: 'Sync'
   });
 
   if (isConfirmed) {
@@ -141,9 +141,9 @@ async function handleBackToDashboard() {
   if (projectStore.syncStatus === 'dirty') {
     const isConfirmed = await confirm({
       title: 'Unsaved Changes',
-      message: 'Anda memiliki perubahan yang belum disimpan. Yakin ingin keluar dari editor? Perubahan yang belum di-save akan hilang.',
+      message: 'You have unsaved changes. Are you sure you want to leave the editor? Unsaved changes will be lost.',
       type: 'danger',
-      confirmText: 'Keluar Tanpa Save'
+      confirmText: 'Leave Without Saving'
     });
     
     if (!isConfirmed) return;

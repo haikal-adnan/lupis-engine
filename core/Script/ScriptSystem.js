@@ -26,7 +26,7 @@ export default class ScriptSystem {
                 runner.owner.tag === 'ui'
             );
 
-            // Script UI atau script dengan flag runInPause tetap berjalan saat pause
+            // UI scripts or scripts with runInPause flag continue running during pause
             if (!isPaused || isUIEntity || runner.runInPause) {
                 runner.update(dt);
             }

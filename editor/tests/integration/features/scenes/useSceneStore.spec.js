@@ -4,7 +4,7 @@ import { useSceneStore, sceneSchema, entitySchema, layerSchema } from '@scenes/s
 import { useProjectStore } from '@projects/projects.js'
 import { setupMockOPFS, createMockEmptyProject } from '@tests/tests.js'
 
-// Mock dependency eksternal
+// Mock external dependencies
 vi.mock('@engines/engines.js', () => ({
   engineBridge: {
     addLayer: vi.fn(),
@@ -32,7 +32,7 @@ vi.mock('@historys/historys.js', () => ({
   })
 }))
 
-describe('Integrasi Scene Store', () => {
+describe('Scene Store Integration', () => {
   let sceneStore
 
   beforeEach(() => {
@@ -51,8 +51,8 @@ describe('Integrasi Scene Store', () => {
     return projectStore
   }
 
-  describe('Inisialisasi & Pengaturan Scene (initScenes, createDefaultScene, setActiveScene)', () => {
-    it('menginisialisasi daftar scene dan menetapkan activeSceneId secara otomatis jika belum ada', () => {
+  describe('Scene Initialization & Settings (initScenes, createDefaultScene, setActiveScene)', () => {
+    it('initializes scenes list and sets activeSceneId automatically if not set', () => {
       // Arrange
       const rawScenes = [
         sceneSchema({ id: 'sc_1', name: 'Level 1' }),
@@ -68,7 +68,7 @@ describe('Integrasi Scene Store', () => {
       expect(sceneStore.activeScene.name).toBe('Level 1')
     })
 
-    it('membuat default scene baru dan menjadikannya active scene', () => {
+    it('creates a new default scene and sets it as active scene', () => {
       // Act
       const defaultScene = sceneStore.createDefaultScene()
 
@@ -80,7 +80,7 @@ describe('Integrasi Scene Store', () => {
       expect(sceneStore.activeScene.layersUI.length).toBe(1)
     })
 
-    it('mengubah activeSceneId dan mengosongkan selectedEntityIds saat berpindah scene', () => {
+    it('changes activeSceneId and clears selectedEntityIds when switching scenes', () => {
       // Arrange
       sceneStore.initScenes([
         sceneSchema({ id: 'sc_1', name: 'Level 1' }),
@@ -96,7 +96,7 @@ describe('Integrasi Scene Store', () => {
       expect(sceneStore.selectedEntityIds).toEqual([])
     })
 
-    it('[Bad Path] mengabaikan setActiveScene jika sceneId tidak ditemukan', () => {
+    it('[Bad Path] ignores setActiveScene if sceneId is not found', () => {
       // Arrange
       sceneStore.initScenes([sceneSchema({ id: 'sc_1', name: 'Level 1' })])
 
@@ -108,8 +108,8 @@ describe('Integrasi Scene Store', () => {
     })
   })
 
-  describe('Getters Evaluasi (activeScene, sceneOptions, activeEntities, activeLayers)', () => {
-    it('menghasilkan opsi pilihan scene, entitas aktif, dan gabungan layer dengan tag section', () => {
+  describe('Getters Evaluation (activeScene, sceneOptions, activeEntities, activeLayers)', () => {
+    it('produces scene options, active entities, and merged layers with section tag', () => {
       // Arrange
       const scene = sceneSchema({
         id: 'sc_1',
@@ -133,7 +133,7 @@ describe('Integrasi Scene Store', () => {
       expect(layers.find(l => l.id === 'lu_1')._section).toBe('ui')
     })
 
-    it('[Bad Path] mengembalikan array kosong pada getters entitas/layer jika activeScene bernilai null', () => {
+    it('[Bad Path] returns empty array for entity/layer getters if activeScene is undefined', () => {
       // Assert
       expect(sceneStore.activeScene).toBeUndefined()
       expect(sceneStore.activeEntities).toEqual([])
@@ -141,7 +141,7 @@ describe('Integrasi Scene Store', () => {
     })
   })
 
-  describe('Sinkronisasi Komponen dari Engine (syncComponentFromEngine & syncTransformFromEngine)', () => {
+  describe('Component Synchronization from Engine (syncComponentFromEngine & syncTransformFromEngine)', () => {
     beforeEach(() => {
       sceneStore.initScenes([
         sceneSchema({
@@ -166,7 +166,7 @@ describe('Integrasi Scene Store', () => {
       ])
     })
 
-    it('menyinkronkan data transform world dari engine ke store', () => {
+    it('synchronizes world transform data from engine to store', () => {
       // Act
       sceneStore.syncTransformFromEngine('ent_world', { x: 120, y: 250 })
 
@@ -174,10 +174,10 @@ describe('Integrasi Scene Store', () => {
       const transform = sceneStore.activeEntities[0].components.Transform
       expect(transform.x).toBe(120)
       expect(transform.y).toBe(250)
-      expect(transform.width).toBe(100) // Properti lain tidak tertimpa
+      expect(transform.width).toBe(100) // Other properties preserved
     })
 
-    it('menyinkronkan data transform UI dari engine ke store', () => {
+    it('synchronizes UI transform data from engine to store', () => {
       // Act
       sceneStore.syncTransformFromEngine('ent_ui', { x: 50, y: 80 })
 
@@ -187,7 +187,7 @@ describe('Integrasi Scene Store', () => {
       expect(uiTransform.y).toBe(80)
     })
 
-    it('memperbarui komponen parsial menggunakan patchComponent', () => {
+    it('updates partial component using patchComponent', () => {
       // Arrange
       sceneStore.syncComponentFromEngine('ent_world', 'SpriteRenderer', { color: '#FF0000' })
 
@@ -200,13 +200,13 @@ describe('Integrasi Scene Store', () => {
     })
   })
 
-  describe('Integrasi Action Komposisi dengan Project Store (useSceneActions via Store)', () => {
-    it('menambahkan scene melalui action terkomposisi dan mendaftarkannya ke project store', async () => {
+  describe('Action Composition Integration with Project Store (useSceneActions via Store)', () => {
+    it('adds scene via composed action and registers it in project store', async () => {
       // Arrange
       const projectStore = await prepareProjectStore()
 
       // Act
-      const newScene = sceneStore.addScene({ name: 'Level Baru' })
+      const newScene = sceneStore.addScene({ name: 'New Level' })
 
       // Assert
       expect(sceneStore.scenes.length).toBe(1)

@@ -13,8 +13,8 @@ import { fileURLToPath } from 'node:url';
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const E2E_DIR = join(ROOT, 'e2e');
 
-/** Application UI strings that are intentionally Indonesian (they are the app's real labels). */
-const UI_STRING_ALLOWLIST = ['Buat Proyek Baru', 'Ganti Nama', 'Simpan'];
+/** Application UI strings allowlist (all app UI strings are now in professional English). */
+const UI_STRING_ALLOWLIST = [];
 
 /** Distinctive Indonesian words. Kept unambiguous to avoid English false positives. */
 const INDONESIAN_WORDS = [

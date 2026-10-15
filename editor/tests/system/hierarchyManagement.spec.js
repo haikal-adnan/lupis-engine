@@ -17,7 +17,7 @@ import {
   createMockScene
 } from '@tests/tests.js'
 
-// Mock composables dialog untuk pengujian terisolasi
+// Mock dialog composables for isolated testing
 vi.mock('@composables/composables.js', () => ({
   usePopAlert: () => ({ showPop: vi.fn() }),
   useConfirm: () => ({ confirm: vi.fn().mockResolvedValue(true) }),
@@ -42,7 +42,7 @@ describe('Hierarchy Management Integration', () => {
       scenes: []
     }
 
-    // Reset spy engineBridge
+    // Reset engineBridge spies
     vi.restoreAllMocks()
     vi.spyOn(engineBridge, 'addLayer').mockImplementation(() => {})
     vi.spyOn(engineBridge, 'deleteLayer').mockImplementation(() => {})
@@ -138,7 +138,7 @@ describe('Hierarchy Management Integration', () => {
       setupMockSceneEnvironment({ layersWorld: [layer], entities: [entityA, entityB] })
       const { moveEntity } = useHierarchyLogic()
 
-      // Act: Pindahkan entityB ke dalam entityA (position: 'inside')
+      // Act: Move entityB into entityA (position: 'inside')
       moveEntity('ent_b', { id: 'ent_a', type: 'entity', layerId: layer.id }, 'inside')
 
       // Assert
@@ -160,12 +160,12 @@ describe('Hierarchy Management Integration', () => {
       setupMockSceneEnvironment({ layersWorld: [layer], entities: [parent, child] })
       const { moveEntity } = useHierarchyLogic()
 
-      // Act: Coba geser parent ke dalam child-nya sendiri
+      // Act: Try moving parent into its own child
       moveEntity('parent_x', { id: 'child_y', type: 'entity', layerId: layer.id }, 'inside')
 
       // Assert
       const parentEntity = sceneStore.activeScene.entities.find(e => e.id === 'parent_x')
-      expect(parentEntity.parentId).toBeNull() // Posisi tidak berubah
+      expect(parentEntity.parentId).toBeNull() // Position unchanged
       expect(engineBridge.moveEntity).not.toHaveBeenCalled()
     })
   })
@@ -186,9 +186,9 @@ describe('Hierarchy Management Integration', () => {
       })
       const { moveEntity } = useHierarchyLogic()
 
-      // Act 1: Coba pindahkan entitas World ke UI Layer
+      // Act 1: Try moving World entity to UI Layer
       moveEntity('ent_world', { id: 'layer_ui_1', type: 'layer', section: 'ui' }, 'inside')
-      // Act 2: Coba pindahkan entitas UI ke World Layer
+      // Act 2: Try moving UI entity to World Layer
       moveEntity('ent_ui', { id: 'layer_world_1', type: 'layer', section: 'world' }, 'inside')
 
       // Assert
@@ -204,12 +204,12 @@ describe('Hierarchy Management Integration', () => {
 
       setupMockSceneEnvironment({ entities: [prefabParent, prefabChild] })
 
-      // Act: Coba buat entitas baru di dalam anak dari instansi prefab
+      // Act: Try creating new entity inside child of prefab instance
       const result = sceneStore.createEntity('sprite', { id: 'prefab_child_1', type: 'entity', layerId: 'layer_world_default' })
 
       // Assert
       expect(result).toBe(false)
-      expect(sceneStore.activeScene.entities).toHaveLength(2) // Tidak ada entitas baru bertambah
+      expect(sceneStore.activeScene.entities).toHaveLength(2) // No new entity added
     })
 
     it('[Bad Path] restricts deleting an entity located inside a Prefab instance', () => {
@@ -258,7 +258,7 @@ describe('Hierarchy Management Integration', () => {
 
       setupMockSceneEnvironment({ layersWorld: [layerA, layerB, layerC] })
 
-      // Act: Pindahkan layerC ke atas layerA (position: 'top')
+      // Act: Move layerC above layerA (position: 'top')
       sceneStore.reorderLayer('layer_c', 'layer_a', 'top')
 
       // Assert
@@ -281,7 +281,7 @@ describe('Hierarchy Management Integration', () => {
       setupMockSceneEnvironment({ layersWorld: [layer], entities: [ent1, ent2] })
       const { moveEntity } = useHierarchyLogic()
 
-      // Act: Pindahkan ent2 ke sebelum ent1 (position: 'top' / 'before')
+      // Act: Move ent2 before ent1 (position: 'top' / 'before')
       moveEntity('ent_2', { id: 'ent_1', type: 'entity', layerId: layer.id, zIndex: 0, parentId: null }, 'top')
 
       // Assert

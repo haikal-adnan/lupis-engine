@@ -148,14 +148,14 @@ export const useWorkspaceStore = defineStore('workspace', {
 
       if (!nextTab) return
 
-      // Jika berpindah antar tipe tab yang berbeda
+      // If switching between different tab types
       if (currentTab && currentTab.type !== nextTab.type) {
         const specificTabs = TAB_SPECIFIC_BOTTOM_TABS[currentTab.type] || []
 
-        // Jika bottom bar saat ini adalah fitur khusus editor sebelumnya (misal timeline di animator)
+        // If current bottom bar is specific to previous editor (e.g. timeline in animator)
         if (specificTabs.includes(this.activeBottomTabId)) {
           this.isBottomBarOpen = false
-          this.activeBottomTabId = 'assets' // reset ke tab umum
+          this.activeBottomTabId = 'assets' // reset to general tab
         }
       }
 

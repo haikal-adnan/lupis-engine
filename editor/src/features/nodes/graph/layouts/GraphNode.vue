@@ -54,7 +54,7 @@
               @click="editValue(fieldKey)"
             >
               <span v-if="typeof data.data[fieldKey] === 'boolean'">
-                  {{ data.data[fieldKey] ? '✔' : '✖' }}
+                  {{ data.data[fieldKey] ? 'true' : 'false' }}
               </span>
               <span v-else>
                   {{ data.data[fieldKey] }}

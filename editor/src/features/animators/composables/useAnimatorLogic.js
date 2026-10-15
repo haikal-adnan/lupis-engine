@@ -5,7 +5,7 @@ import { useAssetStore } from '@assets/assets.js';
 import { usePopAlert, usePrompt, useConfirm } from '@composables/composables.js';
 import { useAnimatorHistory } from '@historys/historys.js';
 
-// State Lokal Sesi (Tidak disimpan ke Pinia/OPFS)
+// Session local state (not persisted to Pinia/OPFS)
 const activeClipByEntity = ref({});
 const showShadow = ref(false);
 const shadowFrameCount = ref(3);
@@ -51,7 +51,7 @@ export function useAnimatorLogic() {
     }
   });
 
-  // AUTO-CLOSE jika entitas saat ini berubah menjadi PREFAB atau hilang
+  // AUTO-CLOSE if current entity becomes PREFAB or missing
   watch(
     [() => workspaceStore.activeTab, selectedEntity],
     ([activeTab, entity]) => {
@@ -81,7 +81,7 @@ export function useAnimatorLogic() {
       try {
         resolvedAssetUrl.value = (await assetStore.getAssetUrlById(newAssetId)) || '';
 
-        // Otomatis buat 1 frame pertama jika clip belum memiliki frame sama sekali
+        // Automatically create first frame if clip has no frames yet
         if (
           activeClipData.value && 
           (!activeClipData.value.frames || activeClipData.value.frames.length === 0)
@@ -89,7 +89,7 @@ export function useAnimatorLogic() {
           addFrame();
         }
       } catch (err) {
-        console.error('Gagal memuat tekstur animator:', err);
+        console.error('Failed to load animator texture:', err);
         resolvedAssetUrl.value = '';
       }
     },
@@ -253,19 +253,19 @@ export function useAnimatorLogic() {
     if (!nodeToRename) return;
 
     const isCategory = nodeToRename.type === 'category';
-    const labelType = isCategory ? 'Kategori' : 'Klip';
+    const labelType = isCategory ? 'Category' : 'Clip';
 
     const newName = await prompt({
-      title: `Ganti Nama ${labelType}`,
-      message: `Masukkan nama baru untuk ${labelType.toLowerCase()} ini:`,
+      title: `Rename ${labelType}`,
+      message: `Enter a new name for this ${labelType.toLowerCase()}:`,
       defaultValue: nodeToRename.name,
-      confirmText: 'Simpan'
+      confirmText: 'Save'
     });
 
     if (newName !== null && newName.trim() !== '' && newName !== nodeToRename.name) {
       const oldName = nodeToRename.name;
       sceneStore.animatorRenameNode(activeEntityId.value, id, newName.trim());
-      showPop({ title: 'Berhasil!', message: `Nama ${labelType.toLowerCase()} telah diubah.`, type: 'success' });
+      showPop({ title: 'Success!', message: `${labelType} name has been updated.`, type: 'success' });
       animatorHistory.recordClipPropChange(activeEntityId.value, id, 'name', oldName, newName.trim());
     }
   };
@@ -406,7 +406,7 @@ export function useAnimatorLogic() {
     const clip = activeClipData.value;
     const isConfirmed = await confirm({
       title: 'Clear Timeline',
-      message: 'Apakah kamu yakin ingin menghapus semua frame dari timeline ini?',
+      message: 'Are you sure you want to delete all frames from this timeline?',
       type: 'danger',
       confirmText: 'Clear'
     });
@@ -433,8 +433,8 @@ export function useAnimatorLogic() {
     if (!maxWidth || maxWidth <= 0) {
       const maxWidthStr = await prompt({
         title: 'Auto Fill Frames',
-        message: 'Asset belum dipilih atau width tidak terbaca. Masukkan total width manual:',
-        placeholder: 'misal: 160',
+        message: 'Asset not selected or width unreadable. Enter total width manually:',
+        placeholder: 'e.g. 160',
         confirmText: 'Auto Fill'
       });
       if (!maxWidthStr) return;
@@ -527,7 +527,7 @@ export function useAnimatorLogic() {
     const clip = activeClipData.value;
     const isConfirmed = await confirm({
       title: 'Delete All Sources?',
-      message: 'Apakah kamu yakin ingin menghapus semua Source dari clip ini?',
+      message: 'Are you sure you want to delete all sources from this clip?',
       type: 'danger',
       confirmText: 'Delete All'
     });

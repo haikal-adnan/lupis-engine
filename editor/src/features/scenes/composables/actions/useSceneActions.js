@@ -56,7 +56,7 @@ export const useSceneActions = {
         this.selectedEntityIds = [];
       }
 
-      // Validasi penyesuaian Initial Scene jika scene yang dihapus adalah initialScene
+      // Adjust Initial Scene if the deleted scene was the initialScene
       const projectStore = useProjectStore();
       if (projectStore.project?.settings?.initialSceneId === sceneId) {
         projectStore.project.settings.initialSceneId = this.scenes[0].id;

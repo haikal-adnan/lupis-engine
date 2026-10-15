@@ -116,10 +116,61 @@ export default class ScriptRunner {
                 const fn = new Function('inputs', 'outputs', 'context', 'node', rawCode + '\nreturn outputs;');
                 this._compiledFunctions.set(nodeId, fn);
             } catch (err) {
-                const title = node.settings?.headerTitle || node.type || nodeId;
-                console.error(`[ScriptRunner] Syntax error di node '${title}' (script: '${this.scriptId}'):`, err);
+                const meta = this.getContextMetadata(node);
+                const errMsg = err?.message || String(err);
+                const formattedMessage = `${meta.prefix} Syntax error: ${errMsg}`;
+
+                if (this.game && this.game.events) {
+                    this.game.events.emit('console:error', {
+                        type: 'error',
+                        time: Date.now(),
+                        message: formattedMessage,
+                        source: 'ScriptRunner',
+                        context: {
+                            scene: meta.scene,
+                            entityScriptId: meta.entityScriptId,
+                            script: meta.script,
+                            node: meta.node
+                        }
+                    });
+                }
+                console.error(`[ScriptRunner] Syntax error di node '${meta.node}' (script: '${this.scriptId}'):`, err);
             }
         });
+    }
+
+    getContextMetadata(node) {
+        const sceneName = this.game?.sceneSystem?.getCurrentSceneName?.() || 
+                          this.game?.world?.currentSceneName || 
+                          this.game?.world?.currentScene?.name || 
+                          this.game?.sceneSystem?.getCurrentSceneId?.() || 
+                          'Scene';
+        const entityScriptId = this.owner 
+            ? (this.owner.scriptId || this.owner.name || this.owner.id || 'Entity') 
+            : 'Global';
+        const scriptName = this.data?.name || 
+                           this.game?.world?.scripts?.[this.scriptId]?.name || 
+                           this.data?.title || 
+                           this.scriptId || 
+                           'Script';
+        const nodeName = node ? (
+            node.settings?.headerTitle || 
+            node.data?.settings?.headerTitle || 
+            node.title || 
+            node.name ||
+            node.label || 
+            node.type || 
+            node.id || 
+            'Node'
+        ) : 'Node';
+
+        return {
+            scene: sceneName,
+            entityScriptId: String(entityScriptId),
+            script: scriptName,
+            node: nodeName,
+            prefix: `[${sceneName}] [${entityScriptId}] [${scriptName}] [${nodeName}]`
+        };
     }
 
     getLocalVariable(key) {
@@ -170,8 +221,34 @@ export default class ScriptRunner {
         if (!this._isScriptActive()) return;
 
         if (this._customTickListeners) {
-            this._customTickListeners.forEach(callback => {
-                callback(dt);
+            this._customTickListeners.forEach((callback, nodeId) => {
+                try {
+                    callback(dt);
+                } catch (err) {
+                    if (err instanceof ScriptAssertionError || err?.name === 'ScriptAssertionError') {
+                        return;
+                    }
+                    const node = this.nodeMap.get(nodeId);
+                    const meta = this.getContextMetadata(node || { id: nodeId });
+                    const errMsg = err?.message || String(err);
+                    const formattedMessage = `${meta.prefix} ${errMsg}`;
+
+                    if (this.game && this.game.events) {
+                        this.game.events.emit('console:error', {
+                            type: 'error',
+                            time: Date.now(),
+                            message: formattedMessage,
+                            source: 'ScriptRunner',
+                            context: {
+                                scene: meta.scene,
+                                entityScriptId: meta.entityScriptId,
+                                script: meta.script,
+                                node: meta.node
+                            }
+                        });
+                    }
+                    console.error(`[ScriptRunner Update Error] Node '${meta.node}' (script: '${this.scriptId}'):`, err);
+                }
             });
         }
     }
@@ -285,8 +362,26 @@ export default class ScriptRunner {
             if (err instanceof ScriptAssertionError || err?.name === 'ScriptAssertionError') {
                 return;
             }
-            const title = node.settings?.headerTitle || node.type || node.id;
-            console.error(`[ScriptRunner Runtime Error] Node '${title}' (id: '${node.id}', script: '${this.scriptId}'):`, err);
+            const meta = this.getContextMetadata(node);
+            const errMsg = err?.message || String(err);
+            const formattedMessage = `${meta.prefix} ${errMsg}`;
+
+            if (this.game && this.game.events) {
+                this.game.events.emit('console:error', {
+                    type: 'error',
+                    time: Date.now(),
+                    message: formattedMessage,
+                    source: 'ScriptRunner',
+                    context: {
+                        scene: meta.scene,
+                        entityScriptId: meta.entityScriptId,
+                        script: meta.script,
+                        node: meta.node
+                    }
+                });
+            }
+
+            console.error(`[ScriptRunner Runtime Error] Node '${meta.node}' (script: '${this.scriptId}'):`, err);
             throw err;
         }
     }
@@ -311,6 +406,24 @@ export default class ScriptRunner {
                 } catch (err) {
                     if (err instanceof ScriptAssertionError || err?.name === 'ScriptAssertionError') {
                         return null;
+                    }
+                    const meta = this.getContextMetadata(sourceNode);
+                    const errMsg = err?.message || String(err);
+                    const formattedMessage = `${meta.prefix} ${errMsg}`;
+
+                    if (this.game && this.game.events) {
+                        this.game.events.emit('console:error', {
+                            type: 'error',
+                            time: Date.now(),
+                            message: formattedMessage,
+                            source: 'ScriptRunner',
+                            context: {
+                                scene: meta.scene,
+                                entityScriptId: meta.entityScriptId,
+                                script: meta.script,
+                                node: meta.node
+                            }
+                        });
                     }
                     throw err;
                 }

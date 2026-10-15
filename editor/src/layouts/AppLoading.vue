@@ -14,7 +14,7 @@ const projectStore = useProjectStore()
     <Loader2 class="w-12 h-12 text-primary animate-spin mb-4" :stroke-width="2" />
     
     <p class="text-foreground text-lg font-medium animate-pulse text-center">
-      {{ workspaceStore.loadingMessage || 'Memproses...' }}
+      {{ workspaceStore.loadingMessage || 'Processing...' }}
     </p>
 
     <p v-if="projectStore.project" class="text-sm text-muted-foreground mt-2">
@@ -22,7 +22,7 @@ const projectStore = useProjectStore()
     </p>
 
     <div v-if="workspaceStore.error" class="mt-6 p-3 bg-destructive/10 text-destructive rounded-lg text-sm border border-destructive/20 text-center w-full">
-        <span class="font-bold block mb-1">Terjadi Kesalahan:</span>
+        <span class="font-bold block mb-1">An Error Occurred:</span>
         {{ workspaceStore.error }}
     </div>
   </div>

@@ -46,7 +46,6 @@ export default class EditorLoader extends RuntimeLoader {
         const { world, renderer, camera, input } = game;
         const { EDITOR } = Config;
 
-        // Inisialisasi TransformEngine sebagai Single Source of Truth
         game.transformEngine = new TransformEngine(world);
 
         const editorRenderer = new EditorRenderer(
@@ -67,7 +66,6 @@ export default class EditorLoader extends RuntimeLoader {
             };
         }
 
-        // Oper game.transformEngine ke SelectionTool
         if (EDITOR.SELECTION) {
             game.selection = new SelectionTool(world, game, canvas, renderer, input, game.transformEngine);
         }

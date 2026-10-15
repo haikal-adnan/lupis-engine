@@ -15,7 +15,7 @@ const {
   scriptSchema 
 } = ScriptModule
 
-// Mock composables eksternal UI Alerts, Confirmations & Dialog Prompts
+// Mock external UI Alerts, Confirmations & Dialog Prompts composables
 const mockPrompt = vi.fn()
 const mockConfirm = vi.fn().mockResolvedValue(true)
 const mockShowPop = vi.fn()
@@ -26,11 +26,11 @@ vi.mock('@composables/composables.js', () => ({
   useConfirm: () => ({ confirm: mockConfirm })
 }))
 
-describe('Pengujian Integrasi ScriptWorkspace', () => {
+describe('ScriptWorkspace Integration Testing', () => {
   let storeRef
   let project
 
-  // Helper pembuat script mock instan dan menyimpannya ke Store & OPFS
+  // Helper to create mock script instances and save them to Store & OPFS
   const createMockScript = async ({ name = 'TestScript', type = 'component', folderId = null } = {}) => {
     const scriptStore = useScriptStore()
     
@@ -64,7 +64,7 @@ describe('Pengujian Integrasi ScriptWorkspace', () => {
       configurable: true
     })
 
-    // Inisialisasi scene default untuk pengujian attach script ke entity
+    // Initialize default scene for testing script attachment to entity
     const sceneStore = useSceneStore()
     sceneStore.initScenes([{
       id: 'scene_main',
@@ -93,8 +93,8 @@ describe('Pengujian Integrasi ScriptWorkspace', () => {
     }
   })
 
-  describe('Integrasi CRUD Script & Sinkronisasi Storage (OPFS)', () => {
-    it('membuat script baru via actions dan menyimpannya ke Pinia Store serta berkas fisik OPFS', async () => {
+  describe('Script CRUD & Storage (OPFS) Synchronization Integration', () => {
+    it('creates new script via actions and saves it to Pinia Store and physical OPFS files', async () => {
       const { createScript } = useScriptActions()
       const scriptStore = useScriptStore()
 
@@ -113,13 +113,13 @@ describe('Pengujian Integrasi ScriptWorkspace', () => {
       expect(scriptFileHandle).toBeDefined()
     })
 
-    it('mengubah nama script dan menyelaraskan perubahan ke berkas metadata di OPFS', async () => {
+    it('renames script and aligns changes to metadata files in OPFS', async () => {
       const { renameScript } = useScriptActions()
       const scriptStore = useScriptStore()
 
       const script = await createMockScript({ name: 'OldLogic', type: 'component' })
 
-      // Mock nilai return dari prompt rename
+      // Mock prompt return value for rename
       mockPrompt.mockResolvedValue('NewLogic')
 
       await renameScript(script.id)
@@ -135,7 +135,7 @@ describe('Pengujian Integrasi ScriptWorkspace', () => {
       expect(content.find(s => s.id === script.id).name).toBe('NewLogic')
     })
 
-    it('menghapus script dari store dan membersihkan berkas fisiknya dari OPFS', async () => {
+    it('deletes script from store and cleans up physical file from OPFS', async () => {
       const { deleteScript } = useScriptActions()
       const scriptStore = useScriptStore()
 
@@ -150,7 +150,7 @@ describe('Pengujian Integrasi ScriptWorkspace', () => {
       expect(scriptFileHandle).toBeUndefined()
     })
 
-    it('[Bad Path] menangani percobaan hapus ID script yang tidak valid secara aman', async () => {
+    it('[Bad Path] safely handles attempt to delete invalid script ID', async () => {
       const { deleteScript } = useScriptActions()
       const scriptStore = useScriptStore()
 
@@ -162,8 +162,8 @@ describe('Pengujian Integrasi ScriptWorkspace', () => {
     })
   })
 
-  describe('Integrasi CRUD Folder pada Section Scripts', () => {
-    it('membuat folder baru khusus section scripts', async () => {
+  describe('Folder CRUD Integration on Scripts Section', () => {
+    it('creates new folder specifically for scripts section', async () => {
       const folderStore = useFolderStore()
       const { createNewFolder } = useFolderActions()
 
@@ -177,7 +177,7 @@ describe('Pengujian Integrasi ScriptWorkspace', () => {
       expect(created.parentId).toBeNull()
     })
 
-    it('menghapus folder scripts beserta pembersihan state di folderStore', async () => {
+    it('deletes scripts folder along with state cleanup in folderStore', async () => {
       const folderStore = useFolderStore()
       const { createNewFolder, deleteFolder } = useFolderActions()
 
@@ -191,8 +191,8 @@ describe('Pengujian Integrasi ScriptWorkspace', () => {
     })
   })
 
-  describe('Integrasi Perpindahan Script & Navigasi Folder', () => {
-    it('memindahkan script ke folder target dan memperbarui daftar visibleScripts', async () => {
+  describe('Script Movement & Folder Navigation Integration', () => {
+    it('moves script to target folder and updates visibleScripts list', async () => {
       const folderStore = useFolderStore()
       const scriptStore = useScriptStore()
       const { createNewFolder } = useFolderActions()
@@ -216,7 +216,7 @@ describe('Pengujian Integrasi ScriptWorkspace', () => {
       expect(logic.visibleScripts.value.some(s => s.id === script.id)).toBe(true)
     })
 
-    it('memindahkan script kembali ke root via navigasi breadcrumb', async () => {
+    it('moves script back to root via breadcrumb navigation', async () => {
       const folderStore = useFolderStore()
       const scriptStore = useScriptStore()
       const { createNewFolder } = useFolderActions()
@@ -240,8 +240,8 @@ describe('Pengujian Integrasi ScriptWorkspace', () => {
     })
   })
 
-  describe('Integrasi Fitur Clipboard Operations (Copy, Cut, Paste & Duplicate)', () => {
-    it('memindahkan script dengan operasi Cut dan Paste', async () => {
+  describe('Clipboard Operations Feature Integration (Copy, Cut, Paste & Duplicate)', () => {
+    it('moves script with Cut and Paste operation', async () => {
       const folderStore = useFolderStore()
       const scriptStore = useScriptStore()
       const { createNewFolder } = useFolderActions()
@@ -263,7 +263,7 @@ describe('Pengujian Integrasi ScriptWorkspace', () => {
       expect(logic.clipboard.value).toBeNull()
     })
 
-    it('menduplikasi script melalui aksi Copy & Paste pada clipboard', async () => {
+    it('duplicates script via Copy & Paste action on clipboard', async () => {
       const scriptStore = useScriptStore()
       const logic = useScriptLogic()
 
@@ -277,8 +277,8 @@ describe('Pengujian Integrasi ScriptWorkspace', () => {
     })
   })
 
-  describe('Integrasi Context Menu, Graph Editor & Interaksi Scene Entity', () => {
-    it('membuka diagram node graph script di workspace tab baru saat handleOpenGraph dipanggil', async () => {
+  describe('Context Menu, Graph Editor & Scene Entity Interaction Integration', () => {
+    it('opens script node graph diagram in new workspace tab when handleOpenGraph is called', async () => {
       const scriptStore = useScriptStore()
       const workspaceStore = useWorkspaceStore()
       const logic = useScriptLogic()
@@ -292,7 +292,7 @@ describe('Pengujian Integrasi ScriptWorkspace', () => {
       expect(workspaceStore.activeTabId).toBe(script.id)
     })
 
-    it('menempelkan script ke komponen ScriptController entitas aktif via Context Menu action', async () => {
+    it('attaches script to ScriptController component of active entity via Context Menu action', async () => {
       const sceneStore = useSceneStore()
       const selectedIdRef = { value: null }
       const logicActions = useScriptLogic()
@@ -313,7 +313,7 @@ describe('Pengujian Integrasi ScriptWorkspace', () => {
       expect(controllerData.some(inst => inst.assetId === script.id)).toBe(true)
     })
 
-    it('menguji opsi menu klik kanan untuk menyalin ID Script ke clipboard', async () => {
+    it('tests right-click menu option to copy Script ID to clipboard', async () => {
       const selectedIdRef = { value: null }
       const logicActions = useScriptLogic()
 
@@ -332,8 +332,8 @@ describe('Pengujian Integrasi ScriptWorkspace', () => {
     })
   })
 
-  describe('Integrasi Pencarian Script & Mode Tampilan Panel', () => {
-    it('menyaring daftar visibleScripts dan visibleFolders berdasarkan searchQuery', async () => {
+  describe('Script Search & Panel View Mode Integration', () => {
+    it('filters visibleScripts and visibleFolders based on searchQuery', async () => {
       const folderStore = useFolderStore()
       const { createNewFolder } = useFolderActions()
       const logic = useScriptLogic()
@@ -352,7 +352,7 @@ describe('Pengujian Integrasi ScriptWorkspace', () => {
       expect(logic.visibleScripts.value[0].name).toBe('player_movement')
     })
 
-    it('mengubah viewMode antara tampilan grid dan list', () => {
+    it('toggles viewMode between grid and list views', () => {
       const logic = useScriptLogic()
 
       expect(logic.viewMode.value).toBe('grid')

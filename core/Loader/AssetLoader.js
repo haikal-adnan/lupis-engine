@@ -22,7 +22,7 @@ export default class AssetLoader {
     let loadedAssets = 0;
 
     if (totalAssets === 0) {
-      if (onProgress) onProgress("Semua aset siap...", 100);
+      if (onProgress) onProgress("All assets ready...", 100);
       return;
     }
 

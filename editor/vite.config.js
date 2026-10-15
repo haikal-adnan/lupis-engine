@@ -32,7 +32,7 @@ export default defineConfig({
       allow: [
         searchForWorkspaceRoot(process.cwd()),
         path.resolve(__dirname, 'src'),
-        path.resolve(__dirname, '../engine'),
+        path.resolve(__dirname, '../core'),
         path.resolve(__dirname, './'),
         path.resolve(__dirname, 'node_modules'),
       ],
@@ -88,6 +88,7 @@ export default defineConfig({
       '@utils': fileURLToPath(new URL('./src/utils', import.meta.url)),
       '@tests': path.resolve(__dirname, './tests'),
       '@core': path.resolve(__dirname, '../core'),
+      '/core': path.resolve(__dirname, '../core'),
       '@engines': fileURLToPath(new URL('./src/features/engines', import.meta.url)),
       'vue': 'vue/dist/vue.esm-bundler.js',
     },

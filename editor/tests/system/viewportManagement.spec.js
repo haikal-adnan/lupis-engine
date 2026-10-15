@@ -160,7 +160,6 @@ describe('Canvas Management & Engine Sync Integration', () => {
       const entity = createMockEntity({ id: 'ent_store_mod_1' })
       setupMockSceneEnvironment({ entities: [entity] })
 
-      // Act: Ubah nama entitas di sceneStore
       sceneStore.updateEntityName('ent_store_mod_1', 'Renamed Hero')
 
       // Assert

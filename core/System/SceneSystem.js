@@ -50,11 +50,11 @@ export default class SceneSystem {
 
     loadInitialScene() {
         if (!this._sceneDataCache || this._sceneDataCache.length === 0) {
-            console.warn("[SceneSystem] Tidak dapat restart: Cache scene kosong.");
+            console.warn("[SceneSystem] Cannot restart: Scene cache is empty.");
             return;
         }
 
-        // Memprioritaskan _initialSceneId, jika tidak ada fallback ke scene pertama
+        // Prioritize _initialSceneId, fallback to first scene if not found
         const targetScene = this._sceneDataCache.find(s => s.id === this._initialSceneId) || this._sceneDataCache[0];
 
         if (targetScene) {
@@ -64,7 +64,7 @@ export default class SceneSystem {
 
     loadScene(sceneIdentifier) {
         if (!this._sceneDataCache || this._sceneDataCache.length === 0) {
-            console.warn("[SceneSystem] Tidak dapat memuat scene: Cache scene kosong.");
+            console.warn("[SceneSystem] Cannot load scene: Scene cache is empty.");
             return;
         }
 
@@ -76,7 +76,7 @@ export default class SceneSystem {
         );
 
         if (!rawSceneData) {
-            console.error(`[SceneSystem] Gagal memuat: Scene '${sceneIdentifier}' tidak ditemukan.`);
+            console.error(`[SceneSystem] Failed to load: Scene '${sceneIdentifier}' not found.`);
             return;
         }
 
@@ -150,7 +150,7 @@ export default class SceneSystem {
         if (currentId) {
             this.queueLoadScene(currentId);
         } else {
-            console.warn("[SceneSystem] Tidak dapat me-restart: ID Scene aktif tidak ditemukan.");
+            console.warn("[SceneSystem] Cannot restart: Active scene ID not found.");
         }
     }
 

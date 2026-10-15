@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test';
 
-// Peta nama section -> testid PropertySection (lihat SceneTree.vue)
+// Map section name -> testid PropertySection (see SceneTree.vue)
 const SECTION_IDS = {
   world: 'hierarchy-section-world',
   ui: 'hierarchy-section-ui',
@@ -155,7 +155,7 @@ export class HierarchyPage {
     await expect
       .poll(async () => {
         const ids = (await this.snapshot()).map((n) => n.id).sort().join('|');
-        const stable = ids === previous;
+        const stable = ids !== '' && ids === previous;
         previous = ids;
         return stable;
       })
@@ -189,6 +189,7 @@ export class HierarchyPage {
    * ['Add Child', 'Sprite']) and returns the new node through its stable identity.
    */
   async addEntity(popup, targetNode, menuPath) {
+    await expect(targetNode).toBeVisible();
     const beforeIds = await this.nodeIds();
     await popup.selectContextMenu(targetNode, menuPath);
     return this.expectNewNode(beforeIds);

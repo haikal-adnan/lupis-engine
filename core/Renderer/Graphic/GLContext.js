@@ -18,7 +18,7 @@ export default class GLContext {
             this.isWebGL2 = false;
         }
 
-        if (!gl) throw new Error("WebGL tidak didukung.");
+        if (!gl) throw new Error("WebGL is not supported.");
 
         this.gl = gl;
 

@@ -83,7 +83,7 @@ import { BaseDropdown } from '@components/components.js'
 
 const props = defineProps({
   title: { type: String, required: true },
-  // Base untuk seluruh data-testid turunan: `${testId}-header`, `-menu-trigger`, `-menu`, `-content`
+  // Base for all derived data-testid attributes: `${testId}-header`, `-menu-trigger`, `-menu`, `-content`
   testId: { type: String, default: 'property-section' },
   defaultOpen: { type: Boolean, default: true },
   collapsible: { type: Boolean, default: true }, 

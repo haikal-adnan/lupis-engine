@@ -13,7 +13,7 @@ vi.mock('vue-router', () => ({
 
 const mockShowPop = vi.fn()
 
-// 2. Gunakan importOriginal agar export lain seperti usePrompt dan useConfirm tetap terbaca
+// Use importOriginal so other exports like usePrompt and useConfirm remain readable
 vi.mock('@composables/composables.js', async (importOriginal) => {
   const actual = await importOriginal()
   return {
@@ -68,14 +68,14 @@ const createMockDirectoryHandle = (dirName) => ({
   }
 })
 
-describe('Sistem pembuatan dan pembuatan ulang proyek', () => {
+describe('Project Creation and Recreation System', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     mockOPFSStore = new Map()
     mockPush.mockClear()
     vi.restoreAllMocks()
 
-    // Setup standar navigator.storage
+    // Standard navigator.storage setup
     Object.defineProperty(global.navigator, 'storage', {
       value: {
         getDirectory: vi.fn(async () => createMockDirectoryHandle('root'))
@@ -85,8 +85,8 @@ describe('Sistem pembuatan dan pembuatan ulang proyek', () => {
     })
   })
 
-  describe('Alur Berhasil Pembuatan Proyek Baru', () => {
-    it('membuat proyek baru, menyimpannya ke OPFS, mengarahkan ke editor, dan menampilkan proyek di dashboard', async () => {
+  describe('Successful New Project Creation Flow', () => {
+    it('creates a new project, saves it to OPFS, redirects to editor, and displays project on dashboard', async () => {
       // Arrange
       const wrapper = mount(DashboardPage, {
         global: {
@@ -98,21 +98,21 @@ describe('Sistem pembuatan dan pembuatan ulang proyek', () => {
 
       await wrapper.vm.$nextTick()
 
-      // Act 1: Buka popup proyek baru
+      // Act 1: Open new project popup
       wrapper.vm.isCreatePopupOpen = true
       await wrapper.vm.$nextTick()
 
-      // Act 2: Jalankan handler create secara langsung
+      // Act 2: Execute create handler directly
       await wrapper.vm.handleCreateProject({
-        name: 'Petualangan Nusantara',
-        description: 'Game RPG 2D bertema sejarah'
+        name: 'Epic Adventure',
+        description: '2D RPG game with historical theme'
       })
 
-      // Assert 1: Modal tertutup dan sistem melakukan navigasi ke halaman editor
+      // Assert 1: Modal closes and system navigates to editor page
       expect(wrapper.vm.isCreatePopupOpen).toBe(false)
       expect(mockPush).toHaveBeenCalledWith(expect.stringMatching(/\/editor\/proj_/))
 
-      // Act 3: Pengguna kembali ke dashboard untuk melihat daftar proyek yang tersimpan
+      // Act 3: User returns to dashboard to view saved project list
       const freshWrapper = mount(DashboardPage, {
         global: {
           stubs: { Teleport: true }
@@ -123,16 +123,16 @@ describe('Sistem pembuatan dan pembuatan ulang proyek', () => {
       await new Promise(resolve => setTimeout(resolve, 50))
       await freshWrapper.vm.$nextTick()
 
-      // Assert 2: Proyek yang baru dibuat muncul di dashboard
+      // Assert 2: Newly created project appears on dashboard
       const projectCard = freshWrapper.find('.group.bg-card')
       expect(projectCard.exists()).toBe(true)
-      expect(projectCard.text()).toContain('Petualangan Nusantara')
-      expect(projectCard.text()).toContain('Game RPG 2D bertema sejarah')
+      expect(projectCard.text()).toContain('Epic Adventure')
+      expect(projectCard.text()).toContain('2D RPG game with historical theme')
     })
   })
 
-  describe('Alur Penanganan Validasi Input', () => {
-    it('menolak pembuatan proyek jika nama proyek tidak diisi atau hanya berisi spasi', async () => {
+  describe('Input Validation Handling Flow', () => {
+    it('rejects project creation if project name is empty or contains only whitespace', async () => {
       // Arrange
       const wrapper = mount(DashboardPage, {
         global: {
@@ -143,20 +143,20 @@ describe('Sistem pembuatan dan pembuatan ulang proyek', () => {
       wrapper.vm.isCreatePopupOpen = true
       await wrapper.vm.$nextTick()
 
-      // Act: Simulasi input kosong atau spasi melalui logika validasi CreateNewProjectPop
+      // Act: Simulate empty input or whitespace via CreateNewProjectPop validation logic
       const emptyName = '   '
       const isValid = emptyName.trim().length > 0
 
-      // Assert 1: Validasi modal mencegah emit event create jika string kosong
+      // Assert 1: Modal validation prevents emitting create event if string is empty
       expect(isValid).toBe(false)
 
-      // Assert 2: Tidak ada navigasi ke editor
+      // Assert 2: No navigation to editor
       expect(mockPush).not.toHaveBeenCalled()
     })
   })
 
-  describe('Alur Pembatalan Pembuatan Proyek', () => {
-    it('menutup modal dan tidak menyimpan proyek ke OPFS saat pengguna membatalkan proses', async () => {
+  describe('Project Creation Cancellation Flow', () => {
+    it('closes modal and does not save project to OPFS when user cancels process', async () => {
       // Arrange
       const wrapper = mount(DashboardPage, {
         global: {
@@ -167,22 +167,22 @@ describe('Sistem pembuatan dan pembuatan ulang proyek', () => {
       wrapper.vm.isCreatePopupOpen = true
       await wrapper.vm.$nextTick()
 
-      // Act: Tutup popup
+      // Act: Close popup
       wrapper.vm.isCreatePopupOpen = false
       await wrapper.vm.$nextTick()
 
-      // Assert: Modal tertutup dan tidak ada navigasi
+      // Assert: Modal closed and no navigation
       expect(wrapper.vm.isCreatePopupOpen).toBe(false)
       expect(mockPush).not.toHaveBeenCalled()
       expect(wrapper.vm.projects.length).toBe(0)
     })
   })
 
-  describe('Alur Penanganan Kegagalan Penyimpanan OPFS', () => {
-    it('menampilkan alert kesalahan jika browser tidak mendukung atau gagal menulis ke OPFS', async () => {
+  describe('OPFS Storage Failure Handling Flow', () => {
+    it('displays error alert if browser does not support or fails writing to OPFS', async () => {
       // Arrange
       navigator.storage.getDirectory = vi.fn().mockRejectedValue(
-        new Error('Gagal mengakses penyimpanan OPFS.')
+        new Error('Failed to access OPFS storage.')
       )
 
       const wrapper = mount(DashboardPage, {
@@ -191,16 +191,16 @@ describe('Sistem pembuatan dan pembuatan ulang proyek', () => {
         }
       })
 
-      // Act: Eksekusi pembuatan proyek
+      // Act: Execute project creation
       await wrapper.vm.handleCreateProject({
-        name: 'Proyek Error',
-        description: 'Uji coba kegagalan'
+        name: 'Error Project',
+        description: 'Failure test'
       })
 
-      // Assert: Verifikasi showPop dipanggil dengan parameter yang sesuai
+      // Assert: Verify showPop is called with appropriate parameters
       expect(mockShowPop).toHaveBeenCalledWith({
         title: 'Error Creating Project',
-        message: 'Gagal mengakses penyimpanan OPFS.',
+        message: 'Failed to access OPFS storage.',
         type: 'error'
       })
       expect(mockPush).not.toHaveBeenCalled()

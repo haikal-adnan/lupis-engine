@@ -27,20 +27,16 @@ export function usePrefabActions() {
   const { prompt } = usePrompt();
 
   const getValidUniqueName = (desiredName, excludeId = null, targetType = null) => {
-    // 1. Clean nama dari spasi dan karakter ilegal
     let cleanName = desiredName
       .replace(/\s+/g, '_')
       .replace(/[^a-zA-Z0-9_]/g, '');
 
-    // Jika nama berakhir dengan angka (misal New_Prefab_1 atau Item_2), 
-    // pisahkan base name dan suffix-nya
     let baseName = cleanName;
     const match = cleanName.match(/^(.*?)(?:_(\d+))?$/);
     if (match && match[1]) {
       baseName = match[1];
     }
 
-    // 2. Filter prefab berdasarkan ID eksklusi dan Type (world / ui) jika diberikan
     const existingPrefabs = store.prefabs.filter(p => {
       if (p.id === excludeId) return false;
       if (targetType) {
@@ -50,18 +46,14 @@ export function usePrefabActions() {
       return true;
     });
 
-    // Check apakah nama persis sama sudah dipakai
     const isExactTaken = existingPrefabs.some(
       p => p.name.toLowerCase() === cleanName.toLowerCase()
     );
 
-    // Jika nama dasar belum dipakai sama sekali, langsung gunakan nama tersebut
     if (!isExactTaken) {
       return cleanName;
     }
 
-    // 3. Jika nama sudah dipakai, cari suffix angka tertinggi yang ada
-    // Contoh regex: mencari yang bernama "New_Prefab" atau "New_Prefab_1", "New_Prefab_2"
     const regex = new RegExp(`^${baseName}(?:_(\\d+))?$`, 'i');
     let maxIndex = 0;
 
@@ -72,7 +64,6 @@ export function usePrefabActions() {
           const num = parseInt(m[1], 10);
           if (num > maxIndex) maxIndex = num;
         } else {
-          // Jika persis "New_Prefab" tanpa angka, anggap setara index 1 jika belum ada index yang lebih tinggi
           if (maxIndex < 1) maxIndex = 1;
         }
       }
@@ -429,7 +420,7 @@ export function usePrefabActions() {
 
     const isConfirmed = await confirm({
       title: 'Apply to Master',
-      message: `Terapkan hierarki saat ini ke Master Prefab "${prefab.name}"? Perubahan struktural (tambah/hapus child) pada instance lain di scene mungkin perlu disesuaikan manual.`,
+      message: `Apply current hierarchy to Master Prefab "${prefab.name}"? Structural changes (add/delete children) to other instances in the scene may require manual adjustment.`,
       confirmText: 'Apply',
       cancelText: 'Cancel',
       type: 'warning'

@@ -131,7 +131,7 @@ const onDrop = (e) => {
       }
     }
   } catch (error) {
-    console.error("Gagal melakukan drop pada folder:", error)
+    console.error("Failed to process drop on folder:", error)
   }
 }
 </script>

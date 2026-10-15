@@ -54,8 +54,8 @@ export function useExportApp() {
   const exportApp = async (projectId, format = 'exe') => {
     if (!projectId) {
       showPop({
-        title: 'Ekspor Gagal',
-        message: 'ID Proyek tidak valid atau tidak ditemukan.',
+        title: 'Export Failed',
+        message: 'Project ID is invalid or missing.',
         type: 'error'
       });
       return { success: false };
@@ -70,11 +70,11 @@ export function useExportApp() {
 
       const isHealthy = await _checkBackendHealth(backendUrl);
       if (!isHealthy) {
-        throw new Error('Layanan backend ekspor belum siap. Harap tunggu beberapa detik dan coba lagi.');
+        throw new Error('Export backend service is not ready. Please wait a few seconds and try again.');
       }
 
       if (!navigator.storage || !navigator.storage.getDirectory) {
-        throw new Error('Browser Anda tidak mendukung OPFS.');
+        throw new Error('Your browser does not support OPFS.');
       }
 
       const root = await navigator.storage.getDirectory();
@@ -84,10 +84,10 @@ export function useExportApp() {
         const projectsDir = await appDir.getDirectoryHandle('projects');
         targetProjectDir = await projectsDir.getDirectoryHandle(String(projectId));
       } catch (fsErr) {
-        throw new Error(`Folder proyek '${projectId}' tidak ditemukan di penyimpanan lokal (OPFS).`);
+        throw new Error(`Project folder '${projectId}' not found in local storage (OPFS).`);
       }
 
-      // 1. Ekstraksi updatedAt dari project.json OPFS (digunakan oleh ZIP dan EXE)
+      // 1. Extract updatedAt from OPFS project.json (used by ZIP and EXE)
       let updatedAt = new Date().toISOString();
       try {
         const projectFileHandle = await targetProjectDir.getFileHandle('project.json');
@@ -98,21 +98,21 @@ export function useExportApp() {
           updatedAt = projectJson.updatedAt;
         }
       } catch (err) {
-        console.warn('Gagal membaca project.json dari OPFS, menggunakan timestamp fallback.', err);
+        console.warn('Failed to read project.json from OPFS, using fallback timestamp.', err);
       }
 
-      // 2. Kompresi folder OPFS ke JSZip
+      // 2. Compress OPFS folder with JSZip
       const projectZip = new JSZip();
       await _addDirectoryToZip(targetProjectDir, projectZip);
       const projectBlob = await projectZip.generateAsync({ type: 'blob' });
 
-      // 3. Menyiapkan FormData terpadu
+      // 3. Prepare unified FormData
       const formData = new FormData();
       formData.append('projectZip', projectBlob, `${projectId}.zip`);
       formData.append('projectId', projectId);
-      formData.append('updatedAt', updatedAt); // Sekarang terkirim baik di ZIP maupun EXE
+      formData.append('updatedAt', updatedAt);
 
-      // 4. Handling untuk format ZIP
+      // 4. Handle ZIP format
       if (targetFormat === 'zip') {
         const response = await fetch(`${backendUrl}/api/export-app/zip`, {
           method: 'POST',
@@ -136,15 +136,15 @@ export function useExportApp() {
         URL.revokeObjectURL(downloadUrl);
 
         showPop({
-          title: 'Ekspor Berhasil',
-          message: `Aplikasi Web Standalone (.zip) untuk proyek '${projectId}' berhasil diunduh.`,
+          title: 'Export Successful',
+          message: `Standalone Web Application (.zip) for project '${projectId}' downloaded successfully.`,
           type: 'success'
         });
 
         return { success: true };
       }
 
-      // 5. Handling untuk format EXE
+      // 5. Handle EXE format
       const response = await fetch(`${backendUrl}/api/export-app/exe`, {
         method: 'POST',
         body: formData,
@@ -159,8 +159,8 @@ export function useExportApp() {
       exeDownloadUrl.value = `${backendUrl}${resData.downloadUrl}`;
 
       showPop({
-        title: 'Build EXE Selesai!',
-        message: `Kompilasi aplikasi '${projectId}' berhasil! Silakan klik tombol 'Download (.EXE)' untuk mengunduh.`,
+        title: 'EXE Build Complete!',
+        message: `Application compilation for '${projectId}' succeeded! Click 'Download (.EXE)' to download.`,
         type: 'success'
       });
 
@@ -169,8 +169,8 @@ export function useExportApp() {
     } catch (error) {
       console.error(`[ExportApp ${targetFormat.toUpperCase()} Error]:`, error);
       showPop({
-        title: 'Gagal Ekspor Aplikasi',
-        message: error.message || 'Terjadi kesalahan saat mengekspor proyek.',
+        title: 'Application Export Failed',
+        message: error.message || 'An error occurred while exporting project.',
         type: 'error'
       });
       return { success: false, error: error.message };

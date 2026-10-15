@@ -63,9 +63,9 @@
             </div>
           </div>
 
-          <!-- Tombol Aksi Dinamis untuk EXE -->
+          <!-- Dynamic Action Button for EXE -->
           <div class="flex items-center gap-2 shrink-0">
-            <!-- Jika EXE sudah siap diunduh -->
+            <!-- If EXE is ready for download -->
             <button
               v-if="exeDownloadUrl"
               @click="triggerDirectDownload"

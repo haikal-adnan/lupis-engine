@@ -7,7 +7,7 @@ export class TilemapOperations {
     }
 
     /**
-     * Melukis atau Menghapus Tile pada koordinat grid tertentu
+     * Paint or erase tile at specified grid coordinates
      */
     paint(world, entity, tm, gridX, gridY, assetId, selection, isEraser = false) {
         if (!tm || !tm.data) return;
@@ -15,7 +15,7 @@ export class TilemapOperations {
         const newData = { ...tm.data };
         let isChanged = false;
 
-        // --- MODE ERASER / HAPUS ---
+        // --- ERASER MODE ---
         if (isEraser) {
             const eraserW = selection?.w || 1;
             const eraserH = selection?.h || 1;
@@ -64,7 +64,7 @@ export class TilemapOperations {
     }
 
     /**
-     * Menghapus seluruh tile dalam area blok persegi (Marquee / Area Selection)
+     * Clear all tiles within rectangular marquee area
      */
     deleteArea(entity, tm, startX, startY, width = 1, height = 1) {
         if (!tm || !tm.data) return;

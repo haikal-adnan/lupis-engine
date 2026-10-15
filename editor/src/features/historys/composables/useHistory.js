@@ -2,7 +2,7 @@ import { reactive, watch } from 'vue';
 import { useWorkspaceStore } from '@workspaces/workspaces.js';
 import { useSceneStore } from '@scenes/scenes.js';
 
-// Setel ke `false` untuk menonaktifkan seluruh console log di file ini
+// Set to `false` to disable all console logs in this file
 const ENABLE_LOGS = true; 
 
 export const historyStore = reactive({});
@@ -36,7 +36,7 @@ export function useHistory(options = {}) {
   };
 
   const logHistory = (actionType = '') => {
-    if (!ENABLE_LOGS) return; // Menghentikan log jika saklar mati
+    if (!ENABLE_LOGS) return; // Cease logging if disabled
 
     const key = getHistoryKey();
     console.group(`[useHistory] ${actionType} | Key: "${key}"`);

@@ -261,7 +261,7 @@ describe('Node Inspector & Code Panel Integration Tests', () => {
       await textarea.setValue(`const v1 = inputs.v0;\nconst v2 = inputs.v1;\nconst v3 = inputs.v2;\noutputs.result = v1 + v2 + v3;\nreturn;`);
 
       expect(wrapper.text()).toContain('Inputs: 3/3');
-      expect(wrapper.text()).toContain('✓ No Issues');
+      expect(wrapper.text()).toContain('No Issues');
     });
   });
 });

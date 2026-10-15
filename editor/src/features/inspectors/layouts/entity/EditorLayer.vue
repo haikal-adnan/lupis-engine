@@ -170,7 +170,7 @@ const commitScriptId = () => {
     hasIdError.value = true
     showPop({ 
       title: 'Duplicate ID', 
-      message: `ID "${newId}" sudah digunakan oleh layer lain.`, 
+      message: `ID "${newId}" is already in use by another layer.`, 
       type: 'warning' 
     })
     localScriptId.value = originalId
@@ -225,7 +225,7 @@ const onDelete = async () => {
   if (!layer.value) return
   if (await confirm({ 
     title: 'Delete Layer?', 
-    message: `Menghapus layer "${layer.value.name}" akan menghapus semua entity di dalamnya. Lanjutkan?`, 
+    message: `Deleting layer "${layer.value.name}" will delete all entities inside it. Continue?`, 
     type: 'danger', 
     confirmText: 'Delete' 
   })) {

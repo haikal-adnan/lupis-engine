@@ -9,7 +9,7 @@ import { useSceneHistory } from '@historys/historys.js'
 import { useConfirm, usePopAlert, usePrompt } from '@composables/composables.js'
 import { setupMockOPFS, createMockEmptyProject } from '@tests/tests.js'
 
-// Mock modul eksternal
+// Mock external modules
 vi.mock('@engines/engines.js', () => ({
   engineBridge: {
     linkEntitiesToPrefab: vi.fn(),
@@ -53,7 +53,7 @@ vi.mock('@prefabs/prefabs.js', async (importOriginal) => {
   }
 })
 
-describe('Integrasi PrefabActions', () => {
+describe('Integration Test: PrefabActions', () => {
   let actions
   let prefabStore
   let sceneStore
@@ -84,7 +84,7 @@ describe('Integrasi PrefabActions', () => {
     workspaceStore.setProjectId(project.id)
     folderStore.activeFolderId = 'folder-root'
 
-    // Mengisi state scenes dengan benar agar getter activeScene berfungsi
+    // Populate scenes state properly so activeScene getter works
     sceneStore.initScenes([
       {
         id: 'scene-1',
@@ -103,8 +103,8 @@ describe('Integrasi PrefabActions', () => {
     vi.clearAllMocks()
   })
 
-  describe('Integrasi Pembuatan dan Duplikasi Prefab', () => {
-    it('membuat prefab baru dari data entity beserta anaknya dan menyimpannya ke OPFS', async () => {
+  describe('Prefab Creation and Duplication Integration', () => {
+    it('creates new prefab from entity data with its children and saves to OPFS', async () => {
       // Arrange
       sceneStore.activeScene.entities = [
         { id: 'ent-1', name: 'ParentEntity', type: 'world', layerId: 'l1', orderIndex: 0, components: { Transform: { x: 10, y: 10 } } },
@@ -125,34 +125,34 @@ describe('Integrasi PrefabActions', () => {
       expect(recordCreatePrefab).toHaveBeenCalledWith(created)
     })
 
-    it('mendefinisikan nama unik otomatis saat nama prefab sudah digunakan', async () => {
+    it('automatically defines unique name when prefab name is already in use', async () => {
       // Arrange
       await actions.createPrefab('Enemy')
 
       // Act
       const secondEnemy = await actions.createPrefab('Enemy')
 
-      // Assert: Sesuai logika baru getValidUniqueName, jika "Enemy" ada, nama berikutnya adalah "Enemy_2"
+      // Assert: Under getValidUniqueName logic, if "Enemy" exists, the next name is "Enemy_2"
       expect(secondEnemy.name).toBe('Enemy_2')
       expect(prefabStore.prefabs).toHaveLength(2)
     })
 
-    it('menduplikasi prefab yang ada dan menyimpan salinan baru', async () => {
+    it('duplicates existing prefab and saves new copy', async () => {
       // Arrange
       const original = await actions.createPrefab('Collectible')
 
       // Act
       const duplicated = await actions.duplicatePrefab(original.id)
 
-      // Assert: Nama duplikat pertama kali bernilai "Collectible_copy"
+      // Assert: First duplicate name is "Collectible_copy"
       expect(duplicated).not.toBeNull()
       expect(duplicated.name).toBe('Collectible_copy')
       expect(prefabStore.prefabs).toHaveLength(2)
     })
   })
 
-  describe('Integrasi Manajemen Hapus, Ubah Nama, dan Update', () => {
-    it('menghapus prefab dari store dan merekam riwayat undo', async () => {
+  describe('Delete, Rename, and Update Management Integration', () => {
+    it('deletes prefab from store and records undo history', async () => {
       // Arrange
       const prefab = await actions.createPrefab('Obstacle')
 
@@ -168,7 +168,7 @@ describe('Integrasi PrefabActions', () => {
       expect(mockShowPop).toHaveBeenCalledWith(expect.objectContaining({ title: 'Deleted' }))
     })
 
-    it('mengubah nama prefab setelah dikonfirmasi via prompt dialog', async () => {
+    it('renames prefab after confirmation via prompt dialog', async () => {
       // Arrange
       const prefab = await actions.createPrefab('OldName')
       mockPrompt.mockResolvedValue('New_Cool_Name')
@@ -185,8 +185,8 @@ describe('Integrasi PrefabActions', () => {
     })
   })
 
-  describe('Integrasi Instansiasi & Linking ke Engine Bridge', () => {
-    it('menginstansiasi prefab ke dalam scene dan memanggil engine bridge', async () => {
+  describe('Instantiation & Engine Bridge Linking Integration', () => {
+    it('instantiates prefab into scene and calls engine bridge', async () => {
       // Arrange
       const prefab = await actions.createPrefab('Tree', null, 'world')
       prefab.data = {
@@ -209,7 +209,7 @@ describe('Integrasi PrefabActions', () => {
       expect(engineBridge.selectEntity).toHaveBeenCalledWith([instance.id])
     })
 
-    it('menghubungkan (link) beberapa entity ke prefab setelah konfirmasi dialog', async () => {
+    it('links multiple entities to prefab after dialog confirmation', async () => {
       // Arrange
       const prefab = await actions.createPrefab('Rock')
       prefab.data = { components: { Transform: { x: 0, y: 0 }, Render: { color: 'gray' } } }
@@ -231,8 +231,8 @@ describe('Integrasi PrefabActions', () => {
     })
   })
 
-  describe('Integrasi Apply to Master Prefab', () => {
-    it('memperbarui master prefab berdasarkan instance scene dan menyinkronkan instance lain', async () => {
+  describe('Apply to Master Prefab Integration', () => {
+    it('updates master prefab based on scene instance and syncs other instances', async () => {
       // Arrange
       const prefab = await actions.createPrefab('Building')
 
@@ -259,8 +259,8 @@ describe('Integrasi PrefabActions', () => {
     })
   })
 
-  describe('Penanganan Kasus Batas dan Jalur Buruk [Bad Path]', () => {
-    it('[Bad Path] mengabaikan proses hapus jika prefab ID tidak ditemukan di store', async () => {
+  describe('Boundary Cases and Bad Path Handling', () => {
+    it('[Bad Path] ignores deletion process if prefab ID is not found in store', async () => {
       // Act
       const result = await actions.deletePrefab('non-existent-id')
 
@@ -269,7 +269,7 @@ describe('Integrasi PrefabActions', () => {
       expect(mockShowPop).not.toHaveBeenCalled()
     })
 
-    it('[Bad Path] membatalkan penautan (link) entity jika pengguna menolak konfirmasi', async () => {
+    it('[Bad Path] cancels entity linking if user declines confirmation', async () => {
       // Arrange
       const prefab = await actions.createPrefab('Fence')
       sceneStore.activeScene.entities = [
@@ -285,7 +285,7 @@ describe('Integrasi PrefabActions', () => {
       expect(engineBridge.linkEntitiesToPrefab).not.toHaveBeenCalled()
     })
 
-    it('[Bad Path] tidak melakukan perubahan jika nama baru pada renamePrefab bernilai kosong', async () => {
+    it('[Bad Path] makes no change if new name in renamePrefab is empty', async () => {
       // Arrange
       const prefab = await actions.createPrefab('Original')
       mockPrompt.mockResolvedValue('   ')

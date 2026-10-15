@@ -267,7 +267,7 @@ describe('useTilemapLogic Integration', () => {
 
       // Assert
       expect(logic.currentTextureUrl.value).toBeNull()
-      expect(consoleErrorSpy).toHaveBeenCalledWith('Gagal memuat URL tekstur tilemap:', expect.any(Error))
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to load tilemap texture URL:', expect.any(Error))
 
       consoleErrorSpy.mockRestore()
     })

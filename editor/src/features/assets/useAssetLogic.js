@@ -128,7 +128,7 @@ export function useAssetLogic() {
         await moveItem(id, type, targetFolder);
         return;
       } catch (err) {
-        console.warn('[AssetLogic] Gagal parse payload drag and drop:', err);
+        console.warn('[AssetLogic] Failed to parse drag and drop payload:', err);
       }
     }
 

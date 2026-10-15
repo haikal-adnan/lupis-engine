@@ -62,10 +62,10 @@ export const useAssetStore = defineStore('asset', {
       const ext = asset.meta.extension;
       const savedFileName = `${asset.fileKey}${ext}`;
 
-      // Simpan file utama
+      // Save primary file
       await opfs.writeFileToHandle(assetsDir, savedFileName, rawFile);
 
-      // Simpan extra files (seperti .fnt dan .png pada BMFont)
+      // Save extra files (such as .fnt and .png for BMFont)
       for (const item of extraFiles) {
         await opfs.writeFileToHandle(assetsDir, item.fileName, item.file);
       }

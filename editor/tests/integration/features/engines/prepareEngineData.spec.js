@@ -1,10 +1,10 @@
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 
-// Impor modul yang diuji
+// Import module under test
 import { prepareEngineData } from '@engines/engines.js'
 
-// Impor store Pinia terkait
+// Import related Pinia stores
 import { useProjectStore } from '@projects/projects.js'
 import { useAssetStore } from '@assets/assets.js'
 import { useSceneStore } from '@scenes/scenes.js'
@@ -16,7 +16,7 @@ import { useScriptStore } from '@scripts/scripts.js'
 import { setupMockOPFS, createMockEmptyProject } from '@tests/tests.js'
 
 // ==============================================================================
-// MOCK DEPENDENCY EKSTERNAL
+// EXTERNAL DEPENDENCY MOCK
 // ==============================================================================
 vi.mock('@projects/projects.js', async (importOriginal) => {
   const actual = await importOriginal()
@@ -38,11 +38,11 @@ describe('Integration Test: prepareEngineData', () => {
   let scriptStore
 
   beforeEach(async () => {
-    // 1. Inisialisasi Pinia & OPFS
+    // 1. Initialize Pinia & OPFS
     setActivePinia(createPinia())
     mockStoreRef = setupMockOPFS()
 
-    // 2. Inisialisasi seluruh store
+    // 2. Initialize all stores
     workspaceStore = useWorkspaceStore()
     projectStore = useProjectStore()
     assetStore = useAssetStore()
@@ -50,7 +50,7 @@ describe('Integration Test: prepareEngineData', () => {
     prefabStore = usePrefabStore()
     scriptStore = useScriptStore()
 
-    // 3. Setup mock project awal
+    // 3. Setup initial mock project
     const mockProject = await createMockEmptyProject()
     workspaceStore.setProjectId(mockProject.id)
   })
@@ -60,8 +60,8 @@ describe('Integration Test: prepareEngineData', () => {
     vi.clearAllMocks()
   })
 
-  describe('Validasi & Eksekusi Serialisasi Data Engine', () => {
-    it('memuat data project jika belum terisi di projectStore lalu menghasilkan payload lengkap', async () => {
+  describe('Engine Data Serialization Validation & Execution', () => {
+    it('loads project data if not populated in projectStore and yields complete payload', async () => {
       // Arrange
       const loadProjectSpy = vi.spyOn(projectStore, 'loadProject').mockImplementation(async (id) => {
         projectStore.project = {
@@ -72,7 +72,7 @@ describe('Integration Test: prepareEngineData', () => {
         projectStore.isProjectLoaded = true
       })
 
-      // Setup data awal di store lainnya
+      // Setup initial data in other stores
       assetStore.initAssets([{ id: 'ast-1', name: 'hero.png', type: 'texture' }])
       sceneStore.initScenes([{ id: 'sc-1', name: 'Main Scene', layersWorld: [], layersUI: [], entities: [] }])
       prefabStore.initPrefabs([{ id: 'pf-1', name: 'PlayerPrefab' }])
@@ -98,11 +98,11 @@ describe('Integration Test: prepareEngineData', () => {
       expect(payload.scripts).toHaveLength(1)
     })
 
-    it('otomatis membuat default scene jika daftar scene di sceneStore masih kosong', async () => {
+    it('automatically creates default scene if scene list in sceneStore is empty', async () => {
       // Arrange
       projectStore.project = { id: 'proj-123', name: 'Test Project' }
       projectStore.isProjectLoaded = true
-      sceneStore.scenes = [] // Kosongkan scene
+      sceneStore.scenes = [] // Empty scenes
 
       const createDefaultSceneSpy = vi.spyOn(sceneStore, 'createDefaultScene')
 
@@ -115,24 +115,24 @@ describe('Integration Test: prepareEngineData', () => {
       expect(payload.scenes[0].name).toBe('Main Scene')
     })
 
-    it('memastikan properti engine (raw instance) dihapus dari workspaceConfig dalam payload', async () => {
+    it('ensures engine property (raw instance) is omitted from workspaceConfig in payload', async () => {
       // Arrange
       projectStore.project = { id: 'proj-123', name: 'Test Project' }
       projectStore.isProjectLoaded = true
 
-      // Attach mock engine instance ke workspaceStore
+      // Attach mock engine instance to workspaceStore
       const mockEngineInstance = { bus: { emit: vi.fn() }, render: vi.fn() }
       workspaceStore.setEngine(mockEngineInstance)
 
       // Act
       const payload = await prepareEngineData()
 
-      // Assert: Instance engine tidak boleh ikut terserialisasi ke dalam payload JSON
+      // Assert: Engine instance must not be serialized into JSON payload
       expect(workspaceStore.engine).not.toBeNull()
       expect(payload.workspaceConfig.engine).toBeUndefined()
     })
 
-    it('menghasilkan objek JSON terisolasi tanpa menyisipkan proxy/reactive Vue (toRaw verification)', async () => {
+    it('produces isolated JSON object without Vue proxy/reactivity (toRaw verification)', async () => {
       // Arrange
       projectStore.project = { id: 'proj-123', name: 'Deep Clone Test' }
       projectStore.isProjectLoaded = true
@@ -141,16 +141,16 @@ describe('Integration Test: prepareEngineData', () => {
       // Act
       const payload = await prepareEngineData()
 
-      // Mutasi data lokal di store setelah payload dibuat
+      // Mutate local data in store after payload creation
       assetStore.assets[0].name = 'bg-modified.png'
 
-      // Assert: Payload harus tetap menyimpan nilai asli sebelum mutasi (deep copy isolation)
+      // Assert: Payload must retain original values before mutation (deep copy isolation)
       expect(payload.assets[0].name).toBe('bg.png')
     })
   })
 
-  describe('Penanganan Kasus Batas dan Error [Bad Path]', () => {
-    it('[Bad Path] melempar Error jika activeProjectId di workspaceStore tidak terkonfigurasi', async () => {
+  describe('Boundary Cases and Error Handling [Bad Path]', () => {
+    it('[Bad Path] throws Error when activeProjectId in workspaceStore is not configured', async () => {
       // Arrange
       workspaceStore.activeProjectId = null
 
@@ -158,26 +158,26 @@ describe('Integration Test: prepareEngineData', () => {
       await expect(prepareEngineData()).rejects.toThrow('No Active Project ID in WorkspaceStore')
     })
 
-    it('[Bad Path] melempar Error jika pemuatan project dari OPFS gagal (project store bernilai null)', async () => {
+    it('[Bad Path] throws Error when loading project from OPFS fails (project store is null)', async () => {
       // Arrange
       vi.spyOn(projectStore, 'loadProject').mockResolvedValue(undefined)
-      projectStore.project = null // Simulasi gagal load
+      projectStore.project = null // Simulate failed load
 
       // Act & Assert
       await expect(prepareEngineData()).rejects.toThrow('Failed to load project metadata from OPFS')
     })
 
-    it('[Bad Path] menangani error serialisasi JSON saat terdapat siklik/circular structure', async () => {
+    it('[Bad Path] handles JSON serialization error when circular structure exists', async () => {
       // Arrange
       projectStore.project = { id: 'proj-123', name: 'Circular Test' }
       projectStore.isProjectLoaded = true
 
-      // Buat struktur circular pada scene store
+      // Create circular structure in scene store
       const circularObj = {}
       circularObj.self = circularObj
       sceneStore.scenes = [circularObj]
 
-      // Suppress console.error untuk pengujian error handling
+      // Suppress console.error for error handling test
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
       // Act & Assert

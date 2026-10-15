@@ -213,7 +213,7 @@ export default class ColliderSystem {
                     if (requiredType !== null && bA.type !== requiredType) continue;
                     const hitBounds = this._getTilemapHitBounds(bA, other);
                     if (hitBounds) {
-                        console.log(`[ColliderSystem] 💥 Collision (Tilemap): '${currentName}' bersentuhan dengan '${otherName}'`);
+                        console.log(`[ColliderSystem] Collision (Tilemap): '${currentName}' collided with '${otherName}'`);
                         return other;
                     }
                 }
@@ -226,7 +226,7 @@ export default class ColliderSystem {
                     for (let bB of boundsBList) {
                         if (requiredType !== null && bB.type !== requiredType) continue;
                         if (this._obbIntersect(bA, bB)) {
-                            console.log(`[ColliderSystem] 💥 Collision detected: '${currentName}' (${currentId}) <---> '${otherName}' (${otherId})`);
+                            console.log(`[ColliderSystem] Collision detected: '${currentName}' (${currentId}) <---> '${otherName}' (${otherId})`);
                             return other;
                         }
                     }
@@ -288,7 +288,7 @@ export default class ColliderSystem {
             }
 
             if (collided) {
-                console.log(`[ColliderSystem] 🔍 Overlap/Collision Found: '${currentName}' bersentuhan dengan '${otherName}'`);
+                console.log(`[ColliderSystem] Overlap/Collision Found: '${currentName}' collided with '${otherName}'`);
                 results.push(other);
             }
         }

@@ -200,7 +200,6 @@ export default class TilemapRenderer {
             this.shape.drawLine(x1, y1, x2, y2, this.colors.grid, 1, proj);
         }
 
-        // 2. Cyan Border saat Tab Active
         const activeTab = editors.tabs?.find(t => String(t.id) === String(editors.activeTabId));
         if (activeTab?.type === 'tilemap') {
             const bounds = TilemapMath.getBounds(tm);
@@ -223,7 +222,6 @@ export default class TilemapRenderer {
             );
         }
 
-        // 3. Render Area Marquee Selection (Merah / Biru)
         if (editors.marqueeSelection) {
             const ms = editors.marqueeSelection;
             const isEraser = editors.activeTool === 'eraser';
@@ -233,7 +231,6 @@ export default class TilemapRenderer {
             this._renderMarquee(rData, ms, borderCol, fillCol, proj);
         }
 
-        // 4. PREVIEW FLOATING GHOST PEMINDAHAN (dragState) & HOVER Preview
         const activeTool = editors.activeTool;
         const selection = editors.tileSelection;
         const asset = world?.assets?.textures?.[tm.assetId];

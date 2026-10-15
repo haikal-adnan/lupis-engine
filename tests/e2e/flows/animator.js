@@ -57,7 +57,7 @@ export class AnimatorCrudObject {
   async renameClipOrCategory(targetNode, newName) {
     await expect(targetNode).toBeVisible();
     await this.popup.selectContextMenu(targetNode, 'Rename');
-    await this.popup.fillPromptAndSubmit(/Ganti Nama|Rename/i, newName, 'Simpan');
+    await this.popup.fillPromptAndSubmit('Rename', newName, 'Save');
   }
 
   async configureClipProperties({ scriptId, name, fps, loop, flipX = false, filterMode } = {}) {

@@ -29,7 +29,7 @@ vi.mock('@composables/composables.js', () => ({
   })
 }))
 
-// 3. Wajib Mock useSceneHistory agar tidak melempar error saat recordEntityMove dipanggil
+// 3. Mock useSceneHistory to prevent errors when recordEntityMove is called
 vi.mock('@historys/historys.js', () => ({
   useSceneHistory: () => ({
     recordEntityMove: vi.fn(),

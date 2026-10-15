@@ -84,7 +84,7 @@ const contextMenuItems = computed(() => {
 
   return [
     {
-      label: `Hapus ${item.kind === 'directory' ? 'Folder' : 'File'}`,
+      label: `Delete ${item.kind === 'directory' ? 'Folder' : 'File'}`,
       icon: Trash2,
       danger: true,
       action: () => handleDeleteItem(item)
@@ -147,7 +147,7 @@ const handleCreateItemSubmit = async () => {
 
 const handleDeleteItem = async (item) => {
   closeContextMenu();
-  if (!confirm(`Hapus "${item.name}"?`)) return;
+  if (!confirm(`Delete "${item.name}"?`)) return;
 
   const result = await deleteEntry(item);
   if (result.success) {
@@ -304,7 +304,7 @@ onBeforeUnmount(() => {
 
       <div class="flex-1 overflow-auto p-4 flex flex-col justify-center items-center">
         <div v-if="!activeFile" class="text-center text-sm font-mono" :class="isDark ? 'text-slate-500' : 'text-slate-400'">
-          Pilih file dari explorer untuk melihat pratinjau.
+          Select a file from the explorer to preview.
         </div>
 
         <div v-else-if="activeFileType === 'code'" class="w-full h-full">
@@ -329,27 +329,27 @@ onBeforeUnmount(() => {
 
         <div v-else class="flex flex-col items-center gap-2 text-sm font-mono" :class="isDark ? 'text-slate-500' : 'text-slate-400'">
           <FileQuestion class="w-8 h-8 opacity-50" />
-          <p>Format file ini tidak mendukung pratinjau langsung.</p>
+          <p>This file format does not support live preview.</p>
         </div>
       </div>
     </div>
 
-    <!-- Modal Buat Item Baru -->
+    <!-- Modal Create New Item -->
     <div v-if="showNewModal" class="fixed inset-0 backdrop-blur-sm z-50 flex items-center justify-center p-4" :class="isDark ? 'bg-black/80' : 'bg-black/40'">
       <div 
         class="p-5 rounded-xl max-w-sm w-full space-y-4 shadow-xl border transition-colors duration-300 font-sans"
         :class="isDark ? 'bg-[#252526] border-white/10 text-slate-200' : 'bg-white border-black/10 text-slate-800'"
       >
-        <h3 class="font-bold text-sm capitalize font-mono">Buat {{ modalType }} Baru</h3>
+        <h3 class="font-bold text-sm capitalize font-mono">New {{ modalType }}</h3>
         
         <p class="text-xs font-mono opacity-70" v-if="selectedItem?.kind === 'directory'">
-          Lokasi: <span class="font-semibold">{{ selectedItem.path }}</span>
+          Location: <span class="font-semibold">{{ selectedItem.path }}</span>
         </p>
 
         <input 
           v-model="newItemName" 
           type="text" 
-          :placeholder="modalType === 'file' ? 'nama-file.js' : 'Nama Folder'"
+          :placeholder="modalType === 'file' ? 'filename.js' : 'Folder Name'"
           class="w-full px-3 py-2 text-xs font-mono border rounded-lg focus:outline-none transition-colors"
           :class="isDark ? 'bg-[#1e1e1e] border-white/10 focus:border-cyan-400 text-white' : 'bg-gray-50 border-black/10 focus:border-cyan-500 text-black'"
           @keyup.enter="handleCreateItemSubmit"
@@ -361,13 +361,13 @@ onBeforeUnmount(() => {
             class="px-3 py-1.5 rounded-lg transition-colors"
             :class="isDark ? 'text-slate-400 hover:bg-white/10' : 'text-slate-600 hover:bg-black/5'"
           >
-            Batal
+            Cancel
           </button>
           <button 
             @click="handleCreateItemSubmit" 
             class="px-3 py-1.5 font-semibold bg-cyan-500 hover:bg-cyan-600 text-white rounded-lg transition-colors"
           >
-            Buat
+            Create
           </button>
         </div>
       </div>

@@ -21,7 +21,7 @@ if (typeof globalThis.navigator !== 'undefined') {
   })
 }
 
-// Impor modul Pinia Store & dependensi terkait
+// Import Pinia Store modules & related dependencies
 import { useProjectStore } from '@projects/useProjectStore.js'
 import { useSceneStore } from '@scenes/scenes.js'
 import { useAssetStore } from '@assets/assets.js'
@@ -32,12 +32,12 @@ import { useScriptStore } from '@scripts/scripts.js'
 import { engineBridge } from '@engines/engines.js'
 import { normalizer } from '@utils/utils.js'
 
-// Variable pengendali mock
+// Mock controller variables
 const mockGetProjectById = vi.fn()
 const mockSyncProject = vi.fn()
 const mockShowPop = vi.fn()
 
-// Isolasi & Mock modul eksternal
+// Isolate & mock external modules
 vi.mock('@projects/useProjectActions.js', () => ({
   useProjectActions: () => ({
     getProjectById: mockGetProjectById,
@@ -82,7 +82,7 @@ vi.mock('@utils/utils.js', () => ({
   normalizer: vi.fn()
 }))
 
-describe('Integrasi Project Store', () => {
+describe('Project Store Integration', () => {
   let projectStore
   let workspaceStore
   let sceneStore
@@ -103,13 +103,13 @@ describe('Integrasi Project Store', () => {
     folderStore = useFolderStore()
     scriptStore = useScriptStore()
 
-    // PERBAIKAN: Mock method OPFS yang benar sesuai implementation store
+    // Mock OPFS methods according to store implementation
     folderStore.syncFoldersToOPFS = vi.fn().mockResolvedValue()
     assetStore.syncAssetsToOPFS = vi.fn().mockResolvedValue()
   })
 
-  describe('Pembersihan Data Project (clearProjectData)', () => {
-    it('mereset state projectStore beserta seluruh child store yang terintegrasi', () => {
+  describe('Clear Project Data (clearProjectData)', () => {
+    it('resets projectStore state and all integrated child stores', () => {
       projectStore.project = { id: 'proj-1', name: 'Test Project' }
       projectStore.syncStatus = 'dirty'
 
@@ -133,8 +133,8 @@ describe('Integrasi Project Store', () => {
     })
   })
 
-  describe('Pemuatan Project (loadProject)', () => {
-    it('memuat data project dan mendistribusikan data ke seluruh store terkait saat integrasi berhasil', async () => {
+  describe('Loading Project (loadProject)', () => {
+    it('loads project data and distributes data to all related stores on successful integration', async () => {
       const projectId = 'proj-123'
       const rawResult = {
         project: { id: projectId, name: 'Game Project' },
@@ -188,16 +188,16 @@ describe('Integrasi Project Store', () => {
       expect(workspaceStore.isLoading).toBe(false)
     })
 
-    it('[Bad Path] menangani kegagalan dependency external saat loadProject dan meneruskan throw error', async () => {
-      const errorMessage = 'Network error: Gagal mengambil data'
+    it('[Bad Path] handles external dependency failure during loadProject and rethrows error', async () => {
+      const errorMessage = 'Network error: Failed to fetch data'
       mockGetProjectById.mockRejectedValueOnce(new Error(errorMessage))
 
       await expect(projectStore.loadProject('proj-invalid')).rejects.toThrow(errorMessage)
     })
   })
 
-  describe('Sinkronisasi dari Server/OPFS (syncFromServer)', () => {
-    it('memperbarui state store dan memanggil engineBridge ketika engine dalam kondisi ready', async () => {
+  describe('Sync from Server/OPFS (syncFromServer)', () => {
+    it('updates store state and calls engineBridge when engine is ready', async () => {
       projectStore.project = { id: 'proj-1', name: 'Existing Project' }
       
       workspaceStore.setEngine({ name: 'Mock Engine Instance' })
@@ -238,23 +238,23 @@ describe('Integrasi Project Store', () => {
       expect(workspaceStore.isLoading).toBe(false)
     })
 
-    it('[Bad Path] melempar error saat syncFromServer gagal dipanggil karena OPFS error', async () => {
+    it('[Bad Path] throws an error when syncFromServer fails due to OPFS error', async () => {
       projectStore.project = { id: 'proj-1' }
-      const error = new Error('Disk OPFS Penuh')
+      const error = new Error('OPFS Disk Full')
       mockGetProjectById.mockRejectedValueOnce(error)
 
-      await expect(projectStore.syncFromServer()).rejects.toThrow('Disk OPFS Penuh')
+      await expect(projectStore.syncFromServer()).rejects.toThrow('OPFS Disk Full')
     })
 
-    it('[Bad Path] melempar TypeError saat syncFromServer dipanggil tetapi tidak ada proyek yang aktif (project is null)', async () => {
+    it('[Bad Path] throws TypeError when syncFromServer is called but no project is active (project is null)', async () => {
       projectStore.project = null
 
       await expect(projectStore.syncFromServer()).rejects.toThrow(TypeError)
     })
   })
 
-  describe('Penyimpanan Project ke Server/OPFS (saveProjectToServer)', () => {
-    it('mengirim seluruh payload gabungan antar-store ke fungsi syncProject', async () => {
+  describe('Save Project to Server/OPFS (saveProjectToServer)', () => {
+    it('sends entire composite payload across stores to syncProject function', async () => {
       projectStore.project = { id: 'proj-1', name: 'Project to Save' }
       assetStore.assets = [{ id: 'asset-1' }]
       folderStore.folders = [{ id: 'folder-1' }]
@@ -285,7 +285,7 @@ describe('Integrasi Project Store', () => {
       expect(workspaceStore.isSaving).toBe(false)
     })
 
-    it('[Bad Path] meneruskan error saat terjadi kegagalan I/O Exception di OPFS', async () => {
+    it('[Bad Path] rethrows error when I/O Exception occurs in OPFS', async () => {
       projectStore.project = { id: 'proj-1' }
       const error = new Error('I/O Exception')
       mockSyncProject.mockRejectedValueOnce(error)
@@ -293,15 +293,15 @@ describe('Integrasi Project Store', () => {
       await expect(projectStore.saveProjectToServer()).rejects.toThrow('I/O Exception')
     })
 
-    it('[Bad Path] menangani kegagalan commit staged assets sebelum proses syncProject', async () => {
+    it('[Bad Path] handles staged asset commit failure before syncProject process', async () => {
       projectStore.project = { id: 'proj-1' }
-      assetStore.syncAssetsToOPFS = vi.fn().mockRejectedValueOnce(new Error('Gagal commit asset'))
+      assetStore.syncAssetsToOPFS = vi.fn().mockRejectedValueOnce(new Error('Failed to commit assets'))
 
-      await expect(projectStore.saveProjectToServer()).rejects.toThrow('Gagal commit asset')
+      await expect(projectStore.saveProjectToServer()).rejects.toThrow('Failed to commit assets')
     })
   })
 
-  describe('Perubahan State Internal dan Pengaturan Project', () => {
+  describe('Internal State and Project Settings Changes', () => {
     beforeEach(() => {
       projectStore.project = {
         id: 'proj-1',
@@ -320,12 +320,12 @@ describe('Integrasi Project Store', () => {
       workspaceStore.isSaving = false
     })
 
-    it('mengubah status syncStatus menjadi dirty ketika method markAsDirty dipanggil', () => {
+    it('sets syncStatus to dirty when markAsDirty is called', () => {
       projectStore.markAsDirty()
       expect(projectStore.syncStatus).toBe('dirty')
     })
 
-    it('menambahkan tag baru tanpa duplikasi dan menandai store sebagai dirty', () => {
+    it('adds new tag without duplicates and marks store as dirty', () => {
       projectStore.addTag('Gameplay')
       projectStore.addTag('gameplay')
 
@@ -333,7 +333,7 @@ describe('Integrasi Project Store', () => {
       expect(projectStore.syncStatus).toBe('dirty')
     })
 
-    it('menghapus tag pilihan dan menandai store sebagai dirty', () => {
+    it('removes selected tag and marks store as dirty', () => {
       projectStore.project.tags = ['Untagged', 'Gameplay']
 
       projectStore.removeTag('Gameplay')
@@ -342,7 +342,7 @@ describe('Integrasi Project Store', () => {
       expect(projectStore.syncStatus).toBe('dirty')
     })
 
-    it('memperbarui pengaturan debug dan menandai store sebagai dirty', () => {
+    it('updates debug settings and marks store as dirty', () => {
       projectStore.updateDebugSettings({ active: false })
 
       expect(projectStore.project.settings.debug.active).toBe(false)

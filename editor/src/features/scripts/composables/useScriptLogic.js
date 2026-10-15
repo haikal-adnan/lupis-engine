@@ -93,7 +93,7 @@ export function useScriptLogic() {
         const { id, type } = JSON.parse(internalData);
         await moveItem(id, type, targetFolder);
       } catch (err) {
-        console.warn('[ScriptLogic] Gagal parse payload drag and drop:', err);
+        console.warn('[ScriptLogic] Failed to parse drag-and-drop payload:', err);
       }
     }
   };

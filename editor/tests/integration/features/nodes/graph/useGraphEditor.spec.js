@@ -174,7 +174,6 @@ describe('Graph Editor Integration', () => {
     })
 
     it('synchronizes all existing node attributes when a variable is updated', async () => {
-      // Arrange
       await setupMockScriptEnvironment({ scriptId: 'script_sync', nodes: [] })
       scriptStore.setActiveScript(scriptStore.getScriptById('script_sync'))
 
@@ -184,7 +183,6 @@ describe('Graph Editor Integration', () => {
       variableLogic.addNodeToCanvas(targetVar, { x: 0, y: 0 }, 'variable_get', false)
       variableLogic.addNodeToCanvas(targetVar, { x: 200, y: 0 }, 'variable_set', false)
 
-      // Act: Update nama & tipe data variabel menggunakan fungsi asli useVariableLogic
       const varIndex = variableLogic.variables.value.findIndex(v => v.id === targetVar.id)
       variableLogic.updateVariable(varIndex, 'name', 'healthPoints')
       variableLogic.updateVariable(varIndex, 'type', 'Number')

@@ -22,53 +22,53 @@ PopAlert: info, success, warning, error
 
 const handleProjectActions = async () => {
   
-  // --- A. ALERT (Peringatan Tunggal) ---
-  // Digunakan untuk validasi yang menghentikan alur kerja
+  // --- A. ALERT (Single Warning/Notice) ---
+  // Used for validation that halts workflow
   const isDuplicate = checkDuplicate(newId);
   if (isDuplicate) {
     await alert({
-      title: 'ID Duplikat',
-      message: `ID "${newId}" sudah digunakan di scene ini.`,
+      title: 'Duplicate ID',
+      message: `ID "${newId}" is already in use in this scene.`,
       type: 'warning'
     });
-    return resetInput(); // Dijalankan SETELAH user klik OK
+    return resetInput(); // Executed AFTER user clicks OK
   }
 
-  // --- B. PROMPT (Input User) ---
-  // Digunakan untuk mengambil input teks singkat
+  // --- B. PROMPT (User Text Input) ---
+  // Used for capturing brief text input
   const newName = await prompt({
-    title: 'Ganti Nama Proyek',
-    message: 'Masukkan nama baru untuk proyek ini:',
-    defaultValue: 'Proyek Baru',
-    confirmText: 'Simpan'
+    title: 'Rename Project',
+    message: 'Enter a new name for this project:',
+    defaultValue: 'New Project',
+    confirmText: 'Save'
   });
 
   if (newName !== null && newName.trim() !== '') {
     
-    // --- C. CONFIRM (Konfirmasi Aksi) ---
-    // Digunakan untuk aksi berbahaya/irreversible (seperti hapus)
+    // --- C. CONFIRM (Action Confirmation) ---
+    // Used for potentially destructive or irreversible actions
     const isConfirmed = await confirm({
-      title: 'Konfirmasi Perubahan',
-      message: `Apakah Anda yakin ingin mengganti nama menjadi "${newName}"?`,
+      title: 'Confirm Changes',
+      message: `Are you sure you want to rename to "${newName}"?`,
       type: 'info',
-      confirmText: 'Ya, Ubah'
+      confirmText: 'Yes, Rename'
     });
 
     if (isConfirmed) {
       try {
         await api.updateProject(newName);
 
-        // --- D. POPALERT (Notifikasi Toast/Pop-up) ---
-        // Tidak bersifat blocking (tidak perlu await)
+        // --- D. POPALERT (Toast/Popup Notification) ---
+        // Non-blocking (no await required)
         showPop({
-          title: 'Berhasil!',
-          message: 'Nama proyek telah diperbarui.',
+          title: 'Success!',
+          message: 'Project name updated.',
           type: 'success'
         });
       } catch (error) {
         showPop({
-          title: 'Gagal',
-          message: error.message || 'Terjadi kesalahan server.',
+          title: 'Failed',
+          message: error.message || 'Server error occurred.',
           type: 'error'
         });
       }

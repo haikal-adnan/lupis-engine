@@ -16,7 +16,7 @@ vi.mock('@composables/composables.js', () => ({
   usePrompt: () => ({ prompt: mockPrompt })
 }))
 
-describe('Integrasi Folder Actions', () => {
+describe('Integration Test: Folder Actions', () => {
   beforeEach(async () => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
@@ -24,7 +24,7 @@ describe('Integrasi Folder Actions', () => {
     setupMockOPFS()
     const project = await createMockEmptyProject({
       projectName: 'Folder Actions Project',
-      description: 'Project pengujian integrasi folder actions',
+      description: 'Folder actions integration test project',
       type: 'empty'
     })
 
@@ -32,11 +32,11 @@ describe('Integrasi Folder Actions', () => {
     workspaceStore.activeProjectId = project.id
   })
 
-  describe('Integrasi Action createNewFolder', () => {
-    it('memproses input prompt dan membuat folder baru di store serta menampilkan notifikasi', async () => {
+  describe('Action: createNewFolder', () => {
+    it('processes prompt input, creates new folder in store, and shows notification', async () => {
       const folderActions = useFolderActions()
       const folderStore = useFolderStore()
-      mockPrompt.mockResolvedValue('  Folder Baru Terbuat  ')
+      mockPrompt.mockResolvedValue('  New Created Folder  ')
 
       const newFolder = await folderActions.createNewFolder({
         defaultName: 'Default Name',
@@ -52,21 +52,21 @@ describe('Integrasi Folder Actions', () => {
       })
 
       expect(folderStore.folders).toHaveLength(1)
-      expect(folderStore.folders[0].name).toBe('Folder Baru Terbuat')
+      expect(folderStore.folders[0].name).toBe('New Created Folder')
       expect(folderStore.folders[0].parentId).toBe('parent_1')
       expect(newFolder.id).toBeDefined()
 
       expect(mockShowPop).toHaveBeenCalledWith({
         title: 'Folder Created',
-        message: 'Folder "Folder Baru Terbuat" created successfully.',
+        message: 'Folder "New Created Folder" created successfully.',
         type: 'success'
       })
     })
 
-    it('membatalkan pembuatan folder secara anggun saat pengguna menekan Cancel pada prompt', async () => {
+    it('gracefully cancels folder creation when user clicks Cancel on prompt', async () => {
       const folderActions = useFolderActions()
       const folderStore = useFolderStore()
-      mockPrompt.mockResolvedValue(null) // Prompt dikembalikan null ketika dibatalkan
+      mockPrompt.mockResolvedValue(null) // Prompt returns null when cancelled
 
       const result = await folderActions.createNewFolder({
         defaultName: 'Default Name',
@@ -80,8 +80,8 @@ describe('Integrasi Folder Actions', () => {
     })
   })
 
-  describe('Integrasi Action deleteFolder (Cascade Delete)', () => {
-    it('menghapus folder beserta seluruh sub-folder, asset, prefab, dan script di dalamnya', async () => {
+  describe('Action: deleteFolder (Cascade Delete)', () => {
+    it('deletes folder along with all sub-folders, assets, prefabs, and scripts inside it', async () => {
       const folderActions = useFolderActions()
       const folderStore = useFolderStore()
       const assetStore = useAssetStore()
@@ -121,8 +121,8 @@ describe('Integrasi Folder Actions', () => {
     })
   })
 
-  describe('Integrasi Action renameFolder & duplicateFolder', () => {
-    it('memperbarui nama folder di store dan memicu notifikasi sukses', async () => {
+  describe('Action: renameFolder & duplicateFolder', () => {
+    it('updates folder name in store and triggers success notification', async () => {
       const folderActions = useFolderActions()
       const folderStore = useFolderStore()
       await folderStore.createFolder({ id: 'f1', name: 'Old Name', section: 'assets', parentId: null })
@@ -137,7 +137,7 @@ describe('Integrasi Folder Actions', () => {
       })
     })
 
-    it('menduplikasi folder yang ada dan membuat entry baru di store', async () => {
+    it('duplicates existing folder and creates new entry in store', async () => {
       const folderActions = useFolderActions()
       const folderStore = useFolderStore()
       await folderStore.createFolder({ id: 'f_orig', name: 'Documents', section: 'assets', parentId: null })

@@ -79,12 +79,13 @@ jobs:
       - name: Install Service Dependencies
         run: |
           cd service
-          npm ci
+          npm ci --omit=dev
 
       - name: Validate Server Syntax
         run: |
           cd service
           node --check server.js
+          node --check runner/main.js
 
   e2e-contracts:
     name: Playwright Contract Verification

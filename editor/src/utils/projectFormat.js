@@ -21,12 +21,12 @@ export async function decodeLupisProject(file) {
   const bytes = new Uint8Array(arrayBuffer);
   
   if (bytes.length < LUPIS_HEADER.length) {
-    throw new Error('File tidak valid atau ukurannya terlalu kecil.');
+    throw new Error('Invalid file or file size is too small.');
   }
 
   for (let i = 0; i < LUPIS_HEADER.length; i++) {
     if (bytes[i] !== LUPIS_HEADER[i]) {
-      throw new Error('Format file tidak valid. File ini bukan file proyek Lupis Engine (.lupisproject) yang sah.');
+      throw new Error('Invalid file format. This is not a valid Lupis Engine project file (.lupisproject).');
     }
   }
 

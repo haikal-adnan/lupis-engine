@@ -25,7 +25,7 @@ export function useShapeEditorLogic() {
     return sceneStore.activeScene.entities?.find(e => String(e.id) === String(id)) || null;
   });
 
-  // AUTO-CLOSE jika entitas saat ini berubah menjadi PREFAB
+  // AUTO-CLOSE if current entity becomes a PREFAB
   watch(
     [() => workspaceStore.activeTab, selectedEntity],
     ([activeTab, entity]) => {

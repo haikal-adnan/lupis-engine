@@ -4,14 +4,14 @@ import { useSceneActions } from '@scenes/scenes.js'
 import { useProjectStore } from '@projects/projects.js'
 import { setupMockOPFS, createMockEmptyProject } from '@tests/tests.js'
 
-describe('Integrasi Scene Actions', () => {
+describe('Scene Actions Integration', () => {
   let sceneStoreState
 
   beforeEach(() => {
     setActivePinia(createPinia())
     setupMockOPFS()
 
-    // Mempersiapkan mock state untuk sceneStore yang mengadopsi useSceneActions
+    // Prepare mock state for sceneStore adopting useSceneActions
     sceneStoreState = {
       scenes: [],
       activeSceneId: null,
@@ -20,7 +20,7 @@ describe('Integrasi Scene Actions', () => {
     }
   })
 
-  // Helper untuk memastikan mock project memiliki properti scenes yang valid
+  // Helper to ensure mock project has valid scenes property
   const prepareProjectStore = async (projectName = 'Test Project') => {
     const projectStore = useProjectStore()
     const mockProject = await createMockEmptyProject({ projectName })
@@ -33,39 +33,39 @@ describe('Integrasi Scene Actions', () => {
     return projectStore
   }
 
-  describe('Tambah Scene (addScene)', () => {
-    it('menambahkan scene baru dan mendaftarkannya ke project store', async () => {
+  describe('Add Scene (addScene)', () => {
+    it('adds new scene and registers it in project store', async () => {
       // Arrange
-      const projectStore = await prepareProjectStore('Game Proyek')
+      const projectStore = await prepareProjectStore('Game Project')
 
       // Act
-      const newScene = sceneStoreState.addScene({ name: 'Level Utama' })
+      const newScene = sceneStoreState.addScene({ name: 'Main Level' })
 
       // Assert
       expect(sceneStoreState.scenes.length).toBe(1)
-      expect(sceneStoreState.scenes[0].name).toBe('Level Utama')
+      expect(sceneStoreState.scenes[0].name).toBe('Main Level')
       expect(sceneStoreState.activeSceneId).toBe(newScene.id)
       expect(sceneStoreState.selectedEntityIds).toEqual([])
 
-      // Sinkronisasi dengan Project Store
+      // Sync with Project Store
       expect(projectStore.project.scenes).toContain(newScene.id)
       expect(projectStore.syncStatus).toBe('dirty')
     })
 
-    it('[Bad Path] melemparkan TypeError ketika dipanggil tanpa active project', () => {
+    it('[Bad Path] throws TypeError when called without active project', () => {
       // Arrange
       const projectStore = useProjectStore()
       projectStore.project = null
 
       // Act & Assert
       expect(() => {
-        sceneStoreState.addScene({ name: 'Scene Tanpa Project' })
+        sceneStoreState.addScene({ name: 'Scene Without Project' })
       }).toThrow(TypeError)
     })
   })
 
-  describe('Duplikasi Scene (duplicateScene)', () => {
-    it('Menduplikasi scene yang ada dan memperbarui id scene pada project store', async () => {
+  describe('Duplicate Scene (duplicateScene)', () => {
+    it('duplicates existing scene and updates scene id in project store', async () => {
       // Arrange
       const projectStore = await prepareProjectStore()
       const initialScene = sceneStoreState.addScene({ name: 'Stage 1' })
@@ -79,12 +79,12 @@ describe('Integrasi Scene Actions', () => {
       expect(duplicatedScene.id).not.toBe(initialScene.id)
       expect(sceneStoreState.activeSceneId).toBe(duplicatedScene.id)
 
-      // Verifikasi integrasi ke Project Store
+      // Verify integration into Project Store
       expect(projectStore.project.scenes).toContain(duplicatedScene.id)
       expect(projectStore.project.scenes.length).toBe(2)
     })
 
-    it('[Bad Path] mengembalikan null jika sceneId tidak ditemukan', async () => {
+    it('[Bad Path] returns null if sceneId is not found', async () => {
       // Arrange
       await prepareProjectStore()
 
@@ -97,8 +97,8 @@ describe('Integrasi Scene Actions', () => {
     })
   })
 
-  describe('Hapus Scene (removeScene)', () => {
-    it('menghapus scene dan mengalihkan activeSceneId ke scene sebelumnya', async () => {
+  describe('Remove Scene (removeScene)', () => {
+    it('removes scene and switches activeSceneId to previous scene', async () => {
       // Arrange
       await prepareProjectStore()
 
@@ -114,7 +114,7 @@ describe('Integrasi Scene Actions', () => {
       expect(sceneStoreState.activeSceneId).toBe(scene1.id)
     })
 
-    it('[Bad Path] melempar error MIN_SCENE_LIMIT jika scene yang tersisa hanya satu', async () => {
+    it('[Bad Path] throws MIN_SCENE_LIMIT error if only one scene remains', async () => {
       // Arrange
       await prepareProjectStore()
       const singleScene = sceneStoreState.addScene({ name: 'Last Scene' })
@@ -127,8 +127,8 @@ describe('Integrasi Scene Actions', () => {
     })
   })
 
-  describe('Pembaruan Nama Scene (updateSceneName)', () => {
-    it('mengubah nama scene jika input nama valid', async () => {
+  describe('Update Scene Name (updateSceneName)', () => {
+    it('updates scene name when name input is valid', async () => {
       // Arrange
       await prepareProjectStore()
       const scene = sceneStoreState.addScene({ name: 'Old Name' })
@@ -140,7 +140,7 @@ describe('Integrasi Scene Actions', () => {
       expect(sceneStoreState.scenes[0].name).toBe('New Name')
     })
 
-    it('[Bad Path] mengabaikan pembaruan nama jika string kosong atau hanya spasi', async () => {
+    it('[Bad Path] ignores name update if string is empty or whitespace only', async () => {
       // Arrange
       await prepareProjectStore()
       const scene = sceneStoreState.addScene({ name: 'Original Name' })

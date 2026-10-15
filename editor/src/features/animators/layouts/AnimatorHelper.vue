@@ -1,14 +1,14 @@
 <template>
   <div class="h-full flex flex-col bg-background text-foreground relative select-none" data-testid="animator-helper-container">
     
-    <!-- State 1: Tidak ada komponen Animator -->
+    <!-- State 1: No Animator component -->
     <div v-if="!hasAnimator" class="h-full flex flex-col items-center justify-center text-center p-4 opacity-50" data-testid="animator-helper-no-component">
       <Film class="w-8 h-8 mb-2 text-muted-foreground" />
       <span class="text-xs font-medium">No Animator Component</span>
       <span class="text-[10px] mt-1">Select an entity with SpriteAnimator.</span>
     </div>
 
-    <!-- State 2: Komponen ada tetapi tidak ada Clip yang dipilih -->
+    <!-- State 2: Component exists but no clip is selected -->
     <ScrollArea v-else-if="!activeClipId" class="flex-1" data-testid="animator-helper-no-clip-settings">
       <div class="p-2 space-y-2">
         <PropertySection title="Viewport & Overlay Settings" :icon="Eye" :default-open="true">
@@ -74,7 +74,7 @@
       </div>
     </ScrollArea>
 
-    <!-- State 3: Menampilkan Properti Clip & Editor Settings -->
+    <!-- State 3: Display Clip Properties & Editor Settings -->
     <ScrollArea v-else class="flex-1" data-testid="animator-helper-content">
       <div class="p-2 space-y-2 pb-20">
         <AnimatorProperty />

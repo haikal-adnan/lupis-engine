@@ -143,7 +143,7 @@ export function useHierarchyLogic() {
 
     // 2. Move Entity
     if (draggedEntity) {
-      // Kasus tanpa targetNode: pindah ke root
+      // Case without targetNode: move to root
       if (!targetNode) {
         sceneStore.moveEntity(draggedId, {
           newParentId: null, 

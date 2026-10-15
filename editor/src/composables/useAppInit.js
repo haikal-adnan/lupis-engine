@@ -36,7 +36,7 @@ export function useAppInit() {
       }
 
       if (!projectStore.project) {
-        throw new Error('Data project gagal dimuat dari OPFS.')
+        throw new Error('Failed to load project data from OPFS.')
       }
 
       initWatchers()

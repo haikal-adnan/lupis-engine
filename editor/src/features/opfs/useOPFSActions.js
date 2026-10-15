@@ -46,7 +46,7 @@ export function useOPFSActions() {
     try {
       await dirHandle.removeEntry(fileName);
     } catch (err) {
-      console.warn(`[OPFS Executor] File "${fileName}" gagal dihapus atau tidak ditemukan:`, err);
+      console.warn(`[OPFS Executor] File "${fileName}" failed to delete or was not found:`, err);
     }
   };
 
@@ -87,7 +87,7 @@ export function useOPFSActions() {
       const tree = await scanDirectory(userDir);
       opfsStore.setFileTree(tree);
     } catch (error) {
-      console.error('Gagal memindai OPFS:', error);
+      console.error('Failed to scan OPFS:', error);
       opfsStore.setError(error.message);
     } finally {
       opfsStore.setLoading(false);
@@ -99,7 +99,7 @@ export function useOPFSActions() {
     try {
       await refreshTree();
     } catch (error) {
-      showPop({ title: 'Inisialisasi OPFS Gagal', message: error.message, type: 'error' });
+      showPop({ title: 'OPFS Initialization Failed', message: error.message, type: 'error' });
     } finally {
       opfsStore.setLoading(false);
     }
@@ -121,7 +121,7 @@ export function useOPFSActions() {
         opfsStore.setActiveFile(fileItem, '', '');
       }
     } catch (error) {
-      showPop({ title: 'Gagal Membuka File', message: error.message, type: 'error' });
+      showPop({ title: 'Failed to Open File', message: error.message, type: 'error' });
     } finally {
       opfsStore.setLoading(false);
     }
@@ -129,8 +129,8 @@ export function useOPFSActions() {
 
   const saveActiveFile = async (contentOverride = null) => {
     if (!opfsStore.activeFile || !opfsStore.activeFile.handle) {
-      showPop({ title: 'Gagal Menyimpan File', message: 'Tidak ada file aktif untuk disimpan.', type: 'error' });
-      return { success: false, error: 'Tidak ada file aktif untuk disimpan.' };
+      showPop({ title: 'Failed to Save File', message: 'No active file to save.', type: 'error' });
+      return { success: false, error: 'No active file to save.' };
     }
 
     opfsStore.setSaving(true);
@@ -142,10 +142,10 @@ export function useOPFSActions() {
       await writable.close();
 
       projectStore.markAsDirty();
-      showPop({ title: 'Tersimpan', message: `File ${opfsStore.activeFile.name} disimpan ke OPFS.`, type: 'success' });
+      showPop({ title: 'Saved', message: `File ${opfsStore.activeFile.name} saved to OPFS.`, type: 'success' });
       return { success: true };
     } catch (error) {
-      showPop({ title: 'Gagal Menyimpan File', message: error.message, type: 'error' });
+      showPop({ title: 'Failed to Save File', message: error.message, type: 'error' });
       return { success: false, error: error.message };
     } finally {
       opfsStore.setSaving(false);
@@ -167,7 +167,7 @@ export function useOPFSActions() {
       projectStore.markAsDirty();
       return { success: true };
     } catch (error) {
-      showPop({ title: `Gagal Membuat ${type}`, message: error.message, type: 'error' });
+      showPop({ title: `Failed to Create ${type}`, message: error.message, type: 'error' });
       return { success: false, error: error.message };
     } finally {
       opfsStore.setLoading(false);
@@ -193,10 +193,10 @@ export function useOPFSActions() {
       }
 
       projectStore.markAsDirty();
-      showPop({ title: 'Berhasil Dihapus', message: `"${item.name}" telah dihapus.`, type: 'info' });
+      showPop({ title: 'Successfully Deleted', message: `"${item.name}" has been deleted.`, type: 'info' });
       return { success: true };
     } catch (error) {
-      showPop({ title: 'Gagal Menghapus', message: error.message, type: 'error' });
+      showPop({ title: 'Failed to Delete', message: error.message, type: 'error' });
       return { success: false, error: error.message };
     } finally {
       opfsStore.setLoading(false);
@@ -223,14 +223,14 @@ export function useOPFSActions() {
       }
 
       if (rejected.length) {
-        showPop({ title: 'Beberapa File Ditolak', message: `Ekstensi tidak didukung: ${rejected.join(', ')}`, type: 'warning' });
+        showPop({ title: 'Some Files Rejected', message: `Unsupported extension: ${rejected.join(', ')}`, type: 'warning' });
       }
       if (saved.length) {
         projectStore.markAsDirty();
-        showPop({ title: 'Unggah Berhasil', message: `${saved.length} file ditambahkan ke OPFS.`, type: 'success' });
+        showPop({ title: 'Upload Successful', message: `${saved.length} file(s) added to OPFS.`, type: 'success' });
       }
     } catch (error) {
-      showPop({ title: 'Gagal Mengunggah File', message: error.message, type: 'error' });
+      showPop({ title: 'Failed to Upload File', message: error.message, type: 'error' });
     } finally {
       opfsStore.setLoading(false);
     }
@@ -240,10 +240,10 @@ export function useOPFSActions() {
     try {
       opfsStore.clearActiveFile();
       opfsStore.setFileTree([]);
-      showPop({ title: 'Cache Dibersihkan', message: 'Folder proyek lokal telah dibersihkan.', type: 'info' });
+      showPop({ title: 'Cache Cleared', message: 'Local project folder cache has been cleared.', type: 'info' });
       return { success: true };
     } catch (error) {
-      console.warn('Cache sudah bersih atau tidak ditemukan:', error);
+      console.warn('Cache is already clean or not found:', error);
       return { success: false, error: error.message };
     }
   };
@@ -291,7 +291,7 @@ export function useOPFSActions() {
         const sanitizedName = projectData.name.trim().replace(/[/\\?%*:|"<>]/g, '').replace(/\s+/g, '_');
         fileName = sanitizedName;
       } catch (e) {
-        console.warn('Gagal membaca nama dari project.json, menggunakan ID sebagai nama file:', e);
+        console.warn('Failed to read name from project.json, using ID as filename:', e);
       }
 
       const zip = new JSZip();
@@ -315,15 +315,15 @@ export function useOPFSActions() {
       URL.revokeObjectURL(url);
 
       showPop({
-        title: 'Ekspor Berhasil',
-        message: `Proyek '${fileName}' berhasil disimpan sebagai .lupisproject.`,
+        title: 'Export Successful',
+        message: `Project '${fileName}' successfully saved as .lupisproject.`,
         type: 'success'
       });
 
       return { success: true };
     } catch (error) {
-      console.error('Gagal ekspor .lupisproject:', error);
-      showPop({ title: 'Gagal Ekspor Proyek', message: error.message, type: 'error' });
+      console.error('Failed to export .lupisproject:', error);
+      showPop({ title: 'Failed to Export Project', message: error.message, type: 'error' });
       return { success: false, error: error.message };
     } finally {
       opfsStore.setLoading(false);
@@ -347,15 +347,15 @@ export function useOPFSActions() {
       await _writeZipEntryToOPFS(loadedZip, targetProjectDir);
 
       showPop({
-        title: 'Import Berhasil',
-        message: `Proyek "${projectData.name}" berhasil di-import.`,
+        title: 'Import Successful',
+        message: `Project "${projectData.name}" successfully imported.`,
         type: 'success'
       });
 
       return { success: true, projectId, projectData };
     } catch (error) {
-      console.error('Gagal import .lupisproject:', error);
-      showPop({ title: 'Gagal Import Proyek', message: error.message, type: 'error' });
+      console.error('Failed to import .lupisproject:', error);
+      showPop({ title: 'Failed to Import Project', message: error.message, type: 'error' });
       return { success: false, error: error.message };
     } finally {
       opfsStore.setLoading(false);
@@ -370,7 +370,7 @@ export function useOPFSActions() {
       const tree = await scanDirectory(targetProjectDir);
       opfsStore.setFileTree(tree);
     } catch (error) {
-      console.error('Gagal memindai folder proyek OPFS:', error);
+      console.error('Failed to scan OPFS project folder:', error);
       opfsStore.setError(error.message);
     } finally {
       opfsStore.setLoading(false);

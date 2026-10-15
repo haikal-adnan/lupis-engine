@@ -8,7 +8,7 @@ import { useSceneHistory } from '@historys/historys.js'
 import { useConfirm, usePopAlert, usePrompt } from '@composables/composables.js'
 import { setupMockOPFS, createMockEmptyProject } from '@tests/tests.js'
 
-// Mock composable UI pendukung yang dipanggil di dalam Actions
+// Mock supporting UI composables called inside Actions
 vi.mock('@composables/composables.js', () => ({
   useConfirm: vi.fn(),
   usePopAlert: vi.fn(),
@@ -25,7 +25,7 @@ vi.mock('@historys/historys.js', () => ({
   })
 }))
 
-describe('Integrasi PrefabLogic', () => {
+describe('Integration Test: PrefabLogic', () => {
   let logic
   let prefabStore
   let folderStore
@@ -56,7 +56,7 @@ describe('Integrasi PrefabLogic', () => {
     const project = await createMockEmptyProject({ projectName: 'Logic Integration Test' })
     workspaceStore.setProjectId(project.id)
 
-    // Set default scene agar operasi prefab berjalan lancar
+    // Set default scene for smooth prefab operations
     sceneStore.initScenes([
       {
         id: 'scene-1',
@@ -75,8 +75,8 @@ describe('Integrasi PrefabLogic', () => {
     vi.clearAllMocks()
   })
 
-  describe('Integrasi Filtering dan Computed Properties', () => {
-    it('memfilter visibleFolders dan visiblePrefabs berdasarkan folder aktif, tab, dan query pencarian', () => {
+  describe('Filtering and Computed Properties Integration', () => {
+    it('filters visibleFolders and visiblePrefabs based on active folder, tab, and search query', () => {
       // Arrange
       folderStore.initFolders([
         { id: 'f1', name: 'Folder UI', section: 'prefabs-ui', parentId: null },
@@ -89,14 +89,14 @@ describe('Integrasi PrefabLogic', () => {
         { id: 'p2', name: 'HealthBar', type: 'ui', folderId: null }
       ])
 
-      // Act & Assert: Tab Default ('world')
+      // Act & Assert: Default tab ('world')
       expect(logic.visibleFolders.value).toHaveLength(1)
       expect(logic.visibleFolders.value[0].name).toBe('Folder World')
 
       expect(logic.visiblePrefabs.value).toHaveLength(1)
       expect(logic.visiblePrefabs.value[0].name).toBe('Player')
 
-      // Act: Ganti Tab ke 'ui' dan lakukan Pencarian
+      // Act: Switch tab to 'ui' and search
       logic.activeTab.value = 'ui'
       logic.searchQuery.value = 'health'
 
@@ -106,7 +106,7 @@ describe('Integrasi PrefabLogic', () => {
       expect(logic.visiblePrefabs.value[0].name).toBe('HealthBar')
     })
 
-    it('menghasilkan susunan breadcrumb folder yang berurutan dari root', () => {
+    it('generates sequential folder breadcrumbs from root', () => {
       // Arrange
       folderStore.initFolders([
         { id: 'root-f', name: 'Root Folder', parentId: null },
@@ -124,8 +124,8 @@ describe('Integrasi PrefabLogic', () => {
     })
   })
 
-  describe('Integrasi Navigasi dan Salin-Tempel (Clipboard Operations)', () => {
-    it('mengubah folder aktif dan membersihkan seleksi serta pencarian saat navigasi', () => {
+  describe('Navigation and Clipboard Operations Integration', () => {
+    it('changes active folder and clears selection and search query on navigation', () => {
       // Arrange
       logic.selectedId.value = 'item-1'
       logic.searchQuery.value = 'test'
@@ -139,7 +139,7 @@ describe('Integrasi PrefabLogic', () => {
       expect(logic.searchQuery.value).toBe('')
     })
 
-    it('memindahkan item prefab ke folder baru melalui operasi paste (cut)', async () => {
+    it('moves prefab item to new folder via paste (cut) operation', async () => {
       // Arrange
       prefabStore.initPrefabs([
         { id: 'p1', name: 'Item', folderId: 'folder-old' }
@@ -154,16 +154,16 @@ describe('Integrasi PrefabLogic', () => {
       // Act
       await logic.handlePaste()
 
-      // Assert: State terbarui
+      // Assert: Updated state
       expect(prefabStore.getPrefabById('p1').folderId).toBe('folder-new')
       expect(logic.clipboard.value.action).toBeNull()
 
-      // Assert: Rekaman history
+      // Assert: History record
       const { recordMovePrefabFolder } = useSceneHistory()
       expect(recordMovePrefabFolder).toHaveBeenCalledWith('p1', 'folder-old', 'folder-new')
     })
 
-    it('menduplikasi prefab saat menjalankan operasi paste (copy)', async () => {
+    it('duplicates prefab when executing paste (copy) operation', async () => {
       // Arrange
       prefabStore.initPrefabs([
         { id: 'p1', name: 'Original', folderId: null }
@@ -177,14 +177,14 @@ describe('Integrasi PrefabLogic', () => {
       // Act
       await logic.handlePaste()
 
-      // Assert: Prefab baru berhasil diduplikasi di store
+      // Assert: New prefab duplicated in store
       expect(prefabStore.prefabs).toHaveLength(2)
       expect(prefabStore.prefabs[1].name).toBe('Original_copy')
     })
   })
 
-  describe('Integrasi Pembuatan, Pemindahan, dan Penghapusan Item', () => {
-    it('membuat prefab kosong baru di folder aktif dan memilihnya secara otomatis', async () => {
+  describe('Item Creation, Movement, and Deletion Integration', () => {
+    it('creates new empty prefab in active folder and selects it automatically', async () => {
       // Arrange
       folderStore.setActiveFolder('active-f')
 
@@ -197,10 +197,10 @@ describe('Integrasi PrefabLogic', () => {
       expect(prefabStore.prefabs[0].folderId).toBe('active-f')
     })
 
-    it('membuat folder baru di direktori saat ini dan memilihnya', async () => {
+    it('creates new folder in current directory and selects it', async () => {
       // Arrange
       folderStore.setActiveFolder('active-f')
-      mockPrompt.mockResolvedValue('New Folder') // Memastikan prompt dialog mengembalikan nama folder
+      mockPrompt.mockResolvedValue('New Folder') // Ensure prompt dialog returns folder name
 
       // Act
       await logic.createFolder()
@@ -211,7 +211,7 @@ describe('Integrasi PrefabLogic', () => {
       expect(folderStore.folders[0].parentId).toBe('active-f')
     })
 
-    it('memproses data drag and drop untuk memindahkan item', async () => {
+    it('processes drag and drop data to move item', async () => {
       // Arrange
       prefabStore.initPrefabs([
         { id: 'p-drag', name: 'Dragged', folderId: 'f-start' }
@@ -229,7 +229,7 @@ describe('Integrasi PrefabLogic', () => {
       expect(prefabStore.getPrefabById('p-drag').folderId).toBe('f-target')
     })
 
-    it('menghapus item prefab dan membersihkan seleksi jika item yang dihapus sedang dipilih', async () => {
+    it('deletes prefab item and clears selection if deleted item was selected', async () => {
       // Arrange
       prefabStore.initPrefabs([
         { id: 'p-delete', name: 'ToDelete', folderId: null }
@@ -244,7 +244,7 @@ describe('Integrasi PrefabLogic', () => {
       expect(logic.selectedId.value).toBeNull()
     })
 
-    it('mengarahkan aksi rename ke prompt dialog lalu memperbarui nama item', async () => {
+    it('routes rename action to prompt dialog and updates item name', async () => {
       // Arrange
       prefabStore.initPrefabs([
         { id: 'p-1', name: 'OldName', folderId: null }
@@ -259,8 +259,8 @@ describe('Integrasi PrefabLogic', () => {
     })
   })
 
-  describe('Penanganan Kasus Batas dan Jalur Buruk [Bad Path]', () => {
-    it('[Bad Path] mengabaikan proses drop jika payload drag and drop corrupt atau invalid JSON', async () => {
+  describe('Boundary Cases and Bad Path Handling', () => {
+    it('[Bad Path] ignores drop process if drag and drop payload is corrupt or invalid JSON', async () => {
       // Arrange
       const mockEvent = {
         dataTransfer: {
@@ -274,12 +274,12 @@ describe('Integrasi PrefabLogic', () => {
 
       // Assert
       expect(consoleWarnSpy).toHaveBeenCalledWith(
-        '[PrefabLogic] Gagal parse payload drag and drop:',
+        '[PrefabLogic] Failed to parse drag-and-drop payload:',
         expect.any(SyntaxError)
       )
     })
 
-    it('[Bad Path] tidak memindahkan prefab jika target folder sama dengan folder asal', async () => {
+    it('[Bad Path] does not move prefab if target folder is the same as source folder', async () => {
       // Arrange
       prefabStore.initPrefabs([
         { id: 'p-same', name: 'Same', folderId: 'f-same' }

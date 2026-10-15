@@ -64,7 +64,7 @@ export default class PrefabSystem {
                 if (!isIdExist) {
                     finalRootScriptId = sanitizedId;
                 } else {
-                    console.warn(`[PrefabSystem] Script ID '${sanitizedId}' sudah ada. Generate ID acak.`);
+                    console.warn(`[PrefabSystem] Script ID '${sanitizedId}' already exists. Generating random ID.`);
                 }
             }
         }

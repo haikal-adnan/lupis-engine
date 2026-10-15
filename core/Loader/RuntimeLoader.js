@@ -37,7 +37,6 @@ export default class RuntimeLoader {
             
             this._initMain(game, canvas, mode);
 
-            // Inisialisasi variabel global ke VariableManager
             if (project.globalVariables && game.variables) {
                 game.variables.initGlobals(project.globalVariables);
             }
@@ -90,7 +89,6 @@ export default class RuntimeLoader {
             reportProgress("Menyiapkan Scene Awal...", 90);
             this._initScriptLibrary(game.world, scripts);
 
-            // Set scene cache sekaligus initialSceneId ke SceneSystem
             const targetSceneId = project.settings?.initialSceneId;
             game.sceneSystem.setSceneCache(scenes, targetSceneId);
 
@@ -108,7 +106,6 @@ export default class RuntimeLoader {
                 message: `${mode.toUpperCase()} engine successfully initialized and running!`
             });
 
-            // Cari target scene berdasarkan initialSceneId, fallback ke scenes[0]
             const initialScene = scenes.find(s => s.id === targetSceneId) || scenes[0];
 
             this._setupWorldSettings(game, project.settings, initialScene.settings);

@@ -230,7 +230,7 @@ const {
   fitToChildren 
 } = useInspectorTransform(selectedEntity, isEditingMasterPrefab);
 
-// 4. Property Bindings (OPERKAN PARAMETER YANG DIBUTUHKAN)
+// 4. Property Bindings (Pass required parameters)
 const { bindComponentProp } = useInspectorBinding(
   selectedEntity, 
   isEditingMasterPrefab, 
@@ -238,7 +238,7 @@ const { bindComponentProp } = useInspectorBinding(
   markAsOverridden
 );
 
-// --- Logic Komponen ---
+// --- Component Logic ---
 const overridden = getComponentOverrideStatus(COMPONENT_NAME);
 
 const x = bindComponentProp(COMPONENT_NAME, 'x', 2);

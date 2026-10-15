@@ -4,7 +4,7 @@ import { usePrefabStore } from '@prefabs/prefabs.js'
 import { useWorkspaceStore } from '@workspaces/workspaces.js'
 import { setupMockOPFS, createMockEmptyProject } from '@tests/tests.js'
 
-// Mock composable external pendukung yang digunakan oleh useOPFSActions
+// Mock external supporting composable used by useOPFSActions
 vi.mock('@composables/composables.js', () => ({
   usePopAlert: () => ({
     showPop: vi.fn()
@@ -25,7 +25,7 @@ vi.mock('@opfs/opfs.js', async (importOriginal) => {
   }
 })
 
-describe('Integrasi PrefabStore', () => {
+describe('Integration Test: PrefabStore', () => {
   let mockStoreRef
   let prefabStore
   let workspaceStore
@@ -37,10 +37,10 @@ describe('Integrasi PrefabStore', () => {
     workspaceStore = useWorkspaceStore()
     prefabStore = usePrefabStore()
 
-    // Inisialisasi mock project kosong
+    // Initialize empty mock project
     const project = await createMockEmptyProject({
       projectName: 'Game Test Project',
-      description: 'Proyek untuk pengujian integrasi prefab'
+      description: 'Project for prefab integration tests'
     })
 
     workspaceStore.setProjectId(project.id)
@@ -51,8 +51,8 @@ describe('Integrasi PrefabStore', () => {
     vi.clearAllMocks()
   })
 
-  describe('Integrasi Operasi CRUD Prefab dengan OPFS dan WorkspaceStore', () => {
-    it('menyimpan prefab baru ke state dan menulis file .json beserta metadata ke OPFS', async () => {
+  describe('Prefab CRUD Operations Integration with OPFS and WorkspaceStore', () => {
+    it('saves new prefab to state and writes .json file and metadata to OPFS', async () => {
       // Arrange
       const newPrefab = {
         id: 'prefab-001',
@@ -65,11 +65,11 @@ describe('Integrasi PrefabStore', () => {
       // Act
       await prefabStore.addPrefab(newPrefab)
 
-      // Assert: Perubahan State Store
+      // Assert: Store State Changes
       expect(prefabStore.prefabs).toHaveLength(1)
       expect(prefabStore.getPrefabById('prefab-001')).toBeDefined()
 
-      // Assert: Verifikasi penulisan file spesifik prefab ke OPFS
+      // Assert: Verify specific prefab file write to OPFS
       const projectId = workspaceStore.activeProjectId
       const prefabFilePath = `root/lupis-engine/projects/${projectId}/prefabs/prefab-001.json`
       expect(mockStoreRef.store.has(prefabFilePath)).toBe(true)
@@ -83,7 +83,7 @@ describe('Integrasi PrefabStore', () => {
       expect(savedContent).not.toHaveProperty('projectId')
       expect(savedContent).not.toHaveProperty('folderId')
 
-      // Assert: Verifikasi sinkronisasi metadata prefabs.json di OPFS
+      // Assert: Verify metadata synchronization in prefabs.json in OPFS
       const metaFilePath = `root/lupis-engine/projects/${projectId}/workspaces/prefabs.json`
       expect(mockStoreRef.store.has(metaFilePath)).toBe(true)
 
@@ -102,7 +102,7 @@ describe('Integrasi PrefabStore', () => {
       ])
     })
 
-    it('memperbarui properti prefab di state dan menyinkronkan perubahan ke file OPFS', async () => {
+    it('updates prefab properties in state and syncs changes to OPFS file', async () => {
       // Arrange
       const initialPrefab = {
         id: 'prefab-002',
@@ -116,11 +116,11 @@ describe('Integrasi PrefabStore', () => {
       // Act
       await prefabStore.updatePrefab('prefab-002', { name: 'SuperEnemy' })
 
-      // Assert: State terbarui
+      // Assert: Updated state
       const updatedPrefab = prefabStore.getPrefabById('prefab-002')
       expect(updatedPrefab.name).toBe('SuperEnemy')
 
-      // Assert: File di OPFS terbarui
+      // Assert: Updated file in OPFS
       const projectId = workspaceStore.activeProjectId
       const prefabFilePath = `root/lupis-engine/projects/${projectId}/prefabs/prefab-002.json`
       const prefabFileHandle = mockStoreRef.store.get(prefabFilePath)
@@ -130,7 +130,7 @@ describe('Integrasi PrefabStore', () => {
       expect(savedContent.name).toBe('SuperEnemy')
     })
 
-    it('memindahkan folder prefab dan menyinkronkan ulang file metadata prefabs.json', async () => {
+    it('moves prefab folder and resynchronizes prefabs.json metadata file', async () => {
       // Arrange
       const prefab = {
         id: 'prefab-003',
@@ -143,10 +143,10 @@ describe('Integrasi PrefabStore', () => {
       // Act
       await prefabStore.movePrefab('prefab-003', 'folder-items')
 
-      // Assert: State terbarui
+      // Assert: Updated state
       expect(prefabStore.getPrefabById('prefab-003').folderId).toBe('folder-items')
 
-      // Assert: Metadata OPFS mencerminkan folderId baru
+      // Assert: OPFS metadata reflects new folderId
       const projectId = workspaceStore.activeProjectId
       const metaFilePath = `root/lupis-engine/projects/${projectId}/workspaces/prefabs.json`
       const metaFileHandle = mockStoreRef.store.get(metaFilePath)
@@ -155,7 +155,7 @@ describe('Integrasi PrefabStore', () => {
       expect(metaData[0].folderId).toBe('folder-items')
     })
 
-    it('menghapus file prefab dari OPFS dan memperbarui file metadata serta state store', async () => {
+    it('removes prefab file from OPFS and updates metadata file and store state', async () => {
       // Arrange
       const prefab = {
         id: 'prefab-004',
@@ -172,14 +172,14 @@ describe('Integrasi PrefabStore', () => {
       // Act
       await prefabStore.removePrefab('prefab-004')
 
-      // Assert: State dibersihkan
+      // Assert: State cleared
       expect(prefabStore.prefabs).toHaveLength(0)
       expect(prefabStore.getPrefabById('prefab-004')).toBeUndefined()
 
-      // Assert: File individu terhapus dari OPFS
+      // Assert: Individual file removed from OPFS
       expect(mockStoreRef.store.has(prefabFilePath)).toBe(false)
 
-      // Assert: Metadata OPFS menjadi array kosong
+      // Assert: OPFS metadata becomes empty array
       const metaFilePath = `root/lupis-engine/projects/${projectId}/workspaces/prefabs.json`
       const metaFileHandle = mockStoreRef.store.get(metaFilePath)
       const metaData = JSON.parse(await (await metaFileHandle.getFile()).text())
@@ -187,7 +187,7 @@ describe('Integrasi PrefabStore', () => {
       expect(metaData).toEqual([])
     })
 
-    it('memperbarui properti komponen internal pada state prefab', () => {
+    it('updates internal component properties on prefab state', () => {
       // Arrange
       const prefab = {
         id: 'prefab-005',
@@ -212,8 +212,8 @@ describe('Integrasi PrefabStore', () => {
     })
   })
 
-  describe('Integrasi Getters', () => {
-    it('mengembalikan daftar prefab terformat melalui getter getAllPrefabs', () => {
+  describe('Getters Integration', () => {
+    it('returns formatted prefab list via getAllPrefabs getter', () => {
       // Arrange
       const list = [
         { id: 'p1', name: 'Prefab 1', folderId: 'root', type: 'a' },
@@ -236,8 +236,8 @@ describe('Integrasi PrefabStore', () => {
     })
   })
 
-  describe('Penanganan Kasus Batas dan Jalur Buruk [Bad Path]', () => {
-    it('[Bad Path] mengabaikan proses hapus jika prefab ID tidak ditemukan', async () => {
+  describe('Boundary Cases and Bad Path Handling', () => {
+    it('[Bad Path] ignores deletion if prefab ID is not found', async () => {
       // Arrange
       const prefab = { id: 'p-valid', name: 'Valid', folderId: 'root' }
       await prefabStore.addPrefab(prefab)
@@ -249,7 +249,7 @@ describe('Integrasi PrefabStore', () => {
       expect(prefabStore.prefabs).toHaveLength(1)
     })
 
-    it('[Bad Path] mengabaikan pembaruan komponen jika nama komponen tidak terdaftar', () => {
+    it('[Bad Path] ignores component update if component name is unregistered', () => {
       // Arrange
       const prefab = {
         id: 'p-comp',

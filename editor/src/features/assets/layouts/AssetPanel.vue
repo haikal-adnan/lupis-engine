@@ -221,7 +221,7 @@ const handleBreadcrumbDrop = (e, targetFolderId) => {
       }
     }
   } catch (err) {
-    console.error("Drop ke breadcrumb gagal:", err)
+    console.error("Drop onto breadcrumb failed:", err)
   }
 }
 

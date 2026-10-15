@@ -147,7 +147,7 @@ export const useProjectStore = defineStore('project', {
       const assetStore = useAssetStore();
       const folderStore = useFolderStore();
 
-      // Sinkronkan data struktur folder & asset ke file JSON masing-masing di OPFS
+      // Sync folder & asset structure data to their respective JSON files in OPFS
       await folderStore.syncFoldersToOPFS();
       await assetStore.syncAssetsToOPFS();
 

@@ -60,7 +60,7 @@ export default class MiniConsoleOverlay {
         });
 
         const title = document.createElement('span');
-        title.innerText = '❖ Debug Console';
+        title.innerText = 'Debug Console';
         title.style.fontWeight = 'bold';
         title.style.color = '#38bdf8';
 
@@ -160,6 +160,7 @@ export default class MiniConsoleOverlay {
             message: msgText,
             source: sourceText,
             type: type,
+            context: data.context || null,
             count: 1
         };
 
@@ -192,8 +193,13 @@ export default class MiniConsoleOverlay {
             wordBreak: 'break-all'
         });
 
+        const hasContext = Boolean(logEntry.context) || /^\[.*?\]\s*\[.*?\]\s*\[.*?\]\s*\[.*?\]/.test(logEntry.message);
+        const sourceHtml = hasContext
+            ? ''
+            : `<span style="color: #64748b; font-size: 9px; shrink: 0;">[${logEntry.source}]</span>`;
+
         item.innerHTML = `
-            <span style="color: #64748b; font-size: 9px; shrink: 0;">[${logEntry.source}]</span>
+            ${sourceHtml}
             <span class="log-msg" style="flex: 1;">${logEntry.message}</span>
             <span class="log-count" style="display: none; background: #334155; color: #f1f5f9; padding: 0 4px; border-radius: 9999px; font-size: 9px;">1</span>
         `;

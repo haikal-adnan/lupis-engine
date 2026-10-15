@@ -29,7 +29,7 @@ export function useTilemapLogic() {
     return sceneStore.activeScene.entities.find(e => String(e.id) === String(id)) || null;
   });
 
-  // Auto-close tab jika entitas berubah menjadi prefab
+  // Auto-close tab if entity becomes a prefab
   watch(
     [() => workspaceStore.activeTab, selectedEntity],
     ([activeTab, entity]) => {
@@ -68,8 +68,8 @@ export function useTilemapLogic() {
 
   const currentTextureUrl = ref(null);
   const assetId = bindComponentProp('Tilemap', 'assetId');
-  const width = bindComponentProp('Tilemap', 'width');   // Lebar 1 Tile (Px)
-  const height = bindComponentProp('Tilemap', 'height'); // Tinggi 1 Tile (Px)
+  const width = bindComponentProp('Tilemap', 'width');   // 1 Tile Width (px)
+  const height = bindComponentProp('Tilemap', 'height'); // 1 Tile Height (px)
 
   watch(
     () => assetId.value,
@@ -82,7 +82,7 @@ export function useTilemapLogic() {
         const url = await assetStore.getAssetUrlById(newAssetId);
         currentTextureUrl.value = url;
       } catch (err) {
-        console.error('Gagal memuat URL tekstur tilemap:', err);
+        console.error('Failed to load tilemap texture URL:', err);
         currentTextureUrl.value = null;
       }
     },

@@ -57,7 +57,7 @@ export default class AudioSystem {
                 this._flushPendingAutoplay();
             }
         } catch (err) {
-            console.error("[AudioSystem] Gagal me-resume AudioContext:", err);
+            console.error("[AudioSystem] Failed to resume AudioContext:", err);
         }
     }
 
@@ -69,7 +69,7 @@ export default class AudioSystem {
     }
 
     /**
-     * Memutar audio berdasarkan entitas dan data komponen Audio (atau data override opsional)
+     * Plays audio based on entity and Audio component data (or optional override data)
      * @param {Object} entity 
      * @param {Object} [overrideAudioData] 
      */
@@ -151,7 +151,7 @@ export default class AudioSystem {
     }
 
     /**
-     * Menghentikan audio yang sedang diputar untuk entitas tertentu
+     * Stops currently playing audio for a specific entity
      * @param {Object|string} entityOrId 
      */
     stop(entityOrId) {

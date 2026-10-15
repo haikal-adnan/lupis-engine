@@ -80,7 +80,6 @@ export class TilemapSelection {
             return;
         }
 
-        // --- FASE 1: MENJATUHKAN / DROP TILE (Jika sedang membawa dragState) ---
         if (editors.dragState) {
             if (isMouseDown && !this.mouseDownPos) {
                 const ds = editors.dragState;
@@ -94,13 +93,11 @@ export class TilemapSelection {
             return;
         }
 
-        // --- FASE 2: MULAI DRAG PADA GRID ---
         if (isMouseDown && !this.mouseDownPos) {
             this.mouseDownPos = { ...gridPos };
             return;
         }
 
-        // --- FASE 3: MEMPERBARUI MARQUEE BOX SAAT MOUSE DITARIK ---
         if (isMouseDown && this.mouseDownPos) {
             const x = Math.min(this.mouseDownPos.x, gridPos.x);
             const y = Math.min(this.mouseDownPos.y, gridPos.y);
@@ -111,7 +108,6 @@ export class TilemapSelection {
             return;
         }
 
-        // --- FASE 4: SAAT KLIK DILEPAS (MOUSE UP) -> TANGKAP TILE MENJADI DRAG STATE ---
         if (!isMouseDown && this.mouseDownPos) {
             if (editors.marqueeSelection) {
                 const ms = editors.marqueeSelection;
@@ -168,7 +164,6 @@ export class TilemapSelection {
 
         const newData = { ...tm.data };
 
-        // 1. Hapus tile dari lokasi awal
         for (let dy = 0; dy < dragState.h; dy++) {
             for (let dx = 0; dx < dragState.w; dx++) {
                 const srcKey = `${dragState.sourceX + dx},${dragState.sourceY + dy}`;
@@ -176,7 +171,6 @@ export class TilemapSelection {
             }
         }
 
-        // 2. Tulis tile ke lokasi tujuan baru
         for (let dy = 0; dy < dragState.h; dy++) {
             for (let dx = 0; dx < dragState.w; dx++) {
                 const tx = targetX + dx;

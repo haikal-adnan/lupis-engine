@@ -5,7 +5,7 @@ import { engineBridge } from '@engines/engines.js'
 import { usePopAlert, useConfirm } from '@composables/composables.js'
 import { useSceneHistory } from '@historys/historys.js'
 
-// Mock dependency eksternal sesuai batas sistem
+// Mock external dependencies within system boundaries
 vi.mock('@engines/engines.js', () => ({
   engineBridge: {
     getCameraPosition: vi.fn(() => ({ x: 100, y: 150 })),
@@ -49,14 +49,14 @@ vi.mock('@historys/historys.js', () => {
   }
 })
 
-describe('Integrasi Entity Actions', () => {
+describe('Entity Actions Integration', () => {
   let sceneStoreState
 
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
 
-    // Mempersiapkan mock state untuk sceneStore yang mengadopsi useEntityActions
+    // Prepare mock state for sceneStore adopting useEntityActions
     sceneStoreState = {
       selectedEntityIds: [],
       activeScene: {
@@ -86,8 +86,8 @@ describe('Integrasi Entity Actions', () => {
     }
   })
 
-  describe('Pembuatan Entitas (createEntity)', () => {
-    it('membuat entitas sprite baru berdasarkan posisi kamera, memperbarui store, dan mencatat ke history', () => {
+  describe('Entity Creation (createEntity)', () => {
+    it('creates a new sprite entity based on camera position, updates store, and records history', () => {
       // Act
       const newEntity = sceneStoreState.createEntity('sprite')
 
@@ -100,7 +100,7 @@ describe('Integrasi Entity Actions', () => {
       expect(newEntity.components.Transform.y).toBe(150)
       expect(sceneStoreState.selectedEntityIds).toEqual([newEntity.id])
 
-      // Verification pada dependency eksternal
+      // Verify external dependencies
       expect(engineBridge.createEntity).toHaveBeenCalledWith(newEntity)
       expect(engineBridge.selectEntity).toHaveBeenCalledWith([newEntity.id])
 
@@ -108,7 +108,7 @@ describe('Integrasi Entity Actions', () => {
       expect(recordEntityCreate).toHaveBeenCalledWith(newEntity)
     })
 
-    it('membuat entitas UI dengan posisi overrides khusus dan menargetkan layer UI', () => {
+    it('creates a UI entity with custom position overrides targeting UI layer', () => {
       // Act
       const uiEntity = sceneStoreState.createEntity('ui_text', 'layer_ui_1', { x: 50, y: 50 })
 
@@ -119,7 +119,7 @@ describe('Integrasi Entity Actions', () => {
       expect(uiEntity.components.UITransform.y).toBe(50)
     })
 
-    it('[Bad Path] mencegah pembuatan entitas anak jika parent berada di dalam instansi Prefab', () => {
+    it('[Bad Path] prevents child entity creation if parent is inside a Prefab instance', () => {
       // Arrange
       const prefabParent = entitySchema({
         id: 'prefab_root',
@@ -136,12 +136,12 @@ describe('Integrasi Entity Actions', () => {
       const { showPop } = usePopAlert()
       expect(showPop).toHaveBeenCalledWith({
         title: 'Prefab Restriction',
-        message: expect.stringContaining('Tidak dapat menambahkan entitas baru ke dalam hierarki instansi Prefab'),
+        message: expect.stringContaining('Cannot add new entities into a Prefab instance hierarchy'),
         type: 'warning'
       })
     })
 
-    it('[Bad Path] mengembalikan false jika activeScene bernilai null', () => {
+    it('[Bad Path] returns false if activeScene is null', () => {
       // Arrange
       sceneStoreState.activeScene = null
 
@@ -154,8 +154,8 @@ describe('Integrasi Entity Actions', () => {
     })
   })
 
-  describe('Duplikasi & Salin Entitas (duplicateEntity & pasteEntity)', () => {
-    it('menduplikasi entitas beserta hirarki keturunan dengan ID baru', () => {
+  describe('Entity Duplication & Copy-Paste (duplicateEntity & pasteEntity)', () => {
+    it('duplicates entity and descendant hierarchy with new IDs', () => {
       // Arrange
       const childEntity = entitySchema({
         id: 'ent_child',
@@ -169,7 +169,7 @@ describe('Integrasi Entity Actions', () => {
 
       // Assert
       expect(newRootIds.length).toBe(1)
-      expect(sceneStoreState.activeScene.entities.length).toBe(4) // 2 awal + 2 klon
+      expect(sceneStoreState.activeScene.entities.length).toBe(4) // 2 initial + 2 clones
       expect(engineBridge.createEntity).toHaveBeenCalled()
       expect(engineBridge.selectEntity).toHaveBeenCalledWith(newRootIds)
 
@@ -177,7 +177,7 @@ describe('Integrasi Entity Actions', () => {
       expect(recordEntityCreate).toHaveBeenCalledTimes(2)
     })
 
-    it('[Bad Path] mencegah duplikasi jika entitas merupakan bagian dari instansi Prefab', () => {
+    it('[Bad Path] prevents duplication if entity is part of a Prefab instance', () => {
       // Arrange
       const prefabEntity = entitySchema({
         id: 'prefab_child',
@@ -199,14 +199,14 @@ describe('Integrasi Entity Actions', () => {
       const { showPop } = usePopAlert()
       expect(showPop).toHaveBeenCalledWith({
         title: 'Prefab Restriction',
-        message: expect.stringContaining('Tidak dapat memodifikasi, memindahkan, atau menghapus entitas di dalam instansi Prefab'),
+        message: expect.stringContaining('Cannot modify, move, or delete entities inside a Prefab instance'),
         type: 'warning'
       })
     })
   })
 
-  describe('Penghapusan Entitas (deleteEntity)', () => {
-    it('menghapus entitas beserta seluruh anak-anaknya dari scene dan mereset seleksi', () => {
+  describe('Entity Deletion (deleteEntity)', () => {
+    it('deletes entity and all of its children from scene and resets selection', () => {
       // Arrange
       const childEntity = entitySchema({
         id: 'ent_child',
@@ -232,8 +232,8 @@ describe('Integrasi Entity Actions', () => {
     })
   })
 
-  describe('Pemindahan Entitas (moveEntity)', () => {
-    it('memindahkan entitas ke parent baru dan menyinkronkan urutan indeks ke engine bridge', () => {
+  describe('Entity Movement (moveEntity)', () => {
+    it('moves entity to new parent and synchronizes index order with engine bridge', () => {
       // Arrange
       const parent2 = entitySchema({
         id: 'ent_parent_2',
@@ -269,8 +269,8 @@ describe('Integrasi Entity Actions', () => {
     })
   })
 
-  describe('Manajemen Komponen (updateComponentProp, addComponent & removeComponent)', () => {
-    it('memperbarui properti komponen dan menyesuaikan rasio tinggi ketika ratio locked aktif', () => {
+  describe('Component Management (updateComponentProp, addComponent & removeComponent)', () => {
+    it('updates component property and adjusts height ratio when ratio locked is active', () => {
       // Arrange
       const entity = sceneStoreState.activeScene.entities[0]
       entity.components.Transform = {
@@ -284,7 +284,7 @@ describe('Integrasi Entity Actions', () => {
 
       // Assert
       expect(entity.components.Transform.width).toBe(200)
-      expect(entity.components.Transform.height).toBe(100) // Rasio 2:1 dijaga
+      expect(entity.components.Transform.height).toBe(100) // 2:1 ratio preserved
       expect(engineBridge.updateComponentProp).toHaveBeenCalledWith({
         entityId: 'ent_1',
         componentName: 'Transform',
@@ -293,7 +293,7 @@ describe('Integrasi Entity Actions', () => {
       })
     })
 
-    it('menambahkan komponen baru jika belum ada dan mencatat history', () => {
+    it('adds new component if not present and records history', () => {
       // Act
       const result = sceneStoreState.addComponent('ent_1', 'Physics')
 
@@ -305,7 +305,7 @@ describe('Integrasi Entity Actions', () => {
       expect(recordAddComponent).toHaveBeenCalledWith('ent_1', 'Physics')
     })
 
-    it('menghapus komponen setelah konfirmasi pengguna disetujui', async () => {
+    it('removes component after user confirmation is approved', async () => {
       // Arrange
       sceneStoreState.addComponent('ent_1', 'Physics', null, false)
 
@@ -327,7 +327,7 @@ describe('Integrasi Entity Actions', () => {
       expect(recordRemoveComponent).toHaveBeenCalled()
     })
 
-    it('[Bad Path] membatalkan penghapusan komponen jika konfirmasi ditolak', async () => {
+    it('[Bad Path] cancels component removal if confirmation is rejected', async () => {
       // Arrange
       const { confirm } = useConfirm()
       vi.mocked(confirm).mockResolvedValueOnce(false)
@@ -342,7 +342,7 @@ describe('Integrasi Entity Actions', () => {
       expect(engineBridge.removeComponent).not.toHaveBeenCalled()
     })
 
-    it('[Bad Path] mencegah penambahan komponen pada instansi Prefab', () => {
+    it('[Bad Path] prevents adding components to a Prefab instance', () => {
       // Arrange
       sceneStoreState.activeScene.entities[0].prefabId = 'pf_123'
 

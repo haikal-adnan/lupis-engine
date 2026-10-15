@@ -26,13 +26,13 @@
             v-if="validationResult.isValid" 
             class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-medium"
           >
-            ✓ No Issues
+            No Issues
           </span>
           <span 
             v-else 
             class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 font-medium"
           >
-            ⚠ Warnings ({{ validationResult.issues.length }})
+            Warnings ({{ validationResult.issues.length }})
           </span>
         </div>
       </div>
@@ -47,7 +47,7 @@
             title="Zoom Out (-10%)"
             class="px-2 py-1 hover:bg-zinc-700 disabled:opacity-40 text-gray-300 transition-colors cursor-pointer disabled:cursor-not-allowed border-r border-zinc-700/60"
           >
-            🔍 -
+            -
           </button>
           
           <button
@@ -64,7 +64,7 @@
             title="Zoom In (+10%)"
             class="px-2 py-1 hover:bg-zinc-700 disabled:opacity-40 text-gray-300 transition-colors cursor-pointer disabled:cursor-not-allowed border-l border-zinc-700/60"
           >
-            🔍 +
+            +
           </button>
         </div>
 

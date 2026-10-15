@@ -157,8 +157,8 @@ export class TransformEngine {
         const newW = Math.max(1, Math.round(Math.abs(rawW)));
         const newH = Math.max(1, Math.round(Math.abs(rawH)));
 
-        // FIX: Hitung dW_Visual & dH_Visual secara kontinu dari rawVisualW/H awal
-        // agar offset posisi tidak melompat ketika melewati titik nol (flip)
+        // FIX: Calculate continuous dW_Visual & dH_Visual from initial rawVisualW/H
+        // to prevent position offset jumping when crossing zero point (flip)
         const dW_Visual = (rawW < 0 ? -newW : newW) - item.w;
         const dH_Visual = (rawH < 0 ? -newH : newH) - item.h;
 

@@ -235,7 +235,7 @@ export const useScriptStore = defineStore('script', {
       const blueprint = getNodeBlueprint(type);
 
       if (!blueprint) {
-        throw new Error(`[ScriptStore] Blueprint type "${type}" tidak ditemukan pada catalog!`);
+        throw new Error(`[ScriptStore] Blueprint type "${type}" not found in catalog!`);
       }
 
       const id = `node_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;

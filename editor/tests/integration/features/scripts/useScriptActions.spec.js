@@ -1,13 +1,13 @@
 import { describe, beforeEach, afterEach, it, expect, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
-import { setupMockOPFS, createMockEmptyProject } from '@tests/tests.js' // Sesuaikan path helper mock
+import { setupMockOPFS, createMockEmptyProject } from '@tests/tests.js'
 import { useScriptActions, useScriptStore } from '@scripts/scripts.js'
 import { useProjectStore } from '@projects/projects.js'
 import { useFolderStore } from '@folders/folders.js'
 import { useSceneStore } from '@scenes/scenes.js'
 import { useWorkspaceStore } from '@workspaces/workspaces.js'
 
-// Mock composables dialog & visual alert
+// Mock dialog & visual alert composables
 const mockPrompt = vi.fn()
 const mockConfirm = vi.fn()
 const mockShowPop = vi.fn()
@@ -20,13 +20,13 @@ vi.mock('@composables/composables.js', () => ({
 
 describe('Script Actions Integration Test', () => {
   beforeEach(async () => {
-    // 1. Inisialisasi Ulang Pinia State
+    // 1. Re-initialize Pinia State
     setActivePinia(createPinia())
 
-    // 2. Inisialisasi Mock Environment OPFS
+    // 2. Initialize Mock OPFS Environment
     setupMockOPFS()
 
-    // 3. Buat Proyek Kosong dan Muat State Awal
+    // 3. Create Empty Project and Load Initial State
     const createdProject = await createMockEmptyProject({
       projectName: 'Script Actions Test Project'
     })
@@ -48,19 +48,19 @@ describe('Script Actions Integration Test', () => {
     vi.clearAllMocks()
   })
 
-  describe('Integrasi Pembuatan dan Validasi Nama Script (createScript & getValidUniqueName)', () => {
-    it('membuat script baru dengan sanitasi nama dan otomatis menangani nama duplikat', async () => {
+  describe('Script Creation and Name Validation Integration (createScript & getValidUniqueName)', () => {
+    it('creates a new script with sanitized name and automatically handles duplicate names', async () => {
       // Arrange
       const scriptActions = useScriptActions()
       const scriptStore = useScriptStore()
       const projectStore = useProjectStore()
 
-      // Buat script awal bernama "Player_Controller"
+      // Create initial script named "Player_Controller"
       scriptStore.initScripts([
         { id: 'sc-1', name: 'Player_Controller', type: 'component' }
       ])
 
-      // User memasukkan nama yang sama dan mengandung karakter ilegal/spasi: "Player Controller! "
+      // User enters identical name with illegal chars/whitespace: "Player Controller! "
       mockPrompt.mockResolvedValue('Player Controller! ')
 
       // Act
@@ -71,7 +71,7 @@ describe('Script Actions Integration Test', () => {
         defaultValue: 'NewComponent'
       }))
       
-      // Sanitasi -> "Player_Controller", Duplikat -> "Player_Controller_1"
+      // Sanitize -> "Player_Controller", Duplicate -> "Player_Controller_1"
       expect(createdScript).not.toBeNull()
       expect(createdScript.name).toBe('Player_Controller_1')
       expect(scriptStore.scripts).toHaveLength(2)
@@ -81,7 +81,7 @@ describe('Script Actions Integration Test', () => {
       }))
     })
 
-    it('membatalkan pembuatan script jika user menekan tombol batal pada prompt', async () => {
+    it('cancels script creation if user clicks cancel on prompt', async () => {
       // Arrange
       const scriptActions = useScriptActions()
       const scriptStore = useScriptStore()
@@ -98,8 +98,8 @@ describe('Script Actions Integration Test', () => {
     })
   })
 
-  describe('Integrasi Penghapusan dan Pengubahan Nama Script (deleteScript & renameScript)', () => {
-    it('menghapus script dari store dan OPFS setelah user mengonfirmasi dialog confirm', async () => {
+  describe('Script Deletion and Renaming Integration (deleteScript & renameScript)', () => {
+    it('deletes script from store and OPFS after user confirms confirmation dialog', async () => {
       // Arrange
       const scriptActions = useScriptActions()
       const scriptStore = useScriptStore()
@@ -111,7 +111,7 @@ describe('Script Actions Integration Test', () => {
       await scriptStore.saveScriptToOPFS(scriptStore.scripts[0])
       projectStore.syncStatus = 'synced'
 
-      mockConfirm.mockResolvedValue(true) // User setuju hapus
+      mockConfirm.mockResolvedValue(true) // User agrees to delete
 
       // Act
       const isDeleted = await scriptActions.deleteScript('sc-del-1')
@@ -125,7 +125,7 @@ describe('Script Actions Integration Test', () => {
       }))
     })
 
-    it('mengubah nama script dan menyelaraskan state ketika input nama baru valid', async () => {
+    it('renames script and aligns state when new name input is valid', async () => {
       // Arrange
       const scriptActions = useScriptActions()
       const scriptStore = useScriptStore()
@@ -149,8 +149,8 @@ describe('Script Actions Integration Test', () => {
     })
   })
 
-  describe('Integrasi Duplikasi Script (duplicateScript)', () => {
-    it('menduplikasi script yang ada beserta seluruh isi node/variabel dengan suffix copy', async () => {
+  describe('Script Duplication Integration (duplicateScript)', () => {
+    it('duplicates existing script along with all node/variable contents with copy suffix', async () => {
       // Arrange
       const scriptActions = useScriptActions()
       const scriptStore = useScriptStore()
@@ -183,8 +183,8 @@ describe('Script Actions Integration Test', () => {
     })
   })
 
-  describe('Integrasi Script ke Scene Entity (applyToEntity)', () => {
-    it('menempelkan script ke ScriptController milik entity dan menginisialisasi nilai awal variabel', () => {
+  describe('Script Application to Scene Entity Integration (applyToEntity)', () => {
+    it('attaches script to entity ScriptController and initializes initial variable values', () => {
       // Arrange
       const scriptActions = useScriptActions()
       const sceneStore = useSceneStore()
@@ -230,7 +230,7 @@ describe('Script Actions Integration Test', () => {
       }))
     })
 
-    it('[Bad Path] menolak penempelan script jika script sudah aktif pada entity yang sama', () => {
+    it('[Bad Path] rejects script attachment if script is already active on the same entity', () => {
       // Arrange
       const scriptActions = useScriptActions()
       const sceneStore = useSceneStore()
@@ -260,8 +260,8 @@ describe('Script Actions Integration Test', () => {
     })
   })
 
-  describe('[Bad Path] Penanganan Akses Resource Tak Valid', () => {
-    it('[Bad Path] mengembalikan false/null secara aman ketika scriptId tidak ditemukan di store', async () => {
+  describe('[Bad Path] Invalid Resource Access Handling', () => {
+    it('[Bad Path] returns false/null safely when scriptId is not found in store', async () => {
       // Arrange
       const scriptActions = useScriptActions()
 

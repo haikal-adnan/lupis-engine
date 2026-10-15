@@ -29,7 +29,7 @@ describe('Integration Test: useEditorToEngine (100% Coverage)', () => {
     setupMockOPFS();
     setActivePinia(createPinia());
 
-    // Reset dan spy semua method di engineBridge, pastikan getCameraPosition mengembalikan koordinat default
+    // Reset and spy all methods on engineBridge, ensure getCameraPosition returns default coordinates
     Object.keys(engineBridge).forEach((key) => {
       if (typeof engineBridge[key] === 'function') {
         if (key === 'getCameraPosition') {
@@ -86,47 +86,47 @@ describe('Integration Test: useEditorToEngine (100% Coverage)', () => {
    * 1. PROJECT STORE SYNC
    * ========================================================================= */
   describe('ProjectStore Sync', () => {
-    it('mengirim updateProjectSettings saat toggleGrid dipanggil', () => {
+    it('sends updateProjectSettings when toggleGrid is called', () => {
       projectStore.toggleGrid();
       expect(engineBridge.updateProjectSettings).toHaveBeenCalledWith({ grid: { visible: false } });
     });
 
-    it('mengirim updateProjectSettings saat toggleMagnet dipanggil', () => {
+    it('sends updateProjectSettings when toggleMagnet is called', () => {
       projectStore.toggleMagnet();
       expect(engineBridge.updateProjectSettings).toHaveBeenCalledWith({ grid: { snap: true } });
     });
 
-    it('mengirim updateProjectSettings saat setGridSize dipanggil', () => {
+    it('sends updateProjectSettings when setGridSize is called', () => {
       projectStore.setGridSize(64, 64);
       expect(engineBridge.updateProjectSettings).toHaveBeenCalledWith({ grid: { width: 64, height: 64 } });
     });
 
-    it('mengirim updateProjectSettings saat setGridColor dipanggil', () => {
+    it('sends updateProjectSettings when setGridColor is called', () => {
       projectStore.setGridColor('#00ff00');
       expect(engineBridge.updateProjectSettings).toHaveBeenCalledWith({ grid: { color: '#00ff00' } });
     });
 
-    it('mengirim updateProjectSettings saat setGridOpacity dipanggil', () => {
+    it('sends updateProjectSettings when setGridOpacity is called', () => {
       projectStore.setGridOpacity(0.8);
       expect(engineBridge.updateProjectSettings).toHaveBeenCalledWith({ grid: { opacity: 0.8 } });
     });
 
-    it('mengirim updateProjectSettings saat setTickRate dipanggil', () => {
+    it('sends updateProjectSettings when setTickRate is called', () => {
       projectStore.setTickRate(120);
       expect(engineBridge.updateProjectSettings).toHaveBeenCalledWith({ tickRate: 120 });
     });
 
-    it('mengirim updateProjectSettings saat toggleUIBorder dipanggil', () => {
+    it('sends updateProjectSettings when toggleUIBorder is called', () => {
       projectStore.toggleUIBorder();
       expect(engineBridge.updateProjectSettings).toHaveBeenCalledWith({ ui: { showUIBorder: false } });
     });
 
-    it('mengirim updateProjectSettings saat updateUISettings dipanggil', () => {
+    it('sends updateProjectSettings when updateUISettings is called', () => {
       projectStore.updateUISettings({ scale: 2 });
       expect(engineBridge.updateProjectSettings).toHaveBeenCalledWith({ ui: { scale: 2 } });
     });
 
-    it('mengirim updateProjectSettings saat updateCameraSettings dipanggil', () => {
+    it('sends updateProjectSettings when updateCameraSettings is called', () => {
       projectStore.updateCameraSettings({ zoom: 1.5 });
       expect(engineBridge.updateProjectSettings).toHaveBeenCalledWith({ camera: { zoom: 1.5 } });
     });
@@ -136,50 +136,50 @@ describe('Integration Test: useEditorToEngine (100% Coverage)', () => {
    * 2. SCENE STORE SYNC
    * ========================================================================= */
   describe('SceneStore Sync', () => {
-    it('mengirim updateSceneSettings saat setBackgroundColor dipanggil', () => {
+    it('sends updateSceneSettings when setBackgroundColor is called', () => {
       sceneStore.setBackgroundColor('#ff0000');
       expect(engineBridge.updateSceneSettings).toHaveBeenCalledWith({ backgroundColor: '#ff0000' });
     });
 
-    it('mengirim updateSceneSettings saat updateWorldBounds dipanggil', () => {
+    it('sends updateSceneSettings when updateWorldBounds is called', () => {
       const bounds = { x1: 0, x2: 1000, y1: 0, y2: 1000 };
       sceneStore.updateWorldBounds(bounds);
       expect(engineBridge.updateSceneSettings).toHaveBeenCalledWith({ worldBounds: bounds });
     });
 
-    it('mengirim updateSceneSettings saat updatePhysicsSettings dipanggil', () => {
+    it('sends updateSceneSettings when updatePhysicsSettings is called', () => {
       sceneStore.updatePhysicsSettings({ gravity: 980 });
       expect(engineBridge.updateSceneSettings).toHaveBeenCalledWith({ physics: { gravity: 980 } });
     });
 
-    it('mengirim updateSceneSettings saat toggleRulers dipanggil', () => {
+    it('sends updateSceneSettings when toggleRulers is called', () => {
       sceneStore.toggleRulers();
       expect(engineBridge.updateSceneSettings).toHaveBeenCalledWith({ showRulers: false });
     });
 
-    it('mengirim clearSelection saat clearSelection dipanggil', () => {
+    it('sends clearSelection when clearSelection is called', () => {
       sceneStore.clearSelection();
       expect(engineBridge.clearSelection).toHaveBeenCalled();
     });
 
-    it('mengirim createEntity saat createEntity dipanggil', () => {
+    it('sends createEntity when createEntity is called', () => {
       const entity = sceneStore.createEntity('sprite');
       expect(engineBridge.createEntity).toHaveBeenCalledWith(entity);
     });
 
-    it('mengirim deleteEntity saat deleteEntity dipanggil', () => {
+    it('sends deleteEntity when deleteEntity is called', () => {
       sceneStore.activeScene.entities.push({ id: 'ent_123', name: 'Player', layerId: 'layer_world_1', components: {} });
       sceneStore.deleteEntity('ent_123');
       expect(engineBridge.deleteEntity).toHaveBeenCalledWith('ent_123');
     });
 
-    it('mengirim updateEntityName saat updateEntityName dipanggil', () => {
+    it('sends updateEntityName when updateEntityName is called', () => {
       sceneStore.activeScene.entities.push({ id: 'ent_123', name: 'Player' });
       sceneStore.updateEntityName('ent_123', 'Hero');
       expect(engineBridge.updateEntityName).toHaveBeenCalledWith('ent_123', 'Hero');
     });
 
-    it('mengirim moveEntity saat moveEntity dipanggil', () => {
+    it('sends moveEntity when moveEntity is called', () => {
       sceneStore.activeScene.entities.push({ id: 'ent_1', layerId: 'layer_world_1', parentId: null });
       sceneStore.moveEntity('ent_1', { newParentId: 'ent_parent', newLayerId: 'layer_world_1' });
       expect(engineBridge.moveEntity).toHaveBeenCalledWith({
@@ -189,7 +189,7 @@ describe('Integration Test: useEditorToEngine (100% Coverage)', () => {
       });
     });
 
-    it('mengirim updateComponentProp saat updateComponentProp dipanggil', () => {
+    it('sends updateComponentProp when updateComponentProp is called', () => {
       sceneStore.activeScene.entities.push({
         id: 'ent_1',
         components: { Transform: { x: 0, y: 0 } }
@@ -198,24 +198,24 @@ describe('Integration Test: useEditorToEngine (100% Coverage)', () => {
       expect(engineBridge.updateComponentProp).toHaveBeenCalledWith(res);
     });
 
-    it('mengirim updateEntityProp saat updateEntityProp dipanggil', () => {
+    it('sends updateEntityProp when updateEntityProp is called', () => {
       sceneStore.activeScene.entities.push({ id: 'ent_1', active: true });
       const res = sceneStore.updateEntityProp('ent_1', 'active', false);
       expect(engineBridge.updateEntityProp).toHaveBeenCalledWith(res);
     });
 
-    it('mengirim updateLayerProp saat updateLayerProp dipanggil', () => {
+    it('sends updateLayerProp when updateLayerProp is called', () => {
       sceneStore.updateLayerProp('layer_world_1', 'visible', false);
       expect(engineBridge.updateLayerProp).toHaveBeenCalledWith('layer_world_1', 'visible', false);
     });
 
-    it('mengirim addComponent saat addComponent dipanggil', () => {
+    it('sends addComponent when addComponent is called', () => {
       sceneStore.activeScene.entities.push({ id: 'ent_1', components: {} });
       const res = sceneStore.addComponent('ent_1', 'Physics');
       expect(engineBridge.addComponent).toHaveBeenCalledWith(res);
     });
 
-    it('mengirim removeComponent saat removeComponent dipanggil', async () => {
+    it('sends removeComponent when removeComponent is called', async () => {
       sceneStore.activeScene.entities.push({ id: 'ent_1', components: { Physics: {} } });
       await sceneStore.removeComponent('ent_1', 'Physics', false);
       expect(engineBridge.removeComponent).toHaveBeenCalledWith({
@@ -224,7 +224,7 @@ describe('Integration Test: useEditorToEngine (100% Coverage)', () => {
       });
     });
 
-    it('mengirim patchComponent saat patchComponent dipanggil', () => {
+    it('sends patchComponent when patchComponent is called', () => {
       sceneStore.activeScene.entities.push({ id: 'ent_1', components: { Transform: { x: 0 } } });
       sceneStore.patchComponent('ent_1', 'Transform', { x: 50 });
       expect(engineBridge.patchComponent).toHaveBeenCalledWith({
@@ -234,23 +234,23 @@ describe('Integration Test: useEditorToEngine (100% Coverage)', () => {
       });
     });
 
-    it('mengirim addLayer saat addLayer dipanggil', () => {
+    it('sends addLayer when addLayer is called', () => {
       const res = sceneStore.addLayer('Background', 'world', false);
       expect(engineBridge.addLayer).toHaveBeenCalledWith(res);
     });
 
-    it('mengirim updateLayerName saat updateLayerName dipanggil', () => {
+    it('sends updateLayerName when updateLayerName is called', () => {
       sceneStore.updateLayerName('layer_world_1', 'Foreground');
       expect(engineBridge.updateLayerName).toHaveBeenCalledWith('layer_world_1', 'Foreground');
     });
 
-    it('mengirim deleteLayer saat deleteLayer dipanggil', () => {
+    it('sends deleteLayer when deleteLayer is called', () => {
       sceneStore.activeScene.layersWorld.push({ id: 'layer_world_2', name: 'Layer 2' });
       sceneStore.deleteLayer('layer_world_2', false);
       expect(engineBridge.deleteLayer).toHaveBeenCalledWith('layer_world_2');
     });
 
-    it('mengirim reorderLayer saat reorderLayer dipanggil', () => {
+    it('sends reorderLayer when reorderLayer is called', () => {
       sceneStore.activeScene.layersWorld.push({ id: 'layer_world_2', name: 'Layer 2' });
       sceneStore.reorderLayer('layer_world_1', 'layer_world_2', 'bottom');
       expect(engineBridge.reorderLayer).toHaveBeenCalledWith({
@@ -265,13 +265,13 @@ describe('Integration Test: useEditorToEngine (100% Coverage)', () => {
    * 3. ASSET STORE SYNC
    * ========================================================================= */
   describe('AssetStore Sync', () => {
-    it('mengirim createAsset saat addAsset dipanggil', async () => {
+    it('sends createAsset when addAsset is called', async () => {
       const assetObj = { id: 'asset_1', fileKey: 'tex1', meta: { extension: '.png' } };
       await assetStore.addAsset(assetObj, new Blob(['']), []);
       expect(engineBridge.createAsset).toHaveBeenCalledWith(assetObj);
     });
 
-    it('mengirim deleteAsset saat removeAsset dipanggil', async () => {
+    it('sends deleteAsset when removeAsset is called', async () => {
       assetStore.assets = [{ id: 'asset_1', fileKey: 'tex1', meta: { extension: '.png' } }];
       await assetStore.removeAsset('asset_1');
       expect(engineBridge.deleteAsset).toHaveBeenCalledWith('asset_1');
@@ -282,12 +282,12 @@ describe('Integration Test: useEditorToEngine (100% Coverage)', () => {
    * 4. WORKSPACE STORE SYNC
    * ========================================================================= */
   describe('WorkspaceStore Sync', () => {
-    it('mengirim updateEditorState saat setActiveTab dipanggil', () => {
+    it('sends updateEditorState when setActiveTab is called', () => {
       workspaceStore.setActiveTab('scene');
       expect(engineBridge.updateEditorState).toHaveBeenCalledWith({ activeTabId: 'scene' });
     });
 
-    it('mengirim updateEditorState saat openTab atau closeTab dipanggil', () => {
+    it('sends updateEditorState when openTab or closeTab is called', () => {
       workspaceStore.openTab({ id: 'tab_2', name: 'Tab 2', type: 'script' });
       expect(engineBridge.updateEditorState).toHaveBeenCalledWith({ tabs: workspaceStore.tabs });
 
@@ -295,22 +295,22 @@ describe('Integration Test: useEditorToEngine (100% Coverage)', () => {
       expect(engineBridge.updateEditorState).toHaveBeenCalledWith({ tabs: workspaceStore.tabs });
     });
 
-    it('mengirim updateEditorState saat setTool dipanggil', () => {
+    it('sends updateEditorState when setTool is called', () => {
       workspaceStore.setTool('hand');
       expect(engineBridge.updateEditorState).toHaveBeenCalledWith({ activeTool: 'hand' });
     });
 
-    it('mengirim updateEditorState saat setContextOpacity dipanggil', () => {
+    it('sends updateEditorState when setContextOpacity is called', () => {
       workspaceStore.setContextOpacity(0.5);
       expect(engineBridge.updateEditorState).toHaveBeenCalledWith({ tilemapContext: { opacity: 0.5 } });
     });
 
-    it('mengirim updateEditorState saat toggleContextVisibility dipanggil', () => {
+    it('sends updateEditorState when toggleContextVisibility is called', () => {
       workspaceStore.toggleContextVisibility();
       expect(engineBridge.updateEditorState).toHaveBeenCalledWith({ tilemapContext: { showOthers: workspaceStore.tilemapContext.showOthers } });
     });
 
-    it('mengirim updateEditorState saat setTileSelection dan clearTileSelection dipanggil', () => {
+    it('sends updateEditorState when setTileSelection and clearTileSelection are called', () => {
       const rect = { x: 0, y: 0, w: 2, h: 2 };
       workspaceStore.setTileSelection(rect);
       expect(engineBridge.updateEditorState).toHaveBeenCalledWith({ tileSelection: rect });
@@ -323,14 +323,11 @@ describe('Integration Test: useEditorToEngine (100% Coverage)', () => {
   /* =========================================================================
    * 5. SCRIPT STORE SYNC
    * ========================================================================= */
-  /* =========================================================================
-   * 5. SCRIPT STORE SYNC
-   * ========================================================================= */
   describe('ScriptStore Sync', () => {
-    it('mengirim createScript saat addScript dipanggil', async () => {
+    it('sends createScript when addScript is called', async () => {
       const scriptData = { id: 'script_101', name: 'PlayerLogic' };
       
-      // Memanggil action Pinia asli
+      // Call native Pinia action
       await scriptStore.addScript(scriptData);
 
       expect(engineBridge.createScript).toHaveBeenCalledWith(
@@ -338,25 +335,25 @@ describe('Integration Test: useEditorToEngine (100% Coverage)', () => {
       );
     });
 
-    it('mengirim updateScript saat updateScriptInList dipanggil', () => {
+    it('sends updateScript when updateScriptInList is called', () => {
       scriptStore.scripts = [{ id: 'script_1', name: 'OldScript' }];
 
-      // Memanggil action Pinia asli
+      // Call native Pinia action
       scriptStore.updateScriptInList('script_1', { name: 'UpdatedScript' });
 
       expect(engineBridge.updateScript).toHaveBeenCalledWith('script_1', { name: 'UpdatedScript' });
     });
 
-    it('mengirim deleteScript saat removeScript dipanggil', async () => {
+    it('sends deleteScript when removeScript is called', async () => {
       scriptStore.scripts = [{ id: 'script_1', name: 'ScriptToDelete' }];
 
-      // Memanggil action Pinia asli
+      // Call native Pinia action
       await scriptStore.removeScript('script_1');
 
       expect(engineBridge.deleteScript).toHaveBeenCalledWith('script_1');
     });
 
-    it('mengirim updateScript saat saveActiveScript dipanggil', () => {
+    it('sends updateScript when saveActiveScript is called', () => {
       scriptStore.activeScript = {
         id: 'script_1',
         nodes: [{ id: 'node_1' }],
@@ -364,7 +361,7 @@ describe('Integration Test: useEditorToEngine (100% Coverage)', () => {
         localVariables: []
       };
 
-      // Memanggil action Pinia asli
+      // Call native Pinia action
       scriptStore.saveActiveScript();
 
       expect(engineBridge.updateScript).toHaveBeenCalledWith('script_1', {
@@ -379,25 +376,25 @@ describe('Integration Test: useEditorToEngine (100% Coverage)', () => {
    * 6. PREFAB STORE SYNC
    * ========================================================================= */
   describe('PrefabStore Sync', () => {
-    it('mengirim createPrefab saat addPrefab dipanggil', async () => {
+    it('sends createPrefab when addPrefab is called', async () => {
       const prefabObj = { id: 'prefab_1', name: 'Coin' };
       await prefabStore.addPrefab(prefabObj);
       expect(engineBridge.createPrefab).toHaveBeenCalledWith(prefabObj);
     });
 
-    it('mengirim updatePrefab saat updatePrefab dipanggil', async () => {
+    it('sends updatePrefab when updatePrefab is called', async () => {
       prefabStore.prefabs = [{ id: 'prefab_player_1', name: 'Old Player' }];
       await prefabStore.updatePrefab('prefab_player_1', { name: 'New Player' });
       expect(engineBridge.updatePrefab).toHaveBeenCalledWith('prefab_player_1', { name: 'New Player' });
     });
 
-    it('mengirim updatePrefab(id, null) saat updateComponentProp dipanggil', () => {
+    it('sends updatePrefab(id, null) when updateComponentProp is called', () => {
       prefabStore.prefabs = [{ id: 'prefab_1', data: { components: { SpriteRenderer: { color: '#ffffff' } } } }];
       prefabStore.updateComponentProp('prefab_1', 'SpriteRenderer', 'color', '#ff0000');
       expect(engineBridge.updatePrefab).toHaveBeenCalledWith('prefab_1', null);
     });
 
-    it('mengirim deletePrefab saat removePrefab dipanggil', async () => {
+    it('sends deletePrefab when removePrefab is called', async () => {
       prefabStore.prefabs = [{ id: 'prefab_1', name: 'Prefab 1' }];
       await prefabStore.removePrefab('prefab_1');
       expect(engineBridge.deletePrefab).toHaveBeenCalledWith('prefab_1');
@@ -408,25 +405,25 @@ describe('Integration Test: useEditorToEngine (100% Coverage)', () => {
    * 7. EDGE CASES & BRANCH COVERAGE
    * ========================================================================= */
   describe('Edge Cases & Branch Coverage', () => {
-    it('tidak memanggil engineBridge jika projectStore.project bernilai null', () => {
+    it('does not call engineBridge when projectStore.project is null', () => {
       projectStore.project = null;
       projectStore.$patch({});
       expect(engineBridge.updateProjectSettings).not.toHaveBeenCalled();
     });
 
-    it('tidak memanggil engineBridge jika result action sceneStore bernilai false', () => {
+    it('does not call engineBridge when sceneStore action result is false', () => {
       vi.spyOn(sceneStore, 'deleteLayer').mockReturnValueOnce(false);
       sceneStore.deleteLayer('non_existent_layer', false);
       expect(engineBridge.deleteLayer).not.toHaveBeenCalled();
     });
 
-    it('tidak memanggil createEntity jika result bernilai null/falsy', () => {
+    it('does not call createEntity when result is null/falsy', () => {
       vi.spyOn(sceneStore, 'createEntity').mockReturnValueOnce(null);
       sceneStore.createEntity('invalid');
       expect(engineBridge.createEntity).not.toHaveBeenCalled();
     });
 
-    it('tidak memanggil saveActiveScript jika activeScript bernilai null', () => {
+    it('does not call saveActiveScript when activeScript is null', () => {
       scriptStore.activeScript = null;
       scriptStore.saveActiveScript();
       expect(engineBridge.updateScript).not.toHaveBeenCalled();

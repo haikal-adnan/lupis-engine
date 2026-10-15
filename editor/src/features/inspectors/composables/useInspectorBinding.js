@@ -7,7 +7,7 @@ import { useWorkspaceStore } from '@workspaces/workspaces.js';
 import { engineBridge } from "@engines/engines.js";
 import { useSceneHistory } from '@historys/historys.js';
 
-// Import composables internal sebagai fallback jika parameter tidak di-pass eksplisit
+// Import internal composables as fallback if parameters are not explicitly passed
 import { useInspectorSelection } from './useInspectorSelection.js';
 import { useInspectorPrefab } from './useInspectorPrefab.js';
 
@@ -17,7 +17,7 @@ export function useInspectorBinding(
   prefabIdParam, 
   markAsOverriddenParam
 ) {
-  // Fallback internal jika tidak dipassing dari komponen Vue
+  // Internal fallback if not passed from Vue component
   const selection = useInspectorSelection();
   const prefab = useInspectorPrefab();
 
@@ -46,7 +46,7 @@ export function useInspectorBinding(
   const getPrefabIdVal = () => {
     const idVal = typeof prefabId === 'string' ? prefabId : prefabId?.value;
     if (idVal) return idVal;
-    // Fallback langsung ke entitas terpilih
+    // Fallback directly to selected entity
     return getEntity()?.prefabId || null;
   };
 
@@ -56,7 +56,7 @@ export function useInspectorBinding(
         if (category === 'ui' || category === 'grid' || category === 'camera') {
           return projectStore.project?.settings?.[category]?.[propName];
         }
-        // Ditingkatkan: sertakan initialSceneId sebagai property project settings
+        // Include initialSceneId as project settings property
         if (!category && (propName === 'tickRate' || propName === 'initialSceneId')) {
           return projectStore.project?.settings?.[propName];
         }
@@ -77,7 +77,7 @@ export function useInspectorBinding(
         }
         else if (category === 'camera') projectStore.updateCameraSettings({ [propName]: val });
         else if (!category && propName === 'tickRate') projectStore.setTickRate(val);
-        // Ditingkatkan: handle simpan initialSceneId ke projectStore
+        // Handle saving initialSceneId to projectStore
         else if (!category && propName === 'initialSceneId') {
           if (typeof projectStore.setInitialSceneId === 'function') {
             projectStore.setInitialSceneId(val);

@@ -1,26 +1,26 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
-import { engineBridge } from '@engines/engines.js'; // Sesuaikan path dengan lokasi engineBridge Anda
+import { engineBridge } from '@engines/engines.js';
 import { useWorkspaceStore } from '@workspaces/workspaces.js';
 import { useSceneStore } from '@scenes/scenes.js';
 
-// Mock dependencies jika diperlukan
+// Mock dependencies if needed
 vi.mock('@scenes/scenes.js', () => ({
   useSceneStore: vi.fn(),
 }));
 
-describe('engineBridge Integration Tests', () => {
+describe('Integration Test: engineBridge', () => {
   let mockBus;
   let mockEngine;
   let mockSceneStore;
   let workspaceStore;
 
   beforeEach(() => {
-    // 1. Inisialisasi ulang Pinia environment
+    // 1. Reinitialize Pinia environment
     setActivePinia(createPinia());
     workspaceStore = useWorkspaceStore();
 
-    // 2. Mock Event Bus Engine
+    // 2. Mock Engine Event Bus
     mockBus = {
       handlers: {},
       on: vi.fn((event, handler) => {
@@ -47,21 +47,21 @@ describe('engineBridge Integration Tests', () => {
     };
     useSceneStore.mockReturnValue(mockSceneStore);
 
-    // Set Engine ke WorkspaceStore
+    // Set Engine to WorkspaceStore
     workspaceStore.setEngine(mockEngine);
   });
 
   describe('Getter & Base Instance', () => {
-    it('harus mengembalikan engine instance dari workspaceStore', () => {
+    it('returns engine instance from workspaceStore', () => {
       expect(engineBridge._instance).toBe(mockEngine);
     });
 
-    it('harus mengembalikan kamera position jika engine & camera tersedia', () => {
+    it('returns camera position if engine and camera are available', () => {
       const cameraPos = engineBridge.getCameraPosition();
       expect(cameraPos).toEqual({ x: 120, y: 350 });
     });
 
-    it('harus mengembalikan default {x:0, y:0} jika engine/camera tidak tersedia', () => {
+    it('returns default {x:0, y:0} if engine/camera is not available', () => {
       workspaceStore.setEngine(null);
       expect(engineBridge.getCameraPosition()).toEqual({ x: 0, y: 0 });
     });
@@ -72,13 +72,13 @@ describe('engineBridge Integration Tests', () => {
       engineBridge.setupListeners();
     });
 
-    it('harus mendaftarkan listener ke engine.bus saat setupListeners dipanggil', () => {
+    it('registers listeners to engine.bus when setupListeners is called', () => {
       expect(mockBus.on).toHaveBeenCalledWith('entity:modified', expect.any(Function));
       expect(mockBus.on).toHaveBeenCalledWith('editor:tool:pickup', expect.any(Function));
       expect(mockBus.on).toHaveBeenCalledWith('editor:tilemap:update-data', expect.any(Function));
     });
 
-    it('harus memproses event "entity:modified" dan menyinkronkan transform ke sceneStore', () => {
+    it('processes "entity:modified" event and syncs transform to sceneStore', () => {
       const mockEntity = {
         id: 'entity-1',
         components: {
@@ -86,7 +86,7 @@ describe('engineBridge Integration Tests', () => {
         },
       };
 
-      // Trigger callback handler langsung
+      // Trigger callback handler directly
       mockBus.handlers['entity:modified'](mockEntity);
 
       expect(mockSceneStore.syncTransformFromEngine).toHaveBeenCalledWith('entity-1', {
@@ -100,7 +100,7 @@ describe('engineBridge Integration Tests', () => {
       });
     });
 
-    it('harus mengabaikan "entity:modified" jika syncComponent.isInternalUpdate bernilai true', () => {
+    it('ignores "entity:modified" if syncComponent.isInternalUpdate is true', () => {
       mockEngine.syncComponent.isInternalUpdate = true;
 
       mockBus.handlers['entity:modified']({ id: 'entity-1' });
@@ -108,7 +108,7 @@ describe('engineBridge Integration Tests', () => {
       expect(mockSceneStore.syncTransformFromEngine).not.toHaveBeenCalled();
     });
 
-    it('harus memanggil callback native yang didaftarkan lewat listener helper', () => {
+    it('calls native callback registered via listener helper', () => {
       const cbEntityModified = vi.fn();
       const cbToolPickup = vi.fn();
       const cbTilemapUpdate = vi.fn();
@@ -128,7 +128,7 @@ describe('engineBridge Integration Tests', () => {
   });
 
   describe('Outbound Event Emits', () => {
-    it('harus memancarkan event bus yang sesuai saat method bridge dipanggil', () => {
+    it('emits corresponding bus events when bridge methods are called', () => {
       engineBridge.createEntity({ name: 'Player' });
       expect(mockBus.emit).toHaveBeenCalledWith('editor:entity:create', { name: 'Player' });
 
@@ -145,7 +145,7 @@ describe('engineBridge Integration Tests', () => {
       expect(mockBus.emit).toHaveBeenCalledWith('editor:selection:clear');
     });
 
-    it('harus menangani updateEntity baik berupa single entity maupun array', () => {
+    it('handles updateEntity for both single entity and array', () => {
       engineBridge.updateEntity({ id: 'ent-1' });
       expect(mockBus.emit).toHaveBeenCalledWith('editor:entity:replace', [{ id: 'ent-1' }]);
 
@@ -155,7 +155,7 @@ describe('engineBridge Integration Tests', () => {
   });
 
   describe('Disconnect Cleanups', () => {
-    it('harus menghapus event listener dan membersihkan callback saat disconnect() dipanggil', () => {
+    it('removes event listeners and cleans up callbacks when disconnect() is called', () => {
       const cbMock = vi.fn();
       engineBridge.onEntityModified(cbMock);
 

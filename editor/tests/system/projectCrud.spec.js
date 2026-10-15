@@ -11,7 +11,7 @@ import { LUPIS_HEADER, XOR_KEY } from '@utils/utils.js'
 import { setupMockOPFS, createMockEmptyProject } from '@tests/tests.js'
 
 /**
- * Helper spesifik projectCrud untuk membuat instansiasi File .lupisproject
+ * Specific helper for projectCrud to create .lupisproject file instance
  */
 async function createValidLupisProjectFile(projectData, fileName = 'project.lupisproject') {
   const zip = new JSZip()
@@ -31,7 +31,7 @@ async function createValidLupisProjectFile(projectData, fileName = 'project.lupi
 }
 
 /* ============================================================================
- * MOCKING KETERGANTUNGAN LINGKUNGAN (Vue Router & VTU Options)
+ * ENVIRONMENT DEPENDENCY MOCKING (Vue Router & VTU Options)
  * ============================================================================
  */
 
@@ -51,11 +51,11 @@ const globalMountOptions = {
 }
 
 /* ============================================================================
- * SYSTEM TEST SUITE: CRUD & MANAJEMEN PROYEK
+ * SYSTEM TEST SUITE: PROJECT CRUD & MANAGEMENT
  * ============================================================================
  */
 
-describe('Sistem Manajemen dan Operasi CRUD Proyek', () => {
+describe('Project Management and CRUD Operations System', () => {
   let projectActions
   let opfsActions
 
@@ -74,13 +74,13 @@ describe('Sistem Manajemen dan Operasi CRUD Proyek', () => {
     opfsActions = useOPFSActions()
   })
 
-  describe('Alur Navigasi dan Membuka Proyek', () => {
-    it('mengarahkan ke router editor dan memperbarui activeProjectId pada workspaceStore saat proyek dibuka', async () => {
+  describe('Navigation and Opening Project Flow', () => {
+    it('redirects to editor router and updates activeProjectId in workspaceStore when project is opened', async () => {
       const workspaceStore = useWorkspaceStore()
 
       const newProject = await createMockEmptyProject({
         projectName: 'Game RPG 2D',
-        description: 'Proyek RPG'
+        description: 'RPG Project'
       })
 
       const wrapper = mount(DashboardPage, globalMountOptions)
@@ -93,11 +93,11 @@ describe('Sistem Manajemen dan Operasi CRUD Proyek', () => {
     })
   })
 
-  describe('Alur Ekspor / Save File Proyek', () => {
-    it('mengekspor berkas dari OPFS dan memicu unduhan file .lupisproject di browser', async () => {
+  describe('Project File Export / Save Flow', () => {
+    it('exports files from OPFS and triggers .lupisproject file download in browser', async () => {
       const newProject = await createMockEmptyProject({
         projectName: 'Game Platformer',
-        description: 'Aplikasi Platformer'
+        description: 'Platformer Application'
       })
 
       const result = await opfsActions.exportToLupisProject(newProject.id)
@@ -113,8 +113,8 @@ describe('Sistem Manajemen dan Operasi CRUD Proyek', () => {
     })
   })
 
-  describe('Alur Pengubahan Metadata Proyek', () => {
-    it('mengubah status proyek antara DRAFT, IN_PROGRESS, dan PUBLISHED serta menyimpan perubahannya di OPFS', async () => {
+  describe('Project Metadata Modification Flow', () => {
+    it('changes project status between DRAFT, IN_PROGRESS, and PUBLISHED and saves changes in OPFS', async () => {
       const created = await createMockEmptyProject({
         projectName: 'Game Puzzle'
       })
@@ -135,28 +135,28 @@ describe('Sistem Manajemen dan Operasi CRUD Proyek', () => {
       expect(updatedPublished.project.status).toBe('PUBLISHED')
     })
 
-    it('mengubah nama (rename) dan deskripsi proyek dengan data baru yang konsisten', async () => {
+    it('renames and updates project description with consistent new data', async () => {
       const created = await createMockEmptyProject({
-        projectName: 'Nama Awal',
-        description: 'Deskripsi Awal'
+        projectName: 'Initial Name',
+        description: 'Initial Description'
       })
 
       await projectActions.updateProject(created.id, {
-        name: 'Nama Baru Terupdate',
-        description: 'Deskripsi Baru Terupdate'
+        name: 'Updated New Name',
+        description: 'Updated New Description'
       })
 
       const result = await projectActions.getProjectById(created.id)
 
-      expect(result.project.name).toBe('Nama Baru Terupdate')
-      expect(result.project.description).toBe('Deskripsi Baru Terupdate')
+      expect(result.project.name).toBe('Updated New Name')
+      expect(result.project.description).toBe('Updated New Description')
     })
   })
 
-  describe('Alur Penghapusan Proyek', () => {
-    it('menghapus folder proyek dari OPFS sehingga proyek tidak lagi tampil di dashboard', async () => {
+  describe('Project Deletion Flow', () => {
+    it('deletes project directory from OPFS so project no longer appears on dashboard', async () => {
       const created = await createMockEmptyProject({
-        projectName: 'Proyek Sementara'
+        projectName: 'Temporary Project'
       })
 
       const initialProjects = await projectActions.getProjects()
@@ -171,14 +171,14 @@ describe('Sistem Manajemen dan Operasi CRUD Proyek', () => {
     })
   })
 
-  describe('Alur Import Proyek via Drop File dan File Explorer', () => {
-    it('memuat proyek dari file .lupisproject melalui mekanisme Drop dan memperbarui daftar proyek', async () => {
+  describe('Project Import Flow via File Drop and File Explorer', () => {
+    it('loads project from .lupisproject file via Drop mechanism and updates project list', async () => {
       const wrapper = mount(DashboardPage, globalMountOptions)
 
       const dummyProject = {
         id: 'proj_imported_drop_123',
         name: 'Imported Game Drop',
-        description: 'Hasil dari file import drag and drop',
+        description: 'Result of drag and drop file import',
         status: 'DRAFT'
       }
 
@@ -203,13 +203,13 @@ describe('Sistem Manajemen dan Operasi CRUD Proyek', () => {
       expect(projects[0].name).toBe('Imported Game Drop')
     })
 
-    it('memuat proyek dari file .lupisproject melalui pemilih file (File Explorer)', async () => {
+    it('loads project from .lupisproject file via file picker (File Explorer)', async () => {
       const wrapper = mount(DashboardPage, globalMountOptions)
 
       const dummyProject = {
         id: 'proj_imported_select_456',
         name: 'Imported Game Select',
-        description: 'Hasil dari file explorer',
+        description: 'Result of file explorer select',
         status: 'DRAFT'
       }
 
@@ -234,8 +234,8 @@ describe('Sistem Manajemen dan Operasi CRUD Proyek', () => {
     })
   })
 
-  describe('Alur Validasi File dan Keamanan Format', () => {
-    it('menolak file yang bukan ber-ekstensi .lupisproject dan memastikan data proyek di OPFS tidak berubah', async () => {
+  describe('File Validation and Format Security Flow', () => {
+    it('rejects files without .lupisproject extension and ensures project data in OPFS is unchanged', async () => {
       const wrapper = mount(DashboardPage, globalMountOptions)
 
       const invalidFile = new File(
@@ -259,7 +259,7 @@ describe('Sistem Manajemen dan Operasi CRUD Proyek', () => {
       expect(projects.length).toBe(0)
     })
 
-    it('menampilkan status pencarian kosong ketika filter nama proyek tidak cocok', async () => {
+    it('displays empty search state when project name filter does not match', async () => {
       await createMockEmptyProject({
         projectName: 'Space Shooter'
       })

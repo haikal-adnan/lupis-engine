@@ -9,7 +9,7 @@ export const BlueprintCamera = {
     {
       type: 'actionCameraFollow',
       label: 'Camera Follow',
-      description: 'Membuat kamera mengikuti entity target secara halus (smooth).',
+      description: 'Makes the camera smoothly follow the target entity.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -50,7 +50,7 @@ return;`
     {
       type: 'actionCameraStopFollow',
       label: 'Stop Camera Follow',
-      description: 'Menghentikan kamera dari mengikuti entity.',
+      description: 'Stops the camera from following the target entity.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -76,7 +76,7 @@ return;`
     {
       type: 'actionCameraSetTransform',
       label: 'Set Camera Transform',
-      description: 'Mengatur posisi (X, Y), skala zoom, dan kecepatan interpolasi (smoothness) kamera.',
+      description: 'Sets camera position (X, Y), zoom scale, and interpolation speed (smoothness).',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -112,7 +112,7 @@ return;`
     {
       type: 'queryCameraInfo',
       label: 'Get Camera Info',
-      description: 'Pure node untuk membaca koordinat, skala zoom, smoothness, dan scriptId target kamera saat ini.',
+      description: 'Pure node to read current camera coordinates, zoom scale, smoothness, and target scriptId.',
       dynamicMode: 'none',
       defaultData: {
         settings: {

@@ -166,7 +166,7 @@ export default class TransformTool {
         if (!validEntities.length) return;
 
         this.initialState = this._createSnapshot();
-        this.startWorld = this.toWorld(px, py); // Simpan titik acuan World Space awal
+        this.startWorld = this.toWorld(px, py); // Store initial World Space reference point
         const topLevelEntities = this._getTopLevelEntities(validEntities);
 
         if (handle.mode === 'rotate') {
@@ -196,7 +196,7 @@ export default class TransformTool {
             this.draggingMove = false;
             this.resizeType = handle.type;
 
-            // Salin nilai awal secara eksplisit sebagai nilai primitif
+            // Explicitly copy initial values as primitives
             this.resizeEntityStarts = topLevelEntities.map(e => {
                 const t = this.mediator.engine.getTransform(e);
                 let sx = t.scaleX ?? 1, sy = t.scaleY ?? 1;

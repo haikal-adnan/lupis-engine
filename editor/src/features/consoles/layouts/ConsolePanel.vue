@@ -87,7 +87,8 @@ const filteredLogs = computed(() => {
     result = result.filter(l => {
       const msg = l.message ? l.message.toLowerCase() : ''
       const src = l.source ? l.source.toLowerCase() : ''
-      return msg.includes(q) || src.includes(q)
+      const ctx = l.context ? `${l.context.scene || ''} ${l.context.entityScriptId || ''} ${l.context.script || ''} ${l.context.node || ''}`.toLowerCase() : ''
+      return msg.includes(q) || src.includes(q) || ctx.includes(q)
     })
   }
   return result

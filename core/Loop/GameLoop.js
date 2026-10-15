@@ -30,7 +30,7 @@ export default class GameLoop {
             this.game.update(delta / 1000);
             this.game.render(1);
         } else {
-            // Update dipanggil secara berkelanjutan
+            // Continuous update step
             this.accumulator += delta;
             while (this.accumulator >= this.interval) {
                 this.game.update(this.interval / 1000);

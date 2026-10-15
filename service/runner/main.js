@@ -64,7 +64,7 @@ app.whenReady().then(() => {
       return respondFile(externalPath);
     }
 
-    console.error(`[Lupis Runner 404] File tidak ditemukan: ${relativePath}`);
+    console.error(`[Lupis Runner 404] File not found: ${relativePath}`);
     return new Response(`404 - File Not Found: ${relativePath}`, {
       status: 404,
       headers: { 'Content-Type': 'text/plain' }

@@ -27,7 +27,7 @@ export async function ensureProject(page, { name, description = '' }) {
     await createBtn.click();
 
     // Verify the modal is ready through its semantic role
-    const modal = page.getByRole('dialog', { name: 'Buat Proyek Baru' });
+    const modal = page.getByRole('dialog', { name: 'New Project' });
     await expect(modal).toBeVisible();
 
     // Fill the modal form through BaseControlHelper

@@ -1,12 +1,54 @@
 import PointerRaycast from "../System/PointerRaycast.js";
 
 export class ScriptAssertionError extends Error {
-  constructor(message, nodeId, nodeType) {
+  constructor(message, nodeId, nodeType, nodeName = null) {
     super(message);
     this.name = 'ScriptAssertionError';
     this.nodeId = nodeId;
     this.nodeType = nodeType;
+    this.nodeName = nodeName || nodeId;
   }
+}
+
+export function getScriptContextMetadata(game, runner, node) {
+  if (runner && typeof runner.getContextMetadata === 'function') {
+    return runner.getContextMetadata(node);
+  }
+
+  const sceneName = game?.sceneSystem?.getCurrentSceneName?.() || 
+                    game?.world?.currentSceneName || 
+                    game?.world?.currentScene?.name || 
+                    game?.sceneSystem?.getCurrentSceneId?.() || 
+                    'Scene';
+
+  const entityScriptId = runner?.owner 
+    ? (runner.owner.scriptId || runner.owner.name || runner.owner.id || 'Entity') 
+    : 'Global';
+
+  const scriptName = runner?.data?.name || 
+                     game?.world?.scripts?.[runner?.scriptId]?.name || 
+                     runner?.data?.title || 
+                     runner?.scriptId || 
+                     'Script';
+
+  const nodeName = node ? (
+    node.settings?.headerTitle || 
+    node.data?.settings?.headerTitle || 
+    node.title || 
+    node.name ||
+    node.label || 
+    node.type || 
+    node.id || 
+    'Node'
+  ) : 'Node';
+
+  return {
+    scene: sceneName,
+    entityScriptId: String(entityScriptId),
+    script: scriptName,
+    node: nodeName,
+    prefix: `[${sceneName}] [${entityScriptId}] [${scriptName}] [${nodeName}]`
+  };
 }
 
 /**
@@ -29,6 +71,26 @@ export default class ContextSystem {
       ? runner.getNodeState(node.id) 
       : (node._state = node._state || {});
 
+    const nodeMeta = getScriptContextMetadata(this.game, runner, node);
+    const nodeName = nodeMeta.node;
+
+    const failAssert = (msg) => {
+      const formatted = `${nodeMeta.prefix} [Assert Error] ${msg} (node: '${nodeName}')`;
+      this.game.events.emit('console:error', {
+        type: 'error',
+        time: Date.now(),
+        message: formatted,
+        source: 'Assert',
+        context: {
+          scene: nodeMeta.scene,
+          entityScriptId: nodeMeta.entityScriptId,
+          script: nodeMeta.script,
+          node: nodeName
+        }
+      });
+      throw new ScriptAssertionError(formatted, node?.id, node?.type, nodeName);
+    };
+
     return {
       owner: runner.owner,
       node: node,
@@ -38,30 +100,54 @@ export default class ContextSystem {
 
       console: {
         log: (...args) => {
-          const message = args.map(a => (typeof a === 'object' && a !== null ? JSON.stringify(a) : String(a))).join(' ');
+          const meta = getScriptContextMetadata(this.game, runner, node);
+          const rawMessage = args.map(a => (typeof a === 'object' && a !== null ? JSON.stringify(a) : String(a))).join(' ');
+          const message = `${meta.prefix} ${rawMessage}`;
           this.game.events.emit('console:log', {
             type: 'log',
             time: Date.now(),
             message,
-            source: 'Script'
+            source: 'Script',
+            context: {
+              scene: meta.scene,
+              entityScriptId: meta.entityScriptId,
+              script: meta.script,
+              node: meta.node
+            }
           });
         },
         warn: (...args) => {
-          const message = args.map(a => (typeof a === 'object' && a !== null ? JSON.stringify(a) : String(a))).join(' ');
+          const meta = getScriptContextMetadata(this.game, runner, node);
+          const rawMessage = args.map(a => (typeof a === 'object' && a !== null ? JSON.stringify(a) : String(a))).join(' ');
+          const message = `${meta.prefix} ${rawMessage}`;
           this.game.events.emit('console:warn', {
             type: 'warn',
             time: Date.now(),
             message,
-            source: 'Script'
+            source: 'Script',
+            context: {
+              scene: meta.scene,
+              entityScriptId: meta.entityScriptId,
+              script: meta.script,
+              node: meta.node
+            }
           });
         },
         error: (...args) => {
-          const message = args.map(a => (typeof a === 'object' && a !== null ? JSON.stringify(a) : String(a))).join(' ');
+          const meta = getScriptContextMetadata(this.game, runner, node);
+          const rawMessage = args.map(a => (typeof a === 'object' && a !== null ? JSON.stringify(a) : String(a))).join(' ');
+          const message = `${meta.prefix} ${rawMessage}`;
           this.game.events.emit('console:error', {
             type: 'error',
             time: Date.now(),
             message,
-            source: 'Script'
+            source: 'Script',
+            context: {
+              scene: meta.scene,
+              entityScriptId: meta.entityScriptId,
+              script: meta.script,
+              node: meta.node
+            }
           });
         }
       },
@@ -69,42 +155,21 @@ export default class ContextSystem {
       assert: {
         isTrue: (condition, message = 'Assertion failed: expected value to be true') => {
           if (!condition) {
-            const formatted = `[Assert Error] ${message} (node: '${node.id}')`;
-            this.game.events.emit('console:error', {
-              type: 'error',
-              time: Date.now(),
-              message: formatted,
-              source: 'Assert'
-            });
-            throw new ScriptAssertionError(formatted, node.id, node.type);
+            failAssert(message);
           }
           return true;
         },
 
         isFalse: (condition, message = 'Assertion failed: expected value to be false') => {
           if (condition) {
-            const formatted = `[Assert Error] ${message} (node: '${node.id}')`;
-            this.game.events.emit('console:error', {
-              type: 'error',
-              time: Date.now(),
-              message: formatted,
-              source: 'Assert'
-            });
-            throw new ScriptAssertionError(formatted, node.id, node.type);
+            failAssert(message);
           }
           return true;
         },
 
         exists: (value, message = 'Assertion failed: value does not exist (null or undefined)') => {
           if (value === null || value === undefined) {
-            const formatted = `[Assert Error] ${message} (node: '${node.id}')`;
-            this.game.events.emit('console:error', {
-              type: 'error',
-              time: Date.now(),
-              message: formatted,
-              source: 'Assert'
-            });
-            throw new ScriptAssertionError(formatted, node.id, node.type);
+            failAssert(message);
           }
           return value;
         },
@@ -112,14 +177,7 @@ export default class ContextSystem {
         hasComponent: (entity, componentName, message) => {
           if (!entity || !entity.components || !entity.components[componentName]) {
             const fallbackMsg = `Assertion failed: entity does not have component '${componentName}'`;
-            const formatted = `[Assert Error] ${message || fallbackMsg} (node: '${node.id}')`;
-            this.game.events.emit('console:error', {
-              type: 'error',
-              time: Date.now(),
-              message: formatted,
-              source: 'Assert'
-            });
-            throw new ScriptAssertionError(formatted, node.id, node.type);
+            failAssert(message || fallbackMsg);
           }
           return entity.components[componentName];
         },
@@ -127,70 +185,35 @@ export default class ContextSystem {
         isNumber: (value, message = 'Assertion failed: expected value to be a valid number') => {
           const num = Number(value);
           if (value === '' || value === null || value === undefined || Number.isNaN(num)) {
-            const formatted = `[Assert Error] ${message} (node: '${node.id}')`;
-            this.game.events.emit('console:error', {
-              type: 'error',
-              time: Date.now(),
-              message: formatted,
-              source: 'Assert'
-            });
-            throw new ScriptAssertionError(formatted, node.id, node.type);
+            failAssert(message);
           }
           return num;
         },
 
         isString: (value, message = 'Assertion failed: expected value to be a string') => {
           if (typeof value !== 'string') {
-            const formatted = `[Assert Error] ${message} (node: '${node.id}')`;
-            this.game.events.emit('console:error', {
-              type: 'error',
-              time: Date.now(),
-              message: formatted,
-              source: 'Assert'
-            });
-            throw new ScriptAssertionError(formatted, node.id, node.type);
+            failAssert(message);
           }
           return value;
         },
 
         isBoolean: (value, message = 'Assertion failed: expected value to be a boolean') => {
           if (typeof value !== 'boolean') {
-            const formatted = `[Assert Error] ${message} (node: '${node.id}')`;
-            this.game.events.emit('console:error', {
-              type: 'error',
-              time: Date.now(),
-              message: formatted,
-              source: 'Assert'
-            });
-            throw new ScriptAssertionError(formatted, node.id, node.type);
+            failAssert(message);
           }
           return value;
         },
 
         isObject: (value, message = 'Assertion failed: expected value to be an object') => {
           if (!value || typeof value !== 'object' || Array.isArray(value)) {
-            const formatted = `[Assert Error] ${message} (node: '${node.id}')`;
-            this.game.events.emit('console:error', {
-              type: 'error',
-              time: Date.now(),
-              message: formatted,
-              source: 'Assert'
-            });
-            throw new ScriptAssertionError(formatted, node.id, node.type);
+            failAssert(message);
           }
           return value;
         },
 
         isArray: (value, message = 'Assertion failed: expected value to be an array') => {
           if (!Array.isArray(value)) {
-            const formatted = `[Assert Error] ${message} (node: '${node.id}')`;
-            this.game.events.emit('console:error', {
-              type: 'error',
-              time: Date.now(),
-              message: formatted,
-              source: 'Assert'
-            });
-            throw new ScriptAssertionError(formatted, node.id, node.type);
+            failAssert(message);
           }
           return value;
         },
@@ -199,27 +222,13 @@ export default class ContextSystem {
           const num = Number(value);
           if (Number.isNaN(num) || num < min || num > max) {
             const fallbackMsg = `Assertion failed: expected ${value} to be between ${min} and ${max}`;
-            const formatted = `[Assert Error] ${message || fallbackMsg} (node: '${node.id}')`;
-            this.game.events.emit('console:error', {
-              type: 'error',
-              time: Date.now(),
-              message: formatted,
-              source: 'Assert'
-            });
-            throw new ScriptAssertionError(formatted, node.id, node.type);
+            failAssert(message || fallbackMsg);
           }
           return num;
         },
 
         fail: (message = 'Assertion failed') => {
-          const formatted = `[Assert Error] ${message} (node: '${node.id}')`;
-          this.game.events.emit('console:error', {
-            type: 'error',
-            time: Date.now(),
-            message: formatted,
-            source: 'Assert'
-          });
-          throw new ScriptAssertionError(formatted, node.id, node.type);
+          failAssert(message);
         }
       },
 
@@ -298,7 +307,7 @@ export default class ContextSystem {
         get: (targetId) => {
           if (!targetId || targetId === 'self') {
             if (!runner.owner) {
-              throw new Error(`[ContextSystem] Owner entity does not exist for 'self' target (node: '${node.id}', type: '${node.type}')`);
+              throw new Error(`[ContextSystem] Owner entity does not exist for 'self' target (node: '${nodeName}', type: '${node?.type || 'unknown'}')`);
             }
             return runner.owner;
           }
@@ -525,13 +534,44 @@ export default class ContextSystem {
           }
         },
         notify: (message, source = 'Notification', type = 'log') => {
-          this.game.events.emit('console:log', {
-            type: type,
+          const meta = getScriptContextMetadata(this.game, runner, node);
+          const rawMessage = typeof message === 'object' && message !== null ? JSON.stringify(message) : String(message ?? '');
+          const formattedMessage = `${meta.prefix} ${rawMessage}`;
+          const eventType = type === 'error' ? 'console:error' : (type === 'warn' ? 'console:warn' : 'console:log');
+
+          this.game.events.emit(eventType, {
+            type: type || 'log',
             time: Date.now(),
-            message: typeof message === 'object' && message !== null ? JSON.stringify(message) : String(message),
-            source: source || 'Notification'
+            message: formattedMessage,
+            source: source || 'Notification',
+            context: {
+              scene: meta.scene,
+              entityScriptId: meta.entityScriptId,
+              script: meta.script,
+              node: meta.node
+            }
           });
         }
+      },
+
+      notify: (message, source = 'Notification', type = 'log') => {
+        const meta = getScriptContextMetadata(this.game, runner, node);
+        const rawMessage = typeof message === 'object' && message !== null ? JSON.stringify(message) : String(message ?? '');
+        const formattedMessage = `${meta.prefix} ${rawMessage}`;
+        const eventType = type === 'error' ? 'console:error' : (type === 'warn' ? 'console:warn' : 'console:log');
+
+        this.game.events.emit(eventType, {
+          type: type || 'log',
+          time: Date.now(),
+          message: formattedMessage,
+          source: source || 'Notification',
+          context: {
+            scene: meta.scene,
+            entityScriptId: meta.entityScriptId,
+            script: meta.script,
+            node: meta.node
+          }
+        });
       },
 
       signal: {
@@ -622,7 +662,7 @@ export default class ContextSystem {
       getGlobal: (key) => {
         const val = this.game.variables?.getGlobal(key);
         if (val === undefined) {
-          throw new Error(`[ContextSystem] Global variable '${key}' not found in registry (node: '${node.id}')`);
+          throw new Error(`[ContextSystem] Global variable '${key}' not found in registry (node: '${nodeName}')`);
         }
         return val;
       },

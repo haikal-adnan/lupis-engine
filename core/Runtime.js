@@ -8,7 +8,7 @@ async function fetchJsonWithFallback(url, fallbackValue = null) {
         if (!response.ok) return fallbackValue;
         return await response.json();
     } catch (e) {
-        console.warn(`[Main] Opsional JSON tidak ditemukan di ${url}, menggunakan fallback.`);
+        console.warn(`[Main] Optional JSON not found at ${url}, using fallback.`);
         return fallbackValue;
     }
 }
@@ -69,7 +69,7 @@ export async function startEngine(canvasSource, baseURL, initialData = {}, mode 
             
             const response = await fetch(projectJsonUrl);
             if (!response.ok) {
-                throw new Error(`Gagal memuat project.json dari ${projectJsonUrl} (Status: ${response.status})`);
+                throw new Error(`Failed to load project.json from ${projectJsonUrl} (Status: ${response.status})`);
             }
             
             const projectMeta = await response.json();

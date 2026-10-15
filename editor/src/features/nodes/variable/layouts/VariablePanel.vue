@@ -126,7 +126,7 @@
       </div>
     </PropertySection>
 
-    <!-- Sembunyikan NodeLibrary jika tab aktif bertipe 'code_editor' -->
+    <!-- Hide NodeLibrary if active tab is of type 'code_editor' -->
     <NodeLibrary v-if="isGraphEditor" />
   </div>
 

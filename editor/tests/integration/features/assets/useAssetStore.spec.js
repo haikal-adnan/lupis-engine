@@ -5,7 +5,7 @@ import { useWorkspaceStore } from '@workspaces/workspaces.js'
 import { setupMockOPFS, createMockEmptyProject } from '@tests/tests.js'
 
 // ==============================================================================
-// MOCK DEPENDENCY EKSTERNAL
+// EXTERNAL DEPENDENCY MOCK
 // ==============================================================================
 vi.mock('@projects/projects.js', () => ({
   useProjectActions: () => ({
@@ -16,7 +16,7 @@ vi.mock('@projects/projects.js', () => ({
   })
 }))
 
-describe('Integration Test: Asset Store dengan OPFS dan Workspace Store', () => {
+describe('Integration Test: Asset Store with OPFS and Workspace Store', () => {
   let mockStoreRef
   let assetStore
   let workspaceStore
@@ -24,17 +24,17 @@ describe('Integration Test: Asset Store dengan OPFS dan Workspace Store', () => 
   beforeEach(async () => {
     setActivePinia(createPinia())
 
-    // Setup simulator in-memory OPFS
+    // Setup in-memory OPFS simulator
     mockStoreRef = setupMockOPFS()
 
     workspaceStore = useWorkspaceStore()
     assetStore = useAssetStore()
 
-    // Inisialisasi mock project awal
+    // Initialize initial mock project
     const project = await createMockEmptyProject()
     workspaceStore.activeProjectId = project.id
 
-    // Setup global URL mock untuk Blob URL
+    // Setup global URL mock for Blob URL
     global.URL.createObjectURL = vi.fn((file) => `blob:mock-url-${file?.name || 'file'}`)
     global.URL.revokeObjectURL = vi.fn()
   })
@@ -44,8 +44,8 @@ describe('Integration Test: Asset Store dengan OPFS dan Workspace Store', () => 
     vi.restoreAllMocks()
   })
 
-  describe('Inisialisasi & Sync State Asset', () => {
-    it('menginisialisasi asset dan menyaring getters dengan benar', () => {
+  describe('Initialization & Asset State Sync', () => {
+    it('initializes assets and filters getters correctly', () => {
       // Arrange
       const sampleAssets = [
         { id: '1', type: 'texture', name: 'hero.png' },
@@ -63,7 +63,7 @@ describe('Integration Test: Asset Store dengan OPFS dan Workspace Store', () => 
       expect(assetStore.getAssetById('1')).toEqual(sampleAssets[0])
     })
 
-    it('menyinkronkan state assets ke file assets.json di OPFS workspace (lupis-engine)', async () => {
+    it('synchronizes assets state to assets.json file in workspace OPFS (lupis-engine)', async () => {
       // Arrange
       assetStore.assets = [{ id: 'ast-1', name: 'bg.png', type: 'texture' }]
 
@@ -83,8 +83,8 @@ describe('Integration Test: Asset Store dengan OPFS dan Workspace Store', () => 
     })
   })
 
-  describe('Manajemen Berkas & Operasi File Asset', () => {
-    it('menambahkan asset baru beserta berkas fisik dan extra files ke OPFS', async () => {
+  describe('File Management & Asset File Operations', () => {
+    it('adds new asset with physical file and extra files to OPFS', async () => {
       // Arrange
       const assetMeta = {
         id: 'font-1',
@@ -110,7 +110,7 @@ describe('Integration Test: Asset Store dengan OPFS dan Workspace Store', () => 
       expect(assetStore.assets).toContainEqual(assetMeta)
     })
 
-    it('memindahkan asset ke folder target dan menyinkronkan data ke OPFS', async () => {
+    it('moves asset to target folder and synchronizes data to OPFS', async () => {
       // Arrange
       assetStore.assets = [{ id: 'ast-1', name: 'icon.png', folderId: 'root' }]
 
@@ -127,7 +127,7 @@ describe('Integration Test: Asset Store dengan OPFS dan Workspace Store', () => 
       expect(content[0].folderId).toBe('folder-ui')
     })
 
-    it('memperbarui metadata asset dan menyimpan ke OPFS', async () => {
+    it('updates asset metadata and saves to OPFS', async () => {
       // Arrange
       assetStore.assets = [{ id: 'ast-1', name: 'Old Name', type: 'texture' }]
 
@@ -138,7 +138,7 @@ describe('Integration Test: Asset Store dengan OPFS dan Workspace Store', () => 
       expect(assetStore.getAssetById('ast-1').name).toBe('New Name')
     })
 
-    it('menghapus asset biasa, mencabut blob URL cache, dan menghapus file dari OPFS', async () => {
+    it('deletes standard asset, revokes blob URL cache, and removes file from OPFS', async () => {
       // Arrange
       const asset = {
         id: 'ast-1',
@@ -148,7 +148,7 @@ describe('Integration Test: Asset Store dengan OPFS dan Workspace Store', () => 
       assetStore.assets = [asset]
       const filePath = 'root/lupis-engine/projects/proj-123/assets/file_1.png'
 
-      // Pre-populate file di OPFS & simpan blob url cache
+      // Pre-populate file in OPFS & cache blob url
       const rootDir = await navigator.storage.getDirectory()
       const appDir = await rootDir.getDirectoryHandle('lupis-engine', { create: true })
       const projectsDir = await appDir.getDirectoryHandle('projects', { create: true })
@@ -168,7 +168,7 @@ describe('Integration Test: Asset Store dengan OPFS dan Workspace Store', () => 
       expect(assetStore.assets).toHaveLength(0)
     })
 
-    it('menghapus BMFont asset beserta seluruh file FNT dan PNG terkait dari OPFS', async () => {
+    it('deletes BMFont asset along with all associated FNT and PNG files from OPFS', async () => {
       // Arrange
       const bmFontAsset = {
         id: 'font-bm-1',
@@ -201,7 +201,7 @@ describe('Integration Test: Asset Store dengan OPFS dan Workspace Store', () => 
       expect(assetStore.assets).toHaveLength(0)
     })
 
-    it('duplikasi asset standar beserta penyalinan file OPFS', async () => {
+    it('duplicates standard asset along with copying OPFS file', async () => {
       // Arrange
       const originalAsset = {
         id: 'ast-orig',
@@ -235,7 +235,7 @@ describe('Integration Test: Asset Store dengan OPFS dan Workspace Store', () => 
       expect(mockStoreRef.store.has(duplicatedPath)).toBe(true)
     })
 
-    it('membuat Blob URL dan menyimpan pada cache saat memanggil getAssetUrlById', async () => {
+    it('creates Blob URL and stores in cache when calling getAssetUrlById', async () => {
       // Arrange
       const asset = {
         id: 'ast-url',
@@ -261,8 +261,8 @@ describe('Integration Test: Asset Store dengan OPFS dan Workspace Store', () => 
     })
   })
 
-  describe('Pencegahan Error / Bad Path', () => {
-    it('[Bad Path] mengembalikan string kosong ketika mencoba getAssetUrlById untuk ID yang tidak terdaftar', async () => {
+  describe('Error Handling / Bad Path', () => {
+    it('[Bad Path] returns empty string when attempting getAssetUrlById for unregistered ID', async () => {
       // Act
       const result = await assetStore.getAssetUrlById('non-existent-id')
 
@@ -270,7 +270,7 @@ describe('Integration Test: Asset Store dengan OPFS dan Workspace Store', () => 
       expect(result).toBe('')
     })
 
-    it('[Bad Path] menangani gracefully saat mencoba menghapus asset yang tidak terdaftar', async () => {
+    it('[Bad Path] handles gracefully when attempting to remove unregistered asset', async () => {
       // Act & Assert
       await expect(assetStore.removeAsset('non-existent-id')).resolves.not.toThrow()
     })

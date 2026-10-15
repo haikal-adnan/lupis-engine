@@ -1,4 +1,4 @@
-// lokasi: src/editor/nodes/composables/useNodeInspector.js
+// Location: src/editor/nodes/composables/useNodeInspector.js
 
 import { computed } from 'vue';
 import { useScriptStore } from '@scripts/scripts.js';
@@ -13,7 +13,7 @@ export function useNodeInspector(props = {}) {
   const { showPop } = usePopAlert();
   const { getVarColor } = useVariableConfig();
 
-  // Sinkronisasi value kustom didelegasikan langsung ke Dynamic Port Manager terpadu
+  // Custom value synchronization delegated directly to unified Dynamic Port Manager
   const { handleNodeValueSync } = useDynamicPortManager();
 
   const { 
@@ -118,7 +118,7 @@ export function useNodeInspector(props = {}) {
     const currentValues = node.value?.data?.values || {};
     updateNodeDataField('data.values', { ...currentValues, [key]: value });
 
-    // Delegasi sinkronisasi nilai kustom (misal: parse keys untuk event_on_key)
+    // Delegate custom value synchronization (e.g. parse keys for event_on_key)
     handleNodeValueSync(node.value, key, value, disconnectInvalidEdges);
   }
 

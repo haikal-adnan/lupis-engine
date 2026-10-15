@@ -81,12 +81,12 @@ export default class Game {
     restartGame() {
         this.isPaused = false;
 
-        // Reset semua variabel global kembali ke nilai awal
+        // Reset all global variables back to initial values
         if (this.variables && typeof this.variables.resetGlobals === 'function') {
             this.variables.resetGlobals();
         }
 
-        // Antrekan pemuatan Initial Scene
+        // Queue loading of initial scene
         if (this.sceneSystem) {
             this.sceneSystem.loadInitialScene();
         }

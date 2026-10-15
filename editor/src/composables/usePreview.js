@@ -34,7 +34,7 @@ export function usePreview() {
       const currentProjectId = workspaceStore.activeProjectId;
 
       if (!currentProjectId) {
-        throw new Error("[Preview] Project ID tidak valid.");
+        throw new Error("[Preview] Invalid Project ID.");
       }
 
       const opfsContext = {

@@ -13,7 +13,7 @@ export function useInspectorPrefab(selectedEntityParam, isEditingMasterPrefabPar
   const workspaceStore = useWorkspaceStore();
   const { showPop } = usePopAlert();
 
-  // FALLBACK INTERNAL: Ambil selection secara otomatis jika parameter tidak dipassing
+  // Internal fallback: automatically retrieve selection if parameter is not passed
   const selection = useInspectorSelection();
   const selectedEntity = selectedEntityParam || selection.selectedEntity;
   const isEditingMasterPrefab = isEditingMasterPrefabParam !== undefined 
@@ -93,27 +93,27 @@ export function useInspectorPrefab(selectedEntityParam, isEditingMasterPrefabPar
 
     const id = ent.id;
     console.group(`[syncObject] Executing Sync for Entity: "${ent.name || id}" (${id})`);
-    console.log('📍 Master Prefab Source:', master);
-    console.log('📍 Entity Snapshot Before Sync:', JSON.parse(JSON.stringify(ent)));
+    console.log('Master Prefab Source:', master);
+    console.log('Entity Snapshot Before Sync:', JSON.parse(JSON.stringify(ent)));
 
     const oldSnapshot = JSON.parse(JSON.stringify(ent));
 
-    // 1. Reset Komponen ke Master Prefab
-    console.groupCollapsed('⚙️ Step 1: Syncing Components');
+    // 1. Reset components to Master Prefab
+    console.groupCollapsed('Step 1: Syncing Components');
     const masterComps = master.data.components || {};
     const instanceComps = ent.components || {};
     const newComps = {};
 
-    // Patch atau Tambahkan Komponen dari Master
+    // Patch or add components from Master
     Object.keys(masterComps).forEach(key => {
       const cleanData = JSON.parse(JSON.stringify(masterComps[key]));
 
-      // Proteksi Transform & UITransform agar Posisi Instance Tidak Berubah
+      // Protect Transform & UITransform so instance position does not change
       if (key === 'Transform' || key === 'UITransform') {
         if (instanceComps[key]) {
           cleanData.x = instanceComps[key].x;
           cleanData.y = instanceComps[key].y;
-          console.log(`  └─ [${key}] Preserving instance position: (${cleanData.x}, ${cleanData.y})`);
+          console.log(`  [${key}] Preserving instance position: (${cleanData.x}, ${cleanData.y})`);
         }
       }
 
@@ -121,43 +121,43 @@ export function useInspectorPrefab(selectedEntityParam, isEditingMasterPrefabPar
       newComps[key] = cleanData;
 
       if (instanceComps[key]) {
-        console.log(`  ├─ Patching component [${key}]:`, cleanData);
+        console.log(`  Patching component [${key}]:`, cleanData);
         engineBridge.patchComponent({ entityId: id, componentName: key, updates: cleanData });
       } else {
-        console.log(`  ├─ Adding missing component [${key}]:`, cleanData);
+        console.log(`  Adding missing component [${key}]:`, cleanData);
         engineBridge.addComponent({ entityId: id, componentName: key, data: cleanData });
       }
     });
 
-    // Hapus Komponen Ekstra yang Hanya Ada di Instance
+    // Remove extra components present only on instance
     Object.keys(instanceComps).forEach(key => {
       if (!masterComps[key]) {
-        console.log(`  └─ Removing extra instance component [${key}]`);
+        console.log(`  Removing extra instance component [${key}]`);
         engineBridge.removeComponent?.({ entityId: id, componentName: key });
       }
     });
 
-    // Update State Scene Store untuk Komponen
+    // Update Scene Store state for components
     if (sceneStore.activeScene) {
       const entity = sceneStore.activeScene.entities.find(e => e.id === id);
       if (entity) {
         entity.components = newComps;
-        console.log('  ✔ SceneStore entity.components updated to:', newComps);
+        console.log('  SceneStore entity.components updated to:', newComps);
       }
     }
     console.groupEnd();
 
-    // 2. Reset Entity Properties (tag, active, overridden)
-    console.groupCollapsed('🏷️ Step 2: Syncing Entity Properties & Recording History');
+    // 2. Reset entity properties (tag, active, overridden)
+    console.groupCollapsed('Step 2: Syncing Entity Properties & Recording History');
     const tag = master.data.tag || 'Untagged';
     const active = master.data.active ?? true;
 
     const oldTag = ent.tag;
     const oldActive = ent.active;
 
-    console.log(`  ├─ Tag: "${oldTag}" ➔ "${tag}"`);
-    console.log(`  ├─ Active: ${oldActive} ➔ ${active}`);
-    console.log('  └─ Overridden Flag: true ➔ false');
+    console.log(`  Tag: "${oldTag}" -> "${tag}"`);
+    console.log(`  Active: ${oldActive} -> ${active}`);
+    console.log('  Overridden Flag: true -> false');
 
     sceneStore.updateEntityProp(id, 'tag', tag);
     sceneStore.updateEntityProp(id, 'active', active);
@@ -172,11 +172,11 @@ export function useInspectorPrefab(selectedEntityParam, isEditingMasterPrefabPar
 
     const newSnapshot = JSON.parse(JSON.stringify(getEntity()));
     recordTransformChange([{ id, oldSnapshot, newSnapshot }]);
-    console.log('  ✔ Recorded history undo/redo snapshot.');
+    console.log('  Recorded history undo/redo snapshot.');
     console.groupEnd();
 
     showPop({ title: 'Reverted to Prefab', type: 'success' });
-    console.log('✅ [syncObject] Sync Completed Successfully.');
+    console.log('[syncObject] Sync Completed Successfully.');
     console.groupEnd();
   }
 

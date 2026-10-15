@@ -3,7 +3,7 @@ import { setActivePinia, createPinia } from 'pinia';
 import { useOPFSStore } from '@opfs/opfs.js';
 
 // ============================================================================
-// 1. MOCKING DEPENDENCY EKSTERNAL (MODUL & UTILS)
+// 1. EXTERNAL DEPENDENCY MOCKING (MODULES & UTILS)
 // ============================================================================
 
 const mockMarkAsDirty = vi.fn();
@@ -25,12 +25,12 @@ vi.mock('@utils/projectFormat.js', () => ({
   decodeLupisProject: vi.fn((data) => JSON.parse(data))
 }));
 
-// Mock Object URL Browser
+// Mock Browser Object URL
 global.URL.revokeObjectURL = vi.fn();
 global.URL.createObjectURL = vi.fn(() => 'blob:http://localhost/mock-uuid');
 
 // ============================================================================
-// 2. HELPER MOCKING STORAGE OPFS BROWSER
+// 2. BROWSER OPFS STORAGE MOCK HELPERS
 // ============================================================================
 
 function createMockFileHandle(fileName, initialContent = '') {
@@ -66,7 +66,7 @@ function createMockDirectoryHandle(dirName, entriesMap = new Map()) {
         entriesMap.set(name, newDir);
         return newDir;
       }
-      const error = new Error(`Direktori ${name} tidak ditemukan`);
+      const error = new Error(`Directory ${name} not found`);
       error.name = 'NotFoundError';
       throw error;
     }),
@@ -79,13 +79,13 @@ function createMockDirectoryHandle(dirName, entriesMap = new Map()) {
         entriesMap.set(name, newFile);
         return newFile;
       }
-      const error = new Error(`File ${name} tidak ditemukan`);
+      const error = new Error(`File ${name} not found`);
       error.name = 'NotFoundError';
       throw error;
     }),
     removeEntry: vi.fn(async (name) => {
       if (!entriesMap.has(name)) {
-        const error = new Error(`Entri ${name} tidak ditemukan`);
+        const error = new Error(`Entry ${name} not found`);
         error.name = 'NotFoundError';
         throw error;
       }
@@ -98,7 +98,7 @@ function createMockDirectoryHandle(dirName, entriesMap = new Map()) {
 // 3. INTEGRATION TEST: OPFS STORE INTERACTION & STORAGE PERSISTENCE
 // ============================================================================
 
-describe('Integrasi OPFS Store dengan System Storage dan Composables', () => {
+describe('Integration Test: OPFS Store with Storage System and Composables', () => {
   let store;
   let mockRootDirectory;
 
@@ -123,10 +123,10 @@ describe('Integrasi OPFS Store dengan System Storage dan Composables', () => {
   });
 
   // --------------------------------------------------------------------------
-  // A. Manajemen Media dan Pembersihan Memori
+  // A. Media Management and Memory Cleanup
   // --------------------------------------------------------------------------
-  describe('Pengelolaan Memori dan Preview File', () => {
-    it('membersihkan URL Blob lama dari memori saat membuka file baru', () => {
+  describe('Memory Management and File Preview', () => {
+    it('cleans up old Blob URL from memory when opening a new file', () => {
       // Arrange
       const oldUrl = 'blob:http://localhost/old-uuid';
       store.imageUrl = oldUrl;
@@ -142,7 +142,7 @@ describe('Integrasi OPFS Store dengan System Storage dan Composables', () => {
       expect(store.imageUrl).toBe('');
     });
 
-    it('mengosongkan seluruh referensi file dan membebaskan Blob URL saat dokumen ditutup', () => {
+    it('clears all file references and releases Blob URL when document is closed', () => {
       // Arrange
       const imgUrl = 'blob:http://localhost/active-image';
       store.setActiveFile({ name: 'sprite.png', kind: 'file' }, '', imgUrl);
@@ -159,10 +159,10 @@ describe('Integrasi OPFS Store dengan System Storage dan Composables', () => {
   });
 
   // --------------------------------------------------------------------------
-  // B. Operasi I/O Storage dan Notifikasi
+  // B. Storage I/O Operations and Notifications
   // --------------------------------------------------------------------------
-  describe('Penulisan Berkas ke Storage Browser', () => {
-    it('menuliskan data berkas ke dalam penyimpanan fisik OPFS dan memperbarui state store', async () => {
+  describe('Writing Files to Browser Storage', () => {
+    it('writes file data to physical OPFS storage and updates store state', async () => {
       // Arrange
       const fileName = 'player.js';
       const fileContent = 'class Player {}';
@@ -186,9 +186,9 @@ describe('Integrasi OPFS Store dengan System Storage dan Composables', () => {
       expect(store.hasActiveFile).toBe(true);
     });
 
-    it('[Bad Path] menampilkan alert error dan menyimpan pesan kesalahan saat kuota penyimpanan penuh', async () => {
+    it('[Bad Path] displays error alert and stores error message when storage quota is exceeded', async () => {
       // Arrange
-      const mockQuotaError = new Error('Penyimpanan browser telah melebihi kuota.');
+      const mockQuotaError = new Error('Browser storage quota exceeded.');
       mockQuotaError.name = 'QuotaExceededError';
       mockRootDirectory.getFileHandle.mockRejectedValue(mockQuotaError);
 
@@ -200,7 +200,7 @@ describe('Integrasi OPFS Store dengan System Storage dan Composables', () => {
       } catch (err) {
         store.setError(err.message);
         mockShowPop({
-          title: 'Gagal Menyimpan',
+          title: 'Failed to Save',
           message: err.message,
           type: 'error'
         });
@@ -209,29 +209,29 @@ describe('Integrasi OPFS Store dengan System Storage dan Composables', () => {
       }
 
       // Assert
-      expect(store.errorMessage).toBe('Penyimpanan browser telah melebihi kuota.');
+      expect(store.errorMessage).toBe('Browser storage quota exceeded.');
       expect(store.isSaving).toBe(false);
       expect(mockShowPop).toHaveBeenCalledWith(
         expect.objectContaining({
           type: 'error',
-          message: 'Penyimpanan browser telah melebihi kuota.'
+          message: 'Browser storage quota exceeded.'
         })
       );
     });
 
-    it('[Bad Path] melempar exception saat mengakses file yang tidak ada tanpa opsi create', async () => {
+    it('[Bad Path] throws exception when accessing non-existent file without create option', async () => {
       // Act & Assert
       await expect(
         mockRootDirectory.getFileHandle('non_existent.json', { create: false })
-      ).rejects.toThrow('File non_existent.json tidak ditemukan');
+      ).rejects.toThrow('File non_existent.json not found');
     });
   });
 
   // --------------------------------------------------------------------------
-  // C. Penanganan Folder Bersarang dan Interupsi Akses
+  // C. Nested Folder Handling and Access Interruption
   // --------------------------------------------------------------------------
-  describe('Navigasi Struktur Direktori Kompleks', () => {
-    it('membuat dan mengakses file dalam direktori bersarang tingkat lanjut', async () => {
+  describe('Complex Directory Structure Navigation', () => {
+    it('creates and accesses files in deeply nested directories', async () => {
       // Arrange
       const pathSegments = ['assets', 'scripts', 'controllers'];
       let currentDir = mockRootDirectory;
@@ -247,13 +247,13 @@ describe('Integrasi OPFS Store dengan System Storage dan Composables', () => {
       expect(targetFile.name).toBe('Controller.js');
     });
 
-    it('[Bad Path] menjaga konsistensi state ketika penutupan dokumen memotong proses penyimpanan', async () => {
+    it('[Bad Path] maintains state consistency when closing document interrupts save process', async () => {
       // Arrange
       const fileItem = { name: 'config.json', kind: 'file' };
       store.setActiveFile(fileItem, '{"version": 1}');
       store.setSaving(true);
 
-      // Act - Pengguna membatalkan/menutup dokumen saat simpan berlangsung
+      // Act - User cancels/closes document while saving
       store.clearActiveFile();
       store.setSaving(false);
 
@@ -263,11 +263,11 @@ describe('Integrasi OPFS Store dengan System Storage dan Composables', () => {
       expect(store.isSaving).toBe(false);
     });
 
-    it('[Bad Path] melempar exception saat mencoba membuka direktori yang tidak ada tanpa opsi create', async () => {
+    it('[Bad Path] throws exception when attempting to open non-existent directory without create option', async () => {
       // Act & Assert
       await expect(
         mockRootDirectory.getDirectoryHandle('invalid_dir', { create: false })
-      ).rejects.toThrow('Direktori invalid_dir tidak ditemukan');
+      ).rejects.toThrow('Directory invalid_dir not found');
     });
   });
 });

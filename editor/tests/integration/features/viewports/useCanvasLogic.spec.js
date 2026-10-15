@@ -77,7 +77,7 @@ vi.mock('@prefabs/prefabs.js', () => ({
   })
 }))
 
-describe('Integrasi Canvas Logic', () => {
+describe('Canvas Logic Integration', () => {
   let sceneStore
 
   beforeEach(() => {
@@ -96,8 +96,8 @@ describe('Integrasi Canvas Logic', () => {
     vi.restoreAllMocks()
   })
 
-  describe('Integrasi Pembuatan dan Manipulasi Entitas', () => {
-    it('membuat entitas baru pada posisi tertentu dan mencatat perintah undo/redo', () => {
+  describe('Entity Creation and Manipulation Integration', () => {
+    it('creates a new entity at specified position and records undo/redo commands', () => {
       const layer = createMockLayer({ id: 'layer_world_1' })
       setupMockSceneEnvironment({ layersWorld: [layer] })
       const { createEntityAtPosition } = useCanvasLogic()
@@ -121,7 +121,7 @@ describe('Integrasi Canvas Logic', () => {
       expect(sceneStore.activeEntities.length).toBe(1)
     })
 
-    it('mengubah zIndex saat bringToFront dipanggil dan mendukung reversal undo/redo', () => {
+    it('updates zIndex when bringToFront is called and supports undo/redo reversal', () => {
       const entity = createMockEntity({ id: 'ent_1', zIndex: 0 })
       setupMockSceneEnvironment({ entities: [entity] })
       sceneStore.selectedEntityIds = ['ent_1']
@@ -144,7 +144,7 @@ describe('Integrasi Canvas Logic', () => {
       expect(targetEnt.zIndex).toBe(1)
     })
 
-    it('mengubah zIndex saat sendToBack dipanggil dan mendukung reversal undo/redo', () => {
+    it('updates zIndex when sendToBack is called and supports undo/redo reversal', () => {
       const entity = createMockEntity({ id: 'ent_1', zIndex: 5 })
       setupMockSceneEnvironment({ entities: [entity] })
       sceneStore.selectedEntityIds = ['ent_1']
@@ -164,7 +164,7 @@ describe('Integrasi Canvas Logic', () => {
       expect(targetEnt.zIndex).toBe(5)
     })
 
-    it('mengubah status kunci (_editor.locked) beberapa entitas saat toggleLock dipanggil', () => {
+    it('toggles lock state (_editor.locked) for multiple entities when toggleLock is called', () => {
       const entityA = createMockEntity({ id: 'ent_a', _editor: { locked: false } })
       const entityB = createMockEntity({ id: 'ent_b', _editor: { locked: true } })
       setupMockSceneEnvironment({ entities: [entityA, entityB] })
@@ -189,7 +189,7 @@ describe('Integrasi Canvas Logic', () => {
       expect(updatedB._editor.locked).toBe(true)
     })
 
-    it('mengubah visibilitas entitas terpilih saat toggleHidden dipanggil', () => {
+    it('toggles visibility of selected entities when toggleHidden is called', () => {
       const entity = createMockEntity({ id: 'ent_1', visible: true })
       setupMockSceneEnvironment({ entities: [entity] })
       sceneStore.selectedEntityIds = ['ent_1']
@@ -209,7 +209,7 @@ describe('Integrasi Canvas Logic', () => {
       expect(targetEnt.visible).toBe(true)
     })
 
-    it('mengubah status aktif entitas terpilih saat toggleInactive dipanggil', () => {
+    it('toggles active state of selected entities when toggleInactive is called', () => {
       const entity = createMockEntity({ id: 'ent_1', active: true })
       setupMockSceneEnvironment({ entities: [entity] })
       sceneStore.selectedEntityIds = ['ent_1']
@@ -229,7 +229,7 @@ describe('Integrasi Canvas Logic', () => {
       expect(targetEnt.active).toBe(true)
     })
 
-    it('menghapus entitas terpilih saat deleteEntity dipanggil', () => {
+    it('deletes selected entities when deleteEntity is called', () => {
       const entity = createMockEntity({ id: 'ent_del', name: 'To Delete' })
       setupMockSceneEnvironment({ entities: [entity] })
       sceneStore.selectedEntityIds = ['ent_del']
@@ -249,7 +249,7 @@ describe('Integrasi Canvas Logic', () => {
       expect(sceneStore.activeEntities[0].id).toBe('ent_del')
     })
 
-    it('menduplikasi entitas terpilih saat duplicateEntity dipanggil', () => {
+    it('duplicates selected entities when duplicateEntity is called', () => {
       const entity = createMockEntity({ id: 'ent_src', name: 'Source' })
       setupMockSceneEnvironment({ entities: [entity] })
       sceneStore.selectedEntityIds = ['ent_src']
@@ -270,8 +270,8 @@ describe('Integrasi Canvas Logic', () => {
     })
   })
 
-  describe('Integrasi Penempelan Paste at Position', () => {
-    it('menghitung offset posisi dan memindahkan entitas yang ditempel ke target koordinat', async () => {
+  describe('Paste at Position Integration', () => {
+    it('calculates position offset and moves pasted entity to target coordinates', async () => {
       const entity = createMockEntity({
         id: 'pasted_1',
         entityType: 'sprite',
@@ -306,8 +306,8 @@ describe('Integrasi Canvas Logic', () => {
     })
   })
 
-  describe('Integrasi Pembuatan Prefab', () => {
-    it('meminta nama prefab dan menghubungkan entitas dengan prefab yang baru dibuat', async () => {
+  describe('Prefab Creation Integration', () => {
+    it('prompts for prefab name and links entity to the newly created prefab', async () => {
       const entity = createMockEntity({ id: 'ent_prefab', name: 'Player', type: 'entity' })
       setupMockSceneEnvironment({ entities: [entity] })
       sceneStore.selectedEntityIds = ['ent_prefab']
@@ -326,8 +326,8 @@ describe('Integrasi Canvas Logic', () => {
     })
   })
 
-  describe('Pengujian Skenario Buruk [Bad Path]', () => {
-    it('[Bad Path] tidak melakukan perubahan jika tidak ada entitas yang dipilih pada bringToFront', () => {
+  describe('Edge Cases and Error Handling [Bad Path]', () => {
+    it('[Bad Path] makes no changes if no entity is selected on bringToFront', () => {
       setupMockSceneEnvironment()
       sceneStore.selectedEntityIds = []
 
@@ -339,7 +339,7 @@ describe('Integrasi Canvas Logic', () => {
       expect(canvasLogicHistoryRecords.length).toBe(0)
     })
 
-    it('[Bad Path] menghentikan proses pasteAtPosition jika clipboard kosong atau tidak valid', async () => {
+    it('[Bad Path] aborts pasteAtPosition if clipboard is empty or invalid', async () => {
       setupMockSceneEnvironment()
       mockPaste.mockResolvedValue([])
 
@@ -351,7 +351,7 @@ describe('Integrasi Canvas Logic', () => {
       expect(canvasLogicHistoryRecords.length).toBe(0)
     })
 
-    it('[Bad Path] menghentikan proses useAsPrefab jika dialog prompt dibatalkan atau mengembalikan string kosong', async () => {
+    it('[Bad Path] aborts useAsPrefab if prompt dialog is cancelled or returns an empty string', async () => {
       const entity = createMockEntity({ id: 'ent_1' })
       setupMockSceneEnvironment({ entities: [entity] })
       sceneStore.selectedEntityIds = ['ent_1']

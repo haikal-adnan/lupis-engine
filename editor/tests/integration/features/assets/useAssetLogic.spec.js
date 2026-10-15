@@ -6,7 +6,7 @@ import { useWorkspaceStore } from '@workspaces/workspaces.js';
 import { usePopImage, usePopAudio, usePopAlert } from '@composables/composables.js';
 import { setupMockOPFS } from '@tests/tests.js';
 
-// Mock dependency eksternal composables di luar sistem yang diuji
+// Mock external composables dependencies outside the tested system
 vi.mock('@composables/composables.js', async (importOriginal) => {
   const actual = await importOriginal();
   return {
@@ -30,17 +30,17 @@ describe('Integration Test: Asset Logic UI & State Navigation', () => {
   beforeEach(async () => {
     setActivePinia(createPinia());
 
-    // Inisialisasi simulator in-memory OPFS pada navigator.storage
+    // Initialize in-memory OPFS simulator on navigator.storage
     setupMockOPFS();
 
     assetStore = useAssetStore();
     folderStore = useFolderStore();
     workspaceStore = useWorkspaceStore();
 
-    // Inisialisasi project aktif agar penyusunan path OPFS bekerja valid
+    // Initialize active project so OPFS path building works validly
     workspaceStore.activeProjectId = 'proj-123';
 
-    // Mock global HTMLImageElement agar `new Image()` memicu `onload`
+    // Mock global HTMLImageElement so new Image() triggers onload
     global.Image = class MockImage {
       constructor() {
         this._src = '';
@@ -59,7 +59,7 @@ describe('Integration Test: Asset Logic UI & State Navigation', () => {
       }
     };
 
-    // Mock global HTMLAudioElement agar `new Audio()` memicu `onloadedmetadata`
+    // Mock global HTMLAudioElement so new Audio() triggers onloadedmetadata
     global.Audio = class MockAudio {
       constructor() {
         this._src = '';
@@ -80,7 +80,7 @@ describe('Integration Test: Asset Logic UI & State Navigation', () => {
     global.URL.createObjectURL = vi.fn((file) => `blob:mock-url-${file?.name || 'file'}`);
     global.URL.revokeObjectURL = vi.fn();
 
-    // Mock modal preview image, audio & alert
+    // Mock image, audio, and alert preview modals
     mockShowImage = vi.fn();
     mockShowAudio = vi.fn();
     mockShowPop = vi.fn();
@@ -89,7 +89,7 @@ describe('Integration Test: Asset Logic UI & State Navigation', () => {
     vi.mocked(usePopAudio).mockReturnValue({ showAudio: mockShowAudio });
     vi.mocked(usePopAlert).mockReturnValue({ showPop: mockShowPop });
 
-    // Setup state dasar folderStore
+    // Setup basic folderStore state
     folderStore.folders = [
       { id: 'root', parentId: null, name: 'Root', section: 'assets' },
       { id: 'f-1', parentId: 'root', name: 'Sprites', section: 'assets' },
@@ -106,14 +106,14 @@ describe('Integration Test: Asset Logic UI & State Navigation', () => {
       if (f) f.parentId = targetId;
     });
 
-    // Setup state dasar assetStore lengkap dengan fileKey & meta
+    // Setup basic assetStore state complete with fileKey & meta
     assetStore.assets = [
       { id: 'a-1', name: 'B Knight', fileKey: 'image_b_knight', folderId: 'f-1', type: 'texture', meta: { extension: '.png', hasBmFont: false } },
       { id: 'a-2', name: 'A Apple', fileKey: 'audio_a_apple', folderId: 'f-1', type: 'audio', meta: { extension: '.wav', hasBmFont: false } },
       { id: 'a-3', name: 'Sub Item', fileKey: 'image_sub_item', folderId: 'f-2', type: 'texture', meta: { extension: '.png', hasBmFont: false } }
     ];
 
-    // Pre-create file dummy pada simulator OPFS dengan struktur baru: lupis-engine/projects/proj-123/assets
+    // Pre-create dummy files in OPFS simulator with structure: lupis-engine/projects/proj-123/assets
     const rootDir = await navigator.storage.getDirectory();
     const appDir = await rootDir.getDirectoryHandle('lupis-engine', { create: true });
     const projectsDir = await appDir.getDirectoryHandle('projects', { create: true });
@@ -131,7 +131,7 @@ describe('Integration Test: Asset Logic UI & State Navigation', () => {
   });
 
   describe('Breadcrumbs, Filtering & Sorting State', () => {
-    it('menghasilkan hirarki breadcrumbs folder dengan urutan yang benar dari root ke folder aktif', () => {
+    it('generates folder breadcrumbs hierarchy in correct order from root to active folder', () => {
       folderStore.activeFolderId = 'f-2';
       const { folderBreadcrumbs } = useAssetLogic();
 
@@ -142,7 +142,7 @@ describe('Integration Test: Asset Logic UI & State Navigation', () => {
       ]);
     });
 
-    it('menyaring dan mengurutkan folder & asset berdasarkan searchQuery dan folder yang aktif', () => {
+    it('filters and sorts folders and assets based on searchQuery and active folder', () => {
       assetStore.assets.push(
         { id: 'a-4', name: 'A Armor', fileKey: 'image_a_armor', folderId: 'f-1', type: 'texture', meta: { extension: '.png' } }
       );
@@ -157,7 +157,7 @@ describe('Integration Test: Asset Logic UI & State Navigation', () => {
       expect(visibleAssets.value[0].displayName).toBe('A Apple');
     });
 
-    it('mengubah viewMode antara grid dan list', () => {
+    it('toggles viewMode between grid and list', () => {
       const { viewMode, toggleViewMode } = useAssetLogic();
 
       expect(viewMode.value).toBe('grid');
@@ -167,7 +167,7 @@ describe('Integration Test: Asset Logic UI & State Navigation', () => {
       expect(viewMode.value).toBe('grid');
     });
 
-    it('berpindah folder aktif dan mereset kriteria pencarian serta seleksi item', () => {
+    it('navigates to active folder and resets search query and item selection', () => {
       const { navigateTo, searchQuery, selectedId } = useAssetLogic();
       searchQuery.value = 'test';
       selectedId.value = 'a-1';
@@ -180,8 +180,8 @@ describe('Integration Test: Asset Logic UI & State Navigation', () => {
     });
   });
 
-  describe('Interaksi File Upload, Drag & Drop, dan Clipboard Operations', () => {
-    it('memicu file input click dan mengimpor seluruh berkas yang dipilih pada event upload', async () => {
+  describe('File Upload, Drag & Drop, and Clipboard Operations', () => {
+    it('triggers file input click and imports all selected files on upload event', async () => {
       const { fileInputRef, triggerUpload, handleFileUpload } = useAssetLogic();
       const mockClick = vi.fn();
       fileInputRef.value = { click: mockClick };
@@ -199,7 +199,7 @@ describe('Integration Test: Asset Logic UI & State Navigation', () => {
       expect(event.target.value).toBe('');
     });
 
-    it('menangani drop data internal JSON untuk memindahkan item asset/folder ke target folder', async () => {
+    it('handles internal JSON drop data to move asset/folder item to target folder', async () => {
       const { handleDrop } = useAssetLogic();
       const dropEvent = {
         dataTransfer: {
@@ -215,7 +215,7 @@ describe('Integration Test: Asset Logic UI & State Navigation', () => {
       expect(assetStore.assets.find((a) => a.id === 'a-1').folderId).toBe('f-2');
     });
 
-    it('menangani drop berkas file sistem eksternal dan mengimpor berkas tersebut', async () => {
+    it('handles external filesystem file drop and imports the files', async () => {
       const { handleDrop } = useAssetLogic();
       const droppedFile = new File(['bytes'], 'dropped.png', { type: 'image/png' });
       const dropEvent = {
@@ -230,7 +230,7 @@ describe('Integration Test: Asset Logic UI & State Navigation', () => {
       expect(assetStore.assets.some((a) => a.name === 'dropped')).toBe(true);
     });
 
-    it('menjalankan aksi paste untuk operasi cut (move item)', async () => {
+    it('executes paste action for cut operation (move item)', async () => {
       const { clipboard, handlePaste } = useAssetLogic();
       clipboard.value = { action: 'cut', item: { id: 'a-1', type: 'asset' } };
 
@@ -240,7 +240,7 @@ describe('Integration Test: Asset Logic UI & State Navigation', () => {
       expect(clipboard.value).toBeNull();
     });
 
-    it('menjalankan aksi paste untuk operasi copy (duplicate asset)', async () => {
+    it('executes paste action for copy operation (duplicate asset)', async () => {
       const { clipboard, handlePaste } = useAssetLogic();
       clipboard.value = { action: 'copy', item: { id: 'a-1', type: 'asset' } };
 
@@ -251,7 +251,7 @@ describe('Integration Test: Asset Logic UI & State Navigation', () => {
   });
 
   describe('Asset Double Click Preview Modal', () => {
-    it('membuka modal pratinjau gambar saat double-click pada asset ber-tipe texture', async () => {
+    it('opens image preview modal on double-clicking texture asset', async () => {
       const { handleAssetDoubleClick } = useAssetLogic();
       const textureAsset = assetStore.getAssetById('a-1');
 
@@ -260,7 +260,7 @@ describe('Integration Test: Asset Logic UI & State Navigation', () => {
       expect(mockShowImage).toHaveBeenCalledWith(expect.stringContaining('blob:mock-url'), 'B Knight');
     });
 
-    it('membuka modal pratinjau audio saat double-click pada asset ber-tipe audio/sound', async () => {
+    it('opens audio preview modal on double-clicking audio asset', async () => {
       const { handleAssetDoubleClick } = useAssetLogic();
       const audioAsset = assetStore.getAssetById('a-2');
 
@@ -270,8 +270,8 @@ describe('Integration Test: Asset Logic UI & State Navigation', () => {
     });
   });
 
-  describe('Pencegahan Error / Safe Execution', () => {
-    it('mengabaikan aksi paste tanpa melempar error jika clipboard bernilai null', async () => {
+  describe('Error Prevention / Safe Execution', () => {
+    it('ignores paste action without throwing error when clipboard is null', async () => {
       const { clipboard, handlePaste } = useAssetLogic();
       clipboard.value = null;
 

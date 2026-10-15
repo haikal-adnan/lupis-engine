@@ -111,7 +111,7 @@ export function usePrefabLogic() {
         const { id, type } = JSON.parse(internalData);
         await moveItem(id, type, targetFolder);
       } catch (err) {
-        console.warn('[PrefabLogic] Gagal parse payload drag and drop:', err);
+        console.warn('[PrefabLogic] Failed to parse drag-and-drop payload:', err);
       }
     }
   };

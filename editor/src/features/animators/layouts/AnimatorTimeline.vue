@@ -193,7 +193,7 @@ const renameClip = async () => {
   if (!activeClipData.value) return;
   const newName = await prompt({
     title: 'Rename Clip',
-    message: 'Masukkan nama baru untuk clip ini:',
+    message: 'Enter a new name for this clip:',
     placeholder: activeClipData.value.name || 'New Clip Name',
     confirmText: 'Rename'
   });

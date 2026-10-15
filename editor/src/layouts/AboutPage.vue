@@ -7,8 +7,8 @@ import {
 
 const projectInfo = {
   title: 'Lupis Engine',
-  subtitle: 'Proyek Tugas Akhir: Pengembangan Game Engine 2D dan Platform Editor Visual Berbasis Komponen Modular dengan Teknologi WebGL',
-  mission: 'Lupis Engine bertujuan untuk memberdayakan pengembang game pemula dengan menyediakan game engine 2D berbasis browser yang mudah diakses melalui visual scripting dan arsitektur komponen modular yang mempermudah hambatan masuk dalam pembuatan game 2D.',
+  subtitle: 'Undergraduate Thesis Project: Development of a 2D Game Engine and Modular Component-Based Visual Editor Platform with WebGL Technology',
+  mission: 'Lupis Engine aims to empower beginner game developers by providing an accessible browser-based 2D game engine through visual scripting and modular component architecture that lowers the entry barrier to 2D game creation.',
   targetGenres: ['Visual Novel', 'Top-down RPG', 'Platformer']
 };
 
@@ -16,17 +16,17 @@ const technologies = [
   {
     icon: Box,
     title: 'WebGL',
-    description: 'Rendering 2D dengan akselerasi perangkat keras melalui graphics pipeline pada browser.'
+    description: 'Hardware-accelerated 2D rendering via the browser graphics pipeline.'
   },
   {
     icon: Code2,
     title: 'JavaScript',
-    description: 'Runtime utama untuk logika engine, API scripting, dan interoperabilitas browser.'
+    description: 'Primary runtime for engine logic, scripting API, and browser interoperability.'
   },
   {
     icon: Blocks,
-    title: 'Arsitektur Komponen Modular',
-    description: 'Desain berbasis Entity-Component-System untuk pembuatan objek game yang fleksibel.'
+    title: 'Modular Component Architecture',
+    description: 'Entity-Component-System design pattern for flexible game object creation.'
   }
 ];
 
@@ -34,21 +34,21 @@ const author = {
   initials: 'HA',
   name: 'Haikal Adnan',
   role: 'Developer & Researcher',
-  department: 'Pendidikan Komputer',
-  faculty: 'Keguruan dan Ilmu Pendidikan',
+  department: 'Computer Education',
+  faculty: 'Teacher Training and Education',
   university: 'Universitas Lambung Mangkurat'
 };
 
 const advisors = [
   {
     initials: 'HS',
-    name: 'Pembimbing Satu',
-    role: 'Pembimbing Utama'
+    name: 'Advisor One',
+    role: 'Primary Advisor'
   },
   {
     initials: 'NA',
-    name: 'Pembimbing Dua',
-    role: 'Pembimbing Pendamping'
+    name: 'Advisor Two',
+    role: 'Co-Advisor'
   }
 ];
 
@@ -71,7 +71,7 @@ const assets = [
 
 <template>
   <section class="w-full max-w-4xl mx-auto px-6 pt-32 pb-10">
-    <p class="text-xs font-bold uppercase tracking-widest text-cyan-400 mb-3">Tentang Proyek</p>
+    <p class="text-xs font-bold uppercase tracking-widest text-cyan-400 mb-3">About Project</p>
     <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight mb-4 text-foreground">
       {{ projectInfo.title }}
     </h1>
@@ -83,9 +83,9 @@ const assets = [
   <div class="w-full max-w-4xl mx-auto px-6"><hr class="border-border" /></div>
 
   <section class="w-full max-w-4xl mx-auto px-6 py-10">
-    <p class="text-xs font-bold uppercase tracking-widest text-cyan-400 mb-5">Misi & Tujuan Penelitian</p>
+    <p class="text-xs font-bold uppercase tracking-widest text-cyan-400 mb-5">Mission & Research Goals</p>
     <p class="text-lg text-foreground leading-relaxed text-justify">
-      {{ projectInfo.mission }} Fokus pada genre 
+      {{ projectInfo.mission }} Focused on genres: 
       <span v-for="(genre, index) in projectInfo.targetGenres" :key="genre">
         <span class="text-cyan-400 font-semibold">{{ genre }}</span>
         <span v-if="index < projectInfo.targetGenres.length - 1">, </span>
@@ -96,7 +96,7 @@ const assets = [
   <div class="w-full max-w-4xl mx-auto px-6"><hr class="border-border" /></div>
 
   <section class="w-full max-w-4xl mx-auto px-6 py-10">
-    <p class="text-xs font-bold uppercase tracking-widest text-cyan-400 mb-6">Teknologi Utama</p>
+    <p class="text-xs font-bold uppercase tracking-widest text-cyan-400 mb-6">Core Technologies</p>
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
       <div 
         v-for="tech in technologies" 
@@ -113,7 +113,7 @@ const assets = [
   <div class="w-full max-w-4xl mx-auto px-6"><hr class="border-border" /></div>
 
   <section class="w-full max-w-4xl mx-auto px-6 py-10">
-    <p class="text-xs font-bold uppercase tracking-widest text-cyan-400 mb-6">Pembuat</p>
+    <p class="text-xs font-bold uppercase tracking-widest text-cyan-400 mb-6">Author</p>
     
     <div class="flex flex-col md:flex-row gap-8 items-start bg-card border border-border rounded-xl p-6 md:p-8">
       <div class="w-20 h-20 rounded-full bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 text-xl font-bold tracking-wider shrink-0">
@@ -125,15 +125,15 @@ const assets = [
         
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-12 pt-5 border-t border-border">
           <div>
-            <p class="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Jurusan</p>
+            <p class="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Department</p>
             <p class="text-foreground text-sm font-medium">{{ author.department }}</p>
           </div>
           <div>
-            <p class="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Fakultas</p>
+            <p class="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Faculty</p>
             <p class="text-foreground text-sm font-medium">{{ author.faculty }}</p>
           </div>
           <div class="sm:col-span-2">
-            <p class="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Universitas</p>
+            <p class="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">University</p>
             <p class="text-foreground text-sm font-medium">{{ author.university }}</p>
           </div>
         </div>
@@ -144,7 +144,7 @@ const assets = [
   <div class="w-full max-w-4xl mx-auto px-6"><hr class="border-border" /></div>
 
   <section class="w-full max-w-4xl mx-auto px-6 py-10">
-    <p class="text-xs font-bold uppercase tracking-widest text-cyan-400 mb-6">Pembimbing</p>
+    <p class="text-xs font-bold uppercase tracking-widest text-cyan-400 mb-6">Advisors</p>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
       <div v-for="advisor in advisors" :key="advisor.name" class="flex items-center gap-4">
         <div class="w-14 h-14 rounded-full bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 font-bold tracking-wider shrink-0">
@@ -161,7 +161,7 @@ const assets = [
   <div class="w-full max-w-4xl mx-auto px-6"><hr class="border-border" /></div>
 
   <section class="w-full max-w-4xl mx-auto px-6 py-10">
-    <p class="text-xs font-bold uppercase tracking-widest text-cyan-400 mb-6">Referensi Akademik & Bibliografi</p>
+    <p class="text-xs font-bold uppercase tracking-widest text-cyan-400 mb-6">Academic References & Bibliography</p>
     <div class="space-y-3 font-mono text-xs md:text-sm text-muted-foreground leading-relaxed">
       <p v-for="(refText, index) in references" :key="index">
         <span class="text-foreground mr-1 font-bold">{{ refText.substring(0, 3) }}</span>{{ refText.substring(3) }}
@@ -172,7 +172,7 @@ const assets = [
   <div class="w-full max-w-4xl mx-auto px-6"><hr class="border-border" /></div>
 
   <section class="w-full max-w-4xl mx-auto px-6 py-10">
-    <p class="text-xs font-bold uppercase tracking-widest text-cyan-400 mb-6">Lisensi & Open Source</p>
+    <p class="text-xs font-bold uppercase tracking-widest text-cyan-400 mb-6">License & Open Source</p>
     <div class="bg-card border border-border rounded-xl p-6">
       <h4 class="text-cyan-400 font-mono text-sm font-semibold mb-4 italic">MIT License</h4>
       <div class="space-y-4 font-mono text-[11px] md:text-xs text-muted-foreground leading-relaxed">
@@ -186,7 +186,7 @@ const assets = [
   <div class="w-full max-w-4xl mx-auto px-6"><hr class="border-border" /></div>
 
   <section class="w-full max-w-4xl mx-auto px-6 py-10">
-    <p class="text-xs font-bold uppercase tracking-widest text-cyan-400 mb-6">Kontribusi Aset</p>
+    <p class="text-xs font-bold uppercase tracking-widest text-cyan-400 mb-6">Asset Credits</p>
     <div class="overflow-hidden border border-border rounded-xl bg-card">
       <table class="w-full text-left border-collapse text-xs md:text-sm">
         <thead>

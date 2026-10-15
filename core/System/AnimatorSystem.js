@@ -11,7 +11,7 @@ export default class AnimatorSystem {
         const world = this.game.world;
         const isPaused = this.game.isPaused;
 
-        // Hanya ambil layer UI saat kondisi pause
+        // Only process UI layers during pause
         const layers = isPaused 
             ? (world.layersUI || [])
             : [...(world.layersWorld || []), ...(world.layersUI || [])];

@@ -100,10 +100,10 @@ export class EntitySyncHandler {
         } else {
             const c = e.components[componentName];
             
-            // 1. Assign seluruh properti dasar (color, isFilled, opacity, dll)
+            // 1. Assign all base properties (color, isFilled, opacity, etc.)
             Object.assign(c, updates);
 
-            // 2. Lakukan deep copy untuk array khusus agar referensi aman
+            // 2. Perform deep copy for specialized arrays to ensure safe references
             if (updates.data && Array.isArray(updates.data)) {
                 c.data = JSON.parse(JSON.stringify(updates.data));
             }
@@ -112,7 +112,7 @@ export class EntitySyncHandler {
             }
         }
         
-        // 3. Mark dirty & panggil resize/bounds update jika diperlukan
+        // 3. Mark dirty & call resize/bounds update if needed
         e.isDirty = true;
         if (typeof ApplyResizeToEntity === 'function') {
             ApplyResizeToEntity(e, this.ctx.world, true);

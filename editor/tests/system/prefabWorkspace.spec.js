@@ -15,7 +15,7 @@ const {
   prefabSchema 
 } = PrefabModule
 
-// Mock composables eksternal UI Alerts, Confirmations & Dialog Prompts
+// Mock external UI Alerts, Confirmations & Dialog Prompts composables
 const mockPrompt = vi.fn()
 const mockConfirm = vi.fn().mockResolvedValue(true)
 const mockShowPop = vi.fn()
@@ -26,7 +26,7 @@ vi.mock('@composables/composables.js', () => ({
   useConfirm: () => ({ confirm: mockConfirm })
 }))
 
-// Mock Engine Bridge untuk interaksi engine
+// Mock Engine Bridge for engine interaction
 vi.mock('@engines/engines.js', () => ({
   engineBridge: {
     linkEntitiesToPrefab: vi.fn(),
@@ -37,7 +37,7 @@ vi.mock('@engines/engines.js', () => ({
   }
 }))
 
-// Mock URL API untuk lingkungan jsdom/node
+// Mock URL API for jsdom/node environment
 if (typeof window.URL.createObjectURL !== 'function') {
   window.URL.createObjectURL = vi.fn(() => 'blob:mock-url')
 }
@@ -45,7 +45,7 @@ if (typeof window.URL.revokeObjectURL !== 'function') {
   window.URL.revokeObjectURL = vi.fn()
 }
 
-describe('Pengujian Integrasi PrefabWorkspace', () => {
+describe('PrefabWorkspace Integration Testing', () => {
   let storeRef
   let project
 
@@ -57,7 +57,7 @@ describe('Pengujian Integrasi PrefabWorkspace', () => {
     const workspaceStore = useWorkspaceStore()
     workspaceStore.activeProjectId = project.id
 
-    // Setup active scene awal
+    // Setup initial active scene
     const sceneStore = useSceneStore()
     sceneStore.initScenes([{
       id: 'scene_default',
@@ -80,8 +80,8 @@ describe('Pengujian Integrasi PrefabWorkspace', () => {
     }
   })
 
-  describe('Integrasi CRUD Prefab (World & UI)', () => {
-    it('membuat prefab kosong baru dan mengonsolidasikannya ke Store serta OPFS', async () => {
+  describe('Prefab CRUD Integration (World & UI)', () => {
+    it('creates a new empty prefab and consolidates it to Store and OPFS', async () => {
       const { createPrefab } = usePrefabActions()
       const prefabStore = usePrefabStore()
 
@@ -99,7 +99,7 @@ describe('Pengujian Integrasi PrefabWorkspace', () => {
       expect(prefabFileHandle).toBeDefined()
     })
 
-    it('membuat UI prefab baru dan menyesuaikan tipe serta skemanya', async () => {
+    it('creates a new UI prefab and adapts its type and schema', async () => {
       const { createPrefab } = usePrefabActions()
       const prefabStore = usePrefabStore()
 
@@ -109,7 +109,7 @@ describe('Pengujian Integrasi PrefabWorkspace', () => {
       expect(prefabStore.getPrefabById(uiPrefab.id).type).toBe('ui')
     })
 
-    it('mengubah nama prefab dan memperbarui data berkas di OPFS', async () => {
+    it('renames prefab and updates file data in OPFS', async () => {
       const { createPrefab, renamePrefab } = usePrefabActions()
       const prefabStore = usePrefabStore()
 
@@ -127,7 +127,7 @@ describe('Pengujian Integrasi PrefabWorkspace', () => {
       expect(content.name).toBe('Enemy_Boss')
     })
 
-    it('melakukan duplikasi prefab dan menyimpan salinannya ke OPFS dengan nama unik', async () => {
+    it('duplicates prefab and saves copy to OPFS with unique name', async () => {
       const { createPrefab, duplicatePrefab } = usePrefabActions()
       const prefabStore = usePrefabStore()
 
@@ -143,7 +143,7 @@ describe('Pengujian Integrasi PrefabWorkspace', () => {
       expect(duplicateFileHandle).toBeDefined()
     })
 
-    it('menghapus prefab dari store dan membersihkan berkas fisiknya di OPFS', async () => {
+    it('deletes prefab from store and cleans up physical file in OPFS', async () => {
       const logic = usePrefabLogic()
       const { createPrefab } = usePrefabActions()
       const prefabStore = usePrefabStore()
@@ -156,7 +156,7 @@ describe('Pengujian Integrasi PrefabWorkspace', () => {
       expect(prefabFileHandle).toBeUndefined()
     })
 
-    it('[Bad Path] menangani percobaan operasi pada ID prefab yang tidak valid secara aman', async () => {
+    it('[Bad Path] safely handles operations on invalid prefab ID', async () => {
       const prefabStore = usePrefabStore()
       const initialCount = prefabStore.prefabs.length
 
@@ -166,8 +166,8 @@ describe('Pengujian Integrasi PrefabWorkspace', () => {
     })
   })
 
-  describe('Integrasi CRUD Folder Prefab Section', () => {
-    it('membuat folder baru pada section prefabs-world', async () => {
+  describe('Prefab Section Folder CRUD Integration', () => {
+    it('creates new folder in prefabs-world section', async () => {
       const folderStore = useFolderStore()
       const { createNewFolder } = useFolderActions()
 
@@ -180,7 +180,7 @@ describe('Pengujian Integrasi PrefabWorkspace', () => {
       expect(created.parentId).toBeNull()
     })
 
-    it('menghapus folder beserta referensinya di folderStore', async () => {
+    it('deletes folder along with references in folderStore', async () => {
       const folderStore = useFolderStore()
       const { createNewFolder, deleteFolder } = useFolderActions()
 
@@ -194,8 +194,8 @@ describe('Pengujian Integrasi PrefabWorkspace', () => {
     })
   })
 
-  describe('Integrasi Perpindahan Prefab & Navigasi Folder', () => {
-    it('memindahkan prefab ke dalam folder target dan menyaring visiblePrefabs', async () => {
+  describe('Prefab Movement & Folder Navigation Integration', () => {
+    it('moves prefab into target folder and filters visiblePrefabs', async () => {
       const folderStore = useFolderStore()
       const { createNewFolder } = useFolderActions()
       const { createPrefab } = usePrefabActions()
@@ -218,7 +218,7 @@ describe('Pengujian Integrasi PrefabWorkspace', () => {
       expect(logic.visiblePrefabs.value.some(p => p.id === prefab.id)).toBe(true)
     })
 
-    it('navigasi breadcrumb mengembalikan tatanan struktur ke folder root', async () => {
+    it('breadcrumb navigation resets structural hierarchy to root folder', async () => {
       const folderStore = useFolderStore()
       const { createNewFolder } = useFolderActions()
       const { createPrefab } = usePrefabActions()
@@ -241,8 +241,8 @@ describe('Pengujian Integrasi PrefabWorkspace', () => {
     })
   })
 
-  describe('Integrasi Fitur Clipboard & Shortcut Key Operations', () => {
-    it('memindahkan prefab menggunakan aksi Cut dan Paste', async () => {
+  describe('Clipboard & Shortcut Key Operations Feature Integration', () => {
+    it('moves prefab using Cut and Paste action', async () => {
       const folderStore = useFolderStore()
       const { createNewFolder } = useFolderActions()
       const { createPrefab } = usePrefabActions()
@@ -263,7 +263,7 @@ describe('Pengujian Integrasi PrefabWorkspace', () => {
       expect(logic.clipboard.value.action).toBeNull()
     })
 
-    it('menyalin prefab menggunakan aksi Copy dan Paste', async () => {
+    it('copies prefab using Copy and Paste action', async () => {
       const { createPrefab } = usePrefabActions()
       const prefabStore = usePrefabStore()
       const logic = usePrefabLogic()
@@ -278,8 +278,8 @@ describe('Pengujian Integrasi PrefabWorkspace', () => {
     })
   })
 
-  describe('Integrasi Context Menu & Operasi Scene Entity', () => {
-    it('menginstansiasi prefab ke dalam scene pada layer target', async () => {
+  describe('Context Menu & Scene Entity Operations Integration', () => {
+    it('instantiates prefab into scene on target layer', async () => {
       const { createPrefab, instantiatePrefab } = usePrefabActions()
       const sceneStore = useSceneStore()
 
@@ -294,7 +294,7 @@ describe('Pengujian Integrasi PrefabWorkspace', () => {
       expect(sceneStore.activeScene.entities.some(e => e.id === instantiatedEntity.id)).toBe(true)
     })
 
-    it('mengarahkan entitas terseleksi di scene untuk saling terhubung dengan prefab (Link to Selected)', async () => {
+    it('links selected entities in scene to prefab (Link to Selected)', async () => {
       const { createPrefab, linkPrefabToEntities } = usePrefabActions()
       const sceneStore = useSceneStore()
 
@@ -313,12 +313,12 @@ describe('Pengujian Integrasi PrefabWorkspace', () => {
       expect(linkedEntity.prefabId).toBe(prefab.id)
     })
 
-    it('menerapkan struktur entitas di scene kembali ke Master Prefab (Apply to Master)', async () => {
+    it('applies entity structure in scene back to Master Prefab (Apply to Master)', async () => {
       const { createPrefab, instantiatePrefab, applyToMasterPrefab } = usePrefabActions()
       const sceneStore = useSceneStore()
       const prefabStore = usePrefabStore()
 
-      // 1. Buat source entity yang sah menggunakan entitySchema
+      // 1. Create valid source entity using entitySchema
       const rawEntity = entitySchema({
         name: 'Upgradeable_Tower',
         type: 'entity',
@@ -326,24 +326,24 @@ describe('Pengujian Integrasi PrefabWorkspace', () => {
         y: 0
       })
 
-      // 2. Buat master prefab dari source entity
+      // 2. Create master prefab from source entity
       const prefab = await createPrefab('Upgradeable_Tower', null, 'world', rawEntity)
 
-      // 3. Instansiasi ke scene
+      // 3. Instantiate into scene
       const instance = instantiatePrefab(prefab.id, {})
 
-      // Ambil entitas hasil instansiasi di scene
+      // Get instantiated entity in scene
       const entityInScene = sceneStore.activeScene.entities.find(e => e.id === instance.id)
       expect(entityInScene).toBeDefined()
       expect(entityInScene.components?.Transform).toBeDefined()
 
-      // 4. Ubah posisi Transform pada entitas di scene
+      // 4. Modify Transform position on entity in scene
       entityInScene.components.Transform.x = 999
 
-      // 5. Terapkan perubahan ke Master Prefab
+      // 5. Apply changes to Master Prefab
       await applyToMasterPrefab(entityInScene.id)
 
-      // 6. Verifikasi Master Prefab di store
+      // 6. Verify Master Prefab in store
       const masterPrefab = prefabStore.getPrefabById(prefab.id)
       expect(masterPrefab).toBeDefined()
       expect(masterPrefab.data).toBeDefined()
@@ -353,8 +353,8 @@ describe('Pengujian Integrasi PrefabWorkspace', () => {
     })
   })
 
-  describe('Integrasi Pencarian & Penyaringan Tab UI/World', () => {
-    it('menyaring prefab berdasarkan tab aktif (world vs ui) dan query pencarian', async () => {
+  describe('Search & UI/World Tab Filtering Integration', () => {
+    it('filters prefabs based on active tab (world vs ui) and search query', async () => {
       const { createPrefab } = usePrefabActions()
       const logic = usePrefabLogic()
 
@@ -374,8 +374,8 @@ describe('Pengujian Integrasi PrefabWorkspace', () => {
     })
   })
 
-  describe('Integrasi Utilitas Logic & Interface State', () => {
-    it('mengubah viewMode antara grid dan list', () => {
+  describe('Utility Logic & Interface State Integration', () => {
+    it('toggles viewMode between grid and list', () => {
       const logic = usePrefabLogic()
 
       expect(logic.viewMode.value).toBe('grid')

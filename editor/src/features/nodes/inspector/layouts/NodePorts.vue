@@ -53,7 +53,7 @@
 
         <!-- Input Dynamic Controls -->
         <div v-if="isInputDynamic" class="mt-2">
-          <!-- Dropdown Tambah Input Property -->
+          <!-- Dynamic Input Property Dropdown -->
           <div v-if="activeDropdownTarget === 'input'" class="animate-in fade-in slide-in-from-top-1 bg-secondary/20 p-2 rounded border border-dashed border-border" data-testid="node-inspector-add-input-port-dropdown-container">
             <div class="text-[10px] text-muted-foreground mb-1.5 ml-1">Select Property:</div>
             <BaseSelect 
@@ -73,7 +73,7 @@
             </button>
           </div>
 
-          <!-- Tombol Pemicu Tambah Input Port -->
+          <!-- Add Input Port Button -->
           <button 
             v-else
             type="button"
@@ -140,7 +140,7 @@
         
         <!-- Output Dynamic Controls -->
         <div v-if="isOutputDynamic" class="mt-2">
-          <!-- Dropdown Tambah Output Property -->
+          <!-- Dynamic Output Property Dropdown -->
           <div v-if="activeDropdownTarget === 'output'" class="animate-in fade-in slide-in-from-top-1 bg-secondary/20 p-2 rounded border border-dashed border-border" data-testid="node-inspector-add-output-port-dropdown-container">
             <div class="text-[10px] text-muted-foreground mb-1.5 ml-1">Select Property:</div>
             <BaseSelect 
@@ -160,7 +160,7 @@
             </button>
           </div>
 
-          <!-- Tombol Pemicu Tambah Output Port -->
+          <!-- Add Output Port Button -->
           <button 
             v-else
             type="button"

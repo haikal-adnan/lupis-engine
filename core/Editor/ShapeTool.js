@@ -140,8 +140,6 @@ export default class ShapeTool {
     }
 
     _handleToolClick(entity, shapeComp, activeTool, localPos, hitId, editors) {
-        // Editor/ShapeTool.js (Di dalam method _handleToolClick)
-
         if (['select', 'move', 'delete', 'eraser'].includes(activeTool)) {
             if (hitId) {
                 if (activeTool === 'delete' || activeTool === 'eraser') {
@@ -155,7 +153,6 @@ export default class ShapeTool {
                     this._isDragging = true;
                     this._dragStartLocal = { ...localPos };
                     
-                    // FIX: Salin nilai x dan y sebagai angka primitif murni
                     this._dragStartPoints = editors.shapeSelectedPoints
                         .map(id => shapeComp.elements.find(el => el.id === id))
                         .filter(Boolean)

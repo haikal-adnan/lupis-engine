@@ -195,7 +195,7 @@ const handleWindowBlur = () => {
     }
 };
 
-// Fungsi Inisialisasi Canvas / Engine
+// Canvas / Engine initialization function
 const initializeCanvas = async () => {
     if (isInitializing || workspaceStore.isEngineReady) return;
 
@@ -204,12 +204,12 @@ const initializeCanvas = async () => {
     await nextTick();
 
     if (!gameCanvas.value) {
-        console.warn("[CanvasView] Canvas DOM ref belum siap, menunda inisialisasi.");
+        console.warn("[CanvasView] Canvas DOM ref not ready, postponing initialization.");
         isInitializing = false;
         return;
     }
 
-    // Pastikan ID Project diambil dari store / localStorage
+    // Ensure Project ID is retrieved from store / localStorage
     let currentProjectId = workspaceStore.activeProjectId;
 
     if (!currentProjectId) {

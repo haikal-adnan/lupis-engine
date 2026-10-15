@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { useProjectActions } from '@projects/projects.js' // Sesuaikan path berkas useProjectActions Anda
+import { useProjectActions } from '@projects/projects.js'
 
 /**
  * In-Memory OPFS Storage Simulator
- * Mensimulasikan struktur FileSystemDirectoryHandle & FileSystemFileHandle bawaan browser.
+ * Simulates browser built-in FileSystemDirectoryHandle & FileSystemFileHandle structures.
  */
 class MockDirectoryHandle {
   constructor(name = '') {
@@ -85,7 +85,7 @@ class MockFileHandle {
   }
 }
 
-describe('Integrasi useProjectActions dengan OPFS Storage', () => {
+describe('useProjectActions Integration with OPFS Storage', () => {
   let actions
   let rootDirectoryHandle
 
@@ -93,7 +93,7 @@ describe('Integrasi useProjectActions dengan OPFS Storage', () => {
     vi.clearAllMocks()
     rootDirectoryHandle = new MockDirectoryHandle('root')
 
-    // Stub navigator.storage agar menggunakan in-memory storage simulator
+    // Stub navigator.storage to use in-memory storage simulator
     Object.defineProperty(globalThis, 'navigator', {
       value: {
         storage: {
@@ -107,8 +107,8 @@ describe('Integrasi useProjectActions dengan OPFS Storage', () => {
     actions = useProjectActions()
   })
 
-  describe('Pemeriksaan Dukungan OPFS (_ensureOPFSSupport)', () => {
-    it('[Bad Path] melempar error ketika navigator.storage tidak tersedia di environment browser', async () => {
+  describe('OPFS Support Verification (_ensureOPFSSupport)', () => {
+    it('[Bad Path] throws an error when navigator.storage is not available in browser environment', async () => {
       // Arrange
       Object.defineProperty(globalThis, 'navigator', {
         value: {},
@@ -121,12 +121,12 @@ describe('Integrasi useProjectActions dengan OPFS Storage', () => {
     })
   })
 
-  describe('Pembuatan Proyek Baru (createProject)', () => {
-    it('membuat struktur folder proyek lengkap beserta file json default di OPFS', async () => {
+  describe('New Project Creation (createProject)', () => {
+    it('creates a complete project directory structure and default json files in OPFS', async () => {
       // Arrange
       const projectInput = {
-        projectName: 'Game RPG Baru',
-        description: 'Petualangan 2D Top-Down'
+        projectName: 'New RPG Game',
+        description: '2D Top-Down Adventure'
       }
 
       // Act
@@ -134,22 +134,22 @@ describe('Integrasi useProjectActions dengan OPFS Storage', () => {
 
       // Assert
       expect(createdProject.id).toBeDefined()
-      expect(createdProject.name).toBe('Game RPG Baru')
+      expect(createdProject.name).toBe('New RPG Game')
       expect(createdProject.status).toBe('DRAFT')
 
-      // Verifikasi struktur berkas di OPFS
+      // Verify directory structure in OPFS
       const appDir = await rootDirectoryHandle.getDirectoryHandle('lupis-engine')
       const projectsDir = await appDir.getDirectoryHandle('projects')
       const projectDir = await projectsDir.getDirectoryHandle(createdProject.id)
 
-      // Verifikasi file project.json
+      // Verify project.json file
       const projectFile = await projectDir.getFileHandle('project.json')
       const projectFileObj = await projectFile.getFile()
       const savedProjectData = JSON.parse(await projectFileObj.text())
 
-      expect(savedProjectData.name).toBe('Game RPG Baru')
+      expect(savedProjectData.name).toBe('New RPG Game')
 
-      // Verifikasi subfolder scenes & workspaces
+      // Verify scenes & workspaces subdirectories
       const scenesDir = await projectDir.getDirectoryHandle('scenes')
       const workspacesDir = await projectDir.getDirectoryHandle('workspaces')
 
@@ -160,7 +160,7 @@ describe('Integrasi useProjectActions dengan OPFS Storage', () => {
       expect(scenesMeta).toHaveLength(1)
       expect(scenesMeta[0].name).toBe('Main Scene')
 
-      // Verifikasi file detail scene utama
+      // Verify main scene detail file
       const defaultSceneId = scenesMeta[0].id
       const sceneDetailFile = await scenesDir.getFileHandle(`${defaultSceneId}.json`)
       const sceneDetailObj = await sceneDetailFile.getFile()
@@ -171,13 +171,13 @@ describe('Integrasi useProjectActions dengan OPFS Storage', () => {
     })
   })
 
-  describe('Pemuatan Daftar Proyek (getProjects)', () => {
-    it('mengambil semua proyek dari OPFS dan mengurutkannya berdasarkan tanggal updatedAt terbaru', async () => {
-      // Arrange: Buat dua proyek dengan tanggal berbeda
-      const p1 = await actions.createProject({ projectName: 'Proyek Lama' })
-      const p2 = await actions.createProject({ projectName: 'Proyek Baru' })
+  describe('Loading Project List (getProjects)', () => {
+    it('retrieves all projects from OPFS and sorts them by most recent updatedAt timestamp', async () => {
+      // Arrange: Create two projects with different timestamps
+      const p1 = await actions.createProject({ projectName: 'Old Project' })
+      const p2 = await actions.createProject({ projectName: 'New Project' })
 
-      // Edit updatedAt secara eksplisit di storage
+      // Explicitly edit updatedAt in storage
       const appDir = await rootDirectoryHandle.getDirectoryHandle('lupis-engine')
       const projectsDir = await appDir.getDirectoryHandle('projects')
 
@@ -202,20 +202,20 @@ describe('Integrasi useProjectActions dengan OPFS Storage', () => {
 
       // Assert
       expect(projects).toHaveLength(2)
-      expect(projects[0].name).toBe('Proyek Baru') // Paling baru di urutan pertama
-      expect(projects[1].name).toBe('Proyek Lama')
+      expect(projects[0].name).toBe('New Project') // Most recent first
+      expect(projects[1].name).toBe('Old Project')
     })
 
-    it('[Bad Path] melempar SyntaxError jika berkas project.json terkorupsi atau mengandung sintaks tidak valid', async () => {
+    it('[Bad Path] throws SyntaxError if project.json file is corrupted or contains invalid syntax', async () => {
       // Arrange
-      const created = await actions.createProject({ projectName: 'Proyek Corrupted' })
+      const created = await actions.createProject({ projectName: 'Corrupted Project' })
       const appDir = await rootDirectoryHandle.getDirectoryHandle('lupis-engine')
       const projectsDir = await appDir.getDirectoryHandle('projects')
       const projectDir = await projectsDir.getDirectoryHandle(created.id)
       
       const fileHandle = await projectDir.getFileHandle('project.json')
       const writable = await fileHandle.createWritable()
-      await writable.write('{ "name": "Corrupted Json", ') // JSON tidak lengkap/rusak
+      await writable.write('{ "name": "Corrupted Json", ') // Incomplete/corrupted JSON
       await writable.close()
 
       // Act & Assert
@@ -223,8 +223,8 @@ describe('Integrasi useProjectActions dengan OPFS Storage', () => {
     })
   })
 
-  describe('Pemuatan Detail Proyek berdasarkan ID (getProjectById)', () => {
-    it('membaca dan menggabungkan metadata beserta berkas detail dari folder scenes, prefabs, dan scripts', async () => {
+  describe('Loading Project Detail by ID (getProjectById)', () => {
+    it('reads and merges metadata and detail files from scenes, prefabs, and scripts directories', async () => {
       // Arrange
       const created = await actions.createProject({ projectName: 'Test Detail' })
 
@@ -241,14 +241,14 @@ describe('Integrasi useProjectActions dengan OPFS Storage', () => {
       expect(loaded.folders).toEqual([])
     })
 
-    it('[Bad Path] melempar error jika folder proyek tidak ditemukan di OPFS', async () => {
+    it('[Bad Path] throws an error if project directory is not found in OPFS', async () => {
       // Act & Assert
       await expect(actions.getProjectById('proj_non_existent')).rejects.toThrow(
         "Directory 'proj_non_existent' not found."
       )
     })
 
-    it('[Bad Path] melempar error jika berkas detail scene yang dicatat di workspace meta hilang dari folder scenes', async () => {
+    it('[Bad Path] throws an error if scene detail file recorded in workspace meta is missing from scenes directory', async () => {
       // Arrange
       const created = await actions.createProject({ projectName: 'Test Missing Scene File' })
       const appDir = await rootDirectoryHandle.getDirectoryHandle('lupis-engine')
@@ -256,13 +256,13 @@ describe('Integrasi useProjectActions dengan OPFS Storage', () => {
       const projectDir = await projectsDir.getDirectoryHandle(created.id)
       const workspacesDir = await projectDir.getDirectoryHandle('workspaces')
 
-      // Dapatkan ID scene default dari scenes.json
+      // Get default scene ID from scenes.json
       const scenesMetaFile = await workspacesDir.getFileHandle('scenes.json')
       const scenesMetaObj = await scenesMetaFile.getFile()
       const scenesMeta = JSON.parse(await scenesMetaObj.text())
       const sceneId = scenesMeta[0].id
 
-      // Hapus berkas detail scene dari folder scenes
+      // Remove scene detail file from scenes directory
       const scenesDir = await projectDir.getDirectoryHandle('scenes')
       await scenesDir.removeEntry(`${sceneId}.json`)
 
@@ -273,32 +273,32 @@ describe('Integrasi useProjectActions dengan OPFS Storage', () => {
     })
   })
 
-  describe('Pembaruan dan Sinkronisasi Proyek (updateProject & syncProject)', () => {
-    it('memperbarui metadata proyek dan mencatat timestamp updatedAt terbaru', async () => {
+  describe('Updating and Syncing Project (updateProject & syncProject)', () => {
+    it('updates project metadata and records newest updatedAt timestamp', async () => {
       // Arrange
-      const created = await actions.createProject({ projectName: 'Proyek Awal' })
+      const created = await actions.createProject({ projectName: 'Initial Project' })
 
       // Act
       const updated = await actions.updateProject(created.id, {
-        name: 'Proyek Direvisi'
+        name: 'Revised Project'
       })
 
       // Assert
-      expect(updated.name).toBe('Proyek Direvisi')
+      expect(updated.name).toBe('Revised Project')
 
-      // Verifikasi di storage
+      // Verify in storage
       const reloaded = await actions.getProjectById(created.id)
-      expect(reloaded.project.name).toBe('Proyek Direvisi')
+      expect(reloaded.project.name).toBe('Revised Project')
     })
 
-    it('[Bad Path] melempar error saat memperbarui proyek yang ID-nya tidak ada', async () => {
+    it('[Bad Path] throws an error when updating project whose ID does not exist', async () => {
       // Act & Assert
       await expect(
-        actions.updateProject('proj_invalid_id', { name: 'Gagal Update' })
+        actions.updateProject('proj_invalid_id', { name: 'Failed Update' })
       ).rejects.toThrow("Directory 'proj_invalid_id' not found.")
     })
 
-    it('menyimpan payload komprehensif berisi assets, scenes, prefabs, scripts, dan folders ke OPFS (syncProject)', async () => {
+    it('saves comprehensive payload containing assets, scenes, prefabs, scripts, and folders to OPFS (syncProject)', async () => {
       // Arrange
       const created = await actions.createProject({ projectName: 'Sync Test' })
       const projectId = created.id
@@ -324,7 +324,7 @@ describe('Integrasi useProjectActions dengan OPFS Storage', () => {
       // Assert
       expect(result.success).toBe(true)
 
-      // Verifikasi data yang tersimpan via getProjectById
+      // Verify stored data via getProjectById
       const reloaded = await actions.getProjectById(projectId)
       expect(reloaded.project.name).toBe('Sync Test Updated')
       expect(reloaded.assets).toEqual(syncPayload.assets)
@@ -335,13 +335,13 @@ describe('Integrasi useProjectActions dengan OPFS Storage', () => {
     })
   })
 
-  describe('Penghapusan Proyek (deleteProject)', () => {
-    it('menghapus seluruh direktori proyek secara rekursif dari OPFS', async () => {
+  describe('Deleting Project (deleteProject)', () => {
+    it('deletes entire project directory recursively from OPFS', async () => {
       // Arrange
-      const created = await actions.createProject({ projectName: 'Proyek Hapus' })
+      const created = await actions.createProject({ projectName: 'Delete Project' })
       const projectId = created.id
 
-      // Pastikan proyek tersimpan sebelum dihapus
+      // Verify project is saved before deletion
       const beforeDelete = await actions.getProjects()
       expect(beforeDelete.some((p) => p.id === projectId)).toBe(true)
 
@@ -354,7 +354,7 @@ describe('Integrasi useProjectActions dengan OPFS Storage', () => {
       expect(afterDelete.some((p) => p.id === projectId)).toBe(false)
     })
 
-    it('[Bad Path] melempar error ketika mencoba menghapus proyek yang tidak terdaftar/tidak ditemukan', async () => {
+    it('[Bad Path] throws an error when attempting to delete non-existent project', async () => {
       // Act & Assert
       await expect(actions.deleteProject('proj_non_existent')).rejects.toThrow(
         "Entry 'proj_non_existent' not found."

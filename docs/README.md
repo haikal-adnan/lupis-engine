@@ -13,6 +13,7 @@ Welcome to the official technical documentation for **Lupis Engine**, a modern w
 | [Core Engine API Reference](file:///D:/Project/Lupis%20Engine/docs/core-api.md) | Technical reference for `Game`, `World`, `Entity`, ECS components, physics, and renderers. |
 | [Visual Scripting & Blueprints](file:///D:/Project/Lupis%20Engine/docs/visual-scripting.md) | Node-graph architecture, data flow execution, custom nodes, and script contracts. |
 | [Visual Editor Guide](file:///D:/Project/Lupis%20Engine/docs/editor-guide.md) | Editor UI walkthrough, hierarchy, inspector, viewport tools, asset pipeline, and preview mode. |
+| [Schema & Contract Lock](file:///D:/Project/Lupis%20Engine/docs/schema-contract.md) | Single Source of Truth for schemas, binary formats, bridge protocols, and API contracts. |
 
 ---
 

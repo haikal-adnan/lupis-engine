@@ -1,7 +1,7 @@
-<!-- lokasi: NodeEdge.vue -->
+<!-- Location: NodeEdge.vue -->
 <template>
   <div v-if="selectedEdge" class="w-full space-y-3">
-    <!-- Info Port Koneksi -->
+    <!-- Connection Port Info -->
     <PropertySection title="Edge Modifier" :icon="GitCommit" data-testid="node-inspector-edge-section">
       <div class="px-2 py-1.5 bg-secondary/20 border border-border rounded text-[10px] space-y-1 font-mono" data-testid="node-inspector-edge-info">
         <div class="flex items-center justify-between text-muted-foreground">
@@ -12,19 +12,19 @@
         </div>
       </div>
 
-      <!-- Callout untuk Collection -->
+      <!-- Callout for Collection -->
       <div 
         v-if="['list', 'map'].includes(edgeDataType)" 
         class="p-2 bg-amber-500/10 border border-amber-500/30 rounded text-[11px] text-amber-500 leading-tight space-y-1"
         data-testid="node-inspector-edge-collection-callout"
       >
-        <p class="font-medium">Opsi Operasi Ditutup</p>
+        <p class="font-medium">Direct Operations Disabled</p>
         <p class="text-[10px] opacity-90">
-          Manipulasi data <strong>{{ edgeDataType.toUpperCase() }}</strong> dilakukan via node library khusus (misal: <em>List Get Item</em>, <em>Map Get Value</em>) agar eksekusi data lebih terstruktur.
+          Data manipulation for <strong>{{ edgeDataType.toUpperCase() }}</strong> is handled via dedicated library nodes (e.g. <em>List Get Item</em>, <em>Map Get Value</em>) for structured data flow.
         </p>
       </div>
 
-      <!-- Tipe Operasi -->
+      <!-- Operation Type -->
       <PropertyRow v-else label="Operation" data-testid="node-inspector-edge-operation-row">
         <BaseSelect
           :model-value="selectedEdge.modifier?.type || 'none'"

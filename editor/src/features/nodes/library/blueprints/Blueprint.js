@@ -227,12 +227,12 @@ return;`
     },
 
     // ------------------------------------------------------------------------
-    // TIPE C: SEQUENTIAL DYNAMIC NODE
+    // TYPE C: SEQUENTIAL DYNAMIC NODE
     // ------------------------------------------------------------------------
     {
       type: 'dynamicSequentialNode',
       label: 'Sequential Collection',
-      description: 'Menambah/mengurangi port berurutan otomatis (v0, v1, ...).',
+      description: 'Automatically adds/removes sequential ports (v0, v1, ...).',
       dynamicMode: 'sequential',
 
       defaultData: {
@@ -278,12 +278,12 @@ return;`
     },
 
     // ------------------------------------------------------------------------
-    // TIPE D: INPUT PROPERTY DYNAMIC NODE
+    // TYPE D: INPUT PROPERTY DYNAMIC NODE
     // ------------------------------------------------------------------------
     {
       type: 'dynamicSetPropertyNode',
       label: 'Set Entity Property',
-      description: 'Menambah port input secara dinamis berdasarkan opsi properti.',
+      description: 'Dynamically adds input ports based on property options.',
       dynamicMode: 'inputProperty',
 
       defaultData: {
@@ -325,14 +325,13 @@ return;`
     },
 
     // ------------------------------------------------------------------------
-    // TIPE E: OUTPUT PROPERTY DYNAMIC NODE
+    // TYPE E: OUTPUT PROPERTY DYNAMIC NODE
     // ------------------------------------------------------------------------
     {
       type: 'dynamicGetPropertyNode',
       label: 'Get Entity Property',
-      description: 'Menambah port output secara dinamis berdasarkan opsi properti.',
+      description: 'Dynamically adds output ports based on property options.',
       dynamicMode: 'outputProperty',
-
       defaultData: {
         settings: {
           headerTitle: 'Get Property',
@@ -367,12 +366,12 @@ return;`
     },
 
     // ------------------------------------------------------------------------
-    // TIPE F: PURE DATA NODE (TANPA PORT EKSEKUSI)
+    // TYPE F: PURE DATA NODE (WITHOUT EXECUTION PORT)
     // ------------------------------------------------------------------------
     {
       type: 'pureDataNode',
       label: 'Negate Number',
-      description: 'Node data murni tanpa port eksekusi, hasil dihitung saat dibaca.',
+      description: 'Pure data node without execution ports; result is evaluated on read.',
       dynamicMode: 'none',
 
       defaultData: {
@@ -414,12 +413,12 @@ return;`
     },
 
     // ------------------------------------------------------------------------
-    // TIPE G: BRANCH NODE (BANYAK PORT EKSEKUSI KELUAR)
+    // TYPE G: BRANCH NODE (MULTIPLE OUT EXECUTION PORTS)
     // ------------------------------------------------------------------------
     {
       type: 'branchExampleNode',
       label: 'Branch',
-      description: 'Memilih salah satu alur eksekusi berdasarkan kondisi boolean.',
+      description: 'Selects an execution flow based on a boolean condition.',
       dynamicMode: 'none',
 
       defaultData: {

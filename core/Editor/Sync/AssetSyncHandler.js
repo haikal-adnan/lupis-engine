@@ -12,7 +12,7 @@ export class AssetSyncHandler {
                 await this.ctx.assetLoader.loadAsset(this.ctx.world, [asset], this.ctx.game.baseURL);
                 this.ctx.bus.emit("engine:asset:loaded", asset.id);
             } catch (error) {
-                console.error(`[AssetSync] Gagal memuat asset ${asset.name}:`, error);
+                console.error(`[AssetSync] Failed to load asset ${asset.name}:`, error);
             }
         }
     }
@@ -95,7 +95,7 @@ export class AssetSyncHandler {
                 sceneLoader.loadScene(safeScene);
             }
         } catch (error) {
-            console.error("[AssetSync] Gagal melakukan onSceneReload:", error);
+            console.error("[AssetSync] Failed to execute onSceneReload:", error);
         } finally {
             this.ctx.isInternalUpdate = false;
         }

@@ -45,7 +45,7 @@
             :step="1" 
             class="font-mono" 
             :disabled="hasPaintedTiles"
-            :title="hasPaintedTiles ? 'Clear tilemap terlebih dahulu untuk mengubah ukuran tile' : 'Tile Width'" 
+            :title="hasPaintedTiles ? 'Clear tilemap first to change tile size' : 'Tile Width'" 
           />
           <BaseNumber 
             v-model="height" 
@@ -54,7 +54,7 @@
             :step="1" 
             class="font-mono" 
             :disabled="hasPaintedTiles"
-            :title="hasPaintedTiles ? 'Clear tilemap terlebih dahulu untuk mengubah ukuran tile' : 'Tile Height'" 
+            :title="hasPaintedTiles ? 'Clear tilemap first to change tile size' : 'Tile Height'" 
           />
         </div>
     </PropertyRow>
@@ -105,7 +105,7 @@ const hasPaintedTiles = computed(() => {
 const handleResetTilemap = async () => {
   const isConfirmed = await confirm({
     title: 'Clear Tilemap',
-    message: 'Apakah kamu yakin ingin menghapus semua tile dari tilemap ini?',
+    message: 'Are you sure you want to delete all tiles from this tilemap?',
     type: 'danger',
     confirmText: 'Clear'
   });

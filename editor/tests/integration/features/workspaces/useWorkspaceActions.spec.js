@@ -1,12 +1,12 @@
 import { setActivePinia, createPinia } from 'pinia'
 import { describe, beforeEach, afterEach, it, expect, vi } from 'vitest'
-import { useWorkspaceActions } from '@workspaces/workspaces.js' // Sesuaikan path impor
+import { useWorkspaceActions } from '@workspaces/workspaces.js'
 import { useSceneStore } from '@scenes/scenes.js'
 
-// 1. Deklarasi mock function di luar vi.mock
+// 1. Declare mock function outside vi.mock
 const mockConfirmFn = vi.fn()
 
-// 2. Mocking dependencies eksternal
+// 2. Mock external dependencies
 vi.mock('@composables/composables.js', () => ({
   useConfirm: () => ({
     confirm: mockConfirmFn
@@ -40,14 +40,14 @@ describe('Integration Test: useWorkspaceActions', () => {
   let sceneStore
 
   beforeEach(() => {
-    // Arrange: Inisialisasi Pinia & reset mock implementation
+    // Arrange: Initialize Pinia & reset mock implementation
     setActivePinia(createPinia())
     sceneStore = useSceneStore()
     
-    // Reset mock function sebelum setiap pengujian
+    // Reset mock function before each test
     mockConfirmFn.mockReset()
 
-    // Setup stub untuk Web API navigator.clipboard
+    // Setup stub for navigator.clipboard Web API
     Object.defineProperty(global.navigator, 'clipboard', {
       value: {
         writeText: vi.fn().mockResolvedValue(undefined)
@@ -56,7 +56,7 @@ describe('Integration Test: useWorkspaceActions', () => {
       configurable: true
     })
 
-    // Inisialisasi composable yang diuji setelah Pinia dan mock siap
+    // Initialize tested composable after Pinia and mocks are ready
     workspaceActions = useWorkspaceActions()
   })
 
@@ -64,8 +64,8 @@ describe('Integration Test: useWorkspaceActions', () => {
     vi.clearAllMocks()
   })
 
-  describe('Integrasi Penghapusan Entitas (handleDeleteEntity)', () => {
-    it('menghapus entitas dari sceneStore ketika pengguna mengonfirmasi dialog', async () => {
+  describe('Entity Deletion Integration (handleDeleteEntity)', () => {
+    it('deletes entity from sceneStore when user confirms dialog', async () => {
       // Arrange
       sceneStore.createDefaultScene()
       const entity = { id: 'ent-001', name: 'Player' }
@@ -93,7 +93,7 @@ describe('Integration Test: useWorkspaceActions', () => {
       expect(remainingEntity).toBeUndefined()
     })
 
-    it('membatalkan penghapusan entitas jika pengguna menolak dialog konfirmasi', async () => {
+    it('cancels entity deletion if user cancels confirmation dialog', async () => {
       // Arrange
       sceneStore.createDefaultScene()
       const entity = { id: 'ent-002', name: 'Enemy' }
@@ -115,7 +115,7 @@ describe('Integration Test: useWorkspaceActions', () => {
       expect(remainingEntity).toBeDefined()
     })
 
-    it('[Bad Path] mengabaikan proses penghapusan jika objek entitas bernilai null atau undefined', async () => {
+    it('[Bad Path] ignores deletion process if entity object is null or undefined', async () => {
       // Act
       await workspaceActions.handleDeleteEntity(null)
       await workspaceActions.handleDeleteEntity(undefined)
@@ -125,8 +125,8 @@ describe('Integration Test: useWorkspaceActions', () => {
     })
   })
 
-  describe('Integrasi Penyalinan ID ke Clipboard (handleCopyId)', () => {
-    it('berhasil menyalin ID entitas ke clipboard navigator', async () => {
+  describe('Copy ID to Clipboard Integration (handleCopyId)', () => {
+    it('successfully copies entity ID to navigator clipboard', async () => {
       // Arrange
       const targetId = 'entity-uuid-12345'
 
@@ -137,7 +137,7 @@ describe('Integration Test: useWorkspaceActions', () => {
       expect(navigator.clipboard.writeText).toHaveBeenCalledWith('entity-uuid-12345')
     })
 
-    it('[Bad Path] mengabaikan eksekusi jika ID bernilai empty string, null, atau undefined', async () => {
+    it('[Bad Path] ignores execution if ID is empty string, null, or undefined', async () => {
       // Act
       await workspaceActions.handleCopyId('')
       await workspaceActions.handleCopyId(null)
@@ -147,7 +147,7 @@ describe('Integration Test: useWorkspaceActions', () => {
       expect(navigator.clipboard.writeText).not.toHaveBeenCalled()
     })
 
-    it('[Bad Path] menangani kegagalan API navigator.clipboard secara aman tanpa melemparkan unhandled rejection', async () => {
+    it('[Bad Path] handles navigator.clipboard API failure safely without throwing unhandled rejection', async () => {
       // Arrange
       const spyConsoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
       vi.mocked(navigator.clipboard.writeText).mockRejectedValueOnce(new Error('Permission denied'))

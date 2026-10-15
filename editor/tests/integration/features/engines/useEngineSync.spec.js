@@ -1,11 +1,11 @@
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 
-// Impor composables yang diuji langsung dari file sumber
+// Import composables under test directly from source file
 import { useEngineSync } from '@engines/useEngineSync.js'
 import { useEditorToEngine, useEngineToEditor } from '@engines/engines.js'
 
-// Impor store Pinia terkait
+// Import related Pinia stores
 import { useProjectStore } from '@projects/projects.js'
 import { useSceneStore } from '@scenes/scenes.js'
 import { useAssetStore } from '@assets/assets.js'
@@ -13,10 +13,10 @@ import { useWorkspaceStore } from '@workspaces/workspaces.js'
 import { useScriptStore } from '@scripts/scripts.js'
 import { usePrefabStore } from '@prefabs/prefabs.js'
 
-// Helper mock OPFS
+// OPFS mock helper
 import { setupMockOPFS } from '@tests/tests.js'
 
-// Mock dependencies eksternal (Composables Engine Directional Bridge)
+// External dependencies mock (Composables Engine Directional Bridge)
 const mockOutgoingListen = vi.fn()
 const mockIncomingListen = vi.fn()
 
@@ -38,11 +38,11 @@ describe('Integration Test: useEngineSync', () => {
   let prefabStore
 
   beforeEach(() => {
-    // 1. Inisialisasi Pinia & Mock Environment
+    // 1. Initialize Pinia & Mock Environment
     setActivePinia(createPinia())
     setupMockOPFS()
 
-    // 2. Inisialisasi seluruh instance store
+    // 2. Initialize all store instances
     projectStore = useProjectStore()
     sceneStore = useSceneStore()
     assetStore = useAssetStore()
@@ -56,15 +56,15 @@ describe('Integration Test: useEngineSync', () => {
     vi.clearAllMocks()
   })
 
-  describe('Inisialisasi Sinkronisasi Engine', () => {
-    it('mengarahkan seluruh instance store ke listener outgoing dan incoming saat initSync dipanggil', () => {
+  describe('Engine Sync Initialization', () => {
+    it('routes all store instances to outgoing and incoming listeners when initSync is called', () => {
       // Arrange
       const { initSync } = useEngineSync()
 
       // Act
       initSync()
 
-      // Assert: Pastikan bridge outbound mengikat seluruh store yang dibutuhkan
+      // Assert: Ensure outbound bridge binds all required stores
       expect(useEditorToEngine).toHaveBeenCalledWith(
         projectStore,
         sceneStore,
@@ -74,15 +74,15 @@ describe('Integration Test: useEngineSync', () => {
         prefabStore
       )
 
-      // Assert: Pastikan bridge inbound mengikat sceneStore
+      // Assert: Ensure inbound bridge binds sceneStore
       expect(useEngineToEditor).toHaveBeenCalledWith(sceneStore)
 
-      // Assert: Listener dua arah berhasil diaktifkan
+      // Assert: Bi-directional listeners enabled successfully
       expect(mockOutgoingListen).toHaveBeenCalledOnce()
       expect(mockIncomingListen).toHaveBeenCalledOnce()
     })
 
-    it('mengembalikan method initSync sebagai antarmuka composables yang valid', () => {
+    it('returns initSync method as valid composable interface', () => {
       // Arrange & Act
       const sync = useEngineSync()
 
@@ -92,30 +92,30 @@ describe('Integration Test: useEngineSync', () => {
     })
   })
 
-  describe('Penanganan Kasus Batas dan Error [Bad Path]', () => {
-    it('[Bad Path] menangani kegagalan eksekusi listener outgoing tanpa memutus aliran aplikasi', () => {
+  describe('Boundary Cases and Error Handling [Bad Path]', () => {
+    it('[Bad Path] handles outgoing listener execution failure gracefully without breaking application flow', () => {
       // Arrange
       mockOutgoingListen.mockImplementationOnce(() => {
-        throw new Error('Gagal menginisialisasi Outgoing Bridge')
+        throw new Error('Failed to initialize Outgoing Bridge')
       })
 
       const { initSync } = useEngineSync()
 
       // Act & Assert
-      expect(() => initSync()).toThrow('Gagal menginisialisasi Outgoing Bridge')
+      expect(() => initSync()).toThrow('Failed to initialize Outgoing Bridge')
       expect(mockIncomingListen).not.toHaveBeenCalled()
     })
 
-    it('[Bad Path] menangani kegagalan listener incoming saat outgoing bridge sudah terhubung', () => {
+    it('[Bad Path] handles incoming listener failure when outgoing bridge is already connected', () => {
       // Arrange
       mockIncomingListen.mockImplementationOnce(() => {
-        throw new Error('Gagal menginisialisasi Incoming Bridge')
+        throw new Error('Failed to initialize Incoming Bridge')
       })
 
       const { initSync } = useEngineSync()
 
       // Act & Assert
-      expect(() => initSync()).toThrow('Gagal menginisialisasi Incoming Bridge')
+      expect(() => initSync()).toThrow('Failed to initialize Incoming Bridge')
       expect(mockOutgoingListen).toHaveBeenCalledOnce()
     })
   })

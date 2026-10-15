@@ -25,7 +25,7 @@ describe('useInspectorTransform Integration', () => {
   let isEditingMasterPrefabRef
 
   beforeEach(() => {
-    // 1. Inisialisasi Mock OPFS
+    // 1. Initialize Mock OPFS
     setupMockOPFS()
 
     // 2. Set Active Pinia & Instantiate Stores
@@ -35,7 +35,7 @@ describe('useInspectorTransform Integration', () => {
     workspaceStore = useWorkspaceStore()
     projectStore = useProjectStore()
 
-    // 3. Set data project default
+    // 3. Set default project data
     projectStore.project = projectSchema({ id: 'test_project_1', name: 'Test Project' })
 
     selectedEntityRef = ref(null)

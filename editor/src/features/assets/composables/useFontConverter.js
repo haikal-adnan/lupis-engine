@@ -58,7 +58,7 @@ export function useFontConverter() {
       }
 
       if (!fntFile || pngFiles.length === 0) {
-        throw new Error('Hasil ekstraksi ZIP tidak lengkap (fnt/png tidak ditemukan).');
+        throw new Error('Incomplete ZIP extraction results (fnt/png not found).');
       }
 
       console.log('[FontConverter Success]:', {
@@ -76,7 +76,7 @@ export function useFontConverter() {
       console.error('[FontConverter Error]:', error);
       showPop({
         title: 'Font Conversion Failed',
-        message: error.message || 'Gagal mengonversi file font ke BMFont.',
+        message: error.message || 'Failed to convert font file to BMFont.',
         type: 'error',
       });
       return null;

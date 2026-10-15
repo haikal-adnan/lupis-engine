@@ -9,7 +9,7 @@ import {
   setupMockSceneEnvironment 
 } from '@tests/tests.js'
 
-// Mock dependency eksternal di luar batas sistem yang diuji
+// Mock external dependencies outside the tested system boundaries
 vi.mock('@composables/composables.js', () => ({
   useClipboard: () => ({
     copy: vi.fn(),
@@ -58,7 +58,7 @@ vi.mock('@historys/historys.js', () => ({
   })
 }))
 
-describe('Integrasi Canvas Menu', () => {
+describe('Canvas Menu Integration', () => {
   let workspaceStore
   let sceneStore
   let mockCanvasHandlers
@@ -85,8 +85,8 @@ describe('Integrasi Canvas Menu', () => {
     vi.restoreAllMocks()
   })
 
-  describe('Integrasi useCanvasMenu dengan Scene dan Workspace Store', () => {
-    it('menampilkan opsi entitas ketika ada entitas yang dipilih', () => {
+  describe('useCanvasMenu Integration with Scene and Workspace Store', () => {
+    it('displays entity options when an entity is selected', () => {
       // Arrange
       const entity = createMockEntity({ id: 'ent_1', name: 'Hero' })
       setupMockSceneEnvironment({ entities: [entity] })
@@ -112,7 +112,7 @@ describe('Integrasi Canvas Menu', () => {
       expect(labels).toContain('Delete')
     })
 
-    it('nonaktifkan aksi Use as Prefab ketika entitas merupakan turunan dari Prefab', () => {
+    it('disables Use as Prefab action when entity is a descendant of a Prefab', () => {
       // Arrange
       const prefabParent = createMockEntity({ id: 'prefab_root', prefabId: 'prefab_123' })
       const childEntity = createMockEntity({ id: 'child_1', parentId: 'prefab_root' })
@@ -131,7 +131,7 @@ describe('Integrasi Canvas Menu', () => {
       expect(prefabItem.disabled).toBe(true)
     })
 
-    it('menampilkan menu pemuatan layer bertipe world saat di tab scene tanpa memilih entitas', () => {
+    it('displays world layer creation menu when in scene tab without entity selected', () => {
       // Arrange
       const worldLayer = createMockLayer({ id: 'l_world', name: 'Background World' })
       setupMockSceneEnvironment({ layersWorld: [worldLayer] })
@@ -152,7 +152,7 @@ describe('Integrasi Canvas Menu', () => {
       expect(entitySubTypes).toEqual(['Empty Entity', 'Sprite', 'Shape', 'Text', 'Tilemap'])
     })
 
-    it('menampilkan menu pemuatan layer bertipe ui saat berada di tab ui', () => {
+    it('displays UI layer creation menu when in UI tab', () => {
       // Arrange
       const uiLayer = createMockLayer({ id: 'l_ui', name: 'HUD Layer' })
       setupMockSceneEnvironment({ layersUI: [uiLayer] })
@@ -171,19 +171,19 @@ describe('Integrasi Canvas Menu', () => {
       expect(entitySubTypes).toEqual(['UI Shape', 'UI Text', 'UI Image'])
     })
 
-    it('mengaktifkan tombol Paste Here hanya jika workspaceStore memiliki data clipboard', () => {
+    it('enables Paste Here button only when workspaceStore has clipboard data', () => {
       // Arrange
       setupMockSceneEnvironment()
       const { contextMenu, openMenu } = useCanvasMenu(mockCanvasHandlers)
 
-      // Act 1: Tanpa clipboard
+      // Act 1: Without clipboard
       workspaceStore.clearClipboard()
       openMenu(100, 100, 0, 0, false)
 
       let pasteItem = contextMenu.value.items.find(i => i.label === 'Paste Here')
       expect(pasteItem.disabled).toBe(true)
 
-      // Act 2: Dengan clipboard
+      // Act 2: With clipboard
       workspaceStore.setClipboard('entity', { id: 'copied_ent' }, 'copy')
       openMenu(100, 100, 0, 0, false)
 
@@ -191,7 +191,7 @@ describe('Integrasi Canvas Menu', () => {
       expect(pasteItem.disabled).toBe(false)
     })
 
-    it('memanggil handler createEntityAtPosition dengan parameter posisi yang sesuai', () => {
+    it('calls createEntityAtPosition handler with expected position parameters', () => {
       // Arrange
       const worldLayer = createMockLayer({ id: 'l_world_target', name: 'Main Layer' })
       setupMockSceneEnvironment({ layersWorld: [worldLayer] })
@@ -210,7 +210,7 @@ describe('Integrasi Canvas Menu', () => {
       expect(mockCanvasHandlers.createEntityAtPosition).toHaveBeenCalledWith('sprite', 'l_world_target', 120, 250)
     })
 
-    it('mengubah state contextMenu.visible menjadi false saat closeMenu dipanggil', () => {
+    it('sets contextMenu.visible to false when closeMenu is called', () => {
       // Arrange
       setupMockSceneEnvironment()
       const { contextMenu, openMenu, closeMenu } = useCanvasMenu(mockCanvasHandlers)
@@ -226,15 +226,15 @@ describe('Integrasi Canvas Menu', () => {
     })
   })
 
-  describe('Pengujian Skenario Buruk [Bad Path]', () => {
-    it('[Bad Path] menangani kondisi saat scene aktif tidak ditemukan atau bernilai null', () => {
+  describe('Edge Cases and Error Handling [Bad Path]', () => {
+    it('[Bad Path] handles scenario when active scene is not found or null', () => {
       // Arrange
       sceneStore.scenes = []
       sceneStore.activeSceneId = null
 
       const { contextMenu, openMenu } = useCanvasMenu(mockCanvasHandlers)
 
-      // Act & Assert (Memastikan tidak melontarkan error crash)
+      // Act & Assert (Ensure it does not throw or crash)
       expect(() => {
         openMenu(100, 100, 0, 0, true)
       }).not.toThrow()
@@ -243,9 +243,9 @@ describe('Integrasi Canvas Menu', () => {
       expect(prefabItem.disabled).toBe(true)
     })
 
-    it('[Bad Path] mengelola item pembuatan entitas default jika tidak ada layer yang cocok pada section', () => {
+    it('[Bad Path] manages default entity creation items when no matching layers exist in section', () => {
       // Arrange
-      // Mengosongkan layerWorld
+      // Clear layerWorld
       setupMockSceneEnvironment({ layersWorld: [] })
       workspaceStore.openTab({ id: 'scene', name: 'Scene Editor', type: 'scene' })
 
@@ -258,11 +258,11 @@ describe('Integrasi Canvas Menu', () => {
       const createItem = contextMenu.value.items.find(i => i.label === 'Create Entity')
       expect(createItem).toBeDefined()
 
-      // Mengembalikan aksi pembuatan entitas langsung tanpa pembungkus layer
+      // Returns direct entity creation actions without layer wrapper
       const labels = createItem.children.map(c => c.label)
       expect(labels).toEqual(['Empty Entity', 'Sprite', 'Shape', 'Text', 'Tilemap'])
 
-      // Memanggil fungsi aksi layer null
+      // Call action with null layer
       createItem.children[0].action()
       expect(mockCanvasHandlers.createEntityAtPosition).toHaveBeenCalledWith('empty', null, 50, 50)
     })

@@ -621,11 +621,11 @@ const saveRawJson = () => {
     const target = currentLevel.value.targetRef;
 
     if (Array.isArray(target)) {
-      if (!Array.isArray(parsed)) throw new Error("Format JSON harus berupa Array.");
+      if (!Array.isArray(parsed)) throw new Error("JSON format must be an Array.");
       target.length = 0;
       parsed.forEach(item => target.push(item));
     } else if (typeof target === 'object') {
-      if (typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error("Format JSON harus berupa Object Map.");
+      if (typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error("JSON format must be an Object Map.");
       Object.keys(target).forEach(k => delete target[k]);
       Object.assign(target, parsed);
     }

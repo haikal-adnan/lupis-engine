@@ -24,7 +24,7 @@ export default class TilemapTool {
         const activeId = editors.activeTabId;
         const entity = TilemapMath.findEntity(this.world, activeId);
 
-        // Klik kanan untuk membatalkan seleksi / pemindahan
+        // Right click to cancel selection / move
         if (this.input?.mouse?.isDown(2)) {
             this._resetState(editors);
             return;
@@ -40,7 +40,7 @@ export default class TilemapTool {
         const tm = entity.components.Tilemap;
         const gridPos = TilemapMath.getMouseGridPosition(this.game, entity, tm);
 
-        // Delete / Backspace untuk menghapus area marquee
+        // Delete / Backspace to clear marquee area
         if (this.input?.keyboard?.isPressed('Delete') || this.input?.keyboard?.isPressed('Backspace')) {
             if (editors.marqueeSelection) {
                 const ms = editors.marqueeSelection;
@@ -56,7 +56,7 @@ export default class TilemapTool {
             this.input?.keyboard?.ctrl
         );
 
-        // --- BILA SEDANG MEMBAWA DRAG STATE ATAU TOOL SELECT/CTRL DITEKAN ---
+        // --- IF CARRYING DRAG STATE OR SELECT TOOL / CTRL PRESSED ---
         if (editors.dragState || activeTool === 'select' || (isCtrlDown && activeTool !== 'eraser')) {
             if (gridPos) {
                 this.selection.handleSelectionAndMove(this.input, entity, tm, gridPos, editors, isCtrlDown);
@@ -72,7 +72,7 @@ export default class TilemapTool {
 
         if (editors.dragState) this._resetState(editors);
 
-        // Clear marquee jika melukis biasa tanpa Ctrl
+        // Clear marquee when painting normally without Ctrl
         if (this.input?.mouse?.isPressed?.(0) && !isCtrlDown) {
             editors.marqueeSelection = null;
         }

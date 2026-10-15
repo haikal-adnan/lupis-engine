@@ -196,7 +196,7 @@ export function useAssetMenu(selectedIdRef, triggerUploadCb, logicActions) {
 
     if (hasAddedAppliers) items.push({ separator: true })
 
-    // Urutan diperbarui: Cut & Copy ditempatkan sebelum Copy ID
+    // Updated order: Cut & Copy placed before Copy ID
     items.push(
       { label: 'Cut', icon: Scissors, shortcut: 'Ctrl+X', action: () => handleCutCopy('cut', targetItem) },
       { label: 'Copy', icon: Copy, shortcut: 'Ctrl+C', action: () => handleCutCopy('copy', targetItem) },

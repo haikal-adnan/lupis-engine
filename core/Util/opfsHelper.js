@@ -22,13 +22,13 @@ export class OPFSHelper {
       const projectDir = await projectsDir.getDirectoryHandle(String(projectId), { create: true });
       return await projectDir.getDirectoryHandle(ASSETS_DIR, { create: true });
     } catch (error) {
-      console.error(`[OPFSHelper] Gagal mengakses direktori assets project [${projectId}]:`, error);
+      console.error(`[OPFSHelper] Failed to access assets directory for project [${projectId}]:`, error);
       throw error;
     }
   }
 
   /**
-   * Membaca file dari OPFS dan mengembalikan File object.
+   * Reads a file from OPFS and returns a File object.
    * @param {string|number} projectId 
    * @param {string} fileName 
    * @returns {Promise<File>}
@@ -39,13 +39,13 @@ export class OPFSHelper {
       const fileHandle = await assetsDir.getFileHandle(fileName);
       return await fileHandle.getFile();
     } catch (error) {
-      console.error(`[OPFSHelper] Gagal mengambil file "${fileName}" (Project: ${projectId}):`, error);
+      console.error(`[OPFSHelper] Failed to retrieve file "${fileName}" (Project: ${projectId}):`, error);
       throw error;
     }
   }
 
   /**
-   * Menulis/Menyimpan Blob atau File ke dalam OPFS.
+   * Writes/Saves Blob or File into OPFS.
    * @param {string|number} projectId 
    * @param {string} fileName 
    * @param {Blob|File|ArrayBuffer|string} content 
@@ -60,13 +60,13 @@ export class OPFSHelper {
       await writable.close();
       return true;
     } catch (error) {
-      console.error(`[OPFSHelper] Gagal menyimpan file "${fileName}" (Project: ${projectId}):`, error);
+      console.error(`[OPFSHelper] Failed to save file "${fileName}" (Project: ${projectId}):`, error);
       throw error;
     }
   }
 
   /**
-   * Menghapus file dari OPFS.
+   * Deletes a file from OPFS.
    * @param {string|number} projectId 
    * @param {string} fileName 
    */
@@ -76,14 +76,14 @@ export class OPFSHelper {
       await assetsDir.removeEntry(fileName);
       return true;
     } catch (error) {
-      console.warn(`[OPFSHelper] Gagal menghapus file "${fileName}" (Project: ${projectId}):`, error);
+      console.warn(`[OPFSHelper] Failed to delete file "${fileName}" (Project: ${projectId}):`, error);
       return false;
     }
   }
 
   /**
-   * Membaca file sebagai Blob URL (digunakan untuk Image & Font Texture Blob URL).
-   * Note: Jangan lupa jalankan URL.revokeObjectURL(url) setelah selesai digunakan!
+   * Reads file as Blob URL (used for Image & Font Texture Blob URL).
+   * Note: Remember to call URL.revokeObjectURL(url) when finished!
    * @param {string|number} projectId 
    * @param {string} fileName 
    * @returns {Promise<string>}
@@ -94,7 +94,7 @@ export class OPFSHelper {
   }
 
   /**
-   * Membaca file sebagai ArrayBuffer (digunakan untuk decodeAudioData Web Audio API).
+   * Reads file as ArrayBuffer (used for decodeAudioData Web Audio API).
    * @param {string|number} projectId 
    * @param {string} fileName 
    * @returns {Promise<ArrayBuffer>}
@@ -105,7 +105,7 @@ export class OPFSHelper {
   }
 
   /**
-   * Membaca file sebagai teks (digunakan untuk file `.fnt` BMFont/XML).
+   * Reads file as text (used for `.fnt` BMFont/XML).
    * @param {string|number} projectId 
    * @param {string} fileName 
    * @returns {Promise<string>}
@@ -116,7 +116,7 @@ export class OPFSHelper {
   }
 
   /**
-   * Memberikan daftar nama semua file yang ada di folder assets project.
+   * Returns list of all file names in project assets folder.
    * @param {string|number} projectId 
    * @returns {Promise<string[]>}
    */
@@ -131,14 +131,14 @@ export class OPFSHelper {
       }
       return files;
     } catch (error) {
-      console.error(`[OPFSHelper] Gagal mengambil daftar file (Project: ${projectId}):`, error);
+      console.error(`[OPFSHelper] Failed to list files (Project: ${projectId}):`, error);
       return [];
     }
   }
 
   /**
-   * Utility parser untuk mengurai skema URI opfs://
-   * Format yang didukung: "opfs://projects/123/asset_key.png" atau "opfs://123/asset_key.png"
+   * Utility parser to resolve opfs:// URI schemes
+   * Supported formats: "opfs://projects/123/asset_key.png" or "opfs://123/asset_key.png"
    * @param {string} opfsUrl 
    * @returns {{ projectId: string, fileName: string } | null}
    */

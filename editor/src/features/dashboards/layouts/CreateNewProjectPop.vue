@@ -17,14 +17,14 @@
         <div 
           role="dialog"
           aria-modal="true"
-          aria-label="Buat Proyek Baru"
+          aria-label="New Project"
           data-testid="create-project-modal"
           class="w-full max-w-sm bg-background border border-border rounded-lg shadow-xl overflow-hidden transform transition-all"
           :class="{ 'scale-100': isOpen, 'scale-95': !isOpen }"
         >
           <div class="px-4 py-3 border-b border-border bg-muted/30">
             <h3 class="text-sm font-semibold text-foreground" data-testid="modal-title">
-              Buat Proyek Baru
+              New Project
             </h3>
           </div>
 
@@ -33,8 +33,8 @@
               <BaseInput 
                 ref="inputRef"
                 v-model="projectName" 
-                label="Nama Proyek"
-                placeholder="Game Keren Saya"
+                label="Project Name"
+                placeholder="My Awesome Game"
                 data-testid="project-name-input"
                 @keydown.enter="handleConfirm"
               />
@@ -43,8 +43,8 @@
             <div class="space-y-1.5">
               <BaseInput 
                 v-model="projectDescription" 
-                label="Deskripsi"
-                placeholder="Deskripsi singkat tentang game Anda..."
+                label="Description"
+                placeholder="Brief description of your game..."
                 data-testid="project-desc-input"
                 @keydown.enter="handleConfirm"
               />
@@ -58,7 +58,7 @@
               @click="handleCancel"
               class="px-3 py-1.5 text-xs font-medium text-foreground bg-transparent hover:bg-muted border border-border rounded transition-colors"
             >
-              Batal
+              Cancel
             </button>
             
             <button 
@@ -68,7 +68,7 @@
               :disabled="!projectName.trim()"
               class="px-3 py-1.5 text-xs font-medium text-white bg-emerald-500 hover:bg-emerald-600 rounded transition-all duration-200 shadow-sm disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-emerald-500"
             >
-              Buat
+              Create
             </button>
           </div>
         </div>

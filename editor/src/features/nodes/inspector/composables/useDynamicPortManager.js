@@ -6,11 +6,11 @@ import { useNodeBlueprint } from '@nodes/nodes.js';
 import { PROTECTED_PORTS } from '../../contract/portIds.js';
 import { keyToPortId } from '../../contract/keyPortNames.js';
 
-// Singleton state agar dropdown target tersinkronisasi di seluruh komponen
+// Singleton state to keep target dropdown synchronized across components
 const activeDropdownTarget = ref(null);
 
 /**
- * Helper: Parser Multi-Key untuk Event On Key
+ * Helper: Multi-key parser for On Key events
  */
 function parseKeysString(rawKeys) {
   if (!rawKeys || !rawKeys.trim()) return [];
@@ -281,7 +281,7 @@ export function useDynamicPortManager() {
     if (PROTECTED_PORTS.includes(portId)) {
       showPop({
         title: 'Protected Port',
-        message: `Port "${portId}" adalah bagian inti node dan tidak bisa dihapus.`,
+        message: `Port "${portId}" is a core node port and cannot be removed.`,
         type: 'warning',
         duration: 3000
       });

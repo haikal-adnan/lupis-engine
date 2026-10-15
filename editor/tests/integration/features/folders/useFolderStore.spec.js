@@ -7,10 +7,10 @@ import { setupMockOPFS, createMockEmptyProject } from '@tests/tests.js'
 
 vi.mock('@composables/composables.js', () => ({
   usePopAlert: () => ({ showPop: vi.fn() }),
-  usePrompt: () => ({ prompt: vi.fn().mockResolvedValue('Folder Baru') })
+  usePrompt: () => ({ prompt: vi.fn().mockResolvedValue('New Folder') })
 }))
 
-describe('Integrasi Folder Store dan Folder Actions', () => {
+describe('Integration Test: Folder Store and Folder Actions', () => {
   let mockStoreRef
 
   beforeEach(async () => {
@@ -19,7 +19,7 @@ describe('Integrasi Folder Store dan Folder Actions', () => {
 
     const project = await createMockEmptyProject({
       projectName: 'Folder Integration Project',
-      description: 'Project pengujian integrasi folder',
+      description: 'Folder integration test project',
       type: 'empty'
     })
 
@@ -27,8 +27,8 @@ describe('Integrasi Folder Store dan Folder Actions', () => {
     workspaceStore.activeProjectId = project.id
   })
 
-  describe('Pembuatan dan Sinkronisasi Folder', () => {
-    it('membuat folder baru dan menyinkronkan data ke OPFS', async () => {
+  describe('Folder Creation and Synchronization', () => {
+    it('creates new folder and synchronizes data to OPFS', async () => {
       const folderStore = useFolderStore()
       const folderActions = useFolderActions()
       const workspaceStore = useWorkspaceStore()
@@ -40,10 +40,10 @@ describe('Integrasi Folder Store dan Folder Actions', () => {
       })
 
       expect(folderStore.folders).toHaveLength(1)
-      expect(folderStore.folders[0].name).toBe('Folder Baru')
+      expect(folderStore.folders[0].name).toBe('New Folder')
       expect(folderStore.folders[0].section).toBe('assets')
 
-      // FIX: Sertakan 'lupis-engine' pada path OPFS mock
+      // FIX: Include 'lupis-engine' in mock OPFS path
       const opfsFilePath = `root/lupis-engine/projects/${workspaceStore.activeProjectId}/workspaces/folders.json`
       const fileHandle = mockStoreRef.store.get(opfsFilePath)
       
@@ -54,10 +54,10 @@ describe('Integrasi Folder Store dan Folder Actions', () => {
 
       expect(content).toHaveLength(1)
       expect(content[0].id).toBe(newFolder.id)
-      expect(content[0].name).toBe('Folder Baru')
+      expect(content[0].name).toBe('New Folder')
     })
 
-    it('membuat folder anak dan menghasilkan path string hierarki dengan benar', async () => {
+    it('creates child folder and generates hierarchical path string correctly', async () => {
       const folderStore = useFolderStore()
 
       await folderStore.createFolder({
@@ -80,8 +80,8 @@ describe('Integrasi Folder Store dan Folder Actions', () => {
     })
   })
 
-  describe('Pengubahan dan Pemindahan Folder', () => {
-    it('mengubah nama folder di state dan memperbarui file sinkronisasi OPFS', async () => {
+  describe('Folder Modification and Movement', () => {
+    it('renames folder in state and updates OPFS sync file', async () => {
       const folderStore = useFolderStore()
       const folderActions = useFolderActions()
       const workspaceStore = useWorkspaceStore()
@@ -97,7 +97,7 @@ describe('Integrasi Folder Store dan Folder Actions', () => {
       const updatedFolder = folderStore.getFolderById(folder.id)
       expect(updatedFolder.name).toBe('Renamed Folder')
 
-      // FIX: Sertakan 'lupis-engine' pada path OPFS mock
+      // FIX: Include 'lupis-engine' in mock OPFS path
       const opfsFilePath = `root/lupis-engine/projects/${workspaceStore.activeProjectId}/workspaces/folders.json`
       const fileHandle = mockStoreRef.store.get(opfsFilePath)
       
@@ -109,7 +109,7 @@ describe('Integrasi Folder Store dan Folder Actions', () => {
       expect(content[0].name).toBe('Renamed Folder')
     })
 
-    it('memindahkan folder ke parent baru dan menyinkronkan perubahan', async () => {
+    it('moves folder to new parent and synchronizes changes', async () => {
       const folderStore = useFolderStore()
 
       await folderStore.createFolder({ id: 'f1', name: 'Folder 1', section: 'assets', parentId: null })
@@ -123,8 +123,8 @@ describe('Integrasi Folder Store dan Folder Actions', () => {
     })
   })
 
-  describe('Penghapusan Folder secara Cascading', () => {
-    it('menghapus folder utama beserta seluruh sub-folder di dalamnya', async () => {
+  describe('Cascading Folder Deletion', () => {
+    it('deletes main folder along with all sub-folders inside it', async () => {
       const folderStore = useFolderStore()
       const folderActions = useFolderActions()
 
@@ -141,8 +141,8 @@ describe('Integrasi Folder Store dan Folder Actions', () => {
     })
   })
 
-  describe('Pengujian Skenario Gagal [Bad Path]', () => {
-    it('[Bad Path] gagal menyinkronkan ke OPFS ketika navigator.storage tidak tersedia', async () => {
+  describe('Failure Scenario Testing [Bad Path]', () => {
+    it('[Bad Path] fails to sync to OPFS when navigator.storage is unavailable', async () => {
       const folderStore = useFolderStore()
 
       const originalStorage = global.navigator.storage
@@ -153,7 +153,7 @@ describe('Integrasi Folder Store dan Folder Actions', () => {
       global.navigator.storage = originalStorage
     })
 
-    it('[Bad Path] mengembalikan null secara anggun saat mencoba menduplikasi folder yang tidak terdaftar', async () => {
+    it('[Bad Path] gracefully returns null when attempting to duplicate unregistered folder', async () => {
       const folderActions = useFolderActions()
       const result = await folderActions.duplicateFolder('non_existent_id')
       

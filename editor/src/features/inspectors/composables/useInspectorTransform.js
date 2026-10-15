@@ -71,7 +71,7 @@ export function useInspectorTransform(selectedEntity, isEditingMasterPrefab) {
   const fitToChildren = () => {
     const ent = getEntity();
     const entities = sceneStore.activeScene?.entities;
-    if (!ent || !entities) return; // FIX: Early return jika entitas atau activeScene.entities null
+    if (!ent || !entities) return; // Early return if entity or activeScene.entities is null
     
     const parentId = ent.id;
     
