@@ -1,0 +1,35 @@
+name: Docker Build Check
+
+on:
+  push:
+    paths:
+      - 'start.yml'
+      - '**/Dockerfile'
+      - '.github/workflows/docker-build.yml'
+    branches: [ main, master, develop ]
+  pull_request:
+    paths:
+      - 'start.yml'
+      - '**/Dockerfile'
+      - '.github/workflows/docker-build.yml'
+    branches: [ main, master, develop ]
+
+jobs:
+  validate-docker:
+    name: Validate Docker Compose & Images
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Validate Docker Compose Configuration
+        run: docker compose -f start.yml config
+
+      - name: Build Core Image
+        run: docker build -t lupis-core:ci -f core/Dockerfile core/
+
+      - name: Build Service Image
+        run: docker build -t lupis-service:ci -f service/Dockerfile service/
+
+      - name: Build Editor Image
+        run: docker build -t lupis-editor:ci -f editor/Dockerfile .

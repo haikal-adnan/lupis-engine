@@ -1,0 +1,59 @@
+name: '💡 Feature Request'
+description: Suggest an idea or enhancement for Lupis Engine
+title: '[Feature]: '
+labels: ['enhancement', 'feature-request']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for suggesting a feature! We welcome ideas to make Lupis Engine more powerful, extensible, and user-friendly.
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Pre-flight Checklist
+      description: Please verify before submitting:
+      options:
+        - label: I have searched existing issues and feature requests to confirm this has not already been proposed.
+          required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Relevant Subsystem
+      description: Which part of the engine would this feature enhance?
+      options:
+        - Core Engine (WebGL / ECS / Audio / Physics)
+        - Visual Editor (UI / Canvas Viewport / Panels)
+        - Visual Scripting (Blueprints / Nodes)
+        - Exporter & Build Tools (Electron / Web Bundle)
+        - Documentation & Examples
+        - Developer Tooling & Testing
+      default: 0
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or Motivation
+      description: Is your feature request related to a problem or limitation?
+      placeholder: I'm always frustrated when...
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution / Feature Design
+      description: Describe what you would like to happen and how you envision this feature working.
+      placeholder: Provide a clear description of the feature, proposed API or UI interface...
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Any alternative solutions, workarounds, or libraries you considered.
+      placeholder: I considered using...
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Add any mockups, references (e.g. from Godot, Unity, Phaser), or code snippets.

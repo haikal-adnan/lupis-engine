@@ -1,0 +1,95 @@
+name: '🐛 Bug Report'
+description: File a bug report to help improve Lupis Engine
+title: '[Bug]: '
+labels: ['bug', 'needs-triage']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting an issue! Please provide as much detail as possible so we can diagnose and resolve the issue quickly.
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Pre-flight Checklist
+      description: Please check if you have performed the following steps:
+      options:
+        - label: I have searched existing issues and confirmed this is not a duplicate.
+          required: true
+        - label: I am using the latest version or commit of Lupis Engine.
+          required: true
+  - type: dropdown
+    id: subsystem
+    attributes:
+      label: Affected Subsystem
+      description: Which part of the Lupis Engine ecosystem is affected?
+      options:
+        - Core Engine (WebGL / Runtime / Systems / ECS)
+        - Visual Editor (Vue 3 UI / Viewport / Tools)
+        - Visual Scripting (Blueprint / NodeGraph / ContextSystem)
+        - Backend Service (Font MSDF / Archiver / Export)
+        - Testing Suite (Playwright E2E / Vitest)
+        - Documentation / Examples
+      default: 0
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: A clear and concise description of what the bug is.
+      placeholder: Describe what happened...
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: Step-by-step instructions to reproduce the behavior.
+      placeholder: |
+        1. Open Editor at http://localhost:6500
+        2. Create a new Entity with Physics component
+        3. Set gravityScale to 1.5
+        4. Click 'Play Preview'
+        5. Observe unexpected error or behavior
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What did you expect to happen?
+      placeholder: The entity should fall smoothly and collide with the floor collider.
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: What actually occurred?
+      placeholder: The entity passes through the collider and an error is logged in the console.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment Info
+      description: Your system and environment details.
+      value: |
+        - OS: [e.g. Windows 11 / Ubuntu 22.04 / macOS Sonoma]
+        - Browser: [e.g. Chrome 124, Firefox 125, Edge]
+        - Node.js Version: [e.g. 20.19.0, 22.12.0]
+        - Graphics GPU / WebGL: [e.g. NVIDIA RTX 3060, Intel Iris Xe]
+        - Deployment: [e.g. Docker Compose / Local npm dev]
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Console Logs / Error Stack Trace
+      description: Paste any browser console logs or terminal output here.
+      render: shell
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots or Videos
+      description: Drag and drop screenshots or screen recordings if applicable.
