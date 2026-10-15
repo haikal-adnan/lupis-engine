@@ -22,7 +22,7 @@
             <div class="w-2 h-2 rounded-full shrink-0" :style="{ backgroundColor: getPortColor(port) }"></div>
             
             <input 
-              :value="port.label"
+              :value="port.label || port.id"
               @change="updatePortLabel(port.id, 'input', $event.target.value)"
               placeholder="Input"
               maxlength="20"
@@ -109,7 +109,7 @@
             <div class="w-2 h-2 rounded-full shrink-0" :style="{ backgroundColor: getPortColor(port) }"></div>
             
             <input 
-              :value="port.label"
+              :value="port.label || port.id"
               @change="updatePortLabel(port.id, 'output', $event.target.value)"
               placeholder="Output"
               maxlength="20"
@@ -206,7 +206,7 @@ const isOutputDynamic = computed(() => {
 });
 
 function isRemovablePort(portId) {
-  const protectedPorts = ['exec_in', 'exec_out', 'in_target', 'target_in', 'sk_main', 'ptr_click_main'];
+  const protectedPorts = ['execIn', 'execOut', 'targetEntity', 'targetLayer', 'onClick'];
   return !protectedPorts.includes(portId);
 }
 

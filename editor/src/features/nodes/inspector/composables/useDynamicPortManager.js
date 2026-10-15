@@ -1,17 +1,13 @@
-// lokasi: src/editor/nodes/composables/useDynamicPortManager.js
-
 import { ref } from 'vue';
 import { useScriptStore } from '@scripts/scripts.js';
 import { useScriptHistory } from '@historys/historys.js';
 import { usePopAlert, usePrompt } from '@composables/composables.js';
 import { useNodeBlueprint } from '@nodes/nodes.js';
+import { PROTECTED_PORTS } from '../../contract/portIds.js';
+import { keyToPortId } from '../../contract/keyPortNames.js';
 
 // Singleton state agar dropdown target tersinkronisasi di seluruh komponen
 const activeDropdownTarget = ref(null);
-
-const PROTECTED_PORTS = [
-  'exec_in', 'exec_out', 'in_target', 'target_in', 'sk_main', 'ptr_click_main'
-];
 
 /**
  * Helper: Parser Multi-Key untuk Event On Key
@@ -49,90 +45,107 @@ export function useDynamicPortManager() {
   // =========================================================================
   // 1. REGISTRY: Custom Value Change Handlers (Inspector Input Sync)
   // =========================================================================
-  const valueChangeHandlers = {
-    event_on_key: (node, key, value, disconnectEdges) => {
-      if (key === 'keys' || key === 'key') {
-        const parsedKeys = parseKeysString(value);
-        const currentOutputs = node.outputs || [];
+  const onKeyHandler = (node, key, value, disconnectEdges) => {
+    if (key === 'keys' || key === 'key') {
+      const parsedKeys = parseKeysString(value);
+      const currentOutputs = node.outputs || [];
+      const seenIds = new Set();
 
-        const newOutputs = parsedKeys.map((keyLabel, idx) => {
-          const existingPort = currentOutputs[idx];
-          return {
-            id: existingPort ? existingPort.id : `out_${Date.now()}_${idx}`,
-            label: keyLabel,
-            dataType: 'execution',
-            color: '#FFFFFF'
-          };
-        });
-
-        if (currentOutputs.length > newOutputs.length) {
-          const removedPorts = currentOutputs.slice(newOutputs.length);
-          removedPorts.forEach(port => disconnectEdges(port.id));
+      const newOutputs = [];
+      parsedKeys.forEach((keyToken) => {
+        let canonicalId = keyToPortId(keyToken);
+        if (seenIds.has(canonicalId)) {
+          let suffix = 1;
+          while (seenIds.has(`${canonicalId}${suffix}`)) {
+            suffix++;
+          }
+          canonicalId = `${canonicalId}${suffix}`;
         }
+        seenIds.add(canonicalId);
 
-        scriptStore.updateNodeInActive(node.id, { outputs: newOutputs });
-      }
-    },
+        newOutputs.push({
+          id: canonicalId,
+          dataType: 'execution',
+          color: '#FFFFFF'
+        });
+      });
 
-    event_advanced_key: (node, key, value, disconnectEdges) => {
-      valueChangeHandlers.event_on_key(node, key, value, disconnectEdges);
+      // Disconnect edges for removed or altered ports
+      const newIdSet = new Set(newOutputs.map(p => p.id));
+      currentOutputs.forEach(port => {
+        if (!newIdSet.has(port.id)) {
+          disconnectEdges(port.id);
+        }
+      });
+
+      scriptStore.updateNodeInActive(node.id, { outputs: newOutputs });
     }
+  };
+
+  const valueChangeHandlers = {
+    eventOnKey: onKeyHandler,
+    eventAdvancedKey: onKeyHandler
   };
 
   // =========================================================================
   // 2. REGISTRY: Custom Add Port Handlers
   // =========================================================================
-  const addPortHandlers = {
-    compare_switch: async (node, { prompt, scriptHistory }) => {
-      const res = await prompt({
-        title: 'Add Case',
-        message: 'Enter value to compare (string/number):',
-        defaultValue: ''
-      });
-      if (res === null || res.trim() === '') return;
+  const switchCaseHandler = async (node, { prompt, scriptHistory }) => {
+    const res = await prompt({
+      title: 'Add Case',
+      message: 'Enter value to compare (string/number):',
+      defaultValue: ''
+    });
+    if (res === null || res.trim() === '') return;
 
-      const newPort = {
-        id: `case_${res}`,
-        label: `Case ${res}`,
-        dataType: 'execution',
-        color: '#FFFFFF'
-      };
-      scriptStore.addNodePort(node.id, 'output', newPort);
-      scriptHistory.recordPortChange(node.id, 'ADD', newPort, 'output', []);
-    }
+    const caseCount = (node.outputs || []).filter(p => p.id && p.id.startsWith('onCase')).length;
+    const newPort = {
+      id: `onCase${caseCount}`,
+      dataType: 'execution',
+      color: '#FFFFFF'
+    };
+    scriptStore.addNodePort(node.id, 'output', newPort);
+    scriptHistory.recordPortChange(node.id, 'ADD', newPort, 'output', []);
+  };
+
+  const addPortHandlers = {
+    logicSwitch: switchCaseHandler
   };
 
   // =========================================================================
   // 3. REGISTRY: Default Port Dynamic Resolver (Sequential)
   // =========================================================================
   function getDynamicPortDefaults(nodeType, nextIndex, bpPorts = []) {
-    if (nodeType === 'event_advanced_key' || nodeType === 'event_on_key') {
-      return { id: `key_${nextIndex}`, label: `Key ${nextIndex + 1}`, dataType: 'execution', color: '#FFFFFF' };
+    if (['eventOnKey', 'eventAdvancedKey'].includes(nodeType)) {
+      return { id: `onKey${nextIndex}`, dataType: 'execution', color: '#FFFFFF' };
     }
 
-    if (nodeType.startsWith('math_')) {
-      return { id: `v${nextIndex}`, label: `Val ${nextIndex + 1}`, dataType: 'number', color: '#64B5F6' };
+    if (nodeType.startsWith('math')) {
+      return { id: `v${nextIndex}`, dataType: 'number', color: '#64B5F6' };
     }
 
-    if (nodeType === 'string_join') {
-      return { id: `str_${nextIndex}`, label: `Str ${nextIndex + 1}`, dataType: 'string', color: '#F48FB1' };
+    if (['stringJoin', 'stringFormat'].includes(nodeType)) {
+      return { id: `v${nextIndex}`, dataType: 'string', color: '#F48FB1' };
     }
 
-    if (nodeType === 'logic_and' || nodeType === 'logic_or') {
-      return { id: `in_${nextIndex}`, label: `In ${nextIndex + 1}`, dataType: 'boolean', color: '#E57373' };
+    if (['logicAnd', 'logicOr'].includes(nodeType)) {
+      return { id: `v${nextIndex}`, dataType: 'boolean', color: '#E57373' };
+    }
+
+    if (['logicFlowMerge'].includes(nodeType)) {
+      return { id: `v${nextIndex}`, dataType: 'execution', color: '#FFFFFF' };
     }
 
     if (bpPorts.length > 0) {
       const lastBpPort = bpPorts[bpPorts.length - 1];
       return {
         id: `v${nextIndex}`,
-        label: `Val ${nextIndex + 1}`,
         dataType: lastBpPort.dataType || lastBpPort.type || 'any',
         color: lastBpPort.color || '#B0BEC5'
       };
     }
 
-    return { id: `v${nextIndex}`, label: `Val ${nextIndex + 1}`, dataType: 'any', color: '#B0BEC5' };
+    return { id: `v${nextIndex}`, dataType: 'any', color: '#B0BEC5' };
   }
 
   // =========================================================================
@@ -153,7 +166,7 @@ export function useDynamicPortManager() {
     const existingPorts = [...(node.inputs || []), ...(node.outputs || [])];
 
     return options
-      .filter(opt => !existingPorts.some(p => p.id === opt.value || p.label === opt.label))
+      .filter(opt => !existingPorts.some(p => p.id === opt.value))
       .map(opt => ({
         label: opt.label || opt.value,
         value: opt.value,
@@ -167,7 +180,7 @@ export function useDynamicPortManager() {
     const ports = type === 'input' ? (node.inputs || []) : (node.outputs || []);
 
     let nextIndex = 0;
-    while (ports.some(p => p.id === `v${nextIndex}` || p.label === `Val ${nextIndex + 1}`)) {
+    while (ports.some(p => p.id === `v${nextIndex}`)) {
       nextIndex++;
     }
 
@@ -179,7 +192,6 @@ export function useDynamicPortManager() {
 
     return {
       id: defaults.id || `v${nextIndex}`,
-      label: defaults.label || `Val ${nextIndex + 1}`,
       dataType: defaults.dataType || 'number',
       color: defaults.color || '#64B5F6'
     };
@@ -221,7 +233,6 @@ export function useDynamicPortManager() {
       if (selected) {
         const newPort = {
           id: selected.value,
-          label: selected.label,
           dataType: selected.type || 'number',
           color: selected.color || '#64B5F6'
         };
@@ -241,7 +252,7 @@ export function useDynamicPortManager() {
       return;
     }
 
-    // B. Custom Node Handlers (cth: compare_switch)
+    // B. Custom Node Handlers (e.g.: logicSwitch)
     const customAddHandler = addPortHandlers[node.type];
     if (customAddHandler) {
       await customAddHandler(node, { prompt, scriptHistory });
@@ -278,7 +289,7 @@ export function useDynamicPortManager() {
     }
 
     const portList = type === 'input' ? node.inputs : node.outputs;
-    const target = portList.find(p => p.id === portId || p.label === portId);
+    const target = portList.find(p => p.id === portId);
     const targetId = target ? target.id : portId;
 
     const connectedEdges = scriptStore.activeScript.edges.filter(e =>

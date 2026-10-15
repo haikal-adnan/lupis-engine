@@ -7,7 +7,7 @@ export const BlueprintLayer = {
   icon: Layers,
   items: [
     {
-      type: 'get_layer',
+      type: 'getLayer',
       label: 'Get Layer Info',
       description: 'Get layer info like ID, Name, Visible, Locked, Z-Index, Opacity',
       dynamicMode: 'outputProperty',
@@ -18,12 +18,12 @@ export const BlueprintLayer = {
           category: 'Basic Layer'
         },
         inputs: [
-          { id: 'target_in', label: 'Layer Target', dataType: 'string', color: '#F48FB1', defaultValue: 'self' }
+          { id: 'targetLayer', dataType: 'string', color: '#F48FB1', defaultValue: 'self' }
         ],
         outputs: [],
         data: {
           values: {
-            target_in: 'self'
+            targetLayer: 'self'
           },
           propertyOptions: [
             { value: 'layerId', label: 'Layer ID', type: 'string', color: '#F48FB1' },
@@ -35,62 +35,21 @@ export const BlueprintLayer = {
             { value: 'opacity', label: 'Opacity (%)', type: 'number', color: '#64B5F6' }
           ],
           code: 
-`const targetId = inputs['Layer Target'] ?? inputs['target_in'] ?? 'self';
-let layer = null;
+`const layer = context.assert.exists(context.layer.get(inputs.targetLayer));
 
-if (context.layer && typeof context.layer.get === 'function') {
-  try {
-    layer = context.layer.get(targetId);
-  } catch (e) {
-    layer = null;
-  }
-}
-
-if (!layer && context.game?.world?.allLayers) {
-  const allLayers = context.game.world.allLayers;
-  if (!targetId || targetId === 'self') {
-    const ownerLayerId = context.owner?.layerId;
-    layer = allLayers.find(l => l.id === ownerLayerId || l.scriptId === ownerLayerId) || allLayers[0] || null;
-  } else {
-    const search = String(targetId).trim().toLowerCase();
-    layer = allLayers.find(l => 
-      l.id === targetId || 
-      l.scriptId === targetId || 
-      (l.name && l.name.toLowerCase() === search)
-    ) || null;
-  }
-}
-
-if (layer) {
-  const layerIdVal = layer.scriptId || layer.id || 'Unknown_ID';
-  const nameVal = layer.name || 'Unknown';
-  const visibleVal = Boolean(layer.visible);
-  const activeVal = Boolean(layer.active);
-  const lockedVal = Boolean(layer.locked);
-  const zIndexVal = Number(layer.zIndex ?? 0);
-  const opacityVal = Math.round((layer.opacity ?? 1.0) * 100);
-
-  outputs['Layer ID'] = layerIdVal;
-  outputs['layerId'] = layerIdVal;
-  outputs['Name'] = nameVal;
-  outputs['name'] = nameVal;
-  outputs['Visible'] = visibleVal;
-  outputs['visible'] = visibleVal;
-  outputs['Active'] = activeVal;
-  outputs['active'] = activeVal;
-  outputs['Locked'] = lockedVal;
-  outputs['locked'] = lockedVal;
-  outputs['Z-Index'] = zIndexVal;
-  outputs['zIndex'] = zIndexVal;
-  outputs['Opacity (%)'] = opacityVal;
-  outputs['opacity'] = opacityVal;
-}
+outputs.layerId = layer.scriptId;
+outputs.name = layer.name;
+outputs.visible = layer.visible;
+outputs.active = layer.active;
+outputs.locked = layer.locked;
+outputs.zIndex = layer.zIndex;
+outputs.opacity = Math.round(layer.opacity * 100);
 return;`
         }
       }
     },
     {
-      type: 'set_layer',
+      type: 'setLayer',
       label: 'Set Layer Info',
       description: 'Set layer info like Name, Visible, Locked, Z-Index, Opacity',
       dynamicMode: 'inputProperty',
@@ -101,15 +60,15 @@ return;`
           category: 'Basic Layer'
         },
         inputs: [
-          { id: 'exec_in', label: 'In', dataType: 'execution', color: '#FFFFFF' },
-          { id: 'target_in', label: 'Layer Target', dataType: 'string', color: '#F48FB1', defaultValue: 'self' }
+          { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'targetLayer', dataType: 'string', color: '#F48FB1', defaultValue: 'self' }
         ],
         outputs: [
-          { id: 'exec_out', label: 'Out', dataType: 'execution', color: '#FFFFFF' }
+          { id: 'execOut', dataType: 'execution', color: '#FFFFFF' }
         ],
         data: {
           values: {
-            target_in: 'self'
+            targetLayer: 'self'
           },
           propertyOptions: [
             { value: 'name', label: 'Name', type: 'string', color: '#F48FB1' },
@@ -120,62 +79,19 @@ return;`
             { value: 'opacity', label: 'Opacity (%)', type: 'number', color: '#64B5F6' }
           ],
           code: 
-`const targetId = inputs['Layer Target'] ?? inputs['target_in'] ?? 'self';
-let layer = null;
+`const layer = context.assert.exists(context.layer.get(inputs.targetLayer));
 
-if (context.layer && typeof context.layer.get === 'function') {
-  try {
-    layer = context.layer.get(targetId);
-  } catch (e) {
-    layer = null;
+const propKeys = ['name', 'visible', 'active', 'locked', 'zIndex'];
+for (const key of propKeys) {
+  if (key in inputs) {
+    layer[key] = inputs[key];
   }
 }
-
-if (!layer && context.game?.world?.allLayers) {
-  const allLayers = context.game.world.allLayers;
-  if (!targetId || targetId === 'self') {
-    const ownerLayerId = context.owner?.layerId;
-    layer = allLayers.find(l => l.id === ownerLayerId || l.scriptId === ownerLayerId) || allLayers[0] || null;
-  } else {
-    const search = String(targetId).trim().toLowerCase();
-    layer = allLayers.find(l => 
-      l.id === targetId || 
-      l.scriptId === targetId || 
-      (l.name && l.name.toLowerCase() === search)
-    ) || null;
-  }
+if ('opacity' in inputs) {
+  layer.opacity = Math.max(0, Math.min(100, inputs.opacity)) / 100;
 }
 
-if (layer) {
-  const newName = inputs['Name'] ?? inputs['name'];
-  const newVisible = inputs['Visible'] ?? inputs['visible'];
-  const newActive = inputs['Active'] ?? inputs['active'];
-  const newLocked = inputs['Locked'] ?? inputs['locked'];
-  const newZIndex = inputs['Z-Index'] ?? inputs['zIndex'];
-  const newOpacity = inputs['Opacity (%)'] ?? inputs['opacity'];
-
-  if (newName !== undefined && newName !== null) {
-    layer.name = String(newName);
-  }
-  if (newVisible !== undefined && newVisible !== null) {
-    layer.visible = Boolean(newVisible);
-  }
-  if (newActive !== undefined && newActive !== null) {
-    layer.active = Boolean(newActive);
-  }
-  if (newLocked !== undefined && newLocked !== null) {
-    layer.locked = Boolean(newLocked);
-  }
-  if (newZIndex !== undefined && newZIndex !== null) {
-    layer.zIndex = Number(newZIndex);
-  }
-  if (newOpacity !== undefined && newOpacity !== null) {
-    layer.opacity = Math.max(0, Math.min(100, Number(newOpacity))) / 100;
-  }
-}
-
-outputs['Out'] = true;
-outputs['exec_out'] = true;
+outputs.execOut = true;
 return;`
         }
       }

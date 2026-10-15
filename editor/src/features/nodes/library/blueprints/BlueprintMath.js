@@ -1,10 +1,5 @@
 import { Calculator } from 'lucide-vue-next';
 
-/**
- * ============================================================================
- * BLUEPRINT: MATH
- * ============================================================================
- */
 export const BlueprintMath = {
   id: 'math',
   label: 'Math',
@@ -12,7 +7,7 @@ export const BlueprintMath = {
   icon: Calculator,
   items: [
     { 
-      type: 'math_add', 
+      type: 'mathAdd', 
       label: 'Add (+)', 
       description: 'Add numbers together (Val 1 + Val 2 + ...)', 
       dynamicMode: 'sequential', 
@@ -23,25 +18,24 @@ export const BlueprintMath = {
           category: 'Math' 
         },
         inputs: [
-          { id: 'v0', label: 'Val 1', dataType: 'number', color: '#64B5F6' }, 
-          { id: 'v1', label: 'Val 2', dataType: 'number', color: '#64B5F6' }  
+          { id: 'v0', dataType: 'number', color: '#64B5F6' }, 
+          { id: 'v1', dataType: 'number', color: '#64B5F6' }  
         ],
         outputs: [
-          { id: 'res', label: 'Result', dataType: 'number', color: '#64B5F6' }
+          { id: 'result', dataType: 'number', color: '#64B5F6' }
         ],
         data: {
           values: { v0: 0, v1: 0 },
           code: 
-`const numbers = Object.values(inputs).map(v => Number(v) || 0);
+`const numbers = Object.values(inputs);
 const sum = numbers.reduce((acc, curr) => acc + curr, 0);
-outputs['Result'] = sum;
-outputs['res'] = sum;
+outputs.result = sum;
 return;`
         }
       } 
     },
     { 
-      type: 'math_subtract', 
+      type: 'mathSubtract', 
       label: 'Subtract (-)', 
       description: 'Subtract numbers (Val 1 - Val 2 - ...)', 
       dynamicMode: 'sequential', 
@@ -52,25 +46,24 @@ return;`
           category: 'Math' 
         },
         inputs: [
-          { id: 'v0', label: 'Val 1', dataType: 'number', color: '#64B5F6' }, 
-          { id: 'v1', label: 'Val 2', dataType: 'number', color: '#64B5F6' }  
+          { id: 'v0', dataType: 'number', color: '#64B5F6' }, 
+          { id: 'v1', dataType: 'number', color: '#64B5F6' }  
         ],
         outputs: [
-          { id: 'res', label: 'Result', dataType: 'number', color: '#64B5F6' }
+          { id: 'result', dataType: 'number', color: '#64B5F6' }
         ],
         data: {
           values: { v0: 0, v1: 0 },
           code: 
-`const numbers = Object.values(inputs).map(v => Number(v) || 0);
+`const numbers = Object.values(inputs);
 const diff = numbers.reduce((acc, curr, idx) => idx === 0 ? curr : acc - curr, 0);
-outputs['Result'] = diff;
-outputs['res'] = diff;
+outputs.result = diff;
 return;`
         }
       } 
     },
     { 
-      type: 'math_multiply', 
+      type: 'mathMultiply', 
       label: 'Multiply (*)', 
       description: 'Multiply numbers together (Val 1 * Val 2 * ...)', 
       dynamicMode: 'sequential', 
@@ -81,25 +74,24 @@ return;`
           category: 'Math' 
         },
         inputs: [
-          { id: 'v0', label: 'Val 1', dataType: 'number', color: '#64B5F6' }, 
-          { id: 'v1', label: 'Val 2', dataType: 'number', color: '#64B5F6' }  
+          { id: 'v0', dataType: 'number', color: '#64B5F6' }, 
+          { id: 'v1', dataType: 'number', color: '#64B5F6' }  
         ],
         outputs: [
-          { id: 'res', label: 'Result', dataType: 'number', color: '#64B5F6' }
+          { id: 'result', dataType: 'number', color: '#64B5F6' }
         ],
         data: {
           values: { v0: 1, v1: 1 },
           code: 
-`const numbers = Object.values(inputs).map(v => Number(v) || 1);
+`const numbers = Object.values(inputs);
 const product = numbers.reduce((acc, curr) => acc * curr, 1);
-outputs['Result'] = product;
-outputs['res'] = product;
+outputs.result = product;
 return;`
         }
       } 
     },
     { 
-      type: 'math_divide', 
+      type: 'mathDivide', 
       label: 'Divide (/)', 
       description: 'Divide numbers (Val 1 / Val 2 / ...)', 
       dynamicMode: 'sequential', 
@@ -110,28 +102,27 @@ return;`
           category: 'Math' 
         },
         inputs: [
-          { id: 'v0', label: 'Val 1', dataType: 'number', color: '#64B5F6' }, 
-          { id: 'v1', label: 'Val 2', dataType: 'number', color: '#64B5F6' }  
+          { id: 'v0', dataType: 'number', color: '#64B5F6' }, 
+          { id: 'v1', dataType: 'number', color: '#64B5F6' }  
         ],
         outputs: [
-          { id: 'res', label: 'Result', dataType: 'number', color: '#64B5F6' }
+          { id: 'result', dataType: 'number', color: '#64B5F6' }
         ],
         data: {
           values: { v0: 0, v1: 1 },
           code: 
-`const numbers = Object.values(inputs).map(v => Number(v) || 0);
+`const numbers = Object.values(inputs);
 const quotient = numbers.reduce((acc, curr, idx) => {
   if (idx === 0) return curr;
   return curr !== 0 ? acc / curr : 0;
 }, 0);
-outputs['Result'] = quotient;
-outputs['res'] = quotient;
+outputs.result = quotient;
 return;`
         }
       } 
     },
     { 
-      type: 'math_negate', 
+      type: 'mathNegate', 
       label: 'Negate', 
       description: 'Invert (-A)', 
       dynamicMode: 'none', 
@@ -142,24 +133,23 @@ return;`
           category: 'Math' 
         },
         inputs: [
-          { id: 'a', label: 'A', dataType: 'number', color: '#64B5F6' }
+          { id: 'a', dataType: 'number', color: '#64B5F6', defaultValue: 0 }
         ],
         outputs: [
-          { id: 'res', label: 'Result', dataType: 'number', color: '#64B5F6' }
+          { id: 'result', dataType: 'number', color: '#64B5F6' }
         ],
         data: {
           values: { a: 0 },
           code: 
-`const val = Number(inputs['A'] ?? inputs['a'] ?? 0);
+`const val = inputs.a;
 const inverted = -val;
-outputs['Result'] = inverted;
-outputs['res'] = inverted;
+outputs.result = inverted;
 return;`
         }
       } 
     },
     { 
-      type: 'math_round', 
+      type: 'mathRound', 
       label: 'Rounding (Floor/Ceil)', 
       description: 'Round, floor, or ceil a number', 
       dynamicMode: 'none', 
@@ -170,29 +160,29 @@ return;`
           category: 'Math' 
         },
         inputs: [
-          { id: 'val', label: 'Value', dataType: 'number', color: '#64B5F6' }
+          { id: 'value', dataType: 'number', color: '#64B5F6', defaultValue: 0 }
         ],
         outputs: [
-          { id: 'res', label: 'Result', dataType: 'number', color: '#64B5F6' }
+          { id: 'result', dataType: 'number', color: '#64B5F6' }
         ],
         data: {
+          values: { value: 0 },
           method: 'floor',
           code: 
-`const val = Number(inputs['Value'] ?? inputs['val'] ?? 0);
-const method = node.data?.method || 'floor';
+`const val = inputs.value;
+const method = node.data.method;
 const result = typeof Math[method] === 'function' ? Math[method](val) : Math.floor(val);
 
-outputs['Result'] = result;
-outputs['res'] = result;
+outputs.result = result;
 return;`
         }
       } 
     },
     { 
-      type: 'math_distance_2d', 
+      type: 'mathDistance2d', 
       label: 'Distance 2D', 
       description: 'Calculate distance between two 2D points', 
-      dynamicMode: 'none',
+      dynamicMode: 'none', 
       defaultData: { 
         settings: { 
           headerTitle: 'Distance 2D', 
@@ -200,34 +190,32 @@ return;`
           category: 'Math' 
         },
         inputs: [
-          { id: 'x1', label: 'X1', dataType: 'number', color: '#64B5F6' },
-          { id: 'y1', label: 'Y1', dataType: 'number', color: '#64B5F6' },
-          { id: 'x2', label: 'X2', dataType: 'number', color: '#64B5F6' },
-          { id: 'y2', label: 'Y2', dataType: 'number', color: '#64B5F6' }
+          { id: 'x1', dataType: 'number', color: '#64B5F6', defaultValue: 0 },
+          { id: 'y1', dataType: 'number', color: '#64B5F6', defaultValue: 0 },
+          { id: 'x2', dataType: 'number', color: '#64B5F6', defaultValue: 0 },
+          { id: 'y2', dataType: 'number', color: '#64B5F6', defaultValue: 0 }
         ], 
         outputs: [
-          { id: 'res', label: 'Distance', dataType: 'number', color: '#64B5F6' }
+          { id: 'result', dataType: 'number', color: '#64B5F6' }
         ],
         data: {
           values: { x1: 0, y1: 0, x2: 0, y2: 0 },
           code: 
-`const x1 = Number(inputs['X1'] ?? inputs['x1'] ?? 0);
-const y1 = Number(inputs['Y1'] ?? inputs['y1'] ?? 0);
-const x2 = Number(inputs['X2'] ?? inputs['x2'] ?? 0);
-const y2 = Number(inputs['Y2'] ?? inputs['y2'] ?? 0);
+`const x1 = inputs.x1;
+const y1 = inputs.y1;
+const x2 = inputs.x2;
+const y2 = inputs.y2;
 
-const dist = Math.hypot(x2 - x1, y2 - y1);
-outputs['Distance'] = dist;
-outputs['res'] = dist;
+outputs.result = Math.hypot(x2 - x1, y2 - y1);
 return;`
         }
       } 
     },
     { 
-      type: 'math_direction_2d', 
+      type: 'mathDirection2d', 
       label: 'Direction 2D', 
       description: 'Get normalized direction vector and angle from A to B', 
-      dynamicMode: 'none',
+      dynamicMode: 'none', 
       defaultData: { 
         settings: { 
           headerTitle: 'Direction 2D', 
@@ -235,23 +223,23 @@ return;`
           category: 'Math' 
         },
         inputs: [
-          { id: 'from_x', label: 'From X', dataType: 'number', color: '#64B5F6' },
-          { id: 'from_y', label: 'From Y', dataType: 'number', color: '#64B5F6' },
-          { id: 'to_x', label: 'To X', dataType: 'number', color: '#64B5F6' },
-          { id: 'to_y', label: 'To Y', dataType: 'number', color: '#64B5F6' }
+          { id: 'fromX', dataType: 'number', color: '#64B5F6', defaultValue: 0 },
+          { id: 'fromY', dataType: 'number', color: '#64B5F6', defaultValue: 0 },
+          { id: 'toX', dataType: 'number', color: '#64B5F6', defaultValue: 0 },
+          { id: 'toY', dataType: 'number', color: '#64B5F6', defaultValue: 0 }
         ], 
         outputs: [
-          { id: 'dir_x', label: 'Dir X (-1 to 1)', dataType: 'number', color: '#64B5F6' },
-          { id: 'dir_y', label: 'Dir Y (-1 to 1)', dataType: 'number', color: '#64B5F6' },
-          { id: 'angle', label: 'Angle (Deg)', dataType: 'number', color: '#64B5F6' }
+          { id: 'directionX', dataType: 'number', color: '#64B5F6' },
+          { id: 'directionY', dataType: 'number', color: '#64B5F6' },
+          { id: 'angle', dataType: 'number', color: '#64B5F6' }
         ],
         data: {
-          values: { from_x: 0, from_y: 0, to_x: 0, to_y: 0 },
+          values: { fromX: 0, fromY: 0, toX: 0, toY: 0 },
           code: 
-`const fromX = Number(inputs['From X'] ?? inputs['from_x'] ?? 0);
-const fromY = Number(inputs['From Y'] ?? inputs['from_y'] ?? 0);
-const toX = Number(inputs['To X'] ?? inputs['to_x'] ?? 0);
-const toY = Number(inputs['To Y'] ?? inputs['to_y'] ?? 0);
+`const fromX = inputs.fromX;
+const fromY = inputs.fromY;
+const toX = inputs.toX;
+const toY = inputs.toY;
 
 const dx = toX - fromX;
 const dy = toY - fromY;
@@ -261,16 +249,12 @@ const deg = Math.atan2(dy, dx) * (180 / Math.PI);
 const dirX = dist > 0 ? dx / dist : 0;
 const dirY = dist > 0 ? dy / dist : 0;
 
-outputs['Angle (Deg)'] = deg;
-outputs['angle'] = deg;
-outputs['Dir X (-1 to 1)'] = dirX;
-outputs['dir_x'] = dirX;
-outputs['Dir Y (-1 to 1)'] = dirY;
-outputs['dir_y'] = dirY;
+outputs.angle = deg;
+outputs.directionX = dirX;
+outputs.directionY = dirY;
 return;`
         }
       } 
     }
   ]
 };
-

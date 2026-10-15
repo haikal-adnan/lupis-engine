@@ -8,7 +8,9 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 
-const ROOT = new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1');
+import { fileURLToPath } from 'node:url';
+
+const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const E2E_DIR = join(ROOT, 'e2e');
 
 /** Application UI strings that are intentionally Indonesian (they are the app's real labels). */

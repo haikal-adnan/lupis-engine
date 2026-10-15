@@ -1,31 +1,80 @@
-// ScriptRunner.js
+import { applyModifiers } from './ValueModifier.js';
+import { ScriptAssertionError } from './ContextSystem.js';
+
+/**
+ * ScriptRunner.js
+ * Universal, type-agnostic node graph executor for Lupis Engine.
+ * 
+ * Rules:
+ * 1. Operates purely on raw pre-processed values from Editor Gate 1.
+ * 2. No port labels, no aliases, no proxies, no type guessing.
+ * 3. O(1) flow and data lookup via pre-indexed adjacency maps.
+ * 4. Runtime errors carry full context: scriptId, nodeId, node type.
+ */
 export default class ScriptRunner {
     constructor(game, scriptData, ownerEntity = null) {
         this.game = game;
-        this.data = scriptData;
+        this.data = scriptData || {};
         this.owner = ownerEntity;
+        this.scriptId = this.data.id || 'anonymous_script';
 
         this.nodeMap = new Map();
-        if (this.data.nodes) {
+        if (Array.isArray(this.data.nodes)) {
             this.data.nodes.forEach(node => this.nodeMap.set(node.id, node));
         }
-        
-        this.edges = this.data.edges || [];
+
+        this.edges = Array.isArray(this.data.edges) ? this.data.edges : [];
         this.localVariables = new Map();
         this.nameToIdMap = new Map();
 
-        this._compiledFunctions = new Map();
-        this._registeredEvents = []; 
-        this._customTickListeners = new Map();
+        // Edge adjacency maps for O(1) traversal
+        this.flowIndex = new Map();
+        this.dataIndex = new Map();
 
+        this._compiledFunctions = new Map();
+        this._registeredEvents = [];
+        this._customTickListeners = new Map();
+        this._nodeStates = new Map();
+        this.nodeOutputs = new Map();
+
+        this._buildAdjacencyIndices();
         this._initVariables();
         this._compileAllNodes();
+    }
+
+    _buildAdjacencyIndices() {
+        this.flowIndex.clear();
+        this.dataIndex.clear();
+
+        this.edges.forEach(edge => {
+            const flowKey = `${edge.source}:${edge.sourceHandle}`;
+            if (!this.flowIndex.has(flowKey)) {
+                this.flowIndex.set(flowKey, []);
+            }
+            this.flowIndex.get(flowKey).push({
+                targetNodeId: edge.target,
+                targetPortId: edge.targetHandle
+            });
+
+            const dataKey = `${edge.target}:${edge.targetHandle}`;
+            this.dataIndex.set(dataKey, {
+                sourceNodeId: edge.source,
+                sourcePortId: edge.sourceHandle
+            });
+        });
+    }
+
+    getNodeState(nodeId) {
+        if (!this._nodeStates.has(nodeId)) {
+            this._nodeStates.set(nodeId, {});
+        }
+        return this._nodeStates.get(nodeId);
     }
 
     _isScriptActive() {
         if (this.owner && this.owner._isDestroyed) return false;
         if (!this.owner) return true;
-        
+
         if (this.owner.components && this.owner.components.ScriptController) {
             const scriptData = this.owner.components.ScriptController.data;
             const scriptInstance = scriptData ? scriptData.find(s => s.assetId === this.data.id) : undefined;
@@ -39,18 +88,18 @@ export default class ScriptRunner {
     _initVariables() {
         this.localVariables.clear();
         this.nameToIdMap.clear();
-        
+
         const source = this.data.variables || this.data.localVariables || [];
         source.forEach(v => {
             if (!v.name || !v.id) return;
 
             let val = v.defaultValue;
             if (Array.isArray(val)) {
-                val = [...val]; 
+                val = [...val];
             } else if (val !== null && typeof val === 'object') {
-                val = { ...val }; 
+                val = { ...val };
             }
-            
+
             this.nameToIdMap.set(v.name, v.id);
             this.localVariables.set(v.id, val);
         });
@@ -60,135 +109,58 @@ export default class ScriptRunner {
         this._compiledFunctions.clear();
 
         this.nodeMap.forEach((node, nodeId) => {
-            const rawCode = node.data ? node.data.code : undefined;
+            const rawCode = node.code !== undefined ? node.code : (node.data ? node.data.code : undefined);
             if (!rawCode || typeof rawCode !== 'string') return;
 
             try {
-                // Gunakan argumen terpisah agar aman dari konflik tanda kutip/backtick
-                const fn = new Function('inputs', 'outputs', 'context', 'node', String(rawCode) + '\nreturn outputs;');
+                const fn = new Function('inputs', 'outputs', 'context', 'node', rawCode + '\nreturn outputs;');
                 this._compiledFunctions.set(nodeId, fn);
             } catch (err) {
-                const headerTitle = node.settings ? node.settings.headerTitle : undefined;
-                console.error(`[ScriptRunner] Syntax error di node '${headerTitle || nodeId}':`, err);
+                const title = node.settings?.headerTitle || node.type || nodeId;
+                console.error(`[ScriptRunner] Syntax error di node '${title}' (script: '${this.scriptId}'):`, err);
             }
         });
     }
 
-    // Mendukung pencarian via ID maupun Name
     getLocalVariable(key) {
-        if (!key) return null;
-        const id = this.localVariables.has(key) ? key : this.nameToIdMap.get(key);
-        if (!id) {
-            console.warn(`[ScriptRunner] Variabel '${key}' tidak terdaftar pada schema Script.`);
-            return null;
+        if (!key) {
+            throw new Error(`[ScriptRunner] Local variable key cannot be empty (script: '${this.scriptId}').`);
         }
-
-        const val = this.localVariables.get(id);
-        return (val !== undefined && val !== null) ? val : null;
+        const id = this.localVariables.has(key) ? key : this.nameToIdMap.get(key);
+        if (!id || !this.localVariables.has(id)) {
+            throw new Error(`[ScriptRunner] Local variable '${key}' is not registered in script schema (script: '${this.scriptId}').`);
+        }
+        return this.localVariables.get(id);
     }
 
     setLocalVariable(key, value) {
-        if (!key) return;
-        const id = this.localVariables.has(key) ? key : this.nameToIdMap.get(key);
-        if (!id) {
-            console.error(`[Runtime Error] Dilarang membuat variabel baru '${key}' saat runtime. Buat variabel melalui Editor!`);
-            return;
+        if (!key) {
+            throw new Error(`[ScriptRunner] Local variable key cannot be empty (script: '${this.scriptId}').`);
         }
-
+        const id = this.localVariables.has(key) ? key : this.nameToIdMap.get(key);
+        if (!id || !this.localVariables.has(id)) {
+            throw new Error(`[ScriptRunner] Local variable '${key}' is not registered in script schema (script: '${this.scriptId}').`);
+        }
         this.localVariables.set(id, value);
     }
 
-    // Resolusi umum: Cek Local terlebih dahulu, lalu Global
     getVariable(key) {
         if (!key) return null;
-
         if (this.localVariables.has(key) || this.nameToIdMap.has(key)) {
             return this.getLocalVariable(key);
         }
-
         if (this.game && this.game.variables) {
-            const varMgr = this.game.variables;
-            if (varMgr.hasGlobal(key) || varMgr.globals?.has(key)) {
-                return varMgr.getGlobal(key);
-            }
+            return this.game.variables.getGlobal(key);
         }
-
         return null;
-    }
-
-    // Penerapan modifier operasi matematika, boolean, koleksi, dan template string
-    _applyVariableModifier(rawVal, modifier) {
-        if (!modifier) return rawVal;
-
-        let val = rawVal;
-        const modType = modifier.type;
-        const modValue = modifier.value;
-
-        if (modType && modType !== 'none') {
-            switch (modType) {
-                case 'add':
-                    val = (Number(val) || 0) + (Number(modValue) || 0);
-                    break;
-                case 'subtract':
-                    val = (Number(val) || 0) - (Number(modValue) || 0);
-                    break;
-                case 'multiply':
-                    val = (Number(val) || 0) * (Number(modValue) || 0);
-                    break;
-                case 'divide': {
-                    const divisor = Number(modValue) || 0;
-                    val = divisor !== 0 ? (Number(val) || 0) / divisor : 0;
-                    break;
-                }
-                case 'invert':
-                    val = -(Number(val) || 0);
-                    break;
-                case 'abs':
-                    val = Math.abs(Number(val) || 0);
-                    break;
-                case 'not':
-                    val = !val;
-                    break;
-                case 'at_index':
-                    val = Array.isArray(val) ? val[Number(modValue) || 0] : null;
-                    break;
-                case 'first':
-                    val = Array.isArray(val) ? val[0] : null;
-                    break;
-                case 'last':
-                    val = Array.isArray(val) && val.length > 0 ? val[val.length - 1] : null;
-                    break;
-                case 'random':
-                    val = Array.isArray(val) && val.length > 0 
-                        ? val[Math.floor(Math.random() * val.length)] 
-                        : null;
-                    break;
-                case 'count':
-                    val = Array.isArray(val) ? val.length : 0;
-                    break;
-            }
-        }
-
-        // Format template teks: "Hey : {value}"
-        const format = modifier.format || modifier.customText;
-        if (format && typeof format === 'string') {
-            const strVal = String(val ?? '');
-            val = format
-                .replace(/\{value\.upper\}/g, strVal.toUpperCase())
-                .replace(/\{value\.lower\}/g, strVal.toLowerCase())
-                .replace(/\{value\}/g, strVal);
-        }
-
-        return val;
     }
 
     start() {
         if (!this._isScriptActive()) return;
-        if (!this.data.nodes) return;
 
-        this.data.nodes.forEach(node => {
-            const hasExecInput = node.inputs ? node.inputs.some(i => i.dataType === 'execution') : false;
-            if (!hasExecInput) {
+        this.nodeMap.forEach(node => {
+            const role = node.role || (node.inputs?.some(i => i.dataType === 'execution') ? 'action' : (node.outputs?.some(o => o.dataType === 'execution') ? 'event' : 'pure'));
+            if (role === 'event') {
                 this._executeNodeLogic(node, null);
             }
         });
@@ -198,237 +170,160 @@ export default class ScriptRunner {
         if (!this._isScriptActive()) return;
 
         if (this._customTickListeners) {
-            this._customTickListeners.forEach((callback) => {
+            this._customTickListeners.forEach(callback => {
                 callback(dt);
             });
         }
     }
 
-    _resolvePortValue(dictionary, node, key) {
-        if (!dictionary || !key) return undefined;
-        
-        if (dictionary[key] !== undefined) return dictionary[key];
-
-        if (node && node.outputs) {
-            const port = node.outputs.find(p => p.id === key || p.label === key);
-            if (port) {
-                if (dictionary[port.id] !== undefined) return dictionary[port.id];
-                if (dictionary[port.label] !== undefined) return dictionary[port.label];
-            }
-        }
-
-        const lowerKey = String(key).toLowerCase();
-        for (const dictKey of Object.keys(dictionary)) {
-            if (dictKey.toLowerCase() === lowerKey) return dictionary[dictKey];
-        }
-
-        return undefined;
-    }
-
     getAllInputValues(node) {
-        if (!node.inputs) return {};
+        const rawInputs = {};
+        const inputsList = node.inputs || [];
 
-        const rawValues = {};
-        const aliasMap = new Map();
+        for (let i = 0; i < inputsList.length; i++) {
+            const port = inputsList[i];
+            if (port.dataType === 'execution') continue;
 
-        node.inputs.forEach(port => {
-            if (port.dataType === 'execution') return;
-
-            const edge = this.edges.find(e => 
-                e.target === node.id && 
-                (e.targetHandle === port.id || e.targetHandle === port.label)
-            );
-            
+            const portId = port.id;
             let val = undefined;
-            if (edge) {
-                const sourceNode = this.nodeMap.get(edge.source);
-                val = this._getNodeOutputValue(sourceNode, edge.sourceHandle);
-            }
 
-            // 1. Cek Mode Variabel jika tidak ada kabel
-            if (val === undefined) {
-                const portId = port.id;
-                const portLabel = port.label;
+            // Compiled payload format
+            if (port.source) {
+                if (port.source.kind === 'edge') {
+                    const edgeInfo = this.dataIndex.get(`${node.id}:${portId}`);
+                    if (edgeInfo) {
+                        const sourceNode = this.nodeMap.get(edgeInfo.sourceNodeId);
+                        val = this._getNodeOutputValue(sourceNode, edgeInfo.sourcePortId);
+                    }
+                } else if (port.source.kind === 'literal') {
+                    val = port.source.value;
+                } else if (port.source.kind === 'variable') {
+                    const rawVar = port.source.scope === 'global'
+                        ? this.game.variables.getGlobal(port.source.variableId)
+                        : this.getLocalVariable(port.source.variableId);
+                    val = applyModifiers(rawVar, port.source.modifiers);
+                }
+            } else {
+                // Fallback for standard/uncompiled node graph
+                const edgeInfo = this.dataIndex.get(`${node.id}:${portId}`);
+                if (edgeInfo) {
+                    const sourceNode = this.nodeMap.get(edgeInfo.sourceNodeId);
+                    val = this._getNodeOutputValue(sourceNode, edgeInfo.sourcePortId);
+                }
 
-                const valueModes = node.data?.valueModes;
-                const mode = (valueModes && (valueModes[portId] || valueModes[portLabel])) || 'input';
+                if (val === undefined) {
+                    const valueModes = node.data?.valueModes;
+                    const mode = valueModes?.[portId] || 'input';
 
-                if (mode === 'variable') {
-                    const varBindings = node.data?.variableBindings;
-                    const boundVar = varBindings && (varBindings[portId] || varBindings[portLabel]);
+                    if (mode === 'variable') {
+                        const boundVar = node.data?.variableBindings?.[portId];
+                        if (boundVar) {
+                            const rawVar = this.getVariable(boundVar);
+                            const modifier = node.data?.variableModifiers?.[portId];
+                            val = applyModifiers(rawVar, modifier);
+                        }
+                    }
+                }
 
-                    if (boundVar) {
-                        const rawVarVal = this.getVariable(boundVar);
-                        const varModifiers = node.data?.variableModifiers;
-                        const modifier = varModifiers && (varModifiers[portId] || varModifiers[portLabel]);
-                        val = this._applyVariableModifier(rawVarVal, modifier);
+                if (val === undefined) {
+                    const values = node.data?.values;
+                    if (values && values[portId] !== undefined) {
+                        val = values[portId];
+                    } else if (port.defaultValue !== undefined) {
+                        val = port.defaultValue;
                     }
                 }
             }
 
-            // 2. Fallback ke Direct Input Values
-            if (val === undefined) {
-                const values = node.data ? node.data.values : undefined;
-                if (values) {
-                    val = values[port.id] !== undefined ? values[port.id] : values[port.label];
-                }
-                if (val === undefined || val === null) {
-                    val = port.defaultValue;
-                }
-            }
+            rawInputs[portId] = val;
+        }
 
-            const canonicalKey = port.id || port.label;
-            rawValues[canonicalKey] = val;
-
-            if (port.id) {
-                aliasMap.set(port.id, canonicalKey);
-                aliasMap.set(port.id.toLowerCase(), canonicalKey);
-            }
-            if (port.label) {
-                aliasMap.set(port.label, canonicalKey);
-                aliasMap.set(port.label.toLowerCase(), canonicalKey);
-            }
-        });
-
-        return new Proxy(rawValues, {
-            get(target, prop) {
-                if (typeof prop === 'string') {
-                    if (prop in target) return target[prop];
-                    const mappedKey = aliasMap.get(prop) || aliasMap.get(prop.toLowerCase());
-                    if (mappedKey && mappedKey in target) {
-                        return target[mappedKey];
-                    }
-                }
-                return target[prop];
-            },
-            has(target, prop) {
-                if (typeof prop === 'string') {
-                    if (prop in target) return true;
-                    const mappedKey = aliasMap.get(prop) || aliasMap.get(prop.toLowerCase());
-                    return Boolean(mappedKey && mappedKey in target);
-                }
-                return prop in target;
-            },
-            set(target, prop, value) {
-                if (typeof prop === 'string') {
-                    const mappedKey = aliasMap.get(prop) || aliasMap.get(prop.toLowerCase());
-                    if (mappedKey) {
-                        target[mappedKey] = value;
-                        return true;
-                    }
-                }
-                target[prop] = value;
-                return true;
-            }
-        });
+        return rawInputs;
     }
 
     executeFlow(sourceNodeId, sourcePortName) {
         if (!this._isScriptActive()) return;
 
-        const sourceNode = this.nodeMap.get(sourceNodeId);
+        const targets = this.flowIndex.get(`${sourceNodeId}:${sourcePortName}`);
+        if (!targets || targets.length === 0) return;
 
-        const connectedEdges = this.edges.filter(e => {
-            if (e.source !== sourceNodeId) return false;
-            if (e.sourceHandle === sourcePortName) return true;
-
-            if (sourceNode && sourceNode.outputs) {
-                const matchedPort = sourceNode.outputs.find(
-                    p => p.id === sourcePortName || p.label === sourcePortName
-                );
-                if (matchedPort) {
-                    return e.sourceHandle === matchedPort.id || e.sourceHandle === matchedPort.label;
-                }
-            }
-            return false;
-        });
-
-        if (connectedEdges.length === 0) return;
-
-        connectedEdges.forEach(edge => {
-            const targetNode = this.nodeMap.get(edge.target);
+        for (let i = 0; i < targets.length; i++) {
+            const { targetNodeId, targetPortId } = targets[i];
+            const targetNode = this.nodeMap.get(targetNodeId);
             if (targetNode) {
-                this._executeNodeLogic(targetNode, edge.targetHandle);
+                this._executeNodeLogic(targetNode, targetPortId);
             }
-        });
+        }
     }
 
-    _executeNodeLogic(node, inputKey) {
+    _executeNodeLogic(node, inputPortId) {
         try {
             const compiledFn = this._compiledFunctions.get(node.id);
+            if (typeof compiledFn !== 'function') {
+                return;
+            }
 
-            if (typeof compiledFn === 'function') {
-                const inputs = this.getAllInputValues(node);
-                const outputs = {};
-                const context = this.game.contextSystem.createExecutionContext(this, node);
+            const inputs = this.getAllInputValues(node);
+            let outputs = this.nodeOutputs.get(node.id);
+            if (!outputs) {
+                outputs = {};
+                this.nodeOutputs.set(node.id, outputs);
+            }
+            const context = this.game.contextSystem.createExecutionContext(this, node);
 
-                compiledFn(inputs, outputs, context, node);
+            compiledFn(inputs, outputs, context, node);
 
-                if (node.outputs && Array.isArray(node.outputs)) {
-                    node.outputs.forEach(port => {
-                        const val = this._resolvePortValue(outputs, node, port.id) ?? 
-                                    this._resolvePortValue(outputs, node, port.label);
-                        
-                        if (val !== undefined) {
-                            outputs[port.id] = val;
-                            outputs[port.label] = val;
-                        }
-                    });
+            // Trigger connected execution output flows
+            const outputsList = node.outputs || [];
+            for (let i = 0; i < outputsList.length; i++) {
+                const port = outputsList[i];
+                if (port.dataType === 'execution' && outputs[port.id] === true) {
+                    this.executeFlow(node.id, port.id);
                 }
-
-                node._tempData = node._tempData || {};
-                Object.assign(node._tempData, outputs);
-
-                const executedPortIds = new Set();
-                if (node.outputs && Array.isArray(node.outputs)) {
-                    node.outputs.forEach(port => {
-                        if (port.dataType !== 'execution') return;
-
-                        const isTriggered = outputs[port.id] === true || outputs[port.label] === true;
-                        if (isTriggered && !executedPortIds.has(port.id)) {
-                            executedPortIds.add(port.id);
-                            this.executeFlow(node.id, port.id);
-                        }
-                    });
-                }
-            } else {
-                this.executeFlow(node.id, 'exec_out');
             }
         } catch (err) {
-            const headerTitle = node.settings ? node.settings.headerTitle : undefined;
-            console.error(`[ScriptRunner] Runtime error pada node '${headerTitle || node.id}':`, err);
+            if (err instanceof ScriptAssertionError || err?.name === 'ScriptAssertionError') {
+                return;
+            }
+            const title = node.settings?.headerTitle || node.type || node.id;
+            console.error(`[ScriptRunner Runtime Error] Node '${title}' (id: '${node.id}', script: '${this.scriptId}'):`, err);
+            throw err;
         }
     }
 
-    _getNodeOutputValue(node, outputKey) {
-        if (!node) return null;
+    _getNodeOutputValue(sourceNode, outputPortId) {
+        if (!sourceNode) return null;
 
-        const hasExecutionInput = node.inputs ? node.inputs.some(i => i.dataType === 'execution') : false;
+        const role = sourceNode.role || (sourceNode.inputs?.some(i => i.dataType === 'execution') ? 'action' : (sourceNode.outputs?.some(o => o.dataType === 'execution') ? 'event' : 'pure'));
 
-        if (!hasExecutionInput) {
-            const compiledFn = this._compiledFunctions.get(node.id);
+        if (role === 'pure') {
+            const compiledFn = this._compiledFunctions.get(sourceNode.id);
             if (typeof compiledFn === 'function') {
-                const inputs = this.getAllInputValues(node);
+                const inputs = this.getAllInputValues(sourceNode);
                 const outputs = {};
-                const context = this.game.contextSystem.createExecutionContext(this, node);
-
-                compiledFn(inputs, outputs, context, node);
-
-                node._tempData = node._tempData || {};
-                Object.assign(node._tempData, outputs);
-                
-                const val = this._resolvePortValue(outputs, node, outputKey);
-                if (val !== undefined) return val;
+                const context = this.game.contextSystem.createExecutionContext(this, sourceNode);
+                try {
+                    compiledFn(inputs, outputs, context, sourceNode);
+                    this.nodeOutputs.set(sourceNode.id, { ...outputs });
+                    if (outputs[outputPortId] !== undefined) {
+                        return outputs[outputPortId];
+                    }
+                } catch (err) {
+                    if (err instanceof ScriptAssertionError || err?.name === 'ScriptAssertionError') {
+                        return null;
+                    }
+                    throw err;
+                }
             }
         }
 
-        if (node._tempData) {
-            const val = this._resolvePortValue(node._tempData, node, outputKey);
-            if (val !== undefined) return val;
+        const cached = this.nodeOutputs.get(sourceNode.id);
+        if (cached && cached[outputPortId] !== undefined) {
+            return cached[outputPortId];
         }
 
-        const values = node.data ? node.data.values : undefined;
-        return (values && values[outputKey] !== undefined) ? values[outputKey] : null;
+        const values = sourceNode.data?.values;
+        return (values && values[outputPortId] !== undefined) ? values[outputPortId] : null;
     }
 
     destroy() {
@@ -445,5 +340,9 @@ export default class ScriptRunner {
         this.localVariables.clear();
         this.nameToIdMap.clear();
         this.nodeMap.clear();
+        this.flowIndex.clear();
+        this.dataIndex.clear();
+        this._nodeStates.clear();
+        this.nodeOutputs.clear();
     }
 }

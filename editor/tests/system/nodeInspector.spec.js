@@ -48,26 +48,26 @@ describe('Node Inspector & Code Panel Integration Tests', () => {
       nodes: [
         {
           id: 'node_math_1',
-          type: 'math_add',
+          type: 'mathAdd',
           name: 'Math Add',
           dynamicMode: 'sequential',
           dynamicData: null,
           settings: { headerTitle: 'Math Add', headerColor: '#00e676', description: 'Adds two numbers' },
           data: {
             values: { v0: 10, v1: 20 },
-            code: `const val1 = inputs['Val 1'];\nconst val2 = inputs['Val 2'];\noutputs['Result'] = val1 + val2;\nreturn;`
+            code: `const val1 = inputs.v0;\nconst val2 = inputs.v1;\noutputs.result = val1 + val2;\nreturn;`
           },
           inputs: [
-            { id: 'v0', label: 'Val 1', dataType: 'number' },
-            { id: 'v1', label: 'Val 2', dataType: 'number' }
+            { id: 'v0', dataType: 'number' },
+            { id: 'v1', dataType: 'number' }
           ],
           outputs: [
-            { id: 'res', label: 'Result', dataType: 'number' }
+            { id: 'result', dataType: 'number' }
           ]
         },
         {
           id: 'node_var_1',
-          type: 'variable_get',
+          type: 'variableGet',
           name: 'Get moveSpeed',
           dynamicMode: 'none',
           dynamicData: null,
@@ -75,11 +75,11 @@ describe('Node Inspector & Code Panel Integration Tests', () => {
           data: {
             variableId: 'var_speed',
             scope: 'Local',
-            code: `outputs['out_0'] = context.getLocal('moveSpeed');\nreturn;`
+            code: `outputs.value = context.getLocal('moveSpeed');\nreturn;`
           },
           inputs: [],
           outputs: [
-            { id: 'out_0', label: 'moveSpeed', dataType: 'number' }
+            { id: 'value', dataType: 'number' }
           ]
         }
       ],
@@ -147,8 +147,7 @@ describe('Node Inspector & Code Panel Integration Tests', () => {
       const targetVar = scriptStore.activeScript.localVariables.find(v => v.id === 'var_name');
 
       activeNode.data.variableId = targetVar.id;
-      activeNode.data.code = `outputs['out_0'] = context.getLocal('${targetVar.name}');\nreturn;`;
-      activeNode.outputs[0].label = targetVar.name;
+      activeNode.data.code = `outputs.value = context.getLocal('${targetVar.name}');\nreturn;`;
       activeNode.outputs[0].dataType = 'string';
 
       scriptStore.saveActiveScript();
@@ -166,7 +165,7 @@ describe('Node Inspector & Code Panel Integration Tests', () => {
       const edge = {
         id: 'edge_test_1',
         source: 'node_var_1',
-        sourceHandle: 'out_0',
+        sourceHandle: 'value',
         target: 'node_math_1',
         targetHandle: 'v0',
         modifier: { type: 'none', value: 0 }
@@ -198,7 +197,7 @@ describe('Node Inspector & Code Panel Integration Tests', () => {
 
       const textarea = wrapper.find('.code-textarea');
       expect(textarea.exists()).toBe(true);
-      expect(textarea.element.value).toContain("inputs['Val 1']");
+      expect(textarea.element.value).toContain("inputs.v0");
     });
 
     it('validates port references in code and highlights missing port issues real-time', async () => {
@@ -246,7 +245,6 @@ describe('Node Inspector & Code Panel Integration Tests', () => {
 
       scriptStore.addNodePort('node_math_1', 'input', {
         id: 'v2',
-        label: 'Val 3',
         dataType: 'number'
       });
 
@@ -260,7 +258,7 @@ describe('Node Inspector & Code Panel Integration Tests', () => {
       const wrapper = mount(CodePanel);
 
       const textarea = wrapper.find('.code-textarea');
-      await textarea.setValue(`const v1 = inputs['Val 1'];\nconst v2 = inputs['Val 2'];\nconst v3 = inputs['Val 3'];\noutputs['Result'] = v1 + v2 + v3;\nreturn;`);
+      await textarea.setValue(`const v1 = inputs.v0;\nconst v2 = inputs.v1;\nconst v3 = inputs.v2;\noutputs.result = v1 + v2 + v3;\nreturn;`);
 
       expect(wrapper.text()).toContain('Inputs: 3/3');
       expect(wrapper.text()).toContain('✓ No Issues');

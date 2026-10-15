@@ -1,13 +1,13 @@
 import { BoxSelect } from 'lucide-vue-next';
 
 export const BlueprintCollider = {
-  id: 'game_physics',
+  id: 'game_collider',
   label: 'Collider System',
   color: '#FF9800',
   icon: BoxSelect,
   items: [
     {
-      type: 'solid_collision',
+      type: 'solidCollision',
       label: 'Solid Collision',
       description: 'Check if an object is hitting a solid wall or obstacle.',
       dynamicMode: 'none',
@@ -18,73 +18,51 @@ export const BlueprintCollider = {
           category: 'Collider System'
         },
         inputs: [
-          { id: 'exec_in', label: 'In', dataType: 'execution', color: '#FFFFFF' },
-          { id: 'target', label: 'Target', dataType: 'string', color: '#F48FB1', defaultValue: 'self' },
-          { id: 'filter_tag', label: 'Filter Tag', dataType: 'string', color: '#F48FB1', defaultValue: '' }
+          { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'targetEntity', dataType: 'string', color: '#F48FB1', defaultValue: 'self' },
+          { id: 'tag', dataType: 'string', color: '#F48FB1', defaultValue: '' }
         ],
         outputs: [
-          { id: 'exec_out', label: 'Out', dataType: 'execution', color: '#FFFFFF' },
-          { id: 'on_hit', label: 'On Hit', dataType: 'execution', color: '#FFFFFF' },
-          { id: 'is_colliding', label: 'Is Colliding?', dataType: 'boolean', color: '#E57373' },
-          { id: 'self_id', label: 'Self ID', dataType: 'string', color: '#F48FB1' },
-          { id: 'hit_id', label: 'Hit ID', dataType: 'string', color: '#F48FB1' }
+          { id: 'execOut', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'onHit', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'isColliding', dataType: 'boolean', color: '#E57373' },
+          { id: 'selfEntity', dataType: 'string', color: '#F48FB1' },
+          { id: 'otherEntity', dataType: 'string', color: '#F48FB1' }
         ],
         data: {
           values: {
-            target: 'self',
-            filter_tag: ''
+            targetEntity: 'self',
+            tag: ''
           },
           code: 
-`const rawTarget = inputs['Target'] ?? inputs['target'] ?? 'self';
-const filterTag = inputs['Filter Tag'] ?? inputs['filter_tag'];
+`const entity = context.assert.exists(context.entity.get(inputs.targetEntity));
+let hitObject = context.collider.checkSolid(entity);
 
-const entity = context.entity.get(rawTarget);
-
-if (!entity) {
-  outputs['Is Colliding?'] = false;
-  outputs['is_colliding'] = false;
-  outputs['Self ID'] = null;
-  outputs['self_id'] = null;
-  outputs['Hit ID'] = null;
-  outputs['hit_id'] = null;
-  outputs['Out'] = true;
-  outputs['exec_out'] = true;
-  return;
-}
-
-let hitObject = context.game.colliderSystem.checkSolid(entity);
-
-if (hitObject && filterTag && typeof filterTag === 'string' && filterTag.trim() !== '') {
-  const objTag = hitObject.tag || hitObject.components?.Tags?.value;
-  if (objTag !== filterTag) {
+if (hitObject && inputs.tag && inputs.tag.trim() !== '') {
+  const objTag = hitObject.tag || (hitObject.components && hitObject.components.Tags && hitObject.components.Tags.value);
+  if (objTag !== inputs.tag) {
     hitObject = null;
   }
 }
 
-const selfScriptId = entity.scriptId || entity.script_id || entity.id;
-const hitScriptId = hitObject ? (hitObject.scriptId || hitObject.script_id || hitObject.id) : null;
-const isColliding = !!hitObject;
+const selfScriptId = entity.scriptId;
+const hitScriptId = hitObject ? hitObject.scriptId : '';
+const isColliding = Boolean(hitObject);
 
-outputs['Self ID'] = selfScriptId;
-outputs['self_id'] = selfScriptId;
-outputs['Hit ID'] = hitScriptId;
-outputs['hit_id'] = hitScriptId;
-outputs['Is Colliding?'] = isColliding;
-outputs['is_colliding'] = isColliding;
-
-outputs['Out'] = true;
-outputs['exec_out'] = true;
+outputs.selfEntity = selfScriptId;
+outputs.otherEntity = hitScriptId;
+outputs.isColliding = isColliding;
+outputs.execOut = true;
 
 if (isColliding) {
-  outputs['On Hit'] = true;
-  outputs['on_hit'] = true;
+  outputs.onHit = true;
 }
 return;`
         }
       }
     },
     {
-      type: 'trigger_zone',
+      type: 'triggerZone',
       label: 'Trigger Zone',
       description: 'Detects when an object enters, stays, or exits an area.',
       dynamicMode: 'none',
@@ -95,90 +73,63 @@ return;`
           category: 'Collider System'
         },
         inputs: [
-          { id: 'exec_in', label: 'In', dataType: 'execution', color: '#FFFFFF' },
-          { id: 'target', label: 'Target', dataType: 'string', color: '#F48FB1', defaultValue: 'self' },
-          { id: 'filter_tag', label: 'Filter Tag', dataType: 'string', color: '#F48FB1', defaultValue: '' }
+          { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'targetEntity', dataType: 'string', color: '#F48FB1', defaultValue: 'self' },
+          { id: 'tag', dataType: 'string', color: '#F48FB1', defaultValue: '' }
         ],
         outputs: [
-          { id: 'exec_out', label: 'Out', dataType: 'execution', color: '#FFFFFF' },
-          { id: 'on_enter', label: 'On Enter', dataType: 'execution', color: '#FFFFFF' },
-          { id: 'on_exit', label: 'On Exit', dataType: 'execution', color: '#FFFFFF' },
-          { id: 'is_inside', label: 'Is Inside?', dataType: 'boolean', color: '#E57373' },
-          { id: 'trigger_id', label: 'Trigger ID', dataType: 'string', color: '#F48FB1' },
-          { id: 'other_id', label: 'Other ID', dataType: 'string', color: '#F48FB1' }
+          { id: 'execOut', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'onEnter', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'onExit', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'isInside', dataType: 'boolean', color: '#E57373' },
+          { id: 'selfEntity', dataType: 'string', color: '#F48FB1' },
+          { id: 'otherEntity', dataType: 'string', color: '#F48FB1' }
         ],
         data: {
           values: {
-            target: 'self',
-            filter_tag: ''
+            targetEntity: 'self',
+            tag: ''
           },
           code: 
-`const targetId = inputs['Target'] ?? inputs['target'] ?? 'self';
-const filterTag = inputs['Filter Tag'] ?? inputs['filter_tag'];
+`const entity = context.assert.exists(context.entity.get(inputs.targetEntity));
 
-const entity = context.entity.get(targetId);
-
-if (!entity) {
-  outputs['Is Inside?'] = false;
-  outputs['is_inside'] = false;
-  outputs['Trigger ID'] = null;
-  outputs['trigger_id'] = null;
-  outputs['Other ID'] = null;
-  outputs['other_id'] = null;
-  outputs['Out'] = true;
-  outputs['exec_out'] = true;
-  return;
+if (!context.state.triggerStates) {
+  context.state.triggerStates = {};
 }
 
-if (!node._triggerStates) {
-  node._triggerStates = {};
-}
-
-const entityId = entity.id || entity._id;
-let myState = node._triggerStates[entityId];
+const entityScriptId = entity.scriptId;
+let myState = context.state.triggerStates[entityScriptId];
 if (!myState) {
-  myState = { isOverlapping: false, lastId: null };
-  node._triggerStates[entityId] = myState;
+  myState = { isOverlapping: false, lastId: '' };
+  context.state.triggerStates[entityScriptId] = myState;
 }
 
-let overlapObject = context.game.colliderSystem.checkOverlap(entity, filterTag);
+const overlapObject = context.collider.checkOverlap(entity, inputs.tag);
 
-const triggerScriptId = entity.scriptId || entity.script_id || entity.id;
-const currentId = overlapObject 
-  ? (overlapObject.scriptId || overlapObject.script_id || overlapObject.id) 
-  : null;
+const currentId = overlapObject ? overlapObject.scriptId : '';
 
 const previousId = myState.lastId;
-const isCurrentlyOverlapping = !!currentId;
+const isCurrentlyOverlapping = Boolean(currentId);
 
-outputs['Trigger ID'] = triggerScriptId;
-outputs['trigger_id'] = triggerScriptId;
-outputs['Other ID'] = currentId || previousId;
-outputs['other_id'] = currentId || previousId;
-outputs['Is Inside?'] = isCurrentlyOverlapping;
-outputs['is_inside'] = isCurrentlyOverlapping;
+outputs.selfEntity = entityScriptId;
+outputs.otherEntity = currentId || previousId;
+outputs.isInside = isCurrentlyOverlapping;
 
 if (!previousId && currentId) {
   myState.lastId = currentId;
-  outputs['On Enter'] = true;
-  outputs['on_enter'] = true;
+  outputs.onEnter = true;
 } else if (previousId && currentId && previousId !== currentId) {
   myState.lastId = currentId;
-  outputs['On Enter'] = true;
-  outputs['on_enter'] = true;
+  outputs.onEnter = true;
 } else if (previousId && !currentId) {
-  myState.lastId = null;
-  outputs['Other ID'] = previousId;
-  outputs['other_id'] = previousId;
-  outputs['Is Inside?'] = false;
-  outputs['is_inside'] = false;
-  outputs['On Exit'] = true;
-  outputs['on_exit'] = true;
+  myState.lastId = '';
+  outputs.otherEntity = previousId;
+  outputs.isInside = false;
+  outputs.onExit = true;
 }
 
 myState.isOverlapping = isCurrentlyOverlapping;
-outputs['Out'] = true;
-outputs['exec_out'] = true;
+outputs.execOut = true;
 return;`
         }
       }

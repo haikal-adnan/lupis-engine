@@ -7,7 +7,7 @@ export const BlueprintEvent = {
   icon: Zap,
   items: [
     {
-      type: 'action_emit_signal',
+      type: 'actionEmitSignal',
       label: 'Emit Signal',
       description: 'Broadcasts a message to the entire system listening for this signal.',
       dynamicMode: 'none',
@@ -18,30 +18,23 @@ export const BlueprintEvent = {
           category: 'Events & Signals'
         },
         inputs: [
-          { id: 'exec_in', label: 'In', dataType: 'execution', color: '#FFFFFF' },
-          { id: 'sig_name', label: 'Signal Name', dataType: 'string', color: '#F48FB1', defaultValue: '' }
+          { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'signalName', dataType: 'string', color: '#F48FB1', defaultValue: '' }
         ],
         outputs: [
-          { id: 'exec_out', label: 'Out', dataType: 'execution', color: '#FFFFFF' }
+          { id: 'execOut', dataType: 'execution', color: '#FFFFFF' }
         ],
         data: {
-          values: { sig_name: '' },
+          values: { signalName: '' },
           code: 
-`const sigName = inputs['Signal Name'] ?? inputs['sig_name'] ?? node.data?.values?.sig_name;
-const eventMgr = context.game?.events || context.game?.signalSystem;
-
-if (sigName && eventMgr && typeof eventMgr.emit === 'function') {
-  eventMgr.emit(sigName);
-}
-
-outputs['Out'] = true;
-outputs['exec_out'] = true;
+`context.signal.emit(inputs.signalName);
+outputs.execOut = true;
 return;`
         }
       }
     },
     {
-      type: 'event_on_signal',
+      type: 'eventOnSignal',
       label: 'On Signal Received',
       description: 'Triggers the flow when a matching global signal is received.',
       dynamicMode: 'none',
@@ -52,26 +45,20 @@ return;`
           category: 'Events & Signals'
         },
         inputs: [
-          { id: 'sig_name', label: 'Signal Name', dataType: 'string', color: '#F48FB1', defaultValue: '' }
+          { id: 'signalName', dataType: 'string', color: '#F48FB1', defaultValue: '' }
         ],
         outputs: [
-          { id: 'exec_out', label: 'Out', dataType: 'execution', color: '#FFFFFF' }
+          { id: 'execOut', dataType: 'execution', color: '#FFFFFF' }
         ],
         data: {
-          values: { sig_name: '' },
+          values: { signalName: '' },
           code: 
-`const sigName = inputs['Signal Name'] ?? inputs['sig_name'] ?? node.data?.values?.sig_name;
-const eventMgr = context.game?.events || context.game?.signalSystem;
-
-if (sigName && eventMgr && typeof eventMgr.on === 'function') {
-  if (!node._signalListenerRegistered) {
-    node._signalListenerRegistered = true;
-    eventMgr.on(sigName, () => {
-      if (typeof context.triggerFlow === 'function') {
-        context.triggerFlow('exec_out');
-      }
-    });
-  }
+`if (!context.state.signalRegistered) {
+  context.state.signalRegistered = true;
+  context.signal.on(inputs.signalName, () => {
+    outputs.execOut = true;
+    context.triggerFlow('execOut');
+  });
 }
 return;`
         }

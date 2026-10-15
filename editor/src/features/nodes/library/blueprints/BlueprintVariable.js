@@ -1,19 +1,14 @@
 import { Boxes } from 'lucide-vue-next';
 
 export const BlueprintVariable = {
-  // 🏷️ 1. METADATA KATEGORI
   id: 'category_variable',
   label: 'Variable',
   color: '#8B5CF6',
   icon: Boxes,
 
-  // 📦 2. DAFTAR NODE DALAM KATEGORI
   items: [
-    // ------------------------------------------------------------------------
-    // TIPE A: VARIABLE GET (Membaca Nilai Variabel)
-    // ------------------------------------------------------------------------
     {
-      type: 'variable_get',
+      type: 'variableGet',
       label: 'Get Variable',
       description: 'Membaca nilai dari variabel lokal atau global.',
       dynamicMode: 'none',
@@ -30,8 +25,7 @@ export const BlueprintVariable = {
 
         outputs: [
           {
-            id: 'out_0',
-            label: 'Variable',
+            id: 'value',
             dataType: 'any',
             color: '#B0BEC5'
           }
@@ -48,17 +42,14 @@ export const BlueprintVariable = {
             }
           ],
           code: 
-`outputs['out_0'] = null;
+`outputs.value = null;
 return;`
         }
       }
     },
 
-    // ------------------------------------------------------------------------
-    // TIPE B: VARIABLE SET (Menulis / Menetapkan Nilai Variabel)
-    // ------------------------------------------------------------------------
     {
-      type: 'variable_set',
+      type: 'variableSet',
       label: 'Set Variable',
       description: 'Menetapkan nilai ke variabel lokal atau global.',
       dynamicMode: 'none',
@@ -73,14 +64,12 @@ return;`
 
         inputs: [
           {
-            id: 'exec_in',
-            label: 'In',
+            id: 'execIn',
             dataType: 'execution',
             color: '#FFFFFF'
           },
           {
-            id: 'val_0',
-            label: 'Variable',
+            id: 'value',
             dataType: 'any',
             color: '#B0BEC5'
           }
@@ -88,14 +77,12 @@ return;`
 
         outputs: [
           {
-            id: 'exec_out',
-            label: 'Out',
+            id: 'execOut',
             dataType: 'execution',
             color: '#FFFFFF'
           },
           {
-            id: 'out_0',
-            label: 'Variable',
+            id: 'valueOut',
             dataType: 'any',
             color: '#B0BEC5'
           }
@@ -112,9 +99,9 @@ return;`
             }
           ],
           code: 
-`const val = inputs['val_0'] ?? inputs['Variable'];
-outputs['out_0'] = val;
-outputs['exec_out'] = true;
+`const val = inputs.value;
+outputs.valueOut = val;
+outputs.execOut = true;
 return;`
         }
       }

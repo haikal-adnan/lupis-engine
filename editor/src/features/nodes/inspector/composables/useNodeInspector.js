@@ -45,7 +45,7 @@ export function useNodeInspector(props = {}) {
   const isNotSet = (value) => value === undefined || value === null || value === '';
 
   const isErrorNotSet = (key, value) => {
-    if (String(key).startsWith('target_in')) return false;
+    if (String(key).startsWith('targetEntity') || String(key).startsWith('targetLayer')) return false;
     return isNotSet(value);
   };
 

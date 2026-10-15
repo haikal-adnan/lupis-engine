@@ -7,7 +7,7 @@ export const BlueprintMouse = {
   icon: MousePointer2,
   items: [
     {
-      type: 'event_pointer_click',
+      type: 'eventPointerClick',
       label: 'Global Mouse Click',
       description: 'Triggered when a mouse button is clicked anywhere on the screen.',
       dynamicMode: 'none',
@@ -19,27 +19,22 @@ export const BlueprintMouse = {
         },
         inputs: [],
         outputs: [
-          { id: 'ptr_click_main', label: 'On Click', dataType: 'execution', color: '#FFFFFF' },
-          { id: 'pos_x', label: 'X Position', dataType: 'number', color: '#64B5F6' },
-          { id: 'pos_y', label: 'Y Position', dataType: 'number', color: '#64B5F6' }
+          { id: 'onClick', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'x', dataType: 'number', color: '#64B5F6' },
+          { id: 'y', dataType: 'number', color: '#64B5F6' }
         ],
         data: {
           button: 'left',
           code: 
 `context.onTick(() => {
-  const mouse = context.game?.input?.mouse;
-  const pointer = context.game?.input?.getPointer?.() || { x: 0, y: 0 };
-  const config = Array.isArray(node.data) ? node.data[0] : node.data;
-  const btnTarget = config && config.button ? config.button : 'left';
+  const mouse = context.input.mouse;
+  const pointer = context.input.getPointer();
 
-  if (mouse && mouse.isPressed && mouse.isPressed(btnTarget)) {
-    outputs['X Position'] = pointer.x;
-    outputs['pos_x'] = pointer.x;
-    outputs['Y Position'] = pointer.y;
-    outputs['pos_y'] = pointer.y;
-    outputs['On Click'] = true;
-    outputs['ptr_click_main'] = true;
-    context.triggerFlow((config && config.id) || 'ptr_click_main');
+  if ((mouse && (mouse.isPressed('left') || mouse.isDown('left'))) || (pointer && pointer.down)) {
+    outputs.x = pointer.x;
+    outputs.y = pointer.y;
+    outputs.onClick = true;
+    context.triggerFlow('onClick');
   }
 });
 return;`
@@ -47,7 +42,7 @@ return;`
       }
     },
     {
-      type: 'event_pointer_drag',
+      type: 'eventPointerDrag',
       label: 'Global Mouse Drag',
       description: 'Triggered continuously while mouse is held down and moving.',
       dynamicMode: 'none',
@@ -59,41 +54,36 @@ return;`
         },
         inputs: [],
         outputs: [
-          { id: 'drag_active', label: 'On Drag', dataType: 'execution', color: '#FFFFFF' },
-          { id: 'pos_x', label: 'X', dataType: 'number', color: '#64B5F6' },
-          { id: 'pos_y', label: 'Y', dataType: 'number', color: '#64B5F6' },
-          { id: 'delta_x', label: 'Delta X', dataType: 'number', color: '#64B5F6' },
-          { id: 'delta_y', label: 'Delta Y', dataType: 'number', color: '#64B5F6' }
+          { id: 'onDrag', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'x', dataType: 'number', color: '#64B5F6' },
+          { id: 'y', dataType: 'number', color: '#64B5F6' },
+          { id: 'deltaX', dataType: 'number', color: '#64B5F6' },
+          { id: 'deltaY', dataType: 'number', color: '#64B5F6' }
         ],
         data: {
           code: 
 `context.onTick(() => {
-  const pointer = context.game?.input?.getPointer?.() || { x: 0, y: 0, down: false };
-  const mouse = context.game?.input?.mouse;
-  const isDown = pointer.down || (mouse && mouse.isDown && mouse.isDown('left'));
+  const pointer = context.input.getPointer();
+  const mouse = context.input.mouse;
+  const isDown = (pointer && pointer.down) || (mouse && (mouse.isDown('left') || mouse.isPressed('left')));
 
-  if (!node._dragState) {
-    node._dragState = { lastX: pointer.x, lastY: pointer.y };
+  if (!context.state.dragState) {
+    context.state.dragState = { lastX: pointer.x, lastY: pointer.y };
   }
 
-  const deltaX = pointer.x - node._dragState.lastX;
-  const deltaY = pointer.y - node._dragState.lastY;
+  const deltaX = pointer.x - context.state.dragState.lastX;
+  const deltaY = pointer.y - context.state.dragState.lastY;
 
-  node._dragState.lastX = pointer.x;
-  node._dragState.lastY = pointer.y;
+  context.state.dragState.lastX = pointer.x;
+  context.state.dragState.lastY = pointer.y;
 
   if (isDown && (deltaX !== 0 || deltaY !== 0)) {
-    outputs['X'] = pointer.x;
-    outputs['pos_x'] = pointer.x;
-    outputs['Y'] = pointer.y;
-    outputs['pos_y'] = pointer.y;
-    outputs['Delta X'] = deltaX;
-    outputs['delta_x'] = deltaX;
-    outputs['Delta Y'] = deltaY;
-    outputs['delta_y'] = deltaY;
-    outputs['On Drag'] = true;
-    outputs['drag_active'] = true;
-    context.triggerFlow('drag_active');
+    outputs.x = pointer.x;
+    outputs.y = pointer.y;
+    outputs.deltaX = deltaX;
+    outputs.deltaY = deltaY;
+    outputs.onDrag = true;
+    context.triggerFlow('onDrag');
   }
 });
 return;`
@@ -101,7 +91,7 @@ return;`
       }
     },
     {
-      type: 'mouse_entity_interact',
+      type: 'mouseEntityInteract',
       label: 'Entity Mouse Event',
       description: 'Checks if the mouse is interacting with an entity. Can use Raycast (respects Z-Index/blocking) or Direct bounds check.',
       dynamicMode: 'none',
@@ -112,163 +102,67 @@ return;`
           category: 'Mouse Events'
         },
         inputs: [
-          { id: 'exec_in', label: 'In', dataType: 'execution', color: '#FFFFFF' },
-          { id: 'target_in', label: 'Target ID (Self)', dataType: 'string', color: '#F48FB1', defaultValue: 'self' },
-          { id: 'use_raycast', label: 'Use Raycast?', dataType: 'boolean', color: '#E57373', defaultValue: true },
-          { id: 'based_collider', label: 'Use Collider Bounds?', dataType: 'boolean', color: '#E57373', defaultValue: false }
+          { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'targetEntity', dataType: 'string', color: '#F48FB1', defaultValue: 'self' },
+          { id: 'useRaycast', dataType: 'boolean', color: '#E57373', defaultValue: true },
+          { id: 'useColliderBounds', dataType: 'boolean', color: '#E57373', defaultValue: false }
         ],
         outputs: [
-          { id: 'exec_out', label: 'Out', dataType: 'execution', color: '#FFFFFF' },
-          { id: 'on_hover', label: 'On Hover', dataType: 'execution', color: '#FFFFFF' },
-          { id: 'on_down', label: 'On Mouse Down', dataType: 'execution', color: '#FFFFFF' },
-          { id: 'on_hold', label: 'On Mouse Hold', dataType: 'execution', color: '#FFFFFF' },
-          { id: 'on_up', label: 'On Mouse Up', dataType: 'execution', color: '#FFFFFF' },
-          { id: 'is_hovering', label: 'Is Hovering?', dataType: 'boolean', color: '#E57373' },
-          { id: 'is_holding', label: 'Is Holding?', dataType: 'boolean', color: '#E57373' },
-          { id: 'entityId', label: 'Entity ID', dataType: 'string', color: '#F48FB1' }
+          { id: 'execOut', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'onHover', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'onDown', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'onHold', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'onUp', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'isHovering', dataType: 'boolean', color: '#E57373' },
+          { id: 'isHolding', dataType: 'boolean', color: '#E57373' },
+          { id: 'selfEntity', dataType: 'string', color: '#F48FB1' }
         ],
         data: {
           values: {
-            target_in: 'self',
-            based_collider: false,
-            use_raycast: true
+            targetEntity: 'self',
+            useColliderBounds: false,
+            useRaycast: true
           },
           code: 
-`const targetId = inputs['Target ID (Self)'] ?? inputs['target_in'] ?? 'self';
-const getEntityFn = context.entity?.get || context.getEntity;
-const entity = typeof getEntityFn === 'function' ? getEntityFn(targetId) : null;
+`const entity = context.assert.exists(context.entity.get(inputs.targetEntity), 'Target entity must exist');
 
-if (!entity) {
-  outputs['Out'] = true;
-  outputs['exec_out'] = true;
-  return;
-}
-
-const hasTransform = entity.components && entity.components.Transform;
-const hasUITransform = entity.components && entity.components.UITransform;
-
-if (!hasTransform && !hasUITransform) {
-  outputs['Out'] = true;
-  outputs['exec_out'] = true;
-  return;
-}
-
-const pointer = context.game?.input?.getPointer?.() || { x: 0, y: 0, down: false };
+const pointer = context.input.getPointer();
 const isPointerDown = pointer.down;
-const entityId = entity.id;
+const isHovering = context.input.isPointerOver(entity, inputs.useRaycast);
 
-const useRaycast = inputs['Use Raycast?'] ?? inputs['use_raycast'] ?? true;
-
-let isHovering = false;
-let outputEntityScriptId = null;
-
-const RaycastSystem = context.game?.pointerRaycast;
-
-if (useRaycast && RaycastSystem) {
-  const topEntity = RaycastSystem.getTopEntityUnderPointer(context.game);
-
-  if (topEntity) {
-    outputEntityScriptId = topEntity.scriptId || topEntity.id;
-
-    if (topEntity.id === entityId) {
-      isHovering = true;
-    } else {
-      let currentParentId = topEntity.parentId;
-      while (currentParentId) {
-        if (currentParentId === entityId) {
-          isHovering = true;
-          break;
-        }
-        const pEntity = context.game.world?.entities?.find(e => e.id === currentParentId);
-        currentParentId = pEntity ? pEntity.parentId : null;
-      }
-    }
-  }
-} else if (RaycastSystem) {
-  const canvas = context.game?.renderer?.gl?.canvas || context.game?.renderer?.canvas;
-  const canvasW = canvas?.clientWidth || canvas?.width || 1920;
-  const canvasH = canvas?.clientHeight || canvas?.height || 1080;
-
-  const uiSettings = context.game?.world?.settings?.ui || { width: 1920, height: 1080 };
-  const camera = context.camera || context.game?.camera || { x: 0, y: 0, scale: 1 };
-
-  const uiPointer = {
-    x: (pointer.x / canvasW) * uiSettings.width,
-    y: (pointer.y / canvasH) * uiSettings.height
-  };
-
-  const halfW = canvasW / 2;
-  const halfH = canvasH / 2;
-  const worldPointer = {
-    x: camera.x + (pointer.x - halfW) / (camera.scale || 1),
-    y: camera.y + (pointer.y - halfH) / (camera.scale || 1)
-  };
-
-  const globalT = RaycastSystem._getGlobalTransform(entity, context.game.world);
-  let drawX = globalT.x || 0;
-  let drawY = globalT.y || 0;
-  let targetPointer = hasUITransform ? uiPointer : worldPointer;
-
-  if (hasUITransform) {
-    const t = entity.components.UITransform;
-    const anchorX = t.anchorX ?? 0.5;
-    const anchorY = t.anchorY ?? 0.5;
-    drawX = (uiSettings.width * anchorX) + (globalT.x || 0);
-    drawY = (uiSettings.height * anchorY) + (globalT.y || 0);
-  }
-
-  isHovering = RaycastSystem._checkIntersection(
-    entity, 
-    globalT, 
-    drawX, 
-    drawY, 
-    targetPointer.x, 
-    targetPointer.y
-  );
-
-  if (isHovering) {
-    outputEntityScriptId = entity.scriptId || entity.id;
-  }
+if (!context.state.interactStates) {
+  context.state.interactStates = new Map();
 }
 
-const node = context.node;
-if (!node._interactStates) node._interactStates = new Map();
+if (!context.state.interactStates.has(entity.scriptId)) {
+  context.state.interactStates.set(entity.scriptId, { wasHovering: false, wasDown: false });
+}
+const state = context.state.interactStates.get(entity.scriptId);
 
-let state = node._interactStates.get(entityId) || { wasHovering: false, wasDown: false };
-
-outputs['Is Hovering?'] = isHovering;
-outputs['is_hovering'] = isHovering;
-outputs['Is Holding?'] = isHovering && isPointerDown;
-outputs['is_holding'] = isHovering && isPointerDown;
-outputs['Entity ID'] = outputEntityScriptId;
-outputs['entityId'] = outputEntityScriptId;
-
-outputs['Out'] = true;
-outputs['exec_out'] = true;
+outputs.isHovering = isHovering;
+outputs.isHolding = isHovering && isPointerDown;
+outputs.selfEntity = entity.scriptId;
+outputs.execOut = true;
 
 if (isHovering) {
-  outputs['On Hover'] = true;
-  outputs['on_hover'] = true;
+  outputs.onHover = true;
 }
 
 if (isHovering && isPointerDown) {
   if (!state.wasDown) {
-    outputs['On Mouse Down'] = true;
-    outputs['on_down'] = true;
+    outputs.onDown = true;
   } else {
-    outputs['On Mouse Hold'] = true;
-    outputs['on_hold'] = true;
+    outputs.onHold = true;
   }
 }
 
 if (!isPointerDown && state.wasDown) {
-  outputs['On Mouse Up'] = true;
-  outputs['on_up'] = true;
+  outputs.onUp = true;
 }
 
 state.wasHovering = isHovering;
 state.wasDown = isPointerDown;
-node._interactStates.set(entityId, state);
+context.state.interactStates.set(entity.scriptId, state);
 
 return;`
         }

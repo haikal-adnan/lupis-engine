@@ -6,9 +6,9 @@ import {
   useGraphEditor, 
   useNodeInspector, 
   useVariableLogic, 
-  useNodeBlueprint 
+  useNodeBlueprint,
+  BlueprintTransform 
 } from '@nodes/nodes.js'
-import { BlueprintTransform } from '@nodes/library/blueprints/BlueprintTransform.js'
 import { setupMockOPFS, createMockEmptyProject } from '@tests/tests.js'
 
 // Mocking dependencies UI/Alert
@@ -289,22 +289,22 @@ describe('Node Scripting System Integration Tests', () => {
       const { syncDynamicInputsAndCode } = useNodeBlueprint()
 
       const dynamicNode = {
-        type: 'string_join',
+        type: 'stringJoin',
         inputs: [
-          { id: 'v0', label: 'Val 1', dataType: 'string' }
+          { id: 'v0', dataType: 'string' }
         ],
         data: {
           values: { v0: 'Hello' },
-          code: `outputs['Result'] = collection.join('');\nreturn;`
+          code: `outputs.result = collection.join('');\nreturn;`
         }
       }
 
-      dynamicNode.inputs.push({ id: 'v1', label: 'Val 2', dataType: 'string' })
+      dynamicNode.inputs.push({ id: 'v1', dataType: 'string' })
       syncDynamicInputsAndCode(dynamicNode)
 
       expect(dynamicNode.data.values).toHaveProperty('v1')
-      expect(dynamicNode.data.code).toContain("const val1 = inputs['Val 1'];")
-      expect(dynamicNode.data.code).toContain("const val2 = inputs['Val 2'];")
+      expect(dynamicNode.data.code).toContain("const val1 = inputs.v0;")
+      expect(dynamicNode.data.code).toContain("const val2 = inputs.v1;")
       expect(dynamicNode.data.code).toContain('const collection = [val1, val2];')
     })
 

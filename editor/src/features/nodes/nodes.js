@@ -31,3 +31,7 @@ export { default as NodeHeader } from '@nodes/inspector/layouts/NodeHeader.vue'
 export { default as NodeData } from '@nodes/inspector/layouts/NodeData.vue'
 export { default as NodeEdge } from '@nodes/inspector/layouts/NodeEdge.vue'
 export { default as NodePorts } from '@nodes/inspector/layouts/NodePorts.vue'
+
+// Contract & Blueprints Barrels
+export * from './contract/index.js';
+export * from './library/blueprints/index.js';

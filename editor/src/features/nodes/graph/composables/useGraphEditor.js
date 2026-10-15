@@ -1,3 +1,4 @@
+import { isTypeCompatible } from '../../contract/portTypes.js';
 import { ref, shallowReactive, computed, nextTick } from 'vue'
 import { useScriptStore } from '@scripts/scripts.js'
 import { storeToRefs } from 'pinia'
@@ -448,14 +449,7 @@ export function useGraphEditor() {
       const sourceType = (interaction.activeDataType || 'any').toLowerCase()
       const targetType = (interaction.candidate.dataType || 'any').toLowerCase()
 
-      let isValid = false
-      if (sourceType === 'execution' || targetType === 'execution') {
-        isValid = (sourceType === 'execution' && targetType === 'execution')
-      } else if (sourceType === 'any' || targetType === 'any') {
-        isValid = true
-      } else {
-        isValid = (sourceType === targetType)
-      }
+      const isValid = isTypeCompatible(sourceType, targetType);
 
       if (!isValid) {
         showPop({
@@ -619,7 +613,7 @@ export function useGraphEditor() {
     if (varJson) {
       try {
         const variable = JSON.parse(varJson)
-        const actionType = variable.actionType || 'variable_get'
+        const actionType = variable.actionType || 'variableGet'
         addNodeToCanvas(variable, finalPos, actionType, false)
         return
       } catch (err) { 

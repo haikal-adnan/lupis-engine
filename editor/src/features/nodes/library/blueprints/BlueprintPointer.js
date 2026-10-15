@@ -7,7 +7,7 @@ export const BlueprintPointer = {
   icon: MousePointer2,
   items: [
     {
-      type: 'event_pointer_click',
+      type: 'eventPointerTap',
       label: 'On Click / Tap',
       description: 'Triggered when screen is clicked (PC) or tapped (Mobile)',
       dynamicMode: 'none',
@@ -19,9 +19,9 @@ export const BlueprintPointer = {
         },
         inputs: [],
         outputs: [
-          { id: 'ptr_click_main', label: 'Trigger', dataType: 'execution', color: '#FFFFFF' },
-          { id: 'pos_x', label: 'Screen X', dataType: 'number', color: '#64B5F6' },
-          { id: 'pos_y', label: 'Screen Y', dataType: 'number', color: '#64B5F6' }
+          { id: 'onClick', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'x', dataType: 'number', color: '#64B5F6' },
+          { id: 'y', dataType: 'number', color: '#64B5F6' }
         ],
         data: {
           values: {
@@ -30,18 +30,15 @@ export const BlueprintPointer = {
           },
           code: 
 `context.onTick(() => {
-  const pointer = context.game?.input?.getPointer?.() || { x: 0, y: 0, down: false };
-  const mouse = context.game?.input?.mouse;
-  const isTriggered = (mouse && mouse.isPressed && mouse.isPressed('left')) || pointer.down;
+  const pointer = context.input.getPointer();
+  const mouse = context.input.mouse;
+  const isTriggered = (mouse && mouse.isPressed('left')) || pointer.down;
 
   if (isTriggered) {
-    outputs['Screen X'] = pointer.x;
-    outputs['pos_x'] = pointer.x;
-    outputs['Screen Y'] = pointer.y;
-    outputs['pos_y'] = pointer.y;
-    outputs['Trigger'] = true;
-    outputs['ptr_click_main'] = true;
-    context.triggerFlow('ptr_click_main');
+    outputs.x = pointer.x;
+    outputs.y = pointer.y;
+    outputs.onClick = true;
+    context.triggerFlow('onClick');
   }
 });
 return;`
@@ -49,7 +46,7 @@ return;`
       }
     },
     {
-      type: 'event_pointer_drag',
+      type: 'eventPointerSwipe',
       label: 'Drag / Swipe',
       description: 'Track pointer movement and delta values while held down',
       dynamicMode: 'none',
@@ -61,9 +58,9 @@ return;`
         },
         inputs: [],
         outputs: [
-          { id: 'drag_active', label: 'On Dragging', dataType: 'execution', color: '#FFFFFF' },
-          { id: 'delta_x', label: 'Delta X', dataType: 'number', color: '#64B5F6' },
-          { id: 'delta_y', label: 'Delta Y', dataType: 'number', color: '#64B5F6' }
+          { id: 'onDrag', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'deltaX', dataType: 'number', color: '#64B5F6' },
+          { id: 'deltaY', dataType: 'number', color: '#64B5F6' }
         ],
         data: {
           values: {
@@ -73,28 +70,25 @@ return;`
           },
           code: 
 `context.onTick(() => {
-  const pointer = context.game?.input?.getPointer?.() || { x: 0, y: 0, down: false };
-  const mouse = context.game?.input?.mouse;
-  const isDown = pointer.down || (mouse && mouse.isDown && mouse.isDown('left'));
+  const pointer = context.input.getPointer();
+  const mouse = context.input.mouse;
+  const isDown = pointer.down || (mouse && mouse.isDown('left'));
 
-  if (!node._dragState) {
-    node._dragState = { lastX: pointer.x, lastY: pointer.y };
+  if (!context.state.dragState) {
+    context.state.dragState = { lastX: pointer.x, lastY: pointer.y };
   }
 
-  const deltaX = pointer.x - node._dragState.lastX;
-  const deltaY = pointer.y - node._dragState.lastY;
+  const deltaX = pointer.x - context.state.dragState.lastX;
+  const deltaY = pointer.y - context.state.dragState.lastY;
 
-  node._dragState.lastX = pointer.x;
-  node._dragState.lastY = pointer.y;
+  context.state.dragState.lastX = pointer.x;
+  context.state.dragState.lastY = pointer.y;
 
   if (isDown && (deltaX !== 0 || deltaY !== 0)) {
-    outputs['Delta X'] = deltaX;
-    outputs['delta_x'] = deltaX;
-    outputs['Delta Y'] = deltaY;
-    outputs['delta_y'] = deltaY;
-    outputs['On Dragging'] = true;
-    outputs['drag_active'] = true;
-    context.triggerFlow('drag_active');
+    outputs.deltaX = deltaX;
+    outputs.deltaY = deltaY;
+    outputs.onDrag = true;
+    context.triggerFlow('onDrag');
   }
 });
 return;`

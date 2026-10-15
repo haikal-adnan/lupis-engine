@@ -20,7 +20,7 @@ export default class EntitySystem {
             (e.name && e.name.toLowerCase() === searchKey.toLowerCase())
         );
 
-        return found || ownerEntity;
+        return found || null;
     }
     
     destroyEntity(entity) {

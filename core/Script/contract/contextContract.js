@@ -1,0 +1,36 @@
+export const CONTEXT_NAMESPACES = Object.freeze([
+  'entity',
+  'layer',
+  'prefab',
+  'collider',
+  'input',
+  'ui',
+  'signal',
+  'lifecycle',
+  'transition',
+  'camera',
+  'scene',
+  'state',
+  'console',
+  'assert'
+]);
+
+export const CONTEXT_ASSERT_METHODS = Object.freeze([
+  'isTrue',
+  'isFalse',
+  'exists',
+  'hasComponent',
+  'isNumber',
+  'isString',
+  'isBoolean',
+  'isObject',
+  'isArray',
+  'inRange',
+  'fail'
+]);
+
+export const CONTEXT_CONSOLE_METHODS = Object.freeze([
+  'log',
+  'warn',
+  'error'
+]);

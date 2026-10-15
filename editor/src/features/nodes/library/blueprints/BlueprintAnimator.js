@@ -7,48 +7,41 @@ export const BlueprintAnimator = {
   icon: Film,
   items: [
     {
-      type: 'play_animation',
+      type: 'playAnimation',
       label: 'Play Animation',
       description: 'Plays the animation. Use On Complete for logic execution after the animation finishes.',
       dynamicMode: 'none',
       defaultData: {
         settings: { headerTitle: 'Play Animation', headerColor: '#8E24AA', category: 'Animator' },
         inputs: [
-          { id: 'exec_in', label: 'In', dataType: 'execution', color: '#FFFFFF' },
-          { id: 'target', label: 'Target ID (Self)', dataType: 'string', color: '#F48FB1', defaultValue: 'self' },
-          { id: 'clip_id', label: 'Clip Name/ID', dataType: 'string', color: '#F48FB1' },
-          { id: 'reset', label: 'Reset Frame?', dataType: 'boolean', color: '#E57373', defaultValue: true }
+          { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'targetEntity', dataType: 'string', color: '#F48FB1', defaultValue: 'self' },
+          { id: 'clipId', dataType: 'string', color: '#F48FB1' },
+          { id: 'reset', dataType: 'boolean', color: '#E57373', defaultValue: true }
         ],
         outputs: [
-          { id: 'exec_out', label: 'Out', dataType: 'execution', color: '#FFFFFF' },
-          { id: 'on_start', label: 'On Start', dataType: 'execution', color: '#FFFFFF' },
-          { id: 'on_complete', label: 'On Complete', dataType: 'execution', color: '#FFFFFF' }
+          { id: 'execOut', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'onStart', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'onComplete', dataType: 'execution', color: '#FFFFFF' }
         ],
         data: {
+          values: {
+            targetEntity: 'self',
+            clipId: '',
+            reset: true
+          },
           code: 
-`const targetId = inputs['Target ID (Self)'] ?? inputs['target'] ?? 'self';
-const clipIdInput = inputs['Clip Name/ID'] ?? inputs['clip_id'];
-const reset = inputs['Reset Frame?'] ?? inputs['reset'];
-const entity = context.getEntity ? context.getEntity(targetId) : context.entity?.get(targetId);
+`const targetId = inputs.targetEntity;
+const clipIdInput = inputs.clipId;
+const reset = inputs.reset;
+const entity = context.assert.exists(context.entity.get(targetId));
+const animator = context.assert.hasComponent(entity, 'SpriteAnimator');
+const targetStr = clipIdInput;
 
-if (!entity?.components?.SpriteAnimator || !clipIdInput) {
-  outputs['Out'] = true;
-  outputs['exec_out'] = true;
-  return;
-}
+const clips = animator.clips || [];
+const targetClip = clips.find(c => c.scriptId === targetStr || c.id === targetStr);
 
-const animator = entity.components.SpriteAnimator;
-const targetStr = String(clipIdInput);
-
-const targetClip = animator.clips?.find(c => 
-  c.scriptId === targetStr || 
-  c.name === targetStr || 
-  c.id === targetStr
-);
-
-const resolvedInternalId = targetClip ? targetClip.id : targetStr;
-
-animator.currentClip = resolvedInternalId;
+animator.currentClip = targetClip ? targetClip.id : targetStr;
 animator.isPlaying = true;
 
 if (reset !== false) {
@@ -59,59 +52,59 @@ if (reset !== false) {
 }
 
 animator._onCompleteCallback = () => {
-  context.executeFlow('On Complete');
+  outputs.onComplete = true;
+  context.triggerFlow('onComplete');
 };
 
-outputs['Out'] = true;
-outputs['exec_out'] = true;
-outputs['On Start'] = true;
-outputs['on_start'] = true;
+outputs.execOut = true;
+outputs.onStart = true;
 return;`
         }
       }
     },
     {
-      type: 'pause_animation',
+      type: 'pauseAnimation',
       label: 'Pause Animation',
       description: 'Temporarily pauses the animation at the current frame.',
       dynamicMode: 'none',
       defaultData: {
         settings: { headerTitle: 'Pause Animation', headerColor: '#8E24AA', category: 'Animator' },
         inputs: [
-          { id: 'exec_in', label: 'In', dataType: 'execution', color: '#FFFFFF' },
-          { id: 'target', label: 'Target ID (Self)', dataType: 'string', color: '#F48FB1', defaultValue: 'self' }
+          { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'targetEntity', dataType: 'string', color: '#F48FB1', defaultValue: 'self' }
         ],
         outputs: [
-          { id: 'exec_out', label: 'Out', dataType: 'execution', color: '#FFFFFF' }
+          { id: 'execOut', dataType: 'execution', color: '#FFFFFF' }
         ],
         data: {
+          values: {
+            targetEntity: 'self'
+          },
           code: 
-`const targetId = inputs['Target ID (Self)'] ?? inputs['target'] ?? 'self';
-const entity = context.getEntity ? context.getEntity(targetId) : context.entity?.get(targetId);
+`const targetId = inputs.targetEntity;
+const entity = context.assert.exists(context.entity.get(targetId));
+const animator = context.assert.hasComponent(entity, 'SpriteAnimator');
 
-if (entity?.components?.SpriteAnimator) {
-  entity.components.SpriteAnimator.isPlaying = false;
-}
+animator.isPlaying = false;
 
-outputs['Out'] = true;
-outputs['exec_out'] = true;
+outputs.execOut = true;
 return;`
         }
       }
     },
     {
-      type: 'get_animator',
+      type: 'getAnimator',
       label: 'Get Animator',
       description: 'Mendapatkan properti animator dari entity target.',
       dynamicMode: 'outputProperty',
       defaultData: {
         settings: { headerTitle: 'Get Animator', headerColor: '#8E24AA', category: 'Animator' },
         inputs: [
-          { id: 'target', label: 'Target ID (Self)', dataType: 'string', color: '#F48FB1', defaultValue: 'self' }
+          { id: 'targetEntity', dataType: 'string', color: '#F48FB1', defaultValue: 'self' }
         ],
         outputs: [],
         data: {
-          values: { target: 'self' },
+          values: { targetEntity: 'self' },
           propertyOptions: [
             { value: 'currentClip', label: 'Current Clip ID', type: 'string', color: '#F48FB1' },
             { value: 'isPlaying', label: 'Is Playing?', type: 'boolean', color: '#E57373' },
@@ -119,183 +112,148 @@ return;`
             { value: 'flipX', label: 'Flip Horizontal', type: 'boolean', color: '#E57373' }
           ],
           code: 
-`const targetId = inputs['Target ID (Self)'] ?? inputs['target'] ?? 'self';
-const entity = context.getEntity ? context.getEntity(targetId) : context.entity?.get(targetId);
+`const targetId = inputs.targetEntity;
+const entity = context.assert.exists(context.entity.get(targetId));
+const comp = context.assert.hasComponent(entity, 'SpriteAnimator');
+const clips = comp.clips || [];
+const clip = clips.find(c => c.scriptId === comp.currentClip || c.id === comp.currentClip);
 
-if (entity?.components?.SpriteAnimator) {
-  const comp = entity.components.SpriteAnimator;
-  const clip = comp.clips?.find(c => c.id === comp.currentClip);
-
-  outputs['Current Clip ID'] = comp.currentClip || null;
-  outputs['currentClip'] = comp.currentClip || null;
-  outputs['Is Playing?'] = !!comp.isPlaying;
-  outputs['isPlaying'] = !!comp.isPlaying;
-  outputs['Is Enabled?'] = !!comp.active;
-  outputs['active'] = !!comp.active;
-  outputs['Flip Horizontal'] = clip ? !!clip.flipX : false;
-  outputs['flipX'] = clip ? !!clip.flipX : false;
-}
+outputs.currentClip = comp.currentClip;
+outputs.isPlaying = comp.isPlaying;
+outputs.active = comp.active;
+outputs.flipX = clip ? clip.flipX : false;
 return;`
         }
       }
     },
     {
-      type: 'set_animator',
+      type: 'setAnimator',
       label: 'Set Animator',
       description: 'Mengatur properti animator pada entity target.',
       dynamicMode: 'inputProperty',
       defaultData: {
         settings: { headerTitle: 'Set Animator', headerColor: '#8E24AA', category: 'Animator' },
         inputs: [
-          { id: 'exec_in', label: 'In', dataType: 'execution', color: '#FFFFFF' },
-          { id: 'target', label: 'Target ID (Self)', dataType: 'string', color: '#F48FB1', defaultValue: 'self' }
+          { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'targetEntity', dataType: 'string', color: '#F48FB1', defaultValue: 'self' }
         ],
         outputs: [
-          { id: 'exec_out', label: 'Out', dataType: 'execution', color: '#FFFFFF' }
+          { id: 'execOut', dataType: 'execution', color: '#FFFFFF' }
         ],
         data: {
-          values: { target: 'self' },
+          values: { targetEntity: 'self' },
           propertyOptions: [
             { value: 'currentClip', label: 'Set Current Clip', type: 'string', color: '#F48FB1' },
             { value: 'active', label: 'Is Enabled', type: 'boolean', color: '#E57373' },
             { value: 'flipX', label: 'Flip Horizontal', type: 'boolean', color: '#E57373' }
           ],
           code: 
-`const targetId = inputs['Target ID (Self)'] ?? inputs['target'] ?? 'self';
-const entity = context.getEntity ? context.getEntity(targetId) : context.entity?.get(targetId);
+`const targetId = inputs.targetEntity;
+const entity = context.assert.exists(context.entity.get(targetId));
+const comp = context.assert.hasComponent(entity, 'SpriteAnimator');
 
-if (!entity?.components?.SpriteAnimator) {
-  outputs['Out'] = true;
-  outputs['exec_out'] = true;
-  return;
-}
+if ('currentClip' in inputs) {
+  const targetStr = inputs.currentClip;
+  const clips = comp.clips || [];
+  const targetClip = clips.find(c => c.scriptId === targetStr || c.id === targetStr);
+  const resolvedId = targetClip ? targetClip.id : targetStr;
 
-const comp = entity.components.SpriteAnimator;
-const currentClipInput = inputs['Set Current Clip'] ?? inputs['currentClip'];
-
-if (currentClipInput !== undefined && currentClipInput !== null && currentClipInput !== '') {
-  const targetStr = String(currentClipInput);
-  const targetClip = comp.clips?.find(c => 
-    c.scriptId === targetStr || 
-    c.name === targetStr || 
-    c.id === targetStr
-  );
-  const resolvedInternalId = targetClip ? targetClip.id : targetStr;
-
-  if (comp.currentClip !== resolvedInternalId) {
-    comp.currentClip = resolvedInternalId;
+  if (comp.currentClip !== resolvedId) {
+    comp.currentClip = resolvedId;
     comp._elapsedTime = 0;
     comp.isPlaying = true;
     if (targetClip) targetClip.frameIndex = 0;
   }
 }
 
-const active = inputs['Is Enabled'] ?? inputs['active'];
-if (active !== undefined && active !== null) {
-  comp.active = Boolean(active);
+if ('active' in inputs) {
+  comp.active = inputs.active;
 }
 
-const flipX = inputs['Flip Horizontal'] ?? inputs['flipX'];
-if (flipX !== undefined && flipX !== null) {
-  const clip = comp.clips?.find(c => c.id === comp.currentClip);
-  if (clip) clip.flipX = Boolean(flipX);
+if ('flipX' in inputs) {
+  const clips = comp.clips || [];
+  const clip = clips.find(c => c.scriptId === comp.currentClip || c.id === comp.currentClip);
+  if (clip) clip.flipX = inputs.flipX;
 }
 
-outputs['Out'] = true;
-outputs['exec_out'] = true;
+outputs.execOut = true;
 return;`
         }
       }
     },
     {
-      type: 'get_clip_prop',
+      type: 'getClipProp',
       label: 'Get Clip Prop',
       description: 'Mendapatkan properti spesifik dari animasi clip.',
       dynamicMode: 'outputProperty',
       defaultData: {
         settings: { headerTitle: 'Get Clip Property', headerColor: '#8E24AA', category: 'Animator' },
         inputs: [
-          { id: 'clip_id', label: 'Clip ID', dataType: 'string', color: '#F48FB1' }
+          { id: 'clipId', dataType: 'string', color: '#F48FB1' }
         ],
         outputs: [],
         data: {
+          values: {
+            clipId: ''
+          },
           propertyOptions: [
             { value: 'fps', label: 'Frame Rate', type: 'number', color: '#64B5F6' },
             { value: 'isLooping', label: 'Is Looping?', type: 'boolean', color: '#E57373' },
             { value: 'frameCount', label: 'Total Frames', type: 'number', color: '#64B5F6' }
           ],
           code: 
-`const clipIdInput = inputs['Clip ID'] ?? inputs['clip_id'];
-if (clipIdInput) {
-  const entity = context.owner;
-  if (entity?.components?.SpriteAnimator?.clips) {
-    const targetStr = String(clipIdInput);
-    const clip = entity.components.SpriteAnimator.clips.find(c => 
-      c.scriptId === targetStr || 
-      c.name === targetStr || 
-      c.id === targetStr
-    );
+`const clipIdInput = inputs.clipId;
+const entity = context.assert.exists(context.owner);
+const comp = context.assert.hasComponent(entity, 'SpriteAnimator');
+const clips = comp.clips || [];
+const targetStr = clipIdInput;
+const clip = clips.find(c => c.scriptId === targetStr || c.id === targetStr);
 
-    if (clip) {
-      outputs['Frame Rate'] = clip.fps || 12;
-      outputs['fps'] = clip.fps || 12;
-      outputs['Is Looping?'] = !!clip.isLooping;
-      outputs['isLooping'] = !!clip.isLooping;
-      outputs['Total Frames'] = clip.frames ? clip.frames.length : 0;
-      outputs['frameCount'] = clip.frames ? clip.frames.length : 0;
-    }
-  }
+if (clip) {
+  outputs.fps = clip.fps;
+  outputs.isLooping = clip.isLooping;
+  outputs.frameCount = clip.frames ? clip.frames.length : 0;
 }
 return;`
         }
       }
     },
     {
-      type: 'set_clip_prop',
+      type: 'setClipProp',
       label: 'Set Clip Prop',
       description: 'Mengatur properti spesifik dari animasi clip.',
       dynamicMode: 'inputProperty',
       defaultData: {
         settings: { headerTitle: 'Set Clip Property', headerColor: '#8E24AA', category: 'Animator' },
         inputs: [
-          { id: 'exec_in', label: 'In', dataType: 'execution', color: '#FFFFFF' },
-          { id: 'clip_id', label: 'Clip ID', dataType: 'string', color: '#F48FB1' }
+          { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'clipId', dataType: 'string', color: '#F48FB1' }
         ],
         outputs: [
-          { id: 'exec_out', label: 'Out', dataType: 'execution', color: '#FFFFFF' }
+          { id: 'execOut', dataType: 'execution', color: '#FFFFFF' }
         ],
         data: {
+          values: {
+            clipId: ''
+          },
           propertyOptions: [
             { value: 'fps', label: 'Set FPS', type: 'number', color: '#64B5F6' },
             { value: 'isLooping', label: 'Set Looping', type: 'boolean', color: '#E57373' }
           ],
           code: 
-`const clipIdInput = inputs['Clip ID'] ?? inputs['clip_id'];
-const entity = context.owner;
-
-if (!clipIdInput || !entity?.components?.SpriteAnimator?.clips) {
-  outputs['Out'] = true;
-  outputs['exec_out'] = true;
-  return;
-}
-
-const targetStr = String(clipIdInput);
-const clip = entity.components.SpriteAnimator.clips.find(c => 
-  c.scriptId === targetStr || 
-  c.name === targetStr || 
-  c.id === targetStr
-);
+`const clipIdInput = inputs.clipId;
+const entity = context.assert.exists(context.owner);
+const comp = context.assert.hasComponent(entity, 'SpriteAnimator');
+const clips = comp.clips || [];
+const targetStr = clipIdInput;
+const clip = clips.find(c => c.scriptId === targetStr || c.id === targetStr);
 
 if (clip) {
-  const fps = inputs['Set FPS'] ?? inputs['fps'];
-  if (fps !== undefined && fps !== null && fps !== '') clip.fps = Number(fps);
-
-  const isLooping = inputs['Set Looping'] ?? inputs['isLooping'];
-  if (isLooping !== undefined && isLooping !== null) clip.isLooping = Boolean(isLooping);
+  if ('fps' in inputs) clip.fps = inputs.fps;
+  if ('isLooping' in inputs) clip.isLooping = inputs.isLooping;
 }
 
-outputs['Out'] = true;
-outputs['exec_out'] = true;
+outputs.execOut = true;
 return;`
         }
       }

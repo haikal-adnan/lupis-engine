@@ -13,7 +13,7 @@ const CATEGORY_BATCHES = [
     name: 'Batch 1: Animator through Events & Signals',
     categories: [
       'Animator', 'Basic Layer', 'Basic Object', 'Boolean Logic', 'Camera',
-      'Collection Helpers', 'Collider System', 'Entity Management', 'Events & Signals',
+      'Collection Helper', 'Collider System', 'Entity Management', 'Events & Signals',
     ],
   },
   {
@@ -26,7 +26,7 @@ const CATEGORY_BATCHES = [
   {
     name: 'Batch 3: Mouse Events through Transition',
     categories: [
-      'Mouse Events', 'Physics & Collision', 'Pointer & Touch', 'Random Operations',
+      'Mouse Events', 'Physics System', 'Pointer & Touch', 'Random Operations',
       'Renderer', 'Scene Management', 'String Utils', 'Transform', 'Transition',
     ],
   },
@@ -45,13 +45,13 @@ test.describe('Node Library & Graph Editor Unified E2E Testing', () => {
   // =========================================================================
   test('drags a node from the sidebar search results onto the graph canvas', async ({ nodeLibrary, nodeGraph }) => {
     await nodeLibrary.searchInSidebar('get transform');
-    const searchItem = nodeLibrary.sidebarSearchItemByType('get_transform');
+    const searchItem = nodeLibrary.sidebarSearchItemByType('getTransform');
     await expect(searchItem).toBeVisible();
-    await expect(nodeGraph.nodesByType('get_transform')).toHaveCount(0);
+    await expect(nodeGraph.nodesByType('getTransform')).toHaveCount(0);
 
     await nodeGraph.dropFromSidebarToCanvas(searchItem, { x: 450, y: 250 });
 
-    await expect(nodeGraph.nodesByType('get_transform')).toHaveCount(1);
+    await expect(nodeGraph.nodesByType('getTransform')).toHaveCount(1);
   });
 
   // =========================================================================
@@ -143,7 +143,7 @@ test.describe('Node Library & Graph Editor Unified E2E Testing', () => {
   // 6. MANIPULASI NODE DIRECT VIA STORE
   // =========================================================================
   test('creates, selects, moves and deletes a node via the Pinia store', async ({ nodeGraph }) => {
-    const nodeId = await nodeGraph.spawnNodeViaStore('get_transform', 'Get Transform', { x: 350, y: 200 });
+    const nodeId = await nodeGraph.spawnNodeViaStore('getTransform', 'Get Transform', { x: 350, y: 200 });
     await expect(nodeGraph.nodeById(nodeId)).toBeVisible();
 
     await nodeGraph.selectNodeById(nodeId);
@@ -157,10 +157,10 @@ test.describe('Node Library & Graph Editor Unified E2E Testing', () => {
   // 7. KONEKSI EDGE & MODIFIER PROPERTY INSPECTOR
   // =========================================================================
   test('connects an edge, selects it and edits its modifier in the Property Inspector', async ({ nodeGraph }) => {
-    const sourceId = await nodeGraph.spawnNodeViaStore('math_add', 'Source Node', { x: 200, y: 200 });
-    const targetId = await nodeGraph.spawnNodeViaStore('math_subtract', 'Target Node', { x: 500, y: 200 });
+    const sourceId = await nodeGraph.spawnNodeViaStore('mathAdd', 'Source Node', { x: 200, y: 200 });
+    const targetId = await nodeGraph.spawnNodeViaStore('mathSubtract', 'Target Node', { x: 500, y: 200 });
 
-    const edgeId = await nodeGraph.connectPortsViaStore(sourceId, 'out_0', targetId, 'in_0');
+    const edgeId = await nodeGraph.connectPortsViaStore(sourceId, 'result', targetId, 'v0');
     await expect(nodeGraph.edgeById(edgeId)).toBeAttached();
 
     await nodeGraph.selectEdgeById(edgeId);
@@ -178,9 +178,9 @@ test.describe('Node Library & Graph Editor Unified E2E Testing', () => {
   // 8. [Bad Path] VALIDASI KONEKSI EDGE
   // =========================================================================
   test('[Bad Path] rejects an edge connection when source and target are the same node', async ({ nodeGraph }) => {
-    const nodeId = await nodeGraph.spawnNodeViaStore('math_add', 'Self Node', { x: 300, y: 200 });
+    const nodeId = await nodeGraph.spawnNodeViaStore('mathAdd', 'Self Node', { x: 300, y: 200 });
 
-    await nodeGraph.connectPortsViaStore(nodeId, 'exec_out', nodeId, 'exec_in');
+    await nodeGraph.connectPortsViaStore(nodeId, 'execOut', nodeId, 'execIn');
 
     await expect(nodeGraph.edges).toHaveCount(0);
   });

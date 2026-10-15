@@ -145,12 +145,18 @@
         channel.postMessage({ type: "REQUEST_LATEST_DATA" });
     }
 
+    let hasLoaded = false;
     channel.onmessage = (event) => {
         const { type, payload, opfsContext } = event.data;
 
         if (type === "SCENE_UPDATE") {
             sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ payload, opfsContext }));
-            window.location.reload();
+            if (!hasLoaded && !savedData) {
+                hasLoaded = true;
+                runGame(payload, opfsContext);
+            } else {
+                window.location.reload();
+            }
         }
     };
   </script>

@@ -6,7 +6,7 @@ export default class VariableManager {
         this._initialGlobalsBackup = [];
     }
 
-    initGlobals(globalVarsArray) {
+    initGlobals(globalVarsArray = []) {
         this._initialGlobalsBackup = Array.isArray(globalVarsArray)
             ? JSON.parse(JSON.stringify(globalVarsArray))
             : [];
@@ -33,22 +33,24 @@ export default class VariableManager {
     }
 
     getGlobal(varNameOrId) {
-        if (!varNameOrId) return null;
+        if (!varNameOrId) {
+            throw new Error('[VariableManager] Global variable identifier cannot be empty.');
+        }
         const id = this.globals.has(varNameOrId) ? varNameOrId : this.nameToIdMap.get(varNameOrId);
-        if (!id) {
-            console.warn(`[VariableManager] Global variable '${varNameOrId}' tidak terdaftar pada schema Global.`);
-            return null;
+        if (!id || !this.globals.has(id)) {
+            throw new Error(`[VariableManager] Global variable '${varNameOrId}' is not registered in Global Schema.`);
         }
 
-        return this.globals.get(id) ?? null;
+        return this.globals.get(id);
     }
 
     setGlobal(varNameOrId, value) {
-        if (!varNameOrId) return;
+        if (!varNameOrId) {
+            throw new Error('[VariableManager] Global variable identifier cannot be empty.');
+        }
         const id = this.globals.has(varNameOrId) ? varNameOrId : this.nameToIdMap.get(varNameOrId);
-        if (!id) {
-            console.error(`[Runtime Error] Global variable '${varNameOrId}' tidak terdaftar pada Global Schema!`);
-            return;
+        if (!id || !this.globals.has(id)) {
+            throw new Error(`[VariableManager] Global variable '${varNameOrId}' is not registered in Global Schema.`);
         }
 
         this.globals.set(id, value);
@@ -59,11 +61,9 @@ export default class VariableManager {
         return this.globals.has(varNameOrId) || this.nameToIdMap.has(varNameOrId);
     }
 
-    registerScriptSchema(scriptId, variablesArray) {
-        if (!variablesArray) return;
-        
+    registerScriptSchema(scriptId, variablesArray = []) {
         const schema = new Map();
-        variablesArray.forEach(v => {
+        (variablesArray || []).forEach(v => {
             if (v.name && v.id) {
                 schema.set(v.name, {
                     id: v.id,

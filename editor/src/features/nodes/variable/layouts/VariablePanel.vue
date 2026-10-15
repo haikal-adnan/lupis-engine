@@ -204,11 +204,11 @@ const openManager = (targetScope) => {
 const handleDragStart = (event, item) => {
   const targetLogic = item.scope === 'Global' ? globalLogic : localLogic;
 
-  let actionType = 'variable_get';
+  let actionType = 'variableGet';
   if (event.altKey) {
-    actionType = 'variable_set';
+    actionType = 'variableSet';
   } else if (event.ctrlKey) {
-    actionType = 'variable_get';
+    actionType = 'variableGet';
   }
 
   targetLogic.onDragStart(event, item, actionType);

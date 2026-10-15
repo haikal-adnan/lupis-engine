@@ -2,104 +2,81 @@ import { Activity } from 'lucide-vue-next';
 
 export const BlueprintPhysics = {
   id: 'game_physics',
-  label: 'Physics & Collision',
-  color: '#7C4DFF',
+  label: 'Physics System',
+  color: '#4CAF50',
   icon: Activity,
   items: [
     {
-      type: 'get_physics',
-      label: 'Get Physics',
-      description: 'Get physics state (velocity, grounded, etc)',
+      type: 'getPhysics',
+      label: 'Get Physics Info',
+      description: 'Get physics component properties like Velocity, Grounded, Mass, etc.',
       dynamicMode: 'outputProperty',
       defaultData: {
         settings: {
           headerTitle: 'Get Physics',
-          headerColor: '#5E35B1',
-          category: 'Physics & Collision'
+          headerColor: '#2E7D32',
+          category: 'Physics System'
         },
         inputs: [
-          { id: 'target_in', label: 'Target Entity', dataType: 'string', color: '#F48FB1', defaultValue: 'self' }
+          { id: 'targetEntity', dataType: 'string', color: '#F48FB1', defaultValue: 'self' }
         ],
         outputs: [],
         data: {
           values: {
-            target_in: 'self'
+            targetEntity: 'self'
           },
           propertyOptions: [
             { value: 'velocityX', label: 'Velocity X', type: 'number', color: '#64B5F6' },
             { value: 'velocityY', label: 'Velocity Y', type: 'number', color: '#64B5F6' },
-            { value: 'isGrounded', label: 'Is Grounded?', type: 'boolean', color: '#E57373' },
+            { value: 'isGrounded', label: 'Is Grounded', type: 'boolean', color: '#E57373' },
             { value: 'movementState', label: 'Movement State', type: 'string', color: '#F48FB1' },
             { value: 'facingDirection', label: 'Facing Direction', type: 'string', color: '#F48FB1' },
             { value: 'mass', label: 'Mass', type: 'number', color: '#64B5F6' },
             { value: 'gravityScale', label: 'Gravity Scale', type: 'number', color: '#64B5F6' },
             { value: 'drag', label: 'Drag', type: 'number', color: '#64B5F6' },
-            { value: 'enabled', label: 'Is Enabled?', type: 'boolean', color: '#E57373' },
-            { value: 'isFrozen', label: 'Is Frozen?', type: 'boolean', color: '#E57373' }
+            { value: 'enabled', label: 'Enabled', type: 'boolean', color: '#E57373' },
+            { value: 'isFrozen', label: 'Is Frozen', type: 'boolean', color: '#E57373' }
           ],
           code: 
-`const targetId = inputs['Target Entity'] ?? inputs['target_in'] ?? 'self';
-const target = context.entity.get(targetId);
+`const targetId = inputs.targetEntity;
+const entity = context.assert.exists(context.entity.get(targetId));
+const phys = context.assert.hasComponent(entity, 'Physics');
 
-if (target && target.components && target.components.Physics) {
-  const phys = target.components.Physics;
-  const velX = phys.velocityX ?? 0;
-  const velY = phys.velocityY ?? 0;
-  const grounded = Boolean(phys.isGrounded);
-  const moveState = phys.movementState || 'idle';
-  const facing = phys.facingDirection || 'right';
-  const massVal = phys.mass ?? 1;
-  const grav = phys.gravityScale ?? 1;
-  const dragVal = phys.drag ?? 0;
-  const isEnabled = Boolean(phys.enabled);
-  const isFrozen = Boolean(phys.isFrozen);
-
-  outputs['Velocity X'] = velX;
-  outputs['velocityX'] = velX;
-  outputs['Velocity Y'] = velY;
-  outputs['velocityY'] = velY;
-  outputs['Is Grounded?'] = grounded;
-  outputs['isGrounded'] = grounded;
-  outputs['Movement State'] = moveState;
-  outputs['movementState'] = moveState;
-  outputs['Facing Direction'] = facing;
-  outputs['facingDirection'] = facing;
-  outputs['Mass'] = massVal;
-  outputs['mass'] = massVal;
-  outputs['Gravity Scale'] = grav;
-  outputs['gravityScale'] = grav;
-  outputs['Drag'] = dragVal;
-  outputs['drag'] = dragVal;
-  outputs['Is Enabled?'] = isEnabled;
-  outputs['enabled'] = isEnabled;
-  outputs['Is Frozen?'] = isFrozen;
-  outputs['isFrozen'] = isFrozen;
-}
+outputs.velocityX = phys.velocityX;
+outputs.velocityY = phys.velocityY;
+outputs.isGrounded = phys.isGrounded;
+outputs.movementState = phys.movementState;
+outputs.facingDirection = phys.facingDirection;
+outputs.mass = phys.mass;
+outputs.gravityScale = phys.gravityScale;
+outputs.drag = phys.drag;
+outputs.enabled = phys.enabled;
+outputs.isFrozen = phys.isFrozen;
 return;`
         }
       }
     },
     {
-      type: 'set_physics',
-      label: 'Set Physics',
-      description: 'Modify physics properties (velocity, mass, drag, gravity)',
+      type: 'setPhysics',
+      label: 'Set Physics Info',
+      description: 'Set physics component properties like Velocity, Mass, etc.',
       dynamicMode: 'inputProperty',
       defaultData: {
         settings: {
           headerTitle: 'Set Physics',
-          headerColor: '#5E35B1',
-          category: 'Physics & Collision'
+          headerColor: '#2E7D32',
+          category: 'Physics System'
         },
         inputs: [
-          { id: 'exec_in', label: 'In', dataType: 'execution', color: '#FFFFFF' },
-          { id: 'target_in', label: 'Target Entity', dataType: 'string', color: '#F48FB1', defaultValue: 'self' }
+          { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'targetEntity', dataType: 'string', color: '#F48FB1', defaultValue: 'self' }
         ],
         outputs: [
-          { id: 'exec_out', label: 'Out', dataType: 'execution', color: '#FFFFFF' }
+          { id: 'execOut', dataType: 'execution', color: '#FFFFFF' }
         ],
         data: {
           values: {
-            target_in: 'self'
+            targetEntity: 'self'
           },
           propertyOptions: [
             { value: 'velocityX', label: 'Velocity X', type: 'number', color: '#64B5F6' },
@@ -107,85 +84,67 @@ return;`
             { value: 'mass', label: 'Mass', type: 'number', color: '#64B5F6' },
             { value: 'gravityScale', label: 'Gravity Scale', type: 'number', color: '#64B5F6' },
             { value: 'drag', label: 'Drag', type: 'number', color: '#64B5F6' },
-            { value: 'enabled', label: 'Enabled?', type: 'boolean', color: '#E57373' },
-            { value: 'isFrozen', label: 'Is Frozen?', type: 'boolean', color: '#E57373' }
+            { value: 'enabled', label: 'Enabled', type: 'boolean', color: '#E57373' },
+            { value: 'isFrozen', label: 'Is Frozen', type: 'boolean', color: '#E57373' }
           ],
           code: 
-`const targetId = inputs['Target Entity'] ?? inputs['target_in'] ?? 'self';
-const entity = context.entity.get(targetId);
+`const targetId = inputs.targetEntity;
+const entity = context.assert.exists(context.entity.get(targetId));
+const phys = context.assert.hasComponent(entity, 'Physics');
 
-if (entity && entity.components && entity.components.Physics) {
-  const phys = entity.components.Physics;
-
-  const velX = inputs['Velocity X'] ?? inputs['velocityX'];
-  const velY = inputs['Velocity Y'] ?? inputs['velocityY'];
-  const mass = inputs['Mass'] ?? inputs['mass'];
-  const gravityScale = inputs['Gravity Scale'] ?? inputs['gravityScale'];
-  const drag = inputs['Drag'] ?? inputs['drag'];
-  const enabled = inputs['Enabled?'] ?? inputs['enabled'];
-  const isFrozen = inputs['Is Frozen?'] ?? inputs['isFrozen'];
-
-  if (velX !== undefined && velX !== null && velX !== '') {
-    const val = Number(velX);
-    phys.velocityX = val;
-    phys._isIntentionalMove = Math.abs(val) > 10;
-  }
-  if (velY !== undefined && velY !== null && velY !== '') {
-    const val = Number(velY);
-    phys.velocityY = val;
-    phys._isIntentionalMove = Math.abs(val) > 10;
-  }
-  if (mass !== undefined && mass !== null && mass !== '') {
-    phys.mass = Number(mass);
-  }
-  if (gravityScale !== undefined && gravityScale !== null && gravityScale !== '') {
-    phys.gravityScale = Number(gravityScale);
-  }
-  if (drag !== undefined && drag !== null && drag !== '') {
-    phys.drag = Number(drag);
-  }
-  if (enabled !== undefined && enabled !== null) {
-    phys.enabled = Boolean(enabled === 'true' || enabled === true);
-  }
-  if (isFrozen !== undefined && isFrozen !== null) {
-    const frozenVal = Boolean(isFrozen === 'true' || isFrozen === true);
-    phys.isFrozen = frozenVal;
-    if (frozenVal) {
-      phys.velocityX = 0;
-      phys.velocityY = 0;
-    }
+const numericKeys = ['velocityX', 'velocityY', 'mass', 'gravityScale', 'drag'];
+for (const key of numericKeys) {
+  if (key in inputs && inputs[key] !== '' && !Number.isNaN(Number(inputs[key]))) {
+    phys[key] = Number(inputs[key]);
   }
 }
 
-outputs['Out'] = true;
-outputs['exec_out'] = true;
+if ('velocityX' in inputs && inputs.velocityX !== '' && !Number.isNaN(Number(inputs.velocityX))) {
+  phys._isIntentionalMove = Math.abs(Number(inputs.velocityX)) > 10;
+}
+if ('velocityY' in inputs && inputs.velocityY !== '' && !Number.isNaN(Number(inputs.velocityY))) {
+  phys._isIntentionalMove = Math.abs(Number(inputs.velocityY)) > 10;
+}
+if ('enabled' in inputs && inputs.enabled !== '') {
+  phys.enabled = Boolean(inputs.enabled);
+}
+if ('isFrozen' in inputs && inputs.isFrozen !== '') {
+  phys.isFrozen = Boolean(inputs.isFrozen);
+}
+
+outputs.execOut = true;
 return;`
         }
       }
     },
     {
-      type: 'set_face_direction',
+      type: 'setFaceDirection',
       label: 'Set Face Direction',
-      description: 'Atur arah hadap karakter',
+      description: 'Automatically sets the entity facing direction based on 2D Axis inputs',
       dynamicMode: 'none',
       defaultData: {
         settings: {
-          headerTitle: 'Face Direction',
-          headerColor: '#FF4081',
-          category: 'Physics & Collision'
+          headerTitle: 'Set Face Direction',
+          headerColor: '#2E7D32',
+          category: 'Physics System'
         },
         inputs: [
-          { id: 'exec_in', label: 'In', dataType: 'execution', color: '#FFFFFF' },
-          { id: 'target_in', label: 'Target Entity', dataType: 'string', color: '#F48FB1', defaultValue: 'self' },
-          { id: 'axisX', label: 'Axis X', dataType: 'number', color: '#64B5F6', defaultValue: 0 },
-          { id: 'axisY', label: 'Axis Y', dataType: 'number', color: '#64B5F6', defaultValue: 0 },
-          { id: 'mode', label: 'Mode', dataType: 'string', color: '#F48FB1', defaultValue: '4-way' }
+          { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'targetEntity', dataType: 'string', color: '#F48FB1', defaultValue: 'self' },
+          { id: 'axisX', dataType: 'number', color: '#64B5F6', defaultValue: 0 },
+          { id: 'axisY', dataType: 'number', color: '#64B5F6', defaultValue: 0 },
+          { id: 'mode', dataType: 'string', color: '#F48FB1', defaultValue: 'horizontal' }
         ],
         outputs: [
-          { id: 'exec_out', label: 'Out', dataType: 'execution', color: '#FFFFFF' }
+          { id: 'execOut', dataType: 'execution', color: '#FFFFFF' }
         ],
         data: {
-          values: { axisX: 0, axisY: 0, mode: '4-way', target_in: 'self' },
+          values: {
+            targetEntity: 'self',
+            axisX: 0,
+            axisY: 0,
+            mode: 'horizontal'
+          },
           options: {
             mode: [
               { label: 'Horizontal Only', value: 'horizontal' },
@@ -195,109 +154,97 @@ return;`
             ]
           },
           code: 
-`const targetId = inputs['Target Entity'] ?? inputs['target_in'] ?? 'self';
-const target = context.entity.get(targetId);
+`const targetId = inputs.targetEntity;
+const target = context.assert.exists(context.entity.get(targetId));
+const phys = context.assert.hasComponent(target, 'Physics');
+const axisX = inputs.axisX;
+const axisY = inputs.axisY;
+const mode = inputs.mode;
 
-if (target && target.components && target.components.Physics) {
-  const phys = target.components.Physics;
-  const axisX = Number(inputs['Axis X'] ?? inputs['axisX'] ?? 0);
-  const axisY = Number(inputs['Axis Y'] ?? inputs['axisY'] ?? 0);
-  const mode = inputs['Mode'] ?? inputs['mode'] ?? '4-way';
+phys.customFacing = true;
 
-  phys.customFacing = true;
-
-  if (mode === 'horizontal') {
-    if (axisX > 0) phys.facingDirection = 'right';
-    else if (axisX < 0) phys.facingDirection = 'left';
-  } else if (mode === 'vertical') {
-    if (axisY > 0) phys.facingDirection = 'down';
-    else if (axisY < 0) phys.facingDirection = 'up';
-  } else if (mode === '4-way') {
-    if (Math.abs(axisX) > Math.abs(axisY)) {
-      phys.facingDirection = axisX > 0 ? 'right' : 'left';
-    } else if (Math.abs(axisY) > 0) {
-      phys.facingDirection = axisY > 0 ? 'down' : 'up';
-    }
-  } else if (mode === '8-way') {
-    if (axisX > 0 && axisY < 0) phys.facingDirection = 'up-right';
-    else if (axisX > 0 && axisY > 0) phys.facingDirection = 'down-right';
-    else if (axisX < 0 && axisY < 0) phys.facingDirection = 'up-left';
-    else if (axisX < 0 && axisY > 0) phys.facingDirection = 'down-left';
-    else if (axisX > 0) phys.facingDirection = 'right';
-    else if (axisX < 0) phys.facingDirection = 'left';
-    else if (axisY < 0) phys.facingDirection = 'up';
-    else if (axisY > 0) phys.facingDirection = 'down';
+if (mode === 'horizontal') {
+  if (axisX > 0) phys.facingDirection = 'right';
+  else if (axisX < 0) phys.facingDirection = 'left';
+} else if (mode === 'vertical') {
+  if (axisY > 0) phys.facingDirection = 'down';
+  else if (axisY < 0) phys.facingDirection = 'up';
+} else if (mode === '4-way') {
+  if (Math.abs(axisX) > Math.abs(axisY)) {
+    phys.facingDirection = axisX > 0 ? 'right' : 'left';
+  } else if (Math.abs(axisY) > 0) {
+    phys.facingDirection = axisY > 0 ? 'down' : 'up';
   }
+} else if (mode === '8-way') {
+  if (axisX > 0 && axisY < 0) phys.facingDirection = 'up-right';
+  else if (axisX > 0 && axisY > 0) phys.facingDirection = 'down-right';
+  else if (axisX < 0 && axisY < 0) phys.facingDirection = 'up-left';
+  else if (axisX < 0 && axisY > 0) phys.facingDirection = 'down-left';
+  else if (axisX > 0) phys.facingDirection = 'right';
+  else if (axisX < 0) phys.facingDirection = 'left';
+  else if (axisY < 0) phys.facingDirection = 'up';
+  else if (axisY > 0) phys.facingDirection = 'down';
 }
 
-outputs['Out'] = true;
-outputs['exec_out'] = true;
+outputs.execOut = true;
 return;`
         }
       }
     },
     {
-      type: 'move_and_slide',
+      type: 'moveAndSlide',
       label: 'Move and Slide',
       description: 'Move character with collision handling (For Kinematic Bodies)',
       dynamicMode: 'none',
       defaultData: {
         settings: {
           headerTitle: 'Move and Slide',
-          headerColor: '#5E35B1',
-          category: 'Physics & Collision'
+          headerColor: '#2E7D32',
+          category: 'Physics System'
         },
         inputs: [
-          { id: 'exec_in', label: 'In', dataType: 'execution', color: '#FFFFFF' },
-          { id: 'target_in', label: 'Target Entity', dataType: 'string', color: '#F48FB1', defaultValue: 'self' },
-          { id: 'vel_x', label: 'Velocity X', dataType: 'number', color: '#64B5F6', defaultValue: 0 },
-          { id: 'vel_y', label: 'Velocity Y', dataType: 'number', color: '#64B5F6', defaultValue: 0 }
+          { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'targetEntity', dataType: 'string', color: '#F48FB1', defaultValue: 'self' },
+          { id: 'velocityX', dataType: 'number', color: '#64B5F6', defaultValue: 0 },
+          { id: 'velocityY', dataType: 'number', color: '#64B5F6', defaultValue: 0 }
         ],
         outputs: [
-          { id: 'exec_out', label: 'Out', dataType: 'execution', color: '#FFFFFF' }
+          { id: 'execOut', dataType: 'execution', color: '#FFFFFF' }
         ],
         data: {
-          values: { target_in: 'self', vel_x: 0, vel_y: 0 },
+          values: {
+            targetEntity: 'self',
+            velocityX: 0,
+            velocityY: 0
+          },
           code: 
-`const targetId = inputs['Target Entity'] ?? inputs['target_in'] ?? 'self';
-const entity = context.entity.get(targetId);
-const phys = entity?.components?.Physics;
+`const targetId = inputs.targetEntity;
+const entity = context.assert.exists(context.entity.get(targetId));
+const phys = entity.components && entity.components.Physics;
 
 if (phys && phys.isFrozen) {
-  outputs['Out'] = true;
-  outputs['exec_out'] = true;
+  outputs.execOut = true;
   return;
 }
 
-const t = entity?.components?.UITransform || entity?.components?.Transform;
+const velX = inputs.velocityX;
+const velY = inputs.velocityY;
+const dt = context.dt;
+const hasPhysics = phys && phys.enabled;
 
-if (t) {
-  const velX = Number(inputs['Velocity X'] ?? inputs['vel_x'] ?? 0);
-  const velY = Number(inputs['Velocity Y'] ?? inputs['vel_y'] ?? 0);
-  const dt = context.runner?.currentDt || 0.016;
-  const hasPhysics = phys && phys.enabled;
-
-  if (hasPhysics) {
-    phys.velocityX = velX;
-    if (phys.gravityScale === 0 || velY !== 0) {
-      phys.velocityY = velY;
-    }
-    phys._isIntentionalMove = Math.abs(velX) > 10 || Math.abs(velY) > 10;
-  } else {
-    const moveX = velX * dt;
-    const moveY = velY * dt;
-
-    if (context.game && context.game.colliderSystem) {
-      context.game.colliderSystem.moveAndSlide(entity, moveX, moveY);
-    } else {
-      t.x += moveX;
-      t.y += moveY;
-    }
+if (hasPhysics) {
+  phys.velocityX = velX;
+  if (phys.gravityScale === 0 || velY !== 0) {
+    phys.velocityY = velY;
   }
+  phys._isIntentionalMove = Math.abs(velX) > 10 || Math.abs(velY) > 10;
+} else {
+  const moveX = velX * dt;
+  const moveY = velY * dt;
+  context.collider.moveAndSlide(entity, moveX, moveY);
 }
 
-outputs['Out'] = true;
-outputs['exec_out'] = true;
+outputs.execOut = true;
 return;`
         }
       }

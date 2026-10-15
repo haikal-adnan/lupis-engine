@@ -83,7 +83,7 @@
           ></div>
           
           <span class="ml-2 text-[10px] font-medium truncate opacity-90 text-slate-600 dark:text-slate-300">
-            {{ input.label }}
+            {{ input.label || input.id }}
           </span>
         </div>
       </div>
@@ -96,7 +96,7 @@
           :style="{ top: (12 + (index * 24) - 6) + 'px' }"
         >
           <span class="mr-2 text-[10px] font-medium truncate opacity-90 text-right text-slate-600 dark:text-slate-300">
-            {{ output.label }}
+            {{ output.label || output.id }}
           </span>
 
           <div 

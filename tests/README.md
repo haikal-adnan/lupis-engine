@@ -134,6 +134,14 @@ E2E tests must follow these rules:
   is a last resort. Resolve failures through Page Objects or container scoping
   before considering helper modifications. Changes must follow Section 11.1.
 
+- Contract Execution Policy:
+  Helper contract tests (e2e/contract/) are decoupled from routine test runs.
+  Daily checking and feature spec runs do not execute contract tests.
+  Contract tests are executed ONLY when:
+  1. Helper changes: A file in helpers/ is created or updated.
+  2. Urgent testing: Rapid verification of helper primitives during critical fixes.
+  3. Finalization: Full suite verification before merge, commit, or release.
+
 - Prefix Bad Paths:
   Prefix negative scenario test cases or validation failures with [Bad Path].
 
@@ -657,8 +665,20 @@ Helper methods must:
     assert aria-disabled / data-disabled on the item
     (popup.contextMenuItem(label)) instead of calling selectContextMenu.
 
-11.3 Helper Contract Tests (e2e/contract/)
-  Dedicated test suite in e2e/contract/*.spec.js tagged @contract. The "contract" project runs before feature specs ("chromium"). A helper failure stops feature specs early, isolating infrastructure breakage.
+11.3 Helper Contract Tests (e2e/contract/) & Execution Triggers
+  Dedicated test suite in e2e/contract/*.spec.js tagged @contract.
+  Contract tests are decoupled from feature specs so that routine feature checks and
+  individual spec runs execute quickly without contract overhead.
+
+  Contract tests are executed ONLY under three explicit triggers:
+  1. Helper changes: A shared helper in helpers/ (BaseControlHelper, PopupHelper)
+     has been modified. Running the contract suite (npx playwright test --project=contract)
+     is mandatory before modifying any caller or page object.
+  2. Urgent testing: Rapid diagnostic or smoke verification of core UI primitives during
+     hotfixes or high-priority troubleshooting.
+  3. Finalization: Pre-merge, pre-commit, or CI full suite verification
+     (npm run test:finalize or npx playwright test), ensuring helper contracts and all
+     feature workflows pass together.
 
 
 --------------------------------------------------------------------------------
@@ -713,7 +733,7 @@ Baseline playwright.config.js setup:
       },
       projects: [
         { name: 'contract', testMatch: /[\\/]contract[\\/].*\.spec\.js$/, use: chromiumUse },
-        { name: 'chromium', testIgnore: /[\\/]contract[\\/]/, dependencies: ['contract'], use: chromiumUse },
+        { name: 'chromium', testIgnore: /[\\/]contract[\\/]/, use: chromiumUse },
       ],
     });
 
@@ -750,7 +770,7 @@ Baseline playwright.config.js setup:
     context menus -> Section 11.2.
 
 14.2 Classification Rules
-  0. Run contract project first (npx playwright test --project=contract).
+  0. Urgent testing or helper suspicion: Run contract project first (npx playwright test --project=contract).
   1. Same stack across tests? Fix shared helper.
   2. Inspect trace logs (npx playwright show-trace).
   3. App bug vs test bug: fix app if UI is incorrect; never loosen assertions.
@@ -760,8 +780,9 @@ Baseline playwright.config.js setup:
      (Section 7.5/7.6), do not stack another fallback.
 
 14.3 Maintenance Rules
-  - Run module E2E suite on Vue component updates.
-  - Run full suite (contract + specs) on helper, page, flow, or fixture changes.
+  - Run feature check for regular development (npm test or npx playwright test --project=chromium).
+  - Run contract project (npm run test:contract) whenever helpers in helpers/ are touched, or during urgent testing.
+  - Run full suite (npm run test:finalize) on helper, page, flow, fixture changes, and during finalization.
   - Ensure new features ship with required data-* / ARIA attributes in the same PR.
   - Test ID renames follow Section 7.6 and are never split across PRs.
   - Check flakiness pre-merge using --repeat-each=10.

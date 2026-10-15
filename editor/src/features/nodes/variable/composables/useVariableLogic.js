@@ -186,8 +186,12 @@ export function useVariableLogic(scopeProps) {
 
       if (node.data) {
         node.data.code = isGet
-          ? `outputs['out_0'] = context.${getMethod}('${name}');\nreturn;`
-          : `const val = inputs['val_0'];\ncontext.${setMethod}('${name}', val);\noutputs['out_0'] = val;\noutputs['exec_out'] = true;\nreturn;`;
+          ? `outputs.value = context.${getMethod}('${name}');\nreturn;`
+          : `const val = inputs.value;
+context.${setMethod}('${name}', val);
+outputs.valueOut = val;
+outputs.execOut = true;
+return;`;
       }
 
       if (node.inputs) {
@@ -249,7 +253,7 @@ export function useVariableLogic(scopeProps) {
     saveList(newList);
   };
 
-  const onDragStart = (event, variable, actionType = 'variable_get') => {
+  const onDragStart = (event, variable, actionType = 'variableGet') => {
     const payload = { 
       ...variable, 
       id: variable.id || variable._id,
@@ -261,10 +265,10 @@ export function useVariableLogic(scopeProps) {
     event.dataTransfer.effectAllowed = 'copy';
   };
 
-  const addNodeToCanvas = (variable, pos = null, actionType = 'variable_get', isScreenPos = false) => {
+  const addNodeToCanvas = (variable, pos = null, actionType = 'variableGet', isScreenPos = false) => {
     if (!scriptStore.activeScript) return;
 
-    const isGet = actionType === 'variable_get';
+    const isGet = actionType === 'variableGet' || actionType === 'variable_get';
     const varType = (variable.type || 'String').toLowerCase();
     const varColor = getVarColor(variable.type);
     const varId = variable.id || variable._id;
@@ -289,8 +293,8 @@ export function useVariableLogic(scopeProps) {
     const setMethod = scope === 'Global' ? 'setGlobal' : 'setLocal';
 
     const nodeCode = isGet
-      ? `outputs['out_0'] = context.${getMethod}('${varName}');\nreturn;`
-      : `const val = inputs['val_0'];\ncontext.${setMethod}('${varName}', val);\noutputs['out_0'] = val;\noutputs['exec_out'] = true;\nreturn;`;
+      ? `outputs.value = context.${getMethod}('${varName}');\nreturn;`
+      : `const val = inputs.value;\ncontext.${setMethod}('${varName}', val);\noutputs.valueOut = val;\noutputs.execOut = true;\nreturn;`;
 
     const cleanDefaultValue = sanitizeVariableValue(variable.defaultValue, variable.type);
 
@@ -318,14 +322,14 @@ export function useVariableLogic(scopeProps) {
       category: 'Variable'
     },
     inputs: isGet ? [] : [
-      { id: 'exec_in', label: 'In', dataType: 'execution', color: '#fff' },
-      { id: 'val_0', label: varName, dataType: varType, color: varColor }
+      { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
+      { id: 'value', label: varName, dataType: varType, color: varColor }
     ],
     outputs: isGet ? [
-      { id: 'out_0', label: varName, dataType: varType, color: varColor }
+      { id: 'value', label: varName, dataType: varType, color: varColor }
     ] : [
-      { id: 'exec_out', label: 'Out', dataType: 'execution', color: '#fff' },
-      { id: 'out_0', label: varName, dataType: varType, color: varColor }
+      { id: 'execOut', dataType: 'execution', color: '#FFFFFF' },
+      { id: 'valueOut', label: varName, dataType: varType, color: varColor }
     ]
   };
 

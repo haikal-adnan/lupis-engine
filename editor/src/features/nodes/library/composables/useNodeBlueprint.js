@@ -1,47 +1,10 @@
 import { ref, computed } from 'vue';
-import { BlueprintLifecycle } from '@nodes/library/blueprints/BlueprintLifecycle.js';
-import { BlueprintKeyboard } from '@nodes/library/blueprints/BlueprintKeyboard.js';
-import { BlueprintTransform } from '@nodes/library/blueprints/BlueprintTransform.js';
-import { BlueprintMath } from '@nodes/library/blueprints/BlueprintMath.js';
-import { BlueprintSystem } from '@nodes/library/blueprints/BlueprintSystem.js';
-import { BlueprintString } from '@nodes/library/blueprints/BlueprintString.js';
-import { BlueprintObject } from '@nodes/library/blueprints/BlueprintObject.js';
-import { BlueprintBoolean } from '@nodes/library/blueprints/BlueprintBoolean.js';
-import { BlueprintComparison } from '@nodes/library/blueprints/BlueprintComparison.js';
-import { BlueprintPointer } from '@nodes/library/blueprints/BlueprintPointer.js';
-import { BlueprintCamera } from '@nodes/library/blueprints/BlueprintCamera.js';
-import { BlueprintCollider } from '@nodes/library/blueprints/BlueprintCollider.js';
-import { BlueprintPhysics } from '@nodes/library/blueprints/BlueprintPhysics.js';
-import { BlueprintRenderer } from '@nodes/library/blueprints/BlueprintRenderer.js';
-import { BlueprintLayer } from '@nodes/library/blueprints/BlueprintLayer.js';
-import { BlueprintScene } from '@nodes/library/blueprints/BlueprintScene.js';
-import { BlueprintMouse } from '@nodes/library/blueprints/BlueprintMouse.js';
-import { BlueprintAnimator } from '@nodes/library/blueprints/BlueprintAnimator.js';
-import { BlueprintTransition } from '@nodes/library/blueprints/BlueprintTransition.js';
-import { BlueprintEvent } from '@nodes/library/blueprints/BlueprintEvent.js';
-import { BlueprintCollectionHelper } from '@nodes/library/blueprints/BlueprintCollectionHelper.js';
-import { BlueprintList } from '@nodes/library/blueprints/BlueprintList.js';
-import { BlueprintMap } from '@nodes/library/blueprints/BlueprintMap.js';
-import { BlueprintLoop } from '@nodes/library/blueprints/BlueprintLoop.js';
-import { BlueprintHelper } from '@nodes/library/blueprints/BlueprintHelper.js';
-import { BlueprintEntity } from '@nodes/library/blueprints/BlueprintEntity.js';
-import { BlueprintRandom } from '@nodes/library/blueprints/BlueprintRandom.js';
-import { BlueprintVariable } from '@nodes/library/blueprints/BlueprintVariable.js';
-
-const rawGroups = [
-  BlueprintRandom, BlueprintEntity, BlueprintLoop, BlueprintHelper,
-  BlueprintList, BlueprintMap, BlueprintCollectionHelper, BlueprintRenderer,
-  BlueprintLifecycle, BlueprintBoolean, BlueprintComparison, BlueprintKeyboard,
-  BlueprintPointer, BlueprintTransform, BlueprintMath, BlueprintSystem,
-  BlueprintString, BlueprintObject, BlueprintCamera, BlueprintCollider,
-  BlueprintPhysics, BlueprintLayer, BlueprintScene, BlueprintMouse,
-  BlueprintAnimator, BlueprintTransition, BlueprintEvent, BlueprintVariable
-];
+import { ALL_BLUEPRINTS, findBlueprintByType } from '../blueprints/index.js';
 
 export function useNodeBlueprint() {
   const searchQuery = ref('');
 
-  const nodeGroups = [...rawGroups].sort((a, b) => a.label.localeCompare(b.label));
+  const nodeGroups = [...ALL_BLUEPRINTS].sort((a, b) => a.label.localeCompare(b.label));
 
   const filteredGroups = computed(() => {
     if (!searchQuery.value) return nodeGroups;
@@ -60,13 +23,7 @@ export function useNodeBlueprint() {
   };
 
   const getNodeBlueprint = (type) => {
-    for (const group of rawGroups) {
-      if (Array.isArray(group.items)) {
-        const found = group.items.find(item => item.type === type);
-        if (found) return found;
-      }
-    }
-    return null;
+    return findBlueprintByType(type);
   };
 
   const getDefaultValueByDataType = (dataType) => {
@@ -85,37 +42,41 @@ export function useNodeBlueprint() {
     const execInputs = node.inputs.filter(p => {
       const dType = String(p.dataType || '').toLowerCase();
       const pId = String(p.id || '').toLowerCase();
-      return dType === 'execution' || pId === 'exec_in';
+      return dType === 'execution';
     });
 
     const dataInputs = node.inputs.filter(p => {
       const dType = String(p.dataType || '').toLowerCase();
       const pId = String(p.id || '').toLowerCase();
-      return dType !== 'execution' && pId !== 'exec_in';
+      return dType !== 'execution';
     });
 
     const newValues = {};
 
+    const cleanedExecInputs = execInputs.map((port) => {
+      const { label, ...rest } = port;
+      return rest;
+    });
+
     const reindexedDataInputs = dataInputs.map((port, index) => {
-      const sequenceNum = index + 1;
       const portId = `v${index}`;
       
       const existingValue = node.data.values[port.id] ?? node.data.values[portId];
       newValues[portId] = existingValue !== undefined ? existingValue : getDefaultValueByDataType(port.dataType);
 
+      const { label, ...rest } = port;
       return {
-        ...port,
-        id: portId,
-        label: `Val ${sequenceNum}`
+        ...rest,
+        id: portId
       };
     });
 
-    node.inputs = [...execInputs, ...reindexedDataInputs];
+    node.inputs = [...cleanedExecInputs, ...reindexedDataInputs];
     node.data.values = newValues;
 
     const constDeclarations = reindexedDataInputs.map((port, index) => {
       const varName = `val${index + 1}`;
-      return `const ${varName} = inputs['${port.label}'];`;
+      return `const ${varName} = inputs.${port.id};`;
     });
 
     const varNames = reindexedDataInputs.map((_, index) => `val${index + 1}`);

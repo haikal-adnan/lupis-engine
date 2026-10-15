@@ -1,10 +1,5 @@
 import { Power } from 'lucide-vue-next';
 
-/**
- * ============================================================================
- * BLUEPRINT: GAME LIFECYCLE
- * ============================================================================
- */
 export const BlueprintLifecycle = {
   id: 'category_game_flow',
   label: 'Game Lifecycle',
@@ -12,7 +7,7 @@ export const BlueprintLifecycle = {
   icon: Power,
   items: [
     {
-      type: 'event_tick',
+      type: 'eventTick',
       label: 'On Tick',
       description: 'Runs every frame. Use for continuous logic.',
       dynamicMode: 'none',
@@ -24,18 +19,15 @@ export const BlueprintLifecycle = {
         },
         inputs: [],
         outputs: [
-          { id: 'out', label: 'Update', dataType: 'execution', color: '#FFFFFF' },
-          { id: 'dt', label: 'Delta Time', dataType: 'number', color: '#64B5F6' }
+          { id: 'execOut', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'deltaTime', dataType: 'number', color: '#64B5F6' }
         ],
         data: {
           code: 
 `context.onTick((dt) => {
-  const delta = Number(dt) || 0;
-  outputs['Delta Time'] = delta;
-  outputs['dt'] = delta;
-  outputs['Update'] = true;
-  outputs['out'] = true;
-  context.triggerFlow('out');
+  outputs.deltaTime = dt;
+  outputs.execOut = true;
+  context.triggerFlow('execOut');
 });
 return;`
         }
@@ -43,7 +35,7 @@ return;`
     },
 
     {
-      type: 'event_game_start',
+      type: 'eventGameStart',
       label: 'On Game Start',
       description: 'Triggered once when the game begins.',
       dynamicMode: 'none',
@@ -55,14 +47,13 @@ return;`
         },
         inputs: [],
         outputs: [
-          { id: 'out', label: 'Start', dataType: 'execution', color: '#FFFFFF' }
+          { id: 'execOut', dataType: 'execution', color: '#FFFFFF' }
         ],
         data: {
           code: 
 `context.onGameStart(() => {
-  outputs['Start'] = true;
-  outputs['out'] = true;
-  context.triggerFlow('out');
+  outputs.execOut = true;
+  context.triggerFlow('execOut');
 });
 return;`
         }
@@ -70,7 +61,7 @@ return;`
     },
 
     {
-      type: 'event_game_pause',
+      type: 'eventGamePause',
       label: 'On Game Pause',
       description: 'Triggered when the game is paused.',
       dynamicMode: 'none',
@@ -82,14 +73,13 @@ return;`
         },
         inputs: [],
         outputs: [
-          { id: 'out', label: 'Out', dataType: 'execution', color: '#FFFFFF' }
+          { id: 'execOut', dataType: 'execution', color: '#FFFFFF' }
         ],
         data: {
           code: 
 `context.onGamePause(() => {
-  outputs['Out'] = true;
-  outputs['out'] = true;
-  context.triggerFlow('out');
+  outputs.execOut = true;
+  context.triggerFlow('execOut');
 });
 return;`
         }
@@ -97,7 +87,7 @@ return;`
     },
 
     {
-      type: 'event_game_resume',
+      type: 'eventGameResume',
       label: 'On Game Resume',
       description: 'Triggered when the game is resumed.',
       dynamicMode: 'none',
@@ -109,14 +99,13 @@ return;`
         },
         inputs: [],
         outputs: [
-          { id: 'out', label: 'Out', dataType: 'execution', color: '#FFFFFF' }
+          { id: 'execOut', dataType: 'execution', color: '#FFFFFF' }
         ],
         data: {
           code: 
 `context.onGameResume(() => {
-  outputs['Out'] = true;
-  outputs['out'] = true;
-  context.triggerFlow('out');
+  outputs.execOut = true;
+  context.triggerFlow('execOut');
 });
 return;`
         }
@@ -124,7 +113,7 @@ return;`
     },
 
     {
-      type: 'event_game_restart',
+      type: 'eventGameRestart',
       label: 'On Game Restart',
       description: 'Triggered when the entire game is restarted.',
       dynamicMode: 'none',
@@ -136,14 +125,13 @@ return;`
         },
         inputs: [],
         outputs: [
-          { id: 'out', label: 'Out', dataType: 'execution', color: '#FFFFFF' }
+          { id: 'execOut', dataType: 'execution', color: '#FFFFFF' }
         ],
         data: {
           code: 
 `context.onGameRestart(() => {
-  outputs['Out'] = true;
-  outputs['out'] = true;
-  context.triggerFlow('out');
+  outputs.execOut = true;
+  context.triggerFlow('execOut');
 });
 return;`
         }
@@ -151,7 +139,7 @@ return;`
     },
 
     {
-      type: 'action_game_pause',
+      type: 'actionGamePause',
       label: 'Pause Game',
       description: 'Freezes gameplay physics and logic update.',
       dynamicMode: 'none',
@@ -162,26 +150,22 @@ return;`
           category: 'Game Lifecycle'
         },
         inputs: [
-          { id: 'exec_in', label: 'In', dataType: 'execution', color: '#FFFFFF' }
+          { id: 'execIn', dataType: 'execution', color: '#FFFFFF' }
         ],
         outputs: [
-          { id: 'out', label: 'Out', dataType: 'execution', color: '#FFFFFF' }
+          { id: 'execOut', dataType: 'execution', color: '#FFFFFF' }
         ],
         data: {
           code: 
-`if (context.game && typeof context.game.pauseGame === 'function') {
-  context.game.pauseGame();
-}
-
-outputs['Out'] = true;
-outputs['out'] = true;
+`context.lifecycle.pause();
+outputs.execOut = true;
 return;`
         }
       }
     },
 
     {
-      type: 'action_game_resume',
+      type: 'actionGameResume',
       label: 'Resume Game',
       description: 'Resumes gameplay physics and logic update.',
       dynamicMode: 'none',
@@ -192,26 +176,22 @@ return;`
           category: 'Game Lifecycle'
         },
         inputs: [
-          { id: 'exec_in', label: 'In', dataType: 'execution', color: '#FFFFFF' }
+          { id: 'execIn', dataType: 'execution', color: '#FFFFFF' }
         ],
         outputs: [
-          { id: 'out', label: 'Out', dataType: 'execution', color: '#FFFFFF' }
+          { id: 'execOut', dataType: 'execution', color: '#FFFFFF' }
         ],
         data: {
           code: 
-`if (context.game && typeof context.game.resumeGame === 'function') {
-  context.game.resumeGame();
-}
-
-outputs['Out'] = true;
-outputs['out'] = true;
+`context.lifecycle.resume();
+outputs.execOut = true;
 return;`
         }
       }
     },
 
     {
-      type: 'action_game_restart',
+      type: 'actionGameRestart',
       label: 'Restart Game',
       description: 'Resets all global variables and reloads the initial scene.',
       dynamicMode: 'none',
@@ -222,19 +202,15 @@ return;`
           category: 'Game Lifecycle'
         },
         inputs: [
-          { id: 'exec_in', label: 'In', dataType: 'execution', color: '#FFFFFF' }
+          { id: 'execIn', dataType: 'execution', color: '#FFFFFF' }
         ],
         outputs: [
-          { id: 'out', label: 'Out', dataType: 'execution', color: '#FFFFFF' }
+          { id: 'execOut', dataType: 'execution', color: '#FFFFFF' }
         ],
         data: {
           code: 
-`if (context.game && typeof context.game.restartGame === 'function') {
-  context.game.restartGame();
-}
-
-outputs['Out'] = true;
-outputs['out'] = true;
+`context.lifecycle.restart();
+outputs.execOut = true;
 return;`
         }
       }

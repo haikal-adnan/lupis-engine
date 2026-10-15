@@ -1,12 +1,12 @@
 import { GenerateUUID } from '@utils/utils.js';
+import { getNodeRole } from '@nodes/contract/nodeRoles.js';
 
 export const createScriptPort = (data = {}) => ({
-  id: data.id || GenerateUUID(), 
-  label: data.label || "",
+  id: data.id || GenerateUUID(),
   dataType: data.dataType || "any",
   color: data.color || "#555",
   enabled: data.enabled ?? true,
-  defaultValue: data.defaultValue ?? null 
+  defaultValue: data.defaultValue ?? null
 });
 
 export const createScriptVariable = (data = {}) => ({
@@ -34,9 +34,6 @@ export const createScriptNode = (data = {}) => {
       if (safeData.values[port.id] === undefined) {
         safeData.values[port.id] = defaultVal;
       }
-      if (safeData.values[port.label] === undefined) {
-        safeData.values[port.label] = defaultVal;
-      }
     }
   });
 
@@ -44,10 +41,15 @@ export const createScriptNode = (data = {}) => {
     safeData.code = safeData.code || `return;`;
   }
 
+  const outputs = Array.isArray(data.outputs)
+    ? data.outputs.map(createScriptPort)
+    : [];
+
   return {
     id: data.id || GenerateUUID(),
     type: data.type || "unknown_node",
-    dynamicMode: data.dynamicMode || "none", 
+    role: data.role || getNodeRole({ inputs, outputs }),
+    dynamicMode: data.dynamicMode || "none",
     position: {
       x: data.position?.x ?? 0,
       y: data.position?.y ?? 0
@@ -62,10 +64,8 @@ export const createScriptNode = (data = {}) => {
         : []
     },
     inputs,
-    outputs: Array.isArray(data.outputs)
-      ? data.outputs.map(createScriptPort)
-      : [],
-    data: safeData 
+    outputs,
+    data: safeData
   };
 };
 
@@ -75,7 +75,7 @@ export const createScriptEdge = (data = {}) => ({
   sourceHandle: data.sourceHandle || null,
   target: data.target,
   targetHandle: data.targetHandle || null,
-  modifier: data.modifier ? { ...data.modifier } : {} // <-- Tambahkan baris ini
+  modifier: data.modifier ? { ...data.modifier } : {}
 });
 
 export const scriptSchema = (data = {}) => {
@@ -84,7 +84,7 @@ export const scriptSchema = (data = {}) => {
     projectId: data.projectId || null,
     folderId: data.folderId || null,
     name: data.name || "Untitled Script",
-    type: data.type || "component", 
+    type: data.type || "component",
     localVariables: Array.isArray(data.localVariables)
       ? data.localVariables.map(createScriptVariable)
       : [],

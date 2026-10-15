@@ -7,7 +7,7 @@ export const BlueprintLoop = {
   icon: Repeat,
   items: [
     {
-      type: 'logic_loop',
+      type: 'logicLoop',
       label: 'For Loop',
       description: 'Repeats execution from a Start value to an End value, incrementing by the specified Step.',
       dynamicMode: 'none',
@@ -18,54 +18,44 @@ export const BlueprintLoop = {
           category: 'Loops'
         },
         inputs: [
-          { id: 'exec_in', label: 'In', dataType: 'execution', color: '#FFFFFF' },
-          { id: 'start', label: 'Start', dataType: 'number', color: '#64B5F6', defaultValue: 0 },
-          { id: 'end', label: 'End', dataType: 'number', color: '#64B5F6', defaultValue: 10 },
-          { id: 'step', label: 'Step', dataType: 'number', color: '#64B5F6', defaultValue: 1 }
+          { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'start', dataType: 'number', color: '#64B5F6', defaultValue: 0 },
+          { id: 'end', dataType: 'number', color: '#64B5F6', defaultValue: 10 },
+          { id: 'step', dataType: 'number', color: '#64B5F6', defaultValue: 1 }
         ],
         outputs: [
-          { id: 'loop_body', label: 'Loop Body', dataType: 'execution', color: '#FFFFFF' },
-          { id: 'index', label: 'Index', dataType: 'number', color: '#64B5F6' },
-          { id: 'completed', label: 'On Completed', dataType: 'execution', color: '#FFFFFF' }
+          { id: 'loopBody', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'index', dataType: 'number', color: '#64B5F6' },
+          { id: 'completed', dataType: 'execution', color: '#FFFFFF' }
         ],
         data: {
           values: { start: 0, end: 10, step: 1 },
           code: 
-`const startInput = inputs['Start'] ?? inputs['start'];
-const endInput = inputs['End'] ?? inputs['end'];
-const stepInput = inputs['Step'] ?? inputs['step'];
-
-const start = startInput !== undefined && startInput !== null ? Number(startInput) : 0;
-const end = endInput !== undefined && endInput !== null ? Number(endInput) : 0;
-let step = stepInput !== undefined && stepInput !== null ? Number(stepInput) : 1;
+`const start = inputs.start;
+const end = inputs.end;
+let step = inputs.step;
 
 if (step === 0) step = 1;
 
 if (step > 0) {
   for (let i = start; i <= end; i += step) {
-    context.node._tempLoopIndex = i;
-    outputs['Loop Body'] = true;
-    outputs['loop_body'] = true;
+    outputs.index = i;
+    outputs.loopBody = true;
   }
 } else {
   for (let i = start; i >= end; i += step) {
-    context.node._tempLoopIndex = i;
-    outputs['Loop Body'] = true;
-    outputs['loop_body'] = true;
+    outputs.index = i;
+    outputs.loopBody = true;
   }
 }
 
-const finalIdx = context.node._tempLoopIndex || 0;
-outputs['Index'] = finalIdx;
-outputs['index'] = finalIdx;
-outputs['On Completed'] = true;
-outputs['completed'] = true;
+outputs.completed = true;
 return;`
         }
       }
     },
     {
-      type: 'logic_for_each',
+      type: 'logicForEach',
       label: 'For Each',
       description: 'Repeats execution for each individual item contained within the List.',
       dynamicMode: 'none',
@@ -76,40 +66,32 @@ return;`
           category: 'Loops'
         },
         inputs: [
-          { id: 'exec_in', label: 'In', dataType: 'execution', color: '#FFFFFF' },
-          { id: 'list', label: 'List', dataType: 'list', color: '#4DD0E1' }
+          { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'list', dataType: 'list', color: '#4DD0E1' }
         ],
         outputs: [
-          { id: 'loop_body', label: 'Loop Body', dataType: 'execution', color: '#FFFFFF' },
-          { id: 'item', label: 'Item', dataType: 'any', color: '#B0BEC5' },
-          { id: 'index', label: 'Index', dataType: 'number', color: '#64B5F6' },
-          { id: 'completed', label: 'On Completed', dataType: 'execution', color: '#FFFFFF' }
+          { id: 'loopBody', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'item', dataType: 'any', color: '#B0BEC5' },
+          { id: 'index', dataType: 'number', color: '#64B5F6' },
+          { id: 'completed', dataType: 'execution', color: '#FFFFFF' }
         ],
         data: {
           code: 
-`const list = inputs['List'] ?? inputs['list'];
+`const list = inputs.list;
 
-if (Array.isArray(list)) {
-  for (let i = 0; i < list.length; i++) {
-    context.node._tempIndex = i;
-    context.node._tempItem = list[i];
-    outputs['Item'] = list[i];
-    outputs['item'] = list[i];
-    outputs['Index'] = i;
-    outputs['index'] = i;
-    outputs['Loop Body'] = true;
-    outputs['loop_body'] = true;
-  }
+for (let i = 0; i < list.length; i++) {
+  outputs.item = list[i];
+  outputs.index = i;
+  outputs.loopBody = true;
 }
 
-outputs['On Completed'] = true;
-outputs['completed'] = true;
+outputs.completed = true;
 return;`
         }
       }
     },
     {
-      type: 'logic_while',
+      type: 'logicWhile',
       label: 'While Loop',
       description: 'Continuously loops execution as long as the input condition remains true.',
       dynamicMode: 'none',
@@ -120,34 +102,34 @@ return;`
           category: 'Loops'
         },
         inputs: [
-          { id: 'exec_in', label: 'In', dataType: 'execution', color: '#FFFFFF' },
-          { id: 'condition', label: 'Condition', dataType: 'boolean', color: '#E57373', defaultValue: false }
+          { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'condition', dataType: 'boolean', color: '#E57373', defaultValue: false }
         ],
         outputs: [
-          { id: 'loop_body', label: 'Loop Body', dataType: 'execution', color: '#FFFFFF' },
-          { id: 'completed', label: 'On Completed', dataType: 'execution', color: '#FFFFFF' }
+          { id: 'loopBody', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'completed', dataType: 'execution', color: '#FFFFFF' }
         ],
         data: {
+          values: {
+            condition: false
+          },
           code: 
 `let iterations = 0;
 const LIMIT = 5000;
-const cond = inputs['Condition'] ?? inputs['condition'];
+const cond = inputs.condition;
 
-while (cond === true) {
+while (cond) {
   iterations++;
   if (iterations > LIMIT) {
     break;
   }
-  outputs['Loop Body'] = true;
-  outputs['loop_body'] = true;
+  outputs.loopBody = true;
 }
 
-outputs['On Completed'] = true;
-outputs['completed'] = true;
+outputs.completed = true;
 return;`
         }
       }
     }
   ]
 };
-

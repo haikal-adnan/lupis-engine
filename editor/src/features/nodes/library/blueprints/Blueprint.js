@@ -6,44 +6,120 @@ import { Boxes } from 'lucide-vue-next';
  * ============================================================================
  *
  * Standar & Aturan Kode Blueprint:
- * 1. Tanpa Komentar Kode: Jangan menyertakan komentar (// atau /*) di dalam `data.code`.
- * 2. Tanpa Icon per Item: Icon hanya digunakan pada level Kategori (`icon: Boxes`).
+ * 1. Tanpa Komentar Kode: Dilarang menyertakan komentar (// atau /*) di dalam `data.code`.
+ * 2. Tanpa Icon per Item: Icon hanya didefinisikan pada level Kategori (`icon: Boxes`).
  * 3. Format Code New Line: Penulisan string `code` selalu dimulai langsung dari baris baru (\n).
- * 4. Standar Mode Dinamis (`dynamicMode`):
- *    - 'none'           : Port statis (fixed).
- *    - 'sequential'     : Tambah port berurutan otomatis (Val 1, Val 2, ... / v0, v1, ...).
- *    - 'inputProperty'  : Membuka dropdown opsi `data.propertyOptions` untuk menambah INPUT PORT.
- *    - 'outputProperty' : Membuka dropdown opsi `data.propertyOptions` untuk menambah OUTPUT PORT.
- * 5. Pembacaan Inputs Runtime:
- *    - Akses inputs mendukung fallback ID maupun Label: `inputs['Target Entity'] ?? inputs['target_in']`.
- *    - Pada node 'sequential', evaluasi seluruh koleksi via `Object.values(inputs)`.
- * 6. Penutup Fungsi: Setiap string `data.code` WAJIB diakhiri dengan `return;`.
- *
- * DataType Port & Kode Warna Standar (Sesuai VAR_COLORS):
- * - 'execution' : Alur eksekusi        (Warna: #FFFFFF)
- * - 'string'    : Teks                 (Warna: #F48FB1)
- * - 'number'    : Angka/Float/Int      (Warna: #64B5F6)
- * - 'boolean'   : True/False           (Warna: #E57373)
- * - 'list'      : Array/Koleksi        (Warna: #4DD0E1)
- * - 'map'       : Object/Dictionary    (Warna: #FF8A65)
- * - 'any'       : Tipe Data Bebas      (Warna: #B0BEC5)
+ * 4. Aturan Port ID (T-001):
+ *    - Pola Regex: ^[A-Za-z][A-Za-z0-9]*$ (panjang 1–32 karakter, camelCase, case-sensitive).
+ *    - Dilarang: spasi, garis bawah (_), tanda hubung (-), titik (.), simbol, atau diawali angka.
+ * 5. Standar Nama Port Baku (Kamus Kanonikal):
+ *    Semua port WAJIB memakai nama dari kamus ini. Nama baru ditambahkan ke kamus
+ *    lebih dulu (ikuti aturan 10), baru dipakai di blueprint.
+ *    - Alur Eksekusi Utama:
+ *        * Masuk: `execIn`
+ *        * Keluar: `execOut`
+ *    - Alur Eksekusi Percabangan & Loop:
+ *        * `onTrue`, `onFalse`, `loopBody`, `completed`, `onHit`, `onComplete`
+ *        * Tambahan: `onElse`, `onDefault`
+ *    - Callback & Event Eksekusi (pola `on` + Peristiwa):
+ *        * `onStart`, `onUpdate`, `onReady`, `onCooling`
+ *        * `onClick`, `onDrag`, `onHover`, `onDown`, `onHold`, `onUp`
+ *        * `onEnter`, `onExit`
+ *    - Target & Entitas:
+ *        * `targetEntity`, `sourceEntity`, `entityName`, `tag`
+ *        * Tambahan: `selfEntity`, `otherEntity`, `parentEntity`, `childEntity`,
+ *          `childEntities`, `prefabName`, `targetLayer`, `layerId`, `customId`,
+ *          `clipId`, `sceneName`, `signalName`
+ *    - Transform & Physics:
+ *        * `position`, `rotation`, `scale`, `x`, `y`, `z`, `velocity`, `force`
+ *        * Tambahan: `velocityX`, `velocityY`, `deltaX`, `deltaY`, `offsetX`, `offsetY`,
+ *          `axisX`, `axisY`, `fromX`, `fromY`, `toX`, `toY`, `x1`, `y1`, `x2`, `y2`,
+ *          `directionX`, `directionY`, `angle`, `smoothSpeed`, `zIndex`
+ *    - Nilai, Hitungan & Operand:
+ *        * `value`, `amount`, `count`, `a`, `b`, `result`
+ *        * Tambahan: `length`, `size`, `min`, `max`, `start`, `end`, `step`,
+ *          `startValue`, `endValue`, `chance`, `compare`, `condition`, `mode`, `speed`,
+ *          `lerpSpeed`, `color`, `text`, `format`, `separator`, `source`, `message`,
+ *          `data`, `pretty`, `reset`, `found`
+ *    - Status Boolean (pola `is`/`has`/`use`):
+ *        * `isDown`, `isColliding`, `isInside`, `isHovering`, `isHolding`, `isTyping`,
+ *          `hasTarget`, `useRaycast`, `useColliderBounds`
+ *    - Waktu & Durasi:
+ *        * `deltaTime`, `duration`, `delay`
+ *    - Koleksi & Data:
+ *        * `list`, `map`, `item`, `key`, `index`, `eventData`
+ *        * Tambahan: `collection`, `path`, `listA`, `listB`, `mapA`, `mapB`, `keysList`,
+ *          `valuesList`, `listOut`, `mapOut`, `collectionOut`, `valueOut`
+ *    - Input Perangkat (Keyboard & Efek UI):
+ *        * `keys`, `action`, `upKey`, `downKey`, `leftKey`, `rightKey`
+ *        * `scaleNormal`, `scaleHover`, `scalePressed`
+ *    - Sequential Dynamic:
+ *        * `v0`, `v1`, `v2`, ...
+ * 6. Penghapusan Port Label:
+ *    - Properti `label` pada objek port DIHAPUS. Hanya gunakan `id`.
+ * 7. Pemanfaatan context.assert & context.console (Zero Defensive Null Checking & Fallback):
+ *    - Dilarang menggunakan `??`, `?.`, `||` fallback, `if (!entity)`, atau silent return pada invariant engine.
+ *    - Ketika node membutuhkan entitas, komponen, atau tipe data tertentu, WAJIB menggunakan `context.assert.exists(...)`,
+ *      `context.assert.hasComponent(...)`, `context.assert.isNumber(...)`, dll.
+ *    - Jika invariant dilanggar, `context.assert` seketika melempar `ScriptAssertionError`, memancarkan event `console:error`,
+ *      dan menghentikan alur seketika pada node tersebut tanpa mengeksekusi port alur keluar (zero downstream leakage).
+ *    - Seluruh operasi logging, peringatan, dan error output menggunakan `context.console.log`, `context.console.warn`, `context.console.error`.
+ * 8. Tanpa Akses Langsung context.game:
+ *    - Node code DILARANG memanggil `context.game`. Semua operasi harus lewat perantara domain:
+ *      `context.entity`, `context.layer`, `context.collider`, `context.input`, `context.ui`,
+ *      `context.signal`, `context.lifecycle`, `context.transition`, `context.camera`, `context.scene`,
+ *      `context.state`, `context.console`, dan `context.assert`.
+ * 8. Pembacaan Inputs & Penulisan Outputs Runtime (T-403 & T-404):
+ *    - Akses inputs langsung via ID: `inputs.targetEntity` atau `inputs.amount`.
+ *    - Penulisan outputs langsung via ID satu assignment: `outputs.result = true`.
+ *    - Dilarang akses bracket berbasis string: `inputs['Target']`, `outputs['Out']`.
+ * 9. Penutup Fungsi: Setiap string `data.code` WAJIB diakhiri dengan `return;`.
+ * 10. Konvensi Membentuk Nama Baru (untuk menambah kamus):
+ *    - camelCase, tanpa akhiran `In`, `Out`, `Id`, atau garis bawah, kecuali aturan pasangan di bawah.
+ *    - Referensi entitas memakai pola `<peran>Entity` (`targetEntity`, `selfEntity`),
+ *      bukan `<peran>Id`. Koleksi entitas memakai bentuk jamak (`childEntities`).
+ *    - Nilai per sumbu memakai `<nama>X` / `<nama>Y` (`velocityX`, `deltaX`).
+ *      `x` dan `y` polos hanya untuk posisi.
+ *    - Exec output non-utama memakai `on<Peristiwa>`. Boolean status memakai `is<Kondisi>`
+ *      atau `has<Objek>`. Boolean pengaturan input memakai `use<Fitur>`.
+ *    - Jika satu node punya input dan output dengan nama dasar yang sama, output diberi
+ *      akhiran `Out` (`list` -> `listOut`, `value` -> `valueOut`).
+ *    - Node data murni dengan satu hasil utama memakai `result`.
+ * 11. Beda `completed` dan `onComplete`:
+ *    - `completed`: alur utama node selesai (loop, delay). Tidak ada `execOut` terpisah.
+ *    - `onComplete`: callback asynchronous setelah aksi selesai (animasi, tween, fade,
+ *      typewriter). `execOut` tetap berjalan langsung.
+ * 12. Port Dinamis Kustom:
+ *    - `sequential`: `v0`, `v1`, ... (data maupun execution).
+ *    - `inputProperty` / `outputProperty`: ID port = `propertyOptions[].value`, camelCase
+ *      dan tidak boleh sama dengan port tetap pada node yang sama.
+ *    - Else-If: input `condition`, `condition1`..`conditionN`; output `onTrue`,
+ *      `onElseIf1`..`onElseIfN`, `onElse`, `onFalse`.
+ *    - Switch: input `value`; output `onCase0`..`onCaseN`, `onDefault`.
+ *    - Keyboard per tombol: `on` + nama tombol huruf awal besar tanpa simbol (`onA`, `onSpace`).
+ *    - Batch: `targetEntity0`..`targetEntityN` dan `value0`..`valueN`.
+ * 13. Referensi ID Port di Luar inputs/outputs:
+ *    - Pemanggilan alur (`context.triggerFlow('execOut')`, `executeFlow(id, 'onComplete')`),
+ *      key `data.values`, dan key `data.options` memakai ID baku yang sama.
+ *    - Format string yang membaca ID port sebagai placeholder mengikuti ID baku (`{v0}`).
+ * 14. Warna Port Baku per dataType:
+ *    - execution `#FFFFFF`, string `#F48FB1`, number `#64B5F6`, boolean `#E57373`,
+ *      any `#B0BEC5`, list `#4DD0E1`, map `#FF8A65`.
  * ============================================================================
  */
 
 export const BlueprintCategoryTemplate = {
-  // 🏷️ 1. METADATA KATEGORI
-  id: 'category_template',
+  id: 'categoryTemplate',
   label: 'Category Name',
   color: '#3B82F6',
   icon: Boxes,
 
-  // 📦 2. DAFTAR NODE DALAM KATEGORI
   items: [
     // ------------------------------------------------------------------------
-    // TIPE A: EVENT NODE (Pemicu Alur Eksekusi / Signal Trigger)
+    // TIPE A: EVENT NODE
     // ------------------------------------------------------------------------
     {
-      type: 'event_example_node',
+      type: 'eventExampleNode',
       label: 'On Custom Event',
       description: 'Dipicu saat event tertentu dieksekusi oleh sistem.',
       dynamicMode: 'none',
@@ -59,14 +135,12 @@ export const BlueprintCategoryTemplate = {
 
         outputs: [
           {
-            id: 'out',
-            label: 'Out',
+            id: 'execOut',
             dataType: 'execution',
             color: '#FFFFFF'
           },
           {
-            id: 'event_data',
-            label: 'Data',
+            id: 'eventData',
             dataType: 'string',
             color: '#F48FB1'
           }
@@ -74,20 +148,20 @@ export const BlueprintCategoryTemplate = {
 
         data: {
           code: 
-`const eventData = node._tempData?.dataValue;
+`const eventData = context.state.dataValue;
 
-outputs['Data'] = eventData;
-outputs['Out'] = true;
+outputs.eventData = eventData;
+outputs.execOut = true;
 return;`
         }
       }
     },
 
     // ------------------------------------------------------------------------
-    // TIPE B: ACTION / PURE NODE (Statis / Fixed Inputs)
+    // TIPE B: ACTION NODE
     // ------------------------------------------------------------------------
     {
-      type: 'action_example_node',
+      type: 'actionExampleNode',
       label: 'Do Something',
       description: 'Mengeksekusi aksi pada target entity atau sistem.',
       dynamicMode: 'none',
@@ -101,21 +175,18 @@ return;`
 
         inputs: [
           {
-            id: 'exec_in',
-            label: 'In',
+            id: 'execIn',
             dataType: 'execution',
             color: '#FFFFFF'
           },
           {
-            id: 'target_in',
-            label: 'Target Entity',
+            id: 'targetEntity',
             dataType: 'string',
-            color: '#FFB74D',
+            color: '#F48FB1',
             defaultValue: 'self'
           },
           {
             id: 'amount',
-            label: 'Amount',
             dataType: 'number',
             color: '#64B5F6',
             defaultValue: 100
@@ -124,14 +195,12 @@ return;`
 
         outputs: [
           {
-            id: 'exec_out',
-            label: 'Out',
+            id: 'execOut',
             dataType: 'execution',
             color: '#FFFFFF'
           },
           {
             id: 'result',
-            label: 'Result',
             dataType: 'boolean',
             color: '#E57373'
           }
@@ -139,33 +208,31 @@ return;`
 
         data: {
           values: {
-            target_in: 'self',
+            targetEntity: 'self',
             amount: 100
           },
 
           code: 
-`const target = inputs['Target Entity'] ?? inputs['target_in'] ?? 'self';
-const amount = Number(inputs['Amount'] ?? inputs['amount'] ?? 0);
-const entity = context.entity.get(target);
+`const target = inputs.targetEntity;
+const amount = inputs.amount;
+const entity = context.assert.exists(context.entity.get(target));
 
-if (entity && typeof entity.applyAmount === 'function') {
-    entity.applyAmount(amount);
-}
+entity.applyAmount(amount);
 
-outputs['Result'] = true;
-outputs['Out'] = true;
+outputs.result = true;
+outputs.execOut = true;
 return;`
         }
       }
     },
 
     // ------------------------------------------------------------------------
-    // TIPE C: SEQUENTIAL DYNAMIC NODE (Operasi Beruntun N-Input)
+    // TIPE C: SEQUENTIAL DYNAMIC NODE
     // ------------------------------------------------------------------------
     {
-      type: 'dynamic_sequential_node',
+      type: 'dynamicSequentialNode',
       label: 'Sequential Collection',
-      description: 'Menambah/mengurangi port berurutan otomatis (Val 1, Val 2, ...).',
+      description: 'Menambah/mengurangi port berurutan otomatis (v0, v1, ...).',
       dynamicMode: 'sequential',
 
       defaultData: {
@@ -178,13 +245,11 @@ return;`
         inputs: [
           {
             id: 'v0',
-            label: 'Val 1',
             dataType: 'number',
             color: '#64B5F6'
           },
           {
             id: 'v1',
-            label: 'Val 2',
             dataType: 'number',
             color: '#64B5F6'
           }
@@ -192,8 +257,7 @@ return;`
 
         outputs: [
           {
-            id: 'res',
-            label: 'Result',
+            id: 'result',
             dataType: 'number',
             color: '#64B5F6'
           }
@@ -206,19 +270,18 @@ return;`
           },
 
           code: 
-`const numbers = Object.values(inputs).map(v => Number(v) || 0);
-outputs['Result'] = numbers.reduce((acc, curr) => acc + curr, 0);
-outputs['res'] = outputs['Result'];
+`const numbers = Object.values(inputs);
+outputs.result = numbers.reduce((acc, curr) => acc + curr, 0);
 return;`
         }
       }
     },
 
     // ------------------------------------------------------------------------
-    // TIPE D: INPUT PROPERTY DYNAMIC NODE (Opsi Input Properti dari Dropdown)
+    // TIPE D: INPUT PROPERTY DYNAMIC NODE
     // ------------------------------------------------------------------------
     {
-      type: 'dynamic_set_property_node',
+      type: 'dynamicSetPropertyNode',
       label: 'Set Entity Property',
       description: 'Menambah port input secara dinamis berdasarkan opsi properti.',
       dynamicMode: 'inputProperty',
@@ -231,16 +294,16 @@ return;`
         },
 
         inputs: [
-          { id: 'exec_in', label: 'In', dataType: 'execution', color: '#FFFFFF' },
-          { id: 'target_in', label: 'Target Entity', dataType: 'string', color: '#FFB74D', defaultValue: 'self' }
+          { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'targetEntity', dataType: 'string', color: '#F48FB1', defaultValue: 'self' }
         ],
 
         outputs: [
-          { id: 'exec_out', label: 'Out', dataType: 'execution', color: '#FFFFFF' }
+          { id: 'execOut', dataType: 'execution', color: '#FFFFFF' }
         ],
 
         data: {
-          values: { target_in: 'self' },
+          values: { targetEntity: 'self' },
           propertyOptions: [
             { value: 'speed', label: 'Move Speed', type: 'number', color: '#64B5F6' },
             { value: 'health', label: 'Health', type: 'number', color: '#64B5F6' },
@@ -248,31 +311,24 @@ return;`
           ],
 
           code: 
-`const targetId = inputs['Target Entity'] ?? inputs['target_in'] ?? 'self';
-const entity = context.entity.get(targetId);
+`const targetId = inputs.targetEntity;
+const entity = context.assert.exists(context.entity.get(targetId));
 
-if (entity) {
-    const speed = inputs['Move Speed'] ?? inputs['speed'];
-    const health = inputs['Health'] ?? inputs['health'];
-    const visible = inputs['Visible'] ?? inputs['visible'];
+entity.speed = inputs.speed;
+entity.health = inputs.health;
+entity.visible = inputs.visible;
 
-    if (speed !== undefined && speed !== null && speed !== '') entity.speed = Number(speed);
-    if (health !== undefined && health !== null && health !== '') entity.health = Number(health);
-    if (visible !== undefined && visible !== null) entity.visible = Boolean(visible);
-}
-
-outputs['Out'] = true;
-outputs['exec_out'] = true;
+outputs.execOut = true;
 return;`
         }
       }
     },
 
     // ------------------------------------------------------------------------
-    // TIPE E: OUTPUT PROPERTY DYNAMIC NODE (Opsi Output Properti dari Dropdown)
+    // TIPE E: OUTPUT PROPERTY DYNAMIC NODE
     // ------------------------------------------------------------------------
     {
-      type: 'dynamic_get_property_node',
+      type: 'dynamicGetPropertyNode',
       label: 'Get Entity Property',
       description: 'Menambah port output secara dinamis berdasarkan opsi properti.',
       dynamicMode: 'outputProperty',
@@ -285,13 +341,13 @@ return;`
         },
 
         inputs: [
-          { id: 'target_in', label: 'Target Entity', dataType: 'string', color: '#FFB74D', defaultValue: 'self' }
+          { id: 'targetEntity', dataType: 'string', color: '#F48FB1', defaultValue: 'self' }
         ],
 
         outputs: [],
 
         data: {
-          values: { target_in: 'self' },
+          values: { targetEntity: 'self' },
           propertyOptions: [
             { value: 'speed', label: 'Move Speed', type: 'number', color: '#64B5F6' },
             { value: 'health', label: 'Health', type: 'number', color: '#64B5F6' },
@@ -299,17 +355,117 @@ return;`
           ],
 
           code: 
-`const targetId = inputs['Target Entity'] ?? inputs['target_in'] ?? 'self';
-const entity = context.entity.get(targetId);
+`const targetId = inputs.targetEntity;
+const entity = context.assert.exists(context.entity.get(targetId));
 
-if (entity) {
-    outputs['Move Speed'] = entity.speed ?? 0;
-    outputs['speed'] = entity.speed ?? 0;
-    outputs['Health'] = entity.health ?? 0;
-    outputs['health'] = entity.health ?? 0;
-    outputs['Visible'] = entity.visible ?? true;
-    outputs['visible'] = entity.visible ?? true;
-}
+outputs.speed = entity.speed;
+outputs.health = entity.health;
+outputs.visible = entity.visible;
+return;`
+        }
+      }
+    },
+
+    // ------------------------------------------------------------------------
+    // TIPE F: PURE DATA NODE (TANPA PORT EKSEKUSI)
+    // ------------------------------------------------------------------------
+    {
+      type: 'pureDataNode',
+      label: 'Negate Number',
+      description: 'Node data murni tanpa port eksekusi, hasil dihitung saat dibaca.',
+      dynamicMode: 'none',
+
+      defaultData: {
+        settings: {
+          headerTitle: 'Negate',
+          headerColor: '#009688',
+          category: 'Category Name'
+        },
+
+        inputs: [
+          {
+            id: 'a',
+            dataType: 'number',
+            color: '#64B5F6',
+            defaultValue: 0
+          }
+        ],
+
+        outputs: [
+          {
+            id: 'result',
+            dataType: 'number',
+            color: '#64B5F6'
+          }
+        ],
+
+        data: {
+          values: {
+            a: 0
+          },
+
+          code: 
+`const a = inputs.a;
+
+outputs.result = -a;
+return;`
+        }
+      }
+    },
+
+    // ------------------------------------------------------------------------
+    // TIPE G: BRANCH NODE (BANYAK PORT EKSEKUSI KELUAR)
+    // ------------------------------------------------------------------------
+    {
+      type: 'branchExampleNode',
+      label: 'Branch',
+      description: 'Memilih salah satu alur eksekusi berdasarkan kondisi boolean.',
+      dynamicMode: 'none',
+
+      defaultData: {
+        settings: {
+          headerTitle: 'Branch',
+          headerColor: '#3F51B5',
+          category: 'Category Name'
+        },
+
+        inputs: [
+          {
+            id: 'execIn',
+            dataType: 'execution',
+            color: '#FFFFFF'
+          },
+          {
+            id: 'condition',
+            dataType: 'boolean',
+            color: '#E57373',
+            defaultValue: false
+          }
+        ],
+
+        outputs: [
+          {
+            id: 'onTrue',
+            dataType: 'execution',
+            color: '#FFFFFF'
+          },
+          {
+            id: 'onFalse',
+            dataType: 'execution',
+            color: '#FFFFFF'
+          }
+        ],
+
+        data: {
+          values: {
+            condition: false
+          },
+
+          code: 
+`const condition = inputs.condition;
+
+outputs.onTrue = condition;
+outputs.onFalse = !condition;
 return;`
         }
       }

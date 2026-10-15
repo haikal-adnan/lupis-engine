@@ -19,7 +19,7 @@
       </PropertyRow>
 
       <!-- 2. Khusus Variable Set: Kontrol Value Input (Direct / Variable Binding) -->
-      <template v-if="node.type === 'variable_set' && variableSetInputPort">
+      <template v-if="(node.type === 'variableSet' || node.type === 'variable_set') && variableSetInputPort">
         <PropertyRow 
           label="Value"
           data-testid="node-inspector-port-row"
@@ -347,15 +347,15 @@ const IGNORED_KEYS = [
 ];
 
 const isVariableNode = computed(() => {
-  return node.value?.type === 'variable_get' || node.value?.type === 'variable_set';
+  return ['variableGet', 'variable_get', 'variableSet', 'variable_set'].includes(node.value?.type);
 });
 
 const variableSetInputPort = computed(() => {
-  if (node.value?.type !== 'variable_set' || !node.value.inputs) return null;
+  if ((node.value?.type !== 'variableSet' && node.value?.type !== 'variable_set') || !node.value.inputs) return null;
   return node.value.inputs.find(port => {
     const dType = String(port.dataType || '').toLowerCase();
     const pId = String(port.id || '').toLowerCase();
-    return dType !== 'execution' && pId !== 'exec_in';
+    return dType !== 'execution';
   }) || null;
 });
 
@@ -375,7 +375,7 @@ const isSequentialNode = computed(() => {
 
 const nextSequentialNumber = computed(() => {
   if (!node.value?.inputs) return 1;
-  return node.value.inputs.filter(p => !['exec_in', 'target_in'].includes(p.id)).length + 1;
+  return node.value.inputs.filter(p => !['execIn', 'targetEntity', 'targetLayer'].includes(p.id)).length + 1;
 });
 
 const nonExecutionInputs = computed(() => {
@@ -383,7 +383,7 @@ const nonExecutionInputs = computed(() => {
   return node.value.inputs.filter(port => {
     const dType = String(port.dataType || '').toLowerCase();
     const pId = String(port.id || '').toLowerCase();
-    return dType !== 'execution' && pId !== 'exec_in' && pId !== 'exec_out';
+    return dType !== 'execution';
   });
 });
 
@@ -392,7 +392,7 @@ const nonExecutionOutputs = computed(() => {
   return node.value.outputs.filter(port => {
     const dType = String(port.dataType || '').toLowerCase();
     const pId = String(port.id || '').toLowerCase();
-    return dType !== 'execution' && pId !== 'exec_in' && pId !== 'exec_out';
+    return dType !== 'execution';
   });
 });
 
@@ -404,7 +404,7 @@ const hasTopData = computed(() => {
 });
 
 function isDynamicPort(portId) {
-  const protectedPorts = ['exec_in', 'exec_out', 'in_target', 'target_in', 'sk_main', 'ptr_click_main'];
+  const protectedPorts = ['execIn', 'execOut', 'targetEntity', 'targetLayer', 'onClick'];
   return !protectedPorts.includes(portId);
 }
 
@@ -461,7 +461,7 @@ function findVariableMeta(varId) {
 }
 
 function regenerateVariableSetCode() {
-  if (!node.value || node.value.type !== 'variable_set') return;
+  if (!node.value || (node.value.type !== 'variableSet' && node.value.type !== 'variable_set')) return;
 
   const targetVarId = node.value.data?.variableId;
   const targetVar = findVariableMeta(targetVarId);
@@ -469,13 +469,13 @@ function regenerateVariableSetCode() {
 
   const varName = targetVar.name;
   const setMethod = targetVar.scope === 'Global' ? 'setGlobal' : 'setLocal';
-  const portId = variableSetInputPort.value?.id || 'val_0';
+  const portId = variableSetInputPort.value?.id || 'value';
 
   node.value.data.code = 
-`const val = inputs['${portId}'] ?? inputs['${varName}'];
+`const val = inputs.${portId};
 context.${setMethod}('${varName}', val);
-outputs['out_0'] = val;
-outputs['exec_out'] = true;
+outputs.valueOut = val;
+outputs.execOut = true;
 return;`;
 
   scriptStore.saveActiveScript();
@@ -487,7 +487,7 @@ function onSelectVariable(newVarId) {
   const targetVar = findVariableMeta(newVarId);
   if (!targetVar) return;
 
-  const isGet = node.value.type === 'variable_get';
+  const isGet = node.value.type === 'variableGet' || node.value.type === 'variable_get';
   const varName = targetVar.name;
   const varType = (targetVar.type || 'String').toLowerCase();
   const varColor = getVarColor(targetVar.type);
@@ -510,37 +510,43 @@ function onSelectVariable(newVarId) {
 
   if (isGet) {
     node.value.inputs = [];
-    const outPort = node.value.outputs.find(o => o.id === 'out_0');
+    const outPort = node.value.outputs.find(o => o.id === 'value' || o.id === 'out_0');
     if (outPort) {
+      outPort.id = 'value';
       outPort.dataType = varType;
       outPort.color = varColor;
       outPort.label = varName;
     } else {
       node.value.outputs = [
-        { id: 'out_0', label: varName, dataType: varType, color: varColor }
+        { id: 'value', label: varName, dataType: varType, color: varColor }
       ];
     }
-    node.value.data.code = `outputs['out_0'] = context.${getMethod}('${varName}');\nreturn;`;
+    node.value.data.code = `outputs.value = context.${getMethod}('${varName}');\nreturn;`;
   } else {
-    const valPort = node.value.inputs.find(i => i.id === 'val_0');
+    const valPort = node.value.inputs.find(i => i.id === 'value' || i.id === 'val_0');
     if (valPort) {
+      valPort.id = 'value';
       valPort.dataType = varType;
       valPort.color = varColor;
       valPort.label = varName;
     } else {
-      node.value.inputs.push({
-        id: 'val_0',
-        label: varName,
-        dataType: varType,
-        color: varColor
-      });
+      node.value.inputs = [
+        { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
+        { id: 'value', label: varName, dataType: varType, color: varColor }
+      ];
     }
 
-    const outPort = node.value.outputs.find(o => o.id === 'out_0');
+    const outPort = node.value.outputs.find(o => o.id === 'valueOut' || o.id === 'out_0');
     if (outPort) {
+      outPort.id = 'valueOut';
       outPort.dataType = varType;
       outPort.color = varColor;
       outPort.label = varName;
+    } else {
+      node.value.outputs = [
+        { id: 'execOut', dataType: 'execution', color: '#FFFFFF' },
+        { id: 'valueOut', label: varName, dataType: varType, color: varColor }
+      ];
     }
 
     if (!node.value.data.values) {
@@ -550,8 +556,7 @@ function onSelectVariable(newVarId) {
       ? (typeof sanitizeVariableValue === 'function' ? sanitizeVariableValue(targetVar.defaultValue, targetVar.type) : targetVar.defaultValue)
       : (typeof getDefaultValueForType === 'function' ? getDefaultValueForType(varType) : '');
 
-    node.value.data.values['val_0'] = defaultVal;
-    node.value.data.values[varName] = defaultVal;
+    node.value.data.values['value'] = defaultVal;
 
     node.value.data.items = [
       {
@@ -587,7 +592,7 @@ function isNotSet(value) {
 }
 
 function getPlaceholder(key, value, type) {
-  if (String(key).startsWith('target_in') && isNotSet(value)) return 'self';
+  if ((String(key).startsWith('targetEntity') || String(key).startsWith('targetLayer')) && isNotSet(value)) return 'self';
   if (isNotSet(value)) return `Empty ${type}...`;
   return '';
 }

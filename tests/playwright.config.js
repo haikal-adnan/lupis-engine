@@ -38,18 +38,17 @@ export default defineConfig({
   },
   projects: [
     {
-      // Helper contract tests (Section 11.3). They run first: a helper failure stops
-      // the feature specs early instead of scattering failures across the suite.
+      // Helper contract tests (Section 11.3). Reserved for helper modifications,
+      // urgent infrastructure testing, and finalization runs. Decoupled from feature
+      // specs so daily check/development runs do not carry contract overhead.
       name: 'contract',
       testMatch: '**/contract/**/*.spec.js',
       use: chromiumUse,
     },
     {
-      // Feature specs. For fast iteration without the contract project:
-      //   npx playwright test --project=chromium --no-deps
+      // Feature specs. Runs fast for routine checking without running contract.
       name: 'chromium',
       testIgnore: ['**/contract/**', '**/specs/blueprint/**'],
-      dependencies: ['contract'],
       use: chromiumUse,
     },
     {
@@ -59,7 +58,6 @@ export default defineConfig({
       // project config, so it applies uniformly to every spec of this folder.
       name: 'blueprint',
       testMatch: '**/specs/blueprint/**/*.spec.js',
-      dependencies: ['contract'],
       timeout: 90_000,
       expect: { timeout: 30_000 },
       use: chromiumUse,

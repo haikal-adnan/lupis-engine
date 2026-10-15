@@ -243,23 +243,23 @@ test.describe('Variable System E2E Testing', () => {
     await variablePage.createVariable({ name: 'PlayerHealth', type: 'number', isExposed: true, scope: 'Local' });
     await variablePage.closeManager();
 
-    const getVarNodeId = await nodeGraph.spawnNodeViaStore('variable_get', 'Get PlayerHealth', { x: 200, y: 200 }, { data: { variableName: 'PlayerHealth' } });
+    const getVarNodeId = await nodeGraph.spawnNodeViaStore('variableGet', 'Get PlayerHealth', { x: 200, y: 200 }, { data: { variableName: 'PlayerHealth' } });
     await expect(nodeGraph.nodeById(getVarNodeId)).toBeVisible();
 
     await nodeGraph.selectNodeById(getVarNodeId);
     await nodeInspector.selectVariableForNode('PlayerHealth');
 
-    const mathNodeId = await nodeGraph.spawnNodeViaStore('math_add', 'Add', { x: 440, y: 200 });
+    const mathNodeId = await nodeGraph.spawnNodeViaStore('mathAdd', 'Add', { x: 440, y: 200 });
     await expect(nodeGraph.nodeById(mathNodeId)).toBeVisible();
 
-    const setVarNodeId = await nodeGraph.spawnNodeViaStore('variable_set', 'Set PlayerHealth', { x: 680, y: 200 }, { data: { variableName: 'PlayerHealth' } });
+    const setVarNodeId = await nodeGraph.spawnNodeViaStore('variableSet', 'Set PlayerHealth', { x: 680, y: 200 }, { data: { variableName: 'PlayerHealth' } });
     await expect(nodeGraph.nodeById(setVarNodeId)).toBeVisible();
 
     await nodeGraph.selectNodeById(setVarNodeId);
     await nodeInspector.selectVariableForNode('PlayerHealth');
 
-    await nodeGraph.connectPortsViaStore(getVarNodeId, 'out_0', mathNodeId, 'in_0');
-    await nodeGraph.connectPortsViaStore(mathNodeId, 'out_0', setVarNodeId, 'in_0');
+    await nodeGraph.connectPortsViaStore(getVarNodeId, 'value', mathNodeId, 'v0');
+    await nodeGraph.connectPortsViaStore(mathNodeId, 'result', setVarNodeId, 'value');
 
     await expect(nodeGraph.edges).toHaveCount(2);
   });

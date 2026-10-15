@@ -207,7 +207,7 @@ describe('useNodeLogic Integration', () => {
       const updatedNode = scriptStore.activeScript.nodes[0];
       expect(updatedNode.inputs).toHaveLength(1);
       expect(updatedNode.inputs[0].id).toBe('pos_x');
-      expect(updatedNode.inputs[0].label).toBe('Position X');
+      expect(updatedNode.inputs[0].label).toBeUndefined();
 
       expect(availableOptions.value).toHaveLength(1);
       expect(availableOptions.value[0].value).toBe('pos_y');
@@ -305,7 +305,7 @@ describe('useNodeLogic Integration', () => {
         id: 'node_protected',
         type: 'test_node',
         dynamicMode: 'sequential',
-        inputs: [{ id: 'exec_in', label: 'Execute' }]
+        inputs: [{ id: 'execIn' }]
       };
       const env = await setupMockScriptEnvironment({ nodes: [targetNode] });
       const scriptStore = useScriptStore();
@@ -315,7 +315,7 @@ describe('useNodeLogic Integration', () => {
 
       const { removeDynamicInput } = useNodeLogic();
 
-      removeDynamicInput('exec_in', 'input');
+      removeDynamicInput('execIn', 'input');
 
       expect(scriptStore.activeScript.nodes[0].inputs).toHaveLength(1);
       expect(mockShowPop).toHaveBeenCalledWith(expect.objectContaining({

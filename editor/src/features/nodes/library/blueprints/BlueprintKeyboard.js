@@ -1,10 +1,5 @@
 import { Zap } from 'lucide-vue-next';
 
-/**
- * ============================================================================
- * BLUEPRINT: KEYBOARD EVENTS
- * ============================================================================
- */
 export const BlueprintKeyboard = {
   id: 'keyboard_events',
   label: 'Keyboard Events',
@@ -12,7 +7,7 @@ export const BlueprintKeyboard = {
   icon: Zap,
   items: [
     { 
-      type: 'event_on_key', 
+      type: 'eventOnKey', 
       label: 'On Key Event', 
       description: 'Triggers individual execution outputs automatically synced with configured key strings.',
       dynamicMode: 'none',
@@ -23,15 +18,16 @@ export const BlueprintKeyboard = {
           category: 'Keyboard Events' 
         },
         inputs: [
-          { id: 'keys', label: 'Keys', dataType: 'string', color: '#F48FB1', defaultValue: 'a, space' },
-          { id: 'action', label: 'Action', dataType: 'string', color: '#F48FB1', defaultValue: 'pressed' }
+          { id: 'keys', dataType: 'string', color: '#F48FB1', defaultValue: 'a, space' },
+          { id: 'action', dataType: 'string', color: '#F48FB1', defaultValue: 'pressed' }
         ],
         outputs: [
-          { id: 'out_a', label: 'a', dataType: 'execution', color: '#FFFFFF' },
-          { id: 'out_space', label: 'space', dataType: 'execution', color: '#FFFFFF' }
+          { id: 'onA', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'onSpace', dataType: 'execution', color: '#FFFFFF' }
         ],
         data: {
           values: {
+            keys: 'a, space',
             action: 'pressed'
           },
           options: {
@@ -43,11 +39,10 @@ export const BlueprintKeyboard = {
           },
           code: 
 `context.onTick(() => {
-  const keyboard = context.game?.input?.keyboard;
-  if (!keyboard) return;
+  const keyboard = context.input.keyboard;
 
-  const rawKeys = inputs['Keys'] ?? inputs['keys'] ?? '';
-  const action = String(inputs['Action'] ?? inputs['action'] ?? 'pressed').toLowerCase();
+  const rawKeys = inputs.keys;
+  const action = inputs.action.toLowerCase();
 
   const rawTokens = rawKeys.split(',').map(t => t.trim().toLowerCase());
   const parsedKeys = [];
@@ -71,10 +66,8 @@ export const BlueprintKeyboard = {
   const activeOutputs = node.outputs || [];
 
   activeOutputs.forEach((output, index) => {
-    let keyName = parsedKeys[index] || output.label || output.id.replace(/^out_/, '');
+    let keyName = parsedKeys[index] || output.id.replace(/^on/, '');
     keyName = keyName.trim().toLowerCase();
-
-    if (!keyName) return;
 
     let triggered = false;
 
@@ -96,7 +89,7 @@ return;`
       } 
     },
     { 
-      type: 'get_key_state', 
+      type: 'getKeyState', 
       label: 'Get Key State', 
       description: 'Returns true if the specified key is currently held down.',
       dynamicMode: 'none',
@@ -107,29 +100,27 @@ return;`
           category: 'Keyboard Events' 
         },
         inputs: [
-          { id: 'key', label: 'Key', dataType: 'string', color: '#F48FB1', defaultValue: 'space' }
+          { id: 'key', dataType: 'string', color: '#F48FB1', defaultValue: 'space' }
         ], 
         outputs: [
-          { id: 'isDown', label: 'Is Down', dataType: 'boolean', color: '#E57373' }
+          { id: 'isDown', dataType: 'boolean', color: '#E57373' }
         ],
         data: {
           values: {
             key: 'space'
           },
           code: 
-`const rawKey = inputs['Key'] ?? inputs['key'] ?? '';
-const keyboard = context.game?.input?.keyboard;
-const formattedKey = rawKey === ' ' ? 'space' : String(rawKey).toLowerCase();
+`const rawKey = inputs.key;
+const keyboard = context.input.keyboard;
+const formattedKey = rawKey === ' ' ? 'space' : rawKey.toLowerCase();
 
-const result = Boolean(formattedKey && keyboard && keyboard.isDown(formattedKey));
-outputs['Is Down'] = result;
-outputs['isDown'] = result;
+outputs.isDown = keyboard.isDown(formattedKey);
 return;`
         }
       } 
     },
     { 
-      type: 'calculate_axis_2d', 
+      type: 'calculateAxis2d', 
       label: 'Calculate Axis 2D', 
       description: 'Calculates directional X and Y axes based on assigned key strings.',
       dynamicMode: 'none',
@@ -140,16 +131,16 @@ return;`
           category: 'Keyboard Events' 
         },
         inputs: [
-          { id: 'exec_tick', label: 'In (Tick)', dataType: 'execution', color: '#FFFFFF' },
-          { id: 'upKey', label: 'Up Key', dataType: 'string', color: '#F48FB1', defaultValue: 'w' },
-          { id: 'downKey', label: 'Down Key', dataType: 'string', color: '#F48FB1', defaultValue: 's' },
-          { id: 'rightKey', label: 'Right Key', dataType: 'string', color: '#F48FB1', defaultValue: 'd' },
-          { id: 'leftKey', label: 'Left Key', dataType: 'string', color: '#F48FB1', defaultValue: 'a' }
+          { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'upKey', dataType: 'string', color: '#F48FB1', defaultValue: 'w' },
+          { id: 'downKey', dataType: 'string', color: '#F48FB1', defaultValue: 's' },
+          { id: 'rightKey', dataType: 'string', color: '#F48FB1', defaultValue: 'd' },
+          { id: 'leftKey', dataType: 'string', color: '#F48FB1', defaultValue: 'a' }
         ], 
         outputs: [
-          { id: 'exec_out', label: 'Out', dataType: 'execution', color: '#FFFFFF' },
-          { id: 'axis_x', label: 'Axis X', dataType: 'number', color: '#64B5F6' },
-          { id: 'axis_y', label: 'Axis Y', dataType: 'number', color: '#64B5F6' }
+          { id: 'execOut', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'axisX', dataType: 'number', color: '#64B5F6' },
+          { id: 'axisY', dataType: 'number', color: '#64B5F6' }
         ],
         data: {
           values: {
@@ -159,34 +150,29 @@ return;`
             leftKey: 'a'
           },
           code: 
-`const keyboard = context.game?.input?.keyboard;
-const upKey = inputs['Up Key'] ?? inputs['upKey'];
-const downKey = inputs['Down Key'] ?? inputs['downKey'];
-const rightKey = inputs['Right Key'] ?? inputs['rightKey'];
-const leftKey = inputs['Left Key'] ?? inputs['leftKey'];
+`const keyboard = context.input.keyboard;
+const upKey = inputs.upKey;
+const downKey = inputs.downKey;
+const rightKey = inputs.rightKey;
+const leftKey = inputs.leftKey;
 
 let x = 0;
 let y = 0;
 
-if (keyboard) {
-  if (rightKey && keyboard.isDown(String(rightKey).toLowerCase())) x += 1;
-  if (leftKey && keyboard.isDown(String(leftKey).toLowerCase())) x -= 1;
-  if (upKey && keyboard.isDown(String(upKey).toLowerCase())) y += 1;
-  if (downKey && keyboard.isDown(String(downKey).toLowerCase())) y -= 1;
-}
+if (keyboard.isDown(rightKey.toLowerCase())) x += 1;
+if (keyboard.isDown(leftKey.toLowerCase())) x -= 1;
+if (keyboard.isDown(upKey.toLowerCase())) y += 1;
+if (keyboard.isDown(downKey.toLowerCase())) y -= 1;
 
-outputs['Axis X'] = x;
-outputs['axis_x'] = x;
-outputs['Axis Y'] = y;
-outputs['axis_y'] = y;
-outputs['Out'] = true;
-outputs['exec_out'] = true;
+outputs.axisX = x;
+outputs.axisY = y;
+outputs.execOut = true;
 return;`
         }
       } 
     },
     { 
-      type: 'simulate_key', 
+      type: 'simulateKey', 
       label: 'Simulate Key', 
       description: 'Dispatches synthetic keyboard events for UI interaction or virtual pads.',
       dynamicMode: 'none',
@@ -197,12 +183,12 @@ return;`
           category: 'Keyboard Events' 
         },
         inputs: [
-          { id: 'exec_in', label: 'In', dataType: 'execution', color: '#FFFFFF' },
-          { id: 'key', label: 'Key', dataType: 'string', color: '#F48FB1', defaultValue: 'd' },
-          { id: 'isDown', label: 'Is Down', dataType: 'boolean', color: '#E57373', defaultValue: true }
+          { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'key', dataType: 'string', color: '#F48FB1', defaultValue: 'd' },
+          { id: 'isDown', dataType: 'boolean', color: '#E57373', defaultValue: true }
         ],
         outputs: [
-          { id: 'exec_out', label: 'Out', dataType: 'execution', color: '#FFFFFF' }
+          { id: 'execOut', dataType: 'execution', color: '#FFFFFF' }
         ],
         data: {
           values: {
@@ -210,31 +196,25 @@ return;`
             isDown: true
           },
           code: 
-`const rawKey = inputs['Key'] ?? inputs['key'];
-const isDownVal = inputs['Is Down'] ?? inputs['isDown'] ?? true;
+`const rawKey = inputs.key;
+const isDownVal = inputs.isDown;
 
-if (rawKey) {
-  const eventType = Boolean(isDownVal) ? 'keydown' : 'keyup';
-  const formattedKey = rawKey === ' ' ? 'space' : String(rawKey);
-  const keyCode = formattedKey.toUpperCase().charCodeAt(0);
-  
-  const event = new KeyboardEvent(eventType, {
-    key: formattedKey,
-    code: \`Key\${formattedKey.toUpperCase()}\`,
-    keyCode: keyCode,
-    which: keyCode,
-    bubbles: true,
-    cancelable: true
-  });
-  
-  window.dispatchEvent(event);
-  if (context.game && context.game.canvas) {
-    context.game.canvas.dispatchEvent(event);
-  }
-}
+const eventType = isDownVal ? 'keydown' : 'keyup';
+const formattedKey = rawKey === ' ' ? 'space' : rawKey;
+const keyCode = formattedKey.toUpperCase().charCodeAt(0);
 
-outputs['Out'] = true;
-outputs['exec_out'] = true;
+const event = new KeyboardEvent(eventType, {
+  key: formattedKey,
+  code: \`Key\${formattedKey.toUpperCase()}\`,
+  keyCode: keyCode,
+  which: keyCode,
+  bubbles: true,
+  cancelable: true
+});
+
+context.ui.dispatchEvent(event);
+
+outputs.execOut = true;
 return;`
         }
       } 

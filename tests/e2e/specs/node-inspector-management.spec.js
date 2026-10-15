@@ -20,7 +20,7 @@ test.describe('Node Inspector Panel E2E Testing Suite', () => {
   // 1. UPDATE DATA TITLE, COLOR, & DESCRIPTION (NODE HEADER)
   // =========================================================================
   test('updates the Header Title, Color and Description of a node', async ({ nodeGraph, nodeInspector }) => {
-    const nodeId = await nodeGraph.spawnNodeViaStore('math_add', 'Add', { x: 300, y: 200 });
+    const nodeId = await nodeGraph.spawnNodeViaStore('mathAdd', 'Add', { x: 300, y: 200 });
     await nodeGraph.selectNodeById(nodeId);
 
     await nodeInspector.setHeaderTitle('Custom Math Addition');
@@ -33,12 +33,12 @@ test.describe('Node Inspector Panel E2E Testing Suite', () => {
   });
 
   test('deletes the selected node through the Inspector header dropdown menu', async ({ nodeGraph, nodeInspector }) => {
-    const nodeId = await nodeGraph.spawnNodeViaStore('event_tick', 'On Tick', { x: 300, y: 200 });
+    const nodeId = await nodeGraph.spawnNodeViaStore('eventTick', 'On Tick', { x: 300, y: 200 });
     await nodeGraph.selectNodeById(nodeId);
 
     await nodeInspector.deleteSelectedNode();
 
-    await expect(nodeGraph.nodesByType('event_tick')).toHaveCount(0);
+    await expect(nodeGraph.nodesByType('eventTick')).toHaveCount(0);
     await expect(nodeInspector.emptySelectionState).toBeVisible();
   });
 
@@ -46,7 +46,7 @@ test.describe('Node Inspector Panel E2E Testing Suite', () => {
   // 2. RENAME PORTS DAN CRUD PORTS (DYNAMIC PORTS ON)
   // =========================================================================
   test('renames input and output ports and performs CRUD on dynamic ports', async ({ nodeGraph, nodeInspector }) => {
-    const nodeId = await nodeGraph.spawnNodeViaStore('math_add', 'Add', { x: 300, y: 200 });
+    const nodeId = await nodeGraph.spawnNodeViaStore('mathAdd', 'Add', { x: 300, y: 200 });
     await nodeGraph.selectNodeById(nodeId);
 
     const firstInputId = await nodeInspector.inputPortIdAt(0);
@@ -71,10 +71,10 @@ test.describe('Node Inspector Panel E2E Testing Suite', () => {
   });
 
   test('[Bad Path] prevents deleting permanent or protected ports', async ({ nodeGraph, nodeInspector }) => {
-    const nodeId = await nodeGraph.spawnNodeViaStore('ui_notification', 'Notification', { x: 300, y: 200 });
+    const nodeId = await nodeGraph.spawnNodeViaStore('uiNotification', 'Notification', { x: 300, y: 200 });
     await nodeGraph.selectNodeById(nodeId);
 
-    const protectedRow = nodeInspector.inputPortRowById('exec_in');
+    const protectedRow = nodeInspector.inputPortRowById('execIn');
     await expect(protectedRow).toBeVisible();
     await expect(protectedRow.getByTestId('node-inspector-input-port-remove-btn')).toHaveCount(0);
   });
@@ -85,14 +85,14 @@ test.describe('Node Inspector Panel E2E Testing Suite', () => {
   test('disables a parameter input when connected by an edge and supports Variable mode', async ({ variableCrud, nodeGraph, nodeInspector }) => {
     await variableCrud.createVariable({ name: 'PlayerSpeed', type: 'number', value: 100, scope: 'Local' });
 
-    const nodeAId = await nodeGraph.spawnNodeViaStore('math_add', 'Add', { x: 200, y: 200 });
-    const nodeBId = await nodeGraph.spawnNodeViaStore('math_subtract', 'Subtract', { x: 500, y: 200 });
+    const nodeAId = await nodeGraph.spawnNodeViaStore('mathAdd', 'Add', { x: 200, y: 200 });
+    const nodeBId = await nodeGraph.spawnNodeViaStore('mathSubtract', 'Subtract', { x: 500, y: 200 });
 
     await nodeGraph.selectNodeById(nodeBId);
     const targetPortId = await nodeInspector.portIdAt(0);
     const unboundPortId = await nodeInspector.portIdAt(1);
 
-    await nodeGraph.connectPortsViaStore(nodeAId, 'out_0', nodeBId, targetPortId);
+    await nodeGraph.connectPortsViaStore(nodeAId, 'result', nodeBId, targetPortId);
     await nodeGraph.selectNodeById(nodeBId);
 
     const targetPortRow = nodeInspector.portRowById(targetPortId);
@@ -109,7 +109,7 @@ test.describe('Node Inspector Panel E2E Testing Suite', () => {
   // 4. UNIQUE PARAMETERS & GENERATED INPUTS FOR MATH ADD DYNAMIC PORTS
   // =========================================================================
   test('syncs the unique Math Add parameters automatically when a dynamic port is added', async ({ nodeGraph, nodeInspector }) => {
-    const nodeId = await nodeGraph.spawnNodeViaStore('math_add', 'Add', { x: 300, y: 200 });
+    const nodeId = await nodeGraph.spawnNodeViaStore('mathAdd', 'Add', { x: 300, y: 200 });
     await nodeGraph.selectNodeById(nodeId);
 
     const paramRows = nodeInspector.portRows;
@@ -132,7 +132,7 @@ test.describe('Node Inspector Panel E2E Testing Suite', () => {
   test('applies and removes a Modifier Add-on on a Variable parameter', async ({ variableCrud, nodeGraph, nodeInspector }) => {
     await variableCrud.createVariable({ name: 'BaseDamage', type: 'number', value: 50, scope: 'Local' });
 
-    const nodeId = await nodeGraph.spawnNodeViaStore('math_multiply', 'Multiply', { x: 300, y: 200 });
+    const nodeId = await nodeGraph.spawnNodeViaStore('mathMultiply', 'Multiply', { x: 300, y: 200 });
     await nodeGraph.selectNodeById(nodeId);
 
     const targetPortId = await nodeInspector.portIdAt(0);
@@ -155,10 +155,10 @@ test.describe('Node Inspector Panel E2E Testing Suite', () => {
   // 6. INSPECTOR SWITCHES WHEN AN EDGE IS SELECTED (NODE EDGE INSPECTOR)
   // =========================================================================
   test('switches the Inspector to Edge View when an edge is clicked and edits the Edge Modifier', async ({ nodeGraph, nodeInspector }) => {
-    const nodeAId = await nodeGraph.spawnNodeViaStore('math_add', 'Add', { x: 200, y: 200 });
-    const nodeBId = await nodeGraph.spawnNodeViaStore('math_divide', 'Divide', { x: 500, y: 200 });
+    const nodeAId = await nodeGraph.spawnNodeViaStore('mathAdd', 'Add', { x: 200, y: 200 });
+    const nodeBId = await nodeGraph.spawnNodeViaStore('mathDivide', 'Divide', { x: 500, y: 200 });
 
-    const edgeId = await nodeGraph.connectPortsViaStore(nodeAId, 'out_0', nodeBId, 'in_0');
+    const edgeId = await nodeGraph.connectPortsViaStore(nodeAId, 'result', nodeBId, 'v0');
 
     await nodeGraph.selectEdgeById(edgeId);
 
@@ -179,10 +179,10 @@ test.describe('Node Inspector Panel E2E Testing Suite', () => {
   // 7. NODE-SPECIFIC BLUEPRINT TESTS
   // =========================================================================
   test.describe('Node-Specific Blueprint Inspector Tests', () => {
-    test('VARIABLE: mengkonfigurasi Get dan Set Variable node', async ({ variableCrud, nodeGraph, nodeInspector }) => {
+    test('VARIABLE: configures Get and Set Variable nodes', async ({ variableCrud, nodeGraph, nodeInspector }) => {
       await variableCrud.createVariable({ name: 'PlayerHealth', type: 'number', value: 100, isExposed: true, scope: 'Local' });
 
-      const nodeId = await nodeGraph.spawnNodeViaStore('variable_get', 'Get Variable', { x: 300, y: 200 });
+      const nodeId = await nodeGraph.spawnNodeViaStore('variableGet', 'Get Variable', { x: 300, y: 200 });
       await nodeGraph.selectNodeById(nodeId);
 
       await nodeInspector.selectVariableForNode('PlayerHealth');
@@ -191,7 +191,7 @@ test.describe('Node Inspector Panel E2E Testing Suite', () => {
     });
 
     test('NOTIFICATION: edits the default input value of UI & Debug Notification', async ({ nodeGraph, nodeInspector }) => {
-      const nodeId = await nodeGraph.spawnNodeViaStore('ui_notification', 'Notification', { x: 300, y: 200 });
+      const nodeId = await nodeGraph.spawnNodeViaStore('uiNotification', 'Notification', { x: 300, y: 200 });
       await nodeGraph.selectNodeById(nodeId);
 
       const sourcePortId = await nodeInspector.portIdAt(0);
@@ -205,7 +205,7 @@ test.describe('Node Inspector Panel E2E Testing Suite', () => {
     });
 
     test('LOGIC: configures And/Or boolean logic with dynamic boolean inputs', async ({ nodeGraph, nodeInspector }) => {
-      const nodeId = await nodeGraph.spawnNodeViaStore('logic_and', 'And', { x: 300, y: 200 });
+      const nodeId = await nodeGraph.spawnNodeViaStore('logicAnd', 'And', { x: 300, y: 200 });
       await nodeGraph.selectNodeById(nodeId);
 
       const portId = await nodeInspector.portIdAt(0);
@@ -215,14 +215,14 @@ test.describe('Node Inspector Panel E2E Testing Suite', () => {
     });
 
     test('LIFECYCLE: shows an empty parameter list on a Lifecycle node without editable values', async ({ nodeGraph, nodeInspector }) => {
-      const nodeId = await nodeGraph.spawnNodeViaStore('event_game_start', 'On Game Start', { x: 300, y: 200 });
+      const nodeId = await nodeGraph.spawnNodeViaStore('eventGameStart', 'On Game Start', { x: 300, y: 200 });
       await nodeGraph.selectNodeById(nodeId);
 
       await expect(nodeInspector.parametersSection).toBeHidden();
     });
 
     test('OBJECT: adds a dynamic property port from the Property Options dropdown', async ({ nodeGraph, nodeInspector }) => {
-      const nodeId = await nodeGraph.spawnNodeViaStore('get_object', 'Get Object Info', { x: 300, y: 200 });
+      const nodeId = await nodeGraph.spawnNodeViaStore('getObject', 'Get Object Info', { x: 300, y: 200 });
       await nodeGraph.selectNodeById(nodeId);
 
       await nodeInspector.addDynamicOutputPort('Active');
@@ -237,8 +237,8 @@ test.describe('Node Inspector Panel E2E Testing Suite', () => {
   // 8. INSPECTOR SELECTION STATES (MULTI-SELECTION & EMPTY STATE)
   // =========================================================================
   test('shows the multi-selection state when more than one node is selected', async ({ nodeGraph, nodeInspector }) => {
-    const node1Id = await nodeGraph.spawnNodeViaStore('math_add', 'Add', { x: 200, y: 200 });
-    const node2Id = await nodeGraph.spawnNodeViaStore('math_subtract', 'Subtract', { x: 500, y: 200 });
+    const node1Id = await nodeGraph.spawnNodeViaStore('mathAdd', 'Add', { x: 200, y: 200 });
+    const node2Id = await nodeGraph.spawnNodeViaStore('mathSubtract', 'Subtract', { x: 500, y: 200 });
 
     await nodeGraph._evaluateStore((store, [id1, id2]) => {
       store.setSelectedNodes([id1, id2]);

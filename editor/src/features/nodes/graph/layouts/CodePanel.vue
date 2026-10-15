@@ -264,7 +264,7 @@ const dataInputPorts = computed(() => {
   return targetNode.value.inputs.filter(p => {
     const dType = String(p.dataType || '').toLowerCase()
     const pId = String(p.id || '').toLowerCase()
-    return dType !== 'execution' && pId !== 'exec_in'
+    return dType !== 'execution'
   })
 })
 
@@ -289,10 +289,16 @@ const validationResult = computed(() => {
   const code = codeContent.value
   const issues = []
 
-  const inputMatches = [...code.matchAll(/inputs\[\s*['"]([^'"]+)['"]\s*\]/g)].map(m => m[1])
+  const inputMatches = [
+    ...[...code.matchAll(/inputs\[\s*['"]([^'"]+)['"]\s*\]/g)].map(m => m[1]),
+    ...[...code.matchAll(/inputs\.([A-Za-z0-9_$]+)/g)].map(m => m[1])
+  ]
   const usedInputKeys = [...new Set(inputMatches)]
 
-  const outputMatches = [...code.matchAll(/outputs\[\s*['"]([^'"]+)['"]\s*\]/g)].map(m => m[1])
+  const outputMatches = [
+    ...[...code.matchAll(/outputs\[\s*['"]([^'"]+)['"]\s*\]/g)].map(m => m[1]),
+    ...[...code.matchAll(/outputs\.([A-Za-z0-9_$]+)\s*=/g)].map(m => m[1])
+  ]
   const usedOutputKeys = [...new Set(outputMatches)]
 
   const allValidInputIdentifiers = targetNode.value.inputs?.flatMap(p => [p.label, p.id]).filter(Boolean) || []

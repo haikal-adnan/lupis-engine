@@ -7,18 +7,18 @@ export const BlueprintBoolean = {
   icon: ShieldCheck,
   items: [
     {
-      type: 'logic_and',
+      type: 'logicAnd',
       label: 'And',
       description: 'True if all dynamic inputs are true.',
       dynamicMode: 'sequential',
       defaultData: {
         settings: { headerTitle: 'And', headerColor: '#E57373', category: 'Boolean Logic' },
         inputs: [
-          { id: 'v0', label: 'Val 1', dataType: 'boolean', color: '#E57373', defaultValue: false },
-          { id: 'v1', label: 'Val 2', dataType: 'boolean', color: '#E57373', defaultValue: false }
+          { id: 'v0', dataType: 'boolean', color: '#E57373', defaultValue: false },
+          { id: 'v1', dataType: 'boolean', color: '#E57373', defaultValue: false }
         ],
         outputs: [
-          { id: 'result', label: 'Result', dataType: 'boolean', color: '#E57373' }
+          { id: 'result', dataType: 'boolean', color: '#E57373' }
         ],
         data: {
           values: {
@@ -26,26 +26,25 @@ export const BlueprintBoolean = {
             v1: false
           },
           code: 
-`const values = Object.values(inputs).map(Boolean);
-outputs['Result'] = values.length > 0 ? values.every(Boolean) : false;
-outputs['result'] = outputs['Result'];
+`const values = Object.values(inputs);
+outputs.result = values.length > 0 ? values.every(v => v === true) : false;
 return;`
         }
       }
     },
     {
-      type: 'logic_or',
+      type: 'logicOr',
       label: 'Or',
       description: 'True if at least one input is true.',
       dynamicMode: 'sequential',
       defaultData: {
         settings: { headerTitle: 'Or', headerColor: '#E57373', category: 'Boolean Logic' },
         inputs: [
-          { id: 'v0', label: 'Val 1', dataType: 'boolean', color: '#E57373', defaultValue: false },
-          { id: 'v1', label: 'Val 2', dataType: 'boolean', color: '#E57373', defaultValue: false }
+          { id: 'v0', dataType: 'boolean', color: '#E57373', defaultValue: false },
+          { id: 'v1', dataType: 'boolean', color: '#E57373', defaultValue: false }
         ],
         outputs: [
-          { id: 'result', label: 'Result', dataType: 'boolean', color: '#E57373' }
+          { id: 'result', dataType: 'boolean', color: '#E57373' }
         ],
         data: {
           values: {
@@ -53,34 +52,31 @@ return;`
             v1: false
           },
           code: 
-`const values = Object.values(inputs).map(Boolean);
-outputs['Result'] = values.some(Boolean);
-outputs['result'] = outputs['Result'];
+`const values = Object.values(inputs);
+outputs.result = values.some(v => v === true);
 return;`
         }
       }
     },
     {
-      type: 'logic_not',
+      type: 'logicNot',
       label: 'Not',
       description: 'Inverts the boolean value.',
       dynamicMode: 'none',
       defaultData: {
         settings: { headerTitle: 'Not', headerColor: '#E57373', category: 'Boolean Logic' },
         inputs: [
-          { id: 'in_val', label: 'In', dataType: 'boolean', color: '#E57373', defaultValue: false }
+          { id: 'value', dataType: 'boolean', color: '#E57373', defaultValue: false }
         ],
         outputs: [
-          { id: 'result', label: 'Out', dataType: 'boolean', color: '#E57373' }
+          { id: 'result', dataType: 'boolean', color: '#E57373' }
         ],
         data: {
           values: {
-            in_val: false
+            value: false
           },
           code: 
-`const inVal = Boolean(inputs['In'] ?? inputs['in_val']);
-outputs['Out'] = !inVal;
-outputs['result'] = !inVal;
+`outputs.result = !inputs.value;
 return;`
         }
       }

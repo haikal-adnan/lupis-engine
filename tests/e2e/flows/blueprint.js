@@ -61,7 +61,7 @@ export class BlueprintTestRunner {
         await this.previewPage.startLogCapture();
         previewPopup = await this.previewPage.openPreview();
         await this.previewPage.expectEngineReady(previewPopup);
-        // Jalankan interaksi Playwright jika disediakan
+        // Execute Playwright interaction if provided
         if (typeof action === 'function') {
           await action(previewPopup);
         }

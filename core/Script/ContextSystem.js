@@ -1,40 +1,225 @@
+import PointerRaycast from "../System/PointerRaycast.js";
+
+export class ScriptAssertionError extends Error {
+  constructor(message, nodeId, nodeType) {
+    super(message);
+    this.name = 'ScriptAssertionError';
+    this.nodeId = nodeId;
+    this.nodeType = nodeType;
+  }
+}
+
+/**
+ * ContextSystem (Engine Gate 2 / Subsystem Facade)
+ * Strict runtime gateway for script nodes.
+ * 
+ * Rules:
+ * 1. Node code NEVER accesses `context.game`.
+ * 2. Missing resources (Entity, Layer, Global Variable) THROW explicit errors with context.
+ * 3. All access is cleanly segmented into domain facades.
+ */
 export default class ContextSystem {
   constructor(game) {
     this.game = game;
   }
 
   createExecutionContext(runner, node) {
+    const game = this.game;
+    const nodeState = typeof runner.getNodeState === 'function' 
+      ? runner.getNodeState(node.id) 
+      : (node._state = node._state || {});
+
     return {
       owner: runner.owner,
-      game: this.game,
-      camera: this.game.camera,
-      dt: this.game.deltaTime,
       node: node,
+      dt: this.game.deltaTime,
+      deltaTime: this.game.deltaTime,
+      state: nodeState,
 
       console: {
-        log: (msg, source = 'Script') => {
+        log: (...args) => {
+          const message = args.map(a => (typeof a === 'object' && a !== null ? JSON.stringify(a) : String(a))).join(' ');
           this.game.events.emit('console:log', {
             type: 'log',
             time: Date.now(),
-            message: typeof msg === 'object' ? JSON.stringify(msg) : String(msg),
-            source: source
+            message,
+            source: 'Script'
           });
         },
-        warn: (msg, source = 'Script') => {
+        warn: (...args) => {
+          const message = args.map(a => (typeof a === 'object' && a !== null ? JSON.stringify(a) : String(a))).join(' ');
           this.game.events.emit('console:warn', {
             type: 'warn',
             time: Date.now(),
-            message: typeof msg === 'object' ? JSON.stringify(msg) : String(msg),
-            source: source
+            message,
+            source: 'Script'
           });
         },
-        error: (msg, source = 'Script') => {
+        error: (...args) => {
+          const message = args.map(a => (typeof a === 'object' && a !== null ? JSON.stringify(a) : String(a))).join(' ');
           this.game.events.emit('console:error', {
             type: 'error',
             time: Date.now(),
-            message: typeof msg === 'object' ? JSON.stringify(msg) : String(msg),
-            source: source
+            message,
+            source: 'Script'
           });
+        }
+      },
+
+      assert: {
+        isTrue: (condition, message = 'Assertion failed: expected value to be true') => {
+          if (!condition) {
+            const formatted = `[Assert Error] ${message} (node: '${node.id}')`;
+            this.game.events.emit('console:error', {
+              type: 'error',
+              time: Date.now(),
+              message: formatted,
+              source: 'Assert'
+            });
+            throw new ScriptAssertionError(formatted, node.id, node.type);
+          }
+          return true;
+        },
+
+        isFalse: (condition, message = 'Assertion failed: expected value to be false') => {
+          if (condition) {
+            const formatted = `[Assert Error] ${message} (node: '${node.id}')`;
+            this.game.events.emit('console:error', {
+              type: 'error',
+              time: Date.now(),
+              message: formatted,
+              source: 'Assert'
+            });
+            throw new ScriptAssertionError(formatted, node.id, node.type);
+          }
+          return true;
+        },
+
+        exists: (value, message = 'Assertion failed: value does not exist (null or undefined)') => {
+          if (value === null || value === undefined) {
+            const formatted = `[Assert Error] ${message} (node: '${node.id}')`;
+            this.game.events.emit('console:error', {
+              type: 'error',
+              time: Date.now(),
+              message: formatted,
+              source: 'Assert'
+            });
+            throw new ScriptAssertionError(formatted, node.id, node.type);
+          }
+          return value;
+        },
+
+        hasComponent: (entity, componentName, message) => {
+          if (!entity || !entity.components || !entity.components[componentName]) {
+            const fallbackMsg = `Assertion failed: entity does not have component '${componentName}'`;
+            const formatted = `[Assert Error] ${message || fallbackMsg} (node: '${node.id}')`;
+            this.game.events.emit('console:error', {
+              type: 'error',
+              time: Date.now(),
+              message: formatted,
+              source: 'Assert'
+            });
+            throw new ScriptAssertionError(formatted, node.id, node.type);
+          }
+          return entity.components[componentName];
+        },
+
+        isNumber: (value, message = 'Assertion failed: expected value to be a valid number') => {
+          const num = Number(value);
+          if (value === '' || value === null || value === undefined || Number.isNaN(num)) {
+            const formatted = `[Assert Error] ${message} (node: '${node.id}')`;
+            this.game.events.emit('console:error', {
+              type: 'error',
+              time: Date.now(),
+              message: formatted,
+              source: 'Assert'
+            });
+            throw new ScriptAssertionError(formatted, node.id, node.type);
+          }
+          return num;
+        },
+
+        isString: (value, message = 'Assertion failed: expected value to be a string') => {
+          if (typeof value !== 'string') {
+            const formatted = `[Assert Error] ${message} (node: '${node.id}')`;
+            this.game.events.emit('console:error', {
+              type: 'error',
+              time: Date.now(),
+              message: formatted,
+              source: 'Assert'
+            });
+            throw new ScriptAssertionError(formatted, node.id, node.type);
+          }
+          return value;
+        },
+
+        isBoolean: (value, message = 'Assertion failed: expected value to be a boolean') => {
+          if (typeof value !== 'boolean') {
+            const formatted = `[Assert Error] ${message} (node: '${node.id}')`;
+            this.game.events.emit('console:error', {
+              type: 'error',
+              time: Date.now(),
+              message: formatted,
+              source: 'Assert'
+            });
+            throw new ScriptAssertionError(formatted, node.id, node.type);
+          }
+          return value;
+        },
+
+        isObject: (value, message = 'Assertion failed: expected value to be an object') => {
+          if (!value || typeof value !== 'object' || Array.isArray(value)) {
+            const formatted = `[Assert Error] ${message} (node: '${node.id}')`;
+            this.game.events.emit('console:error', {
+              type: 'error',
+              time: Date.now(),
+              message: formatted,
+              source: 'Assert'
+            });
+            throw new ScriptAssertionError(formatted, node.id, node.type);
+          }
+          return value;
+        },
+
+        isArray: (value, message = 'Assertion failed: expected value to be an array') => {
+          if (!Array.isArray(value)) {
+            const formatted = `[Assert Error] ${message} (node: '${node.id}')`;
+            this.game.events.emit('console:error', {
+              type: 'error',
+              time: Date.now(),
+              message: formatted,
+              source: 'Assert'
+            });
+            throw new ScriptAssertionError(formatted, node.id, node.type);
+          }
+          return value;
+        },
+
+        inRange: (value, min, max, message) => {
+          const num = Number(value);
+          if (Number.isNaN(num) || num < min || num > max) {
+            const fallbackMsg = `Assertion failed: expected ${value} to be between ${min} and ${max}`;
+            const formatted = `[Assert Error] ${message || fallbackMsg} (node: '${node.id}')`;
+            this.game.events.emit('console:error', {
+              type: 'error',
+              time: Date.now(),
+              message: formatted,
+              source: 'Assert'
+            });
+            throw new ScriptAssertionError(formatted, node.id, node.type);
+          }
+          return num;
+        },
+
+        fail: (message = 'Assertion failed') => {
+          const formatted = `[Assert Error] ${message} (node: '${node.id}')`;
+          this.game.events.emit('console:error', {
+            type: 'error',
+            time: Date.now(),
+            message: formatted,
+            source: 'Assert'
+          });
+          throw new ScriptAssertionError(formatted, node.id, node.type);
         }
       },
 
@@ -108,10 +293,319 @@ export default class ContextSystem {
 
       isPaused: () => this.game.isPaused,
 
+      // Entity subsystem facade (Engine Gate 2: throws on unresolvable target)
       entity: {
-        destroy: (entity) => this.game.entitySystem.destroyEntity(entity),
-        clone: (entity) => this.game.entitySystem.cloneEntity(entity),
-        get: (targetId) => this.game.entitySystem.getEntity(targetId, runner.owner)
+        get: (targetId) => {
+          if (!targetId || targetId === 'self') {
+            if (!runner.owner) {
+              throw new Error(`[ContextSystem] Owner entity does not exist for 'self' target (node: '${node.id}', type: '${node.type}')`);
+            }
+            return runner.owner;
+          }
+
+          const searchKey = String(targetId).trim();
+          const entities = this.game.world?.entities || [];
+
+          const found = entities.find(e => 
+            e.id === searchKey || 
+            e.scriptId === searchKey || 
+            (e.name && e.name.toLowerCase() === searchKey.toLowerCase())
+          );
+
+          return found || null;
+        },
+
+        destroy: (entity) => {
+          if (!entity) return;
+          this.game.entitySystem.destroyEntity(entity);
+        },
+
+        clone: (entity) => {
+          return this.game.entitySystem.cloneEntity(entity);
+        },
+
+        getParent: (entity) => {
+          if (!entity || !entity.parentId) return null;
+          const entities = this.game.world?.entities || [];
+          return entities.find(e => e.id === entity.parentId) || null;
+        },
+
+        getChildren: (entity) => {
+          if (!entity) return [];
+          const entities = this.game.world?.entities || [];
+          return entities.filter(e => e.parentId === entity.id);
+        },
+
+        getRoot: (entity) => {
+          if (!entity) return null;
+          let current = entity;
+          const entities = this.game.world?.entities || [];
+          while (current && current.parentId) {
+            const parent = entities.find(e => e.id === current.parentId);
+            if (!parent) break;
+            current = parent;
+          }
+          return current;
+        },
+
+        findClosestByTag: (tag, fromXOrEntity, optFromY) => {
+          const entities = this.game.world?.entities || [];
+          let originX = 0;
+          let originY = 0;
+          let excludeId = null;
+
+          if (typeof fromXOrEntity === 'object' && fromXOrEntity !== null) {
+            excludeId = fromXOrEntity.id;
+            const t = fromXOrEntity.components?.Transform || fromXOrEntity.components?.UITransform;
+            originX = t ? (t.x || 0) : 0;
+            originY = t ? (t.y || 0) : 0;
+          } else {
+            originX = Number(fromXOrEntity) || 0;
+            originY = Number(optFromY) || 0;
+          }
+
+          let closest = null;
+          let minDistanceSq = Infinity;
+
+          for (const other of entities) {
+            if (other.active === false) continue;
+            if (excludeId && other.id === excludeId) continue;
+            const otherTag = other.tag || other.components?.Tags?.value;
+            if (otherTag === tag) {
+              const t = other.components?.Transform || other.components?.UITransform;
+              const ox = t ? (t.x || 0) : 0;
+              const oy = t ? (t.y || 0) : 0;
+              const dx = ox - originX;
+              const dy = oy - originY;
+              const distSq = dx * dx + dy * dy;
+              if (distSq < minDistanceSq) {
+                minDistanceSq = distSq;
+                closest = other;
+              }
+            }
+          }
+          return closest;
+        },
+
+        getAllByTag: (tag) => {
+          const entities = this.game.world?.entities || [];
+          return entities.filter(e => {
+            if (e.active === false) return false;
+            const otherTag = e.tag || e.components?.Tags?.value;
+            return otherTag === tag;
+          });
+        },
+
+        findByName: (name) => {
+          const entities = this.game.world?.entities || [];
+          return entities.find(e => e.name === name) || null;
+        }
+      },
+
+      prefab: {
+        spawn: (...args) => this.game.prefabSystem.spawnPrefab(...args)
+      },
+
+      layer: {
+        get: (layerId) => {
+          if (!layerId || layerId === 'self') {
+            const ownerLayerId = runner.owner?.layerId;
+            const allLayers = this.game.world?.allLayers || [];
+            const layer = allLayers.find(l => l.id === ownerLayerId || l.scriptId === ownerLayerId) || allLayers[0];
+            return layer || null;
+          }
+
+          if (this.game.layerSystem && typeof this.game.layerSystem.getLayer === 'function') {
+            const l = this.game.layerSystem.getLayer(layerId);
+            if (l) return l;
+          }
+
+          const allLayers = this.game.world?.allLayers || [];
+          const search = String(layerId).trim().toLowerCase();
+          const found = allLayers.find(l => 
+            l.id === layerId || 
+            l.scriptId === layerId || 
+            (l.name && l.name.toLowerCase() === search)
+          );
+
+          return found || null;
+        }
+      },
+
+      collider: {
+        checkSolid: (entity) => this.game.colliderSystem.checkSolid(entity),
+        checkOverlap: (entity, filterTag) => this.game.colliderSystem.checkOverlap(entity, filterTag),
+        moveAndSlide: (entity, moveX, moveY) => this.game.colliderSystem.moveAndSlide(entity, moveX, moveY)
+      },
+
+      input: {
+        getPointer: () => (this.game.input ? this.game.input.getPointer() : null),
+        get pointer() {
+          return this.getPointer();
+        },
+        get mouse() {
+          return game.input?.mouse || null;
+        },
+        keyboard: {
+          isDown: (key) => (this.game.input?.keyboard ? this.game.input.keyboard.isDown(key) : false),
+          isPressed: (key) => (this.game.input?.keyboard ? this.game.input.keyboard.isPressed(key) : false),
+          isReleased: (key) => (this.game.input?.keyboard ? this.game.input.keyboard.isReleased(key) : false),
+          get raw() {
+            return game.input?.keyboard || null;
+          }
+        },
+        raycast: {
+          getTopEntity: () => (this.game.pointerRaycast ? this.game.pointerRaycast.getTopEntityUnderPointer(this.game) : PointerRaycast.getTopEntityUnderPointer(this.game)),
+          getGlobalTransform: (entity) => PointerRaycast._getGlobalTransform(entity, this.game.world)
+        },
+        isPointerOver: (entity, useRaycast = true) => {
+          if (!entity) return false;
+          const raycast = this.game.pointerRaycast || PointerRaycast;
+          if (useRaycast) {
+            const topEntity = raycast.getTopEntityUnderPointer(this.game);
+            if (!topEntity) return false;
+            if (topEntity.scriptId === entity.scriptId) return true;
+            let currentParentId = topEntity.parentId;
+            while (currentParentId) {
+              const p = this.game.world?.entities?.find(e => e.id === currentParentId || e.scriptId === currentParentId);
+              if (p && p.scriptId === entity.scriptId) return true;
+              currentParentId = p ? p.parentId : null;
+            }
+            return false;
+          } else {
+            const pointer = this.game.input.getPointer();
+            const canvas = this.game.renderer?.gl?.canvas || this.game.renderer?.canvas || { width: 1920, height: 1080 };
+            const canvasW = canvas.clientWidth || canvas.width || 1920;
+            const canvasH = canvas.clientHeight || canvas.height || 1080;
+            const uiSettings = this.game.world?.settings?.ui || { width: 1920, height: 1080 };
+            const camera = this.game.camera || { x: 0, y: 0, scale: 1 };
+            const hasUITransform = Boolean(entity.components?.UITransform);
+
+            const uiPointer = {
+              x: (pointer.x / canvasW) * uiSettings.width,
+              y: (pointer.y / canvasH) * uiSettings.height
+            };
+            const halfW = canvasW / 2;
+            const halfH = canvasH / 2;
+            const worldPointer = {
+              x: camera.x + (pointer.x - halfW) / (camera.scale || 1),
+              y: camera.y + (pointer.y - halfH) / (camera.scale || 1)
+            };
+
+            const globalT = raycast._getGlobalTransform(entity, this.game.world);
+            let drawX = globalT.x || 0;
+            let drawY = globalT.y || 0;
+            const targetPointer = hasUITransform ? uiPointer : worldPointer;
+
+            if (hasUITransform) {
+              const t = entity.components.UITransform;
+              const anchorX = t.anchorX ?? 0.5;
+              const anchorY = t.anchorY ?? 0.5;
+              drawX = (uiSettings.width * anchorX) + (globalT.x || 0);
+              drawY = (uiSettings.height * anchorY) + (globalT.y || 0);
+            }
+
+            return raycast._checkIntersection(entity, entity.components?.Transform || entity.components?.UITransform, drawX, drawY, targetPointer.x, targetPointer.y);
+          }
+        }
+      },
+
+      ui: {
+        isUiLayer: (layerId) => {
+          const uiLayerIds = new Set((this.game.world?.layersUI || []).map(l => l.id));
+          return uiLayerIds.has(layerId);
+        },
+        dispatchEvent: (event) => {
+          const canvas = this.game.renderer?.gl?.canvas || this.game.renderer?.canvas || this.game.canvas;
+          if (canvas && typeof canvas.dispatchEvent === 'function') {
+            canvas.dispatchEvent(event);
+          }
+          if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+            window.dispatchEvent(event);
+          }
+        },
+        notify: (message, source = 'Notification', type = 'log') => {
+          this.game.events.emit('console:log', {
+            type: type,
+            time: Date.now(),
+            message: typeof message === 'object' && message !== null ? JSON.stringify(message) : String(message),
+            source: source || 'Notification'
+          });
+        }
+      },
+
+      signal: {
+        emit: (signalName, data) => {
+          this.game.events.emit(signalName, data);
+        },
+        on: (signalName, callback) => {
+          this.game.events.on(signalName, callback);
+          runner._registeredEvents.push({ eventName: signalName, callback });
+        }
+      },
+
+      lifecycle: {
+        pause: () => this.game.pauseGame(),
+        resume: () => this.game.resumeGame(),
+        restart: () => this.game.restartGame(),
+        isPaused: () => this.game.isPaused
+      },
+
+      transition: {
+        fade: (mode, duration, color, onComplete) => {
+          const ts = this.game.transitionSystem;
+          if (!ts) return;
+          if (mode === 'fade_out') {
+            ts.fadeOut(duration, color, onComplete);
+          } else if (mode === 'fade_in') {
+            ts.fadeIn(duration, color, onComplete);
+          } else if (mode === 'fade') {
+            const half = duration / 2;
+            ts.fadeOut(half, color, () => {
+              ts.fadeIn(half, color, onComplete);
+            });
+          }
+        }
+      },
+
+      camera: {
+        follow: (targetEntity, speed = 0.1, offset = { x: 0, y: 0 }) => {
+          this.game.camera.setTarget(targetEntity, speed, offset);
+        },
+        stopFollow: () => {
+          this.game.camera.clearTarget();
+        },
+        setTarget: (targetEntity, speed = 0.1, offset = { x: 0, y: 0 }) => {
+          this.game.camera.setTarget(targetEntity, speed, offset);
+        },
+        clearTarget: () => {
+          this.game.camera.clearTarget();
+        },
+        snapTo: (x, y) => {
+          this.game.camera.snapTo(x, y);
+        },
+        setTransform: (x, y, scale, speed) => {
+          this.game.camera.snapTo(x, y);
+          if (scale !== undefined) this.game.camera.scale = scale;
+          if (speed !== undefined) this.game.camera.lerp = speed;
+        },
+        getInfo: () => ({
+          x: this.game.camera.x,
+          y: this.game.camera.y,
+          scale: this.game.camera.scale,
+          smoothSpeed: this.game.camera.lerp,
+          targetEntity: this.game.camera.target?.scriptId || '',
+          hasTarget: Boolean(this.game.camera.target)
+        }),
+        get x() { return game.camera.x; },
+        set x(val) { game.camera.x = val; },
+        get y() { return game.camera.y; },
+        set y(val) { game.camera.y = val; },
+        get scale() { return game.camera.scale; },
+        set scale(val) { game.camera.scale = val; },
+        get lerp() { return game.camera.lerp; },
+        set lerp(val) { game.camera.lerp = val; },
+        get target() { return game.camera.target; }
       },
 
       scene: {
@@ -123,35 +617,18 @@ export default class ContextSystem {
         getAllScenes: () => this.game.sceneSystem.getAvailableScenes()
       },
 
-      prefab: {
-        spawn: (...args) => this.game.prefabSystem.spawnPrefab(...args)
-      },
-
-      layer: {
-        get: (layerId) => {
-          if (this.game?.layerSystem && typeof this.game.layerSystem.getLayer === 'function') {
-            return this.game.layerSystem.getLayer(layerId);
-          }
-          const allLayers = this.game?.world?.allLayers || [];
-          if (!layerId || layerId === 'self') {
-            const ownerLayerId = runner.owner?.layerId;
-            return allLayers.find(l => l.id === ownerLayerId || l.scriptId === ownerLayerId) || allLayers[0] || null;
-          }
-          const search = String(layerId).trim().toLowerCase();
-          return allLayers.find(l => 
-            l.id === layerId || 
-            l.scriptId === layerId || 
-            (l.name && l.name.toLowerCase() === search)
-          ) || null;
-        }
-      },
-
       getLocal: (key) => runner.getLocalVariable(key),
       setLocal: (key, val) => runner.setLocalVariable(key, val),
-      getGlobal: (key) => this.game?.variables?.getGlobal(key),
-      setGlobal: (key, val) => this.game?.variables?.setGlobal(key, val),
-
-      getTempData: (key) => node._tempData?.[key] ?? null
+      getGlobal: (key) => {
+        const val = this.game.variables?.getGlobal(key);
+        if (val === undefined) {
+          throw new Error(`[ContextSystem] Global variable '${key}' not found in registry (node: '${node.id}')`);
+        }
+        return val;
+      },
+      setGlobal: (key, val) => {
+        this.game.variables?.setGlobal(key, val);
+      }
     };
   }
 }

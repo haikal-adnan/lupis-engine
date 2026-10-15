@@ -2,13 +2,14 @@
 
 Verification status: **static only**. Syntax of every file was checked and
 `node scripts/check-standard.mjs` passes, but Playwright and the application could not be
-run while preparing this change. Run the contract project and then the whole suite before merging:
+run while preparing this change. Run contract tests (when helpers change or during urgent testing) and the finalize suite before merging:
 
 ```
 node scripts/check-standard.mjs                  # static standard check (CI)
-npx eslint e2e                                   # needs: npm i -D eslint eslint-plugin-playwright
-npx playwright test --project=contract           # helper contract tests first
-npx playwright test                              # contract, then chromium + blueprint projects
+npm test                                         # routine feature check (chromium specs only, no contract)
+npm run test:all                                 # check all feature specs (chromium + blueprint)
+npm run test:contract                            # helper contract tests (on helper changes or urgent testing)
+npm run test:finalize                            # finalization: contract + chromium + blueprint projects
 npx playwright test --repeat-each=10             # flakiness check (Section 14.3)
 ```
 

@@ -1,10 +1,5 @@
 import { FileText } from 'lucide-vue-next';
 
-/**
- * ============================================================================
- * BLUEPRINT: STRING UTILS
- * ============================================================================
- */
 export const BlueprintString = {
   id: 'basic_string',
   label: 'String Utils',
@@ -12,7 +7,7 @@ export const BlueprintString = {
   icon: FileText,
   items: [
     { 
-      type: 'string_format', 
+      type: 'stringFormat', 
       label: 'Format String', 
       description: 'Hub for multiple text formats using {variables}', 
       dynamicMode: 'sequential',
@@ -23,19 +18,19 @@ export const BlueprintString = {
           category: 'String Utils' 
         },
         inputs: [
-          { id: 'format', label: 'Format', dataType: 'string', color: '#F48FB1', defaultValue: 'Score: {score} / {max}' },
-          { id: 'score', label: 'score', dataType: 'any', color: '#B0BEC5' },
-          { id: 'max', label: 'max', dataType: 'any', color: '#B0BEC5' }
+          { id: 'format', dataType: 'string', color: '#F48FB1', defaultValue: 'Score: {v0} / {v1}' },
+          { id: 'v0', dataType: 'any', color: '#B0BEC5' },
+          { id: 'v1', dataType: 'any', color: '#B0BEC5' }
         ],
         outputs: [
-          { id: 'res_0', label: 'Format 1', dataType: 'string', color: '#F48FB1' }
+          { id: 'result', dataType: 'string', color: '#F48FB1' }
         ],
         data: { 
           values: {
-            format: 'Score: {score} / {max}'
+            format: 'Score: {v0} / {v1}'
           },
           code: 
-`const formatStr = String(inputs['Format'] ?? inputs['format'] ?? '');
+`const formatStr = inputs.format;
 
 const formatted = formatStr.replace(/{([^{}]+)}/g, (_, path) => {
   const parts = path.split('.');
@@ -43,24 +38,20 @@ const formatted = formatStr.replace(/{([^{}]+)}/g, (_, path) => {
   let val = inputs[rootKey];
 
   for (let i = 1; i < parts.length; i++) {
-    if (val !== undefined && val !== null) {
-      val = val[parts[i].trim()];
-    }
+    val = val[parts[i].trim()];
   }
 
-  if (val === undefined || val === null) return '';
   return typeof val === 'object' ? JSON.stringify(val) : String(val);
 });
 
-outputs['Format 1'] = formatted;
-outputs['res_0'] = formatted;
+outputs.result = formatted;
 return;`
         }
       } 
     },
 
     { 
-      type: 'string_join', 
+      type: 'stringJoin', 
       label: 'Join Strings', 
       description: 'Join multiple strings with a separator', 
       dynamicMode: 'sequential', 
@@ -71,12 +62,12 @@ return;`
           category: 'String Utils' 
         },
         inputs: [
-          { id: 'separator', label: 'Separator', dataType: 'string', color: '#F48FB1', defaultValue: ', ' },
-          { id: 'v0', label: 'Val 1', dataType: 'string', color: '#F48FB1' },
-          { id: 'v1', label: 'Val 2', dataType: 'string', color: '#F48FB1' }
+          { id: 'separator', dataType: 'string', color: '#F48FB1', defaultValue: ', ' },
+          { id: 'v0', dataType: 'string', color: '#F48FB1' },
+          { id: 'v1', dataType: 'string', color: '#F48FB1' }
         ],
         outputs: [
-          { id: 'res', label: 'Result', dataType: 'string', color: '#F48FB1' }
+          { id: 'result', dataType: 'string', color: '#F48FB1' }
         ],
         data: { 
           values: {
@@ -85,22 +76,20 @@ return;`
             v1: ''
           },
           code: 
-`const sep = inputs['Separator'] ?? inputs['separator'] ?? '';
+`const sep = inputs.separator;
 
 const collection = Object.entries(inputs)
-  .filter(([key]) => key !== 'Separator' && key !== 'separator')
-  .map(([, val]) => String(val ?? ''));
+  .filter(([key]) => key !== 'separator')
+  .map(([, val]) => val);
 
-const result = collection.join(sep);
-outputs['Result'] = result;
-outputs['res'] = result;
+outputs.result = collection.join(sep);
 return;`
         }
       } 
     },
 
     { 
-      type: 'string_length', 
+      type: 'stringLength', 
       label: 'String Length', 
       description: 'Get the number of characters in a string', 
       dynamicMode: 'none',
@@ -111,28 +100,25 @@ return;`
           category: 'String Utils' 
         },
         inputs: [
-          { id: 'str_in', label: 'String', dataType: 'string', color: '#F48FB1' }
+          { id: 'value', dataType: 'string', color: '#F48FB1' }
         ],
         outputs: [
-          { id: 'len_out', label: 'Length', dataType: 'number', color: '#64B5F6' }
+          { id: 'length', dataType: 'number', color: '#64B5F6' }
         ],
         data: { 
           values: {
-            str_in: ''
+            value: ''
           },
           code: 
-`const val = String(inputs['String'] ?? inputs['str_in'] ?? '');
-const len = val.length;
-
-outputs['Length'] = len;
-outputs['len_out'] = len;
+`const val = inputs.value;
+outputs.length = val.length;
 return;`
         }
       } 
     },
 
     { 
-      type: 'any_to_string', 
+      type: 'anyToString', 
       label: 'Any To String', 
       description: 'Convert any data type (including List & Map) to a readable string', 
       dynamicMode: 'none',
@@ -143,30 +129,24 @@ return;`
           category: 'String Utils' 
         },
         inputs: [
-          { id: 'in_val', label: 'Input', dataType: 'any', color: '#B0BEC5' },
-          { id: 'pretty', label: 'Pretty', dataType: 'boolean', color: '#E57373', defaultValue: true }
+          { id: 'value', dataType: 'any', color: '#B0BEC5' },
+          { id: 'pretty', dataType: 'boolean', color: '#E57373', defaultValue: true }
         ],
         outputs: [
-          { id: 'res', label: 'String', dataType: 'string', color: '#F48FB1' }
+          { id: 'result', dataType: 'string', color: '#F48FB1' }
         ],
         data: {
           values: {
-            in_val: null,
+            value: '',
             pretty: true
           },
           code: 
-`const val = inputs['Input'] ?? inputs['in_val'];
-const isPretty = Boolean(inputs['Pretty'] ?? inputs['pretty'] ?? true);
+`const val = inputs.value;
+const isPretty = inputs.pretty;
 
-let formatted = '';
-if (typeof val === 'object' && val !== null) {
-  formatted = JSON.stringify(val, null, isPretty ? 2 : 0);
-} else {
-  formatted = String(val ?? '');
-}
+const formatted = typeof val === 'object' ? JSON.stringify(val, null, isPretty ? 2 : 0) : String(val);
 
-outputs['String'] = formatted;
-outputs['res'] = formatted;
+outputs.result = formatted;
 return;`
         }
       } 

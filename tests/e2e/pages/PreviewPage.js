@@ -82,11 +82,12 @@ export class PreviewPage {
    * expect timeout (no per-call timeout, Section 2).
    */
   async expectLog(message, source) {
+    const expectedMessage = typeof message === 'object' && message !== null ? JSON.stringify(message) : String(message);
     await expect
       .poll(async () => await this.getLogs(), {
         message: `Waiting for log "${message}" from the preview`,
       })
-      .toContainEqual(expect.objectContaining({ message, ...(source ? { source } : {}) }));
+      .toContainEqual(expect.objectContaining({ message: expect.stringContaining(expectedMessage), ...(source ? { source } : {}) }));
   }
 
   async expectPreviewing(expected = true) {
@@ -101,6 +102,7 @@ export class PreviewPage {
     await expect(this.playButton).toBeVisible();
     const [popup] = await Promise.all([this.page.waitForEvent('popup'), this.playButton.click()]);
     await popup.waitForLoadState('domcontentloaded');
+    await popup.bringToFront();
     return popup;
   }
 
@@ -112,6 +114,7 @@ export class PreviewPage {
   async expectEngineReady(popup) {
     await expect(popup.getByTestId('preview-canvas')).toBeVisible();
     await expect(popup.getByTestId('preview-loading')).toBeHidden();
+    await popup.waitForFunction(() => window.$game && window.$game.hasStarted === true);
   }
 
   // ==========================================================================

@@ -1,5 +1,4 @@
 export default class LoadScript {
-    
     static load(game, payload) {
         const { project, scripts } = payload;
 
@@ -14,11 +13,9 @@ export default class LoadScript {
 
         if (Array.isArray(scripts)) {
             scripts.forEach(script => {
-                if (script.localVariables && script.localVariables.length > 0) {
-                    game.variables.registerScriptSchema(script.id, script.localVariables);
-                }
+                const vars = script.variables || script.localVariables || [];
+                game.variables.registerScriptSchema(script.id, vars);
             });
         }
-
     }
 }

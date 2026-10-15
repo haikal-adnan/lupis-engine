@@ -244,6 +244,7 @@ export const useScriptStore = defineStore('script', {
       const newNode = createScriptNode({
         id,
         type: blueprint.type || type,
+        role: defaultData.role || blueprint.role,
         dynamicMode: blueprint.dynamicMode || 'none',
         position,
         settings: {
