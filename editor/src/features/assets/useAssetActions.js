@@ -81,6 +81,8 @@ export function useAssetActions() {
       });
     }
 
+    const isFont = type === 'font';
+
     const newAsset = assetSchema({
       id: `asset_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
       projectId,
@@ -93,9 +95,11 @@ export function useAssetActions() {
         size: file.size,
         dimensions: dimensions,
         duration: duration,
-        hasBmFont: type === 'font',
-        fntFile: `${fileKey}.fnt`,
-        pngFiles: extraFiles.filter(e => e.fileName.endsWith('.png')).map(e => e.fileName)
+        hasBmFont: isFont,
+        ...(isFont && {
+          fntFile: `${fileKey}.fnt`,
+          pngFiles: extraFiles.filter(e => e.fileName.endsWith('.png')).map(e => e.fileName)
+        })
       },
       isSynced: true
     });

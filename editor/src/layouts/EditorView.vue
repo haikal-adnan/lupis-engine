@@ -34,10 +34,8 @@ onUnmounted(() => {
   cleanupListeners();
 });
 
-const isSettingsModalOpen = ref(false);
-
 const handleOpenSettings = () => {
-  isSettingsModalOpen.value = true;
+  workspaceStore.openSettingsModal();
 };
 
 const { isLoading } = useAppInit();
@@ -190,8 +188,8 @@ const onLayoutDragOpen = () => {
     </EditorLayout>
 
     <EditorSettingsModal 
-      :is-open="isSettingsModalOpen" 
-      @close="isSettingsModalOpen = false" 
+      :is-open="workspaceStore.isSettingsModalOpen" 
+      @close="workspaceStore.closeSettingsModal" 
     />
 
     <transition

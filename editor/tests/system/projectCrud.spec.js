@@ -114,25 +114,25 @@ describe('Project Management and CRUD Operations System', () => {
   })
 
   describe('Project Metadata Modification Flow', () => {
-    it('changes project status between DRAFT, IN_PROGRESS, and PUBLISHED and saves changes in OPFS', async () => {
+    it('updates project thumbnailUrl and snapshotUrl and saves changes in storage', async () => {
       const created = await createMockEmptyProject({
         projectName: 'Game Puzzle'
       })
 
       await projectActions.updateProject(created.id, {
-        status: 'IN_PROGRESS'
+        thumbnailUrl: 'data:image/png;base64,custom_thumb'
       })
 
-      const updatedProgress = await projectActions.getProjectById(created.id)
+      const updatedThumb = await projectActions.getProjectById(created.id)
 
       await projectActions.updateProject(created.id, {
-        status: 'PUBLISHED'
+        snapshotUrl: 'data:image/png;base64,scene_snapshot'
       })
 
-      const updatedPublished = await projectActions.getProjectById(created.id)
+      const updatedSnapshot = await projectActions.getProjectById(created.id)
 
-      expect(updatedProgress.project.status).toBe('IN_PROGRESS')
-      expect(updatedPublished.project.status).toBe('PUBLISHED')
+      expect(updatedThumb.project.thumbnailUrl).toBe('data:image/png;base64,custom_thumb')
+      expect(updatedSnapshot.project.snapshotUrl).toBe('data:image/png;base64,scene_snapshot')
     })
 
     it('renames and updates project description with consistent new data', async () => {
@@ -178,8 +178,7 @@ describe('Project Management and CRUD Operations System', () => {
       const dummyProject = {
         id: 'proj_imported_drop_123',
         name: 'Imported Game Drop',
-        description: 'Result of drag and drop file import',
-        status: 'DRAFT'
+        description: 'Result of drag and drop file import'
       }
 
       const validLupisProjectFile = await createValidLupisProjectFile(
@@ -209,8 +208,7 @@ describe('Project Management and CRUD Operations System', () => {
       const dummyProject = {
         id: 'proj_imported_select_456',
         name: 'Imported Game Select',
-        description: 'Result of file explorer select',
-        status: 'DRAFT'
+        description: 'Result of file explorer select'
       }
 
       const validLupisProjectFile = await createValidLupisProjectFile(

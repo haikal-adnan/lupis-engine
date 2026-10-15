@@ -1,8 +1,7 @@
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { 
-  Edit2, Type, Trash2, FolderOpen, ExternalLink, 
-  Activity, FileEdit, Clock, Save 
+  Edit2, Type, Trash2, FolderOpen, ExternalLink, Save 
 } from 'lucide-vue-next';
 
 import { 
@@ -111,7 +110,7 @@ export function useProjectMenu(refreshListCallback, openProjectCallback) {
     closeMenu();
     const isConfirmed = await confirm({
       title: 'Delete Project?',
-      message: `Are you sure you want to delete "${project.name}"? This action will permanently delete the project folder from OPFS.`,
+      message: `Are you sure you want to delete "${project.name}"? This action will permanently delete the project folder from storage.`,
       type: 'danger',
       confirmText: 'Delete'
     });
@@ -123,7 +122,7 @@ export function useProjectMenu(refreshListCallback, openProjectCallback) {
         
         showPop({
           title: 'Deleted',
-          message: `Project "${project.name}" has been successfully deleted from OPFS.`,
+          message: `Project "${project.name}" has been successfully deleted from storage.`,
           type: 'success'
         });
       } catch (error) {
@@ -134,29 +133,6 @@ export function useProjectMenu(refreshListCallback, openProjectCallback) {
           type: 'error'
         });
       }
-    }
-  };
-
-  const handleChangeStatus = async (project, newStatus) => {
-    closeMenu();
-    if (project.status === newStatus) return;
-
-    try {
-      await updateProject(project.id, { status: newStatus });
-      if (refreshListCallback) refreshListCallback();
-      
-      showPop({
-        title: 'Status Updated',
-        message: `Project status successfully changed to ${newStatus.replace('_', ' ')}.`,
-        type: 'success'
-      });
-    } catch (error) {
-      console.error("Failed to update status:", error);
-      showPop({
-        title: 'Error',
-        message: error.message || 'Failed to update project status.',
-        type: 'error'
-      });
     }
   };
 
@@ -176,7 +152,11 @@ export function useProjectMenu(refreshListCallback, openProjectCallback) {
         icon: FolderOpen,
         action: () => {
           closeMenu();
-          if (openProjectCallback) openProjectCallback(targetProject.id, false);
+          if (openProjectCallback) {
+            openProjectCallback(targetProject.id, false);
+          } else {
+            router.push(`/editor/${targetProject.id}`);
+          }
         }
       },
       {
@@ -184,30 +164,21 @@ export function useProjectMenu(refreshListCallback, openProjectCallback) {
         icon: ExternalLink,
         action: () => {
           closeMenu();
-          if (openProjectCallback) openProjectCallback(targetProject.id, true);
+          if (openProjectCallback) {
+            openProjectCallback(targetProject.id, true);
+          } else {
+            const routeData = router.resolve({
+              name: 'Editor',
+              params: { idProject: targetProject.id }
+            });
+            window.open(routeData?.href || `/editor/${targetProject.id}`, '_blank');
+          }
         }
       },
       {
         label: 'Save Project',
         icon: Save,
         action: () => handleSaveProject(targetProject)
-      },
-      { separator: true },
-      {
-        label: 'Change Status',
-        icon: Activity,
-        children: [
-          {
-            label: 'Draft',
-            icon: FileEdit,
-            action: () => handleChangeStatus(targetProject, 'DRAFT')
-          },
-          {
-            label: 'In Progress',
-            icon: Clock,
-            action: () => handleChangeStatus(targetProject, 'IN_PROGRESS')
-          }
-        ]
       },
       { separator: true },
       { 

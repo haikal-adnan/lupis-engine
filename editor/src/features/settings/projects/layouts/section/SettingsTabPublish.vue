@@ -99,10 +99,10 @@
             <div>
               <div class="flex items-center gap-2">
                 <h3 class="font-bold text-sm text-foreground">Lupis Project Archive</h3>
-                <span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">OPFS Raw Backup</span>
+                <span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Project Backup</span>
               </div>
               <p class="text-xs text-muted-foreground mt-1 max-w-xl leading-relaxed">
-                Saves all raw OPFS scenes, scripts, node visual graphs, and asset files into a single compressed <code>.lupisproject</code> file to share or import back in Dashboard.
+                Saves all project scenes, scripts, node visual graphs, and asset files into a single compressed <code>.lupisproject</code> file to share or import back in Dashboard.
               </p>
             </div>
           </div>

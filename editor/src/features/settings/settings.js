@@ -9,5 +9,6 @@ export { default as SettingsTabPhysics } from '@settings/projects/layouts/sectio
 export { default as SettingsTabProject } from '@settings/projects/layouts/section/SettingsTabProject.vue'
 export { default as SettingsTabPublish } from '@settings/projects/layouts/section/SettingsTabPublish.vue'
 export { default as SettingsTabResources } from '@settings/projects/layouts/section/SettingsTabResources.vue'
+export { default as SettingsTabPreferences } from '@settings/projects/layouts/section/SettingsTabPreferences.vue'
 
 export { default as SettingsPage } from '@settings/workspaces/layouts/SettingsPage.vue'

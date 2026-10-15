@@ -25,19 +25,33 @@ export class PreviewPage {
 
   /** Starts recording engine logs broadcast by the preview to the editor. Call BEFORE clicking Play. */
   async startLogCapture() {
-    await this.page.evaluate((name) => {
+    await this.page.evaluate(() => {
+      const pathname = window.location.pathname;
+      const match = pathname.match(/\/editor\/([^/?#]+)/);
+      const projectId = match ? match[1] : '';
+      const channelName = projectId ? `lupis_engine_preview_channel_${projectId}` : 'lupis_engine_preview_channel';
+
       window.__previewChannel?.close();
+      window.__previewFallbackChannel?.close();
       window.__previewLogs = [];
       window.__previewScenePayload = null;
 
-      const channel = new BroadcastChannel(name);
-      channel.onmessage = (event) => {
+      const handler = (event) => {
         const { type, payload } = event.data ?? {};
         if (type === 'ENGINE_CONSOLE_LOG') window.__previewLogs.push(payload);
         if (type === 'SCENE_UPDATE') window.__previewScenePayload = payload;
       };
+
+      const channel = new BroadcastChannel(channelName);
+      channel.onmessage = handler;
       window.__previewChannel = channel;
-    }, CHANNEL_NAME);
+
+      if (channelName !== 'lupis_engine_preview_channel') {
+        const fallbackChannel = new BroadcastChannel('lupis_engine_preview_channel');
+        fallbackChannel.onmessage = handler;
+        window.__previewFallbackChannel = fallbackChannel;
+      }
+    });
   }
 
   async getLogs() {

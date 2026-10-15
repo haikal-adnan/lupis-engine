@@ -72,12 +72,23 @@
   <script type="module">
     import { startEngine } from "/core/RuntimePreview.js";
 
-    const CHANNEL_NAME = "lupis_engine_preview_channel";
-    const STORAGE_KEY = "lupis_temp_scene_data";
+    const urlParams = new URLSearchParams(window.location.search);
+    const projectId = urlParams.get("projectId") || "";
+
+    const CHANNEL_NAME = projectId ? `lupis_engine_preview_channel_${projectId}` : "lupis_engine_preview_channel";
+    const STORAGE_KEY = projectId ? `lupis_temp_scene_data_${projectId}` : "lupis_temp_scene_data";
     const loadingEl = document.getElementById("loading");
     const canvasEl = document.getElementById("lp_canvas_preview");
     const containerEl = document.getElementById("canvas_container");
     const channel = new BroadcastChannel(CHANNEL_NAME);
+
+    let isReloading = false;
+
+    window.addEventListener("beforeunload", () => {
+        if (!isReloading) {
+            channel.postMessage({ type: "PREVIEW_CLOSED", projectId });
+        }
+    });
 
     function setupCanvasResponsiveness(refWidth, refHeight) {
         canvasEl.width = refWidth;
@@ -114,6 +125,10 @@
         try {
             loadingEl.classList.remove("hidden");
             loadingEl.innerText = "Starting Engine...";
+
+            if (payload.project?.name) {
+                document.title = `Lupis Preview - ${payload.project.name}`;
+            }
             
             const settings = payload.project?.settings?.ui || payload.scene?.settings?.ui || {};
             const refW = settings.width || 1920;
@@ -125,6 +140,8 @@
 
             loadingEl.classList.add("hidden");
             canvasEl.focus();
+
+            channel.postMessage({ type: "PREVIEW_READY", projectId });
         } catch (error) {
             loadingEl.innerText = error.message;
             console.error("[Preview Engine Error]:", error);
@@ -139,22 +156,32 @@
             runGame(payload, opfsContext);
         } catch (e) {
             sessionStorage.removeItem(STORAGE_KEY);
-            channel.postMessage({ type: "REQUEST_LATEST_DATA" });
+            channel.postMessage({ type: "REQUEST_LATEST_DATA", projectId });
         }
     } else {
-        channel.postMessage({ type: "REQUEST_LATEST_DATA" });
+        channel.postMessage({ type: "REQUEST_LATEST_DATA", projectId });
     }
 
     let hasLoaded = false;
     channel.onmessage = (event) => {
-        const { type, payload, opfsContext } = event.data;
+        const { type, payload, opfsContext, projectId: msgProjectId } = event.data || {};
+
+        if (type === "PREVIEW_PING") {
+            channel.postMessage({ type: "PREVIEW_PONG", projectId });
+            return;
+        }
 
         if (type === "SCENE_UPDATE") {
+            if (msgProjectId && projectId && msgProjectId !== projectId) {
+                return;
+            }
+
             sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ payload, opfsContext }));
             if (!hasLoaded && !savedData) {
                 hasLoaded = true;
                 runGame(payload, opfsContext);
             } else {
+                isReloading = true;
                 window.location.reload();
             }
         }

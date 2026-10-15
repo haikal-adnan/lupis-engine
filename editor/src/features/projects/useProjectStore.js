@@ -21,8 +21,12 @@ export const useProjectStore = defineStore('project', {
     isProjectLoaded: (state) => !!state.project,
     projectName: (state) => state.project?.name || '',
     activeProject: (state) => state.project,
+    isDirty: (state) => state.syncStatus === 'dirty',
+    isSynced: (state) => state.syncStatus === 'synced',
     projectSettings: (state) => ({
       name: state.project?.name,
+      description: state.project?.description,
+      version: state.project?.version,
       tags: state.project?.tags,
       ...state.project?.settings
     })
@@ -31,6 +35,10 @@ export const useProjectStore = defineStore('project', {
   actions: {
     markAsDirty() {
       this.syncStatus = 'dirty';
+    },
+
+    markAsSynced() {
+      this.syncStatus = 'synced';
     },
 
     clearProjectData() {
@@ -91,7 +99,7 @@ export const useProjectStore = defineStore('project', {
       const { showPop } = usePopAlert();
       const { getProjectById } = useProjectActions();
 
-      workspaceStore.setLoading(true, 'Reloading from OPFS storage...');
+      workspaceStore.setLoading(true, 'Reloading project from storage...');
       workspaceStore.clearError();
 
       const projectId = this.project.id;
@@ -126,20 +134,44 @@ export const useProjectStore = defineStore('project', {
       engineBridge.reloadScene(cleanPayload);
 
       showPop({
-        title: 'Sync Successful',
-        message: 'Project data reloaded successfully from OPFS.',
+        title: 'Project Reloaded',
+        message: 'Project data reloaded successfully from storage.',
         type: 'success'
       });
 
       workspaceStore.setLoading(false);
     },
 
-    async saveProjectToServer() {
+    async saveProjectToServer(options = {}) {
       const workspaceStore = useWorkspaceStore();
       const { syncProject } = useProjectActions();
       const { showPop } = usePopAlert();
 
-      workspaceStore.setSaving(true, 'Saving changes to OPFS...');
+      const isAuto = !!options.isAutoSave;
+      workspaceStore.setSaving(true, isAuto ? 'Auto-saving project...' : 'Saving project to storage...');
+
+      // Capture last snapshot from scene canvas if available
+      try {
+        if (typeof document !== 'undefined') {
+          const canvas = document.querySelector('canvas');
+          if (canvas && canvas.width > 0 && canvas.height > 0) {
+            const thumbCanvas = document.createElement('canvas');
+            const targetW = 480;
+            const targetH = Math.round((canvas.height / canvas.width) * targetW) || 300;
+            thumbCanvas.width = targetW;
+            thumbCanvas.height = targetH;
+            const ctx = thumbCanvas.getContext('2d');
+            if (ctx) {
+              ctx.drawImage(canvas, 0, 0, targetW, targetH);
+              this.project.snapshotUrl = thumbCanvas.toDataURL('image/jpeg', 0.85);
+            } else {
+              this.project.snapshotUrl = canvas.toDataURL('image/jpeg', 0.85);
+            }
+          }
+        }
+      } catch {
+        // Fallback gracefully in headless/mock test environments
+      }
 
       const sceneStore = useSceneStore();
       const prefabStore = usePrefabStore();
@@ -147,7 +179,7 @@ export const useProjectStore = defineStore('project', {
       const assetStore = useAssetStore();
       const folderStore = useFolderStore();
 
-      // Sync folder & asset structure data to their respective JSON files in OPFS
+      // Sync folder & asset structure data
       await folderStore.syncFoldersToOPFS();
       await assetStore.syncAssetsToOPFS();
 
@@ -164,13 +196,23 @@ export const useProjectStore = defineStore('project', {
 
       this.syncStatus = 'synced';
 
-      showPop({
-        title: 'Save Successful',
-        message: 'Project saved successfully to OPFS.',
-        type: 'success'
-      });
+      if (!options.silent) {
+        showPop({
+          title: isAuto ? 'Auto-Save Successful' : 'Save Successful',
+          message: isAuto ? 'Project auto-saved successfully.' : 'Project saved successfully.',
+          type: 'success'
+        });
+      }
 
       workspaceStore.setSaving(false);
+    },
+
+    async triggerAutoSave() {
+      if (this.syncStatus === 'dirty' && this.project?.settings?.autoSave?.enabled) {
+        await this.saveProjectToServer({ isAutoSave: true });
+        return true;
+      }
+      return false;
     },
 
     addSceneToProject(sceneId) {
@@ -179,7 +221,50 @@ export const useProjectStore = defineStore('project', {
     },
 
     updateProject(updates) {
+      if (!this.project) return;
       Object.assign(this.project, updates);
+      this.markAsDirty();
+    },
+
+    updateProjectName(name) {
+      if (!this.project) return;
+      const cleanName = (name || '').trim();
+      if (!cleanName) return;
+      this.project.name = cleanName;
+      this.markAsDirty();
+    },
+
+    updateProjectDescription(description) {
+      if (!this.project) return;
+      this.project.description = description ?? '';
+      this.markAsDirty();
+    },
+
+    updateProjectVersion(version) {
+      if (!this.project) return;
+      this.project.version = (version || '').trim() || '1.0.0';
+      this.markAsDirty();
+    },
+
+    updateProjectThumbnail(thumbnailUrl) {
+      if (!this.project) return;
+      this.project.thumbnailUrl = thumbnailUrl || null;
+      this.markAsDirty();
+    },
+
+    updateProjectSnapshot(snapshotUrl) {
+      if (!this.project) return;
+      this.project.snapshotUrl = snapshotUrl || null;
+      this.markAsDirty();
+    },
+
+    updateAutoSaveSettings(updates) {
+      if (!this.project) return;
+      if (!this.project.settings) this.project.settings = {};
+      if (!this.project.settings.autoSave) {
+        this.project.settings.autoSave = { enabled: false, interval: 10 };
+      }
+      Object.assign(this.project.settings.autoSave, updates);
       this.markAsDirty();
     },
 

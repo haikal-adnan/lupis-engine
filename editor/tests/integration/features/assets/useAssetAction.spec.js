@@ -133,6 +133,9 @@ describe('Integration Test: Asset Actions with Stores & Composables', () => {
       expect(createdAsset.type).toBe('texture')
       expect(createdAsset.name).toBe('background')
       expect(createdAsset.meta.dimensions).toEqual({ w: 1920, h: 1080 })
+      expect(createdAsset.meta.hasBmFont).toBe(false)
+      expect(createdAsset.meta.fntFile).toBeUndefined()
+      expect(createdAsset.meta.pngFiles).toBeUndefined()
       expect(assetStore.addAsset).toHaveBeenCalledWith(
         expect.objectContaining({ name: 'background', type: 'texture' }),
         mockImageFile,
@@ -207,7 +210,33 @@ describe('Integration Test: Asset Actions with Stores & Composables', () => {
       // Assert
       expect(createdAsset.type).toBe('audio')
       expect(createdAsset.meta.duration).toBe(120.5)
+      expect(createdAsset.meta.hasBmFont).toBe(false)
+      expect(createdAsset.meta.fntFile).toBeUndefined()
+      expect(createdAsset.meta.pngFiles).toBeUndefined()
       expect(assetStore.addAsset).toHaveBeenCalled()
+    })
+
+    it('ensures non-font assets (texture, audio) omit fntFile and pngFiles in metadata schema', async () => {
+      const { importAsset } = useAssetActions()
+      const mockImage = new File(['img'], 'hero.png', { type: 'image/png' })
+      const mockAudio = new File(['snd'], 'sound.mp3', { type: 'audio/mpeg' })
+      const mockFont = new File(['fnt'], 'game.ttf', { type: 'font/ttf' })
+
+      const imageAsset = await importAsset(mockImage)
+      const audioAsset = await importAsset(mockAudio)
+      const fontAsset = await importAsset(mockFont)
+
+      expect(imageAsset.meta.fntFile).toBeUndefined()
+      expect(imageAsset.meta.pngFiles).toBeUndefined()
+      expect(imageAsset.meta.hasBmFont).toBe(false)
+
+      expect(audioAsset.meta.fntFile).toBeUndefined()
+      expect(audioAsset.meta.pngFiles).toBeUndefined()
+      expect(audioAsset.meta.hasBmFont).toBe(false)
+
+      expect(fontAsset.meta.fntFile).toBeDefined()
+      expect(fontAsset.meta.pngFiles).toBeDefined()
+      expect(fontAsset.meta.hasBmFont).toBe(true)
     })
   })
 

@@ -1,4 +1,4 @@
-import { ref, onMounted, onUnmounted } from "vue";
+import { ref, watch, onMounted, onUnmounted, getCurrentInstance } from "vue";
 import { prepareEngineData } from "@engines/engines.js";
 import { useProjectStore } from '@projects/projects.js';
 import { useWorkspaceStore } from '@workspaces/workspaces.js';
@@ -14,24 +14,67 @@ export function usePreview() {
   const projectStore = useProjectStore();
   const workspaceStore = useWorkspaceStore();
 
-  const initChannel = () => {
-    if (channel) return;
+  const getChannelName = (id) => {
+    const projId = id ?? workspaceStore.activeProjectId ?? projectStore.project?.id;
+    return projId ? `${BROADCAST_CHANNEL_NAME}_${projId}` : BROADCAST_CHANNEL_NAME;
+  };
 
-    channel = new BroadcastChannel(BROADCAST_CHANNEL_NAME);
+  const getWindowName = (id) => {
+    const projId = id ?? workspaceStore.activeProjectId ?? projectStore.project?.id;
+    const safeId = projId ? String(projId).replace(/[^a-zA-Z0-9_-]/g, "_") : "default";
+    return `LupisPreview_${safeId}`;
+  };
+
+  const getPreviewUrl = (id) => {
+    const projId = id ?? workspaceStore.activeProjectId ?? projectStore.project?.id;
+    return projId ? `/preview/index.html?projectId=${encodeURIComponent(projId)}` : "/preview/index.html";
+  };
+
+  const initChannel = () => {
+    const desiredChannelName = getChannelName();
+    if (channel && channel.name === desiredChannelName) return;
+
+    if (channel) {
+      channel.close();
+      channel = null;
+    }
+
+    channel = new BroadcastChannel(desiredChannelName);
 
     channel.onmessage = async (event) => {
-      const { type } = event.data;
+      const { type, projectId } = event.data || {};
+      const currentId = workspaceStore.activeProjectId ?? projectStore.project?.id;
+
+      if (projectId && currentId && String(projectId) !== String(currentId)) {
+        return;
+      }
+
       if (type === "REQUEST_LATEST_DATA") {
+        isPreviewing.value = true;
         await sendDataToPreview();
+      } else if (type === "PREVIEW_READY" || type === "PREVIEW_PONG") {
+        isPreviewing.value = true;
+      } else if (type === "PREVIEW_CLOSED") {
+        isPreviewing.value = false;
+        previewWindow.value = null;
+        if (checkWindowInterval) {
+          clearInterval(checkWindowInterval);
+          checkWindowInterval = null;
+        }
       }
     };
+
+    channel.postMessage({
+      type: "PREVIEW_PING",
+      projectId: workspaceStore.activeProjectId ?? projectStore.project?.id,
+    });
   };
 
   const sendDataToPreview = async () => {
     try {
       const rawData = await prepareEngineData();
       
-      const currentProjectId = workspaceStore.activeProjectId;
+      const currentProjectId = workspaceStore.activeProjectId ?? projectStore.project?.id;
 
       if (!currentProjectId) {
         throw new Error("[Preview] Invalid Project ID.");
@@ -41,10 +84,15 @@ export function usePreview() {
         projectId: String(currentProjectId)
       };
 
+      if (!channel) {
+        initChannel();
+      }
+
       channel.postMessage({
         type: "SCENE_UPDATE",
         payload: rawData,
         opfsContext: opfsContext,
+        projectId: String(currentProjectId),
       });
     } catch (error) {
       console.error("[usePreview] Failed to send preview data:", error);
@@ -62,9 +110,13 @@ export function usePreview() {
       const width = uiSettings.width || 1280;   
       const height = uiSettings.height || 720; 
 
+      const currentProjectId = workspaceStore.activeProjectId ?? projectStore.project?.id;
+      const windowName = getWindowName(currentProjectId);
+      const previewUrl = getPreviewUrl(currentProjectId);
+
       previewWindow.value = window.open(
-        "/preview/index.html", 
-        "LupisPreview",
+        previewUrl, 
+        windowName,
         `width=${width},height=${height},resizable=yes`
       );
       
@@ -80,25 +132,51 @@ export function usePreview() {
       if (previewWindow.value && previewWindow.value.closed) {
         isPreviewing.value = false;
         clearInterval(checkWindowInterval);
+        checkWindowInterval = null;
         previewWindow.value = null;
       }
     }, 1000);
   };
 
-  onMounted(() => {
-    initChannel();
-  });
-
-  onUnmounted(() => {
-    if (channel) {
-      channel.close();
-      channel = null;
+  watch(
+    () => workspaceStore.activeProjectId,
+    (newId, oldId) => {
+      if (newId !== oldId) {
+        if (checkWindowInterval) {
+          clearInterval(checkWindowInterval);
+          checkWindowInterval = null;
+        }
+        isPreviewing.value = false;
+        previewWindow.value = null;
+        initChannel();
+      }
     }
-    if (checkWindowInterval) clearInterval(checkWindowInterval);
-  });
+  );
+
+  if (getCurrentInstance()) {
+    onMounted(() => {
+      initChannel();
+    });
+
+    onUnmounted(() => {
+      if (channel) {
+        channel.close();
+        channel = null;
+      }
+      if (checkWindowInterval) {
+        clearInterval(checkWindowInterval);
+        checkWindowInterval = null;
+      }
+    });
+  }
 
   return {
     isPreviewing,
     openOrUpdatePreview,
+    sendDataToPreview,
+    initChannel,
+    getChannelName,
+    getWindowName,
+    getPreviewUrl,
   };
 }

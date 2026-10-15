@@ -231,8 +231,8 @@ describe('Project Store Integration', () => {
       expect(projectStore.syncStatus).toBe('synced')
       expect(engineBridge.reloadScene).toHaveBeenCalledOnce()
       expect(mockShowPop).toHaveBeenCalledWith({
-        title: 'Sync Successful',
-        message: 'Project data reloaded successfully from OPFS.',
+        title: 'Project Reloaded',
+        message: 'Project data reloaded successfully from storage.',
         type: 'success'
       })
       expect(workspaceStore.isLoading).toBe(false)
@@ -279,7 +279,7 @@ describe('Project Store Integration', () => {
       expect(projectStore.syncStatus).toBe('synced')
       expect(mockShowPop).toHaveBeenCalledWith({
         title: 'Save Successful',
-        message: 'Project saved successfully to OPFS.',
+        message: 'Project saved successfully.',
         type: 'success'
       })
       expect(workspaceStore.isSaving).toBe(false)

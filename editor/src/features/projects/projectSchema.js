@@ -10,13 +10,19 @@ export const projectSchema = (data = {}) => {
     id: data.id, 
     name: data.name || "Untitled Project",
     description: data.description || "",
-    status: data.status || "DRAFT", 
+    version: data.version || "1.0.0",
     createdAt: data.createdAt || new Date().toISOString(),
     thumbnailUrl: data.thumbnailUrl || null,
+    snapshotUrl: data.snapshotUrl || null,
     
     settings: {
       initialSceneId: data.settings?.initialSceneId || firstSceneId,
       tickRate: Number(data.settings?.tickRate || 60),
+      
+      autoSave: {
+        enabled: data.settings?.autoSave?.enabled ?? false,
+        interval: Number(data.settings?.autoSave?.interval ?? 10)
+      },
       
       debug: {
         active: data.settings?.debug?.active ?? true,

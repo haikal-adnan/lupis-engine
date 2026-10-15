@@ -3,8 +3,9 @@ import { bus } from "./EventBus.js";
 const BROADCAST_CHANNEL_NAME = "lupis_engine_preview_channel";
 
 export default class ConsoleBroadcaster {
-  constructor() {
-    this.channel = new BroadcastChannel(BROADCAST_CHANNEL_NAME);
+  constructor(channelName = BROADCAST_CHANNEL_NAME) {
+    this.channelName = channelName || BROADCAST_CHANNEL_NAME;
+    this.channel = new BroadcastChannel(this.channelName);
     this.initListeners();
   }
 

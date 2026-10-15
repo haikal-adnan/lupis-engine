@@ -144,7 +144,6 @@ export function useProjectActions() {
       projectId: projectId,
       name: projectName,
       description: description,
-      status: 'DRAFT',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       settings: {

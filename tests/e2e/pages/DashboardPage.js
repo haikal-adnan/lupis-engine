@@ -22,6 +22,22 @@ export class DashboardPage {
     return this.card(name).getByTestId('project-description');
   }
 
+  cardTitle(name) {
+    return this.card(name).getByTestId('project-title');
+  }
+
+  get fileInput() {
+    return this.page.getByTestId('file-import-input');
+  }
+
+  get loadProjectBtn() {
+    return this.page.getByTestId('load-project-btn').or(this.page.getByTestId('empty-load-project-btn')).first();
+  }
+
+  async importProject(filePath) {
+    await this.fileInput.setInputFiles(filePath);
+  }
+
   async goto() {
     await this.page.goto('/');
     await this.page.waitForLoadState('domcontentloaded');

@@ -23,7 +23,13 @@
         <!-- Validation Status Badges -->
         <div class="flex items-center gap-1.5 ml-1 font-sans text-[10px]">
           <span 
-            v-if="validationResult.isValid" 
+            v-if="validationResult.hasSyntaxError" 
+            class="px-2 py-0.5 rounded bg-red-500/20 text-red-400 border border-red-500/30 font-medium"
+          >
+            Syntax Error
+          </span>
+          <span 
+            v-else-if="validationResult.isValid" 
             class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-medium"
           >
             No Issues
@@ -35,6 +41,7 @@
             Warnings ({{ validationResult.issues.length }})
           </span>
         </div>
+
       </div>
       
       <!-- Action Buttons -->
@@ -129,15 +136,16 @@
         <!-- Real-Time Port & Variable Validation Panel -->
         <div 
           v-if="targetNode && !validationResult.isValid"
-          class="border-t border-amber-500/30 bg-[#252218] p-2.5 px-4 text-xs font-sans text-amber-200 shrink-0 max-h-36 overflow-y-auto z-10"
+          class="border-t p-2.5 px-4 text-xs font-sans shrink-0 max-h-36 overflow-y-auto z-10 transition-colors duration-200"
+          :class="validationResult.hasSyntaxError ? 'border-red-500/40 bg-[#2d1b1b] text-red-200' : 'border-amber-500/30 bg-[#252218] text-amber-200'"
         >
-          <div class="font-semibold text-amber-400 mb-1 flex items-center justify-between">
-            <span>Validation Warnings:</span>
+          <div class="font-semibold mb-1 flex items-center justify-between" :class="validationResult.hasSyntaxError ? 'text-red-400' : 'text-amber-400'">
+            <span>{{ validationResult.hasSyntaxError ? 'Syntax Errors & Issues:' : 'Validation Warnings:' }}</span>
             <span class="text-[10px] text-zinc-400 font-mono">
               Ports — Inputs: {{ dataInputPorts.length }} | Outputs: {{ definedOutputPorts.length }}
             </span>
           </div>
-          <ul class="list-disc list-inside space-y-0.5 text-[11px] text-amber-300/90 font-mono">
+          <ul class="list-disc list-inside space-y-0.5 text-[11px] font-mono" :class="validationResult.hasSyntaxError ? 'text-red-300/90' : 'text-amber-300/90'">
             <li v-for="(issue, idx) in validationResult.issues" :key="idx">
               {{ issue }}
             </li>
@@ -149,8 +157,9 @@
     <!-- IDE Bottom Status Bar -->
     <div 
       class="h-6 text-white px-3 flex items-center justify-between text-[11px] shrink-0 font-sans transition-colors duration-200 z-10"
-      :class="!validationResult.isValid ? 'bg-zinc-800 border-t border-amber-500/40 text-amber-300' : 'bg-[#007acc]'"
+      :class="validationResult.hasSyntaxError ? 'bg-red-950/80 border-t border-red-500/50 text-red-300' : (!validationResult.isValid ? 'bg-zinc-800 border-t border-amber-500/40 text-amber-300' : 'bg-[#007acc]')"
     >
+
       <div class="flex items-center gap-4">
         <span class="font-medium">Node Name: {{ nodeTitle }}</span>
         <span v-if="targetNode" class="font-mono">
@@ -176,6 +185,8 @@ import { useWorkspaceStore } from '@workspaces/workspaces.js'
 import { useScriptStore } from '@scripts/scripts.js'
 import { useProjectStore } from '@projects/projects.js'
 import { useCodeHistory } from '@historys/historys.js'
+import { validateCodePanelContract } from '@nodes/contract/codePanelContract.js'
+
 
 const workspaceStore = useWorkspaceStore()
 const scriptStore = useScriptStore()
@@ -273,97 +284,14 @@ const definedOutputPorts = computed(() => {
   return targetNode.value.outputs
 })
 
-const definedLocalVars = computed(() => {
-  if (!scriptStore.activeScript || !Array.isArray(scriptStore.activeScript.localVariables)) return []
-  return scriptStore.activeScript.localVariables.flatMap(v => [v.name, v.id]).filter(Boolean)
-})
-
-const definedGlobalVars = computed(() => {
-  const globals = projectStore.activeProject?.globalVariables || []
-  return globals.flatMap(v => [v.name, v.id]).filter(Boolean)
-})
-
 const validationResult = computed(() => {
-  if (!targetNode.value) return { isValid: true, issues: [], usedInputsCount: 0, usedOutputsCount: 0, usedVarsCount: 0 }
-
-  const code = codeContent.value
-  const issues = []
-
-  const inputMatches = [
-    ...[...code.matchAll(/inputs\[\s*['"]([^'"]+)['"]\s*\]/g)].map(m => m[1]),
-    ...[...code.matchAll(/inputs\.([A-Za-z0-9_$]+)/g)].map(m => m[1])
-  ]
-  const usedInputKeys = [...new Set(inputMatches)]
-
-  const outputMatches = [
-    ...[...code.matchAll(/outputs\[\s*['"]([^'"]+)['"]\s*\]/g)].map(m => m[1]),
-    ...[...code.matchAll(/outputs\.([A-Za-z0-9_$]+)\s*=/g)].map(m => m[1])
-  ]
-  const usedOutputKeys = [...new Set(outputMatches)]
-
-  const allValidInputIdentifiers = targetNode.value.inputs?.flatMap(p => [p.label, p.id]).filter(Boolean) || []
-  const allValidOutputIdentifiers = targetNode.value.outputs?.flatMap(p => [p.label, p.id]).filter(Boolean) || []
-
-  usedInputKeys.forEach(inputKey => {
-    if (!allValidInputIdentifiers.includes(inputKey)) {
-      issues.push(`Input '${inputKey}' is used in code, but is not defined in Node Input Ports.`)
-    }
+  return validateCodePanelContract(codeContent.value, {
+    node: targetNode.value,
+    localVariables: scriptStore.activeScript?.localVariables || [],
+    globalVariables: projectStore.activeProject?.globalVariables || []
   })
-
-  usedOutputKeys.forEach(outputKey => {
-    if (!allValidOutputIdentifiers.includes(outputKey)) {
-      issues.push(`Output '${outputKey}' is set in code, but is not defined in Node Output Ports.`)
-    }
-  })
-
-  let matchedInputsCount = 0
-  dataInputPorts.value.forEach(port => {
-    const isUsed = usedInputKeys.includes(port.label) || usedInputKeys.includes(port.id)
-    if (isUsed) {
-      matchedInputsCount++
-    } else {
-      issues.push(`Input Port '${port.label || port.id}' is defined on node, but never read in code.`)
-    }
-  })
-
-  let matchedOutputsCount = 0
-  definedOutputPorts.value.forEach(port => {
-    const isUsed = usedOutputKeys.includes(port.label) || usedOutputKeys.includes(port.id)
-    if (isUsed) {
-      matchedOutputsCount++
-    } else {
-      issues.push(`Output Port '${port.label || port.id}' is defined on node, but never set in code.`)
-    }
-  })
-
-  const localGetMatches = [...code.matchAll(/context\.getLocal\(\s*['"]([^'"]+)['"]/g)].map(m => m[1])
-  const localSetMatches = [...code.matchAll(/context\.setLocal\(\s*['"]([^'"]+)['"]/g)].map(m => m[1])
-  const usedLocalVars = [...new Set([...localGetMatches, ...localSetMatches])]
-
-  const globalGetMatches = [...code.matchAll(/context\.getGlobal\(\s*['"]([^'"]+)['"]/g)].map(m => m[1])
-  const globalSetMatches = [...code.matchAll(/context\.setGlobal\(\s*['"]([^'"]+)['"]/g)].map(m => m[1])
-  const usedGlobalVars = [...new Set([...globalGetMatches, ...globalSetMatches])]
-
-  usedLocalVars.forEach(varKey => {
-    if (!definedLocalVars.value.includes(varKey)) {
-      issues.push(`Local Variable '${varKey}' is referenced in code, but not defined in Script Variables.`)
-    }
-  })
-
-  usedGlobalVars.forEach(varKey => {
-    if (!definedGlobalVars.value.includes(varKey)) {
-      issues.push(`Global Variable '${varKey}' is referenced in code, but not defined in Project Global Variables.`)
-    }
-  })
-
-  return {
-    isValid: issues.length === 0,
-    issues,
-    usedInputsCount: matchedInputsCount,
-    usedOutputsCount: matchedOutputsCount,
-    usedVarsCount: usedLocalVars.length + usedGlobalVars.length
-  }
 })
+
 
 const lineCount = computed(() => {
   const lines = codeContent.value.split('\n').length

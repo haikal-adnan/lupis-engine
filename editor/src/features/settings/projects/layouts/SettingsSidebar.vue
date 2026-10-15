@@ -16,8 +16,9 @@
       <button 
         v-for="tab in tabs" 
         :key="tab.id"
+        :data-testid="`settings-tab-${tab.id}`"
         @click="active = tab.id"
-        class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all outline-none relative overflow-hidden group"
+        class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all outline-none relative overflow-hidden group cursor-pointer"
         :class="active === tab.id ? 'text-primary font-semibold bg-primary/10' : 'text-muted-foreground hover:bg-muted hover:text-foreground'"
       >
         <div 

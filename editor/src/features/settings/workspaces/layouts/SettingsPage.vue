@@ -104,23 +104,6 @@ onMounted(() => {
             </div>
           </div>
 
-          <div class="bg-card p-6 rounded-2xl border border-border">
-            <h3 class="font-bold text-lg mb-1 flex items-center gap-2 text-foreground">
-              <HardDrive class="w-5 h-5 text-cyan-500" /> Local Storage (OPFS)
-            </h3>
-            <p class="text-sm text-muted-foreground mb-4">
-              All your projects, scenes, and assets are stored independently and offline in the local browser's Origin Private File System (OPFS).
-            </p>
-            <div class="p-4 rounded-xl bg-muted/40 border border-border flex items-center justify-between">
-              <div class="text-xs font-mono text-muted-foreground">
-                Root Directory: <span class="text-cyan-400 font-bold">lupis-engine/projects</span>
-              </div>
-              <span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-                Offline Active
-              </span>
-            </div>
-          </div>
-
         </div>
       </main>
     </div>

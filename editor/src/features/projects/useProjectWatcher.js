@@ -11,6 +11,7 @@ export function useProjectWatcher() {
   const workspaceStore = useWorkspaceStore()
 
   const storesToWatch = {
+    project: projectStore,
     scene: useSceneStore(),
     script: useScriptStore(),
     asset: useAssetStore(),
@@ -19,8 +20,10 @@ export function useProjectWatcher() {
   }
 
   const IGNORED_KEYS = [
+    'syncStatus',
     'isLoading',
     'isSaving',
+    'loadingMessage',
     'error',
     'selectedNodeId',
     'activeFolderId',
@@ -28,17 +31,52 @@ export function useProjectWatcher() {
     'searchQuery',
     'activeScript',
     'activeSceneId',
-    'selectedEntityIds'
+    'selectedEntityIds',
+    'isSettingsModalOpen',
+    'isResizeModalOpen'
   ]
 
   let unsubscribeFunctions = []
+  let autoSaveTimer = null
+  let beforeUnloadHandler = null
+
+  const checkAndRunAutoSave = async () => {
+    if (
+      projectStore.project?.settings?.autoSave?.enabled &&
+      projectStore.syncStatus === 'dirty' &&
+      !workspaceStore.isLoading &&
+      !workspaceStore.isSaving &&
+      workspaceStore.activeProjectId
+    ) {
+      try {
+        await projectStore.saveProjectToServer({ isAutoSave: true })
+      } catch (err) {
+        console.error('[AutoSave] Failed:', err)
+      }
+    }
+  }
+
+  const setupAutoSaveTimer = () => {
+    if (autoSaveTimer) {
+      clearInterval(autoSaveTimer)
+      autoSaveTimer = null
+    }
+
+    const autoSaveConfig = projectStore.project?.settings?.autoSave
+    if (autoSaveConfig?.enabled && projectStore.isProjectLoaded) {
+      const minutes = Math.max(1, Number(autoSaveConfig.interval) || 10)
+      const ms = minutes * 60 * 1000
+      autoSaveTimer = setInterval(checkAndRunAutoSave, ms)
+      if (autoSaveTimer?.unref) autoSaveTimer.unref()
+    }
+  }
 
   const initWatchers = () => {
     destroyWatchers()
 
     Object.entries(storesToWatch).forEach(([storeName, store]) => {
       const unsubscribe = store.$subscribe((mutation) => {
-        if (workspaceStore.isLoading || projectStore.isSaving || !projectStore.isProjectLoaded) return
+        if (workspaceStore.isLoading || workspaceStore.isSaving || !projectStore.isProjectLoaded) return
 
         const events = Array.isArray(mutation.events) ? mutation.events : [mutation.events]
         const shouldIgnore = events.every(event => {
@@ -48,22 +86,48 @@ export function useProjectWatcher() {
 
         if (shouldIgnore) return
 
+        if (storeName === 'project') {
+          setupAutoSaveTimer()
+        }
+
         if (projectStore.syncStatus !== 'dirty') {
           projectStore.markAsDirty()
         }
-      })
+      }, { flush: 'sync' })
       
       unsubscribeFunctions.push(unsubscribe)
     })
+
+    setupAutoSaveTimer()
+
+    if (typeof window !== 'undefined') {
+      beforeUnloadHandler = (e) => {
+        if (projectStore.syncStatus === 'dirty') {
+          e.preventDefault()
+          e.returnValue = ''
+        }
+      }
+      window.addEventListener('beforeunload', beforeUnloadHandler)
+    }
   }
 
   const destroyWatchers = () => {
+    if (autoSaveTimer) {
+      clearInterval(autoSaveTimer)
+      autoSaveTimer = null
+    }
+    if (typeof window !== 'undefined' && beforeUnloadHandler) {
+      window.removeEventListener('beforeunload', beforeUnloadHandler)
+      beforeUnloadHandler = null
+    }
     unsubscribeFunctions.forEach(unsubscribe => unsubscribe())
     unsubscribeFunctions = []
   }
 
   return {
     initWatchers,
-    destroyWatchers 
+    destroyWatchers,
+    checkAndRunAutoSave,
+    setupAutoSaveTimer
   }
 }

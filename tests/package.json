@@ -15,5 +15,8 @@
   "devDependencies": {
     "@playwright/test": "^1.63.0",
     "eslint-plugin-playwright": "^2.12.1"
+  },
+  "dependencies": {
+    "jszip": "^3.10.2"
   }
 }

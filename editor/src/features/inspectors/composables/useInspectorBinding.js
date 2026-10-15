@@ -56,6 +56,9 @@ export function useInspectorBinding(
         if (category === 'ui' || category === 'grid' || category === 'camera') {
           return projectStore.project?.settings?.[category]?.[propName];
         }
+        if (category === 'autoSave') {
+          return projectStore.project?.settings?.autoSave?.[propName];
+        }
         // Include initialSceneId as project settings property
         if (!category && (propName === 'tickRate' || propName === 'initialSceneId')) {
           return projectStore.project?.settings?.[propName];
@@ -66,6 +69,7 @@ export function useInspectorBinding(
       },
       set: (val) => {
         if (category === 'ui') projectStore.updateUISettings({ [propName]: val });
+        else if (category === 'autoSave') projectStore.updateAutoSaveSettings({ [propName]: val });
         else if (category === 'grid') {
           const grid = projectStore.project.settings.grid;
           if (propName === 'width') projectStore.setGridSize(val, grid.height);
@@ -278,10 +282,21 @@ export function useInspectorBinding(
     recordComponentChange(id, 'TextRenderer', 'fontSize', oldVal, tr.fontSize);
   }
 
+  function bindProjectProp(propName) {
+    return computed({
+      get: () => projectStore.project?.[propName] ?? '',
+      set: (val) => {
+        if (!projectStore.project) return;
+        projectStore.updateProject({ [propName]: val });
+      }
+    });
+  }
+
   return {
     scriptsData,
     currentTextureUrl,
     bindSettingProp,
+    bindProjectProp,
     bindEntityProp,
     bindComponentProp,
     updateScriptInstance,

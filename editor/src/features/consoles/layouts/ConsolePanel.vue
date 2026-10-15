@@ -57,9 +57,11 @@ import { ref, computed, watch, nextTick, onMounted } from 'vue'
 import { Trash2 } from 'lucide-vue-next'
 import { BaseSearchInput } from '@components/components.js';
 import { useConsoleStore, ConsoleItem } from '@consoles/consoles.js'
+import { useWorkspaceStore } from '@workspaces/workspaces.js'
 import { storeToRefs } from 'pinia'
 
 const consoleStore = useConsoleStore()
+const workspaceStore = useWorkspaceStore()
 const { logs } = storeToRefs(consoleStore)
 
 const activeFilter = ref('all')
@@ -115,8 +117,14 @@ const scrollToBottom = async () => {
 }
 
 onMounted(() => {
-  consoleStore.initListeners()
+  consoleStore.initListeners(workspaceStore.activeProjectId)
   scrollToBottom()
+})
+
+watch(() => workspaceStore.activeProjectId, (newId) => {
+  if (newId) {
+    consoleStore.setProjectChannel(newId)
+  }
 })
 
 watch(() => logs.value.length, () => {

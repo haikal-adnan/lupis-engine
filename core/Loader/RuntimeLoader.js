@@ -41,7 +41,10 @@ export default class RuntimeLoader {
                 game.variables.initGlobals(project.globalVariables);
             }
             
-            game.consoleBroadcaster = new ConsoleBroadcaster();
+            const consoleChannelName = project?.id 
+                ? `lupis_engine_preview_channel_${project.id}` 
+                : undefined;
+            game.consoleBroadcaster = new ConsoleBroadcaster(consoleChannelName);
 
             reportProgress("Membangun Prefab Library...", 30);
             game.prefabSystem.initLibrary(prefabs);

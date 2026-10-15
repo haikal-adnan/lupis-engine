@@ -107,13 +107,19 @@ interface ProjectSchema {
   id: string;                                   // UUID unik proyek
   name: string;                                 // Default: "Untitled Project"
   description: string;                          // Ringkasan proyek
-  status: "DRAFT" | "PUBLISHED";                // Status siklus hidup proyek
+  version: string;                              // Versi rilis proyek (default: "1.0.0")
   createdAt: string;                            // ISO 8601 Timestamp
-  thumbnailUrl: string | null;                  // URL / Base64 cover thumbnail
+  thumbnailUrl: string | null;                  // URL / Base64 cover thumbnail kustom pengguna
+  snapshotUrl: string | null;                   // Auto snapshot canvas viewport scene terkini (seperti Figma)
 
   settings: {
     initialSceneId: string | null;              // UUID scene pertama saat boot
     tickRate: number;                           // Target physics tick rate (default: 60)
+
+    autoSave: {
+      enabled: boolean;                         // Mengaktifkan penyimpanan otomatis berkala (default: false)
+      interval: number;                         // Interval auto-save dalam satuan menit (default: 10, min: 1)
+    };
 
     debug: {
       active: boolean;                          // Default: true
@@ -158,6 +164,46 @@ interface ProjectSchema {
   scenes: Array<string | SceneSchema>;          // Referensi ID atau payload scene
 }
 ```
+
+---
+
+## 2.1 Kontrak Status Sinkronisasi & Auto-Save (Sync Status & Auto-Save Contract)
+
+Editor Lupis Engine mengimplementasikan mesin keadaan (**State Machine**) formal untuk melacak integritas data memori terhadap persistensi penyimpanan lokal (OPFS):
+
+```mermaid
+stateDiagram-v2
+    [*] --> SYNCED: loadProject(id)
+    SYNCED --> DIRTY: Mutation (Scene/Entity/Layer/Project/Script/Asset/Prefab)
+    DIRTY --> SAVING: saveProjectToServer() / triggerAutoSave()
+    SAVING --> SYNCED: Save Successful (Commit to OPFS)
+    SAVING --> DIRTY: I/O Error / Failure
+    DIRTY --> SYNCED: syncFromServer() (Discard changes & reload)
+    DIRTY --> WARNING: Navigate away / back to dashboard / beforeunload
+```
+
+### 1. Definisi & Nilai Status Sinkronisasi
+| Status | Nilai `syncStatus` | Indikator Visual | Arti Semantik |
+| :--- | :--- | :--- | :--- |
+| **Synced** | `'synced'` | Hijau (`bg-emerald-500`) | Seluruh data in-memory identik dengan berkas di OPFS. |
+| **Dirty** | `'dirty'` | Merah (`bg-red-500`) | Terdapat perubahan lokal yang belum dikomit ke disk storage. |
+| **Saving / Loading**| - | Kuning berkedip (`bg-yellow-400 animate-pulse`)| Operasi asinkron I/O sedang berjalan (`workspaceStore.isSaving` / `isLoading`). |
+
+### 2. Aturan Transisi Keadaan (State Transition Invariants)
+1. **Boot / Reload Invariant**: Pemanggilan `loadProject(projectId)` atau `syncFromServer()` wajib menghasilkan `syncStatus = 'synced'`.
+2. **Mutation Invariant**: Setiap perubahan pada:
+   - Proyek: `name`, `description`, `version`, `tags`, atau `settings` (termasuk `autoSave`, `grid`, `camera`, `ui`, `debug`)
+   - Hirarki scene: penambahan, pengubahan, penghapusan layer, entity, atau komponen
+   - Aset, Prefab, Folder, Script: penambahan atau pengubahan konten
+   secara deterministik mengubah status menjadi `'dirty'`.
+3. **Commit Invariant**: Keberhasilan `saveProjectToServer()` menulis `project.json` dan semua payload terkait ke OPFS, kemudian menetapkan `syncStatus = 'synced'`.
+4. **Auto-Save Contract**:
+   - Jika `project.settings.autoSave.enabled === true`, timer berkala memicu `triggerAutoSave()` setiap `interval` menit (minimal 1 menit).
+   - Auto-save hanya berjalan apabila status saat evaluasi adalah `'dirty'`, serta `isLoading === false` dan `isSaving === false`.
+   - Jika status telah `'synced'`, auto-save tidak melakukan penulisan berlebih (no-op).
+5. **Safety Guard Contract**:
+   - Menu aksi "Back to Dashboard" wajib memicu dialog konfirmasi bahaya jika `syncStatus === 'dirty'` agar data tidak hilang tanpa persetujuan pengguna.
+   - Event `beforeunload` browser mengintersepsi penutupan tab ketika status `'dirty'`.
 
 ---
 
@@ -646,9 +692,69 @@ const CONTEXT_ASSERT_METHODS = [
 
 // Metode Telemetri Konsol (CONTEXT_CONSOLE_METHODS)
 const CONTEXT_CONSOLE_METHODS = ['log', 'warn', 'error'];
+
+// Metode Root Context (CONTEXT_ROOT_METHODS)
+const CONTEXT_ROOT_METHODS = [
+  'onTick', 'triggerFlow', 'onGameStart', 'onSceneStart',
+  'onGamePause', 'onGameResume', 'onGameRestart', 'isPaused',
+  'notify', 'getLocal', 'setLocal', 'getGlobal', 'setGlobal'
+];
+
+// Properti Root Context (CONTEXT_ROOT_PROPERTIES)
+const CONTEXT_ROOT_PROPERTIES = ['owner', 'node', 'dt', 'deltaTime', 'state'];
 ```
 
+### 8.5 Kontrak CodePanel & Evaluasi Simpul Blueprint (CodePanel Contract & Node Evaluation)
+Didefinisikan di [`core/Script/contract/codePanelContract.js`](file:///d:/Project/Lupis%20Engine/core/Script/contract/codePanelContract.js) dan [`editor/src/features/nodes/contract/codePanelContract.js`](file:///d:/Project/Lupis%20Engine/editor/src/features/nodes/contract/codePanelContract.js):
+
+Setiap potongan kode JavaScript pada simpul Blueprint (`node.data.code`) terikat pada aturan evaluasi dan kontrak integritas antarmuka:
+
+#### 1. Signature Eksekusi Standar Kanonikal (`CODE_PANEL_PARAM_NAMES`)
+Semua kode simpul visual dievaluasi oleh `ScriptRunner` menggunakan fungsi dinamis standar dengan 4 parameter kanonikal:
+```javascript
+new Function('inputs', 'outputs', 'context', 'node', rawCode + '\nreturn outputs;');
+```
+- `inputs`: Objek kamus data masukan pin (`inputs['portName']` atau `inputs.portName`).
+- `outputs`: Objek penampung luaran data dan alur (`outputs['portName'] = val` atau `outputs.portName = val`).
+- `context`: Pintu gerbang interaksi runtime `ContextSystem` (menyediakan namespace `entity`, `layer`, `ui`, `camera`, `scene`, dan method `getLocal`, `setLocal`, `getGlobal`, `setGlobal`, `onTick`, `triggerFlow`).
+- `node`: Struktur metadata simpul aktif (read-only plain object).
+
+#### 2. Aturan Invarian Kontrak CodePanel (`validateCodePanelContract`)
+Editor melakukan analisis statis *real-time* terhadap isi kode pada `CodePanel.vue`:
+
+```mermaid
+flowchart TD
+    UserCode["Script Node Code\n(node.data.code)"] --> StaticCheck["CodePanel Validator\n(validateCodePanelContract)"]
+    StaticCheck --> Check1["1. Syntax Validation (new Function check)"]
+    StaticCheck --> Check2["2. Port Binding (Input & Output matching)"]
+    StaticCheck --> Check3["3. Variable Scope (Local & Global variables)"]
+    StaticCheck --> Check4["4. Context API Conformance (ContextSystem namespaces)"]
+    StaticCheck --> UI["IDE Status Bar & Warnings Panel\n(Syntax Error / Warnings / No Issues)"]
+```
+
+1. **Integritas Sintaks JavaScript**:
+   - Kode harus valid secara sintaksis JavaScript. Jika terdapat kesalahan penulisan, validator melaporkan `hasSyntaxError: true`, pesan error, serta menampilkan badge merah **Syntax Error**.
+2. **Pencocokan Port Masukan (Inputs)**:
+   - Setiap masukan yang dibaca dalam kode (`inputs['foo']` atau `inputs.foo`) harus terdaftar pada `node.inputs` (berdasarkan `id` atau `label`).
+   - Seluruh port masukan tipe data (non-execution) yang didefinisikan pada simpul harus dibaca di dalam logika kode.
+3. **Pencocokan Port Luaran (Outputs)**:
+   - Setiap luaran yang ditetapkan dalam kode (`outputs['bar'] = val` atau `outputs.bar = val`) harus terdaftar pada `node.outputs` (berdasarkan `id` atau `label`).
+   - Seluruh port luaran (termasuk luaran alur `outputs.execOut = true`) yang didefinisikan pada simpul harus ditetapkan nilainya di dalam logika kode.
+4. **Cakupan Variabel (Variables Scope)**:
+   - Variabel lokal yang diakses via `context.getLocal('x')` atau `context.setLocal('x', ...)` harus terdaftar pada `script.localVariables`.
+   - Variabel global yang diakses via `context.getGlobal('y')` atau `context.setGlobal('y', ...)` harus terdaftar pada `project.globalVariables`.
+5. **Kesesuaian API Runtime (`context`)**:
+   - Properti yang diakses pada `context` (`context.<property>`) divalidasi terhadap `VALID_CONTEXT_PROPERTIES` (14 namespace resmi, root method, dan root property `ContextSystem`). Properti yang tidak terdaftar akan memunculkan peringatan kontraktual.
+
+#### 3. Pembangkitan Kode Standar Simpul (`generateDefaultNodeCode`)
+Saat membuat simpul kustom baru atau melakukan *reset code*, editor menyusun *boilerplate* otomatis sesuai port yang telah didefinisikan:
+1. Membaca port masukan data: `const <id> = inputs['<label || id>'];`
+2. Menyiapkan blok komputasi: `// 2. Execute node computation`
+3. Menginisialisasi port luaran data: `outputs['<label || id>'] = null;`
+4. Memicu alur eksekusi (jika memiliki pin execution): `outputs.execOut = true;`
+
 ---
+
 
 ## 9. Kontrak Payload Inisialisasi Engine (`prepareEngineData`)
 

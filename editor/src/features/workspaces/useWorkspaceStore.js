@@ -37,6 +37,7 @@ export const useWorkspaceStore = defineStore('workspace', {
     tilemapContext: { showOthers: true, opacity: 0.3 },
 
     isResizeModalOpen: false, 
+    isSettingsModalOpen: false,
     isPlayMode: false,
     isPaused: false,
 
@@ -140,6 +141,18 @@ export const useWorkspaceStore = defineStore('workspace', {
 
     closeResizeModal() {
       this.isResizeModalOpen = false;
+    },
+
+    openSettingsModal() {
+      this.isSettingsModalOpen = true;
+    },
+
+    closeSettingsModal() {
+      this.isSettingsModalOpen = false;
+    },
+
+    toggleSettingsModal() {
+      this.isSettingsModalOpen = !this.isSettingsModalOpen;
     },
 
     setActiveTab(id) {

@@ -50,7 +50,16 @@ const fetchProjects = async () => {
   }
 };
 
-const openProject = async (projectId) => {
+const openProject = async (projectId, inNewTab = false) => {
+  if (inNewTab) {
+    const routeData = router.resolve({
+      name: 'Editor',
+      params: { idProject: projectId }
+    });
+    window.open(routeData.href || `/editor/${projectId}`, '_blank');
+    return;
+  }
+
   workspaceStore.isLoading = true;
   try {
     await router.push(`/editor/${projectId}`);
@@ -187,18 +196,6 @@ const processImport = async (file) => {
     await fetchProjects();
   }
 };
-
-const getStatusStyle = (status) => {
-  switch(status) {
-    case 'PUBLISHED': 
-      return 'text-cyan-500 bg-cyan-500/10 border-cyan-500/20';
-    case 'IN_PROGRESS': 
-      return 'text-amber-500 bg-amber-500/10 border-amber-500/20';
-    case 'DRAFT':
-    default: 
-      return 'text-slate-500 bg-slate-500/10 border-slate-500/20';
-  }
-};
 </script>
 
 <template>
@@ -259,7 +256,7 @@ const getStatusStyle = (status) => {
             <p class="text-sm font-medium text-slate-300 leading-relaxed max-w-xs">
               {{ isInvalidFileDragged 
                 ? 'Only .lupisproject files can be loaded into the workspace.' 
-                : 'Release the .lupisproject file to extract and load the project into OPFS.' 
+                : 'Release the .lupisproject file to extract and load the project into storage.' 
               }}
             </p>
 
@@ -442,16 +439,16 @@ const getStatusStyle = (status) => {
           data-testid="project-card"
           :data-project-id="project.id"
           :data-project-name="project.name"
-          :data-status="project.status || 'DRAFT'"
           class="group bg-card border border-border rounded-2xl overflow-hidden cursor-pointer hover:border-cyan-500/40 transition-all duration-300 hover:-translate-y-1 shadow-sm hover:shadow-xl hover:shadow-cyan-500/5 flex flex-col"
           @click="openProject(project.id)"
           @contextmenu.prevent="handleContextMenu($event, project)"
         >
           <div class="aspect-[16/10] relative bg-muted/50 overflow-hidden border-b border-border">
             <img 
-              v-if="project.thumbnailUrl" 
-              :src="project.thumbnailUrl" 
+              v-if="project.thumbnailUrl || project.snapshotUrl" 
+              :src="project.thumbnailUrl || project.snapshotUrl" 
               :alt="project.name"
+              data-testid="project-thumbnail-img"
               class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
             />
             <div v-else class="w-full h-full flex items-center justify-center text-muted-foreground/20 group-hover:text-cyan-500/20 transition-colors">
@@ -476,13 +473,6 @@ const getStatusStyle = (status) => {
             <div class="flex items-center justify-between mt-4 pt-4 border-t border-border">
               <span class="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider" data-testid="project-updated-at">
                 Updated {{ new Date(project.updatedAt || Date.now()).toLocaleDateString('en-US') }}
-              </span>
-              <span 
-                class="text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider border"
-                :class="getStatusStyle(project.status)"
-                data-testid="project-status-badge"
-              >
-                {{ (project.status || 'DRAFT').replace('_', ' ') }}
               </span>
             </div>
           </div>

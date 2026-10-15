@@ -135,7 +135,6 @@ describe('useProjectActions Integration with OPFS Storage', () => {
       // Assert
       expect(createdProject.id).toBeDefined()
       expect(createdProject.name).toBe('New RPG Game')
-      expect(createdProject.status).toBe('DRAFT')
 
       // Verify directory structure in OPFS
       const appDir = await rootDirectoryHandle.getDirectoryHandle('lupis-engine')

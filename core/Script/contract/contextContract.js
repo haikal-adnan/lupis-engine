@@ -34,3 +34,28 @@ export const CONTEXT_CONSOLE_METHODS = Object.freeze([
   'warn',
   'error'
 ]);
+
+export const CONTEXT_ROOT_METHODS = Object.freeze([
+  'onTick',
+  'triggerFlow',
+  'onGameStart',
+  'onSceneStart',
+  'onGamePause',
+  'onGameResume',
+  'onGameRestart',
+  'isPaused',
+  'notify',
+  'getLocal',
+  'setLocal',
+  'getGlobal',
+  'setGlobal'
+]);
+
+export const CONTEXT_ROOT_PROPERTIES = Object.freeze([
+  'owner',
+  'node',
+  'dt',
+  'deltaTime',
+  'state'
+]);
+

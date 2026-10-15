@@ -9,31 +9,11 @@
       <HeaderTabs />
     </div>
 
-    <div class="shrink-0 h-full">
-      <HeaderActions 
-        @undo="onUndo"
-        @redo="onRedo"
-        @settings="onOpenSettings"
-      />
-    </div>
-
   </header>
 </template>
 
 <script setup>
-import { HeaderProjectMenu, HeaderTabs, HeaderActions } from '@viewports/viewports.js'
+import { HeaderProjectMenu, HeaderTabs } from '@viewports/viewports.js'
 
-const emit = defineEmits(['settings']);
-
-const onUndo = () => {
-  console.log("Undo triggered");
-};
-
-const onRedo = () => {
-  console.log("Redo triggered");
-};
-
-const onOpenSettings = () => {
-  emit('settings');
-};
+defineEmits(['settings']);
 </script>

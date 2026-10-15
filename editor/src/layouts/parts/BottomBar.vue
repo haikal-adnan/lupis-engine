@@ -28,15 +28,6 @@
       </button>
     </div>
 
-    <div class="flex items-center gap-4 text-[10px] text-muted-foreground px-2">
-      <div class="flex items-center gap-1.5">
-         <div class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
-         <span>Ready</span>
-      </div>
-      <span class="opacity-30">|</span>
-      <span>UTF-8</span>
-    </div>
-
   </div>
 </template>
 

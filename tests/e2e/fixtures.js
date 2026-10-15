@@ -12,6 +12,7 @@ import { VariablePage } from './pages/VariablePage.js';
 import { NodeGraphPage } from './pages/NodeGraphPage.js';
 import { NodeInspectorPage } from './pages/NodeInspectorPage.js';
 import { PreviewPage } from './pages/PreviewPage.js';
+import { SettingsModalPage } from './pages/SettingsModalPage.js';
 
 import { VariableCrudObject } from './flows/variables.js';
 import { InspectorCrudObject } from './flows/inspector.js';
@@ -113,6 +114,10 @@ export const test = base.extend({
 
   previewPage: async ({ page, project }, use) => {
     await use(new PreviewPage(page));
+  },
+
+  settingsModal: async ({ page, project }, use) => {
+    await use(new SettingsModalPage(page));
   },
 
   // nodeLibrary is an alias of the nodeGraph page object (they were merged into one)

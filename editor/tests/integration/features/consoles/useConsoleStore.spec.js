@@ -256,4 +256,33 @@ describe('Integration Test: useConsoleStore', () => {
       expect(bus.on).toHaveBeenCalledTimes(4)
     })
   })
+
+  /* =========================================================================
+   * 6. PROJECT-SPECIFIC PREVIEW CHANNEL ISOLATION
+   * ========================================================================= */
+  describe('Project-Specific Channel Isolation', () => {
+    it('initializes with project-specific channel when projectId is passed to initListeners', () => {
+      store.initListeners('project_alpha_123')
+
+      expect(store.channel.name).toBe('lupis_engine_preview_channel_project_alpha_123')
+    })
+
+    it('dynamically switches channel and closes previous channel when setProjectChannel is called', () => {
+      store.initListeners('project_alpha')
+      const initialChannel = store.channel
+      expect(initialChannel.name).toBe('lupis_engine_preview_channel_project_alpha')
+
+      store.setProjectChannel('project_beta')
+      expect(initialChannel.close).toHaveBeenCalledTimes(1)
+      expect(store.channel.name).toBe('lupis_engine_preview_channel_project_beta')
+    })
+
+    it('updates channel when initListeners is called with new projectId even if already listening', () => {
+      store.initListeners('project_1')
+      expect(store.channel.name).toBe('lupis_engine_preview_channel_project_1')
+
+      store.initListeners('project_2')
+      expect(store.channel.name).toBe('lupis_engine_preview_channel_project_2')
+    })
+  })
 })

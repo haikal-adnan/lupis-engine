@@ -10,6 +10,10 @@
     >
       <div 
         v-if="isOpen" 
+        role="dialog"
+        aria-modal="true"
+        aria-label="Project Settings"
+        data-testid="editor-settings-modal"
         class="fixed inset-0 z-[100] flex items-center justify-center bg-background/80 backdrop-blur-sm p-4 sm:p-6"
         @mousedown="onOutsideMouseDown"
         @mouseup="onOutsideMouseUp"
@@ -36,7 +40,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
-import { Activity, Wind, Grid3X3, FolderSync, Database, BugPlay, Box } from 'lucide-vue-next';
+import { Activity, Wind, Grid3X3, FolderSync, Database, BugPlay, Box, SlidersHorizontal } from 'lucide-vue-next';
 
 import { SettingsSidebar, SettingsContent } from '@settings/settings.js';
 
@@ -44,7 +48,8 @@ const props = defineProps({ isOpen: Boolean });
 const emit = defineEmits(['close']);
 
 const TABS = [
-  { id: 'project', label: 'Project Info', icon: FolderSync, desc: 'Project metadata and auto-save configuration.' },
+  { id: 'project', label: 'Project Info', icon: FolderSync, desc: 'Project metadata, identity, and auto-save configuration.' },
+  { id: 'preferences', label: 'Preferences', icon: SlidersHorizontal, desc: 'Editor appearance, theme, and workspace preferences.' },
   { id: 'engine', label: 'Engine & Canvas', icon: Activity, desc: 'Core game loop configuration and canvas resolution parameters.' },
   { id: 'physics', label: 'Physics & Bounds', icon: Wind, desc: 'Global gravity force, drag coefficients, and active world boundary limits.' },
   { id: 'grid', label: 'Grid & Camera', icon: Grid3X3, desc: 'Visual guidelines for the editor and default viewport camera perspectives.' },
@@ -53,7 +58,7 @@ const TABS = [
   { id: 'publish', label: 'Publish & Export', icon: Box, desc: 'Compile and bundle your project into independent standalone applications.' }
 ];
 
-const activeTab = ref('engine');
+const activeTab = ref('project');
 const currentTabInfo = computed(() => TABS.find(t => t.id === activeTab.value) || TABS[0]);
 
 const isMouseDownOutside = ref(false);

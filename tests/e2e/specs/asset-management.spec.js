@@ -250,4 +250,54 @@ test.describe('Asset Management Comprehensive E2E Tests', () => {
     // Cleanup open context menu
     await page.keyboard.press('Escape');
   });
+
+  // =========================================================================
+  // 8. METADATA SCHEMA INTEGRITY & OPFS PERSISTENCE (EDGE CASE)
+  // =========================================================================
+  test('persists accurate metadata in OPFS assets.json and excludes fntFile from non-font assets', async ({ page, assets }) => {
+    // Arrange & Act: Upload image, audio, and font
+    await assets.upload('sample_image.png');
+    await assets.upload('sample_audio.ogg');
+    await assets.upload('sample_font.ttf');
+
+    await expect(assets.card('sample_image')).toBeVisible();
+    await expect(assets.card('sample_audio')).toBeVisible();
+    await expect(assets.card('sample_font')).toBeVisible();
+
+    // Assert: Read workspaces/assets.json directly from OPFS
+    const projectId = page.url().match(/\/editor\/([^/?#]+)/)?.[1];
+    const assetsData = await page.evaluate(async (pid) => {
+      const root = await navigator.storage.getDirectory();
+      const appDir = await root.getDirectoryHandle('lupis-engine');
+      const projectsDir = await appDir.getDirectoryHandle('projects');
+      const projDir = await projectsDir.getDirectoryHandle(pid);
+      const workspacesDir = await projDir.getDirectoryHandle('workspaces');
+      const assetsFile = await workspacesDir.getFileHandle('assets.json');
+      const file = await assetsFile.getFile();
+      return JSON.parse(await file.text());
+    }, projectId);
+
+    const imageAsset = assetsData.find((a) => a.name === 'sample_image');
+    const audioAsset = assetsData.find((a) => a.name === 'sample_audio');
+    const fontAsset = assetsData.find((a) => a.name === 'sample_font');
+
+    expect(imageAsset).toBeDefined();
+    expect(imageAsset.type).toBe('texture');
+    expect(imageAsset.meta.hasBmFont).toBe(false);
+    expect(imageAsset.meta.fntFile).toBeUndefined();
+    expect(imageAsset.meta.pngFiles).toBeUndefined();
+
+    expect(audioAsset).toBeDefined();
+    expect(audioAsset.type).toBe('audio');
+    expect(audioAsset.meta.hasBmFont).toBe(false);
+    expect(audioAsset.meta.fntFile).toBeUndefined();
+    expect(audioAsset.meta.pngFiles).toBeUndefined();
+
+    expect(fontAsset).toBeDefined();
+    expect(fontAsset.type).toBe('font');
+    expect(fontAsset.meta.hasBmFont).toBe(true);
+    expect(typeof fontAsset.meta.fntFile).toBe('string');
+    expect(fontAsset.meta.fntFile.endsWith('.fnt')).toBe(true);
+    expect(Array.isArray(fontAsset.meta.pngFiles)).toBe(true);
+  });
 });

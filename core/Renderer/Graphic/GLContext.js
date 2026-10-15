@@ -5,7 +5,7 @@ export default class GLContext {
             antialias: true,
             depth: false,
             stencil: false,
-            preserveDrawingBuffer: false,
+            preserveDrawingBuffer: true,
             powerPreference: "high-performance"
         };
 

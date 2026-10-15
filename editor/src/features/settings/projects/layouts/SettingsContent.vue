@@ -8,9 +8,11 @@
         </div>
       </div>
       <button 
+        data-testid="close-settings-modal-btn"
         @click="$emit('close')" 
-        class="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-all outline-none focus:ring-2 focus:ring-primary/20"
+        class="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-all outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
         title="Close (Esc)"
+        aria-label="Close Settings"
       >
         <X class="w-4 h-4" />
       </button>
@@ -19,6 +21,7 @@
     <div class="flex-1 overflow-y-auto custom-scroll p-8">
       <div class="max-w-2xl mx-auto w-full">
         <SettingsTabProject v-if="activeTabId === 'project'" :info="activeTabInfo" />
+        <SettingsTabPreferences v-else-if="activeTabId === 'preferences'" :info="activeTabInfo" />
         <SettingsTabEngine v-else-if="activeTabId === 'engine'" :info="activeTabInfo" />
         <SettingsTabPhysics v-else-if="activeTabId === 'physics'" :info="activeTabInfo" />
         <SettingsTabGrid v-else-if="activeTabId === 'grid'" :info="activeTabInfo" />
@@ -39,7 +42,8 @@ import {
   SettingsTabResources,
   SettingsTabDebug,
   SettingsTabPublish,
-  SettingsTabProject
+  SettingsTabProject,
+  SettingsTabPreferences
 } from '@settings/settings.js'
 
 defineProps({
