@@ -138,6 +138,10 @@ const handleEntityModified = (entities) => {
                 sceneStore.updateComponentProp(id, 'ShapeRenderer', 'elements', comps.ShapeRenderer.elements);
             }
         }
+
+        if (comps.TextRenderer && comps.TextRenderer.autoFit !== undefined) {
+            sceneStore.updateComponentProp(id, 'TextRenderer', 'autoFit', comps.TextRenderer.autoFit);
+        }
     });
 
     if (isPointerDown) {

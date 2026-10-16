@@ -144,7 +144,7 @@
 
     <div v-if="isSizeLockedByText" class="px-1 mb-3 -mt-1">
       <div class="text-[9px] text-amber-500/80 italic flex items-center gap-1">
-        <Info class="w-3 h-3" /> Size is controlled by Text Renderer Auto Fit
+        <Info class="w-3 h-3" /> Size is controlled by Text Renderer (Font Size mode)
       </div>
     </div>
 

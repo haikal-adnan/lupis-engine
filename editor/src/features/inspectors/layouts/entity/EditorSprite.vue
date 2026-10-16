@@ -69,11 +69,14 @@
 
       <div class="flex flex-col" :class="{ 'pointer-events-none': isControlledByAnimator }">
         <div class="flex gap-2.5 mb-1 pt-1">
-          <BaseThumbnail 
+          <BaseCropThumbnail 
             :src="currentTextureUrl"
-            :rect="currentRect" 
+            :rect="currentRect"
+            @update:rect="updateSourceRect"
+            :disabled="isControlledByAnimator"
             fallback-text="No Tex"
-            sizeClass="w-[52px] h-[52px] bg-muted/20 border-border/60 shrink-0"
+            name="Sprite Crop"
+            sizeClass="w-[52px] h-[52px] bg-muted/20 border-border/60 shrink-0 rounded-md"
             data-testid="sprite-renderer-thumbnail"
           />
 
@@ -170,7 +173,7 @@ import {
   PropertyRow,
   BaseNumber,
   BaseButton,
-  BaseThumbnail,
+  BaseCropThumbnail,
   BaseSelect,
 } from '@components/components.js';
 
@@ -245,6 +248,44 @@ const currentRect = computed(() => ({
     w: sourceW.value || 0,
     h: sourceH.value || 0
 }));
+
+function updateSourceRect(rect) {
+  if (!rect) return;
+
+  const oldW = sourceW.value || 0;
+  const oldH = sourceH.value || 0;
+
+  sourceX.value = rect.x;
+  sourceY.value = rect.y;
+  sourceW.value = rect.w;
+  sourceH.value = rect.h;
+
+  // Sesuaikan nilai Transform width & height agar tampilan sprite proporsional dan tidak lonjong
+  const hasUI = !!selectedEntity.value?.components?.UITransform;
+  const currentW = hasUI ? uiTransformW.value : transformW.value;
+  const currentH = hasUI ? uiTransformH.value : transformH.value;
+
+  let targetW = rect.w;
+  let targetH = rect.h;
+
+  if (oldW > 0 && oldH > 0 && currentW > 0 && currentH > 0) {
+    const scaleX = currentW / oldW;
+    const scaleY = currentH / oldH;
+    // Jika skala Transform sebelumnya seragam/proporsional (misalnya 2x), pertahankan faktor skala tersebut
+    if (Math.abs(scaleX - scaleY) < 0.05 && scaleX > 0) {
+      targetW = Math.round(rect.w * scaleX);
+      targetH = Math.round(rect.h * scaleX);
+    }
+  }
+
+  if (hasUI) {
+    uiTransformW.value = targetW;
+    uiTransformH.value = targetH;
+  } else if (selectedEntity.value?.components?.Transform) {
+    transformW.value = targetW;
+    transformH.value = targetH;
+  }
+}
 
 function resetToOriginalSize() {
   if (!assetId.value) return;

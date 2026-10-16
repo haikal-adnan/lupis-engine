@@ -35,6 +35,10 @@ export const engineBridge = {
                     height: transform.height
                 });
             }
+
+            if (entity.components?.TextRenderer && entity.components.TextRenderer.autoFit !== undefined) {
+                sceneStore.updateComponentProp(id, 'TextRenderer', 'autoFit', entity.components.TextRenderer.autoFit);
+            }
         });
 
         if (onNativeEntityModified) onNativeEntityModified(entities);

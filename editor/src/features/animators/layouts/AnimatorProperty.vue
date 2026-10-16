@@ -22,8 +22,12 @@
     </PropertyRow>
     
     <div class="flex gap-2.5 mb-2 pt-1">
-      <BaseThumbnail 
+      <BaseCropThumbnail 
         :src="currentTextureUrl"
+        :rect="baseTileRect"
+        @update:rect="updateBaseTileRect"
+        :disabled="!activeClipData"
+        name="Clip Base Size Crop"
         fallback-text="No Tex"
         sizeClass="w-[52px] h-[52px] bg-muted/20 border-border/60 shrink-0 rounded-md shadow-inner"
         data-testid="animator-property-texture-thumbnail"
@@ -134,7 +138,7 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { Film, FolderSearch, FlipHorizontal } from 'lucide-vue-next';
 import { useAnimatorLogic } from '@animators/animators.js';
 import { useAssetStore } from '@assets/assets.js';
@@ -146,7 +150,7 @@ import {
   BaseNumber,
   BaseSelect,
   BaseButton,
-  BaseThumbnail
+  BaseCropThumbnail
 } from '@components/components.js';
 
 const { activeClipData, bindClipProp } = useAnimatorLogic();
@@ -181,6 +185,19 @@ const baseWidth = bindClipProp('baseSize.w', 32);
 const baseHeight = bindClipProp('baseSize.h', 32);
 const pivotX = bindClipProp('pivot.x', 0.5);
 const pivotY = bindClipProp('pivot.y', 1.0);
+
+const baseTileRect = computed(() => ({
+  x: 0,
+  y: 0,
+  w: baseWidth.value || 32,
+  h: baseHeight.value || 32
+}));
+
+const updateBaseTileRect = (rect) => {
+  if (!rect) return;
+  baseWidth.value = rect.w;
+  baseHeight.value = rect.h;
+};
 
 const toggleSDF = () => {
   useSDF.value = !useSDF.value;

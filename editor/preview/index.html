@@ -148,11 +148,13 @@
         }
     }
 
+    let hasLoaded = false;
     const savedData = sessionStorage.getItem(STORAGE_KEY);
     
     if (savedData) {
         try {
             const { payload, opfsContext } = JSON.parse(savedData);
+            hasLoaded = true;
             runGame(payload, opfsContext);
         } catch (e) {
             sessionStorage.removeItem(STORAGE_KEY);
@@ -162,7 +164,6 @@
         channel.postMessage({ type: "REQUEST_LATEST_DATA", projectId });
     }
 
-    let hasLoaded = false;
     channel.onmessage = (event) => {
         const { type, payload, opfsContext, projectId: msgProjectId } = event.data || {};
 
@@ -176,11 +177,14 @@
                 return;
             }
 
-            sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ payload, opfsContext }));
-            if (!hasLoaded && !savedData) {
+            const incomingStr = JSON.stringify({ payload, opfsContext });
+            const prevStr = sessionStorage.getItem(STORAGE_KEY);
+            sessionStorage.setItem(STORAGE_KEY, incomingStr);
+
+            if (!hasLoaded) {
                 hasLoaded = true;
                 runGame(payload, opfsContext);
-            } else {
+            } else if (prevStr && prevStr !== incomingStr) {
                 isReloading = true;
                 window.location.reload();
             }

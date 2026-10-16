@@ -22,7 +22,14 @@ export class TransformEngine {
 
     getGlobalTransform(e) {
         const t = this.getTransform(e);
-        if (!t) return { x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1 };
+        const isTilemap = Boolean(e?.components?.Tilemap);
+        const defaultPivotX = isTilemap ? 0 : 0.5;
+        const defaultPivotY = isTilemap ? 0 : 0.5;
+
+        if (!t) return { 
+            x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1, 
+            pivotX: defaultPivotX, pivotY: defaultPivotY, width: 100, height: 100 
+        };
 
         if (!e.parentId) {
             return {
@@ -30,12 +37,28 @@ export class TransformEngine {
                 y: t.y || 0,
                 rotation: t.rotation || 0,
                 scaleX: t.scaleX ?? 1,
-                scaleY: t.scaleY ?? 1
+                scaleY: t.scaleY ?? 1,
+                pivotX: t.pivotX ?? defaultPivotX,
+                pivotY: t.pivotY ?? defaultPivotY,
+                width: t.width || 0,
+                height: t.height || 0
             };
         }
 
         const parentEntity = this.findEntityInWorld(e.parentId);
-        if (!parentEntity) return { ...t };
+        if (!parentEntity) {
+            return {
+                x: t.x || 0,
+                y: t.y || 0,
+                rotation: t.rotation || 0,
+                scaleX: t.scaleX ?? 1,
+                scaleY: t.scaleY ?? 1,
+                pivotX: t.pivotX ?? defaultPivotX,
+                pivotY: t.pivotY ?? defaultPivotY,
+                width: t.width || 0,
+                height: t.height || 0
+            };
+        }
 
         const parentGlobal = this.getGlobalTransform(parentEntity);
         const parentRad = parentGlobal.rotation * (Math.PI / 180);
@@ -53,7 +76,11 @@ export class TransformEngine {
             y: parentGlobal.y + rotatedY,
             rotation: parentGlobal.rotation + (t.rotation || 0),
             scaleX: parentGlobal.scaleX * (t.scaleX ?? 1),
-            scaleY: parentGlobal.scaleY * (t.scaleY ?? 1)
+            scaleY: parentGlobal.scaleY * (t.scaleY ?? 1),
+            pivotX: t.pivotX ?? defaultPivotX,
+            pivotY: t.pivotY ?? defaultPivotY,
+            width: t.width || 0,
+            height: t.height || 0
         };
     }
 
@@ -107,9 +134,13 @@ export class TransformEngine {
         return false;
     }
 
-    applyResize(entity, item, localDx, localDy, resizeType, shouldSnap = false, gridSize = 32) {
+    applyResize(entity, item, localDx, localDy, resizeType, shouldSnap = false, gridSize = 32, lockRatio = null) {
         const t = this.getTransform(entity);
         if (!t) return false;
+
+        const isRatioLocked = lockRatio !== null 
+            ? Boolean(lockRatio) 
+            : Boolean(t.isRatioLocked || item.isRatioLocked);
 
         const globalT = this.getGlobalTransform(entity);
         const safeScaleX = Math.abs(globalT.scaleX) < 0.001 ? 0.001 : Math.abs(globalT.scaleX);
@@ -126,22 +157,86 @@ export class TransformEngine {
         let rawVisualW = (item.w * safeScaleX) + dVisualW;
         let rawVisualH = (item.h * safeScaleY) + dVisualH;
 
-        if (shouldSnap) {
-            let snapW = gridSize;
-            let snapH = gridSize;
+        if (isRatioLocked && item.w > 0 && item.h > 0) {
+            const baseRatio = item.w / item.h;
+            const initialVisualW = item.w * safeScaleX;
+            const initialVisualH = item.h * safeScaleY;
 
-            if (entity.components?.Tilemap) {
-                const tileW = entity.components.Tilemap.tileWidth || gridSize;
-                const tileH = entity.components.Tilemap.tileHeight || gridSize;
-                snapW = tileW * safeScaleX;
-                snapH = tileH * safeScaleY;
-            }
+            const isCorner = resizeType.length === 2;
+            const isHorizontalEdge = resizeType === 'e' || resizeType === 'w';
+            const isVerticalEdge = resizeType === 's' || resizeType === 'n';
 
-            if (resizeType.includes('w') || resizeType.includes('e')) {
-                rawVisualW = Math.round(rawVisualW / snapW) * snapW;
+            if (isHorizontalEdge) {
+                anchorY = 0.5;
+                if (shouldSnap) {
+                    let snapW = gridSize;
+                    if (entity.components?.Tilemap) {
+                        snapW = (entity.components.Tilemap.tileWidth || gridSize) * safeScaleX;
+                    }
+                    rawVisualW = Math.round(rawVisualW / snapW) * snapW;
+                }
+                const rawW = rawVisualW / safeScaleX;
+                const rawH = Math.abs(rawW) / baseRatio;
+                rawVisualH = rawH * safeScaleY;
+            } else if (isVerticalEdge) {
+                anchorX = 0.5;
+                if (shouldSnap) {
+                    let snapH = gridSize;
+                    if (entity.components?.Tilemap) {
+                        snapH = (entity.components.Tilemap.tileHeight || gridSize) * safeScaleY;
+                    }
+                    rawVisualH = Math.round(rawVisualH / snapH) * snapH;
+                }
+                const rawH = rawVisualH / safeScaleY;
+                const rawW = Math.abs(rawH) * baseRatio;
+                rawVisualW = rawW * safeScaleX;
+            } else if (isCorner) {
+                const denom = (initialVisualW * initialVisualW) + (initialVisualH * initialVisualH);
+                let deltaS = denom > 0 
+                    ? ((dVisualW * initialVisualW) + (dVisualH * initialVisualH)) / denom 
+                    : 0;
+                let s = 1 + deltaS;
+
+                rawVisualW = initialVisualW * s;
+                rawVisualH = initialVisualH * s;
+
+                if (shouldSnap) {
+                    let snapW = gridSize;
+                    let snapH = gridSize;
+                    if (entity.components?.Tilemap) {
+                        snapW = (entity.components.Tilemap.tileWidth || gridSize) * safeScaleX;
+                        snapH = (entity.components.Tilemap.tileHeight || gridSize) * safeScaleY;
+                    }
+
+                    if (Math.abs(dVisualW / initialVisualW) >= Math.abs(dVisualH / initialVisualH)) {
+                        rawVisualW = Math.round(rawVisualW / snapW) * snapW;
+                        s = initialVisualW !== 0 ? rawVisualW / initialVisualW : 1;
+                        rawVisualH = initialVisualH * s;
+                    } else {
+                        rawVisualH = Math.round(rawVisualH / snapH) * snapH;
+                        s = initialVisualH !== 0 ? rawVisualH / initialVisualH : 1;
+                        rawVisualW = initialVisualW * s;
+                    }
+                }
             }
-            if (resizeType.includes('n') || resizeType.includes('s')) {
-                rawVisualH = Math.round(rawVisualH / snapH) * snapH;
+        } else {
+            if (shouldSnap) {
+                let snapW = gridSize;
+                let snapH = gridSize;
+
+                if (entity.components?.Tilemap) {
+                    const tileW = entity.components.Tilemap.tileWidth || gridSize;
+                    const tileH = entity.components.Tilemap.tileHeight || gridSize;
+                    snapW = tileW * safeScaleX;
+                    snapH = tileH * safeScaleY;
+                }
+
+                if (resizeType.includes('w') || resizeType.includes('e')) {
+                    rawVisualW = Math.round(rawVisualW / snapW) * snapW;
+                }
+                if (resizeType.includes('n') || resizeType.includes('s')) {
+                    rawVisualH = Math.round(rawVisualH / snapH) * snapH;
+                }
             }
         }
 
@@ -154,17 +249,40 @@ export class TransformEngine {
         const newFlipX = (rawW < 0) ? !startFlipX : startFlipX;
         const newFlipY = (rawH < 0) ? !startFlipY : startFlipY;
 
-        const newW = Math.max(1, Math.round(Math.abs(rawW)));
-        const newH = Math.max(1, Math.round(Math.abs(rawH)));
+        let newW = Math.max(1, Math.round(Math.abs(rawW)));
+        let newH = Math.max(1, Math.round(Math.abs(rawH)));
+
+        if (isRatioLocked && item.w > 0 && item.h > 0) {
+            const baseRatio = item.w / item.h;
+            if (resizeType === 'e' || resizeType === 'w') {
+                newH = Math.max(1, Math.round(newW / baseRatio));
+            } else if (resizeType === 's' || resizeType === 'n') {
+                newW = Math.max(1, Math.round(newH * baseRatio));
+            } else if (resizeType.length === 2) {
+                const initialVisualW = item.w * safeScaleX;
+                const initialVisualH = item.h * safeScaleY;
+                if (Math.abs(dVisualW / initialVisualW) >= Math.abs(dVisualH / initialVisualH)) {
+                    newH = Math.max(1, Math.round(newW / baseRatio));
+                } else {
+                    newW = Math.max(1, Math.round(newH * baseRatio));
+                }
+            }
+        }
 
         // FIX: Calculate continuous dW_Visual & dH_Visual from initial rawVisualW/H
         // to prevent position offset jumping when crossing zero point (flip)
         const dW_Visual = (rawW < 0 ? -newW : newW) - item.w;
         const dH_Visual = (rawH < 0 ? -newH : newH) - item.h;
 
+        const isTilemap = Boolean(entity?.components?.Tilemap);
+        const defaultPivotX = isTilemap ? 0 : 0.5;
+        const defaultPivotY = isTilemap ? 0 : 0.5;
+        const px = t.pivotX ?? defaultPivotX;
+        const py = t.pivotY ?? defaultPivotY;
+
         let shiftX_World = 0, shiftY_World = 0;
-        if (anchorX !== null) shiftX_World = (dW_Visual * safeScaleX) * ((t.pivotX ?? 0.5) - anchorX);
-        if (anchorY !== null) shiftY_World = (dH_Visual * safeScaleY) * ((t.pivotY ?? 0.5) - anchorY);
+        if (anchorX !== null) shiftX_World = (dW_Visual * safeScaleX) * (px - anchorX);
+        if (anchorY !== null) shiftY_World = (dH_Visual * safeScaleY) * (py - anchorY);
 
         const rRad = (globalT.rotation || 0) * (Math.PI / 180);
         const wc = Math.cos(rRad);

@@ -174,17 +174,19 @@ export default class TransformTool {
             this.draggingResize = false;
             this.draggingMove = false;
 
-            const bounds = this.geometry.computeGroupBounds();
-            const cx = bounds ? bounds.x + bounds.w / 2 : this.startWorld.x;
-            const cy = bounds ? bounds.y + bounds.h / 2 : this.startWorld.y;
-
-            this.rotateCenter = { x: cx, y: cy };
-            this.rotateStartAngle = Math.atan2(this.startWorld.y - cy, this.startWorld.x - cx);
-
             if (topLevelEntities.length === 1) {
+                const absPos = this.geometry.calculateAbsolutePosition(topLevelEntities[0]);
+                this.rotateCenter = { x: absPos.x, y: absPos.y };
+                this.rotateStartAngle = Math.atan2(this.startWorld.y - absPos.y, this.startWorld.x - absPos.x);
                 const t = this.mediator.engine.getTransform(topLevelEntities[0]);
                 this.entityStartRotation = t.rotation || 0;
             } else {
+                const bounds = this.geometry.computeGroupBounds();
+                const cx = bounds ? bounds.x + bounds.w / 2 : this.startWorld.x;
+                const cy = bounds ? bounds.y + bounds.h / 2 : this.startWorld.y;
+
+                this.rotateCenter = { x: cx, y: cy };
+                this.rotateStartAngle = Math.atan2(this.startWorld.y - cy, this.startWorld.x - cx);
                 this.resizeEntityStarts = topLevelEntities.map(e => {
                     const t = this.mediator.engine.getTransform(e);
                     return { e, startRotation: t.rotation || 0, startX: t.x || 0, startY: t.y || 0 };
@@ -212,7 +214,8 @@ export default class TransformTool {
                     w: Number(t.width || 0),
                     h: Number(t.height || 0),
                     r: Number(t.rotation || 0),
-                    sx, sy, flipX: fx, flipY: fy
+                    sx, sy, flipX: fx, flipY: fy,
+                    isRatioLocked: Boolean(t.isRatioLocked)
                 };
             });
         }

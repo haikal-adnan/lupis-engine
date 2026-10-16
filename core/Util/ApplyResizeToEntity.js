@@ -48,8 +48,13 @@ export function ApplyResizeToEntity(ent, world, force = false) {
                     lineSpacing, letterSpacing, maxWidth, maxLine, overflow 
                 });
 
-                t.width = m.boundsWidth > 0 ? Math.ceil(m.boundsWidth) : 10;
-                t.height = m.boundsHeight > 0 ? Math.ceil(m.boundsHeight) : Math.ceil(fontSize);
+                if (tr.autoFit !== false) {
+                    t.width = m.boundsWidth > 0 ? Math.ceil(m.boundsWidth) : 10;
+                    t.height = m.boundsHeight > 0 ? Math.ceil(m.boundsHeight) : Math.ceil(fontSize);
+                } else if (t.width <= 0 || t.height <= 0) {
+                    t.width = m.boundsWidth > 0 ? Math.ceil(m.boundsWidth) : 10;
+                    t.height = m.boundsHeight > 0 ? Math.ceil(m.boundsHeight) : Math.ceil(fontSize);
+                }
                 
                 tr._lastValue = textValue;
                 tr._lastFontSize = fontSize;
@@ -59,8 +64,8 @@ export function ApplyResizeToEntity(ent, world, force = false) {
                 tr._lastMaxLine = maxLine; 
                 tr._lastOverflow = overflow;
 
-                if (t.scaleX !== undefined) t.scaleX = 1;
-                if (t.scaleY !== undefined) t.scaleY = 1;
+                if (t.scaleX !== undefined && tr.autoFit !== false) t.scaleX = 1;
+                if (t.scaleY !== undefined && tr.autoFit !== false) t.scaleY = 1;
             }
         }
     }

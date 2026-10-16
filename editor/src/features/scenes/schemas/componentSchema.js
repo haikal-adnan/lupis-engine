@@ -108,8 +108,6 @@ export const componentSchema = {
     letterSpacing: Number(inputData.letterSpacing ?? 0),
     overflow: inputData.overflow || "wrap",
     autoFit: Boolean(inputData.autoFit ?? true),
-    smoothing: Number(inputData.smoothing ?? 0.5),
-    bias: Number(inputData.bias ?? 0),
     outlineWidth: Number(inputData.outlineWidth ?? 0),
     outlineColor: inputData.outlineColor || "#000000",
     shadowEnabled: Boolean(inputData.shadowEnabled ?? false),

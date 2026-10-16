@@ -296,8 +296,6 @@ export default class RenderUtils {
             lineSpacing: tx.lineSpacing || 1.2,
             letterSpacing: tx.letterSpacing || 0,
             overflow: tx.overflow || "wrap",
-            smoothing: tx.smoothing ?? 0.5,
-            bias: tx.bias ?? 0,
             outlineWidth: tx.outlineWidth || 0,
             outlineColor: HexToVec4(tx.outlineColor || "#000000"),
             shadowEnabled: tx.shadowEnabled || false,

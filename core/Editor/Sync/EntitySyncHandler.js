@@ -82,7 +82,7 @@ export class EntitySyncHandler {
         this.ctx.isInternalUpdate = true;
         if (
             (componentName === "Transform" || componentName === "UITransform") ||
-            (componentName === "TextRenderer" && ["fontSize", "value", "assetId", "lockRatio"].includes(path))
+            (componentName === "TextRenderer" && ["fontSize", "value", "assetId", "lockRatio", "autoFit"].includes(path))
         ) {
             ApplyResizeToEntity(e, this.ctx.world, true);
         }

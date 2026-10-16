@@ -399,8 +399,6 @@ interface TextRendererComponent {
   letterSpacing: number;                        // Spasi antar karakter (default: 0)
   overflow: "wrap" | "truncate" | "visible";    // Perilaku overflow (default: "wrap")
   autoFit: boolean;                             // Penyesuaian otomatis bounding box (default: true)
-  smoothing: number;                            // Halusan shader MSDF (default: 0.5)
-  bias: number;                                 // Bias ketebalan font shader MSDF (default: 0)
   outlineWidth: number;                         // Default: 0
   outlineColor: string;                         // Default: "#000000"
   shadowEnabled: boolean;                       // Bayangan teks (default: false)

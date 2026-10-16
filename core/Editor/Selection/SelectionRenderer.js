@@ -109,10 +109,11 @@ export class SelectionRenderer {
             );
         } else {
             const dims = this._getEntityDimensions(e);
-            const sx = globalT.scaleX ?? 1;
-            const sy = globalT.scaleY ?? 1;
-            const px = globalT.pivotX ?? 0.5;
-            const py = globalT.pivotY ?? 0.5;
+            const isTilemap = Boolean(e.components?.Tilemap);
+            const px = globalT.pivotX ?? (isTilemap ? 0 : 0.5);
+            const py = globalT.pivotY ?? (isTilemap ? 0 : 0.5);
+            const sx = (t.flipX ? -1 : 1) * (globalT.scaleX ?? 1);
+            const sy = (t.flipY ? -1 : 1) * (globalT.scaleY ?? 1);
             v = calculateQuadVertices(absPos.x, absPos.y, dims.width, dims.height, rRad, sx, sy, px, py);
         }
 

@@ -49,11 +49,53 @@
       <BaseTextArea v-model="textValue" placeholder="Type something..." height="auto" minHeight="64px" resize="vertical" class="w-full" data-testid="text-renderer-text-input" />
     </PropertyRow>
 
+    <PropertyRow label="Sizing Mode" class="mt-2">
+      <div class="flex bg-secondary/30 rounded-md border border-border w-full p-0.5">
+        <BaseButton 
+          type="button"
+          size="sm"
+          ghost 
+          :active="autoFit" 
+          @click="autoFit = true" 
+          class="flex-1 h-6 text-xs font-medium !rounded-[3px] transition-colors"
+          data-testid="text-renderer-sizemode-fontsize"
+        >
+          Font Size
+        </BaseButton>
+        <BaseButton 
+          type="button"
+          size="sm"
+          ghost 
+          :active="!autoFit" 
+          @click="autoFit = false" 
+          class="flex-1 h-6 text-xs font-medium !rounded-[3px] transition-colors"
+          data-testid="text-renderer-sizemode-transform"
+        >
+          Transform
+        </BaseButton>
+      </div>
+    </PropertyRow>
+
     <div class="grid grid-cols-2 gap-2 mt-2">
       <PropertyRow label="Font Size">
         <div class="flex items-center gap-1">
-          <BaseNumber v-model="fontSize" prefix="SZ" :min="1" :scrubbable="true" class="flex-grow font-mono" data-testid="text-renderer-font-size" />
-          <IconButton @click="resetTextRatio" tooltip="Reset / Auto-fit Size" data-testid="text-renderer-reset-ratio-btn"><RefreshCcw class="w-3.5 h-3.5" /></IconButton>
+          <BaseNumber 
+            v-model="fontSize" 
+            prefix="SZ" 
+            :min="1" 
+            :disabled="!autoFit"
+            :scrubbable="autoFit"
+            :tooltip="!autoFit ? 'Font size is controlled by Transform dimensions' : ''"
+            class="flex-grow font-mono" 
+            data-testid="text-renderer-font-size" 
+          />
+          <IconButton 
+            @click="resetTextRatio" 
+            :tooltip="autoFit ? 'Reset to Default Text Size' : 'Switch back to Font Size mode'" 
+            data-testid="text-renderer-reset-ratio-btn"
+          >
+            <RefreshCcw class="w-3.5 h-3.5" />
+          </IconButton>
         </div>
       </PropertyRow>
       <PropertyRow label="Max Width">
@@ -79,10 +121,6 @@
       </PropertyRow>
     </div>
 
-    <div class="px-1 mb-2 mt-1">
-      <BaseCheckbox v-model="autoFit" label="Auto Fit Transform to Text" data-testid="text-renderer-autofit-checkbox" />
-    </div>
-
     <PropertyRow label="Alignment">
       <div class="flex bg-secondary/30 rounded-md border border-border w-full">
         <BaseButton v-for="opt in alignOptions" :key="opt.value" ghost :active="align === opt.value" @click="align = opt.value" class="flex-1 h-7 !rounded-[3px]" :data-testid="`text-renderer-align-${opt.value}`" :data-active="align === opt.value">
@@ -105,13 +143,6 @@
         <div class="flex gap-2">
           <BaseColor v-model="outlineColor" :show-label="false" height="1.75rem" class="flex-1" data-testid="text-renderer-outline-color-picker" />
           <BaseNumber v-model="outlineWidth" prefix="W" :min="0" :max="1" :step="0.05" :precision="2" :scrubbable="true" class="font-mono w-[45%]" data-testid="text-renderer-outline-width" />
-        </div>
-      </PropertyRow>
-
-      <PropertyRow label="Advanced">
-        <div class="grid grid-cols-2 gap-2">
-          <BaseNumber v-model="smoothing" prefix="SM" :min="0.01" :max="1" :step="0.05" :precision="2" :scrubbable="true" class="font-mono" tooltip="Anti-aliasing / Smoothing" data-testid="text-renderer-smoothing" />
-          <BaseNumber v-model="bias" prefix="BS" :min="-0.2" :max="0.2" :step="0.01" :precision="2" :scrubbable="true" class="font-mono" tooltip="Font Bias (Fix holes / Bold effect)" data-testid="text-renderer-bias" />
         </div>
       </PropertyRow>
     </div>
@@ -206,8 +237,6 @@ const overflow = bindComponentProp('TextRenderer', 'overflow');
 const rawOpacity = bindComponentProp('TextRenderer', 'opacity');
 const autoFit = bindComponentProp('TextRenderer', 'autoFit');
 
-const smoothing = bindComponentProp('TextRenderer', 'smoothing');
-const bias = bindComponentProp('TextRenderer', 'bias');
 const outlineWidth = bindComponentProp('TextRenderer', 'outlineWidth');
 const outlineColor = bindComponentProp('TextRenderer', 'outlineColor');
 

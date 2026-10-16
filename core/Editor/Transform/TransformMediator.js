@@ -122,7 +122,10 @@ export class TransformMediator {
 
         const item = startData[0];
         const e = item.e;
-        if (e?.components?.TextRenderer?.autoFit || e?.components?.Tilemap?.autoFit) return;
+        if (e?.components?.Tilemap?.autoFit) return;
+        if (e?.components?.TextRenderer?.autoFit) {
+            e.components.TextRenderer.autoFit = false;
+        }
 
         const dx = nowPos.x - startPos.x;
         const dy = nowPos.y - startPos.y;
@@ -135,7 +138,11 @@ export class TransformMediator {
         const localDx = dx * Math.cos(-rRad) - dy * Math.sin(-rRad);
         const localDy = dx * Math.sin(-rRad) + dy * Math.cos(-rRad);
 
-        const res = this.engine.applyResize(e, item, localDx, localDy, resizeType, shouldSnap, gridSize);
+        const t = this.engine.getTransform(e);
+        const isShift = Boolean(this.input?.keyboard?.isDown("Shift"));
+        const lockRatio = Boolean(t?.isRatioLocked || item.isRatioLocked || isShift);
+
+        const res = this.engine.applyResize(e, item, localDx, localDy, resizeType, shouldSnap, gridSize, lockRatio);
 
         if (res.changed) {
             if (e.components.Tilemap) {

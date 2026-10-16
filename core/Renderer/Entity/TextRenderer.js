@@ -7,8 +7,10 @@ function getShared(gl) {
     let s = _shared.get(gl);
     if (s) return s;
 
-    const isWebGL2 = gl instanceof WebGL2RenderingContext;
-    const hasDeriv = isWebGL2 || !!gl.getExtension("OES_standard_derivatives");
+    const isWebGL2 = typeof WebGL2RenderingContext !== "undefined" && gl instanceof WebGL2RenderingContext;
+    if (!isWebGL2 && gl.getExtension) {
+        gl.getExtension("OES_standard_derivatives");
+    }
 
     const vs = isWebGL2 ? `#version 300 es
         layout(location=0) in vec2 aPos;
@@ -28,64 +30,77 @@ function getShared(gl) {
         precision mediump float;
         in vec2 vUV; in vec4 vColor; out vec4 outColor;
         uniform sampler2D uTex; 
+        uniform vec2 uTexSize;
+        uniform float uDistanceRange;
         uniform float uOutlineWidth;
         uniform vec4 uOutlineColor;
-        
-        uniform float uBias;
-        uniform float uSmoothing;
+        uniform float uBlur;
 
-        float median3(vec3 v) { return max(min(v.r, v.g), min(max(v.r, v.g), v.b)); }
-        
+        float median(float r, float g, float b) {
+            return max(min(r, g), min(max(r, g), b));
+        }
+
         void main() {
             vec3 msdf = texture(uTex, vUV).rgb;
-            
-            float sd = median3(msdf) + uBias; 
-            float dist = sd - 0.5;
-            
-            float fw = fwidth(dist) * (uSmoothing * 2.0); 
-            float alpha = smoothstep(-fw, fw, dist);
-            
+            float sd = median(msdf.r, msdf.g, msdf.b);
+
+            vec2 unitRange = vec2(uDistanceRange) / uTexSize;
+            vec2 screenTexSize = vec2(1.0) / max(fwidth(vUV), vec2(0.00001));
+            float screenPxRange = max(0.5 * dot(unitRange, screenTexSize), 1.0);
+
+            float screenPxDistance = screenPxRange * (sd - 0.5);
+            float blur = max(uBlur, 1.0);
+            float alpha = smoothstep(-0.5 * blur, 0.5 * blur, screenPxDistance);
+
             vec4 finalColor = vec4(vColor.rgb, vColor.a * alpha);
 
             if (uOutlineWidth > 0.0) {
-                float outlineDist = sd - (0.5 - uOutlineWidth * 0.5);
-                float outlineAlpha = smoothstep(-fw, fw, outlineDist);
+                float outlinePxDist = screenPxRange * (sd - (0.5 - uOutlineWidth * 0.5));
+                float outlineAlpha = smoothstep(-0.5 * blur, 0.5 * blur, outlinePxDist);
                 vec4 outlineRGBA = vec4(uOutlineColor.rgb, uOutlineColor.a * outlineAlpha * vColor.a);
-                
                 finalColor = mix(outlineRGBA, finalColor, alpha);
             }
-            
+
             if (finalColor.a < 0.001) discard; 
             outColor = finalColor;
         }
     ` : `
+        #extension GL_OES_standard_derivatives : enable
         precision mediump float;
         varying vec2 vUV; varying vec4 vColor;
         uniform sampler2D uTex; 
+        uniform vec2 uTexSize;
+        uniform float uDistanceRange;
         uniform float uOutlineWidth;
         uniform vec4 uOutlineColor;
-        
-        uniform float uBias;
-        uniform float uSmoothing;
+        uniform float uBlur;
 
-        float median3(vec3 v) { return max(min(v.r, v.g), min(max(v.r, v.g), v.b)); }
-        ${hasDeriv ? "#extension GL_OES_standard_derivatives : enable" : ""}
-        
+        float median(float r, float g, float b) {
+            return max(min(r, g), min(max(r, g), b));
+        }
+
         void main() {
             vec3 msdf = texture2D(uTex, vUV).rgb;
-            float sd = median3(msdf) + uBias; 
-            
-            float dist = sd - 0.5;
-            float fw = ${hasDeriv ? "fwidth(dist) * (uSmoothing * 2.0)" : "(0.04 * (uSmoothing * 2.0))"}; 
-            float alpha = smoothstep(-fw, fw, dist);
-            
+            float sd = median(msdf.r, msdf.g, msdf.b);
+
+            #ifdef GL_OES_standard_derivatives
+                vec2 unitRange = vec2(uDistanceRange) / uTexSize;
+                vec2 screenTexSize = vec2(1.0) / max(fwidth(vUV), vec2(0.00001));
+                float screenPxRange = max(0.5 * dot(unitRange, screenTexSize), 1.0);
+            #else
+                float screenPxRange = uDistanceRange;
+            #endif
+
+            float screenPxDistance = screenPxRange * (sd - 0.5);
+            float blur = max(uBlur, 1.0);
+            float alpha = smoothstep(-0.5 * blur, 0.5 * blur, screenPxDistance);
+
             vec4 finalColor = vec4(vColor.rgb, vColor.a * alpha);
 
             if (uOutlineWidth > 0.0) {
-                float outlineDist = sd - (0.5 - uOutlineWidth * 0.5);
-                float outlineAlpha = smoothstep(-fw, fw, outlineDist);
+                float outlinePxDist = screenPxRange * (sd - (0.5 - uOutlineWidth * 0.5));
+                float outlineAlpha = smoothstep(-0.5 * blur, 0.5 * blur, outlinePxDist);
                 vec4 outlineRGBA = vec4(uOutlineColor.rgb, uOutlineColor.a * outlineAlpha * vColor.a);
-                
                 finalColor = mix(outlineRGBA, finalColor, alpha);
             }
 
@@ -121,10 +136,11 @@ function getShared(gl) {
         gl, isWebGL2, program,
         uProjection: gl.getUniformLocation(program, "uProjection"),
         uTex: gl.getUniformLocation(program, "uTex"),
-        uBias: gl.getUniformLocation(program, "uBias"),
-        uSmoothing: gl.getUniformLocation(program, "uSmoothing"),
+        uTexSize: gl.getUniformLocation(program, "uTexSize"),
+        uDistanceRange: gl.getUniformLocation(program, "uDistanceRange"),
         uOutlineWidth: gl.getUniformLocation(program, "uOutlineWidth"),
-        uOutlineColor: gl.getUniformLocation(program, "uOutlineColor")
+        uOutlineColor: gl.getUniformLocation(program, "uOutlineColor"),
+        uBlur: gl.getUniformLocation(program, "uBlur")
     };
     
     _shared.set(gl, s);
@@ -147,11 +163,13 @@ export default class TextRenderer {
 
         this.currentTexture = null;
         this.currentProjection = null;
-        
-        this._lastBias = 0;
-        this._lastSmoothing = 0.5;
+        this.currentTexW = 512;
+        this.currentTexH = 512;
+        this.distanceRange = 8.0;
+
         this._lastOutlineWidth = 0.0;
         this._lastOutlineColor = [0,0,0,1];
+        this._lastBlur = 0.0;
 
         this.vbo = this.gl.createBuffer();
         this.vao = this.ctx.createVAO();
@@ -175,17 +193,13 @@ export default class TextRenderer {
     drawText(font, str, x, y, w, h, size, color, projection, rot = 0, sx = 1, sy = 1, px = 0, py = 0, alpha = 1, flipX = false, flipY = false, options = {}) {
         if (!font || !font.glTexture || !str || str.trim() === "") return;
 
-        const smoothing = options.smoothing ?? 0.5;
-        const bias = options.bias ?? 0;
         const outWidth = options.outlineWidth ?? 0;
         const outCol = options.outlineColor ?? [0,0,0,1];
         
-        if (this._lastBias !== bias || this._lastSmoothing !== smoothing || this._lastOutlineWidth !== outWidth || 
+        if (this._lastOutlineWidth !== outWidth || 
             this._lastOutlineColor[0] !== outCol[0] || this._lastOutlineColor[1] !== outCol[1] || 
             this._lastOutlineColor[2] !== outCol[2] || this._lastOutlineColor[3] !== outCol[3]) {
             this.flush();
-            this._lastBias = bias;
-            this._lastSmoothing = smoothing;
             this._lastOutlineWidth = outWidth;
             this._lastOutlineColor = outCol;
         }
@@ -218,8 +232,17 @@ export default class TextRenderer {
             };
         };
 
-        if (this.currentTexture !== font.glTexture) { this.flush(); this.currentTexture = font.glTexture; }
-        if (projection !== this.currentProjection) { this.flush(); this.currentProjection = projection; }
+        if (this.currentTexture !== font.glTexture) {
+            this.flush();
+            this.currentTexture = font.glTexture;
+            this.currentTexW = font.common?.texW || 512;
+            this.currentTexH = font.common?.texH || 512;
+            this.distanceRange = font.info?.distance || 8.0;
+        }
+        if (projection !== this.currentProjection) {
+            this.flush();
+            this.currentProjection = projection;
+        }
 
         const renderStringVertices = (textColor, textAlpha, shadowOx = 0, shadowOy = 0) => {
             const d = this.bufferData;
@@ -299,16 +322,16 @@ export default class TextRenderer {
             this.flush();
             
             const originalOutlineWidth = this._lastOutlineWidth;
-            const originalSmoothing = this._lastSmoothing;
+            const originalBlur = this._lastBlur;
 
             this._lastOutlineWidth = 0; 
-            this._lastSmoothing = shBlur > 0 ? shBlur : originalSmoothing; 
+            this._lastBlur = shBlur > 0 ? shBlur * 4.0 : 0.0; 
             
             renderStringVertices(shCol, shAlpha, shOffX, shOffY);
             this.flush(); 
             
             this._lastOutlineWidth = originalOutlineWidth;
-            this._lastSmoothing = originalSmoothing;
+            this._lastBlur = originalBlur;
         }
 
         const col = color || [1, 1, 1, 1];
@@ -325,10 +348,11 @@ export default class TextRenderer {
         this.cache.bindTexture(this.currentTexture);
 
         gl.uniformMatrix4fv(s.uProjection, false, this.currentProjection);
-        gl.uniform1f(s.uBias, this._lastBias);
-        gl.uniform1f(s.uSmoothing, this._lastSmoothing);
+        gl.uniform2f(s.uTexSize, this.currentTexW || 512, this.currentTexH || 512);
+        gl.uniform1f(s.uDistanceRange, this.distanceRange || 8.0);
         gl.uniform1f(s.uOutlineWidth, this._lastOutlineWidth);
         gl.uniform4fv(s.uOutlineColor, this._lastOutlineColor);
+        gl.uniform1f(s.uBlur, this._lastBlur);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.vbo);
         gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.bufferData.subarray(0, this.bufferIndex));

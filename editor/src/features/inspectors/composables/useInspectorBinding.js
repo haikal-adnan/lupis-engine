@@ -276,10 +276,10 @@ export function useInspectorBinding(
     if (!tr) return;
 
     const id = ent.id;
-    const oldVal = tr.fontSize;
+    const oldAutoFit = tr.autoFit;
 
-    sceneStore.updateComponentProp(id, 'TextRenderer', 'fontSize', tr.fontSize);
-    recordComponentChange(id, 'TextRenderer', 'fontSize', oldVal, tr.fontSize);
+    sceneStore.updateComponentProp(id, 'TextRenderer', 'autoFit', true);
+    recordComponentChange(id, 'TextRenderer', 'autoFit', oldAutoFit, true);
   }
 
   function bindProjectProp(propName) {

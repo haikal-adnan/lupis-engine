@@ -478,6 +478,21 @@ test.describe('Property Inspector: Assets, Scripts & Tab Navigation Components E
     await expect(fontSizeInput).toHaveValue('36');
     await expect(alignCenterBtn).toHaveAttribute('data-active', 'true');
 
+    // Verify Sizing Mode (Font Size vs Transform)
+    const fontSizeModeBtn = page.getByTestId('text-renderer-sizemode-fontsize');
+    const transformModeBtn = page.getByTestId('text-renderer-sizemode-transform');
+    await expect(fontSizeModeBtn).toBeVisible();
+    await expect(transformModeBtn).toBeVisible();
+    await expect(fontSizeInput).toBeEnabled();
+
+    // Switch to Transform mode and verify Font Size is disabled
+    await inspector.setTextSizeMode('transform');
+    await expect(fontSizeInput).toBeDisabled();
+
+    // Switch back to Font Size mode and verify Font Size is re-enabled
+    await inspector.setTextSizeMode('fontsize');
+    await expect(fontSizeInput).toBeEnabled();
+
     await inspector.toggleTextShadow(true);
     const shadowToggle = inspector.checkbox('text-renderer-shadow-toggle');
     await expect(shadowToggle).toBeChecked();

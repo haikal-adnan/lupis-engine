@@ -391,6 +391,10 @@ export class InspectorPage {
     await this.controls.selectOption('text-renderer-mode-select', modeLabel, this.textRendererSection);
   }
 
+  async setTextSizeMode(mode) {
+    await this.page.getByTestId(`text-renderer-sizemode-${mode}`).click();
+  }
+
   async toggleTextShadow(checked) {
     const checkbox = this.page.getByTestId('text-renderer-shadow-toggle').locator('input[type="checkbox"]').or(this.page.getByTestId('text-renderer-shadow-toggle')).first();
     await checkbox.setChecked(checked);

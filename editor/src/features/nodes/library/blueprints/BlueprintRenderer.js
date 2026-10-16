@@ -132,8 +132,6 @@ return;`
             { value: 'letterSpacing', label: 'Char Spacing', type: 'number', color: '#64B5F6' },
             { value: 'overflow', label: 'Overflow', type: 'string', color: '#F48FB1' },
             { value: 'autoFit', label: 'Auto Fit', type: 'boolean', color: '#E57373' },
-            { value: 'smoothing', label: 'Smoothing', type: 'number', color: '#64B5F6' },
-            { value: 'bias', label: 'Font Bias', type: 'number', color: '#64B5F6' },
             { value: 'outlineWidth', label: 'Outline Width', type: 'number', color: '#64B5F6' },
             { value: 'outlineColor', label: 'Outline Color', type: 'string', color: '#F48FB1' },
             { value: 'shadowEnabled', label: 'Shadow Enabled', type: 'boolean', color: '#E57373' },
@@ -161,8 +159,6 @@ outputs.lineSpacing = comp.lineSpacing;
 outputs.letterSpacing = comp.letterSpacing;
 outputs.overflow = comp.overflow;
 outputs.autoFit = comp.autoFit;
-outputs.smoothing = comp.smoothing;
-outputs.bias = comp.bias;
 outputs.outlineWidth = comp.outlineWidth;
 outputs.outlineColor = comp.outlineColor;
 outputs.shadowEnabled = comp.shadowEnabled;

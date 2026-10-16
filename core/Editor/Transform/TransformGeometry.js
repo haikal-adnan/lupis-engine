@@ -71,7 +71,19 @@ export class TransformGeometry {
         }
 
         const parentEntity = this._findEntityInWorld(e.parentId);
-        if (!parentEntity) return { ...t };
+        if (!parentEntity) {
+            return {
+                x: t.x || 0,
+                y: t.y || 0,
+                rotation: t.rotation || 0,
+                scaleX: t.scaleX ?? 1,
+                scaleY: t.scaleY ?? 1,
+                pivotX: t.pivotX ?? defaultPivotX,
+                pivotY: t.pivotY ?? defaultPivotY,
+                width: t.width || 0,
+                height: t.height || 0
+            };
+        }
 
         const parentGlobal = this.getGlobalTransform(parentEntity);
         const parentRad = parentGlobal.rotation * (Math.PI / 180);
@@ -129,7 +141,6 @@ export class TransformGeometry {
         }
 
         this.isSizeLocked = selectedList.some(e =>
-            e?.components?.TextRenderer?.autoFit ||
             e?.components?.Tilemap
         );
 
@@ -153,12 +164,17 @@ export class TransformGeometry {
                 );
             } else {
                 const dims = this._getEntityDimensions(e);
+                const isTilemap = Boolean(e?.components?.Tilemap);
+                const px = globalT.pivotX ?? (isTilemap ? 0 : 0.5);
+                const py = globalT.pivotY ?? (isTilemap ? 0 : 0.5);
+                const sx = (t.flipX ? -1 : 1) * (globalT.scaleX ?? 1);
+                const sy = (t.flipY ? -1 : 1) * (globalT.scaleY ?? 1);
                 v = calculateQuadVertices(
                     absPos.x, absPos.y,
                     dims.width, dims.height,
                     rRad,
-                    globalT.scaleX ?? 1, globalT.scaleY ?? 1,
-                    globalT.pivotX ?? 0.5, globalT.pivotY ?? 0.5
+                    sx, sy,
+                    px, py
                 );
             }
 
@@ -200,12 +216,17 @@ export class TransformGeometry {
                 );
             } else {
                 const dims = this._getEntityDimensions(e);
+                const isTilemap = Boolean(e?.components?.Tilemap);
+                const px = globalT.pivotX ?? (isTilemap ? 0 : 0.5);
+                const py = globalT.pivotY ?? (isTilemap ? 0 : 0.5);
+                const sx = (t.flipX ? -1 : 1) * (globalT.scaleX ?? 1);
+                const sy = (t.flipY ? -1 : 1) * (globalT.scaleY ?? 1);
                 v = calculateQuadVertices(
                     absPos.x, absPos.y,
                     dims.width, dims.height,
                     rRad,
-                    globalT.scaleX ?? 1, globalT.scaleY ?? 1,
-                    globalT.pivotX ?? 0.5, globalT.pivotY ?? 0.5
+                    sx, sy,
+                    px, py
                 );
             }
 

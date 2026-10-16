@@ -71,7 +71,6 @@ export default class EditorRenderer {
             align: "left",
             lineSpacing: 1.2,
             letterSpacing: 0,
-            smoothing: 0.1,
             outlineWidth: 0,
             outlineColor: [0, 0, 0, 1],
             shadowEnabled: false,

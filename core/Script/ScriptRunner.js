@@ -392,41 +392,50 @@ export default class ScriptRunner {
         const role = sourceNode.role || (sourceNode.inputs?.some(i => i.dataType === 'execution') ? 'action' : (sourceNode.outputs?.some(o => o.dataType === 'execution') ? 'event' : 'pure'));
 
         if (role === 'pure') {
-            const compiledFn = this._compiledFunctions.get(sourceNode.id);
-            if (typeof compiledFn === 'function') {
-                const inputs = this.getAllInputValues(sourceNode);
-                const outputs = {};
-                const context = this.game.contextSystem.createExecutionContext(this, sourceNode);
-                try {
-                    compiledFn(inputs, outputs, context, sourceNode);
-                    this.nodeOutputs.set(sourceNode.id, { ...outputs });
-                    if (outputs[outputPortId] !== undefined) {
-                        return outputs[outputPortId];
-                    }
-                } catch (err) {
-                    if (err instanceof ScriptAssertionError || err?.name === 'ScriptAssertionError') {
-                        return null;
-                    }
-                    const meta = this.getContextMetadata(sourceNode);
-                    const errMsg = err?.message || String(err);
-                    const formattedMessage = `${meta.prefix} ${errMsg}`;
+            if (!this._evaluatingPureNodes) this._evaluatingPureNodes = new Set();
+            if (this._evaluatingPureNodes.has(sourceNode.id)) {
+                throw new Error(`Cycle detected in pure blueprint node evaluation: node '${sourceNode.id}'`);
+            }
+            this._evaluatingPureNodes.add(sourceNode.id);
+            try {
+                const compiledFn = this._compiledFunctions.get(sourceNode.id);
+                if (typeof compiledFn === 'function') {
+                    const inputs = this.getAllInputValues(sourceNode);
+                    const outputs = {};
+                    const context = this.game?.contextSystem ? this.game.contextSystem.createExecutionContext(this, sourceNode) : {};
+                    try {
+                        compiledFn(inputs, outputs, context, sourceNode);
+                        this.nodeOutputs.set(sourceNode.id, { ...outputs });
+                        if (outputs[outputPortId] !== undefined) {
+                            return outputs[outputPortId];
+                        }
+                    } catch (err) {
+                        if (err instanceof ScriptAssertionError || err?.name === 'ScriptAssertionError') {
+                            return null;
+                        }
+                        const meta = this.getContextMetadata(sourceNode);
+                        const errMsg = err?.message || String(err);
+                        const formattedMessage = `${meta.prefix} ${errMsg}`;
 
-                    if (this.game && this.game.events) {
-                        this.game.events.emit('console:error', {
-                            type: 'error',
-                            time: Date.now(),
-                            message: formattedMessage,
-                            source: 'ScriptRunner',
-                            context: {
-                                scene: meta.scene,
-                                entityScriptId: meta.entityScriptId,
-                                script: meta.script,
-                                node: meta.node
-                            }
-                        });
+                        if (this.game && this.game.events) {
+                            this.game.events.emit('console:error', {
+                                type: 'error',
+                                time: Date.now(),
+                                message: formattedMessage,
+                                source: 'ScriptRunner',
+                                context: {
+                                    scene: meta.scene,
+                                    entityScriptId: meta.entityScriptId,
+                                    script: meta.script,
+                                    node: meta.node
+                                }
+                            });
+                        }
+                        throw err;
                     }
-                    throw err;
                 }
+            } finally {
+                this._evaluatingPureNodes.delete(sourceNode.id);
             }
         }
 

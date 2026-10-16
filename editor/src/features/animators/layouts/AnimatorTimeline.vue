@@ -49,7 +49,7 @@
     <div class="flex-1 flex flex-col min-w-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]">
       <ScrollArea orientation="horizontal" class="flex-1 w-full h-full">
         <div class="flex items-stretch gap-1 p-2 h-full w-max min-w-full">
-          <div v-for="(sourceId, index) in frames" :key="index" @click="selectFrame(index)" class="relative w-28 h-full rounded-md border-2 flex flex-col items-center justify-center shrink-0 transition-all cursor-pointer group" :class="[ currentFrameIndex === index ? 'border-primary bg-primary/10 z-10 shadow-sm' : 'border-transparent bg-background/60 hover:bg-background hover:border-border' ]" data-testid="animator-timeline-frame-item" :data-frame-index="index">
+          <div v-for="(sourceId, index) in frames" :key="index" @click="selectFrame(index)" @dblclick="openCropForFrame(index)" class="relative w-28 h-full rounded-md border-2 flex flex-col items-center justify-center shrink-0 transition-all cursor-pointer group" :class="[ currentFrameIndex === index ? 'border-primary bg-primary/10 z-10 shadow-sm' : 'border-transparent bg-background/60 hover:bg-background hover:border-border' ]" data-testid="animator-timeline-frame-item" :data-frame-index="index">
             <div class="absolute top-2 left-2 text-[10px] font-mono font-bold opacity-20">#{{ index }}</div>
             
             <button @click.stop="removeFrame(index)" v-if="frames.length > 1" class="absolute top-1 right-1 p-1 rounded hover:bg-destructive/20 text-destructive/50 hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity" :class="{ 'opacity-100 text-destructive/70': currentFrameIndex === index }" data-testid="animator-timeline-remove-frame-btn">
@@ -98,7 +98,25 @@
           </div>
         </PropertyRow>
 
-        <div class="h-px bg-border/50 my-3"></div>
+        <!-- Source Crop Thumbnail Preview -->
+        <div class="flex gap-2.5 my-2.5 p-2 rounded-lg border border-border/60 bg-muted/20 items-center">
+          <BaseCropThumbnail 
+            ref="cropThumbnailRef"
+            :src="resolvedAssetUrl"
+            :rect="currentSourceRect"
+            @update:rect="updateCurrentSourceRect"
+            name="Source Frame Crop"
+            sizeClass="w-12 h-12 bg-muted/40 border-border/80 shrink-0 rounded-md shadow-inner"
+            data-testid="animator-timeline-crop-thumbnail"
+          />
+          <div class="flex-1 flex flex-col justify-center min-w-0">
+            <span class="text-xs font-mono font-bold text-foreground truncate">{{ currentSourceId }}</span>
+            <span class="text-[10px] text-muted-foreground font-mono">Frame #{{ currentFrameIndex + 1 }}</span>
+            <span class="text-[9px] text-primary font-mono font-medium">{{ currentRectW }} × {{ currentRectH }} px</span>
+          </div>
+        </div>
+
+        <div class="h-px bg-border/50 my-2"></div>
 
         <PropertyRow label="Source Rect" :no-margin="true">
           <div class="grid grid-cols-2 gap-2">
@@ -119,11 +137,11 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { ref, computed } from 'vue';
 import { Play, Pause, SkipBack, SkipForward, Plus, Pencil, Trash2, MoreVertical, Wand2 } from 'lucide-vue-next';
 import { useAnimatorLogic } from '@animators/animators.js';
 import { usePrompt } from '@composables/composables.js';
-import { PropertyRow, BaseNumber, BaseSelect, BaseDropdown, ScrollArea } from '@components/components.js';
+import { PropertyRow, BaseNumber, BaseSelect, BaseDropdown, BaseCropThumbnail, ScrollArea } from '@components/components.js';
 
 const { 
   activeClipData, syncAnimatorData, currentFrameIndex, resolvedAssetUrl, frames, sources, isPlaying,
@@ -167,6 +185,28 @@ const currentRectX = createRectProxy('x');
 const currentRectY = createRectProxy('y');
 const currentRectW = createRectProxy('w');
 const currentRectH = createRectProxy('h');
+
+const cropThumbnailRef = ref(null);
+
+const currentSourceRect = computed(() => ({
+  x: currentRectX.value || 0,
+  y: currentRectY.value || 0,
+  w: currentRectW.value || 0,
+  h: currentRectH.value || 0
+}));
+
+const updateCurrentSourceRect = (rect) => {
+  if (!rect) return;
+  currentRectX.value = rect.x;
+  currentRectY.value = rect.y;
+  currentRectW.value = rect.w;
+  currentRectH.value = rect.h;
+};
+
+const openCropForFrame = (index) => {
+  selectFrame(index);
+  cropThumbnailRef.value?.openModal();
+};
 
 const getFrameStyle = (sourceId) => {
   const clip = activeClipData.value;

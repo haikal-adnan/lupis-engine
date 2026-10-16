@@ -2,6 +2,7 @@ export { default as BaseButton } from '@components/buttons/BaseButton.vue'
 export { default as IconButton } from '@components/buttons/IconButton.vue'
 
 export { default as BaseThumbnail } from '@components/display/BaseThumbnail.vue'
+export { default as BaseCropThumbnail } from '@components/display/BaseCropThumbnail.vue'
 export { default as PropertyRow } from '@components/display/PropertyRow.vue'
 export { default as PropertySection } from '@components/display/PropertySection.vue'
 

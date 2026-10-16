@@ -87,4 +87,24 @@ export default class World {
     
     addTexture(id, data) { this.assets.textures[id] = data; }
     addFont(id, data) { this.assets.fonts[id] = data; }
+
+    isAncestor(ancestorId, descendantId) {
+        let current = this.entities.find(e => e.id === descendantId);
+        while (current && current.parentId) {
+            if (current.parentId === ancestorId) return true;
+            current = this.entities.find(e => e.id === current.parentId);
+        }
+        return false;
+    }
+
+    setEntityParent(entityId, newParentId) {
+        if (entityId === newParentId) return false;
+        if (newParentId && this.isAncestor(entityId, newParentId)) {
+            return false;
+        }
+        const entity = this.entities.find(e => e.id === entityId);
+        if (!entity) return false;
+        entity.parentId = newParentId || null;
+        return true;
+    }
 }
