@@ -36,7 +36,7 @@ test.describe('Project Management E2E', () => {
     await dashboard.goto();
   });
 
-  test('creates a new project and redirects to editor workspace', async ({ page, controls, dashboard }, testInfo) => {
+  test('creates a new project, redirects to editor workspace, and renders card on dashboard', async ({ page, controls, dashboard }, testInfo) => {
     // Arrange
     const projectName = `E2E Game ${testInfo.testId}`;
     const projectDesc = 'Isolated test project for creation workflow';
@@ -51,29 +51,20 @@ test.describe('Project Management E2E', () => {
     await controls.fillInput('project-desc-input', projectDesc, modal);
     await controls.clickButton('submit-create-project-btn', modal);
 
-    // Assert
+    // Assert redirect
     await expect(page).toHaveURL(/\/editor\/.+/);
-  });
 
-  test('renders created project card on dashboard with accurate metadata', async ({ page, dashboard }, testInfo) => {
-    // Arrange
-    const projectName = `Dashboard Card ${testInfo.testId}`;
-    const projectDesc = 'Metadata validation on dashboard';
-
-    await ensureProject(page, { name: projectName, description: projectDesc });
-
-    // Act
+    // Assert dashboard card & metadata
     await dashboard.goto();
-
-    // Assert
     await expect(dashboard.card(projectName)).toBeVisible();
     await expect(dashboard.cardDescription(projectName)).toHaveText(projectDesc);
   });
 
-  test('renames an existing project via context menu', async ({ page, dashboard, popup }, testInfo) => {
+  test('updates project name and description via context menu', async ({ page, dashboard, popup }, testInfo) => {
     // Arrange
     const initialName = `Old Name ${testInfo.testId}`;
     const updatedName = `New Name ${testInfo.testId}`;
+    const newDesc = 'Updated description content via E2E test';
 
     await ensureProject(page, { name: initialName });
 
@@ -81,31 +72,20 @@ test.describe('Project Management E2E', () => {
     const card = dashboard.card(initialName);
     await expect(card).toBeVisible();
 
-    // Act
+    // Act 1: Rename
     await popup.selectContextMenu(card, 'Rename');
     await popup.fillPromptAndSubmit('Rename Project', updatedName, 'Save');
 
-    // Assert
-    await expect(dashboard.card(updatedName)).toBeVisible();
+    const updatedCard = dashboard.card(updatedName);
+    await expect(updatedCard).toBeVisible();
     await expect(card).toHaveCount(0);
-  });
 
-  test('updates project description via context menu', async ({ page, dashboard, popup }, testInfo) => {
-    // Arrange
-    const projectName = `Desc Update ${testInfo.testId}`;
-    const newDesc = 'Updated description content via E2E test';
-
-    await ensureProject(page, { name: projectName });
-
-    await dashboard.goto();
-    const card = dashboard.card(projectName);
-
-    // Act
-    await popup.selectContextMenu(card, 'Edit Description');
+    // Act 2: Edit Description
+    await popup.selectContextMenu(updatedCard, 'Edit Description');
     await popup.fillPromptAndSubmit('Edit Description', newDesc, 'Save');
 
     // Assert
-    await expect(dashboard.cardDescription(projectName)).toHaveText(newDesc);
+    await expect(dashboard.cardDescription(updatedName)).toHaveText(newDesc);
   });
 
   test('opens an existing project in a new tab via context menu', async ({ context, page, dashboard, popup }, testInfo) => {
@@ -168,23 +148,15 @@ test.describe('Project Management E2E', () => {
     await expect(submitBtn).toBeDisabled();
   });
 
-  test('imports a .lupisproject file and renders card on dashboard with accurate metadata', async ({ dashboard, popup }) => {
+  test('imports a .lupisproject file and verifies editor workspace data integrity', async ({ page, dashboard, popup, hierarchy, assets }) => {
     // Act: Import sample project
     await dashboard.importProject(SAMPLE_PROJECT_PATH);
 
     // Assert: Success feedback and dashboard card rendering
     await popup.expectPopAlert('Import Successful');
-    await expect(dashboard.card('et')).toBeVisible();
-    await expect(dashboard.cardTitle('et')).toHaveText('et');
-  });
-
-  test('opens imported .lupisproject and verifies editor workspace data integrity', async ({ page, dashboard, popup, hierarchy, assets }) => {
-    // Arrange: Import sample project
-    await dashboard.importProject(SAMPLE_PROJECT_PATH);
-    await popup.expectPopAlert('Import Successful');
-
     const card = dashboard.card('et');
     await expect(card).toBeVisible();
+    await expect(dashboard.cardTitle('et')).toHaveText('et');
 
     // Act: Open project in editor workspace
     await card.click();

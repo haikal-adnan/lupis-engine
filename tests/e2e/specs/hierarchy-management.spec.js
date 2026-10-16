@@ -51,36 +51,7 @@ test.describe('Hierarchy & Scene Comprehensive E2E Management', () => {
   // 2. INDEXING, REPARENTING, Z-INDEX & SECTION BOUNDARIES
   // =========================================================================
   test.describe('2. Indexing, Reparenting, Z-Index & Hierarchy Rules', () => {
-    test('handles entity-to-entity reparenting via drag and drop', async ({ hierarchy, popup }) => {
-      const worldLayer = hierarchy.nodeByName('World Layer');
-      const parentEntity = await hierarchy.addEntity(popup, worldLayer, ['Add Entity', 'Empty Entity']);
-      const childEntity = await hierarchy.addEntity(popup, worldLayer, ['Add Entity', 'Sprite']);
-
-      const parentId = await parentEntity.getAttribute('data-node-id');
-      const childId = await childEntity.getAttribute('data-node-id');
-
-      // Drag child ke parent (drop inside)
-      await hierarchy.dragAndDropNodes(childEntity, parentEntity);
-
-      await expect(hierarchy.nodeById(childId)).toHaveAttribute('data-parent-id', parentId);
-    });
-
-    test('extracts child entity back to root layer level', async ({ hierarchy, popup }) => {
-      const worldLayer = hierarchy.nodeByName('World Layer');
-      const parentEntity = await hierarchy.addEntity(popup, worldLayer, ['Add Entity', 'Empty Entity']);
-      const childEntity = await hierarchy.addEntity(popup, parentEntity, ['Add Child', 'Sprite']);
-
-      const parentId = await parentEntity.getAttribute('data-node-id');
-      // Precondition: the child really sits inside the parent, so the final assertion is not vacuous
-      await expect(childEntity).toHaveAttribute('data-parent-id', parentId);
-
-      // Drag the child out of its parent to the root layer
-      await hierarchy.dragAndDropNodes(childEntity, worldLayer);
-
-      await expect(childEntity).not.toHaveAttribute('data-parent-id');
-    });
-
-    test('moves entity with its child tree together to another parent', async ({ hierarchy, popup }) => {
+    test('handles entity-to-entity reparenting and child extraction back to root layer level via drag and drop', async ({ hierarchy, popup }) => {
       const worldLayer = hierarchy.nodeByName('World Layer');
 
       // Target parent
@@ -98,6 +69,10 @@ test.describe('Hierarchy & Scene Comprehensive E2E Management', () => {
 
       await expect(movingParent).toHaveAttribute('data-parent-id', targetParentId);
       await expect(movingChild).toHaveAttribute('data-parent-id', movingParentId);
+
+      // Drag the child out of its parent to the root layer
+      await hierarchy.dragAndDropNodes(movingChild, worldLayer);
+      await expect(movingChild).not.toHaveAttribute('data-parent-id');
     });
 
     test('[Bad Path] prevents moving an entity into its own descendant child', async ({ hierarchy, popup }) => {
@@ -172,7 +147,7 @@ test.describe('Hierarchy & Scene Comprehensive E2E Management', () => {
   // 4. CONTEXT MENU & PREFAB RESTRICTIONS
   // =========================================================================
   test.describe('4. Context Menu Exhaustive Verification & Prefab Rules', () => {
-    // Test the 5 World entity types
+    // Test World and UI entity types
     const worldEntityTypes = [
       { name: 'Empty Entity', path: ['Add Entity', 'Empty Entity'] },
       { name: 'Sprite', path: ['Add Entity', 'Sprite'] },
@@ -181,17 +156,6 @@ test.describe('Hierarchy & Scene Comprehensive E2E Management', () => {
       { name: 'Tilemap', path: ['Add Entity', 'Tilemap'] },
     ];
 
-    for (const item of worldEntityTypes) {
-      test(`creates World Entity type: ${item.name}`, async ({ hierarchy, popup }) => {
-        const worldLayer = hierarchy.nodeByName('World Layer');
-        const created = await hierarchy.addEntity(popup, worldLayer, item.path);
-
-        // The new entity must be inside the World section
-        await expect(hierarchy.section('World').getByTestId('hierarchy-node').and(created)).toBeVisible();
-      });
-    }
-
-    // Test the 4 UI entity types
     const uiEntityTypes = [
       { name: 'Empty UI', path: ['Add UI Element', 'Empty UI'] },
       { name: 'UI Shape', path: ['Add UI Element', 'UI Shape'] },
@@ -199,17 +163,20 @@ test.describe('Hierarchy & Scene Comprehensive E2E Management', () => {
       { name: 'UI Image', path: ['Add UI Element', 'UI Image'] },
     ];
 
-    for (const item of uiEntityTypes) {
-      test(`creates UI Entity type: ${item.name}`, async ({ hierarchy, popup }) => {
-        await hierarchy.addLayerToSection(popup, 'User Interface', 'HUD Layer');
-        const uiLayer = hierarchy.nodeByName('HUD Layer');
+    test('creates World and UI Entity types via Context Menu', async ({ hierarchy, popup }) => {
+      const worldLayer = hierarchy.nodeByName('World Layer');
+      for (const item of worldEntityTypes) {
+        const created = await hierarchy.addEntity(popup, worldLayer, item.path);
+        await expect(hierarchy.section('World').getByTestId('hierarchy-node').and(created)).toBeVisible();
+      }
 
+      await hierarchy.addLayerToSection(popup, 'User Interface', 'HUD Layer');
+      const uiLayer = hierarchy.nodeByName('HUD Layer');
+      for (const item of uiEntityTypes) {
         const created = await hierarchy.addEntity(popup, uiLayer, item.path);
-
-        // The new entity must be inside the User Interface section
         await expect(hierarchy.section('User Interface').getByTestId('hierarchy-node').and(created)).toBeVisible();
-      });
-    }
+      }
+    });
 
     test('tests duplicate, copy, cut, paste, rename, change z-index, and delete operations via Context Menu', async ({ hierarchy, popup }) => {
       const worldLayer = hierarchy.nodeByName('World Layer');
@@ -275,21 +242,7 @@ test.describe('Hierarchy & Scene Comprehensive E2E Management', () => {
   // 5. VISIBILITY & LOCK CONTROLS
   // =========================================================================
   test.describe('5. Visibility & Lock Controls', () => {
-    test('toggles lock and visibility status on entities reactively', async ({ hierarchy, popup }) => {
-      const worldLayer = hierarchy.nodeByName('World Layer');
-      const entityNode = await hierarchy.addEntity(popup, worldLayer, ['Add Entity', 'Shape']);
-      await entityNode.hover();
-
-      // Toggle Lock
-      await entityNode.getByTestId('hierarchy-node-lock-button').click();
-      await expect(entityNode).toHaveAttribute('data-locked', 'true');
-
-      // Toggle Visibility
-      await entityNode.getByTestId('hierarchy-node-visibility-button').click();
-      await expect(entityNode).toHaveAttribute('data-visible', 'false');
-    });
-
-    test('toggles lock and visibility status on layers reactively', async ({ hierarchy }) => {
+    test('toggles lock and visibility status on layers and entities reactively', async ({ hierarchy, popup }) => {
       const worldLayer = hierarchy.nodeByName('World Layer');
       await worldLayer.hover();
 
@@ -300,6 +253,17 @@ test.describe('Hierarchy & Scene Comprehensive E2E Management', () => {
       // Toggle Layer Visibility
       await worldLayer.getByTestId('hierarchy-node-visibility-button').click();
       await expect(worldLayer).toHaveAttribute('data-visible', 'false');
+
+      const entityNode = await hierarchy.addEntity(popup, worldLayer, ['Add Entity', 'Shape']);
+      await entityNode.hover();
+
+      // Toggle Entity Lock
+      await entityNode.getByTestId('hierarchy-node-lock-button').click();
+      await expect(entityNode).toHaveAttribute('data-locked', 'true');
+
+      // Toggle Entity Visibility
+      await entityNode.getByTestId('hierarchy-node-visibility-button').click();
+      await expect(entityNode).toHaveAttribute('data-visible', 'false');
     });
   });
 
@@ -330,7 +294,7 @@ test.describe('Hierarchy & Scene Comprehensive E2E Management', () => {
   // 7. SCENE MANAGEMENT OPERATIONS
   // =========================================================================
   test.describe('7. Scene Operations & Validation Rules', () => {
-    test('creates new scene, renames active scene, duplicates scene, and switches between scenes', async ({ hierarchy, controls, popup }) => {
+    test('performs scene CRUD operations: create, rename, duplicate, switch, and delete safeguards', async ({ page, hierarchy, controls, popup }) => {
       const scene1Name = 'Level 1 - Forest';
       const scene2Name = 'Level 2 - Volcano';
 
@@ -343,21 +307,11 @@ test.describe('Hierarchy & Scene Comprehensive E2E Management', () => {
       await popup.fillPromptAndSubmit('Rename Scene', scene2Name, 'OK');
       await expect(hierarchy.sceneSelect).toContainText(scene2Name);
 
-      // Duplicate Active Scene
-      await controls.clickSelectAction(SCENE_OPTIONS, 'Duplicate Scene');
-      await expect(hierarchy.sceneSelect).toBeVisible();
-    });
-
-    test('[Bad Path] deletes secondary scene and prevents deleting the last remaining scene', async ({ page, hierarchy, controls, popup }) => {
-      const tempScene = 'Temp Scene';
-      await hierarchy.createScene(controls, popup, tempScene);
-      await expect(hierarchy.sceneSelect).toContainText(tempScene);
-
-      // Delete the secondary scene
+      // Delete the secondary scene (leaving only the initial scene)
       await hierarchy.deleteCurrentScene(controls, popup);
-      await expect(hierarchy.sceneSelect).not.toContainText(tempScene);
+      await expect(hierarchy.sceneSelect).not.toContainText(scene2Name);
 
-      // Bad Path: try to delete the last remaining scene
+      // Bad Path: try to delete the sole remaining scene
       await controls.clickSelectAction(SCENE_OPTIONS, 'Delete Scene');
 
       // Check the modal dialog (useAlert), not the PopAlert toast
@@ -371,6 +325,10 @@ test.describe('Hierarchy & Scene Comprehensive E2E Management', () => {
       // Close the modal dialog
       await alertModal.getByRole('button', { name: 'OK', exact: true }).click();
       await expect(alertModal).toHaveCount(0);
+
+      // Duplicate Active Scene to verify duplicate functionality
+      await controls.clickSelectAction(SCENE_OPTIONS, 'Duplicate Scene');
+      await expect(hierarchy.sceneSelect).toBeVisible();
     });
   });
 

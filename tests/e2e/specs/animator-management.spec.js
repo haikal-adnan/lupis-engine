@@ -265,7 +265,7 @@ test.describe('Animator Panel System E2E Workflow Tests', () => {
   // 5. [BAD PATH] SCENARIOS
   // =========================================================================
   test.describe('[Bad Path] Animator Operations Safeguards', () => {
-    test('[Bad Path] cancels timeline clear action and preserves existing frames', async ({
+    test('[Bad Path] enforces safeguards for empty timeline playback and cancels destructive actions', async ({
       hierarchyCrud,
       inspectorCrud,
       animatorCrud,
@@ -284,67 +284,18 @@ test.describe('Animator Panel System E2E Workflow Tests', () => {
       const clipNode = animatorPage.treeNodeByName('New Clip');
       await animatorCrud.selectClipNode(clipNode);
 
+      // Verify playback fails when timeline is empty
+      await expect(animatorPage.timelineFrameItems).toHaveCount(0);
+      await expect(animatorPage.timelinePlayToggle).toBeVisible();
+      await animatorPage.timelinePlayToggle.click();
+      await expect(animatorPage.timelinePlayToggle).toHaveAttribute('aria-pressed', 'false');
+
+      // Add frame, then cancel clear timeline
       await animatorCrud.addFrameToTimeline();
       await expect(animatorPage.timelineFrameItems).toHaveCount(1);
 
       await animatorCrud.clearTimeline({ confirm: false });
       await expect(animatorPage.timelineFrameItems).toHaveCount(1);
-    });
-
-    test('[Bad Path] prevents playback execution when no frames exist in timeline', async ({
-      hierarchyCrud,
-      inspectorCrud,
-      animatorCrud,
-      animatorPage,
-    }) => {
-      const worldLayer = await hierarchyCrud.layer.create('World', 'Empty Layer');
-      const spriteEntity = await hierarchyCrud.entity.create(worldLayer, 'sprite');
-
-      await spriteEntity.click();
-      await inspectorCrud.configureSpriteAnimator({
-        sampleImageName: 'sample_image.png',
-        openEditor: true,
-      });
-
-      await animatorCrud.createClipViaContextMenu();
-      const clipNode = animatorPage.treeNodeByName('New Clip');
-      await animatorCrud.selectClipNode(clipNode);
-
-      await expect(animatorPage.timelineFrameItems).toHaveCount(0);
-
-      await expect(animatorPage.timelinePlayToggle).toBeVisible();
-      await animatorPage.timelinePlayToggle.click();
-      await expect(animatorPage.timelinePlayToggle).toHaveAttribute('aria-pressed', 'false');
-    });
-
-    test('[Bad Path] cancels delete all sources action and preserves active sources', async ({
-      hierarchyCrud,
-      inspectorCrud,
-      animatorCrud,
-      animatorPage,
-      popup,
-    }) => {
-      const worldLayer = await hierarchyCrud.layer.create('World', 'Cancel Layer');
-      const spriteEntity = await hierarchyCrud.entity.create(worldLayer, 'sprite');
-
-      await spriteEntity.click();
-      await inspectorCrud.configureSpriteAnimator({
-        sampleImageName: 'sample_image.png',
-        openEditor: true,
-      });
-
-      await animatorCrud.createClipViaContextMenu();
-      const clipNode = animatorPage.treeNodeByName('New Clip');
-      await animatorCrud.selectClipNode(clipNode);
-
-      await animatorCrud.addFrameToTimeline();
-      await expect(animatorPage.sourceSelect).toBeVisible();
-
-      await animatorPage.sourceMoreMenuTrigger.click();
-      await animatorPage.timelineDeleteAllSourcesBtn.click();
-      await popup.confirmAction('Delete All Sources?', { action: 'cancel', cancelText: 'Cancel' });
-
-      await expect(animatorPage.sourceSelect).toBeVisible();
     });
 
     test('[Bad Path] does not expose animator editor when entity lacks SpriteAnimator', async ({

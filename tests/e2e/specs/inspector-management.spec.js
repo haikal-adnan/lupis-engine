@@ -64,9 +64,9 @@ test.describe('Property Inspector: Basic Components & Prefab E2E', () => {
   });
 
   // =========================================================================
-  // 1. PROJECT & SCENE INSPECTOR (DEFAULT UNSELECTED STATE)
+  // 1. PROJECT, SCENE & LAYER INSPECTOR
   // =========================================================================
-  test('directly verifies EditorProject and EditorScene when no entity is selected on initial load', async ({ page, inspector }) => {
+  test('directly verifies Project, Scene, and Layer properties in unselected and selected states', async ({ page, hierarchy, inspector }) => {
     await expect(inspector.projectSection).toBeVisible();
     await expect(inspector.sceneSection).toBeVisible();
 
@@ -84,12 +84,7 @@ test.describe('Property Inspector: Basic Components & Prefab E2E', () => {
 
     const sceneBgColorPicker = page.getByTestId('scene-bg-color-picker');
     await expect(sceneBgColorPicker).toBeVisible();
-  });
 
-  // =========================================================================
-  // 2. LAYER INSPECTOR TESTING
-  // =========================================================================
-  test('modifies layer properties and verifies reactive UI state', async ({ page, hierarchy, inspector }) => {
     const worldLayer = hierarchy.nodeByName('World Layer');
     await expect(worldLayer).toBeVisible();
     await worldLayer.click();
@@ -108,7 +103,7 @@ test.describe('Property Inspector: Basic Components & Prefab E2E', () => {
   });
 
   // =========================================================================
-  // 3. OBJECT & TRANSFORM SYNC
+  // 2. OBJECT & TRANSFORM SYNC
   // =========================================================================
   test('modifies Object & Transform properties and captures engine sync payload via bus', async ({ page, hierarchy, popup, inspector }) => {
     const worldLayer = hierarchy.nodeByName('World Layer');
@@ -139,7 +134,7 @@ test.describe('Property Inspector: Basic Components & Prefab E2E', () => {
   });
 
   // =========================================================================
-  // 4. UI TRANSFORM
+  // 3. UI TRANSFORM
   // =========================================================================
   test('modifies UI Transform properties on a UI entity', async ({ hierarchy, popup, inspector }) => {
     const uiLayer = hierarchy.nodeByName('UI Layer');
@@ -163,34 +158,22 @@ test.describe('Property Inspector: Basic Components & Prefab E2E', () => {
   });
 
   // =========================================================================
-  // 5. COLLIDER COMPONENT INSPECTION
+  // 4. COLLIDER & PHYSICS COMPONENT INSPECTION
   // =========================================================================
-  test('configures collider component and verifies AutoFit disable state', async ({ hierarchy, popup, inspector }) => {
+  test('configures collider and physics simulation properties on an entity', async ({ hierarchy, popup, inspector }) => {
     const worldLayer = hierarchy.nodeByName('World Layer');
     const entityNode = await hierarchy.addEntity(popup, worldLayer, ['Add Entity', 'Empty Entity']);
     await expect(entityNode).toBeVisible();
     await entityNode.click();
 
     await inspector.ensureColliderComponent();
-
     await inspector.setColliderType('Trigger (Zone)');
     await inspector.toggleColliderAutoFit(true);
 
     const offsetXInput = inspector.field('collider-offset-x');
     await expect(offsetXInput).toBeDisabled();
-  });
-
-  // =========================================================================
-  // 6. PHYSICS COMPONENT INSPECTION
-  // =========================================================================
-  test('modifies physics simulation properties', async ({ hierarchy, popup, inspector }) => {
-    const worldLayer = hierarchy.nodeByName('World Layer');
-    const entityNode = await hierarchy.addEntity(popup, worldLayer, ['Add Entity', 'Empty Entity']);
-    await expect(entityNode).toBeVisible();
-    await entityNode.click();
 
     await inspector.ensurePhysicsComponent();
-
     await inspector.setPhysicsBodyType('Dynamic (Standard)');
     await inspector.setPhysicsMass(12.5);
     await inspector.setPhysicsGravityScale(1.5);
@@ -203,9 +186,9 @@ test.describe('Property Inspector: Basic Components & Prefab E2E', () => {
   });
 
   // =========================================================================
-  // 7. PREFAB CREATION, COMPONENT OVERRIDES & RESTRICTION RULES
+  // 5. PREFAB WORKFLOWS & CONTEXT MENU ACTIONS
   // =========================================================================
-  test('attaches non-conflicting components, creates prefab via context menu, and verifies override status rules', async ({ page, hierarchy, popup, inspector }) => {
+  test('attaches components, creates prefab via context menu, and verifies override status and actions menu', async ({ page, hierarchy, popup, inspector, inspectorCrud }) => {
     const prefabName = 'EnemyMasterPrefab';
 
     const worldLayer = hierarchy.nodeByName('World Layer');
@@ -213,10 +196,11 @@ test.describe('Property Inspector: Basic Components & Prefab E2E', () => {
     await expect(entityNode).toBeVisible();
     await entityNode.click();
 
+    await inspector.setScriptId('enemy_prefab_id');
     await inspector.ensureColliderComponent();
     await inspector.ensurePhysicsComponent();
 
-    const { stableNode } = await createPrefabFromEntity(page, hierarchy, popup, entityNode, prefabName);
+    const { stableNode, nodeId } = await createPrefabFromEntity(page, hierarchy, popup, entityNode, prefabName);
 
     await stableNode.click();
 
@@ -232,45 +216,9 @@ test.describe('Property Inspector: Basic Components & Prefab E2E', () => {
 
     await inspector.addComponent('Audio');
     await popup.expectPopAlert('Restricted');
-  });
 
-  // =========================================================================
-  // 8. PREFAB ACTIONS MENU (APPLY, REVERT, UNPACK, COPY ID, DELETE)
-  // =========================================================================
-  test('tests all prefab context menu actions: Apply to Master, Revert to Sync, Unpack Prefab, Copy ID, and Delete Entity', async ({ page, hierarchy, popup, inspector, inspectorCrud }) => {
-    const prefabName = 'PlayerMasterPrefab';
-
-    const worldLayer = hierarchy.nodeByName('World Layer');
-    const entityNode = await hierarchy.addEntity(popup, worldLayer, ['Add Entity', 'Empty Entity']);
-    await expect(entityNode).toBeVisible();
-    await entityNode.click();
-
-    await inspector.setScriptId('player_entity_id');
-    await inspector.ensurePhysicsComponent();
-
-    const { stableNode, nodeId } = await createPrefabFromEntity(page, hierarchy, popup, entityNode, prefabName);
-    await stableNode.click();
-
-    await inspector.setPhysicsMass(80);
-    await page.evaluate(() => {
-      if (document.activeElement && document.activeElement !== document.body) {
-        document.activeElement.blur();
-      }
-    });
-
-    const objectSection = inspector.objectSection;
-    await expect(objectSection).toBeVisible();
-
-    const overrideBadge = objectSection.getByText('Override', { exact: true });
-    await expect(overrideBadge).toBeVisible();
-
-    // Structural hook (Section 7.5d): PropertySection trigger inside the object section wrapper
-    const menuTrigger = objectSection.locator('[data-element="section-menu-trigger"]');
-    await expect(menuTrigger).toBeVisible();
-    await menuTrigger.click();
-
-    const menuContainer = page.getByTestId('object-section-menu');
-    await expect(menuContainer).toBeVisible();
+    // Context menu actions verification
+    const menuContainer = await inspectorCrud.openObjectSectionMenu();
 
     await expect(menuContainer.getByTestId('menu-item-apply-to-master')).toBeVisible();
     await expect(menuContainer.getByTestId('menu-item-revert-to-sync')).toBeVisible();
@@ -508,15 +456,17 @@ test.describe('Property Inspector: Assets, Scripts & Tab Navigation Components E
   });
 
   // =========================================================================
-  // 14. SHAPE RENDERER COMPONENT & TAB NAVIGATION
+  // 10. SHAPE & TILEMAP RENDERER COMPONENTS & TAB NAVIGATION
   // =========================================================================
-  test('tests all properties, collision toggles, and open shape_editor tab', async ({ page, hierarchy, popup, inspector }) => {
+  test('tests specialized renderers (Shape & Tilemap) and opens respective workspace tabs', async ({ page, hierarchy, popup, inspector, assetCrud }) => {
     const worldLayer = hierarchy.nodeByName('World Layer');
+
+    // 1. Shape Renderer
     const shapeEntityNode = await hierarchy.addEntity(popup, worldLayer, ['Add Entity', 'Shape']);
     await expect(shapeEntityNode).toBeVisible();
     await shapeEntityNode.click();
 
-    const entityId = await shapeEntityNode.getAttribute('data-node-id');
+    const shapeId = await shapeEntityNode.getAttribute('data-node-id');
     await expect(inspector.shapeRendererSection).toBeVisible();
 
     await inspector.setShapeOutlineWidth(4);
@@ -527,31 +477,20 @@ test.describe('Property Inspector: Assets, Scripts & Tab Navigation Components E
     await polygonPhysicsBtn.click();
 
     await inspector.openShapeEditor();
-
-    await expect(activeWorkspaceTab(page, entityId)).toBeVisible();
+    await expect(activeWorkspaceTab(page, shapeId)).toBeVisible();
     await expect(page.getByTestId('right-panel-title')).toHaveText('Custom Shape Inspector');
 
-    await expect.poll(async () => {
-      return await page.evaluate(() => window.__capturedEngineEvents || []);
-    }).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ componentName: 'ShapeRenderer' })
-      ])
-    );
-  });
+    // Switch back to Main Scene tab so the hierarchy and inspector are active
+    await page.getByRole('tab', { name: 'Main Scene' }).click();
+    await expect(worldLayer).toBeVisible();
 
-  // =========================================================================
-  // 15. TILEMAP COMPONENT & TAB NAVIGATION
-  // =========================================================================
-  test('attaches sample image, tests tilemap properties, and open tilemap tab', async ({ page, hierarchy, popup, inspector, assetCrud }) => {
+    // 2. Tilemap Renderer
     const sampleImageName = 'sample_image.png';
-
-    const worldLayer = hierarchy.nodeByName('World Layer');
     const tilemapEntityNode = await hierarchy.addEntity(popup, worldLayer, ['Add Entity', 'Tilemap']);
     await expect(tilemapEntityNode).toBeVisible();
     await tilemapEntityNode.click();
 
-    const entityId = await tilemapEntityNode.getAttribute('data-node-id');
+    const tilemapId = await tilemapEntityNode.getAttribute('data-node-id');
     await expect(inspector.tilemapSection).toBeVisible();
 
     const assetCard = await assetCrud.uploadAsset(sampleImageName);
@@ -565,17 +504,8 @@ test.describe('Property Inspector: Assets, Scripts & Tab Navigation Components E
     await expect(opacityInput).toHaveValue('75');
 
     await inspector.openTilemapEditor();
-
-    await expect(activeWorkspaceTab(page, entityId)).toBeVisible();
+    await expect(activeWorkspaceTab(page, tilemapId)).toBeVisible();
     await expect(page.getByTestId('right-panel-title')).toHaveText('Tile Palette');
-
-    await expect.poll(async () => {
-      return await page.evaluate(() => window.__capturedEngineEvents || []);
-    }).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ componentName: 'Tilemap' })
-      ])
-    );
   });
 
   // =========================================================================

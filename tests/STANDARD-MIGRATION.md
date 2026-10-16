@@ -17,7 +17,7 @@ npx playwright test --repeat-each=10             # flakiness check (Section 14.3
 
 | Area | Change | Section |
 |---|---|---|
-| Language | Every test title, `describe` name, comment, JSDoc, error message and test-data string is now English. Only real application UI labels stay Indonesian (`Buat Proyek Baru`, `Ganti Nama`, `Simpan`) because they are matched against the app. | 2 |
+| Language | Every test title, `describe` name, comment, JSDoc, error message, test-data string, and application UI label is now English. | 2 |
 | Folder layout | `e2e/blueprint/*.spec.js` moved to `e2e/specs/blueprint/` so all feature specs follow the one layout (imports now `../../fixtures.js`). | 4.5 |
 | Test titles | Numeric prefixes (`1.`, `2.1`) removed from the blueprint specs; order is not part of a test's identity. | 2, 12 |
 | `playwright.config.js` | New `blueprint` project (`timeout 90s`, `expect.timeout 30s`) for the slow WebGL preview specs. `chromium` ignores that folder. This replaces the per-call `{ timeout: 30_000 }` / `{ timeout: 15_000 }` that lived in `PreviewPage`. | 2, 13 |

@@ -1,32 +1,32 @@
-# 🔒 Kunci Skema & Kontrak Data Lupis Engine (Schema & Contract Lock)
+# 🔒 Lupis Engine Schema & Data Contract Lock
 
-Dokumen ini adalah **sumber kebenaran tunggal (Single Source of Truth / Canonical Specification)** untuk seluruh struktur data, skema objek, format berkas, protokol bridge antarmuka, dan kontrak komunikasi API di dalam ekosistem **Lupis Engine**.
+This document serves as the **Single Source of Truth (Canonical Specification)** for all data structures, object schemas, file formats, interface bridge protocols, and API communication contracts across the **Lupis Engine** ecosystem.
 
-Semua subsistem (`editor/`, `core/`, `service/`, dan suite pengujian `tests/`) terikat secara ketat pada kontrak yang dijabarkan dalam spesifikasi ini.
+All subsystems (`editor/`, `core/`, `service/`, and the test suites in `tests/`) are strictly bound to the contracts specified herein.
 
 ---
 
-## 📌 Status & Metadata Kontrak
+## 📌 Contract Status & Metadata
 
-| Atribut | Nilai Resmi | Deskripsi |
+| Attribute | Official Value | Description |
 | :--- | :--- | :--- |
-| **Status Dokumen** | `LOCKED & CANONICAL` | Menjadi acuan mutlak pengujian dan verifikasi kode. |
-| **Schema Version** | `2` (`SCHEMA_VERSION = 2`) | Versi skema visual scripting & runtime payload aktif. |
-| **Binary Magic Header** | `LUPIS_PROJECT1!\0` | 16-byte magic number arsip biner proyek. |
-| **Binary XOR Mask** | `0x5A` | Kunci proteksi biner `.lupisproject`. |
-| **Target Runtime** | WebGL 2.0 / ES6 Modules | Lingkungan eksekusi grafis inti. |
-| **Editor Framework** | Vue 3 + Pinia + Vite | Lingkungan studio visual editor. |
-| **Microservice Backend**| Node.js / Express (Port 4000)| Generator font MSDF & desktop packager. |
+| **Document Status** | `LOCKED & CANONICAL` | Definitive reference for code verification and automated tests. |
+| **Schema Version** | `2` (`SCHEMA_VERSION = 2`) | Active schema version for visual scripting & runtime payloads. |
+| **Binary Magic Header** | `LUPIS_PROJECT1!\0` | 16-byte magic number for binary project archives. |
+| **Binary XOR Mask** | `0x5A` | Protection key for binary `.lupisproject` files. |
+| **Target Runtime** | WebGL 2.0 / ES6 Modules | Core graphics execution environment. |
+| **Editor Framework** | Vue 3 + Pinia + Vite | Visual studio editor frontend. |
+| **Microservice Backend**| Node.js / Express (Port 4000)| MSDF font generator & desktop packager. |
 
 ---
 
-## 🧭 Peta Aliran Kontrak (System Topology & Contract Boundaries)
+## 🧭 System Topology & Contract Boundaries
 
 ```mermaid
 flowchart TD
     subgraph Editor ["Visual Editor (Vue 3 / Pinia)"]
-        Stores["Pinia Stores\n(useProjectStore, useSceneStore, dll.)"]
-        Normalizer["normalizer.js & Schemas\n(Sanitasi & Default Factory)"]
+        Stores["Pinia Stores\n(useProjectStore, useSceneStore, etc.)"]
+        Normalizer["normalizer.js & Schemas\n(Sanitization & Default Factory)"]
         BridgeClient["engineBridge.js\n(EventBus Publisher/Subscriber)"]
     end
 
@@ -47,43 +47,43 @@ flowchart TD
         ExportExe["POST /api/export-app/exe"]
     end
 
-    Stores <-->|"Validasi Skema"| Normalizer
-    Stores <-->|"I/O Persistensi"| OPFS
+    Stores <-->|"Schema Validation"| Normalizer
+    Stores <-->|"Persistence I/O"| OPFS
     Stores -->|"Export / Import"| BinaryPkg
-    Editor <==>|"EventBus Bridge & Payload Data"| CoreEngine
+    Editor <==>|"EventBus Bridge & Data Payload"| CoreEngine
     Editor -->|"Multipart Request"| BackendService
 ```
 
 ---
 
-## 1. Kontrak Penyimpanan & Format Berkas (Storage & File System Contract)
+## 1. Storage & File System Contract
 
-### 1.1 Struktur Direktori OPFS (Origin Private File System)
-Di dalam browser virtual storage, direktori kerja berakar pada `lupis-engine/projects/<projectId>/`:
+### 1.1 OPFS Directory Structure (Origin Private File System)
+Inside browser virtual storage, the project workspace is rooted at `lupis-engine/projects/<projectId>/`:
 
 ```text
 lupis-engine/
 └── projects/
     └── <projectId>/
-        ├── project.json                 # Metadata utama proyek (projectSchema)
-        ├── assets/                      # Direktori penyimpanan blob biner mentah
-        │   └── <fileKey>                # File gambar, audio, atau font
+        ├── project.json                 # Primary project metadata (projectSchema)
+        ├── assets/                      # Raw binary media blob directory
+        │   └── <fileKey>                # Image, audio, or font file
         ├── scenes/
-        │   └── <sceneId>.json           # Detail hierarki, entitas & layer scene
+        │   └── <sceneId>.json           # Scene hierarchy, entities & layers
         ├── prefabs/
-        │   └── <prefabId>.json          # Blueprint prefab template
+        │   └── <prefabId>.json          # Prefab blueprint template
         ├── scripts/
         │   └── <scriptId>.json          # Visual scripting node graph
-        └── workspaces/                  # Indeks metadata workspace
-            ├── assets.json              # Daftar ringkas seluruh asset
-            ├── scenes.json              # Daftar ringkas seluruh scene
-            ├── prefabs.json             # Daftar ringkas seluruh prefab
-            ├── scripts.json             # Daftar ringkas seluruh script
-            └── folders.json             # Struktur folder pengelompokan
+        └── workspaces/                  # Workspace index metadata
+            ├── assets.json              # Compact registry of all assets
+            ├── scenes.json              # Compact registry of all scenes
+            ├── prefabs.json             # Compact registry of all prefabs
+            ├── scripts.json             # Compact registry of all scripts
+            └── folders.json             # Folder grouping hierarchy
 ```
 
-### 1.2 Kontrak Paket Biner Proyek (`.lupisproject`)
-File ekspor `.lupisproject` adalah arsip biner terenkripsi ringan dengan spesifikasi:
+### 1.2 Binary Project Package Contract (`.lupisproject`)
+The `.lupisproject` export file is a lightweight encrypted binary archive structured as:
 
 1. **Magic Header (16 bytes):**
    ```text
@@ -91,34 +91,34 @@ File ekspor `.lupisproject` adalah arsip biner terenkripsi ringan dengan spesifi
    ASCII: "LUPIS_PROJECT1!\0"
    ```
 2. **Obfuscation Payload:**
-   Setiap byte setelah header 16-byte dienkripsi/dekripsi menggunakan operasi XOR:
+   Every byte following the 16-byte magic header is encrypted/decrypted via bitwise XOR:
    $$\text{byte}_{\text{obfuscated}} = \text{byte}_{\text{plain}} \oplus 0\text{x}5\text{A}$$
 3. **Payload Content:**
-   Arsip standar **JSZip** yang berisi seluruh struktur file pada root proyek (berkas `project.json`, direktori `scenes/`, `scripts/`, `prefabs/`, `workspaces/`, dan `assets/`).
+   A standard **JSZip** archive containing the entire directory tree from the project root (`project.json`, `scenes/`, `scripts/`, `prefabs/`, `workspaces/`, and `assets/`).
 
 ---
 
-## 2. Kunci Skema Proyek (`projectSchema`)
+## 2. Project Schema (`projectSchema`)
 
-Didefinisikan di [`editor/src/features/projects/projectSchema.js`](file:///d:/Project/Lupis%20Engine/editor/src/features/projects/projectSchema.js) dan dipadankan dengan [`core/Schema/defaultProject.js`](file:///d:/Project/Lupis%20Engine/core/Schema/defaultProject.js):
+Defined in [`editor/src/features/projects/projectSchema.js`](file:///d:/Project/Lupis%20Engine/editor/src/features/projects/projectSchema.js) and matched with [`core/Schema/defaultProject.js`](file:///d:/Project/Lupis%20Engine/core/Schema/defaultProject.js):
 
 ```typescript
 interface ProjectSchema {
-  id: string;                                   // UUID unik proyek
+  id: string;                                   // Unique project UUID
   name: string;                                 // Default: "Untitled Project"
-  description: string;                          // Ringkasan proyek
-  version: string;                              // Versi rilis proyek (default: "1.0.0")
+  description: string;                          // Project summary
+  version: string;                              // Release version (default: "1.0.0")
   createdAt: string;                            // ISO 8601 Timestamp
-  thumbnailUrl: string | null;                  // URL / Base64 cover thumbnail kustom pengguna
-  snapshotUrl: string | null;                   // Auto snapshot canvas viewport scene terkini (seperti Figma)
+  thumbnailUrl: string | null;                  // User custom cover thumbnail URL / Base64
+  snapshotUrl: string | null;                   // Auto snapshot of current canvas viewport (Figma-like)
 
   settings: {
-    initialSceneId: string | null;              // UUID scene pertama saat boot
+    initialSceneId: string | null;              // UUID of boot scene
     tickRate: number;                           // Target physics tick rate (default: 60)
 
     autoSave: {
-      enabled: boolean;                         // Mengaktifkan penyimpanan otomatis berkala (default: false)
-      interval: number;                         // Interval auto-save dalam satuan menit (default: 10, min: 1)
+      enabled: boolean;                         // Toggle periodic auto-save (default: false)
+      interval: number;                         // Auto-save interval in minutes (default: 10, min: 1)
     };
 
     debug: {
@@ -126,50 +126,50 @@ interface ProjectSchema {
       position: "top-left" | "top-right" | "bottom-left" | "bottom-right"; // Default: "top-right"
       width: number;                            // Default: 360
       height: number;                           // Default: 220
-      maxLogs: number;                          // Kapasitas buffer log (default: 50)
+      maxLogs: number;                          // Log buffer capacity (default: 50)
     };
 
     ui: {
-      width: number;                            // Lebar resolusi kanvas UI (default: 1920)
-      height: number;                           // Tinggi resolusi kanvas UI (default: 1080)
-      showUIBorder: boolean;                    // Tampilkan batas canvas UI (default: true)
+      width: number;                            // UI canvas resolution width (default: 1920)
+      height: number;                           // UI canvas resolution height (default: 1080)
+      showUIBorder: boolean;                    // Display UI canvas bounds (default: true)
       active: boolean;                          // Default: true
     };
 
     camera: {
-      x: number;                                // Titik pusat kamera X (default: 960)
-      y: number;                                // Titik pusat kamera Y (default: 540)
-      zoom: number;                             // Skala zoom awal (default: 1)
-      lerp: number;                             // Kehalusan interpolasi kamera (default: 0.1)
+      x: number;                                // Camera center X (default: 960)
+      y: number;                                // Camera center Y (default: 540)
+      zoom: number;                             // Initial zoom scale (default: 1)
+      lerp: number;                             // Camera interpolation smoothness (default: 0.1)
     };
 
     grid: {
-      width: number;                            // Lebar grid sel (default: 32)
-      height: number;                           // Tinggi grid sel (default: 32)
-      color: string;                            // Warna garis grid (default: "#ffffff")
-      opacity: number;                          // Opasitas grid (default: 0.1)
-      visible: boolean;                         // Tampilkan grid (default: true)
-      snap: boolean;                            // Snap transformasi ke grid (default: true)
+      width: number;                            // Grid cell width (default: 32)
+      height: number;                           // Grid cell height (default: 32)
+      color: string;                            // Grid line color (default: "#ffffff")
+      opacity: number;                          // Grid opacity (default: 0.1)
+      visible: boolean;                         // Show grid lines (default: true)
+      snap: boolean;                            // Snap transformations to grid (default: true)
     };
   };
 
   globalVariables: Array<{
-    id: string;                                 // UUID variabel
+    id: string;                                 // Variable UUID
     name: string;                               // Identifier (default: "NewGlobalVar")
-    type: "String" | "Number" | "Boolean";      // Tipe data global
+    type: "String" | "Number" | "Boolean";      // Global data type
     defaultValue: string | number | boolean | null;
   }>;
 
   tags: string[];                               // Default: ["Untagged", "Player", "Enemy"]
-  scenes: Array<string | SceneSchema>;          // Referensi ID atau payload scene
+  scenes: Array<string | SceneSchema>;          // Scene ID references or full payloads
 }
 ```
 
 ---
 
-## 2.1 Kontrak Status Sinkronisasi & Auto-Save (Sync Status & Auto-Save Contract)
+## 2.1 Sync Status & Auto-Save Contract
 
-Editor Lupis Engine mengimplementasikan mesin keadaan (**State Machine**) formal untuk melacak integritas data memori terhadap persistensi penyimpanan lokal (OPFS):
+The Lupis Engine editor implements a formal **Finite State Machine** to track in-memory data integrity against local storage persistence (OPFS):
 
 ```mermaid
 stateDiagram-v2
@@ -182,161 +182,161 @@ stateDiagram-v2
     DIRTY --> WARNING: Navigate away / back to dashboard / beforeunload
 ```
 
-### 1. Definisi & Nilai Status Sinkronisasi
-| Status | Nilai `syncStatus` | Indikator Visual | Arti Semantik |
+### 1. Synchronization Status Definitions
+| Status | `syncStatus` Value | Visual Indicator | Semantic Meaning |
 | :--- | :--- | :--- | :--- |
-| **Synced** | `'synced'` | Hijau (`bg-emerald-500`) | Seluruh data in-memory identik dengan berkas di OPFS. |
-| **Dirty** | `'dirty'` | Merah (`bg-red-500`) | Terdapat perubahan lokal yang belum dikomit ke disk storage. |
-| **Saving / Loading**| - | Kuning berkedip (`bg-yellow-400 animate-pulse`)| Operasi asinkron I/O sedang berjalan (`workspaceStore.isSaving` / `isLoading`). |
+| **Synced** | `'synced'` | Green (`bg-emerald-500`) | In-memory data is completely identical to OPFS disk files. |
+| **Dirty** | `'dirty'` | Red (`bg-red-500`) | Uncommitted local mutations exist in memory. |
+| **Saving / Loading**| - | Pulsing yellow (`bg-yellow-400 animate-pulse`)| Async I/O operation in progress (`workspaceStore.isSaving` / `isLoading`). |
 
-### 2. Aturan Transisi Keadaan (State Transition Invariants)
-1. **Boot / Reload Invariant**: Pemanggilan `loadProject(projectId)` atau `syncFromServer()` wajib menghasilkan `syncStatus = 'synced'`.
-2. **Mutation Invariant**: Setiap perubahan pada:
-   - Proyek: `name`, `description`, `version`, `tags`, atau `settings` (termasuk `autoSave`, `grid`, `camera`, `ui`, `debug`)
-   - Hirarki scene: penambahan, pengubahan, penghapusan layer, entity, atau komponen
-   - Aset, Prefab, Folder, Script: penambahan atau pengubahan konten
-   secara deterministik mengubah status menjadi `'dirty'`.
-3. **Commit Invariant**: Keberhasilan `saveProjectToServer()` menulis `project.json` dan semua payload terkait ke OPFS, kemudian menetapkan `syncStatus = 'synced'`.
+### 2. State Transition Invariants
+1. **Boot / Reload Invariant**: Calling `loadProject(projectId)` or `syncFromServer()` deterministically sets `syncStatus = 'synced'`.
+2. **Mutation Invariant**: Any modification to:
+   - Project: `name`, `description`, `version`, `tags`, or `settings` (including `autoSave`, `grid`, `camera`, `ui`, `debug`)
+   - Scene hierarchy: adding, mutating, or removing layers, entities, or components
+   - Assets, Prefabs, Folders, Scripts: adding or mutating contents
+   deterministically transitions `syncStatus` to `'dirty'`.
+3. **Commit Invariant**: Successful execution of `saveProjectToServer()` writes `project.json` and all associated payloads to OPFS, resetting `syncStatus = 'synced'`.
 4. **Auto-Save Contract**:
-   - Jika `project.settings.autoSave.enabled === true`, timer berkala memicu `triggerAutoSave()` setiap `interval` menit (minimal 1 menit).
-   - Auto-save hanya berjalan apabila status saat evaluasi adalah `'dirty'`, serta `isLoading === false` dan `isSaving === false`.
-   - Jika status telah `'synced'`, auto-save tidak melakukan penulisan berlebih (no-op).
+   - When `project.settings.autoSave.enabled === true`, a recurring timer triggers `triggerAutoSave()` every `interval` minutes (minimum 1 minute).
+   - Auto-save only executes if the evaluated state is `'dirty'`, and both `isLoading === false` and `isSaving === false`.
+   - If the state is already `'synced'`, auto-save executes as a no-op to eliminate redundant disk writes.
 5. **Safety Guard Contract**:
-   - Menu aksi "Back to Dashboard" wajib memicu dialog konfirmasi bahaya jika `syncStatus === 'dirty'` agar data tidak hilang tanpa persetujuan pengguna.
-   - Event `beforeunload` browser mengintersepsi penutupan tab ketika status `'dirty'`.
+   - The "Back to Dashboard" menu action must trigger a confirmation dialog if `syncStatus === 'dirty'` to prevent unintentional data loss.
+   - The browser `beforeunload` event intercepts tab closure when `syncStatus === 'dirty'`.
 
 ---
 
-## 3. Kunci Skema Scene & Layer (`sceneSchema` & `layerSchema`)
+## 3. Scene & Layer Schemas (`sceneSchema` & `layerSchema`)
 
-Didefinisikan di [`editor/src/features/scenes/schemas/sceneSchema.js`](file:///d:/Project/Lupis%20Engine/editor/src/features/scenes/schemas/sceneSchema.js) dan [`layerSchema.js`](file:///d:/Project/Lupis%20Engine/editor/src/features/scenes/schemas/layerSchema.js):
+Defined in [`editor/src/features/scenes/schemas/sceneSchema.js`](file:///d:/Project/Lupis%20Engine/editor/src/features/scenes/schemas/sceneSchema.js) and [`layerSchema.js`](file:///d:/Project/Lupis%20Engine/editor/src/features/scenes/schemas/layerSchema.js):
 
-### 3.1 Skema Scene (`sceneSchema`)
+### 3.1 Scene Schema (`sceneSchema`)
 ```typescript
 interface SceneSchema {
   id: string;                                   // Format: "scene_" + UUID
-  projectId: string | null;                     // Relasi ke project owner
+  projectId: string | null;                     // Associated project ID
   scriptId: string;                             // Format: "script_" + UUID
   name: string;                                 // Default: "Untitled Scene"
 
   settings: {
-    backgroundColor: string;                    // Hex background (default: "#222222")
+    backgroundColor: string;                    // Background color hex (default: "#222222")
     showRulers: boolean;                        // Default: true
 
     physics: {
-      gravity: number;                          // Gravitasi dunia 2D (default: 1200)
-      drag: number;                             // Hambatan udara dunia (default: 5)
+      gravity: number;                          // 2D world gravity (default: 1200)
+      drag: number;                             // Global air resistance (default: 5)
     };
 
     worldBounds: {
-      x1: number;                               // Batas kiri (default: -960)
-      x2: number;                               // Batas kanan (default: 2880)
-      y1: number;                               // Batas atas (default: -540)
-      y2: number;                               // Batas bawah (default: 1620)
-      active: boolean;                          // Apakah batas dunia aktif (default: true)
+      x1: number;                               // Left boundary (default: -960)
+      x2: number;                               // Right boundary (default: 2880)
+      y1: number;                               // Top boundary (default: -540)
+      y2: number;                               // Bottom boundary (default: 1620)
+      active: boolean;                          // World bounds enforcement active (default: true)
     };
   };
 
-  layersWorld: LayerSchema[];                   // Layer untuk objek in-game world space
-  layersUI: LayerSchema[];                      // Layer untuk objek overlay screen UI space
-  entities: EntitySchema[];                     // Seluruh entitas terdaftar dalam scene
+  layersWorld: LayerSchema[];                   // Layers for in-game world space entities
+  layersUI: LayerSchema[];                      // Layers for screen overlay UI entities
+  entities: EntitySchema[];                     // All entities registered in the scene
 }
 ```
 
-### 3.2 Skema Layer (`layerSchema`)
+### 3.2 Layer Schema (`layerSchema`)
 ```typescript
 interface LayerSchema {
-  id: string;                                   // UUID layer
+  id: string;                                   // Layer UUID
   scriptId: string;                             // Format: "layer_" + UUID
   name: string;                                 // Default: "New Layer"
-  zIndex: number;                               // Tingkat kedalaman rendering (default: 0)
-  orderIndex: number;                           // Urutan susunan pada pohon hierarki (default: 0)
-  active: boolean;                              // Mengaktifkan logika & collision (default: true)
-  visible: boolean;                             // Mengaktifkan rendering (default: true)
-  locked: boolean;                              // Mengunci seleksi di viewport (default: false)
-  opacity: number;                              // Nilai transparansi layer (default: 1.0)
+  zIndex: number;                               // Render depth order (default: 0)
+  orderIndex: number;                           // Tree hierarchy sibling ordering (default: 0)
+  active: boolean;                              // Enable logic & collision updates (default: true)
+  visible: boolean;                             // Enable rendering (default: true)
+  locked: boolean;                              // Lock viewport selection (default: false)
+  opacity: number;                              // Layer transparency [0..1] (default: 1.0)
 }
 ```
 
 ---
 
-## 4. Kunci Skema Entitas (`entitySchema`)
+## 4. Entity Schema (`entitySchema`)
 
-Didefinisikan di [`editor/src/features/scenes/schemas/entitySchema.js`](file:///d:/Project/Lupis%20Engine/editor/src/features/scenes/schemas/entitySchema.js):
+Defined in [`editor/src/features/scenes/schemas/entitySchema.js`](file:///d:/Project/Lupis%20Engine/editor/src/features/scenes/schemas/entitySchema.js):
 
 ```typescript
 interface EntitySchema {
-  id: string;                                   // UUID unik entitas
-  scriptId: string;                             // Identifier untuk Blueprint runtime
+  id: string;                                   // Unique entity UUID
+  scriptId: string;                             // Identifier for Blueprint runtime binding
   name: string;                                 // Default: "New Entity"
-  type: "entity" | "ui";                        // Domain entitas: World vs Screen UI
+  type: "entity" | "ui";                        // Entity domain: World vs Screen UI
   tag: string;                                  // Default: "untagged"
 
-  zIndex: number;                               // Tingkat kedalaman draw call (default: 0)
-  orderIndex: number;                           // Urutan hierarki sibling (default: 0)
+  zIndex: number;                               // Draw call depth order (default: 0)
+  orderIndex: number;                           // Sibling order in hierarchy (default: 0)
 
-  parentId: string | null;                      // ID entitas induk (null jika root)
-  layerId: string;                              // ID layer penampung (default: "layer_root")
+  parentId: string | null;                      // Parent entity UUID (null if root entity)
+  layerId: string;                              // Containing layer UUID (default: "layer_root")
 
-  prefabId: string | null;                      // ID prefab asal jika merupakan turunan template
-  overridden: boolean;                          // Status override properti prefab (default: false)
+  prefabId: string | null;                      // Origin prefab UUID if instantiated from template
+  overridden: boolean;                          // Prefab property override flag (default: false)
 
-  active: boolean;                              // Pembaruan siklus game loop (default: true)
-  visible: boolean;                             // Visibilitas pada kamera (default: true)
-  locked: boolean;                              // Kunci manipulasi viewport (default: false)
+  active: boolean;                              // Game loop tick update active (default: true)
+  visible: boolean;                             // Render camera visibility (default: true)
+  locked: boolean;                              // Lock viewport transform handles (default: false)
 
   _editor: {
-    locked: boolean;                            // Status kunci di editor inspector
-    expanded: boolean;                          // Status ekspansi node di panel hierarki
+    locked: boolean;                            // Inspector locked state
+    expanded: boolean;                          // Tree node expanded state in hierarchy
   };
 
-  components: Record<string, ComponentData>;    // Peta komponen ECS
-  _isDirty: boolean;                            // Flag internal sinkronisasi editor
+  components: Record<string, ComponentData>;    // ECS component map
+  _isDirty: boolean;                            // Internal editor synchronization flag
 }
 ```
 
 ---
 
-## 5. Kunci Skema Komponen ECS (`componentSchema`)
+## 5. ECS Component Schemas (`componentSchema`)
 
-Didefinisikan di [`editor/src/features/scenes/schemas/componentSchema.js`](file:///d:/Project/Lupis%20Engine/editor/src/features/scenes/schemas/componentSchema.js). Setiap komponen menyertakan flag `overridden: boolean` saat beroperasi di dalam entitas turunan prefab.
+Defined in [`editor/src/features/scenes/schemas/componentSchema.js`](file:///d:/Project/Lupis%20Engine/editor/src/features/scenes/schemas/componentSchema.js). Every component includes an `overridden: boolean` flag when operating inside a prefab-instantiated entity.
 
 ### 5.1 `Transform` & `UITransform`
 ```typescript
 interface TransformComponent {
-  x: number;                                    // Posisi horizontal
-  y: number;                                    // Posisi vertikal
-  rotation: number;                             // Rotasi dalam derajat/radian (default: 0)
-  scaleX: number;                               // Skala sumbu X (default: 1)
-  scaleY: number;                               // Skala sumbu Y (default: 1)
-  pivotX: number;                               // Titik tumpu X [0..1] (default: 0.5)
-  pivotY: number;                               // Titik tumpu Y [0..1] (default: 0.5)
-  flipX: boolean;                               // Balik horizontal (default: false)
-  flipY: boolean;                               // Balik vertikal (default: false)
-  width: number;                                // Dimensi lebar (default: 100)
-  height: number;                               // Dimensi tinggi (default: 100)
-  isRatioLocked: boolean;                       // Kunci rasio aspek saat resize (default: false)
-  isScaleLocked: boolean;                       // Kunci skala saat resize (default: true)
+  x: number;                                    // Horizontal position
+  y: number;                                    // Vertical position
+  rotation: number;                             // Rotation angle (default: 0)
+  scaleX: number;                               // Scale multiplier X (default: 1)
+  scaleY: number;                               // Scale multiplier Y (default: 1)
+  pivotX: number;                               // Pivot origin ratio X [0..1] (default: 0.5)
+  pivotY: number;                               // Pivot origin ratio Y [0..1] (default: 0.5)
+  flipX: boolean;                               // Horizontal flip (default: false)
+  flipY: boolean;                               // Vertical flip (default: false)
+  width: number;                                // Width dimension (default: 100)
+  height: number;                               // Height dimension (default: 100)
+  isRatioLocked: boolean;                       // Lock aspect ratio on resize (default: false)
+  isScaleLocked: boolean;                       // Lock scale values on resize (default: true)
   overridden: boolean;
 }
 
 interface UITransformComponent extends TransformComponent {
-  anchorX: number;                              // Jangkar penataan UI X [0..1] (default: 0.5)
-  anchorY: number;                              // Jangkar penataan UI Y [0..1] (default: 0.5)
+  anchorX: number;                              // UI anchor alignment ratio X [0..1] (default: 0.5)
+  anchorY: number;                              // UI anchor alignment ratio Y [0..1] (default: 0.5)
 }
 ```
 
 ### 5.2 `SpriteRenderer`
 ```typescript
 interface SpriteRendererComponent {
-  assetId: string | null;                       // UUID asset tekstur gambar
-  sourceX: number;                              // Pemotongan atlas UV X (default: 0)
-  sourceY: number;                              // Pemotongan atlas UV Y (default: 0)
-  sourceWidth: number;                          // Lebar cuplikan tekstur (default: 100)
-  sourceHeight: number;                         // Tinggi cuplikan tekstur (default: 100)
-  color: string;                                // Hex tint warna (default: "#FFFFFF")
-  opacity: number;                              // Transparansi [0..1] (default: 1)
-  filterMode: "pixelated" | "smooth";           // Mode filtering WebGL (default: "pixelated")
+  assetId: string | null;                       // Image texture asset UUID
+  sourceX: number;                              // Atlas UV crop X (default: 0)
+  sourceY: number;                              // Atlas UV crop Y (default: 0)
+  sourceWidth: number;                          // Atlas UV crop width (default: 100)
+  sourceHeight: number;                         // Atlas UV crop height (default: 100)
+  color: string;                                // Hex color tint (default: "#FFFFFF")
+  opacity: number;                              // Opacity ratio [0..1] (default: 1)
+  filterMode: "pixelated" | "smooth";           // WebGL texture filtering (default: "pixelated")
   useSDF: boolean;                              // Signed Distance Field sampling (default: false)
   overridden: boolean;
 }
@@ -346,14 +346,14 @@ interface SpriteRendererComponent {
 ```typescript
 interface ShapeRendererComponent {
   type: "custom";
-  opacity: number;                              // Transparansi umum (default: 1)
-  isFilled: boolean;                            // Isi bentuk geometri (default: true)
-  color: string;                                // Hex warna isi (default: "#ff1e00")
-  fillOpacity: number;                          // Opasitas isi (default: 1)
-  outlineWidth: number;                         // Lebar garis tepi (default: 0)
-  outlineColor: string;                         // Hex warna garis tepi (default: "#0066FF")
-  outlineOpacity: number;                       // Opasitas garis tepi (default: 1)
-  elements: Array<{                             // Simpul geometri titik dan poligon
+  opacity: number;                              // General opacity [0..1] (default: 1)
+  isFilled: boolean;                            // Fill geometry interior (default: true)
+  color: string;                                // Fill hex color (default: "#ff1e00")
+  fillOpacity: number;                          // Fill opacity (default: 1)
+  outlineWidth: number;                         // Stroke outline width (default: 0)
+  outlineColor: string;                         // Stroke outline hex color (default: "#0066FF")
+  outlineOpacity: number;                       // Stroke outline opacity (default: 1)
+  elements: Array<{                             // Point and polygon geometry vertices
     id: string;
     type: "point" | "polygon";
     x?: number;
@@ -362,9 +362,9 @@ interface ShapeRendererComponent {
     points?: string[];
     enabled: boolean;
   }>;
-  enablePolygonCollision: boolean;              // Generate collider otomatis (default: false)
-  enableSegmentCollision: boolean;              // Default: false
-  enableCircleCollision: boolean;               // Default: false
+  enablePolygonCollision: boolean;              // Auto-generate polygon collider (default: false)
+  enableSegmentCollision: boolean;              // Auto-generate segment collider (default: false)
+  enableCircleCollision: boolean;               // Auto-generate circle collider (default: false)
   overridden: boolean;
 }
 ```
@@ -372,13 +372,13 @@ interface ShapeRendererComponent {
 ### 5.4 `Tilemap`
 ```typescript
 interface TilemapComponent {
-  width: number;                                // Lebar ubin / grid (default: 16)
-  height: number;                               // Tinggi ubin / grid (default: 16)
-  assetId: string | null;                       // UUID asset tileset tekstur
-  opacity: number;                              // Default: 1
-  isSolid: boolean;                             // Apakah seluruh ubin memblokir fisik (default: false)
+  width: number;                                // Tile cell width (default: 16)
+  height: number;                               // Tile cell height (default: 16)
+  assetId: string | null;                       // Tileset texture asset UUID
+  opacity: number;                              // Transparency (default: 1)
+  isSolid: boolean;                             // Block physics collision on all tiles (default: false)
   filterMode: "pixelated" | "smooth";           // Default: "pixelated"
-  data: Record<string, number>;                 // Dictionary ubin dengan key "x,y" dan value tileIndex
+  data: Record<string, number>;                 // Tile dictionary mapping "x,y" coordinates to tileIndex
   overridden: boolean;
 }
 ```
@@ -386,27 +386,27 @@ interface TilemapComponent {
 ### 5.5 `TextRenderer`
 ```typescript
 interface TextRendererComponent {
-  value: string;                                // Konten teks (default: "New Text")
-  mode: "static" | "dynamic";                   // Default: "static"
-  assetId: string | null;                       // UUID font MSDF asset
-  fontSize: number;                             // Ukuran font pt (default: 24)
-  color: string;                                // Hex warna teks (default: "#FFFFFF")
+  value: string;                                // Text content (default: "New Text")
+  mode: "static" | "dynamic";                   // Rendering mode (default: "static")
+  assetId: string | null;                       // MSDF font asset UUID
+  fontSize: number;                             // Font point size (default: 24)
+  color: string;                                // Text hex color (default: "#FFFFFF")
   opacity: number;                              // Default: 1
-  align: "left" | "center" | "right";           // Penjajaran horizontal (default: "left")
-  maxWidth: number;                             // Lebar batas wrap (default: 0 / tanpa batas)
-  maxLine: number;                              // Jumlah baris maksimum (default: 0)
-  lineSpacing: number;                          // Spasi antar baris (default: 1.2)
-  letterSpacing: number;                        // Spasi antar karakter (default: 0)
-  overflow: "wrap" | "truncate" | "visible";    // Perilaku overflow (default: "wrap")
-  autoFit: boolean;                             // Penyesuaian otomatis bounding box (default: true)
-  outlineWidth: number;                         // Default: 0
-  outlineColor: string;                         // Default: "#000000"
-  shadowEnabled: boolean;                       // Bayangan teks (default: false)
-  shadowColor: string;                          // Default: "#000000"
-  shadowOpacity: number;                        // Default: 0.5
-  shadowOffsetX: number;                        // Default: 2
-  shadowOffsetY: number;                        // Default: -2
-  shadowBlur: number;                           // Default: 5
+  align: "left" | "center" | "right";           // Horizontal text alignment (default: "left")
+  maxWidth: number;                             // Wrap boundary width (default: 0 / unlimited)
+  maxLine: number;                              // Maximum line count (default: 0 / unlimited)
+  lineSpacing: number;                          // Line height spacing factor (default: 1.2)
+  letterSpacing: number;                        // Character spacing offset (default: 0)
+  overflow: "wrap" | "truncate" | "visible";    // Overflow layout behavior (default: "wrap")
+  autoFit: boolean;                             // Auto-adjust bounding box dimensions (default: true)
+  outlineWidth: number;                         // Text stroke outline width (default: 0)
+  outlineColor: string;                         // Text stroke outline hex color (default: "#000000")
+  shadowEnabled: boolean;                       // Drop shadow toggle (default: false)
+  shadowColor: string;                          // Shadow hex color (default: "#000000")
+  shadowOpacity: number;                        // Shadow opacity (default: 0.5)
+  shadowOffsetX: number;                        // Shadow offset X (default: 2)
+  shadowOffsetY: number;                        // Shadow offset Y (default: -2)
+  shadowBlur: number;                           // Shadow blur radius (default: 5)
   overridden: boolean;
 }
 ```
@@ -414,15 +414,15 @@ interface TextRendererComponent {
 ### 5.6 `Physics`
 ```typescript
 interface PhysicsComponent {
-  enabled: boolean;                             // Simulasi aktif (default: true)
-  type: "dynamic" | "static" | "kinematic";     // Tipe badan fisik (default: "dynamic")
-  mass: number;                                 // Massa objek (default: 1.0)
-  gravityScale: number;                         // Skala pengaruh gravitasi dunia (default: 1.0)
-  isFrozen: boolean;                            // Bekukan pergerakan posisi (default: false)
-  drag: number;                                 // Hambatan gesek internal (default: 1.0)
-  velocityX: number;                            // Kecepatan gerak X saat ini (default: 0)
-  velocityY: number;                            // Kecepatan gerak Y saat ini (default: 0)
-  isGrounded: boolean;                          // Status menyentuh permukaan pijakan (default: false)
+  enabled: boolean;                             // Physics simulation active (default: true)
+  type: "dynamic" | "static" | "kinematic";     // Body physics type (default: "dynamic")
+  mass: number;                                 // Body mass (default: 1.0)
+  gravityScale: number;                         // Gravity multiplier factor (default: 1.0)
+  isFrozen: boolean;                            // Freeze position changes (default: false)
+  drag: number;                                 // Drag coefficient (default: 1.0)
+  velocityX: number;                            // Current linear velocity X (default: 0)
+  velocityY: number;                            // Current linear velocity Y (default: 0)
+  isGrounded: boolean;                          // Contacting ground surface (default: false)
   movementState: "idle" | "run" | "jump" | string; // Default: "idle"
   facingDirection: "left" | "right";            // Default: "right"
   overridden: boolean;
@@ -433,16 +433,16 @@ interface PhysicsComponent {
 ```typescript
 interface ColliderComponent {
   data: Array<{
-    type: "solid" | "trigger";                  // Fisik padat vs pemicu sensor
+    type: "solid" | "trigger";                  // Solid physics body vs sensor trigger
     enabled: boolean;                           // Default: true
-    autoFit: boolean;                           // Sesuaikan otomatis dengan Transform (default: false)
-    offsetX: number;                            // Pergeseran pusat X (default: 0)
-    offsetY: number;                            // Pergeseran pusat Y (default: 0)
-    width: number;                              // Lebar hitbox (default: 32)
-    height: number;                             // Tinggi hitbox (default: 32)
-    rotation: number;                           // Rotasi hitbox (default: 0)
-    pivotX: number;                             // Titik tumpu X (default: 0)
-    pivotY: number;                             // Titik tumpu Y (default: 0)
+    autoFit: boolean;                           // Auto-match entity Transform bounds (default: false)
+    offsetX: number;                            // Offset center X (default: 0)
+    offsetY: number;                            // Offset center Y (default: 0)
+    width: number;                              // Hitbox width (default: 32)
+    height: number;                             // Hitbox height (default: 32)
+    rotation: number;                           // Hitbox rotation (default: 0)
+    pivotX: number;                             // Hitbox pivot X (default: 0)
+    pivotY: number;                             // Hitbox pivot Y (default: 0)
   }>;
   overridden: boolean;
 }
@@ -451,8 +451,8 @@ interface ColliderComponent {
 ### 5.8 `SpriteAnimator`
 ```typescript
 interface SpriteAnimatorComponent {
-  currentClip: string | null;                   // Nama/ID klip animasi yang sedang aktif
-  clips: Record<string, {                       // Dictionary kumpulan klip animasi
+  currentClip: string | null;                   // Active animation clip identifier or scriptId
+  clips: Record<string, {                       // Dictionary / list of animation clips
     name: string;
     frames: Array<{
       sourceX: number;
@@ -463,9 +463,9 @@ interface SpriteAnimatorComponent {
     }>;
     loop: boolean;
     fps: number;
-  }>;
+  }> | Array<any>;
   active: boolean;                              // Default: true
-  isPlaying: boolean;                           // Status pemutaran saat ini (default: true)
+  isPlaying: boolean;                           // Playback running state (default: true)
   overridden: boolean;
 }
 ```
@@ -473,18 +473,18 @@ interface SpriteAnimatorComponent {
 ### 5.9 `Audio`
 ```typescript
 interface AudioComponent {
-  assetId: string | null;                       // UUID asset suara
+  assetId: string | null;                       // Sound media asset UUID
   isMute: boolean;                              // Default: false
-  volume: number;                               // Volume suara [0..1] (default: 1.0)
-  pitch: number;                                // Kecepatan/frekuensi pitch (default: 1.0)
-  loop: boolean;                                // Putar berulang (default: false)
-  autoplay: boolean;                            // Putar saat inisialisasi entitas (default: false)
-  spatial: boolean;                             // Audio 2D posisional jarak (default: false)
-  persist: boolean;                             // Tetap berbunyi lintas scene (default: false)
-  fadeIn: number;                               // Durasi fade-in detik (default: 0.0)
-  fadeOut: number;                              // Durasi fade-out detik (default: 0.0)
-  refDistance: number;                          // Jarak referensi audio posisional (default: 100)
-  maxDistance: number;                          // Jarak batas maksimal terdengar (default: 1000)
+  volume: number;                               // Audio gain [0..1] (default: 1.0)
+  pitch: number;                                // Playback rate / pitch multiplier (default: 1.0)
+  loop: boolean;                                // Loop playback (default: false)
+  autoplay: boolean;                            // Play automatically on spawn (default: false)
+  spatial: boolean;                             // 2D positional distance audio (default: false)
+  persist: boolean;                             // Persist playback across scene changes (default: false)
+  fadeIn: number;                               // Fade-in duration in seconds (default: 0.0)
+  fadeOut: number;                              // Fade-out duration in seconds (default: 0.0)
+  refDistance: number;                          // Positional reference distance (default: 100)
+  maxDistance: number;                          // Maximum audible cutoff distance (default: 1000)
   overridden: boolean;
 }
 ```
@@ -492,10 +492,10 @@ interface AudioComponent {
 ### 5.10 `ScriptController`
 ```typescript
 interface ScriptControllerComponent {
-  data: Array<{                                 // Binding script blueprint ke entitas
-    scriptId: string;                           // UUID script yang terpasang
-    enabled: boolean;                           // Status aktivasi script
-    customParameters?: Record<string, any>;     // Variabel override per-entitas
+  data: Array<{                                 // Visual blueprint bindings
+    scriptId: string;                           // Attached script UUID
+    enabled: boolean;                           // Activation status
+    customParameters?: Record<string, any>;     // Per-entity variable overrides
   }>;
   overridden: boolean;
 }
@@ -503,122 +503,122 @@ interface ScriptControllerComponent {
 
 ---
 
-## 6. Kunci Skema Asset & Folder (`assetSchema` & `folderSchema`)
+## 6. Asset & Folder Schemas (`assetSchema` & `folderSchema`)
 
-Didefinisikan di [`editor/src/features/assets/assetSchema.js`](file:///d:/Project/Lupis%20Engine/editor/src/features/assets/assetSchema.js) dan [`editor/src/features/folders/folderSchema.js`](file:///d:/Project/Lupis%20Engine/editor/src/features/folders/folderSchema.js):
+Defined in [`editor/src/features/assets/assetSchema.js`](file:///d:/Project/Lupis%20Engine/editor/src/features/assets/assetSchema.js) and [`editor/src/features/folders/folderSchema.js`](file:///d:/Project/Lupis%20Engine/editor/src/features/folders/folderSchema.js):
 
-### 6.1 Skema Asset (`assetSchema`)
+### 6.1 Asset Schema (`assetSchema`)
 ```typescript
 interface AssetSchema {
-  id: string;                                   // UUID unik asset
-  projectId: string | null;                     // Relasi owner proyek
-  folderId: string | null;                      // Relasi folder pengelompokan
-  name: string;                                 // Nama tampilan asset
-  type: "texture" | "audio" | "font";           // Tipe media
-  fileKey: string;                              // Kunci file biner pada OPFS / CDN
-  fileUrl?: string;                             // URL sementara (Blob URL atau URL layanan)
-  localBlob?: Blob | null;                      // Memory buffer saat diunggah
-  isSynced: boolean;                            // Status persistensi OPFS (default: true)
+  id: string;                                   // Unique asset UUID
+  projectId: string | null;                     // Associated project ID
+  folderId: string | null;                      // Associated folder grouping UUID
+  name: string;                                 // Display asset label
+  type: "texture" | "audio" | "font";           // Media type
+  fileKey: string;                              // Binary file key in OPFS / storage
+  fileUrl?: string;                             // Ephemeral Blob URL or service URL
+  localBlob?: Blob | null;                      // In-memory upload buffer
+  isSynced: boolean;                            // Persistence status in OPFS (default: true)
 
   meta: {
-    extension: string;                          // Misal: ".png", ".ogg", ".fnt", ".ttf"
-    size: number;                               // Ukuran berkas dalam bytes
-    dimensions?: {                              // Khusus tipe "texture"
+    extension: string;                          // E.g. ".png", ".ogg", ".fnt", ".ttf"
+    size: number;                               // File size in bytes
+    dimensions?: {                              // "texture" type specific
       w: number;
       h: number;
     };
-    duration?: number;                          // Khusus tipe "audio" (dalam detik)
-    textureUrl?: string;                        // Khusus tipe "font" (relasi atlas PNG MSDF)
+    duration?: number;                          // "audio" type specific (in seconds)
+    textureUrl?: string;                        // "font" type specific (PNG atlas path)
     [key: string]: any;
   };
 }
 ```
 
-### 6.2 Asset Sistem Default
-- **Font Sistem Bawaan (`DEFAULT_SYSTEM_FONT_ASSET`):**
+### 6.2 Default System Assets
+- **Default System Font (`DEFAULT_SYSTEM_FONT_ASSET`):**
   - `id`: `"system_default"`
   - `name`: `"System Default Font"`
   - `type`: `"font"`
   - `fileKey`: `"system_default"`
-  - Mengarah ke font MSDF bawaan engine di [`core/Assets/Fonts/defaultFont.fnt`](file:///d:/Project/Lupis%20Engine/core/Assets/Fonts/defaultFont.fnt).
+  - References built-in engine MSDF typography at [`core/Assets/Fonts/defaultFont.fnt`](file:///d:/Project/Lupis%20Engine/core/Assets/Fonts/defaultFont.fnt).
 
-### 6.3 Skema Folder (`folderSchema`)
+### 6.3 Folder Schema (`folderSchema`)
 ```typescript
 interface FolderSchema {
   id: string;                                   // Format: "folder_" + timestamp + random
   type: "folder";
   name: string;                                 // Default: "New Folder"
-  section: "assets" | "scripts" | "prefabs" | "scenes"; // Domain workspace folder
-  projectId: string | null;                     // Relasi owner proyek
-  parentId: string | null;                      // Penataan folder bertingkat (nested)
+  section: "assets" | "scripts" | "prefabs" | "scenes"; // Workspace section domain
+  projectId: string | null;                     // Associated project ID
+  parentId: string | null;                      // Nested parent folder ID
 }
 ```
 
 ---
 
-## 7. Kunci Skema Prefab (`prefabSchema`)
+## 7. Prefab Schema (`prefabSchema`)
 
-Didefinisikan di [`editor/src/features/prefabs/prefabSchema.js`](file:///d:/Project/Lupis%20Engine/editor/src/features/prefabs/prefabSchema.js):
+Defined in [`editor/src/features/prefabs/prefabSchema.js`](file:///d:/Project/Lupis%20Engine/editor/src/features/prefabs/prefabSchema.js):
 
 ```typescript
 interface PrefabSchema {
-  id: string;                                   // UUID unik prefab
+  id: string;                                   // Unique prefab UUID
   projectId: string | null;
   folderId: string | null;
   name: string;                                 // Default: "New Prefab"
-  type: "world" | "ui";                         // Kategori hierarki
+  type: "world" | "ui";                         // Hierarchy category domain
   data: EntitySchema;                           // Root entity template (prefabId=null, parentId=null)
-  children: EntitySchema[];                     // Daftar entitas turunan (anak)
+  children: EntitySchema[];                     // Descendant entities list
 }
 ```
 
 > [!IMPORTANT]
-> **Aturan Normalisasi Prefab:**
-> Saat sebuah entitas diubah menjadi prefab, seluruh properti `overridden` pada komponen root dan entitas anak di-reset ke nilai `false`. Properti `prefabId` dan `parentId` pada root entitas template selalu bernilai `null`.
+> **Prefab Normalization Rules:**
+> When an entity tree is converted into a prefab, all `overridden` flags on components across root and child entities are reset to `false`. Both `prefabId` and `parentId` on the template root entity are strictly normalized to `null`.
 
 ---
 
-## 8. Kunci Kontrak Visual Scripting & Blueprint
+## 8. Visual Scripting & Blueprint Contract
 
-Didefinisikan di [`editor/src/features/nodes/contract/`](file:///d:/Project/Lupis%20Engine/editor/src/features/nodes/contract/) dan [`core/Script/contract/`](file:///d:/Project/Lupis%20Engine/core/Script/contract/):
+Defined across [`editor/src/features/nodes/contract/`](file:///d:/Project/Lupis%20Engine/editor/src/features/nodes/contract/) and [`core/Script/contract/`](file:///d:/Project/Lupis%20Engine/core/Script/contract/):
 
-### 8.1 Skema Script Graph (`scriptSchema`)
+### 8.1 Script Graph Schema (`scriptSchema`)
 ```typescript
 interface ScriptSchema {
-  id: string;                                   // UUID unik script
+  id: string;                                   // Unique script UUID
   projectId: string | null;
   folderId: string | null;
   name: string;                                 // Default: "Untitled Script"
-  type: "component" | "global" | "scene";       // Peran script dalam hierarki
-  localVariables: ScriptVariable[];             // Variabel lokal skrip
-  nodes: ScriptNode[];                          // Daftar simpul logika
-  edges: ScriptEdge[];                          // Daftar relasi kawat/pin
+  type: "component" | "global" | "scene";       // Script role in hierarchy
+  localVariables: ScriptVariable[];             // Local script variables
+  nodes: ScriptNode[];                          // Logic nodes list
+  edges: ScriptEdge[];                          // Wire / pin connection list
 }
 ```
 
-### 8.2 Struktur Elemen Simpul Blueprint
+### 8.2 Blueprint Graph Element Structures
 ```typescript
 interface ScriptVariable {
-  id: string;                                   // UUID variabel
+  id: string;                                   // Variable UUID
   name: string;                                 // Default: "NewVariable"
   type: "number" | "string" | "boolean" | "list" | "map";
-  isExposed: boolean;                           // Tampilkan di inspector entitas (default: false)
-  defaultValue: any;                            // Nilai inisialisasi awal
+  isExposed: boolean;                           // Expose in entity inspector (default: false)
+  defaultValue: any;                            // Initial value
 }
 
 interface ScriptPort {
-  id: string;                                   // Identifier unik port (mengikuti PORT_ID_REGEX)
+  id: string;                                   // Port unique ID (validates against PORT_ID_REGEX)
   dataType: "execution" | "string" | "number" | "boolean" | "any" | "list" | "map";
-  color: string;                                // Hex kode warna indikator pin
+  color: string;                                // Pin color indicator hex
   enabled: boolean;                             // Default: true
-  defaultValue: any;                            // Nilai fallback jika pin input tidak terhubung
+  defaultValue: any;                            // Fallback value when port is unconnected
 }
 
 interface ScriptNode {
-  id: string;                                   // UUID unik node
-  type: string;                                 // Tipe simpul (misal: "math.add", "entity.move")
-  role: "event" | "action" | "pure";            // Peran eksekusi logika
-  dynamicMode: "none" | "list" | "map" | string;// Penambahan pin dinamis
+  id: string;                                   // Unique node UUID
+  type: string;                                 // Canonical node type (e.g. "eventGameStart", "mathAdd", "variableGet")
+  role: "event" | "action" | "pure";            // Execution role
+  dynamicMode: "none" | "list" | "map" | string;// Dynamic pin expansion mode
   position: {
     x: number;
     y: number;
@@ -633,8 +633,8 @@ interface ScriptNode {
   inputs: ScriptPort[];
   outputs: ScriptPort[];
   data: {
-    values: Record<string, any>;                // Nilai literal per input port
-    code: string;                               // Potongan JavaScript evaluasi node
+    values: Record<string, any>;                // Literal values per input port
+    code: string;                               // JavaScript code evaluating the node
     options?: Record<string, any>;
     valueModes?: Record<string, "input" | "variable">;
     variableBindings?: Record<string, string>;
@@ -642,83 +642,83 @@ interface ScriptNode {
 }
 
 interface ScriptEdge {
-  id: string;                                   // UUID kawat koneksi
-  source: string;                               // Node ID asal
-  sourceHandle: string;                         // Port ID output asal
-  target: string;                               // Node ID tujuan
-  targetHandle: string;                         // Port ID input tujuan
-  modifier?: Record<string, any>;               // Modifikasi nilai on-the-wire
+  id: string;                                   // Connection wire UUID
+  source: string;                               // Origin node UUID
+  sourceHandle: string;                         // Origin output port ID
+  target: string;                               // Destination node UUID
+  targetHandle: string;                         // Destination input port ID
+  modifier?: Record<string, any>;               // On-the-wire value transformation
 }
 ```
 
-### 8.3 Aturan Validasi Port & Standar ID
-- **Validasi ID Regex:** `/^[A-Za-z][A-Za-z0-9]{0,31}$/` (`PORT_ID_REGEX`).
-- **Protected Ports (Dilarang Dihapus Secara Dinamis):**
+### 8.3 Port Validation Rules & ID Standards
+- **ID Validation Regex:** `/^[A-Za-z][A-Za-z0-9]{0,31}$/` (`PORT_ID_REGEX`).
+- **Protected Ports (Must Never Be Dynamically Deleted):**
   `execIn`, `execOut`, `targetEntity`, `targetLayer`, `onClick`.
-- **Daftar Port Kanonikal Resmi:**
-  - Aliran Kontrol: `execIn`, `execOut`, `onTrue`, `onFalse`, `loopBody`, `completed`, `onComplete`, `onElse`, `onDefault`.
-  - Siklus Hidup: `onStart`, `onUpdate`, `onReady`, `onEnter`, `onExit`, `onHit`.
-  - Input: `onClick`, `onDrag`, `onHover`, `onDown`, `onHold`, `onUp`.
-  - Referensi Objek: `targetEntity`, `sourceEntity`, `selfEntity`, `otherEntity`, `parentEntity`, `childEntity`, `targetLayer`, `prefabName`.
-  - Nilai Transform & Fisik: `position`, `rotation`, `scale`, `velocity`, `force`, `x`, `y`, `z`, `velocityX`, `velocityY`.
-- **Pewarnaan Port (`PORT_COLORS`):**
-  - `execution`: `#FFFFFF` (Putih)
-  - `string`: `#F48FB1` (Merah Muda)
-  - `number`: `#64B5F6` (Biru)
-  - `boolean`: `#E57373` (Merah)
-  - `any`: `#B0BEC5` (Abu-abu Slate)
+- **Official Canonical Port IDs:**
+  - Control Flow: `execIn`, `execOut`, `onTrue`, `onFalse`, `loopBody`, `completed`, `onComplete`, `onElse`, `onDefault`.
+  - Lifecycle Events: `onStart`, `onUpdate`, `onReady`, `onEnter`, `onExit`, `onHit`.
+  - User Input: `onClick`, `onDrag`, `onHover`, `onDown`, `onHold`, `onUp`.
+  - Object References: `targetEntity`, `sourceEntity`, `selfEntity`, `otherEntity`, `parentEntity`, `childEntity`, `targetLayer`, `prefabName`.
+  - Transform & Physics Values: `position`, `rotation`, `scale`, `velocity`, `force`, `x`, `y`, `z`, `velocityX`, `velocityY`.
+- **Port Color Palette (`PORT_COLORS`):**
+  - `execution`: `#FFFFFF` (White)
+  - `string`: `#F48FB1` (Pink)
+  - `number`: `#64B5F6` (Blue)
+  - `boolean`: `#E57373` (Red)
+  - `any`: `#B0BEC5` (Slate Gray)
   - `list`: `#4DD0E1` (Cyan)
-  - `map`: `#FF8A65` (Jingga Koral)
+  - `map`: `#FF8A65` (Coral Orange)
 
-### 8.4 Kontrak Ruang Nama Eksekusi Runtime (`ContextSystem`)
-Skrip blueprint berjalan di bawah isolasi `ContextSystem` yang menyediakan namespace dan metode berikut:
+### 8.4 Runtime Namespace Execution Contract (`ContextSystem`)
+Blueprint logic executes under the isolation of `ContextSystem`, providing canonical namespaces and methods:
 
 ```typescript
-// 15 Namespace Resmi (CONTEXT_NAMESPACES)
+// 14 Canonical Namespaces (CONTEXT_NAMESPACES)
 const CONTEXT_NAMESPACES = [
   'entity', 'layer', 'prefab', 'collider', 'input',
   'ui', 'signal', 'lifecycle', 'transition', 'camera',
   'scene', 'state', 'console', 'assert'
 ];
 
-// Metode Asersi (CONTEXT_ASSERT_METHODS)
+// Assertion Methods (CONTEXT_ASSERT_METHODS)
 const CONTEXT_ASSERT_METHODS = [
   'isTrue', 'isFalse', 'exists', 'hasComponent',
   'isNumber', 'isString', 'isBoolean', 'isObject',
   'isArray', 'inRange', 'fail'
 ];
 
-// Metode Telemetri Konsol (CONTEXT_CONSOLE_METHODS)
+// Console Telemetry Methods (CONTEXT_CONSOLE_METHODS)
 const CONTEXT_CONSOLE_METHODS = ['log', 'warn', 'error'];
 
-// Metode Root Context (CONTEXT_ROOT_METHODS)
+// Root Context Methods (CONTEXT_ROOT_METHODS)
 const CONTEXT_ROOT_METHODS = [
   'onTick', 'triggerFlow', 'onGameStart', 'onSceneStart',
   'onGamePause', 'onGameResume', 'onGameRestart', 'isPaused',
   'notify', 'getLocal', 'setLocal', 'getGlobal', 'setGlobal'
 ];
 
-// Properti Root Context (CONTEXT_ROOT_PROPERTIES)
+// Root Context Properties (CONTEXT_ROOT_PROPERTIES)
 const CONTEXT_ROOT_PROPERTIES = ['owner', 'node', 'dt', 'deltaTime', 'state'];
 ```
 
-### 8.5 Kontrak CodePanel & Evaluasi Simpul Blueprint (CodePanel Contract & Node Evaluation)
-Didefinisikan di [`core/Script/contract/codePanelContract.js`](file:///d:/Project/Lupis%20Engine/core/Script/contract/codePanelContract.js) dan [`editor/src/features/nodes/contract/codePanelContract.js`](file:///d:/Project/Lupis%20Engine/editor/src/features/nodes/contract/codePanelContract.js):
+### 8.5 CodePanel Contract & Node Logic Evaluation
+Defined in [`core/Script/contract/codePanelContract.js`](file:///d:/Project/Lupis%20Engine/core/Script/contract/codePanelContract.js) and [`editor/src/features/nodes/contract/codePanelContract.js`](file:///d:/Project/Lupis%20Engine/editor/src/features/nodes/contract/codePanelContract.js):
 
-Setiap potongan kode JavaScript pada simpul Blueprint (`node.data.code`) terikat pada aturan evaluasi dan kontrak integritas antarmuka:
+Every snippet of JavaScript within a Blueprint node (`node.data.code`) is subject to strict evaluation invariants:
 
-#### 1. Signature Eksekusi Standar Kanonikal (`CODE_PANEL_PARAM_NAMES`)
-Semua kode simpul visual dievaluasi oleh `ScriptRunner` menggunakan fungsi dinamis standar dengan 4 parameter kanonikal:
+#### 1. Canonical Execution Signature (`CODE_PANEL_PARAM_NAMES`)
+All visual node logic is evaluated dynamically by `ScriptRunner` using a standard 4-parameter function signature:
 ```javascript
 new Function('inputs', 'outputs', 'context', 'node', rawCode + '\nreturn outputs;');
 ```
-- `inputs`: Objek kamus data masukan pin (`inputs['portName']` atau `inputs.portName`).
-- `outputs`: Objek penampung luaran data dan alur (`outputs['portName'] = val` atau `outputs.portName = val`).
-- `context`: Pintu gerbang interaksi runtime `ContextSystem` (menyediakan namespace `entity`, `layer`, `ui`, `camera`, `scene`, dan method `getLocal`, `setLocal`, `getGlobal`, `setGlobal`, `onTick`, `triggerFlow`).
-- `node`: Struktur metadata simpul aktif (read-only plain object).
+- `inputs`: Read-only dictionary of incoming pin values (`inputs['portName']` or `inputs.portName`).
+- `outputs`: Mutable output dictionary for computed data and execution branches (`outputs['portName'] = val` or `outputs.portName = val`).
+- `context`: Gateway to runtime engine services (`ContextSystem` namespaces such as `entity`, `layer`, `ui`, `camera`, `scene`, and methods `getLocal`, `setLocal`, `getGlobal`, `setGlobal`, `onTick`, `triggerFlow`).
+- `node`: Active node metadata plain object (read-only).
 
-#### 2. Aturan Invarian Kontrak CodePanel (`validateCodePanelContract`)
-Editor melakukan analisis statis *real-time* terhadap isi kode pada `CodePanel.vue`:
+#### 2. CodePanel Validation Invariants (`validateCodePanelContract`)
+The editor runs real-time static analysis on the contents of `CodePanel.vue`:
 
 ```mermaid
 flowchart TD
@@ -730,44 +730,43 @@ flowchart TD
     StaticCheck --> UI["IDE Status Bar & Warnings Panel\n(Syntax Error / Warnings / No Issues)"]
 ```
 
-1. **Integritas Sintaks JavaScript**:
-   - Kode harus valid secara sintaksis JavaScript. Jika terdapat kesalahan penulisan, validator melaporkan `hasSyntaxError: true`, pesan error, serta menampilkan badge merah **Syntax Error**.
-2. **Pencocokan Port Masukan (Inputs)**:
-   - Setiap masukan yang dibaca dalam kode (`inputs['foo']` atau `inputs.foo`) harus terdaftar pada `node.inputs` (berdasarkan `id` atau `label`).
-   - Seluruh port masukan tipe data (non-execution) yang didefinisikan pada simpul harus dibaca di dalam logika kode.
-3. **Pencocokan Port Luaran (Outputs)**:
-   - Setiap luaran yang ditetapkan dalam kode (`outputs['bar'] = val` atau `outputs.bar = val`) harus terdaftar pada `node.outputs` (berdasarkan `id` atau `label`).
-   - Seluruh port luaran (termasuk luaran alur `outputs.execOut = true`) yang didefinisikan pada simpul harus ditetapkan nilainya di dalam logika kode.
-4. **Cakupan Variabel (Variables Scope)**:
-   - Variabel lokal yang diakses via `context.getLocal('x')` atau `context.setLocal('x', ...)` harus terdaftar pada `script.localVariables`.
-   - Variabel global yang diakses via `context.getGlobal('y')` atau `context.setGlobal('y', ...)` harus terdaftar pada `project.globalVariables`.
-5. **Kesesuaian API Runtime (`context`)**:
-   - Properti yang diakses pada `context` (`context.<property>`) divalidasi terhadap `VALID_CONTEXT_PROPERTIES` (14 namespace resmi, root method, dan root property `ContextSystem`). Properti yang tidak terdaftar akan memunculkan peringatan kontraktual.
+1. **JavaScript Syntax Integrity**:
+   - The code must be syntactically valid JavaScript. If a parse error occurs, the validator reports `hasSyntaxError: true`, the error details, and presents the **Syntax Error** badge.
+2. **Input Port Binding**:
+   - Any input accessed via code (`inputs['foo']` or `inputs.foo`) must be declared in `node.inputs` (matched by `id` or `label`).
+   - All non-execution data input ports declared on the node should be consumed within the logic.
+3. **Output Port Binding**:
+   - Any output assigned via code (`outputs['bar'] = val` or `outputs.bar = val`) must be declared in `node.outputs` (matched by `id` or `label`).
+   - All declared output ports (including execution branches `outputs.execOut = true`) should receive assignments.
+4. **Variable Scope Resolution**:
+   - Local variables accessed via `context.getLocal('x')` or `context.setLocal('x', ...)` must exist in `script.localVariables`.
+   - Global variables accessed via `context.getGlobal('y')` or `context.setGlobal('y', ...)` must exist in `project.globalVariables`.
+5. **Runtime API Conformance (`context`)**:
+   - Properties accessed on `context` (`context.<property>`) are validated against `VALID_CONTEXT_PROPERTIES` (canonical namespaces, root methods, and root properties). Unregistered access produces a contract warning.
 
-#### 3. Pembangkitan Kode Standar Simpul (`generateDefaultNodeCode`)
-Saat membuat simpul kustom baru atau melakukan *reset code*, editor menyusun *boilerplate* otomatis sesuai port yang telah didefinisikan:
-1. Membaca port masukan data: `const <id> = inputs['<label || id>'];`
-2. Menyiapkan blok komputasi: `// 2. Execute node computation`
-3. Menginisialisasi port luaran data: `outputs['<label || id>'] = null;`
-4. Memicu alur eksekusi (jika memiliki pin execution): `outputs.execOut = true;`
+#### 3. Standard Node Code Boilerplate (`generateDefaultNodeCode`)
+When authoring custom nodes or resetting node code, the editor generates standard boilerplate matching declared ports:
+1. Read data inputs: `const <id> = inputs['<label || id>'];`
+2. Computation block: `// 2. Execute node computation`
+3. Initialize data outputs: `outputs['<label || id>'] = null;`
+4. Trigger flow (if execution output pin is present): `outputs.execOut = true;`
 
 ---
 
+## 9. Engine Initialization Payload Contract (`prepareEngineData`)
 
-## 9. Kontrak Payload Inisialisasi Engine (`prepareEngineData`)
+Defined in [`editor/src/features/engines/prepareEngineData.js`](file:///d:/Project/Lupis%20Engine/editor/src/features/engines/prepareEngineData.js) and consumed by [`core/Loader/RuntimeLoader.js`](file:///d:/Project/Lupis%20Engine/core/Loader/RuntimeLoader.js):
 
-Didefinisikan di [`editor/src/features/engines/prepareEngineData.js`](file:///d:/Project/Lupis%20Engine/editor/src/features/engines/prepareEngineData.js) dan dikonsumsi oleh [`core/Loader/RuntimeLoader.js`](file:///d:/Project/Lupis%20Engine/core/Loader/RuntimeLoader.js):
-
-Ketika editor menginisialisasi atau memuat ulang WebGL Core Canvas, objek JSON berikut diteruskan:
+When the editor boots or reloads the WebGL Core Canvas, the following unified payload is transmitted:
 
 ```typescript
 interface EngineRuntimePayload {
-  project: ProjectSchema;                       // Metadata proyek aktif
-  assets: AssetSchema[];                        // Daftar seluruh media asset
-  scenes: SceneSchema[];                        // Daftar seluruh scene (lengkap dengan entitas)
-  prefabs: PrefabSchema[];                      // Pustaka prefab template
-  scripts: ScriptSchema[];                      // Pustaka script visual blueprint
-  workspaceConfig: {                            // Konfigurasi viewport & alat editor
+  project: ProjectSchema;                       // Active project metadata
+  assets: AssetSchema[];                        // List of all media assets
+  scenes: SceneSchema[];                        // List of all scenes with complete entity hierarchies
+  prefabs: PrefabSchema[];                      // Template prefab library
+  scripts: ScriptSchema[];                      // Visual blueprint script library
+  workspaceConfig: {                            // Viewport and editor tool configurations
     activeProjectId: string;
     activeTabId?: string;
     tabs?: any[];
@@ -778,38 +777,38 @@ interface EngineRuntimePayload {
 ```
 
 > [!NOTE]
-> Jika data proyek kosong atau gagal dimuat dari OPFS, engine secara otomatis jatuh tempo pada objek cadangan kanonikal [`DEFAULT_PROJECT_PAYLOAD`](file:///d:/Project/Lupis%20Engine/core/Schema/defaultProject.js).
+> If project data is empty or fails to load from OPFS, the engine automatically falls back to the canonical [`DEFAULT_PROJECT_PAYLOAD`](file:///d:/Project/Lupis%20Engine/core/Schema/defaultProject.js).
 
 ---
 
-## 10. Kontrak Komunikasi Jembatan (Engine-Editor EventBus Bridge)
+## 10. EventBus Bridge Contract (Engine-Editor Communication)
 
-Dikelola melalui [`editor/src/features/engines/engineBridge.js`](file:///d:/Project/Lupis%20Engine/editor/src/features/engines/engineBridge.js) dan [`core/Editor/SyncComponent.js`](file:///d:/Project/Lupis%20Engine/core/Editor/SyncComponent.js):
+Managed via [`editor/src/features/engines/engineBridge.js`](file:///d:/Project/Lupis%20Engine/editor/src/features/engines/engineBridge.js) and [`core/Editor/SyncComponent.js`](file:///d:/Project/Lupis%20Engine/core/Editor/SyncComponent.js):
 
-| Saluran Event Bus | Arah Aliran | Format Payload | Deskripsi Operasi |
+| Event Bus Channel | Flow Direction | Payload Format | Operation Description |
 | :--- | :--- | :--- | :--- |
-| `entity:modified` | Core $\rightarrow$ Editor | `EntitySchema \| EntitySchema[]` | Mengabarkan mutasi Transform dari pergerakan gizmo atau fisika kanvas ke Pinia `useSceneStore`. |
-| `editor:tool:pickup` | Core $\rightarrow$ Editor | `{ tool: string, entityId: string, coords: object }` | Mengabarkan klik eyedropper atau seleksi kanvas WebGL. |
-| `editor:tilemap:update-data` | Core $\rightarrow$ Editor | `{ entityId: string, data: Record<string, number> }` | Sinkronisasi modifikasi kuas tilemap interaktif. |
-| `console:log` | Core $\rightarrow$ Editor | `{ type: string, time: number, source: string, message: string }` | Menyalurkan log eksekusi, runtime warning, dan error ke console dock. |
-| `editor:scene:reload` | Editor $\rightarrow$ Core | `SceneSchema \| { sceneId: string }` | Memuat ulang scene aktif tanpa refresh halaman browser. |
-| `editor:selection:set` | Editor $\rightarrow$ Core | `string[]` (array entity UUID) | Memperbarui seleksi kotak pembatas (bounding box/gizmo). |
-| `editor:selection:clear` | Editor $\rightarrow$ Core | `void` (tanpa payload) | Membatalkan seluruh seleksi objek di kanvas. |
-| `editor:project:settings-update` | Editor $\rightarrow$ Core | `{ settings: object }` | Sinkronisasi perubahan pengaturan proyek (grid, debug, dll). |
-| `editor:scene:settings-update` | Editor $\rightarrow$ Core | `{ settings: object }` | Sinkronisasi perubahan gravitasi, background color, dll. |
-| `editor:store:update` | Editor $\rightarrow$ Core | `object` | Sinkronisasi status mode editor (alat aktif, visibilitas). |
-| `editor:theme:update` | Editor $\rightarrow$ Core | `{ isDark: boolean }` | Menyesuaikan tema latar kanvas WebGL. |
+| `entity:modified` | Core $\rightarrow$ Editor | `EntitySchema \| EntitySchema[]` | Dispatches Transform mutations from gizmo dragging or physics simulation to Pinia `useSceneStore`. |
+| `editor:tool:pickup` | Core $\rightarrow$ Editor | `{ tool: string, entityId: string, coords: object }` | Notifies canvas eyedropper or entity selection pick events. |
+| `editor:tilemap:update-data` | Core $\rightarrow$ Editor | `{ entityId: string, data: Record<string, number> }` | Synchronizes interactive tilemap brush paint mutations. |
+| `console:log` | Core $\rightarrow$ Editor | `{ type: string, time: number, source: string, message: string }` | Relays execution logs, runtime warnings, and exceptions to the editor console dock. |
+| `editor:scene:reload` | Editor $\rightarrow$ Core | `SceneSchema \| { sceneId: string }` | Reloads active scene without reloading the browser tab. |
+| `editor:selection:set` | Editor $\rightarrow$ Core | `string[]` (Array of entity UUIDs) | Updates active selection bounding box / gizmo focus. |
+| `editor:selection:clear` | Editor $\rightarrow$ Core | `void` (No payload) | Clears all canvas selections. |
+| `editor:project:settings-update` | Editor $\rightarrow$ Core | `{ settings: object }` | Synchronizes project settings mutations (grid, debug, etc.). |
+| `editor:scene:settings-update` | Editor $\rightarrow$ Core | `{ settings: object }` | Synchronizes scene settings (gravity, background color, bounds). |
+| `editor:store:update` | Editor $\rightarrow$ Core | `object` | Synchronizes active editor mode states (active tools, visibility). |
+| `editor:theme:update` | Editor $\rightarrow$ Core | `{ isDark: boolean }` | Harmonizes WebGL canvas background theme. |
 
 ---
 
-## 11. Kontrak REST API Microservice Backend (`service/server.js`)
+## 11. Backend Microservice REST API Contract (`service/server.js`)
 
-Layanan micro-backend berjalan secara lokal pada port `4000` (atau port lingkungan `process.env.PORT`).
+The microservice runs locally on port `4000` (or configured via `process.env.PORT`).
 
 ### 11.1 `GET /api/health`
-- **Tujuan:** Verifikasi kesiapan layanan.
-- **Header Respons:** `application/json`
-- **Skema Respons Sukses:**
+- **Purpose:** Verifies service readiness.
+- **Response Content-Type:** `application/json`
+- **Success Schema:**
   ```json
   {
     "success": true,
@@ -819,53 +818,53 @@ Layanan micro-backend berjalan secara lokal pada port `4000` (atau port lingkung
   ```
 
 ### 11.2 `POST /api/convert-font`
-- **Tujuan:** Mengonversi berkas font TrueType/OpenType (`.ttf`/`.otf`) menjadi Multi-channel Signed Distance Field (MSDF) BMFont.
-- **Content-Type:** `multipart/form-data`
-- **Payload Input:**
-  - `file`: Berkas biner `.ttf` atau `.otf` (Maksimum 15 MB).
-- **Header Respons:** `application/zip` (Lampiran biner: `bmfont-<jobId>.zip`)
-- **Isi Arsip ZIP:**
-  - `font.fnt`: Berkas definisi metrik karakter BMFont format teks/XML.
-  - `font.png`: Tekstur atlas MSDF 2048x2048 piksel.
-- **Respons Error:** `400 / 500` dengan JSON `{ success: false, error: string }`.
+- **Purpose:** Converts TrueType/OpenType (`.ttf`/`.otf`) font files into Multi-channel Signed Distance Field (MSDF) BMFont assets.
+- **Request Content-Type:** `multipart/form-data`
+- **Input Payload:**
+  - `file`: Binary font file `.ttf` or `.otf` (Maximum 15 MB).
+- **Response Content-Type:** `application/zip` (Attachment: `bmfont-<jobId>.zip`)
+- **ZIP Content:**
+  - `font.fnt`: BMFont text/XML glyph metrics specification.
+  - `font.png`: 2048x2048 pixel MSDF texture atlas.
+- **Error Response:** `400 / 500` with JSON `{ success: false, error: string }`.
 
 ### 11.3 `POST /api/export-app/zip`
-- **Tujuan:** Memaketkan proyek menjadi berkas arsip Web Game bundle mandiri yang siap di-host.
-- **Content-Type:** `multipart/form-data`
-- **Payload Input:**
-  - `projectZip`: Berkas arsip ZIP proyek (Maksimum 200 MB).
-  - `projectId`: UUID proyek (String).
-  - `updatedAt`: ISO 8601 Timestamp (String).
-- **Header Respons:** `application/zip` (Unduhan langsung `<projectId>.zip`).
+- **Purpose:** Packages a game project into a standalone web game distribution bundle.
+- **Request Content-Type:** `multipart/form-data`
+- **Input Payload:**
+  - `projectZip`: Project ZIP archive (Maximum 200 MB).
+  - `projectId`: Project UUID string.
+  - `updatedAt`: ISO 8601 Timestamp.
+- **Response Content-Type:** `application/zip` (Direct download of `<projectId>.zip`).
 
 ### 11.4 `POST /api/export-app/exe` & `GET /api/download-app/exe/:projectId`
-- **Tujuan:** Memaketkan game menjadi aplikasi desktop executable Windows via Electron Packager.
-- **Payload Input (POST):**
-  - `projectZip`: Berkas arsip ZIP proyek.
-  - `projectId`: UUID string.
-  - `appName`: Nama berkas aplikasi target.
+- **Purpose:** Compiles a game project into a standalone Windows desktop executable using Electron Packager.
+- **Input Payload (POST):**
+  - `projectZip`: Project ZIP archive.
+  - `projectId`: Project UUID string.
+  - `appName`: Target executable name.
   - `updatedAt`: ISO 8601 Timestamp.
-- **Respons POST:** `{ success: true, message: string, downloadUrl: string }`.
-- **Respons GET:** Stream biner file `.exe` instaler / standalone executable.
+- **POST Response:** `{ success: true, message: string, downloadUrl: string }`.
+- **GET Response:** Binary stream of `.exe` standalone installer or executable.
 
 ---
 
-## 12. Aturan Mutasi Skema & Pedoman Kompatibilitas (Schema Evolution Rules)
+## 12. Schema Evolution Rules & Compatibility Guidelines
 
-Untuk menjaga stabilitas proyek pengguna dan integritas pengujian otomatis (E2E / Integration Tests):
+To ensure project backward compatibility and automated test suite stability (E2E / Integration / System):
 
-1. **Prinsip Aditif (Additive Only Changes):**
-   - Properti baru pada skema **wajib** menyertakan nilai bawaan (default value) melalui operator nullish coalescing (`??`) atau default parameter.
-   - Dilarang keras menghapus atau mengganti nama properti yang sudah ada pada level minor/patch engine.
-2. **Sanitasi Terpusat Melalui Normalizer:**
-   - Semua data mentah dari OPFS, berkas eksternal, atau clipboard wajib melalui fungsi [`normalizer()`](file:///d:/Project/Lupis%20Engine/editor/src/utils/normalizer.js).
-   - Dilarang membuat fungsi sanitasi ad-hoc di luar modul skema resmi.
-3. **Pemberitahuan Peningkatan Skema (Schema Migration Procedure):**
-   - Jika terjadi perubahan struktur data mendasar yang memerlukan migrasi skema, `SCHEMA_VERSION` (saat ini bernilai `2`) wajib dinaikkan.
-   - Script migrasi mundur wajib disediakan untuk mengonversi berkas proyek lama ke versi terbaru saat proyek dibuka di Editor.
-4. **Asumsi Data Internal:**
-   - Setelah melalui layer `normalizer()`, seluruh kode internal berhak berasumsi bahwa struktur data objek adalah valid sesuai skema tanpa memerlukan pengecekan defensif ganda (`if (obj && obj.sub && ...)`).
+1. **Additive-Only Evolution:**
+   - New properties added to any schema **must** provide sensible fallback defaults via nullish coalescing (`??`) or schema factory defaults.
+   - Deleting or renaming existing properties within minor or patch releases is strictly prohibited.
+2. **Centralized Sanitization via Normalizer:**
+   - All raw data originating from OPFS, uploaded files, or clipboard paste operations must pass through [`normalizer()`](file:///d:/Project/Lupis%20Engine/editor/src/utils/normalizer.js).
+   - Authoring ad-hoc sanitization routines outside canonical schema definitions is prohibited.
+3. **Schema Versioning & Migration:**
+   - Any structural breaking change requires incrementing `SCHEMA_VERSION` (currently `2`).
+   - A backward migration adapter must be implemented to convert legacy project files on load.
+4. **Internal Invariant Assumptions:**
+   - Following the `normalizer()` pass, internal application logic may confidently rely on complete schema adherence without defensive null-checks.
 
 ---
 
-> Dokumen ini dikunci dan diverifikasi oleh Antigravity Pairing Assistant untuk Lupis Engine Suite.
+> This canonical contract document is verified and maintained for the Lupis Engine Suite.

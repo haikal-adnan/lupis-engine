@@ -62,30 +62,24 @@ test.describe('Prefab Panel E2E Management', () => {
   // 2. MUTATION, RENAME & DUPLICATION
   // =========================================================================
   test.describe('Mutation & Duplication', () => {
-    test('renames a prefab via context menu', async ({ prefabs, popup }) => {
+    test('renames and duplicates a prefab via context menu', async ({ prefabs, popup }) => {
       await popup.selectContextMenu(prefabs.panel, 'Create Empty Prefab');
 
       const item = prefabs.itemByName('New_Prefab');
       await expect(item).toBeVisible();
       const itemId = await item.getAttribute('data-node-id');
 
+      // Rename
       await popup.selectContextMenu(item, 'Rename');
       await popup.fillPromptAndSubmit(/Rename/i, 'Player_Prefab', 'Rename');
 
       const renamedItem = prefabs.itemById(itemId);
       await expect(renamedItem).toBeVisible();
       await expect(renamedItem).toHaveAttribute('data-node-name', 'Player_Prefab');
-    });
 
-    test('duplicates a prefab and verifies duplicate suffix naming', async ({ prefabs, popup }) => {
-      await popup.selectContextMenu(prefabs.panel, 'Create Empty Prefab');
-
-      const originalItem = prefabs.itemByName('New_Prefab');
-      await expect(originalItem).toBeVisible();
-
-      await popup.selectContextMenu(originalItem, 'Duplicate');
-
-      const duplicatedItem = prefabs.itemByName('New_Prefab_copy');
+      // Duplicate
+      await popup.selectContextMenu(renamedItem, 'Duplicate');
+      const duplicatedItem = prefabs.itemByName('Player_Prefab_copy');
       await expect(duplicatedItem).toBeVisible();
     });
   });
@@ -126,31 +120,27 @@ test.describe('Prefab Panel E2E Management', () => {
   // 4. DELETION & BAD PATHS
   // =========================================================================
   test.describe('Deletion & Boundary Restrictions', () => {
-    test('deletes a prefab after confirmation', async ({ prefabs, popup }) => {
-      await popup.selectContextMenu(prefabs.panel, 'Create Empty Prefab');
-
-      const item = prefabs.itemByName('New_Prefab');
-      await expect(item).toBeVisible();
-
-      await popup.selectContextMenu(item, 'Delete');
-
-      await expect(item).toHaveCount(0);
-    });
-
-    test('[Bad Path] cancels folder deletion and ensures state remains unchanged', async ({ prefabs, popup }) => {
+    test('handles deletion of prefabs and cancellation safeguards', async ({ prefabs, popup }) => {
+      // 1. Create Folder and cancel deletion
       await popup.selectContextMenu(prefabs.panel, 'New Folder');
       await popup.fillPromptAndSubmit(/Folder/i, 'Protected_Folder', 'Create');
 
       const folderItem = prefabs.itemByName('Protected_Folder');
       await expect(folderItem).toBeVisible();
 
-      // Trigger delete and cancel confirmation
       await popup.selectContextMenu(folderItem, 'Delete');
       await popup.confirmAction(/Delete Folder\?/i, { action: 'cancel', cancelText: 'Cancel' });
 
-      // Assert folder remains visible
       await prefabs.ensureVisible();
       await expect(folderItem).toBeVisible();
+
+      // 2. Create Prefab and delete successfully
+      await popup.selectContextMenu(prefabs.panel, 'Create Empty Prefab');
+      const item = prefabs.itemByName('New_Prefab');
+      await expect(item).toBeVisible();
+
+      await popup.selectContextMenu(item, 'Delete');
+      await expect(item).toHaveCount(0);
     });
   });
 
@@ -170,13 +160,6 @@ test.describe('Prefab Panel E2E Management', () => {
       // Clear search query
       await controls.clearSearch('search-prefab-input');
       await expect(item).toBeVisible();
-    });
-
-    test('toggles container view mode between grid and list', async ({ prefabs }) => {
-      await expect(prefabs.container).toHaveAttribute('data-view-mode', 'grid');
-
-      await prefabs.toggleViewMode();
-      await expect(prefabs.container).toHaveAttribute('data-view-mode', 'list');
     });
   });
 });

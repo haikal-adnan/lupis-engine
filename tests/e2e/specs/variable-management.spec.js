@@ -73,36 +73,43 @@ test.describe('Variable System E2E Testing', () => {
   });
 
   // =========================================================================
-  // 2. SEARCH VARIABLE
+  // 2. SEARCH & DUPLICATE VARIABLE
   // =========================================================================
-  test('filters variables reactively with the search feature', async ({ variablePage }) => {
+  test('duplicates variables and filters variables reactively with the search feature', async ({ variablePage }) => {
     await variablePage.openManager();
 
     await variablePage.createVariable({ name: 'HealthPoint', type: 'number' });
     await variablePage.createVariable({ name: 'ManaPoint', type: 'number' });
-    await variablePage.createVariable({ name: 'AttackPower', type: 'number' });
 
-    await variablePage.searchInput.fill('Point');
+    // Duplicate variable
+    const healthRow = variablePage.itemRowByName('HealthPoint');
+    await healthRow.getByTestId('variable-modal-row-menu-trigger').click();
+    await variablePage.page.getByTestId('variable-modal-duplicate-btn').click();
 
-    await expect(variablePage.itemRowByName('HealthPoint')).toBeVisible();
-    await expect(variablePage.itemRowByName('ManaPoint')).toBeVisible();
-    await expect(variablePage.itemRowByName('AttackPower')).toBeHidden();
+    const duplicatedRow = variablePage.itemRowByName('HealthPoint_copy');
+    await expect(duplicatedRow).toBeVisible();
+
+    // Filter reactively with search
+    await variablePage.searchInput.fill('Point_copy');
+    await expect(duplicatedRow).toBeVisible();
+    await expect(variablePage.itemRowByName('ManaPoint')).toBeHidden();
 
     await variablePage.searchInput.fill('');
-    await expect(variablePage.itemRowByName('AttackPower')).toBeVisible();
+    await expect(variablePage.itemRowByName('ManaPoint')).toBeVisible();
 
     await variablePage.closeManager();
   });
 
   // =========================================================================
-  // 3. VARIABLE GLOBAL / LOCAL
+  // 3. VARIABLE GLOBAL / LOCAL SCOPES & EXPOSED PANEL
   // =========================================================================
-  test('keeps Global and Local variable scopes separate', async ({ variablePage }) => {
+  test('keeps Global and Local variable scopes separate and displays exposed variables in panel', async ({ variablePage }) => {
     await variablePage.openManager();
 
-    await variablePage.createVariable({ name: 'GlobalGameScore', type: 'number', scope: 'Global' });
-    await variablePage.createVariable({ name: 'LocalAmmoCount', type: 'number', scope: 'Local' });
+    await variablePage.createVariable({ name: 'GlobalGameScore', type: 'number', isExposed: true, scope: 'Global' });
+    await variablePage.createVariable({ name: 'LocalAmmoCount', type: 'number', isExposed: true, scope: 'Local' });
 
+    // Scope separation inside modal
     await variablePage.switchModalScope('Local');
     await expect(variablePage.itemRowByName('LocalAmmoCount')).toBeVisible();
     await expect(variablePage.itemRowByName('GlobalGameScore')).toBeHidden();
@@ -112,40 +119,10 @@ test.describe('Variable System E2E Testing', () => {
     await expect(variablePage.itemRowByName('LocalAmmoCount')).toBeHidden();
 
     await variablePage.closeManager();
-  });
 
-  // =========================================================================
-  // 4. DUPLICATE VARIABLE
-  // =========================================================================
-  test('duplicates a variable and produces sequential name postfixes', async ({ variablePage }) => {
-    await variablePage.openManager();
-
-    await variablePage.createVariable({ name: 'BaseSpeed', type: 'number' });
-    const originalRow = variablePage.itemRowByName('BaseSpeed');
-
-    await originalRow.getByTestId('variable-modal-row-menu-trigger').click();
-    await variablePage.page.getByTestId('variable-modal-duplicate-btn').click();
-
-    const duplicatedRow = variablePage.itemRowByName('BaseSpeed_copy');
-    await expect(duplicatedRow).toBeVisible();
-
-    await variablePage.closeManager();
-  });
-
-  // =========================================================================
-  // 5. EXPOSE PANEL GLOBAL / LOCAL
-  // =========================================================================
-  test('shows exposed variables in the main Variable Panel', async ({ variablePage }) => {
-    await variablePage.openManager();
-
-    await variablePage.createVariable({ name: 'ExposedHealth', type: 'number', isExposed: true, scope: 'Local' });
-    await variablePage.createVariable({ name: 'ExposedDifficulty', type: 'string', isExposed: true, scope: 'Global' });
-
-    await variablePage.closeManager();
-
-    const localExposed = variablePage.panelItemRow('ExposedHealth', 'Local');
-    const globalExposed = variablePage.panelItemRow('ExposedDifficulty', 'Global');
-
+    // Verify exposed variables in the main Variable Panel
+    const localExposed = variablePage.panelItemRow('LocalAmmoCount', 'Local');
+    const globalExposed = variablePage.panelItemRow('GlobalGameScore', 'Global');
     await expect(localExposed).toBeVisible();
     await expect(globalExposed).toBeVisible();
   });

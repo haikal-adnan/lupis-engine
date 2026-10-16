@@ -277,7 +277,7 @@ specifications.
 
       if ((await card.count()) === 0) {
         await createBtn.click();
-        const modal = page.getByRole('dialog', { name: 'Buat Proyek Baru' });
+        const modal = page.getByRole('dialog', { name: 'New Project' });
         await expect(modal).toBeVisible();
 
         await controls.fillInput('project-name-input', name, modal);

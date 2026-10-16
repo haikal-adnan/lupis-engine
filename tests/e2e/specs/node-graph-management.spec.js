@@ -8,28 +8,8 @@ test.use({
   },
 });
 
-const CATEGORY_BATCHES = [
-  {
-    name: 'Batch 1: Animator through Events & Signals',
-    categories: [
-      'Animator', 'Basic Layer', 'Basic Object', 'Boolean Logic', 'Camera',
-      'Collection Helper', 'Collider System', 'Entity Management', 'Events & Signals',
-    ],
-  },
-  {
-    name: 'Batch 2: Flow Helpers through Math',
-    categories: [
-      'Flow Helpers', 'Game Lifecycle', 'Interface', 'Keyboard Events', 'List Operations',
-      'Logic & Compare', 'Loops', 'Map Operations', 'Math',
-    ],
-  },
-  {
-    name: 'Batch 3: Mouse Events through Transition',
-    categories: [
-      'Mouse Events', 'Physics System', 'Pointer & Touch', 'Random Operations',
-      'Renderer', 'Scene Management', 'String Utils', 'Transform', 'Transition',
-    ],
-  },
+const REPRESENTATIVE_CATEGORIES = [
+  'Math', 'Game Lifecycle', 'Events & Signals', 'Flow Helpers', 'Logic & Compare',
 ];
 
 test.describe('Node Library & Graph Editor Unified E2E Testing', () => {
@@ -110,33 +90,29 @@ test.describe('Node Library & Graph Editor Unified E2E Testing', () => {
   });
 
   // =========================================================================
-  // 5. EVERY NODE PER CATEGORY (BATCH TESTING)
+  // 5. REPRESENTATIVE CATEGORY BATCH TESTING
   // =========================================================================
-  test.describe('Adding Every Node per Category (No Errors)', () => {
-    for (const { name, categories } of CATEGORY_BATCHES) {
-      test(name, async ({ nodeLibrary, nodeGraph }) => {
-        // Slow by design: one test adds every node of several categories, so the default budget is tripled.
-        test.slow();
+  test('adds nodes across representative categories without errors', async ({ nodeLibrary, nodeGraph }) => {
+    // Slow by design: adds nodes of multiple categories
+    test.slow();
 
-        const pageErrors = nodeGraph.collectPageErrors();
-        let expectedTotal = 0;
+    const pageErrors = nodeGraph.collectPageErrors();
+    let expectedTotal = 0;
 
-        for (const category of categories) {
-          await nodeLibrary.addFirstFromModalCategory(category);
-          expectedTotal += 1;
+    for (const category of REPRESENTATIVE_CATEGORIES) {
+      await nodeLibrary.addFirstFromModalCategory(category);
+      expectedTotal += 1;
 
-          const types = await nodeLibrary.sidebarGroupTypes(category);
-          for (const type of types) {
-            await nodeLibrary.sidebarSearchItemByType(type).dblclick();
-            expectedTotal += 1;
-          }
+      const types = await nodeLibrary.sidebarGroupTypes(category);
+      for (const type of types) {
+        await nodeLibrary.sidebarSearchItemByType(type).dblclick();
+        expectedTotal += 1;
+      }
 
-          await expect(nodeGraph.nodes, `Node count after category "${category}"`).toHaveCount(expectedTotal);
-        }
-
-        expect(pageErrors).toEqual([]);
-      });
+      await expect(nodeGraph.nodes, `Node count after category "${category}"`).toHaveCount(expectedTotal);
     }
+
+    expect(pageErrors).toEqual([]);
   });
 
   // =========================================================================

@@ -17,9 +17,10 @@ test.describe('Node Inspector Panel E2E Testing Suite', () => {
   });
 
   // =========================================================================
-  // 1. UPDATE DATA TITLE, COLOR, & DESCRIPTION (NODE HEADER)
   // =========================================================================
-  test('updates the Header Title, Color and Description of a node', async ({ nodeGraph, nodeInspector }) => {
+  // 1. UPDATE DATA TITLE, COLOR, DESCRIPTION & DELETE (NODE HEADER)
+  // =========================================================================
+  test('updates the Header Title, Color, Description and deletes a node via header menu', async ({ nodeGraph, nodeInspector }) => {
     const nodeId = await nodeGraph.spawnNodeViaStore('mathAdd', 'Add', { x: 300, y: 200 });
     await nodeGraph.selectNodeById(nodeId);
 
@@ -30,22 +31,17 @@ test.describe('Node Inspector Panel E2E Testing Suite', () => {
     await expect(nodeInspector.titleInput).toHaveValue('Custom Math Addition');
     await expect(nodeInspector.descriptionTextarea).toHaveValue('Logs the sum with a custom header');
     await expect(nodeInspector.colorIndicator).toHaveAttribute('style', /rgb\(255,\s*87,\s*34\)|#ff5722/i);
-  });
-
-  test('deletes the selected node through the Inspector header dropdown menu', async ({ nodeGraph, nodeInspector }) => {
-    const nodeId = await nodeGraph.spawnNodeViaStore('eventTick', 'On Tick', { x: 300, y: 200 });
-    await nodeGraph.selectNodeById(nodeId);
 
     await nodeInspector.deleteSelectedNode();
 
-    await expect(nodeGraph.nodesByType('eventTick')).toHaveCount(0);
+    await expect(nodeGraph.nodesByType('mathAdd')).toHaveCount(0);
     await expect(nodeInspector.emptySelectionState).toBeVisible();
   });
 
   // =========================================================================
-  // 2. RENAME PORTS DAN CRUD PORTS (DYNAMIC PORTS ON)
+  // 2. RENAME PORTS & DYNAMIC/PROTECTED PORT MANAGEMENT
   // =========================================================================
-  test('renames input and output ports and performs CRUD on dynamic ports', async ({ nodeGraph, nodeInspector }) => {
+  test('renames ports, manages dynamic ports, and safeguards protected ports', async ({ nodeGraph, nodeInspector }) => {
     const nodeId = await nodeGraph.spawnNodeViaStore('mathAdd', 'Add', { x: 300, y: 200 });
     await nodeGraph.selectNodeById(nodeId);
 
@@ -68,11 +64,10 @@ test.describe('Node Inspector Panel E2E Testing Suite', () => {
 
     await nodeInspector.removeInputPort(lastPortId);
     await expect(portRows).toHaveCount(initialInputRows);
-  });
 
-  test('[Bad Path] prevents deleting permanent or protected ports', async ({ nodeGraph, nodeInspector }) => {
-    const nodeId = await nodeGraph.spawnNodeViaStore('uiNotification', 'Notification', { x: 300, y: 200 });
-    await nodeGraph.selectNodeById(nodeId);
+    // Safeguard check on protected port
+    const notifNodeId = await nodeGraph.spawnNodeViaStore('uiNotification', 'Notification', { x: 500, y: 200 });
+    await nodeGraph.selectNodeById(notifNodeId);
 
     const protectedRow = nodeInspector.inputPortRowById('execIn');
     await expect(protectedRow).toBeVisible();
@@ -179,54 +174,40 @@ test.describe('Node Inspector Panel E2E Testing Suite', () => {
   // 7. NODE-SPECIFIC BLUEPRINT TESTS
   // =========================================================================
   test.describe('Node-Specific Blueprint Inspector Tests', () => {
-    test('VARIABLE: configures Get and Set Variable nodes', async ({ variableCrud, nodeGraph, nodeInspector }) => {
+    test('configures variable bindings, notifications, logic inputs, and dynamic ports across node categories', async ({ variableCrud, nodeGraph, nodeInspector }) => {
+      // 1. Variable Get Node
       await variableCrud.createVariable({ name: 'PlayerHealth', type: 'number', value: 100, isExposed: true, scope: 'Local' });
-
-      const nodeId = await nodeGraph.spawnNodeViaStore('variableGet', 'Get Variable', { x: 300, y: 200 });
-      await nodeGraph.selectNodeById(nodeId);
-
+      const varNodeId = await nodeGraph.spawnNodeViaStore('variableGet', 'Get Variable', { x: 300, y: 200 });
+      await nodeGraph.selectNodeById(varNodeId);
       await nodeInspector.selectVariableForNode('PlayerHealth');
-
       await expect(nodeInspector.titleInput).toHaveValue('Get PlayerHealth');
-    });
 
-    test('NOTIFICATION: edits the default input value of UI & Debug Notification', async ({ nodeGraph, nodeInspector }) => {
-      const nodeId = await nodeGraph.spawnNodeViaStore('uiNotification', 'Notification', { x: 300, y: 200 });
-      await nodeGraph.selectNodeById(nodeId);
-
+      // 2. Notification Node
+      const notifNodeId = await nodeGraph.spawnNodeViaStore('uiNotification', 'Notification', { x: 600, y: 200 });
+      await nodeGraph.selectNodeById(notifNodeId);
       const sourcePortId = await nodeInspector.portIdAt(0);
       const msgPortId = await nodeInspector.portIdAt(1);
-
       await nodeInspector.setPortDirectText(sourcePortId, 'SystemAlert');
       await nodeInspector.setPortDirectText(msgPortId, 'Quest Completed!');
-
       await expect(nodeInspector.portField(sourcePortId)).toHaveValue('SystemAlert');
       await expect(nodeInspector.portField(msgPortId)).toHaveValue('Quest Completed!');
-    });
 
-    test('LOGIC: configures And/Or boolean logic with dynamic boolean inputs', async ({ nodeGraph, nodeInspector }) => {
-      const nodeId = await nodeGraph.spawnNodeViaStore('logicAnd', 'And', { x: 300, y: 200 });
-      await nodeGraph.selectNodeById(nodeId);
-
+      // 3. Logic Node
+      const logicNodeId = await nodeGraph.spawnNodeViaStore('logicAnd', 'And', { x: 200, y: 200 });
+      await nodeGraph.selectNodeById(logicNodeId);
       const portId = await nodeInspector.portIdAt(0);
-
       await nodeInspector.setPortDirectSelect(portId, 'True');
       await expect(nodeInspector.portRowById(portId)).toContainText('True');
-    });
 
-    test('LIFECYCLE: shows an empty parameter list on a Lifecycle node without editable values', async ({ nodeGraph, nodeInspector }) => {
-      const nodeId = await nodeGraph.spawnNodeViaStore('eventGameStart', 'On Game Start', { x: 300, y: 200 });
-      await nodeGraph.selectNodeById(nodeId);
-
+      // 4. Lifecycle Node (empty parameters)
+      const lifecycleNodeId = await nodeGraph.spawnNodeViaStore('eventGameStart', 'On Game Start', { x: 450, y: 200 });
+      await nodeGraph.selectNodeById(lifecycleNodeId);
       await expect(nodeInspector.parametersSection).toBeHidden();
-    });
 
-    test('OBJECT: adds a dynamic property port from the Property Options dropdown', async ({ nodeGraph, nodeInspector }) => {
-      const nodeId = await nodeGraph.spawnNodeViaStore('getObject', 'Get Object Info', { x: 300, y: 200 });
-      await nodeGraph.selectNodeById(nodeId);
-
+      // 5. Object Node (dynamic property output)
+      const objNodeId = await nodeGraph.spawnNodeViaStore('getObject', 'Get Object Info', { x: 700, y: 200 });
+      await nodeGraph.selectNodeById(objNodeId);
       await nodeInspector.addDynamicOutputPort('Active');
-
       await expect(
         nodeInspector.outputPortRowById('active').or(nodeInspector.outputPortRowById('Active'))
       ).toBeVisible();

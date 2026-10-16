@@ -38,7 +38,8 @@ const entity = context.assert.exists(context.entity.get(targetId));
 const animator = context.assert.hasComponent(entity, 'SpriteAnimator');
 const targetStr = clipIdInput;
 
-const clips = animator.clips || [];
+const rawClips = animator.clips;
+const clips = Array.isArray(rawClips) ? rawClips : (rawClips && typeof rawClips === 'object' ? Object.values(rawClips) : []);
 const targetClip = clips.find(c => c.scriptId === targetStr || c.id === targetStr);
 
 animator.currentClip = targetClip ? targetClip.id : targetStr;
@@ -115,7 +116,8 @@ return;`
 `const targetId = inputs.targetEntity;
 const entity = context.assert.exists(context.entity.get(targetId));
 const comp = context.assert.hasComponent(entity, 'SpriteAnimator');
-const clips = comp.clips || [];
+const rawClips = comp.clips;
+const clips = Array.isArray(rawClips) ? rawClips : (rawClips && typeof rawClips === 'object' ? Object.values(rawClips) : []);
 const clip = clips.find(c => c.scriptId === comp.currentClip || c.id === comp.currentClip);
 
 outputs.currentClip = comp.currentClip;
@@ -151,10 +153,11 @@ return;`
 `const targetId = inputs.targetEntity;
 const entity = context.assert.exists(context.entity.get(targetId));
 const comp = context.assert.hasComponent(entity, 'SpriteAnimator');
+const rawClips = comp.clips;
+const clips = Array.isArray(rawClips) ? rawClips : (rawClips && typeof rawClips === 'object' ? Object.values(rawClips) : []);
 
 if ('currentClip' in inputs) {
   const targetStr = inputs.currentClip;
-  const clips = comp.clips || [];
   const targetClip = clips.find(c => c.scriptId === targetStr || c.id === targetStr);
   const resolvedId = targetClip ? targetClip.id : targetStr;
 
@@ -171,7 +174,6 @@ if ('active' in inputs) {
 }
 
 if ('flipX' in inputs) {
-  const clips = comp.clips || [];
   const clip = clips.find(c => c.scriptId === comp.currentClip || c.id === comp.currentClip);
   if (clip) clip.flipX = inputs.flipX;
 }

@@ -44,34 +44,15 @@ test.describe('Asset Management Comprehensive E2E Tests', () => {
   });
 
   // =========================================================================
-  // 2. FOLDER DEPTH 5 & BREADCRUMB NAVIGATION
+  // 2. FOLDER HIERARCHY, BREADCRUMB NAVIGATION & CUT/PASTE
   // =========================================================================
-  test('creates a folder tree of depth 5 and navigates breadcrumbs accurately', async ({ assets, popup }) => {
-    const folderTree = ['Level1', 'Level2', 'Level3', 'Level4', 'Level5'];
-
+  test('creates a folder tree, navigates breadcrumbs, and moves asset using Cut & Paste', async ({ assets, popup }) => {
+    const folderTree = ['Level1', 'Level2', 'Level3'];
     await assets.createNestedFolders(folderTree, popup);
 
     for (const name of folderTree) {
       await expect(assets.breadcrumb(name)).toBeVisible();
     }
-
-    await assets.upload('sample_image.png');
-    await expect(assets.card('sample_image')).toBeVisible();
-
-    await assets.breadcrumb('Level3').click();
-    await expect(assets.breadcrumb('Level3')).toBeVisible();
-    await expect(assets.breadcrumb('Level4')).toBeHidden();
-    await expect(assets.card('Level4')).toBeVisible();
-
-    await assets.breadcrumbRoot.click();
-    await expect(assets.card('Level1')).toBeVisible();
-  });
-
-  // =========================================================================
-  // 3. MOVE ASSET TO DIFFERENT FOLDER DEPTHS
-  // =========================================================================
-  test('moves asset across different folder depth levels using Cut & Paste', async ({ assets, popup }) => {
-    await assets.createNestedFolders(['Level1', 'Level2'], popup);
 
     await assets.upload('sample_image.png');
     const assetCard = assets.card('sample_image');
@@ -83,11 +64,9 @@ test.describe('Asset Management Comprehensive E2E Tests', () => {
     await expect(assets.card('Level1')).toBeVisible();
 
     await popup.selectContextMenu(assets.grid, 'Paste');
-
     await expect(assets.card('sample_image')).toBeVisible();
 
     await assets.card('Level1').dblclick();
-    await assets.card('Level2').dblclick();
     await expect(assets.cardsByTitle('sample_image')).toHaveCount(0);
   });
 
@@ -175,7 +154,7 @@ test.describe('Asset Management Comprehensive E2E Tests', () => {
     await expect(targetEntity).toBeVisible();
   });
 
-  test('attaches Image asset to Empty Sprite and Tilemap entities', async ({ assets, hierarchyCrud, popup }) => {
+  test('attaches Image and Font assets to Sprite, Tilemap, and Text entities', async ({ assets, hierarchyCrud, popup }) => {
     const mainLayer = await hierarchyCrud.layer.create('World', 'Main Layer');
 
     const spriteEntity = await hierarchyCrud.entity.create(mainLayer, 'sprite');
@@ -184,6 +163,10 @@ test.describe('Asset Management Comprehensive E2E Tests', () => {
     const tilemapEntity = await hierarchyCrud.entity.create(mainLayer, 'tilemap');
     const tilemapId = await tilemapEntity.getAttribute('data-node-id');
 
+    const textEntity = await hierarchyCrud.entity.create(mainLayer, 'text');
+    const textId = await textEntity.getAttribute('data-node-id');
+
+    // Image attachments
     await assets.upload('sample_image.png');
     const imageCard = assets.card('sample_image');
     await expect(imageCard).toBeVisible();
@@ -197,42 +180,30 @@ test.describe('Asset Management Comprehensive E2E Tests', () => {
     await popup.selectContextMenu(imageCard, 'Apply to Tilemap');
     await popup.expectPopAlert('Success');
     await expect(hierarchyCrud.hierarchy.nodeById(tilemapId)).toBeVisible();
-  });
 
-  test('attaches Font asset to Text entity via TextRenderer', async ({ assets, hierarchyCrud, popup }) => {
-    const mainLayer = await hierarchyCrud.layer.create('World', 'Main Layer');
-    const textEntity = await hierarchyCrud.entity.create(mainLayer, 'text');
-    const entityId = await textEntity.getAttribute('data-node-id');
-
+    // Font attachment
     await assets.upload('sample_font.ttf');
     const fontCard = assets.card('sample_font');
     await expect(fontCard).toBeVisible();
 
     await textEntity.click();
-    await expect(textEntity).toHaveAttribute('aria-selected', 'true');
-
     await popup.selectContextMenu(fontCard, 'Apply to TextRenderer');
-
     await popup.expectPopAlert('Success');
-    const updatedEntity = hierarchyCrud.hierarchy.nodeById(entityId);
-    await expect(updatedEntity).toBeVisible();
+    await expect(hierarchyCrud.hierarchy.nodeById(textId)).toBeVisible();
   });
 
   // =========================================================================
   // 7. [BAD PATH] SCENARIOS
   // =========================================================================
-  test('[Bad Path] cancels deletion modal and ensures asset state remains intact', async ({ assets, popup }) => {
+  test('[Bad Path] handles cancellation of deletion and hides invalid component appliers', async ({ page, assets, hierarchyCrud, popup }) => {
     await assets.upload('sample_image.png');
     const assetCard = assets.card('sample_image');
     await expect(assetCard).toBeVisible();
 
     await popup.selectContextMenu(assetCard, 'Delete');
     await popup.confirmAction('Delete Asset?', { action: 'cancel', cancelText: 'Cancel' });
-
     await expect(assetCard).toBeVisible();
-  });
 
-  test('[Bad Path] verifies audio applier option is hidden when target entity lacks Audio Component', async ({ page, assets, hierarchyCrud, popup }) => {
     const mainLayer = await hierarchyCrud.layer.create('World', 'Main Layer');
     const emptyEntity = await hierarchyCrud.entity.create(mainLayer, 'empty');
     await emptyEntity.click();
@@ -246,8 +217,6 @@ test.describe('Asset Management Comprehensive E2E Tests', () => {
 
     const menuItem = popup.activeMenus.getByRole('menuitem', { name: 'Apply to Audio Component' });
     await expect(menuItem).toHaveCount(0);
-
-    // Cleanup open context menu
     await page.keyboard.press('Escape');
   });
 

@@ -17,14 +17,14 @@ log the engine must print). `BlueprintTestRunner` (`e2e/flows/blueprint.js`) exe
 The runner always closes the preview popup, even when an assertion fails. The preview is only verified by
 the data it sends back (engine logs and scene payload), not tested any deeper.
 
-Every blueprint test therefore ends the same way: a `ui_notification` node prints a known message and the
+Every blueprint test therefore ends the same way: a `uiNotification` node prints a known message and the
 spec expects that message.
 
 ## 2. Where things live
 
 ```
 e2e/
-├── blueprint/        <- your new spec goes here (Blueprint<Topic>.spec.js)
+├── specs/blueprint/        <- specs live here (blueprint-*.spec.js)
 ├── flows/blueprint.js      <- BlueprintTestRunner (scenario executor)
 ├── flows/nodeGraph.js      <- NodeGraphCrudObject: openGraphForEntity, spawnDirect, connectDirect
 ├── flows/nodeInspector.js  <- NodeInspectorCrudObject: ports, values, modifiers
@@ -55,16 +55,16 @@ test.describe('Blueprint <Topic> E2E Testing', () => {
       entityName: '<Topic>Entity1',
       scriptName: '<Topic>Script1',
       nodes: [
-        { id: 'start', type: 'event_game_start', pos: { x: 100, y: 100 } },
+        { id: 'start', type: 'eventGameStart', pos: { x: 100, y: 100 } },
         {
           id: 'notif',
-          type: 'ui_notification',
+          type: 'uiNotification',
           pos: { x: 450, y: 100 },
-          inspectorValues: { in_msg: { value: '<Topic> works', type: 'string' } },
+          inspectorValues: { message: { value: '<Topic> works', type: 'string' } },
         },
       ],
       connections: [
-        { source: 'start', sourceHandle: 'exec_out', target: 'notif', targetHandle: 'exec_in' },
+        { source: 'start', sourceHandle: 'execOut', target: 'notif', targetHandle: 'execIn' },
       ],
       expectedLog: '<Topic> works',
     });
@@ -96,12 +96,12 @@ project through the automatic fixture, so tests are independent and can run in p
 
 ### Nodes
 - `id` is **your** scenario key (used by `variableBindings` and `connections`). The runner maps it to the real node ID.
-- `type` is the node type from the node library (`event_game_start`, `variable_get`, `logic_and`, `ui_notification`, ...).
+- `type` is the node type from the node library (`eventGameStart`, `variableGet`, `logicAnd`, `uiNotification`, ...).
 - `pos` is only layout. Keep nodes about 250px apart so nothing overlaps.
 - `inspectorValues`: `{ <portId>: { value, type } }` where `type` is `string`, `number`, `boolean`, or
   `select` (dropdown, value is the visible option text, e.g. `'Equal (==)'`).
 - `dynamicInputs` / `dynamicOutputs`: arrays of property names added from the Inspector dropdown
-  (e.g. `dynamicOutputs: ['Position X']` on `get_transform`, `dynamicInputs: ['Name', 'Tag']` on `set_object`).
+  (e.g. `dynamicOutputs: ['Position X']` on `getTransform`, `dynamicInputs: ['Name', 'Tag']` on `setObject`).
 - `topLevelData`: node-level fields, `{ key: value }` or `{ key: { value, type: 'number' } }`.
 
 ### Variable bindings
@@ -110,8 +110,8 @@ project through the automatic fixture, so tests are independent and can run in p
   (`{ nodeId: 'math', portId: 'a', varName: 'score', modifier: { label: 'Add', value: 5 } }`).
 
 ### Connections
-- `sourceHandle` / `targetHandle` are port IDs. They differ per node (`exec_out`, `out`, `exec_in`, `out_0`,
-  `v0`, `result`, `cond_0`, ...). Copy them from an existing spec that uses the same node, or read them from
+- `sourceHandle` / `targetHandle` are port IDs. They differ per node (`execOut`, `out`, `execIn`,
+  `v0`, `result`, `message`, ...). Copy them from an existing spec that uses the same node, or read them from
   the node definition. A wrong handle fails in the graph step with a clear error.
 - Optional edge `modifier`: `{ operation: '<label>', value, isNumber }` applied in the Edge Inspector.
 
@@ -120,30 +120,28 @@ project through the automatic fixture, so tests are independent and can run in p
 
 ## 5. Step-by-step: adding a test for a new node
 
-1. **Pick the file.** Reuse `Blueprint<Topic>.spec.js` if the topic exists (Boolean, Comparison, Keyboard,
-   List, Object, Scene, Transform); otherwise create a new file following the template above.
-2. **Find a similar existing test** and copy it. Good starting points:
-   - pure logic with variables: `BlueprintBoolean.spec.js`
-   - dropdown parameters (`select`): `BlueprintComparison.spec.js`
-   - collections via `rawJson`: `BlueprintList.spec.js`
-   - dynamic ports: `BlueprintObject.spec.js`, `BlueprintTransform.spec.js`
-   - multi-scene setup: `BlueprintScene.spec.js`
-3. **Design the smallest graph** that proves one behavior: `event_game_start` -> (your node) -> `ui_notification`.
-4. **Make the result observable.** The message printed by `ui_notification` must depend on the behavior under
-   test. Either put the value into the message (`variable_get` -> `in_msg`) or gate the notification behind a
-   `logic_branch` so it only prints when the logic is correct.
+1. **Pick the category file.** Add to the appropriate category spec:
+   - `blueprint-logic-data.spec.js` (Math, Logic, Comparison, Strings, Collections, Loops)
+   - `blueprint-entity-transform.spec.js` (Entities, Transform, Layers)
+   - `blueprint-lifecycle-events.spec.js` (Lifecycle, Events, Signals, Scenes)
+   - `blueprint-physics-gameplay.spec.js` (Physics, Colliders, Camera, Animator, Input)
+2. **Find a similar existing test** and copy it as a template.
+3. **Design the smallest graph** that proves one behavior: `eventGameStart` -> (your node) -> `uiNotification`.
+4. **Make the result observable.** The message printed by `uiNotification` must depend on the behavior under
+   test. Either connect the value into the message port (`variableGet` -> `message`) or gate the notification behind a
+   `branch` so it only prints when the condition is met.
 5. **Choose a unique `expectedLog`.** A static message must not be reachable through any other path.
    For branch tests, use different messages per path (`'Greater Success'` vs `'False Branch Executed'`).
 6. **Run it alone**, then repeat to check for flakiness:
    ```
-   npx playwright test e2e/specs/blueprint/BlueprintList.spec.js -g "your test title"
-   npx playwright test e2e/specs/blueprint/BlueprintList.spec.js -g "your test title" --repeat-each=10
+   npx playwright test e2e/specs/blueprint/blueprint-logic-data.spec.js -g "your test title"
+   npx playwright test e2e/specs/blueprint/blueprint-logic-data.spec.js -g "your test title" --repeat-each=10
    ```
 7. **Run the standard check** before committing: `node scripts/check-standard.mjs`.
 
 ## 6. Naming conventions
 
-- Test title: present tense, no `should`, no numbering. Example: `Evaluates logic_and with two boolean variables (true AND true)`.
+- Test title: present tense, no `should`, no numbering. Example: `evaluates logicAnd with two boolean variables (true AND true)`.
 - `[Bad Path]` prefix for tests that expect rejection or the false branch.
 - `describe` name: `Blueprint <Topic> E2E Testing`.
 - `testName`: short label, shown in step titles and errors (`Boolean AND Test`).
@@ -178,7 +176,7 @@ If a node needs configuration the scenario schema cannot express:
 | `GRAPH CONFIG ERROR` mentioning a port or handle | Wrong `portId` / `sourceHandle` / `targetHandle` | Copy the IDs from the node definition or a spec using the same node |
 | `GRAPH CONFIG ERROR` on a select/dropdown | Option text differs from the UI | `value` for `select` must match the visible option text exactly |
 | `PREVIEW BOOT ERROR` | Preview popup blocked or engine failed to boot | Open the trace; use `previewPage.collectPopupErrors(popup)` while debugging |
-| `LOGIC VALUE ERROR` (log never arrives) | Graph is built but logic does not reach the notification | Check the execution chain (`exec_*` edges), variable bindings and the branch condition; use `previewPage.dumpRuntimeState(popup)` to inspect compiled nodes and edges |
+| `LOGIC VALUE ERROR` (log never arrives) | Graph is built but logic does not reach the notification | Check the execution chain (`execOut` / `execIn` edges), variable bindings and the branch condition; use `previewPage.dumpRuntimeState(popup)` to inspect compiled nodes and edges |
 | Wrong value in the log | Variable not bound, wrong default value or wrong node parameter | Verify `variableBindings` and `inspectorValues` |
 
 Use the HTML report (`npx playwright show-report`): each of the three stages is a separate step, and the
