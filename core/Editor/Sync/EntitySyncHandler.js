@@ -79,14 +79,29 @@ export class EntitySyncHandler {
 
         target[keys[keys.length - 1]] = value;
 
+        const isTextLayoutProp = componentName === "TextRenderer" && [
+            "fontSize", "value", "assetId", "lockRatio", "autoFit",
+            "maxWidth", "maxLine", "autoLine", "lineSpacing", "letterSpacing", "overflow", "align"
+        ].includes(path);
+
+        const oldH = (componentName === "Transform" || componentName === "UITransform" || e.components?.TextRenderer) 
+            ? (e.components?.Transform?.height ?? e.components?.UITransform?.height) 
+            : undefined;
+
         this.ctx.isInternalUpdate = true;
         if (
             (componentName === "Transform" || componentName === "UITransform") ||
-            (componentName === "TextRenderer" && ["fontSize", "value", "assetId", "lockRatio", "autoFit"].includes(path))
+            isTextLayoutProp
         ) {
             ApplyResizeToEntity(e, this.ctx.world, true);
         }
         this.ctx.isInternalUpdate = false;
+
+        const newH = (e.components?.Transform?.height ?? e.components?.UITransform?.height);
+
+        if (oldH !== undefined && newH !== undefined && oldH !== newH) {
+            this.ctx.bus.emit("entity:modified", [e]);
+        }
     }
 
     onPatchComponent({ entityId, componentName, updates }) {
@@ -112,10 +127,19 @@ export class EntitySyncHandler {
             }
         }
         
+        const oldH = (e.components?.Transform?.height ?? e.components?.UITransform?.height);
+
         // 3. Mark dirty & call resize/bounds update if needed
         e.isDirty = true;
         if (typeof ApplyResizeToEntity === 'function') {
+            this.ctx.isInternalUpdate = true;
             ApplyResizeToEntity(e, this.ctx.world, true);
+            this.ctx.isInternalUpdate = false;
+        }
+
+        const newH = (e.components?.Transform?.height ?? e.components?.UITransform?.height);
+        if (componentName === "TextRenderer" && oldH !== undefined && newH !== undefined && oldH !== newH) {
+            this.ctx.bus.emit("entity:modified", [e]);
         }
     }
     

@@ -74,7 +74,7 @@ export const componentSchema = {
 
   SpriteAnimator: (data = {}) => ({
     currentClip: data.currentClip || null,
-    clips: data.clips || {},
+    clips: Array.isArray(data.clips) ? data.clips : (data.clips && typeof data.clips === 'object' && Object.keys(data.clips).length > 0 ? data.clips : []),
     active: Boolean(data.active ?? true),
     isPlaying: Boolean(data.isPlaying ?? true),
     overridden: Boolean(data.overridden ?? false)
@@ -102,12 +102,11 @@ export const componentSchema = {
     color: inputData.color || "#FFFFFF",
     opacity: Number(inputData.opacity ?? 1),
     align: inputData.align || "left",
-    maxWidth: Number(inputData.maxWidth ?? 0),
-    maxLine: Number(inputData.maxLine ?? 0),
+    maxLine: Math.max(1, Number(inputData.maxLine ?? 1)),
+    autoLine: Boolean(inputData.autoLine ?? true),
     lineSpacing: Number(inputData.lineSpacing ?? 1.2),
     letterSpacing: Number(inputData.letterSpacing ?? 0),
     overflow: inputData.overflow || "wrap",
-    autoFit: Boolean(inputData.autoFit ?? true),
     outlineWidth: Number(inputData.outlineWidth ?? 0),
     outlineColor: inputData.outlineColor || "#000000",
     shadowEnabled: Boolean(inputData.shadowEnabled ?? false),

@@ -36,7 +36,8 @@ export const projectSchema = (data = {}) => {
         width: Number(data.settings?.ui?.width ?? 1920),
         height: Number(data.settings?.ui?.height ?? 1080),
         showUIBorder: data.settings?.ui?.showUIBorder ?? true,
-        active: data.settings?.ui?.active ?? true
+        active: data.settings?.ui?.active ?? true,
+        smartGuides: data.settings?.ui?.smartGuides ?? true
       },
 
       camera: {

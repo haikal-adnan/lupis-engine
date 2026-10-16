@@ -26,6 +26,7 @@ export async function startEngine(canvasSource, baseURL, mode = "runtime", initi
     canvas.oncontextmenu = (e) => e.preventDefault();
 
     const game = new Game(); 
+    game.isPreview = true;
     
     if (process.env.NODE_ENV !== 'production') {
         window.$game = game; 
@@ -34,7 +35,11 @@ export async function startEngine(canvasSource, baseURL, mode = "runtime", initi
     const loader = new RuntimeLoader();
 
     try {
-        await loader.initializeGame(game, canvas, baseURL, mode, initialData);
+        const payload = {
+            ...initialData,
+            isPreview: true
+        };
+        await loader.initializeGame(game, canvas, baseURL, mode, payload);
         return { game, bus };
     } catch (error) {
         console.error("[Runtime] Fatal Error: Failed to start engine.", error);

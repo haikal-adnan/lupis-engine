@@ -1,8 +1,9 @@
 export default class FontMath {
     static measureText(font, str, size, options = {}) {
-        if (!font || !font.chars || !font.info || !str) {
+        if (!font || !font.chars || !font.info || str === undefined || str === null || str === "") {
+            const fallbackW = Number(options.width) > 0 ? Number(options.width) : (Number(options.maxWidth) > 0 ? Number(options.maxWidth) : 0);
             return { 
-                width: 0, height: 0, boundsWidth: 0, boundsHeight: 0, 
+                width: fallbackW, height: 0, boundsWidth: fallbackW, boundsHeight: 0, 
                 xMin: 0, yMin: 0, xMax: 0, yMax: 0, 
                 lines: [], lineWidths: [], wordCounts: [], lineH: 0 
             };
@@ -12,26 +13,42 @@ export default class FontMath {
         const lineH = (font.common?.lineHeight || 10) * scale * (options.lineSpacing || 1.2);
         const lSpacing = (options.letterSpacing || 0) * scale;
         
-        const maxWidth = (options.maxWidth > 0) ? options.maxWidth : Infinity;
-        let maxLine = (options.maxLine > 0) ? options.maxLine : Infinity;
+        const limitWidth = (Number(options.width) > 0) 
+            ? Number(options.width) 
+            : ((Number(options.maxWidth) > 0) ? Number(options.maxWidth) : Infinity);
+
+        const autoLine = options.autoLine !== false;
+        const maxLine = Math.max(1, Number(options.maxLine ?? 1));
+        const effectiveMaxLine = autoLine ? Infinity : maxLine;
         const isEllipsis = options.overflow === "ellipsis";
 
-        if (isEllipsis && maxLine === Infinity) {
-            maxLine = 1;
-        }
-
-        let lines = [];
-        const rawLines = String(str).split('\n');
-        
         const getCharAdvance = (ch) => {
             const g = font.chars[ch.charCodeAt(0)];
             return g ? (g.adv * scale) + lSpacing : 0;
         };
 
+        const getWordWidth = (word) => {
+            let w = 0;
+            for (let i = 0; i < word.length; i++) {
+                w += getCharAdvance(word[i]);
+            }
+            return w;
+        };
+
         const spaceW = getCharAdvance(' ');
 
-        for (const rLine of rawLines) {
-            if (maxWidth === Infinity) {
+        let lines = [];
+        const rawLines = String(str).split(/\r\n|\r|\n/);
+        let isTruncated = false;
+
+        for (let p = 0; p < rawLines.length; p++) {
+            if (lines.length >= effectiveMaxLine) {
+                isTruncated = true;
+                break;
+            }
+
+            const rLine = rawLines[p];
+            if (limitWidth === Infinity) {
                 lines.push(rLine);
                 continue;
             }
@@ -42,23 +59,69 @@ export default class FontMath {
 
             for (let i = 0; i < words.length; i++) {
                 const word = words[i];
-                let wordW = 0;
-                for (const ch of word) {
-                    wordW += getCharAdvance(ch);
+
+                if (word.length === 0) {
+                    if (currentLine.length > 0) {
+                        if (currentLineW + spaceW <= limitWidth) {
+                            currentLine += " ";
+                            currentLineW += spaceW;
+                        } else {
+                            if (lines.length + 1 < effectiveMaxLine) {
+                                lines.push(currentLine);
+                                currentLine = "";
+                                currentLineW = 0;
+                            } else {
+                                isTruncated = true;
+                                break;
+                            }
+                        }
+                    }
+                    continue;
                 }
 
-                const addedW = (currentLine.length > 0) ? wordW + spaceW : wordW;
-                const connector = (currentLine.length > 0) ? " " : "";
+                const wordW = getWordWidth(word);
+                const spaceNeeded = (currentLine.length > 0) ? spaceW : 0;
 
-                if (currentLineW + addedW > maxWidth && currentLine.length > 0) {
-                    lines.push(currentLine); 
-                    currentLine = word;
-                    currentLineW = wordW;
+                if (currentLineW + spaceNeeded + wordW <= limitWidth) {
+                    currentLine += (currentLine.length > 0 ? " " : "") + word;
+                    currentLineW += spaceNeeded + wordW;
+                    continue;
+                }
+
+                if (lines.length + 1 < effectiveMaxLine) {
+                    if (currentLine.length > 0) {
+                        lines.push(currentLine);
+                        currentLine = "";
+                        currentLineW = 0;
+                    }
+
+                    if (wordW <= limitWidth) {
+                        currentLine = word;
+                        currentLineW = wordW;
+                    } else {
+                        for (let c = 0; c < word.length; c++) {
+                            const chW = getCharAdvance(word[c]);
+                            if (currentLineW + chW <= limitWidth) {
+                                currentLine += word[c];
+                                currentLineW += chW;
+                            } else {
+                                if (lines.length + 1 < effectiveMaxLine) {
+                                    lines.push(currentLine);
+                                    currentLine = word[c];
+                                    currentLineW = chW;
+                                } else {
+                                    isTruncated = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
                 } else {
-                    currentLine += connector + word;
-                    currentLineW += addedW;
+                    isTruncated = true;
+                    break;
                 }
             }
+
             if (currentLine.length > 0) {
                 lines.push(currentLine);
             } else if (words.length === 0 || rLine === "") {
@@ -66,38 +129,34 @@ export default class FontMath {
             }
         }
 
-        let isTruncated = false;
-        if (lines.length > maxLine) {
-            lines = lines.slice(0, maxLine);
+        if (rawLines.length > lines.length) {
             isTruncated = true;
         }
 
-        if (isTruncated && isEllipsis && lines.length > 0) {
-            const ellipsisStr = "...";
-            let ellipsisW = 0;
-            
-            for (const ch of ellipsisStr) {
-                ellipsisW += getCharAdvance(ch);
-            }
+        if (rawLines.length > 0 && lines.length === 0) {
+            lines.push("");
+        }
 
+        if (lines.length > effectiveMaxLine) {
+            lines = lines.slice(0, effectiveMaxLine);
+            isTruncated = true;
+        }
+
+        if (isEllipsis && lines.length > 0 && isTruncated) {
+            const ellipsisStr = "...";
+            const ellipsisW = getWordWidth(ellipsisStr);
             let lastLine = lines[lines.length - 1];
-            let lineW = 0;
-            
-            for (const ch of lastLine) {
-                 lineW += getCharAdvance(ch);
-            }
-            
-            if (maxWidth !== Infinity) {
-                while (lastLine.length > 0 && (lineW + ellipsisW > maxWidth)) {
-                    const removedCh = lastLine[lastLine.length - 1];
-                    lineW -= getCharAdvance(removedCh);
+
+            if (limitWidth !== Infinity) {
+                while (lastLine.length > 0 && (getWordWidth(lastLine) + ellipsisW > limitWidth)) {
                     lastLine = lastLine.slice(0, -1);
                 }
+                lines[lines.length - 1] = lastLine.trimEnd() + ellipsisStr;
+            } else {
+                lines[lines.length - 1] = lastLine.trimEnd() + ellipsisStr;
             }
-            lines[lines.length - 1] = lastLine.trimEnd() + ellipsisStr;
-            
         } else {
-            for(let i = 0; i < lines.length; i++){
+            for (let i = 0; i < lines.length; i++) {
                 lines[i] = lines[i].trimEnd();
             }
         }
@@ -105,12 +164,12 @@ export default class FontMath {
         let cx = 0, cy = 0;
         let xMin = Infinity, yMin = Infinity, xMax = -Infinity, yMax = -Infinity;
         const lineWidths = [];
-        const wordCounts = []; 
+        const wordCounts = [];
 
         for (const line of lines) {
             let lineW = 0;
             let spaces = 0;
-            
+
             for (let i = 0; i < line.length; i++) {
                 const ch = line[i];
                 if (ch === ' ') spaces++;
@@ -131,7 +190,7 @@ export default class FontMath {
 
                 lineW += (gdat.adv * scale) + lSpacing;
             }
-            
+
             if (line.length > 0) lineW -= lSpacing;
 
             lineWidths.push(lineW);
@@ -143,20 +202,22 @@ export default class FontMath {
         if (font.common && font.common.stdYMin !== undefined) {
             yMin = font.common.stdYMin * scale;
             const scaledStdYMax = font.common.stdYMax * scale;
-            
             const totalLines = lines.length > 0 ? lines.length : 1;
             yMax = scaledStdYMax + ((totalLines - 1) * lineH);
         } else if (xMin === Infinity) {
             xMin = 0; xMax = cx; yMin = 0; yMax = lineH * (lines.length > 0 ? lines.length : 1);
         }
 
+        const calculatedHeight = Math.max(0, yMax - yMin);
+        const finalWidth = (limitWidth !== Infinity) ? limitWidth : Math.max(0, xMax - xMin);
+
         return {
             lines,
             lineWidths,
             wordCounts,
-            width: cx,
-            boundsWidth: Math.max(0, xMax - xMin),
-            boundsHeight: Math.max(0, yMax - yMin),
+            width: finalWidth,
+            boundsWidth: finalWidth,
+            boundsHeight: calculatedHeight,
             xMin, yMin, xMax, yMax,
             baseline: (font.common?.base || 0) * scale,
             lineH

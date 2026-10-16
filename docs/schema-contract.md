@@ -110,7 +110,7 @@ interface ProjectSchema {
   version: string;                              // Release version (default: "1.0.0")
   createdAt: string;                            // ISO 8601 Timestamp
   thumbnailUrl: string | null;                  // User custom cover thumbnail URL / Base64
-  snapshotUrl: string | null;                   // Auto snapshot of current canvas viewport (Figma-like)
+  snapshotUrl: string | null;                   // Auto snapshot of current canvas viewport
 
   settings: {
     initialSceneId: string | null;              // UUID of boot scene
@@ -392,13 +392,12 @@ interface TextRendererComponent {
   fontSize: number;                             // Font point size (default: 24)
   color: string;                                // Text hex color (default: "#FFFFFF")
   opacity: number;                              // Default: 1
-  align: "left" | "center" | "right";           // Horizontal text alignment (default: "left")
-  maxWidth: number;                             // Wrap boundary width (default: 0 / unlimited)
-  maxLine: number;                              // Maximum line count (default: 0 / unlimited)
+  align: "left" | "center" | "right" | "justify"; // Horizontal text alignment (default: "left")
+  maxLine: number;                              // Maximum line count (default: 1, min: 1)
+  autoLine: boolean;                            // Auto wrap to new lines within Transform width (default: true)
   lineSpacing: number;                          // Line height spacing factor (default: 1.2)
   letterSpacing: number;                        // Character spacing offset (default: 0)
-  overflow: "wrap" | "truncate" | "visible";    // Overflow layout behavior (default: "wrap")
-  autoFit: boolean;                             // Auto-adjust bounding box dimensions (default: true)
+  overflow: "wrap" | "ellipsis";                // Overflow layout behavior (default: "wrap")
   outlineWidth: number;                         // Text stroke outline width (default: 0)
   outlineColor: string;                         // Text stroke outline hex color (default: "#000000")
   shadowEnabled: boolean;                       // Drop shadow toggle (default: false)

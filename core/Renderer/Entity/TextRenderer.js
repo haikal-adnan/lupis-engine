@@ -213,8 +213,8 @@ export default class TextRenderer {
         const targetW = w || nativeW;
         const targetH = h || nativeH;
         
-        const ratioX = (nativeW > 0 ? targetW / nativeW : 1);
-        const ratioY = (nativeH > 0 ? targetH / nativeH : 1);
+        const ratioX = 1;
+        const ratioY = 1;
 
         const c = Math.cos(rot), s = Math.sin(rot);
         const finalSX = flipX ? -sx : sx;

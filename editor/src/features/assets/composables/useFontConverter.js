@@ -21,6 +21,7 @@ export function useFontConverter() {
       const response = await fetch(`${backendUrl}/api/convert-font`, {
         method: 'POST',
         body: formData,
+        signal: AbortSignal.timeout(20000),
       });
 
       if (!response.ok) {
@@ -74,9 +75,13 @@ export function useFontConverter() {
 
     } catch (error) {
       console.error('[FontConverter Error]:', error);
+      let message = error.message || 'Failed to convert font file to BMFont.';
+      if (error.name === 'TimeoutError' || error.name === 'AbortError') {
+        message = 'Font conversion timed out (20 seconds).';
+      }
       showPop({
         title: 'Font Conversion Failed',
-        message: error.message || 'Failed to convert font file to BMFont.',
+        message,
         type: 'error',
       });
       return null;

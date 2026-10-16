@@ -42,28 +42,48 @@ export function useAnimatorLogic() {
   const activeClipId = computed({
     get: () => {
       if (!activeEntityId.value) return null;
-      return activeClipByEntity.value[activeEntityId.value] || null;
+      const stored = activeClipByEntity.value[activeEntityId.value];
+      const compClip = selectedEntity.value?.components?.SpriteAnimator?.currentClip;
+      const clips = realClipsData.value;
+      if (stored !== undefined) {
+        if (stored === null) return null;
+        if (clips.some(c => c.id === stored)) return stored;
+        return null;
+      }
+      if (compClip && clips.some(c => c.id === compClip)) {
+        return compClip;
+      }
+      const firstClip = clips.find(c => c.type === 'clip');
+      return firstClip ? firstClip.id : null;
     },
     set: (val) => {
       if (activeEntityId.value) {
         activeClipByEntity.value[activeEntityId.value] = val;
+        if (selectedEntity.value?.components?.SpriteAnimator) {
+          selectedEntity.value.components.SpriteAnimator.currentClip = val;
+        }
       }
     }
   });
 
-  // AUTO-CLOSE if current entity becomes PREFAB or missing
+  // AUTO-CLOSE if current entity becomes PREFAB, missing, or lacks SpriteAnimator
   watch(
     [() => workspaceStore.activeTab, selectedEntity],
     ([activeTab, entity]) => {
       if (activeTab?.type !== 'animator') return;
-      if (!entity || entity.prefabId) {
+      if (!entity || entity.prefabId || !entity.components?.SpriteAnimator) {
         workspaceStore.closeTab(activeTab.id);
       }
     },
     { immediate: true, deep: true }
   );
 
-  const realClipsData = computed(() => selectedEntity.value?.components?.SpriteAnimator?.clips || []);
+  const realClipsData = computed(() => {
+    const raw = selectedEntity.value?.components?.SpriteAnimator?.clips;
+    if (Array.isArray(raw)) return raw;
+    if (raw && typeof raw === 'object') return Object.values(raw);
+    return [];
+  });
 
   const activeClipData = computed(() => {
     if (!activeClipId.value) return null;
@@ -542,7 +562,7 @@ export function useAnimatorLogic() {
 
   function openAnimatorEditor() {
     const entity = selectedEntityForOpenTab.value;
-    if (!entity || entity.prefabId) return;
+    if (!entity || entity.prefabId || !entity.components?.SpriteAnimator) return;
     workspaceStore.openTab({
       id: entity.id,
       name: entity.name || 'Animator',
@@ -580,11 +600,7 @@ export function useAnimatorLogic() {
     redo: animatorHistory.redo,
 
     selectClip: (id) => {
-      if (id !== null && activeClipId.value === id) {
-        activeClipId.value = null;
-      } else {
-        activeClipId.value = id;
-      }
+      activeClipId.value = id;
     },
 
     openAnimatorEditor,

@@ -49,7 +49,7 @@ app.use(express.urlencoded({ extended: true, limit: "100mb" }));
 const storage = multer.memoryStorage();
 const upload = multer({
   storage,
-  limits: { fileSize: 15 * 1024 * 1024 },
+  limits: { fileSize: 20 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase();
     if (ext === ".ttf" || ext === ".otf") {
@@ -77,7 +77,10 @@ app.post("/api/convert-font", (req, res) => {
   upload(req, res, (err) => {
     if (err) {
       console.error(`[Upload Error]: ${err.message}`);
-      return res.status(400).json({ success: false, error: err.message });
+      const errorMessage = err.code === "LIMIT_FILE_SIZE"
+        ? "Font file is too large. Maximum size allowed is 20MB."
+        : err.message;
+      return res.status(400).json({ success: false, error: errorMessage });
     }
 
     if (!req.file) {
@@ -100,11 +103,14 @@ app.post("/api/convert-font", (req, res) => {
     fs.writeFileSync(inputFontPath, req.file.buffer);
 
     const msdfBin = path.join(__dirname, "node_modules", ".bin", "msdf-bmfont");
-    const cmd = `"${msdfBin}" "${inputFontPath}" -o "${outputFntPath}" --fieldType msdf --texture-size 2048,2048 --distance-range 8 --texture-padding 8 --smart-size --pot --square --overlap`;
+    // Optimize font size for MSDF conversion: 32px for large fonts (> 1MB) to prevent bezier degenerate singularities and ensure fast generation within 20s
+    const isLargeFont = req.file.size > 1024 * 1024;
+    const fontSize = isLargeFont ? 32 : 36;
+    const cmd = `"${msdfBin}" "${inputFontPath}" -o "${outputFntPath}" -s ${fontSize} --fieldType msdf --texture-size 2048,2048 --distance-range 8 --texture-padding 8 --smart-size --pot --square`;
 
-    console.log(`[Job ${jobId}] Running MSDF BMFont conversion...`);
+    console.log(`[Job ${jobId}] Running MSDF BMFont conversion (size: ${fontSize}px)...`);
 
-    exec(cmd, (error, stdout, stderr) => {
+    exec(cmd, { timeout: 20000, maxBuffer: 10 * 1024 * 1024 }, (error, stdout, stderr) => {
       const cleanup = () => {
         if (fs.existsSync(jobFolder)) {
           fs.rmSync(jobFolder, { recursive: true, force: true });
@@ -116,6 +122,9 @@ app.post("/api/convert-font", (req, res) => {
         console.error(`[Job ${jobId}] Conversion error:`, error.message);
         if (stderr) console.error(`[Job ${jobId}] Stderr:`, stderr);
         cleanup();
+        if (error.killed || error.signal === "SIGTERM") {
+          return res.status(504).json({ success: false, error: "Font conversion timed out (20 seconds)." });
+        }
         return res.status(500).json({ success: false, error: "Failed to process MSDF BMFont generator." });
       }
 

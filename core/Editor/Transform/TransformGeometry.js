@@ -188,7 +188,12 @@ export class TransformGeometry {
             const s = { type: "s", ...this._mid(sw, se) };
             const w = { type: "w", ...this._mid(nw, sw) };
 
-            this.handles = [nw, ne, sw, se, n, e_side, s, w];
+            const hasText = Boolean(e?.components?.TextRenderer);
+            if (hasText) {
+                this.handles = [nw, ne, sw, se, e_side, w];
+            } else {
+                this.handles = [nw, ne, sw, se, n, e_side, s, w];
+            }
             this.activeRotation = rRad;
             this.groupBounds = { type: 'obb', v };
             return;

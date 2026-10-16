@@ -19,7 +19,7 @@ export default class World {
                 width: 32, height: 32, color: "#ffffff", opacity: 0.1, visible: true, snap: true
             },
             ui: {
-                width: 1920, height: 1080, showUIBorder: true, active: true
+                width: 1920, height: 1080, showUIBorder: true, active: true, smartGuides: true
             },
             showRulers: true
         };

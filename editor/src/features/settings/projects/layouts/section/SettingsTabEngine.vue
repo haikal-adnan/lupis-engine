@@ -43,6 +43,7 @@
         <div class="flex items-center gap-8 py-2">
           <BaseCheckbox v-model="active" label="Enable UI Layer" box-size="w-4 h-4" icon-size="w-3 h-3" text-size="text-sm" />
           <BaseCheckbox v-model="showBorder" label="Show UI Bounds" :disabled="!active" box-size="w-4 h-4" icon-size="w-3 h-3" text-size="text-sm" />
+          <BaseCheckbox v-model="smartGuides" label="Enable Smart Guides (UI)" :disabled="!active" box-size="w-4 h-4" icon-size="w-3 h-3" text-size="text-sm" data-testid="settings-smart-guides-checkbox" />
         </div>
 
         <div :class="{ 'opacity-50 pointer-events-none grayscale': !active }" class="transition-all duration-300">
@@ -113,6 +114,7 @@ const tickRate = bindSettingProp(null, 'tickRate');
 const backgroundColor = bindSettingProp(null, 'backgroundColor');
 const active = bindSettingProp('ui', 'active');
 const showBorder = bindSettingProp('ui', 'showUIBorder');
+const smartGuides = bindSettingProp('ui', 'smartGuides');
 const refWidth = bindSettingProp('ui', 'width');
 const refHeight = bindSettingProp('ui', 'height');
 

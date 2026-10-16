@@ -14,7 +14,7 @@
           <div class="space-y-0.5">
             <span class="text-sm font-medium text-foreground">Enable Mini Console</span>
             <p class="text-xs text-muted-foreground">
-              Displays logs and notification outputs directly over the game preview viewport.
+              Displays logs and notification outputs directly over the game preview viewport (Toggle with Ctrl + F2).
             </p>
           </div>
           <BaseCheckbox 

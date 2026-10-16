@@ -99,7 +99,7 @@
     <div 
       class="transition-all duration-300"
       :class="{ 
-        'opacity-40 pointer-events-none filter grayscale cursor-not-allowed': isSizeLockedByText || isSizeLockedByTilemap 
+        'opacity-40 pointer-events-none filter grayscale cursor-not-allowed': isSizeLockedByTilemap 
       }"
     >
       <PropertyRow label="Size (px)">
@@ -112,7 +112,7 @@
               :step="1" 
               :precision="2" 
               class="font-mono" 
-              :disabled="locked || isSizeLockedByText || isSizeLockedByTilemap" 
+              :disabled="locked || isSizeLockedByTilemap" 
               data-testid="transform-size-w"
             />
             <BaseNumber 
@@ -144,7 +144,7 @@
 
     <div v-if="isSizeLockedByText" class="px-1 mb-3 -mt-1">
       <div class="text-[9px] text-amber-500/80 italic flex items-center gap-1">
-        <Info class="w-3 h-3" /> Size is controlled by Text Renderer (Font Size mode)
+        <Info class="w-3 h-3" /> Height is controlled by Text Renderer
       </div>
     </div>
 

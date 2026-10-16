@@ -42,7 +42,9 @@
 
         <button 
           @click="removeComponent('SpriteRenderer'); close()" 
-          class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-destructive hover:text-destructive-foreground text-destructive font-medium transition-colors"
+          :disabled="hasAnimator"
+          :title="hasAnimator ? 'Cannot remove Image Renderer while Animator is present' : ''"
+          class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-destructive hover:text-destructive-foreground text-destructive font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-destructive"
           data-testid="sprite-renderer-menu-remove"
         >
           <Trash2 class="w-3.5 h-3.5 mr-2" />
@@ -199,6 +201,11 @@ const assetStore = useAssetStore();
 
 // --- Logic Komponen ---
 const hasComponent = computed(() => !!selectedEntity.value?.components?.SpriteRenderer);
+
+const hasAnimator = computed(() => {
+  if (!selectedEntity.value) return false;
+  return !!(selectedEntity.value.components?.SpriteAnimator || selectedEntity.value.components?.Animator);
+});
 
 const isControlledByAnimator = computed(() => {
   if (!selectedEntity.value) return false;

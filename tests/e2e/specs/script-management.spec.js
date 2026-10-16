@@ -254,6 +254,9 @@ test.describe('Script Panel E2E Management', () => {
   // =========================================================================
   test.describe('Multi-Script & Entity Sharing Scenarios', () => {
     test('attaches the same script to 3 entities of different types (Sprite, Shape, Text)', async ({ hierarchy, inspector, popup, scripts }) => {
+      // Slow test: performs 3 consecutive entity creations, renames, inspector attachments and context menu actions
+      test.slow();
+
       const sharedScriptName = 'SharedGameLogic';
       await scripts.createBtn.click();
       await popup.fillPromptAndSubmit('Create New Component', sharedScriptName, 'Create');

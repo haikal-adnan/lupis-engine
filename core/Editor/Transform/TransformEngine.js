@@ -146,6 +146,125 @@ export class TransformEngine {
         const safeScaleX = Math.abs(globalT.scaleX) < 0.001 ? 0.001 : Math.abs(globalT.scaleX);
         const safeScaleY = Math.abs(globalT.scaleY) < 0.001 ? 0.001 : Math.abs(globalT.scaleY);
 
+        if (entity.components?.TextRenderer) {
+            const isCorner = resizeType.length === 2;
+            const isSideW = resizeType === 'e' || resizeType === 'w';
+
+            if (isCorner) {
+                let dVisualW = resizeType.includes('w') ? -localDx : localDx;
+                let dVisualH = resizeType.includes('n') ? -localDy : localDy;
+                let anchorX = resizeType.includes('w') ? 1 : 0;
+                let anchorY = resizeType.includes('n') ? 1 : 0;
+
+                const initialVisualW = item.w * safeScaleX;
+                const initialVisualH = item.h * safeScaleY;
+                const denom = (initialVisualW * initialVisualW) + (initialVisualH * initialVisualH);
+                let deltaS = denom > 0 
+                    ? ((dVisualW * initialVisualW) + (dVisualH * initialVisualH)) / denom 
+                    : 0;
+                let s = Math.max(0.1, 1 + deltaS);
+
+                const startFontSize = item.fontSize || entity.components.TextRenderer.fontSize || 24;
+                const newFontSize = Math.max(6, Math.round(startFontSize * s));
+                const newW = Math.max(10, Math.round(item.w * s));
+
+                entity.components.TextRenderer.fontSize = newFontSize;
+                t.width = newW;
+                ApplyResizeToEntity(entity, this.world, true);
+                const newH = t.height;
+
+                const dW_Visual = (newW - item.w) * safeScaleX;
+                const dH_Visual = (newH - item.h) * safeScaleY;
+                const px = t.pivotX ?? 0.5;
+                const py = t.pivotY ?? 0.5;
+
+                let shiftX_World = dW_Visual * (px - anchorX);
+                let shiftY_World = dH_Visual * (py - anchorY);
+
+                const rRad = (globalT.rotation || 0) * (Math.PI / 180);
+                const wc = Math.cos(rRad), ws = Math.sin(rRad);
+                const worldDx = shiftX_World * wc - shiftY_World * ws;
+                const worldDy = shiftX_World * ws + shiftY_World * wc;
+
+                let localShiftX = worldDx;
+                let localShiftY = worldDy;
+
+                if (entity.parentId) {
+                    const parentEntity = this.findEntityInWorld(entity.parentId);
+                    if (parentEntity) {
+                        const parentGlobal = this.getGlobalTransform(parentEntity);
+                        const invRad = -parentGlobal.rotation * (Math.PI / 180);
+                        const pCos = Math.cos(invRad);
+                        const pSin = Math.sin(invRad);
+                        const rotDx = (worldDx * pCos) - (worldDy * pSin);
+                        const rotDy = (worldDx * pSin) + (worldDy * pCos);
+                        const pScaleX = parentGlobal.scaleX !== 0 ? parentGlobal.scaleX : 1;
+                        const pScaleY = parentGlobal.scaleY !== 0 ? parentGlobal.scaleY : 1;
+                        localShiftX = rotDx / pScaleX;
+                        localShiftY = rotDy / pScaleY;
+                    }
+                }
+
+                const newX = Math.round(item.x + localShiftX);
+                const newY = Math.round(item.y + localShiftY);
+
+                t.x = newX;
+                t.y = newY;
+                t.overridden = true;
+                return { changed: true, newW: t.width, newH: t.height };
+            } else if (isSideW) {
+                let dVisualW = resizeType === 'w' ? -localDx : localDx;
+                let anchorX = resizeType === 'w' ? 1 : 0;
+
+                let rawVisualW = (item.w * safeScaleX) + dVisualW;
+                if (shouldSnap) {
+                    rawVisualW = Math.round(rawVisualW / (gridSize * safeScaleX)) * (gridSize * safeScaleX);
+                }
+                const newW = Math.max(10, Math.round(rawVisualW / safeScaleX));
+
+                t.width = newW;
+                ApplyResizeToEntity(entity, this.world, true);
+                const newH = t.height;
+
+                const dW_Visual = (newW - item.w) * safeScaleX;
+                const px = t.pivotX ?? 0.5;
+                let shiftX_World = dW_Visual * (px - anchorX);
+                let shiftY_World = 0;
+
+                const rRad = (globalT.rotation || 0) * (Math.PI / 180);
+                const wc = Math.cos(rRad), ws = Math.sin(rRad);
+                const worldDx = shiftX_World * wc - shiftY_World * ws;
+                const worldDy = shiftX_World * ws + shiftY_World * wc;
+
+                let localShiftX = worldDx;
+                let localShiftY = worldDy;
+
+                if (entity.parentId) {
+                    const parentEntity = this.findEntityInWorld(entity.parentId);
+                    if (parentEntity) {
+                        const parentGlobal = this.getGlobalTransform(parentEntity);
+                        const invRad = -parentGlobal.rotation * (Math.PI / 180);
+                        const pCos = Math.cos(invRad);
+                        const pSin = Math.sin(invRad);
+                        const rotDx = (worldDx * pCos) - (worldDy * pSin);
+                        const rotDy = (worldDx * pSin) + (worldDy * pCos);
+                        const pScaleX = parentGlobal.scaleX !== 0 ? parentGlobal.scaleX : 1;
+                        const pScaleY = parentGlobal.scaleY !== 0 ? parentGlobal.scaleY : 1;
+                        localShiftX = rotDx / pScaleX;
+                        localShiftY = rotDy / pScaleY;
+                    }
+                }
+
+                const newX = Math.round(item.x + localShiftX);
+                const newY = Math.round(item.y + localShiftY);
+
+                t.x = newX;
+                t.y = newY;
+                t.overridden = true;
+                return { changed: true, newW: t.width, newH: t.height };
+            }
+        }
+
         let dVisualW = 0, dVisualH = 0;
         let anchorX = null, anchorY = null;
 

@@ -203,6 +203,7 @@ const onLayoutDragOpen = () => {
       <div 
         v-if="isLoading" 
         class="absolute inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+        data-testid="editor-loading-overlay"
       >
         <AppLoading />
       </div>

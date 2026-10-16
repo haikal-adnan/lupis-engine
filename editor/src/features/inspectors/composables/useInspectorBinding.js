@@ -276,10 +276,16 @@ export function useInspectorBinding(
     if (!tr) return;
 
     const id = ent.id;
-    const oldAutoFit = tr.autoFit;
-
-    sceneStore.updateComponentProp(id, 'TextRenderer', 'autoFit', true);
-    recordComponentChange(id, 'TextRenderer', 'autoFit', oldAutoFit, true);
+    const transformComp = ent.components?.Transform ? 'Transform' : (ent.components?.UITransform ? 'UITransform' : null);
+    if (transformComp) {
+      const t = ent.components[transformComp];
+      const oldScaleX = t.scaleX ?? 1;
+      const oldScaleY = t.scaleY ?? 1;
+      sceneStore.updateComponentProp(id, transformComp, 'scaleX', 1);
+      sceneStore.updateComponentProp(id, transformComp, 'scaleY', 1);
+      recordComponentChange(id, transformComp, 'scaleX', oldScaleX, 1);
+      recordComponentChange(id, transformComp, 'scaleY', oldScaleY, 1);
+    }
   }
 
   function bindProjectProp(propName) {

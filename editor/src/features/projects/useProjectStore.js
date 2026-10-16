@@ -330,6 +330,11 @@ export const useProjectStore = defineStore('project', {
       this.markAsDirty();
     },
 
+    toggleSmartGuides() {
+      const current = this.project?.settings?.ui?.smartGuides !== false;
+      this.updateUISettings({ smartGuides: !current });
+    },
+
     updateCameraSettings(updates) {
       Object.assign(this.project.settings.camera, updates);
       this.markAsDirty();

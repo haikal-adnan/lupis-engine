@@ -219,6 +219,18 @@ describe('useAnimatorLogic Integration', () => {
 
       expect(closeTabSpy).toHaveBeenCalledWith(mockEntityData.entity.id)
     })
+
+    it('closes animator tab automatically when SpriteAnimator component is removed', async () => {
+      useAnimatorLogic()
+      const closeTabSpy = vi.spyOn(workspaceStore, 'closeTab')
+
+      const reactiveEntity = sceneStore.activeScene.entities.find(e => e.id === mockEntityData.entity.id)
+      delete reactiveEntity.components.SpriteAnimator
+
+      await nextTick()
+
+      expect(closeTabSpy).toHaveBeenCalledWith(mockEntityData.entity.id)
+    })
   })
 
   describe('Tree Operations & Visual Hierarchy', () => {

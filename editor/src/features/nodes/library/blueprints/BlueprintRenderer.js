@@ -126,12 +126,11 @@ return;`
             { value: 'color', label: 'Text Color', type: 'string', color: '#F48FB1' },
             { value: 'opacity', label: 'Opacity (%)', type: 'number', color: '#64B5F6' },
             { value: 'align', label: 'Align', type: 'string', color: '#F48FB1' },
-            { value: 'maxWidth', label: 'Max Width', type: 'number', color: '#64B5F6' },
+            { value: 'autoLine', label: 'Auto Line', type: 'boolean', color: '#E57373' },
             { value: 'maxLine', label: 'Max Line', type: 'number', color: '#64B5F6' },
             { value: 'lineSpacing', label: 'Line Spacing', type: 'number', color: '#64B5F6' },
             { value: 'letterSpacing', label: 'Char Spacing', type: 'number', color: '#64B5F6' },
             { value: 'overflow', label: 'Overflow', type: 'string', color: '#F48FB1' },
-            { value: 'autoFit', label: 'Auto Fit', type: 'boolean', color: '#E57373' },
             { value: 'outlineWidth', label: 'Outline Width', type: 'number', color: '#64B5F6' },
             { value: 'outlineColor', label: 'Outline Color', type: 'string', color: '#F48FB1' },
             { value: 'shadowEnabled', label: 'Shadow Enabled', type: 'boolean', color: '#E57373' },
@@ -153,12 +152,11 @@ outputs.fontSize = comp.fontSize;
 outputs.color = comp.color;
 outputs.opacity = Math.round(comp.opacity * 100);
 outputs.align = comp.align;
-outputs.maxWidth = comp.maxWidth;
+outputs.autoLine = comp.autoLine;
 outputs.maxLine = comp.maxLine;
 outputs.lineSpacing = comp.lineSpacing;
 outputs.letterSpacing = comp.letterSpacing;
 outputs.overflow = comp.overflow;
-outputs.autoFit = comp.autoFit;
 outputs.outlineWidth = comp.outlineWidth;
 outputs.outlineColor = comp.outlineColor;
 outputs.shadowEnabled = comp.shadowEnabled;
@@ -198,6 +196,11 @@ return;`
             { value: 'fontSize', label: 'Font Size', type: 'number', color: '#64B5F6' },
             { value: 'color', label: 'Color', type: 'string', color: '#F48FB1' },
             { value: 'align', label: 'Align', type: 'string', color: '#F48FB1' },
+            { value: 'autoLine', label: 'Auto Line', type: 'boolean', color: '#E57373' },
+            { value: 'maxLine', label: 'Max Line', type: 'number', color: '#64B5F6' },
+            { value: 'lineSpacing', label: 'Line Spacing', type: 'number', color: '#64B5F6' },
+            { value: 'letterSpacing', label: 'Char Spacing', type: 'number', color: '#64B5F6' },
+            { value: 'overflow', label: 'Overflow', type: 'string', color: '#F48FB1' },
             { value: 'assetId', label: 'Font Asset', type: 'string', color: '#F48FB1' },
             { value: 'opacity', label: 'Opacity (%)', type: 'number', color: '#64B5F6' }
           ],
@@ -210,6 +213,11 @@ if ('value' in inputs) comp.value = inputs.value;
 if ('fontSize' in inputs) comp.fontSize = inputs.fontSize;
 if ('color' in inputs) comp.color = inputs.color;
 if ('align' in inputs) comp.align = inputs.align;
+if ('autoLine' in inputs) comp.autoLine = inputs.autoLine;
+if ('maxLine' in inputs) comp.maxLine = inputs.maxLine;
+if ('lineSpacing' in inputs) comp.lineSpacing = inputs.lineSpacing;
+if ('letterSpacing' in inputs) comp.letterSpacing = inputs.letterSpacing;
+if ('overflow' in inputs) comp.overflow = inputs.overflow;
 if ('assetId' in inputs) comp.assetId = inputs.assetId;
 if ('opacity' in inputs) comp.opacity = inputs.opacity / 100;
 

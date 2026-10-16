@@ -168,7 +168,10 @@ export default class RuntimeLoader {
         const debugConfig = game.debugSettings;
         if (debugConfig && debugConfig.active !== false) {
             const parentElement = canvas.parentElement || document.body;
-            game.miniConsole = new MiniConsoleOverlay(parentElement, debugConfig);
+            game.miniConsole = new MiniConsoleOverlay(parentElement, {
+                ...debugConfig,
+                isPreview: Boolean(game.isPreview || payload?.isPreview)
+            });
         }
     }
 

@@ -1,4 +1,5 @@
 import { bus } from "./EventBus.js";
+import Config from "../Core/Config.js";
 
 export default class MiniConsoleOverlay {
     constructor(container, debugConfig = {}) {
@@ -8,13 +9,16 @@ export default class MiniConsoleOverlay {
             position: debugConfig.position || 'top-right',
             width: debugConfig.width ?? 360,
             height: debugConfig.height ?? 220,
-            maxLogs: debugConfig.maxLogs ?? 50
+            maxLogs: debugConfig.maxLogs ?? 50,
+            isPreview: debugConfig.isPreview !== false
         };
 
         this.logs = [];
         this.domElement = null;
         this.logContainer = null;
+        this.isVisible = Boolean(this.config.active);
         this._listeners = [];
+        this._onKeyDown = null;
 
         if (this.config.active) {
             this._initDOM();
@@ -64,6 +68,11 @@ export default class MiniConsoleOverlay {
         title.style.fontWeight = 'bold';
         title.style.color = '#38bdf8';
 
+        const btnGroup = document.createElement('div');
+        btnGroup.style.display = 'flex';
+        btnGroup.style.alignItems = 'center';
+        btnGroup.style.gap = '6px';
+
         const clearBtn = document.createElement('button');
         clearBtn.innerText = 'Clear';
         Object.assign(clearBtn.style, {
@@ -76,8 +85,29 @@ export default class MiniConsoleOverlay {
         });
         clearBtn.onclick = () => this.clear();
 
+        const closeBtn = document.createElement('button');
+        closeBtn.innerHTML = '&times;';
+        closeBtn.title = 'Close Console (Ctrl+F2)';
+        closeBtn.setAttribute('data-testid', 'mini-console-close-btn');
+        Object.assign(closeBtn.style, {
+            background: 'none',
+            border: 'none',
+            color: '#94a3b8',
+            fontSize: '14px',
+            lineHeight: '1',
+            cursor: 'pointer',
+            padding: '0 4px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+        });
+        closeBtn.onclick = () => this.close();
+
+        btnGroup.appendChild(clearBtn);
+        btnGroup.appendChild(closeBtn);
+
         header.appendChild(title);
-        header.appendChild(clearBtn);
+        header.appendChild(btnGroup);
         this.domElement.appendChild(header);
 
         this.logContainer = document.createElement('div');
@@ -139,6 +169,52 @@ export default class MiniConsoleOverlay {
             { event: 'console:warn', fn: onLog },
             { event: 'console:error', fn: onLog }
         );
+
+        this._onKeyDown = (e) => {
+            if (Config.ENGINE_MODE === 'editor') return;
+            if (!this.config.active) return;
+            if (this.config.isPreview === false) return;
+
+            const isCtrl = Boolean(e.ctrlKey || e.metaKey);
+            if (isCtrl && !e.altKey && !e.shiftKey && (e.key === 'F2' || e.code === 'F2')) {
+                e.preventDefault();
+                e.stopPropagation();
+                this.toggle();
+            }
+        };
+
+        window.addEventListener('keydown', this._onKeyDown, { capture: true });
+    }
+
+    close() {
+        if (!this.domElement || !this.isVisible) return;
+        this.domElement.style.display = 'none';
+        this.isVisible = false;
+    }
+
+    open() {
+        if (!this.config.active) return;
+        if (Config.ENGINE_MODE === 'editor') return;
+        if (this.config.isPreview === false) return;
+
+        if (!this.domElement) {
+            this._initDOM();
+        }
+        this.domElement.style.display = 'flex';
+        this.isVisible = true;
+
+        if (this.logContainer) {
+            this.logContainer.scrollTop = this.logContainer.scrollHeight;
+        }
+    }
+
+    toggle() {
+        if (!this.config.active) return;
+        if (this.isVisible) {
+            this.close();
+        } else {
+            this.open();
+        }
     }
 
     addLog(data) {
@@ -173,7 +249,9 @@ export default class MiniConsoleOverlay {
         }
 
         this._renderLogItem(logEntry);
-        this.logContainer.scrollTop = this.logContainer.scrollHeight;
+        if (this.isVisible && this.logContainer) {
+            this.logContainer.scrollTop = this.logContainer.scrollHeight;
+        }
     }
 
     _renderLogItem(logEntry) {
@@ -228,8 +306,15 @@ export default class MiniConsoleOverlay {
     destroy() {
         this._listeners.forEach(({ event, fn }) => bus.off(event, fn));
         this._listeners = [];
+
+        if (this._onKeyDown) {
+            window.removeEventListener('keydown', this._onKeyDown, { capture: true });
+            this._onKeyDown = null;
+        }
+
         if (this.domElement && this.domElement.parentNode) {
             this.domElement.parentNode.removeChild(this.domElement);
+            this.domElement = null;
         }
     }
 }

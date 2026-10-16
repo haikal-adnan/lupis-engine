@@ -44,6 +44,8 @@ describe('Integration Test: engineBridge', () => {
     // 4. Mock Scene Store
     mockSceneStore = {
       syncTransformFromEngine: vi.fn(),
+      updateComponentData: vi.fn(),
+      activeScene: { entities: [] }
     };
     useSceneStore.mockReturnValue(mockSceneStore);
 

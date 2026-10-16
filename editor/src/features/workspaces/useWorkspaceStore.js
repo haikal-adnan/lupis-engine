@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import { markRaw } from 'vue'; 
+import { useSceneStore } from '@scenes/scenes.js'; 
 
 const TAB_SPECIFIC_BOTTOM_TABS = {
   animator: ['timeline']
@@ -160,6 +161,15 @@ export const useWorkspaceStore = defineStore('workspace', {
       const nextTab = this.tabs.find(t => t.id === id)
 
       if (!nextTab) return
+
+      if (nextTab.type === 'animator') {
+        const sceneStore = useSceneStore()
+        const entity = sceneStore.activeScene?.entities?.find(e => e.id === nextTab.id)
+        if (!entity || entity.prefabId || !entity.components?.SpriteAnimator) {
+          this.closeTab(nextTab.id)
+          return
+        }
+      }
 
       // If switching between different tab types
       if (currentTab && currentTab.type !== nextTab.type) {

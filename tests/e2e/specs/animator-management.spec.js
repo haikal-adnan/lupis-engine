@@ -204,12 +204,10 @@ test.describe('Animator Panel System E2E Workflow Tests', () => {
 
     await popup.fillPromptAndSubmit('New Source', 'run_01', 'Create');
 
-    // Source More Menu: Rename Clip
+    // Source More Menu: Reset to Native Size
     await animatorPage.sourceMoreMenuTrigger.click();
-    await expect(animatorPage.timelineRenameClipBtn).toBeVisible();
-    await animatorPage.timelineRenameClipBtn.click();
-    await popup.fillPromptAndSubmit('Rename Clip', 'Renamed_Run', 'Rename');
-    await expect(animatorPage.clipNameInput).toHaveValue('Renamed_Run');
+    await expect(animatorPage.timelineResetSizeBtn).toBeVisible();
+    await animatorPage.timelineResetSizeBtn.click();
 
     // Source More Menu: Delete All Sources
     await animatorPage.sourceMoreMenuTrigger.click();

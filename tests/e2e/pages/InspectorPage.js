@@ -391,8 +391,10 @@ export class InspectorPage {
     await this.controls.selectOption('text-renderer-mode-select', modeLabel, this.textRendererSection);
   }
 
-  async setTextSizeMode(mode) {
-    await this.page.getByTestId(`text-renderer-sizemode-${mode}`).click();
+  async toggleTextAutoLine(checked) {
+    const checkbox = this.checkbox('text-renderer-auto-line-toggle');
+    await checkbox.setChecked(checked);
+    await expect(checkbox).toBeChecked({ checked });
   }
 
   async toggleTextShadow(checked) {

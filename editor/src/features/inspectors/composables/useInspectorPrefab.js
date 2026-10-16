@@ -271,6 +271,15 @@ export function useInspectorPrefab(selectedEntityParam, isEditingMasterPrefabPar
       return;
     }
 
+    if (compName === 'SpriteRenderer' && (ent.components?.SpriteAnimator || ent.components?.Animator)) {
+      showPop({
+        title: 'Restricted',
+        message: 'Cannot remove Image Renderer while Animator component is present.',
+        type: 'warning'
+      });
+      return;
+    }
+
     if (getEditingMaster()) {
       prefabStore.removeComponent(workspaceStore.activeTab.id, compName);
       // UBAH compName menjadi componentName agar konsisten dengan payload lainnya

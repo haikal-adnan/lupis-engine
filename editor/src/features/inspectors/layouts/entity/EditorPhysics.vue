@@ -59,7 +59,7 @@
           :options="typeOptions" 
           placeholder="Select Type"
           class="w-full"
-          data-testid="physics-type-select"
+          data-testid="physics-body-type-select"
         />
       </PropertyRow>
 

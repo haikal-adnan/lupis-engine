@@ -49,7 +49,7 @@
     <div class="flex-1 flex flex-col min-w-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]">
       <ScrollArea orientation="horizontal" class="flex-1 w-full h-full">
         <div class="flex items-stretch gap-1 p-2 h-full w-max min-w-full">
-          <div v-for="(sourceId, index) in frames" :key="index" @click="selectFrame(index)" @dblclick="openCropForFrame(index)" class="relative w-28 h-full rounded-md border-2 flex flex-col items-center justify-center shrink-0 transition-all cursor-pointer group" :class="[ currentFrameIndex === index ? 'border-primary bg-primary/10 z-10 shadow-sm' : 'border-transparent bg-background/60 hover:bg-background hover:border-border' ]" data-testid="animator-timeline-frame-item" :data-frame-index="index">
+          <div v-for="(sourceId, index) in frames" :key="index" @click="selectFrame(index)" class="relative w-28 h-full rounded-md border-2 flex flex-col items-center justify-center shrink-0 transition-all cursor-pointer group" :class="[ currentFrameIndex === index ? 'border-primary bg-primary/10 z-10 shadow-sm' : 'border-transparent bg-background/60 hover:bg-background hover:border-border' ]" data-testid="animator-timeline-frame-item" :data-frame-index="index">
             <div class="absolute top-2 left-2 text-[10px] font-mono font-bold opacity-20">#{{ index }}</div>
             
             <button @click.stop="removeFrame(index)" v-if="frames.length > 1" class="absolute top-1 right-1 p-1 rounded hover:bg-destructive/20 text-destructive/50 hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity" :class="{ 'opacity-100 text-destructive/70': currentFrameIndex === index }" data-testid="animator-timeline-remove-frame-btn">
@@ -85,8 +85,14 @@
               </template>
               <template #default="{ close }">
                 <div class="flex flex-col text-xs min-w-[160px] py-1">
-                  <button @click="renameClip(); close()" class="flex items-center px-2 py-1.5 mx-1 rounded-sm hover:bg-accent text-left" data-testid="animator-timeline-rename-clip-btn">
-                    <Pencil class="w-3.5 h-3.5 mr-2 opacity-70" /> Rename Clip
+                  <button 
+                    @click="resetToNativeSize(); close()" 
+                    :disabled="!canResetSize"
+                    class="relative flex items-center px-2 py-1.5 mx-1 rounded-sm hover:bg-accent text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed" 
+                    data-testid="animator-timeline-reset-size-btn"
+                  >
+                    <Maximize class="w-3.5 h-3.5 mr-2 opacity-70" /> 
+                    Reset to Native Size
                   </button>
                   <div class="h-px bg-border/50 my-1"></div>
                   <button @click="deleteAllSources(); close()" class="flex items-center px-2 py-1.5 mx-1 rounded-sm hover:bg-destructive/20 text-destructive text-left" data-testid="animator-timeline-delete-all-sources-btn">
@@ -138,18 +144,18 @@
 
 <script setup>
 import { ref, computed } from 'vue';
-import { Play, Pause, SkipBack, SkipForward, Plus, Pencil, Trash2, MoreVertical, Wand2 } from 'lucide-vue-next';
+import { Play, Pause, SkipBack, SkipForward, Plus, Maximize, Trash2, MoreVertical, Wand2 } from 'lucide-vue-next';
 import { useAnimatorLogic } from '@animators/animators.js';
-import { usePrompt } from '@composables/composables.js';
+import { useAssetStore } from '@assets/assets.js';
 import { PropertyRow, BaseNumber, BaseSelect, BaseDropdown, BaseCropThumbnail, ScrollArea } from '@components/components.js';
 
 const { 
-  activeClipData, syncAnimatorData, currentFrameIndex, resolvedAssetUrl, frames, sources, isPlaying,
+  activeClipData, selectedEntity, syncAnimatorData, currentFrameIndex, resolvedAssetUrl, frames, sources, isPlaying,
   stepForward, stepBackward, togglePlay, stopPlayback, addFrame, removeFrame, clearTimeline, autoFill, 
   handleCreateSource, handleDeleteSource, deleteAllSources 
 } = useAnimatorLogic();
 
-const { prompt } = usePrompt();
+const assetStore = useAssetStore();
 
 const sourceOptions = computed(() => Object.keys(sources.value).map(key => ({ label: key, value: key })));
 
@@ -196,16 +202,17 @@ const currentSourceRect = computed(() => ({
 }));
 
 const updateCurrentSourceRect = (rect) => {
-  if (!rect) return;
-  currentRectX.value = rect.x;
-  currentRectY.value = rect.y;
-  currentRectW.value = rect.w;
-  currentRectH.value = rect.h;
-};
-
-const openCropForFrame = (index) => {
-  selectFrame(index);
-  cropThumbnailRef.value?.openModal();
+  if (!rect || !activeClipData.value || !currentSourceId.value) return;
+  if (!activeClipData.value.sources) activeClipData.value.sources = {};
+  if (!activeClipData.value.sources[currentSourceId.value]) {
+    activeClipData.value.sources[currentSourceId.value] = { x: 0, y: 0, w: 0, h: 0 };
+  }
+  const s = activeClipData.value.sources[currentSourceId.value];
+  s.x = rect.x;
+  s.y = rect.y;
+  s.w = rect.w;
+  s.h = rect.h;
+  syncAnimatorData();
 };
 
 const getFrameStyle = (sourceId) => {
@@ -229,17 +236,51 @@ const getFrameStyle = (sourceId) => {
   };
 };
 
-const renameClip = async () => {
-  if (!activeClipData.value) return;
-  const newName = await prompt({
-    title: 'Rename Clip',
-    message: 'Enter a new name for this clip:',
-    placeholder: activeClipData.value.name || 'New Clip Name',
-    confirmText: 'Rename'
-  });
-  if (newName?.trim()) {
-    activeClipData.value.name = newName.trim();
-    syncAnimatorData();
+const canResetSize = computed(() => {
+  const assetId = activeClipData.value?.assetId || selectedEntity.value?.components?.SpriteRenderer?.assetId;
+  return !!assetId && !!currentSourceId.value;
+});
+
+const resetToNativeSize = async () => {
+  const targetAssetId = activeClipData.value?.assetId || selectedEntity.value?.components?.SpriteRenderer?.assetId;
+  if (!targetAssetId) return;
+  let w = 0, h = 0;
+  const asset = assetStore.getAssetById(targetAssetId);
+  if (asset?.meta?.dimensions) {
+    w = asset.meta.dimensions.w;
+    h = asset.meta.dimensions.h;
+  } else {
+    const url = (await assetStore.getAssetUrlById(targetAssetId)) || resolvedAssetUrl.value;
+    if (url) {
+      const img = new Image();
+      await new Promise((resolve) => {
+        img.onload = () => {
+          w = img.naturalWidth || img.width;
+          h = img.naturalHeight || img.height;
+          resolve();
+        };
+        img.onerror = () => resolve();
+        img.src = url;
+      });
+    }
+  }
+
+  if (w > 0 && h > 0) {
+    if (activeClipData.value) {
+      activeClipData.value.baseSize = { w, h };
+      if (currentSourceId.value) {
+        if (!activeClipData.value.sources) activeClipData.value.sources = {};
+        activeClipData.value.sources[currentSourceId.value] = { x: 0, y: 0, w, h };
+      }
+      syncAnimatorData();
+    }
+    if (selectedEntity.value?.components?.UITransform) {
+      selectedEntity.value.components.UITransform.width = w;
+      selectedEntity.value.components.UITransform.height = h;
+    } else if (selectedEntity.value?.components?.Transform) {
+      selectedEntity.value.components.Transform.width = w;
+      selectedEntity.value.components.Transform.height = h;
+    }
   }
 };
 </script>

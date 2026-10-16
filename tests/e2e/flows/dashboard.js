@@ -44,6 +44,10 @@ export async function ensureProject(page, { name, description = '' }) {
   // 5. Verifikasi navigasi URL ke editor workspace
   await expect(page).toHaveURL(/\/editor\/.+/);
 
+  // 6. Ensure editor loading overlay is dismissed and workspace is ready
+  await expect(page.getByTestId('editor-loading-overlay')).toHaveCount(0);
+  await expect(page.getByRole('tab').first()).toBeVisible();
+
   const projectId = page.url().match(/\/editor\/([^/?#]+)/)?.[1];
   return { projectId };
 }

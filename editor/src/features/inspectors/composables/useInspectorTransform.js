@@ -28,8 +28,7 @@ export function useInspectorTransform(selectedEntity, isEditingMasterPrefab) {
   const isSizeLockedByText = computed(() => {
     const ent = getEntity();
     if (!ent) return false;
-    const textComp = ent.components?.TextRenderer;
-    return !!(textComp && textComp.autoFit);
+    return !!ent.components?.TextRenderer;
   });
 
   const isSizeLockedByTilemap = computed(() => {

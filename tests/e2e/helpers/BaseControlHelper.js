@@ -232,6 +232,7 @@ export class BaseControlHelper {
       .or(scope.locator('button', { hasText: labelOrTestId }))
       .first();
 
+    await trigger.scrollIntoViewIfNeeded();
     await trigger.click();
 
     // 2. Find the exact option inside the teleported dropdown (whitespace-tolerant exact match)
@@ -243,6 +244,7 @@ export class BaseControlHelper {
       .first();
 
     await expect(optionItem).toBeVisible();
+    await optionItem.scrollIntoViewIfNeeded();
     await optionItem.click();
   }
 

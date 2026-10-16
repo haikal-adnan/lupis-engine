@@ -301,6 +301,56 @@ describe('Integration Test: Asset Actions with Stores & Composables', () => {
 
       // Act & Assert
       await expect(importAsset(corruptFontFile)).rejects.toThrow('Failed to parse TTF file.')
+      expect(assetStore.isUploading).toBe(false)
+    })
+
+    it('[Bad Path] rejects font upload when font conversion returns null and resets uploading state', async () => {
+      // Arrange
+      mockConvertTtfToBmFont.mockResolvedValueOnce(null)
+      const { importAsset } = useAssetActions()
+      const fontFile = new File(['ttf-bytes'], 'FailedFont.ttf', { type: 'font/ttf' })
+
+      // Act & Assert
+      await expect(importAsset(fontFile)).rejects.toThrow('Font conversion failed for "FailedFont.ttf".')
+      expect(assetStore.isUploading).toBe(false)
+      expect(mockShowPop).toHaveBeenCalledWith(
+        expect.objectContaining({ title: 'Upload Failed', type: 'error' })
+      )
+    })
+
+    it('[Bad Path] rejects assets that exceed the maximum file size limit', async () => {
+      // Arrange
+      const { importAsset } = useAssetActions()
+      // Create a mock file with size > 20MB for font
+      const oversizedFont = new File(['x'], 'HugeFont.ttf', { type: 'font/ttf' })
+      Object.defineProperty(oversizedFont, 'size', { value: 25 * 1024 * 1024 })
+
+      // Act & Assert
+      await expect(importAsset(oversizedFont)).rejects.toThrow('File "HugeFont.ttf" is too large (25.0MB). Maximum allowed size is 20MB.')
+      expect(assetStore.isUploading).toBe(false)
+      expect(mockShowPop).toHaveBeenCalledWith(
+        expect.objectContaining({ title: 'Upload Failed', type: 'error' })
+      )
+    })
+
+    it('displays large font conversion alert when uploading font over 1MB', async () => {
+      // Arrange
+      const { importAsset } = useAssetActions()
+      const largeFont = new File(['x'], 'GaeguLarge.ttf', { type: 'font/ttf' })
+      Object.defineProperty(largeFont, 'size', { value: 3.2 * 1024 * 1024 })
+
+      // Act
+      await importAsset(largeFont)
+
+      // Assert
+      expect(mockShowPop).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: 'Converting Font',
+          message: expect.stringContaining('Converting large font "GaeguLarge.ttf"'),
+          type: 'info'
+        })
+      )
+      expect(assetStore.isUploading).toBe(false)
     })
   })
 })

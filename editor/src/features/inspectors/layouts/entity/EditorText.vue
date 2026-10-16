@@ -49,63 +49,37 @@
       <BaseTextArea v-model="textValue" placeholder="Type something..." height="auto" minHeight="64px" resize="vertical" class="w-full" data-testid="text-renderer-text-input" />
     </PropertyRow>
 
-    <PropertyRow label="Sizing Mode" class="mt-2">
-      <div class="flex bg-secondary/30 rounded-md border border-border w-full p-0.5">
-        <BaseButton 
-          type="button"
-          size="sm"
-          ghost 
-          :active="autoFit" 
-          @click="autoFit = true" 
-          class="flex-1 h-6 text-xs font-medium !rounded-[3px] transition-colors"
-          data-testid="text-renderer-sizemode-fontsize"
-        >
-          Font Size
-        </BaseButton>
-        <BaseButton 
-          type="button"
-          size="sm"
-          ghost 
-          :active="!autoFit" 
-          @click="autoFit = false" 
-          class="flex-1 h-6 text-xs font-medium !rounded-[3px] transition-colors"
-          data-testid="text-renderer-sizemode-transform"
-        >
-          Transform
-        </BaseButton>
-      </div>
-    </PropertyRow>
-
     <div class="grid grid-cols-2 gap-2 mt-2">
       <PropertyRow label="Font Size">
-        <div class="flex items-center gap-1">
-          <BaseNumber 
-            v-model="fontSize" 
-            prefix="SZ" 
-            :min="1" 
-            :disabled="!autoFit"
-            :scrubbable="autoFit"
-            :tooltip="!autoFit ? 'Font size is controlled by Transform dimensions' : ''"
-            class="flex-grow font-mono" 
-            data-testid="text-renderer-font-size" 
-          />
-          <IconButton 
-            @click="resetTextRatio" 
-            :tooltip="autoFit ? 'Reset to Default Text Size' : 'Switch back to Font Size mode'" 
-            data-testid="text-renderer-reset-ratio-btn"
-          >
-            <RefreshCcw class="w-3.5 h-3.5" />
-          </IconButton>
-        </div>
+        <BaseNumber 
+          v-model="fontSize" 
+          prefix="SZ" 
+          :min="1" 
+          :scrubbable="true"
+          class="w-full font-mono" 
+          data-testid="text-renderer-font-size" 
+        />
       </PropertyRow>
-      <PropertyRow label="Max Width">
-        <BaseNumber v-model="maxWidth" prefix="W" :min="0" :scrubbable="true" class="w-full font-mono" data-testid="text-renderer-max-width" />
+      <PropertyRow label="Auto Line">
+        <div class="flex items-center h-7 px-1">
+          <BaseCheckbox v-model="autoLine" label="" data-testid="text-renderer-auto-line-toggle" />
+        </div>
       </PropertyRow>
     </div>
 
     <div class="grid grid-cols-2 gap-2">
       <PropertyRow label="Max Line">
-        <BaseNumber v-model="maxLine" prefix="L" :min="0" :step="1" :precision="0" :scrubbable="true" class="w-full font-mono" data-testid="text-renderer-max-line" />
+        <BaseNumber 
+          v-model="maxLine" 
+          prefix="L" 
+          :min="1" 
+          :step="1" 
+          :precision="0" 
+          :scrubbable="!autoLine" 
+          :disabled="!!autoLine"
+          class="w-full font-mono" 
+          data-testid="text-renderer-max-line" 
+        />
       </PropertyRow>
       <PropertyRow label="Overflow">
         <BaseSelect v-model="overflow" :options="[{ label: 'Wrap', value: 'wrap' }, { label: 'Ellipsis', value: 'ellipsis' }]" data-testid="text-renderer-overflow-select" />
@@ -181,7 +155,7 @@
 import { computed } from "vue";
 import { 
   Type, Trash2, AlignLeft, AlignCenter, AlignRight, AlignJustify,
-  FolderSearch, RefreshCcw, RefreshCw
+  FolderSearch, RefreshCw
 } from "lucide-vue-next"; 
 
 // Barrel import dari @inspectors/inspectors.js
@@ -216,8 +190,7 @@ const {
 
 // 3. Property Bindings & Text Utilities
 const { 
-  bindComponentProp, 
-  resetTextRatio 
+  bindComponentProp 
 } = useInspectorBinding()
 
 // --- Logic Komponen ---
@@ -229,13 +202,12 @@ const mode = bindComponentProp('TextRenderer', 'mode');
 const fontSize = bindComponentProp('TextRenderer', 'fontSize');
 const color = bindComponentProp('TextRenderer', 'color');
 const align = bindComponentProp('TextRenderer', 'align');
-const maxWidth = bindComponentProp('TextRenderer', 'maxWidth');
+const autoLine = bindComponentProp('TextRenderer', 'autoLine');
 const maxLine = bindComponentProp('TextRenderer', 'maxLine');
 const lineSpacing = bindComponentProp('TextRenderer', 'lineSpacing');
 const letterSpacing = bindComponentProp('TextRenderer', 'letterSpacing');
 const overflow = bindComponentProp('TextRenderer', 'overflow');
 const rawOpacity = bindComponentProp('TextRenderer', 'opacity');
-const autoFit = bindComponentProp('TextRenderer', 'autoFit');
 
 const outlineWidth = bindComponentProp('TextRenderer', 'outlineWidth');
 const outlineColor = bindComponentProp('TextRenderer', 'outlineColor');

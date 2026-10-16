@@ -287,14 +287,15 @@ export default class RenderUtils {
 
         const textOptions = {
             text: tx.value ?? "",
-            fontSize: tx.fontSize || 24,
+            fontSize: Number(tx.fontSize) || 24,
             color: HexToVec4(tx.color || "#FFFFFF"),
             font, opacity: a, flipX, flipY,
             align: tx.align || "left",
-            maxWidth: tx.maxWidth || 0,
-            maxLine: tx.maxLine || 0,
-            lineSpacing: tx.lineSpacing || 1.2,
-            letterSpacing: tx.letterSpacing || 0,
+            width: rawT?.width || 100,
+            maxLine: Math.max(1, Number(tx.maxLine) || 1),
+            autoLine: tx.autoLine !== false,
+            lineSpacing: Number(tx.lineSpacing) || 1.2,
+            letterSpacing: Number(tx.letterSpacing) || 0,
             overflow: tx.overflow || "wrap",
             outlineWidth: tx.outlineWidth || 0,
             outlineColor: HexToVec4(tx.outlineColor || "#000000"),
@@ -305,12 +306,11 @@ export default class RenderUtils {
             shadowBlur: tx.shadowBlur ?? 0.5
         };
 
-        if (tx.autoFit && rawT) {
+        if (rawT) {
             const measurement = FontMath.measureText(font, textOptions.text, textOptions.fontSize, textOptions);
-            if (rawT.width !== measurement.boundsWidth || rawT.height !== measurement.boundsHeight) {
-                rawT.width = measurement.boundsWidth;
-                rawT.height = measurement.boundsHeight;
-                trans.width = rawT.width;
+            const newH = measurement.boundsHeight > 0 ? Math.ceil(measurement.boundsHeight) : Math.ceil(textOptions.fontSize);
+            if (rawT.height !== newH) {
+                rawT.height = newH;
                 trans.height = rawT.height;
             }
         }

@@ -5,6 +5,7 @@ import { MapToCanvasPixels, CanvasToWorld } from '@core/Util/MapToCanvasPixels.j
 import Camera from '@core/Util/Camera.js';
 import { HexToVec4 } from '@core/Util/HexToVec4.js';
 import RenderUtils from '@core/Renderer/Scene/RenderUtils.js';
+import FontMath from '@core/Util/FontMath.js';
 
 describe('Engine Math, Matrix & Utility Calculations', () => {
     describe('Mat4 - 4x4 Matrix Mathematics', () => {
@@ -313,4 +314,66 @@ describe('Engine Math, Matrix & Utility Calculations', () => {
             expect(sorted[3].id).toBe('b');
         });
     });
+
+    describe('FontMath - Text Measurement and Wrapping', () => {
+        const mockFont = {
+            info: { size: 20 },
+            common: { lineHeight: 24, base: 20, stdYMin: 0, stdYMax: 20 },
+            chars: {}
+        };
+        for (let i = 32; i <= 126; i++) {
+            mockFont.chars[i] = {
+                w: 8, h: 14, ox: 0, oy: 2, adv: 10
+            };
+        }
+
+        it('returns empty measurements when font or text is missing', () => {
+            const res = FontMath.measureText(null, 'Hello', 20);
+            expect(res.boundsWidth).toBe(0);
+            expect(res.lines).toEqual([]);
+        });
+
+        it('measures unwrapped text when width is 0 or unlimited', () => {
+            const res = FontMath.measureText(mockFont, 'Hello World', 20, { width: 0, autoLine: true });
+            expect(res.lines).toEqual(['Hello World']);
+            expect(res.lineWidths[0]).toBe(110);
+        });
+
+        it('wraps text automatically across unlimited lines when autoLine is true', () => {
+            const res = FontMath.measureText(mockFont, 'One Two Three Four Five', 20, { width: 60, autoLine: true });
+            expect(res.lines.length).toBeGreaterThanOrEqual(3);
+            expect(res.boundsWidth).toBe(60);
+        });
+
+        it('caps wrapped lines at maxLine when autoLine is false', () => {
+            const res = FontMath.measureText(mockFont, 'One Two Three Four Five', 20, { width: 60, maxLine: 2, autoLine: false });
+            expect(res.lines.length).toBe(2);
+            expect(res.lines[0]).toBe('One');
+            expect(res.lineWidths[0]).toBeLessThanOrEqual(60);
+            expect(res.lineWidths[1]).toBeLessThanOrEqual(60);
+        });
+
+        it('stops at the word before exceeding width on the last line when autoLine is false and maxLine is 1', () => {
+            const res = FontMath.measureText(mockFont, 'One Two Three Four Five', 20, { width: 60, maxLine: 1, autoLine: false });
+            expect(res.lines.length).toBe(1);
+            expect(res.lines[0]).toBe('One');
+            expect(res.lineWidths[0]).toBeLessThanOrEqual(60);
+        });
+
+        it('recalculates height when maxLine increases when autoLine is false', () => {
+            const res1 = FontMath.measureText(mockFont, 'One Two Three Four', 20, { width: 60, maxLine: 1, autoLine: false });
+            const res2 = FontMath.measureText(mockFont, 'One Two Three Four', 20, { width: 60, maxLine: 2, autoLine: false });
+            expect(res1.lines.length).toBe(1);
+            expect(res2.lines.length).toBe(2);
+            expect(res2.boundsHeight).toBeGreaterThan(res1.boundsHeight);
+        });
+
+        it('applies ellipsis on the last allowed line when overflow is ellipsis', () => {
+            const res = FontMath.measureText(mockFont, 'Hello World', 20, { width: 60, maxLine: 1, autoLine: false, overflow: 'ellipsis' });
+            expect(res.lines.length).toBe(1);
+            expect(res.lines[0].endsWith('...')).toBe(true);
+            expect(res.lineWidths[0]).toBeLessThanOrEqual(60);
+        });
+    });
 });
+

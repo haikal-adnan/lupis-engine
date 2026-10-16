@@ -77,19 +77,19 @@
     <div 
       class="transition-all duration-300"
       :class="{ 
-        'opacity-40 pointer-events-none filter grayscale cursor-not-allowed': isSizeLockedByText || isSizeLockedByTilemap 
+        'opacity-40 pointer-events-none filter grayscale cursor-not-allowed': isSizeLockedByTilemap 
       }"
     >
       <PropertyRow label="Size (px)">
         <div class="flex items-center gap-2">
           <div class="grid grid-cols-2 gap-2 flex-grow">
-            <BaseNumber v-model="width" prefix="W" :min="1" :step="1" :precision="2" class="font-mono" :disabled="locked" data-testid="ui-transform-size-w" />
-            <BaseNumber v-model="height" prefix="H" :min="1" :step="1" :precision="2" class="font-mono" :disabled="locked" data-testid="ui-transform-size-h" />
+            <BaseNumber v-model="width" prefix="W" :min="1" :step="1" :precision="2" class="font-mono" :disabled="locked || isSizeLockedByTilemap" data-testid="ui-transform-size-w" />
+            <BaseNumber v-model="height" prefix="H" :min="1" :step="1" :precision="2" class="font-mono" :disabled="locked || isSizeLockedByText || isSizeLockedByTilemap" data-testid="ui-transform-size-h" />
           </div>
           <IconButton 
             :active="isRatioLocked" 
             @click="isRatioLocked = !isRatioLocked" 
-            :disabled="locked" 
+            :disabled="locked || isSizeLockedByText || isSizeLockedByTilemap" 
             data-testid="ui-transform-ratio-lock-toggle" 
             :data-locked="isRatioLocked"
           >
@@ -102,7 +102,7 @@
 
     <div v-if="isSizeLockedByText" class="px-1 mb-3 -mt-1">
       <div class="text-[9px] text-amber-500/80 italic flex items-center gap-1">
-        <Info class="w-3 h-3" /> Size is controlled by Text Renderer (Font Size mode)
+        <Info class="w-3 h-3" /> Height is controlled by Text Renderer
       </div>
     </div>
 

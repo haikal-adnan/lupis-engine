@@ -21,7 +21,8 @@ export const DEFAULT_PROJECT_PAYLOAD = {
         width: 1920,
         height: 1080,
         showUIBorder: false,
-        active: true
+        active: true,
+        smartGuides: true
       },
       camera: {
         x: 0,

@@ -106,8 +106,17 @@ export function useAssetLogic() {
 
   const handleFileUpload = async (e) => {
     const files = Array.from(e.target.files);
-    for (const file of files) await importAsset(file);
-    e.target.value = '';
+    try {
+      for (const file of files) {
+        try {
+          await importAsset(file);
+        } catch (err) {
+          console.error('[AssetLogic] Failed to import file:', file.name, err);
+        }
+      }
+    } finally {
+      e.target.value = '';
+    }
   };
 
   const moveItem = async (id, type, targetFolderId) => {
@@ -133,7 +142,13 @@ export function useAssetLogic() {
     }
 
     const files = Array.from(e.dataTransfer.files);
-    for (const file of files) await importAsset(file);
+    for (const file of files) {
+      try {
+        await importAsset(file);
+      } catch (err) {
+        console.error('[AssetLogic] Failed to drop/import file:', file.name, err);
+      }
+    }
   };
 
   const handlePaste = async () => {

@@ -385,10 +385,13 @@ describe('useInspectorBinding Integration', () => {
       expect(projectStore.project.settings.ui.showUIBorder).toBe(true)
     })
 
-    it('resets text ratio by reapplying text renderer font size', () => {
+    it('resets text ratio by restoring transform scale to 1', () => {
       const entity = createMockEntity({
         id: 'ent_text',
-        components: { TextRenderer: { fontSize: 32, autoFit: false } }
+        components: {
+          Transform: { scaleX: 2, scaleY: 0.5 },
+          TextRenderer: { fontSize: 32 }
+        }
       })
       setupMockSceneEnvironment({ entities: [entity] })
       selectedEntityRef.value = sceneStore.activeScene.entities[0]
@@ -397,8 +400,8 @@ describe('useInspectorBinding Integration', () => {
 
       resetTextRatio()
 
-      expect(sceneStore.activeScene.entities[0].components.TextRenderer.fontSize).toBe(32)
-      expect(sceneStore.activeScene.entities[0].components.TextRenderer.autoFit).toBe(true)
+      expect(sceneStore.activeScene.entities[0].components.Transform.scaleX).toBe(1)
+      expect(sceneStore.activeScene.entities[0].components.Transform.scaleY).toBe(1)
     })
   })
 })

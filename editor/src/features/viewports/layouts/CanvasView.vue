@@ -76,6 +76,8 @@ const handlePointerDown = (e) => {
 };
 
 const handleEntityModified = (entities) => {
+    if (workspaceStore.engine?.syncComponent?.isInternalUpdate) return;
+
     const list = Array.isArray(entities) ? entities : [entities];
 
     list.forEach(engEnt => {
@@ -139,8 +141,10 @@ const handleEntityModified = (entities) => {
             }
         }
 
-        if (comps.TextRenderer && comps.TextRenderer.autoFit !== undefined) {
-            sceneStore.updateComponentProp(id, 'TextRenderer', 'autoFit', comps.TextRenderer.autoFit);
+        if (comps.TextRenderer && comps.TextRenderer.fontSize !== undefined) {
+            if (currentEntity.components?.TextRenderer?.fontSize !== comps.TextRenderer.fontSize) {
+                sceneStore.updateComponentData(id, 'TextRenderer', { fontSize: comps.TextRenderer.fontSize });
+            }
         }
     });
 

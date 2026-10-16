@@ -4,6 +4,7 @@ import { bus } from "../Util/EventBus.js";
 import { TransformGeometry } from "./Transform/TransformGeometry.js";
 import { TransformRenderer } from "./Transform/TransformRenderer.js";
 import { TransformMediator } from "./Transform/TransformMediator.js";
+import { UISmartGuides } from "./Transform/UISmartGuides.js";
 
 export default class TransformTool {
     constructor(selectionTool, world, game, canvas, renderer, input) {
@@ -19,7 +20,8 @@ export default class TransformTool {
 
         this.geometry = new TransformGeometry(game, world);
         this.drawer = new TransformRenderer(game, selectionTool);
-        this.mediator = new TransformMediator(world, game, input);
+        this.smartGuides = new UISmartGuides(world, game, this.geometry);
+        this.mediator = new TransformMediator(world, game, input, this.smartGuides);
 
         this.draggingMove = false;
         this.draggingResize = false;
@@ -157,6 +159,13 @@ export default class TransformTool {
             const t = this.mediator.engine.getTransform(e);
             return { e, x: t.x || 0, y: t.y || 0 };
         });
+
+        const { activeTabId, tabs } = this.world?._editors || {};
+        const activeTab = tabs?.find(t => t.id === activeTabId);
+        const isUIMode = activeTab?.type === 'ui';
+        if (isUIMode && this.smartGuides) {
+            this.smartGuides.beginDrag(validEntities);
+        }
     }
 
     // Editor/TransformTool.js
@@ -214,10 +223,18 @@ export default class TransformTool {
                     w: Number(t.width || 0),
                     h: Number(t.height || 0),
                     r: Number(t.rotation || 0),
+                    fontSize: Number(e.components?.TextRenderer?.fontSize || 24),
                     sx, sy, flipX: fx, flipY: fy,
                     isRatioLocked: Boolean(t.isRatioLocked)
                 };
             });
+
+            const { activeTabId, tabs } = this.world?._editors || {};
+            const activeTab = tabs?.find(t => t.id === activeTabId);
+            const isUIMode = activeTab?.type === 'ui';
+            if (isUIMode && this.smartGuides) {
+                this.smartGuides.beginResize(validEntities, handle.type);
+            }
         }
     }
 
@@ -229,6 +246,10 @@ export default class TransformTool {
         this.resizeType = null;
         this.moveStartData = null;
         this.resizeEntityStarts = null;
+
+        if (this.smartGuides) {
+            this.smartGuides.clear();
+        }
 
         this.computeHandles();
 
@@ -277,5 +298,13 @@ export default class TransformTool {
         if (!this.active) return;
         this.computeHandles();
         this.drawer.draw(shape, proj, this.geometry);
+
+        const { activeTabId, tabs } = this.world?._editors || {};
+        const activeTab = tabs?.find(t => t.id === activeTabId);
+        const isUIMode = activeTab?.type === 'ui';
+
+        if (isUIMode && this.smartGuides) {
+            this.smartGuides.draw(shape, proj);
+        }
     }
 }

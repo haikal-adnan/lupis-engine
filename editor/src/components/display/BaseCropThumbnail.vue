@@ -2,6 +2,7 @@
   <div class="relative inline-block select-none" data-component="base-crop-thumbnail">
     <!-- Thumbnail Button Trigger -->
     <button
+      ref="triggerRef"
       type="button"
       data-element="crop-thumbnail-trigger"
       :data-loaded="!!resolvedSrc && imgMeta.w > 0"
@@ -261,7 +262,6 @@
                       </div>
                     </div>
 
-                    <!-- 8 Figma-style Handles -->
                     <!-- Corner: Top-Left -->
                     <div
                       class="absolute -top-1.5 -left-1.5 w-4 h-4 cursor-nwse-resize z-30 flex items-center justify-center group/h"
@@ -480,6 +480,8 @@ const isOpen = ref(false)
 const cropModeActive = ref(true)
 
 // Viewport zoom & pan
+const triggerRef = ref(null)
+const containerSize = reactive({ w: 0, h: 0 })
 const viewportRef = ref(null)
 const zoom = ref(1)
 const pan = reactive({ x: 0, y: 0 })
@@ -569,12 +571,46 @@ watch(() => props.src, async (val) => {
   }
 }, { immediate: true })
 
+const parseSizeClass = (sizeClass) => {
+  if (!sizeClass) return { w: 48, h: 48 };
+  const customW = sizeClass.match(/w-\[(\d+)px\]/)?.[1];
+  const customH = sizeClass.match(/h-\[(\d+)px\]/)?.[1];
+  const twW = sizeClass.match(/\bw-(\d+)\b/)?.[1];
+  const twH = sizeClass.match(/\bh-(\d+)\b/)?.[1];
+
+  let w = 48;
+  let h = 48;
+  if (customW) {
+    w = parseInt(customW, 10);
+  } else if (twW) {
+    w = parseInt(twW, 10) * 4;
+  }
+  if (customH) {
+    h = parseInt(customH, 10);
+  } else if (twH) {
+    h = parseInt(twH, 10) * 4;
+  } else {
+    h = w;
+  }
+  return { w, h };
+};
+
+const updateContainerSize = () => {
+  if (triggerRef.value) {
+    const rect = triggerRef.value.getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0) {
+      containerSize.w = rect.width;
+      containerSize.h = rect.height;
+    }
+  }
+};
+
 // Thumbnail background style calculation
 const thumbnailStyle = computed(() => {
-  if (!resolvedSrc.value || imgMeta.w === 0 || imgMeta.h === 0) return {}
+  if (!resolvedSrc.value || imgMeta.w === 0 || imgMeta.h === 0) return {};
 
   const isFull = !localRect.w || !localRect.h || (localRect.w === 0 && localRect.h === 0) || 
-    (localRect.x === 0 && localRect.y === 0 && localRect.w === imgMeta.w && localRect.h === imgMeta.h)
+    (localRect.x === 0 && localRect.y === 0 && localRect.w === imgMeta.w && localRect.h === imgMeta.h);
 
   if (isFull) {
     return {
@@ -583,22 +619,22 @@ const thumbnailStyle = computed(() => {
       backgroundPosition: 'center',
       backgroundRepeat: 'no-repeat',
       imageRendering: 'pixelated'
-    }
+    };
   }
 
   // Calculate pixel-accurate subregion preview for the container
-  const rawSize = parseInt(props.sizeClass.match(/\d+/)?.[0] || '48', 10)
-  const cw = rawSize
-  const ch = rawSize
-  const rw = Math.max(1, localRect.w)
-  const rh = Math.max(1, localRect.h)
+  const parsed = parseSizeClass(props.sizeClass);
+  const cw = containerSize.w || parsed.w || 48;
+  const ch = containerSize.h || parsed.h || 48;
+  const rw = Math.max(1, localRect.w);
+  const rh = Math.max(1, localRect.h);
 
-  const scale = Math.min(cw / rw, ch / rh)
-  const ox = (cw - rw * scale) / 2
-  const oy = (ch - rh * scale) / 2
+  const scale = Math.min(cw / rw, ch / rh);
+  const ox = (cw - rw * scale) / 2;
+  const oy = (ch - rh * scale) / 2;
 
-  const bgX = ox - localRect.x * scale
-  const bgY = oy - localRect.y * scale
+  const bgX = ox - localRect.x * scale;
+  const bgY = oy - localRect.y * scale;
 
   return {
     backgroundImage: `url('${resolvedSrc.value}')`,
@@ -606,8 +642,8 @@ const thumbnailStyle = computed(() => {
     backgroundPosition: `${bgX}px ${bgY}px`,
     backgroundRepeat: 'no-repeat',
     imageRendering: 'pixelated'
-  }
-})
+  };
+});
 
 // Clamping helper
 const clamp = (val, min, max) => Math.max(min, Math.min(max, val))
@@ -878,11 +914,17 @@ const handleKeyUp = (event) => {
   }
 }
 
+let resizeObserver = null
 onMounted(() => {
   window.addEventListener('keydown', handleKeyDown)
   window.addEventListener('keyup', handleKeyUp)
   window.addEventListener('mouseup', handleGlobalMouseUp)
   window.addEventListener('mousemove', handleGlobalMouseMove)
+  updateContainerSize()
+  if (typeof window !== 'undefined' && window.ResizeObserver && triggerRef.value) {
+    resizeObserver = new ResizeObserver(() => updateContainerSize())
+    resizeObserver.observe(triggerRef.value)
+  }
 })
 
 onBeforeUnmount(() => {
@@ -890,6 +932,10 @@ onBeforeUnmount(() => {
   window.removeEventListener('keyup', handleKeyUp)
   window.removeEventListener('mouseup', handleGlobalMouseUp)
   window.removeEventListener('mousemove', handleGlobalMouseMove)
+  if (resizeObserver) {
+    resizeObserver.disconnect()
+    resizeObserver = null
+  }
 })
 
 defineExpose({

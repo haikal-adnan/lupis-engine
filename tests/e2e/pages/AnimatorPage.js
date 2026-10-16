@@ -173,6 +173,10 @@ export class AnimatorPage {
     return this.page.getByTestId('animator-timeline-rename-clip-btn');
   }
 
+  get timelineResetSizeBtn() {
+    return this.page.getByTestId('animator-timeline-reset-size-btn');
+  }
+
   get timelineDeleteAllSourcesBtn() {
     return this.page.getByTestId('animator-timeline-delete-all-sources-btn');
   }

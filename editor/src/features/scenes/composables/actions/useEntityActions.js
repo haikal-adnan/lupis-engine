@@ -3,6 +3,7 @@ import { GenerateUUID } from '@utils/utils.js';
 import { engineBridge } from "@engines/engines.js";
 import { useConfirm, usePopAlert } from '@composables/composables.js';
 import { useSceneHistory } from '@historys/historys.js';
+import { useWorkspaceStore } from '@workspaces/workspaces.js';
 
 const round = (num, decimals = 2) => {
   const factor = Math.pow(10, decimals);
@@ -614,7 +615,46 @@ export const useEntityActions = {
     
     if (entity.components && entity.components[componentName]) return false;
     
-    const newComponentData = initialData || componentSchema.create(componentName);
+    let newComponentData = initialData || componentSchema.create(componentName);
+
+    if (componentName === 'SpriteAnimator' && !initialData) {
+      const sprite = entity.components?.SpriteRenderer;
+      if (sprite && sprite.assetId) {
+        const clipId = GenerateUUID();
+        const sourceId = 's_0';
+        const sourceRect = {
+          x: Number(sprite.sourceX ?? 0),
+          y: Number(sprite.sourceY ?? 0),
+          w: Number(sprite.sourceWidth ?? 100),
+          h: Number(sprite.sourceHeight ?? 100)
+        };
+        const initialClip = {
+          id: clipId,
+          name: 'New Clip',
+          type: 'clip',
+          scriptId: `clip_${GenerateUUID().slice(0, 8)}`,
+          assetId: sprite.assetId,
+          parentId: null,
+          fps: 12,
+          isLooping: true,
+          frames: [sourceId],
+          sources: {
+            [sourceId]: { ...sourceRect }
+          },
+          baseSize: { w: sourceRect.w, h: sourceRect.h },
+          pivot: { x: 0.5, y: 1 },
+          frameIndex: 0,
+          filterMode: sprite.filterMode || 'pixelated',
+          useSDF: Boolean(sprite.useSDF ?? false)
+        };
+        newComponentData = {
+          ...newComponentData,
+          currentClip: clipId,
+          clips: [initialClip]
+        };
+      }
+    }
+
     if (!entity.components) entity.components = {};
     
     entity.components[componentName] = newComponentData;
@@ -648,6 +688,15 @@ export const useEntityActions = {
         });
         return false;
     }
+
+    if (componentName === 'SpriteRenderer' && (entity.components?.SpriteAnimator || entity.components?.Animator)) {
+        showPop({
+            title: 'Restricted',
+            message: 'Image Renderer cannot be removed while Animator component is present.',
+            type: 'warning'
+        });
+        return false;
+    }
     
     if (recordHistory) {
       const isConfirmed = await confirm({
@@ -664,6 +713,14 @@ export const useEntityActions = {
         const savedData = JSON.parse(JSON.stringify(entity.components[componentName]));
         delete entity.components[componentName];
         entity.components = { ...entity.components };
+
+        if (componentName === 'SpriteAnimator') {
+          const workspaceStore = useWorkspaceStore();
+          const openAnimTab = workspaceStore.tabs?.find(t => t.type === 'animator' && t.id === entityId);
+          if (openAnimTab) {
+            workspaceStore.closeTab(openAnimTab.id);
+          }
+        }
 
         engineBridge.removeComponent?.({ entityId, componentName });
 

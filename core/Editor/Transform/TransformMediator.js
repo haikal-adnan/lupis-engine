@@ -2,10 +2,11 @@ import { bus } from "../../Util/EventBus.js";
 import { TransformEngine } from "./TransformEngine.js";
 
 export class TransformMediator {
-    constructor(world, game, input) {
+    constructor(world, game, input, smartGuides = null) {
         this.world = world;
         this.game = game;
         this.input = input;
+        this.smartGuides = smartGuides;
         this.engine = new TransformEngine(world);
     }
 
@@ -30,19 +31,34 @@ export class TransformMediator {
 
         const dx = nowPos.x - startPos.x;
         const dy = nowPos.y - startPos.y;
-        const { shouldSnap, gridSize } = this.getSnapSettings(isUIMode);
 
         let finalDx = dx;
         let finalDy = dy;
 
-        if (shouldSnap && startData.length > 0) {
-            const leader = startData[0];
-            const targetX = leader.x + dx;
-            const targetY = leader.y + dy;
-            const snappedX = Math.round(targetX / gridSize) * gridSize;
-            const snappedY = Math.round(targetY / gridSize) * gridSize;
-            finalDx = snappedX - leader.x;
-            finalDy = snappedY - leader.y;
+        if (isUIMode) {
+            const smartGuidesEnabled = this.world?.settings?.ui?.smartGuides !== false;
+            const isCtrlHeld = Boolean(this.input?.keyboard?.isDown("Control"));
+            const shouldSnap = smartGuidesEnabled ? !isCtrlHeld : isCtrlHeld;
+
+            if (shouldSnap && this.smartGuides) {
+                const snapRes = this.smartGuides.calculateSnap(dx, dy);
+                finalDx = snapRes.dx;
+                finalDy = snapRes.dy;
+            } else if (this.smartGuides) {
+                this.smartGuides.clearGuides();
+            }
+        } else {
+            const { shouldSnap, gridSize } = this.getSnapSettings(isUIMode);
+
+            if (shouldSnap && startData.length > 0) {
+                const leader = startData[0];
+                const targetX = leader.x + dx;
+                const targetY = leader.y + dy;
+                const snappedX = Math.round(targetX / gridSize) * gridSize;
+                const snappedY = Math.round(targetY / gridSize) * gridSize;
+                finalDx = snappedX - leader.x;
+                finalDy = snappedY - leader.y;
+            }
         }
 
         let changed = false;
@@ -123,12 +139,24 @@ export class TransformMediator {
         const item = startData[0];
         const e = item.e;
         if (e?.components?.Tilemap?.autoFit) return;
-        if (e?.components?.TextRenderer?.autoFit) {
-            e.components.TextRenderer.autoFit = false;
+
+        let dx = nowPos.x - startPos.x;
+        let dy = nowPos.y - startPos.y;
+
+        if (isUIMode) {
+            const smartGuidesEnabled = this.world?.settings?.ui?.smartGuides !== false;
+            const isCtrlHeld = Boolean(this.input?.keyboard?.isDown("Control"));
+            const shouldSnap = smartGuidesEnabled ? !isCtrlHeld : isCtrlHeld;
+
+            if (shouldSnap && this.smartGuides) {
+                const snapRes = this.smartGuides.calculateResizeSnap(dx, dy, resizeType);
+                dx = snapRes.dx;
+                dy = snapRes.dy;
+            } else if (this.smartGuides) {
+                this.smartGuides.clearGuides();
+            }
         }
 
-        const dx = nowPos.x - startPos.x;
-        const dy = nowPos.y - startPos.y;
         if (dx === 0 && dy === 0) return;
 
         const { shouldSnap, gridSize } = this.getSnapSettings(isUIMode);

@@ -36,8 +36,13 @@ export const engineBridge = {
                 });
             }
 
-            if (entity.components?.TextRenderer && entity.components.TextRenderer.autoFit !== undefined) {
-                sceneStore.updateComponentProp(id, 'TextRenderer', 'autoFit', entity.components.TextRenderer.autoFit);
+            if (entity.components?.TextRenderer && entity.components.TextRenderer.fontSize !== undefined) {
+                const cur = sceneStore.activeScene?.entities?.find(e => String(e.id) === String(id));
+                const curFontSize = cur?.components?.TextRenderer?.fontSize;
+                const newFontSize = entity.components.TextRenderer.fontSize;
+                if (curFontSize !== undefined && curFontSize !== newFontSize) {
+                    sceneStore.updateComponentData(id, 'TextRenderer', { fontSize: newFontSize });
+                }
             }
         });
 

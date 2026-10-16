@@ -358,5 +358,49 @@ describe('Entity Actions Integration', () => {
         type: 'warning'
       })
     })
+
+    it('automatically generates clip and selects it when adding SpriteAnimator to entity with existing image', () => {
+      // Arrange
+      sceneStoreState.activeScene.entities[0].components.SpriteRenderer = {
+        assetId: 'asset_hero_123',
+        sourceX: 10,
+        sourceY: 20,
+        sourceWidth: 64,
+        sourceHeight: 64,
+        filterMode: 'smooth',
+        useSDF: true
+      }
+
+      // Act
+      const result = sceneStoreState.addComponent('ent_1', 'SpriteAnimator', null, false)
+
+      // Assert
+      expect(result.componentName).toBe('SpriteAnimator')
+      const anim = sceneStoreState.activeScene.entities[0].components.SpriteAnimator
+      expect(anim.clips).toHaveLength(1)
+      expect(anim.currentClip).toBe(anim.clips[0].id)
+      expect(anim.clips[0].assetId).toBe('asset_hero_123')
+      expect(anim.clips[0].sources['s_0']).toEqual({ x: 10, y: 20, w: 64, h: 64 })
+      expect(anim.clips[0].baseSize).toEqual({ w: 64, h: 64 })
+      expect(anim.clips[0].filterMode).toBe('smooth')
+      expect(anim.clips[0].useSDF).toBe(true)
+    })
+
+    it('[Bad Path] prevents removing SpriteRenderer if entity has SpriteAnimator', async () => {
+      // Arrange
+      sceneStoreState.activeScene.entities[0].components.SpriteAnimator = { clips: [] }
+
+      // Act
+      const result = await sceneStoreState.removeComponent('ent_1', 'SpriteRenderer', false)
+
+      // Assert
+      expect(result).toBe(false)
+      expect(sceneStoreState.activeScene.entities[0].components.SpriteRenderer).toBeDefined()
+      const { showPop } = usePopAlert()
+      expect(showPop).toHaveBeenCalledWith(expect.objectContaining({
+        title: 'Restricted',
+        message: expect.stringContaining('Image Renderer cannot be removed')
+      }))
+    })
   })
 })
