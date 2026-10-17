@@ -146,4 +146,11 @@ export class VariablePage {
     await keyInput.press('Enter');
     await keyInput.blur();
   }
+
+  graphNodeByTitle(title) {
+    return this.page
+      .locator('.font-bold', { hasText: title })
+      .or(this.page.locator('[data-testid="node-item"]', { hasText: title }))
+      .first();
+  }
 }

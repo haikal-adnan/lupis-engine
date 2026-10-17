@@ -30,12 +30,7 @@ test.describe('Reliability: WebGL Context Resilience and Error Handling', () => 
       return false;
     });
 
-    // If browser supports lose context extension, assert handled
-    if (handledContextLoss) {
-      await expect(worldLayer).toBeVisible();
-    } else {
-      // Fallback check that canvas and editor are running
-      await expect(worldLayer).toBeVisible();
-    }
+    // Assert editor interface remains resilient and worldLayer is visible
+    await expect(worldLayer).toBeVisible();
   });
 });

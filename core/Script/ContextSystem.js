@@ -487,20 +487,34 @@ export default class ContextSystem {
         },
         isPointerOver: (entity, useRaycast = true) => {
           if (!entity) return false;
+          if (entity.active === false || entity.visible === false) return false;
           const raycast = this.game.pointerRaycast || PointerRaycast;
           if (useRaycast) {
+            if (!this.game.world || !raycast || typeof raycast.getTopEntityUnderPointer !== 'function') return false;
             const topEntity = raycast.getTopEntityUnderPointer(this.game);
             if (!topEntity) return false;
-            if (topEntity.scriptId === entity.scriptId) return true;
+            if (topEntity.active === false || topEntity.visible === false) return false;
+            const matchesEntity = (cand) => {
+              if (!cand) return false;
+              if (cand.active === false || cand.visible === false) return false;
+              if (cand === entity) return true;
+              if (entity.id && cand.id === entity.id) return true;
+              if (entity.scriptId && cand.scriptId === entity.scriptId) return true;
+              return false;
+            };
+            if (matchesEntity(topEntity)) return true;
             let currentParentId = topEntity.parentId;
             while (currentParentId) {
-              const p = this.game.world?.entities?.find(e => e.id === currentParentId || e.scriptId === currentParentId);
-              if (p && p.scriptId === entity.scriptId) return true;
+              const p = this.game.world?.entities?.find(e => e.id === currentParentId || (e.scriptId && e.scriptId === currentParentId));
+              if (p && (p.active === false || p.visible === false)) return false;
+              if (matchesEntity(p)) return true;
               currentParentId = p ? p.parentId : null;
             }
             return false;
           } else {
+            if (!this.game.input || typeof this.game.input.getPointer !== 'function') return false;
             const pointer = this.game.input.getPointer();
+            if (!pointer) return false;
             const canvas = this.game.renderer?.gl?.canvas || this.game.renderer?.canvas || { width: 1920, height: 1080 };
             const canvasW = canvas.clientWidth || canvas.width || 1920;
             const canvasH = canvas.clientHeight || canvas.height || 1080;
@@ -519,6 +533,7 @@ export default class ContextSystem {
               y: camera.y + (pointer.y - halfH) / (camera.scale || 1)
             };
 
+            if (!raycast || typeof raycast._getGlobalTransform !== 'function' || typeof raycast._checkIntersection !== 'function') return false;
             const globalT = raycast._getGlobalTransform(entity, this.game.world);
             let drawX = globalT.x || 0;
             let drawY = globalT.y || 0;

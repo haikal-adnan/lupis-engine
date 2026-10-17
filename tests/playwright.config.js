@@ -36,6 +36,22 @@ export default defineConfig({
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
   },
+  webServer: [
+    {
+      command: 'node server.js',
+      cwd: '../service',
+      url: 'http://localhost:4000/api/health',
+      reuseExistingServer: !process.env.CI,
+      timeout: 60_000,
+    },
+    {
+      command: 'npm run dev',
+      cwd: '../editor',
+      url: 'http://localhost:6500',
+      reuseExistingServer: !process.env.CI,
+      timeout: 60_000,
+    },
+  ],
   projects: [
     {
       // Helper contract tests (Section 11.3). Reserved for helper modifications,

@@ -133,7 +133,7 @@ export class InspectorPage {
   async setEntityName(newName) {
     const scriptInput = this.page.getByTestId('object-script-id-input').locator('input').first();
     const nameInput = this.page.getByTestId('object-name-input').locator('input').first();
-    const isScriptVisible = await scriptInput.isVisible().catch(() => false);
+    const isScriptVisible = await scriptInput.isVisible();
     const input = isScriptVisible ? scriptInput : nameInput;
     await input.fill(newName);
     await input.press('Enter');
@@ -200,7 +200,7 @@ export class InspectorPage {
   async setLayerName(newName) {
     const scriptInput = this.page.getByTestId('layer-script-id-input').locator('input').first();
     const nameInput = this.page.getByTestId('layer-name-input').locator('input').first();
-    const isScriptVisible = await scriptInput.isVisible().catch(() => false);
+    const isScriptVisible = await scriptInput.isVisible();
     const input = isScriptVisible ? scriptInput : nameInput;
     await input.fill(newName);
     await input.press('Enter');

@@ -34,19 +34,19 @@ export default class PointerRaycast {
         const allLayers = [...sortedUILayers, ...sortedWorldLayers];
 
         const isEntityAndParentsActive = (entity, world) => {
-            if (entity.active === false) return false;
+            if (entity.active === false || entity.visible === false) return false;
             
             let current = entity;
             while (current.parentId) {
                 current = world.entities.find(e => e.id === current.parentId);
                 if (!current) break; 
-                if (current.active === false) return false;
+                if (current.active === false || current.visible === false) return false;
             }
             return true;
         };
 
         for (const layer of allLayers) {
-            if (layer.active === false || !layer.visible || !layer.entities) continue;
+            if (layer.active === false || layer.visible === false || !layer.entities) continue;
             
             const isUILayer = layer.scriptId === 'ui' || layer.scriptId?.toLowerCase().includes('ui');
 

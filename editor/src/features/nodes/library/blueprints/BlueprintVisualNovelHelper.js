@@ -26,6 +26,7 @@ export const BlueprintVisualNovelHelper = {
           { id: 'speakerEntity', dataType: 'string', color: '#F48FB1', defaultValue: 'characterName' },
           { id: 'portraitEntity', dataType: 'string', color: '#F48FB1', defaultValue: 'spriteCharacter' },
           { id: 'nameEntity', dataType: 'string', color: '#F48FB1', defaultValue: 'nameBox' },
+          { id: 'clickEntity', dataType: 'string', color: '#F48FB1', defaultValue: '' },
           { id: 'speed', dataType: 'number', color: '#64B5F6', defaultValue: 40 }
         ],
         outputs: [
@@ -42,6 +43,7 @@ export const BlueprintVisualNovelHelper = {
             speakerEntity: 'characterName',
             portraitEntity: 'spriteCharacter',
             nameEntity: 'nameBox',
+            clickEntity: '',
             speed: 40
           },
           code: 
@@ -208,6 +210,14 @@ const nameEntId = inputs.nameEntity || 'nameBox';
 const spkEnt = spkEntId ? context.entity.get(spkEntId) : false;
 const nameEnt = nameEntId ? context.entity.get(nameEntId) : false;
 
+const clickEntId = inputs.clickEntity || inputs.clickArea;
+const clickEnt = (clickEntId && typeof clickEntId === 'object') ? clickEntId : (clickEntId ? context.entity.get(clickEntId) : false);
+if (clickEntId && !clickEnt) {
+  if (context.console && typeof context.console.warn === 'function') {
+    context.console.warn('[Dialogue Runner] clickEntity \\'' + clickEntId + '\\' not found.');
+  }
+}
+
 const charData = charMap ? charMap[entry.speaker] : false;
 const rawSpeaker = charData && charData.displayName ? charData.displayName : (entry.speaker ? entry.speaker : '');
 const isNarrator = !entry.speaker || entry.speaker === 'narrator' || (charData && charData.displayName === '');
@@ -336,6 +346,9 @@ context.onTick((tickDt) => {
 
   const pointer = context.input ? context.input.getPointer() : false;
   const isPointerDown = Boolean(pointer && pointer.down);
+  const isNewPointerDown = isPointerDown && !context.state.vnWasDown;
+  context.state.vnWasDown = isPointerDown;
+
   const kbd = context.input && context.input.keyboard;
   const isKeyAdvance = Boolean(
     kbd && (
@@ -344,8 +357,21 @@ context.onTick((tickDt) => {
       kbd.isPressed('KeyZ')
     )
   );
-  const isClick = (isPointerDown && !context.state.vnWasDown) || isKeyAdvance;
-  context.state.vnWasDown = isPointerDown;
+
+  let isPointerClick = false;
+  if (isNewPointerDown) {
+    if (clickEnt) {
+      if (clickEnt.active !== false && clickEnt.visible !== false) {
+        if (context.input && typeof context.input.isPointerOver === 'function') {
+          isPointerClick = Boolean(context.input.isPointerOver(clickEnt, true));
+        }
+      }
+    } else if (!clickEntId) {
+      isPointerClick = true;
+    }
+  }
+
+  const isClick = isPointerClick || isKeyAdvance;
 
   if (context.state.vnIsTyping) {
     if (isClick) {

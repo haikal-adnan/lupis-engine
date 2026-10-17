@@ -457,5 +457,105 @@ describe('Selection & Hit Test Calculations Unit Tests', () => {
             game.input.getPointer = () => ({ x: 1130, y: 540 });
             expect(PointerRaycast.getTopEntityUnderPointer(game)?.id).toBe('ent-collider');
         });
+
+        it('ignores entities with visible: false or active: false and hits visible/active entity underneath', () => {
+            const entUnderneath = {
+                id: 'ent-underneath',
+                active: true,
+                visible: true,
+                zIndex: 1,
+                components: {
+                    Transform: { x: 0, y: 0, width: 100, height: 100 }
+                }
+            };
+            const entBlocking = {
+                id: 'ent-blocking',
+                active: true,
+                visible: false, // Invisible blocker
+                zIndex: 10,
+                components: {
+                    Transform: { x: 0, y: 0, width: 100, height: 100 }
+                }
+            };
+            const world = {
+                settings: { ui: { width: 1920, height: 1080 } },
+                layersWorld: [{ visible: true, entities: [entBlocking, entUnderneath] }],
+                layersUI: [],
+                entities: [entBlocking, entUnderneath]
+            };
+            const game = {
+                world,
+                camera: { x: 0, y: 0, scale: 1 },
+                input: { getPointer: () => ({ x: 960, y: 540 }) },
+                renderer: { canvas: { width: 1920, height: 1080 } }
+            };
+
+            // Since entBlocking has visible: false, PointerRaycast should hit entUnderneath
+            expect(PointerRaycast.getTopEntityUnderPointer(game)?.id).toBe('ent-underneath');
+
+            // If entBlocking is visible but active: false, it should also pass through
+            entBlocking.visible = true;
+            entBlocking.active = false;
+            expect(PointerRaycast.getTopEntityUnderPointer(game)?.id).toBe('ent-underneath');
+
+            // If entBlocking becomes active and visible, it should block entUnderneath
+            entBlocking.active = true;
+            expect(PointerRaycast.getTopEntityUnderPointer(game)?.id).toBe('ent-blocking');
+        });
+
+        it('ignores layers with visible: false or active: false and hits layer underneath', () => {
+            const entLayer1 = {
+                id: 'ent-layer-1',
+                active: true,
+                visible: true,
+                components: {
+                    Transform: { x: 0, y: 0, width: 100, height: 100 }
+                }
+            };
+            const entLayer2 = {
+                id: 'ent-layer-2',
+                active: true,
+                visible: true,
+                components: {
+                    Transform: { x: 0, y: 0, width: 100, height: 100 }
+                }
+            };
+            const layerTop = {
+                id: 'layer-top',
+                zIndex: 10,
+                visible: false, // Invisible layer
+                entities: [entLayer2]
+            };
+            const layerBottom = {
+                id: 'layer-bottom',
+                zIndex: 1,
+                visible: true,
+                entities: [entLayer1]
+            };
+            const world = {
+                settings: { ui: { width: 1920, height: 1080 } },
+                layersWorld: [layerTop, layerBottom],
+                layersUI: [],
+                entities: [entLayer2, entLayer1]
+            };
+            const game = {
+                world,
+                camera: { x: 0, y: 0, scale: 1 },
+                input: { getPointer: () => ({ x: 960, y: 540 }) },
+                renderer: { canvas: { width: 1920, height: 1080 } }
+            };
+
+            // Top layer is invisible -> raycast hits ent-layer-1 on bottom layer
+            expect(PointerRaycast.getTopEntityUnderPointer(game)?.id).toBe('ent-layer-1');
+
+            // Top layer is visible but inactive -> raycast hits ent-layer-1
+            layerTop.visible = true;
+            layerTop.active = false;
+            expect(PointerRaycast.getTopEntityUnderPointer(game)?.id).toBe('ent-layer-1');
+
+            // Top layer is visible and active -> raycast hits ent-layer-2
+            layerTop.active = true;
+            expect(PointerRaycast.getTopEntityUnderPointer(game)?.id).toBe('ent-layer-2');
+        });
     });
 });

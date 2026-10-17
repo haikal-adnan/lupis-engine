@@ -11,6 +11,7 @@ describe('Dialogue Runner & Infinite Loop Protection Integration', () => {
   function createMockVnGame() {
     const emittedErrors = [];
     const emittedLogs = [];
+    const emittedWarns = [];
     const globals = new Map();
     const entityRegistry = new Map();
 
@@ -19,6 +20,7 @@ describe('Dialogue Runner & Infinite Loop Protection Integration', () => {
       events: {
         emit: (name, payload) => {
           if (name === 'console:error') emittedErrors.push(payload);
+          if (name === 'console:warn') emittedWarns.push(payload);
           if (name === 'console:log') emittedLogs.push(payload);
         }
       },
@@ -40,7 +42,7 @@ describe('Dialogue Runner & Infinite Loop Protection Integration', () => {
     };
 
     mockGame.contextSystem = new ContextSystem(mockGame);
-    return { mockGame, emittedErrors, emittedLogs, globals, entityRegistry };
+    return { mockGame, emittedErrors, emittedWarns, emittedLogs, globals, entityRegistry };
   }
 
   function setupDialogueRunnerScript(mockGame, nodeValues = {}) {
@@ -94,6 +96,9 @@ describe('Dialogue Runner & Infinite Loop Protection Integration', () => {
         get: (id) => mockGame.entityRegistry.get(id),
         getChildren: () => []
       };
+      if (typeof mockGame.isPointerOver === 'function') {
+        ctx.input.isPointerOver = mockGame.isPointerOver;
+      }
       return ctx;
     };
 
@@ -1011,6 +1016,375 @@ describe('Dialogue Runner & Infinite Loop Protection Integration', () => {
       expect(portraitEntity.visible).toBe(false);
       expect(nameEntity.visible).toBe(false);
       expect(speakerEntity.visible).toBe(false);
+    });
+  });
+
+  describe('clickEntity Interaction & Skip/Advance Control', () => {
+    it('defines clickEntity in vnDialogueRunner blueprint inputs and default values', () => {
+      const clickInput = vnDialogueRunnerDef.defaultData.inputs.find(i => i.id === 'clickEntity');
+      expect(clickInput).toBeDefined();
+      expect(clickInput.dataType).toBe('string');
+      expect(clickInput.defaultValue).toBe('');
+      expect(vnDialogueRunnerDef.defaultData.data.values.clickEntity).toBe('');
+    });
+
+    it('ignores clicks outside clickEntity during typewriter typing', () => {
+      const { mockGame } = createMockVnGame();
+      const clickBox = { id: 'dialogBox', components: {} };
+      mockGame.entityRegistry.set('dialogBox', clickBox);
+
+      // Pointer is currently NOT over dialogBox
+      mockGame.isPointerOver = (entity) => entity.id === 'otherBox';
+
+      const dialogMap = {
+        d_1: { text: 'Teks panjang yang sedang berjalan pelan-pelan.', next: false }
+      };
+
+      const { runner, textEntity } = setupDialogueRunnerScript(mockGame, {
+        dialogMap,
+        dialogId: 'd_1',
+        clickEntity: 'dialogBox',
+        speed: 50
+      });
+
+      const node = runner.nodeMap.get('node_dialogue_runner');
+      runner._executeNodeLogic(node, 'execIn');
+
+      // 1 frame typing
+      runner.update(0.016);
+      const textAfterFirstTick = textEntity.components.TextRenderer.value;
+      expect(textAfterFirstTick.length).toBeLessThan('Teks panjang yang sedang berjalan pelan-pelan.'.length);
+
+      // Click outside dialogBox
+      mockGame.input.pointer.down = true;
+      runner.update(0.016);
+      mockGame.input.pointer.down = false;
+
+      // Text should NOT have skipped
+      expect(textEntity.components.TextRenderer.value.length).toBeLessThan('Teks panjang yang sedang berjalan pelan-pelan.'.length);
+    });
+
+    it('skips typewriter immediately when clickEntity is clicked', () => {
+      const { mockGame } = createMockVnGame();
+      const clickBox = { id: 'dialogBox', components: {} };
+      mockGame.entityRegistry.set('dialogBox', clickBox);
+
+      // Pointer is over dialogBox
+      mockGame.isPointerOver = (entity) => entity.id === 'dialogBox';
+
+      const dialogMap = {
+        d_1: { text: 'Teks panjang yang sedang berjalan pelan-pelan.', next: false }
+      };
+
+      const { runner, textEntity } = setupDialogueRunnerScript(mockGame, {
+        dialogMap,
+        dialogId: 'd_1',
+        clickEntity: 'dialogBox',
+        speed: 50
+      });
+
+      const node = runner.nodeMap.get('node_dialogue_runner');
+      runner._executeNodeLogic(node, 'execIn');
+
+      // 1 frame typing
+      runner.update(0.016);
+      expect(textEntity.components.TextRenderer.value.length).toBeLessThan('Teks panjang yang sedang berjalan pelan-pelan.'.length);
+
+      // Click on dialogBox
+      mockGame.input.pointer.down = true;
+      runner.update(0.016);
+
+      // Immediately completed full text
+      expect(textEntity.components.TextRenderer.value).toBe('Teks panjang yang sedang berjalan pelan-pelan.');
+    });
+
+    it('does not advance dialogue when clicked outside clickEntity after typing finishes', () => {
+      const { mockGame } = createMockVnGame();
+      const clickBox = { id: 'dialogBox', components: {} };
+      mockGame.entityRegistry.set('dialogBox', clickBox);
+
+      mockGame.isPointerOver = () => false;
+
+      const dialogMap = {
+        d_1: { text: 'Kalimat selesai.', next: 'd_2' },
+        d_2: { text: 'Kalimat berikutnya.', next: false }
+      };
+
+      const { runner, textEntity } = setupDialogueRunnerScript(mockGame, {
+        dialogMap,
+        dialogId: 'd_1',
+        clickEntity: 'dialogBox',
+        speed: 0
+      });
+
+      const node = runner.nodeMap.get('node_dialogue_runner');
+      const flowSpy = vi.spyOn(runner, 'executeFlow');
+
+      runner._executeNodeLogic(node, 'execIn');
+      expect(textEntity.components.TextRenderer.value).toBe('Kalimat selesai.');
+
+      // Click outside dialogBox
+      mockGame.input.pointer.down = true;
+      runner.update(0.016);
+
+      expect(flowSpy).not.toHaveBeenCalledWith('node_dialogue_runner', 'onNext');
+    });
+
+    it('advances dialogue to onNext when clickEntity is clicked after typing finishes', () => {
+      const { mockGame } = createMockVnGame();
+      const clickBox = { id: 'dialogBox', components: {} };
+      mockGame.entityRegistry.set('dialogBox', clickBox);
+
+      mockGame.isPointerOver = (entity) => entity.id === 'dialogBox';
+
+      const dialogMap = {
+        d_1: { text: 'Kalimat selesai.', next: 'd_2' },
+        d_2: { text: 'Kalimat berikutnya.', next: false }
+      };
+
+      const { runner, textEntity } = setupDialogueRunnerScript(mockGame, {
+        dialogMap,
+        dialogId: 'd_1',
+        clickEntity: 'dialogBox',
+        speed: 0
+      });
+
+      const node = runner.nodeMap.get('node_dialogue_runner');
+      const flowSpy = vi.spyOn(runner, 'executeFlow');
+
+      runner._executeNodeLogic(node, 'execIn');
+      expect(textEntity.components.TextRenderer.value).toBe('Kalimat selesai.');
+
+      // Click on dialogBox
+      mockGame.input.pointer.down = true;
+      runner.update(0.016);
+
+      expect(flowSpy).toHaveBeenCalledWith('node_dialogue_runner', 'onNext');
+      const outputs = runner.nodeOutputs.get('node_dialogue_runner');
+      expect(outputs.nextDialogId).toBe('d_2');
+    });
+
+    it('warns when clickEntity is specified but does not exist in entity registry', () => {
+      const { mockGame, emittedWarns } = createMockVnGame();
+
+      const dialogMap = {
+        d_1: { text: 'Testing missing entity', next: false }
+      };
+
+      const { runner } = setupDialogueRunnerScript(mockGame, {
+        dialogMap,
+        dialogId: 'd_1',
+        clickEntity: 'missingClickEntity',
+        speed: 0
+      });
+
+      const node = runner.nodeMap.get('node_dialogue_runner');
+      runner._executeNodeLogic(node, 'execIn');
+
+      const warning = emittedWarns.find(w => w.message.includes('missingClickEntity'));
+      expect(warning).toBeDefined();
+      expect(warning.message).toContain("[Dialogue Runner] clickEntity 'missingClickEntity' not found.");
+    });
+
+    it('still supports keyboard keys Space, Enter, KeyZ when clickEntity is configured', () => {
+      const { mockGame } = createMockVnGame();
+      const clickBox = { id: 'dialogBox', components: {} };
+      mockGame.entityRegistry.set('dialogBox', clickBox);
+
+      // Pointer is not over anything
+      mockGame.isPointerOver = () => false;
+
+      const dialogMap = {
+        d_1: { text: 'Teks panjang yang sedang diketik.', next: 'd_2' }
+      };
+
+      const { runner, textEntity } = setupDialogueRunnerScript(mockGame, {
+        dialogMap,
+        dialogId: 'd_1',
+        clickEntity: 'dialogBox',
+        speed: 50
+      });
+
+      const node = runner.nodeMap.get('node_dialogue_runner');
+      runner._executeNodeLogic(node, 'execIn');
+
+      runner.update(0.016);
+      expect(textEntity.components.TextRenderer.value.length).toBeLessThan('Teks panjang yang sedang diketik.'.length);
+
+      // Press Spacebar to skip typewriter
+      mockGame.input.keyboard.pressedKeys.add('Space');
+      runner.update(0.016);
+      mockGame.input.keyboard.pressedKeys.delete('Space');
+
+      expect(textEntity.components.TextRenderer.value).toBe('Teks panjang yang sedang diketik.');
+
+      // Press Enter to advance dialog
+      const flowSpy = vi.spyOn(runner, 'executeFlow');
+      mockGame.input.keyboard.pressedKeys.add('Enter');
+      runner.update(0.016);
+      mockGame.input.keyboard.pressedKeys.delete('Enter');
+
+      expect(flowSpy).toHaveBeenCalledWith('node_dialogue_runner', 'onNext');
+    });
+
+    it('does not trigger if another entity or layer is blocking clickEntity (raycast occlusion)', () => {
+      const { mockGame } = createMockVnGame();
+      const clickBox = { id: 'dialogBox', components: {} };
+      const blockingButton = { id: 'btnMenu', components: {} };
+
+      mockGame.entityRegistry.set('dialogBox', clickBox);
+      mockGame.entityRegistry.set('btnMenu', blockingButton);
+
+      // Raycast indicates btnMenu is on top, blocking dialogBox underneath
+      mockGame.isPointerOver = (entity, useRaycast) => {
+        expect(useRaycast).toBe(true);
+        return entity.id === 'btnMenu';
+      };
+
+      const dialogMap = {
+        d_1: { text: 'Teks dialog yang panjang.', next: 'd_2' }
+      };
+
+      const { runner, textEntity } = setupDialogueRunnerScript(mockGame, {
+        dialogMap,
+        dialogId: 'd_1',
+        clickEntity: 'dialogBox',
+        speed: 50
+      });
+
+      const node = runner.nodeMap.get('node_dialogue_runner');
+      const flowSpy = vi.spyOn(runner, 'executeFlow');
+
+      runner._executeNodeLogic(node, 'execIn');
+
+      runner.update(0.016);
+      expect(textEntity.components.TextRenderer.value.length).toBeLessThan('Teks dialog yang panjang.'.length);
+
+      // Player clicks on btnMenu (which blocks dialogBox)
+      mockGame.input.pointer.down = true;
+      runner.update(0.016);
+
+      // Must NOT skip typewriter because it is blocked by btnMenu!
+      expect(textEntity.components.TextRenderer.value.length).toBeLessThan('Teks dialog yang panjang.'.length);
+      expect(flowSpy).not.toHaveBeenCalled();
+    });
+
+    it('supports clickArea as alias input for clickEntity', () => {
+      const { mockGame } = createMockVnGame();
+      const clickBox = { id: 'dialogBox', components: {} };
+      mockGame.entityRegistry.set('dialogBox', clickBox);
+
+      mockGame.isPointerOver = (entity) => entity.id === 'dialogBox';
+
+      const dialogMap = {
+        d_1: { text: 'Kalimat selesai.', next: 'd_2' }
+      };
+
+      const { runner, textEntity } = setupDialogueRunnerScript(mockGame, {
+        dialogMap,
+        dialogId: 'd_1',
+        clickArea: 'dialogBox',
+        speed: 0
+      });
+
+      const node = runner.nodeMap.get('node_dialogue_runner');
+      const flowSpy = vi.spyOn(runner, 'executeFlow');
+
+      runner._executeNodeLogic(node, 'execIn');
+      expect(textEntity.components.TextRenderer.value).toBe('Kalimat selesai.');
+
+      // Click on dialogBox
+      mockGame.input.pointer.down = true;
+      runner.update(0.016);
+
+      expect(flowSpy).toHaveBeenCalledWith('node_dialogue_runner', 'onNext');
+      const outputs = runner.nodeOutputs.get('node_dialogue_runner');
+      expect(outputs.nextDialogId).toBe('d_2');
+    });
+
+    it('does not block clickEntity if the blocking entity has visible: false or active: false', () => {
+      const { mockGame } = createMockVnGame();
+      const clickBox = { id: 'dialogBox', visible: true, active: true, components: {} };
+      const blockingButton = { id: 'btnMenu', visible: false, active: true, components: {} };
+
+      mockGame.entityRegistry.set('dialogBox', clickBox);
+      mockGame.entityRegistry.set('btnMenu', blockingButton);
+
+      // Raycast bypasses btnMenu because it is invisible (visible: false), hitting dialogBox
+      mockGame.isPointerOver = (entity, useRaycast) => {
+        expect(useRaycast).toBe(true);
+        // If btnMenu is invisible, it doesn't block, so dialogBox is hit
+        if (blockingButton.visible === false || blockingButton.active === false) {
+          return entity.id === 'dialogBox';
+        }
+        return entity.id === 'btnMenu';
+      };
+
+      const dialogMap = {
+        d_1: { text: 'Kalimat selesai.', next: 'd_2' }
+      };
+
+      const { runner, textEntity } = setupDialogueRunnerScript(mockGame, {
+        dialogMap,
+        dialogId: 'd_1',
+        clickEntity: 'dialogBox',
+        speed: 0
+      });
+
+      const node = runner.nodeMap.get('node_dialogue_runner');
+      const flowSpy = vi.spyOn(runner, 'executeFlow');
+
+      runner._executeNodeLogic(node, 'execIn');
+      expect(textEntity.components.TextRenderer.value).toBe('Kalimat selesai.');
+
+      // Click on dialogBox while blockingButton has visible: false -> should advance!
+      mockGame.input.pointer.down = true;
+      runner.update(0.016);
+
+      expect(flowSpy).toHaveBeenCalledWith('node_dialogue_runner', 'onNext');
+      const outputs = runner.nodeOutputs.get('node_dialogue_runner');
+      expect(outputs.nextDialogId).toBe('d_2');
+    });
+
+    it('does not trigger if clickEntity itself has visible: false or active: false', () => {
+      const { mockGame } = createMockVnGame();
+      const clickBox = { id: 'dialogBox', visible: false, active: true, components: {} };
+      mockGame.entityRegistry.set('dialogBox', clickBox);
+
+      mockGame.isPointerOver = () => true;
+
+      const dialogMap = {
+        d_1: { text: 'Kalimat selesai.', next: 'd_2' }
+      };
+
+      const { runner, textEntity } = setupDialogueRunnerScript(mockGame, {
+        dialogMap,
+        dialogId: 'd_1',
+        clickEntity: 'dialogBox',
+        speed: 0
+      });
+
+      const node = runner.nodeMap.get('node_dialogue_runner');
+      const flowSpy = vi.spyOn(runner, 'executeFlow');
+
+      runner._executeNodeLogic(node, 'execIn');
+      expect(textEntity.components.TextRenderer.value).toBe('Kalimat selesai.');
+
+      // Click on dialogBox while visible: false -> should NOT trigger
+      mockGame.input.pointer.down = true;
+      runner.update(0.016);
+
+      expect(flowSpy).not.toHaveBeenCalled();
+
+      // If active: false and visible: true -> should also NOT trigger
+      clickBox.visible = true;
+      clickBox.active = false;
+      mockGame.input.pointer.down = false;
+      runner.update(0.016);
+      mockGame.input.pointer.down = true;
+      runner.update(0.016);
+
+      expect(flowSpy).not.toHaveBeenCalled();
     });
   });
 });

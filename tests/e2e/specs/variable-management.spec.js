@@ -253,11 +253,11 @@ test.describe('Variable System E2E Testing', () => {
 
     // Ctrl + Double Click to spawn Get node
     await shieldRow.dblclick({ modifiers: ['Control'] });
-    await expect(page.locator('.font-bold', { hasText: 'Get ShieldPower' }).or(page.locator('[data-testid="node-item"]', { hasText: 'Get ShieldPower' })).first()).toBeVisible();
+    await expect(variablePage.graphNodeByTitle('Get ShieldPower')).toBeVisible();
 
     // Alt + Double Click to spawn Set node
     await shieldRow.dblclick({ modifiers: ['Alt'] });
-    await expect(page.locator('.font-bold', { hasText: 'Set ShieldPower' }).or(page.locator('[data-testid="node-item"]', { hasText: 'Set ShieldPower' })).first()).toBeVisible();
+    await expect(variablePage.graphNodeByTitle('Set ShieldPower')).toBeVisible();
 
     await variablePage.closeManager();
   });
@@ -279,12 +279,12 @@ test.describe('Variable System E2E Testing', () => {
 
     // Click "Add Get to Graph"
     await page.getByTestId('variable-modal-add-get-btn').click();
-    await expect(page.locator('.font-bold', { hasText: 'Get ManaPoints' }).or(page.locator('[data-testid="node-item"]', { hasText: 'Get ManaPoints' })).first()).toBeVisible();
+    await expect(variablePage.graphNodeByTitle('Get ManaPoints')).toBeVisible();
 
     // Open dropdown again and click "Add Set to Graph"
     await manaRow.getByTestId('variable-modal-row-menu-trigger').click();
     await page.getByTestId('variable-modal-add-set-btn').click();
-    await expect(page.locator('.font-bold', { hasText: 'Set ManaPoints' }).or(page.locator('[data-testid="node-item"]', { hasText: 'Set ManaPoints' })).first()).toBeVisible();
+    await expect(variablePage.graphNodeByTitle('Set ManaPoints')).toBeVisible();
 
     await variablePage.closeManager();
   });
