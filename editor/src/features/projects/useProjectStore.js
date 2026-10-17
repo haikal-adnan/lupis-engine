@@ -85,6 +85,7 @@ export const useProjectStore = defineStore('project', {
 
       workspaceStore.resetCanvas();
       workspaceStore.setProjectId(this.project.id);
+      workspaceStore.setActiveTab('scene');
       this.syncStatus = 'synced';
       workspaceStore.setLoading(false);
     },

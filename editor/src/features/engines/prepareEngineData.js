@@ -27,6 +27,14 @@ export async function prepareEngineData() {
         sceneStore.createDefaultScene();
     }
 
+    const initialSceneId = projectStore.project?.settings?.initialSceneId;
+    if (initialSceneId && (!sceneStore.activeSceneId || !sceneStore.scenes.some(s => s.id === sceneStore.activeSceneId))) {
+        const targetScene = sceneStore.scenes.find(s => s.id === initialSceneId);
+        if (targetScene) {
+            sceneStore.setActiveScene(targetScene.id);
+        }
+    }
+
     const { engine, ...cleanWorkspaceConfig } = toRaw(workspaceStore.$state);
 
     const rawPayload = {

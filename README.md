@@ -1,12 +1,12 @@
 <div align="center">
 
-<img src="https://raw.githubusercontent.com/haikaladnan/lupis-engine/master/editor/public/assets/logo.svg" alt="Lupis Engine logo" width="96" height="96" />
+<img src="https://raw.githubusercontent.com/haikal-adnan/lupis-engine/master/editor/public/assets/logo.svg" alt="Lupis Engine logo" width="96" height="96" />
 
 # Lupis Engine
 
 **A web-first 2D/2.5D game engine and visual creation studio, built on WebGL, Vue 3, and Node.js.**
 
-[![CI](https://github.com/haikaladnan/lupis-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/haikaladnan/lupis-engine/actions/workflows/ci.yml)
+[![CI](https://github.com/haikal-adnan/lupis-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/haikal-adnan/lupis-engine/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 [![Node.js](https://img.shields.io/badge/Node.js-%5E20.19%20%7C%7C%20%3E%3D22.12-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![Vue](https://img.shields.io/badge/Vue-3.5-4FC08D?logo=vuedotjs&logoColor=white)](https://vuejs.org/)
@@ -64,7 +64,7 @@ See [`CHANGELOG.md`](./CHANGELOG.md) for release notes.
 | --- | --- |
 | **Visual Editor** | Hierarchy, Inspector, Asset, and Node Graph panels. Built with Vue 3, Pinia, Vite, and Tailwind CSS. |
 | **Rendering** | WebGL batch rendering for sprites and vector shapes (rectangles, circles, custom polygons). Text rendered with Multi-channel Signed Distance Field (MSDF) fonts, without relying on the Canvas 2D context. |
-| **Visual Scripting** | Blueprint-style node graphs with execution flow control, pure data evaluation, and runtime debugging. |
+| **Visual Scripting** | Consolidated 10-domain architecture with 128 production nodes and dual-tier Context System, supporting ~80% of 2D game mechanics out-of-the-box without touching code. |
 | **Physics** | Rigid bodies with gravity, velocity clamping, and drag, plus kinematic `MoveAndSlide` movement. |
 | **Audio** | Web Audio playback with master gain, pitch control, fade-ins, and 3D spatial (HRTF) panning. |
 | **Asset & Export** | Node.js microservice for MSDF font generation, project compression, and desktop (Electron) packaging. |
@@ -107,7 +107,7 @@ For a deeper walkthrough, see [`docs/architecture.md`](./docs/architecture.md).
 ### Option 1: Docker Compose (recommended)
 
 ```bash
-git clone https://github.com/haikaladnan/lupis-engine.git
+git clone https://github.com/haikal-adnan/lupis-engine.git
 cd lupis-engine
 docker compose -f start.yml up
 ```
@@ -173,11 +173,14 @@ npx serve -l 8080 .
 
 | Guide | Description |
 | --- | --- |
-| [Getting Started](./docs/getting-started.md) | Installation and first project. |
-| [Architecture Overview](./docs/architecture.md) | How the editor, runtime, and service fit together. |
-| [Core Engine API](./docs/core-api.md) | Runtime API reference. |
-| [Visual Scripting Guide](./docs/visual-scripting.md) | Blueprint nodes, execution flow, and debugging. |
-| [Visual Editor Guide](./docs/editor-guide.md) | Editor panels and workflows. |
+| [Getting Started](./docs/getting-started.md) | Installation and first project walkthrough. |
+| [Architecture Overview](./docs/architecture.md) | System design, runtime lifecycle, and inter-process communication. |
+| [Core Engine API](./docs/core-api.md) | Complete runtime API and subsystem reference. |
+| [Visual Scripting Guide](./docs/visual-scripting.md) | 10 Blueprint domains, 128 production nodes, and port contracts. |
+| [Context System Reference](./docs/context-system.md) | Full contract for the 15 runtime execution facades. |
+| [Visual Editor Guide](./docs/editor-guide.md) | Editor panels, inspectors, hotkeys, and authoring workflows. |
+| [Editor Reference](./docs/editor-reference.md) | Detailed feature inventory, menu specifications, and schema definitions. |
+| [Schema Contract](./docs/schema-contract.md) | Formal JSON specifications for projects, scenes, entities, and nodes. |
 
 ## Examples
 

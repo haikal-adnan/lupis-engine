@@ -1,12 +1,12 @@
-import { Image as ImageIcon } from 'lucide-vue-next';
+import { Palette } from 'lucide-vue-next';
 
 export const BlueprintRenderer = {
   id: 'game_renderer',
-  label: 'Renderer',
+  label: 'Rendering & Camera',
   color: '#00ACC1',
-  icon: ImageIcon,
+  icon: Palette,
   items: [
-    {
+{
       type: 'getSprite',
       label: 'Get Sprite',
       description: 'Get properties of the Image Renderer',
@@ -15,7 +15,7 @@ export const BlueprintRenderer = {
         settings: {
           headerTitle: 'Get Sprite',
           headerColor: '#00ACC1',
-          category: 'Renderer'
+          category: 'Rendering & Camera'
         },
         inputs: [
           { id: 'targetEntity', dataType: 'string', color: '#F48FB1', defaultValue: 'self' }
@@ -50,7 +50,7 @@ return;`
         }
       }
     },
-    {
+{
       type: 'setSprite',
       label: 'Set Sprite',
       description: 'Set properties of the Image Renderer',
@@ -59,7 +59,7 @@ return;`
         settings: {
           headerTitle: 'Set Sprite',
           headerColor: '#00ACC1',
-          category: 'Renderer'
+          category: 'Rendering & Camera'
         },
         inputs: [
           { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
@@ -99,7 +99,7 @@ return;`
         }
       }
     },
-    {
+{
       type: 'getText',
       label: 'Get Text',
       description: 'Get properties of the Text Renderer',
@@ -108,7 +108,7 @@ return;`
         settings: {
           headerTitle: 'Get Text',
           headerColor: '#FFB300',
-          category: 'Renderer'
+          category: 'Rendering & Camera'
         },
         inputs: [
           { id: 'targetEntity', dataType: 'string', color: '#F48FB1', defaultValue: 'self' }
@@ -171,7 +171,7 @@ return;`
         }
       }
     },
-    {
+{
       type: 'setText',
       label: 'Set Text',
       description: 'Set properties of the Text Renderer',
@@ -180,7 +180,7 @@ return;`
         settings: {
           headerTitle: 'Set Text',
           headerColor: '#FFB300',
-          category: 'Renderer'
+          category: 'Rendering & Camera'
         },
         inputs: [
           { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
@@ -230,7 +230,7 @@ return;`
         }
       }
     },
-    {
+{
       type: 'getShape',
       label: 'Get Shape',
       description: 'Get properties of the Shape Renderer',
@@ -239,7 +239,7 @@ return;`
         settings: {
           headerTitle: 'Get Shape',
           headerColor: '#E91E63',
-          category: 'Renderer'
+          category: 'Rendering & Camera'
         },
         inputs: [
           { id: 'targetEntity', dataType: 'string', color: '#F48FB1', defaultValue: 'self' }
@@ -272,7 +272,7 @@ return;`
         }
       }
     },
-    {
+{
       type: 'setShape',
       label: 'Set Shape',
       description: 'Set properties of the Shape Renderer',
@@ -281,7 +281,7 @@ return;`
         settings: {
           headerTitle: 'Set Shape',
           headerColor: '#E91E63',
-          category: 'Renderer'
+          category: 'Rendering & Camera'
         },
         inputs: [
           { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
@@ -319,7 +319,7 @@ return;`
         }
       }
     },
-    {
+{
       type: 'getTilemap',
       label: 'Get Tilemap',
       description: 'Get properties of the Tilemap Component',
@@ -328,7 +328,7 @@ return;`
         settings: {
           headerTitle: 'Get Tilemap',
           headerColor: '#689F38',
-          category: 'Renderer'
+          category: 'Rendering & Camera'
         },
         inputs: [
           { id: 'targetEntity', dataType: 'string', color: '#F48FB1', defaultValue: 'self' }
@@ -363,7 +363,7 @@ return;`
         }
       }
     },
-    {
+{
       type: 'setTilemap',
       label: 'Set Tilemap',
       description: 'Set properties of the Tilemap Component',
@@ -372,7 +372,7 @@ return;`
         settings: {
           headerTitle: 'Set Tilemap',
           headerColor: '#689F38',
-          category: 'Renderer'
+          category: 'Rendering & Camera'
         },
         inputs: [
           { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
@@ -412,7 +412,7 @@ return;`
         }
       }
     },
-    {
+{
       type: 'batchSet',
       label: 'Batch Set Properties',
       description: 'Set multiple properties in one execution node',
@@ -421,7 +421,7 @@ return;`
         settings: {
           headerTitle: 'Batch Set',
           headerColor: '#7E57C2',
-          category: 'Renderer'
+          category: 'Rendering & Camera'
         },
         inputs: [
           { id: 'execIn', dataType: 'execution', color: '#FFFFFF' }
@@ -464,6 +464,188 @@ steps.forEach((step, index) => {
 });
 
 outputs.execOut = true;
+return;`
+        }
+      }
+    },
+{
+      type: 'actionFadeScreen',
+      label: 'Fade Screen',
+      description: 'Fades the screen to black (or any color) and vice versa.',
+      dynamicMode: 'none',
+      defaultData: {
+        settings: {
+          headerTitle: 'Fade Screen',
+          headerColor: '#7C3AED',
+          category: 'Rendering & Camera'
+        },
+        inputs: [
+          { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'mode', dataType: 'string', color: '#F48FB1', defaultValue: 'fade_out' },
+          { id: 'duration', dataType: 'number', color: '#64B5F6', defaultValue: 1000 },
+          { id: 'color', dataType: 'string', color: '#F48FB1', defaultValue: '#000000' }
+        ],
+        outputs: [
+          { id: 'execOut', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'onComplete', dataType: 'execution', color: '#FFFFFF' }
+        ],
+        data: {
+          values: {
+            mode: 'fade_out',
+            duration: 1000,
+            color: '#000000'
+          },
+          options: {
+            mode: [
+              { label: 'Fade Out', value: 'fade_out' },
+              { label: 'Fade In', value: 'fade_in' },
+              { label: 'Fade In & Out', value: 'fade' }
+            ]
+          },
+          code: 
+`outputs.execOut = true;
+
+context.transition.fade(inputs.mode, inputs.duration, inputs.color, () => {
+  outputs.onComplete = true;
+  context.triggerFlow('onComplete');
+});
+return;`
+        }
+      }
+    },
+{
+      type: 'actionCameraFollow',
+      label: 'Camera Follow',
+      description: 'Makes the camera smoothly follow the target entity.',
+      dynamicMode: 'none',
+      defaultData: {
+        settings: {
+          headerTitle: 'Camera Follow',
+          headerColor: '#F59E0B',
+          category: 'Rendering & Camera'
+        },
+        inputs: [
+          { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'targetEntity', dataType: 'string', color: '#F48FB1', defaultValue: 'self' },
+          { id: 'smoothSpeed', dataType: 'number', color: '#64B5F6', defaultValue: 0.1 },
+          { id: 'offsetX', dataType: 'number', color: '#64B5F6', defaultValue: 0 },
+          { id: 'offsetY', dataType: 'number', color: '#64B5F6', defaultValue: 0 }
+        ],
+        outputs: [
+          { id: 'execOut', dataType: 'execution', color: '#FFFFFF' }
+        ],
+        data: {
+          values: {
+            targetEntity: 'self',
+            smoothSpeed: 0.1,
+            offsetX: 0,
+            offsetY: 0
+          },
+          code: 
+`const targetEntity = context.assert.exists(context.entity.get(inputs.targetEntity), 'Target entity must exist');
+
+context.camera.setTarget(targetEntity, inputs.smoothSpeed, {
+  x: inputs.offsetX,
+  y: inputs.offsetY
+});
+
+outputs.execOut = true;
+return;`
+        }
+      }
+    },
+{
+      type: 'actionCameraStopFollow',
+      label: 'Stop Camera Follow',
+      description: 'Stops the camera from following the target entity.',
+      dynamicMode: 'none',
+      defaultData: {
+        settings: {
+          headerTitle: 'Stop Follow',
+          headerColor: '#F59E0B',
+          category: 'Rendering & Camera'
+        },
+        inputs: [
+          { id: 'execIn', dataType: 'execution', color: '#FFFFFF' }
+        ],
+        outputs: [
+          { id: 'execOut', dataType: 'execution', color: '#FFFFFF' }
+        ],
+        data: {
+          code: 
+`context.camera.clearTarget();
+
+outputs.execOut = true;
+return;`
+        }
+      }
+    },
+{
+      type: 'actionCameraSetTransform',
+      label: 'Set Camera Transform',
+      description: 'Sets camera position (X, Y), zoom scale, and interpolation speed (smoothness).',
+      dynamicMode: 'none',
+      defaultData: {
+        settings: {
+          headerTitle: 'Set Camera Transform',
+          headerColor: '#F59E0B',
+          category: 'Rendering & Camera'
+        },
+        inputs: [
+          { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'x', dataType: 'number', color: '#64B5F6', defaultValue: 0 },
+          { id: 'y', dataType: 'number', color: '#64B5F6', defaultValue: 0 },
+          { id: 'scale', dataType: 'number', color: '#64B5F6', defaultValue: 1 },
+          { id: 'smoothSpeed', dataType: 'number', color: '#64B5F6', defaultValue: 0.1 }
+        ],
+        outputs: [
+          { id: 'execOut', dataType: 'execution', color: '#FFFFFF' }
+        ],
+        data: {
+          values: {
+            x: 0,
+            y: 0,
+            scale: 1,
+            smoothSpeed: 0.1
+          },
+          code: 
+`context.camera.setTransform(inputs.x, inputs.y, inputs.scale, inputs.smoothSpeed);
+
+outputs.execOut = true;
+return;`
+        }
+      }
+    },
+{
+      type: 'queryCameraInfo',
+      label: 'Get Camera Info',
+      description: 'Pure node to read current camera coordinates, zoom scale, smoothness, and target scriptId.',
+      dynamicMode: 'none',
+      defaultData: {
+        settings: {
+          headerTitle: 'Get Camera Info',
+          headerColor: '#F59E0B',
+          category: 'Rendering & Camera'
+        },
+        inputs: [],
+        outputs: [
+          { id: 'x', dataType: 'number', color: '#64B5F6' },
+          { id: 'y', dataType: 'number', color: '#64B5F6' },
+          { id: 'scale', dataType: 'number', color: '#64B5F6' },
+          { id: 'smoothSpeed', dataType: 'number', color: '#64B5F6' },
+          { id: 'targetEntity', dataType: 'string', color: '#F48FB1' },
+          { id: 'hasTarget', dataType: 'boolean', color: '#E57373' }
+        ],
+        data: {
+          code: 
+`const info = context.camera.getInfo();
+
+outputs.x = info.x;
+outputs.y = info.y;
+outputs.scale = info.scale;
+outputs.smoothSpeed = info.smoothSpeed;
+outputs.targetEntity = info.targetEntity;
+outputs.hasTarget = info.hasTarget;
 return;`
         }
       }

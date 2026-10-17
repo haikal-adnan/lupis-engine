@@ -21,6 +21,17 @@ export function normalizer(
     ? rawScenes.map(scene => sceneSchema(scene, projectId))
     : [];
 
+  if (cleanScenes.length > 0) {
+    if (!cleanProject.settings) {
+      cleanProject.settings = {};
+    }
+    const hasValidInitialScene = cleanProject.settings.initialSceneId && 
+      cleanScenes.some(s => s.id === cleanProject.settings.initialSceneId);
+    if (!hasValidInitialScene) {
+      cleanProject.settings.initialSceneId = cleanScenes[0].id;
+    }
+  }
+
   const cleanAssets = Array.isArray(rawAssets)
     ? rawAssets.map(asset => {
         return assetSchema(asset);

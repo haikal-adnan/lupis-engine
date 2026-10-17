@@ -259,14 +259,14 @@
                 &times;
               </button>
             </template>
-            <div class="text-xs text-muted-foreground font-mono py-1 px-2 rounded bg-muted/40 border border-border/40">
+            <div class="text-xs text-muted-foreground font-mono py-1 px-2 rounded bg-muted/40 border border-border">
               Output: {{ port.dataType }}
             </div>
           </PropertyRow>
         </template>
       </template>
 
-      <div v-if="isPropertyNode && availableOptions.length > 0" class="pt-2 border-t border-border/40">
+      <div v-if="isPropertyNode && availableOptions.length > 0" class="pt-2 border-t border-border">
         <PropertyRow label="Add Property">
           <BaseSelect
             :model-value="''"
@@ -277,7 +277,7 @@
         </PropertyRow>
       </div>
 
-      <div v-if="isSequentialNode" class="pt-2 border-t border-border/40">
+      <div v-if="isSequentialNode" class="pt-2 border-t border-border">
         <button
           type="button"
           @click="handleAddPort('input')"

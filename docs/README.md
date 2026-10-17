@@ -10,6 +10,7 @@ Lupis Engine is a web-based 2D/2.5D game engine with a visual editor. The runtim
 | [Architecture](architecture.md) | Understand how the runtime, editor, and service fit together. |
 | [Core API](core-api.md) | Start the engine, create entities, and use the runtime subsystems. |
 | [Visual scripting](visual-scripting.md) | Understand blueprint graphs, pins, and script execution. |
+| [Context System](context-system.md) | Reference the runtime scripting facade, domains, and assertion contracts. |
 | [Editor guide](editor-guide.md) | Use the editor: panels, tools, assets, shortcuts. |
 | [Editor reference](editor-reference.md) | Work on the editor codebase: stores, history, compiler, bridge. |
 | [Schema contract](schema-contract.md) | Look up the authoritative data schemas, file formats, bridge events, and REST API. |

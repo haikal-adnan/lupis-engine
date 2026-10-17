@@ -1,8 +1,8 @@
 blank_issues_enabled: false
 contact_links:
   - name: 💬 GitHub Discussions & Questions
-    url: https://github.com/haikaladnan/lupis-engine/discussions
+    url: https://github.com/haikal-adnan/lupis-engine/discussions
     about: Ask questions, share your games, or discuss ideas with the community.
   - name: 📖 Lupis Engine Documentation
-    url: https://github.com/haikaladnan/lupis-engine/tree/main/docs
+    url: https://github.com/haikal-adnan/lupis-engine/tree/main/docs
     about: Read API references, getting started guide, and architecture documentation.

@@ -670,6 +670,22 @@ interface ScriptEdge {
 | `list` | `#4DD0E1` (cyan) |
 | `map` | `#FF8A65` (coral) |
 
+### 8.4 Consolidated Blueprint Catalog and Context System Contract
+
+The production node library is structured into 10 domain modules containing 128 nodes (registered in [`editor/src/features/nodes/library/blueprints/index.js`](../editor/src/features/nodes/library/blueprints/index.js)):
+- `BlueprintFlow` (`flow_logic`, 13 nodes)
+- `BlueprintInput` (`input_controls`, 7 nodes)
+- `BlueprintEntity` (`game_entity`, 12 nodes)
+- `BlueprintPhysics` (`game_physics`, 6 nodes)
+- `BlueprintRenderer` (`game_renderer`, 14 nodes)
+- `BlueprintAnimation` (`game_animation`, 16 nodes)
+- `BlueprintCollections` (`data_collections`, 20 nodes)
+- `BlueprintMath` (`math_operations`, 12 nodes)
+- `BlueprintLifecycle` (`game_lifecycle`, 11 nodes)
+- `BlueprintSystem` (`system_utilities`, 17 nodes)
+
+All nodes evaluate against the 15 runtime domain facades provided by `ContextSystem` (`context.audio`, `context.scenes`, `context.transform`, `context.variables`, etc.). Nodes must never access internal engine state directly (`context.game`) or introduce defensive null checks (`?.` or `??`). See [Visual Scripting Guide](visual-scripting.md) and [Context System Reference](context-system.md).
+
 ## 9. Engine initialization payload contract
 
 Built by [`prepareEngineData.js`](../editor/src/features/engines/prepareEngineData.js) and consumed by [`core/Loader/RuntimeLoader.js`](../core/Loader/RuntimeLoader.js). The editor sends it each time it boots or reloads the runtime canvas.

@@ -9,7 +9,7 @@ test.use({
 });
 
 const REPRESENTATIVE_CATEGORIES = [
-  'Math', 'Game Lifecycle', 'Events & Signals', 'Flow Helpers', 'Logic & Compare',
+  'Math & Random', 'Scene & Lifecycle', 'Audio & System', 'Flow & Logic', 'Input & Controls',
 ];
 
 test.describe('Node Library & Graph Editor Unified E2E Testing', () => {
@@ -38,7 +38,7 @@ test.describe('Node Library & Graph Editor Unified E2E Testing', () => {
   // 2. SISTEM SEARCH (MODAL DAN SIDEBAR PANEL)
   // =========================================================================
   test('filters nodes reactively in the library modal and the sidebar panel', async ({ nodeLibrary }) => {
-    await nodeLibrary.searchInSidebar('Keyboard Events');
+    await nodeLibrary.searchInSidebar('Input & Controls');
     await expect(nodeLibrary.sidebarSearchItems).not.toHaveCount(0);
 
     await nodeLibrary.searchInSidebar('zzz-node-not-found');
@@ -49,7 +49,7 @@ test.describe('Node Library & Graph Editor Unified E2E Testing', () => {
     await expect(nodeLibrary.sidebarNoResults).toHaveCount(0);
 
     await nodeLibrary.openModal();
-    await nodeLibrary.openCategory('Math');
+    await nodeLibrary.openCategory('Math & Random');
     const label = await nodeLibrary.firstModalItemLabel();
 
     await nodeLibrary.searchInModal(label);
@@ -67,7 +67,7 @@ test.describe('Node Library & Graph Editor Unified E2E Testing', () => {
   // 3. SISTEM RECENT (MODAL DAN SIDEBAR PANEL)
   // =========================================================================
   test('records recently added nodes and lists them in Recent', async ({ nodeLibrary, nodeGraph }) => {
-    const type = await nodeLibrary.addFromSidebarGroup('Game Lifecycle');
+    const type = await nodeLibrary.addFromSidebarGroup('Scene & Lifecycle');
     await expect(nodeGraph.nodesByType(type)).toHaveCount(1);
 
     await nodeLibrary.clearSidebarSearch();
@@ -82,10 +82,10 @@ test.describe('Node Library & Graph Editor Unified E2E Testing', () => {
   // 4. DOUBLE-CLICK TO ADD A NODE
   // =========================================================================
   test('adds a node to the graph canvas on double-click from both the modal and the sidebar', async ({ nodeLibrary, nodeGraph }) => {
-    const modalType = await nodeLibrary.addFirstFromModalCategory('Math');
+    const modalType = await nodeLibrary.addFirstFromModalCategory('Math & Random');
     await expect(nodeGraph.nodesByType(modalType)).toHaveCount(1);
 
-    const sidebarType = await nodeLibrary.addFromSidebarGroup('Keyboard Events');
+    const sidebarType = await nodeLibrary.addFromSidebarGroup('Input & Controls');
     await expect(nodeGraph.nodesByType(sidebarType)).toHaveCount(1);
   });
 

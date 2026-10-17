@@ -74,6 +74,17 @@
               <Copy class="w-3.5 h-3.5 mr-2 text-muted-foreground" /> <span>Duplicate Scene</span>
             </button>
 
+            <button 
+              @click="handleSetInitial(close)" 
+              :disabled="!sceneStore.activeSceneId || isCurrentSceneInitial" 
+              class="dropdown-item"
+              role="menuitem"
+              data-testid="hierarchy-scene-action-set-initial"
+              :aria-disabled="!sceneStore.activeSceneId || isCurrentSceneInitial"
+            >
+              <BookmarkCheck class="w-3.5 h-3.5 mr-2 text-muted-foreground" /> <span>Set as Initial Scene</span>
+            </button>
+
             <div class="h-[1px] bg-border my-1"></div>
 
             <button 
@@ -122,7 +133,7 @@
 <script setup>
 import { 
   Search, X, MoreVertical, 
-  Plus, Trash2, Edit2, Copy
+  Plus, Trash2, Edit2, Copy, BookmarkCheck
 } from 'lucide-vue-next'
 
 import { 
@@ -135,7 +146,7 @@ import { useSceneStore } from '@scenes/scenes.js';
 import { useAssetStore } from '@assets/assets.js'
 import { useScriptStore } from '@scripts/scripts.js';
 import { usePrefabStore } from '@prefabs/prefabs.js';
-import { toRaw } from 'vue';
+import { toRaw, computed } from 'vue';
 import { engineBridge } from "@engines/engines.js";
 
 import {
@@ -224,6 +235,27 @@ const handleRename = async (close) => {
     } catch (e) {
       showPop({ title: 'Error', message: 'Failed to rename scene.', type: 'error' });
     }
+  }
+};
+
+const isCurrentSceneInitial = computed(() => {
+  return projectStore.project?.settings?.initialSceneId === sceneStore.activeSceneId;
+});
+
+const handleSetInitial = (close) => {
+  close();
+  if (sceneStore.activeSceneId) {
+    if (typeof projectStore.setInitialSceneId === 'function') {
+      projectStore.setInitialSceneId(sceneStore.activeSceneId);
+    } else if (projectStore.project?.settings) {
+      projectStore.project.settings.initialSceneId = sceneStore.activeSceneId;
+      projectStore.markAsDirty();
+    }
+    showPop({
+      title: 'Initial Scene Set',
+      message: `"${sceneStore.activeScene?.scriptId}" is now set as the initial scene.`,
+      type: 'success'
+    });
   }
 };
 

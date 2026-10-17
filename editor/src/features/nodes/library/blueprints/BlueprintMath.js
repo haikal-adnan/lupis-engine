@@ -1,12 +1,12 @@
 import { Calculator } from 'lucide-vue-next';
 
 export const BlueprintMath = {
-  id: 'math',
-  label: 'Math',
-  color: '#009688', 
+  id: 'math_operations',
+  label: 'Math & Random',
+  color: '#009688',
   icon: Calculator,
   items: [
-    { 
+{ 
       type: 'mathAdd', 
       label: 'Add (+)', 
       description: 'Add numbers together (Val 1 + Val 2 + ...)', 
@@ -15,7 +15,7 @@ export const BlueprintMath = {
         settings: { 
           headerTitle: 'Add', 
           headerColor: '#00796B', 
-          category: 'Math' 
+          category: 'Math & Random' 
         },
         inputs: [
           { id: 'v0', dataType: 'number', color: '#64B5F6' }, 
@@ -34,7 +34,7 @@ return;`
         }
       } 
     },
-    { 
+{ 
       type: 'mathSubtract', 
       label: 'Subtract (-)', 
       description: 'Subtract numbers (Val 1 - Val 2 - ...)', 
@@ -43,7 +43,7 @@ return;`
         settings: { 
           headerTitle: 'Subtract', 
           headerColor: '#00796B', 
-          category: 'Math' 
+          category: 'Math & Random' 
         },
         inputs: [
           { id: 'v0', dataType: 'number', color: '#64B5F6' }, 
@@ -62,7 +62,7 @@ return;`
         }
       } 
     },
-    { 
+{ 
       type: 'mathMultiply', 
       label: 'Multiply (*)', 
       description: 'Multiply numbers together (Val 1 * Val 2 * ...)', 
@@ -71,7 +71,7 @@ return;`
         settings: { 
           headerTitle: 'Multiply', 
           headerColor: '#00796B', 
-          category: 'Math' 
+          category: 'Math & Random' 
         },
         inputs: [
           { id: 'v0', dataType: 'number', color: '#64B5F6' }, 
@@ -90,7 +90,7 @@ return;`
         }
       } 
     },
-    { 
+{ 
       type: 'mathDivide', 
       label: 'Divide (/)', 
       description: 'Divide numbers (Val 1 / Val 2 / ...)', 
@@ -99,7 +99,7 @@ return;`
         settings: { 
           headerTitle: 'Divide', 
           headerColor: '#00796B', 
-          category: 'Math' 
+          category: 'Math & Random' 
         },
         inputs: [
           { id: 'v0', dataType: 'number', color: '#64B5F6' }, 
@@ -121,7 +121,7 @@ return;`
         }
       } 
     },
-    { 
+{ 
       type: 'mathNegate', 
       label: 'Negate', 
       description: 'Invert (-A)', 
@@ -130,7 +130,7 @@ return;`
         settings: { 
           headerTitle: 'Negate', 
           headerColor: '#00796B', 
-          category: 'Math' 
+          category: 'Math & Random' 
         },
         inputs: [
           { id: 'a', dataType: 'number', color: '#64B5F6', defaultValue: 0 }
@@ -148,7 +148,7 @@ return;`
         }
       } 
     },
-    { 
+{ 
       type: 'mathRound', 
       label: 'Rounding (Floor/Ceil)', 
       description: 'Round, floor, or ceil a number', 
@@ -157,7 +157,7 @@ return;`
         settings: { 
           headerTitle: 'Rounding', 
           headerColor: '#00796B', 
-          category: 'Math' 
+          category: 'Math & Random' 
         },
         inputs: [
           { id: 'value', dataType: 'number', color: '#64B5F6', defaultValue: 0 }
@@ -178,7 +178,7 @@ return;`
         }
       } 
     },
-    { 
+{ 
       type: 'mathDistance2d', 
       label: 'Distance 2D', 
       description: 'Calculate distance between two 2D points', 
@@ -187,7 +187,7 @@ return;`
         settings: { 
           headerTitle: 'Distance 2D', 
           headerColor: '#00796B', 
-          category: 'Math' 
+          category: 'Math & Random' 
         },
         inputs: [
           { id: 'x1', dataType: 'number', color: '#64B5F6', defaultValue: 0 },
@@ -211,7 +211,7 @@ return;`
         }
       } 
     },
-    { 
+{ 
       type: 'mathDirection2d', 
       label: 'Direction 2D', 
       description: 'Get normalized direction vector and angle from A to B', 
@@ -220,7 +220,7 @@ return;`
         settings: { 
           headerTitle: 'Direction 2D', 
           headerColor: '#00796B', 
-          category: 'Math' 
+          category: 'Math & Random' 
         },
         inputs: [
           { id: 'fromX', dataType: 'number', color: '#64B5F6', defaultValue: 0 },
@@ -255,6 +255,114 @@ outputs.directionY = dirY;
 return;`
         }
       } 
+    },
+{
+      type: 'randomSmart',
+      label: 'Random Number',
+      description: 'Generates a random number. Outputs an integer if inputs are integers, or a float if inputs are decimals.',
+      dynamicMode: 'none',
+      defaultData: {
+        settings: {
+          headerTitle: 'Random Number',
+          headerColor: '#FF5722',
+          category: 'Math & Random'
+        },
+        inputs: [
+          { id: 'min', dataType: 'number', color: '#64B5F6', defaultValue: 1 },
+          { id: 'max', dataType: 'number', color: '#64B5F6', defaultValue: 10 }
+        ],
+        outputs: [
+          { id: 'result', dataType: 'number', color: '#64B5F6' }
+        ],
+        data: {
+          values: { min: 1, max: 10 },
+          code: 
+`const min = inputs.min;
+const max = inputs.max;
+
+let res = 0;
+if (Number.isInteger(min) && Number.isInteger(max)) {
+  res = Math.floor(Math.random() * (max - min + 1)) + min;
+} else {
+  res = Math.random() * (max - min) + min;
+}
+
+outputs.result = res;
+return;`
+        }
+      }
+    },
+{
+      type: 'randomChance',
+      label: 'Random Chance',
+      description: 'Outputs true (Success) or false (Failure) based on a specified probability percentage (0 - 100).',
+      dynamicMode: 'none',
+      defaultData: {
+        settings: {
+          headerTitle: 'Random Chance',
+          headerColor: '#FF5722',
+          category: 'Math & Random'
+        },
+        inputs: [
+          { id: 'chance', dataType: 'number', color: '#64B5F6', defaultValue: 25 }
+        ],
+        outputs: [
+          { id: 'result', dataType: 'boolean', color: '#E57373' }
+        ],
+        data: {
+          values: { chance: 25 },
+          code: 
+`outputs.result = (Math.random() * 100) < inputs.chance;
+return;`
+        }
+      }
+    },
+{
+      type: 'randomFromList',
+      label: 'List Get Random',
+      description: 'Retrieves a single random item from within the provided List or Array.',
+      dynamicMode: 'none',
+      defaultData: {
+        settings: {
+          headerTitle: 'Random From List',
+          headerColor: '#FF5722',
+          category: 'Math & Random'
+        },
+        inputs: [
+          { id: 'list', dataType: 'list', color: '#4DD0E1' }
+        ],
+        outputs: [
+          { id: 'item', dataType: 'any', color: '#B0BEC5' }
+        ],
+        data: {
+          code: 
+`const list = inputs.list;
+outputs.item = list[Math.floor(Math.random() * list.length)];
+return;`
+        }
+      }
+    },
+{
+      type: 'randomColor',
+      label: 'Random Color',
+      description: 'Generates a random color formatted as a Hex string (e.g., #A3F10C).',
+      dynamicMode: 'none',
+      defaultData: {
+        settings: {
+          headerTitle: 'Random Color',
+          headerColor: '#FF5722',
+          category: 'Math & Random'
+        },
+        inputs: [],
+        outputs: [
+          { id: 'color', dataType: 'string', color: '#F48FB1' }
+        ],
+        data: {
+          code: 
+`outputs.color = '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
+return;`
+        }
+      }
     }
   ]
 };

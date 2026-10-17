@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia';
+import { useProjectStore } from '@projects/projects.js';
 import { 
   useSceneActions, 
   useLayerActions, 
@@ -50,11 +51,29 @@ export const useSceneStore = defineStore('scene', {
     ...useSettingActions,
     ...useAnimatorActions,
 
-    initScenes(sceneList) {
+    initScenes(sceneList, initialSceneId = null) {
       this.scenes = Array.isArray(sceneList) ? sceneList : [];
-      if (this.scenes.length > 0 && !this.activeSceneId) {
-        this.activeSceneId = this.scenes[0].id;
+      if (this.scenes.length > 0) {
+        const projectStore = useProjectStore();
+        let targetId = initialSceneId;
+        if (!targetId && this.activeSceneId && this.scenes.some(s => s.id === this.activeSceneId)) {
+          targetId = this.activeSceneId;
+        }
+        if (!targetId) {
+          targetId = projectStore.project?.settings?.initialSceneId;
+        }
+
+        const targetScene = targetId ? this.scenes.find(s => s.id === targetId) : null;
+
+        if (targetScene) {
+          this.activeSceneId = targetScene.id;
+        } else {
+          this.activeSceneId = this.scenes[0].id;
+        }
+      } else {
+        this.activeSceneId = null;
       }
+      this.selectedEntityIds = [];
     },
 
     createDefaultScene() {

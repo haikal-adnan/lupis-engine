@@ -86,7 +86,6 @@
                   </div>
                   <div>
                     <h3 class="text-lg font-bold text-foreground">{{ activeGroup.label }}</h3>
-                    <p class="text-xs text-muted-foreground">{{ activeGroup.description || 'Category items' }}</p>
                   </div>
                 </div>
                 
@@ -114,7 +113,6 @@
                       <component :is="group.icon || 'Box'" class="w-5 h-5 text-foreground" />
                     </div>
                     <h4 class="font-bold text-sm mb-1 text-foreground">{{ group.label }}</h4>
-                    <p class="text-xs text-muted-foreground line-clamp-2 flex-1">{{ group.description || 'Browse nodes in this category' }}</p>
                     <div class="mt-3 inline-flex px-2 py-0.5 rounded text-[10px] font-bold bg-muted text-muted-foreground w-max">
                       {{ group.items?.length || 0 }} nodes
                     </div>

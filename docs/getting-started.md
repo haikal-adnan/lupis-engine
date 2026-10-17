@@ -12,7 +12,7 @@ Set up Lupis Engine for local development and run the test suites.
 ## Run with Docker Compose
 
 ```bash
-git clone https://github.com/haikaladnan/lupis-engine.git
+git clone https://github.com/haikal-adnan/lupis-engine.git
 cd lupis-engine
 docker compose -f start.yml up
 ```
@@ -86,6 +86,9 @@ npm run test:blueprint   # visual scripting specs only
 
 ## Next steps
 
-- [Core API](core-api.md): create scenes and entities in code.
-- [Visual scripting](visual-scripting.md): build behavior with node graphs.
-- [`examples/`](../examples/): working demos.
+- [Architecture Overview](architecture.md): explore the 3-tier system design and runtime loop.
+- [Visual scripting](visual-scripting.md): build behavior with the 10 domain modules and 128 nodes.
+- [Context System](context-system.md): inspect runtime facades and execution context contracts.
+- [Visual Editor Guide](editor-guide.md): master editor panels, gizmos, and workflows.
+- [Core API](core-api.md): create scenes and entities programmatically.
+- [`examples/`](../examples/): explore standalone runnable demos.

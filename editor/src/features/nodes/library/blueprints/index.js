@@ -1,98 +1,65 @@
-import { BlueprintAnimator } from './BlueprintAnimator.js';
-import { BlueprintAudio } from './BlueprintAudio.js';
-import { BlueprintBoolean } from './BlueprintBoolean.js';
-import { BlueprintCamera } from './BlueprintCamera.js';
-import { BlueprintCollectionHelper } from './BlueprintCollectionHelper.js';
-import { BlueprintCollider } from './BlueprintCollider.js';
-import { BlueprintComparison } from './BlueprintComparison.js';
+import { BlueprintFlow } from './BlueprintFlow.js';
+import { BlueprintInput } from './BlueprintInput.js';
 import { BlueprintEntity } from './BlueprintEntity.js';
-import { BlueprintEvent } from './BlueprintEvent.js';
-import { BlueprintHelper } from './BlueprintHelper.js';
-import { BlueprintKeyboard } from './BlueprintKeyboard.js';
-import { BlueprintLayer } from './BlueprintLayer.js';
-import { BlueprintLifecycle } from './BlueprintLifecycle.js';
-import { BlueprintList } from './BlueprintList.js';
-import { BlueprintLoop } from './BlueprintLoop.js';
-import { BlueprintMap } from './BlueprintMap.js';
-import { BlueprintMath } from './BlueprintMath.js';
-import { BlueprintMouse } from './BlueprintMouse.js';
-import { BlueprintObject } from './BlueprintObject.js';
 import { BlueprintPhysics } from './BlueprintPhysics.js';
-import { BlueprintPointer } from './BlueprintPointer.js';
-import { BlueprintRandom } from './BlueprintRandom.js';
 import { BlueprintRenderer } from './BlueprintRenderer.js';
-import { BlueprintScene } from './BlueprintScene.js';
-import { BlueprintString } from './BlueprintString.js';
+import { BlueprintAnimation } from './BlueprintAnimation.js';
+import { BlueprintCollections } from './BlueprintCollections.js';
+import { BlueprintMath } from './BlueprintMath.js';
+import { BlueprintLifecycle } from './BlueprintLifecycle.js';
 import { BlueprintSystem } from './BlueprintSystem.js';
-import { BlueprintTransform } from './BlueprintTransform.js';
-import { BlueprintTransition } from './BlueprintTransition.js';
-import { BlueprintVariable } from './BlueprintVariable.js';
-import { BlueprintVisualNovelHelper } from './BlueprintVisualNovelHelper.js';
+
 export { BlueprintCategoryTemplate } from './Blueprint.js';
+
 export {
-  BlueprintAnimator,
-  BlueprintAudio,
-  BlueprintBoolean,
-  BlueprintCamera,
-  BlueprintCollectionHelper,
-  BlueprintCollider,
-  BlueprintComparison,
+  BlueprintFlow,
+  BlueprintInput,
   BlueprintEntity,
-  BlueprintEvent,
-  BlueprintHelper,
-  BlueprintKeyboard,
-  BlueprintLayer,
-  BlueprintLifecycle,
-  BlueprintList,
-  BlueprintLoop,
-  BlueprintMap,
-  BlueprintMath,
-  BlueprintMouse,
-  BlueprintObject,
   BlueprintPhysics,
-  BlueprintPointer,
-  BlueprintRandom,
   BlueprintRenderer,
-  BlueprintScene,
-  BlueprintString,
+  BlueprintAnimation,
+  BlueprintCollections,
+  BlueprintMath,
+  BlueprintLifecycle,
   BlueprintSystem,
-  BlueprintTransform,
-  BlueprintTransition,
-  BlueprintVariable,
-  BlueprintVisualNovelHelper
+  // Backward compatibility re-export aliases
+  BlueprintFlow as BlueprintBoolean,
+  BlueprintFlow as BlueprintComparison,
+  BlueprintFlow as BlueprintLoop,
+  BlueprintFlow as BlueprintHelper,
+  BlueprintInput as BlueprintKeyboard,
+  BlueprintInput as BlueprintMouse,
+  BlueprintInput as BlueprintPointer,
+  BlueprintEntity as BlueprintObject,
+  BlueprintEntity as BlueprintTransform,
+  BlueprintEntity as BlueprintLayer,
+  BlueprintPhysics as BlueprintCollider,
+  BlueprintRenderer as BlueprintTransition,
+  BlueprintRenderer as BlueprintCamera,
+  BlueprintAnimation as BlueprintAnimator,
+  BlueprintCollections as BlueprintList,
+  BlueprintCollections as BlueprintMap,
+  BlueprintCollections as BlueprintCollectionHelper,
+  BlueprintMath as BlueprintRandom,
+  BlueprintLifecycle as BlueprintScene,
+  BlueprintSystem as BlueprintAudio,
+  BlueprintSystem as BlueprintVariable,
+  BlueprintSystem as BlueprintString,
+  BlueprintSystem as BlueprintEvent,
+  BlueprintSystem as BlueprintVisualNovelHelper
 };
 
 export const ALL_BLUEPRINTS = Object.freeze([
-  BlueprintRandom,
+  BlueprintFlow,
+  BlueprintInput,
   BlueprintEntity,
-  BlueprintLoop,
-  BlueprintHelper,
-  BlueprintList,
-  BlueprintMap,
-  BlueprintCollectionHelper,
-  BlueprintRenderer,
-  BlueprintLifecycle,
-  BlueprintBoolean,
-  BlueprintComparison,
-  BlueprintKeyboard,
-  BlueprintPointer,
-  BlueprintTransform,
-  BlueprintMath,
-  BlueprintSystem,
-  BlueprintString,
-  BlueprintObject,
-  BlueprintCamera,
-  BlueprintCollider,
   BlueprintPhysics,
-  BlueprintLayer,
-  BlueprintScene,
-  BlueprintMouse,
-  BlueprintAnimator,
-  BlueprintAudio,
-  BlueprintTransition,
-  BlueprintEvent,
-  BlueprintVariable,
-  BlueprintVisualNovelHelper
+  BlueprintRenderer,
+  BlueprintAnimation,
+  BlueprintCollections,
+  BlueprintMath,
+  BlueprintLifecycle,
+  BlueprintSystem
 ]);
 
 export const allBlueprints = ALL_BLUEPRINTS;

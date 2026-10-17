@@ -39,6 +39,7 @@ Defined in [`core/Core/Game.js`](../core/Core/Game.js). `Game` owns every subsys
 | `entitySystem` | `EntitySystem` | Lookup, cloning, recursive destruction |
 | `events` | `EventManager` | Engine events (`game:start`, `game:restart`, ...) |
 | `input` | `InputManager` | Mouse, touch, keyboard |
+| `contextSystem` | `ContextSystem` | Blueprint execution context, variable scopes, and domain facades |
 | `start()` | method | Start the game loop |
 | `restartGame()` | method | Reset globals and reload the initial scene |
 | `quitGame()` | method | Stop the loop and pause all systems |
@@ -123,3 +124,13 @@ game.camera.x = t.x;
 game.camera.y = t.y;
 game.camera.zoom = 1.5;
 ```
+
+### Context System
+
+```javascript
+const ctx = game.contextSystem.createContext(entity);
+ctx.variables.set("score", 100);
+ctx.audio.playSound("sfx_coin");
+```
+
+`ContextSystem` provides 15 isolated runtime facades for visual scripting graphs and custom scripting panels without leaking internal engine state. See [Context System Reference](context-system.md) for complete facade APIs.

@@ -189,35 +189,22 @@ classDiagram
 
 ### 5.2 Node blueprint categories
 
-Node definitions live in `@nodes/library/blueprints/`, one file per category (24 files).
+Node definitions live in `@nodes/library/blueprints/`, organized into **10 consolidated domain modules** (128 nodes total).
 
-| File | Domain | Nodes |
-| :--- | :--- | :--- |
-| `BlueprintLifecycle.js` | Lifecycle | On Game Start, On Tick, On Game Pause, On Game Resume, On Game Restart, On Game Quit, Pause Game, Resume Game, Restart Game, Quit Game |
-| `BlueprintAudio.js` | Audio | Play Audio, Stop Audio, Set Volume, Get Volume, Set Master Volume, Set Background Volume, Set SFX Volume, Set Voice Volume, Set Channel Mute |
-| `BlueprintEvent.js` | Custom events | Trigger Event, Listen Event, Broadcast Message |
-| `BlueprintTransform.js` | Transform | Get Position, Set Position, Move Towards, Rotate |
-| `BlueprintPhysics.js` | Physics | Add Force, Set Velocity, Move and Slide, Set Gravity |
-| `BlueprintCollider.js` | Collision | On Collision Enter, On Collision Exit, Check Overlap |
-| `BlueprintRenderer.js` | Rendering | Set Tint, Set Visibility, Set UV Offset, Set Alpha |
-| `BlueprintAnimator.js` | Animation | Play Animation, Pause Animation, Set Animation Speed |
-| `BlueprintCamera.js` | Camera | Camera Follow, Set Camera Zoom, Shake Camera |
-| `BlueprintScene.js` | Scene | Load Scene, Reload Scene, Get Active Scene |
-| `BlueprintEntity.js` | Entity | Spawn Entity, Destroy Entity, Find Entity By Tag |
-| `BlueprintMath.js` | Math | Add, Subtract, Multiply, Divide, Clamp, Lerp |
-| `BlueprintComparison.js` | Comparison | Equals, Not Equals, Greater Than, Less Than |
-| `BlueprintBoolean.js` | Boolean | AND, OR, NOT, XOR |
-| `BlueprintString.js` | String | Concat, Substring, String Length, Contains |
-| `BlueprintList.js` | List | List Append, List Get Index, List Length, List Remove |
-| `BlueprintMap.js` | Map | Map Get, Map Set, Map Has Key, Map Remove |
-| `BlueprintLoop.js` | Flow control | For Loop, While Loop, Break Loop, Branch (If / Else) |
-| `BlueprintKeyboard.js` | Keyboard | On Key Down, On Key Up, Is Key Pressed |
-| `BlueprintMouse.js` | Mouse | On Mouse Click, Get Mouse Position, On Mouse Hover |
-| `BlueprintPointer.js` | Touch / pointer | On Pointer Down, On Pointer Up, Get Pointer Vector |
-| `BlueprintRandom.js` | Random | Random Number, Random Integer In Range, Random Bool |
-| `BlueprintSystem.js` | System | Print to Console, Get Delta Time, Quit Game |
-| `BlueprintVariable.js` | Variables | Get Variable, Set Variable |
-| `BlueprintTransition.js` | Screen transitions | Fade In, Fade Out, Color Flash |
+| File | Domain | Category ID | Nodes Count | Key Nodes |
+| :--- | :--- | :--- | :---: | :--- |
+| `BlueprintFlow.js` | Flow & Logic | `flow_logic` | 13 | Branch (If/Else), Switch, Compare, And, Or, Not, For Loop, For Each, While Loop, Flow Merge, Delay, Cooldown, Typewriter |
+| `BlueprintInput.js` | Input & Controls | `input_controls` | 7 | On Key Event, Get Key State, Calculate Axis 2D, Simulate Key, On Click / Tap, On Drag / Swipe, Entity Pointer Event |
+| `BlueprintEntity.js` | Entity & Transform | `game_entity` | 12 | Spawn Prefab, Destroy Entity, Clone Entity, Get/Set Children & Parent, Get/Set Entity Info, Find Closest by Tag, Get/Set Transform, Get/Set Layer |
+| `BlueprintPhysics.js` | Physics & Collision | `game_physics` | 6 | Move and Slide, Solid Collision, Trigger Zone, Get/Set Physics Info, Set Face Direction |
+| `BlueprintRenderer.js` | Rendering & Camera | `game_renderer` | 14 | Get/Set Sprite, Get/Set Text, Get/Set Shape, Get/Set Tilemap, Batch Set, Fade Screen Transition, Camera Follow / Stop Follow / Set Transform / Get Info |
+| `BlueprintAnimation.js` | Animation & Tweens | `game_animation` | 16 | Tween Value, Move To, Scale To, Rotate To, Resize To, Fade To, Crop Image, Fill Amount, Shake Transform, Button Scale Effect, Play/Pause Animation, Get/Set Animator & Clip Props |
+| `BlueprintCollections.js` | Collections & Data | `data_collections` | 20 | List Get/Set/Push/Insert/RemoveAt/Length/Contains/IndexOf/Concat/Shuffle, Map Get/Set/Remove/Has/Merge/Keys/Values/Size, Get/Set Value by Path |
+| `BlueprintMath.js` | Math & Random | `math_operations` | 12 | Add, Subtract, Multiply, Divide, Negate, Rounding, Distance 2D, Direction 2D, Random Number, Random Chance, List Get Random, Random Color |
+| `BlueprintLifecycle.js` | Scene & Lifecycle | `game_lifecycle` | 11 | On Tick, On Game Start/Pause/Resume/Restart/Quit, Universal Set Game State Action, On Scene Start, Change Scene, Restart Scene, Get Current Scene |
+| `BlueprintSystem.js` | Audio & System | `system_utilities` | 17 | Play/Stop Audio, Set/Get Volume, Set Channel Mute, Get/Set Variable, Format/Join/Length/AnyToString, Emit/On Signal, Notification & Debug Toasts, VN Dialogue Runner, VN Choice Presenter |
+
+For complete documentation on visual scripting and runtime execution, see [Visual Scripting](visual-scripting.md) and [Context System](context-system.md).
 
 ## 6. Runtime bridge (`@engines/`)
 

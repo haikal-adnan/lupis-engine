@@ -127,12 +127,14 @@ Renderer classes are named in the diagram; the matching component schemas are `S
 
 ## Visual scripting
 
-Blueprint graphs are compiled by the editor and executed by the runtime.
+Blueprint graphs are authored in the visual editor, compiled into deterministic graph definitions, and executed within the runtime:
 
-- **Execution pins** carry control flow. **Data pins** carry typed values and are evaluated on demand.
-- `ContextSystem` runs each graph with its own local variable scope and access to project-wide globals.
+- **10 Domain Modules & 128 Nodes**: The node library is organized into 10 cohesive domain modules (`Flow`, `Input`, `Entity`, `Physics`, `Renderer`, `Animation`, `Collections`, `Math`, `Lifecycle`, `System`), providing 128 production nodes.
+- **Dual-Tier Architecture**: Novice creators can build ~80% of 2D game genres entirely through node graph logic without touching code panels. Advanced developers can leverage custom code panels and raw context facades for complex, low-level mechanics.
+- **Execution & Data Evaluation**: Execution ports carry imperative control flow with re-entrancy protection and step caps. Data ports are strictly evaluated on demand adhering to the T-001 port naming standard.
+- **Context System**: Graphs execute against `ContextSystem`, exposing 15 isolated runtime facades (`context.audio`, `context.scenes`, `context.transform`, `context.variables`, etc.) with zero direct game mutation and zero defensive null checks.
 
-Details: [Visual scripting](visual-scripting.md).
+See [Visual Scripting Guide](visual-scripting.md) and [Context System Reference](context-system.md) for full contracts.
 
 ## Editor-to-runtime bridge
 

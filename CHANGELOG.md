@@ -9,6 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Visual Scripting Consolidation**:
+  - Re-architected 31 legacy blueprint files into 10 domain-driven modules with 128 production nodes.
+  - Complete dual-tier architecture enabling ~80% of 2D game genres to be authored entirely via node graphs.
+  - Added comprehensive `docs/context-system.md` documenting all 15 runtime domain facades, properties, methods, and contracts.
+  - Added universal composite node `actionSetGameState` replacing disparate lifecycle actions.
+  - Unified pointer and mouse interactions into `eventPointerTap` and `eventPointerDrag`.
+  - Added multi-bus audio setter `setAudioVolume` with configurable channel targeting.
+
+### Changed
+- **Contract & Architecture Hardening**:
+  - Enforced strict T-001 port naming regex (`/^[A-Za-z][A-Za-z0-9]{0,31}$/`) across all 128 blueprint nodes.
+  - Eliminated all defensive optional chaining (`?.`) and nullish coalescing (`??`) in node execution blocks.
+  - Removed internal engine state leaking (`context.game`), isolating execution to formal runtime facades.
+  - Pruned redundant nodes (`randomBoolean`, separate volume setters, redundant parent destroyers).
+  - Cleaned up 24 deprecated blueprint files with backward-compatible re-exports.
+
 ### Planned
 - WebGPU experimental rendering backend.
 - Tilemap autotiling bitmask generator.

@@ -38,7 +38,7 @@ editor/
 │   │   ├── folders/             # Folder tree management for project assets
 │   │   ├── historys/            # Atomic undo/redo transaction engine
 │   │   ├── inspectors/          # Property inspector and ECS component bindings
-│   │   ├── nodes/               # Visual scripting logic canvas and 27 blueprint categories
+│   │   ├── nodes/               # Visual scripting logic canvas, 10 domain modules, and 128 nodes
 │   │   ├── opfs/                # Origin Private File System storage abstractions
 │   │   ├── prefabs/             # Reusable entity-component templates
 │   │   ├── projects/            # Project manifest serialization, persistence, and watchers
@@ -109,7 +109,7 @@ npm run test
 npm run test:run
 ```
 
-All 780+ unit and integration tests must pass prior to opening a Pull Request.
+All 1,060+ unit and integration tests across 88 test suites must pass prior to opening a Pull Request.
 
 ---
 

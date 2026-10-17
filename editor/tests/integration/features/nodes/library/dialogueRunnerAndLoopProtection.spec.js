@@ -1,8 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import ContextSystem from '@core/Script/ContextSystem.js';
 import ScriptRunner from '@core/Script/ScriptRunner.js';
-import { BlueprintVisualNovelHelper } from '@nodes/library/blueprints/BlueprintVisualNovelHelper.js';
-import { BlueprintHelper } from '@nodes/library/blueprints/BlueprintHelper.js';
+import { BlueprintSystem as BlueprintVisualNovelHelper, BlueprintFlow as BlueprintHelper } from '@nodes/library/blueprints/index.js';
 import { componentSchema } from '@scenes/scenes.js';
 
 describe('Dialogue Runner & Infinite Loop Protection Integration', () => {

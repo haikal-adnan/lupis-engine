@@ -4,7 +4,7 @@ import AudioSystem from '@core/System/AudioSystem.js';
 import ContextSystem from '@core/Script/ContextSystem.js';
 import { componentSchema } from '@scenes/schemas/componentSchema.js';
 import { BlueprintLifecycle } from '@nodes/library/blueprints/BlueprintLifecycle.js';
-import { BlueprintAudio } from '@nodes/library/blueprints/BlueprintAudio.js';
+import { BlueprintSystem } from '@nodes/library/blueprints/BlueprintSystem.js';
 import { validateCodePanelContract } from '@nodes/contract/codePanelContract.js';
 
 describe('Audio & Lifecycle Features Unit & Integration Tests', () => {
@@ -298,8 +298,8 @@ describe('Audio & Lifecycle Features Unit & Integration Tests', () => {
     });
   });
 
-  describe('5. Blueprint Lifecycle Nodes (eventGameQuit & actionGameQuit)', () => {
-    it('defines eventGameQuit and actionGameQuit in BlueprintLifecycle', () => {
+  describe('5. Blueprint Lifecycle Nodes (eventGameQuit & actionSetGameState)', () => {
+    it('defines eventGameQuit and actionSetGameState in BlueprintLifecycle', () => {
       const eventQuit = BlueprintLifecycle.items.find(i => i.type === 'eventGameQuit');
       expect(eventQuit).toBeDefined();
       expect(eventQuit.label).toBe('On Game Quit');
@@ -307,39 +307,43 @@ describe('Audio & Lifecycle Features Unit & Integration Tests', () => {
       expect(eventQuit.defaultData.outputs[0].id).toBe('execOut');
       expect(eventQuit.defaultData.data.code).toContain('context.onGameQuit');
 
-      const actionQuit = BlueprintLifecycle.items.find(i => i.type === 'actionGameQuit');
-      expect(actionQuit).toBeDefined();
-      expect(actionQuit.label).toBe('Quit Game');
-      expect(actionQuit.defaultData.settings.headerTitle).toBe('Quit Game');
-      expect(actionQuit.defaultData.inputs[0].id).toBe('execIn');
-      expect(actionQuit.defaultData.outputs[0].id).toBe('execOut');
-      expect(actionQuit.defaultData.data.code).toContain('context.lifecycle.quit()');
+      const actionState = BlueprintLifecycle.items.find(i => i.type === 'actionSetGameState');
+      expect(actionState).toBeDefined();
+      expect(actionState.label).toBe('Set Game State');
+      expect(actionState.defaultData.settings.headerTitle).toBe('Set Game State');
+      expect(actionState.defaultData.inputs[0].id).toBe('execIn');
+      expect(actionState.defaultData.outputs[0].id).toBe('execOut');
+      expect(actionState.defaultData.data.code).toContain('context.lifecycle.quit()');
     });
 
-    it('passes codePanelContract validation for eventGameQuit and actionGameQuit', () => {
+    it('passes codePanelContract validation for eventGameQuit and actionSetGameState', () => {
       const eventQuit = BlueprintLifecycle.items.find(i => i.type === 'eventGameQuit');
       const eventValidation = validateCodePanelContract(eventQuit.defaultData.data.code, {
         node: { inputs: eventQuit.defaultData.inputs, outputs: eventQuit.defaultData.outputs }
       });
       expect(eventValidation.isValid).toBe(true);
 
-      const actionQuit = BlueprintLifecycle.items.find(i => i.type === 'actionGameQuit');
-      const actionValidation = validateCodePanelContract(actionQuit.defaultData.data.code, {
-        node: { inputs: actionQuit.defaultData.inputs, outputs: actionQuit.defaultData.outputs }
+      const actionState = BlueprintLifecycle.items.find(i => i.type === 'actionSetGameState');
+      const actionValidation = validateCodePanelContract(actionState.defaultData.data.code, {
+        node: { inputs: actionState.defaultData.inputs, outputs: actionState.defaultData.outputs }
       });
       expect(actionValidation.isValid).toBe(true);
     });
   });
 
   describe('6. Blueprint Audio Module Nodes Validation', () => {
-    it('has category_audio with 9 defined blueprint nodes', () => {
-      expect(BlueprintAudio.id).toBe('category_audio');
-      expect(BlueprintAudio.label).toBe('Audio');
-      expect(BlueprintAudio.items).toHaveLength(9);
+    const audioTypes = ['playAudio', 'stopAudio', 'setAudioVolume', 'getAudioVolume', 'setAudioMute'];
+
+    it('has audio nodes defined in BlueprintSystem', () => {
+      audioTypes.forEach(type => {
+        const item = BlueprintSystem.items.find(i => i.type === type);
+        expect(item, `Audio node ${type} should exist in BlueprintSystem`).toBeDefined();
+      });
     });
 
-    it('validates each node in BlueprintAudio with codePanelContract', () => {
-      BlueprintAudio.items.forEach(item => {
+    it('validates each audio node in BlueprintSystem with codePanelContract', () => {
+      audioTypes.forEach(type => {
+        const item = BlueprintSystem.items.find(i => i.type === type);
         const validation = validateCodePanelContract(item.defaultData.data.code, {
           node: {
             inputs: item.defaultData.inputs,

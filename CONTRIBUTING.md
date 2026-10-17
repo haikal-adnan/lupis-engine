@@ -12,10 +12,11 @@ We are committed to providing a welcoming, inclusive, and harassment-free commun
 
 ## 🗺️ How Can I Contribute?
 
-- **Report Bugs**: Submit detailed bug reports using our [Bug Report Form](https://github.com/haikaladnan/lupis-engine/issues/new?template=bug_report.yml).
-- **Suggest Features**: Propose ideas or architecture improvements using the [Feature Request Form](https://github.com/haikaladnan/lupis-engine/issues/new?template=feature_request.yml).
-- **Improve Documentation**: Fix typos, add tutorials, or expand API explanations in [`docs/`](file:///D:/Project/Lupis%20Engine/docs/).
-- **Submit Code**: Implement bug fixes, performance optimizations, or new Blueprint nodes.
+- **Report Bugs**: Submit detailed bug reports via our [GitHub Issue Chooser](https://github.com/haikal-adnan/lupis-engine/issues/new/choose) or review the [Bug Report Template](.github/ISSUE_TEMPLATE/bug_report.yml).
+- **Suggest Features**: Propose ideas and architectural enhancements via [GitHub Feature Request](https://github.com/haikal-adnan/lupis-engine/issues/new/choose) or review the [Feature Request Template](.github/ISSUE_TEMPLATE/feature_request.yml).
+- **Community Discussions**: Ask questions, share ideas, and connect with other developers on [GitHub Discussions](https://github.com/haikal-adnan/lupis-engine/discussions).
+- **Improve Documentation**: Fix typos, add tutorials, or expand API explanations in [`docs/`](docs/).
+- **Submit Code**: Implement bug fixes, performance optimizations, or new Blueprint nodes adhering to the 10 consolidated domain modules.
 
 ---
 
@@ -74,6 +75,17 @@ cd tests
 npm install
 npm test
 ```
+
+---
+
+## 🧩 Visual Scripting Node Contribution Standards
+
+When contributing new nodes or modifying existing ones in `editor/src/features/nodes/library/blueprints/`:
+- **Consolidated Architecture**: Every node must belong to one of the 10 domain blueprint modules (`BlueprintFlow`, `BlueprintInput`, `BlueprintEntity`, `BlueprintPhysics`, `BlueprintRenderer`, `BlueprintAnimation`, `BlueprintCollections`, `BlueprintMath`, `BlueprintLifecycle`, `BlueprintSystem`). Do not create loose single-node files.
+- **T-001 Port Naming Invariant**: Every port identifier MUST match the regex `/^[A-Za-z][A-Za-z0-9]{0,31}$/`. Do not use hyphenated names, underscores, or spaces in port names.
+- **Dual-Tier / Context System Compliant**: Nodes must interact only through formal `context` runtime facades (`context.audio`, `context.scenes`, `context.transform`, `context.variables`, etc.). Never access internal properties like `context.game`.
+- **Zero Defensive Checks**: Never use optional chaining (`?.`) or nullish coalescing (`??`) defensively against null inputs; assume valid runtime contracts.
+- **Contract Verification**: Verify your node passes `validateCodePanelContract` in `editor/tests/unit/features/nodes/useNodeBlueprint.spec.js`.
 
 ---
 

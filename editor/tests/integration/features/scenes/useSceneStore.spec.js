@@ -68,6 +68,54 @@ describe('Scene Store Integration', () => {
       expect(sceneStore.activeScene.scriptId).toBe('Level_1')
     })
 
+    it('sets activeSceneId to project initialSceneId when available on initialization', async () => {
+      // Arrange
+      const projectStore = await prepareProjectStore()
+      projectStore.project.settings.initialSceneId = 'sc_2'
+
+      const rawScenes = [
+        sceneSchema({ id: 'sc_1', scriptId: 'Level_1' }),
+        sceneSchema({ id: 'sc_2', scriptId: 'Level_2' })
+      ]
+
+      // Act
+      sceneStore.initScenes(rawScenes)
+
+      // Assert
+      expect(sceneStore.activeSceneId).toBe('sc_2')
+      expect(sceneStore.activeScene.scriptId).toBe('Level_2')
+    })
+
+    it('sets activeSceneId to explicit initialSceneId argument on initialization', () => {
+      // Arrange
+      const rawScenes = [
+        sceneSchema({ id: 'sc_1', scriptId: 'Level_1' }),
+        sceneSchema({ id: 'sc_2', scriptId: 'Level_2' })
+      ]
+
+      // Act
+      sceneStore.initScenes(rawScenes, 'sc_2')
+
+      // Assert
+      expect(sceneStore.activeSceneId).toBe('sc_2')
+      expect(sceneStore.activeScene.scriptId).toBe('Level_2')
+    })
+
+    it('falls back to first scene if initialSceneId is invalid or not found', () => {
+      // Arrange
+      const rawScenes = [
+        sceneSchema({ id: 'sc_1', scriptId: 'Level_1' }),
+        sceneSchema({ id: 'sc_2', scriptId: 'Level_2' })
+      ]
+
+      // Act
+      sceneStore.initScenes(rawScenes, 'non_existent_scene')
+
+      // Assert
+      expect(sceneStore.activeSceneId).toBe('sc_1')
+      expect(sceneStore.activeScene.scriptId).toBe('Level_1')
+    })
+
     it('creates a new default scene and sets it as active scene', () => {
       // Act
       const defaultScene = sceneStore.createDefaultScene()

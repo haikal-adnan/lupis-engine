@@ -45,7 +45,13 @@ Shows the components of the selected entity. Add or remove components (`Physics`
 
 ### Blueprint graph
 
-Canvas for visual scripts with pan and zoom. Open the node menu with right-click or `Space`. Cable color shows the pin data type. See [Visual scripting](visual-scripting.md).
+Infinite graph canvas for visual scripting with pan and zoom navigation:
+- Open the node menu with right-click or `Space` to search through the 10 domain categories (`Flow`, `Input`, `Entity`, `Physics`, `Renderer`, `Animation`, `Collections`, `Math`, `Lifecycle`, `System`) containing 128 production nodes.
+- Wire execution ports (white pentagon pins) for flow control, and data ports (colored circular pins) for pure typed evaluations.
+- Real-time compiler detects disconnected ports, cycle hazards, and type mismatches.
+- Full runtime debugging support with live port value inspection.
+
+See [Visual Scripting Guide](visual-scripting.md) and [Context System Reference](context-system.md).
 
 ### Assets
 

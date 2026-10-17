@@ -1,12 +1,12 @@
-import { Power } from 'lucide-vue-next';
+import { PlayCircle } from 'lucide-vue-next';
 
 export const BlueprintLifecycle = {
-  id: 'category_game_flow',
-  label: 'Game Lifecycle',
-  color: '#EF4444',
-  icon: Power,
+  id: 'game_lifecycle',
+  label: 'Scene & Lifecycle',
+  color: '#9C27B0',
+  icon: PlayCircle,
   items: [
-    {
+{
       type: 'eventTick',
       label: 'On Tick',
       description: 'Runs every frame. Use for continuous logic.',
@@ -15,7 +15,7 @@ export const BlueprintLifecycle = {
         settings: {
           headerTitle: 'On Tick',
           headerColor: '#3B82F6',
-          category: 'Game Lifecycle'
+          category: 'Scene & Lifecycle'
         },
         inputs: [],
         outputs: [
@@ -33,8 +33,7 @@ return;`
         }
       }
     },
-
-    {
+{
       type: 'eventGameStart',
       label: 'On Game Start',
       description: 'Triggered once when the game begins.',
@@ -43,7 +42,7 @@ return;`
         settings: {
           headerTitle: 'On Game Start',
           headerColor: '#10B981',
-          category: 'Game Lifecycle'
+          category: 'Scene & Lifecycle'
         },
         inputs: [],
         outputs: [
@@ -59,8 +58,7 @@ return;`
         }
       }
     },
-
-    {
+{
       type: 'eventGamePause',
       label: 'On Game Pause',
       description: 'Triggered when the game is paused.',
@@ -69,7 +67,7 @@ return;`
         settings: {
           headerTitle: 'On Game Pause',
           headerColor: '#EF4444',
-          category: 'Game Lifecycle'
+          category: 'Scene & Lifecycle'
         },
         inputs: [],
         outputs: [
@@ -85,8 +83,7 @@ return;`
         }
       }
     },
-
-    {
+{
       type: 'eventGameResume',
       label: 'On Game Resume',
       description: 'Triggered when the game is resumed.',
@@ -95,7 +92,7 @@ return;`
         settings: {
           headerTitle: 'On Game Resume',
           headerColor: '#10B981',
-          category: 'Game Lifecycle'
+          category: 'Scene & Lifecycle'
         },
         inputs: [],
         outputs: [
@@ -111,8 +108,7 @@ return;`
         }
       }
     },
-
-    {
+{
       type: 'eventGameRestart',
       label: 'On Game Restart',
       description: 'Triggered when the entire game is restarted.',
@@ -121,7 +117,7 @@ return;`
         settings: {
           headerTitle: 'On Game Restart',
           headerColor: '#F59E0B',
-          category: 'Game Lifecycle'
+          category: 'Scene & Lifecycle'
         },
         inputs: [],
         outputs: [
@@ -137,86 +133,7 @@ return;`
         }
       }
     },
-
-    {
-      type: 'actionGamePause',
-      label: 'Pause Game',
-      description: 'Freezes gameplay physics and logic update.',
-      dynamicMode: 'none',
-      defaultData: {
-        settings: {
-          headerTitle: 'Pause Game',
-          headerColor: '#EF4444',
-          category: 'Game Lifecycle'
-        },
-        inputs: [
-          { id: 'execIn', dataType: 'execution', color: '#FFFFFF' }
-        ],
-        outputs: [
-          { id: 'execOut', dataType: 'execution', color: '#FFFFFF' }
-        ],
-        data: {
-          code: 
-`context.lifecycle.pause();
-outputs.execOut = true;
-return;`
-        }
-      }
-    },
-
-    {
-      type: 'actionGameResume',
-      label: 'Resume Game',
-      description: 'Resumes gameplay physics and logic update.',
-      dynamicMode: 'none',
-      defaultData: {
-        settings: {
-          headerTitle: 'Resume Game',
-          headerColor: '#10B981',
-          category: 'Game Lifecycle'
-        },
-        inputs: [
-          { id: 'execIn', dataType: 'execution', color: '#FFFFFF' }
-        ],
-        outputs: [
-          { id: 'execOut', dataType: 'execution', color: '#FFFFFF' }
-        ],
-        data: {
-          code: 
-`context.lifecycle.resume();
-outputs.execOut = true;
-return;`
-        }
-      }
-    },
-
-    {
-      type: 'actionGameRestart',
-      label: 'Restart Game',
-      description: 'Resets all global variables and reloads the initial scene.',
-      dynamicMode: 'none',
-      defaultData: {
-        settings: {
-          headerTitle: 'Restart Game',
-          headerColor: '#EF4444',
-          category: 'Game Lifecycle'
-        },
-        inputs: [
-          { id: 'execIn', dataType: 'execution', color: '#FFFFFF' }
-        ],
-        outputs: [
-          { id: 'execOut', dataType: 'execution', color: '#FFFFFF' }
-        ],
-        data: {
-          code: 
-`context.lifecycle.restart();
-outputs.execOut = true;
-return;`
-        }
-      }
-    },
-
-    {
+{
       type: 'eventGameQuit',
       label: 'On Game Quit',
       description: 'Triggered when the game begins quitting or closing.',
@@ -225,7 +142,7 @@ return;`
         settings: {
           headerTitle: 'On Game Quit',
           headerColor: '#EF4444',
-          category: 'Game Lifecycle'
+          category: 'Scene & Lifecycle'
         },
         inputs: [],
         outputs: [
@@ -241,31 +158,158 @@ return;`
         }
       }
     },
-
     {
-      type: 'actionGameQuit',
-      label: 'Quit Game',
-      description: 'Terminates gameplay session. Closes the preview tab in preview mode, or exits the window in build mode.',
+      type: 'actionSetGameState',
+      label: 'Set Game State',
+      description: 'Controls game state (pause, resume, restart, or quit).',
       dynamicMode: 'none',
       defaultData: {
         settings: {
-          headerTitle: 'Quit Game',
-          headerColor: '#EF4444',
-          category: 'Game Lifecycle'
+          headerTitle: 'Set Game State',
+          headerColor: '#9C27B0',
+          category: 'Scene & Lifecycle'
         },
         inputs: [
-          { id: 'execIn', dataType: 'execution', color: '#FFFFFF' }
+          { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'action', dataType: 'string', color: '#F48FB1', defaultValue: 'pause' }
         ],
         outputs: [
           { id: 'execOut', dataType: 'execution', color: '#FFFFFF' }
         ],
         data: {
+          values: {
+            action: 'pause'
+          },
+          options: {
+            action: [
+              { label: 'Pause', value: 'pause' },
+              { label: 'Resume', value: 'resume' },
+              { label: 'Restart', value: 'restart' },
+              { label: 'Quit', value: 'quit' }
+            ]
+          },
           code: 
-`context.lifecycle.quit();
+`const act = inputs.action;
+if (act === 'pause') {
+  context.lifecycle.pause();
+} else if (act === 'resume') {
+  context.lifecycle.resume();
+} else if (act === 'restart') {
+  context.lifecycle.restart();
+} else if (act === 'quit') {
+  context.lifecycle.quit();
+}
 outputs.execOut = true;
 return;`
         }
       }
+    },
+{
+      type: 'eventSceneStart',
+      label: 'On Scene Start',
+      description: 'Triggered exactly once when the scene has successfully loaded and started.',
+      dynamicMode: 'none',
+      defaultData: {
+        settings: {
+          headerTitle: 'On Scene Start',
+          headerColor: '#059669',
+          category: 'Scene & Lifecycle'
+        },
+        inputs: [],
+        outputs: [
+          { id: 'execOut', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'sceneName', dataType: 'string', color: '#F48FB1' }
+        ],
+        data: {
+          code: 
+`context.onSceneStart((sceneName) => {
+  outputs.sceneName = sceneName;
+  outputs.execOut = true;
+  context.triggerFlow('execOut');
+});
+return;`
+        }
+      }
+    },
+{ 
+      type: 'changeScene', 
+      label: 'Change Scene', 
+      description: 'Switches to another scene using the specified Scene Name.', 
+      dynamicMode: 'none',
+      defaultData: { 
+        settings: { 
+          headerTitle: 'Change Scene', 
+          headerColor: '#8E24AA', 
+          category: 'Scene & Lifecycle' 
+        },
+        inputs: [
+          { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'sceneName', dataType: 'string', color: '#F48FB1' } 
+        ], 
+        outputs: [
+          { id: 'execOut', dataType: 'execution', color: '#FFFFFF' }
+        ],
+        data: {
+          values: {
+            sceneName: ''
+          },
+          code: 
+`const sceneName = inputs.sceneName;
+
+outputs.execOut = true;
+
+context.scene.load(sceneName);
+return;`
+        }
+      } 
+    },
+{ 
+      type: 'restartScene', 
+      label: 'Restart Scene', 
+      description: 'Reloads the currently active scene.', 
+      dynamicMode: 'none',
+      defaultData: { 
+        settings: { 
+          headerTitle: 'Restart Scene', 
+          headerColor: '#8E24AA', 
+          category: 'Scene & Lifecycle' 
+        },
+        inputs: [
+          { id: 'execIn', dataType: 'execution', color: '#FFFFFF' }
+        ], 
+        outputs: [
+          { id: 'execOut', dataType: 'execution', color: '#FFFFFF' }
+        ],
+        data: {
+          code: 
+`outputs.execOut = true;
+context.scene.restart();
+return;`
+        }
+      } 
+    },
+{ 
+      type: 'getCurrentScene', 
+      label: 'Get Current Scene', 
+      description: 'Retrieves the name of the currently active scene.', 
+      dynamicMode: 'none',
+      defaultData: { 
+        settings: { 
+          headerTitle: 'Get Current Scene', 
+          headerColor: '#8E24AA', 
+          category: 'Scene & Lifecycle' 
+        },
+        inputs: [], 
+        outputs: [
+          { id: 'sceneName', dataType: 'string', color: '#F48FB1' }
+        ],
+        data: {
+          code: 
+`const currentScene = context.scene.getCurrentName();
+outputs.sceneName = currentScene;
+return;`
+        }
+      } 
     }
   ]
 };

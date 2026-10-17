@@ -2,11 +2,197 @@ import { Activity } from 'lucide-vue-next';
 
 export const BlueprintPhysics = {
   id: 'game_physics',
-  label: 'Physics System',
-  color: '#4CAF50',
+  label: 'Physics & Collision',
+  color: '#8BC34A',
   icon: Activity,
   items: [
-    {
+{
+      type: 'moveAndSlide',
+      label: 'Move and Slide',
+      description: 'Move character with collision handling (For Kinematic Bodies)',
+      dynamicMode: 'none',
+      defaultData: {
+        settings: {
+          headerTitle: 'Move and Slide',
+          headerColor: '#2E7D32',
+          category: 'Physics & Collision'
+        },
+        inputs: [
+          { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'targetEntity', dataType: 'string', color: '#F48FB1', defaultValue: 'self' },
+          { id: 'velocityX', dataType: 'number', color: '#64B5F6', defaultValue: 0 },
+          { id: 'velocityY', dataType: 'number', color: '#64B5F6', defaultValue: 0 }
+        ],
+        outputs: [
+          { id: 'execOut', dataType: 'execution', color: '#FFFFFF' }
+        ],
+        data: {
+          values: {
+            targetEntity: 'self',
+            velocityX: 0,
+            velocityY: 0
+          },
+          code: 
+`const targetId = inputs.targetEntity;
+const entity = context.assert.exists(context.entity.get(targetId));
+const phys = entity.components && entity.components.Physics;
+
+if (phys && phys.isFrozen) {
+  outputs.execOut = true;
+  return;
+}
+
+const velX = inputs.velocityX;
+const velY = inputs.velocityY;
+const dt = context.dt;
+const hasPhysics = phys && phys.enabled;
+
+if (hasPhysics) {
+  phys.velocityX = velX;
+  if (phys.gravityScale === 0 || velY !== 0) {
+    phys.velocityY = velY;
+  }
+  phys._isIntentionalMove = Math.abs(velX) > 10 || Math.abs(velY) > 10;
+} else {
+  const moveX = velX * dt;
+  const moveY = velY * dt;
+  context.collider.moveAndSlide(entity, moveX, moveY);
+}
+
+outputs.execOut = true;
+return;`
+        }
+      }
+    },
+{
+      type: 'solidCollision',
+      label: 'Solid Collision',
+      description: 'Check if an object is hitting a solid wall or obstacle.',
+      dynamicMode: 'none',
+      defaultData: {
+        settings: {
+          headerTitle: 'Solid Collision',
+          headerColor: '#D32F2F',
+          category: 'Physics & Collision'
+        },
+        inputs: [
+          { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'targetEntity', dataType: 'string', color: '#F48FB1', defaultValue: 'self' },
+          { id: 'tag', dataType: 'string', color: '#F48FB1', defaultValue: '' }
+        ],
+        outputs: [
+          { id: 'execOut', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'onHit', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'isColliding', dataType: 'boolean', color: '#E57373' },
+          { id: 'selfEntity', dataType: 'string', color: '#F48FB1' },
+          { id: 'otherEntity', dataType: 'string', color: '#F48FB1' }
+        ],
+        data: {
+          values: {
+            targetEntity: 'self',
+            tag: ''
+          },
+          code: 
+`const entity = context.assert.exists(context.entity.get(inputs.targetEntity));
+let hitObject = context.collider.checkSolid(entity);
+
+if (hitObject && inputs.tag && inputs.tag.trim() !== '') {
+  const objTag = hitObject.tag || (hitObject.components && hitObject.components.Tags && hitObject.components.Tags.value);
+  if (objTag !== inputs.tag) {
+    hitObject = null;
+  }
+}
+
+const selfScriptId = entity.scriptId;
+const hitScriptId = hitObject ? hitObject.scriptId : '';
+const isColliding = Boolean(hitObject);
+
+outputs.selfEntity = selfScriptId;
+outputs.otherEntity = hitScriptId;
+outputs.isColliding = isColliding;
+outputs.execOut = true;
+
+if (isColliding) {
+  outputs.onHit = true;
+}
+return;`
+        }
+      }
+    },
+{
+      type: 'triggerZone',
+      label: 'Trigger Zone',
+      description: 'Detects when an object enters, stays, or exits an area.',
+      dynamicMode: 'none',
+      defaultData: {
+        settings: {
+          headerTitle: 'Trigger Zone',
+          headerColor: '#0097A7',
+          category: 'Physics & Collision'
+        },
+        inputs: [
+          { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'targetEntity', dataType: 'string', color: '#F48FB1', defaultValue: 'self' },
+          { id: 'tag', dataType: 'string', color: '#F48FB1', defaultValue: '' }
+        ],
+        outputs: [
+          { id: 'execOut', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'onEnter', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'onExit', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'isInside', dataType: 'boolean', color: '#E57373' },
+          { id: 'selfEntity', dataType: 'string', color: '#F48FB1' },
+          { id: 'otherEntity', dataType: 'string', color: '#F48FB1' }
+        ],
+        data: {
+          values: {
+            targetEntity: 'self',
+            tag: ''
+          },
+          code: 
+`const entity = context.assert.exists(context.entity.get(inputs.targetEntity));
+
+if (!context.state.triggerStates) {
+  context.state.triggerStates = {};
+}
+
+const entityScriptId = entity.scriptId;
+let myState = context.state.triggerStates[entityScriptId];
+if (!myState) {
+  myState = { isOverlapping: false, lastId: '' };
+  context.state.triggerStates[entityScriptId] = myState;
+}
+
+const overlapObject = context.collider.checkOverlap(entity, inputs.tag);
+
+const currentId = overlapObject ? overlapObject.scriptId : '';
+
+const previousId = myState.lastId;
+const isCurrentlyOverlapping = Boolean(currentId);
+
+outputs.selfEntity = entityScriptId;
+outputs.otherEntity = currentId || previousId;
+outputs.isInside = isCurrentlyOverlapping;
+
+if (!previousId && currentId) {
+  myState.lastId = currentId;
+  outputs.onEnter = true;
+} else if (previousId && currentId && previousId !== currentId) {
+  myState.lastId = currentId;
+  outputs.onEnter = true;
+} else if (previousId && !currentId) {
+  myState.lastId = '';
+  outputs.otherEntity = previousId;
+  outputs.isInside = false;
+  outputs.onExit = true;
+}
+
+myState.isOverlapping = isCurrentlyOverlapping;
+outputs.execOut = true;
+return;`
+        }
+      }
+    },
+{
       type: 'getPhysics',
       label: 'Get Physics Info',
       description: 'Get physics component properties like Velocity, Grounded, Mass, etc.',
@@ -15,7 +201,7 @@ export const BlueprintPhysics = {
         settings: {
           headerTitle: 'Get Physics',
           headerColor: '#2E7D32',
-          category: 'Physics System'
+          category: 'Physics & Collision'
         },
         inputs: [
           { id: 'targetEntity', dataType: 'string', color: '#F48FB1', defaultValue: 'self' }
@@ -56,7 +242,7 @@ return;`
         }
       }
     },
-    {
+{
       type: 'setPhysics',
       label: 'Set Physics Info',
       description: 'Set physics component properties like Velocity, Mass, etc.',
@@ -65,7 +251,7 @@ return;`
         settings: {
           headerTitle: 'Set Physics',
           headerColor: '#2E7D32',
-          category: 'Physics System'
+          category: 'Physics & Collision'
         },
         inputs: [
           { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
@@ -117,7 +303,7 @@ return;`
         }
       }
     },
-    {
+{
       type: 'setFaceDirection',
       label: 'Set Face Direction',
       description: 'Automatically sets the entity facing direction based on 2D Axis inputs',
@@ -126,7 +312,7 @@ return;`
         settings: {
           headerTitle: 'Set Face Direction',
           headerColor: '#2E7D32',
-          category: 'Physics System'
+          category: 'Physics & Collision'
         },
         inputs: [
           { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
@@ -184,64 +370,6 @@ if (mode === 'horizontal') {
   else if (axisX < 0) phys.facingDirection = 'left';
   else if (axisY < 0) phys.facingDirection = 'up';
   else if (axisY > 0) phys.facingDirection = 'down';
-}
-
-outputs.execOut = true;
-return;`
-        }
-      }
-    },
-    {
-      type: 'moveAndSlide',
-      label: 'Move and Slide',
-      description: 'Move character with collision handling (For Kinematic Bodies)',
-      dynamicMode: 'none',
-      defaultData: {
-        settings: {
-          headerTitle: 'Move and Slide',
-          headerColor: '#2E7D32',
-          category: 'Physics System'
-        },
-        inputs: [
-          { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
-          { id: 'targetEntity', dataType: 'string', color: '#F48FB1', defaultValue: 'self' },
-          { id: 'velocityX', dataType: 'number', color: '#64B5F6', defaultValue: 0 },
-          { id: 'velocityY', dataType: 'number', color: '#64B5F6', defaultValue: 0 }
-        ],
-        outputs: [
-          { id: 'execOut', dataType: 'execution', color: '#FFFFFF' }
-        ],
-        data: {
-          values: {
-            targetEntity: 'self',
-            velocityX: 0,
-            velocityY: 0
-          },
-          code: 
-`const targetId = inputs.targetEntity;
-const entity = context.assert.exists(context.entity.get(targetId));
-const phys = entity.components && entity.components.Physics;
-
-if (phys && phys.isFrozen) {
-  outputs.execOut = true;
-  return;
-}
-
-const velX = inputs.velocityX;
-const velY = inputs.velocityY;
-const dt = context.dt;
-const hasPhysics = phys && phys.enabled;
-
-if (hasPhysics) {
-  phys.velocityX = velX;
-  if (phys.gravityScale === 0 || velY !== 0) {
-    phys.velocityY = velY;
-  }
-  phys._isIntentionalMove = Math.abs(velX) > 10 || Math.abs(velY) > 10;
-} else {
-  const moveX = velX * dt;
-  const moveY = velY * dt;
-  context.collider.moveAndSlide(entity, moveX, moveY);
 }
 
 outputs.execOut = true;
