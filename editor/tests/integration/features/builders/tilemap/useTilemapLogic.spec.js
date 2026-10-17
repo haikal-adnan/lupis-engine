@@ -24,6 +24,7 @@ function createMockTilemapEntity({
 } = {}) {
   const mockAsset = {
     id: assetId,
+    scriptId: assetName,
     name: assetName,
     type: 'texture',
     fileKey: `fk_${assetId}`,
@@ -117,6 +118,7 @@ describe('useTilemapLogic Integration', () => {
       expect(logic.hasTilemap.value).toBe(true)
       expect(logic.width.value).toBe(16)
       expect(logic.height.value).toBe(16)
+      expect(logic.assetScriptId.value).toBe(mockTilemapData.mockAsset.scriptId)
     })
 
     it('opens tilemap editor tab in workspace store', () => {

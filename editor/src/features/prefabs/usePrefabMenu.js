@@ -113,17 +113,17 @@ export function usePrefabMenu(selectedIdRef, activeTabRef, logicActions) {
     }
 
     const items = [
-      { label: targetItem.name, disabled: true, icon: Box },
+      { label: targetItem.scriptId || targetItem.id, disabled: true, icon: Box },
       { separator: true },
       { 
         label: 'Instantiate to...', 
         icon: PlusSquare,
         children: contextLayers.value.map(layer => ({
-          label: layer.name,
+          label: layer.scriptId,
           icon: Layers, 
           action: () => {
             closeMenu()
-            instantiatePrefab(id, { parentId: layer.id, parentName: layer.name })
+            instantiatePrefab(id, { parentId: layer.id })
           }
         }))
       }

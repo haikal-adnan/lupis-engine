@@ -21,7 +21,7 @@
         :style="thumbnailStyle"
       ></div>
       
-      <span v-else class="text-[9px] text-muted-foreground" data-element="thumbnail-empty">Empty</span>
+      <span v-else class="text-[9px] text-muted-foreground" data-element="thumbnail-empty">{{ fallbackText }}</span>
 
       <div class="absolute inset-0 bg-black/40 hidden group-hover:flex items-center justify-center z-10">
         <Maximize2 class="w-3.5 h-3.5 text-white drop-shadow-md" />
@@ -39,7 +39,8 @@ const props = defineProps({
   src: { type: [String, Object, Promise], default: null },
   rect: { type: Object, default: () => ({ x: 0, y: 0, w: 0, h: 0 }) },
   sizeClass: { type: String, default: 'w-12 h-12' },
-  name: { type: String, default: 'Texture Preview' }
+  name: { type: String, default: 'Texture Preview' },
+  fallbackText: { type: String, default: 'Empty' }
 })
 
 const { showImage } = usePopImage()

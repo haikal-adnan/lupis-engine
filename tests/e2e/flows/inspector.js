@@ -110,8 +110,8 @@ export class InspectorCrudObject {
   // =========================================================================
   async configureObjectMetaData({ name, scriptId, tag, active } = {}) {
     await expect(this.inspector.objectSection).toBeVisible();
-    if (name) await this.inspector.setEntityName(name);
-    if (scriptId) await this.inspector.setScriptId(scriptId);
+    const targetScriptId = scriptId || name;
+    if (targetScriptId) await this.inspector.setScriptId(targetScriptId);
     if (tag) await this.inspector.setEntityTag(tag);
     if (active !== undefined) {
       const activeToggle = this.page.getByTestId('object-active-toggle');

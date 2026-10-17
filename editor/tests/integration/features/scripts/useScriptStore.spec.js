@@ -45,7 +45,7 @@ describe('Script Store Integration Test', () => {
       const projectStore = useProjectStore()
 
       scriptStore.initScripts([
-        { id: 'script-1', name: 'PlayerController', nodes: [], edges: [] }
+        { id: 'script-1', scriptId: 'PlayerController', nodes: [], edges: [] }
       ])
       scriptStore.setActiveScript(scriptStore.scripts[0])
       projectStore.syncStatus = 'synced'
@@ -67,7 +67,7 @@ describe('Script Store Integration Test', () => {
     it('connects edges between nodes and automatically cleans up edges when node is removed', () => {
       const scriptStore = useScriptStore()
       scriptStore.initScripts([
-        { id: 'script-1', name: 'LogicScript', nodes: [], edges: [] }
+        { id: 'script-1', scriptId: 'LogicScript', nodes: [], edges: [] }
       ])
       scriptStore.setActiveScript(scriptStore.scripts[0])
 
@@ -94,7 +94,7 @@ describe('Script Store Integration Test', () => {
     it('manages multi-node selection and synchronizes selectedNode and selectedNodes getters', () => {
       const scriptStore = useScriptStore()
       scriptStore.initScripts([
-        { id: 'script-sel', name: 'SelectionScript', nodes: [], edges: [] }
+        { id: 'script-sel', scriptId: 'SelectionScript', nodes: [], edges: [] }
       ])
       scriptStore.setActiveScript(scriptStore.scripts[0])
 
@@ -119,7 +119,7 @@ describe('Script Store Integration Test', () => {
     it('updates node properties (data & settings) partially with updateNodeInActive', () => {
       const scriptStore = useScriptStore()
       scriptStore.initScripts([
-        { id: 'script-upd', name: 'UpdateScript', nodes: [], edges: [] }
+        { id: 'script-upd', scriptId: 'UpdateScript', nodes: [], edges: [] }
       ])
       scriptStore.setActiveScript(scriptStore.scripts[0])
 
@@ -144,7 +144,7 @@ describe('Script Store Integration Test', () => {
     it('updates edge modifier and saves changes to active script', () => {
       const scriptStore = useScriptStore()
       scriptStore.initScripts([
-        { id: 'script-mod', name: 'ModifierScript', nodes: [], edges: [] }
+        { id: 'script-mod', scriptId: 'ModifierScript', nodes: [], edges: [] }
       ])
       scriptStore.setActiveScript(scriptStore.scripts[0])
 
@@ -269,7 +269,7 @@ describe('Script Store Integration Test', () => {
     it('ignores port addition if node has none dynamicMode (static node)', () => {
       const scriptStore = useScriptStore()
       scriptStore.initScripts([
-        { id: 'script-static', name: 'StaticScript', nodes: [], edges: [] }
+        { id: 'script-static', scriptId: 'StaticScript', nodes: [], edges: [] }
       ])
       scriptStore.setActiveScript(scriptStore.scripts[0])
 
@@ -298,7 +298,7 @@ describe('Script Store Integration Test', () => {
       const activeProjId = workspaceStore.activeProjectId
 
       scriptStore.initScripts([
-        { id: 'script-101', name: 'MovementScript', type: 'component', folderId: null }
+        { id: 'script-101', scriptId: 'MovementScript', type: 'component', folderId: null }
       ])
 
       await scriptStore.saveScriptToOPFS(scriptStore.scripts[0])
@@ -310,7 +310,7 @@ describe('Script Store Integration Test', () => {
       const scriptContent = JSON.parse(await scriptFile.text())
 
       expect(scriptContent.id).toBe('script-101')
-      expect(scriptContent.name).toBe('MovementScript')
+      expect(scriptContent.scriptId).toBe('MovementScript')
       expect(scriptContent.projectId).toBeUndefined()
 
       const metaFileHandle = await workspacesDir.getFileHandle('scripts.json')
@@ -322,7 +322,7 @@ describe('Script Store Integration Test', () => {
           id: 'script-101',
           projectId: activeProjId,
           folderId: null,
-          name: 'MovementScript',
+          scriptId: 'MovementScript',
           type: 'component'
         }
       ])
@@ -331,7 +331,7 @@ describe('Script Store Integration Test', () => {
     it('removes script from RAM state and deletes physical file in OPFS', async () => {
       const scriptStore = useScriptStore()
       scriptStore.initScripts([
-        { id: 'script-to-delete', name: 'TempScript' }
+        { id: 'script-to-delete', scriptId: 'TempScript' }
       ])
       scriptStore.setActiveScript(scriptStore.scripts[0])
 
@@ -352,8 +352,8 @@ describe('Script Store Integration Test', () => {
     it('aligns all scripts in RAM to OPFS when syncAllScriptsToOPFS is called', async () => {
       const scriptStore = useScriptStore()
       scriptStore.initScripts([
-        { id: 's-1', name: 'Script Alpha' },
-        { id: 's-2', name: 'Script Beta' }
+        { id: 's-1', scriptId: 'ScriptAlpha' },
+        { id: 's-2', scriptId: 'ScriptBeta' }
       ])
       scriptStore.setActiveScript(scriptStore.scripts[0])
       
@@ -377,7 +377,7 @@ describe('Script Store Integration Test', () => {
     it('moves script folder and synchronizes OPFS metadata via moveScript', async () => {
       const scriptStore = useScriptStore()
       scriptStore.initScripts([
-        { id: 'script-move', name: 'MoveMe', folderId: null }
+        { id: 'script-move', scriptId: 'MoveMe', folderId: null }
       ])
 
       const success = await scriptStore.moveScript('script-move', 'folder-target-123')
@@ -408,11 +408,11 @@ describe('Script Store Integration Test', () => {
       const { scriptsDir, workspacesDir } = await scriptStore._getScriptDirectories()
       
       const mockScriptMeta = [
-        { id: 'sc-init-1', projectId, folderId: null, name: 'OPFS Loaded Script', type: 'component' }
+        { id: 'sc-init-1', projectId, folderId: null, scriptId: 'OPFS_Loaded_Script', type: 'component' }
       ]
       const mockScriptData = {
         id: 'sc-init-1',
-        name: 'OPFS Loaded Script',
+        scriptId: 'OPFS_Loaded_Script',
         type: 'component',
         nodes: [{ id: 'n1', type: 'start' }],
         edges: []
@@ -425,7 +425,7 @@ describe('Script Store Integration Test', () => {
 
       expect(scriptStore.scripts).toHaveLength(1)
       expect(scriptStore.scripts[0].id).toBe('sc-init-1')
-      expect(scriptStore.scripts[0].name).toBe('OPFS Loaded Script')
+      expect(scriptStore.scripts[0].scriptId).toBe('OPFS_Loaded_Script')
       expect(scriptStore.scripts[0].nodes).toHaveLength(1)
       expect(projectStore.syncStatus).toBe('synced')
     })
@@ -440,7 +440,7 @@ describe('Script Store Integration Test', () => {
       await projectStore.loadProject(createdProject.id)
 
       scriptStore.initScripts([
-        { id: 'sc-save-1', name: 'Save Target Script' }
+        { id: 'sc-save-1', scriptId: 'SaveTargetScript' }
       ])
       scriptStore.setActiveScript(scriptStore.scripts[0])
       scriptStore.addNodeToActive({ id: 'save-node', type: 'output' })
@@ -464,7 +464,7 @@ describe('Script Store Integration Test', () => {
     it('[Bad Path] handles OPFS read failures in isolation without corrupting RAM state', async () => {
       const scriptStore = useScriptStore()
       scriptStore.initScripts([
-        { id: 'script-ghost', name: 'GhostScript' }
+        { id: 'script-ghost', scriptId: 'GhostScript' }
       ])
 
       await expect(scriptStore.removeScript('script-ghost')).resolves.not.toThrow()
@@ -474,7 +474,7 @@ describe('Script Store Integration Test', () => {
     it('[Bad Path] ignores adding edge to same node (self-loop boundary)', () => {
       const scriptStore = useScriptStore()
       scriptStore.initScripts([
-        { id: 'script-loop', name: 'LoopScript' }
+        { id: 'script-loop', scriptId: 'LoopScript' }
       ])
       scriptStore.setActiveScript(scriptStore.scripts[0])
       scriptStore.addNodeToActive({ id: 'node-same', type: 'process' })
@@ -492,7 +492,7 @@ describe('Script Store Integration Test', () => {
     it('[Bad Path] makes no changes when removing port on unregistered node', () => {
       const scriptStore = useScriptStore()
       scriptStore.initScripts([
-        { id: 'script-port-err', name: 'PortErrScript' }
+        { id: 'script-port-err', scriptId: 'PortErrScript' }
       ])
       scriptStore.setActiveScript(scriptStore.scripts[0])
 
@@ -504,7 +504,7 @@ describe('Script Store Integration Test', () => {
     it('[Bad Path] throws error on spawnNodeByType if blueprint type is not found in catalog', () => {
       const scriptStore = useScriptStore()
       scriptStore.initScripts([
-        { id: 'script-spawn', name: 'SpawnScript', nodes: [], edges: [] }
+        { id: 'script-spawn', scriptId: 'SpawnScript', nodes: [], edges: [] }
       ])
       scriptStore.setActiveScript(scriptStore.scripts[0])
 

@@ -60,7 +60,7 @@ export function useAssetMenu(selectedIdRef, triggerUploadCb, logicActions) {
 
     try {
       sceneStore.updateComponentProp(entityId, componentName, 'assetId', asset.id)
-      showPop({ title: 'Success', message: `Applied "${asset.name}" to ${componentName}.`, type: 'success' })
+      showPop({ title: 'Success', message: `Applied "${asset.scriptId || asset.id}" to ${componentName}.`, type: 'success' })
     } catch (error) {
       showPop({ title: 'Failed', message: 'Failed to apply asset.', type: 'error' })
     }
@@ -88,14 +88,15 @@ export function useAssetMenu(selectedIdRef, triggerUploadCb, logicActions) {
   const handleRename = async (targetItem) => {
     closeMenu()
     const isFolder = targetItem.type === 'folder' || targetItem.isFolder
+    const oldName = isFolder ? targetItem.name : (targetItem.scriptId || '')
     const newName = await prompt({
       title: isFolder ? 'Rename Folder' : 'Rename Asset',
       message: 'Enter a new name:', 
-      defaultValue: targetItem.name,
+      defaultValue: oldName,
       confirmText: 'Rename'
     })
     
-    if (newName && newName.trim() !== "" && newName !== targetItem.name) {
+    if (newName && newName.trim() !== "" && newName !== oldName) {
       if (isFolder) renameFolder(targetItem.id, newName)
       else renameAsset(targetItem.id, newName)
     }
@@ -128,11 +129,11 @@ export function useAssetMenu(selectedIdRef, triggerUploadCb, logicActions) {
 
   const handleCopyId = async (targetItem) => {
     closeMenu()
-    const id = targetItem.id
-    if (!id) return
+    const textToCopy = targetItem.scriptId || targetItem.id
+    if (!textToCopy) return
     
     try {
-      await navigator.clipboard.writeText(id)
+      await navigator.clipboard.writeText(textToCopy)
       showPop({ title: 'Success', message: 'Asset ID copied to clipboard.', type: 'success' })
     } catch (err) {
       showPop({ title: 'Error', message: 'Failed to copy Asset ID.', type: 'error' })
@@ -145,7 +146,7 @@ export function useAssetMenu(selectedIdRef, triggerUploadCb, logicActions) {
 
     const isFolder = targetItem.type === 'folder' || targetItem.isFolder
     const items = [
-      { label: targetItem.name, disabled: true, icon: null },
+      { label: isFolder ? targetItem.name : (targetItem.scriptId || targetItem.id), disabled: true, icon: null },
       { separator: true }
     ]
 

@@ -56,7 +56,7 @@ describe('Integration Test: PrefabStore', () => {
       // Arrange
       const newPrefab = {
         id: 'prefab-001',
-        name: 'PlayerCharacter',
+        scriptId: 'PlayerCharacter',
         type: 'character',
         folderId: 'root',
         data: { components: { Transform: { x: 10, y: 20 } } }
@@ -79,7 +79,7 @@ describe('Integration Test: PrefabStore', () => {
       const savedContent = JSON.parse(await fileData.text())
 
       expect(savedContent.id).toBe('prefab-001')
-      expect(savedContent.name).toBe('PlayerCharacter')
+      expect(savedContent.scriptId).toBe('PlayerCharacter')
       expect(savedContent).not.toHaveProperty('projectId')
       expect(savedContent).not.toHaveProperty('folderId')
 
@@ -96,7 +96,7 @@ describe('Integration Test: PrefabStore', () => {
           id: 'prefab-001',
           projectId: projectId,
           folderId: 'root',
-          name: 'PlayerCharacter',
+          scriptId: 'PlayerCharacter',
           type: 'character'
         }
       ])
@@ -106,7 +106,7 @@ describe('Integration Test: PrefabStore', () => {
       // Arrange
       const initialPrefab = {
         id: 'prefab-002',
-        name: 'Enemy',
+        scriptId: 'Enemy',
         type: 'npc',
         folderId: 'folder-a',
         data: { components: { Health: { hp: 100 } } }
@@ -114,11 +114,11 @@ describe('Integration Test: PrefabStore', () => {
       await prefabStore.addPrefab(initialPrefab)
 
       // Act
-      await prefabStore.updatePrefab('prefab-002', { name: 'SuperEnemy' })
+      await prefabStore.updatePrefab('prefab-002', { scriptId: 'SuperEnemy' })
 
       // Assert: Updated state
       const updatedPrefab = prefabStore.getPrefabById('prefab-002')
-      expect(updatedPrefab.name).toBe('SuperEnemy')
+      expect(updatedPrefab.scriptId).toBe('SuperEnemy')
 
       // Assert: Updated file in OPFS
       const projectId = workspaceStore.activeProjectId
@@ -127,14 +127,14 @@ describe('Integration Test: PrefabStore', () => {
       const fileData = await prefabFileHandle.getFile()
       const savedContent = JSON.parse(await fileData.text())
 
-      expect(savedContent.name).toBe('SuperEnemy')
+      expect(savedContent.scriptId).toBe('SuperEnemy')
     })
 
     it('moves prefab folder and resynchronizes prefabs.json metadata file', async () => {
       // Arrange
       const prefab = {
         id: 'prefab-003',
-        name: 'Coin',
+        scriptId: 'Coin',
         type: 'item',
         folderId: 'root'
       }
@@ -159,7 +159,7 @@ describe('Integration Test: PrefabStore', () => {
       // Arrange
       const prefab = {
         id: 'prefab-004',
-        name: 'Obstacle',
+        scriptId: 'Obstacle',
         type: 'environment',
         folderId: 'root'
       }
@@ -191,7 +191,7 @@ describe('Integration Test: PrefabStore', () => {
       // Arrange
       const prefab = {
         id: 'prefab-005',
-        name: 'Hero',
+        scriptId: 'Hero',
         folderId: 'root',
         data: {
           components: {
@@ -216,8 +216,8 @@ describe('Integration Test: PrefabStore', () => {
     it('returns formatted prefab list via getAllPrefabs getter', () => {
       // Arrange
       const list = [
-        { id: 'p1', name: 'Prefab 1', folderId: 'root', type: 'a' },
-        { id: 'p2', name: 'Prefab 2', folderId: 'f1', type: 'b' }
+        { id: 'p1', scriptId: 'Prefab 1', folderId: 'root', type: 'a' },
+        { id: 'p2', scriptId: 'Prefab 2', folderId: 'f1', type: 'b' }
       ]
       prefabStore.initPrefabs(list)
 
@@ -228,7 +228,7 @@ describe('Integration Test: PrefabStore', () => {
       expect(allPrefabs).toHaveLength(2)
       expect(allPrefabs[0]).toEqual({
         id: 'p1',
-        name: 'Prefab 1',
+        scriptId: 'Prefab 1',
         folderId: 'root',
         thumbnailUrl: null,
         originalData: list[0]
@@ -239,7 +239,7 @@ describe('Integration Test: PrefabStore', () => {
   describe('Boundary Cases and Bad Path Handling', () => {
     it('[Bad Path] ignores deletion if prefab ID is not found', async () => {
       // Arrange
-      const prefab = { id: 'p-valid', name: 'Valid', folderId: 'root' }
+      const prefab = { id: 'p-valid', scriptId: 'Valid', folderId: 'root' }
       await prefabStore.addPrefab(prefab)
 
       // Act
@@ -253,7 +253,7 @@ describe('Integration Test: PrefabStore', () => {
       // Arrange
       const prefab = {
         id: 'p-comp',
-        name: 'Test',
+        scriptId: 'Test',
         data: { components: { Collider: { active: true } } }
       }
       prefabStore.initPrefabs([prefab])

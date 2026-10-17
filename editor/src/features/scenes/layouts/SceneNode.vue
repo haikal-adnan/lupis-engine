@@ -4,7 +4,7 @@
       ref="dragGhostRef"
       class="fixed -top-[9999px] bg-foreground text-background px-2 py-1 rounded text-xs font-bold z-50 shadow-md border border-border"
     >
-      {{ node.name }}
+      {{ node.scriptId }}
     </div>
 
     <div
@@ -19,7 +19,8 @@
       class="group/node relative flex items-center w-full border border-transparent py-0.5 pr-2 text-xs cursor-default transition-none whitespace-nowrap"
       data-testid="hierarchy-node"
       :data-node-id="node.id"
-      :data-node-name="node.name"
+      :data-node-name="node.scriptId"
+      :data-node-script-id="node.scriptId"
       :data-node-type="node.type"
       :data-parent-id="node.parentId || null"
       :data-prefab="isPrefab ? 'true' : 'false'"
@@ -82,7 +83,7 @@
             'opacity-50': !visible || isInactive 
         }"
       >
-        {{ node.name }}
+        {{ node.scriptId }}
         
         <span 
           v-if="node.zIndex !== undefined && node.zIndex !== null" 
@@ -224,11 +225,11 @@ const getIcon = computed(() => {
   
   if (isPrefab.value) return Box
   
-  const name = (props.node.name || '').toLowerCase()
-  if (name.includes('text')) return Type
-  if (name.includes('sprite')) return Image
-  if (name.includes('script')) return FileCode
-  if (name.includes('chest') || name.includes('box')) return Box
+  const scriptId = (props.node.scriptId || '').toLowerCase()
+  if (scriptId.includes('text')) return Type
+  if (scriptId.includes('sprite')) return Image
+  if (scriptId.includes('script')) return FileCode
+  if (scriptId.includes('chest') || scriptId.includes('box')) return Box
   return Cuboid
 })
 

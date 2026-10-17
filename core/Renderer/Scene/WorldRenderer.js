@@ -55,7 +55,7 @@ export default class WorldRenderer {
             const layer = layers[li];
             if (!layer || layer.active === false || layer.visible === false || !layer.entities) continue;
 
-            const isUILayer = layer.scriptId === 'ui' || (layer.name && layer.name.includes('UI'));
+            const isUILayer = layer.scriptId === 'ui' || layer.scriptId?.toLowerCase().includes('ui');
             if (!isEditor && isUILayer) continue;
 
             const layerOpacity = layer.opacity ?? 1.0; 

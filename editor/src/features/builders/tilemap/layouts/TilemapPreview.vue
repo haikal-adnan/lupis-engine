@@ -6,6 +6,7 @@
         :src="currentTextureUrl"
         :rect="null" 
         fallback-text="No Set"
+        :name="assetScriptId || 'Tileset'"
         sizeClass="w-[52px] h-[52px] bg-muted/20 border-border/60 shrink-0"
       />
 
@@ -24,7 +25,7 @@
             title="Click to select tileset asset"
           >
             <span class="flex-1 px-2 text-[11px] font-mono text-muted-foreground/90 truncate select-none group-hover:text-foreground transition-colors">
-              {{ assetId || 'None' }}
+              {{ assetScriptId || 'None' }}
             </span>
 
             <div class="px-2 h-full flex items-center justify-center border-l border-border bg-muted/10 text-muted-foreground/50 group-hover:text-primary group-hover:bg-primary/5 transition-colors">
@@ -88,6 +89,7 @@ const {
   selectedEntity,
   currentTextureUrl, 
   assetId, 
+  assetScriptId,
   width, 
   height, 
   openAssetSelector,

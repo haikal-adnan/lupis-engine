@@ -1,3 +1,5 @@
+import { GenerateUUID, sanitizeScriptId } from '@utils/utils.js';
+
 export const componentSchema = {
   Transform: (data = {}, defaults = { width: 100, height: 100 }) => ({
     x: Number(data.x ?? 0),
@@ -41,7 +43,20 @@ export const componentSchema = {
   }),
 
   Collider: (data = {}) => ({
-    data: Array.isArray(data.data) ? data.data : [{
+    data: Array.isArray(data.data) ? data.data.map(shape => ({
+      id: shape.id,
+      scriptId: shape.scriptId ? sanitizeScriptId(shape.scriptId, shape.scriptId) : undefined,
+      type: shape.type || "solid",
+      enabled: Boolean(shape.enabled ?? true),
+      autoFit: Boolean(shape.autoFit ?? false),
+      offsetX: Number(shape.offsetX ?? 0),
+      offsetY: Number(shape.offsetY ?? 0),
+      width: Number(shape.width ?? 32),
+      height: Number(shape.height ?? 32),
+      rotation: Number(shape.rotation ?? 0),
+      pivotX: Number(shape.pivotX ?? 0),
+      pivotY: Number(shape.pivotY ?? 0),
+    })) : [{
       type: data.type || "solid",
       enabled: Boolean(data.enabled ?? true),
       autoFit: Boolean(data.autoFit ?? false),
@@ -72,13 +87,44 @@ export const componentSchema = {
     overridden: Boolean(data.overridden ?? false)
   }),
 
-  SpriteAnimator: (data = {}) => ({
-    currentClip: data.currentClip || null,
-    clips: Array.isArray(data.clips) ? data.clips : (data.clips && typeof data.clips === 'object' && Object.keys(data.clips).length > 0 ? data.clips : []),
-    active: Boolean(data.active ?? true),
-    isPlaying: Boolean(data.isPlaying ?? true),
-    overridden: Boolean(data.overridden ?? false)
-  }),
+  SpriteAnimator: (data = {}) => {
+    const rawClips = Array.isArray(data.clips)
+      ? data.clips
+      : (data.clips && typeof data.clips === 'object' && Object.keys(data.clips).length > 0
+          ? Object.values(data.clips)
+          : []);
+
+    const cleanClips = rawClips.map(clip => {
+      const scriptId = sanitizeScriptId(
+        clip.scriptId || "clip_default",
+        "clip_default"
+      );
+      const clean = {
+        id: clip.id || GenerateUUID(),
+        scriptId: scriptId,
+        type: clip.type || "clip",
+        parentId: clip.parentId || null,
+        assetId: clip.assetId || null,
+        fps: Number(clip.fps ?? 12),
+        isLooping: Boolean(clip.isLooping ?? clip.loop ?? true),
+        frames: Array.isArray(clip.frames) ? clip.frames : [],
+        filterMode: clip.filterMode || "pixelated",
+        useSDF: Boolean(clip.useSDF ?? false),
+        ...clip
+      };
+      delete clean.name;
+      delete clean.clipName;
+      return clean;
+    });
+
+    return {
+      currentClip: data.currentClip || (cleanClips.length > 0 ? cleanClips[0].scriptId : null),
+      clips: cleanClips,
+      active: Boolean(data.active ?? true),
+      isPlaying: Boolean(data.isPlaying ?? true),
+      overridden: Boolean(data.overridden ?? false)
+    };
+  },
 
   SpriteRenderer: (inputData = {}) => ({
     assetId: inputData.assetId || null,
@@ -102,6 +148,7 @@ export const componentSchema = {
     color: inputData.color || "#FFFFFF",
     opacity: Number(inputData.opacity ?? 1),
     align: inputData.align || "left",
+    alignLine: inputData.alignLine || inputData.alignV || inputData.verticalAlign || "top",
     maxLine: Math.max(1, Number(inputData.maxLine ?? 1)),
     autoLine: Boolean(inputData.autoLine ?? true),
     lineSpacing: Number(inputData.lineSpacing ?? 1.2),

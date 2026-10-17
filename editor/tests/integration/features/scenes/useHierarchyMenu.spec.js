@@ -53,7 +53,7 @@ describe('Hierarchy Menu Integration', () => {
 
     it('populates layer-specific menu items when right-clicking a layer node', () => {
       // Arrange
-      const layer = createMockLayer({ id: 'l_world_1', name: 'World Layer', section: 'world' })
+      const layer = createMockLayer({ id: 'l_world_1', scriptId: 'WorldLayer', section: 'world' })
       setupMockSceneEnvironment({ layersWorld: [layer] })
 
       const { contextMenu, openMenu } = useHierarchyMenu(handlers)
@@ -193,7 +193,7 @@ describe('Hierarchy Menu Integration', () => {
       const sceneStore = useSceneStore()
 
       workspaceStore.setClipboard('entity', [{
-        root: { id: 'e_copy', name: 'Copied Entity', layerId: 'l_default', parentId: null },
+        root: { id: 'e_copy', scriptId: 'CopiedEntity', layerId: 'l_default', parentId: null },
         descendants: []
       }], 'copy')
 
@@ -206,7 +206,7 @@ describe('Hierarchy Menu Integration', () => {
 
       // Assert
       expect(sceneStore.activeEntities.length).toBe(1)
-      expect(sceneStore.activeEntities[0].name).toBe('Copied Entity')
+      expect(sceneStore.activeEntities[0].scriptId.startsWith('CopiedEntity')).toBe(true)
       expect(contextMenu.value.visible).toBe(false)
     })
 

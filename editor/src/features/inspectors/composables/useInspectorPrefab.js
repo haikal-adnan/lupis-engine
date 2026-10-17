@@ -92,7 +92,7 @@ export function useInspectorPrefab(selectedEntityParam, isEditingMasterPrefabPar
     }
 
     const id = ent.id;
-    console.group(`[syncObject] Executing Sync for Entity: "${ent.name || id}" (${id})`);
+    console.group(`[syncObject] Executing Sync for Entity: "${ent.scriptId || id}" (${id})`);
     console.log('Master Prefab Source:', master);
     console.log('Entity Snapshot Before Sync:', JSON.parse(JSON.stringify(ent)));
 

@@ -61,9 +61,9 @@ describe('PrefabWorkspace Integration Testing', () => {
     const sceneStore = useSceneStore()
     sceneStore.initScenes([{
       id: 'scene_default',
-      name: 'Default Scene',
-      layersWorld: [{ id: 'layer_world_1', name: 'World Layer', _section: 'world' }],
-      layersUI: [{ id: 'layer_ui_1', name: 'UI Layer', _section: 'ui' }],
+      scriptId: 'Default_Scene',
+      layersWorld: [{ id: 'layer_world_1', scriptId: 'World_Layer', _section: 'world' }],
+      layersUI: [{ id: 'layer_ui_1', scriptId: 'UI_Layer', _section: 'ui' }],
       entities: []
     }])
     sceneStore.setActiveScene('scene_default')
@@ -88,7 +88,7 @@ describe('PrefabWorkspace Integration Testing', () => {
       const newPrefab = await createPrefab('Player_Prefab', null, 'world')
 
       expect(newPrefab).toBeDefined()
-      expect(newPrefab.name).toBe('Player_Prefab')
+      expect(newPrefab.scriptId).toBe('Player_Prefab')
       expect(newPrefab.type).toBe('world')
       expect(prefabStore.prefabs.some(p => p.id === newPrefab.id)).toBe(true)
 
@@ -119,12 +119,12 @@ describe('PrefabWorkspace Integration Testing', () => {
       await renamePrefab(prefab.id)
 
       const updatedPrefab = prefabStore.getPrefabById(prefab.id)
-      expect(updatedPrefab.name).toBe('Enemy_Boss')
+      expect(updatedPrefab.scriptId).toBe('Enemy_Boss')
 
       const prefabFileHandle = storeRef.store.get(`root/lupis-engine/projects/${project.id}/prefabs/${prefab.id}.json`)
       const fileData = await prefabFileHandle.getFile()
       const content = JSON.parse(await fileData.text())
-      expect(content.name).toBe('Enemy_Boss')
+      expect(content.scriptId).toBe('Enemy_Boss')
     })
 
     it('duplicates prefab and saves copy to OPFS with unique name', async () => {
@@ -136,7 +136,7 @@ describe('PrefabWorkspace Integration Testing', () => {
 
       expect(duplicate).toBeDefined()
       expect(duplicate.id).not.toBe(original.id)
-      expect(duplicate.name).toBe('Coin_copy')
+      expect(duplicate.scriptId).toBe('Coin_copy')
       expect(prefabStore.prefabs.length).toBe(2)
 
       const duplicateFileHandle = storeRef.store.get(`root/lupis-engine/projects/${project.id}/prefabs/${duplicate.id}.json`)
@@ -274,7 +274,7 @@ describe('PrefabWorkspace Integration Testing', () => {
       await logic.handlePaste()
 
       expect(prefabStore.prefabs.length).toBe(2)
-      expect(prefabStore.prefabs.some(p => p.name === 'Bullet_copy')).toBe(true)
+      expect(prefabStore.prefabs.some(p => p.scriptId === 'Bullet_copy')).toBe(true)
     })
   })
 
@@ -299,7 +299,7 @@ describe('PrefabWorkspace Integration Testing', () => {
       const sceneStore = useSceneStore()
 
       const rawUnlinked = entitySchema({
-        name: 'Unlinked Entity',
+        scriptId: 'Unlinked_Entity',
         type: 'entity',
         x: 10,
         y: 20
@@ -320,7 +320,7 @@ describe('PrefabWorkspace Integration Testing', () => {
 
       // 1. Create valid source entity using entitySchema
       const rawEntity = entitySchema({
-        name: 'Upgradeable_Tower',
+        scriptId: 'Upgradeable_Tower',
         type: 'entity',
         x: 0,
         y: 0
@@ -363,11 +363,11 @@ describe('PrefabWorkspace Integration Testing', () => {
 
       logic.activeTab.value = 'world'
       expect(logic.visiblePrefabs.value.length).toBe(1)
-      expect(logic.visiblePrefabs.value[0].name).toBe('World_Tree')
+      expect(logic.visiblePrefabs.value[0].scriptId).toBe('World_Tree')
 
       logic.activeTab.value = 'ui'
       expect(logic.visiblePrefabs.value.length).toBe(1)
-      expect(logic.visiblePrefabs.value[0].name).toBe('UI_Button')
+      expect(logic.visiblePrefabs.value[0].scriptId).toBe('UI_Button')
 
       logic.searchQuery.value = 'Non_Existent'
       expect(logic.visiblePrefabs.value.length).toBe(0)

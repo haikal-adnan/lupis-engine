@@ -27,7 +27,6 @@ export const BlueprintLayer = {
           },
           propertyOptions: [
             { value: 'layerId', label: 'Layer ID', type: 'string', color: '#F48FB1' },
-            { value: 'name', label: 'Name', type: 'string', color: '#F48FB1' },
             { value: 'visible', label: 'Visible', type: 'boolean', color: '#E57373' },
             { value: 'active', label: 'Active', type: 'boolean', color: '#E57373' },
             { value: 'locked', label: 'Locked', type: 'boolean', color: '#E57373' },
@@ -38,7 +37,6 @@ export const BlueprintLayer = {
 `const layer = context.assert.exists(context.layer.get(inputs.targetLayer));
 
 outputs.layerId = layer.scriptId;
-outputs.name = layer.name;
 outputs.visible = layer.visible;
 outputs.active = layer.active;
 outputs.locked = layer.locked;
@@ -51,7 +49,7 @@ return;`
     {
       type: 'setLayer',
       label: 'Set Layer Info',
-      description: 'Set layer info like Name, Visible, Locked, Z-Index, Opacity',
+      description: 'Set layer info like Visible, Locked, Z-Index, Opacity',
       dynamicMode: 'inputProperty',
       defaultData: {
         settings: {
@@ -71,7 +69,6 @@ return;`
             targetLayer: 'self'
           },
           propertyOptions: [
-            { value: 'name', label: 'Name', type: 'string', color: '#F48FB1' },
             { value: 'visible', label: 'Visible', type: 'boolean', color: '#E57373' },
             { value: 'active', label: 'Active', type: 'boolean', color: '#E57373' },
             { value: 'locked', label: 'Locked', type: 'boolean', color: '#E57373' },
@@ -81,7 +78,7 @@ return;`
           code: 
 `const layer = context.assert.exists(context.layer.get(inputs.targetLayer));
 
-const propKeys = ['name', 'visible', 'active', 'locked', 'zIndex'];
+const propKeys = ['visible', 'active', 'locked', 'zIndex'];
 for (const key of propKeys) {
   if (key in inputs) {
     layer[key] = inputs[key];

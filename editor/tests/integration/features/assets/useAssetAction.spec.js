@@ -131,13 +131,13 @@ describe('Integration Test: Asset Actions with Stores & Composables', () => {
       // Assert
       expect(assetStore.isUploading).toBe(false)
       expect(createdAsset.type).toBe('texture')
-      expect(createdAsset.name).toBe('background')
+      expect(createdAsset.scriptId).toBe('background')
       expect(createdAsset.meta.dimensions).toEqual({ w: 1920, h: 1080 })
       expect(createdAsset.meta.hasBmFont).toBe(false)
       expect(createdAsset.meta.fntFile).toBeUndefined()
       expect(createdAsset.meta.pngFiles).toBeUndefined()
       expect(assetStore.addAsset).toHaveBeenCalledWith(
-        expect.objectContaining({ name: 'background', type: 'texture' }),
+        expect.objectContaining({ scriptId: 'background', type: 'texture' }),
         mockImageFile,
         []
       )
@@ -149,8 +149,8 @@ describe('Integration Test: Asset Actions with Stores & Composables', () => {
     it('handles duplicate file names in the same folder by appending numbering automatically', async () => {
       // Arrange
       assetStore.assets = [
-        { name: 'sprite', folderId: 'folder-root' },
-        { name: 'sprite (1)', folderId: 'folder-root' }
+        { scriptId: 'sprite', folderId: 'folder-root' },
+        { scriptId: 'sprite_1', folderId: 'folder-root' }
       ]
 
       const { importAsset } = useAssetActions()
@@ -169,7 +169,7 @@ describe('Integration Test: Asset Actions with Stores & Composables', () => {
       const createdAsset = await importAsset(mockFile)
 
       // Assert
-      expect(createdAsset.name).toBe('sprite (2)')
+      expect(createdAsset.scriptId).toBe('sprite_2')
       expect(createdAsset.meta.dimensions).toEqual({ w: 64, h: 64 })
     })
 
@@ -244,7 +244,7 @@ describe('Integration Test: Asset Actions with Stores & Composables', () => {
     it('deletes asset via store and shows alert pop notification', async () => {
       // Arrange
       const { deleteAsset } = useAssetActions()
-      assetStore.assets = [{ id: 'ast-101', name: 'Hero' }]
+      assetStore.assets = [{ id: 'ast-101', scriptId: 'Hero' }]
 
       // Act
       await deleteAsset('ast-101')
@@ -262,14 +262,14 @@ describe('Integration Test: Asset Actions with Stores & Composables', () => {
     it('renames asset, trims redundant whitespace, and updates store', async () => {
       // Arrange
       const { renameAsset } = useAssetActions()
-      assetStore.assets = [{ id: 'ast-102', name: 'OldName' }]
+      assetStore.assets = [{ id: 'ast-102', scriptId: 'OldName' }]
 
       // Act
       await renameAsset('ast-102', '  New Asset Name  ')
 
       // Assert
       expect(assetStore.updateAsset).toHaveBeenCalledWith('ast-102', {
-        name: 'New Asset Name',
+        scriptId: 'New_Asset_Name',
         isSynced: true
       })
       expect(mockShowPop).toHaveBeenCalledWith({
@@ -282,7 +282,7 @@ describe('Integration Test: Asset Actions with Stores & Composables', () => {
     it('updates specific asset properties directly', async () => {
       // Arrange
       const { updateAssetProperty } = useAssetActions()
-      assetStore.assets = [{ id: 'ast-103', name: 'Asset 1', folderId: 'folder-a' }]
+      assetStore.assets = [{ id: 'ast-103', scriptId: 'Asset 1', folderId: 'folder-a' }]
 
       // Act
       await updateAssetProperty('ast-103', { folderId: 'folder-b' })

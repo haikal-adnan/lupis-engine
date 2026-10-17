@@ -121,14 +121,14 @@ export function useScriptMenu(selectedIdRef, logicActions) {
     const eligibleEntity = getEligibleEntity();
 
     const items = [
-      { label: targetItem.name, disabled: true, icon: FileCode2 }
+      { label: targetItem.scriptId || targetItem.id, disabled: true, icon: FileCode2 }
     ];
 
     if (eligibleEntity && scriptObj) {
       items.push(
         { separator: true },
         {
-          label: `Add to ${eligibleEntity.name}`,
+          label: `Add to ${eligibleEntity.scriptId}`,
           icon: PlayCircle,
           action: () => {
             closeMenu();

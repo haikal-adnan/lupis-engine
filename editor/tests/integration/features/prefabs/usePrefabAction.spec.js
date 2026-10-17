@@ -45,7 +45,7 @@ vi.mock('@prefabs/prefabs.js', async (importOriginal) => {
       id: data.id || 'default-id',
       projectId: data.projectId || 'proj-1',
       folderId: data.folderId || 'root',
-      name: data.name || 'Default',
+      scriptId: data.scriptId || 'Default',
       type: data.type || 'world',
       data: data.data || { components: {} },
       children: data.children || []
@@ -88,7 +88,7 @@ describe('Integration Test: PrefabActions', () => {
     sceneStore.initScenes([
       {
         id: 'scene-1',
-        name: 'Main Scene',
+        scriptId: 'Main_Scene',
         entities: [],
         layersWorld: [{ id: 'layer-world-1' }],
         layersUI: [{ id: 'layer-ui-1' }]
@@ -107,15 +107,15 @@ describe('Integration Test: PrefabActions', () => {
     it('creates new prefab from entity data with its children and saves to OPFS', async () => {
       // Arrange
       sceneStore.activeScene.entities = [
-        { id: 'ent-1', name: 'ParentEntity', type: 'world', layerId: 'l1', orderIndex: 0, components: { Transform: { x: 10, y: 10 } } },
-        { id: 'ent-2', parentId: 'ent-1', name: 'ChildEntity', type: 'world', layerId: 'l1', orderIndex: 1, components: {} }
+        { id: 'ent-1', scriptId: 'ParentEntity', type: 'world', layerId: 'l1', orderIndex: 0, components: { Transform: { x: 10, y: 10 } } },
+        { id: 'ent-2', parentId: 'ent-1', scriptId: 'ChildEntity', type: 'world', layerId: 'l1', orderIndex: 1, components: {} }
       ]
 
       // Act
       const created = await actions.createPrefab('Player Hero', null, 'world', sceneStore.activeScene.entities[0])
 
       // Assert
-      expect(created.name).toBe('Player_Hero')
+      expect(created.scriptId).toBe('Player_Hero')
       expect(created.folderId).toBe('folder-root')
       expect(prefabStore.prefabs).toHaveLength(1)
       expect(prefabStore.getPrefabById(created.id)).toBeDefined()
@@ -132,8 +132,8 @@ describe('Integration Test: PrefabActions', () => {
       // Act
       const secondEnemy = await actions.createPrefab('Enemy')
 
-      // Assert: Under getValidUniqueName logic, if "Enemy" exists, the next name is "Enemy_2"
-      expect(secondEnemy.name).toBe('Enemy_2')
+      // Assert: Under getValidUniqueName logic, if "Enemy" exists, the next name is "Enemy_1"
+      expect(secondEnemy.scriptId).toBe('Enemy_1')
       expect(prefabStore.prefabs).toHaveLength(2)
     })
 
@@ -146,7 +146,7 @@ describe('Integration Test: PrefabActions', () => {
 
       // Assert: First duplicate name is "Collectible_copy"
       expect(duplicated).not.toBeNull()
-      expect(duplicated.name).toBe('Collectible_copy')
+      expect(duplicated.scriptId).toBe('Collectible_copy')
       expect(prefabStore.prefabs).toHaveLength(2)
     })
   })
@@ -178,7 +178,7 @@ describe('Integration Test: PrefabActions', () => {
 
       // Assert
       const updated = prefabStore.getPrefabById(prefab.id)
-      expect(updated.name).toBe('New_Cool_Name')
+      expect(updated.scriptId).toBe('New_Cool_Name')
 
       const { recordRenamePrefab } = useSceneHistory()
       expect(recordRenamePrefab).toHaveBeenCalledWith(prefab.id, 'OldName', 'New_Cool_Name')
@@ -191,7 +191,6 @@ describe('Integration Test: PrefabActions', () => {
       const prefab = await actions.createPrefab('Tree', null, 'world')
       prefab.data = {
         id: 'p-root',
-        name: 'Tree',
         scriptId: 'Tree',
         type: 'world',
         components: { Transform: { x: 0, y: 0 } }
@@ -294,7 +293,7 @@ describe('Integration Test: PrefabActions', () => {
       await actions.renamePrefab(prefab.id)
 
       // Assert
-      expect(prefabStore.getPrefabById(prefab.id).name).toBe('Original')
+      expect(prefabStore.getPrefabById(prefab.id).scriptId).toBe('Original')
     })
   })
 })

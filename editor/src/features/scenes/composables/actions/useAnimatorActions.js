@@ -27,9 +27,20 @@ export const useAnimatorActions = {
     }
   },
 
+  _generateUniqueClipScriptId(clips, base = 'New_Clip') {
+    let candidate = base;
+    let counter = 1;
+    const existing = new Set((clips || []).map(c => (c.scriptId || '').toLowerCase()));
+    while (existing.has(candidate.toLowerCase())) {
+      candidate = `${base}_${counter++}`;
+    }
+    return candidate;
+  },
+
   _cloneAnimatorNode(node) {
     const clone = JSON.parse(JSON.stringify(node));
     clone.id = `anim_${GenerateUUID().split('-')[0]}`;
+    delete clone.name;
     delete clone.children;
     delete clone._uiChildren;
     return clone;
@@ -40,9 +51,8 @@ export const useAnimatorActions = {
 
     const newNode = { 
       id: GenerateUUID(), 
-      name: 'New Category', 
       type: 'category', 
-      scriptId: `clip_category_${GenerateUUID()}`, 
+      scriptId: this._generateUniqueClipScriptId(clips, 'New_Category'), 
       assetId: null,
       parentId: null, 
       fps: 12, isLooping: true, frames: [], sources: {}, baseSize: { w: 32, h: 32 }, pivot: { x: 0.5, y: 1 },
@@ -68,9 +78,8 @@ export const useAnimatorActions = {
 
     const newNode = { 
       id: GenerateUUID(), 
-      name: 'New Clip',
       type: 'clip', 
-      scriptId: `clip_${GenerateUUID()}`,
+      scriptId: this._generateUniqueClipScriptId(clips, 'New_Clip'),
       assetId: null,
       parentId: parentId,
       fps: 12, isLooping: true, frames: [], sources: {}, baseSize: { w: 32, h: 32 }, pivot: { x: 0.5, y: 1 },
@@ -105,7 +114,8 @@ export const useAnimatorActions = {
     const nodeIndex = clips.findIndex(c => c.id === nodeId);
     
     if (nodeIndex !== -1) {
-      clips[nodeIndex].name = newName;
+      clips[nodeIndex].scriptId = newName;
+      delete clips[nodeIndex].name;
       this._saveAnimatorClips(entityId, clips);
     }
   },

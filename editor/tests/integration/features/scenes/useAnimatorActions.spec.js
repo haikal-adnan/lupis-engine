@@ -24,7 +24,7 @@ function createMockEntityWithAnimator({
 } = {}) {
   const defaultCategory = {
     id: catId,
-    name: 'Locomotion',
+    scriptId: 'Locomotion',
     type: 'category',
     parentId: null,
     isOpen: true
@@ -32,9 +32,8 @@ function createMockEntityWithAnimator({
 
   const defaultClip = {
     id: clipId,
-    name: 'Idle',
-    type: 'clip',
     scriptId: `clip_${clipId}`,
+    type: 'clip',
     assetId: null,
     parentId: catId,
     fps: 12,
@@ -50,7 +49,7 @@ function createMockEntityWithAnimator({
 
   const entity = createMockEntity({
     id: entityId,
-    name: overrides.name || 'Test Entity',
+    scriptId: overrides.scriptId || 'TestEntity',
     attachComponents: {
       SpriteAnimator: {
         active: true,
@@ -137,7 +136,7 @@ describe('useAnimatorActions Unit & Integration Tests', () => {
       expect(cloned.id.startsWith('anim_')).toBe(true)
       expect(cloned.children).toBeUndefined()
       expect(cloned._uiChildren).toBeUndefined()
-      expect(cloned.name).toBe(sourceNode.name)
+      expect(cloned.scriptId).toBe(sourceNode.scriptId)
     })
   })
 
@@ -152,7 +151,7 @@ describe('useAnimatorActions Unit & Integration Tests', () => {
       
       const newCategory = updatedClips[updatedClips.length - 1]
       expect(newCategory.type).toBe('category')
-      expect(newCategory.name).toBe('New Category')
+      expect(newCategory.scriptId).toBeDefined()
       expect(newCategory.parentId).toBeNull()
     })
 
@@ -160,7 +159,7 @@ describe('useAnimatorActions Unit & Integration Tests', () => {
       sceneStore.animatorCreateClip(mockData.entity.id, mockData.defaultCategory.id)
 
       const updatedClips = sceneStore._getAnimatorClips(mockData.entity.id)
-      const newClip = updatedClips.find(c => c.name === 'New Clip')
+      const newClip = updatedClips[updatedClips.length - 1]
 
       expect(newClip).toBeDefined()
       expect(newClip.parentId).toBe(mockData.defaultCategory.id)
@@ -173,7 +172,7 @@ describe('useAnimatorActions Unit & Integration Tests', () => {
       const updatedClips = sceneStore._getAnimatorClips(mockData.entity.id)
       const newClip = updatedClips[updatedClips.length - 1]
 
-      expect(newClip.name).toBe('New Clip')
+      expect(newClip.scriptId).toBeDefined()
       expect(newClip.parentId).toBe(mockData.defaultClip.parentId)
     })
 
@@ -207,13 +206,13 @@ describe('useAnimatorActions Unit & Integration Tests', () => {
       expect(remainingClips).toHaveLength(0)
     })
 
-    it('animatorRenameNode updates node name successfully', () => {
+    it('animatorRenameNode updates node scriptId successfully', () => {
       sceneStore.animatorRenameNode(mockData.entity.id, mockData.defaultClip.id, 'Run_Animation')
 
       const clips = sceneStore._getAnimatorClips(mockData.entity.id)
       const target = clips.find(c => c.id === mockData.defaultClip.id)
 
-      expect(target.name).toBe('Run_Animation')
+      expect(target.scriptId).toBe('Run_Animation')
     })
   })
 

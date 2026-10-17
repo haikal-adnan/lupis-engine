@@ -1,5 +1,5 @@
 import { componentSchema, entitySchema } from '@scenes/scenes.js';
-import { GenerateUUID } from '@utils/utils.js';
+import { GenerateUUID, sanitizeScriptId, getValidUniqueScriptId, isScriptIdDuplicate } from '@utils/utils.js';
 import { engineBridge } from "@engines/engines.js";
 import { useConfirm, usePopAlert } from '@composables/composables.js';
 import { useSceneHistory } from '@historys/historys.js';
@@ -66,11 +66,11 @@ export const useEntityActions = {
         ...JSON.parse(JSON.stringify(root)),
         id: newRootId,
         scriptId: `${root.scriptId}_${GenerateUUID().split('-')[0]}`,
-        name: `${root.name}`,
         layerId: targetLayerId || root.layerId,
         parentId: targetParentId !== undefined ? targetParentId : root.parentId,
         orderIndex: (root.orderIndex || 0) + 1
      };
+     delete clonedRoot.name;
 
      const clonedDescendants = descendants.map(child => {
         const newId = GenerateUUID();
@@ -324,37 +324,32 @@ export const useEntityActions = {
   },
 
   updateEntityScriptId(entityId, newScriptId) {
-    if (!this.activeScene) return false;
+    if (!this.activeScene || !newScriptId || !newScriptId.trim()) return false;
 
-    const sanitizedId = newScriptId.replace(/[^a-zA-Z0-9_]/g, "_");
+    const sanitizedId = sanitizeScriptId(newScriptId);
+    if (!sanitizedId) return false;
+
+    const isDuplicate = isScriptIdDuplicate(sanitizedId, this.activeScene.entities, e => e.scriptId, entityId);
+    if (isDuplicate) return false;
+
     const entity = this.activeScene.entities.find(e => e.id === entityId);
-    
     if (entity) {
       const oldVal = entity.scriptId;
       entity.scriptId = sanitizedId;
+      delete entity.name;
 
       const { recordPropChange } = useSceneHistory();
       recordPropChange(entityId, 'scriptId', oldVal, sanitizedId);
+
+      if (engineBridge.updateEntityProp) {
+        engineBridge.updateEntityProp({ id: entityId, prop: 'scriptId', value: sanitizedId });
+      }
 
       return { id: entityId, prop: 'scriptId', value: sanitizedId };
     }
     return false;
   },
 
-  updateEntityName(entityId, newName) {
-    if (!this.activeScene) return false;
-    const entity = this.activeScene.entities.find(e => e.id === entityId);
-    if (entity && entity.name !== newName) {
-      const oldVal = entity.name;
-      entity.name = newName;
-
-      const { recordPropChange } = useSceneHistory();
-      recordPropChange(entityId, 'name', oldVal, newName);
-
-      return { id: entityId, prop: 'name', value: newName };
-    }
-    return false;
-  },
 
   deleteEntity(entityId, recordHistory = true) {
     if (!this.activeScene) return false;
@@ -569,6 +564,10 @@ export const useEntityActions = {
 
   updateEntityProp(entityId, propName, value, recordHistory = true) {
     if (!this.activeScene) return false;
+
+    if (propName === 'scriptId' || propName === 'name') {
+      return this.updateEntityScriptId(entityId, value);
+    }
 
     const entity = this.activeScene.entities.find(e => e.id === entityId);
     if (entity) {

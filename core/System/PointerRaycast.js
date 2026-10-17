@@ -48,7 +48,7 @@ export default class PointerRaycast {
         for (const layer of allLayers) {
             if (layer.active === false || !layer.visible || !layer.entities) continue;
             
-            const isUILayer = layer.scriptId === 'ui' || (layer.name && layer.name.includes('UI'));
+            const isUILayer = layer.scriptId === 'ui' || layer.scriptId?.toLowerCase().includes('ui');
 
             const sortedEntities = [...layer.entities].sort((a, b) => {
                 const zA = a.zIndex ?? 0;

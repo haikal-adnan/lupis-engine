@@ -7,7 +7,7 @@ export class PrefabSyncHandler {
         if (!this.ctx.world.prefabs) this.ctx.world.prefabs = {};
         this.ctx.world.prefabs[p.id] = {
             id: p.id,
-            name: p.name,
+            scriptId: p.scriptId,
             data: p.data,
             children: p.children || []
         };

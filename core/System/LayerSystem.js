@@ -5,6 +5,11 @@ export default class LayerSystem {
 
     getLayer(layerId) {
         if (!layerId || !this.game?.world?.allLayers) return null;
-        return this.game.world.allLayers.find(l => l.scriptId === layerId || l.id === layerId) || null;
+        const search = String(layerId).trim().toLowerCase();
+        const slug = search.replace(/\s+/g, '_');
+        return this.game.world.allLayers.find(l => 
+            l.id === layerId || 
+            (l.scriptId && (l.scriptId.toLowerCase() === search || l.scriptId.toLowerCase() === slug))
+        ) || null;
     }
 }

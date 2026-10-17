@@ -32,26 +32,27 @@ async function setupBareMinimumAnimatorEntity({
   hierarchy,
   page,
   entityName = 'HeroEntity',
-  scriptId = 'Hero_Entity_ID',
+  scriptId,
 }) {
   const worldLayer = await getReadyWorldLayer(hierarchy);
   const spriteEntity = await hierarchyCrud.entity.create(worldLayer, 'sprite');
   await spriteEntity.click();
-  await inspectorCrud.configureObjectMetaData({ name: entityName, scriptId });
+  const targetScriptId = scriptId || entityName;
+  await inspectorCrud.configureObjectMetaData({ scriptId: targetScriptId });
 
   await inspectorCrud.configureSpriteAnimator({
     sampleImageName: 'sample_image.png',
   });
 
-  await page.evaluate(({ name }) => {
+  await page.evaluate(({ targetScriptId }) => {
     const app = document.querySelector('#app')?.__vue_app__;
     const pinia = app?.config?.globalProperties?.$pinia;
     if (!pinia) return;
 
     for (const store of pinia._s.values()) {
       if (store.$id === 'scene') {
-        const entity = store.activeEntities?.find((e) => e?.name === name)
-          || (Array.isArray(store.scenes) ? store.scenes.flatMap(s => s.entities || []).find(e => e?.name === name) : null);
+        const entity = store.activeEntities?.find((e) => e?.scriptId === targetScriptId)
+          || (Array.isArray(store.scenes) ? store.scenes.flatMap(s => s.entities || []).find(e => e?.scriptId === targetScriptId) : null);
 
         if (entity) {
           if (!entity.components) entity.components = {};
@@ -93,7 +94,7 @@ async function setupBareMinimumAnimatorEntity({
         }
       }
     }
-  }, { name: entityName });
+  }, { targetScriptId });
 
   return spriteEntity;
 }
@@ -110,7 +111,7 @@ test.describe('Blueprint Physics, Gameplay & Interaction E2E Testing', () => {
     const worldLayer = hierarchy.nodeByName('World Layer');
     const physEntity = await hierarchyCrud.entity.create(worldLayer, 'empty');
     await physEntity.click();
-    await inspectorCrud.configureObjectMetaData({ name: 'PhysEntity_Mass', scriptId: 'Phys_Entity_Mass_ID' });
+    await inspectorCrud.configureObjectMetaData({ scriptId: 'PhysEntity_Mass' });
     await inspectorCrud.setupPhysics('Dynamic (Standard)', 3.5, 1.0);
 
     await blueprintRunner.runTest({
@@ -153,7 +154,7 @@ test.describe('Blueprint Physics, Gameplay & Interaction E2E Testing', () => {
     const worldLayer = hierarchy.nodeByName('World Layer');
     const physEntity = await hierarchyCrud.entity.create(worldLayer, 'empty');
     await physEntity.click();
-    await inspectorCrud.configureObjectMetaData({ name: 'FrozenEntity', scriptId: 'Frozen_Entity_ID' });
+    await inspectorCrud.configureObjectMetaData({ scriptId: 'FrozenEntity' });
     await inspectorCrud.setupPhysics('Dynamic (Standard)', 1.0, 1.0);
 
     await blueprintRunner.runTest({
@@ -212,12 +213,12 @@ test.describe('Blueprint Physics, Gameplay & Interaction E2E Testing', () => {
     const worldLayer = hierarchy.nodeByName('World Layer');
     const testerEntity = await hierarchyCrud.entity.create(worldLayer, 'empty');
     await testerEntity.click();
-    await inspectorCrud.configureObjectMetaData({ name: 'SolidTester', scriptId: 'Solid_Tester_ID' });
+    await inspectorCrud.configureObjectMetaData({ scriptId: 'Solid_Tester_ID' });
     await inspectorCrud.setupCollider();
 
     await blueprintRunner.runTest({
       testName: 'Solid Collision - Read Self ID',
-      entityName: 'SolidTester',
+      entityName: 'Solid_Tester_ID',
       scriptName: 'Script_Solid_ReadSelf',
       variables: [
         { name: 'targetId', type: 'string', value: 'self' },
@@ -251,7 +252,7 @@ test.describe('Blueprint Physics, Gameplay & Interaction E2E Testing', () => {
     const worldLayer = hierarchy.nodeByName('World Layer');
     const spriteEntity = await hierarchyCrud.entity.create(worldLayer, 'sprite');
     await spriteEntity.click();
-    await inspectorCrud.configureObjectMetaData({ name: 'SpriteTester', scriptId: 'Sprite_Tester_ID' });
+    await inspectorCrud.configureObjectMetaData({ scriptId: 'SpriteTester' });
 
     await blueprintRunner.runTest({
       testName: 'Sprite - Modify and Read Source Width',
@@ -333,7 +334,7 @@ test.describe('Blueprint Physics, Gameplay & Interaction E2E Testing', () => {
       inspectorCrud,
       hierarchy,
       entityName: 'Hero_PlayAnim',
-      scriptId: 'Hero_Play_01',
+      scriptId: 'Hero_PlayAnim',
     });
 
     await blueprintRunner.runTest({

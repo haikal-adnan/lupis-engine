@@ -291,7 +291,7 @@ const currentScript = computed(() => scriptsData.value[selectedIndex.value])
 
 function getScriptName(assetId) {
    const def = scriptStore.getScriptById(assetId)
-   return def ? def.name : 'Unknown Script'
+   return def ? def.scriptId : 'Unknown Script'
 }
 
 const currentScriptName = computed(() => currentScript.value ? getScriptName(currentScript.value.assetId) : '')
@@ -379,7 +379,7 @@ function openScriptEditor() {
       scriptStore.setActiveScript(scriptDef)
       workspaceStore.openTab({
           id: scriptDef.id,
-          name: scriptDef.name,
+          name: scriptDef.scriptId,
           type: 'diagram',
           fixed: false
       })

@@ -137,8 +137,11 @@ describe('Integration Test: engineBridge', () => {
       engineBridge.deleteEntity('ent-1');
       expect(mockBus.emit).toHaveBeenCalledWith('editor:entity:delete', 'ent-1');
 
-      engineBridge.updateEntityName('ent-1', 'New Player');
-      expect(mockBus.emit).toHaveBeenCalledWith('editor:entity:update-name', { id: 'ent-1', name: 'New Player' });
+      engineBridge.updateEntityScriptId('ent-1', 'new_player');
+      expect(mockBus.emit).toHaveBeenCalledWith('editor:entity:update-script-id', { id: 'ent-1', scriptId: 'new_player' });
+
+      engineBridge.updateLayerScriptId('layer-1', 'new_layer');
+      expect(mockBus.emit).toHaveBeenCalledWith('editor:layer:update-script-id', { id: 'layer-1', scriptId: 'new_layer' });
 
       engineBridge.updateProjectSettings({ tickRate: 60 });
       expect(mockBus.emit).toHaveBeenCalledWith('editor:project:settings-update', { tickRate: 60 });

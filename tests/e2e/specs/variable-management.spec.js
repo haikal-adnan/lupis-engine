@@ -240,4 +240,52 @@ test.describe('Variable System E2E Testing', () => {
 
     await expect(nodeGraph.edges).toHaveCount(2);
   });
+
+  // =========================================================================
+  // 10. QUICK ADD VARIABLE TO CANVAS VIA CTRL/ALT + DOUBLE CLICK
+  // =========================================================================
+  test('spawns Get and Set nodes via Ctrl + Double Click and Alt + Double Click from modal', async ({ page, variablePage }) => {
+    await variablePage.openManager();
+    await variablePage.createVariable({ name: 'ShieldPower', type: 'number', scope: 'Local' });
+
+    const shieldRow = variablePage.itemRowByName('ShieldPower');
+    await expect(shieldRow).toBeVisible();
+
+    // Ctrl + Double Click to spawn Get node
+    await shieldRow.dblclick({ modifiers: ['Control'] });
+    await expect(page.locator('.font-bold', { hasText: 'Get ShieldPower' }).or(page.locator('[data-testid="node-item"]', { hasText: 'Get ShieldPower' })).first()).toBeVisible();
+
+    // Alt + Double Click to spawn Set node
+    await shieldRow.dblclick({ modifiers: ['Alt'] });
+    await expect(page.locator('.font-bold', { hasText: 'Set ShieldPower' }).or(page.locator('[data-testid="node-item"]', { hasText: 'Set ShieldPower' })).first()).toBeVisible();
+
+    await variablePage.closeManager();
+  });
+
+  // =========================================================================
+  // 11. QUICK ADD VARIABLE TO GRAPH VIA ROW DROPDOWN MENU
+  // =========================================================================
+  test('spawns Get and Set nodes via dropdown menu "Add Get to Graph" and "Add Set to Graph"', async ({ page, variablePage }) => {
+    await variablePage.openManager();
+    await variablePage.createVariable({ name: 'ManaPoints', type: 'number', scope: 'Local' });
+
+    const manaRow = variablePage.itemRowByName('ManaPoints');
+    await expect(manaRow).toBeVisible();
+
+    // Click dropdown menu trigger on row
+    await manaRow.getByTestId('variable-modal-row-menu-trigger').click();
+    await expect(page.getByTestId('variable-modal-add-get-btn')).toBeVisible();
+    await expect(page.getByTestId('variable-modal-add-set-btn')).toBeVisible();
+
+    // Click "Add Get to Graph"
+    await page.getByTestId('variable-modal-add-get-btn').click();
+    await expect(page.locator('.font-bold', { hasText: 'Get ManaPoints' }).or(page.locator('[data-testid="node-item"]', { hasText: 'Get ManaPoints' })).first()).toBeVisible();
+
+    // Open dropdown again and click "Add Set to Graph"
+    await manaRow.getByTestId('variable-modal-row-menu-trigger').click();
+    await page.getByTestId('variable-modal-add-set-btn').click();
+    await expect(page.locator('.font-bold', { hasText: 'Set ManaPoints' }).or(page.locator('[data-testid="node-item"]', { hasText: 'Set ManaPoints' })).first()).toBeVisible();
+
+    await variablePage.closeManager();
+  });
 });

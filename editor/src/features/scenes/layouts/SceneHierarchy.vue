@@ -80,8 +80,8 @@ const handlers = {
   renameLayer: async (layerId) => {
     const layer = sceneStore.activeLayers.find(l => l.id === layerId)
     if (!layer) return
-    const newName = await prompt({ title: 'Rename Layer', defaultValue: layer.name, confirmText: 'Rename' })
-    if (newName?.trim()) sceneStore.updateLayerName(layerId, newName)
+    const newName = await prompt({ title: 'Rename Layer', defaultValue: layer.scriptId, confirmText: 'Rename' })
+    if (newName?.trim()) sceneStore.updateLayerScriptId(layerId, newName)
   },
   changeZIndex: async (layerId) => {
     const layer = sceneStore.activeLayers.find(l => l.id === layerId)
@@ -101,8 +101,8 @@ const handlers = {
     const entity = sceneStore.activeEntities.find(e => e.id === entityId)
     if (!entity) return
     const title = entity.type === 'group' ? 'Rename Group' : 'Rename Entity'
-    const newName = await prompt({ title, defaultValue: entity.name, confirmText: 'Rename' })
-    if (newName?.trim()) sceneStore.updateEntityName(entityId, newName)
+    const newName = await prompt({ title, defaultValue: entity.scriptId, confirmText: 'Rename' })
+    if (newName?.trim()) sceneStore.updateEntityScriptId(entityId, newName)
   },
   
   useAsPrefab: async (entityId) => {
@@ -112,7 +112,7 @@ const handlers = {
     const prefabName = await prompt({ 
       title: 'Create Prefab', 
       message: 'Enter name for the new prefab:', 
-      defaultValue: `${entity.name}_Prefab`, 
+      defaultValue: `${entity.scriptId}_Prefab`, 
       confirmText: 'Create' 
     })
 

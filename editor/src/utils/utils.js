@@ -3,3 +3,10 @@ export { GenerateUUID } from '@utils/generateUUID.js'
 export { normalizer } from '@utils/normalizer.js'
 export { encodeLupisProject, decodeLupisProject, } from '@utils/projectFormat.js'
 export { computeGlobalTransform } from '@utils/transformMath.js'
+export { 
+  SCRIPT_ID_REGEX, 
+  isValidScriptId, 
+  sanitizeScriptId, 
+  getValidUniqueScriptId, 
+  isScriptIdDuplicate 
+} from '@utils/identifier.js'

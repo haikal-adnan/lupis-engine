@@ -168,10 +168,10 @@ describe('useScriptMenu Integration Testing', () => {
     it('renames script via useScriptActions when Rename item is executed', async () => {
       // Arrange
       const scriptStore = useScriptStore()
-      scriptStore.scripts = [{ id: 's_1', name: 'GameLoop', type: 'component' }]
+      scriptStore.scripts = [{ id: 's_1', scriptId: 'GameLoop', type: 'component' }]
 
       const { handleContextMenu, contextMenuItems } = useScriptMenu(selectedIdRef, logicActions)
-      const scriptItem = { id: 's_1', name: 'GameLoop', isFolder: false }
+      const scriptItem = { id: 's_1', scriptId: 'GameLoop', isFolder: false }
 
       handleContextMenu({ clientX: 0, clientY: 0 }, scriptItem)
       mockPromptFn.mockResolvedValue('MainGameLoop')
@@ -182,16 +182,16 @@ describe('useScriptMenu Integration Testing', () => {
       await renameAction()
 
       // Assert
-      expect(scriptStore.scripts[0].name).toBe('MainGameLoop')
+      expect(scriptStore.scripts[0].scriptId).toBe('MainGameLoop')
     })
 
     it('duplicates script and updates scriptStore state', async () => {
       // Arrange
       const scriptStore = useScriptStore()
-      scriptStore.scripts = [{ id: 's_orig', name: 'PlayerMove', type: 'component' }]
+      scriptStore.scripts = [{ id: 's_orig', scriptId: 'PlayerMove', type: 'component' }]
 
       const { handleContextMenu, contextMenuItems } = useScriptMenu(selectedIdRef, logicActions)
-      const scriptItem = { id: 's_orig', name: 'PlayerMove', isFolder: false }
+      const scriptItem = { id: 's_orig', scriptId: 'PlayerMove', isFolder: false }
 
       handleContextMenu({ clientX: 0, clientY: 0 }, scriptItem)
 
@@ -202,7 +202,7 @@ describe('useScriptMenu Integration Testing', () => {
 
       // Assert
       expect(scriptStore.scripts).toHaveLength(2)
-      expect(scriptStore.scripts[1].name).toBe('PlayerMove_Copy')
+      expect(scriptStore.scripts[1].scriptId).toBe('PlayerMove_Copy')
     })
 
     it('attaches script to eligible entity in active scene', () => {
@@ -210,12 +210,12 @@ describe('useScriptMenu Integration Testing', () => {
       const scriptStore = useScriptStore()
       const sceneStore = useSceneStore()
 
-      const targetScript = { id: 'script_attach', name: 'EnemyAI', type: 'component' }
+      const targetScript = { id: 'script_attach', scriptId: 'EnemyAI', type: 'component' }
       scriptStore.scripts = [targetScript]
 
       const entityWithController = createMockEntity({
         id: 'ent_1',
-        name: 'EnemyObject',
+        scriptId: 'EnemyObject',
         attachComponents: { ScriptController: { data: [] } }
       })
 

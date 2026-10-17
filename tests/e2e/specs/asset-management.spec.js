@@ -246,9 +246,9 @@ test.describe('Asset Management Comprehensive E2E Tests', () => {
       return JSON.parse(await file.text());
     }, projectId);
 
-    const imageAsset = assetsData.find((a) => a.name === 'sample_image');
-    const audioAsset = assetsData.find((a) => a.name === 'sample_audio');
-    const fontAsset = assetsData.find((a) => a.name === 'sample_font');
+    const imageAsset = assetsData.find((a) => (a.scriptId || a.name) === 'sample_image');
+    const audioAsset = assetsData.find((a) => (a.scriptId || a.name) === 'sample_audio');
+    const fontAsset = assetsData.find((a) => (a.scriptId || a.name) === 'sample_font');
 
     expect(imageAsset).toBeDefined();
     expect(imageAsset.type).toBe('texture');

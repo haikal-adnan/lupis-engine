@@ -97,8 +97,8 @@ describe('useInspectorBinding Integration', () => {
 
     it('dynamically adapts when selectedEntity changes via useInspectorSelection without passing refs', () => {
       // Arrange - Buat dua entitas berbeda
-      const entityA = createMockEntity({ id: 'ent_A', name: 'Entity A', components: { SpriteRenderer: { opacity: 0.5 } } })
-      const entityB = createMockEntity({ id: 'ent_B', name: 'Entity B', components: { SpriteRenderer: { opacity: 1.0 } } })
+      const entityA = createMockEntity({ id: 'ent_A', scriptId: 'Entity_A', components: { SpriteRenderer: { opacity: 0.5 } } })
+      const entityB = createMockEntity({ id: 'ent_B', scriptId: 'Entity_B', components: { SpriteRenderer: { opacity: 1.0 } } })
       setupMockSceneEnvironment({ entities: [entityA, entityB] })
 
       // Panggil binding tanpa argumen pada level komputasi
@@ -183,17 +183,17 @@ describe('useInspectorBinding Integration', () => {
   })
 
   describe('Entity Prop Bindings (bindEntityProp)', () => {
-    it('updates entity name in sceneStore and records prop change history when editing regular entity', () => {
-      const entity = createMockEntity({ id: 'ent_1', name: 'Original Name' })
+    it('updates entity scriptId in sceneStore and records prop change history when editing regular entity', () => {
+      const entity = createMockEntity({ id: 'ent_1', scriptId: 'Original_ScriptId' })
       setupMockSceneEnvironment({ entities: [entity] })
       selectedEntityRef.value = sceneStore.activeScene.entities[0]
 
       const { bindEntityProp } = setupBinding()
-      const nameBinding = bindEntityProp('name')
+      const scriptIdBinding = bindEntityProp('scriptId')
 
-      nameBinding.value = 'Updated Name'
+      scriptIdBinding.value = 'Updated_ScriptId'
 
-      expect(sceneStore.activeScene.entities[0].name).toBe('Updated Name')
+      expect(sceneStore.activeScene.entities[0].scriptId).toBe('Updated_ScriptId')
     })
 
     it('updates prefab store and dispatches engineBridge call when editing master prefab entity', () => {
@@ -203,37 +203,37 @@ describe('useInspectorBinding Integration', () => {
       prefabStore.initPrefabs([
         {
           id: 'prefab_101',
-          name: 'Old Prefab Name',
-          data: { id: 'ent_p1', name: 'Old Prefab Name' }
+          scriptId: 'OldPrefabScriptId',
+          data: { id: 'ent_p1', scriptId: 'OldPrefabScriptId' }
         }
       ])
-      workspaceStore.openTab({ id: 'prefab_101', name: 'Prefab', type: 'prefab' })
+      workspaceStore.openTab({ id: 'prefab_101', scriptId: 'OldPrefabScriptId', type: 'prefab' })
       selectedEntityRef.value = prefabStore.getPrefabById('prefab_101').data
 
       engineBridge.updatePrefabMasterProp = () => {}
       const spyBridge = vi.spyOn(engineBridge, 'updatePrefabMasterProp')
 
       const { bindEntityProp } = setupBinding()
-      const nameBinding = bindEntityProp('name')
+      const scriptIdBinding = bindEntityProp('scriptId')
 
-      nameBinding.value = 'New Prefab Name'
+      scriptIdBinding.value = 'NewPrefabScriptId'
 
-      expect(prefabStore.getPrefabById('prefab_101').name).toBe('New Prefab Name')
+      expect(prefabStore.getPrefabById('prefab_101').scriptId).toBe('NewPrefabScriptId')
       expect(spyBridge).toHaveBeenCalledWith({
         prefabId: 'prefab_101',
-        prop: 'name',
-        value: 'New Prefab Name'
+        prop: 'scriptId',
+        value: 'NewPrefabScriptId'
       })
     })
 
     it('[Bad Path] returns empty string and skips update when selectedEntity is null', () => {
       selectedEntityRef.value = null
       const { bindEntityProp } = setupBinding()
-      const nameBinding = bindEntityProp('name')
+      const scriptIdBinding = bindEntityProp('scriptId')
 
-      expect(nameBinding.value).toBe('')
+      expect(scriptIdBinding.value).toBe('')
       expect(() => {
-        nameBinding.value = 'Any Name'
+        scriptIdBinding.value = 'Any_ScriptId'
       }).not.toThrow()
     })
   })
@@ -357,7 +357,7 @@ describe('useInspectorBinding Integration', () => {
       selectedEntityRef.value = sceneStore.activeScene.entities[0]
 
       assetStore.assets = [
-        { id: 'asset_tex_1', name: 'Hero Sprite', type: 'texture', fileKey: 'hero', meta: { extension: '.png' } }
+        { id: 'asset_tex_1', scriptId: 'Hero_Sprite', type: 'texture', fileKey: 'hero', meta: { extension: '.png' } }
       ]
 
       vi.spyOn(assetStore, 'getAssetUrlById').mockResolvedValue('blob:http://localhost/mock-blob-uuid')

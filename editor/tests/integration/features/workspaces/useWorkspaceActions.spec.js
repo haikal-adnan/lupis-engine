@@ -68,10 +68,10 @@ describe('Integration Test: useWorkspaceActions', () => {
     it('deletes entity from sceneStore when user confirms dialog', async () => {
       // Arrange
       sceneStore.createDefaultScene()
-      const entity = { id: 'ent-001', name: 'Player' }
+      const entity = { id: 'ent-001', scriptId: 'Player' }
       sceneStore.activeScene.entities.push({
         id: 'ent-001',
-        name: 'Player',
+        scriptId: 'Player',
         parentId: null,
         layerId: 'layer_world_default'
       })
@@ -96,10 +96,10 @@ describe('Integration Test: useWorkspaceActions', () => {
     it('cancels entity deletion if user cancels confirmation dialog', async () => {
       // Arrange
       sceneStore.createDefaultScene()
-      const entity = { id: 'ent-002', name: 'Enemy' }
+      const entity = { id: 'ent-002', scriptId: 'Enemy' }
       sceneStore.activeScene.entities.push({
         id: 'ent-002',
-        name: 'Enemy',
+        scriptId: 'Enemy',
         parentId: null,
         layerId: 'layer_world_default'
       })

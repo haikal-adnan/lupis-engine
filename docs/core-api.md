@@ -1,209 +1,125 @@
-# 🧩 Core Engine API Reference
+# Core API
 
-This document provides a comprehensive technical reference for the public APIs in the Lupis Engine Core (`core/`).
+Public API of the runtime in `core/`. Data shapes are defined in [schema-contract.md](schema-contract.md); this page covers how to use them.
 
----
+## Start the engine
 
-## 1. Initializing the Engine: `startEngine`
-
-Located in [`core/Runtime.js`](file:///D:/Project/Lupis%20Engine/core/Runtime.js):
+`startEngine` is exported from [`core/Runtime.js`](../core/Runtime.js).
 
 ```javascript
 import { startEngine } from "./Runtime.js";
 
-const canvasElement = document.getElementById("game-canvas");
-const baseURL = "./"; // Project assets root folder
+const canvas = document.getElementById("game-canvas");
 
 const { game, bus } = await startEngine(
-    canvasElement,
-    baseURL,
-    payloadData,      // Optional project payload (scenes, entities, prefabs)
-    "runtime",        // Mode: "runtime" or "editor"
-    (msg, pct) => {   // Optional progress callback
-        console.log(`Loading: ${pct}% - ${msg}`);
-    }
+    canvas,
+    "./",            // base URL of the project assets
+    payload,         // optional project payload (scenes, entities, prefabs)
+    "runtime",       // mode: "runtime" | "editor"
+    (msg, pct) => console.log(`${pct}% ${msg}`)   // optional progress callback
 );
 ```
 
----
+The payload format is `EngineRuntimePayload` ([schema-contract §9](schema-contract.md#9-engine-initialization-payload-contract)).
 
-## 2. The `Game` Coordinator
+## Game
 
-Located in [`core/Core/Game.js`](file:///D:/Project/Lupis%20Engine/core/Core/Game.js):
+Defined in [`core/Core/Game.js`](../core/Core/Game.js). `Game` owns every subsystem.
 
-| Property / Method | Type | Description |
+| Member | Type | Description |
 | :--- | :--- | :--- |
-| `world` | `World` | Entity container, scene hierarchy, and layer storage |
-| `camera` | `Camera` | Active 2D viewport camera (x, y, zoom, rotation) |
-| `physicsSystem` | `PhysicsSystem` | Evaluates gravity, drag, velocity, and kinematics |
-| `colliderSystem` | `ColliderSystem` | Resolves solid AABB/Circle collisions and triggers |
-| `audioSystem` | `AudioSystem` | Web Audio sound player and volume controller |
-| `animatorSystem`| `AnimatorSystem`| Sprite clip player and keyframe updater |
-| `sceneSystem` | `SceneSystem` | Handles scene loading, switching, and caching |
-| `prefabSystem` | `PrefabSystem` | Instantiates entities from saved prefab templates |
-| `entitySystem` | `EntitySystem` | Lookup, cloning, and recursive entity destruction |
-| `events` | `EventManager` | Engine event bus (`game:start`, `game:restart`, etc.) |
-| `input` | `InputManager` | Mouse, touch, and keyboard input polling |
-| `start()` | `Function` | Starts the internal `GameLoop` |
-| `restartGame()` | `Function` | Resets globals and reloads the initial scene |
-| `quitGame()` | `Function` | Stops the game loop and pauses all systems |
+| `world` | `World` | Entities, layers, prefabs |
+| `camera` | `Camera` | 2D camera: `x`, `y`, `zoom`, `rotation` |
+| `physicsSystem` | `PhysicsSystem` | Gravity, drag, velocity |
+| `colliderSystem` | `ColliderSystem` | Solid collisions and triggers |
+| `audioSystem` | `AudioSystem` | Sound and music playback |
+| `animatorSystem` | `AnimatorSystem` | Sprite clip playback |
+| `sceneSystem` | `SceneSystem` | Scene loading, switching, caching |
+| `prefabSystem` | `PrefabSystem` | Instantiates entities from prefabs |
+| `entitySystem` | `EntitySystem` | Lookup, cloning, recursive destruction |
+| `events` | `EventManager` | Engine events (`game:start`, `game:restart`, ...) |
+| `input` | `InputManager` | Mouse, touch, keyboard |
+| `start()` | method | Start the game loop |
+| `restartGame()` | method | Reset globals and reload the initial scene |
+| `quitGame()` | method | Stop the loop and pause all systems |
 
----
+## World and entities
 
-## 3. The `World` & Entity Model
+Defined in [`core/Core/World.js`](../core/Core/World.js) and [`core/Core/Entity.js`](../core/Core/Entity.js).
 
-Located in [`core/Core/World.js`](file:///D:/Project/Lupis%20Engine/core/Core/World.js) and [`core/Core/Entity.js`](file:///D:/Project/Lupis%20Engine/core/Core/Entity.js):
+Every entity has a UUID `id` and a unique-per-scene `scriptId`. Parent and layer references use UUIDs. See the [identity model](schema-contract.md#identity-model).
 
-### Creating an Entity programmatically:
 ```javascript
 import Entity from "./Core/Entity.js";
 
-const player = new Entity("player_01");
-player.name = "Hero";
+const player = new Entity(crypto.randomUUID());
+player.scriptId = "player_hero";
 player.tag = "Player";
-player.layerId = "layer_w_root";
+player.layerId = worldLayerId;   // `id` of an existing world layer
 
-// Add components
-player.addComponent("Transform", {
-    x: 100,
-    y: 200,
-    rotation: 0,
-    scaleX: 1,
-    scaleY: 1
-});
+player.addComponent("Transform", { x: 100, y: 200, width: 64, height: 64 });
 
 player.addComponent("ShapeRenderer", {
-    shapeType: "rectangle",
-    width: 64,
-    height: 64,
-    color: "#3498db"
+    points: [
+        { x: -32, y: -32 }, { x: 32, y: -32 },
+        { x: 32, y: 32 },   { x: -32, y: 32 }
+    ],
+    fillColor: "#3498db"
 });
 
-player.addComponent("Physics", {
-    enabled: true,
-    velocityX: 0,
-    velocityY: 0,
-    gravityScale: 1.0,
-    drag: 0.1,
-    isFrozen: false
-});
+player.addComponent("Physics", { type: "dynamic", gravityScale: 1.0, drag: 0.1 });
 
 player.addComponent("Collider", {
-    enabled: true,
-    type: "box",
-    width: 64,
-    height: 64,
-    isSolid: true,
-    isTrigger: false
+    data: [{ type: "solid", width: 64, height: 64 }]
 });
 
 game.world.addEntity(player);
 ```
 
----
+Omitted component fields take the defaults listed in the schema contract.
 
-## 4. Built-in Component Schemas
+## Components
 
-### `Transform`
-Defines 2D world positioning, rotation, and scaling:
-```json
-{
-  "x": 0,
-  "y": 0,
-  "rotation": 0,
-  "scaleX": 1,
-  "scaleY": 1
+| Component | Purpose | Schema |
+| :--- | :--- | :--- |
+| `Transform`, `UITransform` | Position, rotation, scale, pivot, size, UI anchors | [§5.1](schema-contract.md#51-transform-and-uitransform) |
+| `SpriteRenderer` | Textured sprite with atlas cropping | [§5.2](schema-contract.md#52-spriterenderer) |
+| `ShapeRenderer` | Filled or stroked polygon | [§5.3](schema-contract.md#53-shaperenderer) |
+| `Tilemap` | Tile grid | [§5.4](schema-contract.md#54-tilemap) |
+| `TextRenderer` | MSDF text | [§5.5](schema-contract.md#55-textrenderer) |
+| `Physics` | Body type, velocity, gravity, drag | [§5.6](schema-contract.md#56-physics) |
+| `Collider` | One or more solid or trigger boxes | [§5.7](schema-contract.md#57-collider) |
+| `SpriteAnimator` | Clip playback | [§5.8](schema-contract.md#58-spriteanimator-and-animationclipschema) |
+| `Audio` | Sound source | [§5.9](schema-contract.md#59-audio) |
+| `ScriptController` | Blueprint bindings | [§5.10](schema-contract.md#510-scriptcontroller) |
+
+## Subsystems
+
+### Collisions
+
+```javascript
+const hit = game.colliderSystem.moveAndSlide(entity, dx, dy);
+if (hit) {
+    console.log("Blocked by", hit);
 }
+
+const rayHit = game.pointerRaycast.cast(worldX, worldY);
 ```
 
-### `ShapeRenderer`
-Draws GPU-accelerated vector primitives:
-```json
-{
-  "shapeType": "rectangle", // "rectangle" | "circle" | "polygon"
-  "width": 64,
-  "height": 64,
-  "radius": 32,
-  "color": "#e74c3c",
-  "stroke": true,
-  "strokeColor": "#ffffff",
-  "strokeWidth": 2
-}
+### Audio
+
+```javascript
+game.audioSystem.playSound("sfx_jump", { volume: 0.8, pitch: 1.0 });
+game.audioSystem.playMusic("bgm_overworld", { loop: true, volume: 0.5 });
 ```
 
-### `ImageRenderer`
-Draws 2D sprite textures:
-```json
-{
-  "assetId": "asset_hero_sprite",
-  "width": 128,
-  "height": 128,
-  "flipX": false,
-  "flipY": false,
-  "tint": "#ffffff"
-}
+Sounds are referenced by the asset `scriptId`.
+
+### Camera
+
+```javascript
+const t = player.components.Transform;
+game.camera.x = t.x;
+game.camera.y = t.y;
+game.camera.zoom = 1.5;
 ```
-
-### `Physics`
-Controls kinematic and dynamic forces in `PhysicsSystem`:
-```json
-{
-  "enabled": true,
-  "velocityX": 0,
-  "velocityY": 0,
-  "gravityScale": 1.0,
-  "drag": 0.5,
-  "isFrozen": false
-}
-```
-
-### `Collider`
-Defines physical collision boundaries:
-```json
-{
-  "enabled": true,
-  "type": "box", // "box" | "circle"
-  "width": 64,
-  "height": 64,
-  "radius": 32,
-  "offsetX": 0,
-  "offsetY": 0,
-  "isSolid": true,
-  "isTrigger": false
-}
-```
-
----
-
-## 5. Subsystems Reference
-
-### 5.1 `PhysicsSystem` & `ColliderSystem`
-- **Move and Slide**:
-  ```javascript
-  const hitResult = game.colliderSystem.moveAndSlide(entity, dx, dy);
-  if (hitResult) {
-      console.log("Collided with solid object:", hitResult);
-  }
-  ```
-- **Raycasting**:
-  ```javascript
-  const rayHit = game.pointerRaycast.cast(worldX, worldY);
-  ```
-
-### 5.2 `AudioSystem`
-- **Playing Sound FX**:
-  ```javascript
-  game.audioSystem.playSound("sfx_jump", { volume: 0.8, pitch: 1.0 });
-  ```
-- **Background Music**:
-  ```javascript
-  game.audioSystem.playMusic("bgm_overworld", { loop: true, volume: 0.5 });
-  ```
-
-### 5.3 `Camera`
-- **Panning & Zooming**:
-  ```javascript
-  game.camera.x = player.components.Transform.x;
-  game.camera.y = player.components.Transform.y;
-  game.camera.zoom = 1.5;
-  ```

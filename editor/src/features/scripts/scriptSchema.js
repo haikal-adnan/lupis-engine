@@ -1,4 +1,4 @@
-import { GenerateUUID } from '@utils/utils.js';
+import { GenerateUUID, sanitizeScriptId } from '@utils/utils.js';
 import { getNodeRole } from '@nodes/contract/nodeRoles.js';
 
 export const createScriptPort = (data = {}) => ({
@@ -11,7 +11,7 @@ export const createScriptPort = (data = {}) => ({
 
 export const createScriptVariable = (data = {}) => ({
   id: data.id || GenerateUUID(),
-  name: data.name || "NewVariable",
+  name: sanitizeScriptId(data.name || "new_variable", "new_variable"),
   type: data.type || "number",
   isExposed: data.isExposed || false,
   defaultValue: data.defaultValue ?? 0
@@ -79,11 +79,16 @@ export const createScriptEdge = (data = {}) => ({
 });
 
 export const scriptSchema = (data = {}) => {
-  return {
+  const scriptId = sanitizeScriptId(
+    data.scriptId || `script_${GenerateUUID().slice(0, 8)}`,
+    `script_${GenerateUUID().slice(0, 8)}`
+  );
+
+  const script = {
     id: data.id || GenerateUUID(),
     projectId: data.projectId || null,
     folderId: data.folderId || null,
-    name: data.name || "Untitled Script",
+    scriptId: scriptId,
     type: data.type || "component",
     localVariables: Array.isArray(data.localVariables)
       ? data.localVariables.map(createScriptVariable)
@@ -95,4 +100,6 @@ export const scriptSchema = (data = {}) => {
       ? data.edges.map(createScriptEdge)
       : [],
   };
+
+  return script;
 };

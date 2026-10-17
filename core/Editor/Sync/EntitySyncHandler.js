@@ -39,9 +39,11 @@ export class EntitySyncHandler {
         }
     }
 
-    onUpdateEntityName({ id, name }) {
+    onUpdateEntityScriptId({ id, scriptId }) {
         const e = this._findEntityById(id);
-        if (e) e.name = name;
+        if (e && scriptId) {
+            e.scriptId = scriptId;
+        }
     }
 
     onMoveEntity({ id, layerId, parentId }) {
@@ -81,7 +83,7 @@ export class EntitySyncHandler {
 
         const isTextLayoutProp = componentName === "TextRenderer" && [
             "fontSize", "value", "assetId", "lockRatio", "autoFit",
-            "maxWidth", "maxLine", "autoLine", "lineSpacing", "letterSpacing", "overflow", "align"
+            "maxWidth", "maxLine", "autoLine", "lineSpacing", "letterSpacing", "overflow", "align", "alignLine"
         ].includes(path);
 
         const oldH = (componentName === "Transform" || componentName === "UITransform" || e.components?.TextRenderer) 
@@ -175,7 +177,7 @@ export class EntitySyncHandler {
             if (!entity) return;
 
             entity.prefabId = newData.prefabId;
-            entity.name = newData.name;
+            entity.scriptId = newData.scriptId || entity.scriptId;
             if (newData.overridden !== undefined) entity.overridden = newData.overridden;
 
             entity.components = {};
@@ -194,8 +196,9 @@ export class EntitySyncHandler {
 
     _createEntityInstance(data) {
         const e = new Entity(data.id);
+        const scriptId = data.scriptId || "Entity";
         Object.assign(e, {
-            name: data.name,
+            scriptId: scriptId,
             type: data.type,
             layerId: data.layerId,
             parentId: data.parentId || null,

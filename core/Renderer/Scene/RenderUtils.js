@@ -291,6 +291,7 @@ export default class RenderUtils {
             color: HexToVec4(tx.color || "#FFFFFF"),
             font, opacity: a, flipX, flipY,
             align: tx.align || "left",
+            alignLine: tx.alignLine || tx.alignV || tx.verticalAlign || "top",
             width: rawT?.width || 100,
             maxLine: Math.max(1, Number(tx.maxLine) || 1),
             autoLine: tx.autoLine !== false,
@@ -309,9 +310,12 @@ export default class RenderUtils {
         if (rawT) {
             const measurement = FontMath.measureText(font, textOptions.text, textOptions.fontSize, textOptions);
             const newH = measurement.boundsHeight > 0 ? Math.ceil(measurement.boundsHeight) : Math.ceil(textOptions.fontSize);
-            if (rawT.height !== newH) {
-                rawT.height = newH;
-                trans.height = rawT.height;
+            const hasCustomVAlign = tx.alignLine === 'mid' || tx.alignLine === 'bottom' || tx.alignLine === 'center' || tx.alignLine === 'middle';
+            if (!hasCustomVAlign && tx.autoLine !== false) {
+                if (rawT.height !== newH) {
+                    rawT.height = newH;
+                    trans.height = rawT.height;
+                }
             }
         }
 

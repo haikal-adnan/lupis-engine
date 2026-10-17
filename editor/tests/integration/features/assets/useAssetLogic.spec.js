@@ -108,9 +108,9 @@ describe('Integration Test: Asset Logic UI & State Navigation', () => {
 
     // Setup basic assetStore state complete with fileKey & meta
     assetStore.assets = [
-      { id: 'a-1', name: 'B Knight', fileKey: 'image_b_knight', folderId: 'f-1', type: 'texture', meta: { extension: '.png', hasBmFont: false } },
-      { id: 'a-2', name: 'A Apple', fileKey: 'audio_a_apple', folderId: 'f-1', type: 'audio', meta: { extension: '.wav', hasBmFont: false } },
-      { id: 'a-3', name: 'Sub Item', fileKey: 'image_sub_item', folderId: 'f-2', type: 'texture', meta: { extension: '.png', hasBmFont: false } }
+      { id: 'a-1', scriptId: 'B_Knight', fileKey: 'image_b_knight', folderId: 'f-1', type: 'texture', meta: { extension: '.png', hasBmFont: false } },
+      { id: 'a-2', scriptId: 'A_Apple', fileKey: 'audio_a_apple', folderId: 'f-1', type: 'audio', meta: { extension: '.wav', hasBmFont: false } },
+      { id: 'a-3', scriptId: 'Sub_Item', fileKey: 'image_sub_item', folderId: 'f-2', type: 'texture', meta: { extension: '.png', hasBmFont: false } }
     ];
 
     // Pre-create dummy files in OPFS simulator with structure: lupis-engine/projects/proj-123/assets
@@ -144,17 +144,17 @@ describe('Integration Test: Asset Logic UI & State Navigation', () => {
 
     it('filters and sorts folders and assets based on searchQuery and active folder', () => {
       assetStore.assets.push(
-        { id: 'a-4', name: 'A Armor', fileKey: 'image_a_armor', folderId: 'f-1', type: 'texture', meta: { extension: '.png' } }
+        { id: 'a-4', scriptId: 'A_Armor', fileKey: 'image_a_armor', folderId: 'f-1', type: 'texture', meta: { extension: '.png' } }
       );
       const { visibleFolders, visibleAssets, searchQuery } = useAssetLogic();
 
       expect(visibleFolders.value).toHaveLength(1);
       expect(visibleFolders.value[0].name).toBe('Hero');
-      expect(visibleAssets.value.map((a) => a.displayName)).toEqual(['A Apple', 'A Armor', 'B Knight']);
+      expect(visibleAssets.value.map((a) => a.displayName)).toEqual(['A_Apple', 'A_Armor', 'B_Knight']);
 
       searchQuery.value = 'apple';
       expect(visibleAssets.value).toHaveLength(1);
-      expect(visibleAssets.value[0].displayName).toBe('A Apple');
+      expect(visibleAssets.value[0].displayName).toBe('A_Apple');
     });
 
     it('toggles viewMode between grid and list', () => {
@@ -194,8 +194,8 @@ describe('Integration Test: Asset Logic UI & State Navigation', () => {
       await handleFileUpload(event);
 
       expect(mockClick).toHaveBeenCalled();
-      expect(assetStore.assets.some((a) => a.name === 'a')).toBe(true);
-      expect(assetStore.assets.some((a) => a.name === 'b')).toBe(true);
+      expect(assetStore.assets.some((a) => a.scriptId === 'a')).toBe(true);
+      expect(assetStore.assets.some((a) => a.scriptId === 'b')).toBe(true);
       expect(event.target.value).toBe('');
     });
 
@@ -227,7 +227,7 @@ describe('Integration Test: Asset Logic UI & State Navigation', () => {
 
       await handleDrop(dropEvent, 'f-1');
 
-      expect(assetStore.assets.some((a) => a.name === 'dropped')).toBe(true);
+      expect(assetStore.assets.some((a) => a.scriptId === 'dropped')).toBe(true);
     });
 
     it('executes paste action for cut operation (move item)', async () => {
@@ -246,7 +246,7 @@ describe('Integration Test: Asset Logic UI & State Navigation', () => {
 
       await handlePaste();
 
-      expect(assetStore.assets.some((a) => a.name === 'B Knight (Copy)')).toBe(true);
+      expect(assetStore.assets.some((a) => a.scriptId === 'B_Knight_Copy')).toBe(true);
     });
   });
 
@@ -255,18 +255,18 @@ describe('Integration Test: Asset Logic UI & State Navigation', () => {
       const { handleAssetDoubleClick } = useAssetLogic();
       const textureAsset = assetStore.getAssetById('a-1');
 
-      await handleAssetDoubleClick({ ...textureAsset, displayName: textureAsset.name });
+      await handleAssetDoubleClick({ ...textureAsset, displayName: textureAsset.scriptId });
 
-      expect(mockShowImage).toHaveBeenCalledWith(expect.stringContaining('blob:mock-url'), 'B Knight');
+      expect(mockShowImage).toHaveBeenCalledWith(expect.stringContaining('blob:mock-url'), 'B_Knight');
     });
 
     it('opens audio preview modal on double-clicking audio asset', async () => {
       const { handleAssetDoubleClick } = useAssetLogic();
       const audioAsset = assetStore.getAssetById('a-2');
 
-      await handleAssetDoubleClick({ ...audioAsset, displayName: audioAsset.name });
+      await handleAssetDoubleClick({ ...audioAsset, displayName: audioAsset.scriptId });
 
-      expect(mockShowAudio).toHaveBeenCalledWith(expect.stringContaining('blob:mock-url'), 'A Apple');
+      expect(mockShowAudio).toHaveBeenCalledWith(expect.stringContaining('blob:mock-url'), 'A_Apple');
     });
   });
 

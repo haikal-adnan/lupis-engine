@@ -289,7 +289,7 @@ const audioAsset = computed(() => {
 });
 
 const displayAssetName = computed(() => {
-  return audioAsset.value ? (audioAsset.value.displayName || audioAsset.value.name) : 'None Selected';
+  return audioAsset.value ? (audioAsset.value.scriptId || audioAsset.value.displayName || 'Asset') : 'None Selected';
 });
 
 function playAudio() {

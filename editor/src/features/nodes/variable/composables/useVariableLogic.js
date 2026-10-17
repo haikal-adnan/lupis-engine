@@ -1,7 +1,7 @@
 import { computed, unref } from 'vue';
 import { useScriptStore } from '@scripts/scripts.js';
 import { useProjectStore } from '@projects/projects.js';
-import { GenerateUUID } from '@utils/utils.js';
+import { GenerateUUID, sanitizeScriptId, getValidUniqueScriptId, isScriptIdDuplicate } from '@utils/utils.js';
 import { useVariableConfig } from '@nodes/nodes.js';
 import { usePopAlert } from '@composables/composables.js';
 import { useScriptHistory } from '@historys/historys.js';
@@ -42,6 +42,7 @@ export function useVariableLogic(scopeProps) {
       recordLocalVariableChange(oldList, newList);
       
       scriptStore.updateScriptInList(scriptStore.activeScript.id, { localVariables: newList });
+      projectStore.markAsDirty();
     }
   };
 
@@ -54,15 +55,8 @@ export function useVariableLogic(scopeProps) {
   };
 
   const addVariable = (customType = 'String') => {
-    let baseName = 'NewVar';
-    let counter = 1;
-    let potentialName = baseName;
     const currentVars = variables.value;
-
-    while (currentVars.some(v => v.name === potentialName)) {
-      potentialName = `${baseName}_${counter}`;
-      counter++;
-    }
+    const potentialName = getValidUniqueScriptId('NewVar', currentVars, v => v.name);
 
     const rawDefault = getDefaultValueForType(customType);
 
@@ -79,14 +73,29 @@ export function useVariableLogic(scopeProps) {
     return newVar;
   };
 
-  const updateVariable = (index, key, value) => {
+  const updateVariable = (indexOrId, key, value) => {
     const newList = JSON.parse(JSON.stringify(variables.value));
-    const targetVar = newList[index];
+    let targetIndex = typeof indexOrId === 'number' ? indexOrId : newList.findIndex(v => v.id === indexOrId);
+    if (targetIndex < 0 || targetIndex >= newList.length) {
+      targetIndex = newList.findIndex(v => v.id === indexOrId);
+    }
+    const targetVar = newList[targetIndex];
     if (!targetVar) return;
 
     if (targetVar[key] === value) return;
 
-    if (key === 'type') {
+    if (key === 'name') {
+      const sanitized = sanitizeScriptId(value, targetVar.name);
+      if (isScriptIdDuplicate(sanitized, variables.value, v => v.name, targetVar.id)) {
+        showPop({ 
+          title: 'Duplicate Variable', 
+          message: `Variable "${sanitized}" already exists in ${getScope()} scope.`, 
+          type: 'warning' 
+        });
+        return;
+      }
+      targetVar.name = sanitized;
+    } else if (key === 'type') {
       const cleanType = String(value).toLowerCase();
       targetVar.type = cleanType;
       targetVar.defaultValue = getDefaultValueForType(cleanType);
@@ -218,36 +227,39 @@ return;`;
     scriptStore.saveActiveScript();
   };
 
-  const duplicateVariable = (index) => {
-    const item = variables.value[index];
+  const duplicateVariable = (indexOrId) => {
+    let idx = typeof indexOrId === 'number' ? indexOrId : variables.value.findIndex(v => v.id === indexOrId);
+    if (idx < 0 || idx >= variables.value.length) {
+      idx = variables.value.findIndex(v => v.id === indexOrId);
+    }
+    const item = variables.value[idx];
     if (!item) return;
 
     const copy = JSON.parse(JSON.stringify(item));
     copy.id = GenerateUUID();
-    let baseName = `${copy.name}_copy`;
-    let potentialName = baseName;
-    let counter = 1;
-
-    while (variables.value.some(v => v.name === potentialName)) {
-      potentialName = `${baseName}_${counter}`;
-      counter++;
-    }
-    copy.name = potentialName;
+    copy.name = getValidUniqueScriptId(`${copy.name}_copy`, variables.value, v => v.name, copy.id);
 
     const newList = [...variables.value];
-    newList.splice(index + 1, 0, copy);
+    newList.splice(idx + 1, 0, copy);
     saveList(newList);
+    return copy;
   };
 
-  const deleteVariable = (index) => {
+  const deleteVariable = (indexOrId) => {
+    let idx = typeof indexOrId === 'number' ? indexOrId : variables.value.findIndex(v => v.id === indexOrId);
+    if (idx < 0 || idx >= variables.value.length) {
+      idx = variables.value.findIndex(v => v.id === indexOrId);
+    }
+    if (idx === -1) return;
     const newList = [...variables.value];
-    newList.splice(index, 1);
+    newList.splice(idx, 1);
     saveList(newList);
   };
 
   const reorderVariables = (fromIndex, toIndex) => {
-    if (fromIndex === toIndex) return;
+    if (fromIndex === toIndex || fromIndex < 0 || toIndex < 0) return;
     const newList = [...variables.value];
+    if (fromIndex >= newList.length || toIndex >= newList.length) return;
     const [movedItem] = newList.splice(fromIndex, 1);
     newList.splice(toIndex, 0, movedItem);
     saveList(newList);
@@ -266,7 +278,14 @@ return;`;
   };
 
   const addNodeToCanvas = (variable, pos = null, actionType = 'variableGet', isScreenPos = false) => {
-    if (!scriptStore.activeScript) return;
+    if (!scriptStore.activeScript) {
+      showPop({
+        title: 'No Active Script',
+        message: 'Open a visual script in the editor first to add variable nodes.',
+        type: 'warning'
+      });
+      return null;
+    }
 
     const isGet = actionType === 'variableGet' || actionType === 'variable_get';
     const varType = (variable.type || 'String').toLowerCase();
@@ -287,6 +306,19 @@ return;`;
       } else {
         finalPosition = pos;
       }
+    } else if (scriptStore.camera) {
+      const cam = scriptStore.camera;
+      const baseX = Math.round((400 - cam.x) / cam.scale) - 100;
+      const baseY = Math.round((300 - cam.y) / cam.scale) - 50;
+      let targetPos = { x: baseX, y: baseY };
+      const nodes = scriptStore.activeScript.nodes || [];
+      let offset = 0;
+      while (nodes.some(n => Math.abs(n.position.x - targetPos.x) < 25 && Math.abs(n.position.y - targetPos.y) < 25) && offset < 10) {
+        offset++;
+        targetPos.x += 30;
+        targetPos.y += 30;
+      }
+      finalPosition = targetPos;
     }
 
     const getMethod = scope === 'Global' ? 'getGlobal' : 'getLocal';
@@ -299,45 +331,48 @@ return;`;
     const cleanDefaultValue = sanitizeVariableValue(variable.defaultValue, variable.type);
 
     const newNodePayload = {
-    id: GenerateUUID(),
-    type: actionType,
-    label: isGet ? `Get ${varName}` : `Set ${varName}`,
-    dynamicData: null,
-    position: finalPosition,
-    data: { 
-      scope: scope,
-      variableId: varId,
-      code: nodeCode,
-      items: [
-        {
-          variableId: varId,
-          value: cleanDefaultValue,
-          dataType: varType
-        }
+      id: GenerateUUID(),
+      type: actionType,
+      label: isGet ? `Get ${varName}` : `Set ${varName}`,
+      dynamicData: null,
+      position: finalPosition,
+      data: { 
+        scope: scope,
+        variableId: varId,
+        variableName: varName,
+        code: nodeCode,
+        items: [
+          {
+            variableId: varId,
+            value: cleanDefaultValue,
+            dataType: varType
+          }
+        ]
+      },
+      settings: {
+        headerTitle: isGet ? `Get ${varName}` : `Set ${varName}`,
+        headerColor: varColor,
+        category: 'Variable'
+      },
+      inputs: isGet ? [] : [
+        { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
+        { id: 'value', label: varName, dataType: varType, color: varColor }
+      ],
+      outputs: isGet ? [
+        { id: 'value', label: varName, dataType: varType, color: varColor }
+      ] : [
+        { id: 'execOut', dataType: 'execution', color: '#FFFFFF' },
+        { id: 'valueOut', label: varName, dataType: varType, color: varColor }
       ]
-    },
-    settings: {
-      headerTitle: isGet ? `Get ${varName}` : `Set ${varName}`,
-      headerColor: varColor,
-      category: 'Variable'
-    },
-    inputs: isGet ? [] : [
-      { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
-      { id: 'value', label: varName, dataType: varType, color: varColor }
-    ],
-    outputs: isGet ? [
-      { id: 'value', label: varName, dataType: varType, color: varColor }
-    ] : [
-      { id: 'execOut', dataType: 'execution', color: '#FFFFFF' },
-      { id: 'valueOut', label: varName, dataType: varType, color: varColor }
-    ]
-  };
+    };
 
     scriptStore.addNodeToActive(newNodePayload);
     
     if (typeof recordAddNode === 'function') {
       recordAddNode(newNodePayload);
     }
+
+    return newNodePayload;
   };
 
   return {

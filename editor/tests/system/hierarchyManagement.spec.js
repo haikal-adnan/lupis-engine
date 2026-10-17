@@ -59,19 +59,19 @@ describe('Hierarchy Management Integration', () => {
       setupMockSceneEnvironment()
 
       // Act
-      const worldLayer = sceneStore.addLayer('World Layer 2', 'world')
-      const uiLayer = sceneStore.addLayer('HUD Layer', 'ui')
+      const worldLayer = sceneStore.addLayer('World_Layer_2', 'world')
+      const uiLayer = sceneStore.addLayer('HUD_Layer', 'ui')
 
       // Assert
-      expect(sceneStore.activeScene.layersWorld).toContainEqual(expect.objectContaining({ id: worldLayer.id, name: 'World Layer 2' }))
-      expect(sceneStore.activeScene.layersUI).toContainEqual(expect.objectContaining({ id: uiLayer.id, name: 'HUD Layer' }))
+      expect(sceneStore.activeScene.layersWorld).toContainEqual(expect.objectContaining({ id: worldLayer.id, scriptId: 'World_Layer_2' }))
+      expect(sceneStore.activeScene.layersUI).toContainEqual(expect.objectContaining({ id: uiLayer.id, scriptId: 'HUD_Layer' }))
       expect(engineBridge.addLayer).toHaveBeenCalledTimes(2)
     })
 
     it('[Bad Path] prevents deleting the last remaining layer in World or UI section', () => {
       // Arrange
-      const worldLayer = createMockLayer({ id: 'layer_world_sole', name: 'Sole World', section: 'world' })
-      const uiLayer = createMockLayer({ id: 'layer_ui_sole', name: 'Sole UI', section: 'ui' })
+      const worldLayer = createMockLayer({ id: 'layer_world_sole', scriptId: 'Sole_World', section: 'world' })
+      const uiLayer = createMockLayer({ id: 'layer_ui_sole', scriptId: 'Sole_UI', section: 'ui' })
       setupMockSceneEnvironment({ layersWorld: [worldLayer], layersUI: [uiLayer] })
 
       // Act
@@ -110,9 +110,9 @@ describe('Hierarchy Management Integration', () => {
     it('constructs a multi-level tree structure correctly with treeData getter', () => {
       // Arrange
       const layer = createMockLayer({ id: 'layer_world_default', section: 'world' })
-      const parent = createMockEntity({ id: 'parent_1', name: 'Parent Node', layerId: layer.id })
-      const child = createMockEntity({ id: 'child_1', name: 'Child Node', parentId: 'parent_1', layerId: layer.id })
-      const grandChild = createMockEntity({ id: 'grandchild_1', name: 'Grandchild Node', parentId: 'child_1', layerId: layer.id })
+      const parent = createMockEntity({ id: 'parent_1', scriptId: 'Parent_Node', layerId: layer.id })
+      const child = createMockEntity({ id: 'child_1', scriptId: 'Child_Node', parentId: 'parent_1', layerId: layer.id })
+      const grandChild = createMockEntity({ id: 'grandchild_1', scriptId: 'Grandchild_Node', parentId: 'child_1', layerId: layer.id })
 
       setupMockSceneEnvironment({ layersWorld: [layer], entities: [parent, child, grandChild] })
 
@@ -252,9 +252,9 @@ describe('Hierarchy Management Integration', () => {
 
     it('reorders layer sequence and recalculates orderIndex across collection', () => {
       // Arrange
-      const layerA = createMockLayer({ id: 'layer_a', name: 'Layer A', orderIndex: 0, section: 'world' })
-      const layerB = createMockLayer({ id: 'layer_b', name: 'Layer B', orderIndex: 1, section: 'world' })
-      const layerC = createMockLayer({ id: 'layer_c', name: 'Layer C', orderIndex: 2, section: 'world' })
+      const layerA = createMockLayer({ id: 'layer_a', scriptId: 'Layer_A', orderIndex: 0, section: 'world' })
+      const layerB = createMockLayer({ id: 'layer_b', scriptId: 'Layer_B', orderIndex: 1, section: 'world' })
+      const layerC = createMockLayer({ id: 'layer_c', scriptId: 'Layer_C', orderIndex: 2, section: 'world' })
 
       setupMockSceneEnvironment({ layersWorld: [layerA, layerB, layerC] })
 

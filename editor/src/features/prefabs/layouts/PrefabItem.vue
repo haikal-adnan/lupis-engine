@@ -7,7 +7,7 @@
       isDragOver ? 'ring-2 ring-primary bg-primary/20 scale-105' : '',
       isCut ? 'opacity-50 grayscale' : ''
     ]"
-    :title="data.name" 
+    :title="isFolder ? data.name : (data.scriptId || '')" 
     draggable="true"
     @dragstart="onDragStart"
     @dragover="onDragOver"
@@ -18,7 +18,7 @@
     @contextmenu.prevent.stop="$emit('contextmenu', $event, data)"
     data-testid="prefab-item"
     :data-node-id="data.id"
-    :data-node-name="data.name"
+    :data-node-name="isFolder ? data.name : data.scriptId"
     :data-node-type="isFolder ? 'folder' : (data.type || 'world')"
     :aria-selected="active ? 'true' : 'false'"
     :data-cut="isCut ? 'true' : 'false'"
@@ -53,7 +53,7 @@
         active ? 'text-foreground' : 'text-muted-foreground group-hover:text-foreground'
       ]"
     >
-      {{ data.name }}
+      {{ isFolder ? data.name : data.scriptId }}
     </span>
   </div>
 </template>

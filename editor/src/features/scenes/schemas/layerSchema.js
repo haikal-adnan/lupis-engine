@@ -1,15 +1,21 @@
-import { GenerateUUID } from '@utils/utils.js';
+import { GenerateUUID, sanitizeScriptId } from '@utils/utils.js';
 
 export const layerSchema = (data = {}) => {
-  return {
-    id: data.id || `${GenerateUUID()}`,
-    scriptId: data.scriptId || `layer_${GenerateUUID()}`,
-    name: data.name || "New Layer",
+  const scriptId = sanitizeScriptId(
+    data.scriptId || `layer_${GenerateUUID().slice(0, 8)}`,
+    `layer_${GenerateUUID().slice(0, 8)}`
+  );
+
+  const layer = {
+    id: data.id || `layer_${GenerateUUID()}`,
+    scriptId: scriptId,
     zIndex: Number(data.zIndex ?? 0), 
     orderIndex: Number(data.orderIndex ?? 0),
     active: data.active ?? true,
     visible: data.visible ?? true,
     locked: data.locked ?? false,
-    opacity: data.opacity ?? 1.0
+    opacity: Number(data.opacity ?? 1.0)
   };
+
+  return layer;
 };

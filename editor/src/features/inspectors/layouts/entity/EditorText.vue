@@ -103,6 +103,14 @@
       </div>
     </PropertyRow>
 
+    <PropertyRow label="Align Line">
+      <div class="flex bg-secondary/30 rounded-md border border-border w-full">
+        <BaseButton v-for="opt in alignLineOptions" :key="opt.value" ghost :active="alignLine === opt.value" @click="alignLine = opt.value" class="flex-1 h-7 !rounded-[3px]" :data-testid="`text-renderer-align-line-${opt.value}`" :data-active="alignLine === opt.value">
+          <component :is="opt.icon" class="w-3.5 h-3.5" />
+        </BaseButton>
+      </div>
+    </PropertyRow>
+
     <div class="h-px bg-border my-3"></div>
 
     <div class="space-y-2">
@@ -155,6 +163,7 @@
 import { computed } from "vue";
 import { 
   Type, Trash2, AlignLeft, AlignCenter, AlignRight, AlignJustify,
+  AlignVerticalJustifyStart, AlignVerticalJustifyCenter, AlignVerticalJustifyEnd,
   FolderSearch, RefreshCw
 } from "lucide-vue-next"; 
 
@@ -234,5 +243,17 @@ const alignOptions = [
     { label: 'Center', value: 'center', icon: AlignCenter },
     { label: 'Right', value: 'right', icon: AlignRight },
     { label: 'Justify', value: 'justify', icon: AlignJustify }
+];
+
+const rawAlignLine = bindComponentProp('TextRenderer', 'alignLine');
+const alignLine = computed({
+  get: () => rawAlignLine.value || 'top',
+  set: (val) => { rawAlignLine.value = val; }
+});
+
+const alignLineOptions = [
+    { label: 'Top', value: 'top', icon: AlignVerticalJustifyStart },
+    { label: 'Middle', value: 'mid', icon: AlignVerticalJustifyCenter },
+    { label: 'Bottom', value: 'bottom', icon: AlignVerticalJustifyEnd }
 ];
 </script>

@@ -34,7 +34,7 @@ export default class SyncComponent {
         // Entity Events
         this.bus.on("editor:entity:create", d => this.entitySync.onCreateEntity(d));
         this.bus.on("editor:entity:delete", id => this.entitySync.onDeleteEntity(id));
-        this.bus.on("editor:entity:update-name", p => this.entitySync.onUpdateEntityName(p));
+        this.bus.on("editor:entity:update-script-id", p => this.entitySync.onUpdateEntityScriptId(p));
         this.bus.on("editor:entity:move", p => this.entitySync.onMoveEntity(p));
         this.bus.on("editor:entity:update-component", p => this.entitySync.onUpdateComponent(p));
         this.bus.on("editor:entity:update-prop", p => this.entitySync.onUpdateEntityProp(p));
@@ -46,7 +46,7 @@ export default class SyncComponent {
         // Layer Events
         this.bus.on("editor:layer:create", d => this.layerSync.onCreateLayer(d));
         this.bus.on("editor:layer:delete", id => this.layerSync.onDeleteLayer(id));
-        this.bus.on("editor:layer:update-name", p => this.layerSync.onUpdateLayerName(p));
+        this.bus.on("editor:layer:update-script-id", p => this.layerSync.onUpdateLayerScriptId(p));
         this.bus.on("editor:layer:update-prop", p => this.layerSync.onUpdateLayerProp(p));
         this.bus.on("editor:layer:reorder", p => this.layerSync.onReorderLayer(p));
 

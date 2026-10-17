@@ -53,7 +53,8 @@ export class ScriptCrudObject {
     const scriptItem = this.scriptPage.itemByName(scriptName);
     await expect(scriptItem).toBeVisible();
 
-    await this.popup.selectContextMenu(scriptItem, `Add to ${entityName}`);
+    const currentScriptId = (await entityNode.getAttribute('data-node-script-id')) || entityName;
+    await this.popup.selectContextMenu(scriptItem, `Add to ${currentScriptId}`);
   }
 
   /**

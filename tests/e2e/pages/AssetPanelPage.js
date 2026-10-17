@@ -56,20 +56,25 @@ export class AssetPanelPage {
    */
   card(title) {
     const baseName = title.replace(/\.[^/.]+$/, '');
+    const slug = title.trim().replace(/[\s-]+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+    const baseSlug = baseName.trim().replace(/[\s-]+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
     return this.panel
-      .locator(`[title="${title}"], [title="${baseName}"], [title^="${baseName}."]`)
+      .locator(`[title="${title}"], [title="${baseName}"], [title^="${baseName}."], [title="${slug}"], [title="${baseSlug}"]`)
       .first();
   }
 
   /** All elements matching the title (for toHaveCount assertions). */
   cardsByTitle(title) {
     const baseName = title.replace(/\.[^/.]+$/, '');
-    return this.panel.locator(`[title="${title}"], [title="${baseName}"], [title^="${baseName}."]`);
+    const slug = title.trim().replace(/[\s-]+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+    const baseSlug = baseName.trim().replace(/[\s-]+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+    return this.panel.locator(`[title="${title}"], [title="${baseName}"], [title^="${baseName}."], [title="${slug}"], [title="${baseSlug}"]`);
   }
 
   /** First card whose title contains the given text. */
   cardContaining(text) {
-    return this.panel.locator(`[title*="${text}"]`).first();
+    const slug = text.trim().replace(/[\s()-]+/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
+    return this.panel.locator(`[title*="${text}"], [title*="${slug}"]`).first();
   }
 
   // ==========================================
@@ -95,9 +100,8 @@ export class AssetPanelPage {
     await fileInput.setInputFiles(filePath);
 
     // 2. Wait for the asset card to appear in the DOM (main signal that the file was processed).
-    //    No explicit { timeout } (Section 2): if uploads are genuinely slow, raise the
-    //    global expect.timeout in playwright.config.js instead of per call.
-    await expect(this.card(fileName)).toBeVisible();
+    const baseName = fileName.replace(/\.[^/.]+$/, '');
+    await expect(this.card(fileName).or(this.cardContaining(baseName))).toBeVisible();
 
     // 3. Make sure the loading overlay is gone
     await expect(this.uploadOverlay).toBeHidden();

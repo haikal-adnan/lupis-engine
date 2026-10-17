@@ -1,23 +1,13 @@
 <template>
   <PropertySection title="Clip Properties" :icon="Film" :default-open="true" data-testid="animator-property-section">
     
-    <PropertyRow label="Clip ID">
+    <PropertyRow label="ID">
       <BaseInput 
         v-model="scriptId" 
         placeholder="e.g. walk_anim" 
         class="w-full font-mono text-xs text-blue-400" 
         :disabled="!activeClipData"
         data-testid="animator-property-script-id"
-      />
-    </PropertyRow>
-
-    <PropertyRow label="Clip Name">
-      <BaseInput 
-        v-model="clipName" 
-        placeholder="e.g. Walk_Up" 
-        class="w-full font-mono text-xs" 
-        :disabled="!activeClipData"
-        data-testid="animator-property-clip-name"
       />
     </PropertyRow>
     
@@ -27,7 +17,7 @@
         :rect="baseTileRect"
         @update:rect="updateBaseTileRect"
         :disabled="!activeClipData"
-        name="Clip Base Size Crop"
+        :name="assetScriptId || 'Clip Base Size Crop'"
         fallback-text="No Tex"
         sizeClass="w-[52px] h-[52px] bg-muted/20 border-border/60 shrink-0 rounded-md shadow-inner"
         data-testid="animator-property-texture-thumbnail"
@@ -50,7 +40,7 @@
             data-testid="animator-property-texture-btn"
           >
             <span class="flex-1 px-2 text-[10px] font-mono text-muted-foreground/90 truncate select-none group-hover:text-foreground transition-colors">
-              {{ activeClipData?.assetId || 'None' }}
+              {{ assetScriptId || 'None' }}
             </span>
 
             <div class="px-2 h-full flex items-center justify-center border-l border-border bg-muted/10 text-muted-foreground/50 group-hover:text-primary group-hover:bg-primary/5 transition-colors">
@@ -156,6 +146,13 @@ import {
 const { activeClipData, bindClipProp } = useAnimatorLogic();
 const assetStore = useAssetStore();
 
+const assetScriptId = computed(() => {
+  const targetAssetId = activeClipData.value?.assetId;
+  if (!targetAssetId) return null;
+  const asset = assetStore.getAssetById(targetAssetId);
+  return asset ? (asset.scriptId || asset.id) : targetAssetId;
+});
+
 const currentTextureUrl = ref(null);
 
 watch(
@@ -175,7 +172,6 @@ watch(
 );
 
 const scriptId = bindClipProp('scriptId', '');
-const clipName = bindClipProp('name', '');
 const fps = bindClipProp('fps', 12);
 const isLooping = bindClipProp('isLooping', true);
 const flipX = bindClipProp('flipX', false);

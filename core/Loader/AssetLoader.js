@@ -17,6 +17,14 @@ export default class AssetLoader {
     }
 
     if (!world.audios) world.audios = {};
+    if (!world.assetMap) world.assetMap = {};
+    world.assetList = Array.isArray(assets) ? assets : [];
+    for (const a of world.assetList) {
+      if (a && a.id) {
+        world.assetMap[a.id] = a;
+        if (a.scriptId) world.assetMap[a.scriptId] = a;
+      }
+    }
 
     const totalAssets = assets.length;
     let loadedAssets = 0;
@@ -42,12 +50,12 @@ export default class AssetLoader {
             break;
         }
       } catch (err) {
-        console.error(`[AssetLoader] Failed to load asset [${asset.id}]: ${asset.name}`, err);
+        console.error(`[AssetLoader] Failed to load asset [${asset.id}]: ${asset.scriptId || asset.id}`, err);
       } finally {
         loadedAssets++;
         if (onProgress) {
           const percentage = Math.floor((loadedAssets / totalAssets) * 100);
-          onProgress(`Mengunduh ${asset.name || 'Aset'}...`, percentage);
+          onProgress(`Mengunduh ${asset.scriptId || 'Aset'}...`, percentage);
         }
       }
     });
@@ -91,6 +99,9 @@ export default class AssetLoader {
     };
 
     world.addTexture(asset.id, data);
+    if (asset.scriptId && asset.scriptId !== asset.id) {
+      world.addTexture(asset.scriptId, data);
+    }
   }
 
   async loadFont(world, asset, baseURL) {

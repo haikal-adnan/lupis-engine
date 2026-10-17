@@ -54,11 +54,11 @@ export function useScriptLogic() {
 
     if (searchQuery.value) {
       const query = searchQuery.value.toLowerCase();
-      list = list.filter(s => s.name.toLowerCase().includes(query));
+      list = list.filter(s => (s.scriptId || '').toLowerCase().includes(query));
     }
 
     return list.sort((a, b) => 
-      a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' })
+      (a.scriptId || '').localeCompare(b.scriptId || '', undefined, { numeric: true, sensitivity: 'base' })
     );
   });
 
@@ -120,7 +120,7 @@ export function useScriptLogic() {
     scriptStore.setActiveScript(scriptData);
     workspaceStore.openTab({
       id: scriptData.id,
-      name: scriptData.name,
+      name: scriptData.scriptId,
       type: 'diagram'
     });
   };

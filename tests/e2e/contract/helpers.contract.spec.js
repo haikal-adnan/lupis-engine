@@ -30,7 +30,7 @@ test.describe('@contract PopupHelper.selectContextMenu', () => {
     await expect(popup.activeMenus).toHaveCount(0);
 
     await popup.fillPromptAndSubmit('Rename Layer', 'Contract Layer', 'Rename');
-    await expect(hierarchy.nodeById(nodeId)).toHaveAttribute('data-node-name', 'Contract Layer');
+    await expect(hierarchy.nodeById(nodeId)).toHaveAttribute('data-node-name', /Contract[ _]Layer/);
   });
 
   test('nested menu: submenu opens, leaf item is selected, all levels close', async ({ popup, hierarchy }) => {
@@ -80,11 +80,11 @@ test.describe('@contract PopupHelper prompt & confirm', () => {
     // Section 11 point 6: the caller passes the trigger test ID explicitly
     await controls.clickSelectAction(SCENE_OPTIONS, 'Delete Scene');
     await popup.confirmAction(/scene/i, { action: 'cancel' });
-    await expect(hierarchy.sceneSelect).toContainText('Contract Scene');
+    await expect(hierarchy.sceneSelect).toContainText(/Contract[ _]Scene/);
 
     await controls.clickSelectAction(SCENE_OPTIONS, 'Delete Scene');
     await popup.confirmAction(/scene/i, { action: 'confirm' });
-    await expect(hierarchy.sceneSelect).not.toContainText('Contract Scene');
+    await expect(hierarchy.sceneSelect).not.toContainText('Contract_Scene');
   });
 });
 

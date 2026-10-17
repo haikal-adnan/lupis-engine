@@ -85,8 +85,8 @@ describe('Integration Test: PrefabLogic', () => {
       folderStore.setActiveFolder(null)
 
       prefabStore.initPrefabs([
-        { id: 'p1', name: 'Player', type: 'world', folderId: null },
-        { id: 'p2', name: 'HealthBar', type: 'ui', folderId: null }
+        { id: 'p1', scriptId: 'Player', type: 'world', folderId: null },
+        { id: 'p2', scriptId: 'HealthBar', type: 'ui', folderId: null }
       ])
 
       // Act & Assert: Default tab ('world')
@@ -94,7 +94,7 @@ describe('Integration Test: PrefabLogic', () => {
       expect(logic.visibleFolders.value[0].name).toBe('Folder World')
 
       expect(logic.visiblePrefabs.value).toHaveLength(1)
-      expect(logic.visiblePrefabs.value[0].name).toBe('Player')
+      expect(logic.visiblePrefabs.value[0].scriptId).toBe('Player')
 
       // Act: Switch tab to 'ui' and search
       logic.activeTab.value = 'ui'
@@ -103,7 +103,7 @@ describe('Integration Test: PrefabLogic', () => {
       // Assert
       expect(logic.visibleFolders.value).toHaveLength(0)
       expect(logic.visiblePrefabs.value).toHaveLength(1)
-      expect(logic.visiblePrefabs.value[0].name).toBe('HealthBar')
+      expect(logic.visiblePrefabs.value[0].scriptId).toBe('HealthBar')
     })
 
     it('generates sequential folder breadcrumbs from root', () => {
@@ -142,7 +142,7 @@ describe('Integration Test: PrefabLogic', () => {
     it('moves prefab item to new folder via paste (cut) operation', async () => {
       // Arrange
       prefabStore.initPrefabs([
-        { id: 'p1', name: 'Item', folderId: 'folder-old' }
+        { id: 'p1', scriptId: 'Item', folderId: 'folder-old' }
       ])
       folderStore.setActiveFolder('folder-new')
 
@@ -166,7 +166,7 @@ describe('Integration Test: PrefabLogic', () => {
     it('duplicates prefab when executing paste (copy) operation', async () => {
       // Arrange
       prefabStore.initPrefabs([
-        { id: 'p1', name: 'Original', folderId: null }
+        { id: 'p1', scriptId: 'Original', folderId: null }
       ])
 
       logic.clipboard.value = {
@@ -179,7 +179,7 @@ describe('Integration Test: PrefabLogic', () => {
 
       // Assert: New prefab duplicated in store
       expect(prefabStore.prefabs).toHaveLength(2)
-      expect(prefabStore.prefabs[1].name).toBe('Original_copy')
+      expect(prefabStore.prefabs[1].scriptId).toBe('Original_copy')
     })
   })
 
@@ -214,7 +214,7 @@ describe('Integration Test: PrefabLogic', () => {
     it('processes drag and drop data to move item', async () => {
       // Arrange
       prefabStore.initPrefabs([
-        { id: 'p-drag', name: 'Dragged', folderId: 'f-start' }
+        { id: 'p-drag', scriptId: 'Dragged', folderId: 'f-start' }
       ])
       const mockEvent = {
         dataTransfer: {
@@ -232,7 +232,7 @@ describe('Integration Test: PrefabLogic', () => {
     it('deletes prefab item and clears selection if deleted item was selected', async () => {
       // Arrange
       prefabStore.initPrefabs([
-        { id: 'p-delete', name: 'ToDelete', folderId: null }
+        { id: 'p-delete', scriptId: 'ToDelete', folderId: null }
       ])
       logic.selectedId.value = 'p-delete'
 
@@ -247,7 +247,7 @@ describe('Integration Test: PrefabLogic', () => {
     it('routes rename action to prompt dialog and updates item name', async () => {
       // Arrange
       prefabStore.initPrefabs([
-        { id: 'p-1', name: 'OldName', folderId: null }
+        { id: 'p-1', scriptId: 'OldName', folderId: null }
       ])
       mockPrompt.mockResolvedValue('RenamedPrefab')
 
@@ -255,7 +255,7 @@ describe('Integration Test: PrefabLogic', () => {
       await logic.handleRename({ id: 'p-1', isFolder: false })
 
       // Assert
-      expect(prefabStore.getPrefabById('p-1').name).toBe('RenamedPrefab')
+      expect(prefabStore.getPrefabById('p-1').scriptId).toBe('RenamedPrefab')
     })
   })
 
@@ -282,7 +282,7 @@ describe('Integration Test: PrefabLogic', () => {
     it('[Bad Path] does not move prefab if target folder is the same as source folder', async () => {
       // Arrange
       prefabStore.initPrefabs([
-        { id: 'p-same', name: 'Same', folderId: 'f-same' }
+        { id: 'p-same', scriptId: 'Same', folderId: 'f-same' }
       ])
 
       // Act

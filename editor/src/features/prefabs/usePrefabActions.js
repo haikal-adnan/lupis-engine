@@ -1,7 +1,7 @@
 import { usePrefabStore } from '@prefabs/prefabs.js';
 import { useSceneStore } from '@scenes/scenes.js';
 import { prefabSchema } from '@prefabs/prefabs.js';
-import { GenerateUUID } from '@utils/utils.js';
+import { GenerateUUID, sanitizeScriptId, getValidUniqueScriptId, isScriptIdDuplicate } from '@utils/utils.js';
 import { engineBridge } from "@engines/engines.js";
 import { useSceneHistory } from "@historys/historys.js";
 
@@ -27,50 +27,7 @@ export function usePrefabActions() {
   const { prompt } = usePrompt();
 
   const getValidUniqueName = (desiredName, excludeId = null, targetType = null) => {
-    let cleanName = desiredName
-      .replace(/\s+/g, '_')
-      .replace(/[^a-zA-Z0-9_]/g, '');
-
-    let baseName = cleanName;
-    const match = cleanName.match(/^(.*?)(?:_(\d+))?$/);
-    if (match && match[1]) {
-      baseName = match[1];
-    }
-
-    const existingPrefabs = store.prefabs.filter(p => {
-      if (p.id === excludeId) return false;
-      if (targetType) {
-        const pType = p.type || p.data?.type || 'world';
-        return pType === targetType;
-      }
-      return true;
-    });
-
-    const isExactTaken = existingPrefabs.some(
-      p => p.name.toLowerCase() === cleanName.toLowerCase()
-    );
-
-    if (!isExactTaken) {
-      return cleanName;
-    }
-
-    const regex = new RegExp(`^${baseName}(?:_(\\d+))?$`, 'i');
-    let maxIndex = 0;
-
-    existingPrefabs.forEach(p => {
-      const m = p.name.match(regex);
-      if (m) {
-        if (m[1] !== undefined) {
-          const num = parseInt(m[1], 10);
-          if (num > maxIndex) maxIndex = num;
-        } else {
-          if (maxIndex < 1) maxIndex = 1;
-        }
-      }
-    });
-
-    const nextIndex = maxIndex + 1;
-    return `${baseName}_${nextIndex}`;
+    return getValidUniqueScriptId(desiredName, store.prefabs, p => p.scriptId, excludeId);
   };
 
   const createPrefab = async (
@@ -123,7 +80,7 @@ export function usePrefabActions() {
       id: GenerateUUID(), 
       projectId: workspaceStore.activeProjectId,
       folderId: targetFolderId,
-      name: validName, 
+      scriptId: validName, 
       type: type, 
       ...dataPayload
     });
@@ -152,7 +109,7 @@ export function usePrefabActions() {
 
     showPop({ 
       title: 'Deleted', 
-      message: `Prefab "${prefab.name}" removed. (Ctrl+Z to Undo)`, 
+      message: `Prefab "${prefab.scriptId}" removed. (Ctrl+Z to Undo)`, 
       type: 'success' 
     });
 
@@ -163,10 +120,11 @@ export function usePrefabActions() {
     const prefab = store.getPrefabById(prefabId);
     if (!prefab) return;
 
+    const currentName = prefab.scriptId;
     const rawNewName = await prompt({
       title: 'Rename Prefab',
       message: 'Enter new name for the prefab (Alphanumeric and underscores only):',
-      defaultValue: prefab.name,
+      defaultValue: currentName,
       confirmText: 'Rename',
       cancelText: 'Cancel'
     });
@@ -174,12 +132,13 @@ export function usePrefabActions() {
     if (rawNewName && rawNewName.trim() !== "") {
       const validName = getValidUniqueName(rawNewName, prefabId);
 
-      if (validName !== prefab.name) {
-        const oldName = prefab.name;
-        const updatedEntityData = { ...prefab.data, name: validName };
+      if (validName !== currentName) {
+        const oldName = currentName;
+        const updatedEntityData = { ...prefab.data, scriptId: validName };
+        delete updatedEntityData.name;
         
         await store.updatePrefab(prefabId, { 
-          name: validName, 
+          scriptId: validName,
           data: updatedEntityData 
         });
 
@@ -199,7 +158,10 @@ export function usePrefabActions() {
 
     const clone = JSON.parse(JSON.stringify(original));
     clone.id = GenerateUUID();
-    clone.name = getValidUniqueName(`${original.name}_copy`);
+    const baseScriptId = original.scriptId || 'prefab';
+    const validName = getValidUniqueName(`${baseScriptId}_copy`);
+    clone.scriptId = validName;
+    delete clone.name;
     clone.folderId = folderStore.activeFolderId;
 
     await store.addPrefab(clone);
@@ -208,7 +170,7 @@ export function usePrefabActions() {
     const { recordCreatePrefab } = useSceneHistory();
     recordCreatePrefab(clone);
 
-    showPop({ title: 'Duplicated', message: `Prefab duplicated as "${clone.name}".`, type: 'success' });
+    showPop({ title: 'Duplicated', message: `Prefab duplicated as "${validName}".`, type: 'success' });
     
     return clone;
   };
@@ -227,7 +189,7 @@ export function usePrefabActions() {
     if (entityIds.length > 1) {
       const isConfirmed = await confirm({
         title: 'Link Entities',
-        message: `Link ${entityIds.length} entities to "${prefab.name}"?`,
+        message: `Link ${entityIds.length} entities to "${prefab.scriptId}"?`,
         confirmText: 'Link',
         cancelText: 'Cancel',
         type: 'warning'
@@ -272,7 +234,7 @@ export function usePrefabActions() {
 
     showPop({ 
       title: 'Linked', 
-      message: `${entitiesToUpdate.length} entities linked to "${prefab.name}".`, 
+      message: `${entitiesToUpdate.length} entities linked to "${prefab.scriptId}".`, 
       type: 'success' 
     });
   };
@@ -320,7 +282,7 @@ export function usePrefabActions() {
     const nextOrderIndex = maxOrder + 1;
 
     const existingEntities = sceneStore.activeScene.entities;
-    const baseName = prefab.name; 
+    const baseName = prefab.scriptId; 
     const regex = new RegExp(`^${baseName}_(\\d+)$`);
 
     let maxIndex = 0;
@@ -342,7 +304,7 @@ export function usePrefabActions() {
 
     newRootEntity.id = newRootId;
     newRootEntity.prefabId = prefabId; 
-    newRootEntity.name = `${prefab.name}_${nextIndex}`; 
+    delete newRootEntity.name;
     newRootEntity.scriptId = baseScriptId;
     
     newRootEntity.layerId = targetLayerId;
@@ -396,7 +358,7 @@ export function usePrefabActions() {
 
     showPop({ 
       title: 'Instantiated', 
-      message: `${newRootEntity.name} added to scene.`, 
+      message: `${newRootEntity.scriptId} added to scene.`, 
       type: 'success' 
     });
 
@@ -420,7 +382,7 @@ export function usePrefabActions() {
 
     const isConfirmed = await confirm({
       title: 'Apply to Master',
-      message: `Apply current hierarchy to Master Prefab "${prefab.name}"? Structural changes (add/delete children) to other instances in the scene may require manual adjustment.`,
+      message: `Apply current hierarchy to Master Prefab "${prefab.scriptId}"? Structural changes (add/delete children) to other instances in the scene may require manual adjustment.`,
       confirmText: 'Apply',
       cancelText: 'Cancel',
       type: 'warning'

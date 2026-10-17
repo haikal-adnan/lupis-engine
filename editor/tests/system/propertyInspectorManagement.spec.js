@@ -75,7 +75,7 @@ describe('Inspector Property Management Integration Suite', () => {
 
   describe('Selection & State Derivation Integration', () => {
     it('correctly resolves selectedEntity and selection states when single World Entity is selected', () => {
-      const entity = createMockEntity({ name: 'Hero', type: 'entity' })
+      const entity = createMockEntity({ scriptId: 'Hero', type: 'entity' })
       setupMockSceneEnvironment({ entities: [entity] })
       sceneStore.selectedEntityIds = [entity.id]
 
@@ -85,12 +85,12 @@ describe('Inspector Property Management Integration Suite', () => {
       expect(hasSelection.value).toBe(true)
       expect(isMultiSelection.value).toBe(false)
       expect(selectedEntity.value.id).toBe(entity.id)
-      expect(selectedEntity.value.name).toBe('Hero')
+      expect(selectedEntity.value.scriptId).toBe('Hero')
     })
 
     it('correctly resolves selectedEntity when UI Entity is selected', () => {
       const uiEntity = createMockEntity({
-        name: 'UI Button',
+        scriptId: 'UI_Button',
         type: 'ui',
         components: {
           UITransform: createMockComponent('UITransform', { x: 10, y: 20, width: 200, height: 50, anchorX: 0.5, anchorY: 0.5 })
@@ -110,8 +110,8 @@ describe('Inspector Property Management Integration Suite', () => {
     it('switches selection context to master prefab data when active tab is a prefab', () => {
       const mockPrefab = {
         id: 'prefab_hero_1',
-        name: 'Hero Prefab Master',
-        data: createMockEntity({ id: 'ent_master', name: 'Master Hero' })
+        scriptId: 'Hero_Prefab_Master',
+        data: createMockEntity({ id: 'ent_master', scriptId: 'Master_Hero' })
       }
       prefabStore.prefabs = [mockPrefab]
 
@@ -126,13 +126,13 @@ describe('Inspector Property Management Integration Suite', () => {
       expect(isEditingMasterPrefab.value).toBe(true)
       expect(selectedEntity.value).not.toBeNull()
       expect(selectedEntity.value.id).toBe('ent_master')
-      expect(selectedEntity.value.name).toBe('Master Hero')
+      expect(selectedEntity.value.scriptId).toBe('Master_Hero')
     })
   })
 
   describe('UI Entity vs World Entity Property Binding Integration', () => {
     it('binds entity property and synchronizes changes with sceneStore', () => {
-      const entity = createMockEntity({ name: 'Old Entity Name' })
+      const entity = createMockEntity({ scriptId: 'Old_Entity_ScriptId' })
       setupMockSceneEnvironment({ entities: [entity] })
       sceneStore.selectedEntityIds = [entity.id]
 
@@ -141,12 +141,12 @@ describe('Inspector Property Management Integration Suite', () => {
       const markAsOverridden = vi.fn()
 
       const { bindEntityProp } = useInspectorBinding(selectedEntity, isEditingMasterPrefab, prefabId, markAsOverridden)
-      const entityName = bindEntityProp('name')
+      const entityScriptId = bindEntityProp('scriptId')
 
-      entityName.value = 'New Entity Name'
+      entityScriptId.value = 'New_Entity_ScriptId'
 
-      expect(sceneStore.activeScene.entities[0].name).toBe('New Entity Name')
-      expect(selectedEntity.value.name).toBe('New Entity Name')
+      expect(sceneStore.activeScene.entities[0].scriptId).toBe('New_Entity_ScriptId')
+      expect(selectedEntity.value.scriptId).toBe('New_Entity_ScriptId')
     })
 
     it('binds UITransform properties and syncs correctly without looking for Transform', () => {
@@ -346,7 +346,7 @@ describe('Inspector Property Management Integration Suite', () => {
           SpriteRenderer: createMockComponent('SpriteRenderer', { color: '#FF0000' })
         }
       })
-      const mockPrefab = { id: 'prefab_enemy', name: 'Enemy Prefab', data: masterEntity }
+      const mockPrefab = { id: 'prefab_enemy', scriptId: 'Enemy_Prefab', data: masterEntity }
       prefabStore.prefabs = [mockPrefab]
 
       const instanceEntity = createMockEntity({
@@ -528,7 +528,7 @@ describe('Inspector Property Management Integration Suite', () => {
 
       expect(() => {
         const { bindEntityProp, bindComponentProp } = useInspectorBinding()
-        const prop = bindEntityProp('name')
+        const prop = bindEntityProp('scriptId')
         expect(prop.value).toBe('')
         const compProp = bindComponentProp('Transform', 'width')
         expect(compProp.value).toBeUndefined()

@@ -8,7 +8,8 @@
       isDragOver ? 'ring-2 ring-primary bg-primary/20 scale-105' : '',
       isCut ? 'opacity-50 grayscale' : ''
     ]"
-    :title="data.name" 
+    :title="isFolder ? data.name : (data.scriptId || '')" 
+    :data-node-name="isFolder ? data.name : data.scriptId"
     :draggable="isSynced"
     @dragstart="onDragStart"
     @dragover="onDragOver"
@@ -48,7 +49,7 @@
         active ? 'text-foreground' : 'text-muted-foreground group-hover:text-foreground'
       ]"
     >
-      {{ data.name }}
+      {{ isFolder ? data.name : data.scriptId }}
     </span>
   </div>
 </template>

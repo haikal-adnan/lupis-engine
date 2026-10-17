@@ -12,19 +12,17 @@ export default class SceneLoader {
         if (this.world) {
             this.world.currentSceneId = sceneData.id; 
             this.world.currentSceneScriptId = sceneData.scriptId || sceneData.id || null;
-            this.world.currentSceneName = sceneData.name || "";
             
             if (sceneData.settings) {
                 this.world.settings = { ...this.world.settings, ...sceneData.settings };
             }
         }
 
-        const parseLayers = (layers, defaultName, defaultZ) => {
+        const parseLayers = (layers, defaultZ) => {
             if (Array.isArray(layers) && layers.length > 0) {
                 return layers.map((layer, index) => ({
                     id: layer.id,
                     scriptId: layer.scriptId, 
-                    name: layer.name,
                     visible: layer.visible ?? true,
                     locked: layer.locked ?? false,
                     active: layer.active ?? true,
@@ -37,18 +35,18 @@ export default class SceneLoader {
             return [];
         };
 
-        this.world.layersWorld = parseLayers(sceneData.layersWorld, "World Root", 0);
-        this.world.layersUI = parseLayers(sceneData.layersUI, "UI Root", 100);
+        this.world.layersWorld = parseLayers(sceneData.layersWorld, 0);
+        this.world.layersUI = parseLayers(sceneData.layersUI, 100);
 
         if (this.world.layersWorld.length === 0) {
             this.world.layersWorld.push({ 
-                id: "layer_w_root", scriptId: "root_w", name: "World Root", 
+                id: "layer_w_root", scriptId: "root_w", 
                 visible: true, locked: false, zIndex: 0, orderIndex: 0, entities: [] 
             });
         }
         if (this.world.layersUI.length === 0) {
             this.world.layersUI.push({ 
-                id: "layer_ui_root", scriptId: "root_ui", name: "UI Root", 
+                id: "layer_ui_root", scriptId: "root_ui", 
                 visible: true, locked: false, zIndex: 100, orderIndex: 0, entities: [] 
             });
         }
@@ -102,7 +100,7 @@ export default class SceneLoader {
                 let template = null;
 
                 if (prefab.children && prefab.children.length > 0) {
-                    template = prefab.children.find(c => c.name === instanceData.name);
+                    template = prefab.children.find(c => c.scriptId === instanceData.scriptId);
                 }
 
                 if (!template) {
@@ -118,7 +116,6 @@ export default class SceneLoader {
         const entity = new Entity(finalData.id);
 
         entity.scriptId = finalData.scriptId; 
-        entity.name = finalData.name;
         entity.type = finalData.type;
         entity.tag = finalData.tag;
         entity.layerId = finalData.layerId;
@@ -149,8 +146,7 @@ export default class SceneLoader {
         const merged = JSON.parse(JSON.stringify(template));
 
         merged.id = instance.id;
-        merged.scriptId = instance.scriptId; 
-        merged.name = instance.name;
+        merged.scriptId = instance.scriptId || template.scriptId; 
         merged.parentId = instance.parentId;
         merged.layerId = instance.layerId;
         merged.prefabId = instance.prefabId;

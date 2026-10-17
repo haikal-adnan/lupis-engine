@@ -1,69 +1,90 @@
-# 🎨 Lupis Visual Editor Guide
+# Editor guide
 
-The Lupis Visual Editor is a modern, responsive web-based IDE built with **Vue 3**, **Tailwind CSS**, and **Pinia**.
+The Lupis Editor is a browser-based editor for building scenes, assets, and blueprint scripts. It is built with Vue 3, Tailwind CSS, and Pinia. For the codebase, see [editor-reference.md](editor-reference.md).
 
----
-
-## 1. Interface Layout
-
-The workspace is divided into customizable panels:
+## Layout
 
 ```
 +-------------------------------------------------------------------------+
-| Top Bar: Project Name | Play / Pause / Restart | Viewport Mode | Export |
+| Top bar: project name | Play / Pause / Restart | Viewport mode | Export  |
 +------------------+------------------------------------+-----------------+
-| Hierarchy Panel  | Viewport Canvas (WebGL)            | Inspector Panel |
+| Hierarchy        | Viewport (WebGL)                   | Inspector       |
 |                  |                                    |                 |
-| - World Layers   | [ Transform Gizmo / Selection Box] | - Transform     |
-|   - Player       |                                    | - Physics       |
-|   - Enemies      | Tools: Move, Rotate, Scale, Brush  | - Collider      |
-| - UI Layers      | Rulers, Snap Grid, Zoom Slider     | - Shape/Sprite  |
+| - World layers   | Gizmo / selection box              | - Transform     |
+|   - player       |                                    | - Physics       |
+|   - enemies      | Tools: move, rotate, scale, brush  | - Collider      |
+| - UI layers      | Rulers, snap grid, zoom            | - Renderer      |
 +------------------+------------------------------------+-----------------+
-| Bottom Panel: Assets Library | Blueprint Node Graph | Console Logs     |
+| Bottom dock: Assets | Blueprint graph | Console                         |
 +-------------------------------------------------------------------------+
 ```
 
----
+## Panels
 
-## 2. Key Panels
+### Hierarchy
 
-### 2.1 Hierarchy Panel
-- Manages the parent-child relationship of Entities.
-- Distinguishes between **World Layers** (subject to camera movement) and **UI Layers** (fixed viewport HUD).
-- Supports drag-and-drop reordering and entity grouping.
+Shows entities as a tree of parents and children, grouped into two layer types:
 
-### 2.2 Viewport Canvas
-- Real-time interactive canvas displaying the current scene.
-- **Transform Gizmo**: Move, rotate, and scale selected entities.
-- **Rulers & Grid**: Pixel-accurate alignment and snapping.
-- **Tilemap Tool**: Paint tiles directly onto tilemap layers.
-- **Shape Tool**: Draw rectangles, circles, and custom polygon colliders interactively.
+- **World layers** move with the camera.
+- **UI layers** are fixed to the screen (HUD).
 
-### 2.3 Inspector Panel
-- Dynamically updates to reflect the components of the selected Entity.
-- Add or remove components with a single click (`Physics`, `Collider`, `ImageRenderer`, `ShapeRenderer`, `Animator`).
-- Real-time two-way data binding with instant viewport feedback.
+Entities and layers are labeled by their `scriptId`, shown as **ID**. Drag to reorder or reparent.
 
-### 2.4 Blueprint Node Graph
-- Visual scripting canvas with infinite pan and zoom.
-- Context menu for creating nodes (right-click or press Space).
-- Connection cables indicate data type via color coding.
+### Viewport
 
-### 2.5 Asset Manager
-- Supports drag-and-drop importing for images (`.png`, `.jpg`, `.webp`), fonts (`.ttf`, `.otf`), audio (`.ogg`, `.mp3`, `.wav`), and prefabs (`.json`).
-- Automatic font atlas generation via the micro-backend service.
+Live view of the active scene.
 
----
+- **Transform gizmo:** move, rotate, and scale the selection.
+- **Rulers and grid:** pixel alignment and snapping.
+- **Tilemap tool:** paint tiles onto tilemap entities.
+- **Shape tool:** draw polygons and colliders.
 
-## 3. Keyboard Shortcuts
+### Inspector
+
+Shows the components of the selected entity. Add or remove components (`Physics`, `Collider`, `SpriteRenderer`, `ShapeRenderer`, `SpriteAnimator`, and others). Edits apply to the viewport immediately.
+
+### Blueprint graph
+
+Canvas for visual scripts with pan and zoom. Open the node menu with right-click or `Space`. Cable color shows the pin data type. See [Visual scripting](visual-scripting.md).
+
+### Assets
+
+Import by drag and drop:
+
+| Type | Formats |
+| :--- | :--- |
+| Images | `.png`, `.jpg`, `.webp` |
+| Fonts | `.ttf`, `.otf` (converted to an MSDF atlas by the backend service) |
+| Audio | `.ogg`, `.mp3`, `.wav` |
+| Prefabs | `.json` |
+
+Assets are referenced from scripts by their `scriptId`.
+
+### Console
+
+Runtime logs, warnings, and errors from the engine and from scripts.
+
+## Save state
+
+The editor tracks whether memory matches what is stored in the browser (OPFS):
+
+| Indicator | Meaning |
+| :--- | :--- |
+| Green | Saved. |
+| Red | Unsaved changes. |
+| Yellow, pulsing | Save or load in progress. |
+
+Leaving the editor with unsaved changes shows a warning. Auto-save is off by default and can be enabled in project settings.
+
+## Shortcuts
 
 | Shortcut | Action |
 | :--- | :--- |
-| `W` | Activate Move (Translate) Tool |
-| `E` | Activate Rotate Tool |
-| `R` | Activate Scale Tool |
-| `Delete` / `Backspace` | Delete selected entity |
-| `Ctrl + D` | Duplicate selected entity |
-| `Ctrl + Z` / `Ctrl + Y` | Undo / Redo |
-| `F` | Focus camera on selected entity |
-| `Space + Drag` | Pan viewport camera |
+| `W` | Move tool |
+| `E` | Rotate tool |
+| `R` | Scale tool |
+| `Delete` / `Backspace` | Delete selection |
+| `Ctrl + D` | Duplicate selection |
+| `Ctrl + Z` / `Ctrl + Y` | Undo / redo |
+| `F` | Focus camera on selection |
+| `Space` + drag | Pan viewport |

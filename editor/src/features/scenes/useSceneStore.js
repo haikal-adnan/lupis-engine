@@ -20,7 +20,7 @@ export const useSceneStore = defineStore('scene', {
     getSceneById: (state) => (id) => state.scenes.find(s => s.id === id),
     
     sceneOptions: (state) => state.scenes.map(scene => ({
-      label: scene.name,
+      label: scene.scriptId,
       value: scene.id
     })),
 
@@ -61,13 +61,13 @@ export const useSceneStore = defineStore('scene', {
       const defaultSceneId = 'scene_main_' + Date.now();
       const defaultScene = {
         id: defaultSceneId,
-        name: 'Main Scene',
+        scriptId: 'Main_Scene',
         entities: [],
         layersWorld: [
-          { id: 'layer_world_default', name: 'Default', visible: true, locked: false }
+          { id: 'layer_world_default', scriptId: 'World_Layer', visible: true, locked: false }
         ],
         layersUI: [
-          { id: 'layer_ui_default', name: 'UI Layer', visible: true, locked: false }
+          { id: 'layer_ui_default', scriptId: 'UI_Layer', visible: true, locked: false }
         ],
         settings: {
           backgroundColor: '#1a1a1a'

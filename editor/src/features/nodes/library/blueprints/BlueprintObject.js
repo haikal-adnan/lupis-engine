@@ -27,7 +27,6 @@ export const BlueprintObject = {
           },
           propertyOptions: [
             { value: 'entityId', label: 'Entity ID', type: 'string', color: '#F48FB1' },
-            { value: 'name', label: 'Name', type: 'string', color: '#F48FB1' },
             { value: 'tagName', label: 'Tag Name', type: 'string', color: '#F48FB1' },
             { value: 'active', label: 'Active', type: 'boolean', color: '#E57373' },
             { value: 'visible', label: 'Visible', type: 'boolean', color: '#E57373' }
@@ -36,7 +35,6 @@ export const BlueprintObject = {
 `const entity = context.assert.exists(context.entity.get(inputs.targetEntity), 'Target entity must exist');
 
 outputs.entityId = entity.scriptId;
-outputs.name = entity.name;
 outputs.tagName = entity.tag;
 outputs.active = entity.active;
 outputs.visible = entity.visible;
@@ -47,7 +45,7 @@ return;`
     {
       type: 'setObject',
       label: 'Set Object Info',
-      description: 'Set entity info like Name, Tag, Active, Visible',
+      description: 'Set entity info like Tag, Active, Visible',
       dynamicMode: 'inputProperty',
       defaultData: {
         settings: {
@@ -67,7 +65,6 @@ return;`
             targetEntity: 'self'
           },
           propertyOptions: [
-            { value: 'name', label: 'Name', type: 'string', color: '#F48FB1' },
             { value: 'tag', label: 'Tag', type: 'string', color: '#F48FB1' },
             { value: 'active', label: 'Active', type: 'boolean', color: '#E57373' },
             { value: 'visible', label: 'Visible', type: 'boolean', color: '#E57373' }
@@ -75,7 +72,7 @@ return;`
           code: 
 `const entity = context.assert.exists(context.entity.get(inputs.targetEntity), 'Target entity must exist');
 
-const propKeys = ['name', 'tag', 'active', 'visible'];
+const propKeys = ['tag', 'active', 'visible'];
 for (const key of propKeys) {
   if (key in inputs) {
     entity[key] = inputs[key];

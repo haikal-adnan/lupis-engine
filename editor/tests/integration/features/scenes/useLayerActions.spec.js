@@ -10,7 +10,7 @@ vi.mock('@engines/engines.js', () => ({
   engineBridge: {
     addLayer: vi.fn(),
     deleteLayer: vi.fn(),
-    updateLayerName: vi.fn(),
+    updateLayerScriptId: vi.fn(),
     reorderLayer: vi.fn(),
     createEntity: vi.fn(),
     deleteEntity: vi.fn()
@@ -54,13 +54,13 @@ describe('Layer Actions Integration', () => {
       activeScene: {
         id: 'scene_1',
         layersWorld: [
-          layerSchema({ id: 'layer_w1', name: 'World Root', orderIndex: 0, zIndex: 0 })
+          layerSchema({ id: 'layer_w1', scriptId: 'World_Root', orderIndex: 0, zIndex: 0 })
         ],
         layersUI: [
-          layerSchema({ id: 'layer_u1', name: 'UI Root', orderIndex: 0, zIndex: 0 })
+          layerSchema({ id: 'layer_u1', scriptId: 'UI_Root', orderIndex: 0, zIndex: 0 })
         ],
         entities: [
-          { id: 'entity_1', name: 'Player', layerId: 'layer_w1', type: 'sprite' }
+          { id: 'entity_1', scriptId: 'Player', layerId: 'layer_w1', type: 'sprite' }
         ]
       },
       ...useLayerActions
@@ -74,7 +74,7 @@ describe('Layer Actions Integration', () => {
 
       // Assert
       expect(sceneStoreState.activeScene.layersWorld.length).toBe(2)
-      expect(newLayer.name).toBe('Background')
+      expect(newLayer.scriptId).toBe('Background')
       expect(newLayer.section).toBe('world')
       expect(newLayer.orderIndex).toBe(1)
 
@@ -111,18 +111,18 @@ describe('Layer Actions Integration', () => {
     })
   })
 
-  describe('Layer Property Updates (updateLayerName & updateLayerZIndex)', () => {
-    it('updates layer name and sends update to engine bridge and history', () => {
+  describe('Layer Property Updates (updateLayerScriptId & updateLayerZIndex)', () => {
+    it('updates layer scriptId and sends update to engine bridge and history', () => {
       // Act
-      sceneStoreState.updateLayerName('layer_w1', 'Base World')
+      sceneStoreState.updateLayerScriptId('layer_w1', 'Base_World')
 
       // Assert
       const layer = sceneStoreState.activeScene.layersWorld[0]
-      expect(layer.name).toBe('Base World')
-      expect(engineBridge.updateLayerName).toHaveBeenCalledWith('layer_w1', 'Base World')
+      expect(layer.scriptId).toBe('Base_World')
+      expect(engineBridge.updateLayerScriptId).toHaveBeenCalledWith('layer_w1', 'Base_World')
 
       const { recordLayerPropChange } = useSceneHistory()
-      expect(recordLayerPropChange).toHaveBeenCalledWith('layer_w1', 'name', 'World Root', 'Base World')
+      expect(recordLayerPropChange).toHaveBeenCalledWith('layer_w1', 'scriptId', 'World_Root', 'Base_World')
     })
 
     it('updates layer zIndex and ignores if value is NaN', () => {
@@ -221,7 +221,7 @@ describe('Layer Actions Integration', () => {
       expect(sceneStoreState.activeScene.layersWorld.length).toBe(2)
       
       const duplicatedLayer = sceneStoreState.activeScene.layersWorld[1]
-      expect(duplicatedLayer.name).toBe('World Root (Copy)')
+      expect(duplicatedLayer.scriptId).toBe('World_Root_copy')
       expect(duplicatedLayer.id).toBe(createdIds[0])
 
       // Verify entity is also duplicated
@@ -235,7 +235,7 @@ describe('Layer Actions Integration', () => {
         type: 'layer',
         mode: 'copy',
         data: [{
-          layer: layerSchema({ name: 'World Overlay' }),
+          layer: layerSchema({ scriptId: 'World_Overlay' }),
           entities: [],
           section: 'world'
         }]

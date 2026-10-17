@@ -39,11 +39,11 @@ describe('Scene Actions Integration', () => {
       const projectStore = await prepareProjectStore('Game Project')
 
       // Act
-      const newScene = sceneStoreState.addScene({ name: 'Main Level' })
+      const newScene = sceneStoreState.addScene({ scriptId: 'Main_Level' })
 
       // Assert
       expect(sceneStoreState.scenes.length).toBe(1)
-      expect(sceneStoreState.scenes[0].name).toBe('Main Level')
+      expect(sceneStoreState.scenes[0].scriptId).toBe('Main_Level')
       expect(sceneStoreState.activeSceneId).toBe(newScene.id)
       expect(sceneStoreState.selectedEntityIds).toEqual([])
 
@@ -59,7 +59,7 @@ describe('Scene Actions Integration', () => {
 
       // Act & Assert
       expect(() => {
-        sceneStoreState.addScene({ name: 'Scene Without Project' })
+        sceneStoreState.addScene({ scriptId: 'Scene_Without_Project' })
       }).toThrow(TypeError)
     })
   })
@@ -68,14 +68,14 @@ describe('Scene Actions Integration', () => {
     it('duplicates existing scene and updates scene id in project store', async () => {
       // Arrange
       const projectStore = await prepareProjectStore()
-      const initialScene = sceneStoreState.addScene({ name: 'Stage 1' })
+      const initialScene = sceneStoreState.addScene({ scriptId: 'Stage_1' })
 
       // Act
       const duplicatedScene = sceneStoreState.duplicateScene(initialScene.id)
 
       // Assert
       expect(sceneStoreState.scenes.length).toBe(2)
-      expect(duplicatedScene.name).toBe('Stage 1 (Copy)')
+      expect(duplicatedScene.scriptId).toBe('Stage_1_copy')
       expect(duplicatedScene.id).not.toBe(initialScene.id)
       expect(sceneStoreState.activeSceneId).toBe(duplicatedScene.id)
 
@@ -102,8 +102,8 @@ describe('Scene Actions Integration', () => {
       // Arrange
       await prepareProjectStore()
 
-      const scene1 = sceneStoreState.addScene({ name: 'Scene 1' })
-      const scene2 = sceneStoreState.addScene({ name: 'Scene 2' })
+      const scene1 = sceneStoreState.addScene({ scriptId: 'Scene_1' })
+      const scene2 = sceneStoreState.addScene({ scriptId: 'Scene_2' })
 
       // Act
       sceneStoreState.removeScene(scene2.id)
@@ -117,7 +117,7 @@ describe('Scene Actions Integration', () => {
     it('[Bad Path] throws MIN_SCENE_LIMIT error if only one scene remains', async () => {
       // Arrange
       await prepareProjectStore()
-      const singleScene = sceneStoreState.addScene({ name: 'Last Scene' })
+      const singleScene = sceneStoreState.addScene({ scriptId: 'Last_Scene' })
 
       // Act & Assert
       expect(() => {
@@ -127,29 +127,29 @@ describe('Scene Actions Integration', () => {
     })
   })
 
-  describe('Update Scene Name (updateSceneName)', () => {
-    it('updates scene name when name input is valid', async () => {
+  describe('Update Scene ScriptId (updateSceneScriptId)', () => {
+    it('updates scene scriptId when scriptId input is valid', async () => {
       // Arrange
       await prepareProjectStore()
-      const scene = sceneStoreState.addScene({ name: 'Old Name' })
+      const scene = sceneStoreState.addScene({ scriptId: 'Old_Name' })
 
       // Act
-      sceneStoreState.updateSceneName(scene.id, 'New Name')
+      sceneStoreState.updateSceneScriptId(scene.id, 'New_Name')
 
       // Assert
-      expect(sceneStoreState.scenes[0].name).toBe('New Name')
+      expect(sceneStoreState.scenes[0].scriptId).toBe('New_Name')
     })
 
-    it('[Bad Path] ignores name update if string is empty or whitespace only', async () => {
+    it('[Bad Path] ignores scriptId update if string is empty or whitespace only', async () => {
       // Arrange
       await prepareProjectStore()
-      const scene = sceneStoreState.addScene({ name: 'Original Name' })
+      const scene = sceneStoreState.addScene({ scriptId: 'Original_Name' })
 
       // Act
-      sceneStoreState.updateSceneName(scene.id, '   ')
+      sceneStoreState.updateSceneScriptId(scene.id, '   ')
 
       // Assert
-      expect(sceneStoreState.scenes[0].name).toBe('Original Name')
+      expect(sceneStoreState.scenes[0].scriptId).toBe('Original_Name')
     })
   })
 })

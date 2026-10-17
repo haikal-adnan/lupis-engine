@@ -1,85 +1,73 @@
-# ⚡ Visual Scripting & Blueprint Guide
+# Visual scripting
 
-Lupis Engine features a node-graph visual scripting system inspired by Unreal Engine Blueprints and Godot VisualScript. It enables game creators to implement game logic, physics behaviors, UI interactions, and state machines without writing code.
+Lupis Engine scripts game logic as node graphs ("blueprints"). A graph is edited in the editor, validated and compiled there, and executed by the runtime.
 
----
+## Graph model
 
-## 1. Core Concepts
+A graph is a set of nodes connected by edges between pins.
 
-A Blueprint graph consists of:
-- **Nodes**: Logical operations (events, actions, math, branching).
-- **Execution Pins (White)**: Dictate step-by-step control flow (`exec-in` and `exec-out`).
-- **Data Pins (Colored)**: Carry strongly-typed values (`number`, `string`, `boolean`, `vector`, `entity`, `object`).
+- **Execution pins** (white) define the order in which nodes run.
+- **Data pins** (colored) carry typed values.
+- Each node has a role: `event` (starts a flow), `action` (does work, has execution pins), or `pure` (computes a value on demand, no execution pins).
 
 ```mermaid
 graph LR
-    Start["[Event] On Game Start"] -->|"exec"| Spawn["[Action] Spawn Prefab"]
-    Spawn -->|"exec"| Move["[Physics] Set Velocity"]
-    
-    Speed["[Var] MoveSpeed: 300"] -->|"number"| Move
+    Start["Event: Game Start"] -->|"exec"| Spawn["Action: Spawn Entity"]
+    Spawn -->|"exec"| Move["Action: Set Velocity"]
+    Speed["Variable: moveSpeed = 300"] -->|"number"| Move
 ```
 
----
+### Pin types
 
-## 2. Standard Node Categories
-
-Lupis Engine includes an extensive library of verified visual nodes:
-
-| Category | Typical Nodes |
+| Type | Color |
 | :--- | :--- |
-| **Lifecycle & Events** | `OnStart`, `OnUpdate`, `OnDestroy`, `OnTriggerEnter`, `OnTriggerExit`, `OnCustomEvent` |
-| **Entity & Hierarchy** | `FindEntity`, `GetEntityProperty`, `SetEntityProperty`, `SpawnPrefab`, `DestroyEntity` |
-| **Transform & Camera** | `Translate`, `Rotate`, `SetScale`, `CameraFollow`, `SetCameraZoom`, `ScreenToWorld` |
-| **Physics & Motion** | `AddForce`, `SetVelocity`, `GetVelocity`, `MoveAndSlide`, `Raycast` |
-| **Math & Logic** | `Add`, `Subtract`, `Multiply`, `Divide`, `Clamp`, `Lerp`, `Branch (If)`, `Compare` |
-| **Input** | `IsKeyPressed`, `OnKeyDown`, `GetMousePosition`, `OnPointerDown` |
-| **Audio** | `PlaySound`, `StopSound`, `PlayMusic`, `SetVolume` |
-| **Variables & State** | `GetVariable`, `SetVariable`, `IncrementVariable`, `ToggleBoolean` |
-| **Flow Control** | `Branch`, `Sequence`, `ForLoop`, `WhileLoop`, `Delay` |
+| `execution` | `#FFFFFF` |
+| `number` | `#64B5F6` |
+| `string` | `#F48FB1` |
+| `boolean` | `#E57373` |
+| `list` | `#4DD0E1` |
+| `map` | `#FF8A65` |
+| `any` | `#B0BEC5` |
 
----
+The editor allows automatic conversion between some types (for example number to string). Invalid connections are rejected during validation.
 
-## 3. Script Execution Runtime (`ContextSystem.js`)
+## Node categories
 
-When a game scene runs:
-1. `ScriptLoader` compiles the node graph JSON into an executable topological graph.
-2. `ScriptRunner` executes node blocks based on event triggers (e.g. `update(dt)`).
-3. The `ContextSystem` manages scope:
-   - **Local Variables**: Unique to the running script instance.
-   - **Entity Variables**: Tied to the host Entity.
-   - **Global Variables**: Shared across scenes via `VariableManager`.
+Nodes are defined in `editor/src/features/nodes/library/blueprints/`, one file per category.
 
----
+| Group | Blueprint files |
+| :--- | :--- |
+| Lifecycle and events | `Lifecycle`, `Event`, `System` |
+| Entity and scene | `Entity`, `Scene`, `Transform`, `Camera` |
+| Physics and collision | `Physics`, `Collider` |
+| Rendering and animation | `Renderer`, `Animator`, `Transition` |
+| Input | `Keyboard`, `Mouse`, `Pointer` |
+| Math and logic | `Math`, `Comparison`, `Boolean`, `Random` |
+| Data | `Variable`, `String`, `List`, `Map` |
+| Flow control | `Loop` (For, While, Break, Branch) |
 
-## 4. Contract Schema: Creating Custom Nodes
+The full node list per file is in [editor-reference.md §5.2](editor-reference.md#52-node-blueprint-categories).
 
-Custom nodes must adhere to the node contract in `core/Script/contract/`:
+## Execution
 
-```javascript
-export const MyCustomNodeContract = {
-    id: "custom.math.doubler",
-    title: "Double Value",
-    category: "Math/Custom",
-    color: "#4CAF50",
-    inputs: [
-        { name: "value", type: "number", defaultValue: 0 }
-    ],
-    outputs: [
-        { name: "result", type: "number" }
-    ],
-    execute(context, inputs) {
-        return {
-            result: inputs.value * 2
-        };
-    }
-};
-```
+When a scene runs:
 
----
+1. `ScriptLoader` compiles each graph's JSON into an executable chain.
+2. `ScriptRunner` runs the chain when its event fires (for example each `update(dt)`).
+3. `ContextSystem` resolves variables by scope:
 
-## 5. Debugging & Stepping
+| Scope | Lifetime | Storage |
+| :--- | :--- | :--- |
+| Local | One running script instance | Script `localVariables` |
+| Entity | The host entity | `customParameters` on the entity's `ScriptController` binding |
+| Global | Across scenes | `VariableManager`, declared in project `globalVariables` |
 
-In the Visual Editor:
-- You can place breakpoints on execution pins.
-- Active execution flows highlight in real-time on the Node Graph canvas during live preview.
-- Inspect pin values in the **Node Inspector** side panel.
+Scripts are attached to entities through the `ScriptController` component and addressed by `scriptId`.
+
+## Custom nodes
+
+A node must satisfy the node contract in `editor/src/features/nodes/contract/` and `core/Script/contract/`. The structure of `ScriptNode`, `ScriptPort`, and `ScriptEdge` is specified in [schema-contract §8](schema-contract.md#8-visual-scripting-and-blueprint-contract). Port IDs must match `PORT_ID_REGEX` (`/^[A-Za-z][A-Za-z0-9]{0,31}$/`).
+
+## Debugging
+
+In the editor, the active execution path is highlighted on the graph during preview, and pin values can be inspected in the Node Inspector. Breakpoints can be set on execution pins.

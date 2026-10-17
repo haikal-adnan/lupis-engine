@@ -2,9 +2,9 @@
 import { vi } from 'vitest'
 import { useProjectActions } from '@projects/projects.js'
 import { useSceneStore } from '@scenes/scenes.js'
-import { useScriptStore } from '@scripts/scripts.js'
+import { useScriptStore, scriptSchema } from '@scripts/scripts.js'
 import { entitySchema, layerSchema, sceneSchema, componentSchema } from '@scenes/scenes.js'
-import { GenerateUUID } from '@utils/utils.js'
+import { GenerateUUID, sanitizeScriptId } from '@utils/utils.js'
 
 /* ============================================================================
  * IN-MEMORY OPFS MOCK HELPER
@@ -188,14 +188,17 @@ function getComponentsByEntityType(type, rawX = 0, rawY = 0) {
  */
 export function createMockLayer(overrides = {}) {
   const section = overrides.section || 'world'
-  return layerSchema({
-    id: `layer_${GenerateUUID()}`,
-    name: overrides.name || 'New Layer',
-    zIndex: overrides.zIndex ?? 0,
-    orderIndex: overrides.orderIndex ?? 0,
-    ...overrides,
+  const explicitScriptId = overrides.scriptId || (overrides.name ? sanitizeScriptId(overrides.name) : 'layer_default');
+  return {
+    ...layerSchema({
+      id: overrides.id || `layer_${GenerateUUID()}`,
+      scriptId: explicitScriptId,
+      zIndex: overrides.zIndex ?? 0,
+      orderIndex: overrides.orderIndex ?? 0,
+      ...overrides
+    }),
     section
-  })
+  }
 }
 
 /**
@@ -221,13 +224,11 @@ export function createMockEntity({
     mergedComponents[compName] = componentSchema.create(compName, compData)
   }
 
-  const displayType = entityType.startsWith('ui_') ? entityType.replace('ui_', '') : entityType
-  const namePrefix = displayType.charAt(0).toUpperCase() + displayType.slice(1)
+  const explicitScriptId = overrides.scriptId || (overrides.name ? sanitizeScriptId(overrides.name) : `${entityType}_${GenerateUUID().split('-')[0]}`);
 
   return entitySchema({
     id: overrides.id || `${GenerateUUID()}`,
-    scriptId: overrides.scriptId || `${entityType}_${GenerateUUID().split('-')[0]}`,
-    name: overrides.name || `${namePrefix} Entity`,
+    scriptId: explicitScriptId,
     type: isUI ? 'ui' : (overrides.type || 'entity'),
     layerId: overrides.layerId || (isUI ? 'layer_ui_default' : 'layer_world_default'),
     parentId: overrides.parentId || null,
@@ -242,9 +243,10 @@ export function createMockEntity({
  * Membuat data scene presisi dengan sceneSchema & useSceneActions
  */
 export function createMockScene(overrides = {}) {
+  const explicitScriptId = overrides.scriptId || (overrides.name ? sanitizeScriptId(overrides.name) : (overrides.sceneName ? sanitizeScriptId(overrides.sceneName) : 'scene_default'));
   return sceneSchema({
-    id: `scene_${GenerateUUID()}`,
-    name: overrides.name || 'Untitled Scene',
+    id: overrides.id || `scene_${GenerateUUID()}`,
+    scriptId: explicitScriptId,
     ...overrides
   })
 }
@@ -255,12 +257,12 @@ export function createMockScene(overrides = {}) {
 export function setupMockSceneEnvironment(options = {}) {
   const sceneStore = useSceneStore()
 
-  const defaultWorldLayer = createMockLayer({ id: 'layer_world_default', name: 'World Default', section: 'world' })
-  const defaultUILayer = createMockLayer({ id: 'layer_ui_default', name: 'UI Default', section: 'ui' })
+  const defaultWorldLayer = createMockLayer({ id: 'layer_world_default', scriptId: 'WorldDefault', section: 'world' })
+  const defaultUILayer = createMockLayer({ id: 'layer_ui_default', scriptId: 'UIDefault', section: 'ui' })
 
   const activeScene = createMockScene({
     id: options.sceneId || `scene_active_${GenerateUUID().split('-')[0]}`,
-    name: options.sceneName || 'Active Test Scene',
+    scriptId: options.sceneScriptId || (options.sceneName ? sanitizeScriptId(options.sceneName) : 'ActiveTestScene'),
     layersWorld: options.layersWorld || [defaultWorldLayer],
     layersUI: options.layersUI || [defaultUILayer],
     entities: options.entities || []
@@ -281,24 +283,24 @@ export async function setupMockScriptEnvironment(options = {}) {
   const scriptStore = useScriptStore()
 
   // 1. Opsi Script Default
-  const scriptId = options.scriptId || `sc_${GenerateUUID().split('-')[0]}`
-  const scriptName = options.scriptName || 'TestScript'
+  const scriptId = options.id || options.scriptId || `sc_${GenerateUUID().split('-')[0]}`
+  const scriptIdentifier = options.scriptId || (options.scriptName ? sanitizeScriptId(options.scriptName) : (options.name ? sanitizeScriptId(options.name) : 'TestScript'))
   const scriptType = options.scriptType || 'component'
   const localVariables = options.localVariables || [
     { id: 'v1', name: 'speed', defaultValue: 10 },
     { id: 'v2', name: 'active', defaultValue: true }
   ]
-  const scriptContent = options.scriptContent || `// Script: ${scriptName}\nconsole.log("Hello Script");`
+  const scriptContent = options.scriptContent || `// Script: ${scriptIdentifier}\nconsole.log("Hello Script");`
 
-  const mockScript = {
+  const mockScript = scriptSchema({
     id: scriptId,
-    name: scriptName,
+    scriptId: scriptIdentifier,
     type: scriptType,
     folderId: options.folderId || null,
     localVariables,
     nodes: options.nodes || [{ id: 'node_start', type: 'start' }],
     edges: options.edges || []
-  }
+  })
 
   // 2. Registrasi Script ke Store
   scriptStore.initScripts([mockScript])
@@ -332,7 +334,7 @@ export async function setupMockScriptEnvironment(options = {}) {
 
   const mockEntity = createMockEntity({
     id: options.entityId || `entity_${GenerateUUID().split('-')[0]}`,
-    name: options.entityName || 'Scripted Entity',
+    scriptId: options.entityScriptId || (options.entityName ? sanitizeScriptId(options.entityName) : 'ScriptedEntity'),
     entityType: options.entityType || 'sprite',
     attachComponents: {
       ScriptController: scriptControllerData

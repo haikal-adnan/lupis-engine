@@ -5,7 +5,7 @@ import { useSceneStore } from '@scenes/scenes.js';
 import { useProjectStore } from '@projects/projects.js';
 import { useFolderStore } from '@folders/folders.js';
 import { scriptSchema } from '@scripts/scripts.js';
-import { GenerateUUID } from '@utils/utils.js';
+import { GenerateUUID, sanitizeScriptId, getValidUniqueScriptId, isScriptIdDuplicate } from '@utils/utils.js';
 
 import { 
   useConfirm,
@@ -26,28 +26,7 @@ export function useScriptActions() {
   const { prompt } = usePrompt();
 
   const getValidUniqueName = (desiredName, excludeId = null) => {
-    let cleanName = desiredName
-      .replace(/\s+/g, '_')
-      .replace(/[^a-zA-Z0-9_]/g, '');
-    
-    if (!cleanName) cleanName = 'New_Script';
-
-    let finalName = cleanName;
-    let counter = 1;
-
-    const isNameTaken = (nameToCheck) => {
-      return scriptStore.scripts.some(s => 
-        s.id !== excludeId && 
-        s.name.toLowerCase() === nameToCheck.toLowerCase()
-      );
-    };
-
-    while (isNameTaken(finalName)) {
-      finalName = `${cleanName}_${counter}`;
-      counter++;
-    }
-
-    return finalName;
+    return getValidUniqueScriptId(desiredName, scriptStore.scripts, s => s.scriptId, excludeId);
   };
 
   const createScript = async (type = 'component', folderId = null) => {
@@ -68,7 +47,7 @@ export function useScriptActions() {
         id: GenerateUUID(),
         projectId,
         folderId: targetFolderId,
-        name: validName,
+        scriptId: validName,
         type
       });
 
@@ -92,7 +71,7 @@ export function useScriptActions() {
 
     const isConfirmed = await confirm({
       title: 'Delete Script',
-      message: `Are you sure you want to delete "${script.name}"?`,
+      message: `Are you sure you want to delete "${script.scriptId}"?`,
       confirmText: 'Delete',
       cancelText: 'Cancel',
       type: 'danger'
@@ -104,7 +83,7 @@ export function useScriptActions() {
 
       showPop({
         title: 'Deleted',
-        message: `Script "${script.name}" removed.`,
+        message: `Script "${script.scriptId}" removed.`,
         type: 'info'
       });
       return true;
@@ -116,26 +95,29 @@ export function useScriptActions() {
     const script = scriptStore.getScriptById(scriptId);
     if (!script) return;
 
+    const currentName = script.scriptId;
     const rawNewName = await prompt({
       title: 'Rename Script',
-      defaultValue: script.name,
+      defaultValue: currentName,
       confirmText: 'Rename',
       cancelText: 'Cancel'
     });
 
     if (rawNewName && rawNewName.trim() !== '') {
-      const validName = getValidUniqueName(rawNewName.trim(), scriptId);
-      if (validName !== script.name) {
-        scriptStore.updateScriptInList(scriptId, { name: validName });
-        await scriptStore.syncScriptsMetaToOPFS();
-        projectStore.markAsDirty();
-
-        showPop({
-          title: 'Renamed',
-          message: `Script renamed to "${validName}".`,
-          type: 'success'
-        });
+      const sanitized = sanitizeScriptId(rawNewName.trim());
+      if (isScriptIdDuplicate(sanitized, scriptStore.scripts, s => s.scriptId, scriptId)) {
+        showPop({ title: 'Duplicate Script', message: `Script "${sanitized}" already exists.`, type: 'warning' });
+        return;
       }
+      scriptStore.updateScriptInList(scriptId, { scriptId: sanitized });
+      await scriptStore.syncScriptsMetaToOPFS();
+      projectStore.markAsDirty();
+
+      showPop({
+        title: 'Renamed',
+        message: `Script renamed to "${sanitized}".`,
+        type: 'success'
+      });
     }
   };
 
@@ -145,7 +127,9 @@ export function useScriptActions() {
 
     const clone = JSON.parse(JSON.stringify(original));
     clone.id = GenerateUUID();
-    clone.name = getValidUniqueName(`${original.name}_Copy`);
+    const baseScriptId = original.scriptId || 'Script';
+    const validName = getValidUniqueName(`${baseScriptId}_Copy`);
+    clone.scriptId = validName;
     clone.folderId = folderStore.activeFolderId || original.folderId || null;
 
     await scriptStore.addScript(clone);
@@ -153,7 +137,7 @@ export function useScriptActions() {
 
     showPop({
       title: 'Duplicated',
-      message: `Script "${original.name}" copied.`,
+      message: `Script "${baseScriptId}" copied.`,
       type: 'success'
     });
 
@@ -175,7 +159,7 @@ export function useScriptActions() {
     if (isAlreadyAttached) {
       showPop({
         title: 'Script Exists',
-        message: `Script "${script.name}" is already active on ${entity.name}.`,
+        message: `Script "${script.scriptId}" is already active on ${entity.scriptId}.`,
         type: 'warning'
       });
       return;
@@ -206,7 +190,7 @@ export function useScriptActions() {
 
     showPop({
       title: 'Script Attached',
-      message: `Added "${script.name}" to ${entity.name}.`,
+      message: `Added "${script.scriptId}" to ${entity.scriptId}.`,
       type: 'success'
     });
   };

@@ -173,10 +173,10 @@ describe('Integration Test: useEditorToEngine (100% Coverage)', () => {
       expect(engineBridge.deleteEntity).toHaveBeenCalledWith('ent_123');
     });
 
-    it('sends updateEntityName when updateEntityName is called', () => {
-      sceneStore.activeScene.entities.push({ id: 'ent_123', name: 'Player' });
-      sceneStore.updateEntityName('ent_123', 'Hero');
-      expect(engineBridge.updateEntityName).toHaveBeenCalledWith('ent_123', 'Hero');
+    it('sends updateEntityScriptId when updateEntityScriptId is called', () => {
+      sceneStore.activeScene.entities.push({ id: 'ent_123', scriptId: 'player' });
+      sceneStore.updateEntityScriptId('ent_123', 'hero');
+      expect(engineBridge.updateEntityScriptId).toHaveBeenCalledWith('ent_123', 'hero');
     });
 
     it('sends moveEntity when moveEntity is called', () => {
@@ -239,9 +239,9 @@ describe('Integration Test: useEditorToEngine (100% Coverage)', () => {
       expect(engineBridge.addLayer).toHaveBeenCalledWith(res);
     });
 
-    it('sends updateLayerName when updateLayerName is called', () => {
-      sceneStore.updateLayerName('layer_world_1', 'Foreground');
-      expect(engineBridge.updateLayerName).toHaveBeenCalledWith('layer_world_1', 'Foreground');
+    it('sends updateLayerScriptId when updateLayerScriptId is called', () => {
+      sceneStore.updateLayerScriptId('layer_world_1', 'foreground');
+      expect(engineBridge.updateLayerScriptId).toHaveBeenCalledWith('layer_world_1', 'foreground');
     });
 
     it('sends deleteLayer when deleteLayer is called', () => {

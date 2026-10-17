@@ -86,7 +86,7 @@ describe('Animator Panel System Integration Test', () => {
       expect(sceneStore.activeScene.entities[0].components.SpriteAnimator.clips.length).toBe(1)
       const createdCategory = sceneStore.activeScene.entities[0].components.SpriteAnimator.clips[0]
       expect(createdCategory.type).toBe('category')
-      expect(createdCategory.name).toBe('New Category')
+      expect(createdCategory.scriptId).toBe('New_Category')
 
       // Act: Buat Clip di dalam Kategori
       logic.createClip(createdCategory.id)
@@ -156,7 +156,7 @@ describe('Animator Panel System Integration Test', () => {
       const updatedClips = logic.realClipsData.value
       expect(updatedClips.length).toBe(2)
       expect(updatedClips[1].id).not.toBe(originalClip.id)
-      expect(updatedClips[1].name).toBe(originalClip.name)
+      expect(updatedClips[1].scriptId).toBe(originalClip.scriptId)
     })
 
     it('cuts a node and clears clipboard after paste operation', () => {
@@ -240,7 +240,7 @@ describe('Animator Panel System Integration Test', () => {
       assetStore.initAssets([
         {
           id: mockAssetId,
-          name: 'Hero Spritesheet',
+          scriptId: 'Hero_Spritesheet',
           type: 'sprite',
           meta: { dimensions: { w: 128, h: 32 } }
         }
@@ -343,7 +343,7 @@ describe('Animator Panel System Integration Test', () => {
         deleteNode: vi.fn()
       }
       const menu = useAnimatorMenu(handlers)
-      const clipNode = { id: 'clip_1', type: 'clip', name: 'Idle' }
+      const clipNode = { id: 'clip_1', type: 'clip', scriptId: 'Idle' }
 
       // Act
       menu.openMenu({ clientX: 50, clientY: 50 }, clipNode)

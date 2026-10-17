@@ -45,9 +45,6 @@
       />
     </PropertyRow>
 
-    <PropertyRow label="Name">
-      <BaseInput v-model="name" placeholder="Layer Name" data-testid="layer-name-input" />
-    </PropertyRow>
 
     <PropertyRow label="Z-Index">
       <BaseNumber v-model="zIndex" :step="1" :precision="0" class="font-mono w-full" placeholder="0" data-testid="layer-z-index-input" />
@@ -180,10 +177,6 @@ const commitScriptId = () => {
   }
 }
 
-const name = computed({
-  get: () => layer.value?.name || '',
-  set: (val) => { if (layer.value) sceneStore.updateLayerName(layer.value.id, val) }
-})
 
 const zIndex = computed({
   get: () => layer.value?.zIndex ?? 0,
@@ -225,7 +218,7 @@ const onDelete = async () => {
   if (!layer.value) return
   if (await confirm({ 
     title: 'Delete Layer?', 
-    message: `Deleting layer "${layer.value.name}" will delete all entities inside it. Continue?`, 
+    message: `Deleting layer "${layer.value.scriptId}" will delete all entities inside it. Continue?`, 
     type: 'danger', 
     confirmText: 'Delete' 
   })) {

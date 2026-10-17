@@ -249,7 +249,15 @@ export default class TextRenderer {
             let i = this.bufferIndex;
             const scale = size / font.info.size;
             const lSpacing = (options.letterSpacing || 0) * scale;
-            let cy = 0;
+            
+            const alignLine = options.alignLine || options.alignV || options.verticalAlign || "top";
+            let verticalOffset = 0;
+            if (alignLine === "mid" || alignLine === "center" || alignLine === "middle") {
+                verticalOffset = Math.max(0, (targetH - nativeH) / 2);
+            } else if (alignLine === "bottom") {
+                verticalOffset = Math.max(0, targetH - nativeH);
+            }
+            let cy = verticalOffset;
 
             for (let lineIdx = 0; lineIdx < measurement.lines.length; lineIdx++) {
                 const line = measurement.lines[lineIdx];

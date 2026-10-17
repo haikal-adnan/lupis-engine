@@ -13,6 +13,12 @@ export class InspectorPage {
   }
 
   field(testId, inner = 'input') {
+    if (testId === 'object-name-input') {
+      return this.page.locator('[data-testid="object-script-id-input"], [data-testid="object-name-input"]').locator(inner).first();
+    }
+    if (testId === 'layer-name-input') {
+      return this.page.locator('[data-testid="layer-script-id-input"], [data-testid="layer-name-input"]').locator(inner).first();
+    }
     return this.page.getByTestId(testId).locator(inner).first();
   }
 
@@ -125,7 +131,10 @@ export class InspectorPage {
   // OBJECT INSPECTOR ACTIONS
   // =========================================================================
   async setEntityName(newName) {
-    const input = this.page.getByTestId('object-name-input').locator('input').first();
+    const scriptInput = this.page.getByTestId('object-script-id-input').locator('input').first();
+    const nameInput = this.page.getByTestId('object-name-input').locator('input').first();
+    const isScriptVisible = await scriptInput.isVisible().catch(() => false);
+    const input = isScriptVisible ? scriptInput : nameInput;
     await input.fill(newName);
     await input.press('Enter');
     await input.blur();
@@ -189,9 +198,13 @@ export class InspectorPage {
   // LAYER INSPECTOR ACTIONS
   // =========================================================================
   async setLayerName(newName) {
-    const input = this.page.getByTestId('layer-name-input').locator('input').first();
+    const scriptInput = this.page.getByTestId('layer-script-id-input').locator('input').first();
+    const nameInput = this.page.getByTestId('layer-name-input').locator('input').first();
+    const isScriptVisible = await scriptInput.isVisible().catch(() => false);
+    const input = isScriptVisible ? scriptInput : nameInput;
     await input.fill(newName);
     await input.press('Enter');
+    await input.blur();
   }
 
   async setLayerZIndex(zIndex) {

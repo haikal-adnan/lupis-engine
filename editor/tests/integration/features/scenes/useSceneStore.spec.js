@@ -55,8 +55,8 @@ describe('Scene Store Integration', () => {
     it('initializes scenes list and sets activeSceneId automatically if not set', () => {
       // Arrange
       const rawScenes = [
-        sceneSchema({ id: 'sc_1', name: 'Level 1' }),
-        sceneSchema({ id: 'sc_2', name: 'Level 2' })
+        sceneSchema({ id: 'sc_1', scriptId: 'Level_1' }),
+        sceneSchema({ id: 'sc_2', scriptId: 'Level_2' })
       ]
 
       // Act
@@ -65,7 +65,7 @@ describe('Scene Store Integration', () => {
       // Assert
       expect(sceneStore.scenes.length).toBe(2)
       expect(sceneStore.activeSceneId).toBe('sc_1')
-      expect(sceneStore.activeScene.name).toBe('Level 1')
+      expect(sceneStore.activeScene.scriptId).toBe('Level_1')
     })
 
     it('creates a new default scene and sets it as active scene', () => {
@@ -75,7 +75,7 @@ describe('Scene Store Integration', () => {
       // Assert
       expect(sceneStore.scenes.length).toBe(1)
       expect(sceneStore.activeSceneId).toBe(defaultScene.id)
-      expect(sceneStore.activeScene.name).toBe('Main Scene')
+      expect(sceneStore.activeScene.scriptId).toBe('Main_Scene')
       expect(sceneStore.activeScene.layersWorld.length).toBe(1)
       expect(sceneStore.activeScene.layersUI.length).toBe(1)
     })
@@ -83,8 +83,8 @@ describe('Scene Store Integration', () => {
     it('changes activeSceneId and clears selectedEntityIds when switching scenes', () => {
       // Arrange
       sceneStore.initScenes([
-        sceneSchema({ id: 'sc_1', name: 'Level 1' }),
-        sceneSchema({ id: 'sc_2', name: 'Level 2' })
+        sceneSchema({ id: 'sc_1', scriptId: 'Level_1' }),
+        sceneSchema({ id: 'sc_2', scriptId: 'Level_2' })
       ])
       sceneStore.selectedEntityIds = ['ent_1']
 
@@ -98,7 +98,7 @@ describe('Scene Store Integration', () => {
 
     it('[Bad Path] ignores setActiveScene if sceneId is not found', () => {
       // Arrange
-      sceneStore.initScenes([sceneSchema({ id: 'sc_1', name: 'Level 1' })])
+      sceneStore.initScenes([sceneSchema({ id: 'sc_1', scriptId: 'Level_1' })])
 
       // Act
       sceneStore.setActiveScene('non_existent_id')
@@ -113,16 +113,16 @@ describe('Scene Store Integration', () => {
       // Arrange
       const scene = sceneSchema({
         id: 'sc_1',
-        name: 'Stage 1',
-        layersWorld: [layerSchema({ id: 'lw_1', name: 'World Layer' })],
-        layersUI: [layerSchema({ id: 'lu_1', name: 'UI Layer' })],
-        entities: [entitySchema({ id: 'ent_1', name: 'Player' })]
+        scriptId: 'Stage_1',
+        layersWorld: [layerSchema({ id: 'lw_1', scriptId: 'World_Layer' })],
+        layersUI: [layerSchema({ id: 'lu_1', scriptId: 'UI_Layer' })],
+        entities: [entitySchema({ id: 'ent_1', scriptId: 'Player' })]
       })
       sceneStore.initScenes([scene])
 
       // Assert Getters
       expect(sceneStore.sceneOptions).toEqual([
-        { label: 'Stage 1', value: 'sc_1' }
+        { label: 'Stage_1', value: 'sc_1' }
       ])
       expect(sceneStore.activeEntities.length).toBe(1)
       expect(sceneStore.activeEntities[0].id).toBe('ent_1')
@@ -206,7 +206,7 @@ describe('Scene Store Integration', () => {
       const projectStore = await prepareProjectStore()
 
       // Act
-      const newScene = sceneStore.addScene({ name: 'New Level' })
+      const newScene = sceneStore.addScene({ scriptId: 'New_Level' })
 
       // Assert
       expect(sceneStore.scenes.length).toBe(1)

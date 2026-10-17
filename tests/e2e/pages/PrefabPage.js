@@ -59,7 +59,8 @@ export class PrefabPage {
   }
 
   itemByName(name) {
-    return this.page.locator(`[data-testid="prefab-item"][data-node-name="${name}"]`);
+    const slug = name.replace(/[\s-]+/g, '_');
+    return this.page.locator(`[data-testid="prefab-item"][data-node-name="${name}"], [data-testid="prefab-item"][data-node-name="${slug}"], [data-testid="prefab-item"][data-node-name^="${slug}_"]`).first();
   }
 
   itemById(id) {

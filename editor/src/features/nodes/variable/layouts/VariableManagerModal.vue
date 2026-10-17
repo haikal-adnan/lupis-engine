@@ -94,8 +94,19 @@
           <div ref="scrollContainerRef" class="w-full flex-1 min-h-0 bg-background overflow-y-auto custom-scroll">
             <div class="p-6 flex flex-col min-h-full">
               
+              <!-- Quick Add to Canvas Hint Badge -->
+              <div v-if="isRootLevel" class="flex items-center justify-between text-[10px] text-muted-foreground bg-muted/30 px-3 py-1.5 rounded-md border border-border mb-3 font-mono select-none">
+                <div class="flex items-center gap-2">
+                  <span class="font-bold text-foreground/80">Quick Add to Canvas:</span>
+                  <span><kbd class="px-1.5 py-0.5 bg-muted rounded border border-border text-[9px] text-foreground font-semibold">Ctrl</kbd> + 2x Click : <b>Get</b></span>
+                  <span>•</span>
+                  <span><kbd class="px-1.5 py-0.5 bg-muted rounded border border-border text-[9px] text-foreground font-semibold">Alt</kbd> + 2x Click : <b>Set</b></span>
+                </div>
+                <span class="text-[9px] opacity-70 italic hidden sm:inline">Double-click variable row</span>
+              </div>
+
               <!-- Column Headers -->
-              <div v-if="displayItems.length > 0" class="flex items-center gap-2 px-8 mb-2 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+              <div v-if="displayItems.length > 0" class="flex items-center gap-2 px-8 mb-2 text-[10px] font-bold text-muted-foreground uppercase tracking-wider select-none">
                 <div v-if="isRootLevel" class="w-8 text-center shrink-0" title="Expose variable">Panel</div>
                 <div v-if="isRootLevel" class="w-40">Variable Name</div>
                 <div v-else-if="currentType?.toLowerCase() === 'map'" class="w-36">Map Key</div>
@@ -113,67 +124,72 @@
                   data-testid="variable-modal-item-row"
                   :data-variable-name="item.name"
                   :data-variable-type="item.type"
+                  :data-variable-id="item.id"
                   draggable="true"
                   @dragstart="onDragStart($event, idx)"
+                  @dragend="onDragEnd"
                   @dragover.prevent
                   @dragenter.prevent
                   @drop="onDrop($event, idx)"
-                  class="group flex items-center gap-2 p-2 pr-3 rounded-lg border border-border bg-card hover:border-primary/30 transition-all shadow-sm"
-                  :class="{ 'opacity-40 scale-[0.98] border-primary/50 bg-primary/5': dragIndex === idx }"
+                  @dblclick="handleRowDblClick($event, item)"
+                  :title="isRootLevel ? 'Ctrl + 2x Click: Get Node | Alt + 2x Click: Set Node' : ''"
+                  class="group flex items-center gap-2 p-2 pr-3 rounded-lg border border-border bg-card hover:border-primary/30 transition-all shadow-sm select-none"
+                  :class="{ 'opacity-40 scale-[0.98] border-primary/50 bg-primary/5 pointer-events-none': dragIndex === idx }"
                 >
-                  <div class="cursor-grab active:cursor-grabbing p-1 text-muted-foreground group-hover:text-primary/60 transition-colors shrink-0">
+                  <div class="cursor-grab active:cursor-grabbing p-1 text-muted-foreground group-hover:text-primary/60 transition-colors shrink-0 select-none">
                     <GripVertical class="w-4 h-4" />
                   </div>
 
                   <!-- Root Level: Expose Checkbox -->
-                  <div v-if="isRootLevel" class="w-8 flex justify-center shrink-0">
+                  <div v-if="isRootLevel" class="w-8 flex justify-center shrink-0" @dragstart.stop>
                     <input 
                       type="checkbox"
                       :checked="!!item.isExposed"
-                      @change="e => handleUpdateField(idx, 'isExposed', e.target.checked)"
+                      @change="e => handleUpdateField(item, 'isExposed', e.target.checked)"
                       data-testid="variable-modal-expose-checkbox"
                       class="w-4 h-4 rounded border-border text-primary focus:ring-primary/50 cursor-pointer accent-primary"
                     />
                   </div>
 
                   <!-- Root Level: Variable Name -->
-                  <div v-if="isRootLevel" class="w-40 shrink-0">
+                  <div v-if="isRootLevel" class="w-40 shrink-0" @dragstart.stop>
                     <input 
                       :value="item.name"
-                      @change="e => handleUpdateField(idx, 'name', e.target.value)"
+                      @change="e => handleUpdateField(item, 'name', e.target.value)"
+                      @keydown.enter="$event.target.blur()"
                       data-testid="variable-modal-name-input"
                       placeholder="Var Name..."
-                      class="w-full bg-transparent border-b border-transparent hover:border-border focus:border-primary outline-none font-bold text-xs py-1 text-foreground"
+                      class="w-full bg-transparent border-b border-transparent hover:border-border focus:border-primary outline-none font-bold text-xs py-1 text-foreground select-text"
                     />
                   </div>
 
-                  <div v-else-if="currentType?.toLowerCase() === 'map'" class="w-36 shrink-0">
+                  <div v-else-if="currentType?.toLowerCase() === 'map'" class="w-36 shrink-0" @dragstart.stop>
                     <BaseInput 
                       :model-value="item.key" 
                       @update:model-value="val => handleMapKeyChange(item.key, val)" 
                       placeholder="Key..." 
-                      class="font-mono text-xs" 
+                      class="font-mono text-xs select-text" 
                     />
                   </div>
 
                   <!-- Nested Level: List Index Label -->
                   <div v-else class="w-10 text-[10px] font-mono text-muted-foreground font-bold text-center select-none shrink-0">
-                    {{ idx }}
+                    {{ item.index ?? idx }}
                   </div>
 
                   <!-- Type Selector -->
-                  <div class="w-32 shrink-0">
+                  <div class="w-32 shrink-0" @dragstart.stop>
                     <BaseSelect 
                       :model-value="item.type"
                       :options="typeOptions"
-                      @update:model-value="val => handleTypeChange(item, idx, val)"
+                      @update:model-value="val => handleTypeChange(item, val)"
                       data-testid="variable-modal-type-select"
                       class="w-full text-xs"
                     />
                   </div>
 
                   <!-- Value Renderer -->
-                  <div class="flex-1 min-w-[150px]">
+                  <div class="flex-1 min-w-[150px]" @dragstart.stop>
                     <!-- Button if Value is List or Map -->
                     <BaseButton 
                       v-if="isCollectionType(item.type)"
@@ -192,28 +208,28 @@
                       v-else-if="item.type?.toLowerCase() === 'boolean'" 
                       data-testid="variable-modal-value-bool-select"
                       :model-value="item.value"
-                      @update:model-value="val => handleValueChange(item, idx, val)"
+                      @update:model-value="val => handleValueChange(item, val)"
                       :options="boolOptions" 
                     />
                     <BaseNumber 
                       data-testid="variable-modal-value-number-input"
                       v-else-if="item.type?.toLowerCase() === 'number'" 
                       :model-value="item.value"
-                      @update:model-value="val => handleValueChange(item, idx, val)"
-                      class="font-mono text-xs" 
+                      @update:model-value="val => handleValueChange(item, val)"
+                      class="font-mono text-xs select-text" 
                     />
                     <BaseInput 
                       v-else 
                       data-testid="variable-modal-value-string-input"
                       :model-value="item.value"
-                      @update:model-value="val => handleValueChange(item, idx, val)"
+                      @update:model-value="val => handleValueChange(item, val)"
                       placeholder="Value..." 
-                      class="text-xs" 
+                      class="text-xs select-text" 
                     />
                   </div>
 
                   <!-- Context Menu Actions -->
-                  <div class="flex items-center shrink-0 ml-1">
+                  <div class="flex items-center shrink-0 ml-1" @dragstart.stop>
                     <BaseDropdown align="right">
                       <template #trigger>
                         <button data-testid="variable-modal-row-menu-trigger" class="p-1.5 rounded text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
@@ -222,12 +238,20 @@
                       </template>
 
                       <template #default="{ close }">
-                        <div class="w-auto whitespace-nowrap flex flex-col py-1 text-xs min-w-[130px]">
-                          <button @click="handleDuplicate(item, idx); close()" data-testid="variable-modal-duplicate-btn" class="flex items-center px-2 py-1.5 hover:bg-accent hover:text-accent-foreground text-left transition-colors">
+                        <div class="w-auto whitespace-nowrap flex flex-col py-1 text-xs min-w-[140px]">
+                          <button @click="handleDuplicate(item); close()" data-testid="variable-modal-duplicate-btn" class="flex items-center px-2 py-1.5 hover:bg-accent hover:text-accent-foreground text-left transition-colors">
                             <Copy class="w-3.5 h-3.5 mr-2 text-muted-foreground" /> Duplicate
                           </button>
+                          <template v-if="isRootLevel">
+                            <button @click="handleAddGetNode(item); close()" data-testid="variable-modal-add-get-btn" class="flex items-center px-2 py-1.5 hover:bg-accent hover:text-accent-foreground text-left transition-colors">
+                              <ArrowDownRight class="w-3.5 h-3.5 mr-2 text-primary" /> Add Get to Graph
+                            </button>
+                            <button @click="handleAddSetNode(item); close()" data-testid="variable-modal-add-set-btn" class="flex items-center px-2 py-1.5 hover:bg-accent hover:text-accent-foreground text-left transition-colors">
+                              <ArrowUpRight class="w-3.5 h-3.5 mr-2 text-amber-500" /> Add Set to Graph
+                            </button>
+                          </template>
                           <div class="h-px bg-border my-1"></div>
-                          <button @click="handleRemove(item, idx); close()" data-testid="variable-modal-delete-btn" class="flex items-center px-2 py-1.5 hover:bg-destructive/10 text-destructive text-left transition-colors">
+                          <button @click="handleRemove(item); close()" data-testid="variable-modal-delete-btn" class="flex items-center px-2 py-1.5 hover:bg-destructive/10 text-destructive text-left transition-colors">
                             <Trash2 class="w-3.5 h-3.5 mr-2" /> Delete
                           </button>
                         </div>
@@ -310,7 +334,7 @@
 import { ref, computed, watch, nextTick } from 'vue';
 import { 
   X, GripVertical, Trash2, Plus, ChevronRight, Settings2, 
-  Copy, MoreVertical, Code, Globe, FileCode 
+  Copy, MoreVertical, Code, Globe, FileCode, ArrowDownRight, ArrowUpRight 
 } from 'lucide-vue-next'; 
 import { usePopAlert } from '@composables/composables.js';
 import { useVariableConfig, useVariableLogic } from '@nodes/nodes.js';
@@ -341,7 +365,8 @@ const {
   updateVariable, 
   duplicateVariable, 
   deleteVariable,
-  reorderVariables
+  reorderVariables,
+  addNodeToCanvas
 } = useVariableLogic(() => currentScope.value);
 
 const stack = ref([]);
@@ -385,6 +410,7 @@ const displayItems = computed(() => {
     if (cType === 'list' && Array.isArray(parentRef)) {
       items = parentRef.map((val, idx) => ({
         keyId: `list_${idx}`,
+        index: idx,
         type: detectTypeFromValue(val),
         value: val
       }));
@@ -436,14 +462,24 @@ watch(() => props.isOpen, (newVal) => {
 
 const switchScope = (newScope) => {
   if (currentScope.value === newScope) return;
+  commitCurrentChanges();
   currentScope.value = newScope;
   searchQuery.value = '';
   initStack();
 };
 
 const navigateTo = (index) => {
+  commitCurrentChanges();
   stack.value = stack.value.slice(0, index + 1);
   searchQuery.value = '';
+};
+
+const commitCurrentChanges = () => {
+  if (isRootLevel.value) return;
+  const firstNestedLevel = stack.value[1];
+  if (!firstNestedLevel?.rootVarId) return;
+
+  updateVariable(firstNestedLevel.rootVarId, 'defaultValue', firstNestedLevel.targetRef);
 };
 
 const enterNestedLevel = (item, idx) => {
@@ -453,7 +489,7 @@ const enterNestedLevel = (item, idx) => {
 
   if (!val || (targetType === 'list' && !Array.isArray(val)) || (targetType === 'map' && typeof val !== 'object')) {
     val = getDefaultValueForType(targetType);
-    handleValueChange(item, idx, val);
+    handleValueChange(item, val);
   }
 
   const label = isRootLevel.value 
@@ -461,10 +497,12 @@ const enterNestedLevel = (item, idx) => {
     : (isMap ? (item.key || 'EmptyKey') : `Idx ${idx}`);
 
   searchQuery.value = '';
+  const rootVarId = isRootLevel.value ? item.id : stack.value[stack.value.length - 1]?.rootVarId;
   stack.value.push({
     label: label,
     type: targetType,
-    targetRef: val
+    targetRef: val,
+    rootVarId: rootVarId
   });
 };
 
@@ -477,6 +515,7 @@ const addNewItem = async () => {
 
     if (cType === 'list' && Array.isArray(parentRef)) {
       parentRef.push('');
+      commitCurrentChanges();
     } else if (cType === 'map' && parentRef && typeof parentRef === 'object') {
       let newKey = '';
       
@@ -490,6 +529,7 @@ const addNewItem = async () => {
       }
       
       parentRef[newKey] = '';
+      commitCurrentChanges();
     }
   }
   
@@ -499,9 +539,9 @@ const addNewItem = async () => {
   }
 };
 
-const handleUpdateField = (idx, key, value) => {
+const handleUpdateField = (item, key, value) => {
   if (isRootLevel.value) {
-    updateVariable(idx, key, value);
+    updateVariable(item.id, key, value);
   }
 };
 
@@ -526,44 +566,53 @@ const handleMapKeyChange = (oldKey, newKey) => {
   const val = parentRef[oldKey];
   delete parentRef[oldKey];
   parentRef[trimmedNewKey] = val;
+  commitCurrentChanges();
 };
 
-const handleTypeChange = (item, idx, newType) => {
+const handleTypeChange = (item, newType) => {
   const cleanType = String(newType).toLowerCase();
   const newVal = getDefaultValueForType(cleanType);
 
   if (isRootLevel.value) {
-    updateVariable(idx, 'type', cleanType);
+    updateVariable(item.id, 'type', cleanType);
   } else {
-    handleValueChange(item, idx, newVal);
+    handleValueChange(item, newVal);
   }
 };
 
-const handleValueChange = (item, idx, val) => {
+const handleValueChange = (item, val) => {
   if (isRootLevel.value) {
-    updateVariable(idx, 'defaultValue', val);
+    updateVariable(item.id, 'defaultValue', val);
   } else {
     const parentRef = currentLevel.value.targetRef;
     const cType = currentType.value?.toLowerCase();
 
     if (cType === 'list' && Array.isArray(parentRef)) {
-      parentRef[idx] = val;
+      const listIdx = typeof item.index === 'number' ? item.index : parentRef.indexOf(item.value);
+      if (listIdx !== -1) {
+        parentRef[listIdx] = val;
+      }
     } else if (cType === 'map' && parentRef && typeof parentRef === 'object') {
       parentRef[item.key] = val;
     }
+    commitCurrentChanges();
   }
 };
 
-const handleDuplicate = (item, idx) => {
+const handleDuplicate = (item) => {
   if (isRootLevel.value) {
-    duplicateVariable(idx);
+    duplicateVariable(item.id);
   } else {
     const parentRef = currentLevel.value.targetRef;
     const cType = currentType.value?.toLowerCase();
 
     if (cType === 'list' && Array.isArray(parentRef)) {
-      const copyVal = JSON.parse(JSON.stringify(parentRef[idx]));
-      parentRef.splice(idx + 1, 0, copyVal);
+      const listIdx = typeof item.index === 'number' ? item.index : parentRef.indexOf(item.value);
+      if (listIdx !== -1) {
+        const copyVal = JSON.parse(JSON.stringify(parentRef[listIdx]));
+        parentRef.splice(listIdx + 1, 0, copyVal);
+        commitCurrentChanges();
+      }
     } else if (cType === 'map' && parentRef && typeof parentRef === 'object') {
       const copyVal = JSON.parse(JSON.stringify(parentRef[item.key]));
       let newKey = `${item.key}_copy`;
@@ -572,42 +621,122 @@ const handleDuplicate = (item, idx) => {
         newKey = `${item.key}_copy_${count++}`;
       }
       parentRef[newKey] = copyVal;
+      commitCurrentChanges();
     }
   }
 };
 
-const handleRemove = (item, idx) => {
+const handleRemove = (item) => {
   if (isRootLevel.value) {
-    deleteVariable(idx);
+    deleteVariable(item.id);
   } else {
     const parentRef = currentLevel.value.targetRef;
     const cType = currentType.value?.toLowerCase();
 
     if (cType === 'list' && Array.isArray(parentRef)) {
-      parentRef.splice(idx, 1);
+      const listIdx = typeof item.index === 'number' ? item.index : parentRef.indexOf(item.value);
+      if (listIdx !== -1) {
+        parentRef.splice(listIdx, 1);
+        commitCurrentChanges();
+      }
     } else if (cType === 'map' && parentRef && typeof parentRef === 'object') {
       delete parentRef[item.key];
+      commitCurrentChanges();
     }
   }
 };
 
 const onDragStart = (e, idx) => {
+  window.getSelection()?.removeAllRanges();
   dragIndex.value = idx;
   e.dataTransfer.effectAllowed = 'move';
 };
 
+const onDragEnd = () => {
+  dragIndex.value = null;
+  window.getSelection()?.removeAllRanges();
+};
+
 const onDrop = (e, dropIndex) => {
-  if (dragIndex.value === null || dragIndex.value === dropIndex) return;
+  if (dragIndex.value === null || dragIndex.value === dropIndex) {
+    dragIndex.value = null;
+    return;
+  }
+
+  const fromItem = displayItems.value[dragIndex.value];
+  const toItem = displayItems.value[dropIndex];
+
+  if (!fromItem || !toItem) {
+    dragIndex.value = null;
+    return;
+  }
+
   if (isRootLevel.value) {
-    reorderVariables(dragIndex.value, dropIndex);
+    const fromRealIdx = variables.value.findIndex(v => v.id === fromItem.id);
+    const toRealIdx = variables.value.findIndex(v => v.id === toItem.id);
+    if (fromRealIdx !== -1 && toRealIdx !== -1 && fromRealIdx !== toRealIdx) {
+      reorderVariables(fromRealIdx, toRealIdx);
+    }
   } else {
     const parentRef = currentLevel.value.targetRef;
     if (Array.isArray(parentRef)) {
-      const item = parentRef.splice(dragIndex.value, 1)[0];
-      parentRef.splice(dropIndex, 0, item);
+      const fromRealIdx = typeof fromItem.index === 'number' ? fromItem.index : parentRef.indexOf(fromItem.value);
+      const toRealIdx = typeof toItem.index === 'number' ? toItem.index : parentRef.indexOf(toItem.value);
+      if (fromRealIdx !== -1 && toRealIdx !== -1 && fromRealIdx !== toRealIdx) {
+        const item = parentRef.splice(fromRealIdx, 1)[0];
+        parentRef.splice(toRealIdx, 0, item);
+        commitCurrentChanges();
+      }
     }
   }
   dragIndex.value = null;
+  window.getSelection()?.removeAllRanges();
+};
+
+const handleAddGetNode = (item) => {
+  if (!isRootLevel.value) return;
+  addNodeToCanvas(
+    { ...item, scope: currentScope.value }, 
+    null, 
+    'variableGet'
+  );
+  showPop({ 
+    title: 'Variable Node Added', 
+    message: `Spawned "Get ${item.name}" node on canvas.`, 
+    type: 'info', 
+    duration: 1500 
+  });
+};
+
+const handleAddSetNode = (item) => {
+  if (!isRootLevel.value) return;
+  addNodeToCanvas(
+    { ...item, scope: currentScope.value }, 
+    null, 
+    'variableSet'
+  );
+  showPop({ 
+    title: 'Variable Node Added', 
+    message: `Spawned "Set ${item.name}" node on canvas.`, 
+    type: 'info', 
+    duration: 1500 
+  });
+};
+
+const handleRowDblClick = (event, item) => {
+  if (!isRootLevel.value) return;
+
+  if (event.ctrlKey || event.metaKey) {
+    event.preventDefault();
+    event.stopPropagation();
+    window.getSelection()?.removeAllRanges();
+    handleAddGetNode(item);
+  } else if (event.altKey) {
+    event.preventDefault();
+    event.stopPropagation();
+    window.getSelection()?.removeAllRanges();
+    handleAddSetNode(item);
+  }
 };
 
 const openRawEditor = () => {
@@ -630,6 +759,7 @@ const saveRawJson = () => {
       Object.assign(target, parsed);
     }
 
+    commitCurrentChanges();
     isRawEditorOpen.value = false;
     showPop({ title: 'Success', message: 'JSON successfully applied.', type: 'success', duration: 1500 });
   } catch (err) {
@@ -637,7 +767,13 @@ const saveRawJson = () => {
   }
 };
 
-const handleClose = () => emit('close');
+const handleClose = () => {
+  if (typeof document !== 'undefined' && document.activeElement instanceof HTMLElement) {
+    document.activeElement.blur();
+  }
+  commitCurrentChanges();
+  emit('close');
+};
 const onOutsideMouseDown = (e) => isMouseDownOutside.value = e.target === e.currentTarget;
 const onOutsideMouseUp = (e) => {
   if (isMouseDownOutside.value && e.target === e.currentTarget) handleClose();

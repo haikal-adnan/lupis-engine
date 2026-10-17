@@ -177,8 +177,8 @@ describe('useNodeBlueprint Integration', () => {
   });
 
   describe('Comprehensive Registered Blueprints Audit', () => {
-    it('verifies all 28 registered blueprint modules exist and have valid structure', () => {
-      expect(allBlueprints).toHaveLength(28);
+    it('verifies all 29 registered blueprint modules exist and have valid structure', () => {
+      expect(allBlueprints).toHaveLength(29);
 
       allBlueprints.forEach((blueprint) => {
         expect(blueprint).toBeDefined();
@@ -242,7 +242,7 @@ describe('useNodeBlueprint Integration', () => {
       });
     });
 
-    it('enforces T-001 port ID alphanumeric regex across all 28 blueprints', () => {
+    it('enforces T-001 port ID alphanumeric regex across all 29 blueprints', () => {
       allBlueprints.forEach((blueprint) => {
         blueprint.items.forEach((item) => {
           const allPorts = [
@@ -266,7 +266,7 @@ describe('useNodeBlueprint Integration', () => {
       });
     });
 
-    it('enforces standard canonical port naming dictionary across all 28 blueprints', () => {
+    it('enforces standard canonical port naming dictionary across all 29 blueprints', () => {
       allBlueprints.forEach((blueprint) => {
         blueprint.items.forEach((item) => {
           const allPorts = [
@@ -328,7 +328,7 @@ describe('useNodeBlueprint Integration', () => {
       const labels = nodeGroups.map(g => g.label);
       const sortedLabels = [...labels].sort((a, b) => a.localeCompare(b));
 
-      expect(nodeGroups.length).toBe(28);
+      expect(nodeGroups.length).toBe(29);
       expect(labels).toEqual(sortedLabels);
     });
 

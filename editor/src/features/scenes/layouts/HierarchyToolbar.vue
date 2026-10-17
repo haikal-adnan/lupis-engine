@@ -193,12 +193,12 @@ const handleCreate = async (close) => {
   
   if (name) {
     try {
-      const newScene = sceneStore.addScene({ name });
+      const newScene = sceneStore.addScene({ scriptId: name });
       
       if (newScene?.id) {
         sceneStore.setActiveScene(newScene.id);
       } else if (sceneStore.scenes?.length) {
-        const created = sceneStore.scenes.find(s => s.name === name);
+        const created = sceneStore.scenes.find(s => s.scriptId === name);
         if (created) sceneStore.setActiveScene(created.id);
       }
 
@@ -215,11 +215,12 @@ const handleRename = async (close) => {
   const scene = sceneStore.activeScene;
   if (!scene) return;
 
-  const name = await prompt({ title: 'Rename Scene', defaultValue: scene.name });
-  if (name && name !== scene.name) {
+  const currentName = scene.scriptId;
+  const name = await prompt({ title: 'Rename Scene', defaultValue: currentName });
+  if (name && name !== currentName) {
     try {
-      sceneStore.updateSceneName(scene.id, name);
-      showPop({ title: 'Renamed', message: 'Scene name updated.', type: 'success' });
+      sceneStore.updateSceneScriptId(scene.id, name);
+      showPop({ title: 'Renamed', message: 'Scene identifier updated.', type: 'success' });
     } catch (e) {
       showPop({ title: 'Error', message: 'Failed to rename scene.', type: 'error' });
     }
@@ -251,7 +252,7 @@ const handleDelete = async (close) => {
     return;
   }
 
-  const sceneName = sceneStore.activeScene?.name;
+  const sceneName = sceneStore.activeScene?.scriptId;
   const confirmed = await confirm({ 
     title: 'Delete Scene', 
     message: `Are you sure you want to delete "${sceneName}"?`,

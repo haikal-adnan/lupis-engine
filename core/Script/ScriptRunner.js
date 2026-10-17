@@ -140,16 +140,17 @@ export default class ScriptRunner {
     }
 
     getContextMetadata(node) {
-        const sceneName = this.game?.sceneSystem?.getCurrentSceneName?.() || 
-                          this.game?.world?.currentSceneName || 
-                          this.game?.world?.currentScene?.name || 
+        const sceneName = this.game?.sceneSystem?.getCurrentSceneScriptId?.() || 
+                          this.game?.sceneSystem?.getCurrentSceneName?.() || 
+                          this.game?.world?.currentSceneScriptId || 
+                          this.game?.world?.currentScene?.scriptId || 
                           this.game?.sceneSystem?.getCurrentSceneId?.() || 
                           'Scene';
         const entityScriptId = this.owner 
-            ? (this.owner.scriptId || this.owner.name || this.owner.id || 'Entity') 
+            ? (this.owner.scriptId || this.owner.id || 'Entity') 
             : 'Global';
-        const scriptName = this.data?.name || 
-                           this.game?.world?.scripts?.[this.scriptId]?.name || 
+        const scriptName = this.data?.scriptId || 
+                           this.game?.world?.scripts?.[this.scriptId]?.scriptId || 
                            this.data?.title || 
                            this.scriptId || 
                            'Script';
@@ -195,19 +196,38 @@ export default class ScriptRunner {
         this.localVariables.set(id, value);
     }
 
+    hasLocalVariable(key) {
+        if (!key) return false;
+        return this.localVariables.has(key) || this.nameToIdMap.has(key);
+    }
+
+    hasVariable(key) {
+        if (!key) return false;
+        if (this.hasLocalVariable(key)) return true;
+        if (this.game && this.game.variables && typeof this.game.variables.hasGlobal === 'function') {
+            return this.game.variables.hasGlobal(key);
+        }
+        return false;
+    }
+
     getVariable(key) {
         if (!key) return null;
-        if (this.localVariables.has(key) || this.nameToIdMap.has(key)) {
+        if (this.hasLocalVariable(key)) {
             return this.getLocalVariable(key);
         }
-        if (this.game && this.game.variables) {
-            return this.game.variables.getGlobal(key);
+        if (this.game && this.game.variables && typeof this.game.variables.hasGlobal === 'function') {
+            if (this.game.variables.hasGlobal(key)) {
+                return this.game.variables.getGlobal(key);
+            }
         }
         return null;
     }
 
     start() {
         if (!this._isScriptActive()) return;
+
+        this._flowDepth = 0;
+        this._flowStepsInFrame = 0;
 
         this.nodeMap.forEach(node => {
             const role = node.role || (node.inputs?.some(i => i.dataType === 'execution') ? 'action' : (node.outputs?.some(o => o.dataType === 'execution') ? 'event' : 'pure'));
@@ -219,6 +239,9 @@ export default class ScriptRunner {
 
     update(dt) {
         if (!this._isScriptActive()) return;
+
+        this._flowDepth = 0;
+        this._flowStepsInFrame = 0;
 
         if (this._customTickListeners) {
             this._customTickListeners.forEach((callback, nodeId) => {
@@ -321,15 +344,50 @@ export default class ScriptRunner {
     executeFlow(sourceNodeId, sourcePortName) {
         if (!this._isScriptActive()) return;
 
+        if (typeof this._flowDepth !== 'number') this._flowDepth = 0;
+        if (typeof this._flowStepsInFrame !== 'number') this._flowStepsInFrame = 0;
+
+        const MAX_FLOW_DEPTH = 100;
+        const MAX_FLOW_STEPS_PER_FRAME = 1000;
+
+        if (this._flowDepth >= MAX_FLOW_DEPTH || this._flowStepsInFrame >= MAX_FLOW_STEPS_PER_FRAME) {
+            const sourceNode = this.nodeMap.get(sourceNodeId);
+            const meta = this.getContextMetadata(sourceNode || { id: sourceNodeId });
+            const errorMsg = `Infinite loop or excessive execution detected at node '${meta.node}' (source port: '${sourcePortName}'). Recursion depth: ${this._flowDepth}, Steps: ${this._flowStepsInFrame}. Flow halted to prevent game freeze.`;
+
+            if (this.game && this.game.events) {
+                this.game.events.emit('console:error', {
+                    type: 'error',
+                    time: Date.now(),
+                    message: `${meta.prefix} [Loop Protection] ${errorMsg}`,
+                    source: 'ScriptRunner',
+                    context: {
+                        scene: meta.scene,
+                        entityScriptId: meta.entityScriptId,
+                        script: meta.script,
+                        node: meta.node
+                    }
+                });
+            }
+            console.error(`[ScriptRunner Loop Protection] ${errorMsg}`);
+            return;
+        }
+
         const targets = this.flowIndex.get(`${sourceNodeId}:${sourcePortName}`);
         if (!targets || targets.length === 0) return;
 
-        for (let i = 0; i < targets.length; i++) {
-            const { targetNodeId, targetPortId } = targets[i];
-            const targetNode = this.nodeMap.get(targetNodeId);
-            if (targetNode) {
-                this._executeNodeLogic(targetNode, targetPortId);
+        this._flowDepth++;
+        this._flowStepsInFrame++;
+        try {
+            for (let i = 0; i < targets.length; i++) {
+                const { targetNodeId, targetPortId } = targets[i];
+                const targetNode = this.nodeMap.get(targetNodeId);
+                if (targetNode) {
+                    this._executeNodeLogic(targetNode, targetPortId);
+                }
             }
+        } finally {
+            this._flowDepth--;
         }
     }
 
@@ -346,15 +404,25 @@ export default class ScriptRunner {
                 outputs = {};
                 this.nodeOutputs.set(node.id, outputs);
             }
+
+            // Clear previous execution outputs so stale values from prior executions don't auto-trigger!
+            const outputsList = node.outputs || [];
+            for (let i = 0; i < outputsList.length; i++) {
+                const port = outputsList[i];
+                if (port.dataType === 'execution') {
+                    outputs[port.id] = false;
+                }
+            }
+
             const context = this.game.contextSystem.createExecutionContext(this, node);
 
             compiledFn(inputs, outputs, context, node);
 
             // Trigger connected execution output flows
-            const outputsList = node.outputs || [];
             for (let i = 0; i < outputsList.length; i++) {
                 const port = outputsList[i];
                 if (port.dataType === 'execution' && outputs[port.id] === true) {
+                    outputs[port.id] = false; // consume it!
                     this.executeFlow(node.id, port.id);
                 }
             }

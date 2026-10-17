@@ -126,7 +126,7 @@
           :key="asset.id" 
           :data="{
             id: asset.id,
-            name: asset.displayName || asset.name, 
+            scriptId: asset.scriptId,
             type: asset.type,
             fileKey: asset.fileKey,
             meta: asset.meta,
@@ -138,7 +138,7 @@
           :is-cut="clipboard?.action === 'cut' && clipboard?.item?.id === asset.id"
           @click="handleSelect(asset.id)"
           @dblclick="handleAssetDoubleClick(asset)"
-          @contextmenu="handleContextMenu($event, { ...asset, name: asset.displayName || asset.name })" 
+          @contextmenu="handleContextMenu($event, asset)" 
           @move-asset="({ id, type, targetFolderId }) => moveItem(id, type, targetFolderId)"
         />
       </div>

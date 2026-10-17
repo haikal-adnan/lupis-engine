@@ -48,9 +48,9 @@ describe('Integration Test: Asset Store with OPFS and Workspace Store', () => {
     it('initializes assets and filters getters correctly', () => {
       // Arrange
       const sampleAssets = [
-        { id: '1', type: 'texture', name: 'hero.png' },
-        { id: '2', type: 'font', name: 'arial.ttf' },
-        { id: '3', type: 'sprite', name: 'coin.png' }
+        { id: '1', type: 'texture', scriptId: 'hero_png' },
+        { id: '2', type: 'font', scriptId: 'arial_ttf' },
+        { id: '3', type: 'sprite', scriptId: 'coin_png' }
       ]
 
       // Act
@@ -65,7 +65,7 @@ describe('Integration Test: Asset Store with OPFS and Workspace Store', () => {
 
     it('synchronizes assets state to assets.json file in workspace OPFS (lupis-engine)', async () => {
       // Arrange
-      assetStore.assets = [{ id: 'ast-1', name: 'bg.png', type: 'texture' }]
+      assetStore.assets = [{ id: 'ast-1', scriptId: 'bg_png', type: 'texture' }]
 
       // Act
       await assetStore.syncAssetsToOPFS()
@@ -79,7 +79,7 @@ describe('Integration Test: Asset Store with OPFS and Workspace Store', () => {
       const content = await file.text()
       const parsedData = JSON.parse(content)
 
-      expect(parsedData).toEqual([{ id: 'ast-1', name: 'bg.png', type: 'texture' }])
+      expect(parsedData).toEqual([{ id: 'ast-1', scriptId: 'bg_png', type: 'texture' }])
     })
   })
 
@@ -88,7 +88,7 @@ describe('Integration Test: Asset Store with OPFS and Workspace Store', () => {
       // Arrange
       const assetMeta = {
         id: 'font-1',
-        name: 'Custom Font',
+        scriptId: 'CustomFont',
         fileKey: 'font_key_1',
         type: 'font',
         meta: { extension: '.ttf' }
@@ -112,7 +112,7 @@ describe('Integration Test: Asset Store with OPFS and Workspace Store', () => {
 
     it('moves asset to target folder and synchronizes data to OPFS', async () => {
       // Arrange
-      assetStore.assets = [{ id: 'ast-1', name: 'icon.png', folderId: 'root' }]
+      assetStore.assets = [{ id: 'ast-1', scriptId: 'icon_png', folderId: 'root' }]
 
       // Act
       const result = await assetStore.moveAsset('ast-1', 'folder-ui')
@@ -129,13 +129,13 @@ describe('Integration Test: Asset Store with OPFS and Workspace Store', () => {
 
     it('updates asset metadata and saves to OPFS', async () => {
       // Arrange
-      assetStore.assets = [{ id: 'ast-1', name: 'Old Name', type: 'texture' }]
+      assetStore.assets = [{ id: 'ast-1', scriptId: 'OldName', type: 'texture' }]
 
       // Act
-      await assetStore.updateAsset('ast-1', { name: 'New Name' })
+      await assetStore.updateAsset('ast-1', { scriptId: 'NewName' })
 
       // Assert
-      expect(assetStore.getAssetById('ast-1').name).toBe('New Name')
+      expect(assetStore.getAssetById('ast-1').scriptId).toBe('NewName')
     })
 
     it('deletes standard asset, revokes blob URL cache, and removes file from OPFS', async () => {
@@ -205,7 +205,7 @@ describe('Integration Test: Asset Store with OPFS and Workspace Store', () => {
       // Arrange
       const originalAsset = {
         id: 'ast-orig',
-        name: 'Player',
+        scriptId: 'Player',
         fileKey: 'player_key',
         meta: { extension: '.png', hasBmFont: false }
       }
@@ -228,7 +228,7 @@ describe('Integration Test: Asset Store with OPFS and Workspace Store', () => {
       expect(assetStore.assets).toHaveLength(2)
       const duplicated = assetStore.assets[1]
 
-      expect(duplicated.name).toBe('Player (Copy)')
+      expect(duplicated.scriptId).toBe('Player_Copy')
       expect(duplicated.fileKey).not.toBe('player_key')
 
       const duplicatedPath = `root/lupis-engine/projects/proj-123/assets/${duplicated.fileKey}.png`

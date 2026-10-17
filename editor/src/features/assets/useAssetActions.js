@@ -3,6 +3,7 @@ import { useFolderStore } from '@folders/folders.js';
 import { assetSchema, useFontConverter } from '@assets/assets.js';
 import { usePopAlert } from '@composables/composables.js';
 import { useWorkspaceStore } from '@workspaces/workspaces.js';
+import { sanitizeScriptId, getValidUniqueScriptId, isScriptIdDuplicate } from '@utils/utils.js';
 
 const MAX_FILE_SIZES = {
   font: 20 * 1024 * 1024,      // 20 MB
@@ -60,12 +61,7 @@ export function useAssetActions() {
         duration = await _getAudioDuration(file);
       }
 
-      let finalName = pureName;
-      let counter = 1;
-      while (assetStore.assets.some(a => a.name === finalName && a.folderId === currentFolderId)) {
-        finalName = `${pureName} (${counter})`;
-        counter++;
-      }
+      const finalName = getValidUniqueScriptId(pureName, assetStore.assets, a => a.scriptId);
 
       const randomHex = Math.random().toString(36).substring(2, 10) + Math.random().toString(36).substring(2, 10);
       const fileKey = `${label}${randomHex}`;
@@ -109,7 +105,7 @@ export function useAssetActions() {
         id: `asset_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
         projectId,
         folderId: currentFolderId,
-        name: finalName,
+        scriptId: finalName,
         type,
         fileKey,
         meta: {
@@ -130,7 +126,7 @@ export function useAssetActions() {
 
       showPop({
         title: 'Upload Ready',
-        message: `Asset "${newAsset.name}" uploaded successfully.`,
+        message: `Asset "${newAsset.scriptId}" uploaded successfully.`,
         type: 'success'
       });
 
@@ -158,9 +154,20 @@ export function useAssetActions() {
   };
 
   const renameAsset = async (assetId, newName) => {
-    const cleanName = newName.trim();
+    const sanitized = sanitizeScriptId(newName);
+    if (!sanitized) return;
+
+    if (isScriptIdDuplicate(sanitized, assetStore.assets, a => a.scriptId, assetId)) {
+      showPop({
+        title: 'Duplicate Name',
+        message: `Asset "${sanitized}" already exists.`,
+        type: 'warning'
+      });
+      return;
+    }
+
     await assetStore.updateAsset(assetId, {
-      name: cleanName,
+      scriptId: sanitized,
       isSynced: true
     });
 

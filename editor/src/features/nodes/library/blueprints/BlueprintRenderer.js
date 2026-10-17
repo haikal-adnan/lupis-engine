@@ -126,6 +126,7 @@ return;`
             { value: 'color', label: 'Text Color', type: 'string', color: '#F48FB1' },
             { value: 'opacity', label: 'Opacity (%)', type: 'number', color: '#64B5F6' },
             { value: 'align', label: 'Align', type: 'string', color: '#F48FB1' },
+            { value: 'alignLine', label: 'Align Line', type: 'string', color: '#F48FB1' },
             { value: 'autoLine', label: 'Auto Line', type: 'boolean', color: '#E57373' },
             { value: 'maxLine', label: 'Max Line', type: 'number', color: '#64B5F6' },
             { value: 'lineSpacing', label: 'Line Spacing', type: 'number', color: '#64B5F6' },
@@ -152,6 +153,7 @@ outputs.fontSize = comp.fontSize;
 outputs.color = comp.color;
 outputs.opacity = Math.round(comp.opacity * 100);
 outputs.align = comp.align;
+outputs.alignLine = comp.alignLine || 'top';
 outputs.autoLine = comp.autoLine;
 outputs.maxLine = comp.maxLine;
 outputs.lineSpacing = comp.lineSpacing;
@@ -196,6 +198,7 @@ return;`
             { value: 'fontSize', label: 'Font Size', type: 'number', color: '#64B5F6' },
             { value: 'color', label: 'Color', type: 'string', color: '#F48FB1' },
             { value: 'align', label: 'Align', type: 'string', color: '#F48FB1' },
+            { value: 'alignLine', label: 'Align Line', type: 'string', color: '#F48FB1' },
             { value: 'autoLine', label: 'Auto Line', type: 'boolean', color: '#E57373' },
             { value: 'maxLine', label: 'Max Line', type: 'number', color: '#64B5F6' },
             { value: 'lineSpacing', label: 'Line Spacing', type: 'number', color: '#64B5F6' },
@@ -213,6 +216,7 @@ if ('value' in inputs) comp.value = inputs.value;
 if ('fontSize' in inputs) comp.fontSize = inputs.fontSize;
 if ('color' in inputs) comp.color = inputs.color;
 if ('align' in inputs) comp.align = inputs.align;
+if ('alignLine' in inputs) comp.alignLine = inputs.alignLine;
 if ('autoLine' in inputs) comp.autoLine = inputs.autoLine;
 if ('maxLine' in inputs) comp.maxLine = inputs.maxLine;
 if ('lineSpacing' in inputs) comp.lineSpacing = inputs.lineSpacing;

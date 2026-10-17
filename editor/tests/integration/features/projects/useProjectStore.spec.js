@@ -78,9 +78,13 @@ vi.mock('@engines/engines.js', () => ({
   }
 }))
 
-vi.mock('@utils/utils.js', () => ({
-  normalizer: vi.fn()
-}))
+vi.mock('@utils/utils.js', async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    normalizer: vi.fn()
+  };
+})
 
 describe('Project Store Integration', () => {
   let projectStore

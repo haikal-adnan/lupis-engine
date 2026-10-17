@@ -27,8 +27,7 @@ export default class SceneSystem {
     getAvailableScenes() {
         return this._sceneDataCache.map(s => ({
             id: s.id,
-            name: s.name || s.id,
-            scriptId: s.scriptId
+            scriptId: s.scriptId || s.id
         }));
     }
 
@@ -36,8 +35,8 @@ export default class SceneSystem {
         return this._currentSceneData;
     }
 
-    getCurrentSceneName() {
-        return this._currentSceneData?.name || this.game.world.currentSceneName || "";
+    getCurrentSceneScriptId() {
+        return this._currentSceneData?.scriptId || this.game.world.currentSceneScriptId || "";
     }
 
     getCurrentSceneId() {
@@ -71,7 +70,7 @@ export default class SceneSystem {
         const searchKey = String(sceneIdentifier).trim().toLowerCase();
 
         const rawSceneData = this._sceneDataCache.find(s =>
-            (s.name && s.name.trim().toLowerCase() === searchKey) ||
+            (s.scriptId && s.scriptId.trim().toLowerCase() === searchKey) ||
             (s.id === sceneIdentifier)
         );
 
@@ -109,7 +108,6 @@ export default class SceneSystem {
 
         world.currentSceneId = targetSceneData.id;
         world.currentSceneScriptId = targetSceneData.scriptId || targetSceneData.id || null;
-        world.currentSceneName = targetSceneData.name || "";
 
         const sceneLoader = new SceneLoader(world, Config.ENGINE_MODE);
         sceneLoader.loadScene(targetSceneData);
@@ -138,8 +136,8 @@ export default class SceneSystem {
                 this.game.loop.isFirstFrame = true;
             }
 
-            const activeSceneName = this.getCurrentSceneName();
-            this.game.events.emit('scene:start', activeSceneName);
+            const activeSceneScriptId = this.getCurrentSceneScriptId();
+            this.game.events.emit('scene:start', activeSceneScriptId);
         }
 
         this.game.resumeGame();

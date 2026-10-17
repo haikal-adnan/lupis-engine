@@ -52,6 +52,7 @@
         <BaseThumbnail 
           :src="currentTextureUrl"
           fallback-text="None"
+          :name="assetScriptId || 'Tilemap'"
           sizeClass="w-9 h-9 bg-muted/20 border-border/60 shrink-0 rounded"
           class="object-contain"
           data-testid="tilemap-thumbnail"
@@ -126,6 +127,7 @@ import {
 const { 
   hasTilemap, 
   currentTextureUrl, 
+  assetScriptId,
   bindComponentProp, 
   openTilemapEditor,
 } = useTilemapLogic();

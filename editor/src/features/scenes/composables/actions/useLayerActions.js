@@ -1,6 +1,6 @@
 import { layerSchema } from '@scenes/scenes.js'; 
 import { engineBridge } from "@engines/engines.js";
-import { GenerateUUID } from '@utils/utils.js';
+import { GenerateUUID, sanitizeScriptId, getValidUniqueScriptId, isScriptIdDuplicate } from '@utils/utils.js';
 import { usePopAlert } from '@composables/composables.js';
 import { useSceneHistory } from '@historys/historys.js';
 
@@ -10,13 +10,18 @@ export const useLayerActions = {
     if (!scene) return null;
     
     const collection = section === 'ui' ? scene.layersUI : scene.layersWorld;
+    const allLayers = [...(scene.layersWorld || []), ...(scene.layersUI || [])];
 
     const maxOrder = collection.reduce((max, layer) => 
         (layer.orderIndex > max ? layer.orderIndex : max), -1
     );
     
+    const defaultSlug = section === 'ui' ? 'UI_Layer' : 'World_Layer';
+    const desired = name || defaultSlug;
+    const uniqueScriptId = getValidUniqueScriptId(desired, allLayers, l => l.scriptId);
+
     const newLayer = layerSchema({
-      name: name || "New Layer",
+      scriptId: uniqueScriptId,
       orderIndex: maxOrder + 1,
       zIndex: 0
     });
@@ -42,21 +47,34 @@ export const useLayerActions = {
     engineBridge.addLayer(layerData);
   },
 
-  updateLayerName(layerId, newName) {
+  updateLayerScriptId(layerId, newScriptId) {
     const scene = this.activeScene;
-    if (!scene) return;
+    if (!scene || !newScriptId || !newScriptId.trim()) return false;
 
     let layer = scene.layersWorld?.find(l => l.id === layerId) || 
                 scene.layersUI?.find(l => l.id === layerId);
 
-    if (layer && layer.name !== newName) {
-      const oldName = layer.name;
-      layer.name = newName;
-      engineBridge.updateLayerName(layerId, newName);
+    if (!layer) return false;
+
+    const sanitized = sanitizeScriptId(newScriptId);
+    if (!sanitized) return false;
+
+    const allLayers = [...(scene.layersWorld || []), ...(scene.layersUI || [])];
+    if (isScriptIdDuplicate(sanitized, allLayers, l => l.scriptId, layerId)) {
+      return false;
+    }
+
+    if (layer.scriptId !== sanitized) {
+      const oldScriptId = layer.scriptId;
+      layer.scriptId = sanitized;
+      delete layer.name;
+      engineBridge.updateLayerScriptId(layerId, sanitized);
 
       const { recordLayerPropChange } = useSceneHistory();
-      recordLayerPropChange(layerId, 'name', oldName, newName);
+      recordLayerPropChange(layerId, 'scriptId', oldScriptId, sanitized);
+      return true;
     }
+    return true;
   },
 
   updateLayerZIndex(layerId, newZIndex) {
@@ -216,15 +234,19 @@ export const useLayerActions = {
       }
 
       const collection = targetSection === 'ui' ? scene.layersUI : scene.layersWorld;
+      const allLayers = [...(scene.layersWorld || []), ...(scene.layersUI || [])];
       const newLayerId = GenerateUUID(); 
 
-      const newLayer = {
+      const baseScriptId = sourceLayer.scriptId || 'layer';
+      const desiredScriptId = mode === 'copy' ? `${baseScriptId}_copy` : baseScriptId;
+      const uniqueScriptId = getValidUniqueScriptId(desiredScriptId, allLayers, l => l.scriptId);
+
+      const newLayer = layerSchema({
         ...sourceLayer,
         id: newLayerId,
-        scriptId: `layer_${GenerateUUID().split('-')[0]}`,
-        name: mode === 'copy' ? `${sourceLayer.name} (Copy)` : sourceLayer.name,
+        scriptId: uniqueScriptId,
         orderIndex: collection.length, 
-      };
+      });
 
       collection.push(newLayer);
       engineBridge.addLayer(newLayer);

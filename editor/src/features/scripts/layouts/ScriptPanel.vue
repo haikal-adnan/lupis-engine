@@ -101,7 +101,7 @@
           :key="script.id" 
           :data="{
             id: script.id,
-            name: script.name,
+            scriptId: script.scriptId,
             type: script.type || 'component',
             folderId: script.folderId,
             originalData: script.originalData || script

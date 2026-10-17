@@ -188,14 +188,14 @@ export default class ColliderSystem {
         if (boundsAList.length === 0) return null;
 
         const currentId = entity.id || entity._id;
-        const currentName = entity.name || currentId;
+        const currentName = entity.scriptId || currentId;
         const entities = this.game.world.entities;
         const inactiveLayers = this._getInactiveLayers();
 
         for (let i = 0; i < entities.length; i++) {
             const other = entities[i];
             const otherId = other.id || other._id;
-            const otherName = other.name || otherId;
+            const otherName = other.scriptId || otherId;
             
             if (otherId === currentId) continue;
             if (other.active === false) continue;
@@ -242,14 +242,14 @@ export default class ColliderSystem {
         if (boundsAList.length === 0) return results;
 
         const currentId = entity.id || entity._id;
-        const currentName = entity.name || currentId;
+        const currentName = entity.scriptId || currentId;
         const entities = this.game.world.entities;
         const inactiveLayers = this._getInactiveLayers();
 
         for (let i = 0; i < entities.length; i++) {
             const other = entities[i];
             const otherId = other.id || other._id;
-            const otherName = other.name || otherId;
+            const otherName = other.scriptId || otherId;
 
             if (otherId === currentId) continue;
             if (other.active === false) continue;

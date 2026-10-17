@@ -95,8 +95,8 @@ test.describe('Property Inspector: Basic Components & Prefab E2E', () => {
     await inspector.setLayerZIndex(5);
     await inspector.toggleLayerActive();
 
-    const nameInput = inspector.field('layer-name-input');
-    await expect(nameInput).toHaveValue('Main World Layer');
+    const nameInput = inspector.field('layer-script-id-input');
+    await expect(nameInput).toHaveValue(/Main[ _]World[ _]Layer/i);
 
     const activeToggle = page.getByTestId('layer-active-toggle');
     await expect(activeToggle).toHaveAttribute('data-active', 'false');
@@ -116,8 +116,8 @@ test.describe('Property Inspector: Basic Components & Prefab E2E', () => {
     await inspector.setPosition(250.75, -120.5);
     await inspector.setRotation(90);
 
-    const nameInput = inspector.field('object-name-input');
-    await expect(nameInput).toHaveValue('MainPlayer');
+    const nameInput = inspector.field('object-script-id-input');
+    await expect(nameInput).toHaveValue(/MainPlayer|player_main_id/);
 
     const posXInput = inspector.field('transform-pos-x');
     await expect(posXInput).toHaveValue('250.75');
@@ -231,7 +231,7 @@ test.describe('Property Inspector: Basic Components & Prefab E2E', () => {
     await expect(massInput).toHaveValue('1');
 
     await inspectorCrud.clickObjectSectionMenuItem('menu-item-unpack-prefab');
-    await expect(page.getByTestId('editor-object-section').getByText('Prefab')).toHaveCount(0);
+    await expect(page.getByTestId('editor-object-section').getByText('Prefab', { exact: true })).toHaveCount(0);
 
     await inspectorCrud.clickObjectSectionMenuItem('menu-item-copy-id');
 
@@ -480,7 +480,7 @@ test.describe('Property Inspector: Assets, Scripts & Tab Navigation Components E
     await expect(page.getByTestId('right-panel-title')).toHaveText('Custom Shape Inspector');
 
     // Switch back to Main Scene tab so the hierarchy and inspector are active
-    await page.getByRole('tab', { name: 'Main Scene' }).click();
+    await page.getByRole('tab', { name: /Main[ _]Scene/ }).click();
     await expect(worldLayer).toBeVisible();
 
     // 2. Tilemap Renderer

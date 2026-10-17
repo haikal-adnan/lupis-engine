@@ -26,6 +26,7 @@ import { BlueprintSystem } from './BlueprintSystem.js';
 import { BlueprintTransform } from './BlueprintTransform.js';
 import { BlueprintTransition } from './BlueprintTransition.js';
 import { BlueprintVariable } from './BlueprintVariable.js';
+import { BlueprintVisualNovelHelper } from './BlueprintVisualNovelHelper.js';
 export { BlueprintCategoryTemplate } from './Blueprint.js';
 export {
   BlueprintAnimator,
@@ -55,7 +56,8 @@ export {
   BlueprintSystem,
   BlueprintTransform,
   BlueprintTransition,
-  BlueprintVariable
+  BlueprintVariable,
+  BlueprintVisualNovelHelper
 };
 
 export const ALL_BLUEPRINTS = Object.freeze([
@@ -86,7 +88,8 @@ export const ALL_BLUEPRINTS = Object.freeze([
   BlueprintAnimator,
   BlueprintTransition,
   BlueprintEvent,
-  BlueprintVariable
+  BlueprintVariable,
+  BlueprintVisualNovelHelper
 ]);
 
 export const allBlueprints = ALL_BLUEPRINTS;

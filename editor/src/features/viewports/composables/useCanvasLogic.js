@@ -336,7 +336,7 @@ export function useCanvasLogic() {
     const entity = sceneStore.activeScene?.entities?.find(e => e.id === id);
     if (!entity) return;
 
-    const baseName = entity.name || "New Prefab";
+    const baseName = entity.scriptId || "New_Prefab";
     const suggestedName = baseName
       .replace(/\s+/g, '_')
       .replace(/[^a-zA-Z0-9_]/g, '');

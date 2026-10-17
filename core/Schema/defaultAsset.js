@@ -1,3 +1,5 @@
+import { sanitizeScriptId } from "../Util/identifier.js";
+
 export const assetSchema = (data = {}) => {
   const meta = data.meta || {};
   const type = data.type || "texture";
@@ -5,10 +7,16 @@ export const assetSchema = (data = {}) => {
   const isAudio = type === "audio";
   const isFont = type === "font";
 
-  return {
+  const scriptId = sanitizeScriptId(
+    data.scriptId || "Asset",
+    "Asset"
+  );
+
+  const asset = {
     id: data.id,
     projectId: data.projectId || null,
-    name: data.name || "Asset",
+    folderId: data.folderId || null,
+    scriptId: scriptId,
     type: type,
     fileKey: data.fileKey || "",
     fileUrl: data.fileUrl || "",
@@ -30,6 +38,8 @@ export const assetSchema = (data = {}) => {
       ...meta
     }
   };
+
+  return asset;
 };
 
 export const createDefaultAsset = (overrideData = {}) => {
@@ -56,7 +66,8 @@ export const createDefaultAsset = (overrideData = {}) => {
   const baseData = {
     id: overrideData.id || `asset_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
     projectId: overrideData.projectId || null,
-    name: overrideData.name || `Asset_${type}`,
+    folderId: overrideData.folderId || null,
+    scriptId: overrideData.scriptId || `Asset_${type}`,
     type: type,
     fileKey: overrideData.fileKey || "",
     fileUrl: overrideData.fileUrl || "",
@@ -68,7 +79,7 @@ export const createDefaultAsset = (overrideData = {}) => {
 
 export const DEFAULT_SYSTEM_FONT_ASSET = assetSchema({
   id: "system_default",
-  name: "System Default Font",
+  scriptId: "system_default_font",
   type: "font",
   fileKey: "system_default",
   fileUrl: "",
@@ -80,9 +91,9 @@ export const DEFAULT_SYSTEM_FONT_ASSET = assetSchema({
 });
 
 export const DEFAULT_ASSET_TEMPLATES = {
-  TEXTURE: () => createDefaultAsset({ type: "texture", name: "Default Texture" }),
-  AUDIO: () => createDefaultAsset({ type: "audio", name: "Default Audio" }),
-  FONT: () => createDefaultAsset({ type: "font", name: "Default Font" })
+  TEXTURE: () => createDefaultAsset({ type: "texture", scriptId: "default_texture" }),
+  AUDIO: () => createDefaultAsset({ type: "audio", scriptId: "default_audio" }),
+  FONT: () => createDefaultAsset({ type: "font", scriptId: "default_font" })
 };
 
 export default createDefaultAsset;

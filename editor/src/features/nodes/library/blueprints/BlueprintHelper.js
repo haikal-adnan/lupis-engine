@@ -53,22 +53,29 @@ return;`
         data: {
           values: { duration: 500 },
           code: 
-`const duration = inputs.duration;
-const dt = context.dt * 1000;
+`const rawDuration = Number(inputs.duration);
+const duration = isNaN(rawDuration) ? 500 : Math.max(0, rawDuration);
 
-if (!context.state.isDelayActive) {
-  context.state.isDelayActive = true;
-  context.state.delayRemaining = duration;
-}
-
-context.state.delayRemaining -= dt;
-
-if (context.state.delayRemaining <= 0) {
-  context.state.isDelayActive = false;
+if (duration <= 0) {
   outputs.completed = true;
-} else {
-  outputs.completed = false;
+  context.triggerFlow('completed');
+  return;
 }
+
+context.state.delayRemaining = duration;
+context.state.isDelayActive = true;
+
+context.onTick((dt) => {
+  if (!context.state.isDelayActive) return;
+  const deltaMs = (typeof dt === 'number' ? dt : context.dt) * 1000;
+  context.state.delayRemaining -= deltaMs;
+
+  if (context.state.delayRemaining <= 0) {
+    context.state.isDelayActive = false;
+    outputs.completed = true;
+    context.triggerFlow('completed');
+  }
+});
 return;`
         }
       }
@@ -95,16 +102,22 @@ return;`
         data: {
           values: { duration: 500 },
           code: 
-`const targetDuration = inputs.duration;
+`const rawDuration = Number(inputs.duration);
+const targetDuration = isNaN(rawDuration) ? 500 : Math.max(0, rawDuration);
 const currentTime = Date.now();
 
-context.state.lastExecuteTime = context.state.lastExecuteTime || 0;
+const lastTime = typeof context.state.lastExecuteTime === 'number' ? context.state.lastExecuteTime : 0;
+const elapsed = currentTime - lastTime;
 
-if (currentTime - context.state.lastExecuteTime >= targetDuration) {
+if (elapsed >= targetDuration) {
   context.state.lastExecuteTime = currentTime;
   outputs.onReady = true;
+  outputs.onCooling = false;
+  context.triggerFlow('onReady');
 } else {
+  outputs.onReady = false;
   outputs.onCooling = true;
+  context.triggerFlow('onCooling');
 }
 return;`
         }
@@ -204,7 +217,7 @@ return;`
 `const entity = context.assert.exists(context.entity.get(inputs.targetEntity), 'Target entity must exist');
 const comp = context.assert.hasComponent(entity, 'TextRenderer');
 
-const speed = Math.max(1, inputs.speed);
+const speed = Math.max(1, Number(inputs.speed) || 50);
 const inputText = inputs.text;
 
 if (!context.state.isTyping) {

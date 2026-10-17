@@ -199,7 +199,7 @@ const clipOptions = computed(() => {
   return clips.value
     .filter(clip => clip.type === 'clip')
     .map(clip => ({
-      label: clip.name,
+      label: clip.scriptId,
       value: clip.id
     }))
 })

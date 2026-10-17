@@ -11,7 +11,7 @@ export default class PrefabSystem {
         if (!Array.isArray(prefabs)) return;
         this.game.world.prefabs = Object.fromEntries(prefabs.map(p => [p.id, {
             id: p.id,
-            name: p.name,
+            scriptId: p.scriptId,
             data: p.data,
             children: p.children || []
         }]));
@@ -24,9 +24,10 @@ export default class PrefabSystem {
         let prefabData = null;
         let prefabChildren = [];
 
+        const searchLower = String(prefabIdentifier).toLowerCase();
         for (const key in world.prefabs) {
             const p = world.prefabs[key];
-            if (p.id === prefabIdentifier || p.name === prefabIdentifier) {
+            if (p.id === prefabIdentifier || (p.scriptId && p.scriptId.toLowerCase() === searchLower)) {
                 prefabData = p.data;
                 prefabChildren = p.children || [];
                 break;

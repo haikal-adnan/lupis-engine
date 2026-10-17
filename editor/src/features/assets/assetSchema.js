@@ -1,3 +1,5 @@
+import { sanitizeScriptId } from '@utils/utils.js';
+
 export const assetSchema = (data = {}) => {
   const meta = data.meta || {};
   const type = data.type || "texture";
@@ -26,19 +28,27 @@ export const assetSchema = (data = {}) => {
     delete cleanMeta.pngFiles;
   }
 
-  return {
+  const scriptId = sanitizeScriptId(
+    data.scriptId || "asset",
+    "asset"
+  );
+
+  const asset = {
     id: data.id,
     projectId: data.projectId || null,
     folderId: data.folderId || null,
 
-    name: data.name || "New Asset",
+    scriptId: scriptId,
     type: type,
     
     fileKey: data.fileKey || "",
+    fileUrl: data.fileUrl || "",
 
     meta: cleanMeta,
 
     localBlob: data.localBlob || null,
     isSynced: data.isSynced ?? true
   };
+
+  return asset;
 };

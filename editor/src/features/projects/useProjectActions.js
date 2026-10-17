@@ -63,7 +63,7 @@ export function useProjectActions() {
         return {
           ...detail,
           id: sceneId,
-          name: meta.name,
+          scriptId: meta.scriptId || detail?.scriptId,
           folderId: meta.folderId,
           projectId: meta.projectId
         };
@@ -76,6 +76,7 @@ export function useProjectActions() {
         const detail = await _readJsonFile(prefabsDir, `${prefabId}.json`);
         return {
           ...detail,
+          scriptId: meta.scriptId || detail?.scriptId,
           folderId: meta.folderId,
           projectId: meta.projectId
         };
@@ -89,7 +90,7 @@ export function useProjectActions() {
         return {
           ...detail,
           id: scriptId,
-          name: meta.name,
+          scriptId: meta.scriptId || detail?.scriptId,
           type: meta.type,
           folderId: meta.folderId,
           projectId: meta.projectId
@@ -121,20 +122,20 @@ export function useProjectActions() {
 
     const defaultSceneMeta = [{
       id: defaultSceneId,
-      name: 'Main Scene',
+      scriptId: 'Main_Scene',
       projectId: projectId,
       folderId: null
     }];
 
     const defaultSceneData = {
       id: defaultSceneId,
-      name: 'Main Scene',
+      scriptId: 'Main_Scene',
       entities: [],
       layersWorld: [
-        { id: 'layer_world_default', name: 'World Layer', visible: true, locked: false }
+        { id: 'layer_world_default', scriptId: 'World_Layer', visible: true, locked: false }
       ],
       layersUI: [
-        { id: 'layer_ui_default', name: 'UI Layer', visible: true, locked: false }
+        { id: 'layer_ui_default', scriptId: 'UI_Layer', visible: true, locked: false }
       ],
       settings: { backgroundColor: '#1a1a1a' }
     };
@@ -208,7 +209,7 @@ export function useProjectActions() {
       id: s.id,
       projectId: projectId,
       folderId: s.folderId,
-      name: s.name
+      scriptId: s.scriptId
     }));
     await _writeJsonFile(workspacesDir, 'scenes.json', sceneMetas);
 
@@ -223,7 +224,7 @@ export function useProjectActions() {
       id: p.id,
       projectId: projectId,
       folderId: p.folderId,
-      name: p.name,
+      scriptId: p.scriptId,
       type: p.type
     }));
     await _writeJsonFile(workspacesDir, 'prefabs.json', prefabMetas);
@@ -239,7 +240,7 @@ export function useProjectActions() {
       id: s.id,
       projectId: projectId,
       folderId: s.folderId,
-      name: s.name,
+      scriptId: s.scriptId,
       type: s.type
     }));
     await _writeJsonFile(workspacesDir, 'scripts.json', scriptMetas);

@@ -63,7 +63,7 @@ export function useEditorToEngine(projectStore, sceneStore, assetStore, workspac
 
           case 'createEntity': if (result) engineBridge.createEntity(result); break;
           case 'deleteEntity': engineBridge.deleteEntity(args[0]); break;
-          case 'updateEntityName': engineBridge.updateEntityName(args[0], args[1]); break;
+          case 'updateEntityScriptId': engineBridge.updateEntityScriptId(args[0], args[1]); break;
           case 'moveEntity': 
             engineBridge.moveEntity({ 
                 id: args[0], 
@@ -79,7 +79,7 @@ export function useEditorToEngine(projectStore, sceneStore, assetStore, workspac
           case 'patchComponent': engineBridge.patchComponent({ entityId: args[0], componentName: args[1], updates: args[2] }); break;
 
           case 'addLayer': if (result) engineBridge.addLayer(result); break;
-          case 'updateLayerName': engineBridge.updateLayerName(args[0], args[1]); break;
+          case 'updateLayerScriptId': engineBridge.updateLayerScriptId(args[0], args[1]); break;
           case 'deleteLayer': engineBridge.deleteLayer(args[0]); break;
           case 'reorderLayer': engineBridge.reorderLayer({ id: args[0], targetId: args[1], position: args[2] }); break;
         }

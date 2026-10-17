@@ -14,10 +14,10 @@ export default class EntitySystem {
         const searchKey = targetId.trim();
         const entities = this.game?.world?.entities || [];
 
+        const searchLower = searchKey.toLowerCase();
         const found = entities.find(e => 
             e.id === searchKey || 
-            e.scriptId === searchKey || 
-            (e.name && e.name.toLowerCase() === searchKey.toLowerCase())
+            (e.scriptId && e.scriptId.toLowerCase() === searchLower)
         );
 
         return found || null;

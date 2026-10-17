@@ -20,14 +20,14 @@ test.describe('Hierarchy & Scene Comprehensive E2E Management', () => {
       await hierarchy.addLayerToSection(popup, 'World', 'Custom World Layer');
       const worldSection = hierarchy.section('World');
       await expect(
-        worldSection.locator('[data-testid="hierarchy-node"][data-node-name="Custom World Layer"]')
+        worldSection.locator('[data-testid="hierarchy-node"][data-node-name="Custom World Layer"], [data-testid="hierarchy-node"][data-node-name="Custom_World_Layer"]')
       ).toBeVisible();
 
       // 2. Add a UI Layer via the section header
       await hierarchy.addLayerToSection(popup, 'User Interface', 'Custom UI Layer');
       const uiSection = hierarchy.section('User Interface');
       await expect(
-        uiSection.locator('[data-testid="hierarchy-node"][data-node-name="Custom UI Layer"]')
+        uiSection.locator('[data-testid="hierarchy-node"][data-node-name="Custom UI Layer"], [data-testid="hierarchy-node"][data-node-name="Custom_UI_Layer"]')
       ).toBeVisible();
     });
 
@@ -189,7 +189,7 @@ test.describe('Hierarchy & Scene Comprehensive E2E Management', () => {
       await popup.selectContextMenu(spriteNode, 'Rename Entity');
       await popup.fillPromptAndSubmit('Rename Entity', 'Hero Sprite', 'Rename');
       const renamedNode = hierarchy.nodeById(spriteId);
-      await expect(renamedNode).toHaveAttribute('data-node-name', 'Hero Sprite');
+      await expect(renamedNode).toHaveAttribute('data-node-name', /Hero[ _]Sprite/);
 
       // 3. Duplicate
       const idsBeforeDuplicate = await hierarchy.nodeIds();
@@ -300,12 +300,12 @@ test.describe('Hierarchy & Scene Comprehensive E2E Management', () => {
 
       // Create Scene 1
       await hierarchy.createScene(controls, popup, scene1Name);
-      await expect(hierarchy.sceneSelect).toContainText(scene1Name);
+      await expect(hierarchy.sceneSelect).toContainText(/Level[ _]1[ _]Forest/);
 
       // Rename Active Scene
       await controls.clickSelectAction(SCENE_OPTIONS, 'Rename Scene');
       await popup.fillPromptAndSubmit('Rename Scene', scene2Name, 'OK');
-      await expect(hierarchy.sceneSelect).toContainText(scene2Name);
+      await expect(hierarchy.sceneSelect).toContainText(/Level[ _]2[ _]Volcano/);
 
       // Delete the secondary scene (leaving only the initial scene)
       await hierarchy.deleteCurrentScene(controls, popup);

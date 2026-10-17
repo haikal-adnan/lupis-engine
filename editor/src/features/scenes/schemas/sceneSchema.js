@@ -1,15 +1,17 @@
-import { entitySchema, layerSchema} from '@scenes/scenes.js';
-import { GenerateUUID } from '@utils/utils.js';
+import { entitySchema, layerSchema } from '@scenes/scenes.js';
+import { GenerateUUID, sanitizeScriptId } from '@utils/utils.js';
 
 export const sceneSchema = (data = {}, projectId = null) => {
   const sceneId = data.id || `scene_${GenerateUUID()}`;
-  const scriptId = data.scriptId || `script_${GenerateUUID()}`;
+  const scriptId = sanitizeScriptId(
+    data.scriptId || `scene_${GenerateUUID().slice(0, 8)}`,
+    `scene_${GenerateUUID().slice(0, 8)}`
+  );
 
-  return {
+  const scene = {
     id: sceneId,
-    projectId: projectId || data.projectId,
+    projectId: projectId || data.projectId || null,
     scriptId: scriptId,
-    name: data.name || "Untitled Scene",
     
     settings: {
       backgroundColor: data.settings?.backgroundColor || '#222222',
@@ -32,14 +34,16 @@ export const sceneSchema = (data = {}, projectId = null) => {
 
     layersWorld: Array.isArray(data.layersWorld) 
       ? data.layersWorld.map(l => layerSchema(l))
-      : [layerSchema({ id: `layer_world_${GenerateUUID()}`, scriptId: 'world_root', name: 'World Root' })],
+      : [layerSchema({ id: `layer_world_${GenerateUUID()}`, scriptId: 'world_root' })],
 
     layersUI: Array.isArray(data.layersUI) 
       ? data.layersUI.map(l => layerSchema(l))
-      : [layerSchema({ id: `layer_ui_${GenerateUUID()}`, scriptId: 'ui_root', name: 'UI Root' })],
+      : [layerSchema({ id: `layer_ui_${GenerateUUID()}`, scriptId: 'ui_root' })],
 
     entities: Array.isArray(data.entities) 
       ? data.entities.map(e => entitySchema(e)) 
       : []
   };
+
+  return scene;
 };

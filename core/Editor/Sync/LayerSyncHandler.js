@@ -4,10 +4,10 @@ export class LayerSyncHandler {
     }
 
     onCreateLayer(layerData) {
+        const scriptId = layerData.scriptId || "layer_default";
         const newLayer = {
             id: layerData.id,
-            scriptId: layerData.scriptId,
-            name: layerData.name,
+            scriptId: scriptId,
             visible: true,
             locked: false,
             opacity: layerData.opacity ?? 1.0,
@@ -17,8 +17,7 @@ export class LayerSyncHandler {
         };
 
         const isUI = layerData.section === "ui" || 
-                     layerData.scriptId === "ui" ||
-                     (layerData.name && layerData.name.toLowerCase().includes("ui"));
+                     (layerData.scriptId && (layerData.scriptId === "ui" || layerData.scriptId.startsWith("ui") || layerData.scriptId.toLowerCase().includes("ui")));
 
         if (isUI) {
             this.ctx.world.layersUI.push(newLayer);
@@ -32,9 +31,11 @@ export class LayerSyncHandler {
         this.ctx.world.layersUI = this.ctx.world.layersUI.filter(l => l.id !== id);
     }
 
-    onUpdateLayerName({ id, name }) {
+    onUpdateLayerScriptId({ id, scriptId }) {
         const layer = this._findLayer(id);
-        if (layer) layer.name = name;
+        if (layer) {
+            layer.scriptId = scriptId;
+        }
     }
 
     onUpdateLayerProp({ id, prop, value }) {

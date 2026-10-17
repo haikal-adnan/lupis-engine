@@ -62,16 +62,15 @@ describe('Entity Actions Integration', () => {
       activeScene: {
         id: 'scene_1',
         layersWorld: [
-          layerSchema({ id: 'layer_world_1', name: 'World Root' })
+          layerSchema({ id: 'layer_world_1', scriptId: 'World_Root' })
         ],
         layersUI: [
-          layerSchema({ id: 'layer_ui_1', name: 'UI Root' })
+          layerSchema({ id: 'layer_ui_1', scriptId: 'UI_Root' })
         ],
         entities: [
           entitySchema({
             id: 'ent_1',
             scriptId: 'sprite_1',
-            name: 'Player',
             layerId: 'layer_world_1',
             type: 'entity',
             x: 0,
@@ -93,7 +92,7 @@ describe('Entity Actions Integration', () => {
 
       // Assert
       expect(sceneStoreState.activeScene.entities.length).toBe(2)
-      expect(newEntity.name).toBe('Sprite 2')
+      expect(newEntity.scriptId).toBe('sprite_2')
       expect(newEntity.type).toBe('entity')
       expect(newEntity.layerId).toBe('layer_world_1')
       expect(newEntity.components.Transform.x).toBe(100)

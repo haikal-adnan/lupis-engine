@@ -72,9 +72,11 @@ export class LayerCrud {
 
   async create(sectionName, layerName) {
     await this.hierarchy.addLayerToSection(this.popup, sectionName, layerName);
+    const slug = layerName.replace(/[\s-]+/g, '_');
     const targetLayer = this.hierarchy
       .section(sectionName)
-      .locator(`[data-testid="hierarchy-node"][data-node-name="${layerName}"]`);
+      .locator(`[data-testid="hierarchy-node"][data-node-name="${layerName}"], [data-testid="hierarchy-node"][data-node-name="${slug}"], [data-testid="hierarchy-node"][data-node-script-id="${slug}"]`)
+      .first();
 
     await expect(targetLayer).toBeVisible();
     return targetLayer;
@@ -88,7 +90,8 @@ export class LayerCrud {
     await this.popup.fillPromptAndSubmit('Rename Layer', newName, 'Rename');
 
     const renamedNode = this.hierarchy.nodeById(nodeId);
-    await expect(renamedNode).toHaveAttribute('data-node-name', newName);
+    const slug = newName.replace(/[\s-]+/g, '_');
+    await expect(renamedNode).toHaveAttribute('data-node-name', new RegExp(`^(${newName}|${slug})$`));
     return renamedNode;
   }
 

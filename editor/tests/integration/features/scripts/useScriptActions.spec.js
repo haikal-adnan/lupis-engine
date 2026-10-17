@@ -57,7 +57,7 @@ describe('Script Actions Integration Test', () => {
 
       // Create initial script named "Player_Controller"
       scriptStore.initScripts([
-        { id: 'sc-1', name: 'Player_Controller', type: 'component' }
+        { id: 'sc-1', scriptId: 'Player_Controller', type: 'component' }
       ])
 
       // User enters identical name with illegal chars/whitespace: "Player Controller! "
@@ -73,7 +73,7 @@ describe('Script Actions Integration Test', () => {
       
       // Sanitize -> "Player_Controller", Duplicate -> "Player_Controller_1"
       expect(createdScript).not.toBeNull()
-      expect(createdScript.name).toBe('Player_Controller_1')
+      expect(createdScript.scriptId).toBe('Player_Controller_1')
       expect(scriptStore.scripts).toHaveLength(2)
       expect(projectStore.syncStatus).toBe('dirty')
       expect(mockShowPop).toHaveBeenCalledWith(expect.objectContaining({
@@ -106,7 +106,7 @@ describe('Script Actions Integration Test', () => {
       const projectStore = useProjectStore()
 
       scriptStore.initScripts([
-        { id: 'sc-del-1', name: 'UnusedScript' }
+        { id: 'sc-del-1', scriptId: 'UnusedScript' }
       ])
       await scriptStore.saveScriptToOPFS(scriptStore.scripts[0])
       projectStore.syncStatus = 'synced'
@@ -132,7 +132,7 @@ describe('Script Actions Integration Test', () => {
       const projectStore = useProjectStore()
 
       scriptStore.initScripts([
-        { id: 'sc-ren-1', name: 'OldName' }
+        { id: 'sc-ren-1', scriptId: 'OldName' }
       ])
       mockPrompt.mockResolvedValue('New Awesome Name')
 
@@ -141,7 +141,7 @@ describe('Script Actions Integration Test', () => {
 
       // Assert
       const updatedScript = scriptStore.getScriptById('sc-ren-1')
-      expect(updatedScript.name).toBe('New_Awesome_Name')
+      expect(updatedScript.scriptId).toBe('New_Awesome_Name')
       expect(projectStore.syncStatus).toBe('dirty')
       expect(mockShowPop).toHaveBeenCalledWith(expect.objectContaining({
         type: 'success'
@@ -161,7 +161,7 @@ describe('Script Actions Integration Test', () => {
       scriptStore.initScripts([
         {
           id: 'sc-orig',
-          name: 'EnemyAI',
+          scriptId: 'EnemyAI',
           localVariables: [{ id: 'v1', name: 'hp', defaultValue: 100 }],
           nodes: [{ id: 'n1', type: 'start' }]
         }
@@ -173,7 +173,7 @@ describe('Script Actions Integration Test', () => {
       // Assert
       expect(clonedScript).not.toBeNull()
       expect(clonedScript.id).not.toBe('sc-orig')
-      expect(clonedScript.name).toBe('EnemyAI_Copy')
+      expect(clonedScript.scriptId).toBe('EnemyAI_Copy')
       expect(clonedScript.folderId).toBe('folder-101')
       expect(clonedScript.nodes).toHaveLength(1)
       expect(scriptStore.scripts).toHaveLength(2)
@@ -191,7 +191,7 @@ describe('Script Actions Integration Test', () => {
 
       const mockScript = {
         id: 'sc-attach-1',
-        name: 'RotatorScript',
+        scriptId: 'RotatorScript',
         localVariables: [
           { name: 'speed', defaultValue: 5 },
           { name: 'loop', defaultValue: true }
@@ -200,7 +200,7 @@ describe('Script Actions Integration Test', () => {
 
       const mockEntity = {
         id: 'ent-1',
-        name: 'CubeObject',
+        scriptId: 'CubeObject',
         components: {
           ScriptController: { data: [] }
         }
@@ -235,10 +235,10 @@ describe('Script Actions Integration Test', () => {
       const scriptActions = useScriptActions()
       const sceneStore = useSceneStore()
 
-      const mockScript = { id: 'sc-attached', name: 'RotatorScript' }
+      const mockScript = { id: 'sc-attached', scriptId: 'RotatorScript' }
       const mockEntity = {
         id: 'ent-1',
-        name: 'CubeObject',
+        scriptId: 'CubeObject',
         components: {
           ScriptController: {
             data: [{ id: 'inst_123', assetId: 'sc-attached' }]

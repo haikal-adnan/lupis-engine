@@ -53,7 +53,6 @@ test.describe('Animator Panel System E2E Workflow Tests', () => {
     // 4. Act & Assert: Pengaturan Properti Klip Komprehensif
     await animatorCrud.configureClipProperties({
       scriptId: 'walk_01',
-      name: 'Hero_Walk',
       fps: 24,
       loop: 'True (Loop)',
       flipX: true,
@@ -61,7 +60,6 @@ test.describe('Animator Panel System E2E Workflow Tests', () => {
     });
 
     await expect(animatorPage.scriptIdInput).toHaveValue('walk_01');
-    await expect(animatorPage.clipNameInput).toHaveValue('Hero_Walk');
     await expect(animatorPage.fpsInput).toHaveValue('24');
     // State is read through ARIA, not Tailwind classes (Section 7.1/7.2). Component contract: aria-pressed.
     await expect(animatorPage.flipXButton).toHaveAttribute('aria-pressed', 'true');

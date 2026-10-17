@@ -48,11 +48,13 @@ export class AnimatorPage {
   }
 
   treeNodeByName(name) {
-    return this.page.locator(`[data-testid="animator-tree-node"][data-node-name="${name}"]`).first();
+    const slug = name.replace(/\s+/g, '_');
+    return this.page.locator(`[data-testid="animator-tree-node"][data-node-name="${name}"], [data-testid="animator-tree-node"][data-node-name="${slug}"], [data-testid="animator-tree-node"][data-node-script-id="${slug}"]`).first();
   }
 
   treeNodesByName(name) {
-    return this.page.locator(`[data-testid="animator-tree-node"][data-node-name="${name}"]`);
+    const slug = name.replace(/\s+/g, '_');
+    return this.page.locator(`[data-testid="animator-tree-node"][data-node-name="${name}"], [data-testid="animator-tree-node"][data-node-name="${slug}"], [data-testid="animator-tree-node"][data-node-script-id="${slug}"]`);
   }
 
   treeNodeById(id) {
@@ -71,7 +73,7 @@ export class AnimatorPage {
   }
 
   get clipNameInput() {
-    return this.page.getByTestId('animator-property-clip-name').locator('input').first();
+    return this.scriptIdInput;
   }
 
   get textureButton() {

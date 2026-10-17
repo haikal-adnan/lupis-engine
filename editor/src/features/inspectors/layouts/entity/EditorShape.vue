@@ -178,7 +178,7 @@ function openShapeEditor() {
 
   workspaceStore.openTab({
     id: entity.id,
-    name: entity.name || 'Shape Editor',
+    name: entity.scriptId || 'Shape Editor',
     type: 'shape_editor',
     fixed: false
   });

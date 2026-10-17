@@ -179,13 +179,13 @@ describe('useSceneHistory Integration', () => {
       // Arrange
       const layerId = targetScene.layersWorld[0].id;
       const oldName = targetScene.layersWorld[0].name;
-      const newName = 'Renamed Layer';
+      const newName = 'Renamed_Layer';
 
       // Act
       sceneHistory.recordLayerPropChange(layerId, 'name', oldName, newName);
       sceneStore.updateLayerProp(layerId, 'name', newName, false);
 
-      expect(targetScene.layersWorld[0].name).toBe('Renamed Layer');
+      expect(targetScene.layersWorld[0].name).toBe('Renamed_Layer');
 
       // Assert Undo
       sceneHistory.undo();
@@ -193,7 +193,7 @@ describe('useSceneHistory Integration', () => {
 
       // Assert Redo
       sceneHistory.redo();
-      expect(targetScene.layersWorld[0].name).toBe('Renamed Layer');
+      expect(targetScene.layersWorld[0].name).toBe('Renamed_Layer');
     });
   });
 

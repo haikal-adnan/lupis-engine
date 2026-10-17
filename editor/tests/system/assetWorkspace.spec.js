@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { ref } from 'vue'
 import { setActivePinia, createPinia } from 'pinia'
 import { setupMockOPFS, createMockEmptyProject } from '@tests/tests.js'
 
@@ -40,22 +41,23 @@ describe('AssetWorkspace Integration Testing', () => {
   let project
 
   // Helper to create mock assets without DOM element dependencies
-  const createMockAsset = async ({ name = 'test_asset', type = 'texture', folderId = null } = {}) => {
+  const createMockAsset = async ({ scriptId, name, type = 'texture', folderId = null } = {}) => {
     const assetStore = useAssetStore()
     const workspaceStore = useWorkspaceStore()
+    const finalScriptId = scriptId || name || 'test_asset'
     
     const asset = assetSchema({
       id: `asset_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
       projectId: workspaceStore.activeProjectId,
       folderId,
-      name,
+      scriptId: finalScriptId,
       type,
       fileKey: `mock_${type}_${Math.random().toString(36).substring(2, 8)}`,
       meta: { extension: type === 'texture' ? '.png' : '.wav', size: 1024 },
       isSynced: true
     })
 
-    const fakeFile = new File(['mock content'], `${name}${asset.meta.extension}`, { 
+    const fakeFile = new File(['mock content'], `${finalScriptId}${asset.meta.extension}`, { 
       type: type === 'texture' ? 'image/png' : 'audio/wav' 
     })
     
@@ -119,7 +121,7 @@ describe('AssetWorkspace Integration Testing', () => {
       const importedAsset = await createMockAsset({ name: 'hero', type: 'texture' })
 
       expect(importedAsset).toBeDefined()
-      expect(importedAsset.name).toBe('hero')
+      expect(importedAsset.scriptId).toBe('hero')
       expect(importedAsset.type).toBe('texture')
       expect(assetStore.assets.some(a => a.id === importedAsset.id)).toBe(true)
 
@@ -134,16 +136,16 @@ describe('AssetWorkspace Integration Testing', () => {
       const { renameAsset } = useAssetActions()
       const assetStore = useAssetStore()
 
-      const asset = await createMockAsset({ name: 'icon', type: 'texture' })
+      const asset = await createMockAsset({ scriptId: 'icon', type: 'texture' })
       await renameAsset(asset.id, 'app_icon')
 
       const updatedAsset = assetStore.getAssetById(asset.id)
-      expect(updatedAsset.name).toBe('app_icon')
+      expect(updatedAsset.scriptId).toBe('app_icon')
 
       const assetsJsonHandle = storeRef.store.get(`root/lupis-engine/projects/${project.id}/workspaces/assets.json`)
       const fileData = await assetsJsonHandle.getFile()
       const content = JSON.parse(await fileData.text())
-      expect(content.find(a => a.id === asset.id).name).toBe('app_icon')
+      expect(content.find(a => a.id === asset.id).scriptId).toBe('app_icon')
     })
 
     it('deletes asset along with physical files from OPFS', async () => {
@@ -254,7 +256,7 @@ describe('AssetWorkspace Integration Testing', () => {
       sceneStore.setActiveScene('scene_main')
       sceneStore.initScenes([{
         id: 'scene_main',
-        name: 'Main Scene',
+        scriptId: 'Main_Scene',
         entities: [
           {
             id: 'entity_1',
@@ -280,6 +282,28 @@ describe('AssetWorkspace Integration Testing', () => {
       expect(activeEntity.components.SpriteRenderer.assetId).toBe(asset.id)
     })
 
+    it('copies scriptId to clipboard via Copy ID context menu action', async () => {
+      const selectedIdRef = ref(null)
+      const asset = await createMockAsset({ name: 'player_hero', type: 'texture' })
+      expect(asset.scriptId).toBe('player_hero')
+
+      const writeTextMock = vi.fn().mockResolvedValue(undefined)
+      Object.defineProperty(global.navigator, 'clipboard', {
+        value: { writeText: writeTextMock },
+        writable: true,
+        configurable: true
+      })
+
+      const menu = useAssetMenu(selectedIdRef, vi.fn(), {})
+      menu.handleContextMenu({ clientX: 100, clientY: 100 }, asset)
+
+      const copyIdItem = menu.contextMenuItems.value.find(i => i.label === 'Copy ID')
+      expect(copyIdItem).toBeDefined()
+
+      await copyIdItem.action()
+      expect(writeTextMock).toHaveBeenCalledWith('player_hero')
+    })
+
     it('duplicates asset via clipboard copy/paste', async () => {
       const assetStore = useAssetStore()
       const logic = useAssetLogic()
@@ -290,7 +314,7 @@ describe('AssetWorkspace Integration Testing', () => {
       await logic.handlePaste()
 
       expect(assetStore.assets.length).toBe(2)
-      expect(assetStore.assets.some(a => a.name.includes('(Copy)'))).toBe(true)
+      expect(assetStore.assets.some(a => a.scriptId.includes('_Copy'))).toBe(true)
     })
   })
 
@@ -311,7 +335,7 @@ describe('AssetWorkspace Integration Testing', () => {
 
       expect(logic.visibleFolders.value.length).toBe(0)
       expect(logic.visibleAssets.value.length).toBe(1)
-      expect(logic.visibleAssets.value[0].name).toBe('gui_button')
+      expect(logic.visibleAssets.value[0].scriptId).toBe('gui_button')
     })
   })
 
@@ -343,8 +367,8 @@ describe('AssetWorkspace Integration Testing', () => {
       const asset1 = await importAsset(file1)
       const asset2 = await importAsset(file2)
 
-      expect(asset1.name).toBe('sprite')
-      expect(asset2.name).toBe('sprite (1)')
+      expect(asset1.scriptId).toBe('sprite')
+      expect(asset2.scriptId).toBe('sprite_1')
     })
 
     it('moves asset with Cut and Paste action, then clears clipboard', async () => {

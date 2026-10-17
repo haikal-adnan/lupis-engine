@@ -278,15 +278,15 @@ export function useAnimatorLogic() {
     const newName = await prompt({
       title: `Rename ${labelType}`,
       message: `Enter a new name for this ${labelType.toLowerCase()}:`,
-      defaultValue: nodeToRename.name,
+      defaultValue: nodeToRename.scriptId,
       confirmText: 'Save'
     });
 
-    if (newName !== null && newName.trim() !== '' && newName !== nodeToRename.name) {
-      const oldName = nodeToRename.name;
+    if (newName !== null && newName.trim() !== '' && newName !== nodeToRename.scriptId) {
+      const oldName = nodeToRename.scriptId;
       sceneStore.animatorRenameNode(activeEntityId.value, id, newName.trim());
       showPop({ title: 'Success!', message: `${labelType} name has been updated.`, type: 'success' });
-      animatorHistory.recordClipPropChange(activeEntityId.value, id, 'name', oldName, newName.trim());
+      animatorHistory.recordClipPropChange(activeEntityId.value, id, 'scriptId', oldName, newName.trim());
     }
   };
 
@@ -565,7 +565,7 @@ export function useAnimatorLogic() {
     if (!entity || entity.prefabId || !entity.components?.SpriteAnimator) return;
     workspaceStore.openTab({
       id: entity.id,
-      name: entity.name || 'Animator',
+      name: entity.scriptId || 'Animator',
       type: 'animator',
       fixed: false
     });

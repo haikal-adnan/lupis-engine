@@ -7,7 +7,6 @@ export default class Entity {
         this.visible = true;
         this.locked = false;
 
-        this.name = "New Entity";
         this.type = "entity";    
         this.tag = "untagged";   
         this.layerId = "layer_root"; 

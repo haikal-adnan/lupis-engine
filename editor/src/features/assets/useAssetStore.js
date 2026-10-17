@@ -127,7 +127,8 @@ export const useAssetStore = defineStore('asset', {
 
       const newAsset = JSON.parse(JSON.stringify(original));
       newAsset.id = `asset_${Date.now()}_copy`;
-      newAsset.name = `${original.name} (Copy)`;
+      newAsset.scriptId = `${original.scriptId}_Copy`;
+      delete newAsset.name;
 
       const ext = original.meta.extension;
       const originalFileName = `${original.fileKey}${ext}`;

@@ -12,7 +12,7 @@ export class AssetSyncHandler {
                 await this.ctx.assetLoader.loadAsset(this.ctx.world, [asset], this.ctx.game.baseURL);
                 this.ctx.bus.emit("engine:asset:loaded", asset.id);
             } catch (error) {
-                console.error(`[AssetSync] Failed to load asset ${asset.name}:`, error);
+                console.error(`[AssetSync] Failed to load asset ${asset.scriptId || asset.id}:`, error);
             }
         }
     }
@@ -27,7 +27,7 @@ export class AssetSyncHandler {
         if (!this.ctx.world.scripts) this.ctx.world.scripts = {};
         this.ctx.world.scripts[s.id] = {
             id: s.id,
-            name: s.name,
+            scriptId: s.scriptId,
             type: s.type,
             variables: s.localVariables || [],
             nodes: s.nodes || [],
@@ -69,7 +69,7 @@ export class AssetSyncHandler {
             if (prefabs && Array.isArray(prefabs)) {
                 this.ctx.world.prefabs = Object.fromEntries(prefabs.map(p => [p.id, {
                     id: p.id,
-                    name: p.name,
+                    scriptId: p.scriptId,
                     data: p.data,
                     children: p.children || []
                 }]));
@@ -79,7 +79,7 @@ export class AssetSyncHandler {
             if (scripts && Array.isArray(scripts)) {
                 this.ctx.world.scripts = Object.fromEntries(scripts.map(s => [s.id, {
                     id: s.id,
-                    name: s.name,
+                    scriptId: s.scriptId,
                     type: s.type,
                     variables: s.localVariables || [],
                     nodes: s.nodes || [],

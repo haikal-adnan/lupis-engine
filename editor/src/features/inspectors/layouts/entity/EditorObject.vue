@@ -18,7 +18,7 @@
         </div>
 
         <div class="px-2 py-0.5 rounded text-[10px] font-medium bg-secondary text-secondary-foreground border border-border truncate flex-1 text-center">
-          {{ name || 'Entity' }}
+          {{ localScriptId || 'Entity' }}
         </div>
       </div>
     </template>
@@ -103,7 +103,7 @@
           </div>
           
           <span class="text-[11px] font-medium italic truncate">
-            {{ prefabName }}
+            {{ prefabScriptId }}
           </span>
         </div>
 
@@ -118,13 +118,7 @@
       </div>
     </PropertyRow>
 
-    <PropertyRow label="Name">
-      <BaseInput 
-        v-model="name" 
-        placeholder="ObjectName" 
-        data-testid="object-name-input"
-      />
-    </PropertyRow>
+
 
     <PropertyRow label="Tag">
       <BaseSelect 
@@ -251,7 +245,6 @@ const hasIdError = ref(false)
 const localScriptId = ref('')
 const isProcessing = ref(false)
 
-const name = bindEntityProp('name')
 const zIndex = bindEntityProp('zIndex')
 
 // Komputasi deep-checking override flag di level entitas maupun komponen
@@ -274,10 +267,10 @@ const onApplyToMaster = async () => {
   }
 }
 
-const prefabName = computed(() => {
+const prefabScriptId = computed(() => {
   if (!prefabId.value) return ''
   const master = prefabStore.getPrefabById(prefabId.value)
-  return master ? master.name : 'Unknown Prefab'
+  return master ? master.scriptId : 'Unknown Prefab'
 })
 
 const openPrefabMaster = () => {

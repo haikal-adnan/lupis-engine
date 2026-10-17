@@ -117,7 +117,7 @@ export default class RuntimeLoader {
                 type: 'log',
                 time: Date.now(),
                 source: 'SceneManager',
-                message: `Loading initial scene: "${initialScene.name || initialScene.id}"`
+                message: `Loading initial scene: "${initialScene.scriptId || initialScene.id}"`
             });
 
             await game.sceneSystem.loadScene(initialScene.id);
@@ -212,7 +212,7 @@ export default class RuntimeLoader {
         world.scripts = Array.isArray(scripts) 
             ? Object.fromEntries(scripts.map(s => [s.id, {
                 id: s.id,
-                name: s.name,
+                scriptId: s.scriptId,
                 type: s.type,
                 variables: s.localVariables || [],
                 nodes: s.nodes || [],

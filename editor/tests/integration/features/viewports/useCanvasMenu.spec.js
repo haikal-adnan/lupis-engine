@@ -28,7 +28,7 @@ vi.mock('@composables/composables.js', () => ({
 vi.mock('@engines/engines.js', () => ({
   engineBridge: {
     addLayer: vi.fn(),
-    updateLayerName: vi.fn(),
+    updateLayerScriptId: vi.fn(),
     deleteLayer: vi.fn(),
     reorderLayer: vi.fn(),
     createEntity: vi.fn(),
@@ -133,7 +133,7 @@ describe('Canvas Menu Integration', () => {
 
     it('displays world layer creation menu when in scene tab without entity selected', () => {
       // Arrange
-      const worldLayer = createMockLayer({ id: 'l_world', name: 'Background World' })
+      const worldLayer = createMockLayer({ id: 'l_world', scriptId: 'Background_World', name: 'Background_World' })
       setupMockSceneEnvironment({ layersWorld: [worldLayer] })
       workspaceStore.openTab({ id: 'scene', name: 'Scene Editor', type: 'scene' })
 
@@ -146,7 +146,7 @@ describe('Canvas Menu Integration', () => {
       const createItem = contextMenu.value.items.find(item => item.label === 'Create Entity')
       expect(createItem).toBeDefined()
       expect(createItem.children.length).toBe(1)
-      expect(createItem.children[0].label).toBe('Background World')
+      expect(createItem.children[0].label).toBe('Background_World')
 
       const entitySubTypes = createItem.children[0].children.map(child => child.label)
       expect(entitySubTypes).toEqual(['Empty Entity', 'Sprite', 'Shape', 'Text', 'Tilemap'])
@@ -154,7 +154,7 @@ describe('Canvas Menu Integration', () => {
 
     it('displays UI layer creation menu when in UI tab', () => {
       // Arrange
-      const uiLayer = createMockLayer({ id: 'l_ui', name: 'HUD Layer' })
+      const uiLayer = createMockLayer({ id: 'l_ui', scriptId: 'HUD_Layer', name: 'HUD_Layer' })
       setupMockSceneEnvironment({ layersUI: [uiLayer] })
       workspaceStore.openTab({ id: 'ui_tab', name: 'UI Editor', type: 'ui' })
 
@@ -167,7 +167,7 @@ describe('Canvas Menu Integration', () => {
       const createItem = contextMenu.value.items.find(item => item.label === 'Create Entity')
       const entitySubTypes = createItem.children[0].children.map(child => child.label)
 
-      expect(createItem.children[0].label).toBe('HUD Layer')
+      expect(createItem.children[0].label).toBe('HUD_Layer')
       expect(entitySubTypes).toEqual(['UI Shape', 'UI Text', 'UI Image'])
     })
 

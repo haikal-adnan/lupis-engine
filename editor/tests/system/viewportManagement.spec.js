@@ -80,7 +80,7 @@ describe('Canvas Management & Engine Sync Integration', () => {
     vi.restoreAllMocks()
     vi.spyOn(engineBridge, 'updateEntityProp').mockImplementation(() => {})
     vi.spyOn(engineBridge, 'updateComponentProp').mockImplementation(() => {})
-    vi.spyOn(engineBridge, 'updateEntityName').mockImplementation(() => {})
+    vi.spyOn(engineBridge, 'updateEntityScriptId').mockImplementation(() => {})
     vi.spyOn(engineBridge, 'createEntity').mockImplementation(() => {})
     vi.spyOn(engineBridge, 'deleteEntity').mockImplementation(() => {})
     vi.spyOn(engineBridge, 'onEntityModified').mockImplementation(() => {})
@@ -160,10 +160,10 @@ describe('Canvas Management & Engine Sync Integration', () => {
       const entity = createMockEntity({ id: 'ent_store_mod_1' })
       setupMockSceneEnvironment({ entities: [entity] })
 
-      sceneStore.updateEntityName('ent_store_mod_1', 'Renamed Hero')
+      sceneStore.updateEntityScriptId('ent_store_mod_1', 'renamed_hero')
 
       // Assert
-      expect(engineBridge.updateEntityName).toHaveBeenCalledWith('ent_store_mod_1', 'Renamed Hero')
+      expect(engineBridge.updateEntityScriptId).toHaveBeenCalledWith('ent_store_mod_1', 'renamed_hero')
     })
   })
 

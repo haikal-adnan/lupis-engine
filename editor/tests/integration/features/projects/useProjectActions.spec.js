@@ -157,7 +157,7 @@ describe('useProjectActions Integration with OPFS Storage', () => {
       const scenesMeta = JSON.parse(await scenesMetaObj.text())
 
       expect(scenesMeta).toHaveLength(1)
-      expect(scenesMeta[0].name).toBe('Main Scene')
+      expect(scenesMeta[0].scriptId).toBe('Main_Scene')
 
       // Verify main scene detail file
       const defaultSceneId = scenesMeta[0].id
@@ -165,7 +165,7 @@ describe('useProjectActions Integration with OPFS Storage', () => {
       const sceneDetailObj = await sceneDetailFile.getFile()
       const sceneDetail = JSON.parse(await sceneDetailObj.text())
 
-      expect(sceneDetail.name).toBe('Main Scene')
+      expect(sceneDetail.scriptId).toBe('Main_Scene')
       expect(sceneDetail.layersWorld).toHaveLength(1)
     })
   })
@@ -233,7 +233,7 @@ describe('useProjectActions Integration with OPFS Storage', () => {
       // Assert
       expect(loaded.project.id).toBe(created.id)
       expect(loaded.scenes).toHaveLength(1)
-      expect(loaded.scenes[0].name).toBe('Main Scene')
+      expect(loaded.scenes[0].scriptId).toBe('Main_Scene')
       expect(loaded.assets).toEqual([])
       expect(loaded.prefabs).toEqual([])
       expect(loaded.scripts).toEqual([])

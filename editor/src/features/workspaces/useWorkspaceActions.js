@@ -10,7 +10,7 @@ export function useWorkspaceActions() {
 
     const isConfirmed = await confirm({
       title: 'Delete Entity?',
-      message: `Are you sure you want to delete "${entity.name}"? This action cannot be undone.`,
+      message: `Are you sure you want to delete "${entity.scriptId}"? This action cannot be undone.`,
       confirmText: 'Delete',
       cancelText: 'Cancel',
       type: 'danger'

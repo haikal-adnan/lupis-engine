@@ -104,7 +104,7 @@ export function compileScript(rawScript, options = {}) {
   return {
     schemaVersion: SCHEMA_VERSION,
     id: normalized.id,
-    name: normalized.name,
+    scriptId: normalized.scriptId,
     variables: normalized.variables,
     nodes: compiledNodes,
     edges: normalized.edges

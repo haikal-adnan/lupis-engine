@@ -68,6 +68,11 @@ export function useTilemapLogic() {
 
   const currentTextureUrl = ref(null);
   const assetId = bindComponentProp('Tilemap', 'assetId');
+  const assetScriptId = computed(() => {
+    if (!assetId.value) return null;
+    const asset = assetStore.getAssetById(assetId.value);
+    return asset ? (asset.scriptId || asset.id) : assetId.value;
+  });
   const width = bindComponentProp('Tilemap', 'width');   // 1 Tile Width (px)
   const height = bindComponentProp('Tilemap', 'height'); // 1 Tile Height (px)
 
@@ -95,7 +100,7 @@ export function useTilemapLogic() {
 
     workspaceStore.openTab({
       id: entity.id,
-      name: entity.name || 'Tilemap',
+      name: entity.scriptId || 'Tilemap',
       type: 'tilemap',
       fixed: false
     });
@@ -312,6 +317,7 @@ export function useTilemapLogic() {
     hasTilemap,
     currentTextureUrl,
     assetId,
+    assetScriptId,
     width,
     height,
     bindComponentProp,

@@ -117,7 +117,7 @@ export function useTab() {
       const visual = TYPE_ICONS[tab.type] || TYPE_ICONS['scene']
       
       const dynamicName = tab.type === 'scene' && sceneStore.activeScene
-        ? sceneStore.activeScene.name
+        ? sceneStore.activeScene.scriptId
         : tab.name
 
       return {

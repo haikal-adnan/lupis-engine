@@ -1,68 +1,44 @@
-# 📚 Lupis Engine Documentation
+# Lupis Engine documentation
 
-Welcome to the official technical documentation for **Lupis Engine**, a modern web-based 2D/2.5D game engine and visual creation suite powered by WebGL, Vue 3, and Node.js.
+Lupis Engine is a web-based 2D/2.5D game engine with a visual editor. The runtime uses WebGL 2 and vanilla ES modules, the editor is built on Vue 3, and a small Node.js service handles font conversion and export packaging.
 
----
+## Documents
 
-## 🧭 Documentation Sitemap
-
-| Document | Description |
+| Document | Read it to |
 | :--- | :--- |
-| [Architecture Overview](file:///D:/Project/Lupis%20Engine/docs/architecture.md) | High-level system architecture, engine topology, and subsystem interaction diagrams. |
-| [Getting Started](file:///D:/Project/Lupis%20Engine/docs/getting-started.md) | Prerequisites, local installation, Docker Compose setup, and dev environment workflow. |
-| [Core Engine API Reference](file:///D:/Project/Lupis%20Engine/docs/core-api.md) | Technical reference for `Game`, `World`, `Entity`, ECS components, physics, and renderers. |
-| [Visual Scripting & Blueprints](file:///D:/Project/Lupis%20Engine/docs/visual-scripting.md) | Node-graph architecture, data flow execution, custom nodes, and script contracts. |
-| [Visual Editor Guide](file:///D:/Project/Lupis%20Engine/docs/editor-guide.md) | Editor UI walkthrough, hierarchy, inspector, viewport tools, asset pipeline, and preview mode. |
-| [Schema & Contract Lock](file:///D:/Project/Lupis%20Engine/docs/schema-contract.md) | Single Source of Truth for schemas, binary formats, bridge protocols, and API contracts. |
+| [Getting started](getting-started.md) | Install, run, and test the project locally. |
+| [Architecture](architecture.md) | Understand how the runtime, editor, and service fit together. |
+| [Core API](core-api.md) | Start the engine, create entities, and use the runtime subsystems. |
+| [Visual scripting](visual-scripting.md) | Understand blueprint graphs, pins, and script execution. |
+| [Editor guide](editor-guide.md) | Use the editor: panels, tools, assets, shortcuts. |
+| [Editor reference](editor-reference.md) | Work on the editor codebase: stores, history, compiler, bridge. |
+| [Schema contract](schema-contract.md) | Look up the authoritative data schemas, file formats, bridge events, and REST API. |
 
----
+When documents disagree, [schema-contract.md](schema-contract.md) wins.
 
-## ⚡ High-Level Overview
+## Repository layout
 
-Lupis Engine is engineered with a modular, service-oriented architecture:
+| Directory | Contents | Default port |
+| :--- | :--- | :--- |
+| `core/` | Runtime engine (ES modules, WebGL 2) | 8080 |
+| `editor/` | Visual editor (Vue 3, Pinia, Vite) | 6500 |
+| `service/` | Node.js service: MSDF font conversion, project export | 4000 |
+| `tests/` | Playwright end-to-end tests | n/a |
 
-```mermaid
-graph TD
-    subgraph Editor ["Visual Editor (Vue 3 + Vite)"]
-        UI["Hierarchy, Inspector & Asset Panels"]
-        Graph["Visual Blueprint Node Graph"]
-        Bridge["Engine IFrame / PostMessage Bridge"]
-    end
-
-    subgraph Core ["Core Runtime Engine (WebGL / ES Modules)"]
-        Game["Game Coordinator & Loop"]
-        World["World & Entity Component System"]
-        Render["WebGL Batch Renderer (Shapes, Sprites, Fonts)"]
-        Phys["Physics & Collider Systems"]
-        Audio["Web Audio API System"]
-        Script["Blueprint ScriptRunner & Context"]
-    end
-
-    subgraph Service ["Backend Microservice (Express + Node)"]
-        Font["MSDF Font Generator"]
-        Archiver["Project Zipper & Importer"]
-        Builder["Electron Bundle Exporter"]
-    end
-
-    Bridge <==>|"EventBus & Viewport Sync"| Game
-    UI -->|"Project Payload"| Service
-    Service -->|"Cached Assets"| Core
-```
-
----
-
-## 🛠️ Quick Commands
+## Quick start
 
 ```bash
-# Start all services with Docker Compose
+# All services
 docker compose -f start.yml up
 
-# Or run editor locally
+# Editor only
 cd editor && npm install && npm run dev
 
-# Run editor unit tests
+# Editor unit tests
 cd editor && npm run test:run
 
-# Run E2E test standard check
+# E2E spec standard check
 node tests/scripts/check-standard.mjs
 ```
+
+See [Getting started](getting-started.md) for requirements and the full setup.

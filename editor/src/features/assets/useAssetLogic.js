@@ -69,16 +69,16 @@ export function useAssetLogic() {
 
     if (searchQuery.value.trim()) {
       const q = searchQuery.value.toLowerCase().trim();
-      assets = assets.filter(a => a.name.toLowerCase().includes(q));
+      assets = assets.filter(a => (a.scriptId || '').toLowerCase().includes(q));
     }
 
     assets.sort((a, b) =>
-      a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' })
+      (a.scriptId || '').localeCompare(b.scriptId || '', undefined, { numeric: true, sensitivity: 'base' })
     );
 
     return assets.map(a => ({
       ...a,
-      displayName: a.name,
+      displayName: a.scriptId,
       originalExt: a.meta ? a.meta.extension : ''
     }));
   });

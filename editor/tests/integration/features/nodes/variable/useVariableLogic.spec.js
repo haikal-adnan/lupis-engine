@@ -265,6 +265,56 @@ describe('useVariableLogic Integration', () => {
     })
   })
 
+  describe('Direct ID Operations & Camera Fallback', () => {
+    it('supports updating and deleting variables by ID directly and marks project dirty', async () => {
+      // Arrange
+      await setupMockScriptEnvironment({ scriptId: 'script_id_ops', localVariables: [] })
+      scriptStore.setActiveScript(scriptStore.getScriptById('script_id_ops'))
+
+      const variableLogic = useVariableLogic('Local')
+      const varA = variableLogic.addVariable('String')
+      const varB = variableLogic.addVariable('Number')
+
+      projectStore.syncStatus = 'synced'
+
+      // Act: update variable by ID
+      variableLogic.updateVariable(varB.id, 'defaultValue', 99)
+
+      // Assert
+      expect(scriptStore.activeScript.localVariables.find(v => v.id === varB.id).defaultValue).toBe(99)
+      expect(projectStore.syncStatus).toBe('dirty')
+
+      // Act: delete variable by ID
+      variableLogic.deleteVariable(varA.id)
+      expect(scriptStore.activeScript.localVariables.length).toBe(1)
+      expect(scriptStore.activeScript.localVariables[0].id).toBe(varB.id)
+    })
+
+    it('spawns Get and Set nodes at camera center when pos is null', async () => {
+      // Arrange
+      await setupMockScriptEnvironment({ scriptId: 'script_center_spawn', localVariables: [] })
+      scriptStore.setActiveScript(scriptStore.getScriptById('script_center_spawn'))
+
+      scriptStore.camera = { x: 0, y: 0, scale: 1 }
+
+      const variableLogic = useVariableLogic('Local')
+      const createdVar = variableLogic.addVariable('Number')
+
+      // Act: spawn Get node without pos
+      const getNode = variableLogic.addNodeToCanvas(createdVar, null, 'variableGet')
+      expect(getNode).toBeDefined()
+      expect(getNode.type).toBe('variableGet')
+      expect(getNode.label).toBe('Get NewVar')
+
+      // Act: spawn Set node without pos (should offset slightly to not collide)
+      const setNode = variableLogic.addNodeToCanvas(createdVar, null, 'variableSet')
+      expect(setNode).toBeDefined()
+      expect(setNode.type).toBe('variableSet')
+      expect(setNode.label).toBe('Set NewVar')
+      expect(setNode.position.x).not.toBe(getNode.position.x)
+    })
+  })
+
   describe('Negative & Edge Cases', () => {
     it('[Bad Path] handles map entry insertion gracefully when key is empty or whitespace', async () => {
       // Arrange

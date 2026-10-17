@@ -66,11 +66,11 @@ export function usePrefabLogic() {
 
     if (searchQuery.value) {
       const query = searchQuery.value.toLowerCase();
-      list = list.filter(p => p.name.toLowerCase().includes(query));
+      list = list.filter(p => (p.scriptId || '').toLowerCase().includes(query));
     }
 
     return list.sort((a, b) => 
-      a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' })
+      (a.scriptId || '').localeCompare(b.scriptId || '', undefined, { numeric: true, sensitivity: 'base' })
     );
   });
 

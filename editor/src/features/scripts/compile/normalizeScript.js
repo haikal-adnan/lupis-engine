@@ -36,7 +36,7 @@ export function normalizeScript(script) {
 
   const normalized = {
     id: script.id || 'script_' + Date.now(),
-    name: script.name || 'Untitled Script',
+    scriptId: script.scriptId || 'script_' + Date.now(),
     variables: Array.isArray(script.variables || script.localVariables) 
       ? (script.variables || script.localVariables).map(v => ({
           id: v.id,

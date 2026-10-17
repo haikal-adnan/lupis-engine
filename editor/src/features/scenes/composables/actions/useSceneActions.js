@@ -1,15 +1,20 @@
-import { useProjectStore } from '@projects/projects.js'
+import { useProjectStore } from '@projects/projects.js';
 import { sceneSchema } from '@scenes/scenes.js';
+import { sanitizeScriptId, getValidUniqueScriptId, isScriptIdDuplicate } from '@utils/utils.js';
 
 export const useSceneActions = {
   addScene(sceneData = {}) {
     const projectStore = useProjectStore();
 
     const safeSceneData = JSON.parse(JSON.stringify(sceneData));
+    const desiredScriptId = safeSceneData.scriptId || 'scene';
+    delete safeSceneData.name;
+    const uniqueScriptId = getValidUniqueScriptId(desiredScriptId, this.scenes, s => s.scriptId);
 
     const newScene = sceneSchema({
       projectId: projectStore.project?.id,
-      ...safeSceneData
+      ...safeSceneData,
+      scriptId: uniqueScriptId
     });
 
     this.scenes.push(newScene);
@@ -30,7 +35,9 @@ export const useSceneActions = {
     const newScene = JSON.parse(JSON.stringify(originalScene));
 
     newScene.id = `scene_${Date.now()}`;
-    newScene.name = `${originalScene.name} (Copy)`;
+    const baseScriptId = originalScene.scriptId || 'scene';
+    newScene.scriptId = getValidUniqueScriptId(`${baseScriptId}_copy`, this.scenes, s => s.scriptId, newScene.id);
+    delete newScene.name;
 
     this.scenes.push(newScene);
     this.activeSceneId = newScene.id;
@@ -65,10 +72,18 @@ export const useSceneActions = {
     }
   },
 
-  updateSceneName(sceneId, newName) {
+  updateSceneScriptId(sceneId, newScriptId) {
     const scene = this.scenes.find(s => s.id === sceneId);
-    if (scene && newName && newName.trim() !== "") {
-      scene.name = newName.trim();
+    if (!scene || !newScriptId || !newScriptId.trim()) return false;
+    const sanitized = sanitizeScriptId(newScriptId);
+    if (!sanitized) return false;
+
+    if (isScriptIdDuplicate(sanitized, this.scenes, s => s.scriptId, sceneId)) {
+      return false;
     }
+
+    scene.scriptId = sanitized;
+    delete scene.name;
+    return true;
   }
 };

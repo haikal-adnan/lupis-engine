@@ -28,7 +28,7 @@ export const useScriptStore = defineStore('script', {
     getAllScripts: (state) => {
       return state.scripts.map(s => ({
         id: s.id,
-        name: s.name,
+        scriptId: s.scriptId,
         type: s.type || 'component',
         folderId: s.folderId || null,
         originalData: s
@@ -94,7 +94,7 @@ export const useScriptStore = defineStore('script', {
         id: s.id,
         projectId,
         folderId: s.folderId,
-        name: s.name,
+        scriptId: s.scriptId,
         type: s.type
       }));
 

@@ -1,5 +1,5 @@
 import { componentSchema } from '@scenes/scenes.js';
-import { GenerateUUID } from '@utils/utils.js';
+import { GenerateUUID, sanitizeScriptId } from '@utils/utils.js';
 
 export const entitySchema = (data = {}) => {
   const cleanComponents = {};
@@ -55,12 +55,14 @@ export const entitySchema = (data = {}) => {
   }
 
   const type = data.type || "entity";
+  const scriptId = sanitizeScriptId(
+    data.scriptId || `${type}_${GenerateUUID().slice(0, 8)}`,
+    `${type}_${GenerateUUID().slice(0, 8)}`
+  );
 
-  return {
+  const entity = {
     id: data.id || `${GenerateUUID()}`,
-    scriptId: data.scriptId || `${type}_${GenerateUUID()}`,
-    
-    name: data.name || "New Entity",
+    scriptId: scriptId,
     type: type,
     tag: data.tag || "untagged",
     
@@ -85,4 +87,6 @@ export const entitySchema = (data = {}) => {
     components: cleanComponents,
     _isDirty: false 
   };
+
+  return entity;
 };

@@ -1,15 +1,19 @@
 import { entitySchema } from '@scenes/scenes.js'; 
+import { sanitizeScriptId } from '@utils/utils.js';
 
 export const prefabSchema = (data = {}) => {
   const entityData = data.data ? entitySchema(data.data) : entitySchema({});
   
-  const finalName = data.name || entityData.name || "New Prefab";
+  const finalScriptId = sanitizeScriptId(
+    data.scriptId || entityData.scriptId || "prefab_1",
+    "prefab_1"
+  );
   const finalType = data.type || entityData.type || "world";
 
   entityData.prefabId = null; 
   entityData.parentId = null; 
   entityData.overridden = false;
-  entityData.name = finalName;
+  entityData.scriptId = finalScriptId;
   entityData.type = finalType;
 
   if (entityData.components) {
@@ -32,13 +36,15 @@ export const prefabSchema = (data = {}) => {
     return c;
   });
   
-  return {
+  const prefab = {
     id: data.id,
     projectId: data.projectId || null,
     folderId: data.folderId || null, 
-    name: finalName,
+    scriptId: finalScriptId,
     type: finalType, 
     data: entityData,
     children: childrenData
   };
+
+  return prefab;
 };

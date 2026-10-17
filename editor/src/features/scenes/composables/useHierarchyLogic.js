@@ -65,7 +65,6 @@ export function useHierarchyLogic() {
       
       return {
         id: layer.id,
-        name: layer.name,
         type: 'layer',
         scriptId: layer.scriptId,
         visible: layer.visible,
@@ -85,7 +84,7 @@ export function useHierarchyLogic() {
       const isUI = layer._section === 'ui' || 
                    layer.scriptId === 'l_hud' || 
                    layer.scriptId === 'l_menu' ||
-                   (layer.name && layer.name.toLowerCase().includes('ui'));
+                   (layer.scriptId && layer.scriptId.toLowerCase().includes('ui'));
       
       if (isUI) {
         uiLayers.push(layer);
@@ -108,7 +107,7 @@ export function useHierarchyLogic() {
     const section = layer._section || layer.section;
     if (section === 'ui') return true;
     if (layer.scriptId === 'l_hud' || layer.scriptId === 'l_menu') return true;
-    return Boolean(layer.name && layer.name.toLowerCase().includes('ui'));
+    return Boolean(layer.scriptId && layer.scriptId.toLowerCase().includes('ui'));
   };
 
   const isAncestor = (ancestorId, potentialDescendantId) => {

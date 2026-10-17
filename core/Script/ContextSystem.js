@@ -15,18 +15,18 @@ export function getScriptContextMetadata(game, runner, node) {
     return runner.getContextMetadata(node);
   }
 
-  const sceneName = game?.sceneSystem?.getCurrentSceneName?.() || 
-                    game?.world?.currentSceneName || 
-                    game?.world?.currentScene?.name || 
+  const sceneName = game?.sceneSystem?.getCurrentSceneScriptId?.() || 
+                    game?.world?.currentSceneScriptId || 
+                    game?.world?.currentScene?.scriptId || 
                     game?.sceneSystem?.getCurrentSceneId?.() || 
                     'Scene';
 
   const entityScriptId = runner?.owner 
-    ? (runner.owner.scriptId || runner.owner.name || runner.owner.id || 'Entity') 
+    ? (runner.owner.scriptId || runner.owner.id || 'Entity') 
     : 'Global';
 
-  const scriptName = runner?.data?.name || 
-                     game?.world?.scripts?.[runner?.scriptId]?.name || 
+  const scriptName = runner?.data?.scriptId || 
+                     game?.world?.scripts?.[runner?.scriptId]?.scriptId || 
                      runner?.data?.title || 
                      runner?.scriptId || 
                      'Script';
@@ -35,7 +35,6 @@ export function getScriptContextMetadata(game, runner, node) {
     node.settings?.headerTitle || 
     node.data?.settings?.headerTitle || 
     node.title || 
-    node.name ||
     node.label || 
     node.type || 
     node.id || 
@@ -94,8 +93,8 @@ export default class ContextSystem {
     return {
       owner: runner.owner,
       node: node,
-      dt: this.game.deltaTime,
-      deltaTime: this.game.deltaTime,
+      get dt() { return game.deltaTime; },
+      get deltaTime() { return game.deltaTime; },
       state: nodeState,
 
       console: {
@@ -240,6 +239,10 @@ export default class ContextSystem {
       },
 
       triggerFlow: (portName) => {
+        const nodeOutputs = runner.nodeOutputs.get(node.id);
+        if (nodeOutputs && nodeOutputs[portName] === true) {
+          nodeOutputs[portName] = false;
+        }
         runner.executeFlow(node.id, portName);
       },
 
@@ -313,12 +316,13 @@ export default class ContextSystem {
           }
 
           const searchKey = String(targetId).trim();
+          const searchLower = searchKey.toLowerCase();
+          const searchSlug = searchLower.replace(/\s+/g, '_');
           const entities = this.game.world?.entities || [];
 
           const found = entities.find(e => 
             e.id === searchKey || 
-            e.scriptId === searchKey || 
-            (e.name && e.name.toLowerCase() === searchKey.toLowerCase())
+            (e.scriptId && (e.scriptId.toLowerCase() === searchLower || e.scriptId.toLowerCase() === searchSlug))
           );
 
           return found || null;
@@ -406,8 +410,22 @@ export default class ContextSystem {
         },
 
         findByName: (name) => {
+          const searchLower = String(name).trim().toLowerCase();
+          const searchSlug = searchLower.replace(/\s+/g, '_');
           const entities = this.game.world?.entities || [];
-          return entities.find(e => e.name === name) || null;
+          return entities.find(e => 
+            (e.scriptId && (e.scriptId.toLowerCase() === searchLower || e.scriptId.toLowerCase() === searchSlug)) || 
+            e.id === name
+          ) || null;
+        },
+
+        findByScriptId: (scriptId) => {
+          const searchLower = String(scriptId).trim().toLowerCase();
+          const searchSlug = searchLower.replace(/\s+/g, '_');
+          const entities = this.game.world?.entities || [];
+          return entities.find(e => 
+            (e.scriptId && (e.scriptId.toLowerCase() === searchLower || e.scriptId.toLowerCase() === searchSlug))
+          ) || null;
         }
       },
 
@@ -431,10 +449,10 @@ export default class ContextSystem {
 
           const allLayers = this.game.world?.allLayers || [];
           const search = String(layerId).trim().toLowerCase();
+          const slug = search.replace(/\s+/g, '_');
           const found = allLayers.find(l => 
             l.id === layerId || 
-            l.scriptId === layerId || 
-            (l.name && l.name.toLowerCase() === search)
+            (l.scriptId && (l.scriptId.toLowerCase() === search || l.scriptId.toLowerCase() === slug))
           );
 
           return found || null;
@@ -648,6 +666,35 @@ export default class ContextSystem {
         get target() { return game.camera.target; }
       },
 
+      asset: {
+        get: (idOrScriptId) => {
+          if (!idOrScriptId) return null;
+          const search = String(idOrScriptId).trim();
+          const searchLower = search.toLowerCase();
+          const searchSlug = searchLower.replace(/\s+/g, '_');
+          if (this.game.world?.assetMap?.[search]) return this.game.world.assetMap[search];
+          const list = this.game.world?.assetList || [];
+          return list.find(a => 
+            a.id === search || 
+            (a.scriptId && (a.scriptId.toLowerCase() === searchLower || a.scriptId.toLowerCase() === searchSlug))
+          ) || null;
+        },
+        resolveId: (idOrScriptId) => {
+          if (!idOrScriptId) return null;
+          const found = this.game.world?.assetMap?.[idOrScriptId];
+          if (found && found.id) return found.id;
+          const search = String(idOrScriptId).trim();
+          const searchLower = search.toLowerCase();
+          const searchSlug = searchLower.replace(/\s+/g, '_');
+          const list = this.game.world?.assetList || [];
+          const matched = list.find(a => 
+            a.id === search || 
+            (a.scriptId && (a.scriptId.toLowerCase() === searchLower || a.scriptId.toLowerCase() === searchSlug))
+          );
+          return matched ? matched.id : idOrScriptId;
+        }
+      },
+
       scene: {
         load: (sceneName) => this.game.sceneSystem.queueLoadScene(sceneName),
         restart: () => this.game.sceneSystem.restartScene(),
@@ -668,7 +715,9 @@ export default class ContextSystem {
       },
       setGlobal: (key, val) => {
         this.game.variables?.setGlobal(key, val);
-      }
+      },
+      getVariable: (key) => runner.getVariable(key),
+      hasVariable: (key) => runner.hasVariable(key)
     };
   }
 }

@@ -43,7 +43,7 @@ export function useHierarchyMenu(handlers) {
     if (node) {
       isUIContext = node._section === 'ui' || 
                     node.scriptId === 'ui' || 
-                    node.name === 'UI' ||
+                    (node.scriptId && node.scriptId.toLowerCase().includes('ui')) ||
                     (node.type && node.type.startsWith('ui_'));
       
       if (!isUIContext && node.layerId) {

@@ -151,7 +151,7 @@ export default class RendererManager {
     _handleEditorGizmos(world, game, isUIMode) {
         const { activeTabId } = world._editors || {};
         const isSceneMode = activeTabId === "scene" || !activeTabId; 
-        const isUILayer = (layer) => layer && (layer.scriptId === 'ui' || layer.name === 'UI');
+        const isUILayer = (layer) => layer && (layer.scriptId === 'ui' || layer.scriptId?.toLowerCase().includes('ui'));
         
         const isLayerInteractable = (layer) => layer && layer.active !== false && layer.visible !== false;
 

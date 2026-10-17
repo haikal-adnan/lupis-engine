@@ -45,7 +45,7 @@ export const DEFAULT_PROJECT_PAYLOAD = {
   scenes: [
     {
       id: "default_main_scene",
-      name: "Main Scene",
+      scriptId: "default_main_scene",
       settings: {
         backgroundColor: "#1a1a1a",
         showRulers: false,
@@ -61,6 +61,12 @@ export const DEFAULT_PROJECT_PAYLOAD = {
           drag: 5
         }
       },
+      layersWorld: [
+        { id: "layer_world_default", scriptId: "world_root", zIndex: 0, orderIndex: 0, active: true, visible: true, locked: false, opacity: 1.0 }
+      ],
+      layersUI: [
+        { id: "layer_ui_default", scriptId: "ui_root", zIndex: 0, orderIndex: 0, active: true, visible: true, locked: false, opacity: 1.0 }
+      ],
       entities: []
     }
   ],

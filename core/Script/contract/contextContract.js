@@ -48,7 +48,9 @@ export const CONTEXT_ROOT_METHODS = Object.freeze([
   'getLocal',
   'setLocal',
   'getGlobal',
-  'setGlobal'
+  'setGlobal',
+  'getVariable',
+  'hasVariable'
 ]);
 
 export const CONTEXT_ROOT_PROPERTIES = Object.freeze([

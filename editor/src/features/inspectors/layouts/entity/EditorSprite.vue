@@ -77,7 +77,7 @@
             @update:rect="updateSourceRect"
             :disabled="isControlledByAnimator"
             fallback-text="No Tex"
-            name="Sprite Crop"
+            :name="assetScriptId || 'Sprite Crop'"
             sizeClass="w-[52px] h-[52px] bg-muted/20 border-border/60 shrink-0 rounded-md"
             data-testid="sprite-renderer-thumbnail"
           />
@@ -98,7 +98,7 @@
                 data-testid="sprite-renderer-asset-btn"
               >
                 <span class="flex-1 px-2 text-[11px] font-mono text-muted-foreground/90 truncate select-none group-hover:text-foreground transition-colors">
-                  {{ assetId || 'None' }}
+                  {{ assetScriptId || 'None' }}
                 </span>
 
                 <div class="px-2 h-full flex items-center justify-center border-l border-border bg-muted/10 text-muted-foreground/50 group-hover:text-primary group-hover:bg-primary/5 transition-colors">
@@ -216,6 +216,11 @@ const isControlledByAnimator = computed(() => {
 const overridden = getComponentOverrideStatus('SpriteRenderer');
 
 const assetId = bindComponentProp('SpriteRenderer', 'assetId');
+const assetScriptId = computed(() => {
+  if (!assetId.value) return null;
+  const asset = assetStore.getAssetById(assetId.value);
+  return asset ? (asset.scriptId || asset.id) : assetId.value;
+});
 const rawOpacity = bindComponentProp('SpriteRenderer', 'opacity');
 
 const displayOpacity = computed({

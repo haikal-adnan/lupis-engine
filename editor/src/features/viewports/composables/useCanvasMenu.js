@@ -139,7 +139,7 @@ export function useCanvasMenu(canvasHandlers) {
 
       if (filteredLayers.length > 0) {
         createItems = filteredLayers.map(layer => ({
-          label: layer.name,
+          label: layer.scriptId,
           icon: Layers,
           children: getEntityTypesForLayer(layer.id)
         }));

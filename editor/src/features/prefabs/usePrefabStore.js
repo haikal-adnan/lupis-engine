@@ -11,7 +11,7 @@ export const usePrefabStore = defineStore('prefab', {
     getAllPrefabs: (state) => {
       return state.prefabs.map(p => ({
         id: p.id,
-        name: p.name,
+        scriptId: p.scriptId,
         folderId: p.folderId,
         thumbnailUrl: null, 
         originalData: p
@@ -61,7 +61,7 @@ export const usePrefabStore = defineStore('prefab', {
         id: p.id,
         projectId: projectId,
         folderId: p.folderId,
-        name: p.name,
+        scriptId: p.scriptId,
         type: p.type
       }));
 

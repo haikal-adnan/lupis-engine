@@ -25,10 +25,11 @@ export class AnimatorCrudObject {
     await expect(clipNode).toBeVisible();
     // selectClip() toggles (clicking the active clip deselects it), so only click if the properties are not shown yet.
     // TODO contract: give animator-tree-node an aria-selected attribute so switching between clips is reliable.
-    if ((await this.animatorPage.clipNameInput.count()) === 0) {
+    const propertyInput = this.animatorPage.scriptIdInput.or(this.animatorPage.clipNameInput);
+    if ((await propertyInput.count()) === 0) {
       await clipNode.click();
     }
-    await expect(this.animatorPage.clipNameInput).toBeVisible();
+    await expect(propertyInput).toBeVisible();
   }
 
   async createCategoryViaContextMenu(targetNode = null) {

@@ -21,7 +21,7 @@ describe('Context Console Mapping Integration', () => {
         off: vi.fn()
       },
       sceneSystem: {
-        getCurrentSceneName: vi.fn(() => 'TestScene'),
+        getCurrentSceneScriptId: vi.fn(() => 'TestScene'),
         getCurrentSceneId: vi.fn(() => 'scene_01')
       },
       world: {
@@ -33,13 +33,12 @@ describe('Context Console Mapping Integration', () => {
     mockRunner = {
       owner: {
         id: 'ent_123',
-        scriptId: 'player_hero',
-        name: 'Player'
+        scriptId: 'player_hero'
       },
       scriptId: 'script_player',
       data: {
         id: 'script_player',
-        name: 'PlayerController'
+        scriptId: 'PlayerController'
       },
       getNodeState: vi.fn(() => ({}))
     }
@@ -64,12 +63,12 @@ describe('Context Console Mapping Integration', () => {
       expect(meta.prefix).toBe('[TestScene] [player_hero] [PlayerController] [JumpAction]')
     })
 
-    it('falls back to entity name or id when scriptId is not provided', () => {
-      mockRunner.owner = { id: 'ent_999', name: 'Goblin' }
+    it('falls back to entity id when scriptId is not provided', () => {
+      mockRunner.owner = { id: 'ent_999' }
       const meta = getScriptContextMetadata(mockGame, mockRunner, mockNode)
 
-      expect(meta.entityScriptId).toBe('Goblin')
-      expect(meta.prefix).toBe('[TestScene] [Goblin] [PlayerController] [JumpAction]')
+      expect(meta.entityScriptId).toBe('ent_999')
+      expect(meta.prefix).toBe('[TestScene] [ent_999] [PlayerController] [JumpAction]')
     })
 
     it('falls back to Global when owner is null', () => {
@@ -180,7 +179,7 @@ describe('Context Console Mapping Integration', () => {
     it('maps runtime errors thrown during node execution', () => {
       const scriptData = {
         id: 'script_combat',
-        name: 'CombatScript',
+        scriptId: 'CombatScript',
         nodes: [
           {
             id: 'node_err',

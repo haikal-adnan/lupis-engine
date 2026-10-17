@@ -120,7 +120,7 @@ const scriptStore = useScriptStore();
 const { updateScriptInstance } = useInspectorBinding();
 
 const def = computed(() => scriptStore.getScriptById(props.data.assetId));
-const scriptName = computed(() => def.value?.name || 'Unknown Script');
+const scriptName = computed(() => def.value?.scriptId || 'Unknown Script');
 
 const active = computed({
   get: () => props.data.active,

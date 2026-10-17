@@ -31,12 +31,13 @@ describe('ScriptWorkspace Integration Testing', () => {
   let project
 
   // Helper to create mock script instances and save them to Store & OPFS
-  const createMockScript = async ({ name = 'TestScript', type = 'component', folderId = null } = {}) => {
+  const createMockScript = async ({ scriptId, name, type = 'component', folderId = null } = {}) => {
     const scriptStore = useScriptStore()
+    const finalScriptId = scriptId || name || 'TestScript'
     
     const script = scriptSchema({
       id: `script_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-      name,
+      scriptId: finalScriptId,
       type,
       folderId,
       nodes: [],
@@ -68,11 +69,11 @@ describe('ScriptWorkspace Integration Testing', () => {
     const sceneStore = useSceneStore()
     sceneStore.initScenes([{
       id: 'scene_main',
-      name: 'Main Scene',
+      scriptId: 'Main_Scene',
       entities: [
         {
           id: 'entity_player',
-          name: 'Player',
+          scriptId: 'Player',
           components: {
             ScriptController: { data: [] }
           }
@@ -103,7 +104,7 @@ describe('ScriptWorkspace Integration Testing', () => {
       const newScript = await createScript('component', null)
 
       expect(newScript).toBeDefined()
-      expect(newScript.name).toBe('PlayerController')
+      expect(newScript.scriptId).toBe('PlayerController')
       expect(scriptStore.scripts.some(s => s.id === newScript.id)).toBe(true)
 
       const scriptsJsonHandle = storeRef.store.get(`root/lupis-engine/projects/${project.id}/workspaces/scripts.json`)
@@ -117,7 +118,7 @@ describe('ScriptWorkspace Integration Testing', () => {
       const { renameScript } = useScriptActions()
       const scriptStore = useScriptStore()
 
-      const script = await createMockScript({ name: 'OldLogic', type: 'component' })
+      const script = await createMockScript({ scriptId: 'OldLogic', type: 'component' })
 
       // Mock prompt return value for rename
       mockPrompt.mockResolvedValue('NewLogic')
@@ -125,14 +126,14 @@ describe('ScriptWorkspace Integration Testing', () => {
       await renameScript(script.id)
 
       const updatedScript = scriptStore.getScriptById(script.id)
-      expect(updatedScript.name).toBe('NewLogic')
+      expect(updatedScript.scriptId).toBe('NewLogic')
 
       const scriptsJsonHandle = storeRef.store.get(`root/lupis-engine/projects/${project.id}/workspaces/scripts.json`)
       expect(scriptsJsonHandle).toBeDefined()
 
       const fileData = await scriptsJsonHandle.getFile()
       const content = JSON.parse(await fileData.text())
-      expect(content.find(s => s.id === script.id).name).toBe('NewLogic')
+      expect(content.find(s => s.id === script.id).scriptId).toBe('NewLogic')
     })
 
     it('deletes script from store and cleans up physical file from OPFS', async () => {
@@ -273,7 +274,7 @@ describe('ScriptWorkspace Integration Testing', () => {
       await logic.handlePaste()
 
       expect(scriptStore.scripts.length).toBe(2)
-      expect(scriptStore.scripts.some(s => s.name === 'HealthLogic_Copy')).toBe(true)
+      expect(scriptStore.scripts.some(s => s.scriptId === 'HealthLogic_Copy')).toBe(true)
     })
   })
 
@@ -349,7 +350,7 @@ describe('ScriptWorkspace Integration Testing', () => {
 
       expect(logic.visibleFolders.value.length).toBe(0)
       expect(logic.visibleScripts.value.length).toBe(1)
-      expect(logic.visibleScripts.value[0].name).toBe('player_movement')
+      expect(logic.visibleScripts.value[0].scriptId).toBe('player_movement')
     })
 
     it('toggles viewMode between grid and list views', () => {

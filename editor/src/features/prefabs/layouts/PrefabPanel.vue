@@ -126,7 +126,7 @@
           :key="prefab.id" 
           :data="{
             id: prefab.id,
-            name: prefab.name,
+            scriptId: prefab.scriptId,
             type: prefab.type || prefab.data?.type || prefab.originalData?.type || 'world',
             thumbnailUrl: prefab.thumbnailUrl,
             folderId: prefab.folderId

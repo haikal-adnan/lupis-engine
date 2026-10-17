@@ -64,7 +64,7 @@ test.describe('Blueprint Entity, Transform & Layer Management E2E Testing', () =
     const worldLayer = hierarchy.nodeByName('World Layer');
     const victimNode = await hierarchyCrud.entity.create(worldLayer, 'empty');
     await victimNode.click();
-    await inspectorCrud.configureObjectMetaData({ name: 'VictimEntity', scriptId: 'Victim_Entity_ID' });
+    await inspectorCrud.configureObjectMetaData({ scriptId: 'Victim_Entity_ID' });
 
     await blueprintRunner.runTest({
       testName: 'Destroy Entity - Target Success',
@@ -106,7 +106,7 @@ test.describe('Blueprint Entity, Transform & Layer Management E2E Testing', () =
     const worldLayer = hierarchy.nodeByName('World Layer');
     const sourceEntity = await hierarchyCrud.entity.create(worldLayer, 'empty');
     await sourceEntity.click();
-    await inspectorCrud.configureObjectMetaData({ name: 'CloneTemplate', scriptId: 'Clone_Template_ID' });
+    await inspectorCrud.configureObjectMetaData({ scriptId: 'Clone_Template_ID' });
 
     await blueprintRunner.runTest({
       testName: 'Clone Entity - Success Execution',
@@ -148,7 +148,7 @@ test.describe('Blueprint Entity, Transform & Layer Management E2E Testing', () =
     const worldLayer = hierarchy.nodeByName('World Layer');
     const worldEntity = await hierarchyCrud.entity.create(worldLayer, 'empty');
     await worldEntity.click();
-    await inspectorCrud.configureObjectMetaData({ name: 'WorldEntity_Transform', scriptId: 'World_Entity_ID' });
+    await inspectorCrud.configureObjectMetaData({ scriptId: 'WorldEntity_Transform' });
     await inspectorCrud.setupTransform(150, 250);
 
     await blueprintRunner.runTest({
@@ -191,7 +191,7 @@ test.describe('Blueprint Entity, Transform & Layer Management E2E Testing', () =
     const worldLayer = hierarchy.nodeByName('World Layer');
     const worldEntity = await hierarchyCrud.entity.create(worldLayer, 'empty');
     await worldEntity.click();
-    await inspectorCrud.configureObjectMetaData({ name: 'TargetEntity_SetTransform', scriptId: 'Set_Transform_ID' });
+    await inspectorCrud.configureObjectMetaData({ scriptId: 'TargetEntity_SetTransform' });
     await inspectorCrud.setupTransform(100, 100);
 
     await blueprintRunner.runTest({
@@ -243,7 +243,7 @@ test.describe('Blueprint Entity, Transform & Layer Management E2E Testing', () =
       entityName: 'LayerModifierEntity',
       scriptName: 'Script_SetLayer_ZIndex',
       variables: [
-        { name: 'targetLayer', type: 'string', value: 'World Layer' },
+        { name: 'targetLayer', type: 'string', value: 'World_Layer' },
         { name: 'newZIndex', type: 'number', value: 7 },
       ],
       nodes: [

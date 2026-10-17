@@ -1,38 +1,32 @@
-# 🏗️ Lupis Engine Architecture
+# Architecture
 
-This document describes the internal architecture, subsystems, and runtime data flow of **Lupis Engine**.
-
----
-
-## 1. System Topology
-
-Lupis Engine is split into three decoupled components that communicate via standard web protocols:
+Lupis Engine has three components that communicate over standard web protocols.
 
 ```mermaid
 flowchart LR
-    subgraph Client ["Browser Client"]
-        Editor["Visual Editor\nPort: 6500\n(Vue 3, Pinia, Tailwind)"]
-        Core["Core Game Runtime\nPort: 8080\n(WebGL2, ES6 Modules)"]
+    subgraph Client ["Browser"]
+        Editor["Editor<br/>:6500<br/>Vue 3, Pinia, Tailwind"]
+        Core["Core runtime<br/>:8080<br/>WebGL 2, ES modules"]
     end
 
-    subgraph Server ["Backend Service"]
-        Service["Node Service\nPort: 4000\n(Express, MSDF, Archiver)"]
+    subgraph Server ["Backend"]
+        Service["Service<br/>:4000<br/>Express, MSDF, archiver"]
     end
 
-    Editor -->|"Embedded Viewport iframe"| Core
-    Editor -->|"Asset & Font processing"| Service
+    Editor -->|"Embedded viewport (iframe)"| Core
+    Editor -->|"Font and export requests"| Service
     Core -->|"Fetches project assets"| Service
 ```
 
-- **`core/` (Core Runtime Engine)**: Zero-framework vanilla ES Module engine running on WebGL (with WebGL1 fallback). Responsible for frame updates, entity-component data, physics calculations, Web Audio, and rendering.
-- **`editor/` (Visual Studio / Editor)**: Vue 3 single-page application providing scene layout manipulation, inspector property binding, timeline animation, asset management, and visual node-graph editing.
-- **`service/` (Micro-Backend Service)**: Node.js Express server handling CPU-heavy tasks such as Multi-channel Signed Distance Field (MSDF) font generation, asset bundling into zip files, and desktop Electron packaging.
+| Component | Directory | Responsibility |
+| :--- | :--- | :--- |
+| Core runtime | `core/` | Game loop, entity-component data, physics, audio, rendering, script execution. No framework dependencies. |
+| Editor | `editor/` | Scene editing, inspector, asset management, sprite animation, blueprint graph editing. |
+| Service | `service/` | CPU-heavy work: MSDF font generation, project bundling, desktop (Electron) packaging. |
 
----
+## Core runtime
 
-## 2. Core Runtime Architecture
-
-The engine runtime is built around a centralized `Game` instance coordinating specialized subsystems:
+A single `Game` instance owns and coordinates the subsystems.
 
 ```mermaid
 classDiagram
@@ -60,13 +54,14 @@ classDiagram
         +Array layersWorld
         +Array layersUI
         +Map prefabs
+        +Map scriptIdMap
         +addEntity(entity)
         +removeEntity(id)
     }
 
     class Entity {
         +String id
-        +String name
+        +String scriptId
         +String tag
         +String layerId
         +String parentId
@@ -84,69 +79,63 @@ classDiagram
     Game *-- RendererManager
 ```
 
-### 2.1 The Game Loop (`GameLoop.js`)
-The engine uses `requestAnimationFrame` with a fixed-timestep accumulator for physics and a variable delta-time for visual interpolation:
-1. **Input Polling**: Mouse, touch, keyboard events are dispatched from `InputManager`.
-2. **Physics Step**: `PhysicsSystem.update(dt)` applies gravity, drag, velocity clamp, and invokes `ColliderSystem.moveAndSlide(entity, dx, dy)`.
-3. **Animation Step**: `AnimatorSystem.update(dt)` advances sprite keyframes.
-4. **Scripting Step**: `ScriptSystem` executes active Blueprint nodes and event callbacks.
-5. **Render Step**: `RendererManager.render()` sorts visible entities by layer (`layersWorld`, `layersUI`), `zIndex`, and `orderIndex`, flushing batched vertices to the GPU via WebGL shaders.
+Entities are addressed two ways: by `id` (UUID, used internally) and by `scriptId` (slug, used by scripts). `World.scriptIdMap` gives O(1) lookup by `scriptId`. See the [identity model](schema-contract.md#identity-model).
 
----
+### Game loop
 
-## 3. Rendering Pipeline
+`GameLoop.js` runs on `requestAnimationFrame`. Physics uses a fixed-timestep accumulator; everything else uses variable delta time. Each frame runs these steps in order:
 
-The rendering system supports hardware-accelerated 2D and 2.5D pseudo-isometric rendering with batching:
+1. **Input.** `InputManager` dispatches mouse, touch, and keyboard events.
+2. **Physics.** `PhysicsSystem.update(dt)` applies gravity, drag, and velocity clamping, then calls `ColliderSystem.moveAndSlide(entity, dx, dy)`.
+3. **Animation.** `AnimatorSystem.update(dt)` advances sprite clips.
+4. **Scripting.** `ScriptSystem` runs active blueprint graphs and event callbacks.
+5. **Render.** `RendererManager.render()` sorts visible entities by layer (`layersWorld`, then `layersUI`), `zIndex`, and `orderIndex`, then flushes batched vertices to the GPU.
+
+## Rendering
 
 ```mermaid
 flowchart TD
-    Entities["World Entities"] --> Filter["Active & Visible Filter"]
-    Filter --> Sort["Layer & Depth Sorting (Z-Index / Y-Sort)"]
-    Sort --> Queue["RenderQueue Batching"]
-    
-    Queue --> Image["ImageRenderer (Textures & Sprites)"]
-    Queue --> Shape["ShapeRenderer (Rectangles, Circles, Polygons)"]
-    Queue --> Text["TextRenderer (MSDF Fonts)"]
-    Queue --> Tile["TilemapRenderer (Grid & Chunk Tiles)"]
-    
-    Image --> GL["WebGL / WebGL2 Context Flush"]
+    Entities["World entities"] --> Filter["Active and visible filter"]
+    Filter --> Sort["Layer and depth sort (zIndex / Y-sort)"]
+    Sort --> Queue["RenderQueue batching"]
+
+    Queue --> Image["ImageRenderer: textures, sprites"]
+    Queue --> Shape["ShapeRenderer: polygons"]
+    Queue --> Text["TextRenderer: MSDF fonts"]
+    Queue --> Tile["TilemapRenderer: grid, chunks"]
+
+    Image --> GL["WebGL 2 flush"]
     Shape --> GL
     Text --> GL
     Tile --> GL
 ```
 
-### 3.1 Custom Shaders
-- **ShapeRenderer**: Vertex color batch shader buffering up to 60,000 vertices per draw call, supporting anti-aliased borders and fill blending.
-- **ImageRenderer**: Texture batch shader supporting UV transform, tinting, and sprite flipping.
-- **TextRenderer**: Multi-channel Signed Distance Field (MSDF) shader rendering crisp fonts at arbitrary zoom scales without blur or pixelation.
+Renderer classes are named in the diagram; the matching component schemas are `SpriteRenderer`, `ShapeRenderer`, `TextRenderer`, and `Tilemap` ([schema-contract §5](schema-contract.md#5-ecs-component-schemas-componentschema)).
 
----
+| Renderer | Notes |
+| :--- | :--- |
+| Shape | Vertex-color batching, up to 60,000 vertices per draw call. Anti-aliased borders and fill blending. |
+| Image | Texture batching with UV transform, tint, and flipping. |
+| Text | MSDF shader. Stays sharp at any zoom. Fonts are converted offline by the service. |
+| Tilemap | Grid and chunked tile rendering. |
 
-## 4. Physics & Collision Subsystem
+## Physics and collision
 
-- **AABB & Circle Colliders**: Fast broadphase and narrowphase intersection testing.
-- **Solid vs. Trigger**:
-  - `isSolid: true`: Blocks physical movement and resolves penetration vectors.
-  - `isTrigger: true`: Emits trigger collision events (`onTriggerEnter`, `onTriggerExit`) without physical pushback.
-- **Layer Masks**: Entities and colliders are partitioned by collision layers to ignore unwanted collision checks (e.g. Player projectiles vs Player body).
-- **MoveAndSlide**: Emulates kinematic character movement against arbitrary solid obstacles, handling diagonal sliding along walls.
+- **Colliders** are boxes defined by offset, size, and rotation. An entity can have several, each with an optional `scriptId` for hitbox targeting (`"head"`, `"body"`).
+- **Solid** colliders block movement and resolve penetration. **Trigger** colliders emit enter/exit events and do not push.
+- **`moveAndSlide`** moves an entity as a kinematic body: it stops at solid obstacles and slides along walls.
 
----
+## Visual scripting
 
-## 5. Visual Scripting & Blueprint System
+Blueprint graphs are compiled by the editor and executed by the runtime.
 
-Lupis Engine features a node-graph visual scripting runtime:
-- **Node Contract**: Every node defines input pins, output pins, execution flow triggers, and pure evaluation functions.
-- **ContextSystem**: Executes node graphs with an isolated local variable state and access to global game variables.
-- **Execution vs Pure Pins**:
-  - White execution pins control step-by-step logic (`OnStart`, `OnUpdate`, `Branch`, `Sequence`).
-  - Colored data pins evaluate math, vector operations, and entity lookups on demand.
+- **Execution pins** carry control flow. **Data pins** carry typed values and are evaluated on demand.
+- `ContextSystem` runs each graph with its own local variable scope and access to project-wide globals.
 
----
+Details: [Visual scripting](visual-scripting.md).
 
-## 6. Editor-to-Engine Bridge
+## Editor-to-runtime bridge
 
-When running inside the editor:
-- The engine runs inside an isolated `<iframe>` or embedded canvas element.
-- The `SyncComponent` and `PostMessage` / `EventBus` bridge mirror scene updates (entity additions, property adjustments, camera panning) without full page reloads.
-- The Viewport overlays interactive Gizmos (`TransformTool`, `ShapeTool`, `TilemapTool`, `Rulers`, `Grid`) rendered directly above the game canvas.
+In the editor, the runtime runs in an isolated iframe or embedded canvas. Scene changes (entity creation, property edits, camera moves) are mirrored to the runtime through `SyncComponent` and an EventBus over `postMessage`, so the scene does not reload on each edit. Gizmos (`TransformTool`, `ShapeTool`, `TilemapTool`, rulers, grid) are drawn above the game canvas.
+
+Channel list and payloads: [schema-contract §10](schema-contract.md#10-eventbus-bridge-contract).

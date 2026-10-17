@@ -15,10 +15,8 @@ export function useHierarchyFilter(treeData) {
       if (!Array.isArray(nodes)) return [];
 
       return nodes.reduce((acc, node) => {
-        // Check if name or scriptId matches query
-        const nameMatch = node.name && node.name.toLowerCase().includes(query);
-        const scriptIdMatch = node.scriptId && node.scriptId.toLowerCase().includes(query);
-        const matches = nameMatch || scriptIdMatch;
+        // Check if scriptId matches query
+        const matches = Boolean(node.scriptId && node.scriptId.toLowerCase().includes(query));
 
         // Search recursively into children (child entities/nodes)
         const filteredChildren = node.children ? filterNodes(node.children) : [];

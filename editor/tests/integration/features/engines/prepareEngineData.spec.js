@@ -73,10 +73,10 @@ describe('Integration Test: prepareEngineData', () => {
       })
 
       // Setup initial data in other stores
-      assetStore.initAssets([{ id: 'ast-1', name: 'hero.png', type: 'texture' }])
-      sceneStore.initScenes([{ id: 'sc-1', name: 'Main Scene', layersWorld: [], layersUI: [], entities: [] }])
-      prefabStore.initPrefabs([{ id: 'pf-1', name: 'PlayerPrefab' }])
-      scriptStore.initScripts([{ id: 'scr-1', name: 'PlayerController.js' }])
+      assetStore.initAssets([{ id: 'ast-1', scriptId: 'hero', type: 'texture' }])
+      sceneStore.initScenes([{ id: 'sc-1', scriptId: 'MainScene', layersWorld: [], layersUI: [], entities: [] }])
+      prefabStore.initPrefabs([{ id: 'pf-1', scriptId: 'PlayerPrefab' }])
+      scriptStore.initScripts([{ id: 'scr-1', scriptId: 'PlayerController' }])
 
       // Act
       const payload = await prepareEngineData()
@@ -112,7 +112,7 @@ describe('Integration Test: prepareEngineData', () => {
       // Assert
       expect(createDefaultSceneSpy).toHaveBeenCalledOnce()
       expect(payload.scenes).toHaveLength(1)
-      expect(payload.scenes[0].name).toBe('Main Scene')
+      expect(payload.scenes[0].scriptId).toBe('Main_Scene')
     })
 
     it('ensures engine property (raw instance) is omitted from workspaceConfig in payload', async () => {
@@ -136,16 +136,16 @@ describe('Integration Test: prepareEngineData', () => {
       // Arrange
       projectStore.project = { id: 'proj-123', name: 'Deep Clone Test' }
       projectStore.isProjectLoaded = true
-      assetStore.initAssets([{ id: 'ast-deep', name: 'bg.png' }])
+      assetStore.initAssets([{ id: 'ast-deep', scriptId: 'bg_png' }])
 
       // Act
       const payload = await prepareEngineData()
 
       // Mutate local data in store after payload creation
-      assetStore.assets[0].name = 'bg-modified.png'
+      assetStore.assets[0].scriptId = 'bg_modified'
 
       // Assert: Payload must retain original values before mutation (deep copy isolation)
-      expect(payload.assets[0].name).toBe('bg.png')
+      expect(payload.assets[0].scriptId).toBe('bg_png')
     })
   })
 

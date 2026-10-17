@@ -45,7 +45,11 @@ export class HierarchyPage {
 
   nodeByName(name) {
     const safe = name.replace(/"/g, '\\"');
-    return this.page.locator(`[data-testid="hierarchy-node"][data-node-name="${safe}"]`).first();
+    const slug = safe.trim().replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+    if (slug && slug !== safe) {
+      return this.page.locator(`[data-testid="hierarchy-node"][data-node-name="${safe}"], [data-testid="hierarchy-node"][data-node-name="${slug}"], [data-testid="hierarchy-node"][data-node-script-id="${safe}"], [data-testid="hierarchy-node"][data-node-script-id="${slug}"]`).first();
+    }
+    return this.page.locator(`[data-testid="hierarchy-node"][data-node-name="${safe}"], [data-testid="hierarchy-node"][data-node-script-id="${safe}"]`).first();
   }
 
   nodeById(id) {
@@ -68,23 +72,28 @@ export class HierarchyPage {
 
     // 3. Choose the option by its text
     const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const slugName = sceneName.replace(/[\s-]+/g, '_');
+    const namePattern = new RegExp(`^\\s*(${escapeRegex(sceneName)}|${escapeRegex(slugName)})\\s*$`, 'i');
     const optionItem = dropdown
       .getByTestId('select-option')
-      .filter({ hasText: new RegExp(`^\\s*${escapeRegex(sceneName)}\\s*$`, 'i') })
+      .filter({ hasText: namePattern })
       .or(dropdown.getByRole('option', { name: sceneName }))
+      .or(dropdown.getByRole('option', { name: slugName }))
       .first();
 
     await expect(optionItem).toBeVisible();
     await optionItem.click();
 
     // 4. Assert the active scene changed
-    await expect(this.sceneSelect).toContainText(sceneName);
+    await expect(this.sceneSelect).toContainText(new RegExp(`${escapeRegex(sceneName)}|${escapeRegex(slugName)}`));
   }
 
   async createScene(controls, popup, sceneName) {
     await controls.clickSelectAction('hierarchy-scene-options-button', 'New Scene');
     await popup.fillPromptAndSubmit('New Scene', sceneName, 'OK');
-    await expect(this.sceneSelect).toContainText(sceneName);
+    const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const slugName = sceneName.replace(/[\s-]+/g, '_');
+    await expect(this.sceneSelect).toContainText(new RegExp(`${escapeRegex(sceneName)}|${escapeRegex(slugName)}`));
   }
 
   async deleteCurrentScene(controls, popup) {
@@ -137,12 +146,13 @@ export class HierarchyPage {
     const menu = await this.openSectionMenu(sectionName);
     await menu.getByTestId(`hierarchy-${kind}-add-layer-button`).click();
 
-    // No .first(): if two "New Layer" items exist, strict mode must fail instead of hiding the ambiguity.
+    // Support both raw "New Layer" and slugified "New_Layer" (v3 contract)
     const created = this.section(sectionName)
-      .locator('[data-testid="hierarchy-node"][data-node-name="New Layer"]');
+      .locator('[data-testid="hierarchy-node"][data-node-name="New Layer"], [data-testid="hierarchy-node"][data-node-name="New_Layer"], [data-testid="hierarchy-node"][data-node-script-id="New_Layer"]')
+      .first();
     await expect(created).toBeVisible();
 
-    if (layerName !== 'New Layer') {
+    if (layerName !== 'New Layer' && layerName !== 'New_Layer') {
       await popup.selectContextMenu(created, 'Rename Layer');
       await popup.fillPromptAndSubmit('Rename Layer', layerName, 'Rename');
       await expect(this.nodeByName(layerName)).toBeVisible();

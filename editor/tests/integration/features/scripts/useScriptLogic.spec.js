@@ -62,9 +62,9 @@ describe('Script Logic Composable Integration Test', () => {
       ])
 
       scriptStore.initScripts([
-        { id: 'sc-1', name: 'RootScript', folderId: null },
-        { id: 'sc-2', name: 'VectorMath', folderId: 'f-2' },
-        { id: 'sc-3', name: 'AlgebraMath', folderId: 'f-2' }
+        { id: 'sc-1', scriptId: 'RootScript', folderId: null },
+        { id: 'sc-2', scriptId: 'VectorMath', folderId: 'f-2' },
+        { id: 'sc-3', scriptId: 'AlgebraMath', folderId: 'f-2' }
       ])
 
       // Act: Navigate to Folder B (f-2)
@@ -77,8 +77,8 @@ describe('Script Logic Composable Integration Test', () => {
 
       // Assert Visible Scripts sorted naturally (AlgebraMath -> VectorMath)
       expect(scriptLogic.visibleScripts.value).toHaveLength(2)
-      expect(scriptLogic.visibleScripts.value[0].name).toBe('AlgebraMath')
-      expect(scriptLogic.visibleScripts.value[1].name).toBe('VectorMath')
+      expect(scriptLogic.visibleScripts.value[0].scriptId).toBe('AlgebraMath')
+      expect(scriptLogic.visibleScripts.value[1].scriptId).toBe('VectorMath')
     })
 
     it('filters script and folder list in real-time when searchQuery is populated', () => {
@@ -93,8 +93,8 @@ describe('Script Logic Composable Integration Test', () => {
       ])
 
       scriptStore.initScripts([
-        { id: 'sc-1', name: 'PlayerMovement', folderId: null },
-        { id: 'sc-2', name: 'EnemyAI', folderId: null }
+        { id: 'sc-1', scriptId: 'PlayerMovement', folderId: null },
+        { id: 'sc-2', scriptId: 'EnemyAI', folderId: null }
       ])
 
       // Act: Enter search query "phys"
@@ -111,7 +111,7 @@ describe('Script Logic Composable Integration Test', () => {
       // Assert
       expect(scriptLogic.visibleFolders.value).toHaveLength(0)
       expect(scriptLogic.visibleScripts.value).toHaveLength(1)
-      expect(scriptLogic.visibleScripts.value[0].name).toBe('PlayerMovement')
+      expect(scriptLogic.visibleScripts.value[0].scriptId).toBe('PlayerMovement')
     })
   })
 
@@ -127,7 +127,7 @@ describe('Script Logic Composable Integration Test', () => {
       ])
 
       scriptStore.initScripts([
-        { id: 'sc-move-1', name: 'ScriptToMove', folderId: null }
+        { id: 'sc-move-1', scriptId: 'ScriptToMove', folderId: null }
       ])
 
       const mockDropEvent = {
@@ -155,7 +155,7 @@ describe('Script Logic Composable Integration Test', () => {
       ])
 
       scriptStore.initScripts([
-        { id: 'sc-cut-1', name: 'CutScript', folderId: null }
+        { id: 'sc-cut-1', scriptId: 'CutScript', folderId: null }
       ])
 
       // 1. Store Cut action in clipboard
@@ -182,7 +182,7 @@ describe('Script Logic Composable Integration Test', () => {
       const scriptLogic = useScriptLogic()
 
       scriptStore.initScripts([
-        { id: 'sc-copy-1', name: 'OriginalScript', folderId: null }
+        { id: 'sc-copy-1', scriptId: 'OriginalScript', folderId: null }
       ])
 
       scriptLogic.clipboard.value = {
@@ -195,7 +195,7 @@ describe('Script Logic Composable Integration Test', () => {
 
       // Assert
       expect(scriptStore.scripts).toHaveLength(2)
-      expect(scriptStore.scripts[1].name).toBe('OriginalScript_Copy')
+      expect(scriptStore.scripts[1].scriptId).toBe('OriginalScript_Copy')
     })
   })
 
@@ -206,7 +206,7 @@ describe('Script Logic Composable Integration Test', () => {
       const workspaceStore = useWorkspaceStore()
       const scriptLogic = useScriptLogic()
 
-      const targetScript = { id: 'sc-graph-1', name: 'CameraGraphScript', nodes: [], edges: [] }
+      const targetScript = { id: 'sc-graph-1', scriptId: 'CameraGraphScript', nodes: [], edges: [] }
       scriptStore.initScripts([targetScript])
 
       // Act
@@ -245,7 +245,7 @@ describe('Script Logic Composable Integration Test', () => {
 
       // Assert
       expect(scriptStore.scripts).toHaveLength(1)
-      expect(scriptStore.scripts[0].name).toBe('NewInFolderScript')
+      expect(scriptStore.scripts[0].scriptId).toBe('NewInFolderScript')
       expect(scriptStore.scripts[0].folderId).toBe('active-f')
     })
 
@@ -255,7 +255,7 @@ describe('Script Logic Composable Integration Test', () => {
       const scriptLogic = useScriptLogic()
 
       scriptStore.initScripts([
-        { id: 'sc-select-del', name: 'SelectedForDelete' }
+        { id: 'sc-select-del', scriptId: 'SelectedForDelete' }
       ])
       await scriptStore.saveScriptToOPFS(scriptStore.scripts[0])
 

@@ -118,7 +118,7 @@ export const engineBridge = {
   },
 
   createEntity(d) { if(this._instance) this._instance.bus.emit("editor:entity:create", d); },
-  updateEntityName(id, name) { if(this._instance) this._instance.bus.emit("editor:entity:update-name", { id, name }); },
+  updateEntityScriptId(id, scriptId) { if(this._instance) this._instance.bus.emit("editor:entity:update-script-id", { id, scriptId }); },
   deleteEntity(id) { if(this._instance) this._instance.bus.emit("editor:entity:delete", id); },
   moveEntity(p) { if(this._instance) this._instance.bus.emit("editor:entity:move", p); },
   updateComponentProp(p) { if(this._instance) this._instance.bus.emit("editor:entity:update-component", p); },
@@ -131,7 +131,7 @@ export const engineBridge = {
   removeComponent(p) { if(this._instance) this._instance.bus.emit("editor:entity:remove-component", p); },
 
   addLayer(d) { if(this._instance) this._instance.bus.emit("editor:layer:create", d); },
-  updateLayerName(id, name) { if(this._instance) this._instance.bus.emit("editor:layer:update-name", { id, name }); },
+  updateLayerScriptId(id, scriptId) { if(this._instance) this._instance.bus.emit("editor:layer:update-script-id", { id, scriptId }); },
   deleteLayer(id) { if(this._instance) this._instance.bus.emit("editor:layer:delete", id); },
   reorderLayer(p) { if(this._instance) this._instance.bus.emit("editor:layer:reorder", p); },
 

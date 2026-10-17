@@ -70,14 +70,15 @@
                 data-testid="animator-tree-node"
                 :data-node-id="node.id"
                 :data-node-type="node.type"
-                :data-node-name="node.name"
+                :data-node-name="node.scriptId"
+                :data-node-script-id="node.scriptId"
               >
                 <div v-if="node.type === 'category'" class="flex items-center justify-center w-5 h-5 mr-1 text-muted-foreground">
                   <component :is="node.isOpen ? ChevronDown : ChevronRight" class="w-3.5 h-3.5" />
                 </div>
 
                 <component :is="node.type === 'category' ? (node.isOpen ? FolderOpen : Folder) : Film" class="w-4 h-4 mr-2 shrink-0" :class="[ node.type === 'category' ? 'text-yellow-500' : (activeClipId === node.id ? 'text-primary' : 'opacity-70') ]"/>
-                <span class="text-sm flex-grow truncate" :class="node.type === 'category' ? 'font-semibold tracking-wide text-foreground' : 'font-medium'">{{ node.name }}</span>
+                <span class="text-sm flex-grow truncate" :class="node.type === 'category' ? 'font-semibold tracking-wide text-foreground' : 'font-medium'">{{ node.scriptId }}</span>
                 
                 <span v-if="node.type === 'category'" class="text-[10px] font-bold opacity-50 bg-muted px-2 py-0.5 rounded-full ml-1">
                   {{ node._uiChildren?.length || 0 }}
@@ -108,11 +109,12 @@
                   data-testid="animator-tree-node"
                   :data-node-id="child.id"
                   :data-node-type="child.type"
-                  :data-node-name="child.name"
+                  :data-node-name="child.scriptId"
+                  :data-node-script-id="child.scriptId"
                   :data-parent-id="node.id"
                 >
                   <Film class="w-4 h-4 mr-2 shrink-0" :class="activeClipId === child.id ? 'text-primary' : 'opacity-60'" />
-                  <span class="text-sm font-medium flex-grow truncate">{{ child.name }}</span>
+                  <span class="text-sm font-medium flex-grow truncate">{{ child.scriptId }}</span>
                   <PlayCircle v-if="activeClipId === child.id" class="w-4 h-4 text-primary opacity-80 shrink-0 ml-1" />
                 </div>
 
@@ -167,12 +169,12 @@ const filteredTreeData = computed(() => {
   if (!searchQuery.value) return treeVisualData.value;
   const q = searchQuery.value.toLowerCase();
   return treeVisualData.value.filter(n => {
-    if (n.name.toLowerCase().includes(q)) return true;
-    if (n._uiChildren && n._uiChildren.some(c => c.name.toLowerCase().includes(q))) return true;
+    if (n.scriptId && n.scriptId.toLowerCase().includes(q)) return true;
+    if (n._uiChildren && n._uiChildren.some(c => c.scriptId && c.scriptId.toLowerCase().includes(q))) return true;
     return false;
   }).map(n => {
     if (n._uiChildren) {
-      return { ...n, _uiChildren: n._uiChildren.filter(c => c.name.toLowerCase().includes(q) || n.name.toLowerCase().includes(q)) };
+      return { ...n, _uiChildren: n._uiChildren.filter(c => (c.scriptId && c.scriptId.toLowerCase().includes(q)) || (n.scriptId && n.scriptId.toLowerCase().includes(q))) };
     }
     return n;
   });
