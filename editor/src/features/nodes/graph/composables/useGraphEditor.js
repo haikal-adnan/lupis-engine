@@ -601,8 +601,15 @@ export function useGraphEditor() {
       case 'prepend': return `"${val}" +`
       case 'uppercase': return `AA`
       case 'lowercase': return `aa`
+      case 'trim': return `trim`
       default: return modifier.type.toUpperCase()
     }
+  }
+
+  const getModifierBadgeWidth = (modifier) => {
+    const text = getModifierBadgeText(modifier)
+    if (!text) return 28
+    return Math.max(28, text.length * 6.5 + 12)
   }
 
   const onDrop = (event) => {
@@ -646,6 +653,7 @@ export function useGraphEditor() {
     startConnect,
     startMoveEdge,
     getModifierBadgeText,
+    getModifierBadgeWidth,
     handleGlobalMouseMove,
     handleGlobalMouseUp,
     onCanvasMouseDown,

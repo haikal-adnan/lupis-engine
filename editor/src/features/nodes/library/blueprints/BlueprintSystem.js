@@ -70,7 +70,7 @@ return;`
 {
       type: 'setAudioVolume',
       label: 'Set Volume',
-      description: 'Sets volume for an audio channel (master, background, sfx, or voice).',
+      description: 'Sets volume for an audio channel (master, background, sfx, or voice) in range 0 - 100.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -81,7 +81,7 @@ return;`
         inputs: [
           { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
           { id: 'audioType', dataType: 'string', color: '#F48FB1', defaultValue: 'master' },
-          { id: 'volume', dataType: 'number', color: '#64B5F6', defaultValue: 1 }
+          { id: 'volume', dataType: 'number', color: '#64B5F6', defaultValue: 100 }
         ],
         outputs: [
           { id: 'execOut', dataType: 'execution', color: '#FFFFFF' }
@@ -89,7 +89,7 @@ return;`
         data: {
           values: {
             audioType: 'master',
-            volume: 1
+            volume: 100
           },
           options: {
             audioType: [
@@ -111,7 +111,7 @@ return;`
 {
       type: 'getAudioVolume',
       label: 'Get Volume',
-      description: 'Retrieves current volume of an audio channel (master, background, sfx, or voice).',
+      description: 'Retrieves current volume of an audio channel (master, background, sfx, or voice) in range 0 - 100.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -481,7 +481,7 @@ return;`
         inputs: [
           { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
           { id: 'source', dataType: 'string', color: '#F48FB1', defaultValue: 'Notification' },
-          { id: 'message', dataType: 'string', color: '#F48FB1', defaultValue: 'Hello World' }
+          { id: 'message', dataType: 'any', color: '#B0BEC5', defaultValue: 'Hello World' }
         ],
         outputs: [
           { id: 'execOut', dataType: 'execution', color: '#FFFFFF' }

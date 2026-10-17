@@ -19,7 +19,8 @@ export function compileScript(rawScript, options = {}) {
   normalized.edges.forEach(edge => {
     incomingEdgeMap.set(`${edge.target}:${edge.targetHandle}`, {
       sourceNodeId: edge.source,
-      sourcePortId: edge.sourceHandle
+      sourcePortId: edge.sourceHandle,
+      modifier: edge.modifier || null
     });
 
     const flowKey = `${edge.source}:${edge.sourceHandle}`;
@@ -52,7 +53,10 @@ export function compileScript(rawScript, options = {}) {
 
       let source;
       if (connectedEdge) {
-        source = { kind: 'edge' };
+        source = {
+          kind: 'edge',
+          modifier: connectedEdge.modifier || null
+        };
       } else {
         const mode = valueModes[portId] || 'input';
         if (mode === 'variable' && varBindings[portId]) {

@@ -59,7 +59,8 @@ export default class ScriptRunner {
             const dataKey = `${edge.target}:${edge.targetHandle}`;
             this.dataIndex.set(dataKey, {
                 sourceNodeId: edge.source,
-                sourcePortId: edge.sourceHandle
+                sourcePortId: edge.sourceHandle,
+                modifier: edge.modifier || null
             });
         });
     }
@@ -294,6 +295,10 @@ export default class ScriptRunner {
                     if (edgeInfo) {
                         const sourceNode = this.nodeMap.get(edgeInfo.sourceNodeId);
                         val = this._getNodeOutputValue(sourceNode, edgeInfo.sourcePortId);
+                        const modifier = port.source.modifier || port.source.modifiers || edgeInfo.modifier;
+                        if (modifier) {
+                            val = applyModifiers(val, modifier);
+                        }
                     }
                 } else if (port.source.kind === 'literal') {
                     val = port.source.value;
@@ -309,6 +314,9 @@ export default class ScriptRunner {
                 if (edgeInfo) {
                     const sourceNode = this.nodeMap.get(edgeInfo.sourceNodeId);
                     val = this._getNodeOutputValue(sourceNode, edgeInfo.sourcePortId);
+                    if (edgeInfo.modifier) {
+                        val = applyModifiers(val, edgeInfo.modifier);
+                    }
                 }
 
                 if (val === undefined) {

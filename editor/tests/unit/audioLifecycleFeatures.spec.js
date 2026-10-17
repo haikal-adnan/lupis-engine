@@ -26,7 +26,7 @@ describe('Audio & Lifecycle Features Unit & Integration Tests', () => {
     it('creates Audio component with default audioType "sfx"', () => {
       const audioComp = componentSchema.create('Audio');
       expect(audioComp.audioType).toBe('sfx');
-      expect(audioComp.volume).toBe(1.0);
+      expect(audioComp.volume).toBe(100);
       expect(audioComp.isMute).toBe(false);
       expect(audioComp.loop).toBe(false);
     });
@@ -73,45 +73,45 @@ describe('Audio & Lifecycle Features Unit & Integration Tests', () => {
     });
 
     it('controls volume on each individual bus correctly', () => {
-      audioSystem.setVolume('background', 0.6);
-      expect(audioSystem.getVolume('background')).toBe(0.6);
+      audioSystem.setVolume('background', 60);
+      expect(audioSystem.getVolume('background')).toBe(60);
       expect(audioSystem.buses.background.gain.gain.value).toBe(0.6);
 
-      audioSystem.setVolume('sfx', 0.75);
-      expect(audioSystem.getVolume('sfx')).toBe(0.75);
+      audioSystem.setVolume('sfx', 75);
+      expect(audioSystem.getVolume('sfx')).toBe(75);
       expect(audioSystem.buses.sfx.gain.gain.value).toBe(0.75);
 
-      audioSystem.setVolume('voice', 0.9);
-      expect(audioSystem.getVolume('voice')).toBe(0.9);
+      audioSystem.setVolume('voice', 90);
+      expect(audioSystem.getVolume('voice')).toBe(90);
       expect(audioSystem.buses.voice.gain.gain.value).toBe(0.9);
 
-      audioSystem.setVolume('master', 0.5);
-      expect(audioSystem.getVolume('master')).toBe(0.5);
+      audioSystem.setVolume('master', 50);
+      expect(audioSystem.getVolume('master')).toBe(50);
       expect(audioSystem.buses.master.gain.gain.value).toBe(0.5);
     });
 
     it('supports convenience volume setter and getter methods', () => {
-      audioSystem.setMasterVolume(0.85);
-      expect(audioSystem.getMasterVolume()).toBe(0.85);
+      audioSystem.setMasterVolume(85);
+      expect(audioSystem.getMasterVolume()).toBe(85);
 
-      audioSystem.setBackgroundVolume(0.4);
-      expect(audioSystem.getBackgroundVolume()).toBe(0.4);
+      audioSystem.setBackgroundVolume(40);
+      expect(audioSystem.getBackgroundVolume()).toBe(40);
 
-      audioSystem.setSfxVolume(0.65);
-      expect(audioSystem.getSfxVolume()).toBe(0.65);
+      audioSystem.setSfxVolume(65);
+      expect(audioSystem.getSfxVolume()).toBe(65);
 
-      audioSystem.setVoiceVolume(0.95);
-      expect(audioSystem.getVoiceVolume()).toBe(0.95);
+      audioSystem.setVoiceVolume(95);
+      expect(audioSystem.getVoiceVolume()).toBe(95);
     });
 
     it('handles muting and unmuting per bus without losing volume setting', () => {
-      audioSystem.setVolume('sfx', 0.7);
+      audioSystem.setVolume('sfx', 70);
       expect(audioSystem.isMuted('sfx')).toBe(false);
 
       audioSystem.setMute('sfx', true);
       expect(audioSystem.isMuted('sfx')).toBe(true);
       expect(audioSystem.buses.sfx.gain.gain.value).toBe(0);
-      expect(audioSystem.getVolume('sfx')).toBe(0.7);
+      expect(audioSystem.getVolume('sfx')).toBe(70);
 
       audioSystem.setMute('sfx', false);
       expect(audioSystem.isMuted('sfx')).toBe(false);
@@ -132,7 +132,7 @@ describe('Audio & Lifecycle Features Unit & Integration Tests', () => {
           Audio: {
             assetId: 'bgm_asset',
             audioType: 'background',
-            volume: 0.8
+            volume: 80
           }
         }
       };
@@ -143,7 +143,7 @@ describe('Audio & Lifecycle Features Unit & Integration Tests', () => {
           Audio: {
             assetId: 'voice_asset',
             audioType: 'voice',
-            volume: 0.9
+            volume: 90
           }
         }
       };
@@ -154,7 +154,7 @@ describe('Audio & Lifecycle Features Unit & Integration Tests', () => {
           Audio: {
             assetId: 'sfx_asset',
             audioType: 'sfx',
-            volume: 1.0
+            volume: 100
           }
         }
       };
@@ -178,7 +178,7 @@ describe('Audio & Lifecycle Features Unit & Integration Tests', () => {
 
     it('plays sound directly and stops all audio nodes', () => {
       const mockBuffer = {};
-      const nodeId = audioSystem.playSound(mockBuffer, { audioType: 'voice', volume: 0.8 });
+      const nodeId = audioSystem.playSound(mockBuffer, { audioType: 'voice', volume: 80 });
       expect(nodeId).toBeDefined();
       expect(audioSystem.activeNodes.size).toBe(1);
 
@@ -284,17 +284,17 @@ describe('Audio & Lifecycle Features Unit & Integration Tests', () => {
       expect(typeof context.audio.setMute).toBe('function');
       expect(typeof context.audio.isMuted).toBe('function');
 
-      context.audio.setMasterVolume(0.5);
-      expect(context.audio.getMasterVolume()).toBe(0.5);
+      context.audio.setMasterVolume(50);
+      expect(context.audio.getMasterVolume()).toBe(50);
 
-      context.audio.setBackgroundVolume(0.3);
-      expect(context.audio.getBackgroundVolume()).toBe(0.3);
+      context.audio.setBackgroundVolume(30);
+      expect(context.audio.getBackgroundVolume()).toBe(30);
 
-      context.audio.setSfxVolume(0.8);
-      expect(context.audio.getSfxVolume()).toBe(0.8);
+      context.audio.setSfxVolume(80);
+      expect(context.audio.getSfxVolume()).toBe(80);
 
-      context.audio.setVoiceVolume(0.9);
-      expect(context.audio.getVoiceVolume()).toBe(0.9);
+      context.audio.setVoiceVolume(90);
+      expect(context.audio.getVoiceVolume()).toBe(90);
     });
   });
 

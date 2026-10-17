@@ -162,6 +162,37 @@ describe('Context Console Mapping Integration', () => {
       }))
     })
 
+    it('formats map and list notifications with pretty indentation', () => {
+      const sampleList = ['item1', 'item2']
+      execContext.ui.notify(sampleList, 'Inventory')
+
+      const expectedPrettyList = JSON.stringify(sampleList, null, 2)
+      expect(mockGame.events.emit).toHaveBeenCalledWith('console:log', expect.objectContaining({
+        type: 'log',
+        message: `[TestScene] [player_hero] [PlayerController] [JumpAction] ${expectedPrettyList}`,
+        source: 'Inventory'
+      }))
+
+      const sampleMap = { score: 100, lives: 3 }
+      execContext.notify(sampleMap, 'Stats')
+
+      const expectedPrettyMap = JSON.stringify(sampleMap, null, 2)
+      expect(mockGame.events.emit).toHaveBeenCalledWith('console:log', expect.objectContaining({
+        type: 'log',
+        message: `[TestScene] [player_hero] [PlayerController] [JumpAction] ${expectedPrettyMap}`,
+        source: 'Stats'
+      }))
+
+      const es6Map = new Map([['health', 50]])
+      execContext.notify(es6Map, 'ES6Map')
+      const expectedPrettyES6Map = JSON.stringify({ health: 50 }, null, 2)
+      expect(mockGame.events.emit).toHaveBeenCalledWith('console:log', expect.objectContaining({
+        type: 'log',
+        message: `[TestScene] [player_hero] [PlayerController] [JumpAction] ${expectedPrettyES6Map}`,
+        source: 'ES6Map'
+      }))
+    })
+
     it('maps context.assert errors with [Scene] [Entity] [Script] [Node] [Assert Error] and shows node name', () => {
       expect(() => {
         execContext.assert.isTrue(false, 'Expected health > 0')

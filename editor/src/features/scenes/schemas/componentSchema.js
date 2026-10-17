@@ -34,7 +34,7 @@ export const componentSchema = {
       assetId: data.assetId || null,
       audioType,
       isMute: Boolean(data.isMute ?? false),
-      volume: Number(data.volume ?? 1.0),
+      volume: Number(data.volume ?? 100),
       pitch: Number(data.pitch ?? 1.0),
       loop: Boolean(data.loop ?? false),
       autoplay: Boolean(data.autoplay ?? false),

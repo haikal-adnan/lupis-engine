@@ -74,7 +74,7 @@ describe('useInspectorBinding Integration', () => {
       // Arrange - Setup entity di sceneStore dan pilih melalui selection store
       const entity = createMockEntity({
         id: 'ent_audio_unbound',
-        components: { Audio: { currentClip: 'clip_101', clips: [{ id: 'clip_101', volume: 0.8 }] } }
+        components: { Audio: { currentClip: 'clip_101', clips: [{ id: 'clip_101', volume: 80 }] } }
       })
       setupMockSceneEnvironment({ entities: [entity] })
       

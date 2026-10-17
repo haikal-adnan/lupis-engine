@@ -24,10 +24,10 @@ export default class AudioSystem {
         this.voiceGain.connect(this.masterGain);
 
         this.buses = {
-            master: { gain: this.masterGain, volume: 1.0, isMute: false },
-            background: { gain: this.backgroundGain, volume: 1.0, isMute: false },
-            sfx: { gain: this.sfxGain, volume: 1.0, isMute: false },
-            voice: { gain: this.voiceGain, volume: 1.0, isMute: false }
+            master: { gain: this.masterGain, volume: 100, isMute: false },
+            background: { gain: this.backgroundGain, volume: 100, isMute: false },
+            sfx: { gain: this.sfxGain, volume: 100, isMute: false },
+            voice: { gain: this.voiceGain, volume: 100, isMute: false }
         };
 
         this.activeNodes = new Map();
@@ -97,23 +97,23 @@ export default class AudioSystem {
             console.warn(`[AudioSystem] Unknown audio bus '${type}'`);
             return;
         }
-        const safeVol = Math.max(0, Number(volume));
+        const safeVol = Math.max(0, Math.min(100, Number(volume)));
         bus.volume = safeVol;
         if (!bus.isMute) {
-            bus.gain.gain.value = safeVol;
+            bus.gain.gain.value = safeVol / 100;
         }
     }
 
     getVolume(type) {
         const bus = this.buses[type];
-        return bus ? bus.volume : 1.0;
+        return bus ? bus.volume : 100;
     }
 
     setMute(type, isMute) {
         const bus = this.buses[type];
         if (!bus) return;
         bus.isMute = Boolean(isMute);
-        bus.gain.gain.value = bus.isMute ? 0 : bus.volume;
+        bus.gain.gain.value = bus.isMute ? 0 : (bus.volume / 100);
     }
 
     isMuted(type) {
@@ -223,7 +223,9 @@ export default class AudioSystem {
         source.loop = audioData.loop ?? false;
 
         const gainNode = this.context.createGain();
-        const targetVolume = audioData.isMute ? 0 : (audioData.volume ?? 1.0);
+        const rawVol = audioData.volume ?? 100;
+        const safeVol = Math.max(0, Math.min(100, Number(rawVol)));
+        const targetVolume = audioData.isMute ? 0 : (safeVol / 100);
         const fadeInDuration = audioData.fadeIn || 0;
 
         if (fadeInDuration > 0) {
@@ -297,7 +299,9 @@ export default class AudioSystem {
         source.loop = options.loop ?? false;
 
         const gainNode = this.context.createGain();
-        const targetVolume = options.isMute ? 0 : (options.volume ?? 1.0);
+        const rawVol = options.volume ?? 100;
+        const safeVol = Math.max(0, Math.min(100, Number(rawVol)));
+        const targetVolume = options.isMute ? 0 : (safeVol / 100);
         gainNode.gain.value = targetVolume;
         source.connect(gainNode);
 

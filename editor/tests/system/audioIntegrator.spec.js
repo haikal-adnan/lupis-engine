@@ -60,7 +60,7 @@ describe('Audio Inspector System Integration Test', () => {
               scriptId: 'BGM_MAIN',
               assetId: 'asset_bgm_1',
               isMute: false,
-              volume: 0.8,
+              volume: 80,
               pitch: 1.0,
               loop: true,
               autoplay: true,
@@ -146,7 +146,7 @@ describe('Audio Inspector System Integration Test', () => {
       }
 
       // Act: Ubah parameter klip audio
-      updateClipProp('volume', 1.0)
+      updateClipProp('volume', 100)
       updateClipProp('pitch', 1.2)
       updateClipProp('loop', false)
 
@@ -154,7 +154,7 @@ describe('Audio Inspector System Integration Test', () => {
       const audioComp = sceneStore.activeScene.entities[0].components.Audio
       const activeClip = audioComp.clips.find(c => c.id === 'clip_1')
 
-      expect(activeClip.volume).toBe(1.0)
+      expect(activeClip.volume).toBe(100)
       expect(activeClip.pitch).toBe(1.2)
       expect(activeClip.loop).toBe(false)
 
@@ -185,7 +185,7 @@ describe('Audio Inspector System Integration Test', () => {
         scriptId: 'SFX_JUMP',
         assetId: null,
         isMute: false,
-        volume: 1.0,
+        volume: 100,
         pitch: 1.0,
         loop: false,
         autoplay: false,

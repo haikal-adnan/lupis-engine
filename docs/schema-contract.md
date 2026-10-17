@@ -478,7 +478,7 @@ interface AudioComponent {
   assetId: string | null;           // audio asset UUID
   audioType: "background" | "sfx" | "voice"; // channel bus (default: "sfx")
   isMute: boolean;                  // default: false
-  volume: number;                   // [0..1] (default: 1.0)
+  volume: number;                   // [0..100] (default: 100)
   pitch: number;                    // rate multiplier (default: 1.0)
   loop: boolean;                    // default: false
   autoplay: boolean;                // play on spawn (default: false)

@@ -74,7 +74,11 @@
             class="pointer-events-none select-none"
           >
             <rect 
-              x="-14" y="-9" width="28" height="18" rx="4" 
+              :x="-getModifierBadgeWidth(edge.modifier) / 2" 
+              y="-9" 
+              :width="getModifierBadgeWidth(edge.modifier)" 
+              height="18" 
+              rx="4" 
               class="fill-background stroke-primary border shadow-sm"
               stroke-width="1"
             />
@@ -197,6 +201,7 @@ const {
   getEdgeData, 
   getPathD, 
   getModifierBadgeText, 
+  getModifierBadgeWidth,
   isRelated, 
   GRID_SIZE,
   handleKeyDown

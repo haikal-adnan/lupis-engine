@@ -110,8 +110,8 @@ const rayHit = game.pointerRaycast.cast(worldX, worldY);
 ### Audio
 
 ```javascript
-game.audioSystem.playSound("sfx_jump", { volume: 0.8, pitch: 1.0 });
-game.audioSystem.playMusic("bgm_overworld", { loop: true, volume: 0.5 });
+game.audioSystem.playSound("sfx_jump", { volume: 80, pitch: 1.0 });
+game.audioSystem.playMusic("bgm_overworld", { loop: true, volume: 50 });
 ```
 
 Sounds are referenced by the asset `scriptId`.

@@ -103,9 +103,9 @@
 
       <PropertyRow label="Volume">
         <BaseNumber 
-          v-model="volumeDisplay" 
+          v-model="volume" 
           prefix="%" 
-          :min="0" :max="200" :step="1"
+          :min="0" :max="100" :step="1"
           class="font-mono w-full" 
           data-testid="audio-volume-input"
         />
@@ -286,9 +286,14 @@ const audioType = computed({
 const isMute = bindComponentProp('Audio', 'isMute')
 
 const rawVolume = bindComponentProp('Audio', 'volume')
-const volumeDisplay = computed({
-  get: () => Math.round((rawVolume.value ?? 1.0) * 100),
-  set: (val) => { rawVolume.value = parseFloat((val / 100).toFixed(2)); }
+const volume = computed({
+  get: () => {
+    const val = rawVolume.value;
+    return val !== undefined && val !== null ? Math.round(Number(val)) : 100;
+  },
+  set: (val) => {
+    rawVolume.value = Math.max(0, Math.min(100, Math.round(Number(val) || 0)));
+  }
 })
 
 const pitch = bindComponentProp('Audio', 'pitch')

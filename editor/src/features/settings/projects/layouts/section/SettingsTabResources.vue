@@ -19,9 +19,9 @@
         <div class="space-y-6">
           <PropertyRow label="Master Volume">
             <div class="flex gap-3">
-              <BaseNumber v-model="masterVolume" height="2.5rem" text-size="text-sm" label-size="text-sm" :min="0" :max="1" :step="0.05" prefix="Vol" class="w-full font-mono" disabled />
+              <BaseNumber v-model="masterVolume" height="2.5rem" text-size="text-sm" label-size="text-sm" :min="0" :max="100" :step="1" prefix="Vol" class="w-full font-mono" disabled />
               <div class="text-sm font-mono text-muted-foreground bg-muted px-4 h-10 flex items-center rounded-md border border-border shrink-0 w-20 justify-center">
-                {{ Math.round(masterVolume * 100) }}%
+                {{ Math.round(masterVolume) }}%
               </div>
             </div>
           </PropertyRow>
@@ -53,7 +53,7 @@ import {
 
 defineProps({ info: Object });
 
-const masterVolume = ref(1.0);
+const masterVolume = ref(100);
 const muteInEditor = ref(false);
 </script>
 

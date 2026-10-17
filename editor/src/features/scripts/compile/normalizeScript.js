@@ -95,7 +95,8 @@ export function normalizeScript(script) {
     source: edge.source,
     sourceHandle: LEGACY_PORT_MAP[edge.sourceHandle] || edge.sourceHandle,
     target: edge.target,
-    targetHandle: LEGACY_PORT_MAP[edge.targetHandle] || edge.targetHandle
+    targetHandle: LEGACY_PORT_MAP[edge.targetHandle] || edge.targetHandle,
+    modifier: edge.modifier ? { ...edge.modifier } : (edge.modifier || null)
   }));
 
   return normalized;

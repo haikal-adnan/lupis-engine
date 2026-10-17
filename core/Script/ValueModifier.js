@@ -13,41 +13,63 @@ export function applyModifier(rawVal, modifier) {
 
   if (modType && modType !== 'none') {
     switch (modType) {
-      case 'add':
-        val = val + modValue;
+      case 'add': {
+        const numVal = Number(val);
+        const numMod = Number(modValue);
+        if (!isNaN(numVal) && !isNaN(numMod)) {
+          val = numVal + numMod;
+        } else {
+          val = String(val ?? '') + String(modValue ?? '');
+        }
         break;
+      }
       case 'subtract':
-        val = val - modValue;
+        val = Number(val) - Number(modValue);
         break;
       case 'multiply':
-        val = val * modValue;
+        val = Number(val) * Number(modValue);
         break;
       case 'divide':
-        val = modValue !== 0 ? val / modValue : 0;
+        val = Number(modValue) !== 0 ? Number(val) / Number(modValue) : 0;
         break;
       case 'invert':
-        val = -val;
+        val = -Number(val);
         break;
       case 'abs':
-        val = Math.abs(val);
+        val = Math.abs(Number(val));
         break;
       case 'not':
         val = !val;
         break;
+      case 'append':
+        val = String(val ?? '') + String(modValue ?? '');
+        break;
+      case 'prepend':
+        val = String(modValue ?? '') + String(val ?? '');
+        break;
+      case 'uppercase':
+        val = String(val ?? '').toUpperCase();
+        break;
+      case 'lowercase':
+        val = String(val ?? '').toLowerCase();
+        break;
+      case 'trim':
+        val = String(val ?? '').trim();
+        break;
       case 'at_index':
-        val = val[modValue];
+        val = val != null ? val[modValue] : undefined;
         break;
       case 'first':
-        val = val[0];
+        val = val != null ? val[0] : undefined;
         break;
       case 'last':
-        val = val[val.length - 1];
+        val = val != null ? val[val.length - 1] : undefined;
         break;
       case 'random':
-        val = val[Math.floor(Math.random() * val.length)];
+        val = (val != null && val.length > 0) ? val[Math.floor(Math.random() * val.length)] : undefined;
         break;
       case 'count':
-        val = val.length;
+        val = val != null ? val.length : 0;
         break;
       default:
         break;

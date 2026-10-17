@@ -50,6 +50,34 @@ export function getScriptContextMetadata(game, runner, node) {
   };
 }
 
+export function formatNotificationMessage(message) {
+  if (message === undefined || message === null) {
+    return String(message ?? '');
+  }
+  if (message instanceof Map) {
+    try {
+      return JSON.stringify(Object.fromEntries(message), null, 2);
+    } catch {
+      return String(message);
+    }
+  }
+  if (message instanceof Set) {
+    try {
+      return JSON.stringify(Array.from(message), null, 2);
+    } catch {
+      return String(message);
+    }
+  }
+  if (Array.isArray(message) || (typeof message === 'object' && message !== null)) {
+    try {
+      return JSON.stringify(message, null, 2);
+    } catch {
+      return String(message);
+    }
+  }
+  return String(message);
+}
+
 /**
  * ContextSystem (Engine Gate 2 / Subsystem Facade)
  * Strict runtime gateway for script nodes.
@@ -590,7 +618,7 @@ export default class ContextSystem {
         },
         notify: (message, source = 'Notification', type = 'log') => {
           const meta = getScriptContextMetadata(this.game, runner, node);
-          const rawMessage = typeof message === 'object' && message !== null ? JSON.stringify(message) : String(message ?? '');
+          const rawMessage = formatNotificationMessage(message);
           const formattedMessage = `${meta.prefix} ${rawMessage}`;
           const eventType = type === 'error' ? 'console:error' : (type === 'warn' ? 'console:warn' : 'console:log');
 
@@ -611,7 +639,7 @@ export default class ContextSystem {
 
       notify: (message, source = 'Notification', type = 'log') => {
         const meta = getScriptContextMetadata(this.game, runner, node);
-        const rawMessage = typeof message === 'object' && message !== null ? JSON.stringify(message) : String(message ?? '');
+        const rawMessage = formatNotificationMessage(message);
         const formattedMessage = `${meta.prefix} ${rawMessage}`;
         const eventType = type === 'error' ? 'console:error' : (type === 'warn' ? 'console:warn' : 'console:log');
 

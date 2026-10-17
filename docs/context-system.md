@@ -187,8 +187,8 @@ Directs sound playback through the engine's 4 audio buses: `master`, `background
 | `play(targetEntityOrAssetId, options?)` | `target: Entity \| string, options?: Object` | Plays sound on an entity with an `Audio` component or triggers one-shot audio asset. |
 | `stop(targetEntityOrId)` | `target: Entity \| string` | Stops playback on the specified entity. |
 | `stopAll()` | `none` | Stops all active audio voices across all channels. |
-| `setVolume(channel, volume)` | `channel: string, volume: number` | Sets channel volume (`'master'`, `'background'`, `'sfx'`, `'voice'`) in range `0.0 - 1.0`. |
-| `getVolume(channel)` | `channel: string` | Retrieves current volume level for channel. |
+| `setVolume(channel, volume)` | `channel: string, volume: number` | Sets channel volume (`'master'`, `'background'`, `'sfx'`, `'voice'`) in range `0 - 100`. |
+| `getVolume(channel)` | `channel: string` | Retrieves current volume level for channel (0 - 100). |
 | `setMute(channel, isMute)` | `channel: string, isMute: boolean` | Mutes or unmutes a specific audio channel. |
 | `isMuted(channel)` | `channel: string` | Returns mute status for channel. |
 
