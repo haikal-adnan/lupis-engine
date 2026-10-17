@@ -178,7 +178,69 @@ return;`
         }
       } 
     },
-{ 
+    { 
+      type: 'mathInRange', 
+      label: 'In Range', 
+      description: 'Check if a number is within a min and max range (min <= value <= max)', 
+      dynamicMode: 'none', 
+      defaultData: { 
+        settings: { 
+          headerTitle: 'In Range', 
+          headerColor: '#00796B', 
+          category: 'Math & Random' 
+        },
+        inputs: [
+          { id: 'value', dataType: 'number', color: '#64B5F6', defaultValue: 0 },
+          { id: 'min', dataType: 'number', color: '#64B5F6', defaultValue: 0 },
+          { id: 'max', dataType: 'number', color: '#64B5F6', defaultValue: 100 }
+        ],
+        outputs: [
+          { id: 'result', dataType: 'boolean', color: '#E57373' }
+        ],
+        data: {
+          values: { value: 0, min: 0, max: 100 },
+          code: 
+`const val = inputs.value;
+const min = inputs.min;
+const max = inputs.max;
+
+outputs.result = val >= min && val <= max;
+return;`
+        }
+      } 
+    },
+    { 
+      type: 'mathClamp', 
+      label: 'Clamp', 
+      description: 'Clamp a number between a minimum and maximum limit', 
+      dynamicMode: 'none', 
+      defaultData: { 
+        settings: { 
+          headerTitle: 'Clamp', 
+          headerColor: '#00796B', 
+          category: 'Math & Random' 
+        },
+        inputs: [
+          { id: 'value', dataType: 'number', color: '#64B5F6', defaultValue: 0 },
+          { id: 'min', dataType: 'number', color: '#64B5F6', defaultValue: 0 },
+          { id: 'max', dataType: 'number', color: '#64B5F6', defaultValue: 100 }
+        ],
+        outputs: [
+          { id: 'result', dataType: 'number', color: '#64B5F6' }
+        ],
+        data: {
+          values: { value: 0, min: 0, max: 100 },
+          code: 
+`const val = inputs.value;
+const min = inputs.min;
+const max = inputs.max;
+
+outputs.result = Math.min(Math.max(val, min), max);
+return;`
+        }
+      } 
+    },
+    { 
       type: 'mathDistance2d', 
       label: 'Distance 2D', 
       description: 'Calculate distance between two 2D points', 

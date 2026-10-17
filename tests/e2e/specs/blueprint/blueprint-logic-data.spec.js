@@ -249,4 +249,60 @@ test.describe('Blueprint Logic, Math & Data Management E2E Testing', () => {
     });
   });
 
+  // 8. RANGE INCLUSIVE CHECK
+  test('evaluates in range inclusive boundary and outputs true boolean', async ({ blueprintRunner }) => {
+    await blueprintRunner.runTest({
+      testName: 'In Range Test',
+      entityName: 'RangeEntity_InRange',
+      scriptName: 'Script_InRange',
+      nodes: [
+        { id: 'start', type: 'eventGameStart', pos: { x: 100, y: 100 } },
+        {
+          id: 'rangeNode',
+          type: 'mathInRange',
+          pos: { x: 350, y: 200 },
+          inspectorValues: {
+            value: { value: 10, type: 'number' },
+            min: { value: 0, type: 'number' },
+            max: { value: 10, type: 'number' },
+          },
+        },
+        { id: 'notif', type: 'uiNotification', pos: { x: 650, y: 100 } },
+      ],
+      connections: [
+        { source: 'start', sourceHandle: 'execOut', target: 'notif', targetHandle: 'execIn' },
+        { source: 'rangeNode', sourceHandle: 'result', target: 'notif', targetHandle: 'message' },
+      ],
+      expectedLog: true,
+    });
+  });
+
+  // 9. CLAMP LIMIT VALUE
+  test('clamps number between specified min and max bounds', async ({ blueprintRunner }) => {
+    await blueprintRunner.runTest({
+      testName: 'Clamp Value Test',
+      entityName: 'ClampEntity_Clamp',
+      scriptName: 'Script_Clamp',
+      nodes: [
+        { id: 'start', type: 'eventGameStart', pos: { x: 100, y: 100 } },
+        {
+          id: 'clampNode',
+          type: 'mathClamp',
+          pos: { x: 350, y: 200 },
+          inspectorValues: {
+            value: { value: 150, type: 'number' },
+            min: { value: 0, type: 'number' },
+            max: { value: 100, type: 'number' },
+          },
+        },
+        { id: 'notif', type: 'uiNotification', pos: { x: 650, y: 100 } },
+      ],
+      connections: [
+        { source: 'start', sourceHandle: 'execOut', target: 'notif', targetHandle: 'execIn' },
+        { source: 'clampNode', sourceHandle: 'result', target: 'notif', targetHandle: 'message' },
+      ],
+      expectedLog: 100,
+    });
+  });
+
 });

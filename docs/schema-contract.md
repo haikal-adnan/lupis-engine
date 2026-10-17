@@ -680,7 +680,7 @@ The production node library is structured into 10 domain modules containing 128 
 - `BlueprintRenderer` (`game_renderer`, 14 nodes)
 - `BlueprintAnimation` (`game_animation`, 16 nodes)
 - `BlueprintCollections` (`data_collections`, 20 nodes)
-- `BlueprintMath` (`math_operations`, 12 nodes)
+- `BlueprintMath` (`math_operations`, 14 nodes)
 - `BlueprintLifecycle` (`game_lifecycle`, 11 nodes)
 - `BlueprintSystem` (`system_utilities`, 17 nodes)
 

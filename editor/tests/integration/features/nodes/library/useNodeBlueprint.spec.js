@@ -6,7 +6,8 @@ import {
   ALL_BLUEPRINTS,
   BlueprintBoolean,
   BlueprintTransform,
-  BlueprintKeyboard
+  BlueprintKeyboard,
+  findBlueprintByType
 } from '@nodes/library/blueprints/index.js';
 import ContextSystem, { ScriptAssertionError } from '@core/Script/ContextSystem.js';
 import ScriptRunner from '@core/Script/ScriptRunner.js';
@@ -660,6 +661,69 @@ describe('useNodeBlueprint Integration', () => {
       expect(executedNodes).toEqual(['node_start']);
       expect(emittedErrors.length).toBe(1);
       expect(emittedErrors[0].message).toContain('Halt here immediately');
+    });
+  });
+
+  describe('Math Operations Node Verification (InRange & Clamp)', () => {
+    it('correctly executes mathInRange logic across inside, boundary, and outside values', () => {
+      const inRangeBlueprint = findBlueprintByType('mathInRange');
+      expect(inRangeBlueprint).toBeDefined();
+      expect(inRangeBlueprint.type).toBe('mathInRange');
+      expect(inRangeBlueprint.defaultData.inputs.map(i => i.id)).toEqual(['value', 'min', 'max']);
+      expect(inRangeBlueprint.defaultData.outputs.map(o => o.id)).toEqual(['result']);
+
+      const executeInRange = (val, min, max) => {
+        const fn = new Function('inputs', 'outputs', 'context', 'node', inRangeBlueprint.defaultData.data.code);
+        const outputs = {};
+        fn({ value: val, min, max }, outputs, {}, inRangeBlueprint.defaultData);
+        return outputs.result;
+      };
+
+      // Inside
+      expect(executeInRange(5, 0, 10)).toBe(true);
+      expect(executeInRange(0.5, 0, 1)).toBe(true);
+
+      // Boundaries (Inclusive)
+      expect(executeInRange(0, 0, 10)).toBe(true);
+      expect(executeInRange(10, 0, 10)).toBe(true);
+
+      // Outside
+      expect(executeInRange(-1, 0, 10)).toBe(false);
+      expect(executeInRange(11, 0, 10)).toBe(false);
+      expect(executeInRange(-0.001, 0, 1)).toBe(false);
+      expect(executeInRange(1.001, 0, 1)).toBe(false);
+    });
+
+    it('correctly executes mathClamp logic across inside, below min, and above max values', () => {
+      const clampBlueprint = findBlueprintByType('mathClamp');
+      expect(clampBlueprint).toBeDefined();
+      expect(clampBlueprint.type).toBe('mathClamp');
+      expect(clampBlueprint.defaultData.inputs.map(i => i.id)).toEqual(['value', 'min', 'max']);
+      expect(clampBlueprint.defaultData.outputs.map(o => o.id)).toEqual(['result']);
+
+      const executeClamp = (val, min, max) => {
+        const fn = new Function('inputs', 'outputs', 'context', 'node', clampBlueprint.defaultData.data.code);
+        const outputs = {};
+        fn({ value: val, min, max }, outputs, {}, clampBlueprint.defaultData);
+        return outputs.result;
+      };
+
+      // Inside
+      expect(executeClamp(5, 0, 10)).toBe(5);
+      expect(executeClamp(0, 0, 10)).toBe(0);
+      expect(executeClamp(10, 0, 10)).toBe(10);
+
+      // Below min
+      expect(executeClamp(-10, 0, 10)).toBe(0);
+      expect(executeClamp(-999, -50, 50)).toBe(-50);
+
+      // Above max
+      expect(executeClamp(25, 0, 10)).toBe(10);
+      expect(executeClamp(100, -50, 50)).toBe(50);
+
+      // Decimals
+      expect(executeClamp(3.5, 1.2, 3.1)).toBe(3.1);
+      expect(executeClamp(0.8, 1.2, 3.1)).toBe(1.2);
     });
   });
 });
