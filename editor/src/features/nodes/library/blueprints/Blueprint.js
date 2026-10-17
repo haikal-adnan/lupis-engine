@@ -40,10 +40,10 @@ import { Boxes } from 'lucide-vue-next';
  *        * Tambahan: `length`, `size`, `min`, `max`, `start`, `end`, `step`,
  *          `startValue`, `endValue`, `chance`, `compare`, `condition`, `mode`, `speed`,
  *          `lerpSpeed`, `color`, `text`, `format`, `separator`, `source`, `message`,
- *          `data`, `pretty`, `reset`, `found`
+ *          `data`, `pretty`, `reset`, `found`, `volume`, `pitch`, `audioType`
  *    - Status Boolean (pola `is`/`has`/`use`):
  *        * `isDown`, `isColliding`, `isInside`, `isHovering`, `isHolding`, `isTyping`,
- *          `hasTarget`, `useRaycast`, `useColliderBounds`
+ *          `hasTarget`, `useRaycast`, `useColliderBounds`, `isMute`
  *    - Waktu & Durasi:
  *        * `deltaTime`, `duration`, `delay`
  *    - Koleksi & Data:

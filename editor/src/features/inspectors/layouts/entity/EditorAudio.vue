@@ -54,6 +54,18 @@
         </BaseButton>
       </PropertyRow>
 
+      <PropertyRow label="Audio Type">
+        <BaseSelect 
+          v-model="audioType" 
+          :options="[
+            { label: 'Background', value: 'background' },
+            { label: 'Sound Effect (SFX)', value: 'sfx' },
+            { label: 'Voice', value: 'voice' }
+          ]" 
+          data-testid="audio-type-select" 
+        />
+      </PropertyRow>
+
       <PropertyRow label="Audio File" :no-margin="true">
         <div class="
             group flex items-center w-full relative text-left
@@ -243,7 +255,8 @@ import {
   PropertySection,
   PropertyRow,
   BaseNumber,
-  BaseButton
+  BaseButton,
+  BaseSelect
 } from '@components/components.js';
 
 const { selectedEntity } = useInspectorSelection()
@@ -265,6 +278,11 @@ const overridden = getComponentOverrideStatus('Audio')
 
 // Direct Bindings
 const assetId = bindComponentProp('Audio', 'assetId')
+const rawAudioType = bindComponentProp('Audio', 'audioType')
+const audioType = computed({
+  get: () => rawAudioType.value || 'sfx',
+  set: (val) => { rawAudioType.value = val; }
+})
 const isMute = bindComponentProp('Audio', 'isMute')
 
 const rawVolume = bindComponentProp('Audio', 'volume')

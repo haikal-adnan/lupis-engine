@@ -193,7 +193,8 @@ Node definitions live in `@nodes/library/blueprints/`, one file per category (24
 
 | File | Domain | Nodes |
 | :--- | :--- | :--- |
-| `BlueprintLifecycle.js` | Lifecycle | On Awake, On Start, On Tick, On Destroy |
+| `BlueprintLifecycle.js` | Lifecycle | On Game Start, On Tick, On Game Pause, On Game Resume, On Game Restart, On Game Quit, Pause Game, Resume Game, Restart Game, Quit Game |
+| `BlueprintAudio.js` | Audio | Play Audio, Stop Audio, Set Volume, Get Volume, Set Master Volume, Set Background Volume, Set SFX Volume, Set Voice Volume, Set Channel Mute |
 | `BlueprintEvent.js` | Custom events | Trigger Event, Listen Event, Broadcast Message |
 | `BlueprintTransform.js` | Transform | Get Position, Set Position, Move Towards, Rotate |
 | `BlueprintPhysics.js` | Physics | Add Force, Set Velocity, Move and Slide, Set Gravity |

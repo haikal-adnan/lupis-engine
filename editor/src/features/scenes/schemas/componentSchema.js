@@ -25,22 +25,30 @@ export const componentSchema = {
     overridden: Boolean(data.overridden ?? false)
   }),
 
-  Audio: (data = {}) => ({
-    assetId: data.assetId || null,
-    isMute: Boolean(data.isMute ?? false),
-    volume: Number(data.volume ?? 1.0),
-    pitch: Number(data.pitch ?? 1.0),
-    loop: Boolean(data.loop ?? false),
-    autoplay: Boolean(data.autoplay ?? false),
-    spatial: Boolean(data.spatial ?? false),
-    persist: Boolean(data.persist ?? false),
-    fadeIn: Number(data.fadeIn ?? 0.0),
-    fadeOut: Number(data.fadeOut ?? 0.0),
-    refDistance: Number(data.refDistance ?? 100),
-    maxDistance: Number(data.maxDistance ?? 1000),
-    ...data,
-    overridden: Boolean(data.overridden ?? false)
-  }),
+  Audio: (data = {}) => {
+    const validTypes = ['background', 'sfx', 'voice'];
+    const rawType = data.audioType || data.type || 'sfx';
+    const audioType = validTypes.includes(rawType) ? rawType : 'sfx';
+
+    return {
+      assetId: data.assetId || null,
+      audioType,
+      isMute: Boolean(data.isMute ?? false),
+      volume: Number(data.volume ?? 1.0),
+      pitch: Number(data.pitch ?? 1.0),
+      loop: Boolean(data.loop ?? false),
+      autoplay: Boolean(data.autoplay ?? false),
+      spatial: Boolean(data.spatial ?? false),
+      persist: Boolean(data.persist ?? false),
+      fadeIn: Number(data.fadeIn ?? 0.0),
+      fadeOut: Number(data.fadeOut ?? 0.0),
+      refDistance: Number(data.refDistance ?? 100),
+      maxDistance: Number(data.maxDistance ?? 1000),
+      ...data,
+      audioType,
+      overridden: Boolean(data.overridden ?? false)
+    };
+  },
 
   Collider: (data = {}) => ({
     data: Array.isArray(data.data) ? data.data.map(shape => ({

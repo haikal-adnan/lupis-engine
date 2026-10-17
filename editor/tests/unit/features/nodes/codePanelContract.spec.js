@@ -20,11 +20,11 @@ describe('CodePanel Contract & Blueprint Evaluation', () => {
       expect(Object.isFrozen(CODE_PANEL_PARAM_NAMES)).toBe(true);
     });
 
-    it('contains all 14 official context namespaces', () => {
+    it('contains all 15 official context namespaces', () => {
       const namespaces = [
         'entity', 'layer', 'prefab', 'collider', 'input',
         'ui', 'signal', 'lifecycle', 'transition', 'camera',
-        'scene', 'state', 'console', 'assert'
+        'scene', 'state', 'console', 'assert', 'audio'
       ];
       namespaces.forEach(ns => {
         expect(VALID_CONTEXT_PROPERTIES.has(ns)).toBe(true);
@@ -34,6 +34,8 @@ describe('CodePanel Contract & Blueprint Evaluation', () => {
     it('contains root context methods and properties', () => {
       expect(VALID_CONTEXT_PROPERTIES.has('onTick')).toBe(true);
       expect(VALID_CONTEXT_PROPERTIES.has('triggerFlow')).toBe(true);
+      expect(VALID_CONTEXT_PROPERTIES.has('onGameQuit')).toBe(true);
+      expect(VALID_CONTEXT_PROPERTIES.has('onQuit')).toBe(true);
       expect(VALID_CONTEXT_PROPERTIES.has('getLocal')).toBe(true);
       expect(VALID_CONTEXT_PROPERTIES.has('setLocal')).toBe(true);
       expect(VALID_CONTEXT_PROPERTIES.has('getGlobal')).toBe(true);

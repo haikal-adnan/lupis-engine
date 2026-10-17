@@ -177,8 +177,8 @@ describe('useNodeBlueprint Integration', () => {
   });
 
   describe('Comprehensive Registered Blueprints Audit', () => {
-    it('verifies all 29 registered blueprint modules exist and have valid structure', () => {
-      expect(allBlueprints).toHaveLength(29);
+    it('verifies all 30 registered blueprint modules exist and have valid structure', () => {
+      expect(allBlueprints).toHaveLength(30);
 
       allBlueprints.forEach((blueprint) => {
         expect(blueprint).toBeDefined();
@@ -328,7 +328,7 @@ describe('useNodeBlueprint Integration', () => {
       const labels = nodeGroups.map(g => g.label);
       const sortedLabels = [...labels].sort((a, b) => a.localeCompare(b));
 
-      expect(nodeGroups.length).toBe(29);
+      expect(nodeGroups.length).toBe(30);
       expect(labels).toEqual(sortedLabels);
     });
 

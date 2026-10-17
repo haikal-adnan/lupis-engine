@@ -12,7 +12,8 @@ export const CONTEXT_NAMESPACES = Object.freeze([
   'scene',
   'state',
   'console',
-  'assert'
+  'assert',
+  'audio'
 ]);
 
 export const CONTEXT_ASSERT_METHODS = Object.freeze([
@@ -43,6 +44,8 @@ export const CONTEXT_ROOT_METHODS = Object.freeze([
   'onGamePause',
   'onGameResume',
   'onGameRestart',
+  'onGameQuit',
+  'onQuit',
   'isPaused',
   'notify',
   'getLocal',

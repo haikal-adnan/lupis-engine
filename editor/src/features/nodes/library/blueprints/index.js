@@ -1,4 +1,5 @@
 import { BlueprintAnimator } from './BlueprintAnimator.js';
+import { BlueprintAudio } from './BlueprintAudio.js';
 import { BlueprintBoolean } from './BlueprintBoolean.js';
 import { BlueprintCamera } from './BlueprintCamera.js';
 import { BlueprintCollectionHelper } from './BlueprintCollectionHelper.js';
@@ -30,6 +31,7 @@ import { BlueprintVisualNovelHelper } from './BlueprintVisualNovelHelper.js';
 export { BlueprintCategoryTemplate } from './Blueprint.js';
 export {
   BlueprintAnimator,
+  BlueprintAudio,
   BlueprintBoolean,
   BlueprintCamera,
   BlueprintCollectionHelper,
@@ -86,6 +88,7 @@ export const ALL_BLUEPRINTS = Object.freeze([
   BlueprintScene,
   BlueprintMouse,
   BlueprintAnimator,
+  BlueprintAudio,
   BlueprintTransition,
   BlueprintEvent,
   BlueprintVariable,

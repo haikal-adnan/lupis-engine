@@ -2,11 +2,33 @@ export default class AudioSystem {
     constructor(game) {
         this.game = game;
         
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        this.context = new AudioContext();
+        const AudioContextClass = typeof window !== 'undefined' ? (window.AudioContext || window.webkitAudioContext) : null;
+        if (AudioContextClass) {
+            this.context = new AudioContextClass();
+        } else {
+            this.context = this._createFallbackContext();
+        }
         
+        // 1 Master Gain (direct output)
         this.masterGain = this.context.createGain();
         this.masterGain.connect(this.context.destination);
+
+        // 3 Sub-buses connected into Master Gain
+        this.backgroundGain = this.context.createGain();
+        this.backgroundGain.connect(this.masterGain);
+
+        this.sfxGain = this.context.createGain();
+        this.sfxGain.connect(this.masterGain);
+
+        this.voiceGain = this.context.createGain();
+        this.voiceGain.connect(this.masterGain);
+
+        this.buses = {
+            master: { gain: this.masterGain, volume: 1.0, isMute: false },
+            background: { gain: this.backgroundGain, volume: 1.0, isMute: false },
+            sfx: { gain: this.sfxGain, volume: 1.0, isMute: false },
+            voice: { gain: this.voiceGain, volume: 1.0, isMute: false }
+        };
 
         this.activeNodes = new Map();
         this.pendingAutoplayAudio = [];
@@ -15,6 +37,101 @@ export default class AudioSystem {
         this._canvas = null;
         this._unlockHandler = null;
     }
+
+    _createFallbackContext() {
+        const createDummyGain = () => {
+            const gainObj = {
+                value: 1.0,
+                setValueAtTime(val) { this.value = val; },
+                linearRampToValueAtTime(val) { this.value = val; }
+            };
+            return {
+                gain: gainObj,
+                connect() {}
+            };
+        };
+
+        return {
+            state: 'running',
+            currentTime: 0,
+            destination: {},
+            createGain: createDummyGain,
+            createBufferSource: () => ({
+                buffer: null,
+                playbackRate: { value: 1.0 },
+                loop: false,
+                connect() {},
+                start() {},
+                stop() {}
+            }),
+            createPanner: () => ({
+                panningModel: 'HRTF',
+                distanceModel: 'inverse',
+                refDistance: 100,
+                maxDistance: 1000,
+                rolloffFactor: 1,
+                positionX: { value: 0 },
+                positionY: { value: 0 },
+                positionZ: { value: 0 },
+                connect() {}
+            }),
+            listener: {
+                positionX: { value: 0 },
+                positionY: { value: 0 },
+                positionZ: { value: 0 }
+            },
+            resume: async () => {}
+        };
+    }
+
+    getBusGainNode(type) {
+        if (type === 'background') return this.backgroundGain;
+        if (type === 'voice') return this.voiceGain;
+        if (type === 'master') return this.masterGain;
+        return this.sfxGain;
+    }
+
+    setVolume(type, volume) {
+        const bus = this.buses[type];
+        if (!bus) {
+            console.warn(`[AudioSystem] Unknown audio bus '${type}'`);
+            return;
+        }
+        const safeVol = Math.max(0, Number(volume));
+        bus.volume = safeVol;
+        if (!bus.isMute) {
+            bus.gain.gain.value = safeVol;
+        }
+    }
+
+    getVolume(type) {
+        const bus = this.buses[type];
+        return bus ? bus.volume : 1.0;
+    }
+
+    setMute(type, isMute) {
+        const bus = this.buses[type];
+        if (!bus) return;
+        bus.isMute = Boolean(isMute);
+        bus.gain.gain.value = bus.isMute ? 0 : bus.volume;
+    }
+
+    isMuted(type) {
+        const bus = this.buses[type];
+        return bus ? bus.isMute : false;
+    }
+
+    setMasterVolume(val) { this.setVolume('master', val); }
+    getMasterVolume() { return this.getVolume('master'); }
+
+    setBackgroundVolume(val) { this.setVolume('background', val); }
+    getBackgroundVolume() { return this.getVolume('background'); }
+
+    setSfxVolume(val) { this.setVolume('sfx', val); }
+    getSfxVolume() { return this.getVolume('sfx'); }
+
+    setVoiceVolume(val) { this.setVolume('voice', val); }
+    getVoiceVolume() { return this.getVolume('voice'); }
 
     attachCanvas(canvas) {
         this._canvas = canvas;
@@ -140,14 +257,72 @@ export default class AudioSystem {
             finalNode = pannerNode;
         }
 
-        finalNode.connect(this.masterGain);
+        const rawType = audioData.audioType || audioData.type || 'sfx';
+        const channelType = (rawType === 'background' || rawType === 'voice') ? rawType : 'sfx';
+        const targetBus = this.buses[channelType] || this.buses.sfx;
+
+        finalNode.connect(targetBus.gain);
         source.start();
 
-        const nodeId = crypto.randomUUID();
-        this.activeNodes.set(nodeId, { entity, source, gainNode, pannerNode, targetVolume, audioData });
+        const nodeId = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : ('audio_' + Math.random().toString(36).slice(2));
+        this.activeNodes.set(nodeId, { entity, source, gainNode, pannerNode, targetVolume, audioData, channel: channelType });
 
         source.onended = () => this.activeNodes.delete(nodeId);
         return nodeId;
+    }
+
+    /**
+     * Plays a sound asset directly without an entity (one-shot or looping)
+     * @param {string|AudioBuffer} assetIdOrBuffer
+     * @param {Object} [options]
+     * @returns {string|null} nodeId
+     */
+    playSound(assetIdOrBuffer, options = {}) {
+        if (!assetIdOrBuffer) return null;
+        if (this.context.state === 'suspended') {
+            this.context.resume().catch(() => {});
+        }
+
+        let audioBuffer = null;
+        if (typeof assetIdOrBuffer === 'string') {
+            audioBuffer = this.game.world?.audios?.[assetIdOrBuffer];
+        } else if (typeof assetIdOrBuffer === 'object') {
+            audioBuffer = assetIdOrBuffer;
+        }
+        if (!audioBuffer) return null;
+
+        const source = this.context.createBufferSource();
+        source.buffer = audioBuffer;
+        source.playbackRate.value = options.pitch ?? 1.0;
+        source.loop = options.loop ?? false;
+
+        const gainNode = this.context.createGain();
+        const targetVolume = options.isMute ? 0 : (options.volume ?? 1.0);
+        gainNode.gain.value = targetVolume;
+        source.connect(gainNode);
+
+        const rawType = options.audioType || options.type || 'sfx';
+        const channelType = (rawType === 'background' || rawType === 'voice') ? rawType : 'sfx';
+        const targetBus = this.buses[channelType] || this.buses.sfx;
+
+        gainNode.connect(targetBus.gain);
+        source.start();
+
+        const nodeId = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : ('audio_' + Math.random().toString(36).slice(2));
+        this.activeNodes.set(nodeId, { entity: null, source, gainNode, targetVolume, audioData: options, channel: channelType });
+
+        source.onended = () => this.activeNodes.delete(nodeId);
+        return nodeId;
+    }
+
+    /**
+     * Stops all active audio nodes across all channels
+     */
+    stopAll() {
+        for (const [nodeId, nodeData] of this.activeNodes.entries()) {
+            try { nodeData.source.stop(); } catch(e) {}
+            this.activeNodes.delete(nodeId);
+        }
     }
 
     /**

@@ -95,8 +95,29 @@ export default class Game {
     }
 
     quitGame() {
+        this.events.emit('game:quit');
+
         if (this.loop && typeof this.loop.stop === 'function') {
             this.loop.stop();
+        }
+
+        if (typeof window !== 'undefined') {
+            // 1. Electron standalone build environment
+            if (window.electronAPI && typeof window.electronAPI.quit === 'function') {
+                window.electronAPI.quit();
+                return;
+            }
+            if (window.electronAPI && typeof window.electronAPI.close === 'function') {
+                window.electronAPI.close();
+                return;
+            }
+
+            // 2. Preview mode / browser tab environment
+            try {
+                window.close();
+            } catch (e) {
+                console.warn('[Game] Unable to close window automatically:', e);
+            }
         }
     }
 

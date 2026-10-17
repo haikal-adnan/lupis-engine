@@ -1,4 +1,4 @@
-const { app, BrowserWindow, protocol, session } = require('electron');
+const { app, BrowserWindow, protocol, session, ipcMain } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -24,7 +24,8 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      webSecurity: true
+      webSecurity: true,
+      preload: path.join(__dirname, 'preload.js')
     }
   });
 
@@ -80,6 +81,10 @@ app.whenReady().then(() => {
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
+});
+
+ipcMain.on('app:quit', () => {
+  app.quit();
 });
 
 function respondFile(filePath) {

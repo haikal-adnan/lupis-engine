@@ -214,6 +214,58 @@ outputs.execOut = true;
 return;`
         }
       }
+    },
+
+    {
+      type: 'eventGameQuit',
+      label: 'On Game Quit',
+      description: 'Triggered when the game begins quitting or closing.',
+      dynamicMode: 'none',
+      defaultData: {
+        settings: {
+          headerTitle: 'On Game Quit',
+          headerColor: '#EF4444',
+          category: 'Game Lifecycle'
+        },
+        inputs: [],
+        outputs: [
+          { id: 'execOut', dataType: 'execution', color: '#FFFFFF' }
+        ],
+        data: {
+          code: 
+`context.onGameQuit(() => {
+  outputs.execOut = true;
+  context.triggerFlow('execOut');
+});
+return;`
+        }
+      }
+    },
+
+    {
+      type: 'actionGameQuit',
+      label: 'Quit Game',
+      description: 'Terminates gameplay session. Closes the preview tab in preview mode, or exits the window in build mode.',
+      dynamicMode: 'none',
+      defaultData: {
+        settings: {
+          headerTitle: 'Quit Game',
+          headerColor: '#EF4444',
+          category: 'Game Lifecycle'
+        },
+        inputs: [
+          { id: 'execIn', dataType: 'execution', color: '#FFFFFF' }
+        ],
+        outputs: [
+          { id: 'execOut', dataType: 'execution', color: '#FFFFFF' }
+        ],
+        data: {
+          code: 
+`context.lifecycle.quit();
+outputs.execOut = true;
+return;`
+        }
+      }
     }
   ]
 };

@@ -303,6 +303,28 @@ export default class ContextSystem {
         runner._registeredEvents.push({ eventName: 'game:restart', callback: handler });
       },
 
+      onGameQuit: (callback) => {
+        const handler = () => {
+          if (runner._isScriptActive()) {
+            callback();
+          }
+        };
+
+        this.game.events.on('game:quit', handler);
+        runner._registeredEvents.push({ eventName: 'game:quit', callback: handler });
+      },
+
+      onQuit: (callback) => {
+        const handler = () => {
+          if (runner._isScriptActive()) {
+            callback();
+          }
+        };
+
+        this.game.events.on('game:quit', handler);
+        runner._registeredEvents.push({ eventName: 'game:quit', callback: handler });
+      },
+
       isPaused: () => this.game.isPaused,
 
       // Entity subsystem facade (Engine Gate 2: throws on unresolvable target)
@@ -621,7 +643,63 @@ export default class ContextSystem {
         pause: () => this.game.pauseGame(),
         resume: () => this.game.resumeGame(),
         restart: () => this.game.restartGame(),
+        quit: () => this.game.quitGame(),
         isPaused: () => this.game.isPaused
+      },
+
+      audio: {
+        play: (targetEntityOrAssetId, options = {}) => {
+          if (!targetEntityOrAssetId || targetEntityOrAssetId === 'self') {
+            const ent = runner.owner;
+            if (ent && ent.components?.Audio) {
+              return this.game.audioSystem.play(ent, options);
+            }
+          }
+          if (typeof targetEntityOrAssetId === 'object' && targetEntityOrAssetId !== null) {
+            if (targetEntityOrAssetId.components?.Audio) {
+              return this.game.audioSystem.play(targetEntityOrAssetId, options);
+            }
+          }
+          if (typeof targetEntityOrAssetId === 'string') {
+            const ent = this.entity.get(targetEntityOrAssetId);
+            if (ent && ent.components?.Audio) {
+              return this.game.audioSystem.play(ent, options);
+            }
+          }
+          return this.game.audioSystem.playSound(targetEntityOrAssetId, options);
+        },
+        stop: (targetEntityOrId) => {
+          if (!targetEntityOrId || targetEntityOrId === 'self') {
+            return this.game.audioSystem.stop(runner.owner?.id);
+          }
+          if (typeof targetEntityOrId === 'object' && targetEntityOrId !== null) {
+            return this.game.audioSystem.stop(targetEntityOrId.id);
+          }
+          const ent = this.entity.get(targetEntityOrId);
+          if (ent) {
+            return this.game.audioSystem.stop(ent.id);
+          }
+          return this.game.audioSystem.stop(targetEntityOrId);
+        },
+        stopAll: () => {
+          this.game.audioSystem.stopAll();
+        },
+        setVolume: (type, volume) => {
+          this.game.audioSystem.setVolume(type, volume);
+        },
+        getVolume: (type) => {
+          return this.game.audioSystem.getVolume(type);
+        },
+        setMasterVolume: (volume) => this.game.audioSystem.setMasterVolume(volume),
+        getMasterVolume: () => this.game.audioSystem.getMasterVolume(),
+        setBackgroundVolume: (volume) => this.game.audioSystem.setBackgroundVolume(volume),
+        getBackgroundVolume: () => this.game.audioSystem.getBackgroundVolume(),
+        setSfxVolume: (volume) => this.game.audioSystem.setSfxVolume(volume),
+        getSfxVolume: () => this.game.audioSystem.getSfxVolume(),
+        setVoiceVolume: (volume) => this.game.audioSystem.setVoiceVolume(volume),
+        getVoiceVolume: () => this.game.audioSystem.getVoiceVolume(),
+        setMute: (type, isMute) => this.game.audioSystem.setMute(type, isMute),
+        isMuted: (type) => this.game.audioSystem.isMuted(type)
       },
 
       transition: {
