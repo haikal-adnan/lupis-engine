@@ -313,6 +313,45 @@ describe('Engine Math, Matrix & Utility Calculations', () => {
             // zIndex 1, orderIndex 2
             expect(sorted[3].id).toBe('b');
         });
+
+        it('enforces Hierarchical Stacking Context: Parent (z:0, o:0), Child (z:1, o:0), Pure (z:0, o:1)', () => {
+            const entities = [
+                { id: 'pure', zIndex: 0, orderIndex: 1, parentId: null },
+                { id: 'child', zIndex: 1, orderIndex: 0, parentId: 'parent' },
+                { id: 'parent', zIndex: 0, orderIndex: 0, parentId: null }
+            ];
+
+            const sorted = RenderUtils.getHierarchicalOrder(entities);
+            expect(sorted.map(e => e.id)).toEqual(['parent', 'child', 'pure']);
+
+            // sortItems also produces the identical result when hierarchy is present
+            const sortedViaSortItems = RenderUtils.sortItems([...entities]);
+            expect(sortedViaSortItems.map(e => e.id)).toEqual(['parent', 'child', 'pure']);
+        });
+
+        it('renders child behind parent when child zIndex is lower than parent', () => {
+            const entities = [
+                { id: 'pure', zIndex: 0, orderIndex: 1, parentId: null },
+                { id: 'shadow_child', zIndex: -1, orderIndex: 0, parentId: 'parent' },
+                { id: 'parent', zIndex: 0, orderIndex: 0, parentId: null }
+            ];
+
+            const sorted = RenderUtils.getHierarchicalOrder(entities);
+            expect(sorted.map(e => e.id)).toEqual(['shadow_child', 'parent', 'pure']);
+        });
+
+        it('handles multi-level nested hierarchy stacking correctly', () => {
+            const entities = [
+                { id: 'other_root', zIndex: 0, orderIndex: 1, parentId: null },
+                { id: 'grandparent', zIndex: 0, orderIndex: 0, parentId: null },
+                { id: 'uncle', zIndex: 0, orderIndex: 1, parentId: 'grandparent' },
+                { id: 'parent', zIndex: 0, orderIndex: 0, parentId: 'grandparent' },
+                { id: 'child', zIndex: 0, orderIndex: 0, parentId: 'parent' }
+            ];
+
+            const sorted = RenderUtils.getHierarchicalOrder(entities);
+            expect(sorted.map(e => e.id)).toEqual(['grandparent', 'parent', 'child', 'uncle', 'other_root']);
+        });
     });
 
     describe('FontMath - Text Measurement and Wrapping', () => {

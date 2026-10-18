@@ -584,20 +584,10 @@ export default class ContextSystem {
             };
 
             if (!raycast || typeof raycast._getGlobalTransform !== 'function' || typeof raycast._checkIntersection !== 'function') return false;
-            const globalT = raycast._getGlobalTransform(entity, this.game.world);
-            let drawX = globalT.x || 0;
-            let drawY = globalT.y || 0;
+            const absT = raycast._getGlobalTransform(entity, this.game.world);
             const targetPointer = hasUITransform ? uiPointer : worldPointer;
 
-            if (hasUITransform) {
-              const t = entity.components.UITransform;
-              const anchorX = t.anchorX ?? 0.5;
-              const anchorY = t.anchorY ?? 0.5;
-              drawX = (uiSettings.width * anchorX) + (globalT.x || 0);
-              drawY = (uiSettings.height * anchorY) + (globalT.y || 0);
-            }
-
-            return raycast._checkIntersection(entity, entity.components?.Transform || entity.components?.UITransform, drawX, drawY, targetPointer.x, targetPointer.y);
+            return raycast._checkIntersection(entity, absT, absT.x, absT.y, targetPointer.x, targetPointer.y);
           }
         }
       },

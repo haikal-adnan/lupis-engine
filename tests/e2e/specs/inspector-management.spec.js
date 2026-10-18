@@ -216,6 +216,7 @@ test.describe('Property Inspector: Basic Components & Prefab E2E', () => {
 
     await inspector.addComponent('Audio');
     await popup.expectPopAlert('Restricted');
+    await popup.closePopAlert('Restricted');
 
     // Context menu actions verification
     const menuContainer = await inspectorCrud.openObjectSectionMenu();

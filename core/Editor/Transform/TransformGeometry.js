@@ -1,5 +1,6 @@
 import { calculateQuadVertices } from "../../Util/calculateQuadVertices.js";
 import { TilemapMath } from "../Tilemap/TilemapMath.js";
+import RenderUtils from "../../Renderer/Scene/RenderUtils.js";
 
 export class TransformGeometry {
     constructor(game, world) {
@@ -112,25 +113,7 @@ export class TransformGeometry {
     calculateAbsolutePosition(e) {
         const t = this._getTransform(e);
         if (!t) return { x: 0, y: 0 };
-
-        const globalT = this.getGlobalTransform(e);
-
-        if (!e.components.UITransform) {
-            return { x: globalT.x || 0, y: globalT.y || 0 };
-        }
-
-        const uiSettings = this.world?.settings?.ui || { width: 1920, height: 1080 };
-        const parentBounds = { x: 0, y: 0, width: uiSettings.width, height: uiSettings.height };
-
-        const anchorX = t.anchorX ?? 0.5;
-        const anchorY = t.anchorY ?? 0.5;
-        const anchorPointX = parentBounds.x + (parentBounds.width * anchorX);
-        const anchorPointY = parentBounds.y + (parentBounds.height * anchorY);
-
-        return {
-            x: anchorPointX + (globalT.x || 0),
-            y: anchorPointY + (globalT.y || 0)
-        };
+        return RenderUtils.calculateAbsolutePosition(e, this.world);
     }
 
     computeHandles(selectedList) {

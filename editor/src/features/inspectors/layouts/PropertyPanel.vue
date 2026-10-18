@@ -165,8 +165,10 @@ const selectedIsLayer = computed(() => {
 
 const handleAddComponent = (value) => {
   if (value) {
-    addComponentToSelection(value);
-    setTimeout(scrollToBottom, 100);
+    const success = addComponentToSelection(value);
+    if (success) {
+      setTimeout(scrollToBottom, 100);
+    }
   }
 };
 </script>

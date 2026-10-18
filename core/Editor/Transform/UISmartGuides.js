@@ -1,4 +1,5 @@
 import { calculateQuadVertices } from "../../Util/calculateQuadVertices.js";
+import RenderUtils from "../../Renderer/Scene/RenderUtils.js";
 
 /**
  * Pure function: Calculates Axis-Aligned Bounding Box (AABB) for a given UI entity.
@@ -35,18 +36,16 @@ export function calculateEntityAABB(entity, world = null, geometry = null) {
         pivotX = globalT.pivotX ?? pivotX;
         pivotY = globalT.pivotY ?? pivotY;
     } else {
-        const uiSettings = world?.settings?.ui || { width: 1920, height: 1080 };
-        const canvasW = uiSettings.width || 1920;
-        const canvasH = uiSettings.height || 1080;
-        if (comps.UITransform) {
-            const anchorX = t.anchorX ?? 0.5;
-            const anchorY = t.anchorY ?? 0.5;
-            absX = canvasW * anchorX + Number(t.x || 0);
-            absY = canvasH * anchorY + Number(t.y || 0);
-        } else {
-            absX = Number(t.x || 0);
-            absY = Number(t.y || 0);
-        }
+        const absT = RenderUtils.calculateAbsoluteTransform(entity, world);
+        absX = absT.x;
+        absY = absT.y;
+        rotDeg = absT.rotation || 0;
+        scaleX = absT.scaleX ?? 1;
+        scaleY = absT.scaleY ?? 1;
+        pivotX = absT.pivotX ?? pivotX;
+        pivotY = absT.pivotY ?? pivotY;
+        width = absT.width || width;
+        height = absT.height || height;
     }
 
     const sx = (flipX ? -1 : 1) * scaleX;

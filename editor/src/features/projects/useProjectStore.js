@@ -151,61 +151,86 @@ export const useProjectStore = defineStore('project', {
       const isAuto = !!options.isAutoSave;
       workspaceStore.setSaving(true, isAuto ? 'Auto-saving project...' : 'Saving project to storage...');
 
-      // Capture last snapshot from scene canvas if available
       try {
-        if (typeof document !== 'undefined') {
-          const canvas = document.querySelector('canvas');
-          if (canvas && canvas.width > 0 && canvas.height > 0) {
-            const thumbCanvas = document.createElement('canvas');
-            const targetW = 480;
-            const targetH = Math.round((canvas.height / canvas.width) * targetW) || 300;
-            thumbCanvas.width = targetW;
-            thumbCanvas.height = targetH;
-            const ctx = thumbCanvas.getContext('2d');
-            if (ctx) {
-              ctx.drawImage(canvas, 0, 0, targetW, targetH);
-              this.project.snapshotUrl = thumbCanvas.toDataURL('image/jpeg', 0.85);
-            } else {
-              this.project.snapshotUrl = canvas.toDataURL('image/jpeg', 0.85);
+        // Capture last snapshot from scene canvas if available
+        try {
+          if (typeof document !== 'undefined') {
+            const canvas = document.querySelector('canvas');
+            if (canvas && canvas.width > 0 && canvas.height > 0) {
+              const thumbCanvas = document.createElement('canvas');
+              const targetW = 480;
+              const targetH = Math.round((canvas.height / canvas.width) * targetW) || 300;
+              thumbCanvas.width = targetW;
+              thumbCanvas.height = targetH;
+              const ctx = thumbCanvas.getContext('2d');
+              if (ctx) {
+                ctx.drawImage(canvas, 0, 0, targetW, targetH);
+                this.project.snapshotUrl = thumbCanvas.toDataURL('image/jpeg', 0.85);
+              } else {
+                this.project.snapshotUrl = canvas.toDataURL('image/jpeg', 0.85);
+              }
             }
           }
+        } catch {
+          // Fallback gracefully in headless/mock test environments
         }
-      } catch {
-        // Fallback gracefully in headless/mock test environments
+
+        const sceneStore = useSceneStore();
+        const prefabStore = usePrefabStore();
+        const scriptStore = useScriptStore();
+        const assetStore = useAssetStore();
+        const folderStore = useFolderStore();
+
+        // Sync folder & asset structure data
+        await folderStore.syncFoldersToOPFS();
+        await assetStore.syncAssetsToOPFS();
+
+        const syncPayload = {
+          project: JSON.parse(JSON.stringify(this.project)),
+          assets: JSON.parse(JSON.stringify(assetStore.assets)),
+          folders: JSON.parse(JSON.stringify(folderStore.folders)),
+          scenes: JSON.parse(JSON.stringify(sceneStore.scenes)),
+          prefabs: JSON.parse(JSON.stringify(prefabStore.prefabs)),
+          scripts: JSON.parse(JSON.stringify(scriptStore.scripts))
+        };
+
+        await syncProject(this.project.id, syncPayload);
+
+        this.syncStatus = 'synced';
+
+        if (!options.silent) {
+          showPop({
+            title: isAuto ? 'Auto-Save Successful' : 'Save Successful',
+            message: isAuto ? 'Project auto-saved successfully.' : 'Project saved successfully.',
+            type: 'success'
+          });
+        }
+      } catch (error) {
+        console.error('[Storage Error] Failed to save project:', error);
+
+        const isQuotaError = error.name === 'QuotaExceededError' || 
+          /quota|no space|disk|storage pressure/i.test(error.message || '');
+
+        if (isQuotaError) {
+          try {
+            const { handleQuotaExceededEmergency } = await import('@opfs/storageGuard.js');
+            const { useOPFSActions } = await import('@opfs/opfs.js');
+            const { exportToLupisProject } = useOPFSActions();
+            await handleQuotaExceededEmergency(this.project.id, exportToLupisProject, error);
+          } catch (emergencyErr) {
+            console.error('[StorageGuard] Failed to invoke emergency export handler:', emergencyErr);
+          }
+        } else if (!options.silent) {
+          showPop({
+            title: 'Save Failed',
+            message: error.message || 'An unexpected error occurred while saving to storage.',
+            type: 'error'
+          });
+        }
+        throw error;
+      } finally {
+        workspaceStore.setSaving(false);
       }
-
-      const sceneStore = useSceneStore();
-      const prefabStore = usePrefabStore();
-      const scriptStore = useScriptStore();
-      const assetStore = useAssetStore();
-      const folderStore = useFolderStore();
-
-      // Sync folder & asset structure data
-      await folderStore.syncFoldersToOPFS();
-      await assetStore.syncAssetsToOPFS();
-
-      const syncPayload = {
-        project: JSON.parse(JSON.stringify(this.project)),
-        assets: JSON.parse(JSON.stringify(assetStore.assets)),
-        folders: JSON.parse(JSON.stringify(folderStore.folders)),
-        scenes: JSON.parse(JSON.stringify(sceneStore.scenes)),
-        prefabs: JSON.parse(JSON.stringify(prefabStore.prefabs)),
-        scripts: JSON.parse(JSON.stringify(scriptStore.scripts))
-      };
-
-      await syncProject(this.project.id, syncPayload);
-
-      this.syncStatus = 'synced';
-
-      if (!options.silent) {
-        showPop({
-          title: isAuto ? 'Auto-Save Successful' : 'Save Successful',
-          message: isAuto ? 'Project auto-saved successfully.' : 'Project saved successfully.',
-          type: 'success'
-        });
-      }
-
-      workspaceStore.setSaving(false);
     },
 
     async triggerAutoSave() {

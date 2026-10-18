@@ -266,6 +266,203 @@ describe('Entity Actions Integration', () => {
       const { recordEntityMove } = useSceneHistory()
       expect(recordEntityMove).toHaveBeenCalled()
     })
+
+    it('recalculates local transform coordinates so entity visually preserves world position when dragged into parent', () => {
+      // Arrange: entity at world (300, 400), parent at world (100, 150)
+      const entity = sceneStoreState.activeScene.entities.find(e => e.id === 'ent_1')
+      entity.components.Transform.x = 300
+      entity.components.Transform.y = 400
+
+      const parentEntity = entitySchema({
+        id: 'parent_target',
+        layerId: 'layer_world_1',
+        x: 100,
+        y: 150
+      })
+      sceneStoreState.activeScene.entities.push(parentEntity)
+
+      const targetContext = {
+        newParentId: 'parent_target',
+        newLayerId: 'layer_world_1',
+        insertionType: 'inside',
+        referenceId: null
+      }
+
+      // Act
+      const success = sceneStoreState.moveEntity('ent_1', targetContext)
+
+      // Assert
+      expect(success).toBe(true)
+      expect(entity.parentId).toBe('parent_target')
+      // Local transform recalculated: 300 - 100 = 200, 400 - 150 = 250
+      expect(entity.components.Transform.x).toBe(200)
+      expect(entity.components.Transform.y).toBe(250)
+      expect(engineBridge.updateComponentProp).toHaveBeenCalledWith({
+        entityId: 'ent_1',
+        componentName: 'Transform',
+        path: 'x',
+        value: 200
+      })
+      expect(engineBridge.updateComponentProp).toHaveBeenCalledWith({
+        entityId: 'ent_1',
+        componentName: 'Transform',
+        path: 'y',
+        value: 250
+      })
+    })
+
+    it('recalculates local transform back to world coordinates when entity is unparented (dragged to root)', () => {
+      // Arrange: Parent at (100, 150), child with parentId 'parent_target' and local (50, 60)
+      const parentEntity = entitySchema({
+        id: 'parent_target',
+        layerId: 'layer_world_1',
+        x: 100,
+        y: 150
+      })
+      sceneStoreState.activeScene.entities.push(parentEntity)
+
+      const childEntity = entitySchema({
+        id: 'ent_child_1',
+        parentId: 'parent_target',
+        layerId: 'layer_world_1',
+        x: 50,
+        y: 60
+      })
+      sceneStoreState.activeScene.entities.push(childEntity)
+
+      const targetContext = {
+        newParentId: null,
+        newLayerId: 'layer_world_1',
+        insertionType: 'append',
+        referenceId: null
+      }
+
+      // Act
+      const success = sceneStoreState.moveEntity('ent_child_1', targetContext)
+
+      // Assert
+      expect(success).toBe(true)
+      expect(childEntity.parentId).toBeNull()
+      // Local position converted back to world position: 100 + 50 = 150, 150 + 60 = 210
+      expect(childEntity.components.Transform.x).toBe(150)
+      expect(childEntity.components.Transform.y).toBe(210)
+    })
+
+    it('recalculates UI entity transform coordinates relative to parent size and anchor (e.g. 900x900 parent)', () => {
+      // Arrange: Parent UI panel of size 900x900 centered at (960, 540)
+      const parentUI = entitySchema({
+        id: 'ui_panel_parent',
+        layerId: 'layer_ui_1',
+        name: 'PanelParent'
+      })
+      delete parentUI.components.Transform
+      parentUI.components.UITransform = {
+        x: 0,
+        y: 0,
+        anchorX: 0.5,
+        anchorY: 0.5,
+        pivotX: 0.5,
+        pivotY: 0.5,
+        width: 900,
+        height: 900
+      }
+      sceneStoreState.activeScene.entities.push(parentUI)
+
+      // Child UI button at screen center (960, 540) with anchor (0.5, 0.5)
+      const childUI = entitySchema({
+        id: 'ui_btn_child',
+        layerId: 'layer_ui_1',
+        name: 'ButtonChild'
+      })
+      delete childUI.components.Transform
+      childUI.components.UITransform = {
+        x: 0,
+        y: 0,
+        anchorX: 0.5,
+        anchorY: 0.5,
+        pivotX: 0.5,
+        pivotY: 0.5,
+        width: 200,
+        height: 60
+      }
+      sceneStoreState.activeScene.entities.push(childUI)
+
+      // Move child into parent
+      const targetContext = {
+        newParentId: 'ui_panel_parent',
+        newLayerId: 'layer_ui_1',
+        insertionType: 'inside',
+        referenceId: null
+      }
+
+      // Act
+      const success = sceneStoreState.moveEntity('ui_btn_child', targetContext)
+
+      // Assert
+      expect(success).toBe(true)
+      expect(childUI.parentId).toBe('ui_panel_parent')
+      // Both parent center and child were at (960, 540). Child's anchor is 0.5, 0.5.
+      // So local x and y should be 0, 0!
+      expect(childUI.components.UITransform.x).toBe(0)
+      expect(childUI.components.UITransform.y).toBe(0)
+    })
+
+    it('recalculates UI entity transform for 200x56 child in 400x56 display with Center-Left anchor to x: 0, y: 0', () => {
+      // Arrange: Display parent 400x56 centered at (960, 540)
+      const displayParent = entitySchema({
+        id: 'display_parent',
+        layerId: 'layer_ui_1',
+        name: 'DisplayParent'
+      })
+      delete displayParent.components.Transform
+      displayParent.components.UITransform = {
+        x: 0,
+        y: 0,
+        anchorX: 0.5,
+        anchorY: 0.5,
+        pivotX: 0.5,
+        pivotY: 0.5,
+        width: 400,
+        height: 56
+      }
+      sceneStoreState.activeScene.entities.push(displayParent)
+
+      // Child 200x56 at world position (860, 540) with Center-Left anchor (anchorX: 0, anchorY: 0.5)
+      // When at world (860, 540), child's left edge is at 760 (exact parent display left edge!)
+      const childUI = entitySchema({
+        id: 'child_content',
+        layerId: 'layer_ui_1',
+        name: 'ChildContent'
+      })
+      delete childUI.components.Transform
+      childUI.components.UITransform = {
+        x: 860, // root world position (anchorX is 0, so canvasW * 0 + 860 = 860)
+        y: 0,   // root center position (anchorY is 0.5, so canvasH * 0.5 + 0 = 540)
+        anchorX: 0,
+        anchorY: 0.5,
+        pivotX: 0.5,
+        pivotY: 0.5,
+        width: 200,
+        height: 56
+      }
+      sceneStoreState.activeScene.entities.push(childUI)
+
+      const targetContext = {
+        newParentId: 'display_parent',
+        newLayerId: 'layer_ui_1',
+        insertionType: 'inside',
+        referenceId: null
+      }
+
+      // Act
+      const success = sceneStoreState.moveEntity('child_content', targetContext)
+
+      // Assert: Because child is flush with parent left edge, local x must be 0 and local y must be 0!
+      expect(success).toBe(true)
+      expect(childUI.parentId).toBe('display_parent')
+      expect(childUI.components.UITransform.x).toBe(0)
+      expect(childUI.components.UITransform.y).toBe(0)
+    })
   })
 
   describe('Component Management (updateComponentProp, addComponent & removeComponent)', () => {

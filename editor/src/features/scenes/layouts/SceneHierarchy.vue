@@ -100,7 +100,7 @@ const handlers = {
   renameEntity: async (entityId) => {
     const entity = sceneStore.activeEntities.find(e => e.id === entityId)
     if (!entity) return
-    const title = entity.type === 'group' ? 'Rename Group' : 'Rename Entity'
+    const title = 'Rename Entity'
     const newName = await prompt({ title, defaultValue: entity.scriptId, confirmText: 'Rename' })
     if (newName?.trim()) sceneStore.updateEntityScriptId(entityId, newName)
   },

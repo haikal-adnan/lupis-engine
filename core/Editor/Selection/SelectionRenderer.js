@@ -1,5 +1,6 @@
 import { calculateQuadVertices } from "../../Util/calculateQuadVertices.js";
 import { TilemapMath } from "../../Editor/Tilemap/TilemapMath.js";
+import RenderUtils from "../../Renderer/Scene/RenderUtils.js";
 
 export class SelectionRenderer {
     constructor(game, transformEngine) {
@@ -29,23 +30,7 @@ export class SelectionRenderer {
     _calculateAbsolutePosition(e) {
         const t = this.engine.getTransform(e);
         if (!t) return { x: 0, y: 0 };
-
-        const globalT = this.engine.getGlobalTransform(e);
-
-        if (!e.components?.UITransform) {
-            return { x: globalT.x || 0, y: globalT.y || 0 };
-        }
-
-        const uiSettings = this.game.world.settings?.ui || { width: 1920, height: 1080 };
-        const parentBounds = { x: 0, y: 0, width: uiSettings.width, height: uiSettings.height };
-
-        const anchorX = t.anchorX ?? 0.5;
-        const anchorY = t.anchorY ?? 0.5;
-
-        return {
-            x: parentBounds.x + (parentBounds.width * anchorX) + (globalT.x || 0),
-            y: parentBounds.y + (parentBounds.height * anchorY) + (globalT.y || 0)
-        };
+        return RenderUtils.calculateAbsolutePosition(e, this.game.world);
     }
 
     draw(shape, proj, selectedList, hoveredEntity, marqueeBox) {

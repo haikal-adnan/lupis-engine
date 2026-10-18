@@ -242,23 +242,25 @@ export function useInspectorPrefab(selectedEntityParam, isEditingMasterPrefabPar
 
   function addComponentToSelection(componentName) {
     const ent = getEntity();
-    if (!ent) return;
+    if (!ent) return false;
     
     if (isLockedByPrefab.value) {
       showPop({ title: 'Restricted', message: 'Cannot add components to a Prefab instance or its children. Unpack it first.', type: 'warning' });
-      return;
+      return false;
     }
 
     if (getEditingMaster()) {
       const hasComponent = ent.components && ent.components[componentName];
-      if (hasComponent) return;
+      if (hasComponent) return false;
       prefabStore.addComponent(workspaceStore.activeTab.id, componentName);
       engineBridge.addPrefabMasterComponent?.({ prefabId: workspaceStore.activeTab.id, componentName: componentName });
+      return true;
     } else {
       const hasComponent = ent.components && ent.components[componentName];
-      if (hasComponent) return;
+      if (hasComponent) return false;
       sceneStore.addComponent(ent.id, componentName);
       recordAddComponent(ent.id, componentName);
+      return true;
     }
   }
 

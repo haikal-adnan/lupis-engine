@@ -3,6 +3,7 @@ import { TransformEngine } from '@core/Editor/Transform/TransformEngine.js';
 import { TransformGeometry } from '@core/Editor/Transform/TransformGeometry.js';
 import { TransformMediator } from '@core/Editor/Transform/TransformMediator.js';
 import { ApplyResizeToEntity } from '@core/Util/ApplyResizeToEntity.js';
+import { computeGlobalTransform, worldToLocalTransform } from '@/utils/transformMath.js';
 
 describe('Transform Calculations Unit Tests', () => {
     const createMockWorld = (entities = [], uiSettings = { width: 1920, height: 1080 }) => ({
@@ -455,6 +456,286 @@ describe('Transform Calculations Unit Tests', () => {
             expect(absPos.y).toBe(560);
         });
 
+        it('calculates child UI absolute position relative to parent size (e.g. 900x900 parent)', () => {
+            // Parent: centered on screen (1920x1080) at (960, 540), size 900x900, pivot (0.5, 0.5)
+            const parentUI = {
+                id: 'parent-panel',
+                parentId: null,
+                components: {
+                    UITransform: {
+                        x: 0,
+                        y: 0,
+                        anchorX: 0.5,
+                        anchorY: 0.5,
+                        pivotX: 0.5,
+                        pivotY: 0.5,
+                        width: 900,
+                        height: 900
+                    }
+                }
+            };
+
+            // Child 1: centered within parent (anchor 0.5, 0.5)
+            const childCenter = {
+                id: 'child-center',
+                parentId: 'parent-panel',
+                components: {
+                    UITransform: {
+                        x: 0,
+                        y: 0,
+                        anchorX: 0.5,
+                        anchorY: 0.5,
+                        pivotX: 0.5,
+                        pivotY: 0.5,
+                        width: 100,
+                        height: 100
+                    }
+                }
+            };
+
+            // Child 2: top-left corner of parent (anchor 0, 0, local offset 0, 0)
+            const childTopLeft = {
+                id: 'child-tl',
+                parentId: 'parent-panel',
+                components: {
+                    UITransform: {
+                        x: 0,
+                        y: 0,
+                        anchorX: 0,
+                        anchorY: 0,
+                        pivotX: 0.5,
+                        pivotY: 0.5,
+                        width: 100,
+                        height: 100
+                    }
+                }
+            };
+
+            // Child 3: bottom-right corner of parent (anchor 1, 1, local offset 0, 0)
+            const childBottomRight = {
+                id: 'child-br',
+                parentId: 'parent-panel',
+                components: {
+                    UITransform: {
+                        x: 0,
+                        y: 0,
+                        anchorX: 1,
+                        anchorY: 1,
+                        pivotX: 0.5,
+                        pivotY: 0.5,
+                        width: 100,
+                        height: 100
+                    }
+                }
+            };
+
+            const world = createMockWorld([parentUI, childCenter, childTopLeft, childBottomRight], { width: 1920, height: 1080 });
+            const game = createMockGame(world);
+            const geometry = new TransformGeometry(game, world);
+
+            // Parent position: screen center (960, 540)
+            const parentPos = geometry.calculateAbsolutePosition(parentUI);
+            expect(parentPos.x).toBe(960);
+            expect(parentPos.y).toBe(540);
+
+            // Child 1 (centered): center is at (960, 540)
+            const centerPos = geometry.calculateAbsolutePosition(childCenter);
+            expect(centerPos.x).toBe(960);
+            expect(centerPos.y).toBe(540);
+
+            // Child 2 (top-left): left edge aligns with parent left edge (510).
+            // With child width 100 and pivot 0.5, child center is at 510 + 50 = 560.
+            // Top edge aligns with parent top edge (90).
+            // With child height 100 and pivot 0.5, child center is at 90 + 50 = 140.
+            // Entire child [510..610]x[90..190] is completely inside parent [510..1410]x[90..990]!
+            const tlPos = geometry.calculateAbsolutePosition(childTopLeft);
+            expect(tlPos.x).toBe(560);
+            expect(tlPos.y).toBe(140);
+
+            // Child 3 (bottom-right): right edge aligns with parent right edge (1410).
+            // With child width 100 and pivot 0.5, child center is at 1410 - 50 = 1360.
+            // Bottom edge aligns with parent bottom edge (990).
+            // With child height 100 and pivot 0.5, child center is at 990 - 50 = 940.
+            // Entire child [1310..1410]x[890..990] is completely inside parent [510..1410]x[90..990]!
+            const brPos = geometry.calculateAbsolutePosition(childBottomRight);
+            expect(brPos.x).toBe(1360);
+            expect(brPos.y).toBe(940);
+        });
+
+        it('fits 200x56 child flush inside 400x56 display with Center-Left anchor without half-size offset', () => {
+            // Parent display: 400x56 centered on screen at (960, 540).
+            // Parent X range: [760, 1160], Y range: [512, 568].
+            const displayParent = {
+                id: 'display-400x56',
+                parentId: null,
+                components: {
+                    UITransform: {
+                        x: 0,
+                        y: 0,
+                        anchorX: 0.5,
+                        anchorY: 0.5,
+                        pivotX: 0.5,
+                        pivotY: 0.5,
+                        width: 400,
+                        height: 56
+                    }
+                }
+            };
+
+            // Child: 200x56 with Center-Left anchor (anchorX: 0, anchorY: 0.5) and x: 0, y: 0
+            const childCenterLeft = {
+                id: 'child-200x56',
+                parentId: 'display-400x56',
+                components: {
+                    UITransform: {
+                        x: 0,
+                        y: 0,
+                        anchorX: 0,
+                        anchorY: 0.5,
+                        pivotX: 0.5,
+                        pivotY: 0.5,
+                        width: 200,
+                        height: 56
+                    }
+                }
+            };
+
+            const world = createMockWorld([displayParent, childCenterLeft], { width: 1920, height: 1080 });
+            const game = createMockGame(world);
+            const geometry = new TransformGeometry(game, world);
+
+            const childPos = geometry.calculateAbsolutePosition(childCenterLeft);
+            // Child center is at 860. With width 200 and pivot 0.5:
+            // Left edge = 860 - 100 = 760 (exact parent left edge!)
+            // Right edge = 860 + 100 = 960 (half of parent display!)
+            // Fits PAS inside without user needing to add +100 offset!
+            expect(childPos.x).toBe(860);
+            expect(childPos.y).toBe(540);
+        });
+
+        it('correctly anchors child inside a button (200x60 button with child text)', () => {
+            const button = {
+                id: 'btn-main',
+                parentId: null,
+                components: {
+                    UITransform: {
+                        x: 100,
+                        y: 50,
+                        anchorX: 0.5,
+                        anchorY: 0.5,
+                        pivotX: 0.5,
+                        pivotY: 0.5,
+                        width: 200,
+                        height: 60
+                    }
+                }
+            };
+
+            // Child text centered inside button
+            const textCentered = {
+                id: 'btn-text-center',
+                parentId: 'btn-main',
+                components: {
+                    UITransform: {
+                        x: 0,
+                        y: 0,
+                        anchorX: 0.5,
+                        anchorY: 0.5,
+                        pivotX: 0.5,
+                        pivotY: 0.5,
+                        width: 80,
+                        height: 24
+                    }
+                }
+            };
+
+            // Child icon aligned to left edge of button with 10px margin
+            const iconLeft = {
+                id: 'btn-icon-left',
+                parentId: 'btn-main',
+                components: {
+                    UITransform: {
+                        x: 10,
+                        y: 0,
+                        anchorX: 0, // left edge of button
+                        anchorY: 0.5,
+                        pivotX: 0, // pivot at icon left
+                        pivotY: 0.5,
+                        width: 24,
+                        height: 24
+                    }
+                }
+            };
+
+            const world = createMockWorld([button, textCentered, iconLeft], { width: 1920, height: 1080 });
+            const game = createMockGame(world);
+            const geometry = new TransformGeometry(game, world);
+
+            // Button is at screen center (960 + 100, 540 + 50) = (1060, 590)
+            const btnPos = geometry.calculateAbsolutePosition(button);
+            expect(btnPos.x).toBe(1060);
+            expect(btnPos.y).toBe(590);
+
+            // Text centered: exact same position as button center
+            const textPos = geometry.calculateAbsolutePosition(textCentered);
+            expect(textPos.x).toBe(1060);
+            expect(textPos.y).toBe(590);
+
+            // Icon left: left edge of button = 1060 - 200 * 0.5 = 960. With x = 10 -> 970
+            const iconPos = geometry.calculateAbsolutePosition(iconLeft);
+            expect(iconPos.x).toBe(970);
+            expect(iconPos.y).toBe(590);
+        });
+
+        it('rotates child anchors when parent UI entity is rotated', () => {
+            const parent = {
+                id: 'parent-rot',
+                parentId: null,
+                components: {
+                    UITransform: {
+                        x: 0,
+                        y: 0,
+                        rotation: 90,
+                        anchorX: 0.5,
+                        anchorY: 0.5,
+                        pivotX: 0.5,
+                        pivotY: 0.5,
+                        width: 900,
+                        height: 900
+                    }
+                }
+            };
+
+            // Child anchored at right edge of parent: (anchorX: 1, anchorY: 0.5)
+            // With child width 50 and pivot 0.5, child's right edge is at parent's right edge (+450),
+            // so child center is at local offset (+425, 0).
+            // When parent is rotated 90 deg clockwise: (+425, 0) rotates to (0, +425)
+            const childRight = {
+                id: 'child-right',
+                parentId: 'parent-rot',
+                components: {
+                    UITransform: {
+                        x: 0,
+                        y: 0,
+                        anchorX: 1,
+                        anchorY: 0.5,
+                        pivotX: 0.5,
+                        pivotY: 0.5,
+                        width: 50,
+                        height: 50
+                    }
+                }
+            };
+
+            const world = createMockWorld([parent, childRight], { width: 1920, height: 1080 });
+            const game = createMockGame(world);
+            const geometry = new TransformGeometry(game, world);
+
+            const childPos = geometry.calculateAbsolutePosition(childRight);
+            expect(childPos.x).toBeCloseTo(960);
+            expect(childPos.y).toBeCloseTo(540 + 425); // 965
+        });
+
         it('adjusts handle detection radius with camera zoom', () => {
             const world = createMockWorld();
             const game = createMockGame(world, 2.0); // 2x zoom in
@@ -607,6 +888,148 @@ describe('Transform Calculations Unit Tests', () => {
             expect(entity.hitY).toBe(20);
             expect(entity.hitWidth).toBe(120);
             expect(entity.hitHeight).toBe(80);
+        });
+    });
+
+    describe('worldToLocalTransform and computeGlobalTransform Utility', () => {
+        it('calculates local coordinates from world when parent has translation', () => {
+            const worldTransform = { x: 250, y: 350, rotation: 0, scaleX: 1, scaleY: 1 };
+            const parentGlobal = { x: 100, y: 150, rotation: 0, scaleX: 1, scaleY: 1 };
+
+            const local = worldToLocalTransform(worldTransform, parentGlobal);
+            expect(local.x).toBe(150);
+            expect(local.y).toBe(200);
+            expect(local.rotation).toBe(0);
+        });
+
+        it('calculates local coordinates when parent has rotation and scale', () => {
+            const worldTransform = { x: 60, y: 70, rotation: 90, scaleX: 2, scaleY: 2 };
+            const parentGlobal = { x: 100, y: 50, rotation: 90, scaleX: 2, scaleY: 2 };
+
+            const local = worldToLocalTransform(worldTransform, parentGlobal);
+            expect(local.x).toBeCloseTo(10);
+            expect(local.y).toBeCloseTo(20);
+            expect(local.rotation).toBe(0);
+            expect(local.scaleX).toBeCloseTo(1);
+            expect(local.scaleY).toBeCloseTo(1);
+        });
+
+        it('returns world transform directly when parent is null (root level)', () => {
+            const worldTransform = { x: 123, y: 456, rotation: 45, scaleX: 1.5, scaleY: 1.5 };
+            const local = worldToLocalTransform(worldTransform, null);
+            expect(local.x).toBe(123);
+            expect(local.y).toBe(456);
+            expect(local.rotation).toBe(45);
+            expect(local.scaleX).toBe(1.5);
+            expect(local.scaleY).toBe(1.5);
+        });
+
+        it('guarantees roundtrip invariance: computeGlobalTransform(child) matches original world pos', () => {
+            const parent = {
+                id: 'parent',
+                parentId: null,
+                components: { Transform: { x: 100, y: 200, rotation: 30, scaleX: 1.5, scaleY: 1.5 } }
+            };
+            const originalWorld = { x: 250, y: 300, rotation: 45, scaleX: 1.5, scaleY: 1.5 };
+
+            const parentGlobal = computeGlobalTransform(parent, () => null);
+            const local = worldToLocalTransform(originalWorld, parentGlobal);
+
+            const child = {
+                id: 'child',
+                parentId: 'parent',
+                components: { Transform: { ...local } }
+            };
+
+            const computedChildGlobal = computeGlobalTransform(child, id => (id === 'parent' ? parent : null));
+            expect(computedChildGlobal.x).toBeCloseTo(originalWorld.x, 3);
+            expect(computedChildGlobal.y).toBeCloseTo(originalWorld.y, 3);
+            expect(computedChildGlobal.rotation).toBeCloseTo(originalWorld.rotation, 3);
+        });
+
+        it('guarantees roundtrip invariance for UI entity reparented into 900x900 parent with anchors', () => {
+            const uiSettings = { width: 1920, height: 1080 };
+            const parent = {
+                id: 'parent-ui',
+                parentId: null,
+                components: {
+                    UITransform: {
+                        x: 0,
+                        y: 0,
+                        anchorX: 0.5,
+                        anchorY: 0.5,
+                        pivotX: 0.5,
+                        pivotY: 0.5,
+                        width: 900,
+                        height: 900,
+                        rotation: 0,
+                        scaleX: 1,
+                        scaleY: 1
+                    }
+                }
+            };
+            const parentGlobal = computeGlobalTransform(parent, () => null, uiSettings);
+            expect(parentGlobal.x).toBe(960);
+            expect(parentGlobal.y).toBe(540);
+
+            // Child UI entity anchored at bottom-right (anchorX: 1, anchorY: 1)
+            // It should stay at world position (1360, 940) whose right and bottom edges align with parent
+            const targetScreenPos = { x: 1360, y: 940, rotation: 0, scaleX: 1, scaleY: 1 };
+            const childEntity = {
+                id: 'child-ui',
+                components: {
+                    UITransform: {
+                        anchorX: 1,
+                        anchorY: 1,
+                        pivotX: 0.5,
+                        pivotY: 0.5,
+                        width: 100,
+                        height: 100
+                    }
+                }
+            };
+
+            const local = worldToLocalTransform(targetScreenPos, parentGlobal, childEntity, uiSettings);
+            // In 900x900 parent with 100x100 child, bottom-right edge alignment puts child center at (1360, 940)
+            // Therefore, local x and y should be 0!
+            expect(local.x).toBeCloseTo(0, 3);
+            expect(local.y).toBeCloseTo(0, 3);
+
+            // Now computeGlobalTransform on this child
+            const childWithLocal = {
+                id: 'child-ui',
+                parentId: 'parent-ui',
+                components: {
+                    UITransform: {
+                        ...childEntity.components.UITransform,
+                        ...local
+                    }
+                }
+            };
+            const computedGlobal = computeGlobalTransform(childWithLocal, id => (id === 'parent-ui' ? parent : null), uiSettings);
+            expect(computedGlobal.x).toBeCloseTo(1360, 3);
+            expect(computedGlobal.y).toBeCloseTo(940, 3);
+
+            // Now test unparenting back to root
+            const unparentedLocal = worldToLocalTransform(computedGlobal, null, childEntity, uiSettings);
+            // Root anchorX = 1 -> 1920, so localX = 1360 - 1920 = -560
+            // Root anchorY = 1 -> 1080, so localY = 940 - 1080 = -140
+            expect(unparentedLocal.x).toBeCloseTo(1360 - 1920, 3);
+            expect(unparentedLocal.y).toBeCloseTo(940 - 1080, 3);
+
+            const rootChild = {
+                id: 'child-ui',
+                parentId: null,
+                components: {
+                    UITransform: {
+                        ...childEntity.components.UITransform,
+                        ...unparentedLocal
+                    }
+                }
+            };
+            const rootGlobal = computeGlobalTransform(rootChild, () => null, uiSettings);
+            expect(rootGlobal.x).toBeCloseTo(1360, 3);
+            expect(rootGlobal.y).toBeCloseTo(940, 3);
         });
     });
 });

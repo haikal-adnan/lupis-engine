@@ -1,3 +1,5 @@
+import RenderUtils from "../Renderer/Scene/RenderUtils.js";
+
 export default class PointerRaycast {
     static getTopEntityUnderPointer(game) {
         const world = game.world;
@@ -50,19 +52,7 @@ export default class PointerRaycast {
             
             const isUILayer = layer.scriptId === 'ui' || layer.scriptId?.toLowerCase().includes('ui');
 
-            const sortedEntities = [...layer.entities].sort((a, b) => {
-                const zA = a.zIndex ?? 0;
-                const zB = b.zIndex ?? 0;
-                if (zA !== zB) return zB - zA;
-
-                const oA = a.orderIndex ?? 0;
-                const oB = b.orderIndex ?? 0;
-                if (oA !== oB) return oB - oA;
-
-                const depthA = this._getEntityDepth(a, world);
-                const depthB = this._getEntityDepth(b, world);
-                return depthB - depthA; 
-            });
+            const sortedEntities = RenderUtils.getHierarchicalOrder(layer.entities).reverse();
 
             for (const entity of sortedEntities) {
                 if (!isEntityAndParentsActive(entity, world)) continue;
@@ -76,21 +66,13 @@ export default class PointerRaycast {
                 if (!hasUITransform && !hasTransform) continue;
 
                 const isEntityUI = isUILayer || hasUITransform;
-                const t = hasUITransform ? comps.UITransform : comps.Transform;
-                const globalT = this._getGlobalTransform(entity, world);
+                const targetPointer = isEntityUI ? uiPointer : worldPointer;
 
-                let drawX = globalT.x || 0;
-                let drawY = globalT.y || 0;
-                let targetPointer = isEntityUI ? uiPointer : worldPointer;
+                const absT = RenderUtils.calculateAbsoluteTransform(entity, world);
+                const drawX = absT.x;
+                const drawY = absT.y;
 
-                if (hasUITransform) {
-                    const anchorX = t.anchorX ?? 0.5;
-                    const anchorY = t.anchorY ?? 0.5;
-                    drawX = (uiSettings.width * anchorX) + (globalT.x || 0);
-                    drawY = (uiSettings.height * anchorY) + (globalT.y || 0);
-                }
-
-                const isHit = this._checkIntersection(entity, globalT, drawX, drawY, targetPointer.x, targetPointer.y);
+                const isHit = this._checkIntersection(entity, absT, drawX, drawY, targetPointer.x, targetPointer.y);
                 
                 if (isHit) {
                     return entity; 
@@ -113,36 +95,7 @@ export default class PointerRaycast {
     }
 
     static _getGlobalTransform(e, world) {
-        const t = e.components && (e.components.UITransform || e.components.Transform);
-        if (!t) return { x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1, pivotX: 0.5, pivotY: 0.5, width: 100, height: 100 };
-
-        if (!e.parentId) return {
-            x: t.x, y: t.y, rotation: t.rotation || 0,
-            scaleX: t.scaleX ?? 1, scaleY: t.scaleY ?? 1,
-            pivotX: t.pivotX ?? 0.5, pivotY: t.pivotY ?? 0.5,
-            width: t.width, height: t.height
-        };
-
-        const parentEntity = world.entities.find(ent => ent.id === e.parentId);
-        if (!parentEntity) return { ...t }; 
-
-        const parentGlobal = this._getGlobalTransform(parentEntity, world);
-        const parentRad = parentGlobal.rotation * (Math.PI / 180);
-        const cos = Math.cos(parentRad);
-        const sin = Math.sin(parentRad);
-
-        const scaledLocalX = t.x * parentGlobal.scaleX;
-        const scaledLocalY = t.y * parentGlobal.scaleY;
-
-        return {
-            x: parentGlobal.x + (scaledLocalX * cos) - (scaledLocalY * sin),
-            y: parentGlobal.y + (scaledLocalX * sin) + (scaledLocalY * cos),
-            rotation: parentGlobal.rotation + (t.rotation || 0),
-            scaleX: parentGlobal.scaleX * (t.scaleX ?? 1),
-            scaleY: parentGlobal.scaleY * (t.scaleY ?? 1),
-            pivotX: t.pivotX ?? 0.5, pivotY: t.pivotY ?? 0.5,
-            width: t.width, height: t.height
-        };
+        return RenderUtils.calculateAbsoluteTransform(e, world);
     }
 
     static _checkIntersection(entity, t, drawX, drawY, pointerX, pointerY) {

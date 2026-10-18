@@ -1,5 +1,6 @@
 import { calculateQuadVertices } from "../../Util/calculateQuadVertices.js";
 import { TilemapMath } from "../../Editor/Tilemap/TilemapMath.js";
+import RenderUtils from "../../Renderer/Scene/RenderUtils.js";
 
 export class SelectionHit {
     constructor(game, transformEngine) {
@@ -30,25 +31,10 @@ export class SelectionHit {
         };
     }
 
-    _calculateAbsolutePosition(e, parentBounds) {
+    _calculateAbsolutePosition(e) {
         const t = this.engine.getTransform(e);
         if (!t) return { x: 0, y: 0 };
-
-        const globalT = this.engine.getGlobalTransform(e);
-
-        if (e.components?.UITransform) {
-            if (!parentBounds) {
-                const uiSettings = this.game.world.settings?.ui || { width: 1920, height: 1080 };
-                parentBounds = { x: 0, y: 0, width: uiSettings.width, height: uiSettings.height };
-            }
-            const anchorX = t.anchorX ?? 0.5;
-            const anchorY = t.anchorY ?? 0.5;
-            return {
-                x: parentBounds.x + (parentBounds.width * anchorX) + (globalT.x || 0),
-                y: parentBounds.y + (parentBounds.height * anchorY) + (globalT.y || 0)
-            };
-        }
-        return { x: globalT.x || 0, y: globalT.y || 0 };
+        return RenderUtils.calculateAbsolutePosition(e, this.game.world);
     }
 
     _isPointInEntity(wx, wy, e, parentBounds) {
@@ -129,12 +115,7 @@ export class SelectionHit {
 
             if (!layer.entities) continue;
 
-            const sortedEntities = [...layer.entities].sort((a, b) => {
-                const zA = a.zIndex ?? 0;
-                const zB = b.zIndex ?? 0;
-                if (zA !== zB) return zB - zA;
-                return (b.orderIndex ?? 0) - (a.orderIndex ?? 0);
-            });
+            const sortedEntities = RenderUtils.getHierarchicalOrder(layer.entities).reverse();
 
             for (const e of sortedEntities) {
                 if (!e.visible || this.locked(e)) continue;

@@ -58,7 +58,7 @@
           :is="isOpen ? ChevronDown : ChevronRight"
           class="w-3 h-3 transition-transform pointer-events-none"
           :class="[
-            (!hasChildren && node.type !== 'group' && node.type !== 'layer') ? 'opacity-0' : 'opacity-70',
+            (!hasChildren && node.type !== 'layer') ? 'opacity-0' : 'opacity-70',
             isSelected ? 'text-white' : 'text-muted-foreground'
           ]"
         />
@@ -70,8 +70,7 @@
         :class="[
             isSelected ? 'text-white' : '',
             node.type === 'layer' ? 'text-blue-500' : 
-            (node.type === 'group' ? 'text-yellow-500' : 
-            (isPrefab && !isSelected ? 'text-sky-400' : 'opacity-70'))
+            (isPrefab && !isSelected ? 'text-sky-400' : 'opacity-70')
         ]"
       />
 
@@ -221,11 +220,11 @@ const {
 
 const getIcon = computed(() => {
   if (isLayer.value) return Layers
-  if (props.node.type === 'group') return isOpen.value ? FolderOpen : Folder
   
   if (isPrefab.value) return Box
   
   const scriptId = (props.node.scriptId || '').toLowerCase()
+  if (scriptId.includes('empty')) return isOpen.value ? FolderOpen : Folder
   if (scriptId.includes('text')) return Type
   if (scriptId.includes('sprite')) return Image
   if (scriptId.includes('script')) return FileCode

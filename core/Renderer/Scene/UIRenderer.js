@@ -30,13 +30,12 @@ export default class UIRenderer {
             }
         }
 
-        const rootBounds = { x: 0, y: 0, width: uiSettings.width, height: uiSettings.height };
         this.renderQueue.length = 0;
-        this._collectUIEntities(world, proj, rootBounds);
+        this._collectUIEntities(world, proj);
         RenderUtils.executeRenderQueue(this.renderQueue, this.renderer, proj, world);
     }
 
-    _collectUIEntities(world, proj, rootBounds) {
+    _collectUIEntities(world, proj) {
         const layers = [...(world?.layersUI || [])];
         RenderUtils.sortItems(layers);
 
@@ -44,16 +43,15 @@ export default class UIRenderer {
             if (!layer || layer.active === false || !layer.visible || !layer.entities) continue;
             
             const layerOpacity = layer.opacity ?? 1.0;
-            const allEntities = [...layer.entities];
-            RenderUtils.sortItems(allEntities);
+            const allEntities = RenderUtils.getHierarchicalOrder(layer.entities);
             
             for (const entity of allEntities) {
-                this._processUIEntity(entity, world, proj, layerOpacity, rootBounds); 
+                this._processUIEntity(entity, world, proj, layerOpacity); 
             }
         }
     }
 
-    _processUIEntity(e, world, proj, parentOpacity, parentBounds) {
+    _processUIEntity(e, world, proj, parentOpacity) {
         if (!e || e.active === false || e.visible === false) return;
 
         const comps = e.components;
@@ -62,23 +60,18 @@ export default class UIRenderer {
         const rawT = comps.UITransform || comps.Transform;
         if (!rawT) return;
 
-        const globalT = RenderUtils.getGlobalTransform(e, world);
-
-        const anchorX = rawT.anchorX ?? 0.5;
-        const anchorY = rawT.anchorY ?? 0.5;
-        const anchorPointX = parentBounds.x + (parentBounds.width * anchorX);
-        const anchorPointY = parentBounds.y + (parentBounds.height * anchorY);
+        const absT = RenderUtils.calculateAbsoluteTransform(e, world);
 
         const trans = {
-            x: anchorPointX + (globalT.x || 0),
-            y: anchorPointY + (globalT.y || 0),
-            width: globalT.width || 0,
-            height: globalT.height || 0,
-            rotation: (globalT.rotation || 0) * (Math.PI / 180),
-            scaleX: globalT.scaleX ?? 1,
-            scaleY: globalT.scaleY ?? 1,
-            pivotX: globalT.pivotX ?? 0.5,
-            pivotY: globalT.pivotY ?? 0.5
+            x: absT.x,
+            y: absT.y,
+            width: absT.width || 0,
+            height: absT.height || 0,
+            rotation: (absT.rotation || 0) * (Math.PI / 180),
+            scaleX: absT.scaleX ?? 1,
+            scaleY: absT.scaleY ?? 1,
+            pivotX: absT.pivotX ?? 0.5,
+            pivotY: absT.pivotY ?? 0.5
         };
 
         const currentOpacity = (e.opacity ?? 1) * parentOpacity;
@@ -98,7 +91,7 @@ export default class UIRenderer {
             RenderUtils.processText(comps, currentOpacity, flipX, flipY, rawT, world, this.renderQueue, trans);
         }
 
-        RenderUtils.processColliderDebug(comps, globalT, trans, this.renderQueue, this.colliderColorSolid, this.colliderColorTrigger);
+        RenderUtils.processColliderDebug(comps, absT, trans, this.renderQueue, this.colliderColorSolid, this.colliderColorTrigger);
     }
 
     _renderWorkspaceGizmos(proj, w, h) {

@@ -145,7 +145,12 @@ export function useOPFSActions() {
       showPop({ title: 'Saved', message: `File ${opfsStore.activeFile.name} saved to OPFS.`, type: 'success' });
       return { success: true };
     } catch (error) {
-      showPop({ title: 'Failed to Save File', message: error.message, type: 'error' });
+      const isQuota = error.name === 'QuotaExceededError' || /quota|no space|disk/i.test(error.message || '');
+      const title = isQuota ? 'Storage Quota Exceeded' : 'Failed to Save File';
+      const message = isQuota 
+        ? 'Cannot write file to OPFS: Disk space is full. Please free up space on Drive C:.' 
+        : error.message;
+      showPop({ title, message, type: 'error' });
       return { success: false, error: error.message };
     } finally {
       opfsStore.setSaving(false);
@@ -230,7 +235,12 @@ export function useOPFSActions() {
         showPop({ title: 'Upload Successful', message: `${saved.length} file(s) added to OPFS.`, type: 'success' });
       }
     } catch (error) {
-      showPop({ title: 'Failed to Upload File', message: error.message, type: 'error' });
+      const isQuota = error.name === 'QuotaExceededError' || /quota|no space|disk/i.test(error.message || '');
+      const title = isQuota ? 'Storage Quota Exceeded' : 'Failed to Upload File';
+      const message = isQuota 
+        ? 'Upload failed because storage is full. Please free up space on Drive C:.' 
+        : error.message;
+      showPop({ title, message, type: 'error' });
     } finally {
       opfsStore.setLoading(false);
     }

@@ -1,5 +1,5 @@
 import { componentSchema, entitySchema } from '@scenes/scenes.js';
-import { GenerateUUID, sanitizeScriptId, getValidUniqueScriptId, isScriptIdDuplicate } from '@utils/utils.js';
+import { GenerateUUID, sanitizeScriptId, getValidUniqueScriptId, isScriptIdDuplicate, computeGlobalTransform, worldToLocalTransform } from '@utils/utils.js';
 import { engineBridge } from "@engines/engines.js";
 import { useConfirm, usePopAlert } from '@composables/composables.js';
 import { useSceneHistory } from '@historys/historys.js';
@@ -175,6 +175,9 @@ export const useEntityActions = {
     else if (type === 'audio') {
       components.Transform = { ...rawTransform, width: 50, height: 50 };
       components.Audio = { currentClip: null, clips: [] };
+    }
+    else if (type === 'empty') {
+      components.Transform = { ...rawTransform, width: 0, height: 0 };
     }
     else if (type === 'ui_empty') {
       components.UITransform = { ...rawTransform, width: 100, height: 100, anchorX: 0.5, anchorY: 0.5 };
@@ -430,6 +433,55 @@ export const useEntityActions = {
     const oldSiblingOrders = affectedEntitiesBefore.map(e => ({ id: e.id, orderIndex: e.orderIndex ?? 0 }));
 
     const resolvedParentId = (newParentId !== undefined && newParentId !== null) ? newParentId : null;
+
+    const compName = entity.components?.Transform ? 'Transform' : (entity.components?.UITransform ? 'UITransform' : null);
+    const oldTransform = (compName && entity.components[compName])
+      ? JSON.parse(JSON.stringify(entity.components[compName]))
+      : null;
+    let newTransform = null;
+
+    if (oldParentId !== resolvedParentId && compName && entity.components[compName]) {
+      const uiSettings = this.activeScene?.settings?.ui || { width: 1920, height: 1080 };
+      const getEntityById = (id) => entities.find(e => String(e.id) === String(id));
+      const currentGlobal = computeGlobalTransform(entity, getEntityById, uiSettings);
+      if (currentGlobal) {
+        let newParentGlobal = null;
+        if (resolvedParentId) {
+          const newParent = getEntityById(resolvedParentId);
+          if (newParent) {
+            newParentGlobal = computeGlobalTransform(newParent, getEntityById, uiSettings);
+          }
+        }
+
+        const newLocal = worldToLocalTransform(currentGlobal, newParentGlobal, entity, uiSettings);
+        const comp = entity.components[compName];
+        comp.x = round(newLocal.x);
+        comp.y = round(newLocal.y);
+
+        if (comp.rotation !== undefined && newLocal.rotation !== undefined) {
+          comp.rotation = round(newLocal.rotation);
+        }
+        if (comp.scaleX !== undefined && newLocal.scaleX !== undefined) {
+          comp.scaleX = round(newLocal.scaleX);
+        }
+        if (comp.scaleY !== undefined && newLocal.scaleY !== undefined) {
+          comp.scaleY = round(newLocal.scaleY);
+        }
+
+        entity.components[compName] = JSON.parse(JSON.stringify(comp));
+        entity.components = { ...entity.components };
+        newTransform = JSON.parse(JSON.stringify(comp));
+
+        if (engineBridge && engineBridge.updateComponentProp) {
+          engineBridge.updateComponentProp({ entityId: entity.id, componentName: compName, path: 'x', value: comp.x });
+          engineBridge.updateComponentProp({ entityId: entity.id, componentName: compName, path: 'y', value: comp.y });
+          if (comp.rotation !== undefined) {
+            engineBridge.updateComponentProp({ entityId: entity.id, componentName: compName, path: 'rotation', value: comp.rotation });
+          }
+        }
+      }
+    }
+
     entity.parentId = resolvedParentId;
     if (newLayerId) {
       entity.layerId = newLayerId;
@@ -508,7 +560,10 @@ export const useEntityActions = {
             oldContext,
             newContext: targetContext,
             oldSiblingOrders,
-            newSiblingOrders
+            newSiblingOrders,
+            compName,
+            oldTransform,
+            newTransform
           });
         }
       } catch (err) {

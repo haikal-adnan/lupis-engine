@@ -8,6 +8,7 @@ import { BlueprintCollections } from './BlueprintCollections.js';
 import { BlueprintMath } from './BlueprintMath.js';
 import { BlueprintLifecycle } from './BlueprintLifecycle.js';
 import { BlueprintSystem } from './BlueprintSystem.js';
+import { BlueprintHelperTool } from './BlueprintHelperTool.js';
 
 export { BlueprintCategoryTemplate } from './Blueprint.js';
 
@@ -22,6 +23,7 @@ export {
   BlueprintMath,
   BlueprintLifecycle,
   BlueprintSystem,
+  BlueprintHelperTool,
   // Backward compatibility re-export aliases
   BlueprintFlow as BlueprintBoolean,
   BlueprintFlow as BlueprintComparison,
@@ -46,7 +48,7 @@ export {
   BlueprintSystem as BlueprintVariable,
   BlueprintSystem as BlueprintString,
   BlueprintSystem as BlueprintEvent,
-  BlueprintSystem as BlueprintVisualNovelHelper
+  BlueprintHelperTool as BlueprintVisualNovelHelper
 };
 
 export const ALL_BLUEPRINTS = Object.freeze([
@@ -59,7 +61,8 @@ export const ALL_BLUEPRINTS = Object.freeze([
   BlueprintCollections,
   BlueprintMath,
   BlueprintLifecycle,
-  BlueprintSystem
+  BlueprintSystem,
+  BlueprintHelperTool
 ]);
 
 export const allBlueprints = ALL_BLUEPRINTS;

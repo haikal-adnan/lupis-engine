@@ -3,8 +3,105 @@ import Config from "../../Core/Config.js";
 import FontMath from "../../Util/FontMath.js";
 
 export default class RenderUtils {
+    static getHierarchicalOrder(entities) {
+        if (!Array.isArray(entities) || entities.length === 0) return [];
+
+        const entityMap = new Map();
+        const childrenMap = new Map();
+        const rootEntities = [];
+
+        for (const e of entities) {
+            if (!e) continue;
+            entityMap.set(String(e.id), e);
+        }
+
+        for (const e of entities) {
+            if (!e) continue;
+            const parentId = e.parentId ? String(e.parentId) : null;
+            if (parentId && entityMap.has(parentId)) {
+                if (!childrenMap.has(parentId)) {
+                    childrenMap.set(parentId, []);
+                }
+                childrenMap.get(parentId).push(e);
+            } else {
+                rootEntities.push(e);
+            }
+        }
+
+        const compareSiblings = (a, b) => {
+            const zA = a?.zIndex ?? 0;
+            const zB = b?.zIndex ?? 0;
+            if (zA !== zB) return zA - zB;
+
+            const oA = a?.orderIndex ?? 0;
+            const oB = b?.orderIndex ?? 0;
+            if (oA !== oB) return oA - oB;
+
+            const idA = String(a?.id || "");
+            const idB = String(b?.id || "");
+            return idA.localeCompare(idB);
+        };
+
+        rootEntities.sort(compareSiblings);
+
+        const result = [];
+        const visited = new Set();
+
+        const traverse = (node) => {
+            const nodeId = String(node.id);
+            if (visited.has(nodeId)) return;
+            visited.add(nodeId);
+
+            const children = childrenMap.get(nodeId) || [];
+            children.sort(compareSiblings);
+
+            const parentZ = node.zIndex ?? 0;
+            const behindChildren = [];
+            const frontChildren = [];
+
+            for (const child of children) {
+                const childZ = child.zIndex ?? 0;
+                if (childZ < parentZ) {
+                    behindChildren.push(child);
+                } else {
+                    frontChildren.push(child);
+                }
+            }
+
+            for (const child of behindChildren) {
+                traverse(child);
+            }
+
+            result.push(node);
+
+            for (const child of frontChildren) {
+                traverse(child);
+            }
+        };
+
+        for (const root of rootEntities) {
+            traverse(root);
+        }
+
+        for (const e of entities) {
+            if (e && !visited.has(String(e.id))) {
+                result.push(e);
+            }
+        }
+
+        return result;
+    }
+
     static sortItems(items) {
-        if (!Array.isArray(items)) return [];
+        if (!Array.isArray(items) || items.length === 0) return items;
+
+        const hasHierarchy = items.some(item => item && item.parentId);
+        if (hasHierarchy) {
+            const sorted = this.getHierarchicalOrder(items);
+            items.splice(0, items.length, ...sorted);
+            return items;
+        }
+
         return items.sort((a, b) => {
             const zA = a?.zIndex ?? 0;
             const zB = b?.zIndex ?? 0;
@@ -22,6 +119,10 @@ export default class RenderUtils {
 
     static findEntityById(world, id) {
         if (!id) return null;
+        if (Array.isArray(world?.entities)) {
+            const foundInWorld = world.entities.find(e => String(e.id) === String(id));
+            if (foundInWorld) return foundInWorld;
+        }
         const allLayers = [...(world?.layersWorld || []), ...(world?.layersUI || [])];
         for (const layer of allLayers) {
             if (!layer?.entities) continue;
@@ -29,6 +130,138 @@ export default class RenderUtils {
             if (found) return found;
         }
         return null;
+    }
+
+    static calculateAbsoluteTransform(e, world) {
+        if (!e) return { x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1, pivotX: 0.5, pivotY: 0.5, width: 0, height: 0 };
+        const comps = e.components;
+        const isUI = Boolean(comps?.UITransform);
+        const t = comps && (comps.UITransform || comps.Transform);
+        const isTilemap = Boolean(comps?.Tilemap);
+        const defaultPivotX = isTilemap ? 0 : 0.5;
+        const defaultPivotY = isTilemap ? 0 : 0.5;
+
+        if (!t) {
+            return {
+                x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1,
+                pivotX: defaultPivotX, pivotY: defaultPivotY, width: 0, height: 0
+            };
+        }
+
+        const localX = t.x || 0;
+        const localY = t.y || 0;
+        const localRot = t.rotation || 0;
+        const localScaleX = t.scaleX ?? 1;
+        const localScaleY = t.scaleY ?? 1;
+        const pivotX = t.pivotX ?? defaultPivotX;
+        const pivotY = t.pivotY ?? defaultPivotY;
+        const width = t.width || 0;
+        const height = t.height || 0;
+
+        const uiSettings = world?.settings?.ui || { width: 1920, height: 1080 };
+        const canvasW = uiSettings.width ?? 1920;
+        const canvasH = uiSettings.height ?? 1080;
+
+        if (!e.parentId) {
+            if (isUI) {
+                const anchorX = t.anchorX ?? 0.5;
+                const anchorY = t.anchorY ?? 0.5;
+                return {
+                    x: (canvasW * anchorX) + localX,
+                    y: (canvasH * anchorY) + localY,
+                    rotation: localRot,
+                    scaleX: localScaleX,
+                    scaleY: localScaleY,
+                    pivotX, pivotY,
+                    width, height
+                };
+            }
+            return {
+                x: localX,
+                y: localY,
+                rotation: localRot,
+                scaleX: localScaleX,
+                scaleY: localScaleY,
+                pivotX, pivotY,
+                width, height
+            };
+        }
+
+        const parentEntity = this.findEntityById(world, e.parentId);
+        if (!parentEntity) {
+            if (isUI) {
+                const anchorX = t.anchorX ?? 0.5;
+                const anchorY = t.anchorY ?? 0.5;
+                return {
+                    x: (canvasW * anchorX) + localX,
+                    y: (canvasH * anchorY) + localY,
+                    rotation: localRot,
+                    scaleX: localScaleX,
+                    scaleY: localScaleY,
+                    pivotX, pivotY,
+                    width, height
+                };
+            }
+            return {
+                x: localX,
+                y: localY,
+                rotation: localRot,
+                scaleX: localScaleX,
+                scaleY: localScaleY,
+                pivotX, pivotY,
+                width, height
+            };
+        }
+
+        const parentAbs = this.calculateAbsoluteTransform(parentEntity, world);
+
+        let anchorOffsetX = 0;
+        let anchorOffsetY = 0;
+
+        if (isUI) {
+            const anchorX = t.anchorX ?? 0.5;
+            const anchorY = t.anchorY ?? 0.5;
+            const parentW = parentAbs.width || 0;
+            const parentH = parentAbs.height || 0;
+            const parentPivotX = parentAbs.pivotX ?? 0.5;
+            const parentPivotY = parentAbs.pivotY ?? 0.5;
+
+            const childW = width || 0;
+            const childH = height || 0;
+            const childPivotX = pivotX ?? 0.5;
+            const childPivotY = pivotY ?? 0.5;
+
+            anchorOffsetX = parentW * (anchorX - parentPivotX) + childW * (childPivotX - anchorX);
+            anchorOffsetY = parentH * (anchorY - parentPivotY) + childH * (childPivotY - anchorY);
+        }
+
+        const localPosWithAnchorX = anchorOffsetX + localX;
+        const localPosWithAnchorY = anchorOffsetY + localY;
+
+        const parentRad = (parentAbs.rotation || 0) * (Math.PI / 180);
+        const cos = Math.cos(parentRad);
+        const sin = Math.sin(parentRad);
+
+        const scaledLocalX = localPosWithAnchorX * (parentAbs.scaleX ?? 1);
+        const scaledLocalY = localPosWithAnchorY * (parentAbs.scaleY ?? 1);
+
+        const rotatedX = (scaledLocalX * cos) - (scaledLocalY * sin);
+        const rotatedY = (scaledLocalX * sin) + (scaledLocalY * cos);
+
+        return {
+            x: parentAbs.x + rotatedX,
+            y: parentAbs.y + rotatedY,
+            rotation: (parentAbs.rotation || 0) + localRot,
+            scaleX: (parentAbs.scaleX ?? 1) * localScaleX,
+            scaleY: (parentAbs.scaleY ?? 1) * localScaleY,
+            pivotX, pivotY,
+            width, height
+        };
+    }
+
+    static calculateAbsolutePosition(e, world) {
+        const absT = this.calculateAbsoluteTransform(e, world);
+        return { x: absT.x, y: absT.y };
     }
 
     static getGlobalTransform(e, world) {

@@ -59,8 +59,7 @@ export default class WorldRenderer {
             if (!isEditor && isUILayer) continue;
 
             const layerOpacity = layer.opacity ?? 1.0; 
-            const allEntities = [...layer.entities];
-            RenderUtils.sortItems(allEntities);
+            const allEntities = RenderUtils.getHierarchicalOrder(layer.entities);
 
             for (const e of allEntities) {
                 const isEntityUI = e?.type === 'ui' || e?.type === 'ui_entity' || e?.components?.UITransform || isUILayer;
@@ -112,30 +111,18 @@ export default class WorldRenderer {
                 return;
             }
 
-            let drawX = globalT.x || 0;
-            let drawY = globalT.y || 0;
-
-            if (comps.UITransform) {
-                const uiSettings = world?.settings?.ui || { width: 1920, height: 1080 };
-                const parentW = uiSettings.width;
-                const parentH = uiSettings.height;
-                const anchorX = rawT.anchorX ?? 0.5;
-                const anchorY = rawT.anchorY ?? 0.5;
-
-                drawX = (parentW * anchorX) + (globalT.x || 0);
-                drawY = (parentH * anchorY) + (globalT.y || 0);
-            }
+            const absT = RenderUtils.calculateAbsoluteTransform(e, world);
 
             const trans = {
-                x: drawX, 
-                y: drawY, 
-                width: globalT.width || 0, 
-                height: globalT.height || 0,
-                rotation: (globalT.rotation || 0) * (Math.PI / 180),
-                scaleX: globalT.scaleX ?? 1, 
-                scaleY: globalT.scaleY ?? 1,
-                pivotX: globalT.pivotX ?? 0.5, 
-                pivotY: globalT.pivotY ?? 0.5
+                x: absT.x, 
+                y: absT.y, 
+                width: absT.width || 0, 
+                height: absT.height || 0,
+                rotation: (absT.rotation || 0) * (Math.PI / 180),
+                scaleX: absT.scaleX ?? 1, 
+                scaleY: absT.scaleY ?? 1,
+                pivotX: absT.pivotX ?? 0.5, 
+                pivotY: absT.pivotY ?? 0.5
             };
 
             const flipX = rawT.flipX || false;

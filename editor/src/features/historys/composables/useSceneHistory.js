@@ -215,7 +215,10 @@ export function useSceneHistory() {
       oldContext,
       newContext,
       oldSiblingOrders,
-      newSiblingOrders
+      newSiblingOrders,
+      compName,
+      oldTransform,
+      newTransform
     } = moveDetails;
 
     record({
@@ -226,6 +229,17 @@ export function useSceneHistory() {
         if (!scene) return;
 
         sceneStore.moveEntity(draggedId, oldContext, false);
+
+        if (oldTransform && compName) {
+          const ent = scene.entities.find(e => e.id === draggedId);
+          if (ent && ent.components?.[compName]) {
+            ent.components[compName] = JSON.parse(JSON.stringify(oldTransform));
+            if (engineBridge && engineBridge.updateComponentProp) {
+              engineBridge.updateComponentProp({ entityId: draggedId, componentName: compName, path: 'x', value: oldTransform.x });
+              engineBridge.updateComponentProp({ entityId: draggedId, componentName: compName, path: 'y', value: oldTransform.y });
+            }
+          }
+        }
 
         if (sceneStore.activeSceneId === targetSceneId) {
           engineBridge.moveEntity({
@@ -248,6 +262,17 @@ export function useSceneHistory() {
         if (!scene) return;
 
         sceneStore.moveEntity(draggedId, newContext, false);
+
+        if (newTransform && compName) {
+          const ent = scene.entities.find(e => e.id === draggedId);
+          if (ent && ent.components?.[compName]) {
+            ent.components[compName] = JSON.parse(JSON.stringify(newTransform));
+            if (engineBridge && engineBridge.updateComponentProp) {
+              engineBridge.updateComponentProp({ entityId: draggedId, componentName: compName, path: 'x', value: newTransform.x });
+              engineBridge.updateComponentProp({ entityId: draggedId, componentName: compName, path: 'y', value: newTransform.y });
+            }
+          }
+        }
 
         if (sceneStore.activeSceneId === targetSceneId) {
           engineBridge.moveEntity({

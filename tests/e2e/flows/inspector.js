@@ -22,6 +22,7 @@ export class InspectorCrudObject {
   // HELPER INTERNAL: OBJECT SECTION MENU (PREFAB & ENTITY ACTIONS)
   // =========================================================================
   async openObjectSectionMenu() {
+    await this.inspector.objectSection.scrollIntoViewIfNeeded();
     await this.page.evaluate(() => {
       if (document.activeElement && document.activeElement !== document.body) {
         document.activeElement.blur();

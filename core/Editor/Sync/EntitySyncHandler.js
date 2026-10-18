@@ -58,8 +58,22 @@ export class EntitySyncHandler {
         this.ctx.isInternalUpdate = true;
         this._removeEntityFromCurrentContainer(entity);
 
+        if (entity.parentId) {
+            const oldParent = this._findEntityById(entity.parentId);
+            if (oldParent && Array.isArray(oldParent.children)) {
+                oldParent.children = oldParent.children.filter(c => c.id !== entity.id);
+            }
+        }
+
         entity.layerId = layerId;
         entity.parentId = parentId !== undefined ? parentId : null;
+
+        if (entity.parentId) {
+            const newParent = this._findEntityById(entity.parentId);
+            if (newParent && typeof newParent.addChild === 'function') {
+                newParent.addChild(entity);
+            }
+        }
 
         newLayer.entities.push(entity);
         this.ctx._sortContainer(newLayer.entities);

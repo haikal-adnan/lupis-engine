@@ -3,6 +3,7 @@ import { LayerSyncHandler } from "./Sync/LayerSyncHandler.js";
 import { AssetSyncHandler } from "./Sync/AssetSyncHandler.js";
 import { PrefabSyncHandler } from "./Sync/PrefabSyncHandler.js";
 import { SettingsSyncHandler } from "./Sync/SettingsSyncHandler.js";
+import RenderUtils from "../Renderer/Scene/RenderUtils.js";
 
 export default class SyncComponent {
     constructor(world, bus, game) {
@@ -78,11 +79,6 @@ export default class SyncComponent {
 
     _sortContainer(container) {
         if (!container) return;
-        container.sort((a, b) => {
-            const zA = a.zIndex ?? 0;
-            const zB = b.zIndex ?? 0;
-            if (zA !== zB) return zA - zB;
-            return (a.orderIndex ?? 0) - (b.orderIndex ?? 0);
-        });
+        RenderUtils.sortItems(container);
     }
 }

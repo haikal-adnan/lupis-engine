@@ -93,13 +93,13 @@ const props = defineProps({
   paddingX: { type: String, default: '0.75rem' },
   textSize: { type: String, default: 'text-sm' },
   labelSize: { type: String, default: 'text-xs' },
-  step: { type: Number, default: 0.1 },
-  min: { type: Number, default: -Infinity },
-  max: { type: Number, default: Infinity },
+  step: { type: [Number, String], default: 0.1 },
+  min: { type: [Number, String], default: -Infinity },
+  max: { type: [Number, String], default: Infinity },
   ignoreRange: { type: Boolean, default: false },
   cyclic: { type: Boolean, default: false },
-  scrubSensitivity: { type: Number, default: 1 }, 
-  precision: { type: Number, default: null }
+  scrubSensitivity: { type: [Number, String], default: 1 }, 
+  precision: { type: [Number, String], default: null }
 })
 
 const model = defineModel({ type: [Number, String] })
@@ -127,8 +127,11 @@ function formatValue(val) {
   const num = parseFloat(val)
   if (isNaN(num)) return val
   
-  if (props.precision !== null) {
-    return parseFloat(num.toFixed(props.precision))
+  if (props.precision !== null && props.precision !== undefined && props.precision !== '') {
+    const prec = Number(props.precision)
+    if (!isNaN(prec)) {
+      return parseFloat(num.toFixed(prec))
+    }
   }
   
   const stepPrecision = getStepPrecision(props.step)
@@ -140,12 +143,17 @@ function formatValue(val) {
 }
 
 function getStepPrecision(step) {
-  if (!step || !step.toString().includes('.')) return 0
-  return step.toString().split('.')[1].length
+  if (step === null || step === undefined || step === '') return 0
+  const str = step.toString()
+  if (str.includes('e-')) {
+    return parseInt(str.split('e-')[1], 10)
+  }
+  if (!str.includes('.')) return 0
+  return str.split('.')[1].length
 }
 
 function validateInput(event) {
-  let value = event.target.value
+  let value = event.target.value.replace(/,/g, '.')
   let clean = value.replace(/[^0-9.-]/g, '')
   if (clean.lastIndexOf('-') > 0) {
     clean = '-' + clean.replace(/-/g, '') 
@@ -157,11 +165,14 @@ function validateInput(event) {
 
 function normalizeValue(val) {
   if (props.ignoreRange) return val
+  const minVal = Number(props.min)
+  const maxVal = Number(props.max)
+  const stepVal = (props.step !== undefined && props.step !== null && !isNaN(Number(props.step)) && Number(props.step) > 0) ? Number(props.step) : 1
   if (props.cyclic) {
-    const rangeSpan = (props.max - props.min) + props.step
-    return ((((val - props.min) % rangeSpan) + rangeSpan) % rangeSpan) + props.min
+    const rangeSpan = (maxVal - minVal) + stepVal
+    return ((((val - minVal) % rangeSpan) + rangeSpan) % rangeSpan) + minVal
   }
-  return Math.max(props.min, Math.min(props.max, val))
+  return Math.max(minVal, Math.min(maxVal, val))
 }
 
 function updateModel(val) {
@@ -193,15 +204,32 @@ function onMouseMove(event) {
   if (event.shiftKey) modifier = 10
   if (event.altKey) modifier = 0.1
 
-  const pixelsPerStep = 5 / props.scrubSensitivity
-  const stepsToMove = (deltaX / pixelsPerStep) * modifier
-  
-  let newValue = startValue + (stepsToMove * props.step)
-  newValue = normalizeValue(newValue)
-  
-  const cleanedValue = formatValue(newValue)
-  model.value = cleanedValue
-  localInput.value = cleanedValue
+  const stepVal = (props.step !== undefined && props.step !== null && !isNaN(Number(props.step)) && Number(props.step) > 0) ? Number(props.step) : 1
+  const effectiveStep = stepVal * modifier
+  const sensitivity = Number(props.scrubSensitivity) || 1
+  const pixelsPerStep = 5 / sensitivity
+  const stepsCount = Math.round(deltaX / pixelsPerStep)
+
+  if (stepsCount === 0) {
+    model.value = startValue
+    localInput.value = startValue
+    return
+  }
+
+  let stepPrecision = getStepPrecision(stepVal)
+  if (modifier === 0.1) {
+    stepPrecision += 1
+  } else if (modifier === 10) {
+    stepPrecision = Math.max(0, stepPrecision - 1)
+  }
+
+  const baseSnapped = Math.round(startValue / effectiveStep) * effectiveStep
+  const rawValue = baseSnapped + (stepsCount * effectiveStep)
+  const clampedValue = normalizeValue(rawValue)
+  const finalValue = parseFloat(clampedValue.toFixed(stepPrecision))
+
+  model.value = finalValue
+  localInput.value = finalValue
 }
 
 function stopScrub() {
@@ -216,8 +244,11 @@ function stopScrub() {
 function increment(val) {
   if (props.disabled) return
   const current = parseFloat(model.value) || 0
-  const precision = Math.max(getStepPrecision(props.step), getStepPrecision(current))
-  const updated = parseFloat((current + val).toFixed(precision || 4))
+  const numVal = Number(val)
+  if (isNaN(numVal)) return
+  const stepVal = Number(props.step) || 1
+  const precision = Math.max(getStepPrecision(stepVal), getStepPrecision(current))
+  const updated = parseFloat((current + numVal).toFixed(precision))
   updateModel(updated)
 }
 
