@@ -191,13 +191,38 @@ export default class ShapeRenderer {
 
         let verts = [];
         if (type === "rectangle") {
-            const offsets = [
-                [-px, -py], 
-                [1 - px, -py], 
-                [1 - px, 1 - py], 
-                [-px, 1 - py]
-            ];
-            verts = offsets.map(([ox, oy]) => this._transformPoint(ox, oy, x, y, scaleX, scaleY, cos, sin));
+            const r = Math.max(0, Math.min(cornerRadius || 0, Math.abs(w) * 0.5, Math.abs(h) * 0.5));
+            if (r > 0) {
+                const segsPerCorner = 8;
+                const left = -w * px;
+                const right = w * (1 - px);
+                const top = -h * py;
+                const bottom = h * (1 - py);
+
+                const corners = [
+                    { cx: right - r, cy: top + r, startAngle: -Math.PI / 2 },
+                    { cx: right - r, cy: bottom - r, startAngle: 0 },
+                    { cx: left + r, cy: bottom - r, startAngle: Math.PI / 2 },
+                    { cx: left + r, cy: top + r, startAngle: Math.PI }
+                ];
+
+                for (const c of corners) {
+                    for (let i = 0; i <= segsPerCorner; i++) {
+                        const ang = c.startAngle + (i / segsPerCorner) * (Math.PI / 2);
+                        const lx = c.cx + Math.cos(ang) * r;
+                        const ly = c.cy + Math.sin(ang) * r;
+                        verts.push(this._transformPoint(lx / w, ly / h, x, y, scaleX, scaleY, cos, sin));
+                    }
+                }
+            } else {
+                const offsets = [
+                    [-px, -py], 
+                    [1 - px, -py], 
+                    [1 - px, 1 - py], 
+                    [-px, 1 - py]
+                ];
+                verts = offsets.map(([ox, oy]) => this._transformPoint(ox, oy, x, y, scaleX, scaleY, cos, sin));
+            }
         } else if (type === "ellipse" || type === "circle") {
             const segs = 32;
             for (let i = 0; i < segs; i++) {

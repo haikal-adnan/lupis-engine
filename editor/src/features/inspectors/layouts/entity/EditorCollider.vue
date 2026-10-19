@@ -172,6 +172,21 @@
         </div>
       </PropertyRow>
 
+      <PropertyRow label="Corner Radius (Capsule)">
+        <BaseNumber 
+          v-model="cornerRadius" 
+          prefix="R" 
+          :min="0" 
+          :max="maxRadius" 
+          :step="1" 
+          :precision="1" 
+          class="font-mono w-full transition-all duration-300" 
+          :class="{ 'opacity-50 grayscale pointer-events-none': autoFit }"
+          :disabled="autoFit" 
+          data-testid="collider-corner-radius" 
+        />
+      </PropertyRow>
+
       <div class="flex gap-3 items-start">
         <div class="flex-grow pt-[1px]">
           <PropertyRow label="Rotation">
@@ -198,11 +213,16 @@
         />
       </div>
 
-      <div class="px-1 mb-2 mt-1">
+      <div class="px-1 mb-2 mt-1 space-y-1.5">
         <BaseCheckbox 
           v-model="autoFit" 
           label="Fit to Transform Size & Rotation" 
           data-testid="collider-autofit-toggle"
+        />
+        <BaseCheckbox 
+          v-model="lockWorldRotation" 
+          label="Lock World Rotation (Stay Upright)" 
+          data-testid="collider-lock-rotation-toggle"
         />
       </div>
 
@@ -297,7 +317,7 @@ const bindCurrentColliderProp = (propName) => computed({
     const path = `data.${selectedIndex.value}.${propName}`
     
     let finalVal = val;
-    if (propName === 'enabled' || propName === 'autoFit') finalVal = Boolean(val);
+    if (propName === 'enabled' || propName === 'autoFit' || propName === 'lockWorldRotation') finalVal = Boolean(val);
     if (typeof finalVal === 'number') finalVal = Math.round(finalVal * 100) / 100;
 
     if (isEditingMasterPrefab.value) {
@@ -312,23 +332,33 @@ const bindCurrentColliderProp = (propName) => computed({
 const type = bindCurrentColliderProp('type')
 const enabled = bindCurrentColliderProp('enabled')
 const autoFit = bindCurrentColliderProp('autoFit')
+const lockWorldRotation = bindCurrentColliderProp('lockWorldRotation')
 const offsetX = bindCurrentColliderProp('offsetX')
 const offsetY = bindCurrentColliderProp('offsetY')
 const width = bindCurrentColliderProp('width')
 const height = bindCurrentColliderProp('height')
+const cornerRadius = bindCurrentColliderProp('cornerRadius')
 const rotation = bindCurrentColliderProp('rotation')
 const pivotX = bindCurrentColliderProp('pivotX')
 const pivotY = bindCurrentColliderProp('pivotY')
+
+const maxRadius = computed(() => {
+  const w = Number(width.value) || 0;
+  const h = Number(height.value) || 0;
+  return Math.max(0, Math.floor(Math.min(w, h) / 2));
+});
 
 function addNewCollider() {
   const newCol = { 
     type: 'solid', 
     enabled: true, 
     autoFit: false, 
+    lockWorldRotation: false,
     offsetX: 0, 
     offsetY: 0, 
     width: 32, 
-    height: 32 
+    height: 32,
+    cornerRadius: 0
   }
   
   const currentList = [...collidersData.value, newCol]

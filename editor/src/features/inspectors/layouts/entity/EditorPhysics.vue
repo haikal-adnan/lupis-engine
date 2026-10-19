@@ -99,6 +99,43 @@
           data-testid="physics-gravity-scale-input"
         />
       </PropertyRow>
+
+      <div class="h-px bg-border/50 my-2"></div>
+
+      <div class="px-1 mb-1">
+        <BaseCheckbox 
+          v-model="alignToSlope" 
+          label="Align to Slope" 
+          data-testid="physics-align-slope-toggle"
+        />
+      </div>
+
+      <template v-if="alignToSlope">
+        <PropertyRow label="Adapt Speed">
+          <BaseNumber 
+            v-model="slopeAdaptSpeed" 
+            prefix="S" 
+            :min="1" 
+            :step="1" 
+            :precision="1" 
+            class="font-mono w-full" 
+            data-testid="physics-slope-speed-input"
+          />
+        </PropertyRow>
+
+        <PropertyRow label="Max Slope (°)">
+          <BaseNumber 
+            v-model="maxSlopeAngle" 
+            prefix="∠" 
+            :min="5" 
+            :max="89" 
+            :step="1" 
+            :precision="0" 
+            class="font-mono w-full" 
+            data-testid="physics-max-slope-input"
+          />
+        </PropertyRow>
+      </template>
     </div>
 
   </PropertySection>
@@ -119,7 +156,8 @@ import {
   PropertyRow,
   BaseNumber,
   BaseButton,
-  BaseSelect
+  BaseSelect,
+  BaseCheckbox
 } from '@components/components.js';
 
 const { selectedEntity } = useInspectorSelection()
@@ -141,6 +179,9 @@ const type = bindComponentProp('Physics', 'type')
 const mass = bindComponentProp('Physics', 'mass')
 const drag = bindComponentProp('Physics', 'drag')
 const gravityScale = bindComponentProp('Physics', 'gravityScale')
+const alignToSlope = bindComponentProp('Physics', 'alignToSlope')
+const slopeAdaptSpeed = bindComponentProp('Physics', 'slopeAdaptSpeed')
+const maxSlopeAngle = bindComponentProp('Physics', 'maxSlopeAngle')
 
 const typeOptions = [
   { label: 'Dynamic (Standard)', value: 'dynamic' },

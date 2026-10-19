@@ -348,7 +348,7 @@ export default class RenderUtils {
         if (opt.type === "rectStroke") {
             shapeRenderer.drawParametricShape(
                 "rectangle", t.x, t.y, t.width, t.height,
-                [0, 0, 0, 0], opt.color, false, opt.thickness || 2, 0, 4,
+                [0, 0, 0, 0], opt.color, false, opt.thickness || 2, opt.cornerRadius || 0, 4,
                 proj, t.rotation, t.scaleX, t.scaleY, t.pivotX, t.pivotY, opt.flipX, opt.flipY
             );
             return;
@@ -570,21 +570,33 @@ export default class RenderUtils {
             const c = comps.Collider.data[i];
             if (!c || !c.enabled) continue;
 
-            const cW = (c.autoFit ? globalT.width : c.width) * Math.abs(globalT.scaleX ?? 1);
-            const cH = (c.autoFit ? globalT.height : c.height) * Math.abs(globalT.scaleY ?? 1);
+            const scaleX = Math.abs(globalT.scaleX ?? 1);
+            const scaleY = Math.abs(globalT.scaleY ?? 1);
+
+            const cW = (c.autoFit ? globalT.width : c.width) * scaleX;
+            const cH = (c.autoFit ? globalT.height : c.height) * scaleY;
             const pX = c.pivotX ?? 0.5;
             const pY = c.pivotY ?? 0.5;
 
-            const localTlX = -globalT.width * Math.abs(globalT.scaleX ?? 1) * (globalT.pivotX ?? 0.5) + (c.offsetX || 0) * Math.abs(globalT.scaleX ?? 1);
-            const localTlY = -globalT.height * Math.abs(globalT.scaleY ?? 1) * (globalT.pivotY ?? 0.5) + (c.offsetY || 0) * Math.abs(globalT.scaleY ?? 1);
+            const localTlX = -globalT.width * scaleX * (globalT.pivotX ?? 0.5) + (c.offsetX || 0) * scaleX;
+            const localTlY = -globalT.height * scaleY * (globalT.pivotY ?? 0.5) + (c.offsetY || 0) * scaleY;
 
             const localPx = localTlX + cW * pX;
             const localPy = localTlY + cH * pY;
 
-            const worldPx = trans.x + localPx * cosT - localPy * sinT;
-            const worldPy = trans.y + localPx * sinT + localPy * cosT;
+            const isLockRot = Boolean(c.lockWorldRotation);
+            const worldPx = isLockRot ? (trans.x + localPx) : (trans.x + localPx * cosT - localPy * sinT);
+            const worldPy = isLockRot ? (trans.y + localPy) : (trans.y + localPx * sinT + localPy * cosT);
 
-            const totalRot = c.autoFit ? tRotRad : tRotRad + ((c.rotation || 0) * (Math.PI / 180));
+            const totalRot = isLockRot 
+                ? ((c.rotation || 0) * (Math.PI / 180)) 
+                : (c.autoFit ? tRotRad : tRotRad + ((c.rotation || 0) * (Math.PI / 180)));
+
+            const cRadius = Math.max(0, Math.min(
+                (Number(c.cornerRadius) || 0) * Math.min(scaleX, scaleY),
+                cW * 0.5,
+                cH * 0.5
+            ));
 
             const debugTrans = {
                 x: worldPx, y: worldPy, width: cW, height: cH,
@@ -598,7 +610,8 @@ export default class RenderUtils {
                 shapeOptions: {
                     type: "rectStroke",
                     color: c.type === 'trigger' ? triggerColor : solidColor,
-                    thickness: 2, opacity: 1.0, flipX: false, flipY: false
+                    thickness: 2, opacity: 1.0, flipX: false, flipY: false,
+                    cornerRadius: cRadius
                 }
             });
         }

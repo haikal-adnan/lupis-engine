@@ -17,8 +17,6 @@ export default class ColliderSystem {
             return null;
         }
 
-        this._normalizeStuck(entity);
-
         const MAX_STEP_SIZE = 8;
         const distance = Math.sqrt(dx*dx + dy*dy);
         if (distance < 0.001) return null;
@@ -73,6 +71,9 @@ export default class ColliderSystem {
 
     _moveSingleStep(entity, dx, dy) {
         const transform = entity.components.Transform;
+        const startX = transform.x;
+        const startY = transform.y;
+
         let hits = { x: null, y: null, normals: [] };
         
         transform.x += dx;
@@ -91,16 +92,72 @@ export default class ColliderSystem {
 
             if (mtv && mtv.axis) {
                 hits.normals.push(mtv.axis);
-                if (Math.abs(mtv.axis.x) > Math.abs(mtv.axis.y)) {
-                    hits.x = collision;
-                } else {
+                // Any surface with upward-pointing normal (ny < -0.25, up to ~75 deg slope) is a floor (hits.y), NOT a wall!
+                if (mtv.axis.y < -0.25) {
                     hits.y = collision;
+                } else if (mtv.axis.y > 0.25) {
+                    hits.y = collision; // Ceiling
+                } else {
+                    hits.x = collision; // True wall
                 }
             } else {
                 break;
             }
             iter++;
         }
+
+        // Auto Step-Climb for small lips, seams, and rough segment joints (<= 8px)
+        if (hits.x && Math.abs(dx) > 0.001) {
+            const stepUpHeight = 8;
+            const blockedX = transform.x;
+            const blockedY = transform.y;
+
+            // Test if we can step up over this obstacle
+            transform.x = startX;
+            transform.y = startY - stepUpHeight;
+
+            // Only attempt if headspace is clear (no ceiling immediately above)
+            if (!this._findCollision(entity, 'solid')) {
+                // Move forward at the elevated height
+                transform.x += dx;
+                
+                let wallBlocked = false;
+                const colHigh = this._findCollision(entity, 'solid');
+                if (colHigh) {
+                    const mtvHigh = this._resolveOverlap(entity, colHigh);
+                    if (mtvHigh && Math.abs(mtvHigh.axis?.x || 0) > 0.6) {
+                        wallBlocked = true; // True wall, not a small step
+                    }
+                }
+
+                if (!wallBlocked) {
+                    // Step back down to ground
+                    transform.y += stepUpHeight;
+                    let groundHit = null;
+                    let it = 0;
+                    while (it < 4) {
+                        const colDown = this._findCollision(entity, 'solid');
+                        if (!colDown) break;
+                        groundHit = colDown;
+                        this._resolveOverlap(entity, colDown);
+                        it++;
+                    }
+
+                    // Stepped over successfully!
+                    hits.x = null;
+                    if (groundHit) hits.y = groundHit;
+                } else {
+                    // Restore blocked state
+                    transform.x = blockedX;
+                    transform.y = blockedY;
+                }
+            } else {
+                // Restore blocked state
+                transform.x = blockedX;
+                transform.y = blockedY;
+            }
+        }
+
         return hasCollision ? hits : null;
     }
 
@@ -329,10 +386,19 @@ export default class ColliderSystem {
                 const localPx = localTlX + cW * pX;
                 const localPy = localTlY + cH * pY;
 
-                const worldPx = t.x + localPx * cosT - localPy * sinT;
-                const worldPy = t.y + localPx * sinT + localPy * cosT;
+                const isLockRot = Boolean(c.lockWorldRotation);
+                const worldPx = isLockRot ? (t.x + localPx) : (t.x + localPx * cosT - localPy * sinT);
+                const worldPy = isLockRot ? (t.y + localPy) : (t.y + localPx * sinT + localPy * cosT);
 
-                const totalRot = c.autoFit ? tRotRad : tRotRad + ((c.rotation || 0) * (Math.PI / 180));
+                const totalRot = isLockRot 
+                    ? ((c.rotation || 0) * (Math.PI / 180)) 
+                    : (c.autoFit ? tRotRad : tRotRad + ((c.rotation || 0) * (Math.PI / 180)));
+
+                const cRadius = Math.max(0, Math.min(
+                    (Number(c.cornerRadius) || 0) * Math.min(Math.abs(scaleX), Math.abs(scaleY)),
+                    cW * 0.5,
+                    cH * 0.5
+                ));
 
                 boundsList.push({
                     x: worldPx, 
@@ -342,6 +408,7 @@ export default class ColliderSystem {
                     rotation: totalRot,
                     pivotX: pX,
                     pivotY: pY,
+                    cornerRadius: cRadius,
                     type: c.type || 'solid'
                 });
             }
@@ -446,8 +513,27 @@ export default class ColliderSystem {
             return false;
         }
 
-        const cornersA = isCircleA ? [] : this._getObbCorners(a);
-        const cornersB = isCircleB ? [] : this._getObbCorners(b);
+        const cornersA = isCircleA ? [] : (a.cornerRadius > 0 ? this._getInnerCorners(a) : this._getObbCorners(a));
+        const cornersB = isCircleB ? [] : (b.cornerRadius > 0 ? this._getInnerCorners(b) : this._getObbCorners(b));
+
+        const isSegmentA = cornersA.length === 2;
+        const isSegmentB = cornersB.length === 2;
+        const segmentCorners = isSegmentB ? cornersB : (isSegmentA ? cornersA : null);
+        let segmentFloorNormal = null;
+
+        if (segmentCorners) {
+            const p1 = segmentCorners[0];
+            const p2 = segmentCorners[1];
+            const sx = p2.x - p1.x;
+            const sy = p2.y - p1.y;
+            const slen = Math.hypot(sx, sy) || 1;
+            let nx = -sy / slen;
+            let ny = sx / slen;
+            if (ny > 0) { nx = -nx; ny = -ny; }
+            if (ny < -0.2) {
+                segmentFloorNormal = { x: nx, y: ny };
+            }
+        }
         
         const axes = [...this._getObbAxes(cornersA), ...this._getObbAxes(cornersB)];
         
@@ -460,6 +546,19 @@ export default class ColliderSystem {
             if (axis) axes.push(axis);
         }
 
+        if (a.cornerRadius > 0 && cornersB.length > 0) {
+            for (let i = 0; i < cornersA.length; i++) {
+                const axis = this._getCircleToPolygonAxis(cornersA[i], cornersB);
+                if (axis) axes.push(axis);
+            }
+        }
+        if (b.cornerRadius > 0 && cornersA.length > 0) {
+            for (let i = 0; i < cornersB.length; i++) {
+                const axis = this._getCircleToPolygonAxis(cornersB[i], cornersA);
+                if (axis) axes.push(axis);
+            }
+        }
+
         let minOverlap = Infinity;
         let smallestAxis = null;
 
@@ -470,6 +569,11 @@ export default class ColliderSystem {
             
             if (pA.max <= pB.min || pB.max <= pA.min) return false;
             
+            // Ghost collision prevention: Floor segments must never select horizontal wall axes (|axis.y| < 0.2)
+            if (segmentFloorNormal && Math.abs(axis.y) < 0.2) {
+                continue;
+            }
+
             const overlap = Math.min(pA.max - pB.min, pB.max - pA.min);
             if (overlap < minOverlap) {
                 minOverlap = overlap;
@@ -477,18 +581,41 @@ export default class ColliderSystem {
             }
         }
 
-        const cxA = isCircleA ? a.x : cornersA.reduce((sum, c) => sum + c.x, 0) / (cornersA.length || 1);
-        const cyA = isCircleA ? a.y : cornersA.reduce((sum, c) => sum + c.y, 0) / (cornersA.length || 1);
-        
-        const cxB = isCircleB ? b.x : cornersB.reduce((sum, c) => sum + c.x, 0) / (cornersB.length || 1);
-        const cyB = isCircleB ? b.y : cornersB.reduce((sum, c) => sum + c.y, 0) / (cornersB.length || 1);
+        // For floor segments, always prioritize pushing along the segment's upward floor normal
+        if (segmentFloorNormal) {
+            smallestAxis = segmentFloorNormal;
+            const pA = this._projectShape(a, cornersA, smallestAxis);
+            const pB = this._projectShape(b, cornersB, smallestAxis);
+            minOverlap = Math.min(pA.max - pB.min, pB.max - pA.min);
+        }
 
-        const dx = cxA - cxB;
-        const dy = cyA - cyB;
+        if (!smallestAxis) return false;
 
-        if (smallestAxis && (dx * smallestAxis.x + dy * smallestAxis.y < 0)) {
-            smallestAxis.x *= -1;
-            smallestAxis.y *= -1;
+        if (segmentFloorNormal) {
+            // A floor segment must always push the colliding entity upwards out of the ground
+            if (isSegmentB) {
+                if (smallestAxis.y > 0) {
+                    smallestAxis = { x: -smallestAxis.x, y: -smallestAxis.y };
+                }
+            } else {
+                if (smallestAxis.y < 0) {
+                    smallestAxis = { x: -smallestAxis.x, y: -smallestAxis.y };
+                }
+            }
+        } else {
+            const cxA = isCircleA ? a.x : cornersA.reduce((sum, c) => sum + c.x, 0) / (cornersA.length || 1);
+            const cyA = isCircleA ? a.y : cornersA.reduce((sum, c) => sum + c.y, 0) / (cornersA.length || 1);
+            
+            const cxB = isCircleB ? b.x : cornersB.reduce((sum, c) => sum + c.x, 0) / (cornersB.length || 1);
+            const cyB = isCircleB ? b.y : cornersB.reduce((sum, c) => sum + c.y, 0) / (cornersB.length || 1);
+
+            const dx = cxA - cxB;
+            const dy = cyA - cyB;
+
+            if (smallestAxis && (dx * smallestAxis.x + dy * smallestAxis.y < 0)) {
+                smallestAxis.x *= -1;
+                smallestAxis.y *= -1;
+            }
         }
 
         return { overlap: minOverlap, axis: smallestAxis };
@@ -509,7 +636,37 @@ export default class ColliderSystem {
             if (dot < min) min = dot;
             if (dot > max) max = dot;
         }
+
+        if (shape.cornerRadius > 0) {
+            return { 
+                min: min - shape.cornerRadius, 
+                max: max + shape.cornerRadius 
+            };
+        }
+
         return { min, max };
+    }
+
+    _getInnerCorners(b) {
+        const r = b.cornerRadius || 0;
+        if (r <= 0) return this._getObbCorners(b);
+
+        const cx = b.x; 
+        const cy = b.y;
+        const cos = Math.cos(b.rotation || 0);
+        const sin = Math.sin(b.rotation || 0);
+        
+        const left = -b.w * (b.pivotX ?? 0.5) + r;
+        const right = b.w * (1 - (b.pivotX ?? 0.5)) - r;
+        const top = -b.h * (b.pivotY ?? 0.5) + r;
+        const bottom = b.h * (1 - (b.pivotY ?? 0.5)) - r;
+        
+        return [
+            { x: cx + left*cos - top*sin, y: cy + left*sin + top*cos },      
+            { x: cx + right*cos - top*sin, y: cy + right*sin + top*cos },   
+            { x: cx + right*cos - bottom*sin, y: cy + right*sin + bottom*cos }, 
+            { x: cx + left*cos - bottom*sin, y: cy + left*sin + bottom*cos }
+        ];
     }
 
     _getCircleToPolygonAxis(circle, corners) {
@@ -576,10 +733,6 @@ export default class ColliderSystem {
             const len = Math.hypot(dx, dy);
             if (len > 0) {
                 axes.push({ x: -dy / len, y: dx / len }); 
-
-                if (c.length === 2) {
-                    axes.push({ x: dx / len, y: dy / len });
-                }
             }
         }
         return axes;
@@ -612,10 +765,18 @@ export default class ColliderSystem {
 
         if (!mtv || !mtv.axis || !Number.isFinite(mtv.overlap)) return null;
 
-        const pushX = (Number(mtv.axis.x) || 0) * (mtv.overlap + 0.01);
-        const pushY = (Number(mtv.axis.y) || 0) * (mtv.overlap + 0.01);
-        if (Number.isFinite(pushX)) t.x += pushX;
-        if (Number.isFinite(pushY)) t.y += pushY;
+        // Walkable floor or slope: normal points upward (axis.y < -0.25, up to ~75 deg)
+        // Resolve purely vertically so horizontal walking velocity is never pushed backwards uphill!
+        if (mtv.axis.y < -0.25) {
+            const verticalPush = -(mtv.overlap + 0.005) / Math.abs(mtv.axis.y);
+            const clampedPushY = Math.max(-24, Math.min(0, verticalPush));
+            if (Number.isFinite(clampedPushY)) t.y += clampedPushY;
+        } else {
+            const pushX = (Number(mtv.axis.x) || 0) * (mtv.overlap + 0.005);
+            const pushY = (Number(mtv.axis.y) || 0) * (mtv.overlap + 0.005);
+            if (Number.isFinite(pushX)) t.x += pushX;
+            if (Number.isFinite(pushY)) t.y += pushY;
+        }
         
         return mtv;
     }
