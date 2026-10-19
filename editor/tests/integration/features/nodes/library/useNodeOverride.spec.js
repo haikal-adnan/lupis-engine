@@ -428,4 +428,213 @@ describe('useNodeOverride & Blueprint Sync Mechanism', () => {
       expect(popState.value.message).toBe('No nodes found in any script of the current project.');
     });
   });
+
+  describe('Variable Nodes, Modifiers, and Dynamic Ports Preservation', () => {
+    it('preserves variable nodes, variableId, scope, ports, code, and connected edges', async () => {
+      const mockVariable = {
+        id: 'var_player_health',
+        name: 'playerHealth',
+        type: 'Number',
+        defaultValue: 100
+      };
+
+      const varGetNode = {
+        id: 'node_get_health',
+        type: 'variableGet',
+        position: { x: 0, y: 0 },
+        settings: { headerTitle: 'Get playerHealth', headerColor: '#64B5F6', category: 'Variable' },
+        inputs: [],
+        outputs: [
+          { id: 'value', label: 'playerHealth', dataType: 'number', color: '#64B5F6' }
+        ],
+        data: {
+          scope: 'Local',
+          variableId: 'var_player_health',
+          variableName: 'playerHealth',
+          code: "outputs.value = context.getLocal('playerHealth');\nreturn;"
+        }
+      };
+
+      const consumerNode = {
+        id: 'node_math_add',
+        type: 'mathAdd',
+        position: { x: 200, y: 0 },
+        settings: { headerTitle: 'Add' },
+        inputs: [
+          { id: 'a', dataType: 'number', color: '#64B5F6', defaultValue: 0 },
+          { id: 'b', dataType: 'number', color: '#64B5F6', defaultValue: 0 }
+        ],
+        outputs: [
+          { id: 'result', dataType: 'number', color: '#64B5F6' }
+        ],
+        data: {
+          values: { a: 0, b: 10 }
+        }
+      };
+
+      const connectionEdge = {
+        id: 'edge_health_to_add',
+        source: 'node_get_health',
+        sourceHandle: 'value',
+        target: 'node_math_add',
+        targetHandle: 'a',
+        modifier: { type: 'multiply', value: 2 }
+      };
+
+      const script = {
+        id: 'script_with_var',
+        localVariables: [mockVariable],
+        nodes: [varGetNode, consumerNode],
+        edges: [connectionEdge]
+      };
+
+      // Act
+      const result = overrideAllScriptNodes(script);
+
+      // Assert
+      expect(result.success).toBe(true);
+      expect(result.count).toBe(2);
+
+      // Variable node code and ports must not be wiped
+      expect(varGetNode.data.variableId).toBe('var_player_health');
+      expect(varGetNode.data.variableName).toBe('playerHealth');
+      expect(varGetNode.data.code).toContain("context.getLocal('playerHealth')");
+      expect(varGetNode.outputs[0].dataType).toBe('number');
+      expect(varGetNode.outputs[0].id).toBe('value');
+
+      // The connection edge must remain connected
+      expect(script.edges).toHaveLength(1);
+      expect(script.edges[0].id).toBe('edge_health_to_add');
+      // Edge modifier must be preserved
+      expect(script.edges[0].modifier).toEqual({ type: 'multiply', value: 2 });
+    });
+
+    it('preserves node input variableModifiers, variableBindings, and valueModes', async () => {
+      const nodeWithModifiers = {
+        id: 'node_speed_setter',
+        type: 'actionSetGameState',
+        position: { x: 100, y: 100 },
+        settings: { headerTitle: 'Set Game State' },
+        inputs: [
+          { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'action', dataType: 'string', color: '#F48FB1' }
+        ],
+        outputs: [
+          { id: 'execOut', dataType: 'execution', color: '#FFFFFF' }
+        ],
+        data: {
+          values: { action: 'custom' },
+          valueModes: { action: 'variable' },
+          variableBindings: { action: 'var_state_id' },
+          variableModifiers: {
+            action: { type: 'none', value: 0, format: 'state_{value}' }
+          }
+        }
+      };
+
+      const script = {
+        id: 'script_mod_test',
+        nodes: [nodeWithModifiers],
+        edges: []
+      };
+
+      const result = overrideNodeFromBlueprint(nodeWithModifiers, script);
+
+      expect(result.success).toBe(true);
+      expect(nodeWithModifiers.data.valueModes.action).toBe('variable');
+      expect(nodeWithModifiers.data.variableBindings.action).toBe('var_state_id');
+      expect(nodeWithModifiers.data.variableModifiers.action).toEqual({
+        type: 'none',
+        value: 0,
+        format: 'state_{value}'
+      });
+    });
+
+    it('preserves dynamic ports on nodes supporting dynamicMode', async () => {
+      const dynamicMathNode = {
+        id: 'node_dynamic_math',
+        type: 'mathAdd',
+        dynamicMode: 'sequential',
+        position: { x: 0, y: 0 },
+        settings: { headerTitle: 'Add' },
+        inputs: [
+          { id: 'a', dataType: 'number', color: '#64B5F6', defaultValue: 0 },
+          { id: 'b', dataType: 'number', color: '#64B5F6', defaultValue: 0 },
+          { id: 'v2', dataType: 'number', color: '#64B5F6', defaultValue: 5 } // Dynamically added port
+        ],
+        outputs: [
+          { id: 'result', dataType: 'number', color: '#64B5F6' }
+        ],
+        data: {
+          values: { a: 1, b: 2, v2: 5 }
+        }
+      };
+
+      const dynamicEdge = {
+        id: 'edge_to_v2',
+        source: 'other_node',
+        sourceHandle: 'out',
+        target: 'node_dynamic_math',
+        targetHandle: 'v2'
+      };
+
+      const script = {
+        id: 'script_dyn',
+        nodes: [dynamicMathNode],
+        edges: [dynamicEdge]
+      };
+
+      const result = overrideNodeFromBlueprint(dynamicMathNode, script);
+
+      expect(result.success).toBe(true);
+      // Dynamic port v2 must be preserved
+      expect(dynamicMathNode.inputs.find(p => p.id === 'v2')).toBeDefined();
+      expect(dynamicMathNode.data.values.v2).toBe(5);
+      // Connection to dynamic port must not be severed
+      expect(script.edges).toHaveLength(1);
+      expect(script.edges[0].targetHandle).toBe('v2');
+    });
+
+    it('preserves connections when port data types are compatible across casing or type synonyms', async () => {
+      const nodeA = {
+        id: 'node_src',
+        type: 'actionSetGameState',
+        position: { x: 0, y: 0 },
+        inputs: [{ id: 'execIn', dataType: 'execution' }],
+        outputs: [{ id: 'execOut', dataType: 'execution' }]
+      };
+
+      const nodeB = {
+        id: 'node_dest',
+        type: 'actionSetGameState',
+        position: { x: 200, y: 0 },
+        // Suppose targetHandle had uppercase / synonym
+        inputs: [
+          { id: 'execIn', dataType: 'Execution' },
+          { id: 'action', dataType: 'String' }
+        ],
+        outputs: [{ id: 'execOut', dataType: 'execution' }]
+      };
+
+      const edgeExec = {
+        id: 'edge_exec',
+        source: 'node_src',
+        sourceHandle: 'execOut',
+        target: 'node_dest',
+        targetHandle: 'execIn'
+      };
+
+      const script = {
+        id: 'script_case',
+        nodes: [nodeA, nodeB],
+        edges: [edgeExec]
+      };
+
+      const result = overrideAllScriptNodes(script);
+
+      expect(result.success).toBe(true);
+      expect(script.edges).toHaveLength(1);
+      expect(script.edges[0].id).toBe('edge_exec');
+    });
+  });
 });
