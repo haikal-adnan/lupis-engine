@@ -3,6 +3,8 @@ import { createScriptNode, createScriptPort } from '@scripts/scripts.js';
 import { useScriptStore } from '@scripts/scripts.js';
 import { useConfirm, usePopAlert } from '@composables/composables.js';
 import { useScriptHistory } from '@historys/historys.js';
+import { useProjectStore } from '@projects/projects.js';
+import { useWorkspaceStore } from '@workspaces/workspaces.js';
 
 export function getDefaultValueByDataType(dataType) {
   const type = String(dataType || '').toLowerCase();
@@ -198,61 +200,139 @@ export function overrideAllScriptNodes(script) {
 }
 
 /**
+ * Overrides all nodes across an array of scripts.
+ * @param {Array} scripts - Array of script objects.
+ * @returns {{ success: boolean, totalOverriddenNodes: number, affectedScriptsCount: number }}
+ */
+export function overrideAllProjectNodes(scripts) {
+  if (!Array.isArray(scripts) || scripts.length === 0) {
+    return { success: false, totalOverriddenNodes: 0, affectedScriptsCount: 0 };
+  }
+
+  let totalOverriddenNodes = 0;
+  let affectedScriptsCount = 0;
+
+  scripts.forEach(script => {
+    if (script && Array.isArray(script.nodes) && script.nodes.length > 0) {
+      const { success, count } = overrideAllScriptNodes(script);
+      if (success && count > 0) {
+        totalOverriddenNodes += count;
+        affectedScriptsCount++;
+      }
+    }
+  });
+
+  return { success: true, totalOverriddenNodes, affectedScriptsCount };
+}
+
+/**
  * Composable for UI interactions (dialog confirmation, toast, store syncing).
  */
 export function useNodeOverride() {
   const scriptStore = useScriptStore();
   const scriptHistory = useScriptHistory();
+  const projectStore = useProjectStore();
   const { confirm } = useConfirm();
   const { showPop } = usePopAlert();
 
   const triggerOverrideAllNodes = async () => {
-    const activeScript = scriptStore.activeScript;
-    if (!activeScript) {
+    const scripts = Array.isArray(scriptStore.scripts) && scriptStore.scripts.length > 0
+      ? scriptStore.scripts
+      : (scriptStore.activeScript ? [scriptStore.activeScript] : []);
+
+    if (!scripts || scripts.length === 0) {
       showPop({
         title: 'Override Nodes',
-        message: 'Tidak ada script yang sedang aktif di canvas.',
+        message: 'No scripts found in the current project.',
         type: 'info'
       });
       return false;
     }
 
-    if (!activeScript.nodes || activeScript.nodes.length === 0) {
+    const totalNodesInProject = scripts.reduce((acc, s) => {
+      return acc + (Array.isArray(s.nodes) ? s.nodes.length : 0);
+    }, 0);
+
+    if (totalNodesInProject === 0) {
       showPop({
         title: 'Override Nodes',
-        message: 'Tidak ada node di script yang sedang aktif.',
+        message: 'No nodes found in any script of the current project.',
         type: 'info'
       });
       return false;
     }
 
     const isConfirmed = await confirm({
-      title: 'Override Graph Nodes',
-      message: 'Tindakan ini akan mengoverride seluruh node script di graph saat ini berdasarkan template blueprint terbaru. Nilai lama yang cocok tetap dipertahankan, port yang tidak cocok akan diputus, dan kode akan direset. Hal ini dapat mengakibatkan sistem tidak sesuai jika terdapat perubahan struktur blueprint. Lanjutkan?',
+      title: 'Override Project Nodes',
+      message: `This action will override all nodes across all scripts (${scripts.length} script(s)) in the current project based on the latest blueprint definitions.\n\nMatching input values will be preserved, incompatible port connections will be severed, and node codes will be reset. Proceed?`,
       confirmText: 'Override',
-      cancelText: 'Batal',
+      cancelText: 'Cancel',
       type: 'warning'
     });
 
     if (!isConfirmed) return false;
 
-    const oldNodes = JSON.parse(JSON.stringify(activeScript.nodes));
-    const oldEdges = JSON.parse(JSON.stringify(activeScript.edges));
-
-    const { count } = overrideAllScriptNodes(activeScript);
-
-    const newNodes = JSON.parse(JSON.stringify(activeScript.nodes));
-    const newEdges = JSON.parse(JSON.stringify(activeScript.edges));
-
-    if (scriptHistory?.recordOverrideNodes) {
-      scriptHistory.recordOverrideNodes(oldNodes, oldEdges, newNodes, newEdges, `Override ${count} node(s)`);
+    // If an active script is currently open in canvas, flush its current state first
+    if (scriptStore.activeScript && typeof scriptStore.saveActiveScript === 'function') {
+      scriptStore.saveActiveScript();
     }
 
-    scriptStore.saveActiveScript();
+    let totalOverridden = 0;
+    let affectedScriptsCount = 0;
+    let activeOldNodes = null;
+    let activeOldEdges = null;
+    let activeNewNodes = null;
+    let activeNewEdges = null;
+    let activeCount = 0;
+
+    scripts.forEach(script => {
+      if (!script || !Array.isArray(script.nodes) || script.nodes.length === 0) return;
+
+      const isActiveScript = scriptStore.activeScript && scriptStore.activeScript.id === script.id;
+      if (isActiveScript) {
+        activeOldNodes = JSON.parse(JSON.stringify(scriptStore.activeScript.nodes));
+        activeOldEdges = JSON.parse(JSON.stringify(scriptStore.activeScript.edges));
+      }
+
+      const { success, count } = overrideAllScriptNodes(script);
+      if (success && count > 0) {
+        totalOverridden += count;
+        affectedScriptsCount++;
+      }
+
+      if (isActiveScript) {
+        scriptStore.activeScript.nodes = JSON.parse(JSON.stringify(script.nodes));
+        scriptStore.activeScript.edges = JSON.parse(JSON.stringify(script.edges));
+        activeNewNodes = JSON.parse(JSON.stringify(scriptStore.activeScript.nodes));
+        activeNewEdges = JSON.parse(JSON.stringify(scriptStore.activeScript.edges));
+        activeCount = count;
+      }
+    });
+
+    if (scriptStore.activeScript && activeOldNodes && scriptHistory?.recordOverrideNodes) {
+      scriptHistory.recordOverrideNodes(
+        activeOldNodes,
+        activeOldEdges,
+        activeNewNodes,
+        activeNewEdges,
+        `Override ${activeCount} node(s)`
+      );
+    }
+
+    projectStore.markAsDirty();
+
+    try {
+      const workspaceStore = useWorkspaceStore();
+      if (workspaceStore.activeProjectId && typeof scriptStore.syncAllScriptsToOPFS === 'function') {
+        await scriptStore.syncAllScriptsToOPFS();
+      }
+    } catch {
+      // Non-fatal if OPFS sync is not directly available; projectStore is marked dirty
+    }
 
     showPop({
       title: 'Nodes Overridden',
-      message: `Berhasil mengoverride ${count} node berdasarkan blueprint template terbaru.`,
+      message: `Successfully overridden ${totalOverridden} node(s) across ${affectedScriptsCount} script(s) based on the latest blueprint definitions.`,
       type: 'success'
     });
 
@@ -263,6 +343,7 @@ export function useNodeOverride() {
     overrideNodeFromBlueprint,
     resetNodeToDefault,
     overrideAllScriptNodes,
+    overrideAllProjectNodes,
     triggerOverrideAllNodes
   };
 }

@@ -11,8 +11,12 @@ describe('Atomic Slider Blueprint & Execution Tests', () => {
     expect(sliderDef.label).toBe('Atomic Slider');
     expect(sliderDef.defaultData.settings.category).toBe('Helper & Tool');
     expect(sliderDef.defaultData.inputs.map(i => i.id)).toEqual([
-      'execIn', 'barEntity', 'handlerEntity', 'value', 'min', 'max', 'step', 'isInteractive'
+      'execIn', 'barEntity', 'handlerEntity', 'value', 'min', 'max', 'step', 'isInteractive', 'reverse'
     ]);
+    const reverseInput = sliderDef.defaultData.inputs.find(i => i.id === 'reverse');
+    expect(reverseInput).toBeDefined();
+    expect(reverseInput.dataType).toBe('boolean');
+    expect(sliderDef.defaultData.data.values.reverse).toBe(false);
     expect(sliderDef.defaultData.outputs.map(o => o.id)).toEqual([
       'execOut', 'onChanged', 'value', 'normalized'
     ]);
@@ -313,5 +317,182 @@ describe('Atomic Slider Blueprint & Execution Tests', () => {
     outputs = runner.nodeOutputs.get('hpNode');
     expect(outputs.value).toBe(120);
     expect(outputs.onChanged).toBe(false);
+  });
+
+  it('reverses direction when reverse: true so sliding to the right goes from 100 to 0', () => {
+    const bar = {
+      id: 'RevBar100',
+      scriptId: 'RevBar100',
+      components: {
+        UITransform: { x: 100, y: 100, width: 320, height: 20, pivotX: 0, pivotY: 0, anchorX: 0, anchorY: 0 },
+        ShapeRenderer: { width: 320, height: 20 }
+      }
+    };
+
+    const handler = {
+      id: 'RevHandler100',
+      scriptId: 'RevHandler100',
+      components: {
+        UITransform: { x: 0, y: 100, width: 24, height: 24, pivotX: 0.5, pivotY: 0.5, anchorX: 0, anchorY: 0 }
+      }
+    };
+
+    const { mockGame, setPointer } = createMockGame([bar, handler]);
+
+    const scriptData = {
+      id: 'test_reverse_slider',
+      nodes: [
+        {
+          id: 'reverseSliderNode',
+          type: 'atomicSlider',
+          inputs: sliderDef.defaultData.inputs,
+          outputs: sliderDef.defaultData.outputs,
+          data: {
+            values: {
+              barEntity: 'RevBar100',
+              handlerEntity: 'RevHandler100',
+              value: 100,
+              min: 0,
+              max: 100,
+              step: 1,
+              isInteractive: true,
+              reverse: true
+            },
+            code: sliderDef.defaultData.data.code
+          }
+        }
+      ],
+      edges: []
+    };
+
+    const runner = new ScriptRunner(mockGame, scriptData);
+
+    // Initial tick at 100 (value=100 in reverse mode is at the LEFT edge, width=0, handler at left)
+    runner._executeNodeLogic(scriptData.nodes[0], 'execIn');
+    let outputs = runner.nodeOutputs.get('reverseSliderNode');
+    expect(outputs.value).toBe(100);
+    expect(outputs.normalized).toBe(1);
+    expect(bar.components.UITransform.width).toBe(0);
+    expect(handler.components.UITransform.x).toBe(100); // Left edge
+
+    const executeFlowSpy = vi.spyOn(runner, 'executeFlow');
+
+    // Drag to midpoint: x = 100 + 160 = 260 -> should yield value 50 (50/100)
+    setPointer({ x: 260, y: 105, down: true });
+    runner._executeNodeLogic(scriptData.nodes[0], 'execIn');
+    outputs = runner.nodeOutputs.get('reverseSliderNode');
+    expect(outputs.value).toBe(50);
+    expect(outputs.normalized).toBe(0.5);
+    expect(executeFlowSpy).toHaveBeenCalledWith('reverseSliderNode', 'onChanged');
+    expect(bar.components.UITransform.width).toBe(160); // 50/100 of 320
+    expect(bar.components.UITransform.x).toBe(100);
+    expect(handler.components.UITransform.x).toBe(260); // Midpoint (50/100)
+
+    // User's specific scenario: value 40 -> both handler and bar at 60/100 (x = 292, width = 192)
+    setPointer({ x: 292, y: 105, down: true });
+    runner._executeNodeLogic(scriptData.nodes[0], 'execIn');
+    outputs = runner.nodeOutputs.get('reverseSliderNode');
+    expect(outputs.value).toBe(40);
+    expect(outputs.normalized).toBe(0.4);
+    expect(bar.components.UITransform.width).toBe(192); // 60/100 of 320
+    expect(bar.components.UITransform.x).toBe(100);
+    expect(handler.components.UITransform.x).toBe(292); // 60/100 from left
+
+    // Drag to 75% from left: x = 100 + (0.75 * 320) = 340 -> should yield value 25 (75/100)
+    setPointer({ x: 340, y: 105, down: true });
+    runner._executeNodeLogic(scriptData.nodes[0], 'execIn');
+    outputs = runner.nodeOutputs.get('reverseSliderNode');
+    expect(outputs.value).toBe(25);
+    expect(outputs.normalized).toBe(0.25);
+    expect(bar.components.UITransform.width).toBe(240); // 75/100 of 320
+    expect(bar.components.UITransform.x).toBe(100);
+    expect(handler.components.UITransform.x).toBe(340);
+
+    // Drag all the way to the right: x = 420 -> should yield value 0 (100/100)
+    setPointer({ x: 420, y: 105, down: true });
+    runner._executeNodeLogic(scriptData.nodes[0], 'execIn');
+    outputs = runner.nodeOutputs.get('reverseSliderNode');
+    expect(outputs.value).toBe(0);
+    expect(outputs.normalized).toBe(0);
+    expect(bar.components.UITransform.width).toBe(320); // 100/100 of 320
+    expect(bar.components.UITransform.x).toBe(100);
+    expect(handler.components.UITransform.x).toBe(420); // Right edge
+
+    // Drag all the way to the left: x = 100 -> should yield value 100 (0/100)
+    setPointer({ x: 100, y: 105, down: true });
+    runner._executeNodeLogic(scriptData.nodes[0], 'execIn');
+    outputs = runner.nodeOutputs.get('reverseSliderNode');
+    expect(outputs.value).toBe(100);
+    expect(outputs.normalized).toBe(1);
+    expect(bar.components.UITransform.width).toBe(0);
+    expect(bar.components.UITransform.x).toBe(100);
+    expect(handler.components.UITransform.x).toBe(100);
+  });
+
+  it('supports child handler with reverse: true without offset error', () => {
+    const bar = {
+      id: 'RevBarChild',
+      scriptId: 'RevBarChild',
+      components: {
+        UITransform: { x: -270, y: 0, width: 360, height: 20, pivotX: 0.5, pivotY: 0.5, anchorX: 0.5, anchorY: 0.5 },
+        SpriteRenderer: { sourceX: 0, sourceY: 0, sourceWidth: 360, sourceHeight: 20 }
+      }
+    };
+
+    const handler = {
+      id: 'RevHandlerChild',
+      scriptId: 'RevHandlerChild',
+      parentId: 'RevBarChild',
+      components: {
+        UITransform: { x: 0, y: 0, width: 30, height: 30, pivotX: 0.5, pivotY: 0.5, anchorX: 0.5, anchorY: 0.5 }
+      }
+    };
+
+    const { mockGame, setPointer } = createMockGame([bar, handler]);
+
+    const scriptData = {
+      id: 'test_reverse_child',
+      nodes: [
+        {
+          id: 'revChildNode',
+          type: 'atomicSlider',
+          inputs: sliderDef.defaultData.inputs,
+          outputs: sliderDef.defaultData.outputs,
+          data: {
+            values: {
+              barEntity: 'RevBarChild',
+              handlerEntity: 'RevHandlerChild',
+              value: 0,
+              min: 0,
+              max: 160,
+              step: 1,
+              isInteractive: true,
+              reverse: true
+            },
+            code: sliderDef.defaultData.data.code
+          }
+        }
+      ],
+      edges: []
+    };
+
+    const runner = new ScriptRunner(mockGame, scriptData);
+    runner._executeNodeLogic(scriptData.nodes[0], 'execIn');
+
+    let outputs = runner.nodeOutputs.get('revChildNode');
+    expect(outputs.value).toBe(0);
+    expect(outputs.normalized).toBe(0);
+    expect(bar.components.UITransform.width).toBe(360); // value 0 in reverse is right edge (full width)
+
+    // Click at screenLeft (value should become 160)
+    // screenLeft = -270 + 960 - (0.5 * 360) = 690 - 180 = 510
+    setPointer({ x: 510, y: 540, down: true });
+    runner._executeNodeLogic(scriptData.nodes[0], 'execIn');
+    outputs = runner.nodeOutputs.get('revChildNode');
+    expect(outputs.value).toBe(160);
+    expect(outputs.normalized).toBe(1);
+    expect(bar.components.UITransform.width).toBe(0); // value 160 in reverse is left edge (width 0)
+    expect(bar.components.SpriteRenderer.sourceX).toBe(0);
+    expect(bar.components.SpriteRenderer.sourceWidth).toBe(0);
   });
 });

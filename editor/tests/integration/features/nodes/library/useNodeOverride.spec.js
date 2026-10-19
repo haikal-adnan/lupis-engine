@@ -4,7 +4,8 @@ import {
   useNodeOverride, 
   overrideNodeFromBlueprint, 
   resetNodeToDefault, 
-  overrideAllScriptNodes 
+  overrideAllScriptNodes,
+  overrideAllProjectNodes 
 } from '@nodes/library/composables/useNodeOverride.js';
 import { useScriptStore } from '@scripts/scripts.js';
 import { useProjectStore } from '@projects/projects.js';
@@ -234,6 +235,45 @@ describe('useNodeOverride & Blueprint Sync Mechanism', () => {
     });
   });
 
+  describe('overrideAllProjectNodes', () => {
+    it('overrides all nodes across multiple scripts and returns correct statistics', () => {
+      const script1 = {
+        id: 's_1',
+        nodes: [
+          { id: 'n1', type: 'eventGameStart', position: { x: 0, y: 0 }, data: { code: 'old code 1' } }
+        ],
+        edges: []
+      };
+      const script2 = {
+        id: 's_2',
+        nodes: [
+          { id: 'n2', type: 'eventGamePause', position: { x: 0, y: 0 }, data: { code: 'old code 2' } },
+          { id: 'n3', type: 'eventGameResume', position: { x: 10, y: 0 }, data: { code: 'old code 3' } }
+        ],
+        edges: []
+      };
+      const scriptEmpty = {
+        id: 's_3',
+        nodes: [],
+        edges: []
+      };
+
+      const result = overrideAllProjectNodes([script1, script2, scriptEmpty]);
+
+      expect(result.success).toBe(true);
+      expect(result.totalOverriddenNodes).toBe(3);
+      expect(result.affectedScriptsCount).toBe(2);
+      expect(script1.nodes[0].data.code).toContain('context.onGameStart');
+      expect(script2.nodes[0].data.code).toContain('context.onGamePause');
+      expect(script2.nodes[1].data.code).toContain('context.onGameResume');
+    });
+
+    it('handles empty or non-array inputs safely', () => {
+      expect(overrideAllProjectNodes([])).toEqual({ success: false, totalOverriddenNodes: 0, affectedScriptsCount: 0 });
+      expect(overrideAllProjectNodes(null)).toEqual({ success: false, totalOverriddenNodes: 0, affectedScriptsCount: 0 });
+    });
+  });
+
   describe('triggerOverrideAllNodes with Confirmation & Pop Alerts', () => {
     it('aborts when user cancels the confirmation dialog', async () => {
       const node = {
@@ -258,7 +298,7 @@ describe('useNodeOverride & Blueprint Sync Mechanism', () => {
       expect(scriptStore.activeScript.nodes[0].data.code).toBe('custom code');
     });
 
-    it('proceeds with override and shows success popup when confirmed', async () => {
+    it('proceeds with override and shows success popup when confirmed with active script', async () => {
       const node = {
         id: 'node_1',
         type: 'eventGameStart',
@@ -268,22 +308,124 @@ describe('useNodeOverride & Blueprint Sync Mechanism', () => {
       await setupMockScriptEnvironment({ scriptId: 'script_confirm_test_2', nodes: [node] });
       scriptStore.setActiveScript(scriptStore.getScriptById('script_confirm_test_2'));
 
-      const { confirm, handleConfirm } = useConfirm();
+      const { confirm, handleConfirm, state: confirmState } = useConfirm();
       const { popState } = usePopAlert();
       const { triggerOverrideAllNodes } = useNodeOverride();
 
-      // Trigger action and simulate clicking 'Confirm' in dialog
+      // Trigger action and inspect English dialog options
       const actionPromise = triggerOverrideAllNodes();
+      expect(confirmState.value.isOpen).toBe(true);
+      expect(confirmState.value.title).toBe('Override Project Nodes');
+      expect(confirmState.value.confirmText).toBe('Override');
+      expect(confirmState.value.cancelText).toBe('Cancel');
+
       handleConfirm();
       const result = await actionPromise;
 
       expect(result).toBe(true);
       // Node code has been reset to blueprint
       expect(scriptStore.activeScript.nodes[0].data.code).toContain('context.onGameStart');
-      // Success toast was displayed
+      // Success toast was displayed in English
       expect(popState.value.isOpen).toBe(true);
       expect(popState.value.type).toBe('success');
       expect(popState.value.title).toBe('Nodes Overridden');
+      expect(popState.value.message).toContain('Successfully overridden');
+      expect(projectStore.syncStatus).toBe('dirty');
+    });
+
+    it('works directly WITHOUT opening canvas (activeScript is null) across all project scripts', async () => {
+      const nodeA = {
+        id: 'node_headless_1',
+        type: 'eventGameStart',
+        position: { x: 0, y: 0 },
+        data: { code: 'headless code A' }
+      };
+      const nodeB = {
+        id: 'node_headless_2',
+        type: 'eventGamePause',
+        position: { x: 10, y: 10 },
+        data: { code: 'headless code B' }
+      };
+
+      const scriptA = {
+        id: 'script_headless_a',
+        scriptId: 'HeadlessScriptA',
+        nodes: [nodeA],
+        edges: []
+      };
+      const scriptB = {
+        id: 'script_headless_b',
+        scriptId: 'HeadlessScriptB',
+        nodes: [nodeB],
+        edges: []
+      };
+
+      scriptStore.initScripts([scriptA, scriptB]);
+      // Explicitly ensure NO canvas is open
+      scriptStore.activeScript = null;
+      expect(scriptStore.activeScript).toBeNull();
+
+      const { handleConfirm, state: confirmState } = useConfirm();
+      const { popState } = usePopAlert();
+      const { triggerOverrideAllNodes } = useNodeOverride();
+
+      const actionPromise = triggerOverrideAllNodes();
+      expect(confirmState.value.isOpen).toBe(true);
+      expect(confirmState.value.title).toBe('Override Project Nodes');
+      expect(confirmState.value.message).toContain('2 script(s)');
+
+      handleConfirm();
+      const result = await actionPromise;
+
+      expect(result).toBe(true);
+      expect(scriptStore.activeScript).toBeNull();
+
+      // Both scripts in the project must be overridden
+      const updatedScriptA = scriptStore.getScriptById('script_headless_a');
+      const updatedScriptB = scriptStore.getScriptById('script_headless_b');
+      expect(updatedScriptA.nodes[0].data.code).toContain('context.onGameStart');
+      expect(updatedScriptB.nodes[0].data.code).toContain('context.onGamePause');
+
+      expect(popState.value.isOpen).toBe(true);
+      expect(popState.value.type).toBe('success');
+      expect(popState.value.title).toBe('Nodes Overridden');
+      expect(popState.value.message).toContain('Successfully overridden 2 node(s) across 2 script(s)');
+      expect(projectStore.syncStatus).toBe('dirty');
+    });
+
+    it('shows English info popup when no scripts exist in project', async () => {
+      scriptStore.initScripts([]);
+      scriptStore.activeScript = null;
+
+      const { popState } = usePopAlert();
+      const { triggerOverrideAllNodes } = useNodeOverride();
+
+      const result = await triggerOverrideAllNodes();
+
+      expect(result).toBe(false);
+      expect(popState.value.isOpen).toBe(true);
+      expect(popState.value.type).toBe('info');
+      expect(popState.value.title).toBe('Override Nodes');
+      expect(popState.value.message).toBe('No scripts found in the current project.');
+    });
+
+    it('shows English info popup when scripts exist but have no nodes', async () => {
+      scriptStore.initScripts([
+        { id: 'script_empty_1', nodes: [], edges: [] },
+        { id: 'script_empty_2', nodes: [], edges: [] }
+      ]);
+      scriptStore.activeScript = null;
+
+      const { popState } = usePopAlert();
+      const { triggerOverrideAllNodes } = useNodeOverride();
+
+      const result = await triggerOverrideAllNodes();
+
+      expect(result).toBe(false);
+      expect(popState.value.isOpen).toBe(true);
+      expect(popState.value.type).toBe('info');
+      expect(popState.value.title).toBe('Override Nodes');
+      expect(popState.value.message).toBe('No nodes found in any script of the current project.');
     });
   });
 });

@@ -475,7 +475,7 @@ return;`
     {
       type: 'atomicSlider',
       label: 'Atomic Slider',
-      description: 'Mengatur slider modular berbasis nilai bebas (misal 0-160), mendukung bar shape/sprite, knob independen atau child, serta pembulatan step.',
+      description: 'Mengatur slider modular berbasis nilai bebas (misal 0-160), mendukung bar shape/sprite, knob independen atau child, pembulatan step, serta arah reverse.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -491,7 +491,8 @@ return;`
           { id: 'min', dataType: 'number', color: '#64B5F6' },
           { id: 'max', dataType: 'number', color: '#64B5F6' },
           { id: 'step', dataType: 'number', color: '#64B5F6' },
-          { id: 'isInteractive', dataType: 'boolean', color: '#81C784' }
+          { id: 'isInteractive', dataType: 'boolean', color: '#81C784' },
+          { id: 'reverse', dataType: 'boolean', color: '#81C784' }
         ],
         outputs: [
           { id: 'execOut', dataType: 'execution', color: '#FFFFFF' },
@@ -507,7 +508,8 @@ return;`
             min: 0,
             max: 100,
             step: 1,
-            isInteractive: true
+            isInteractive: true,
+            reverse: false
           },
           code:
 `const barName = typeof inputs.barEntity === 'string' ? inputs.barEntity.trim() : '';
@@ -571,6 +573,7 @@ const rawMax = typeof inputs.max === 'number' ? inputs.max : 100;
 const maxVal = rawMax > minVal ? rawMax : (minVal + 1);
 const stepVal = typeof inputs.step === 'number' && inputs.step > 0 ? inputs.step : 0;
 const isInteractive = inputs.isInteractive !== false;
+const isReverse = inputs.reverse === true || inputs.reverse === 'true';
 
 function snapValue(val) {
   const clamped = Math.max(minVal, Math.min(maxVal, val));
@@ -585,6 +588,7 @@ function snapValue(val) {
 if (!context.state.isInitialized) {
   context.state.isInitialized = true;
   context.state.isDragging = false;
+  context.state.lastReverse = isReverse;
 
   const sprite = barEnt.components ? barEnt.components.SpriteRenderer : false;
   const shape = barEnt.components ? barEnt.components.ShapeRenderer : false;
@@ -667,31 +671,37 @@ if (typeof inputs.value === 'number' && inputs.value !== context.state.lastInput
   barEnt._atomicValue = context.state.value;
 }
 
+if (context.state.lastReverse !== isReverse) {
+  context.state.lastReverse = isReverse;
+  updateVisual(context.state.value);
+}
+
 function updateVisual(val) {
   const f = Math.max(0, Math.min(1, (val - minVal) / (maxVal - minVal)));
+  const fVisual = isReverse ? (1 - f) : f;
   const baseW = context.state.baseW;
   const pivotX = context.state.pivotX;
   const baseX = context.state.baseX;
-  const w = Math.max(0, baseW * f);
+  const w = Math.max(0, baseW * fVisual);
 
   tBar.width = w;
-  tBar.x = baseX - (pivotX * baseW * (1 - f));
+  tBar.x = baseX - (pivotX * baseW * (1 - fVisual));
 
   if (barEnt.components && barEnt.components.ShapeRenderer) {
     barEnt.components.ShapeRenderer.width = w;
   }
   if (barEnt.components && barEnt.components.SpriteRenderer) {
     barEnt.components.SpriteRenderer.sourceX = context.state.baseSX;
-    barEnt.components.SpriteRenderer.sourceWidth = Math.max(0, context.state.baseSW * f);
+    barEnt.components.SpriteRenderer.sourceWidth = Math.max(0, context.state.baseSW * fVisual);
   }
 
   const tHandler = handlerEnt && handlerEnt.components ? (handlerEnt.components.UITransform || handlerEnt.components.Transform) : false;
   if (tHandler) {
     if (context.state.isChild) {
-      tHandler.x = (baseX - (pivotX * baseW) + (f * baseW)) - tBar.x;
+      tHandler.x = (baseX - (pivotX * baseW) + (fVisual * baseW)) - tBar.x;
     } else {
       const localLeft = baseX - (pivotX * baseW);
-      tHandler.x = localLeft + (f * baseW);
+      tHandler.x = localLeft + (fVisual * baseW);
     }
   }
 }
@@ -753,7 +763,9 @@ function processPointer() {
 
     const clampedX = Math.min(Math.max(px, left), right);
     const fill = baseW > 0 ? ((clampedX - left) / baseW) : 0;
-    const computedVal = minVal + (fill * (maxVal - minVal));
+    const computedVal = isReverse
+      ? (maxVal - (fill * (maxVal - minVal)))
+      : (minVal + (fill * (maxVal - minVal)));
     const snappedVal = snapValue(computedVal);
 
     if (snappedVal !== context.state.value) {

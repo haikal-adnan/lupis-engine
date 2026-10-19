@@ -18,7 +18,8 @@ export {
   useNodeOverride, 
   overrideNodeFromBlueprint, 
   resetNodeToDefault, 
-  overrideAllScriptNodes 
+  overrideAllScriptNodes,
+  overrideAllProjectNodes 
 } from '@nodes/library/composables/useNodeOverride.js'
 
 export { default as NodeBlueprintModal } from '@nodes/library/layouts/NodeBlueprintModal.vue'
