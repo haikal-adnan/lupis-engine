@@ -14,7 +14,9 @@ export const layerSchema = (data = {}) => {
     active: data.active ?? true,
     visible: data.visible ?? true,
     locked: data.locked ?? false,
-    opacity: Number(data.opacity ?? 1.0)
+    opacity: Number(data.opacity ?? 1.0),
+    freezeInput: typeof data.freezeInput === 'boolean' ? data.freezeInput : Boolean(data.freezeInput?.active ?? false),
+    freezeInputType: data.freezeInputType || (typeof data.freezeInput === 'object' && data.freezeInput?.type) || 'all'
   };
 
   return layer;

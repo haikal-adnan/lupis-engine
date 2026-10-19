@@ -1,7 +1,8 @@
 <template>
   <div 
+    ref="panelRef"
     class="relative h-full flex flex-col bg-background text-foreground select-none overflow-hidden"
-    @click="closeMenu"
+    @click="handleBackgroundClick"
     @contextmenu.prevent="handleContextMenu($event, null)"
     tabindex="0"
   >
@@ -172,6 +173,10 @@ import {
 import { AssetItem } from '@assets/assets.js'
 
 import { useAssetLogic, useAssetMenu } from '@assets/assets.js'
+import { useWorkspaceStore } from '@workspaces/workspaces.js'
+
+const workspaceStore = useWorkspaceStore()
+const panelRef = ref(null)
 
 const assetLogic = useAssetLogic()
 
@@ -206,6 +211,13 @@ const {
 
 const dragOverBreadcrumb = ref(null)
 
+const handleBackgroundClick = (e) => {
+  closeMenu()
+  if (e.target === e.currentTarget || e.target.classList?.contains('overflow-y-auto') || !e.target.closest?.('[data-testid="asset-item"], button, input')) {
+    handleSelect(null)
+  }
+}
+
 const handleBreadcrumbDrop = (e, targetFolderId) => {
   dragOverBreadcrumb.value = null 
 
@@ -227,6 +239,12 @@ const handleBreadcrumbDrop = (e, targetFolderId) => {
 
 const handleKeyDown = (e) => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+  if (!workspaceStore.isBottomBarOpen || workspaceStore.activeBottomTabId !== 'assets') return;
+
+  if (panelRef.value && !panelRef.value.contains(document.activeElement) && !panelRef.value.contains(e.target)) {
+    return;
+  }
 
   if (e.ctrlKey || e.metaKey) {
     switch(e.key.toLowerCase()) {
@@ -255,8 +273,10 @@ const handleKeyDown = (e) => {
         }
         break;
       case 'v':
-        e.preventDefault();
-        handlePaste();
+        if (clipboard.value) {
+          e.preventDefault();
+          handlePaste();
+        }
         break;
     }
   }

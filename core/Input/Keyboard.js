@@ -1,6 +1,7 @@
 export default class Keyboard {
-    constructor(eventManager) {
+    constructor(eventManager, game = null) {
         this.eventManager = eventManager; 
+        this.game = game;
         this.keys = new Set();
         this.pressed = new Set();
         this.released = new Set();
@@ -55,18 +56,21 @@ export default class Keyboard {
         this.meta = e.metaKey;
     }
 
-    isDown(k) {
+    isDown(k, contextEntity = null) {
         if (!k) return false;
+        if (this.game?.layerSystem?.isEntityInputFrozen(contextEntity, 'keyboard')) return false;
         return this.keys.has(String(k).toLowerCase());
     }
 
-    isPressed(k) {
+    isPressed(k, contextEntity = null) {
         if (!k) return false;
+        if (this.game?.layerSystem?.isEntityInputFrozen(contextEntity, 'keyboard')) return false;
         return this.pressed.has(String(k).toLowerCase());
     }
 
-    isReleased(k) {
+    isReleased(k, contextEntity = null) {
         if (!k) return false;
+        if (this.game?.layerSystem?.isEntityInputFrozen(contextEntity, 'keyboard')) return false;
         return this.released.has(String(k).toLowerCase());
     }
 

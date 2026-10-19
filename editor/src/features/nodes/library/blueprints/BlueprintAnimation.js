@@ -1043,14 +1043,30 @@ return;`
 const t = entity.components.UITransform || entity.components.Transform;
 context.assert.exists(t, 'Entity must have UITransform or Transform component');
 
-const isHovering = context.input.isPointerOver(entity, inputs.useRaycast);
-const isPointerDown = context.input.getPointer().down;
-
 if (!context.state.wasDownMap) context.state.wasDownMap = new Map();
 if (!context.state.scaleMap) context.state.scaleMap = new Map();
 
 let currentScale = context.state.scaleMap.get(entity.scriptId) || t.scaleX || inputs.scaleNormal;
 let wasDown = context.state.wasDownMap.get(entity.scriptId) || false;
+
+outputs.selfEntity = entity.scriptId;
+outputs.execOut = true;
+
+const pointer = context.input.getPointer(entity) || context.input.getPointer();
+const isLayerFrozen = Boolean(entity.layerId && context.layer && typeof context.layer.isInputFrozen === 'function' && context.layer.isInputFrozen(entity.layerId, 'pointer'));
+const isFrozen = !pointer || isLayerFrozen;
+
+if (isFrozen) {
+  currentScale += (inputs.scaleNormal - currentScale) * inputs.lerpSpeed;
+  t.scaleX = currentScale;
+  t.scaleY = currentScale;
+  context.state.scaleMap.set(entity.scriptId, currentScale);
+  context.state.wasDownMap.set(entity.scriptId, false);
+  return;
+}
+
+const isHovering = Boolean(context.input.isPointerOver(entity, inputs.useRaycast));
+const isPointerDown = pointer ? Boolean(pointer.down) : false;
 
 let targetScale = inputs.scaleNormal;
 if (isHovering) {
@@ -1070,10 +1086,7 @@ if (isHovering && !isPointerDown && wasDown) {
 
 context.state.wasDownMap.set(entity.scriptId, isPointerDown);
 
-outputs.execOut = true;
-
 if (clicked) {
-  outputs.selfEntity = entity.scriptId;
   outputs.onClick = true;
 }
 return;`

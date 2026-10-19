@@ -5,6 +5,7 @@ import { TransformGeometry } from "./Transform/TransformGeometry.js";
 import { TransformRenderer } from "./Transform/TransformRenderer.js";
 import { TransformMediator } from "./Transform/TransformMediator.js";
 import { UISmartGuides } from "./Transform/UISmartGuides.js";
+import RenderUtils from "../Renderer/Scene/RenderUtils.js";
 
 export default class TransformTool {
     constructor(selectionTool, world, game, canvas, renderer, input) {
@@ -39,9 +40,9 @@ export default class TransformTool {
     }
 
     _isInteractive(e) {
-        if (!e || e.active === false) return false;
-        const locked = Boolean(e.locked || (e._editor && e._editor.locked === true));
-        if (locked) return false;
+        if (!e) return false;
+        if (!RenderUtils.isEntityEffectivelyActive(e, this.world) || !RenderUtils.isEntityEffectivelyVisible(e, this.world)) return false;
+        if (RenderUtils.isEntityEffectivelyLocked(e, this.world)) return false;
 
         const parentLayer = this._findLayerOfEntity(e);
         if (parentLayer && (parentLayer.active === false || parentLayer.visible === false || parentLayer.locked)) {

@@ -426,7 +426,9 @@ return;`
             { value: 'active', label: 'Active', type: 'boolean', color: '#E57373' },
             { value: 'locked', label: 'Locked', type: 'boolean', color: '#E57373' },
             { value: 'zIndex', label: 'Z-Index', type: 'number', color: '#64B5F6' },
-            { value: 'opacity', label: 'Opacity (%)', type: 'number', color: '#64B5F6' }
+            { value: 'opacity', label: 'Opacity (%)', type: 'number', color: '#64B5F6' },
+            { value: 'freezeInput', label: 'Freeze Input', type: 'boolean', color: '#E57373' },
+            { value: 'freezeInputType', label: 'Freeze Input Type', type: 'string', color: '#F48FB1' }
           ],
           code: 
 `const layer = context.assert.exists(context.layer.get(inputs.targetLayer));
@@ -437,6 +439,8 @@ outputs.active = layer.active;
 outputs.locked = layer.locked;
 outputs.zIndex = layer.zIndex;
 outputs.opacity = Math.round(layer.opacity * 100);
+outputs.freezeInput = Boolean(layer.freezeInput);
+outputs.freezeInputType = layer.freezeInputType || 'all';
 return;`
         }
       }
@@ -468,12 +472,14 @@ return;`
             { value: 'active', label: 'Active', type: 'boolean', color: '#E57373' },
             { value: 'locked', label: 'Locked', type: 'boolean', color: '#E57373' },
             { value: 'zIndex', label: 'Z-Index', type: 'number', color: '#64B5F6' },
-            { value: 'opacity', label: 'Opacity (%)', type: 'number', color: '#64B5F6' }
+            { value: 'opacity', label: 'Opacity (%)', type: 'number', color: '#64B5F6' },
+            { value: 'freezeInput', label: 'Freeze Input', type: 'boolean', color: '#E57373' },
+            { value: 'freezeInputType', label: 'Freeze Input Type', type: 'string', color: '#F48FB1' }
           ],
           code: 
 `const layer = context.assert.exists(context.layer.get(inputs.targetLayer));
 
-const propKeys = ['visible', 'active', 'locked', 'zIndex'];
+const propKeys = ['visible', 'active', 'locked', 'zIndex', 'freezeInput', 'freezeInputType'];
 for (const key of propKeys) {
   if (key in inputs) {
     layer[key] = inputs[key];

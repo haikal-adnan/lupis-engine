@@ -603,4 +603,56 @@ export default class RenderUtils {
             });
         }
     }
+
+    static isEntityEffectivelyActive(entity, world) {
+        if (!entity || entity.active === false) return false;
+        const allEntities = world?.entities || [];
+        let current = entity;
+        while (current.parentId) {
+            current = allEntities.find(e => String(e.id) === String(current.parentId));
+            if (!current) break;
+            if (current.active === false) return false;
+        }
+        if (entity.layerId && world) {
+            const allLayers = [...(world.layersWorld || []), ...(world.layersUI || [])];
+            const layer = allLayers.find(l => String(l.id) === String(entity.layerId));
+            if (layer && layer.active === false) return false;
+        }
+        return true;
+    }
+
+    static isEntityEffectivelyVisible(entity, world) {
+        if (!entity || entity.visible === false) return false;
+        const allEntities = world?.entities || [];
+        let current = entity;
+        while (current.parentId) {
+            current = allEntities.find(e => String(e.id) === String(current.parentId));
+            if (!current) break;
+            if (current.visible === false) return false;
+        }
+        if (entity.layerId && world) {
+            const allLayers = [...(world.layersWorld || []), ...(world.layersUI || [])];
+            const layer = allLayers.find(l => String(l.id) === String(entity.layerId));
+            if (layer && layer.visible === false) return false;
+        }
+        return true;
+    }
+
+    static isEntityEffectivelyLocked(entity, world) {
+        if (!entity) return false;
+        if (Boolean(entity.locked || (entity._editor && entity._editor.locked))) return true;
+        const allEntities = world?.entities || [];
+        let current = entity;
+        while (current.parentId) {
+            current = allEntities.find(e => String(e.id) === String(current.parentId));
+            if (!current) break;
+            if (Boolean(current.locked || (current._editor && current._editor.locked))) return true;
+        }
+        if (entity.layerId && world) {
+            const allLayers = [...(world.layersWorld || []), ...(world.layersUI || [])];
+            const layer = allLayers.find(l => String(l.id) === String(entity.layerId));
+            if (layer && Boolean(layer.locked)) return true;
+        }
+        return false;
+    }
 }

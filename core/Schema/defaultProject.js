@@ -62,10 +62,10 @@ export const DEFAULT_PROJECT_PAYLOAD = {
         }
       },
       layersWorld: [
-        { id: "layer_world_default", scriptId: "world_root", zIndex: 0, orderIndex: 0, active: true, visible: true, locked: false, opacity: 1.0 }
+        { id: "layer_world_default", scriptId: "world_root", zIndex: 0, orderIndex: 0, active: true, visible: true, locked: false, opacity: 1.0, freezeInput: false, freezeInputType: "all" }
       ],
       layersUI: [
-        { id: "layer_ui_default", scriptId: "ui_root", zIndex: 0, orderIndex: 0, active: true, visible: true, locked: false, opacity: 1.0 }
+        { id: "layer_ui_default", scriptId: "ui_root", zIndex: 0, orderIndex: 0, active: true, visible: true, locked: false, opacity: 1.0, freezeInput: false, freezeInputType: "all" }
       ],
       entities: []
     }

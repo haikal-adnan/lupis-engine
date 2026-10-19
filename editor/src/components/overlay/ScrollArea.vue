@@ -9,11 +9,12 @@
     <div
       ref="viewportRef"
       class="h-full w-full scrollbar-hide"
-      :class="isVertical ? 'overflow-y-auto overflow-x-hidden' : 'overflow-x-auto overflow-y-hidden'"
+      :class="viewportClass"
       @scroll="handleScroll"
+      @wheel="handleWheel"
       data-testid="scroll-viewport"
     >
-      <div ref="contentRef" :class="isVertical ? '' : 'w-max h-full'">
+      <div ref="contentRef" :class="contentClass">
         <slot />
       </div>
     </div>
@@ -22,7 +23,7 @@
       <div
         v-if="showScrollbar"
         role="scrollbar"
-        :aria-orientation="orientation"
+        :aria-orientation="isVertical ? 'vertical' : 'horizontal'"
         :aria-valuenow="Math.round(thumbPos)"
         data-testid="scroll-track"
         class="fixed z-[9999] transition-opacity duration-200 flex"
@@ -58,11 +59,25 @@ const props = defineProps({
   orientation: {
     type: String,
     default: 'vertical',
-    validator: (v) => ['vertical', 'horizontal'].includes(v)
+    validator: (v) => ['vertical', 'horizontal', 'both'].includes(v)
   }
 })
 
-const isVertical = computed(() => props.orientation === 'vertical')
+const isVertical = computed(() => props.orientation === 'vertical' || props.orientation === 'both')
+
+const viewportClass = computed(() => {
+  if (props.orientation === 'both') {
+    return 'overflow-y-auto overflow-x-auto'
+  }
+  return isVertical.value ? 'overflow-y-auto overflow-x-hidden' : 'overflow-x-auto overflow-y-hidden'
+})
+
+const contentClass = computed(() => {
+  if (props.orientation === 'both') {
+    return 'min-w-max min-h-full w-full'
+  }
+  return isVertical.value ? '' : 'w-max h-full'
+})
 
 const containerRef = ref(null)
 const viewportRef = ref(null)
@@ -134,6 +149,19 @@ const handleScroll = () => {
   scrollTimeout = setTimeout(() => {
     isScrolling.value = false
   }, 1000)
+}
+
+const handleWheel = (e) => {
+  if (e.shiftKey && viewportRef.value) {
+    const maxScrollLeft = viewportRef.value.scrollWidth - viewportRef.value.clientWidth
+    if (maxScrollLeft > 0) {
+      const delta = e.deltaY !== 0 ? e.deltaY : e.deltaX
+      if (delta !== 0) {
+        viewportRef.value.scrollLeft += delta
+        e.preventDefault()
+      }
+    }
+  }
 }
 
 const handleMouseEnter = () => { isHovering.value = true }

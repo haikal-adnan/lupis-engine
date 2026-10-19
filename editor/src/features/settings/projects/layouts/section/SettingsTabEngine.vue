@@ -85,14 +85,41 @@
         </div>
       </div>
     </section>
+
+    <section class="space-y-5">
+      <div class="border-b border-border pb-2">
+        <h4 class="text-sm font-bold text-foreground">Visual Scripting & Blueprints</h4>
+        <p class="text-xs text-muted-foreground mt-0.5">Override node data in the active graph based on latest blueprint definitions.</p>
+      </div>
+      
+      <div class="space-y-4">
+        <PropertyRow label="Override Nodes">
+          <div class="flex items-center justify-between w-full gap-4">
+            <span class="text-xs text-muted-foreground">Override all nodes in current graph while preserving existing compatible values.</span>
+            <button
+              data-testid="settings-engine-override-nodes-btn"
+              @click="triggerOverrideAllNodes"
+              class="px-3 py-1.5 text-xs font-semibold rounded-md border border-border bg-background hover:bg-accent text-foreground transition-colors flex items-center gap-2 shrink-0 cursor-pointer shadow-sm"
+              title="Override all nodes in active script with latest blueprints"
+            >
+              <RefreshCw class="w-3.5 h-3.5 text-amber-500" />
+              <span>Override Nodes</span>
+            </button>
+          </div>
+        </PropertyRow>
+      </div>
+    </section>
   </div>
 </template>
 
 <script setup>
 import { computed } from 'vue';
-import { MonitorPlay, Check, ArrowRightLeft } from 'lucide-vue-next';
+import { MonitorPlay, Check, ArrowRightLeft, RefreshCw } from 'lucide-vue-next';
 import { useInspectorBinding } from "@inspectors/inspectors.js";
 import { useSceneStore } from '@scenes/scenes.js';
+import { useNodeOverride } from '@nodes/nodes.js';
+
+const { triggerOverrideAllNodes } = useNodeOverride();
 
 import {
   PropertyRow,

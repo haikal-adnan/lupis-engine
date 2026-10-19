@@ -256,9 +256,9 @@ return;`
 `context.onTick(() => {
   const pointer = context.input.getPointer();
   const mouse = context.input.mouse;
-  const isTriggered = (mouse && mouse.isPressed('left')) || pointer.down;
+  const isTriggered = (mouse && mouse.isPressed('left')) || (pointer && pointer.down);
 
-  if (isTriggered) {
+  if (isTriggered && pointer) {
     outputs.x = pointer.x;
     outputs.y = pointer.y;
     outputs.onClick = true;
@@ -292,6 +292,7 @@ return;`
           code: 
 `context.onTick(() => {
   const pointer = context.input.getPointer();
+  if (!pointer) return;
   const mouse = context.input.mouse;
   const isDown = (pointer && pointer.down) || (mouse && (mouse.isDown('left') || mouse.isPressed('left')));
 
@@ -354,10 +355,6 @@ return;`
           code: 
 `const entity = context.assert.exists(context.entity.get(inputs.targetEntity), 'Target entity must exist');
 
-const pointer = context.input.getPointer();
-const isPointerDown = pointer.down;
-const isHovering = context.input.isPointerOver(entity, inputs.useRaycast);
-
 if (!context.state.interactStates) {
   context.state.interactStates = new Map();
 }
@@ -367,10 +364,26 @@ if (!context.state.interactStates.has(entity.scriptId)) {
 }
 const state = context.state.interactStates.get(entity.scriptId);
 
-outputs.isHovering = isHovering;
-outputs.isHolding = isHovering && isPointerDown;
 outputs.selfEntity = entity.scriptId;
 outputs.execOut = true;
+
+const pointer = context.input.getPointer(entity) || context.input.getPointer();
+const isLayerFrozen = Boolean(entity.layerId && context.layer && typeof context.layer.isInputFrozen === 'function' && context.layer.isInputFrozen(entity.layerId, 'pointer'));
+
+if (!pointer || isLayerFrozen) {
+  outputs.isHovering = false;
+  outputs.isHolding = false;
+  state.wasHovering = false;
+  state.wasDown = false;
+  context.state.interactStates.set(entity.scriptId, state);
+  return;
+}
+
+const isPointerDown = Boolean(pointer.down);
+const isHovering = Boolean(context.input.isPointerOver(entity, inputs.useRaycast));
+
+outputs.isHovering = isHovering;
+outputs.isHolding = isHovering && isPointerDown;
 
 if (isHovering) {
   outputs.onHover = true;
@@ -395,6 +408,50 @@ context.state.interactStates.set(entity.scriptId, state);
 return;`
         }
       }
+    },
+    {
+      type: 'freezeLayerInput',
+      label: 'Freeze Layer Input',
+      description: 'Freezes or unfreezes pointer, keyboard, or all inputs for all entities in a layer.',
+      dynamicMode: 'none',
+      defaultData: {
+        settings: {
+          headerTitle: 'Freeze Layer Input',
+          headerColor: '#4CAF50',
+          category: 'Input & Controls'
+        },
+        inputs: [
+          { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'layer', dataType: 'string', color: '#F48FB1', defaultValue: 'self' },
+          { id: 'inputType', dataType: 'string', color: '#F48FB1', defaultValue: 'all' },
+          { id: 'active', dataType: 'boolean', color: '#E57373', defaultValue: true }
+        ],
+        outputs: [
+          { id: 'execOut', dataType: 'execution', color: '#FFFFFF' }
+        ],
+        data: {
+          values: {
+            layer: 'self',
+            inputType: 'all',
+            active: true
+          },
+          options: {
+            inputType: [
+              { label: 'Pointer', value: 'pointer' },
+              { label: 'Keyboard', value: 'keyboard' },
+              { label: 'All', value: 'all' }
+            ]
+          },
+          code: 
+`const target = inputs.layer;
+const layer = context.assert.exists(context.layer.get(target), 'Target layer must exist');
+layer.freezeInput = Boolean(inputs.active);
+layer.freezeInputType = inputs.inputType;
+outputs.execOut = true;
+return;`
+        }
+      }
     }
   ]
 };
+

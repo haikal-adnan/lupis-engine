@@ -34,10 +34,10 @@ export const BlueprintHelperTool = {
         data: {
           values: {
             config: {
-              master: { volume: 100, bar: 'VolumeMasterBar', handler: 'VolumeMasterHandler', indicator: 'VolumeMasterIndicator' },
-              vocal: { volume: 100, bar: 'VolumeVocalBar', handler: 'VolumeVocalHandler', indicator: 'VolumeVocalIndicator' },
-              sfx: { volume: 100, bar: 'VolumeSFXBar', handler: 'VolumeSFXHandler', indicator: 'VolumeSFXIndicator' },
-              background: { volume: 100, bar: 'VolumeBGMBar', handler: 'VolumeBGMHandler', indicator: 'VolumeBGMIndicator' }
+              master: { bar: 'VolumeMasterBar', handler: 'VolumeMasterHandler', indicator: 'VolumeMasterIndicator' },
+              vocal: { bar: 'VolumeVocalBar', handler: 'VolumeVocalHandler', indicator: 'VolumeVocalIndicator' },
+              sfx: { bar: 'VolumeSFXBar', handler: 'VolumeSFXHandler', indicator: 'VolumeSFXIndicator' },
+              background: { bar: 'VolumeBGMBar', handler: 'VolumeBGMHandler', indicator: 'VolumeBGMIndicator' }
             }
           },
           code: 
@@ -54,10 +54,10 @@ if (typeof config === 'string') {
 }
 
 const defaultConfig = {
-  master: { volume: 100, bar: 'VolumeMasterBar', handler: 'VolumeMasterHandler', indicator: 'VolumeMasterIndicator' },
-  vocal: { volume: 100, bar: 'VolumeVocalBar', handler: 'VolumeVocalHandler', indicator: 'VolumeVocalIndicator' },
-  sfx: { volume: 100, bar: 'VolumeSFXBar', handler: 'VolumeSFXHandler', indicator: 'VolumeSFXIndicator' },
-  background: { volume: 100, bar: 'VolumeBGMBar', handler: 'VolumeBGMHandler', indicator: 'VolumeBGMIndicator' }
+  master: { bar: 'VolumeMasterBar', handler: 'VolumeMasterHandler', indicator: 'VolumeMasterIndicator' },
+  vocal: { bar: 'VolumeVocalBar', handler: 'VolumeVocalHandler', indicator: 'VolumeVocalIndicator' },
+  sfx: { bar: 'VolumeSFXBar', handler: 'VolumeSFXHandler', indicator: 'VolumeSFXIndicator' },
+  background: { bar: 'VolumeBGMBar', handler: 'VolumeBGMHandler', indicator: 'VolumeBGMIndicator' }
 };
 
 let sliderMap = defaultConfig;
@@ -261,10 +261,15 @@ if (!context.state.isInitialized || context.state.activeConfig !== config) {
       handlerEntity && barEntity && handlerEntity.parentId &&
       (handlerEntity.parentId === barEntity.id || handlerEntity.parentId === barEntity.scriptId)
     );
-    const baseW = tBar.width || 100;
-    const baseH = tBar.height || 100;
-    const baseX = typeof tBar.x === 'number' ? tBar.x : 0;
-    const baseY = typeof tBar.y === 'number' ? tBar.y : 0;
+    const baseW = typeof tBar._baseWidth === 'number' ? tBar._baseWidth : (tBar.width || 100);
+    const baseH = typeof tBar._baseHeight === 'number' ? tBar._baseHeight : (tBar.height || 100);
+    const baseX = typeof tBar._baseX === 'number' ? tBar._baseX : (typeof tBar.x === 'number' ? tBar.x : 0);
+    const baseY = typeof tBar._baseY === 'number' ? tBar._baseY : (typeof tBar.y === 'number' ? tBar.y : 0);
+    tBar._baseWidth = baseW;
+    tBar._baseHeight = baseH;
+    tBar._baseX = baseX;
+    tBar._baseY = baseY;
+
     const pivotX = typeof tBar.pivotX === 'number' ? tBar.pivotX : 0.5;
     const pivotY = typeof tBar.pivotY === 'number' ? tBar.pivotY : 0.5;
     const anchorX = typeof tBar.anchorX === 'number' ? tBar.anchorX : 0.5;
@@ -276,13 +281,28 @@ if (!context.state.isInitialized || context.state.activeConfig !== config) {
     let baseSH = baseH;
 
     if (sprite) {
-      baseSX = typeof sprite.sourceX === 'number' ? sprite.sourceX : 0;
-      baseSY = typeof sprite.sourceY === 'number' ? sprite.sourceY : 0;
-      baseSW = sprite.sourceWidth || baseW;
-      baseSH = sprite.sourceHeight || baseH;
+      baseSX = typeof sprite._baseSourceX === 'number' ? sprite._baseSourceX : (typeof sprite.sourceX === 'number' ? sprite.sourceX : 0);
+      baseSY = typeof sprite._baseSourceY === 'number' ? sprite._baseSourceY : (typeof sprite.sourceY === 'number' ? sprite.sourceY : 0);
+      baseSW = typeof sprite._baseSourceWidth === 'number' ? sprite._baseSourceWidth : (sprite.sourceWidth || baseW);
+      baseSH = typeof sprite._baseSourceHeight === 'number' ? sprite._baseSourceHeight : (sprite.sourceHeight || baseH);
+      sprite._baseSourceX = baseSX;
+      sprite._baseSourceY = baseSY;
+      sprite._baseSourceWidth = baseSW;
+      sprite._baseSourceHeight = baseSH;
     }
 
+    if (shape) {
+      const baseShapeW = typeof shape._baseWidth === 'number' ? shape._baseWidth : (shape.width || baseW);
+      const baseShapeH = typeof shape._baseHeight === 'number' ? shape._baseHeight : (shape.height || baseH);
+      shape._baseWidth = baseShapeW;
+      shape._baseHeight = baseShapeH;
+    }
+
+    const prevBarX = tBar.x;
+    tBar.x = baseX;
     const barGT = getGlobalTransform(barEntity);
+    tBar.x = prevBarX;
+
     const screenLeft = barGT.x - (pivotX * baseW);
     const screenRight = screenLeft + baseW;
     const screenTop = barGT.y - (pivotY * baseH);
@@ -323,16 +343,21 @@ if (!context.state.isInitialized || context.state.activeConfig !== config) {
 
     const s = context.state.sliders[key];
     let vol = false;
-    if (typeof item.volume === 'number' && !isNaN(item.volume)) {
-      vol = item.volume;
-    } else if (typeof item.volume === 'string' && item.volume.trim() && !isNaN(Number(item.volume))) {
-      vol = Number(item.volume);
-    }
+    let hasAudioVol = false;
 
-    if (vol === false && context.audio && typeof context.audio.getVolume === 'function') {
+    if (context.audio && typeof context.audio.getVolume === 'function') {
       const existingVol = context.audio.getVolume(audioBus);
       if (typeof existingVol === 'number' && !isNaN(existingVol)) {
         vol = existingVol;
+        hasAudioVol = true;
+      }
+    }
+
+    if (vol === false) {
+      if (typeof item.volume === 'number' && !isNaN(item.volume)) {
+        vol = item.volume;
+      } else if (typeof item.volume === 'string' && item.volume.trim() && !isNaN(Number(item.volume))) {
+        vol = Number(item.volume);
       }
     }
 
@@ -341,11 +366,33 @@ if (!context.state.isInitialized || context.state.activeConfig !== config) {
     }
 
     updateSliderVisual(s, vol);
-    if (context.audio && typeof context.audio.setVolume === 'function') {
+    if (!hasAudioVol && context.audio && typeof context.audio.setVolume === 'function') {
       context.audio.setVolume(audioBus, vol);
     }
 
     outputs[key + 'Volume'] = vol;
+    outputs.currentVolume = vol;
+  }
+}
+
+function syncExternalVolumeChanges() {
+  if (!context.audio || typeof context.audio.getVolume !== 'function') return;
+  if (!context.state.sliders) return;
+
+  for (const [key, s] of Object.entries(context.state.sliders)) {
+    if (!s || !s.tBar) continue;
+    if (context.state.activeSlider === key) continue;
+
+    const rawBusVol = context.audio.getVolume(s.audioBus);
+    if (typeof rawBusVol !== 'number' || isNaN(rawBusVol)) continue;
+    const busVol = Math.max(0, Math.min(100, Math.round(rawBusVol)));
+
+    if (busVol !== s.currentVolume) {
+      updateSliderVisual(s, busVol);
+      outputs[key + 'Volume'] = busVol;
+      outputs.currentVolume = busVol;
+      outputs.changedChannel = key;
+    }
   }
 }
 
@@ -407,6 +454,7 @@ function processPointerInteractions() {
   }
 }
 
+syncExternalVolumeChanges();
 processPointerInteractions();
 
 if (!context.state.hasTickListener) {
@@ -414,6 +462,7 @@ if (!context.state.hasTickListener) {
   context.state.activeSlider = false;
 
   context.onTick(() => {
+    syncExternalVolumeChanges();
     processPointerInteractions();
   });
 }
@@ -545,10 +594,15 @@ if (!context.state.isInitialized) {
     (handlerEnt.parentId === barEnt.id || handlerEnt.parentId === barEnt.scriptId)
   );
 
-  const baseW = tBar.width || 100;
-  const baseH = tBar.height || 100;
-  const baseX = typeof tBar.x === 'number' ? tBar.x : 0;
-  const baseY = typeof tBar.y === 'number' ? tBar.y : 0;
+  const baseW = typeof tBar._baseWidth === 'number' ? tBar._baseWidth : (tBar.width || 100);
+  const baseH = typeof tBar._baseHeight === 'number' ? tBar._baseHeight : (tBar.height || 100);
+  const baseX = typeof tBar._baseX === 'number' ? tBar._baseX : (typeof tBar.x === 'number' ? tBar.x : 0);
+  const baseY = typeof tBar._baseY === 'number' ? tBar._baseY : (typeof tBar.y === 'number' ? tBar.y : 0);
+  tBar._baseWidth = baseW;
+  tBar._baseHeight = baseH;
+  tBar._baseX = baseX;
+  tBar._baseY = baseY;
+
   const pivotX = typeof tBar.pivotX === 'number' ? tBar.pivotX : 0.5;
   const pivotY = typeof tBar.pivotY === 'number' ? tBar.pivotY : 0.5;
 
@@ -558,13 +612,28 @@ if (!context.state.isInitialized) {
   let baseSH = baseH;
 
   if (sprite) {
-    baseSX = typeof sprite.sourceX === 'number' ? sprite.sourceX : 0;
-    baseSY = typeof sprite.sourceY === 'number' ? sprite.sourceY : 0;
-    baseSW = sprite.sourceWidth || baseW;
-    baseSH = sprite.sourceHeight || baseH;
+    baseSX = typeof sprite._baseSourceX === 'number' ? sprite._baseSourceX : (typeof sprite.sourceX === 'number' ? sprite.sourceX : 0);
+    baseSY = typeof sprite._baseSourceY === 'number' ? sprite._baseSourceY : (typeof sprite.sourceY === 'number' ? sprite.sourceY : 0);
+    baseSW = typeof sprite._baseSourceWidth === 'number' ? sprite._baseSourceWidth : (sprite.sourceWidth || baseW);
+    baseSH = typeof sprite._baseSourceHeight === 'number' ? sprite._baseSourceHeight : (sprite.sourceHeight || baseH);
+    sprite._baseSourceX = baseSX;
+    sprite._baseSourceY = baseSY;
+    sprite._baseSourceWidth = baseSW;
+    sprite._baseSourceHeight = baseSH;
   }
 
+  if (shape) {
+    const baseShapeW = typeof shape._baseWidth === 'number' ? shape._baseWidth : (shape.width || baseW);
+    const baseShapeH = typeof shape._baseHeight === 'number' ? shape._baseHeight : (shape.height || baseH);
+    shape._baseWidth = baseShapeW;
+    shape._baseHeight = baseShapeH;
+  }
+
+  const prevBarX = tBar.x;
+  tBar.x = baseX;
   const barGT = getGlobalTransform(barEnt);
+  tBar.x = prevBarX;
+
   const screenLeft = barGT.x - (pivotX * baseW);
   const screenRight = screenLeft + baseW;
   const screenTop = barGT.y - (pivotY * baseH);
@@ -586,14 +655,16 @@ if (!context.state.isInitialized) {
   context.state.screenBottom = screenBottom;
   context.state.isChild = isChild;
 
-  const initialVal = typeof inputs.value === 'number' ? inputs.value : maxVal;
+  const initialVal = typeof barEnt._atomicValue === 'number' ? barEnt._atomicValue : (typeof inputs.value === 'number' ? inputs.value : maxVal);
   context.state.value = snapValue(initialVal);
+  barEnt._atomicValue = context.state.value;
   context.state.lastInputValue = inputs.value;
 }
 
 if (typeof inputs.value === 'number' && inputs.value !== context.state.lastInputValue && !context.state.isDragging) {
   context.state.lastInputValue = inputs.value;
   context.state.value = snapValue(inputs.value);
+  barEnt._atomicValue = context.state.value;
 }
 
 function updateVisual(val) {
@@ -687,6 +758,7 @@ function processPointer() {
 
     if (snappedVal !== context.state.value) {
       context.state.value = snappedVal;
+      barEnt._atomicValue = snappedVal;
       updateVisual(snappedVal);
 
       const normalized = Math.max(0, Math.min(1, (snappedVal - minVal) / (maxVal - minVal)));
@@ -876,55 +948,76 @@ function applyShapeColor(ent, colorHex) {
 
 if (!context.state.isInitialized) {
   context.state.isInitialized = true;
-  context.state.isOn = Boolean(inputs.isOn);
+  const initialIsOn = typeof knobEnt._switchIsOn === 'boolean'
+    ? knobEnt._switchIsOn
+    : (trackEnt && typeof trackEnt._switchIsOn === 'boolean' ? trackEnt._switchIsOn : Boolean(inputs.isOn));
+  context.state.isOn = initialIsOn;
   context.state.lastInputIsOn = inputs.isOn;
   context.state.progress = context.state.isOn ? 1 : 0;
   context.state.wasDown = false;
 
   const tKnob = knobEnt.components && (knobEnt.components.UITransform || knobEnt.components.Transform);
   if (tKnob) {
-    const baseX = typeof tKnob.x === 'number' ? tKnob.x : 0;
-    const defaultSlideDist = typeof inputs.slideDist === 'number' ? inputs.slideDist : 40;
-    let travelDist = defaultSlideDist;
+    if (typeof tKnob._switchOffX === 'number' && typeof tKnob._switchOnX === 'number') {
+      context.state.offX = tKnob._switchOffX;
+      context.state.onX = tKnob._switchOnX;
+    } else {
+      const baseX = typeof tKnob._baseX === 'number' ? tKnob._baseX : (typeof tKnob.x === 'number' ? tKnob.x : 0);
+      tKnob._baseX = baseX;
+      const defaultSlideDist = typeof inputs.slideDist === 'number' ? inputs.slideDist : 40;
+      let travelDist = defaultSlideDist;
 
-    if (trackEnt) {
-      const tTrack = trackEnt.components && (trackEnt.components.UITransform || trackEnt.components.Transform);
-      if (tTrack && typeof tTrack.width === 'number' && typeof tKnob.width === 'number') {
-        const isChild = Boolean(
-          knobEnt.parentId &&
-          (knobEnt.parentId === trackEnt.id || knobEnt.parentId === trackEnt.scriptId)
-        );
-        if (isChild) {
-          const trackW = tTrack.width;
-          const knobW = tKnob.width;
-          const pad = Math.max(2, Math.round(((tTrack.height || 30) - (tKnob.height || 26)) / 2));
-          const pTrackX = typeof tTrack.pivotX === 'number' ? tTrack.pivotX : 0.5;
-          const pKnobX = typeof tKnob.pivotX === 'number' ? tKnob.pivotX : 0.5;
-          const childOffX = (-pTrackX * trackW) + (pKnobX * knobW) + pad;
-          const childOnX = (-pTrackX * trackW) + trackW - ((1 - pKnobX) * knobW) - pad;
-          context.state.offX = childOffX;
-          context.state.onX = childOnX;
-          travelDist = false;
-        } else {
-          const diff = tTrack.width - tKnob.width - 4;
-          if (diff > 0) {
-            travelDist = diff;
+      if (trackEnt) {
+        const tTrack = trackEnt.components && (trackEnt.components.UITransform || trackEnt.components.Transform);
+        if (tTrack && typeof tTrack.width === 'number' && typeof tKnob.width === 'number') {
+          const isChild = Boolean(
+            knobEnt.parentId &&
+            (knobEnt.parentId === trackEnt.id || knobEnt.parentId === trackEnt.scriptId)
+          );
+          if (isChild) {
+            const trackW = tTrack.width;
+            const knobW = tKnob.width;
+            const pad = Math.max(2, Math.round(((tTrack.height || 30) - (tKnob.height || 26)) / 2));
+            const pTrackX = typeof tTrack.pivotX === 'number' ? tTrack.pivotX : 0.5;
+            const pKnobX = typeof tKnob.pivotX === 'number' ? tKnob.pivotX : 0.5;
+            const childOffX = (-pTrackX * trackW) + (pKnobX * knobW) + pad;
+            const childOnX = (-pTrackX * trackW) + trackW - ((1 - pKnobX) * knobW) - pad;
+            context.state.offX = childOffX;
+            context.state.onX = childOnX;
+            travelDist = false;
+          } else {
+            const diff = tTrack.width - tKnob.width - 4;
+            if (diff > 0) {
+              travelDist = diff;
+            }
           }
         }
       }
-    }
 
-    if (travelDist !== false) {
-      if (context.state.isOn) {
-        context.state.onX = baseX;
-        context.state.offX = baseX - travelDist;
-      } else {
-        context.state.offX = baseX;
-        context.state.onX = baseX + travelDist;
+      if (travelDist !== false) {
+        if (Boolean(inputs.isOn)) {
+          context.state.onX = baseX;
+          context.state.offX = baseX - travelDist;
+        } else {
+          context.state.offX = baseX;
+          context.state.onX = baseX + travelDist;
+        }
       }
+
+      tKnob._switchOffX = context.state.offX;
+      tKnob._switchOnX = context.state.onX;
     }
 
+    knobEnt._switchIsOn = context.state.isOn;
+    if (trackEnt) {
+      trackEnt._switchIsOn = context.state.isOn;
+    }
+
+    const prevKnobX = tKnob.x;
+    tKnob.x = context.state.offX;
     const knobGT = getGlobalTransform(knobEnt);
+    tKnob.x = prevKnobX;
+
     const knobW = tKnob.width || 40;
     const knobH = tKnob.height || 40;
     const pKnobX = typeof tKnob.pivotX === 'number' ? tKnob.pivotX : 0.5;
@@ -935,7 +1028,7 @@ if (!context.state.isInitialized) {
 
     const minX = Math.min(context.state.offX, context.state.onX);
     const maxX = Math.max(context.state.offX, context.state.onX);
-    const originShift = knobGT.x - (typeof tKnob.x === 'number' ? tKnob.x : 0);
+    const originShift = knobGT.x - context.state.offX;
     const left = originShift + minX - (pKnobX * knobW);
     const right = originShift + maxX - (pKnobX * knobW) + knobW;
 
@@ -949,6 +1042,10 @@ if (!context.state.isInitialized) {
 if (typeof inputs.isOn === 'boolean' && inputs.isOn !== context.state.lastInputIsOn) {
   context.state.lastInputIsOn = inputs.isOn;
   context.state.isOn = inputs.isOn;
+  knobEnt._switchIsOn = inputs.isOn;
+  if (trackEnt) {
+    trackEnt._switchIsOn = inputs.isOn;
+  }
 }
 
 function applyVisuals(progress) {
@@ -1055,6 +1152,10 @@ function updateStep() {
 
     if (triggered) {
       context.state.isOn = nextState;
+      knobEnt._switchIsOn = nextState;
+      if (trackEnt) {
+        trackEnt._switchIsOn = nextState;
+      }
       outputs.isOn = context.state.isOn;
       if (context.state.isOn) {
         outputs.onOn = true;
@@ -1249,55 +1350,76 @@ function isPointerOverEntity(ent) {
 
 if (!context.state.isInitialized) {
   context.state.isInitialized = true;
-  context.state.isOn = Boolean(inputs.isOn);
+  const initialIsOn = typeof knobEnt._switchIsOn === 'boolean'
+    ? knobEnt._switchIsOn
+    : (trackEnt && typeof trackEnt._switchIsOn === 'boolean' ? trackEnt._switchIsOn : Boolean(inputs.isOn));
+  context.state.isOn = initialIsOn;
   context.state.lastInputIsOn = inputs.isOn;
   context.state.progress = context.state.isOn ? 1 : 0;
   context.state.wasDown = false;
 
   const tKnob = knobEnt.components && (knobEnt.components.UITransform || knobEnt.components.Transform);
   if (tKnob) {
-    const baseX = typeof tKnob.x === 'number' ? tKnob.x : 0;
-    const defaultSlideDist = typeof inputs.slideDist === 'number' ? inputs.slideDist : 40;
-    let travelDist = defaultSlideDist;
+    if (typeof tKnob._switchOffX === 'number' && typeof tKnob._switchOnX === 'number') {
+      context.state.offX = tKnob._switchOffX;
+      context.state.onX = tKnob._switchOnX;
+    } else {
+      const baseX = typeof tKnob._baseX === 'number' ? tKnob._baseX : (typeof tKnob.x === 'number' ? tKnob.x : 0);
+      tKnob._baseX = baseX;
+      const defaultSlideDist = typeof inputs.slideDist === 'number' ? inputs.slideDist : 40;
+      let travelDist = defaultSlideDist;
 
-    if (trackEnt) {
-      const tTrack = trackEnt.components && (trackEnt.components.UITransform || trackEnt.components.Transform);
-      if (tTrack && typeof tTrack.width === 'number' && typeof tKnob.width === 'number') {
-        const isChild = Boolean(
-          knobEnt.parentId &&
-          (knobEnt.parentId === trackEnt.id || knobEnt.parentId === trackEnt.scriptId)
-        );
-        if (isChild) {
-          const trackW = tTrack.width;
-          const knobW = tKnob.width;
-          const pad = Math.max(2, Math.round(((tTrack.height || 30) - (tKnob.height || 26)) / 2));
-          const pTrackX = typeof tTrack.pivotX === 'number' ? tTrack.pivotX : 0.5;
-          const pKnobX = typeof tKnob.pivotX === 'number' ? tKnob.pivotX : 0.5;
-          const childOffX = (-pTrackX * trackW) + (pKnobX * knobW) + pad;
-          const childOnX = (-pTrackX * trackW) + trackW - ((1 - pKnobX) * knobW) - pad;
-          context.state.offX = childOffX;
-          context.state.onX = childOnX;
-          travelDist = false;
-        } else {
-          const diff = tTrack.width - tKnob.width - 4;
-          if (diff > 0) {
-            travelDist = diff;
+      if (trackEnt) {
+        const tTrack = trackEnt.components && (trackEnt.components.UITransform || trackEnt.components.Transform);
+        if (tTrack && typeof tTrack.width === 'number' && typeof tKnob.width === 'number') {
+          const isChild = Boolean(
+            knobEnt.parentId &&
+            (knobEnt.parentId === trackEnt.id || knobEnt.parentId === trackEnt.scriptId)
+          );
+          if (isChild) {
+            const trackW = tTrack.width;
+            const knobW = tKnob.width;
+            const pad = Math.max(2, Math.round(((tTrack.height || 30) - (tKnob.height || 26)) / 2));
+            const pTrackX = typeof tTrack.pivotX === 'number' ? tTrack.pivotX : 0.5;
+            const pKnobX = typeof tKnob.pivotX === 'number' ? tKnob.pivotX : 0.5;
+            const childOffX = (-pTrackX * trackW) + (pKnobX * knobW) + pad;
+            const childOnX = (-pTrackX * trackW) + trackW - ((1 - pKnobX) * knobW) - pad;
+            context.state.offX = childOffX;
+            context.state.onX = childOnX;
+            travelDist = false;
+          } else {
+            const diff = tTrack.width - tKnob.width - 4;
+            if (diff > 0) {
+              travelDist = diff;
+            }
           }
         }
       }
-    }
 
-    if (travelDist !== false) {
-      if (context.state.isOn) {
-        context.state.onX = baseX;
-        context.state.offX = baseX - travelDist;
-      } else {
-        context.state.offX = baseX;
-        context.state.onX = baseX + travelDist;
+      if (travelDist !== false) {
+        if (Boolean(inputs.isOn)) {
+          context.state.onX = baseX;
+          context.state.offX = baseX - travelDist;
+        } else {
+          context.state.offX = baseX;
+          context.state.onX = baseX + travelDist;
+        }
       }
+
+      tKnob._switchOffX = context.state.offX;
+      tKnob._switchOnX = context.state.onX;
     }
 
+    knobEnt._switchIsOn = context.state.isOn;
+    if (trackEnt) {
+      trackEnt._switchIsOn = context.state.isOn;
+    }
+
+    const prevKnobX = tKnob.x;
+    tKnob.x = context.state.offX;
     const knobGT = getGlobalTransform(knobEnt);
+    tKnob.x = prevKnobX;
+
     const knobW = tKnob.width || 40;
     const knobH = tKnob.height || 40;
     const pKnobX = typeof tKnob.pivotX === 'number' ? tKnob.pivotX : 0.5;
@@ -1308,7 +1430,7 @@ if (!context.state.isInitialized) {
 
     const minX = Math.min(context.state.offX, context.state.onX);
     const maxX = Math.max(context.state.offX, context.state.onX);
-    const originShift = knobGT.x - (typeof tKnob.x === 'number' ? tKnob.x : 0);
+    const originShift = knobGT.x - context.state.offX;
     const left = originShift + minX - (pKnobX * knobW);
     const right = originShift + maxX - (pKnobX * knobW) + knobW;
 
@@ -1322,6 +1444,10 @@ if (!context.state.isInitialized) {
 if (typeof inputs.isOn === 'boolean' && inputs.isOn !== context.state.lastInputIsOn) {
   context.state.lastInputIsOn = inputs.isOn;
   context.state.isOn = inputs.isOn;
+  knobEnt._switchIsOn = inputs.isOn;
+  if (trackEnt) {
+    trackEnt._switchIsOn = inputs.isOn;
+  }
 }
 
 function applyVisuals(progress) {
@@ -1431,6 +1557,10 @@ function updateStep() {
 
     if (triggered) {
       context.state.isOn = nextState;
+      knobEnt._switchIsOn = nextState;
+      if (trackEnt) {
+        trackEnt._switchIsOn = nextState;
+      }
       outputs.isOn = context.state.isOn;
       if (context.state.isOn) {
         outputs.onOn = true;

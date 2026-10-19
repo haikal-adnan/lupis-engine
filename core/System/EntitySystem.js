@@ -12,12 +12,13 @@ export default class EntitySystem {
         }
 
         const searchKey = targetId.trim();
+        const searchLower = searchKey.toLowerCase();
+        const searchSlug = searchLower.replace(/\s+/g, '_');
         const entities = this.game?.world?.entities || [];
 
-        const searchLower = searchKey.toLowerCase();
         const found = entities.find(e => 
             e.id === searchKey || 
-            (e.scriptId && e.scriptId.toLowerCase() === searchLower)
+            (e.scriptId && (e.scriptId.toLowerCase() === searchLower || e.scriptId.toLowerCase() === searchSlug))
         );
 
         return found || null;
@@ -134,5 +135,96 @@ export default class EntitySystem {
                 }
             }
         });
+    }
+
+    getParent(entity) {
+        if (!entity || !entity.parentId) return null;
+        const entities = this.game?.world?.entities || [];
+        return entities.find(e => e.id === entity.parentId) || null;
+    }
+
+    getChildren(entity) {
+        if (!entity) return [];
+        const entities = this.game?.world?.entities || [];
+        return entities.filter(e => e.parentId === entity.id);
+    }
+
+    getRoot(entity) {
+        if (!entity) return null;
+        let current = entity;
+        const entities = this.game?.world?.entities || [];
+        while (current && current.parentId) {
+            const parent = entities.find(e => e.id === current.parentId);
+            if (!parent) break;
+            current = parent;
+        }
+        return current;
+    }
+
+    findClosestByTag(tag, fromXOrEntity, optFromY) {
+        const entities = this.game?.world?.entities || [];
+        let originX = 0;
+        let originY = 0;
+        let excludeId = null;
+
+        if (typeof fromXOrEntity === 'object' && fromXOrEntity !== null) {
+            excludeId = fromXOrEntity.id;
+            const t = fromXOrEntity.components?.Transform || fromXOrEntity.components?.UITransform;
+            originX = t ? (t.x || 0) : 0;
+            originY = t ? (t.y || 0) : 0;
+        } else {
+            originX = Number(fromXOrEntity) || 0;
+            originY = Number(optFromY) || 0;
+        }
+
+        let closest = null;
+        let minDistanceSq = Infinity;
+
+        for (const other of entities) {
+            if (other.active === false) continue;
+            if (excludeId && other.id === excludeId) continue;
+            const otherTag = other.tag || other.components?.Tags?.value;
+            if (otherTag === tag) {
+                const t = other.components?.Transform || other.components?.UITransform;
+                const ox = t ? (t.x || 0) : 0;
+                const oy = t ? (t.y || 0) : 0;
+                const dx = ox - originX;
+                const dy = oy - originY;
+                const distSq = dx * dx + dy * dy;
+                if (distSq < minDistanceSq) {
+                    minDistanceSq = distSq;
+                    closest = other;
+                }
+            }
+        }
+        return closest;
+    }
+
+    getAllByTag(tag) {
+        const entities = this.game?.world?.entities || [];
+        return entities.filter(e => {
+            if (e.active === false) return false;
+            const otherTag = e.tag || e.components?.Tags?.value;
+            return otherTag === tag;
+        });
+    }
+
+    findByName(name) {
+        const searchLower = String(name).trim().toLowerCase();
+        const searchSlug = searchLower.replace(/\s+/g, '_');
+        const entities = this.game?.world?.entities || [];
+        return entities.find(e => 
+            (e.scriptId && (e.scriptId.toLowerCase() === searchLower || e.scriptId.toLowerCase() === searchSlug)) || 
+            e.id === name
+        ) || null;
+    }
+
+    findByScriptId(scriptId) {
+        const searchLower = String(scriptId).trim().toLowerCase();
+        const searchSlug = searchLower.replace(/\s+/g, '_');
+        const entities = this.game?.world?.entities || [];
+        return entities.find(e => 
+            (e.scriptId && (e.scriptId.toLowerCase() === searchLower || e.scriptId.toLowerCase() === searchSlug))
+        ) || null;
     }
 }

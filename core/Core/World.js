@@ -107,4 +107,25 @@ export default class World {
         entity.parentId = newParentId || null;
         return true;
     }
+
+    getAsset(idOrScriptId) {
+        if (!idOrScriptId) return null;
+        const search = String(idOrScriptId).trim();
+        const searchLower = search.toLowerCase();
+        const searchSlug = searchLower.replace(/\s+/g, '_');
+        if (this.assetMap?.[search]) return this.assetMap[search];
+        const list = this.assetList || [];
+        return list.find(a => 
+            a.id === search || 
+            (a.scriptId && (a.scriptId.toLowerCase() === searchLower || a.scriptId.toLowerCase() === searchSlug))
+        ) || null;
+    }
+
+    resolveAssetId(idOrScriptId) {
+        if (!idOrScriptId) return null;
+        const found = this.assetMap?.[idOrScriptId];
+        if (found && found.id) return found.id;
+        const matched = this.getAsset(idOrScriptId);
+        return matched ? matched.id : idOrScriptId;
+    }
 }

@@ -1,9 +1,10 @@
 <template>
   <div 
+    ref="panelRef"
     data-testid="script-panel"
     :data-view-mode="viewMode"
     class="relative h-full flex flex-col bg-background text-foreground select-none overflow-hidden"
-    @click="closeMenu"
+    @click="handleBackgroundClick"
     @contextmenu.prevent="handleContextMenu($event, null)"
     tabindex="0"
   >
@@ -145,7 +146,10 @@ import {
 } from '@components/components.js';
 
 import { ScriptItem, useScriptLogic, useScriptMenu } from '@scripts/scripts.js';
+import { useWorkspaceStore } from '@workspaces/workspaces.js';
 
+const workspaceStore = useWorkspaceStore();
+const panelRef = ref(null);
 const scriptLogic = useScriptLogic();
 
 const {
@@ -194,8 +198,21 @@ const handleBreadcrumbDrop = (e, targetFolderId) => {
   }
 };
 
+const handleBackgroundClick = (e) => {
+  closeMenu();
+  if (e.target === e.currentTarget || e.target.classList?.contains('overflow-y-auto') || !e.target.closest?.('[data-testid="script-item"], button, input')) {
+    handleSelect(null);
+  }
+};
+
 const handleKeyDown = (e) => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+  if (!workspaceStore.isBottomBarOpen || workspaceStore.activeBottomTabId !== 'scripts') return;
+
+  if (panelRef.value && !panelRef.value.contains(document.activeElement) && !panelRef.value.contains(e.target)) {
+    return;
+  }
 
   if (e.ctrlKey || e.metaKey) {
     switch(e.key.toLowerCase()) {
@@ -224,8 +241,10 @@ const handleKeyDown = (e) => {
         }
         break;
       case 'v':
-        e.preventDefault();
-        handlePaste();
+        if (clipboard.value) {
+          e.preventDefault();
+          handlePaste();
+        }
         break;
     }
   }

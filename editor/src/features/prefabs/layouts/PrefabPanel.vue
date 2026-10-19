@@ -1,7 +1,8 @@
 <template>
   <div 
+    ref="panelRef"
     class="relative h-full flex flex-col bg-background text-foreground select-none overflow-hidden"
-    @click="closeMenu"
+    @click="handleBackgroundClick"
     @contextmenu.prevent="handleContextMenu($event, null)"
     tabindex="0"
     data-testid="prefab-panel"
@@ -171,7 +172,10 @@ import { PrefabItem } from '@prefabs/prefabs.js';
 
 import { useFolderStore } from '@folders/folders.js';
 import { usePrefabLogic, usePrefabMenu } from '@prefabs/prefabs.js';
+import { useWorkspaceStore } from '@workspaces/workspaces.js';
 
+const workspaceStore = useWorkspaceStore();
+const panelRef = ref(null);
 const folderStore = useFolderStore();
 const prefabLogic = usePrefabLogic();
 
@@ -221,8 +225,21 @@ const handleBreadcrumbDrop = (e, targetFolderId) => {
   }
 };
 
+const handleBackgroundClick = (e) => {
+  closeMenu();
+  if (e.target === e.currentTarget || e.target.classList?.contains('overflow-y-auto') || !e.target.closest?.('[data-testid="prefab-item"], button, input')) {
+    handleSelect(null);
+  }
+};
+
 const handleKeyDown = (e) => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+  if (!workspaceStore.isBottomBarOpen || workspaceStore.activeBottomTabId !== 'prefabs') return;
+
+  if (panelRef.value && !panelRef.value.contains(document.activeElement) && !panelRef.value.contains(e.target)) {
+    return;
+  }
 
   if (e.ctrlKey || e.metaKey) {
     switch(e.key.toLowerCase()) {
@@ -251,8 +268,10 @@ const handleKeyDown = (e) => {
         }
         break;
       case 'v':
-        e.preventDefault();
-        handlePaste();
+        if (clipboard.value) {
+          e.preventDefault();
+          handlePaste();
+        }
         break;
     }
   }

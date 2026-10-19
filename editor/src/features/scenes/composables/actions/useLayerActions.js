@@ -241,11 +241,15 @@ export const useLayerActions = {
       const desiredScriptId = mode === 'copy' ? `${baseScriptId}_copy` : baseScriptId;
       const uniqueScriptId = getValidUniqueScriptId(desiredScriptId, allLayers, l => l.scriptId);
 
+      const maxLayerOrder = collection.reduce((max, l) => 
+        (l.orderIndex > max ? l.orderIndex : max), -1
+      );
+
       const newLayer = layerSchema({
         ...sourceLayer,
         id: newLayerId,
         scriptId: uniqueScriptId,
-        orderIndex: collection.length, 
+        orderIndex: maxLayerOrder + 1, 
       });
 
       collection.push(newLayer);
@@ -253,13 +257,23 @@ export const useLayerActions = {
       createdLayerIds.push(newLayerId);
 
       if (sourceEntities?.length > 0) {
-        const newEntities = sourceEntities.map(entity => ({
-          ...entity,
-          id: GenerateUUID(),
-          scriptId: `${entity.type}_${GenerateUUID().split('-')[0]}`,
-          layerId: newLayerId, 
-          parentId: null 
-        }));
+        const idMap = {};
+        sourceEntities.forEach(e => {
+          idMap[e.id] = GenerateUUID();
+        });
+
+        const newEntities = sourceEntities.map(entity => {
+          const newId = idMap[entity.id];
+          const newParentId = entity.parentId && idMap[entity.parentId] ? idMap[entity.parentId] : null;
+          return {
+            ...JSON.parse(JSON.stringify(entity)),
+            id: newId,
+            scriptId: `${entity.scriptId || entity.type || 'entity'}_${GenerateUUID().split('-')[0]}`,
+            layerId: newLayerId, 
+            parentId: newParentId,
+            orderIndex: entity.orderIndex ?? 0
+          };
+        });
         scene.entities.push(...newEntities);
         engineBridge.createEntity(newEntities); 
       }

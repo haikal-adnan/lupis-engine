@@ -212,6 +212,7 @@ Directs sound playback through the engine's 4 audio buses: `master`, `background
 | `getCurrentId()` | `none` | `string` | Returns active scene unique ID. |
 | `getCurrentData()` | `none` | `SceneData` | Returns active scene raw configuration object. |
 | `getAllScenes()` | `none` | `Array` | Returns list of all available project scenes. |
+| `injectLayer(sceneName, layerName, inheritState?, targetLayer?)` | `sceneName: string, layerName: string, inheritState?: boolean, targetLayer?: string` | `{ success: boolean, isFirstLoad: boolean }` | Injects a layer and its entities from another scene into the active scene. If `inheritState: true` (default), preserves mutated runtime state across scene loads; if `false`, instantiates fresh from template schema. `targetLayer` specifies an optional destination layer name. |
 
 ---
 

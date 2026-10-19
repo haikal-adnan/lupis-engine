@@ -350,6 +350,50 @@ outputs.sceneName = currentScene;
 return;`
         }
       } 
+    },
+    { 
+      type: 'injectLayer', 
+      label: 'Inject Layer', 
+      description: 'Injects a reusable layer and its entities from another scene into the active scene with optional state inheritance.', 
+      dynamicMode: 'none',
+      defaultData: { 
+        settings: { 
+          headerTitle: 'Inject Layer', 
+          headerColor: '#8E24AA', 
+          category: 'Scene & Lifecycle' 
+        },
+        inputs: [
+          { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'sceneName', dataType: 'string', color: '#F48FB1', defaultValue: '' },
+          { id: 'layerName', dataType: 'string', color: '#F48FB1', defaultValue: '' },
+          { id: 'targetLayer', dataType: 'string', color: '#F48FB1', defaultValue: '' },
+          { id: 'inheritState', dataType: 'boolean', color: '#4CAF50', defaultValue: true }
+        ], 
+        outputs: [
+          { id: 'execOut', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'success', dataType: 'boolean', color: '#4CAF50' },
+          { id: 'isFirstLoad', dataType: 'boolean', color: '#4CAF50' }
+        ],
+        data: {
+          values: {
+            sceneName: '',
+            layerName: '',
+            targetLayer: '',
+            inheritState: true
+          },
+          code: 
+`const sceneName = String(inputs.sceneName);
+const layerName = String(inputs.layerName);
+const targetLayer = inputs.targetLayer ? String(inputs.targetLayer) : '';
+const inheritState = inputs.inheritState !== false && inputs.inheritState !== 'false';
+
+const res = context.scene.injectLayer(sceneName, layerName, inheritState, targetLayer);
+outputs.success = Boolean(res.success);
+outputs.isFirstLoad = Boolean(res.isFirstLoad);
+outputs.execOut = true;
+return;`
+        }
+      } 
     }
   ]
 };

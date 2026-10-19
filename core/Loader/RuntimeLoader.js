@@ -178,7 +178,7 @@ export default class RuntimeLoader {
     _initMain(game, canvas, mode) {
         Config.ENGINE_MODE = mode;
         game.events = new EventManager();
-        game.input = new InputManager(canvas, game.events);
+        game.input = new InputManager(canvas, game.events, game);
         game.world.ui = [];
         game.renderer = new RendererManager(canvas, game);
 

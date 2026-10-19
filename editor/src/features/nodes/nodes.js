@@ -14,6 +14,12 @@ export { default as VariablePanel } from '@nodes/variable/layouts/VariablePanel.
 export { useNodeBlueprint } from '@nodes/library/composables/useNodeBlueprint.js'
 export { useNodePreferences } from '@nodes/library/composables/useNodePreferences.js'
 export { useVariableConfig } from '@nodes/library/composables/useVariableConfig.js'
+export { 
+  useNodeOverride, 
+  overrideNodeFromBlueprint, 
+  resetNodeToDefault, 
+  overrideAllScriptNodes 
+} from '@nodes/library/composables/useNodeOverride.js'
 
 export { default as NodeBlueprintModal } from '@nodes/library/layouts/NodeBlueprintModal.vue'
 export { default as NodeLibrary } from '@nodes/library/layouts/NodeLibrary.vue'

@@ -173,11 +173,13 @@
 
 <script setup>
 import { onMounted, onBeforeUnmount } from 'vue'
+import { RefreshCw } from 'lucide-vue-next'
 import { BaseContextMenu } from "@components/components.js";
-import { useGraphEditor, useNodeMenu, GraphNode } from '@nodes/nodes.js'
+import { useGraphEditor, useNodeMenu, useNodeOverride, GraphNode } from '@nodes/nodes.js'
 import { useTheme } from '@composables/composables.js';
 
 const { isDark } = useTheme() 
+const { triggerOverrideAllNodes } = useNodeOverride() 
 
 const {
   panelRef, 

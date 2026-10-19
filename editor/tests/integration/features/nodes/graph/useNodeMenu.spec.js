@@ -211,6 +211,81 @@ describe('useNodeMenu Integration', () => {
       expect(activeTab.name).toBe('Custom Action')
       expect(activeTab.type).toBe('code_editor')
     })
+
+    it('resets node to template defaults and severs connected edges on Reset Node', async () => {
+      // Arrange
+      const nodeA = {
+        id: 'node_reset_test',
+        type: 'eventSceneStart',
+        position: { x: 50, y: 50 },
+        settings: { headerTitle: 'Custom Name' },
+        inputs: [{ id: 'customPort', dataType: 'string' }],
+        outputs: [{ id: 'execOut', dataType: 'execution' }],
+        data: {
+          code: '/* custom modified code */'
+        }
+      }
+      const edgeA = { id: 'edge_reset_test', source: 'node_reset_test', sourceHandle: 'execOut', target: 'node_other', targetHandle: 'in' }
+
+      await setupMockScriptEnvironment({ scriptId: 'script_reset', nodes: [nodeA], edges: [edgeA] })
+      scriptStore.setActiveScript(scriptStore.getScriptById('script_reset'))
+
+      const { openMenu, contextMenu } = useNodeMenu()
+      openMenu({ clientX: 20, clientY: 20 }, nodeA)
+
+      const resetAction = contextMenu.value.items.find(i => i.label === 'Reset Node')?.action
+      expect(resetAction).toBeDefined()
+
+      // Act
+      resetAction()
+
+      // Assert: node reset to defaults, edges disconnected
+      const updatedNode = scriptStore.activeScript.nodes.find(n => n.id === 'node_reset_test')
+      expect(updatedNode.settings.headerTitle).toBe('On Scene Start')
+      expect(updatedNode.data.code).toContain('context.onSceneStart')
+      expect(scriptStore.activeScript.edges.find(e => e.id === 'edge_reset_test')).toBeUndefined()
+    })
+
+    it('applies blueprint update to node while keeping compatible port connections on Apply update to Node', async () => {
+      // Arrange
+      const nodeA = {
+        id: 'node_update_test',
+        type: 'actionSetGameState',
+        position: { x: 200, y: 150 },
+        settings: { headerTitle: 'Set Game State' },
+        inputs: [
+          { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'action', dataType: 'string', color: '#F48FB1', defaultValue: 'pause' }
+        ],
+        outputs: [
+          { id: 'execOut', dataType: 'execution', color: '#FFFFFF' }
+        ],
+        data: {
+          values: { action: 'quit' },
+          code: '/* user edited code */'
+        }
+      }
+      const edgeA = { id: 'edge_keep', source: 'node_prev', sourceHandle: 'out', target: 'node_update_test', targetHandle: 'execIn' }
+
+      await setupMockScriptEnvironment({ scriptId: 'script_apply_update', nodes: [nodeA], edges: [edgeA] })
+      scriptStore.setActiveScript(scriptStore.getScriptById('script_apply_update'))
+
+      const { openMenu, contextMenu } = useNodeMenu()
+      openMenu({ clientX: 30, clientY: 30 }, nodeA)
+
+      const updateAction = contextMenu.value.items.find(i => i.label === 'Apply update to Node')?.action
+      expect(updateAction).toBeDefined()
+
+      // Act
+      updateAction()
+
+      // Assert: existing value 'quit' is preserved, code is reset, edge is kept
+      const updatedNode = scriptStore.activeScript.nodes.find(n => n.id === 'node_update_test')
+      expect(updatedNode.data.values.action).toBe('quit')
+      expect(updatedNode.data.code).toContain('context.lifecycle')
+      expect(updatedNode.data.code).not.toContain('/* user edited code */')
+      expect(scriptStore.activeScript.edges.find(e => e.id === 'edge_keep')).toBeDefined()
+    })
   })
 
   describe('Negative & Edge Cases', () => {

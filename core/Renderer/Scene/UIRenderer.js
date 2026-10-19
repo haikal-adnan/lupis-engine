@@ -52,7 +52,7 @@ export default class UIRenderer {
     }
 
     _processUIEntity(e, world, proj, parentOpacity) {
-        if (!e || e.active === false || e.visible === false) return;
+        if (!e || !RenderUtils.isEntityEffectivelyActive(e, world) || !RenderUtils.isEntityEffectivelyVisible(e, world)) return;
 
         const comps = e.components;
         if (!comps) return;

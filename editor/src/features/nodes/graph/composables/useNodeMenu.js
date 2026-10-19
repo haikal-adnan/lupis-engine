@@ -1,9 +1,10 @@
 import { ref } from 'vue'
-import { Copy, Trash2, Code } from 'lucide-vue-next'
+import { Copy, Trash2, Code, RotateCcw, RefreshCw } from 'lucide-vue-next'
 import { GenerateUUID } from '@utils/utils.js'
 import { useScriptStore } from '@scripts/scripts.js'
 import { useWorkspaceStore } from '@workspaces/workspaces.js'
 import { useScriptHistory } from '@historys/historys.js'
+import { resetNodeToDefault, overrideNodeFromBlueprint } from '@nodes/library/composables/useNodeOverride.js'
 
 export function useNodeMenu() {
   const store = useScriptStore()
@@ -51,6 +52,50 @@ export function useNodeMenu() {
       store.saveActiveScript()
     },
 
+    resetNode: (nodeId) => {
+      const targetIds = store.selectedNodeIds.length > 0 ? [...store.selectedNodeIds] : [nodeId]
+      if (!store.activeScript) return
+
+      const oldNodes = JSON.parse(JSON.stringify(store.activeScript.nodes))
+      const oldEdges = JSON.parse(JSON.stringify(store.activeScript.edges))
+
+      targetIds.forEach(id => {
+        const targetNode = store.activeScript.nodes.find(n => n.id === id)
+        if (!targetNode) return
+        resetNodeToDefault(targetNode, store.activeScript)
+      })
+
+      const newNodes = JSON.parse(JSON.stringify(store.activeScript.nodes))
+      const newEdges = JSON.parse(JSON.stringify(store.activeScript.edges))
+
+      if (scriptHistory?.recordOverrideNodes) {
+        scriptHistory.recordOverrideNodes(oldNodes, oldEdges, newNodes, newEdges, 'Reset Node')
+      }
+      store.saveActiveScript()
+    },
+
+    applyUpdateToNode: (nodeId) => {
+      const targetIds = store.selectedNodeIds.length > 0 ? [...store.selectedNodeIds] : [nodeId]
+      if (!store.activeScript) return
+
+      const oldNodes = JSON.parse(JSON.stringify(store.activeScript.nodes))
+      const oldEdges = JSON.parse(JSON.stringify(store.activeScript.edges))
+
+      targetIds.forEach(id => {
+        const targetNode = store.activeScript.nodes.find(n => n.id === id)
+        if (!targetNode) return
+        overrideNodeFromBlueprint(targetNode, store.activeScript)
+      })
+
+      const newNodes = JSON.parse(JSON.stringify(store.activeScript.nodes))
+      const newEdges = JSON.parse(JSON.stringify(store.activeScript.edges))
+
+      if (scriptHistory?.recordOverrideNodes) {
+        scriptHistory.recordOverrideNodes(oldNodes, oldEdges, newNodes, newEdges, 'Apply update to Node')
+      }
+      store.saveActiveScript()
+    },
+
     openCodeEditor: (node) => {
       if (!node || !node.id) return
       const nodeTitle = node.settings?.headerTitle || 'Node'
@@ -71,12 +116,25 @@ export function useNodeMenu() {
     const count = store.selectedNodeIds.length
     const deleteLabel = count > 1 ? `Delete Selected (${count})` : 'Delete Node'
     const duplicateLabel = count > 1 ? `Duplicate Selected (${count})` : 'Duplicate Node'
+    const resetLabel = count > 1 ? `Reset Selected (${count})` : 'Reset Node'
+    const updateLabel = count > 1 ? `Apply update to Selected (${count})` : 'Apply update to Node'
 
     const items = [
       { 
         label: 'Edit Code', 
         icon: Code, 
         action: () => handlers.openCodeEditor(node) 
+      },
+      { separator: true },
+      {
+        label: updateLabel,
+        icon: RefreshCw,
+        action: () => handlers.applyUpdateToNode(node.id)
+      },
+      {
+        label: resetLabel,
+        icon: RotateCcw,
+        action: () => handlers.resetNode(node.id)
       },
       { separator: true },
       { 

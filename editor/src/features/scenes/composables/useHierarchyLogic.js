@@ -77,6 +77,46 @@ export function useHierarchyLogic() {
       };
     });
 
+    const propagateState = (node, parentLocked, parentHidden, parentInactive) => {
+      const ownLocked = Boolean(node.locked || node._editor?.locked);
+      const ownVisible = node.visible !== false;
+      const ownActive = node.active !== false;
+
+      node.ownLocked = ownLocked;
+      node.ownVisible = ownVisible;
+      node.ownActive = ownActive;
+
+      node.inheritedLocked = parentLocked;
+      node.inheritedHidden = parentHidden;
+      node.inheritedInactive = parentInactive;
+
+      node.effectiveLocked = ownLocked || parentLocked;
+      node.effectiveVisible = ownVisible && !parentHidden;
+      node.effectiveActive = ownActive && !parentInactive;
+
+      if (node.children && node.children.length > 0) {
+        node.children.forEach(child => {
+          propagateState(child, node.effectiveLocked, !node.effectiveVisible, !node.effectiveActive);
+        });
+      }
+    };
+
+    allLayers.forEach(layer => {
+      const layerLocked = Boolean(layer.locked);
+      const layerHidden = layer.visible === false;
+      const layerInactive = layer.active === false;
+
+      layer.effectiveLocked = layerLocked;
+      layer.effectiveVisible = !layerHidden;
+      layer.effectiveActive = !layerInactive;
+
+      if (layer.children && layer.children.length > 0) {
+        layer.children.forEach(child => {
+          propagateState(child, layerLocked, layerHidden, layerInactive);
+        });
+      }
+    });
+
     const worldLayers = [];
     const uiLayers = [];
 

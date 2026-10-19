@@ -17,8 +17,8 @@
       data-section="tree-viewport"
       data-testid="hierarchy-tree-viewport"
     >
-      <ScrollArea>
-        <div class="px-1 pt-2 pb-32"> 
+      <ScrollArea orientation="both">
+        <div class="px-1 pt-2 pb-32 min-w-max w-full"> 
           <!-- data-testid intentionally NOT attached here: would override SceneTree root testid -->
           <SceneTree 
             :data="filteredData" 

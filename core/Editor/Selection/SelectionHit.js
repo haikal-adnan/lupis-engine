@@ -9,7 +9,7 @@ export class SelectionHit {
     }
 
     locked(e) {
-        return Boolean(e?.locked || (e?._editor && e._editor.locked));
+        return RenderUtils.isEntityEffectivelyLocked(e, this.game.world);
     }
 
     _getEntityDimensions(e) {
@@ -118,7 +118,7 @@ export class SelectionHit {
             const sortedEntities = RenderUtils.getHierarchicalOrder(layer.entities).reverse();
 
             for (const e of sortedEntities) {
-                if (!e.visible || this.locked(e)) continue;
+                if (!RenderUtils.isEntityEffectivelyVisible(e, this.game.world) || !RenderUtils.isEntityEffectivelyActive(e, this.game.world) || this.locked(e)) continue;
                 if (filter && !filter(e, layer)) continue;
 
                 if (this._isPointInEntity(wx, wy, e, rootBounds)) {
@@ -148,7 +148,7 @@ export class SelectionHit {
             if (!layer.entities) continue;
 
             for (const e of layer.entities) {
-                if (!e.visible || this.locked(e)) continue;
+                if (!RenderUtils.isEntityEffectivelyVisible(e, this.game.world) || !RenderUtils.isEntityEffectivelyActive(e, this.game.world) || this.locked(e)) continue;
                 if (filter && !filter(e, layer)) continue;
 
                 const t = this.engine.getTransform(e);

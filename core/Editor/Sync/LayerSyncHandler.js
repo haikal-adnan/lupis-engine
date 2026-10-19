@@ -8,11 +8,14 @@ export class LayerSyncHandler {
         const newLayer = {
             id: layerData.id,
             scriptId: scriptId,
-            visible: true,
-            locked: false,
+            visible: layerData.visible ?? true,
+            active: layerData.active ?? true,
+            locked: layerData.locked ?? false,
             opacity: layerData.opacity ?? 1.0,
             zIndex: layerData.zIndex ?? 0,
             orderIndex: layerData.orderIndex ?? 0,
+            freezeInput: Boolean(layerData.freezeInput ?? false),
+            freezeInputType: layerData.freezeInputType || 'all',
             entities: []
         };
 

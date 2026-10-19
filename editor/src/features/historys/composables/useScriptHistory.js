@@ -328,6 +328,33 @@ export function useScriptHistory() {
     });
   };
 
+  const recordOverrideNodes = (oldNodes, oldEdges, newNodes, newEdges, description = 'Override Nodes') => {
+    const targetScriptId = scriptStore.activeScript?.id;
+    if (!targetScriptId) return;
+
+    const oldNodesCloned = deepClone(oldNodes);
+    const oldEdgesCloned = deepClone(oldEdges);
+    const newNodesCloned = deepClone(newNodes);
+    const newEdgesCloned = deepClone(newEdges);
+
+    record({
+      type: 'OVERRIDE_NODES',
+      description,
+      undo: () => {
+        if (scriptStore.activeScript?.id !== targetScriptId) return;
+        scriptStore.activeScript.nodes = deepClone(oldNodesCloned);
+        scriptStore.activeScript.edges = deepClone(oldEdgesCloned);
+        scriptStore.saveActiveScript();
+      },
+      redo: () => {
+        if (scriptStore.activeScript?.id !== targetScriptId) return;
+        scriptStore.activeScript.nodes = deepClone(newNodesCloned);
+        scriptStore.activeScript.edges = deepClone(newEdgesCloned);
+        scriptStore.saveActiveScript();
+      }
+    });
+  };
+
   return {
     startTransaction,
     endTransactionWithDelay,
@@ -340,6 +367,7 @@ export function useScriptHistory() {
     recordEdgeModifierChange,
     recordPortChange,
     recordLocalVariableChange,
+    recordOverrideNodes,
     undo,
     redo,
     logHistory

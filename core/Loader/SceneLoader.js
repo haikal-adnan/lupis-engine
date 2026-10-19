@@ -137,6 +137,25 @@ export default class SceneLoader {
             for (const [key, val] of Object.entries(finalData.components)) {
                 entity.addComponent(key, val);
             }
+            if (entity.components.UITransform) {
+                const ut = entity.components.UITransform;
+                if (typeof ut._baseWidth !== 'number' && typeof ut.width === 'number') ut._baseWidth = ut.width;
+                if (typeof ut._baseHeight !== 'number' && typeof ut.height === 'number') ut._baseHeight = ut.height;
+                if (typeof ut._baseX !== 'number' && typeof ut.x === 'number') ut._baseX = ut.x;
+                if (typeof ut._baseY !== 'number' && typeof ut.y === 'number') ut._baseY = ut.y;
+            }
+            if (entity.components.SpriteRenderer) {
+                const sr = entity.components.SpriteRenderer;
+                if (typeof sr._baseSourceWidth !== 'number' && typeof sr.sourceWidth === 'number') sr._baseSourceWidth = sr.sourceWidth;
+                if (typeof sr._baseSourceHeight !== 'number' && typeof sr.sourceHeight === 'number') sr._baseSourceHeight = sr.sourceHeight;
+                if (typeof sr._baseSourceX !== 'number' && typeof sr.sourceX === 'number') sr._baseSourceX = sr.sourceX;
+                if (typeof sr._baseSourceY !== 'number' && typeof sr.sourceY === 'number') sr._baseSourceY = sr.sourceY;
+            }
+            if (entity.components.ShapeRenderer) {
+                const sh = entity.components.ShapeRenderer;
+                if (typeof sh._baseWidth !== 'number' && typeof sh.width === 'number') sh._baseWidth = sh.width;
+                if (typeof sh._baseHeight !== 'number' && typeof sh.height === 'number') sh._baseHeight = sh.height;
+            }
         }
 
         return entity;

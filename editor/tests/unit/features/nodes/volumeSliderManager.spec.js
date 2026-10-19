@@ -13,12 +13,13 @@ describe('volumeSliderManager Blueprint & Execution Tests', () => {
     expect(sliderNodeDef.defaultData.inputs.map(i => i.id)).toEqual(['execIn', 'config']);
   });
 
-  function createMockGame() {
+  function createMockGame(initialVolumes = {}) {
     const audioVolumes = {
       master: 100,
       background: 100,
       sfx: 100,
-      voice: 100
+      voice: 100,
+      ...initialVolumes
     };
 
     const entities = [
@@ -83,7 +84,7 @@ describe('volumeSliderManager Blueprint & Execution Tests', () => {
   }
 
   it('handles partial config with only background volume without errors', () => {
-    const { mockGame, audioVolumes, entities } = createMockGame();
+    const { mockGame, audioVolumes, entities } = createMockGame({ background: 75 });
 
     const scriptData = {
       id: 'test_script',
@@ -128,7 +129,7 @@ describe('volumeSliderManager Blueprint & Execution Tests', () => {
   });
 
   it('handles partial config with master, sfx, background (omitting vocal) and null entries safely', () => {
-    const { mockGame, audioVolumes, entities } = createMockGame();
+    const { mockGame, audioVolumes, entities } = createMockGame({ master: 50, background: 30, sfx: 80 });
 
     const scriptData = {
       id: 'test_script_multi',
@@ -306,7 +307,7 @@ describe('volumeSliderManager Blueprint & Execution Tests', () => {
   });
 
   it('updates indicator TextRenderer with "{value}%" on initialization and on pointer interaction', () => {
-    const { mockGame, audioVolumes, entities } = createMockGame();
+    const { mockGame, audioVolumes, entities } = createMockGame({ master: 85 });
 
     const masterIndicator = {
       id: 'VolumeMasterIndicator',
@@ -375,7 +376,7 @@ describe('volumeSliderManager Blueprint & Execution Tests', () => {
   });
 
   it('handles optional indicator gracefully when omitted, null, or entity has no TextRenderer', () => {
-    const { mockGame, audioVolumes, entities } = createMockGame();
+    const { mockGame, audioVolumes, entities } = createMockGame({ master: 70, background: 40, sfx: 60, voice: 90 });
 
     entities.push({
       id: 'EmptyIndicatorEntity',
@@ -439,7 +440,7 @@ describe('volumeSliderManager Blueprint & Execution Tests', () => {
   });
 
   it('supports indicator TextRenderer located on a child entity', () => {
-    const { mockGame, audioVolumes, entities } = createMockGame();
+    const { mockGame, audioVolumes, entities } = createMockGame({ background: 65 });
 
     const childTextEntity = {
       id: 'BGMIndicatorChildText',
@@ -493,6 +494,169 @@ describe('volumeSliderManager Blueprint & Execution Tests', () => {
 
     expect(audioVolumes.background).toBe(65);
     expect(childTextEntity.components.TextRenderer.value).toBe('65%');
+  });
+
+  it('reads actual current volume from audio system on initialization (e.g. master: 30)', () => {
+    const { mockGame, entities } = createMockGame({ master: 30 });
+
+    const masterIndicator = {
+      id: 'VolumeMasterIndicator',
+      scriptId: 'VolumeMasterIndicator',
+      components: {
+        UITransform: { x: -90, y: 80, width: 60, height: 20 },
+        TextRenderer: { value: '0%' }
+      }
+    };
+    entities.push(masterIndicator);
+
+    const scriptData = {
+      id: 'test_real_volume',
+      nodes: [
+        {
+          id: 'sliderNode',
+          type: 'volumeSliderManager',
+          inputs: sliderNodeDef.defaultData.inputs,
+          outputs: sliderNodeDef.defaultData.outputs,
+          data: {
+            values: {
+              config: {
+                master: {
+                  bar: 'VolumeMasterBar',
+                  handler: 'VolumeMasterHandler',
+                  indicator: 'VolumeMasterIndicator'
+                }
+              }
+            },
+            code: sliderNodeDef.defaultData.data.code
+          }
+        }
+      ],
+      edges: []
+    };
+
+    const runner = new ScriptRunner(mockGame, scriptData);
+    runner._executeNodeLogic(scriptData.nodes[0], 'execIn');
+
+    const masterBar = entities.find(e => e.id === 'VolumeMasterBar');
+    const masterKnob = entities.find(e => e.id === 'VolumeMasterHandler');
+
+    // 360 * 0.3 = 108
+    expect(masterBar.components.UITransform.width).toBe(108);
+    expect(masterBar.components.ShapeRenderer.width).toBe(108);
+    // localLeft = -270 - 0.5 * 360 = -450. Knob = -450 + 0.3 * 360 = -342
+    expect(masterKnob.components.UITransform.x).toBe(-342);
+    expect(masterIndicator.components.TextRenderer.value).toBe('30%');
+
+    const outputs = runner.nodeOutputs.get('sliderNode');
+    expect(outputs.masterVolume).toBe(30);
+    expect(outputs.currentVolume).toBe(30);
+  });
+
+  it('adapts slider visual and outputs when audio volume changes outside volume slider', () => {
+    const { mockGame, entities } = createMockGame({ master: 30 });
+
+    const masterIndicator = {
+      id: 'VolumeMasterIndicator',
+      scriptId: 'VolumeMasterIndicator',
+      components: {
+        UITransform: { x: -90, y: 80, width: 60, height: 20 },
+        TextRenderer: { value: '0%' }
+      }
+    };
+    entities.push(masterIndicator);
+
+    const scriptData = {
+      id: 'test_external_sync',
+      nodes: [
+        {
+          id: 'sliderNode',
+          type: 'volumeSliderManager',
+          inputs: sliderNodeDef.defaultData.inputs,
+          outputs: sliderNodeDef.defaultData.outputs,
+          data: {
+            values: {
+              config: {
+                master: {
+                  bar: 'VolumeMasterBar',
+                  handler: 'VolumeMasterHandler',
+                  indicator: 'VolumeMasterIndicator'
+                }
+              }
+            },
+            code: sliderNodeDef.defaultData.data.code
+          }
+        }
+      ],
+      edges: []
+    };
+
+    const runner = new ScriptRunner(mockGame, scriptData);
+    runner._executeNodeLogic(scriptData.nodes[0], 'execIn');
+
+    expect(masterIndicator.components.TextRenderer.value).toBe('30%');
+
+    // Simulate external change outside this volume slider:
+    mockGame.audioSystem.setVolume('master', 60);
+
+    // Run tick / next execution
+    runner._executeNodeLogic(scriptData.nodes[0], 'execIn');
+
+    const masterBar = entities.find(e => e.id === 'VolumeMasterBar');
+    const masterKnob = entities.find(e => e.id === 'VolumeMasterHandler');
+
+    // 360 * 0.6 = 216
+    expect(masterBar.components.UITransform.width).toBe(216);
+    expect(masterBar.components.ShapeRenderer.width).toBe(216);
+    // localLeft = -270 - 0.5 * 360 = -450. Knob = -450 + 0.6 * 360 = -234
+    expect(masterKnob.components.UITransform.x).toBe(-234);
+    expect(masterIndicator.components.TextRenderer.value).toBe('60%');
+
+    const outputs = runner.nodeOutputs.get('sliderNode');
+    expect(outputs.masterVolume).toBe(60);
+    expect(outputs.currentVolume).toBe(60);
+    expect(outputs.changedChannel).toBe('master');
+  });
+
+  it('fallbacks gracefully to config volume or 100 when audio system has no volume or is unavailable', () => {
+    const { mockGame, entities } = createMockGame();
+    mockGame.audioSystem = null; // simulate no audioSystem
+    mockGame.contextSystem = new ContextSystem(mockGame);
+
+    const scriptData = {
+      id: 'test_fallback_audio',
+      nodes: [
+        {
+          id: 'sliderNode',
+          type: 'volumeSliderManager',
+          inputs: sliderNodeDef.defaultData.inputs,
+          outputs: sliderNodeDef.defaultData.outputs,
+          data: {
+            values: {
+              config: {
+                master: {
+                  volume: 45,
+                  bar: 'VolumeMasterBar',
+                  handler: 'VolumeMasterHandler'
+                }
+              }
+            },
+            code: sliderNodeDef.defaultData.data.code
+          }
+        }
+      ],
+      edges: []
+    };
+
+    const runner = new ScriptRunner(mockGame, scriptData);
+    expect(() => {
+      runner._executeNodeLogic(scriptData.nodes[0], 'execIn');
+    }).not.toThrow();
+
+    const masterBar = entities.find(e => e.id === 'VolumeMasterBar');
+    // 360 * 0.45 = 162
+    expect(masterBar.components.ShapeRenderer.width).toBe(162);
+    const outputs = runner.nodeOutputs.get('sliderNode');
+    expect(outputs.masterVolume).toBe(45);
   });
 });
 

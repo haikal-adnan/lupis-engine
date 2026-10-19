@@ -34,7 +34,15 @@ export class EntitySyncHandler {
             const idx = layer.entities.findIndex(e => e.id === id);
             if (idx !== -1) {
                 layer.entities.splice(idx, 1);
-                return;
+            }
+            const childIndices = [];
+            layer.entities.forEach((e, i) => {
+                if (e.parentId === id) childIndices.push(i);
+            });
+            for (let i = childIndices.length - 1; i >= 0; i--) {
+                const childId = layer.entities[childIndices[i]].id;
+                layer.entities.splice(childIndices[i], 1);
+                this.onDeleteEntity(childId);
             }
         }
     }

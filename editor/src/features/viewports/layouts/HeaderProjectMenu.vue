@@ -68,8 +68,6 @@
         </span>
       </button>
 
-      <div class="h-px bg-border my-1"></div>
-
       <!-- Item 3: Settings -->
       <button 
         data-testid="project-menu-settings"
@@ -101,13 +99,15 @@ import { useWorkspaceStore } from '@workspaces/workspaces.js';
 import { useConfirm } from '@composables/composables.js';
 import { useOPFSActions } from '@opfs/opfs.js';
 import { BaseDropdown } from "@components/components.js";
-import { ChevronDown, FolderOpen, CloudUpload, Download, Settings } from 'lucide-vue-next';
+import { ChevronDown, FolderOpen, CloudUpload, Download, Settings, RefreshCw } from 'lucide-vue-next';
+import { useNodeOverride } from '@nodes/nodes.js';
 
 const router = useRouter();
 const projectStore = useProjectStore();
 const workspaceStore = useWorkspaceStore();
 const { confirm } = useConfirm();
 const { exportToLupisProject } = useOPFSActions();
+const { triggerOverrideAllNodes } = useNodeOverride();
 
 const projectMenuDropdown = ref(null);
 
@@ -138,6 +138,11 @@ const statusTooltip = computed(() => {
 
 function closeMenu() { 
   projectMenuDropdown.value?.close(); 
+}
+
+function handleOverrideNodes() {
+  closeMenu();
+  triggerOverrideAllNodes();
 }
 
 function handleOpenSettings() {

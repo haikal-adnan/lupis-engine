@@ -49,6 +49,7 @@ export default class PointerRaycast {
 
         for (const layer of allLayers) {
             if (layer.active === false || layer.visible === false || !layer.entities) continue;
+            if (game.layerSystem ? game.layerSystem.isInputFrozen(layer.id, 'pointer') : (layer.freezeInput && (layer.freezeInputType === 'all' || layer.freezeInputType === 'pointer'))) continue;
             
             const isUILayer = layer.scriptId === 'ui' || layer.scriptId?.toLowerCase().includes('ui');
 
@@ -81,6 +82,65 @@ export default class PointerRaycast {
         }
 
         return null;
+    }
+
+    static isPointerOver(game, entity, useRaycast = true) {
+        if (!game || !entity) return false;
+        if (entity.active === false || entity.visible === false) return false;
+        if (game.layerSystem?.isEntityInputFrozen(entity, 'pointer')) return false;
+
+        if (useRaycast) {
+            if (!game.world || typeof this.getTopEntityUnderPointer !== 'function') return false;
+            const topEntity = this.getTopEntityUnderPointer(game);
+            if (!topEntity) return false;
+            if (topEntity.active === false || topEntity.visible === false) return false;
+
+            const matchesEntity = (cand) => {
+                if (!cand) return false;
+                if (cand.active === false || cand.visible === false) return false;
+                if (cand === entity) return true;
+                if (entity.id && cand.id === entity.id) return true;
+                if (entity.scriptId && cand.scriptId === entity.scriptId) return true;
+                return false;
+            };
+
+            if (matchesEntity(topEntity)) return true;
+            let currentParentId = topEntity.parentId;
+            while (currentParentId) {
+                const p = game.world?.entities?.find(e => e.id === currentParentId || (e.scriptId && e.scriptId === currentParentId));
+                if (p && (p.active === false || p.visible === false)) return false;
+                if (matchesEntity(p)) return true;
+                currentParentId = p ? p.parentId : null;
+            }
+            return false;
+        } else {
+            if (!game.input || typeof game.input.getPointer !== 'function') return false;
+            const pointer = game.input.getPointer(entity);
+            if (!pointer) return false;
+
+            const canvas = game.renderer?.gl?.canvas || game.renderer?.canvas || { width: 1920, height: 1080 };
+            const canvasW = canvas.clientWidth || canvas.width || 1920;
+            const canvasH = canvas.clientHeight || canvas.height || 1080;
+            const uiSettings = game.world?.settings?.ui || { width: 1920, height: 1080 };
+            const camera = game.camera || { x: 0, y: 0, scale: 1 };
+            const hasUITransform = Boolean(entity.components?.UITransform);
+
+            const uiPointer = {
+                x: (pointer.x / canvasW) * uiSettings.width,
+                y: (pointer.y / canvasH) * uiSettings.height
+            };
+            const halfW = canvasW / 2;
+            const halfH = canvasH / 2;
+            const worldPointer = {
+                x: camera.x + (pointer.x - halfW) / (camera.scale || 1),
+                y: camera.y + (pointer.y - halfH) / (camera.scale || 1)
+            };
+
+            const absT = this._getGlobalTransform(entity, game.world);
+            const targetPointer = hasUITransform ? uiPointer : worldPointer;
+
+            return this._checkIntersection(entity, absT, absT.x, absT.y, targetPointer.x, targetPointer.y);
+        }
     }
 
     static _getEntityDepth(entity, world) {

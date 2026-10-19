@@ -3,6 +3,7 @@ import { bus } from "../Util/EventBus.js";
 import { SelectionHit } from "./Selection/SelectionHit.js";
 import { SelectionRenderer } from "./Selection/SelectionRenderer.js";
 import { SelectionPanner } from "./Selection/SelectionPanner.js";
+import RenderUtils from "../Renderer/Scene/RenderUtils.js";
 
 export default class SelectionTool {
     constructor(world, game, canvas, renderer, input, transformEngine) {
@@ -78,8 +79,8 @@ export default class SelectionTool {
     _isClickable(e) {
         if (!e) return false;
         if (e.type === 'layer' || !e.components) return false;
-        if (e.active === false || e.visible === false) return false;
-        if (e.locked || (e._editor && e._editor.locked)) return false;
+        if (!RenderUtils.isEntityEffectivelyActive(e, this.world) || !RenderUtils.isEntityEffectivelyVisible(e, this.world)) return false;
+        if (RenderUtils.isEntityEffectivelyLocked(e, this.world)) return false;
         return true;
     }
 

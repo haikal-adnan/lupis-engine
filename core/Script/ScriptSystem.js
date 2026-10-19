@@ -9,6 +9,7 @@ export default class ScriptSystem {
     add(scriptData, ownerEntity = null) {
         const runner = new ScriptRunner(this.game, scriptData, ownerEntity);
         this.runners.push(runner);
+        return runner;
     }
 
     startAll() {

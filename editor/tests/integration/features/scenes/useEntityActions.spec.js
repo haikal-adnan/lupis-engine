@@ -164,13 +164,14 @@ describe('Entity Actions Integration', () => {
       sceneStoreState.activeScene.entities.push(childEntity)
 
       // Act
-      const newRootIds = sceneStoreState.duplicateEntity('ent_1')
+      const duplicatedIds = sceneStoreState.duplicateEntity('ent_1')
 
       // Assert
-      expect(newRootIds.length).toBe(1)
+      expect(duplicatedIds.length).toBe(2) // Parent + Child
       expect(sceneStoreState.activeScene.entities.length).toBe(4) // 2 initial + 2 clones
       expect(engineBridge.createEntity).toHaveBeenCalled()
-      expect(engineBridge.selectEntity).toHaveBeenCalledWith(newRootIds)
+      expect(engineBridge.selectEntity).toHaveBeenCalledWith(duplicatedIds)
+      expect(sceneStoreState.selectedEntityIds).toEqual(duplicatedIds)
 
       const { recordEntityCreate } = useSceneHistory()
       expect(recordEntityCreate).toHaveBeenCalledTimes(2)
@@ -225,6 +226,7 @@ describe('Entity Actions Integration', () => {
 
       expect(engineBridge.clearSelection).toHaveBeenCalled()
       expect(engineBridge.deleteEntity).toHaveBeenCalledWith('ent_1')
+      expect(engineBridge.deleteEntity).toHaveBeenCalledWith('ent_child')
 
       const { recordEntityDelete } = useSceneHistory()
       expect(recordEntityDelete).toHaveBeenCalled()

@@ -84,7 +84,7 @@ export default class WorldRenderer {
     }
 
     _processEntity(e, world, proj, parentOpacity = 1.0) {
-        if (!e || e.active === false || e.visible === false) return;
+        if (!e || !RenderUtils.isEntityEffectivelyActive(e, world) || !RenderUtils.isEntityEffectivelyVisible(e, world)) return;
 
         const currentOpacity = (e.opacity ?? 1) * parentOpacity;
         const comps = e.components;

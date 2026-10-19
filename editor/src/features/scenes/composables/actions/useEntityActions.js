@@ -37,6 +37,26 @@ const checkPrefabRestriction = (entities, entityId, targetParentId = null) => {
 };
 
 export const useEntityActions = {
+  filterTopLevelEntityIds(entityIds) {
+    if (!Array.isArray(entityIds) || entityIds.length === 0) return [];
+    const entities = this.activeScene?.entities || [];
+    const idSet = new Set(entityIds);
+    const entityMap = new Map(entities.map(e => [e.id, e]));
+
+    return entityIds.filter(id => {
+      let current = entityMap.get(id);
+      if (!current) return true;
+      while (current.parentId) {
+        if (idSet.has(current.parentId)) {
+          return false;
+        }
+        current = entityMap.get(current.parentId);
+        if (!current) break;
+      }
+      return true;
+    });
+  },
+
   getHierarchyData(entityId) {
     const entities = this.activeScene?.entities;
     if (!entities) return null;
@@ -57,18 +77,32 @@ export const useEntityActions = {
     return { root, descendants };
   },
 
-  createClones(root, descendants, targetLayerId, targetParentId) {
+  createClones(root, descendants, targetLayerId, targetParentId, nextOrderIndex) {
      const idMap = {};
      const newRootId = GenerateUUID();
      idMap[root.id] = newRootId;
+
+     const effectiveLayerId = targetLayerId || root.layerId;
+     const effectiveParentId = targetParentId !== undefined ? targetParentId : root.parentId;
+
+     let assignedOrderIndex = nextOrderIndex;
+     if (assignedOrderIndex === undefined) {
+         const siblings = (this.activeScene?.entities || []).filter(e => 
+             e.parentId === effectiveParentId && e.layerId === effectiveLayerId
+         );
+         const maxOrder = siblings.reduce((max, node) => 
+             (node.orderIndex > max ? node.orderIndex : max), -1
+         );
+         assignedOrderIndex = maxOrder + 1;
+     }
 
      const clonedRoot = {
         ...JSON.parse(JSON.stringify(root)),
         id: newRootId,
         scriptId: `${root.scriptId}_${GenerateUUID().split('-')[0]}`,
-        layerId: targetLayerId || root.layerId,
-        parentId: targetParentId !== undefined ? targetParentId : root.parentId,
-        orderIndex: (root.orderIndex || 0) + 1
+        layerId: effectiveLayerId,
+        parentId: effectiveParentId,
+        orderIndex: assignedOrderIndex
      };
      delete clonedRoot.name;
 
@@ -79,7 +113,8 @@ export const useEntityActions = {
             ...JSON.parse(JSON.stringify(child)),
             id: newId,
             scriptId: `${child.scriptId}_${GenerateUUID().split('-')[0]}`,
-            layerId: targetLayerId || root.layerId,
+            layerId: effectiveLayerId,
+            orderIndex: child.orderIndex ?? 0
         };
      });
 
@@ -250,10 +285,11 @@ export const useEntityActions = {
     if (!this.activeScene) return false;
     const { showPop } = usePopAlert();
 
-    const idsToDuplicate = Array.isArray(entityIds) ? entityIds : [entityIds];
-    if (idsToDuplicate.length === 0) return false;
+    const targetIds = entityIds !== undefined ? entityIds : this.selectedEntityIds;
+    const rawIds = Array.isArray(targetIds) ? targetIds : (targetIds ? [targetIds] : []);
+    if (rawIds.length === 0) return false;
 
-    for (const id of idsToDuplicate) {
+    for (const id of rawIds) {
         const restrictionMsg = checkPrefabRestriction(this.activeScene.entities, id);
         if (restrictionMsg) {
             showPop({ title: 'Prefab Restriction', message: restrictionMsg, type: 'warning' });
@@ -261,29 +297,50 @@ export const useEntityActions = {
         }
     }
 
+    const idsToDuplicate = this.filterTopLevelEntityIds(rawIds);
+
     const allNewEntities = [];
     const newRootIds = [];
 
     idsToDuplicate.forEach(id => {
         const data = this.getHierarchyData(id);
         if (!data) return;
-        const clones = this.createClones(data.root, data.descendants);
+
+        const targetParentId = data.root.parentId;
+        const targetLayerId = data.root.layerId;
+
+        const existingSiblings = this.activeScene.entities.filter(e =>
+            e.parentId === targetParentId && e.layerId === targetLayerId
+        );
+        const batchSiblings = allNewEntities.filter(e =>
+            e.parentId === targetParentId && e.layerId === targetLayerId
+        );
+        const maxOrder = [...existingSiblings, ...batchSiblings].reduce((max, node) =>
+            (node.orderIndex > max ? node.orderIndex : max), -1
+        );
+        const nextOrderIndex = maxOrder + 1;
+
+        const clones = this.createClones(data.root, data.descendants, targetLayerId, targetParentId, nextOrderIndex);
         allNewEntities.push(...clones);
         if (clones.length > 0) newRootIds.push(clones[0].id);
     });
 
     this.activeScene.entities.push(...allNewEntities);
     engineBridge.createEntity(allNewEntities); 
-    engineBridge.selectEntity(newRootIds);
+
+    const allNewIds = allNewEntities.map(e => e.id);
+    this.selectedEntityIds = allNewIds;
+    engineBridge.selectEntity(allNewIds);
 
     const { recordEntityCreate } = useSceneHistory();
     allNewEntities.forEach(ent => recordEntityCreate(ent));
 
-    return newRootIds;
+    return allNewIds;
   },
 
   getEntityDataForClipboard(entityIds) {
-      const ids = Array.isArray(entityIds) ? entityIds : [entityIds];
+      const rawIds = Array.isArray(entityIds) ? entityIds : [entityIds];
+      const ids = this.filterTopLevelEntityIds(rawIds);
       return ids.map(id => this.getHierarchyData(id)).filter(item => item !== null);
   },
 
@@ -311,19 +368,33 @@ export const useEntityActions = {
           if (targetContext.parentId !== undefined) targetParentId = targetContext.parentId;
           if (targetContext.layerId !== undefined) targetLayerId = targetContext.layerId;
 
-          const clones = this.createClones(root, descendants, targetLayerId, targetParentId);
+          const existingSiblings = this.activeScene.entities.filter(e =>
+              e.parentId === targetParentId && e.layerId === targetLayerId
+          );
+          const batchSiblings = allNewClones.filter(e =>
+              e.parentId === targetParentId && e.layerId === targetLayerId
+          );
+          const maxOrder = [...existingSiblings, ...batchSiblings].reduce((max, node) =>
+              (node.orderIndex > max ? node.orderIndex : max), -1
+          );
+          const nextOrderIndex = maxOrder + 1;
+
+          const clones = this.createClones(root, descendants, targetLayerId, targetParentId, nextOrderIndex);
           allNewClones.push(...clones);
           if (clones.length > 0) newRootIds.push(clones[0].id);
       });
       
       this.activeScene.entities.push(...allNewClones);
       engineBridge.createEntity(allNewClones);
-      engineBridge.selectEntity(newRootIds);
+
+      const allNewIds = allNewClones.map(e => e.id);
+      this.selectedEntityIds = allNewIds;
+      engineBridge.selectEntity(allNewIds);
 
       const { recordEntityCreate } = useSceneHistory();
       allNewClones.forEach(ent => recordEntityCreate(ent));
 
-      return newRootIds;
+      return allNewIds;
   },
 
   updateEntityScriptId(entityId, newScriptId) {
@@ -356,6 +427,9 @@ export const useEntityActions = {
 
   deleteEntity(entityId, recordHistory = true) {
     if (!this.activeScene) return false;
+    const targetEntity = this.activeScene.entities.find(e => e.id === entityId);
+    if (!targetEntity) return false;
+
     const { showPop } = usePopAlert();
 
     const restrictionMsg = checkPrefabRestriction(this.activeScene.entities, entityId);
@@ -382,10 +456,15 @@ export const useEntityActions = {
     }
 
     this.activeScene.entities = this.activeScene.entities.filter(e => !idsToDelete.includes(e.id));
-    this.selectedEntityIds = [];
+    this.selectedEntityIds = this.selectedEntityIds.filter(id => !idsToDelete.includes(id));
     
-    engineBridge.clearSelection();
-    engineBridge.deleteEntity(entityId);
+    if (this.selectedEntityIds.length === 0) {
+      engineBridge.clearSelection();
+    } else {
+      engineBridge.selectEntity(this.selectedEntityIds);
+    }
+
+    idsToDelete.forEach(id => engineBridge.deleteEntity(id));
 
     return true;
   },
