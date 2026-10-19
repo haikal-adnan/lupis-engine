@@ -10,7 +10,7 @@ export const BlueprintInput = {
       type: 'eventOnKey', 
       label: 'On Key Event', 
       description: 'Triggers individual execution outputs automatically synced with configured key strings.',
-      dynamicMode: 'none',
+      dynamicMode: 'keyboard',
       defaultData: { 
         settings: { 
           headerTitle: 'On Key Event', 
@@ -18,17 +18,19 @@ export const BlueprintInput = {
           category: 'Input & Controls' 
         },
         inputs: [
-          { id: 'keys', dataType: 'string', color: '#F48FB1', defaultValue: 'a, space' },
-          { id: 'action', dataType: 'string', color: '#F48FB1', defaultValue: 'pressed' }
+          { id: 'action', dataType: 'string', color: '#F48FB1', defaultValue: 'pressed' },
+          { id: 'key0', dataType: 'string', color: '#F48FB1', defaultValue: 'a' },
+          { id: 'key1', dataType: 'string', color: '#F48FB1', defaultValue: 'space' }
         ],
         outputs: [
-          { id: 'onA', dataType: 'execution', color: '#FFFFFF' },
-          { id: 'onSpace', dataType: 'execution', color: '#FFFFFF' }
+          { id: 'onKey0', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'onKey1', dataType: 'execution', color: '#FFFFFF' }
         ],
         data: {
           values: {
-            keys: 'a, space',
-            action: 'pressed'
+            action: 'pressed',
+            key0: 'a',
+            key1: 'space'
           },
           options: {
             action: [
@@ -40,37 +42,26 @@ export const BlueprintInput = {
           code: 
 `context.onTick(() => {
   const keyboard = context.input.keyboard;
-
-  const rawKeys = inputs.keys;
   const action = inputs.action.toLowerCase();
 
-  const rawTokens = rawKeys.split(',').map(t => t.trim().toLowerCase());
-  const parsedKeys = [];
+  const keyKeys = Object.keys(inputs)
+    .filter(k => k.startsWith('key'))
+    .sort((a, b) => {
+      const idxA = parseInt(a.replace('key', ''), 10) || 0;
+      const idxB = parseInt(b.replace('key', ''), 10) || 0;
+      return idxA - idxB;
+    });
 
-  let i = 0;
-  while (i < rawTokens.length) {
-    const token = rawTokens[i];
-    if (token.length > 0) {
-      parsedKeys.push(token);
-      i++;
-    } else {
-      if (i + 1 < rawTokens.length && rawTokens[i + 1] === '') {
-        parsedKeys.push(',');
-        i += 2;
-      } else {
-        i++;
-      }
-    }
-  }
-
-  const activeOutputs = node.outputs || [];
-
-  activeOutputs.forEach((output, index) => {
-    let keyName = parsedKeys[index] || output.id.replace(/^on/, '');
-    keyName = keyName.trim().toLowerCase();
+  for (let i = 0; i < keyKeys.length; i++) {
+    const k = keyKeys[i];
+    const rawVal = inputs[k];
+    if (typeof rawVal !== 'string') continue;
+    const keyName = rawVal.trim().toLowerCase();
+    if (!keyName) continue;
+    const keyIdx = k.replace('key', '');
+    const outId = \`onKey\${keyIdx}\`;
 
     let triggered = false;
-
     if (action === 'pressed' && keyboard.isPressed(keyName)) {
       triggered = true;
     } else if (action === 'released' && keyboard.isReleased(keyName)) {
@@ -80,9 +71,29 @@ export const BlueprintInput = {
     }
 
     if (triggered) {
-      context.triggerFlow(output.id);
+      context.triggerFlow(outId);
     }
-  });
+  }
+
+  const legacyRaw = inputs.keys;
+  if (typeof legacyRaw === 'string' && legacyRaw.length > 0) {
+    const legacyTokens = legacyRaw.split(',').map(t => t.trim().toLowerCase());
+    const activeOutputs = node.outputs || [];
+    activeOutputs.forEach((output, index) => {
+      const keyName = legacyTokens[index] || output.id.replace(/^on/, '').toLowerCase();
+      let triggered = false;
+      if (action === 'pressed' && keyboard.isPressed(keyName)) {
+        triggered = true;
+      } else if (action === 'released' && keyboard.isReleased(keyName)) {
+        triggered = true;
+      } else if (action === 'hold' && keyboard.isDown(keyName)) {
+        triggered = true;
+      }
+      if (triggered) {
+        context.triggerFlow(output.id);
+      }
+    });
+  }
 });
 return;`
         }

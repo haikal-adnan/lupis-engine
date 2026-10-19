@@ -204,6 +204,46 @@ return;`
         }
       }
     },
+    {
+      type: 'changeScreen',
+      label: 'Change Screen',
+      description: 'Changes display mode between windowed and fullscreen.',
+      dynamicMode: 'none',
+      defaultData: {
+        settings: {
+          headerTitle: 'Change Screen',
+          headerColor: '#9C27B0',
+          category: 'Scene & Lifecycle'
+        },
+        inputs: [
+          { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'mode', dataType: 'string', color: '#F48FB1', defaultValue: 'window' }
+        ],
+        outputs: [
+          { id: 'execOut', dataType: 'execution', color: '#FFFFFF' }
+        ],
+        data: {
+          values: {
+            mode: 'window'
+          },
+          options: {
+            mode: [
+              { label: 'Window', value: 'window' },
+              { label: 'Full Screen', value: 'fullscreen' }
+            ]
+          },
+          code: 
+`const targetMode = String(inputs.mode);
+if (targetMode === 'fullscreen' || targetMode === 'Full Screen') {
+  context.lifecycle.changeScreen('fullscreen');
+} else {
+  context.lifecycle.changeScreen('window');
+}
+outputs.execOut = true;
+return;`
+        }
+      }
+    },
 {
       type: 'eventSceneStart',
       label: 'On Scene Start',

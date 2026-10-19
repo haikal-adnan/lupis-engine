@@ -62,7 +62,7 @@ return;`
       type: 'logicSwitch',
       label: 'Switch',
       description: 'Directs execution to a specific path based on the data type and its value.',
-      dynamicMode: 'none',
+      dynamicMode: 'switch',
       defaultData: {
         settings: {
           headerTitle: 'Switch',
@@ -71,7 +71,9 @@ return;`
         },
         inputs: [
           { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
-          { id: 'value', dataType: 'string', color: '#F48FB1', defaultValue: '' }
+          { id: 'value', dataType: 'string', color: '#F48FB1', defaultValue: '' },
+          { id: 'case0', dataType: 'string', color: '#F48FB1', defaultValue: 'right' },
+          { id: 'case1', dataType: 'string', color: '#F48FB1', defaultValue: 'left' }
         ],
         outputs: [
           { id: 'onCase0', dataType: 'execution', color: '#FFFFFF' },
@@ -80,18 +82,46 @@ return;`
         ],
         data: {
           values: {
-            value: ''
+            value: '',
+            case0: 'right',
+            case1: 'left'
           },
           dataType: 'string',
           cases: ['right', 'left'],
           code: 
 `const rawValue = inputs.value;
-const cases = node.data.cases;
-const matchIndex = cases.indexOf(rawValue);
+let matched = false;
 
-if (matchIndex !== -1) {
-  outputs[\`onCase\${matchIndex}\`] = true;
-} else {
+const caseKeys = Object.keys(inputs)
+  .filter(k => k.startsWith('case'))
+  .sort((a, b) => {
+    const idxA = parseInt(a.replace('case', ''), 10) || 0;
+    const idxB = parseInt(b.replace('case', ''), 10) || 0;
+    return idxA - idxB;
+  });
+
+for (let i = 0; i < caseKeys.length; i++) {
+  const k = caseKeys[i];
+  const caseVal = inputs[k];
+  const caseIndex = k.replace('case', '');
+  if (rawValue == caseVal) {
+    outputs[\`onCase\${caseIndex}\`] = true;
+    matched = true;
+    break;
+  }
+}
+
+const nodeData = (node && node.data) || {};
+const legacyCases = nodeData.cases;
+if (!matched && Array.isArray(legacyCases)) {
+  const matchIndex = legacyCases.indexOf(rawValue);
+  if (matchIndex >= 0) {
+    outputs[\`onCase\${matchIndex}\`] = true;
+    matched = true;
+  }
+}
+
+if (!matched) {
   outputs.onDefault = true;
 }
 return;`

@@ -86,7 +86,16 @@ return;`
 const entity = context.assert.exists(context.entity.get(targetId));
 const comp = context.assert.hasComponent(entity, 'SpriteRenderer');
 
-if ('assetId' in inputs) comp.assetId = inputs.assetId;
+if ('assetId' in inputs) {
+  let finalAssetId = inputs.assetId;
+  if (context.asset && typeof context.asset.resolveId === 'function') {
+    const resolved = context.asset.resolveId(inputs.assetId);
+    if (resolved) {
+      finalAssetId = resolved;
+    }
+  }
+  comp.assetId = finalAssetId;
+}
 if ('color' in inputs) comp.color = inputs.color;
 if ('opacity' in inputs) comp.opacity = inputs.opacity;
 if ('sourceX' in inputs) comp.sourceX = inputs.sourceX;

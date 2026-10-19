@@ -87,6 +87,17 @@ ipcMain.on('app:quit', () => {
   app.quit();
 });
 
+ipcMain.on('screen:change', (event, mode) => {
+  const win = BrowserWindow.fromWebContents(event.sender) || BrowserWindow.getFocusedWindow();
+  if (win) {
+    if (mode === 'fullscreen' || mode === 'Full Screen') {
+      win.setFullScreen(true);
+    } else {
+      win.setFullScreen(false);
+    }
+  }
+});
+
 function respondFile(filePath) {
   try {
     const fileBuffer = fs.readFileSync(filePath);

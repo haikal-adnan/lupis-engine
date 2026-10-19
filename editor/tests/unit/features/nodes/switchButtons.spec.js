@@ -13,7 +13,7 @@ describe('Switch Buttons Blueprint & Execution Tests', () => {
     expect(shapeSwitchDef.defaultData.settings.category).toBe('Helper & Tool');
     expect(shapeSwitchDef.defaultData.inputs.map(i => i.id)).toContain('knobEntity');
     expect(shapeSwitchDef.defaultData.inputs.map(i => i.id)).toContain('trackEntity');
-    expect(shapeSwitchDef.defaultData.outputs.map(o => o.id)).toEqual(['execOut', 'onToggled', 'isOn', 'isOff']);
+    expect(shapeSwitchDef.defaultData.outputs.map(o => o.id)).toEqual(['execOut', 'isOn', 'onOn', 'onOff']);
 
     expect(imageSwitchDef).toBeDefined();
     expect(imageSwitchDef.label).toBe('Switch Button Image');
@@ -22,7 +22,7 @@ describe('Switch Buttons Blueprint & Execution Tests', () => {
     expect(imageSwitchDef.defaultData.inputs.map(i => i.id)).toContain('knobOnImage');
     expect(imageSwitchDef.defaultData.inputs.map(i => i.id)).toContain('trackOffImage');
     expect(imageSwitchDef.defaultData.inputs.map(i => i.id)).toContain('trackOnImage');
-    expect(imageSwitchDef.defaultData.outputs.map(o => o.id)).toEqual(['execOut', 'onToggled', 'isOn', 'isOff']);
+    expect(imageSwitchDef.defaultData.outputs.map(o => o.id)).toEqual(['execOut', 'isOn', 'onOn', 'onOff']);
   });
 
   function createMockGame(entities) {
@@ -123,11 +123,11 @@ describe('Switch Buttons Blueprint & Execution Tests', () => {
       };
 
       const runner = new ScriptRunner(mockGame, scriptData);
+      const executeFlowSpy = vi.spyOn(runner, 'executeFlow');
       runner._executeNodeLogic(scriptData.nodes[0], 'execIn');
 
       const outputs = runner.nodeOutputs.get('node_shape_switch');
       expect(outputs.isOn).toBe(false);
-      expect(outputs.isOff).toBe(true);
       expect(knob.components.ShapeRenderer.color).toBe('#E0E0E0');
       expect(track.components.ShapeRenderer.color).toBe('#757575');
       expect(label.components.TextRenderer.value).toBe('INACTIVE');
@@ -138,7 +138,7 @@ describe('Switch Buttons Blueprint & Execution Tests', () => {
       runner._executeNodeLogic(scriptData.nodes[0], 'execIn');
 
       expect(outputs.isOn).toBe(true);
-      expect(outputs.isOff).toBe(false);
+      expect(executeFlowSpy).toHaveBeenCalledWith('node_shape_switch', 'onOn');
       expect(knob.components.ShapeRenderer.color).toBe('#FFFFFF');
       expect(track.components.ShapeRenderer.color).toBe('#4CAF50');
       expect(label.components.TextRenderer.value).toBe('ACTIVE');

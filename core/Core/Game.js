@@ -121,6 +121,60 @@ export default class Game {
         }
     }
 
+    changeScreen(mode) {
+        const isFullscreen = mode === 'fullscreen' || mode === 'Full Screen' || mode === 'full screen';
+        const targetMode = isFullscreen ? 'fullscreen' : 'window';
+        this.events.emit('screen:change', { mode: targetMode });
+
+        if (typeof window !== 'undefined') {
+            // 1. Electron standalone build environment
+            if (window.electronAPI) {
+                if (typeof window.electronAPI.changeScreen === 'function') {
+                    window.electronAPI.changeScreen(targetMode);
+                    return;
+                }
+                if (typeof window.electronAPI.setFullScreen === 'function') {
+                    window.electronAPI.setFullScreen(isFullscreen);
+                    return;
+                }
+            }
+
+            // 2. Preview mode / browser web environment
+            try {
+                if (typeof document !== 'undefined') {
+                    const docEl = document.documentElement;
+                    if (isFullscreen) {
+                        if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                            const req = docEl?.requestFullscreen || docEl?.webkitRequestFullscreen || docEl?.msRequestFullscreen;
+                            if (req) {
+                                const p = req.call(docEl);
+                                if (p && typeof p.catch === 'function') {
+                                    p.catch((err) => {
+                                        console.warn('[Game] Fullscreen request rejected:', err);
+                                    });
+                                }
+                            }
+                        }
+                    } else {
+                        if (document.fullscreenElement || document.webkitFullscreenElement) {
+                            const exit = document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen;
+                            if (exit) {
+                                const p = exit.call(document);
+                                if (p && typeof p.catch === 'function') {
+                                    p.catch((err) => {
+                                        console.warn('[Game] Exit fullscreen rejected:', err);
+                                    });
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (e) {
+                console.warn('[Game] Screen change error:', e);
+            }
+        }
+    }
+
     destroy() {
         this.quitGame();
 

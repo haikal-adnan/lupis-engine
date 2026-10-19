@@ -146,6 +146,14 @@ export function useNodeLogic() {
     dynamicManager.removeDynamicPort(selectedNode.value, portId, type);
   };
 
+  const canDeleteInputPort = (node, portId) => {
+    return dynamicManager.canDeleteInputPort(node || selectedNode.value, portId);
+  };
+
+  const canDeleteOutputPort = (node, portId) => {
+    return dynamicManager.canDeleteOutputPort(node || selectedNode.value, portId);
+  };
+
   return {
     selectedNode,
     scriptStore,
@@ -164,6 +172,8 @@ export function useNodeLogic() {
     effectiveDynamicMode,
     handleAddPort,
     addFromDropdown,
-    removeDynamicInput
+    removeDynamicInput,
+    canDeleteInputPort,
+    canDeleteOutputPort
   };
 }

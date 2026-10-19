@@ -34,10 +34,10 @@ export const BlueprintHelperTool = {
         data: {
           values: {
             config: {
-              master: { volume: 100, bar: 'VolumeMasterBar', handler: 'VolumeMasterHandler' },
-              vocal: { volume: 100, bar: 'VolumeVocalBar', handler: 'VolumeVocalHandler' },
-              sfx: { volume: 100, bar: 'VolumeSFXBar', handler: 'VolumeSFXHandler' },
-              background: { volume: 100, bar: 'VolumeBGMBar', handler: 'VolumeBGMHandler' }
+              master: { volume: 100, bar: 'VolumeMasterBar', handler: 'VolumeMasterHandler', indicator: 'VolumeMasterIndicator' },
+              vocal: { volume: 100, bar: 'VolumeVocalBar', handler: 'VolumeVocalHandler', indicator: 'VolumeVocalIndicator' },
+              sfx: { volume: 100, bar: 'VolumeSFXBar', handler: 'VolumeSFXHandler', indicator: 'VolumeSFXIndicator' },
+              background: { volume: 100, bar: 'VolumeBGMBar', handler: 'VolumeBGMHandler', indicator: 'VolumeBGMIndicator' }
             }
           },
           code: 
@@ -54,10 +54,10 @@ if (typeof config === 'string') {
 }
 
 const defaultConfig = {
-  master: { volume: 100, bar: 'VolumeMasterBar', handler: 'VolumeMasterHandler' },
-  vocal: { volume: 100, bar: 'VolumeVocalBar', handler: 'VolumeVocalHandler' },
-  sfx: { volume: 100, bar: 'VolumeSFXBar', handler: 'VolumeSFXHandler' },
-  background: { volume: 100, bar: 'VolumeBGMBar', handler: 'VolumeBGMHandler' }
+  master: { volume: 100, bar: 'VolumeMasterBar', handler: 'VolumeMasterHandler', indicator: 'VolumeMasterIndicator' },
+  vocal: { volume: 100, bar: 'VolumeVocalBar', handler: 'VolumeVocalHandler', indicator: 'VolumeVocalIndicator' },
+  sfx: { volume: 100, bar: 'VolumeSFXBar', handler: 'VolumeSFXHandler', indicator: 'VolumeSFXIndicator' },
+  background: { volume: 100, bar: 'VolumeBGMBar', handler: 'VolumeBGMHandler', indicator: 'VolumeBGMIndicator' }
 };
 
 let sliderMap = defaultConfig;
@@ -131,6 +131,34 @@ function updateSliderVisual(s, volume) {
       s.tHandler.x = localLeft + (f * s.baseW);
     }
   }
+
+  let indicatorComp = s.indicatorTextComp;
+  if (!indicatorComp) {
+    if (!s.indicatorEntity && s.indicatorName && context.entity && typeof context.entity.get === 'function') {
+      s.indicatorEntity = context.entity.get(s.indicatorName);
+    }
+    if (s.indicatorEntity) {
+      if (s.indicatorEntity.components && s.indicatorEntity.components.TextRenderer) {
+        indicatorComp = s.indicatorEntity.components.TextRenderer;
+        s.indicatorTextComp = indicatorComp;
+      } else if (s.indicatorEntity.children && Array.isArray(s.indicatorEntity.children) && context.entity && typeof context.entity.get === 'function') {
+        for (const childId of s.indicatorEntity.children) {
+          const childEnt = context.entity.get(childId);
+          if (childEnt && childEnt.components && childEnt.components.TextRenderer) {
+            indicatorComp = childEnt.components.TextRenderer;
+            s.indicatorTextComp = indicatorComp;
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  if (indicatorComp) {
+    const rounded = Math.round(clampedVol);
+    const template = (typeof s.format === 'string' && s.format) ? s.format : '{value}%';
+    indicatorComp.value = template.replace('{value}', rounded);
+  }
 }
 
 function isPointerOverSlider(s, px, py) {
@@ -201,6 +229,29 @@ if (!context.state.isInitialized || context.state.activeConfig !== config) {
       }
     }
 
+    let indicatorEntity = false;
+    let indicatorTextComp = false;
+    let indicatorName = '';
+    if (item.indicator && typeof item.indicator === 'string') {
+      indicatorName = item.indicator.trim();
+      if (indicatorName && context.entity && typeof context.entity.get === 'function') {
+        indicatorEntity = context.entity.get(indicatorName);
+      }
+      if (indicatorEntity) {
+        if (indicatorEntity.components && indicatorEntity.components.TextRenderer) {
+          indicatorTextComp = indicatorEntity.components.TextRenderer;
+        } else if (indicatorEntity.children && Array.isArray(indicatorEntity.children) && context.entity && typeof context.entity.get === 'function') {
+          for (const childId of indicatorEntity.children) {
+            const childEnt = context.entity.get(childId);
+            if (childEnt && childEnt.components && childEnt.components.TextRenderer) {
+              indicatorTextComp = childEnt.components.TextRenderer;
+              break;
+            }
+          }
+        }
+      }
+    }
+
     const tHandler = handlerEntity && handlerEntity.components ? (handlerEntity.components.UITransform || handlerEntity.components.Transform) : false;
     const sprite = barEntity.components ? barEntity.components.SpriteRenderer : false;
     const shape = barEntity.components ? barEntity.components.ShapeRenderer : false;
@@ -241,6 +292,10 @@ if (!context.state.isInitialized || context.state.activeConfig !== config) {
       key: key,
       barEntity: barEntity,
       handlerEntity: handlerEntity,
+      indicatorEntity: indicatorEntity,
+      indicatorTextComp: indicatorTextComp,
+      indicatorName: indicatorName,
+      format: (typeof item.format === 'string') ? item.format : '{value}%',
       tBar: tBar,
       tHandler: tHandler,
       sprite: sprite,
@@ -693,9 +748,9 @@ return;`
         ],
         outputs: [
           { id: 'execOut', dataType: 'execution', color: '#FFFFFF' },
-          { id: 'onToggled', dataType: 'execution', color: '#FFFFFF' },
-          { id: 'isOn', dataType: 'boolean', color: '#81C784' },
-          { id: 'isOff', dataType: 'boolean', color: '#81C784' }
+          { id: 'isOn', dataType: 'boolean', color: '#E57373' },
+          { id: 'onOn', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'onOff', dataType: 'execution', color: '#FFFFFF' }
         ],
         data: {
           values: {
@@ -1001,9 +1056,15 @@ function updateStep() {
     if (triggered) {
       context.state.isOn = nextState;
       outputs.isOn = context.state.isOn;
-      outputs.isOff = !context.state.isOn;
-      outputs.onToggled = true;
-      context.triggerFlow('onToggled');
+      if (context.state.isOn) {
+        outputs.onOn = true;
+        outputs.onOff = false;
+        context.triggerFlow('onOn');
+      } else {
+        outputs.onOff = true;
+        outputs.onOn = false;
+        context.triggerFlow('onOff');
+      }
     }
   }
 
@@ -1037,7 +1098,6 @@ if (!context.state.hasTickListener && typeof context.onTick === 'function') {
 }
 
 outputs.isOn = context.state.isOn;
-outputs.isOff = !context.state.isOn;
 outputs.execOut = true;
 return;`
         }
@@ -1075,9 +1135,9 @@ return;`
         ],
         outputs: [
           { id: 'execOut', dataType: 'execution', color: '#FFFFFF' },
-          { id: 'onToggled', dataType: 'execution', color: '#FFFFFF' },
-          { id: 'isOn', dataType: 'boolean', color: '#81C784' },
-          { id: 'isOff', dataType: 'boolean', color: '#81C784' }
+          { id: 'isOn', dataType: 'boolean', color: '#E57373' },
+          { id: 'onOn', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'onOff', dataType: 'execution', color: '#FFFFFF' }
         ],
         data: {
           values: {
@@ -1372,9 +1432,15 @@ function updateStep() {
     if (triggered) {
       context.state.isOn = nextState;
       outputs.isOn = context.state.isOn;
-      outputs.isOff = !context.state.isOn;
-      outputs.onToggled = true;
-      context.triggerFlow('onToggled');
+      if (context.state.isOn) {
+        outputs.onOn = true;
+        outputs.onOff = false;
+        context.triggerFlow('onOn');
+      } else {
+        outputs.onOff = true;
+        outputs.onOn = false;
+        context.triggerFlow('onOff');
+      }
     }
   }
 
@@ -1408,7 +1474,6 @@ if (!context.state.hasTickListener && typeof context.onTick === 'function') {
 }
 
 outputs.isOn = context.state.isOn;
-outputs.isOff = !context.state.isOn;
 outputs.execOut = true;
 return;`
         }
@@ -1526,6 +1591,10 @@ const parseVars = (text) => {
     const trimmed = expression.trim();
     if (!trimmed) return match;
 
+    if (/^emit(?:Click)?\\s*\\(/i.test(trimmed)) {
+      return match;
+    }
+
     const scopeMatch = trimmed.match(/^(local|global)(?:[:.]|\\(([^)]+)\\))(.*)$/i);
     let scope = false;
     let varName = false;
@@ -1598,7 +1667,90 @@ const parseVars = (text) => {
   });
 };
 
-const fullText = parseVars(entry.text || '');
+const splitArgs = (str) => {
+  const args = [];
+  let cur = '';
+  let inQuote = false;
+  let quoteChar = '';
+  let depth = 0;
+  for (let i = 0; i < str.length; i++) {
+    const c = str[i];
+    if (inQuote) {
+      cur += c;
+      if (c === quoteChar && str[i - 1] !== '\\\\') {
+        inQuote = false;
+      }
+    } else if (c === '"' || c === "'") {
+      inQuote = true;
+      quoteChar = c;
+      cur += c;
+    } else if (c === '(' || c === '[' || c === '{') {
+      depth++;
+      cur += c;
+    } else if (c === ')' || c === ']' || c === '}') {
+      depth--;
+      cur += c;
+    } else if (c === ',' && depth === 0) {
+      if (cur.trim()) args.push(cur.trim());
+      cur = '';
+    } else {
+      cur += c;
+    }
+  }
+  if (cur.trim()) args.push(cur.trim());
+  return args;
+};
+
+const parseSignalArg = (raw) => {
+  const trimmed = (raw || '').trim();
+  if (!trimmed) return false;
+  const colonIdx = trimmed.indexOf(':');
+  if (colonIdx === -1) {
+    return { signal: trimmed, value: true };
+  }
+  const signal = trimmed.slice(0, colonIdx).trim();
+  const valRaw = trimmed.slice(colonIdx + 1).trim();
+  if (valRaw === '') {
+    return { signal, value: true };
+  }
+  try {
+    return { signal, value: JSON.parse(valRaw) };
+  } catch (e) {
+    return { signal, value: valRaw };
+  }
+};
+
+const rawEntryText = parseVars(entry.text || '');
+
+let fullText = '';
+const emitCues = [];
+let lastIdx = 0;
+const emitRegex = /\\{emit\\s*\\(([^)]*)\\)\\}/gi;
+let m;
+while ((m = emitRegex.exec(rawEntryText))) {
+  fullText += rawEntryText.slice(lastIdx, m.index);
+  const charIdx = fullText.length;
+  const sigs = splitArgs(m[1]).map(parseSignalArg).filter(Boolean);
+  if (sigs.length > 0) {
+    emitCues.push({ index: charIdx, signals: sigs, triggered: false });
+  }
+  lastIdx = emitRegex.lastIndex;
+}
+fullText += rawEntryText.slice(lastIdx);
+
+const triggerPendingEmits = (currentIdx) => {
+  const cues = context.state.vnEmitCues;
+  if (!cues || !context.signal || typeof context.signal.emit !== 'function') return;
+  for (let i = 0; i < cues.length; i++) {
+    const cue = cues[i];
+    if (!cue.triggered && currentIdx >= cue.index) {
+      cue.triggered = true;
+      for (let s = 0; s < cue.signals.length; s++) {
+        context.signal.emit(cue.signals[s].signal, cue.signals[s].value);
+      }
+    }
+  }
+};
 const textEntId = inputs.textEntity || 'dialogText';
 const textEnt = context.assert.exists(context.entity.get(textEntId), 'Dialogue Text entity must exist');
 let textComp = textEnt.components ? textEnt.components.TextRenderer : false;
@@ -1730,6 +1882,7 @@ const rawSpeed = Number(inputs.speed);
 const speed = isNaN(rawSpeed) ? 40 : Math.max(0, rawSpeed);
 
 context.state.vnTargetText = fullText;
+context.state.vnEmitCues = emitCues;
 context.state.vnTimer = 0;
 context.state.vnCompleted = false;
 
@@ -1740,10 +1893,18 @@ if (speed === 0 || fullText.length === 0) {
   context.state.vnIndex = fullText.length;
   context.state.vnIsTyping = false;
   textComp.value = fullText;
+  triggerPendingEmits(fullText.length);
+  if (entry.choices && Array.isArray(entry.choices) && entry.choices.length > 0) {
+    context.state.vnCompleted = true;
+    outputs.choices = entry.choices;
+    outputs.onChoice = true;
+    context.triggerFlow('onChoice');
+  }
 } else {
   context.state.vnIndex = 0;
   context.state.vnIsTyping = true;
   textComp.value = '';
+  triggerPendingEmits(0);
 }
 
 context.onTick((tickDt) => {
@@ -1786,6 +1947,13 @@ context.onTick((tickDt) => {
       context.state.vnIndex = context.state.vnTargetText.length;
       textComp.value = context.state.vnTargetText;
       context.state.vnIsTyping = false;
+      triggerPendingEmits(context.state.vnTargetText.length);
+      if (entry.choices && Array.isArray(entry.choices) && entry.choices.length > 0) {
+        context.state.vnCompleted = true;
+        outputs.choices = entry.choices;
+        outputs.onChoice = true;
+        context.triggerFlow('onChoice');
+      }
       return;
     }
 
@@ -1794,11 +1962,18 @@ context.onTick((tickDt) => {
     while (context.state.vnTimer >= charSpeed && context.state.vnIndex < context.state.vnTargetText.length) {
       context.state.vnTimer -= charSpeed;
       context.state.vnIndex++;
+      triggerPendingEmits(context.state.vnIndex);
     }
     textComp.value = context.state.vnTargetText.slice(0, context.state.vnIndex);
 
     if (context.state.vnIndex >= context.state.vnTargetText.length) {
       context.state.vnIsTyping = false;
+      if (entry.choices && Array.isArray(entry.choices) && entry.choices.length > 0) {
+        context.state.vnCompleted = true;
+        outputs.choices = entry.choices;
+        outputs.onChoice = true;
+        context.triggerFlow('onChoice');
+      }
     }
   } else {
     if (isClick) {
@@ -1844,9 +2019,7 @@ return;`
         ],
         outputs: [
           { id: 'execOut', dataType: 'execution', color: '#FFFFFF' },
-          { id: 'onTrigger', dataType: 'execution', color: '#FFFFFF' },
-          { id: 'nextDialogId', dataType: 'string', color: '#F48FB1' },
-          { id: 'signalName', dataType: 'string', color: '#F48FB1' }
+          { id: 'nextDialogId', dataType: 'string', color: '#F48FB1' }
         ],
         data: {
           values: {
@@ -1863,11 +2036,68 @@ const textEntities = inputs.textEntities || ['btnChoice1Text', 'btnChoice2Text',
 context.assert.isArray(choices, 'Choices must be a valid array');
 context.assert.isArray(buttons, 'Button entities must be a valid array');
 
+const splitArgs = (str) => {
+  const args = [];
+  let cur = '';
+  let inQuote = false;
+  let quoteChar = '';
+  let depth = 0;
+  for (let i = 0; i < str.length; i++) {
+    const c = str[i];
+    if (inQuote) {
+      cur += c;
+      if (c === quoteChar && str[i - 1] !== '\\\\') {
+        inQuote = false;
+      }
+    } else if (c === '"' || c === "'") {
+      inQuote = true;
+      quoteChar = c;
+      cur += c;
+    } else if (c === '(' || c === '[' || c === '{') {
+      depth++;
+      cur += c;
+    } else if (c === ')' || c === ']' || c === '}') {
+      depth--;
+      cur += c;
+    } else if (c === ',' && depth === 0) {
+      if (cur.trim()) args.push(cur.trim());
+      cur = '';
+    } else {
+      cur += c;
+    }
+  }
+  if (cur.trim()) args.push(cur.trim());
+  return args;
+};
+
+const parseSignalArg = (raw) => {
+  const trimmed = (raw || '').trim();
+  if (!trimmed) return false;
+  const colonIdx = trimmed.indexOf(':');
+  if (colonIdx === -1) {
+    return { signal: trimmed, value: true };
+  }
+  const signal = trimmed.slice(0, colonIdx).trim();
+  const valRaw = trimmed.slice(colonIdx + 1).trim();
+  if (valRaw === '') {
+    return { signal, value: true };
+  }
+  try {
+    return { signal, value: JSON.parse(valRaw) };
+  } catch (e) {
+    return { signal, value: valRaw };
+  }
+};
+
 const parseVars = (text) => {
   if (!text || typeof text !== 'string') return '';
   return text.replace(/\\{([^{}]+)\\}/g, (match, expression) => {
     const trimmed = expression.trim();
     if (!trimmed) return match;
+
+    if (/^emit(?:Click)?\\s*\\(/i.test(trimmed)) {
+      return match;
+    }
 
     const scopeMatch = trimmed.match(/^(local|global)(?:[:.]|\\(([^)]+)\\))(.*)$/i);
     let scope = false;
@@ -1964,7 +2194,9 @@ for (let i = 0; i < buttons.length; i++) {
       }
     }
     if (textComp) {
-      textComp.value = parseVars(choices[i].text);
+      const rawText = choices[i].text || '';
+      const textWithoutEmit = rawText.replace(/\\{emitClick\\s*\\([^)]*\\)\\}/gi, '').trim();
+      textComp.value = parseVars(textWithoutEmit);
     }
   } else {
     btnEnt.visible = false;
@@ -1998,8 +2230,20 @@ context.onTick(() => {
     if (i >= buttons.length) break;
     const btnEnt = context.entity.get(buttons[i]);
     if (!btnEnt || !btnEnt.visible) continue;
-
-    const isHovering = context.input.isPointerOver(btnEnt, true);
+    const txtEnt = textEntities && textEntities[i] ? context.entity.get(textEntities[i]) : false;
+    let isHovering = false;
+    if (context.input && typeof context.input.isPointerOver === 'function') {
+      isHovering = context.input.isPointerOver(btnEnt, true);
+      if (!isHovering && txtEnt) {
+        isHovering = context.input.isPointerOver(txtEnt, true);
+      }
+      if (!isHovering) {
+        isHovering = context.input.isPointerOver(btnEnt, false);
+      }
+      if (!isHovering && txtEnt) {
+        isHovering = context.input.isPointerOver(txtEnt, false);
+      }
+    }
     if (isHovering) {
       const selected = choices[i];
 
@@ -2015,13 +2259,19 @@ context.onTick(() => {
       context.state.vnNextDialogId = selected.next;
       outputs.nextDialogId = selected.next;
 
+      const rawText = selected.text || '';
+      const emitMatches = [...rawText.matchAll(/\\{emitClick\\s*\\(([^)]*)\\)\\}/gi)];
+      for (let m = 0; m < emitMatches.length; m++) {
+        const sigs = splitArgs(emitMatches[m][1]).map(parseSignalArg).filter(Boolean);
+        for (let s = 0; s < sigs.length; s++) {
+          context.signal.emit(sigs[s].signal, sigs[s].value);
+        }
+      }
+
       if (selected.signals && Array.isArray(selected.signals) && selected.signals.length > 0) {
         for (let s = 0; s < selected.signals.length; s++) {
           const sig = selected.signals[s];
-          context.signal.emit(sig);
-          outputs.signalName = sig;
-          outputs.onTrigger = true;
-          context.triggerFlow('onTrigger');
+          context.signal.emit(sig, true);
         }
       }
 

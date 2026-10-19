@@ -82,34 +82,129 @@ export function useDynamicPortManager() {
     }
   };
 
+  function syncSwitchCases(node) {
+    if (!node || node.type !== 'logicSwitch') return;
+    if (!node.data) node.data = {};
+    const caseInputs = (node.inputs || [])
+      .filter(p => p.id && String(p.id).startsWith('case'))
+      .sort((a, b) => {
+        const idxA = parseInt(String(a.id).replace('case', ''), 10) || 0;
+        const idxB = parseInt(String(b.id).replace('case', ''), 10) || 0;
+        return idxA - idxB;
+      });
+
+    node.data.cases = caseInputs.map(p => {
+      if (node.data.values && node.data.values[p.id] !== undefined) {
+        return node.data.values[p.id];
+      }
+      return p.defaultValue ?? '';
+    });
+  }
+
+  const switchHandler = (node, key, value) => {
+    if (String(key).startsWith('case')) {
+      syncSwitchCases(node);
+    }
+  };
+
   const valueChangeHandlers = {
     eventOnKey: onKeyHandler,
-    eventAdvancedKey: onKeyHandler
+    eventAdvancedKey: onKeyHandler,
+    logicSwitch: switchHandler
   };
 
   // =========================================================================
   // 2. REGISTRY: Custom Add Port Handlers
   // =========================================================================
-  const switchCaseHandler = async (node, { prompt, scriptHistory }) => {
-    const res = await prompt({
-      title: 'Add Case',
-      message: 'Enter value to compare (string/number):',
-      defaultValue: ''
-    });
-    if (res === null || res.trim() === '') return;
+  const switchCaseHandler = (node, { scriptHistory }) => {
+    let nextIndex = 0;
+    while (
+      (node.inputs || []).some(p => p.id === `case${nextIndex}`) ||
+      (node.outputs || []).some(p => p.id === `onCase${nextIndex}`)
+    ) {
+      nextIndex++;
+    }
 
-    const caseCount = (node.outputs || []).filter(p => p.id && p.id.startsWith('onCase')).length;
-    const newPort = {
-      id: `onCase${caseCount}`,
+    const newInputPort = {
+      id: `case${nextIndex}`,
+      dataType: 'string',
+      color: '#F48FB1',
+      defaultValue: ''
+    };
+
+    const newOutputPort = {
+      id: `onCase${nextIndex}`,
       dataType: 'execution',
       color: '#FFFFFF'
     };
-    scriptStore.addNodePort(node.id, 'output', newPort);
-    scriptHistory.recordPortChange(node.id, 'ADD', newPort, 'output', []);
+
+    scriptStore.addNodePort(node.id, 'input', newInputPort);
+    scriptStore.addNodePort(node.id, 'output', newOutputPort);
+
+    const activeNode = scriptStore.activeScript?.nodes?.find(n => n.id === node.id) || node;
+    if (!activeNode.data) activeNode.data = {};
+    if (!activeNode.data.values) activeNode.data.values = {};
+    activeNode.data.values[newInputPort.id] = '';
+
+    syncSwitchCases(activeNode);
+    scriptStore.saveActiveScript();
+
+    if (activeNode !== node) {
+      node.inputs = activeNode.inputs;
+      node.outputs = activeNode.outputs;
+      node.data = activeNode.data;
+    }
+
+    scriptHistory.recordPortChange(node.id, 'ADD', newInputPort, 'input', []);
+    scriptHistory.recordPortChange(node.id, 'ADD', newOutputPort, 'output', []);
+  };
+
+  const keyEventHandler = (node, { scriptHistory }) => {
+    let nextIndex = 0;
+    while (
+      (node.inputs || []).some(p => p.id === `key${nextIndex}`) ||
+      (node.outputs || []).some(p => p.id === `onKey${nextIndex}`)
+    ) {
+      nextIndex++;
+    }
+
+    const newInputPort = {
+      id: `key${nextIndex}`,
+      dataType: 'string',
+      color: '#F48FB1',
+      defaultValue: ''
+    };
+
+    const newOutputPort = {
+      id: `onKey${nextIndex}`,
+      dataType: 'execution',
+      color: '#FFFFFF'
+    };
+
+    scriptStore.addNodePort(node.id, 'input', newInputPort);
+    scriptStore.addNodePort(node.id, 'output', newOutputPort);
+
+    const activeNode = scriptStore.activeScript?.nodes?.find(n => n.id === node.id) || node;
+    if (!activeNode.data) activeNode.data = {};
+    if (!activeNode.data.values) activeNode.data.values = {};
+    activeNode.data.values[newInputPort.id] = '';
+
+    scriptStore.saveActiveScript();
+
+    if (activeNode !== node) {
+      node.inputs = activeNode.inputs;
+      node.outputs = activeNode.outputs;
+      node.data = activeNode.data;
+    }
+
+    scriptHistory.recordPortChange(node.id, 'ADD', newInputPort, 'input', []);
+    scriptHistory.recordPortChange(node.id, 'ADD', newOutputPort, 'output', []);
   };
 
   const addPortHandlers = {
-    logicSwitch: switchCaseHandler
+    logicSwitch: switchCaseHandler,
+    eventOnKey: keyEventHandler,
+    eventAdvancedKey: keyEventHandler
   };
 
   // =========================================================================
@@ -275,6 +370,56 @@ export function useDynamicPortManager() {
     }
   }
 
+  function canDeleteInputPort(node, portId) {
+    if (!node || !portId) return false;
+    if (PROTECTED_PORTS.includes(portId)) return false;
+
+    if (node.type === 'logicSwitch') {
+      return String(portId).startsWith('case');
+    }
+
+    if (node.type === 'eventOnKey' || node.type === 'eventAdvancedKey') {
+      if (portId === 'action') return false;
+      return String(portId).startsWith('key');
+    }
+
+    const mode = getDynamicMode(node);
+    if (mode === 'sequential') {
+      return true;
+    }
+
+    if (mode === 'inputProperty') {
+      const bp = getNodeBlueprint(node.type);
+      const options = node.data?.propertyOptions || bp?.defaultData?.data?.propertyOptions || [];
+      return options.some(o => o.value === portId);
+    }
+
+    return false;
+  }
+
+  function canDeleteOutputPort(node, portId) {
+    if (!node || !portId) return false;
+    if (PROTECTED_PORTS.includes(portId)) return false;
+
+    if (node.type === 'logicSwitch') {
+      if (portId === 'onDefault') return false;
+      return String(portId).startsWith('onCase');
+    }
+
+    if (node.type === 'eventOnKey' || node.type === 'eventAdvancedKey') {
+      return String(portId).startsWith('onKey');
+    }
+
+    const mode = getDynamicMode(node);
+    if (mode === 'outputProperty') {
+      const bp = getNodeBlueprint(node.type);
+      const options = node.data?.propertyOptions || bp?.defaultData?.data?.propertyOptions || [];
+      return options.some(o => o.value === portId);
+    }
+
+    return false;
+  }
+
   function removeDynamicPort(node, portId, type = 'input') {
     if (!node) return;
 
@@ -288,25 +433,95 @@ export function useDynamicPortManager() {
       return;
     }
 
-    const portList = type === 'input' ? node.inputs : node.outputs;
+    if (node.type === 'logicSwitch') {
+      if (portId === 'value' || portId === 'onDefault' || portId === 'execIn') {
+        showPop({
+          title: 'Protected Port',
+          message: `Port "${portId}" cannot be removed.`,
+          type: 'warning',
+          duration: 3000
+        });
+        return;
+      }
+    }
+
+    if (node.type === 'eventOnKey' || node.type === 'eventAdvancedKey') {
+      if (portId === 'action') {
+        showPop({
+          title: 'Protected Port',
+          message: `Port "${portId}" cannot be removed.`,
+          type: 'warning',
+          duration: 3000
+        });
+        return;
+      }
+    }
+
+    const activeNode = scriptStore.activeScript?.nodes?.find(n => n.id === node.id) || node;
+    const portList = type === 'input' ? activeNode.inputs : activeNode.outputs;
     const target = portList.find(p => p.id === portId);
     const targetId = target ? target.id : portId;
 
-    const connectedEdges = scriptStore.activeScript.edges.filter(e =>
-      (type === 'input' && e.target === node.id && e.targetHandle === targetId) ||
-      (type === 'output' && e.source === node.id && e.sourceHandle === targetId)
+    const connectedEdges = (scriptStore.activeScript?.edges || []).filter(e =>
+      (type === 'input' && e.target === activeNode.id && e.targetHandle === targetId) ||
+      (type === 'output' && e.source === activeNode.id && e.sourceHandle === targetId)
     );
 
-    scriptStore.removeNodePort(node.id, type, targetId);
-
-    if (type === 'input' && node.data?.values) {
-      const updatedValues = { ...node.data.values };
-      delete updatedValues[targetId];
-      node.data.values = updatedValues;
+    // 1. Identify paired port to remove
+    let pairedPort = null;
+    if (activeNode.type === 'logicSwitch') {
+      if (type === 'input' && String(targetId).startsWith('case')) {
+        const caseIdx = String(targetId).replace('case', '');
+        pairedPort = { type: 'output', id: `onCase${caseIdx}` };
+      } else if (type === 'output' && String(targetId).startsWith('onCase')) {
+        const caseIdx = String(targetId).replace('onCase', '');
+        pairedPort = { type: 'input', id: `case${caseIdx}` };
+      }
+    } else if (activeNode.type === 'eventOnKey' || activeNode.type === 'eventAdvancedKey') {
+      if (type === 'input' && String(targetId).startsWith('key')) {
+        const keyIdx = String(targetId).replace('key', '');
+        pairedPort = { type: 'output', id: `onKey${keyIdx}` };
+      } else if (type === 'output' && String(targetId).startsWith('onKey')) {
+        const keyIdx = String(targetId).replace('onKey', '');
+        pairedPort = { type: 'input', id: `key${keyIdx}` };
+      }
     }
 
+    // 2. Remove primary port from scriptStore
+    scriptStore.removeNodePort(activeNode.id, type, targetId);
+
+    // 3. Remove paired port from scriptStore if present
+    if (pairedPort) {
+      scriptStore.removeNodePort(activeNode.id, pairedPort.type, pairedPort.id);
+    }
+
+    // 4. Clean up node.data.values and cases on the fresh node in scriptStore
+    const freshNode = scriptStore.activeScript?.nodes?.find(n => n.id === node.id) || activeNode;
+    if (freshNode.data?.values) {
+      if (type === 'input') {
+        delete freshNode.data.values[targetId];
+      }
+      if (pairedPort && pairedPort.type === 'input') {
+        delete freshNode.data.values[pairedPort.id];
+      }
+    }
+
+    if (freshNode.type === 'logicSwitch') {
+      syncSwitchCases(freshNode);
+    }
+
+    // 5. Persist the updated node.data in activeScript
+    scriptStore.saveActiveScript();
+
     if (target) {
-      scriptHistory.recordPortChange(node.id, 'REMOVE', target, type, connectedEdges);
+      scriptHistory.recordPortChange(activeNode.id, 'REMOVE', target, type, connectedEdges);
+    }
+
+    const currentActiveNode = scriptStore.activeScript?.nodes?.find(n => n.id === node.id);
+    if (currentActiveNode && currentActiveNode !== node) {
+      node.inputs = currentActiveNode.inputs;
+      node.outputs = currentActiveNode.outputs;
+      if (currentActiveNode.data) node.data = currentActiveNode.data;
     }
   }
 
@@ -319,6 +534,9 @@ export function useDynamicPortManager() {
     handleNodeValueSync,
     addDynamicPort,
     removeDynamicPort,
+    canDeleteInputPort,
+    canDeleteOutputPort,
+    syncSwitchCases,
     isProtectedPort: (portId) => PROTECTED_PORTS.includes(portId)
   };
 }

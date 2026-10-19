@@ -662,7 +662,9 @@ export default class ContextSystem {
         resume: () => this.game.resumeGame(),
         restart: () => this.game.restartGame(),
         quit: () => this.game.quitGame(),
-        isPaused: () => this.game.isPaused
+        isPaused: () => this.game.isPaused,
+        changeScreen: (mode) => this.game.changeScreen(mode),
+        setScreenMode: (mode) => this.game.changeScreen(mode)
       },
 
       audio: {

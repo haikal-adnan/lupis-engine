@@ -422,15 +422,16 @@ return;`
         },
         inputs: [
           { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
-          { id: 'signalName', dataType: 'string', color: '#F48FB1', defaultValue: '' }
+          { id: 'signalName', dataType: 'string', color: '#F48FB1', defaultValue: '' },
+          { id: 'value', dataType: 'any', color: '#B0BEC5' }
         ],
         outputs: [
           { id: 'execOut', dataType: 'execution', color: '#FFFFFF' }
         ],
         data: {
-          values: { signalName: '' },
+          values: { signalName: '', value: null },
           code: 
-`context.signal.emit(inputs.signalName);
+`context.signal.emit(inputs.signalName, inputs.value);
 outputs.execOut = true;
 return;`
         }
@@ -451,14 +452,16 @@ return;`
           { id: 'signalName', dataType: 'string', color: '#F48FB1', defaultValue: '' }
         ],
         outputs: [
-          { id: 'execOut', dataType: 'execution', color: '#FFFFFF' }
+          { id: 'execOut', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'value', dataType: 'any', color: '#B0BEC5' }
         ],
         data: {
           values: { signalName: '' },
           code: 
 `if (!context.state.signalRegistered) {
   context.state.signalRegistered = true;
-  context.signal.on(inputs.signalName, () => {
+  context.signal.on(inputs.signalName, (val) => {
+    outputs.value = val;
     outputs.execOut = true;
     context.triggerFlow('execOut');
   });

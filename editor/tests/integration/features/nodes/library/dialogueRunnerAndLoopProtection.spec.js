@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import ContextSystem from '@core/Script/ContextSystem.js';
 import ScriptRunner from '@core/Script/ScriptRunner.js';
-import { BlueprintHelperTool as BlueprintVisualNovelHelper, BlueprintFlow as BlueprintHelper } from '@nodes/library/blueprints/index.js';
+import { BlueprintHelperTool as BlueprintVisualNovelHelper, BlueprintFlow as BlueprintHelper, BlueprintSystem } from '@nodes/library/blueprints/index.js';
 import { componentSchema } from '@scenes/scenes.js';
 
 describe('Dialogue Runner & Infinite Loop Protection Integration', () => {
@@ -11,16 +11,33 @@ describe('Dialogue Runner & Infinite Loop Protection Integration', () => {
     const emittedErrors = [];
     const emittedLogs = [];
     const emittedWarns = [];
+    const emittedSignals = [];
     const globals = new Map();
     const entityRegistry = new Map();
+    const eventListeners = new Map();
 
     const mockGame = {
       deltaTime: 0.016,
       events: {
-        emit: (name, payload) => {
-          if (name === 'console:error') emittedErrors.push(payload);
-          if (name === 'console:warn') emittedWarns.push(payload);
-          if (name === 'console:log') emittedLogs.push(payload);
+        emit: (name, ...args) => {
+          if (name === 'console:error') emittedErrors.push(args[0]);
+          if (name === 'console:warn') emittedWarns.push(args[0]);
+          if (name === 'console:log') emittedLogs.push(args[0]);
+          emittedSignals.push({ name, args, data: args[0] });
+          const list = eventListeners.get(name) || [];
+          for (const cb of [...list]) {
+            cb(...args);
+          }
+        },
+        on: (name, cb) => {
+          if (!eventListeners.has(name)) eventListeners.set(name, []);
+          eventListeners.get(name).push(cb);
+        },
+        off: (name, cb) => {
+          if (!eventListeners.has(name)) return;
+          const list = eventListeners.get(name);
+          const idx = list.indexOf(cb);
+          if (idx > -1) list.splice(idx, 1);
         }
       },
       variables: {
@@ -41,7 +58,7 @@ describe('Dialogue Runner & Infinite Loop Protection Integration', () => {
     };
 
     mockGame.contextSystem = new ContextSystem(mockGame);
-    return { mockGame, emittedErrors, emittedWarns, emittedLogs, globals, entityRegistry };
+    return { mockGame, emittedErrors, emittedWarns, emittedLogs, emittedSignals, globals, entityRegistry };
   }
 
   function setupDialogueRunnerScript(mockGame, nodeValues = {}) {
@@ -105,7 +122,8 @@ describe('Dialogue Runner & Infinite Loop Protection Integration', () => {
       id: 'script_vn_test',
       localVariables: [
         { id: 'var_local_hero', name: 'heroName', defaultValue: 'Alex' },
-        { id: 'var_local_score', name: 'playerScore', defaultValue: 0 }
+        { id: 'var_local_score', name: 'playerScore', defaultValue: 0 },
+        { id: 'var_player_name', name: 'playerName', defaultValue: 'Calk' }
       ],
       nodes: [
         {
@@ -127,6 +145,62 @@ describe('Dialogue Runner & Infinite Loop Protection Integration', () => {
 
     const runner = new ScriptRunner(mockGame, scriptData, { id: 'ent_runner' });
     return { runner, textEntity, speakerEntity, portraitEntity, nameEntity, scriptData };
+  }
+
+  const vnChoicePresenterDef = BlueprintVisualNovelHelper.items.find(i => i.type === 'vnChoicePresenter');
+
+  function setupChoicePresenterScript(mockGame, nodeValues = {}) {
+    const btn1 = { id: 'btnChoice1', visible: false, components: { Transform: {} } };
+    const btn2 = { id: 'btnChoice2', visible: false, components: { Transform: {} } };
+    const btn3 = { id: 'btnChoice3', visible: false, components: { Transform: {} } };
+
+    const txt1 = { id: 'btnChoice1Text', visible: false, components: { TextRenderer: { value: '' } } };
+    const txt2 = { id: 'btnChoice2Text', visible: false, components: { TextRenderer: { value: '' } } };
+    const txt3 = { id: 'btnChoice3Text', visible: false, components: { TextRenderer: { value: '' } } };
+
+    mockGame.entityRegistry.set('btnChoice1', btn1);
+    mockGame.entityRegistry.set('btnChoice2', btn2);
+    mockGame.entityRegistry.set('btnChoice3', btn3);
+    mockGame.entityRegistry.set('btnChoice1Text', txt1);
+    mockGame.entityRegistry.set('btnChoice2Text', txt2);
+    mockGame.entityRegistry.set('btnChoice3Text', txt3);
+
+    const origCreateExecutionContext = mockGame.contextSystem.createExecutionContext.bind(mockGame.contextSystem);
+    mockGame.contextSystem.createExecutionContext = (runner, node) => {
+      const ctx = origCreateExecutionContext(runner, node);
+      ctx.entity = {
+        get: (id) => mockGame.entityRegistry.get(id),
+        getChildren: () => []
+      };
+      ctx.input.isPointerOver = (entity) => entity.id === 'btnChoice1';
+      return ctx;
+    };
+
+    const scriptData = {
+      id: 'script_choice_test',
+      localVariables: [
+        { id: 'var_player_name', name: 'playerName', defaultValue: 'Calk' }
+      ],
+      nodes: [
+        {
+          id: 'node_choice_presenter',
+          type: 'vnChoicePresenter',
+          inputs: vnChoicePresenterDef.defaultData.inputs,
+          outputs: vnChoicePresenterDef.defaultData.outputs,
+          data: {
+            values: {
+              ...vnChoicePresenterDef.defaultData.data.values,
+              ...nodeValues
+            },
+            code: vnChoicePresenterDef.defaultData.data.code
+          }
+        }
+      ],
+      edges: []
+    };
+
+    const runner = new ScriptRunner(mockGame, scriptData, { id: 'ent_choice_runner' });
+    return { runner, btn1, btn2, btn3, txt1, txt2, txt3 };
   }
 
   describe('Typewriter Functionality', () => {
@@ -512,62 +586,6 @@ describe('Dialogue Runner & Infinite Loop Protection Integration', () => {
   });
 
   describe('Choice Presenter Functionality', () => {
-    const vnChoicePresenterDef = BlueprintVisualNovelHelper.items.find(i => i.type === 'vnChoicePresenter');
-
-    function setupChoicePresenterScript(mockGame, nodeValues = {}) {
-      const btn1 = { id: 'btnChoice1', visible: false, components: { Transform: {} } };
-      const btn2 = { id: 'btnChoice2', visible: false, components: { Transform: {} } };
-      const btn3 = { id: 'btnChoice3', visible: false, components: { Transform: {} } };
-
-      const txt1 = { id: 'btnChoice1Text', visible: false, components: { TextRenderer: { value: '' } } };
-      const txt2 = { id: 'btnChoice2Text', visible: false, components: { TextRenderer: { value: '' } } };
-      const txt3 = { id: 'btnChoice3Text', visible: false, components: { TextRenderer: { value: '' } } };
-
-      mockGame.entityRegistry.set('btnChoice1', btn1);
-      mockGame.entityRegistry.set('btnChoice2', btn2);
-      mockGame.entityRegistry.set('btnChoice3', btn3);
-      mockGame.entityRegistry.set('btnChoice1Text', txt1);
-      mockGame.entityRegistry.set('btnChoice2Text', txt2);
-      mockGame.entityRegistry.set('btnChoice3Text', txt3);
-
-      const origCreateExecutionContext = mockGame.contextSystem.createExecutionContext.bind(mockGame.contextSystem);
-      mockGame.contextSystem.createExecutionContext = (runner, node) => {
-        const ctx = origCreateExecutionContext(runner, node);
-        ctx.entity = {
-          get: (id) => mockGame.entityRegistry.get(id),
-          getChildren: () => []
-        };
-        ctx.input.isPointerOver = (entity) => entity.id === 'btnChoice1';
-        return ctx;
-      };
-
-      const scriptData = {
-        id: 'script_choice_test',
-        localVariables: [
-          { id: 'var_player_name', name: 'playerName', defaultValue: 'Calk' }
-        ],
-        nodes: [
-          {
-            id: 'node_choice_presenter',
-            type: 'vnChoicePresenter',
-            inputs: vnChoicePresenterDef.defaultData.inputs,
-            outputs: vnChoicePresenterDef.defaultData.outputs,
-            data: {
-              values: {
-                ...vnChoicePresenterDef.defaultData.data.values,
-                ...nodeValues
-              },
-              code: vnChoicePresenterDef.defaultData.data.code
-            }
-          }
-        ],
-        edges: []
-      };
-
-      const runner = new ScriptRunner(mockGame, scriptData, { id: 'ent_choice_runner' });
-      return { runner, btn1, btn2, btn3, txt1, txt2, txt3 };
-    }
-
     it('populates choices to default btnChoice1..3 with variable interpolation', () => {
       const { mockGame } = createMockVnGame();
       const choices = [
@@ -1384,6 +1402,208 @@ describe('Dialogue Runner & Infinite Loop Protection Integration', () => {
       runner.update(0.016);
 
       expect(flowSpy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Inline Signal Emission in Dialogue Runner & Choice Presenter', () => {
+    it('triggers inline {emit(signalName:value)} mid-typewriter and strips tag from rendered dialogue', () => {
+      const { mockGame, emittedSignals } = createMockVnGame();
+      const dialogMap = {
+        d_grape: {
+          text: 'Halo, nama ku {local(playerName)}, sebagai perkenalan, nih 20 anggur {emit(giveGrape:20)}, selamat menikmati'
+        }
+      };
+
+      const { runner, textEntity } = setupDialogueRunnerScript(mockGame, {
+        dialogMap,
+        dialogId: 'd_grape',
+        speed: 10
+      });
+
+      const node = runner.nodeMap.get('node_dialogue_runner');
+      runner._executeNodeLogic(node, 'execIn');
+
+      // Initially at index 0, giveGrape has NOT triggered yet
+      expect(emittedSignals.some(s => s.name === 'giveGrape')).toBe(false);
+
+      // Advance by 100ms -> only 10 chars typed
+      runner.update(0.100);
+      expect(emittedSignals.some(s => s.name === 'giveGrape')).toBe(false);
+
+      // Advance enough frames so typewriter passes index where {emit(...)} is located (around char 55)
+      runner.update(1.0);
+
+      // giveGrape signal should now be emitted with value 20
+      const grapeSignal = emittedSignals.find(s => s.name === 'giveGrape');
+      expect(grapeSignal).toBeDefined();
+      expect(grapeSignal.args[0]).toBe(20);
+
+      // The text displayed should NOT contain {emit(...)}
+      expect(textEntity.components.TextRenderer.value).not.toContain('{emit');
+      expect(textEntity.components.TextRenderer.value).toContain('Calk, sebagai perkenalan, nih 20 anggur , selamat menikmati');
+    });
+
+    it('triggers pending {emit(...)} signals immediately if dialogue is skipped via click', () => {
+      const { mockGame, emittedSignals } = createMockVnGame();
+      const dialogMap = {
+        d_skip: {
+          text: 'Teks panjang {emit(sigA:1)} dan lebih panjang lagi {emit(sigB:2)} selesai.'
+        }
+      };
+
+      const { runner, textEntity } = setupDialogueRunnerScript(mockGame, {
+        dialogMap,
+        dialogId: 'd_skip',
+        speed: 100
+      });
+
+      const node = runner.nodeMap.get('node_dialogue_runner');
+      runner._executeNodeLogic(node, 'execIn');
+
+      // Click immediately while typing
+      mockGame.input.pointer.down = true;
+      runner.update(0.016);
+
+      // Both signals should have triggered
+      expect(emittedSignals.some(s => s.name === 'sigA' && s.args[0] === 1)).toBe(true);
+      expect(emittedSignals.some(s => s.name === 'sigB' && s.args[0] === 2)).toBe(true);
+      expect(textEntity.components.TextRenderer.value).not.toContain('{emit');
+    });
+
+    it('emits signals immediately on dialog start when speed is 0', () => {
+      const { mockGame, emittedSignals } = createMockVnGame();
+      const dialogMap = {
+        d_instant: {
+          text: 'Halo! {emit(instantGift:99)}'
+        }
+      };
+
+      const { runner } = setupDialogueRunnerScript(mockGame, {
+        dialogMap,
+        dialogId: 'd_instant',
+        speed: 0
+      });
+
+      const node = runner.nodeMap.get('node_dialogue_runner');
+      runner._executeNodeLogic(node, 'execIn');
+
+      expect(emittedSignals.some(s => s.name === 'instantGift' && s.args[0] === 99)).toBe(true);
+    });
+
+    it('renders choice text without {emitClick(...)} and emits all signals with values on click', () => {
+      const { mockGame, emittedSignals } = createMockVnGame();
+      const choices = [
+        { text: 'Terima kasih {emitClick(getGold:140, unlockFishRod)}', next: 'd_next' }
+      ];
+
+      const { runner, btn1, txt1 } = setupChoicePresenterScript(mockGame, {
+        choices,
+        activationDelay: 0
+      });
+
+      const node = runner.nodeMap.get('node_choice_presenter');
+      runner._executeNodeLogic(node, 'execIn');
+
+      // Button text displayed does not contain {emitClick(...)}
+      expect(btn1.visible).toBe(true);
+      expect(txt1.components.TextRenderer.value).toBe('Terima kasih');
+
+      // Click the choice button
+      mockGame.input.pointer.down = true;
+      runner.update(0.016);
+
+      // Both signals emitted: getGold with 140, unlockFishRod with true
+      const goldSig = emittedSignals.find(s => s.name === 'getGold');
+      expect(goldSig).toBeDefined();
+      expect(goldSig.args[0]).toBe(140);
+
+      const fishSig = emittedSignals.find(s => s.name === 'unlockFishRod');
+      expect(fishSig).toBeDefined();
+      expect(fishSig.args[0]).toBe(true);
+
+      // Next dialog is set and choices hidden
+      const outputs = runner.nodeOutputs.get('node_choice_presenter');
+      expect(outputs.nextDialogId).toBe('d_next');
+      expect(outputs.signalName).toBeUndefined();
+    });
+
+    it('supports actionEmitSignal with value input and eventOnSignal with execOut and value output', () => {
+      const { mockGame } = createMockVnGame();
+      const emitSignalDef = BlueprintSystem.items.find(i => i.type === 'actionEmitSignal');
+      const onSignalDef = BlueprintSystem.items.find(i => i.type === 'eventOnSignal');
+
+      let receivedValue = null;
+      let eventFired = false;
+
+      const scriptData = {
+        id: 'script_signal_test',
+        localVariables: [],
+        nodes: [
+          {
+            id: 'node_on_signal',
+            type: 'eventOnSignal',
+            inputs: onSignalDef.defaultData.inputs,
+            outputs: onSignalDef.defaultData.outputs,
+            data: {
+              values: { signalName: 'rewardEvent' },
+              code: onSignalDef.defaultData.data.code
+            }
+          },
+          {
+            id: 'node_custom_receiver',
+            type: 'customReceiver',
+            inputs: [
+              { id: 'execIn', dataType: 'execution' },
+              { id: 'valIn', dataType: 'any' }
+            ],
+            outputs: [],
+            data: {
+              code: `
+                eventFired = true;
+                receivedValue = inputs.valIn;
+              `
+            }
+          },
+          {
+            id: 'node_emit_signal',
+            type: 'actionEmitSignal',
+            inputs: emitSignalDef.defaultData.inputs,
+            outputs: emitSignalDef.defaultData.outputs,
+            data: {
+              values: { signalName: 'rewardEvent', value: { coins: 50, item: 'Grape' } },
+              code: emitSignalDef.defaultData.data.code
+            }
+          }
+        ],
+        edges: [
+          {
+            source: 'node_on_signal',
+            sourceHandle: 'execOut',
+            target: 'node_custom_receiver',
+            targetHandle: 'execIn'
+          },
+          {
+            source: 'node_on_signal',
+            sourceHandle: 'value',
+            target: 'node_custom_receiver',
+            targetHandle: 'valIn'
+          }
+        ]
+      };
+
+      const runner = new ScriptRunner(mockGame, scriptData, { id: 'ent_runner' });
+
+      // Register listener
+      const onSignalNode = runner.nodeMap.get('node_on_signal');
+      runner._executeNodeLogic(onSignalNode, 'execIn');
+
+      // Now emit signal using actionEmitSignal node
+      const emitNode = runner.nodeMap.get('node_emit_signal');
+      runner._executeNodeLogic(emitNode, 'execIn');
+
+      // Verify onSignal outputs
+      const onSignalOutputs = runner.nodeOutputs.get('node_on_signal');
+      expect(onSignalOutputs.value).toEqual({ coins: 50, item: 'Grape' });
     });
   });
 });

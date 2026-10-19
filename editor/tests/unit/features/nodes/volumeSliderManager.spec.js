@@ -304,5 +304,195 @@ describe('volumeSliderManager Blueprint & Execution Tests', () => {
     expect(masterBar.components.UITransform.x).toBe(-450);
     expect(masterHandler.components.UITransform.x).toBe(0);
   });
+
+  it('updates indicator TextRenderer with "{value}%" on initialization and on pointer interaction', () => {
+    const { mockGame, audioVolumes, entities } = createMockGame();
+
+    const masterIndicator = {
+      id: 'VolumeMasterIndicator',
+      scriptId: 'VolumeMasterIndicator',
+      components: {
+        UITransform: { x: -90, y: 80, width: 60, height: 20 },
+        TextRenderer: { value: '0%' }
+      }
+    };
+    entities.push(masterIndicator);
+
+    let pointerState = { x: 0, y: 0, down: false };
+    mockGame.input.getPointer = vi.fn(() => pointerState);
+    mockGame.input.mouse.isDown = vi.fn(() => pointerState.down);
+
+    const scriptData = {
+      id: 'test_indicator',
+      nodes: [
+        {
+          id: 'sliderNode',
+          type: 'volumeSliderManager',
+          inputs: sliderNodeDef.defaultData.inputs,
+          outputs: sliderNodeDef.defaultData.outputs,
+          data: {
+            values: {
+              config: {
+                master: {
+                  volume: 85,
+                  bar: 'VolumeMasterBar',
+                  handler: 'VolumeMasterHandler',
+                  indicator: 'VolumeMasterIndicator'
+                }
+              }
+            },
+            code: sliderNodeDef.defaultData.data.code
+          }
+        }
+      ],
+      edges: []
+    };
+
+    const runner = new ScriptRunner(mockGame, scriptData);
+
+    // Initial 85% volume sets text to "85%"
+    runner._executeNodeLogic(scriptData.nodes[0], 'execIn');
+    expect(audioVolumes.master).toBe(85);
+    expect(masterIndicator.components.TextRenderer.value).toBe('85%');
+
+    // Drag to 50% volume (x = 690, y = 590)
+    pointerState = { x: 690, y: 590, down: true };
+    runner._executeNodeLogic(scriptData.nodes[0], 'execIn');
+    expect(audioVolumes.master).toBe(50);
+    expect(masterIndicator.components.TextRenderer.value).toBe('50%');
+
+    // Drag to 0% volume (x = 510, y = 590)
+    pointerState = { x: 510, y: 590, down: true };
+    runner._executeNodeLogic(scriptData.nodes[0], 'execIn');
+    expect(audioVolumes.master).toBe(0);
+    expect(masterIndicator.components.TextRenderer.value).toBe('0%');
+
+    // Drag to 100% volume (x = 870, y = 590)
+    pointerState = { x: 870, y: 590, down: true };
+    runner._executeNodeLogic(scriptData.nodes[0], 'execIn');
+    expect(audioVolumes.master).toBe(100);
+    expect(masterIndicator.components.TextRenderer.value).toBe('100%');
+  });
+
+  it('handles optional indicator gracefully when omitted, null, or entity has no TextRenderer', () => {
+    const { mockGame, audioVolumes, entities } = createMockGame();
+
+    entities.push({
+      id: 'EmptyIndicatorEntity',
+      scriptId: 'EmptyIndicatorEntity',
+      components: {
+        UITransform: { x: 0, y: 0 }
+      }
+    });
+
+    const scriptData = {
+      id: 'test_optional_indicator',
+      nodes: [
+        {
+          id: 'sliderNode',
+          type: 'volumeSliderManager',
+          inputs: sliderNodeDef.defaultData.inputs,
+          outputs: sliderNodeDef.defaultData.outputs,
+          data: {
+            values: {
+              config: {
+                master: {
+                  volume: 70,
+                  bar: 'VolumeMasterBar',
+                  handler: 'VolumeMasterHandler'
+                  // indicator omitted
+                },
+                background: {
+                  volume: 40,
+                  bar: 'VolumeBGMBar',
+                  handler: 'VolumeBGMHandler',
+                  indicator: null
+                },
+                sfx: {
+                  volume: 60,
+                  bar: 'VolumeMasterBar',
+                  handler: 'VolumeMasterHandler',
+                  indicator: 'NonExistentIndicator'
+                },
+                vocal: {
+                  volume: 90,
+                  bar: 'VolumeBGMBar',
+                  handler: 'VolumeBGMHandler',
+                  indicator: 'EmptyIndicatorEntity'
+                }
+              }
+            },
+            code: sliderNodeDef.defaultData.data.code
+          }
+        }
+      ],
+      edges: []
+    };
+
+    const runner = new ScriptRunner(mockGame, scriptData);
+    expect(() => {
+      runner._executeNodeLogic(scriptData.nodes[0], 'execIn');
+    }).not.toThrow();
+
+    expect(audioVolumes.master).toBe(70);
+    expect(audioVolumes.background).toBe(40);
+  });
+
+  it('supports indicator TextRenderer located on a child entity', () => {
+    const { mockGame, audioVolumes, entities } = createMockGame();
+
+    const childTextEntity = {
+      id: 'BGMIndicatorChildText',
+      scriptId: 'BGMIndicatorChildText',
+      parentId: 'BGMIndicatorContainer',
+      components: {
+        UITransform: { x: 0, y: 0 },
+        TextRenderer: { value: 'Old Value' }
+      }
+    };
+
+    const parentIndicatorContainer = {
+      id: 'BGMIndicatorContainer',
+      scriptId: 'BGMIndicatorContainer',
+      children: ['BGMIndicatorChildText'],
+      components: {
+        UITransform: { x: 0, y: 100 }
+      }
+    };
+
+    entities.push(parentIndicatorContainer, childTextEntity);
+
+    const scriptData = {
+      id: 'test_child_indicator',
+      nodes: [
+        {
+          id: 'sliderNode',
+          type: 'volumeSliderManager',
+          inputs: sliderNodeDef.defaultData.inputs,
+          outputs: sliderNodeDef.defaultData.outputs,
+          data: {
+            values: {
+              config: {
+                background: {
+                  volume: 65,
+                  bar: 'VolumeBGMBar',
+                  handler: 'VolumeBGMHandler',
+                  indicator: 'BGMIndicatorContainer'
+                }
+              }
+            },
+            code: sliderNodeDef.defaultData.data.code
+          }
+        }
+      ],
+      edges: []
+    };
+
+    const runner = new ScriptRunner(mockGame, scriptData);
+    runner._executeNodeLogic(scriptData.nodes[0], 'execIn');
+
+    expect(audioVolumes.background).toBe(65);
+    expect(childTextEntity.components.TextRenderer.value).toBe('65%');
+  });
 });
 

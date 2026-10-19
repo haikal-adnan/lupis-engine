@@ -23,7 +23,9 @@ export function useNodeInspector(props = {}) {
     updatePortLabel,
     availableOptions,
     activeDropdownTarget,
-    effectiveDynamicMode
+    effectiveDynamicMode,
+    canDeleteInputPort,
+    canDeleteOutputPort
   } = useNodeLogic();
 
   const startScriptTransaction = scriptHistory.startTransaction;
@@ -230,6 +232,8 @@ export function useNodeInspector(props = {}) {
     handleAddPort,
     addFromDropdown,
     removeDynamicInput,
-    updatePortLabel
+    updatePortLabel,
+    canDeleteInputPort,
+    canDeleteOutputPort
   };
 }

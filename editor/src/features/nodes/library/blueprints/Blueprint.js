@@ -95,8 +95,8 @@ import { Boxes } from 'lucide-vue-next';
  *      dan tidak boleh sama dengan port tetap pada node yang sama.
  *    - Else-If: input `condition`, `condition1`..`conditionN`; output `onTrue`,
  *      `onElseIf1`..`onElseIfN`, `onElse`, `onFalse`.
- *    - Switch: input `value`; output `onCase0`..`onCaseN`, `onDefault`.
- *    - Keyboard per tombol: `on` + nama tombol huruf awal besar tanpa simbol (`onA`, `onSpace`).
+ *    - Switch: input `value`, `case0`..`caseN`; output `onCase0`..`onCaseN`, `onDefault`.
+ *    - Keyboard: input `action`, `key0`..`keyN`; output `onKey0`..`onKeyN`.
  *    - Batch: `targetEntity0`..`targetEntityN` dan `value0`..`valueN`.
  * 13. Referensi ID Port di Luar inputs/outputs:
  *    - Pemanggilan alur (`context.triggerFlow('execOut')`, `executeFlow(id, 'onComplete')`),

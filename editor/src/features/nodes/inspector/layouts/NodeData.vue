@@ -159,7 +159,7 @@
             </span>
 
             <button 
-              v-if="isDynamicPort(port.id)" 
+              v-if="canDeleteInput(port.id)" 
               type="button"
               @click="removeDynamicInput(port.id, 'input')"
               class="text-xs text-muted-foreground hover:text-red-400 transition-colors px-1"
@@ -287,6 +287,30 @@
           <span>+ Add Value (Val {{ nextSequentialNumber }})</span>
         </button>
       </div>
+
+      <div v-if="isSwitchNode" class="pt-2 border-t border-border">
+        <button
+          type="button"
+          @click="handleAddPort('input')"
+          class="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 text-xs font-mono border border-dashed border-border rounded-md text-muted-foreground hover:text-foreground hover:border-foreground/50 transition-colors bg-secondary/10 hover:bg-secondary/20"
+          data-testid="node-inspector-add-case-btn"
+        >
+          <Plus class="w-3.5 h-3.5" />
+          <span>+ Add Case</span>
+        </button>
+      </div>
+
+      <div v-if="isKeyNode" class="pt-2 border-t border-border">
+        <button
+          type="button"
+          @click="handleAddPort('input')"
+          class="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 text-xs font-mono border border-dashed border-border rounded-md text-muted-foreground hover:text-foreground hover:border-foreground/50 transition-colors bg-secondary/10 hover:bg-secondary/20"
+          data-testid="node-inspector-add-key-btn"
+        >
+          <Plus class="w-3.5 h-3.5" />
+          <span>+ Add Key</span>
+        </button>
+      </div>
     </template>
 
     <!-- Empty State -->
@@ -332,7 +356,8 @@ const {
   effectiveDynamicMode,
   handleAddPort,
   addFromDropdown,
-  removeDynamicInput
+  removeDynamicInput,
+  canDeleteInputPort
 } = useNodeInspector(props);
 
 const booleanOptions = [
@@ -343,7 +368,7 @@ const booleanOptions = [
 const IGNORED_KEYS = [
   'code', 'values', 'propertyOptions', 'dynamicMode', 
   'mappings', 'options', 'valueModes', 'variableBindings', 'variableModifiers',
-  'variableId', 'scope', 'items'
+  'variableId', 'scope', 'items', 'cases'
 ];
 
 const isVariableNode = computed(() => {
@@ -359,9 +384,17 @@ const variableSetInputPort = computed(() => {
   }) || null;
 });
 
+const isSwitchNode = computed(() => {
+  return node.value?.type === 'logicSwitch';
+});
+
+const isKeyNode = computed(() => {
+  return node.value?.type === 'eventOnKey' || node.value?.type === 'eventAdvancedKey';
+});
+
 const isDynamicNode = computed(() => {
   const mode = effectiveDynamicMode.value;
-  return mode === 'inputProperty' || mode === 'outputProperty' || mode === 'sequential';
+  return mode === 'inputProperty' || mode === 'outputProperty' || mode === 'sequential' || mode === 'switch' || mode === 'keyboard' || isSwitchNode.value || isKeyNode.value;
 });
 
 const isPropertyNode = computed(() => {
@@ -403,9 +436,8 @@ const hasTopData = computed(() => {
   return Object.keys(data).filter(k => shouldShowDataField(k)).length > 0;
 });
 
-function isDynamicPort(portId) {
-  const protectedPorts = ['execIn', 'execOut', 'targetEntity', 'targetLayer', 'onClick'];
-  return !protectedPorts.includes(portId);
+function canDeleteInput(portId) {
+  return canDeleteInputPort(node.value, portId);
 }
 
 function onAddPropertySelected(optionValue) {

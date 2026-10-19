@@ -316,8 +316,8 @@ export const useScriptStore = defineStore('script', {
         ? node.dynamicMode
         : (blueprintItem?.dynamicMode || 'none');
 
-      const isDynamicInput = effectiveMode === 'sequential' || effectiveMode === 'inputProperty';
-      const isDynamicOutput = effectiveMode === 'outputProperty';
+      const isDynamicInput = effectiveMode === 'sequential' || effectiveMode === 'inputProperty' || effectiveMode === 'switch' || effectiveMode === 'keyboard' || node.type === 'logicSwitch' || node.type === 'eventOnKey' || node.type === 'eventAdvancedKey';
+      const isDynamicOutput = effectiveMode === 'outputProperty' || effectiveMode === 'switch' || effectiveMode === 'keyboard' || node.type === 'logicSwitch' || node.type === 'eventOnKey' || node.type === 'eventAdvancedKey';
 
       if (type === 'input' && !isDynamicInput) return;
       if (type === 'output' && !isDynamicOutput) return;
@@ -340,7 +340,12 @@ export const useScriptStore = defineStore('script', {
         }
       } else {
         if (node.outputs.some(p => p.id === newPort.id)) return;
-        node.outputs.push(newPort);
+        const defaultIndex = node.outputs.findIndex(p => p.id === 'onDefault');
+        if (defaultIndex !== -1) {
+          node.outputs.splice(defaultIndex, 0, newPort);
+        } else {
+          node.outputs.push(newPort);
+        }
       }
       
       this.saveActiveScript();
@@ -357,8 +362,8 @@ export const useScriptStore = defineStore('script', {
         ? node.dynamicMode
         : (blueprintItem?.dynamicMode || 'none');
 
-      const isDynamicInput = effectiveMode === 'sequential' || effectiveMode === 'inputProperty';
-      const isDynamicOutput = effectiveMode === 'outputProperty';
+      const isDynamicInput = effectiveMode === 'sequential' || effectiveMode === 'inputProperty' || effectiveMode === 'switch' || effectiveMode === 'keyboard' || node.type === 'logicSwitch' || node.type === 'eventOnKey' || node.type === 'eventAdvancedKey';
+      const isDynamicOutput = effectiveMode === 'outputProperty' || effectiveMode === 'switch' || effectiveMode === 'keyboard' || node.type === 'logicSwitch' || node.type === 'eventOnKey' || node.type === 'eventAdvancedKey';
 
       if (type === 'input' && !isDynamicInput) return;
       if (type === 'output' && !isDynamicOutput) return;

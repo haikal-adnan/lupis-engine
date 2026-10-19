@@ -35,7 +35,7 @@
           </div>
 
           <IconButton 
-            v-if="isInputDynamic && isRemovablePort(port.id)"
+            v-if="canDeleteInputPort(selectedNode, port.id)"
             @click="removeDynamicInput(port.id, 'input')"
             class="opacity-30 group-hover:opacity-100 transition-opacity w-6 h-6 shrink-0"
             variant="ghost" 
@@ -82,7 +82,7 @@
             data-testid="node-inspector-add-input-port-btn"
           >
             <Plus class="w-3 h-3 group-hover:scale-110 transition-transform" />
-            <span>{{ effectiveDynamicMode === 'sequential' ? '+ Add Value' : 'Add Input Port' }}</span>
+            <span>{{ effectiveDynamicMode === 'sequential' ? '+ Add Value' : (selectedNode?.type === 'logicSwitch' ? '+ Add Case' : (selectedNode?.type === 'eventOnKey' || selectedNode?.type === 'eventAdvancedKey' ? '+ Add Key' : 'Add Input Port')) }}</span>
           </button>
         </div>
       </div>
@@ -122,7 +122,7 @@
           </div>
           
           <IconButton 
-            v-if="isOutputDynamic && isRemovablePort(port.id)"
+            v-if="canDeleteOutputPort(selectedNode, port.id)"
             @click="removeDynamicInput(port.id, 'output')"
             class="opacity-30 group-hover:opacity-100 transition-opacity w-6 h-6 shrink-0"
             variant="ghost" 
@@ -169,7 +169,7 @@
             data-testid="node-inspector-add-output-port-btn"
           >
             <Plus class="w-3 h-3 group-hover:scale-110 transition-transform" />
-            <span>Add Output Port</span>
+            <span>{{ selectedNode?.type === 'logicSwitch' ? '+ Add Case' : (selectedNode?.type === 'eventOnKey' || selectedNode?.type === 'eventAdvancedKey' ? '+ Add Key' : 'Add Output Port') }}</span>
           </button>
         </div>
       </div>
@@ -191,23 +191,25 @@ const {
   handleAddPort,   
   addFromDropdown,   
   removeDynamicInput,
-  updatePortLabel
+  updatePortLabel,
+  canDeleteInputPort,
+  canDeleteOutputPort
 } = useNodeLogic();
 
 const dynamicModeLabel = computed(() => effectiveDynamicMode.value);
 
 const isInputDynamic = computed(() => {
   const mode = effectiveDynamicMode.value;
-  return mode === 'sequential' || mode === 'inputProperty';
+  return mode === 'sequential' || mode === 'inputProperty' || mode === 'switch' || mode === 'keyboard' || selectedNode.value?.type === 'logicSwitch' || selectedNode.value?.type === 'eventOnKey' || selectedNode.value?.type === 'eventAdvancedKey';
 });
 
 const isOutputDynamic = computed(() => {
-  return effectiveDynamicMode.value === 'outputProperty';
+  const mode = effectiveDynamicMode.value;
+  return mode === 'outputProperty' || mode === 'switch' || mode === 'keyboard' || selectedNode.value?.type === 'logicSwitch' || selectedNode.value?.type === 'eventOnKey' || selectedNode.value?.type === 'eventAdvancedKey';
 });
 
 function isRemovablePort(portId) {
-  const protectedPorts = ['execIn', 'execOut', 'targetEntity', 'targetLayer', 'onClick'];
-  return !protectedPorts.includes(portId);
+  return canDeleteInputPort(selectedNode.value, portId);
 }
 
 function getPortColor(port) {
