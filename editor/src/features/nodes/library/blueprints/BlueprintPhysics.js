@@ -24,7 +24,13 @@ export const BlueprintPhysics = {
           { id: 'velocityY', dataType: 'number', color: '#64B5F6', defaultValue: 0 }
         ],
         outputs: [
-          { id: 'execOut', dataType: 'execution', color: '#FFFFFF' }
+          { id: 'execOut', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'isColliding', dataType: 'boolean', color: '#E57373' },
+          { id: 'hitX', dataType: 'boolean', color: '#E57373' },
+          { id: 'hitY', dataType: 'boolean', color: '#E57373' },
+          { id: 'isGrounded', dataType: 'boolean', color: '#81C784' },
+          { id: 'realVelocityX', dataType: 'number', color: '#64B5F6' },
+          { id: 'realVelocityY', dataType: 'number', color: '#64B5F6' }
         ],
         data: {
           values: {
@@ -33,19 +39,25 @@ export const BlueprintPhysics = {
             velocityY: 0
           },
           code: 
-`const targetId = inputs.targetEntity;
+`const targetId = inputs.targetEntity || 'self';
 const entity = context.assert.exists(context.entity.get(targetId));
 const phys = entity.components && entity.components.Physics;
 
 if (phys && phys.isFrozen) {
   outputs.execOut = true;
+  outputs.isColliding = false;
+  outputs.hitX = false;
+  outputs.hitY = false;
+  outputs.isGrounded = Boolean(phys.isGrounded);
+  outputs.realVelocityX = 0;
+  outputs.realVelocityY = 0;
   return;
 }
 
-const velX = inputs.velocityX;
-const velY = inputs.velocityY;
-const dt = context.dt;
-const hasPhysics = phys && phys.enabled;
+const velX = Number(inputs.velocityX) || 0;
+const velY = Number(inputs.velocityY) || 0;
+const dt = Number(context.dt || context.deltaTime || 0.016);
+const hasPhysics = Boolean(phys && phys.enabled);
 
 if (hasPhysics) {
   phys.velocityX = velX;
@@ -53,10 +65,25 @@ if (hasPhysics) {
     phys.velocityY = velY;
   }
   phys._isIntentionalMove = Math.abs(velX) > 10 || Math.abs(velY) > 10;
+
+  outputs.isGrounded = Boolean(phys.isGrounded);
+  outputs.isColliding = Boolean(phys.collisionInfo && phys.collisionInfo.hitSolid);
+  outputs.hitX = Boolean(phys.collisionInfo && phys.collisionInfo.hitSolidX);
+  outputs.hitY = Boolean(phys.collisionInfo && phys.collisionInfo.hitSolidY);
+  outputs.realVelocityX = phys.velocityX;
+  outputs.realVelocityY = phys.velocityY;
 } else {
   const moveX = velX * dt;
   const moveY = velY * dt;
-  context.collider.moveAndSlide(entity, moveX, moveY);
+  const hitResult = context.collider.moveAndSlide(entity, moveX, moveY);
+
+  const hasHit = Boolean(hitResult);
+  outputs.isColliding = hasHit;
+  outputs.hitX = Boolean(hitResult && hitResult.x);
+  outputs.hitY = Boolean(hitResult && hitResult.y);
+  outputs.isGrounded = Boolean(hitResult && hitResult.y && moveY >= 0);
+  outputs.realVelocityX = hitResult && hitResult.x ? 0 : velX;
+  outputs.realVelocityY = hitResult && hitResult.y ? 0 : velY;
 }
 
 outputs.execOut = true;

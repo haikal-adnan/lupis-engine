@@ -27,7 +27,7 @@ export default class World {
         this._editors = {
             activeTool: 'select',
             activeTabId: null,
-            tilemapContext: { showOthers: true, opacity: 0.3 },
+            tilemapContext: { showOthers: true, opacity: 0.3, showGrid: true },
             tabs: []
         };
     }

@@ -177,4 +177,67 @@ describe('useTilemapHistory Integration', () => {
       expect(initialPropState).toBe(afterUndoState);
     });
   });
+
+  describe('Direct Tilemap Data Change Recording (Move, Delete, Bucket Fill)', () => {
+    it('records direct tile move change and reverts tile data on undo, then reapplies on redo', () => {
+      // Arrange
+      const oldData = { '2,2': 1, '3,2': 2 };
+      const newData = { '5,5': 1, '6,5': 2 };
+
+      targetScene.entities[0].components.Tilemap.data = { ...oldData };
+
+      // Act: Record move tiles
+      tilemapHistory.recordTilemapDataChange(entityId, oldData, newData, 'Move Marquee Tiles');
+      sceneStore.updateComponentProp(entityId, 'Tilemap', 'data', newData);
+
+      expect(targetScene.entities[0].components.Tilemap.data).toEqual(newData);
+
+      // Assert Undo -> restores oldData
+      tilemapHistory.undo();
+      expect(targetScene.entities[0].components.Tilemap.data).toEqual(oldData);
+
+      // Assert Redo -> reapplies newData
+      tilemapHistory.redo();
+      expect(targetScene.entities[0].components.Tilemap.data).toEqual(newData);
+    });
+
+    it('records tile deletion and bucket fill with proper descriptions and supports undo/redo', () => {
+      // Arrange
+      const filledData = { '0,0': 1, '1,0': 1, '0,1': 1 };
+      const deletedData = { '0,1': 1 };
+
+      targetScene.entities[0].components.Tilemap.data = { ...filledData };
+
+      // Act: Delete area
+      tilemapHistory.recordTilemapDataChange(entityId, filledData, deletedData, 'Delete Marquee Tiles');
+      sceneStore.updateComponentProp(entityId, 'Tilemap', 'data', deletedData);
+
+      // Undo deletion
+      tilemapHistory.undo();
+      expect(targetScene.entities[0].components.Tilemap.data).toEqual(filledData);
+
+      // Redo deletion
+      tilemapHistory.redo();
+      expect(targetScene.entities[0].components.Tilemap.data).toEqual(deletedData);
+
+      // Bucket fill
+      const bucketData = { '0,1': 9, '1,1': 9 };
+      tilemapHistory.recordTilemapDataChange(entityId, deletedData, bucketData, 'Bucket Fill');
+      sceneStore.updateComponentProp(entityId, 'Tilemap', 'data', bucketData);
+
+      tilemapHistory.undo();
+      expect(targetScene.entities[0].components.Tilemap.data).toEqual(deletedData);
+    });
+
+    it('[Bad Path] ignores recordTilemapDataChange when old and new data are identical or entityId is missing', () => {
+      const currentData = { '1,1': 5 };
+      targetScene.entities[0].components.Tilemap.data = { ...currentData };
+
+      tilemapHistory.recordTilemapDataChange(entityId, currentData, currentData, 'No-op Change');
+      tilemapHistory.recordTilemapDataChange(null, currentData, { '1,1': 10 }, 'Missing Entity');
+
+      tilemapHistory.undo();
+      expect(targetScene.entities[0].components.Tilemap.data).toEqual(currentData);
+    });
+  });
 });

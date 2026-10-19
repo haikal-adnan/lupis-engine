@@ -17,6 +17,16 @@
       >
         <Hand class="w-4 h-4" />
       </IconButton>
+
+      <div class="h-4 w-[1px] bg-border my-auto mx-0.5"></div>
+
+      <IconButton 
+        :active="showPaletteGrid" 
+        :tooltip="showPaletteGrid ? 'Hide Grid' : 'Show Grid'"
+        @click="togglePaletteGrid"
+      >
+        <Grid3x3 class="w-4 h-4" />
+      </IconButton>
     </div>
 
     <div 
@@ -54,7 +64,7 @@
            </div>
         </div>
 
-        <div v-if="currentTextureUrl" class="absolute inset-0 pointer-events-none" :style="gridOverlayStyle"></div>
+        <div v-if="currentTextureUrl && showPaletteGrid" class="absolute inset-0 pointer-events-none" :style="gridOverlayStyle"></div>
       </div>
       
       <div class="absolute bottom-2 right-2 px-2 py-1 bg-background/80 rounded text-[10px] font-mono border border-border pointer-events-none z-20">
@@ -70,13 +80,14 @@
 </template>
 
 <script setup>
-import { Grid, Hand, MousePointer2 } from 'lucide-vue-next';
+import { Grid, Hand, MousePointer2, Grid3x3 } from 'lucide-vue-next';
 import { useTilemapLogic } from '@builders/builders.js';
 import { PropertySection, PropertyRow, BaseButton, IconButton } from '@components/components.js';
 
 const { 
   currentTextureUrl, viewportRef, viewScale, containerStyle,
   cursorClass, effectiveMode, hasSelection, selectionRect, selectionStyle, gridOverlayStyle,
+  showPaletteGrid, togglePaletteGrid,
   isHovering, resetView, handleWheel, setPaletteMode,
   onPointerDown, onPointerMove, onPointerUp, onPointerLeave 
 } = useTilemapLogic();

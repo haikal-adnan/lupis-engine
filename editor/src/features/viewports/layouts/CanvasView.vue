@@ -31,7 +31,6 @@ const canvasLogic = useCanvasLogic();
 const { contextMenu, openMenu, closeMenu } = useCanvasMenu(canvasLogic);
 
 const initialEntitySnapshots = new Map();
-const initialTilemapSnapshots = new Map();
 let isPointerDown = false;
 let isDraggingEntity = false;
 
@@ -40,7 +39,6 @@ const deepClone = (data) => data ? JSON.parse(JSON.stringify(data)) : null;
 const handlePointerDown = (e) => {
     isPointerDown = true;
     initialEntitySnapshots.clear();
-    initialTilemapSnapshots.clear();
 
     const activeTab = workspaceStore.activeTab;
     let targetEntity = null;
@@ -67,10 +65,6 @@ const handlePointerDown = (e) => {
                 active: entity.active,
                 _editor: deepClone(entity._editor || {})
             });
-
-            if (entity.components.Tilemap) {
-                initialTilemapSnapshots.set(String(id), deepClone(entity.components.Tilemap.data || []));
-            }
         }
     });
 };
@@ -92,10 +86,6 @@ const handleEntityModified = (entities) => {
                 active: currentEntity.active,
                 _editor: deepClone(currentEntity._editor || {})
             });
-
-            if (currentEntity.components.Tilemap) {
-                initialTilemapSnapshots.set(id, deepClone(currentEntity.components.Tilemap.data || []));
-            }
         }
 
         const comps = engEnt.components;
@@ -180,21 +170,9 @@ const handlePointerUp = () => {
         }
     }
 
-    if (initialTilemapSnapshots.size > 0) {
-        initialTilemapSnapshots.forEach((oldTileData, id) => {
-            const currentEntity = sceneStore.activeEntities.find(e => String(e.id) === String(id));
-            const newTileData = currentEntity?.components?.Tilemap?.data;
-
-            if (newTileData && JSON.stringify(oldTileData) !== JSON.stringify(newTileData)) {
-                recordTilemapPropChange(id, 'data', oldTileData, newTileData);
-            }
-        });
-    }
-
     isPointerDown = false;
     isDraggingEntity = false;
     initialEntitySnapshots.clear();
-    initialTilemapSnapshots.clear();
 };
 
 const handleWindowBlur = () => {

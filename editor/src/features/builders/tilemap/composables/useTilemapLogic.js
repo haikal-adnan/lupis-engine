@@ -113,12 +113,17 @@ export function useTilemapLogic() {
   const navigation = useTilemapNavigation();
 
   const activePaletteMode = ref('select');
+  const showPaletteGrid = ref(true);
   const isSpacePressed = ref(false);
   const isHovering = ref(false);
   const isSelecting = ref(false);
   const selectionStart = ref({ x: 0, y: 0 });
   const selectionEnd = ref({ x: 0, y: 0 });
   const hasSelection = ref(false);
+
+  function togglePaletteGrid() {
+    showPaletteGrid.value = !showPaletteGrid.value;
+  }
 
   let resizeObserver = null;
   const lastSize = { w: 0, h: 0 };
@@ -332,6 +337,8 @@ export function useTilemapLogic() {
     setTool: workspaceStore.setTool,
     setContextOpacity: workspaceStore.setContextOpacity,
     toggleContextVisibility: workspaceStore.toggleContextVisibility,
+    toggleGridVisibility: workspaceStore.toggleGridVisibility,
+    setGridVisibility: workspaceStore.setGridVisibility,
     ...navigation,
     activePaletteMode,
     effectiveMode,
@@ -341,6 +348,8 @@ export function useTilemapLogic() {
     selectionRect,
     selectionStyle,
     gridOverlayStyle,
+    showPaletteGrid,
+    togglePaletteGrid,
     isHovering,
     setPaletteMode,
     onPointerDown,

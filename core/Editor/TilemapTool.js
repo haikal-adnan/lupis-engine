@@ -24,8 +24,15 @@ export default class TilemapTool {
         const activeId = editors.activeTabId;
         const entity = TilemapMath.findEntity(this.world, activeId);
 
-        // Right click to cancel selection / move
-        if (this.input?.mouse?.isDown(2)) {
+        // Right click or Escape to cancel selection / move
+        if (this.input?.mouse?.isDown(2) || this.input?.keyboard?.isPressed('Escape')) {
+            if (this.operations?.activeStroke) {
+                const initData = this.operations.activeStroke.initialData;
+                this.operations.activeStroke = null;
+                if (initData && entity?.components?.Tilemap) {
+                    this.operations.applyDataChange(entity, entity.components.Tilemap, initData);
+                }
+            }
             this._resetState(editors);
             return;
         }
@@ -40,8 +47,14 @@ export default class TilemapTool {
         const tm = entity.components.Tilemap;
         const gridPos = TilemapMath.getMouseGridPosition(this.game, entity, tm);
 
-        // Delete / Backspace to clear marquee area
+        // Delete / Backspace to clear marquee area or dragged tiles
         if (this.input?.keyboard?.isPressed('Delete') || this.input?.keyboard?.isPressed('Backspace')) {
+            if (editors.dragState) {
+                const ds = editors.dragState;
+                this.operations.deleteArea(entity, tm, ds.sourceX, ds.sourceY, ds.w, ds.h);
+                this._resetState(editors);
+                return;
+            }
             if (editors.marqueeSelection) {
                 const ms = editors.marqueeSelection;
                 this.operations.deleteArea(entity, tm, ms.x, ms.y, ms.w, ms.h);
@@ -58,9 +71,7 @@ export default class TilemapTool {
 
         // --- IF CARRYING DRAG STATE OR SELECT TOOL / CTRL PRESSED ---
         if (editors.dragState || activeTool === 'select' || (isCtrlDown && activeTool !== 'eraser')) {
-            if (gridPos) {
-                this.selection.handleSelectionAndMove(this.input, entity, tm, gridPos, editors, isCtrlDown);
-            }
+            this.selection.handleSelectionAndMove(this.input, entity, tm, gridPos, editors, isCtrlDown);
             return;
         }
 
@@ -78,27 +89,35 @@ export default class TilemapTool {
         }
 
         // --- BRUSH / BUCKET / EYEDROPPER ---
-        if (this.input?.mouse?.isDown(0) && gridPos) {
-            switch (activeTool) {
-                case 'brush':
-                    if (editors.tileSelection) {
-                        this.operations.paint(this.world, entity, tm, gridPos.x, gridPos.y, tm.assetId, editors.tileSelection, false);
-                    }
-                    break;
-                case 'bucket':
-                    if (editors.tileSelection) {
-                        this.operations.handleBucket(this.world, entity, tm, gridPos.x, gridPos.y, editors.tileSelection);
-                    }
-                    break;
-                case 'eyedropper':
-                    this.operations.handleEyedropper(this.world, tm, gridPos.x, gridPos.y);
-                    break;
+        if (this.input?.mouse?.isDown(0)) {
+            if (gridPos) {
+                switch (activeTool) {
+                    case 'brush':
+                        if (editors.tileSelection) {
+                            this.operations.startStroke(entity, tm, 'Paint');
+                            this.operations.paint(this.world, entity, tm, gridPos.x, gridPos.y, tm.assetId, editors.tileSelection, false);
+                        }
+                        break;
+                    case 'bucket':
+                        if (editors.tileSelection) {
+                            this.operations.handleBucket(this.world, entity, tm, gridPos.x, gridPos.y, editors.tileSelection);
+                        }
+                        break;
+                    case 'eyedropper':
+                        this.operations.handleEyedropper(this.world, tm, gridPos.x, gridPos.y);
+                        break;
+                }
             }
+        } else {
+            this.operations.endStroke(entity, tm);
         }
     }
 
     _resetState(editors) {
         this._isPanning = false;
+        if (this.operations) {
+            this.operations.activeStroke = null;
+        }
         this.selection.reset(editors);
     }
 

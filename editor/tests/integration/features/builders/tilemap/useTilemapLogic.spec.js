@@ -254,6 +254,42 @@ describe('useTilemapLogic Integration', () => {
       // Assert
       expect(workspaceStore.tilemapContext.showOthers).toBe(!initialVisibility)
     })
+
+    it('toggles tilemap grid visibility correctly', () => {
+      // Arrange
+      const logic = useTilemapLogic()
+      expect(workspaceStore.tilemapContext.showGrid).toBe(true)
+
+      // Act
+      logic.toggleGridVisibility()
+
+      // Assert
+      expect(workspaceStore.tilemapContext.showGrid).toBe(false)
+
+      // Act again
+      logic.toggleGridVisibility()
+      expect(workspaceStore.tilemapContext.showGrid).toBe(true)
+
+      // Act with setGridVisibility
+      logic.setGridVisibility(false)
+      expect(workspaceStore.tilemapContext.showGrid).toBe(false)
+    })
+
+    it('toggles palette grid visibility correctly', () => {
+      // Arrange
+      const logic = useTilemapLogic()
+      expect(logic.showPaletteGrid.value).toBe(true)
+
+      // Act
+      logic.togglePaletteGrid()
+
+      // Assert
+      expect(logic.showPaletteGrid.value).toBe(false)
+
+      // Act again
+      logic.togglePaletteGrid()
+      expect(logic.showPaletteGrid.value).toBe(true)
+    })
   })
 
   describe('[Bad Path] Edge Cases and Error Handling', () => {

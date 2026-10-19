@@ -84,6 +84,36 @@ export function useTilemapHistory() {
     });
   };
 
+  const recordTilemapDataChange = (entityId, oldData, newData, description = 'Update Tilemap') => {
+    if (!entityId) return;
+    if (JSON.stringify(oldData) === JSON.stringify(newData)) return;
+
+    const targetSceneId = sceneStore.activeSceneId;
+    if (!targetSceneId) return;
+
+    const clonedOldData = deepClone(oldData || {});
+    const clonedNewData = deepClone(newData || {});
+
+    activeStroke = null;
+
+    record({
+      type: 'CHANGE_TILEMAP_DATA',
+      description: `${description} on ${entityId}`,
+      undo: () => {
+        sceneStore.updateComponentProp(entityId, 'Tilemap', 'data', deepClone(clonedOldData));
+        if (sceneStore.activeSceneId === targetSceneId) {
+          engineBridge.updateComponentProp({ entityId, componentName: 'Tilemap', path: 'data', value: deepClone(clonedOldData) });
+        }
+      },
+      redo: () => {
+        sceneStore.updateComponentProp(entityId, 'Tilemap', 'data', deepClone(clonedNewData));
+        if (sceneStore.activeSceneId === targetSceneId) {
+          engineBridge.updateComponentProp({ entityId, componentName: 'Tilemap', path: 'data', value: deepClone(clonedNewData) });
+        }
+      }
+    });
+  };
+
   const recordTilemapPropChange = (entityId, propPath, oldValue, newValue) => {
     if (JSON.stringify(oldValue) === JSON.stringify(newValue)) return;
     const targetSceneId = sceneStore.activeSceneId;
@@ -144,6 +174,7 @@ export function useTilemapHistory() {
   return {
     startStrokeTransaction,
     endStrokeTransaction,
+    recordTilemapDataChange,
     recordTilemapPropChange,
     undo,
     redo,

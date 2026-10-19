@@ -218,6 +218,25 @@ describe('Integration Test: useEngineToEditor', () => {
         [0, 2, 0]
       ])
     })
+
+    it('syncs data and records history when payload contains oldData', () => {
+      // Arrange
+      const { listen } = useEngineToEditor(sceneStore)
+      listen()
+
+      const mockTilemapPayload = {
+        entityId: 'tilemap-ent-1',
+        oldData: { '0,0': 1 },
+        newData: { '1,1': 2 },
+        description: 'Move Tiles'
+      }
+
+      // Act
+      engineBridge.__triggerTilemapUpdated(mockTilemapPayload)
+
+      // Assert
+      expect(sceneStore.syncTilemapDataFromEngine).toHaveBeenCalledWith('tilemap-ent-1', { '1,1': 2 })
+    })
   })
 
   describe('Boundary Cases and Invalid Data Handling [Bad Path]', () => {

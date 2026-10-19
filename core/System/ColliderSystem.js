@@ -7,6 +7,9 @@ export default class ColliderSystem {
         if (entity.active === false) return null;
         if (!entity.components.Transform) return null;
         
+        dx = Number(dx) || 0;
+        dy = Number(dy) || 0;
+
         const boundsList = this.getBounds(entity).filter(b => b.type === 'solid');
         if (boundsList.length === 0) {
             entity.components.Transform.x += dx;
@@ -607,10 +610,12 @@ export default class ColliderSystem {
             if (mtv) break;
         }
 
-        if (!mtv || !mtv.axis) return null;
+        if (!mtv || !mtv.axis || !Number.isFinite(mtv.overlap)) return null;
 
-        t.x += mtv.axis.x * (mtv.overlap + 0.01);
-        t.y += mtv.axis.y * (mtv.overlap + 0.01);
+        const pushX = (Number(mtv.axis.x) || 0) * (mtv.overlap + 0.01);
+        const pushY = (Number(mtv.axis.y) || 0) * (mtv.overlap + 0.01);
+        if (Number.isFinite(pushX)) t.x += pushX;
+        if (Number.isFinite(pushY)) t.y += pushY;
         
         return mtv;
     }

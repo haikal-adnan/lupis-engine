@@ -51,19 +51,33 @@
       </BaseButton>
     </PropertyRow>
 
+    <PropertyRow label="Grid">
+      <BaseButton 
+        :active="context.showGrid ?? true"
+        @click="toggleGridVisibility"
+        class="w-full h-7 text-xs gap-2 justify-center"
+        ghost
+      >
+        <Grid3x3 v-if="context.showGrid ?? true" class="w-3.5 h-3.5 text-white" />
+        <Grid3x3 v-else class="w-3.5 h-3.5 text-muted-foreground" />
+        
+        <span>{{ (context.showGrid ?? true) ? 'Grid Visible' : 'Grid Hidden' }}</span>
+      </BaseButton>
+    </PropertyRow>
+
   </PropertySection>
 </template>
 
 <script setup>
-import { Hand, MousePointer2, Brush, Eraser, PaintBucket, Pipette, Eye, EyeOff } from 'lucide-vue-next';
+import { Hand, MousePointer2, Brush, Eraser, PaintBucket, Pipette, Eye, EyeOff, Grid3x3 } from 'lucide-vue-next';
 import { useTilemapLogic } from '@builders/builders.js';
 import { PropertySection, PropertyRow, BaseButton, BaseNumber } from '@components/components.js';
 
-const { activeTool, context, setTool, setContextOpacity, toggleContextVisibility } = useTilemapLogic();
+const { activeTool, context, setTool, setContextOpacity, toggleContextVisibility, toggleGridVisibility } = useTilemapLogic();
 
 const tools = [
   { id: 'hand',       icon: Hand,          label: 'Pan Tool (Space)' },
-  { id: 'select',     icon: MousePointer2,  label: 'Select / Move (V)' },
+  { id: 'select',     icon: MousePointer2,  label: 'Select / Move (V) (Hold Ctrl for Marquee)' },
   { id: 'brush',      icon: Brush,          label: 'Brush (B)' },
   { id: 'eraser',     icon: Eraser,         label: 'Eraser (E)' },
   { id: 'bucket',     icon: PaintBucket,    label: 'Bucket Fill (G)' },

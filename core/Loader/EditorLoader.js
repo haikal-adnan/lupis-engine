@@ -37,7 +37,8 @@ export default class EditorLoader extends RuntimeLoader {
             tabs: config.tabs || [],
             tilemapContext: {
                 showOthers: config.tilemapContext?.showOthers ?? true,
-                opacity: config.tilemapContext?.opacity ?? 0.5
+                opacity: config.tilemapContext?.opacity ?? 0.5,
+                showGrid: config.tilemapContext?.showGrid ?? true
             },
         };
     }

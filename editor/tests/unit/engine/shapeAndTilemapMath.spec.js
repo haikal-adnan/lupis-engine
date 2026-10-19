@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { ShapeMath } from '@core/Editor/Shape/ShapeMath.js';
 import { TilemapMath } from '@core/Editor/Tilemap/TilemapMath.js';
 import { TilemapSelection } from '@core/Editor/Tilemap/TilemapSelection.js';
+import { TilemapOperations } from '@core/Editor/Tilemap/TilemapOperations.js';
 
 describe('Shape and Tilemap Math Calculations Unit Tests', () => {
     describe('ShapeMath - Shape Point & Boundary Mathematics', () => {
@@ -240,6 +241,8 @@ describe('Shape and Tilemap Math Calculations Unit Tests', () => {
 
             expect(applyDataChange).toHaveBeenCalledTimes(1);
             const resultingData = applyDataChange.mock.calls[0][2];
+            const oldData = applyDataChange.mock.calls[0][3];
+            const desc = applyDataChange.mock.calls[0][4];
 
             // Old keys should be deleted
             expect(resultingData['10,10']).toBeUndefined();
@@ -247,6 +250,8 @@ describe('Shape and Tilemap Math Calculations Unit Tests', () => {
             // New keys should be populated
             expect(resultingData['15,15']).toBe(1);
             expect(resultingData['16,15']).toBe(2);
+            expect(oldData).toEqual({ '10,10': 1, '11,10': 2 });
+            expect(desc).toBe('Move Marquee Tiles');
         });
 
         it('handleEraser computes marquee selection area while mouse is dragged', () => {
@@ -275,5 +280,299 @@ describe('Shape and Tilemap Math Calculations Unit Tests', () => {
             expect(operations.deleteArea).toHaveBeenCalledWith(expect.anything(), expect.anything(), 2, 3, 4, 4);
             expect(editors.marqueeSelection).toBeNull();
         });
+
+        it('handleSelectionAndMove supports directly dragging and moving a single tile in one motion', () => {
+            const applyDataChange = vi.fn();
+            const operations = { applyDataChange };
+            const selection = new TilemapSelection(operations);
+            const tm = { data: { '5,5': 42 } };
+            const entity = { id: 'single-tile-entity' };
+            const editors = {};
+
+            const mouseDown = { mouse: { isDown: (b) => b === 0 } };
+            const mouseUp = { mouse: { isDown: () => false } };
+
+            // 1. Mouse down directly on tile (5, 5)
+            selection.handleSelectionAndMove(mouseDown, entity, tm, { x: 5, y: 5 }, editors);
+            expect(editors.dragState).toEqual({
+                data: [42],
+                w: 1,
+                h: 1,
+                sourceX: 5,
+                sourceY: 5,
+                offX: 0,
+                offY: 0
+            });
+            expect(selection.isDragging).toBe(true);
+
+            // 2. Drag to (8, 9)
+            selection.handleSelectionAndMove(mouseDown, entity, tm, { x: 8, y: 9 }, editors);
+            expect(selection.dragHasMoved).toBe(true);
+
+            // 3. Mouse up at (8, 9) -> commits move
+            selection.handleSelectionAndMove(mouseUp, entity, tm, { x: 8, y: 9 }, editors);
+            expect(applyDataChange).toHaveBeenCalledTimes(1);
+            const resultData = applyDataChange.mock.calls[0][2];
+            expect(resultData['5,5']).toBeUndefined();
+            expect(resultData['8,9']).toBe(42);
+            expect(editors.marqueeSelection).toEqual({ x: 8, y: 9, w: 1, h: 1 });
+            expect(editors.dragState).toBeNull();
+        });
+
+        it('handleSelectionAndMove selects single tile if clicked without dragging', () => {
+            const applyDataChange = vi.fn();
+            const operations = { applyDataChange };
+            const selection = new TilemapSelection(operations);
+            const tm = { data: { '5,5': 42 } };
+            const entity = { id: 'single-tile-entity' };
+            const editors = {};
+
+            const mouseDown = { mouse: { isDown: (b) => b === 0 } };
+            const mouseUp = { mouse: { isDown: () => false } };
+
+            // Mouse down and mouse up at identical position (5, 5) without movement
+            selection.handleSelectionAndMove(mouseDown, entity, tm, { x: 5, y: 5 }, editors);
+            selection.handleSelectionAndMove(mouseUp, entity, tm, { x: 5, y: 5 }, editors);
+
+            // Did not move, so applyDataChange not called; tile is now selected as 1x1 marquee
+            expect(applyDataChange).not.toHaveBeenCalled();
+            expect(editors.marqueeSelection).toEqual({ x: 5, y: 5, w: 1, h: 1 });
+            expect(editors.dragState).toBeNull();
+        });
+
+        it('handleSelectionAndMove creates and keeps marquee selection around non-empty tiles on mouse up when holding Ctrl', () => {
+            const operations = { applyDataChange: vi.fn() };
+            const selection = new TilemapSelection(operations);
+            const tm = { data: { '2,2': 1, '3,2': 2 } };
+            const editors = {};
+
+            const mouseDownCtrl = { mouse: { isDown: (b) => b === 0 }, keyboard: { isDown: (k) => k === 'Control' } };
+            const mouseUpCtrl = { mouse: { isDown: () => false }, keyboard: { isDown: (k) => k === 'Control' } };
+
+            // 1. Mouse down with Ctrl to draw marquee starting even on filled tile (2, 2)
+            selection.handleSelectionAndMove(mouseDownCtrl, {}, tm, { x: 2, y: 2 }, editors, true);
+            expect(selection.isSelecting).toBe(true);
+
+            // 2. Drag to (3, 3)
+            selection.handleSelectionAndMove(mouseDownCtrl, {}, tm, { x: 3, y: 3 }, editors, true);
+            expect(editors.marqueeSelection).toEqual({ x: 2, y: 2, w: 2, h: 2 });
+
+            // 3. Mouse up at (3, 3)
+            selection.handleSelectionAndMove(mouseUpCtrl, {}, tm, { x: 3, y: 3 }, editors, true);
+            expect(selection.isSelecting).toBe(false);
+            // Marquee selection should remain active
+            expect(editors.marqueeSelection).toEqual({ x: 2, y: 2, w: 2, h: 2 });
+            expect(editors.dragState).toBeFalsy();
+            expect(operations.applyDataChange).not.toHaveBeenCalled();
+        });
+
+        it('handleSelectionAndMove clears marquee on mouse up if area contains only empty cells', () => {
+            const operations = { applyDataChange: vi.fn() };
+            const selection = new TilemapSelection(operations);
+            const tm = { data: { '10,10': 1 } };
+            const editors = {};
+
+            const mouseDownCtrl = { mouse: { isDown: (b) => b === 0 }, keyboard: { isDown: (k) => k === 'Control' } };
+            const mouseUpCtrl = { mouse: { isDown: () => false }, keyboard: { isDown: (k) => k === 'Control' } };
+
+            // Select empty area (0, 0) to (1, 1) with Ctrl
+            selection.handleSelectionAndMove(mouseDownCtrl, {}, tm, { x: 0, y: 0 }, editors, true);
+            selection.handleSelectionAndMove(mouseDownCtrl, {}, tm, { x: 1, y: 1 }, editors, true);
+            selection.handleSelectionAndMove(mouseUpCtrl, {}, tm, { x: 1, y: 1 }, editors, true);
+
+            expect(editors.marqueeSelection).toBeNull();
+            expect(editors.dragState).toBeFalsy();
+        });
+
+        it('handleSelectionAndMove allows moving multi-selected tiles after releasing Ctrl and dragging', () => {
+            const applyDataChange = vi.fn();
+            const operations = { applyDataChange };
+            const selection = new TilemapSelection(operations);
+            const tm = {
+                data: {
+                    '2,2': 1,
+                    '3,2': 2
+                }
+            };
+            const entity = { id: 'test-entity' };
+            const editors = {};
+
+            const mouseDownCtrl = { mouse: { isDown: (b) => b === 0 }, keyboard: { isDown: (k) => k === 'Control' } };
+            const mouseUpCtrl = { mouse: { isDown: () => false }, keyboard: { isDown: (k) => k === 'Control' } };
+            const mouseDownNoCtrl = { mouse: { isDown: (b) => b === 0 }, keyboard: { isDown: () => false } };
+            const mouseUpNoCtrl = { mouse: { isDown: () => false }, keyboard: { isDown: () => false } };
+
+            // Phase 1: Hold Ctrl and drag marquee from (2, 2) to (3, 2)
+            selection.handleSelectionAndMove(mouseDownCtrl, entity, tm, { x: 2, y: 2 }, editors, true);
+            selection.handleSelectionAndMove(mouseDownCtrl, entity, tm, { x: 3, y: 2 }, editors, true);
+            selection.handleSelectionAndMove(mouseUpCtrl, entity, tm, { x: 3, y: 2 }, editors, true);
+
+            expect(editors.marqueeSelection).toEqual({ x: 2, y: 2, w: 2, h: 1 });
+
+            // Phase 2: Ctrl is released! User clicks inside marquee at (2, 2) and drags to (6, 5)
+            selection.handleSelectionAndMove(mouseDownNoCtrl, entity, tm, { x: 2, y: 2 }, editors, false);
+            expect(selection.isDragging).toBe(true);
+            expect(editors.dragState).toEqual({
+                data: [1, 2],
+                w: 2,
+                h: 1,
+                sourceX: 2,
+                sourceY: 2,
+                offX: 0,
+                offY: 0
+            });
+
+            // Dragging to (6, 5)
+            selection.handleSelectionAndMove(mouseDownNoCtrl, entity, tm, { x: 6, y: 5 }, editors, false);
+            expect(selection.dragHasMoved).toBe(true);
+
+            // Phase 3: Mouse released at (6, 5) -> drops multi-selected tiles at target!
+            selection.handleSelectionAndMove(mouseUpNoCtrl, entity, tm, { x: 6, y: 5 }, editors, false);
+
+            expect(applyDataChange).toHaveBeenCalledTimes(1);
+            const updatedData = applyDataChange.mock.calls[0][2];
+            expect(updatedData['2,2']).toBeUndefined();
+            expect(updatedData['3,2']).toBeUndefined();
+            expect(updatedData['6,5']).toBe(1);
+            expect(updatedData['7,5']).toBe(2);
+            expect(editors.marqueeSelection).toEqual({ x: 6, y: 5, w: 2, h: 1 });
+            expect(editors.dragState).toBeNull();
+        });
+
+        it('handleSelectionAndMove does not mutate data when dropped at identical coordinates', () => {
+            const applyDataChange = vi.fn();
+            const operations = { applyDataChange };
+            const selection = new TilemapSelection(operations);
+            const tm = { data: { '5,5': 3 } };
+            const entity = { id: 'ent-1' };
+            const editors = {
+                marqueeSelection: { x: 5, y: 5, w: 1, h: 1 }
+            };
+
+            const mouseDown = { mouse: { isDown: (b) => b === 0 } };
+            const mouseUp = { mouse: { isDown: () => false } };
+
+            // Click on (5, 5) and release without moving
+            selection.handleSelectionAndMove(mouseDown, entity, tm, { x: 5, y: 5 }, editors);
+            expect(selection.isDragging).toBe(true);
+            selection.handleSelectionAndMove(mouseUp, entity, tm, { x: 5, y: 5 }, editors);
+
+            expect(applyDataChange).not.toHaveBeenCalled();
+            expect(editors.marqueeSelection).toEqual({ x: 5, y: 5, w: 1, h: 1 });
+            expect(editors.dragState).toBeNull();
+        });
+
+        it('handleSelectionAndMove clears active selection when user clicks outside', () => {
+            const operations = { applyDataChange: vi.fn() };
+            const selection = new TilemapSelection(operations);
+            const tm = { data: { '2,2': 1 } };
+            const editors = {
+                marqueeSelection: { x: 2, y: 2, w: 1, h: 1 }
+            };
+
+            const mouseDown = { mouse: { isDown: (b) => b === 0 } };
+            const mouseUp = { mouse: { isDown: () => false } };
+
+            // Click at (10, 10) (empty tile outside selection)
+            selection.handleSelectionAndMove(mouseDown, {}, tm, { x: 10, y: 10 }, editors);
+            selection.handleSelectionAndMove(mouseUp, {}, tm, { x: 10, y: 10 }, editors);
+
+            // Previous marquee should be gone, and since (10, 10) is empty, marquee remains null
+            expect(editors.marqueeSelection).toBeNull();
+            expect(editors.dragState).toBeFalsy();
+        });
+    });
+
+    describe('TilemapOperations - History and Data Change Operations', () => {
+        it('deleteArea deletes tiles and passes oldData and description to applyDataChange', () => {
+            const ops = new TilemapOperations();
+            const spyApply = vi.spyOn(ops, 'applyDataChange').mockImplementation(() => {});
+
+            const entity = { id: 'ent-1' };
+            const tm = { data: { '1,1': 5, '2,1': 6, '10,10': 9 } };
+
+            // Delete 2x1 area from (1, 1)
+            ops.deleteArea(entity, tm, 1, 1, 2, 1);
+
+            expect(spyApply).toHaveBeenCalledTimes(1);
+            const [passedEntity, passedTm, newData, oldData, desc] = spyApply.mock.calls[0];
+
+            expect(newData['1,1']).toBeUndefined();
+            expect(newData['2,1']).toBeUndefined();
+            expect(newData['10,10']).toBe(9);
+            expect(oldData).toEqual({ '1,1': 5, '2,1': 6, '10,10': 9 });
+            expect(desc).toBe('Delete Marquee Tiles');
+        });
+
+        it('deleteArea handles 1x1 single tile delete with description Delete Tile', () => {
+            const ops = new TilemapOperations();
+            const spyApply = vi.spyOn(ops, 'applyDataChange').mockImplementation(() => {});
+
+            const entity = { id: 'ent-1' };
+            const tm = { data: { '1,1': 5 } };
+
+            ops.deleteArea(entity, tm, 1, 1, 1, 1);
+
+            expect(spyApply).toHaveBeenCalledTimes(1);
+            expect(spyApply.mock.calls[0][4]).toBe('Delete Tile');
+        });
+
+        it('handleBucket fills contiguous tiles and passes oldData and description Bucket Fill', () => {
+            const ops = new TilemapOperations();
+            const spyApply = vi.spyOn(ops, 'applyDataChange').mockImplementation(() => {});
+
+            const entity = { id: 'ent-1' };
+            const tm = {
+                assetId: 'asset_1',
+                width: 16,
+                data: { '0,0': 1, '1,0': 1, '0,1': 1 }
+            };
+            const world = {
+                assets: {
+                    textures: {
+                        asset_1: { width: 64 }
+                    }
+                }
+            };
+
+            ops.handleBucket(world, entity, tm, 0, 0, { x: 2, y: 0 });
+
+            expect(spyApply).toHaveBeenCalledTimes(1);
+            const [passedEntity, passedTm, newData, oldData, desc] = spyApply.mock.calls[0];
+
+            expect(desc).toBe('Bucket Fill');
+            expect(oldData).toEqual({ '0,0': 1, '1,0': 1, '0,1': 1 });
+            expect(newData['0,0']).toBe(3); // (0 * 4) + 2 + 1 = 3
+        });
+
+        it('startStroke and endStroke emit stroke transaction with initial data once completed', () => {
+            const ops = new TilemapOperations();
+            const spyApply = vi.spyOn(ops, 'applyDataChange');
+
+            const entity = { id: 'ent-1' };
+            const tm = { data: { '0,0': 1 } };
+
+            ops.startStroke(entity, tm, 'Paint');
+            expect(ops.activeStroke).toEqual({
+                entityId: 'ent-1',
+                initialData: { '0,0': 1 },
+                toolName: 'Paint'
+            });
+
+            // Simulate paint modifying tm.data
+            tm.data = { '0,0': 1, '1,0': 2 };
+
+            ops.endStroke(entity, tm);
+
+            expect(ops.activeStroke).toBeNull();
+            expect(spyApply).toHaveBeenCalledWith(
+                entity,
+                tm,
+                { '0,0': 1, '1,0': 2 },
+                { '0,0': 1 },
+                'Paint Tiles'
+            );
+        });
     });
 });
+

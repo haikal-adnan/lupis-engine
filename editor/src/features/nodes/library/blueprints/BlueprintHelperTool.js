@@ -2426,6 +2426,381 @@ context.onTick(() => {
 return;`
         }
       }
+    },
+    {
+      type: 'platformerController',
+      label: 'Platformer Controller',
+      description: 'All-in-one platformer movement helper (Left, Right, Jump, Drop-Through Platform, Land Detection).',
+      dynamicMode: 'none',
+      defaultData: {
+        settings: {
+          headerTitle: 'Platformer Controller',
+          headerColor: '#2E7D32',
+          category: 'Helper & Tool'
+        },
+        inputs: [
+          { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'targetEntity', dataType: 'string', color: '#F48FB1', defaultValue: 'self' },
+          { id: 'speed', dataType: 'number', color: '#64B5F6', defaultValue: 260 },
+          { id: 'jumpForce', dataType: 'number', color: '#64B5F6', defaultValue: 520 },
+          { id: 'keyLeft', dataType: 'string', color: '#F48FB1', defaultValue: 'a' },
+          { id: 'keyRight', dataType: 'string', color: '#F48FB1', defaultValue: 'd' },
+          { id: 'keyJump', dataType: 'string', color: '#F48FB1', defaultValue: 'space' },
+          { id: 'keyDown', dataType: 'string', color: '#F48FB1', defaultValue: 's' },
+          { id: 'oneWayTag', dataType: 'string', color: '#F48FB1', defaultValue: 'platform' },
+          { id: 'dropNudge', dataType: 'number', color: '#64B5F6', defaultValue: 6 }
+        ],
+        outputs: [
+          { id: 'execOut', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'onJump', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'onLand', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'onDrop', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'isGrounded', dataType: 'boolean', color: '#81C784' },
+          { id: 'movementState', dataType: 'string', color: '#F48FB1' },
+          { id: 'facingDirection', dataType: 'string', color: '#F48FB1' },
+          { id: 'velocityX', dataType: 'number', color: '#64B5F6' },
+          { id: 'velocityY', dataType: 'number', color: '#64B5F6' }
+        ],
+        data: {
+          values: {
+            targetEntity: 'self',
+            speed: 260,
+            jumpForce: 520,
+            keyLeft: 'a',
+            keyRight: 'd',
+            keyJump: 'space',
+            keyDown: 's',
+            oneWayTag: 'platform',
+            dropNudge: 6
+          },
+          code: 
+`const targetId = inputs.targetEntity || 'self';
+const target = context.assert.exists(context.entity.get(targetId));
+const phys = target.components && target.components.Physics;
+const keyboard = context.input.keyboard;
+
+if (!context.state.platformer) {
+  context.state.platformer = { wasGrounded: false };
+}
+const state = context.state.platformer;
+
+const keyLeft = String(inputs.keyLeft || 'a').trim().toLowerCase();
+const keyRight = String(inputs.keyRight || 'd').trim().toLowerCase();
+const keyJump = String(inputs.keyJump || 'space').trim().toLowerCase();
+const keyDown = String(inputs.keyDown || 's').trim().toLowerCase();
+
+const speed = Number(inputs.speed) || 0;
+const jumpForce = Number(inputs.jumpForce) || 0;
+const dropNudge = Number(inputs.dropNudge) || 6;
+
+let moveDirX = 0;
+if (keyboard.isDown(keyRight)) moveDirX += 1;
+if (keyboard.isDown(keyLeft)) moveDirX -= 1;
+
+const isGrounded = Boolean(phys ? phys.isGrounded : true);
+const isDownPressed = keyboard.isDown(keyDown);
+const isJumpTriggered = keyboard.isPressed(keyJump);
+
+let didDrop = false;
+let didJump = false;
+
+if (isGrounded && isDownPressed && isJumpTriggered) {
+  if (target.components && target.components.Transform) {
+    target.components.Transform.y += dropNudge;
+    if (phys) {
+      phys.velocityY = Math.max(100, (phys.velocityY || 0) + 100);
+      phys.isGrounded = false;
+    }
+    didDrop = true;
+    outputs.onDrop = true;
+  }
+} else if (isGrounded && isJumpTriggered) {
+  if (phys) {
+    phys.velocityY = -Math.abs(jumpForce);
+    phys.isGrounded = false;
+  }
+  didJump = true;
+  outputs.onJump = true;
+}
+
+if (phys) {
+  phys.velocityX = moveDirX * speed;
+  phys._isIntentionalMove = Math.abs(phys.velocityX) > 10;
+  if (moveDirX > 0) {
+    phys.facingDirection = 'right';
+    phys.customFacing = true;
+  } else if (moveDirX < 0) {
+    phys.facingDirection = 'left';
+    phys.customFacing = true;
+  }
+} else {
+  const dt = Number(context.dt || context.deltaTime || 0.016);
+  const moveX = moveDirX * speed * dt;
+  context.collider.moveAndSlide(target, moveX, 0);
+}
+
+if (!state.wasGrounded && isGrounded && !didDrop && !didJump) {
+  outputs.onLand = true;
+}
+state.wasGrounded = isGrounded;
+
+outputs.isGrounded = isGrounded;
+outputs.movementState = phys ? phys.movementState : (moveDirX !== 0 ? 'running' : 'idle');
+outputs.facingDirection = phys ? (phys.facingDirection || 'right') : (moveDirX < 0 ? 'left' : 'right');
+outputs.velocityX = phys ? phys.velocityX : (moveDirX * speed);
+outputs.velocityY = phys ? phys.velocityY : 0;
+outputs.execOut = true;
+
+return;`
+        }
+      }
+    },
+    {
+      type: 'platformerAnimator',
+      label: 'Platformer Animator',
+      description: 'Smart platformer animator helper (idle, run, jump, fall, auto left/right orientation and auto-flip).',
+      dynamicMode: 'none',
+      defaultData: {
+        settings: {
+          headerTitle: 'Platformer Animator',
+          headerColor: '#AB47BC',
+          category: 'Helper & Tool'
+        },
+        inputs: [
+          { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'targetEntity', dataType: 'string', color: '#F48FB1', defaultValue: 'self' },
+          { id: 'idleClips', dataType: 'string', color: '#F48FB1', defaultValue: '' },
+          { id: 'runClips', dataType: 'string', color: '#F48FB1', defaultValue: '' },
+          { id: 'jumpClips', dataType: 'string', color: '#F48FB1', defaultValue: '' },
+          { id: 'fallClips', dataType: 'string', color: '#F48FB1', defaultValue: '' },
+          { id: 'movementState', dataType: 'string', color: '#F48FB1', defaultValue: '' },
+          { id: 'facingDirection', dataType: 'string', color: '#F48FB1', defaultValue: '' },
+          { id: 'autoFlipX', dataType: 'boolean', color: '#E57373', defaultValue: true }
+        ],
+        outputs: [
+          { id: 'execOut', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'onClipChanged', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'currentClip', dataType: 'string', color: '#F48FB1' },
+          { id: 'activeState', dataType: 'string', color: '#F48FB1' },
+          { id: 'facingDirection', dataType: 'string', color: '#F48FB1' },
+          { id: 'isFlipped', dataType: 'boolean', color: '#81C784' }
+        ],
+        data: {
+          values: {
+            targetEntity: 'self',
+            idleClips: '',
+            runClips: '',
+            jumpClips: '',
+            fallClips: '',
+            movementState: '',
+            facingDirection: '',
+            autoFlipX: true
+          },
+          code: 
+`const targetId = inputs.targetEntity || 'self';
+const target = context.assert.exists(context.entity.get(targetId));
+const animator = context.assert.hasComponent(target, 'SpriteAnimator');
+const phys = target.components && target.components.Physics;
+const transform = target.components && target.components.Transform;
+
+if (!context.state.platformerAnim) {
+  context.state.platformerAnim = {
+    lastState: 'idle',
+    lastFacing: 'right',
+    lastClip: '',
+    prevX: transform ? transform.x : 0,
+    prevY: transform ? transform.y : 0
+  };
+}
+const state = context.state.platformerAnim;
+
+function parseClips(raw) {
+  if (!raw || typeof raw !== 'string') return false;
+  const parts = raw.split(',').map(s => s.trim()).filter(Boolean);
+  if (parts.length === 0) return false;
+  if (parts.length === 1) {
+    return { left: parts[0], right: parts[0], isSingle: true };
+  }
+  const p0 = parts[0].toLowerCase();
+  const p1 = parts[1].toLowerCase();
+  if (p0.includes('left') || p0.endsWith('_l') || p0.endsWith('-l')) {
+    return { left: parts[0], right: parts[1], isSingle: false };
+  }
+  if (p1.includes('left') || p1.endsWith('_l') || p1.endsWith('-l')) {
+    return { left: parts[1], right: parts[0], isSingle: false };
+  }
+  if (p0.includes('right') || p0.endsWith('_r') || p0.endsWith('-r')) {
+    return { left: parts[1], right: parts[0], isSingle: false };
+  }
+  if (p1.includes('right') || p1.endsWith('_r') || p1.endsWith('-r')) {
+    return { left: parts[0], right: parts[1], isSingle: false };
+  }
+  return { left: parts[0], right: parts[1], isSingle: false };
+}
+
+const idleInput = String(inputs.idleClips || (node.data && node.data.values && node.data.values.idleClips) || '');
+const runInput = String(inputs.runClips || (node.data && node.data.values && node.data.values.runClips) || '');
+const jumpInput = String(inputs.jumpClips || (node.data && node.data.values && node.data.values.jumpClips) || '');
+const fallInput = String(inputs.fallClips || (node.data && node.data.values && node.data.values.fallClips) || '');
+
+const idleCfg = parseClips(idleInput);
+const runCfg = parseClips(runInput);
+const jumpCfg = parseClips(jumpInput);
+const fallCfg = parseClips(fallInput);
+
+let facing = '';
+const inputFacing = String(inputs.facingDirection || '').trim().toLowerCase();
+if (inputFacing === 'left' || inputFacing === 'right') {
+  facing = inputFacing;
+} else if (phys && (phys.facingDirection === 'left' || phys.facingDirection === 'right')) {
+  facing = phys.facingDirection;
+} else if (phys && typeof phys.velocityX === 'number' && Math.abs(phys.velocityX) > 5) {
+  facing = phys.velocityX < 0 ? 'left' : 'right';
+} else if (transform && typeof transform.x === 'number') {
+  const dx = transform.x - state.prevX;
+  if (dx < -0.2) facing = 'left';
+  else if (dx > 0.2) facing = 'right';
+}
+
+if (!facing) {
+  facing = state.lastFacing || 'right';
+}
+state.lastFacing = facing;
+
+let moveState = '';
+const inputState = String(inputs.movementState || '').trim().toLowerCase();
+if (inputState) {
+  if (inputState === 'idle' || inputState === 'stand') moveState = 'idle';
+  else if (inputState === 'running' || inputState === 'run' || inputState === 'walk' || inputState === 'moving') moveState = 'run';
+  else if (inputState === 'jumping' || inputState === 'jump') moveState = 'jump';
+  else if (inputState === 'falling' || inputState === 'fall') moveState = 'fall';
+  else if (inputState === 'air' || inputState === 'inair') moveState = 'jump';
+  else moveState = inputState;
+}
+
+if (!moveState) {
+  if (phys) {
+    const isGrounded = Boolean(phys.isGrounded);
+    const vy = Number(phys.velocityY) || 0;
+    const vx = Number(phys.velocityX) || 0;
+    if (!isGrounded) {
+      if (vy < -10) moveState = 'jump';
+      else if (vy > 10) moveState = 'fall';
+      else moveState = 'jump';
+    } else {
+      if (Math.abs(vx) > 10) moveState = 'run';
+      else moveState = 'idle';
+    }
+  } else if (transform) {
+    const dy = (typeof transform.y === 'number') ? transform.y - state.prevY : 0;
+    const dx = (typeof transform.x === 'number') ? transform.x - state.prevX : 0;
+    if (dy < -0.5) moveState = 'jump';
+    else if (dy > 0.5) moveState = 'fall';
+    else if (Math.abs(dx) > 0.2) moveState = 'run';
+    else moveState = 'idle';
+  } else {
+    moveState = state.lastState || 'idle';
+  }
+}
+
+let selectedCfg = false;
+let resolvedState = moveState;
+
+if (moveState === 'fall') {
+  if (fallCfg) selectedCfg = fallCfg;
+  else if (jumpCfg) { selectedCfg = jumpCfg; resolvedState = 'jump'; }
+  else if (runCfg) { selectedCfg = runCfg; resolvedState = 'run'; }
+  else if (idleCfg) { selectedCfg = idleCfg; resolvedState = 'idle'; }
+} else if (moveState === 'jump') {
+  if (jumpCfg) selectedCfg = jumpCfg;
+  else if (fallCfg) { selectedCfg = fallCfg; resolvedState = 'fall'; }
+  else if (runCfg) { selectedCfg = runCfg; resolvedState = 'run'; }
+  else if (idleCfg) { selectedCfg = idleCfg; resolvedState = 'idle'; }
+} else if (moveState === 'run') {
+  if (runCfg) selectedCfg = runCfg;
+  else if (idleCfg) { selectedCfg = idleCfg; resolvedState = 'idle'; }
+} else {
+  resolvedState = 'idle';
+  if (idleCfg) selectedCfg = idleCfg;
+  else if (runCfg) { selectedCfg = runCfg; resolvedState = 'run'; }
+}
+
+let targetClipName = '';
+let isSingle = false;
+if (selectedCfg) {
+  targetClipName = (facing === 'left') ? selectedCfg.left : selectedCfg.right;
+  isSingle = Boolean(selectedCfg.isSingle);
+}
+
+const rawClips = animator.clips;
+const clips = Array.isArray(rawClips) ? rawClips : (rawClips && typeof rawClips === 'object' ? Object.values(rawClips) : []);
+
+let matchedClip = false;
+if (targetClipName) {
+  const targetLower = targetClipName.toLowerCase();
+  for (let i = 0; i < clips.length; i++) {
+    const c = clips[i];
+    if (c.scriptId === targetClipName || c.id === targetClipName || c.name === targetClipName) {
+      matchedClip = c;
+      break;
+    }
+    if (String(c.scriptId || '').toLowerCase() === targetLower ||
+        String(c.id || '').toLowerCase() === targetLower ||
+        String(c.name || '').toLowerCase() === targetLower) {
+      matchedClip = c;
+      break;
+    }
+  }
+}
+
+const resolvedClipId = matchedClip ? matchedClip.id : targetClipName;
+
+let autoFlipX = true;
+if (inputs.autoFlipX === false || inputs.autoFlipX === 'false') {
+  autoFlipX = false;
+}
+
+let shouldFlip = false;
+if (isSingle && autoFlipX) {
+  shouldFlip = (facing === 'left');
+}
+
+if (transform) {
+  transform.flipX = shouldFlip;
+}
+
+let clipChanged = false;
+if (resolvedClipId && animator.currentClip !== resolvedClipId) {
+  animator.currentClip = resolvedClipId;
+  animator._activeClipId = '';
+  animator._elapsedTime = 0;
+  animator.isPlaying = true;
+  if (matchedClip) matchedClip.frameIndex = 0;
+  clipChanged = true;
+} else if (animator.currentClip && !animator.isPlaying) {
+  animator.isPlaying = true;
+}
+
+if (transform) {
+  state.prevX = transform.x;
+  state.prevY = transform.y;
+}
+state.lastState = resolvedState;
+state.lastClip = animator.currentClip || resolvedClipId;
+
+outputs.execOut = true;
+outputs.currentClip = animator.currentClip || resolvedClipId || '';
+outputs.activeState = resolvedState;
+outputs.facingDirection = facing;
+outputs.isFlipped = shouldFlip;
+
+if (clipChanged) {
+  outputs.onClipChanged = true;
+}
+
+return;`
+        }
+      }
     }
   ]
 };

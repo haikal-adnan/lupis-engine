@@ -488,14 +488,12 @@ const processImport = async (file) => {
     />
 
     <!-- Context Menu -->
-    <Teleport to="body">
-      <BaseContextMenu 
-        v-if="menu.visible"
-        data-testid="project-context-menu"
-        :position="{ x: menu.x, y: menu.y }"
-        :items="contextMenuItems"
-        @close="closeMenu"
-      />
-    </Teleport>
+    <BaseContextMenu 
+      v-if="menu.visible"
+      data-testid="project-context-menu"
+      :position="{ x: menu.x, y: menu.y }"
+      :items="contextMenuItems"
+      @close="closeMenu"
+    />
   </div>
 </template>

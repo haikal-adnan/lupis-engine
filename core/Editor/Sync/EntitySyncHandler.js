@@ -102,6 +102,7 @@ export class EntitySyncHandler {
         }
 
         target[keys[keys.length - 1]] = value;
+        e.isDirty = true;
 
         const isTextLayoutProp = componentName === "TextRenderer" && [
             "fontSize", "value", "assetId", "lockRatio", "autoFit",

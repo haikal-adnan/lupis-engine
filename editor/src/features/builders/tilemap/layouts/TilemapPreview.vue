@@ -61,7 +61,7 @@
     </PropertyRow>
 
     <!-- Clear Tilemap Data -->
-    <div class="pt-2 border-t border-border/40 mt-3">
+    <div class="pt-2 border-t border-border mt-3">
       <BaseButton 
         variant="danger" 
         size="sm" 

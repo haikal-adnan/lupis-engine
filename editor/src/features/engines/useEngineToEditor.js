@@ -1,6 +1,8 @@
 import { engineBridge } from "@engines/engines.js";
+import { useTilemapHistory } from "@historys/historys.js";
 
 export function useEngineToEditor(sceneStore) {
+  const tilemapHistory = useTilemapHistory();
   
   const listen = () => {
     engineBridge.onEntityModified((engineEntities) => {
@@ -50,6 +52,14 @@ export function useEngineToEditor(sceneStore) {
     engineBridge.onTilemapDataUpdated((payload) => {
         if(payload && payload.entityId && payload.newData) {
             sceneStore.syncTilemapDataFromEngine(payload.entityId, payload.newData);
+            if (payload.oldData && JSON.stringify(payload.oldData) !== JSON.stringify(payload.newData)) {
+                tilemapHistory.recordTilemapDataChange(
+                    payload.entityId,
+                    payload.oldData,
+                    payload.newData,
+                    payload.description || 'Update Tilemap'
+                );
+            }
         }
     });
   };

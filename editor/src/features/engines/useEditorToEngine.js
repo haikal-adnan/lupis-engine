@@ -107,6 +107,8 @@ export function useEditorToEngine(projectStore, sceneStore, assetStore, workspac
           case 'setTool': engineBridge.updateEditorState({ activeTool: args[0] }); break;
           case 'setContextOpacity': engineBridge.updateEditorState({ tilemapContext: { opacity: args[0] } }); break;
           case 'toggleContextVisibility': engineBridge.updateEditorState({ tilemapContext: { showOthers: workspaceStore.tilemapContext.showOthers } }); break;
+          case 'toggleGridVisibility': engineBridge.updateEditorState({ tilemapContext: { showGrid: workspaceStore.tilemapContext.showGrid } }); break;
+          case 'setGridVisibility': engineBridge.updateEditorState({ tilemapContext: { showGrid: args[0] } }); break;
           case 'setTileSelection':
           case 'clearTileSelection': engineBridge.updateEditorState({ tileSelection: workspaceStore.tileSelection }); break;
         }

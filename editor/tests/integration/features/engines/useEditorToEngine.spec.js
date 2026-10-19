@@ -310,6 +310,16 @@ describe('Integration Test: useEditorToEngine (100% Coverage)', () => {
       expect(engineBridge.updateEditorState).toHaveBeenCalledWith({ tilemapContext: { showOthers: workspaceStore.tilemapContext.showOthers } });
     });
 
+    it('sends updateEditorState when toggleGridVisibility is called', () => {
+      workspaceStore.toggleGridVisibility();
+      expect(engineBridge.updateEditorState).toHaveBeenCalledWith({ tilemapContext: { showGrid: workspaceStore.tilemapContext.showGrid } });
+    });
+
+    it('sends updateEditorState when setGridVisibility is called', () => {
+      workspaceStore.setGridVisibility(false);
+      expect(engineBridge.updateEditorState).toHaveBeenCalledWith({ tilemapContext: { showGrid: false } });
+    });
+
     it('sends updateEditorState when setTileSelection and clearTileSelection are called', () => {
       const rect = { x: 0, y: 0, w: 2, h: 2 };
       workspaceStore.setTileSelection(rect);

@@ -158,46 +158,49 @@ export default class TilemapRenderer {
         const sinR = Math.sin(rData.rotation);
 
         // 1. Grid Lines Viewport
-        const camScale = Math.max(0.001, cam.scale || 1);
-        const halfViewW = (canvas.width / camScale) / 2 + absTileW * 2;
-        const halfViewH = (canvas.height / camScale) / 2 + absTileH * 2;
-        const viewRadius = Math.hypot(halfViewW, halfViewH);
+        const showGrid = editors?.tilemapContext?.showGrid ?? true;
+        if (showGrid) {
+            const camScale = Math.max(0.001, cam.scale || 1);
+            const halfViewW = (canvas.width / camScale) / 2 + absTileW * 2;
+            const halfViewH = (canvas.height / camScale) / 2 + absTileH * 2;
+            const viewRadius = Math.hypot(halfViewW, halfViewH);
 
-        const centerGridX = Math.floor((cam.x - rData.tfX) / scaledTileW);
-        const centerGridY = Math.floor((cam.y - rData.tfY) / scaledTileH);
+            const centerGridX = Math.floor((cam.x - rData.tfX) / scaledTileW);
+            const centerGridY = Math.floor((cam.y - rData.tfY) / scaledTileH);
 
-        const spanX = Math.ceil(viewRadius / absTileW) + 2;
-        const spanY = Math.ceil(viewRadius / absTileH) + 2;
+            const spanX = Math.ceil(viewRadius / absTileW) + 2;
+            const spanY = Math.ceil(viewRadius / absTileH) + 2;
 
-        const minX = centerGridX - spanX;
-        const maxX = centerGridX + spanX;
-        const minY = centerGridY - spanY;
-        const maxY = centerGridY + spanY;
+            const minX = centerGridX - spanX;
+            const maxX = centerGridX + spanX;
+            const minY = centerGridY - spanY;
+            const maxY = centerGridY + spanY;
 
-        for (let i = minX; i <= maxX; i++) {
-            const xLocal = i * scaledTileW;
-            const yLocalStart = minY * scaledTileH;
-            const yLocalEnd = maxY * scaledTileH;
+            for (let i = minX; i <= maxX; i++) {
+                const xLocal = i * scaledTileW;
+                const yLocalStart = minY * scaledTileH;
+                const yLocalEnd = maxY * scaledTileH;
 
-            const x1 = rData.tfX + (xLocal * cosR - yLocalStart * sinR);
-            const y1 = rData.tfY + (xLocal * sinR + yLocalStart * cosR);
-            const x2 = rData.tfX + (xLocal * cosR - yLocalEnd * sinR);
-            const y2 = rData.tfY + (xLocal * sinR + yLocalEnd * cosR);
+                const x1 = rData.tfX + (xLocal * cosR - yLocalStart * sinR);
+                const y1 = rData.tfY + (xLocal * sinR + yLocalStart * cosR);
+                const x2 = rData.tfX + (xLocal * cosR - yLocalEnd * sinR);
+                const y2 = rData.tfY + (xLocal * sinR + yLocalEnd * cosR);
 
-            this.shape.drawLine(x1, y1, x2, y2, this.colors.grid, 1, proj);
-        }
+                this.shape.drawLine(x1, y1, x2, y2, this.colors.grid, 1, proj);
+            }
 
-        for (let j = minY; j <= maxY; j++) {
-            const yLocal = j * scaledTileH;
-            const xLocalStart = minX * scaledTileW;
-            const xLocalEnd = maxX * scaledTileW;
+            for (let j = minY; j <= maxY; j++) {
+                const yLocal = j * scaledTileH;
+                const xLocalStart = minX * scaledTileW;
+                const xLocalEnd = maxX * scaledTileW;
 
-            const x1 = rData.tfX + (xLocalStart * cosR - yLocal * sinR);
-            const y1 = rData.tfY + (xLocalStart * sinR + yLocal * cosR);
-            const x2 = rData.tfX + (xLocalEnd * cosR - yLocal * sinR);
-            const y2 = rData.tfY + (xLocalEnd * sinR + yLocal * cosR);
+                const x1 = rData.tfX + (xLocalStart * cosR - yLocal * sinR);
+                const y1 = rData.tfY + (xLocalStart * sinR + yLocal * cosR);
+                const x2 = rData.tfX + (xLocalEnd * cosR - yLocal * sinR);
+                const y2 = rData.tfY + (xLocalEnd * sinR + yLocal * cosR);
 
-            this.shape.drawLine(x1, y1, x2, y2, this.colors.grid, 1, proj);
+                this.shape.drawLine(x1, y1, x2, y2, this.colors.grid, 1, proj);
+            }
         }
 
         const activeTab = editors.tabs?.find(t => String(t.id) === String(editors.activeTabId));

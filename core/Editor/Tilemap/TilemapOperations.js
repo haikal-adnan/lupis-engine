@@ -69,6 +69,7 @@ export class TilemapOperations {
     deleteArea(entity, tm, startX, startY, width = 1, height = 1) {
         if (!tm || !tm.data) return;
 
+        const oldData = { ...tm.data };
         const newData = { ...tm.data };
         let isChanged = false;
 
@@ -87,7 +88,10 @@ export class TilemapOperations {
             }
         }
 
-        if (isChanged) this.applyDataChange(entity, tm, newData);
+        if (isChanged) {
+            const desc = (width > 1 || height > 1) ? 'Delete Marquee Tiles' : 'Delete Tile';
+            this.applyDataChange(entity, tm, newData, oldData, desc);
+        }
     }
 
     /**
@@ -122,6 +126,7 @@ export class TilemapOperations {
         const replaceId = (selection.y * tilesetCols) + selection.x + 1;
         if (targetId === replaceId) return;
 
+        const oldData = { ...tm.data };
         const newData = { ...tm.data };
         const stack = [{ x: targetX, y: targetY }];
         const visited = new Set();
@@ -155,7 +160,32 @@ export class TilemapOperations {
             }
         }
 
-        this.applyDataChange(entity, tm, newData);
+        if (count > 0) {
+            this.applyDataChange(entity, tm, newData, oldData, 'Bucket Fill');
+        }
+    }
+
+    startStroke(entity, tm, toolName = 'Paint') {
+        if (!this.activeStroke && entity && tm?.data) {
+            this.activeStroke = {
+                entityId: entity.id,
+                initialData: { ...tm.data },
+                toolName
+            };
+        }
+    }
+
+    endStroke(entity, tm) {
+        if (!this.activeStroke) return;
+        const stroke = this.activeStroke;
+        this.activeStroke = null;
+
+        if (!entity || !tm?.data) return;
+        if (stroke.entityId !== entity.id) return;
+
+        if (JSON.stringify(stroke.initialData) !== JSON.stringify(tm.data)) {
+            this.applyDataChange(entity, tm, tm.data, stroke.initialData, `${stroke.toolName} Tiles`);
+        }
     }
 
     handleEyedropper(world, tm, gridX, gridY) {
@@ -174,9 +204,14 @@ export class TilemapOperations {
         bus.emit("editor:tool:pickup", { x: id % tilesetCols, y: Math.floor(id / tilesetCols), w: 1, h: 1 });
     }
 
-    applyDataChange(entity, tm, newData) {
+    applyDataChange(entity, tm, newData, oldData = null, description = 'Update Tilemap') {
         tm.data = newData;
         entity.isDirty = true;
-        bus.emit("editor:tilemap:update-data", { entityId: entity.id, newData: newData });
+        const payload = { entityId: entity.id, newData: newData };
+        if (oldData) {
+            payload.oldData = oldData;
+            payload.description = description;
+        }
+        bus.emit("editor:tilemap:update-data", payload);
     }
 }

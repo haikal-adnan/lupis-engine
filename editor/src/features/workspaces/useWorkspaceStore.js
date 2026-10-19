@@ -35,7 +35,7 @@ export const useWorkspaceStore = defineStore('workspace', {
     tileSelection: null,
     canvas: { zoom: 1 },
 
-    tilemapContext: { showOthers: true, opacity: 0.3 },
+    tilemapContext: { showOthers: true, opacity: 0.3, showGrid: true },
 
     isResizeModalOpen: false, 
     isSettingsModalOpen: false,
@@ -130,6 +130,15 @@ export const useWorkspaceStore = defineStore('workspace', {
 
     toggleContextVisibility() {
       this.tilemapContext.showOthers = !this.tilemapContext.showOthers;
+    },
+
+    toggleGridVisibility() {
+      const current = this.tilemapContext.showGrid ?? true;
+      this.tilemapContext.showGrid = !current;
+    },
+
+    setGridVisibility(val) {
+      this.tilemapContext.showGrid = !!val;
     },
 
     setContextOpacity(val) {
