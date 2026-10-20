@@ -63,7 +63,7 @@
               data-testid="collider-dropdown-trigger"
             >
               <span class="truncate font-medium">
-                {{ collidersData.length > 0 ? `Collider ${selectedIndex + 1} (${currentCollider?.type})` : 'No Colliders Attached' }}
+                {{ collidersData.length > 0 ? (currentCollider?.scriptId ? `${currentCollider.scriptId} (${currentCollider?.type})` : `Collider ${selectedIndex + 1} (${currentCollider?.type})`) : 'No Colliders Attached' }}
               </span>
               <ChevronDown class="w-3.5 h-3.5 opacity-50" />
             </button>
@@ -88,7 +88,7 @@
               >
                 <div class="flex items-center gap-2 truncate">
                    <div class="w-1 h-1 rounded-full" :class="idx === selectedIndex ? 'bg-primary' : 'bg-transparent'"></div>
-                   <span class="truncate">Collider {{ idx + 1 }} ({{ col.type }})</span>
+                   <span class="truncate">{{ col.scriptId ? `${col.scriptId} (${col.type})` : `Collider ${idx + 1} (${col.type})` }}</span>
                 </div>
                 <Check v-if="col.enabled" class="w-3.5 h-3.5 text-blue-500 ml-2" />
               </button>
@@ -135,6 +135,17 @@
     </div>
 
     <div v-if="currentCollider" class="space-y-2">
+      <PropertyRow label="Script ID">
+        <BaseInput 
+          v-model="localScriptId" 
+          placeholder="col_hitbox_1" 
+          :error="hasIdError"
+          @blur="commitScriptId"
+          class="font-mono text-xs w-full" 
+          data-testid="collider-script-id" 
+        />
+      </PropertyRow>
+
       <PropertyRow label="Status">
         <BaseButton 
           :active="enabled"
@@ -224,6 +235,11 @@
           label="Lock World Rotation (Stay Upright)" 
           data-testid="collider-lock-rotation-toggle"
         />
+        <BaseCheckbox 
+          v-model="autoFlipX" 
+          label="Auto Flip with Facing / flipX" 
+          data-testid="collider-autoflip-toggle"
+        />
       </div>
 
       <div v-if="autoFit" class="px-1 mb-3 -mt-1">
@@ -266,8 +282,10 @@ import {
   BaseNumber,
   BaseSelect,
   BaseButton,
-  BaseCheckbox
+  BaseCheckbox,
+  BaseInput
 } from '@components/components.js';
+import { GenerateUUID, sanitizeScriptId } from '@utils/utils.js';
 
 const { selectedEntity, isEditingMasterPrefab } = useInspectorSelection()
 
@@ -296,7 +314,9 @@ const currentCollider = computed(() => collidersData.value[selectedIndex.value])
 
 const typeOptions = [
   { label: 'Solid (Physics)', value: 'solid' },
-  { label: 'Trigger (Zone)', value: 'trigger' }
+  { label: 'Trigger (Zone)', value: 'trigger' },
+  { label: 'Hitbox (Attack)', value: 'hitbox' },
+  { label: 'Hurtbox (Damage Zone)', value: 'hurtbox' }
 ]
 
 function selectIndex(idx, close) {
@@ -317,7 +337,7 @@ const bindCurrentColliderProp = (propName) => computed({
     const path = `data.${selectedIndex.value}.${propName}`
     
     let finalVal = val;
-    if (propName === 'enabled' || propName === 'autoFit' || propName === 'lockWorldRotation') finalVal = Boolean(val);
+    if (propName === 'enabled' || propName === 'autoFit' || propName === 'lockWorldRotation' || propName === 'autoFlipX') finalVal = Boolean(val);
     if (typeof finalVal === 'number') finalVal = Math.round(finalVal * 100) / 100;
 
     if (isEditingMasterPrefab.value) {
@@ -333,6 +353,49 @@ const type = bindCurrentColliderProp('type')
 const enabled = bindCurrentColliderProp('enabled')
 const autoFit = bindCurrentColliderProp('autoFit')
 const lockWorldRotation = bindCurrentColliderProp('lockWorldRotation')
+const autoFlipX = bindCurrentColliderProp('autoFlipX')
+
+const localScriptId = ref('')
+const hasIdError = ref(false)
+
+watch(() => currentCollider.value?.scriptId, (val) => {
+  localScriptId.value = val || ''
+  hasIdError.value = false
+}, { immediate: true })
+
+const commitScriptId = () => {
+  if (!currentCollider.value || !selectedEntity.value) return
+  const originalId = currentCollider.value.scriptId || ''
+  const fallback = `col_${currentCollider.value.type || 'solid'}_${selectedIndex.value + 1}`
+  const sanitized = sanitizeScriptId(localScriptId.value.trim(), originalId || fallback)
+  localScriptId.value = sanitized
+
+  if (!sanitized || sanitized === originalId) {
+    localScriptId.value = originalId
+    return
+  }
+
+  const isDuplicate = collidersData.value.some((c, idx) => idx !== selectedIndex.value && c.scriptId === sanitized)
+  if (isDuplicate) {
+    hasIdError.value = true
+    showPop({
+      title: 'Duplicate Collider ID',
+      message: `ID "${sanitized}" is already used by another collider on this entity.`,
+      type: 'warning'
+    })
+    localScriptId.value = originalId
+    setTimeout(() => { hasIdError.value = false }, 1000)
+    return
+  }
+
+  const path = `data.${selectedIndex.value}.scriptId`
+  if (isEditingMasterPrefab.value) {
+    prefabStore.updateComponentProp(workspaceStore.activeTab.id, 'Collider', path, sanitized)
+  } else {
+    sceneStore.updateComponentProp(selectedEntity.value.id, 'Collider', path, sanitized)
+    markComponentAsOverridden()
+  }
+}
 const offsetX = bindCurrentColliderProp('offsetX')
 const offsetY = bindCurrentColliderProp('offsetY')
 const width = bindCurrentColliderProp('width')
@@ -349,16 +412,23 @@ const maxRadius = computed(() => {
 });
 
 function addNewCollider() {
+  const nextIdx = collidersData.value.length + 1
   const newCol = { 
+    id: GenerateUUID(),
+    scriptId: `col_solid_${nextIdx}`,
     type: 'solid', 
     enabled: true, 
     autoFit: false, 
     lockWorldRotation: false,
+    autoFlipX: true,
     offsetX: 0, 
     offsetY: 0, 
     width: 32, 
     height: 32,
-    cornerRadius: 0
+    cornerRadius: 0,
+    rotation: 0,
+    pivotX: 0,
+    pivotY: 0
   }
   
   const currentList = [...collidersData.value, newCol]

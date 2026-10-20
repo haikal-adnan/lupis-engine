@@ -6,8 +6,8 @@
         ref="menuRef"
         role="menu"
         aria-label="Context Menu"
-        data-testid="context-menu"
         v-bind="$attrs"
+        data-testid="context-menu"
         class="base-context-menu-fixed fixed min-w-[160px] max-w-[240px] p-1 bg-popover border border-border shadow-lg rounded-md flex flex-col gap-0.5 text-popover-foreground z-[9999] max-h-[85vh] overflow-y-auto overflow-x-hidden scrollbar-thin"
         :style="menuStyle"
         @contextmenu.prevent

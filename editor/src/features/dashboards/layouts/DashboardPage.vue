@@ -490,7 +490,6 @@ const processImport = async (file) => {
     <!-- Context Menu -->
     <BaseContextMenu 
       v-if="menu.visible"
-      data-testid="project-context-menu"
       :position="{ x: menu.x, y: menu.y }"
       :items="contextMenuItems"
       @close="closeMenu"

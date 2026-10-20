@@ -12,6 +12,8 @@ export default class UIRenderer {
         
         this.colliderColorSolid = [0, 1, 0, 0.8]; 
         this.colliderColorTrigger = [1, 1, 0, 0.8]; 
+        this.colliderColorHitbox = [1, 0.15, 0.15, 0.85];
+        this.colliderColorHurtbox = [0, 0.75, 1, 0.85]; 
     }
 
     render(world, proj, isSceneMode = false) {
@@ -91,7 +93,7 @@ export default class UIRenderer {
             RenderUtils.processText(comps, currentOpacity, flipX, flipY, rawT, world, this.renderQueue, trans);
         }
 
-        RenderUtils.processColliderDebug(comps, absT, trans, this.renderQueue, this.colliderColorSolid, this.colliderColorTrigger);
+        RenderUtils.processColliderDebug(comps, absT, trans, this.renderQueue, this.colliderColorSolid, this.colliderColorTrigger, this.colliderColorHitbox, this.colliderColorHurtbox);
     }
 
     _renderWorkspaceGizmos(proj, w, h) {

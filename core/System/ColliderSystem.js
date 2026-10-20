@@ -177,6 +177,107 @@ export default class ColliderSystem {
         return overlaps[0];
     }
 
+    getColliderShape(entity, scriptId) {
+        if (!entity || !entity.components || !entity.components.Collider) return null;
+        const shapes = entity.components.Collider.data;
+        if (!Array.isArray(shapes)) return null;
+        const idLower = String(scriptId).trim().toLowerCase();
+        return shapes.find(s => 
+            s.scriptId === scriptId ||
+            s.id === scriptId ||
+            String(s.scriptId || '').toLowerCase() === idLower ||
+            String(s.id || '').toLowerCase() === idLower
+        ) || null;
+    }
+
+    setColliderEnabled(entity, scriptId, enabled = true) {
+        const shape = this.getColliderShape(entity, scriptId);
+        if (shape) {
+            shape.enabled = Boolean(enabled);
+            return true;
+        }
+        return false;
+    }
+
+    checkHitbox(attackerEntity, hitboxIdentifier, targetTag = null, targetTypes = null) {
+        if (!attackerEntity || attackerEntity.active === false) return [];
+        const attackerBounds = this.getBounds(attackerEntity);
+        if (attackerBounds.length === 0) return [];
+
+        let hbBound = null;
+        if (typeof hitboxIdentifier === 'string') {
+            const idLower = String(hitboxIdentifier).trim().toLowerCase();
+            hbBound = attackerBounds.find(b =>
+                b.scriptId === hitboxIdentifier ||
+                b.id === hitboxIdentifier ||
+                String(b.scriptId || '').toLowerCase() === idLower ||
+                String(b.id || '').toLowerCase() === idLower
+            );
+        } else if (hitboxIdentifier && typeof hitboxIdentifier === 'object') {
+            hbBound = hitboxIdentifier;
+        }
+
+        if (!hbBound) {
+            hbBound = attackerBounds.find(b => b.type === 'hitbox') || attackerBounds[0];
+        }
+        if (!hbBound) return [];
+
+        const validTargetTypes = Array.isArray(targetTypes) 
+            ? targetTypes 
+            : (targetTypes ? [targetTypes] : ['hurtbox', 'solid', 'trigger']);
+
+        const results = [];
+        const attackerId = attackerEntity.id || attackerEntity._id;
+        const entities = this.game.world?.entities || [];
+        const inactiveLayers = this._getInactiveLayers();
+
+        for (let i = 0; i < entities.length; i++) {
+            const other = entities[i];
+            const otherId = other.id || other._id;
+            if (otherId === attackerId || other.active === false) continue;
+            if (other.layerId && inactiveLayers.has(other.layerId)) continue;
+
+            if (targetTag && targetTag.trim() !== '') {
+                const otherTag = other.tag || other.components?.Tags?.value;
+                if (otherTag !== targetTag) continue;
+            }
+
+            const otherBounds = this.getBounds(other);
+            if (otherBounds.length === 0) {
+                const oT = other.components && (other.components.Transform || other.components.UITransform);
+                if (oT) {
+                    const fallbackBound = {
+                        x: oT.x,
+                        y: oT.y,
+                        w: (oT.width || 32) * Math.abs(oT.scaleX ?? 1),
+                        h: (oT.height || 32) * Math.abs(oT.scaleY ?? 1),
+                        rotation: (oT.rotation || 0) * (Math.PI / 180),
+                        pivotX: oT.pivotX ?? 0.5,
+                        pivotY: oT.pivotY ?? 0.5,
+                        cornerRadius: 0,
+                        type: 'hurtbox'
+                    };
+                    if (this._obbIntersect(hbBound, fallbackBound)) {
+                        results.push({ entity: other, targetBound: fallbackBound, attackerBound: hbBound });
+                    }
+                }
+                continue;
+            }
+
+            for (const bB of otherBounds) {
+                if (validTargetTypes.length > 0 && !validTargetTypes.includes(bB.type)) {
+                    continue;
+                }
+                if (this._obbIntersect(hbBound, bB)) {
+                    results.push({ entity: other, targetBound: bB, attackerBound: hbBound });
+                    break;
+                }
+            }
+        }
+
+        return results;
+    }
+
     _getInactiveLayers() {
         const worldLayers = this.game.world.layersWorld || [];
         const uiLayers = this.game.world.layersUI || [];
@@ -360,9 +461,10 @@ export default class ColliderSystem {
         if (!t) return [];
 
         const boundsList = [];
+        const isFlippedX = Boolean(t.flipX || (entity.components?.Physics?.facingDirection === 'left'));
         const scaleX = (t.scaleX ?? 1) * (t.flipX ? -1 : 1);
         const scaleY = (t.scaleY ?? 1) * (t.flipY ? -1 : 1);
-        const tRotRad = (t.rotation || 0) * (Math.PI / 180);
+        const tRotRad = (t.rotation || 0) * (Math.PI / 180) * (isFlippedX ? -1 : 1);
         const cosT = Math.cos(tRotRad);
         const sinT = Math.sin(tRotRad);
 
@@ -377,22 +479,28 @@ export default class ColliderSystem {
 
                 const cW = (c.autoFit ? entityW : c.width) * Math.abs(scaleX);
                 const cH = (c.autoFit ? entityH : c.height) * Math.abs(scaleY);
-                const pX = c.pivotX ?? 0.5;
-                const pY = c.pivotY ?? 0.5;
+                let pX = c.pivotX ?? 0.5;
+                let pY = c.pivotY ?? 0.5;
 
                 const localTlX = -entityW * Math.abs(scaleX) * (t.pivotX ?? 0.5) + (c.offsetX || 0) * Math.abs(scaleX);
                 const localTlY = -entityH * Math.abs(scaleY) * (t.pivotY ?? 0.5) + (c.offsetY || 0) * Math.abs(scaleY);
 
-                const localPx = localTlX + cW * pX;
-                const localPy = localTlY + cH * pY;
+                let localPx = localTlX + cW * pX;
+                let localPy = localTlY + cH * pY;
+
+                const shouldFlipX = isFlippedX && (c.autoFlipX !== false);
+                if (shouldFlipX) {
+                    localPx = -localPx;
+                    pX = 1 - pX;
+                }
 
                 const isLockRot = Boolean(c.lockWorldRotation);
                 const worldPx = isLockRot ? (t.x + localPx) : (t.x + localPx * cosT - localPy * sinT);
                 const worldPy = isLockRot ? (t.y + localPy) : (t.y + localPx * sinT + localPy * cosT);
 
-                const totalRot = isLockRot 
-                    ? ((c.rotation || 0) * (Math.PI / 180)) 
-                    : (c.autoFit ? tRotRad : tRotRad + ((c.rotation || 0) * (Math.PI / 180)));
+                let totalRot = isLockRot 
+                    ? ((c.rotation || 0) * (Math.PI / 180) * (shouldFlipX ? -1 : 1)) 
+                    : (c.autoFit ? tRotRad : tRotRad + (((c.rotation || 0) * (Math.PI / 180)) * (shouldFlipX ? -1 : 1)));
 
                 const cRadius = Math.max(0, Math.min(
                     (Number(c.cornerRadius) || 0) * Math.min(Math.abs(scaleX), Math.abs(scaleY)),
@@ -409,7 +517,10 @@ export default class ColliderSystem {
                     pivotX: pX,
                     pivotY: pY,
                     cornerRadius: cRadius,
-                    type: c.type || 'solid'
+                    type: c.type || 'solid',
+                    id: c.id,
+                    scriptId: c.scriptId,
+                    shape: c
                 });
             }
         }

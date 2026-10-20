@@ -50,38 +50,45 @@ export const componentSchema = {
     };
   },
 
-  Collider: (data = {}) => ({
-    data: Array.isArray(data.data) ? data.data.map(shape => ({
-      id: shape.id,
-      scriptId: shape.scriptId ? sanitizeScriptId(shape.scriptId, shape.scriptId) : undefined,
-      type: shape.type || "solid",
-      enabled: Boolean(shape.enabled ?? true),
-      autoFit: Boolean(shape.autoFit ?? false),
-      lockWorldRotation: Boolean(shape.lockWorldRotation ?? false),
-      offsetX: Number(shape.offsetX ?? 0),
-      offsetY: Number(shape.offsetY ?? 0),
-      width: Number(shape.width ?? 32),
-      height: Number(shape.height ?? 32),
-      cornerRadius: Number(shape.cornerRadius ?? 0),
-      rotation: Number(shape.rotation ?? 0),
-      pivotX: Number(shape.pivotX ?? 0),
-      pivotY: Number(shape.pivotY ?? 0),
-    })) : [{
-      type: data.type || "solid",
-      enabled: Boolean(data.enabled ?? true),
-      autoFit: Boolean(data.autoFit ?? false),
-      lockWorldRotation: Boolean(data.lockWorldRotation ?? false),
-      offsetX: Number(data.offsetX ?? 0),
-      offsetY: Number(data.offsetY ?? 0),
-      width: Number(data.width ?? 32),
-      height: Number(data.height ?? 32),
-      cornerRadius: Number(data.cornerRadius ?? 0),
-      rotation: Number(data.rotation ?? 0),
-      pivotX: Number(data.pivotX ?? 0),
-      pivotY: Number(data.pivotY ?? 0),
-    }],
-    overridden: Boolean(data.overridden ?? false)
-  }),
+  Collider: (data = {}) => {
+    const validTypes = ['solid', 'trigger', 'hitbox', 'hurtbox'];
+    const formatShape = (shape = {}, index = 0) => {
+      const shapeId = shape.id || GenerateUUID();
+      const rawType = shape.type || 'solid';
+      const shapeType = validTypes.includes(rawType) ? rawType : 'solid';
+      const fallbackScriptId = `col_${shapeType}_${index + 1}`;
+      const scriptId = shape.scriptId
+        ? sanitizeScriptId(shape.scriptId, fallbackScriptId)
+        : fallbackScriptId;
+
+      return {
+        id: shapeId,
+        scriptId,
+        type: shapeType,
+        enabled: Boolean(shape.enabled ?? true),
+        autoFit: Boolean(shape.autoFit ?? false),
+        lockWorldRotation: Boolean(shape.lockWorldRotation ?? false),
+        autoFlipX: Boolean(shape.autoFlipX ?? true),
+        offsetX: Number(shape.offsetX ?? 0),
+        offsetY: Number(shape.offsetY ?? 0),
+        width: Number(shape.width ?? 32),
+        height: Number(shape.height ?? 32),
+        cornerRadius: Number(shape.cornerRadius ?? 0),
+        rotation: Number(shape.rotation ?? 0),
+        pivotX: Number(shape.pivotX ?? 0),
+        pivotY: Number(shape.pivotY ?? 0),
+      };
+    };
+
+    const rawShapes = Array.isArray(data.data)
+      ? data.data
+      : (data.data ? [data.data] : [data]);
+
+    return {
+      data: rawShapes.map((shape, idx) => formatShape(shape, idx)),
+      overridden: Boolean(data.overridden ?? false)
+    };
+  },
 
   Physics: (data = {}) => ({
     enabled: Boolean(data.enabled ?? true),

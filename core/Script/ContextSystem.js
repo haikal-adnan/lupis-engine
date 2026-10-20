@@ -85,7 +85,11 @@ export default class ContextSystem {
       collider: {
         checkSolid: (entity) => this.game.colliderSystem?.checkSolid(entity),
         checkOverlap: (entity, filterTag) => this.game.colliderSystem?.checkOverlap(entity, filterTag),
-        moveAndSlide: (entity, moveX, moveY) => this.game.colliderSystem?.moveAndSlide(entity, moveX, moveY)
+        moveAndSlide: (entity, moveX, moveY) => this.game.colliderSystem?.moveAndSlide(entity, moveX, moveY),
+        getShape: (entity, scriptId) => this.game.colliderSystem?.getColliderShape(entity, scriptId),
+        setShapeEnabled: (entity, scriptId, enabled) => this.game.colliderSystem?.setColliderEnabled(entity, scriptId, enabled),
+        checkHitbox: (attacker, hitboxIdentifier, filterTag, targetTypes) => this.game.colliderSystem?.checkHitbox(attacker, hitboxIdentifier, filterTag, targetTypes),
+        getBounds: (entity) => this.game.colliderSystem?.getBounds(entity)
       },
       input: this.inputHandler.createFacade(contextParams),
       ui: this.uiHandler.createFacade(contextParams),

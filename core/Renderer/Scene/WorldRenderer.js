@@ -12,6 +12,8 @@ export default class WorldRenderer {
         this.boundsColor = [0.7, 0, 1, 0.6];
         this.colliderColorSolid = [0, 1, 0, 0.8]; 
         this.colliderColorTrigger = [1, 1, 0, 0.8]; 
+        this.colliderColorHitbox = [1, 0.15, 0.15, 0.85];
+        this.colliderColorHurtbox = [0, 0.75, 1, 0.85]; 
     }
 
     render(world, proj, alpha = 1.0, isUIMode = false) {
@@ -137,7 +139,7 @@ export default class WorldRenderer {
                 RenderUtils.processShape(comps, currentOpacity, flipX, flipY, entityId, this.renderQueue, trans);
             }
 
-            RenderUtils.processColliderDebug(comps, globalT, trans, this.renderQueue, this.colliderColorSolid, this.colliderColorTrigger);
+            RenderUtils.processColliderDebug(comps, globalT, trans, this.renderQueue, this.colliderColorSolid, this.colliderColorTrigger, this.colliderColorHitbox, this.colliderColorHurtbox);
 
             if (comps.TextRenderer) {
                 RenderUtils.processText(comps, currentOpacity, flipX, flipY, rawT, world, this.renderQueue, trans);

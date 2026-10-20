@@ -2489,17 +2489,28 @@ const keyRight = String(inputs.keyRight || 'd').trim().toLowerCase();
 const keyJump = String(inputs.keyJump || 'space').trim().toLowerCase();
 const keyDown = String(inputs.keyDown || 's').trim().toLowerCase();
 
-const speed = Number(inputs.speed) || 0;
-const jumpForce = Number(inputs.jumpForce) || 0;
-const dropNudge = Number(inputs.dropNudge) || 6;
+const speed = Number(inputs.speed !== undefined ? inputs.speed : 260);
+const jumpForce = Number(inputs.jumpForce !== undefined ? inputs.jumpForce : 520);
+const dropNudge = Number(inputs.dropNudge !== undefined ? inputs.dropNudge : 6);
+
+const dt = Number(context.dt || context.deltaTime || 0.016);
+const combatState = target._combat;
+const isCombatAttacking = Boolean(combatState && combatState.isAttacking);
+
+const isKnockedBack = Boolean(target._knockback && target._knockback.duration > 0);
+if (isKnockedBack) {
+  target._knockback.duration -= dt;
+}
 
 let moveDirX = 0;
-if (keyboard.isDown(keyRight)) moveDirX += 1;
-if (keyboard.isDown(keyLeft)) moveDirX -= 1;
+if (!isCombatAttacking && !isKnockedBack) {
+  if (keyboard.isDown(keyRight)) moveDirX += 1;
+  if (keyboard.isDown(keyLeft)) moveDirX -= 1;
+}
 
 const isGrounded = Boolean(phys ? phys.isGrounded : true);
 const isDownPressed = keyboard.isDown(keyDown);
-const isJumpTriggered = keyboard.isPressed(keyJump);
+const isJumpTriggered = !isCombatAttacking && !isKnockedBack && keyboard.isPressed(keyJump);
 
 let didDrop = false;
 let didJump = false;
@@ -2524,8 +2535,10 @@ if (isGrounded && isDownPressed && isJumpTriggered) {
 }
 
 if (phys) {
-  phys.velocityX = moveDirX * speed;
-  phys._isIntentionalMove = Math.abs(phys.velocityX) > 10;
+  if (!isKnockedBack) {
+    phys.velocityX = moveDirX * speed;
+    phys._isIntentionalMove = Math.abs(phys.velocityX) > 10;
+  }
   if (moveDirX > 0) {
     phys.facingDirection = 'right';
     phys.customFacing = true;
@@ -2534,7 +2547,6 @@ if (phys) {
     phys.customFacing = true;
   }
 } else {
-  const dt = Number(context.dt || context.deltaTime || 0.016);
   const moveX = moveDirX * speed * dt;
   context.collider.moveAndSlide(target, moveX, 0);
 }
@@ -2545,7 +2557,7 @@ if (!state.wasGrounded && isGrounded && !didDrop && !didJump) {
 state.wasGrounded = isGrounded;
 
 outputs.isGrounded = isGrounded;
-outputs.movementState = phys ? phys.movementState : (moveDirX !== 0 ? 'running' : 'idle');
+outputs.movementState = isCombatAttacking ? 'attack' : (phys ? phys.movementState : (moveDirX !== 0 ? 'running' : 'idle'));
 outputs.facingDirection = phys ? (phys.facingDirection || 'right') : (moveDirX < 0 ? 'left' : 'right');
 outputs.velocityX = phys ? phys.velocityX : (moveDirX * speed);
 outputs.velocityY = phys ? phys.velocityY : 0;
@@ -2570,9 +2582,12 @@ return;`
           { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
           { id: 'targetEntity', dataType: 'string', color: '#F48FB1', defaultValue: 'self' },
           { id: 'idleClips', dataType: 'string', color: '#F48FB1', defaultValue: '' },
+          { id: 'walkClips', dataType: 'string', color: '#F48FB1', defaultValue: '' },
           { id: 'runClips', dataType: 'string', color: '#F48FB1', defaultValue: '' },
           { id: 'jumpClips', dataType: 'string', color: '#F48FB1', defaultValue: '' },
           { id: 'fallClips', dataType: 'string', color: '#F48FB1', defaultValue: '' },
+          { id: 'hitClips', dataType: 'string', color: '#F48FB1', defaultValue: '' },
+          { id: 'isHit', dataType: 'boolean', color: '#E57373', defaultValue: false },
           { id: 'movementState', dataType: 'string', color: '#F48FB1', defaultValue: '' },
           { id: 'facingDirection', dataType: 'string', color: '#F48FB1', defaultValue: '' },
           { id: 'autoFlipX', dataType: 'boolean', color: '#E57373', defaultValue: true }
@@ -2589,9 +2604,12 @@ return;`
           values: {
             targetEntity: 'self',
             idleClips: '',
+            walkClips: '',
             runClips: '',
             jumpClips: '',
             fallClips: '',
+            hitClips: '',
+            isHit: false,
             movementState: '',
             facingDirection: '',
             autoFlipX: true
@@ -2639,14 +2657,18 @@ function parseClips(raw) {
 }
 
 const idleInput = String(inputs.idleClips || (node.data && node.data.values && node.data.values.idleClips) || '');
+const walkInput = String(inputs.walkClips || (node.data && node.data.values && node.data.values.walkClips) || '');
 const runInput = String(inputs.runClips || (node.data && node.data.values && node.data.values.runClips) || '');
 const jumpInput = String(inputs.jumpClips || (node.data && node.data.values && node.data.values.jumpClips) || '');
 const fallInput = String(inputs.fallClips || (node.data && node.data.values && node.data.values.fallClips) || '');
+const hitInput = String(inputs.hitClips || (node.data && node.data.values && node.data.values.hitClips) || '');
 
 const idleCfg = parseClips(idleInput);
+const walkCfg = parseClips(walkInput);
 const runCfg = parseClips(runInput);
 const jumpCfg = parseClips(jumpInput);
 const fallCfg = parseClips(fallInput);
+const hitCfg = parseClips(hitInput);
 
 let facing = '';
 const inputFacing = String(inputs.facingDirection || '').trim().toLowerCase();
@@ -2671,11 +2693,149 @@ let moveState = '';
 const inputState = String(inputs.movementState || '').trim().toLowerCase();
 if (inputState) {
   if (inputState === 'idle' || inputState === 'stand') moveState = 'idle';
-  else if (inputState === 'running' || inputState === 'run' || inputState === 'walk' || inputState === 'moving') moveState = 'run';
+  else if (inputState === 'walk' || inputState === 'walking' || inputState === 'patrol') moveState = 'walk';
+  else if (inputState === 'running' || inputState === 'run' || inputState === 'moving') moveState = 'run';
   else if (inputState === 'jumping' || inputState === 'jump') moveState = 'jump';
   else if (inputState === 'falling' || inputState === 'fall') moveState = 'fall';
   else if (inputState === 'air' || inputState === 'inair') moveState = 'jump';
+  else if (inputState === 'attack' || inputState === 'attacking') moveState = 'attack';
+  else if (inputState === 'hit' || inputState === 'hurt' || inputState === 'damaged') moveState = 'hit';
   else moveState = inputState;
+}
+
+const isHitInput = Boolean(inputs.isHit === true || inputs.isHit === 'true');
+const isKnockedBack = Boolean(target._knockback && target._knockback.duration > 0);
+const isEntityHit = Boolean(target._isHit || (target._hit && target._hit.duration > 0));
+const isHitMoveState = (moveState === 'hit');
+let isHit = isHitInput || isKnockedBack || isEntityHit || isHitMoveState;
+
+const dt = Number(context.dt || context.deltaTime || 0.016);
+if (isKnockedBack && !target._ai && (!phys || phys._isIntentionalMove === undefined)) {
+  target._knockback.duration -= dt;
+}
+
+if (!isHit && state.lastState === 'hit' && hitCfg) {
+  const currentClipId = animator.currentClip || state.lastClip;
+  const rawClips = animator.clips;
+  const clips = Array.isArray(rawClips) ? rawClips : (rawClips && typeof rawClips === 'object' ? Object.values(rawClips) : []);
+  const activeClip = clips.find(c => c.id === currentClipId || c.scriptId === currentClipId || c.name === currentClipId);
+  if (activeClip && activeClip.isLooping === false && animator.isPlaying) {
+    const totalFrames = Array.isArray(activeClip.frames) ? activeClip.frames.length : 1;
+    const currentFrame = typeof activeClip.frameIndex === 'number' ? activeClip.frameIndex : 0;
+    if (currentFrame < totalFrames - 1) {
+      isHit = true;
+    }
+  }
+}
+
+if (inputs.enabled === false) {
+  outputs.execOut = true;
+  return;
+}
+
+if (isHit && hitCfg) {
+  const combatState = target._combat || context.state.platformerCombat;
+  if (combatState) {
+    combatState.isAttacking = false;
+    combatState.bufferAttack = false;
+  }
+
+  let autoFlipX = true;
+  if (inputs.autoFlipX === false || inputs.autoFlipX === 'false') {
+    autoFlipX = false;
+  }
+  const isSingle = Boolean(hitCfg.isSingle);
+  const targetClipName = (facing === 'left') ? hitCfg.left : hitCfg.right;
+  let shouldFlip = false;
+  if (isSingle && autoFlipX) {
+    shouldFlip = (facing === 'left');
+  }
+  if (transform) {
+    transform.flipX = shouldFlip;
+    state.prevX = transform.x;
+    state.prevY = transform.y;
+  }
+
+  const rawClips = animator.clips;
+  const clips = Array.isArray(rawClips) ? rawClips : (rawClips && typeof rawClips === 'object' ? Object.values(rawClips) : []);
+
+  let matchedClip = false;
+  if (targetClipName) {
+    const targetLower = targetClipName.toLowerCase();
+    for (let i = 0; i < clips.length; i++) {
+      const c = clips[i];
+      if (c.scriptId === targetClipName || c.id === targetClipName || c.name === targetClipName) {
+        matchedClip = c;
+        break;
+      }
+      if (String(c.scriptId || '').toLowerCase() === targetLower ||
+          String(c.id || '').toLowerCase() === targetLower ||
+          String(c.name || '').toLowerCase() === targetLower) {
+        matchedClip = c;
+        break;
+      }
+    }
+  }
+
+  const resolvedClipId = matchedClip ? matchedClip.id : targetClipName;
+
+  let clipChanged = false;
+  if (resolvedClipId && animator.currentClip !== resolvedClipId) {
+    animator.currentClip = resolvedClipId;
+    animator._activeClipId = '';
+    animator._elapsedTime = 0;
+    animator.isPlaying = true;
+    if (matchedClip) matchedClip.frameIndex = 0;
+    clipChanged = true;
+  } else if (animator.currentClip && !animator.isPlaying) {
+    animator.isPlaying = true;
+  }
+
+  state.lastState = 'hit';
+  state.lastClip = animator.currentClip || resolvedClipId;
+
+  outputs.execOut = true;
+  outputs.currentClip = animator.currentClip || resolvedClipId || '';
+  outputs.activeState = 'hit';
+  outputs.facingDirection = facing;
+  outputs.isFlipped = shouldFlip;
+
+  if (clipChanged) {
+    outputs.onClipChanged = true;
+  }
+
+  return;
+}
+
+const combatState = target._combat || context.state.platformerCombat;
+const isCombatAttacking = Boolean(
+  (combatState && combatState.isAttacking) ||
+  moveState === 'attack' ||
+  moveState === 'attacking'
+);
+
+if (isCombatAttacking) {
+  let autoFlipX = true;
+  if (inputs.autoFlipX === false || inputs.autoFlipX === 'false') {
+    autoFlipX = false;
+  }
+  let shouldFlip = false;
+  if (autoFlipX) {
+    shouldFlip = (facing === 'left');
+  }
+  if (transform) {
+    transform.flipX = shouldFlip;
+    state.prevX = transform.x;
+    state.prevY = transform.y;
+  }
+  state.lastState = 'attack';
+  state.lastClip = animator.currentClip || '';
+  outputs.execOut = true;
+  outputs.currentClip = animator.currentClip || '';
+  outputs.activeState = 'attack';
+  outputs.facingDirection = facing;
+  outputs.isFlipped = shouldFlip;
+  return;
 }
 
 if (!moveState) {
@@ -2688,16 +2848,27 @@ if (!moveState) {
       else if (vy > 10) moveState = 'fall';
       else moveState = 'jump';
     } else {
-      if (Math.abs(vx) > 10) moveState = 'run';
-      else moveState = 'idle';
+      const speed = Math.abs(vx);
+      if (speed > 10) {
+        if (phys && phys.movementState === 'walk' && walkCfg) moveState = 'walk';
+        else if (walkCfg && !runCfg) moveState = 'walk';
+        else if (walkCfg && runCfg && speed < 100) moveState = 'walk';
+        else moveState = 'run';
+      } else {
+        moveState = 'idle';
+      }
     }
   } else if (transform) {
     const dy = (typeof transform.y === 'number') ? transform.y - state.prevY : 0;
     const dx = (typeof transform.x === 'number') ? transform.x - state.prevX : 0;
     if (dy < -0.5) moveState = 'jump';
     else if (dy > 0.5) moveState = 'fall';
-    else if (Math.abs(dx) > 0.2) moveState = 'run';
-    else moveState = 'idle';
+    else if (Math.abs(dx) > 0.2) {
+      if (walkCfg && !runCfg) moveState = 'walk';
+      else moveState = 'run';
+    } else {
+      moveState = 'idle';
+    }
   } else {
     moveState = state.lastState || 'idle';
   }
@@ -2710,18 +2881,26 @@ if (moveState === 'fall') {
   if (fallCfg) selectedCfg = fallCfg;
   else if (jumpCfg) { selectedCfg = jumpCfg; resolvedState = 'jump'; }
   else if (runCfg) { selectedCfg = runCfg; resolvedState = 'run'; }
+  else if (walkCfg) { selectedCfg = walkCfg; resolvedState = 'walk'; }
   else if (idleCfg) { selectedCfg = idleCfg; resolvedState = 'idle'; }
 } else if (moveState === 'jump') {
   if (jumpCfg) selectedCfg = jumpCfg;
   else if (fallCfg) { selectedCfg = fallCfg; resolvedState = 'fall'; }
   else if (runCfg) { selectedCfg = runCfg; resolvedState = 'run'; }
+  else if (walkCfg) { selectedCfg = walkCfg; resolvedState = 'walk'; }
+  else if (idleCfg) { selectedCfg = idleCfg; resolvedState = 'idle'; }
+} else if (moveState === 'walk') {
+  if (walkCfg) selectedCfg = walkCfg;
+  else if (runCfg) { selectedCfg = runCfg; resolvedState = 'run'; }
   else if (idleCfg) { selectedCfg = idleCfg; resolvedState = 'idle'; }
 } else if (moveState === 'run') {
   if (runCfg) selectedCfg = runCfg;
+  else if (walkCfg) { selectedCfg = walkCfg; resolvedState = 'walk'; }
   else if (idleCfg) { selectedCfg = idleCfg; resolvedState = 'idle'; }
 } else {
   resolvedState = 'idle';
   if (idleCfg) selectedCfg = idleCfg;
+  else if (walkCfg) { selectedCfg = walkCfg; resolvedState = 'walk'; }
   else if (runCfg) { selectedCfg = runCfg; resolvedState = 'run'; }
 }
 
@@ -2797,6 +2976,1004 @@ outputs.isFlipped = shouldFlip;
 if (clipChanged) {
   outputs.onClipChanged = true;
 }
+
+return;`
+        }
+      }
+    },
+    {
+      type: 'platformerCombat',
+      label: 'Platformer Combat',
+      description: 'All-in-one platformer combat helper (ground combos, air attacks, frame-accurate hitbox activation, auto clip playing, facing detection, and target damage).',
+      dynamicMode: 'none',
+      defaultData: {
+        settings: {
+          headerTitle: 'Platformer Combat',
+          headerColor: '#D32F2F',
+          category: 'Helper & Tool'
+        },
+        inputs: [
+          { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'targetEntity', dataType: 'string', color: '#F48FB1', defaultValue: 'self' },
+          { id: 'triggerAttack', dataType: 'boolean', color: '#81C784', defaultValue: false },
+          { id: 'keyAttack', dataType: 'string', color: '#F48FB1', defaultValue: 'j' },
+          { id: 'targetTag', dataType: 'string', color: '#F48FB1', defaultValue: 'enemy' },
+          { id: 'facingDirection', dataType: 'string', color: '#F48FB1', defaultValue: '' },
+          { id: 'isGrounded', dataType: 'boolean', color: '#81C784', defaultValue: true },
+          { id: 'attacksConfig', dataType: 'map', color: '#FF8A65' },
+          { id: 'attackCooldown', dataType: 'number', color: '#64B5F6', defaultValue: 0 },
+          { id: 'comboBufferTime', dataType: 'number', color: '#64B5F6', defaultValue: 0.35 },
+          { id: 'autoLockMovement', dataType: 'boolean', color: '#E57373', defaultValue: true }
+        ],
+        outputs: [
+          { id: 'execOut', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'onAttackStart', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'onHitboxActive', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'onHit', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'onAttackEnd', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'isAttacking', dataType: 'boolean', color: '#81C784' },
+          { id: 'canMove', dataType: 'boolean', color: '#81C784' },
+          { id: 'isCoolingDown', dataType: 'boolean', color: '#81C784' },
+          { id: 'cooldownRemaining', dataType: 'number', color: '#64B5F6' },
+          { id: 'currentCombo', dataType: 'number', color: '#64B5F6' },
+          { id: 'currentClip', dataType: 'string', color: '#F48FB1' },
+          { id: 'hitTarget', dataType: 'string', color: '#F48FB1' },
+          { id: 'damage', dataType: 'number', color: '#64B5F6' }
+        ],
+        data: {
+          values: {
+            targetEntity: 'self',
+            triggerAttack: false,
+            keyAttack: 'j',
+            targetTag: 'enemy',
+            facingDirection: '',
+            isGrounded: true,
+            attackCooldown: 0,
+            comboBufferTime: 0.35,
+            autoLockMovement: true,
+            attacksConfig: {
+              ground: [
+                {
+                  clip: 'attack1',
+                  startFrame: 1,
+                  endFrame: 3,
+                  hitbox: { offsetX: 32, offsetY: 0, width: 40, height: 32 },
+                  damage: 10,
+                  knockbackX: 150,
+                  knockbackY: -50,
+                  forwardStep: 20
+                },
+                {
+                  clip: 'attack2',
+                  startFrame: 2,
+                  endFrame: 4,
+                  hitbox: { offsetX: 36, offsetY: 0, width: 44, height: 32 },
+                  damage: 15,
+                  knockbackX: 250,
+                  knockbackY: -80,
+                  forwardStep: 30
+                }
+              ],
+              air: [
+                {
+                  clip: 'airAttack',
+                  startFrame: 1,
+                  endFrame: 4,
+                  hitbox: { offsetX: 25, offsetY: 5, width: 44, height: 44 },
+                  damage: 12,
+                  knockbackX: 120,
+                  knockbackY: 80,
+                  forwardStep: 0
+                }
+              ]
+            }
+          },
+          code: 
+`const targetId = inputs.targetEntity || 'self';
+const target = context.assert.exists(context.entity.get(targetId));
+const animator = target.components && target.components.SpriteAnimator;
+const phys = target.components && target.components.Physics;
+const transform = target.components && target.components.Transform;
+const keyboard = context.input.keyboard;
+const dt = Number(context.dt || context.deltaTime || 0.016);
+
+if (!target._combat) {
+  target._combat = {
+    isAttacking: false,
+    currentCombo: 0,
+    comboTimer: 0,
+    cooldownTimer: 0,
+    bufferAttack: false,
+    hasTriggeredHitboxActive: false,
+    hitEntitiesThisAttack: [],
+    currentAttackDef: null,
+    activeClipId: '',
+    lastFacing: 'right'
+  };
+}
+const state = target._combat;
+
+if (state.cooldownTimer > 0) {
+  state.cooldownTimer -= dt;
+  if (state.cooldownTimer < 0) state.cooldownTimer = 0;
+}
+
+let config = inputs.attacksConfig;
+if (!config && node.data && node.data.values && node.data.values.attacksConfig) {
+  config = node.data.values.attacksConfig;
+}
+if (typeof config === 'string') {
+  try {
+    config = JSON.parse(config);
+  } catch (e) {
+    config = null;
+  }
+}
+
+const defaultAttacks = {
+  ground: [
+    {
+      clip: 'attack1',
+      startFrame: 1,
+      endFrame: 3,
+      hitbox: { offsetX: 32, offsetY: 0, width: 40, height: 32 },
+      damage: 10,
+      knockbackX: 150,
+      knockbackY: -50,
+      forwardStep: 20
+    },
+    {
+      clip: 'attack2',
+      startFrame: 2,
+      endFrame: 4,
+      hitbox: { offsetX: 36, offsetY: 0, width: 44, height: 32 },
+      damage: 15,
+      knockbackX: 250,
+      knockbackY: -80,
+      forwardStep: 30
+    }
+  ],
+  air: [
+    {
+      clip: 'airAttack',
+      startFrame: 1,
+      endFrame: 4,
+      hitbox: { offsetX: 25, offsetY: 5, width: 44, height: 44 },
+      damage: 12,
+      knockbackX: 120,
+      knockbackY: 80,
+      forwardStep: 0
+    }
+  ]
+};
+
+let groundList = defaultAttacks.ground;
+let airList = defaultAttacks.ground;
+
+if (config && typeof config === 'object') {
+  if (Array.isArray(config)) {
+    groundList = config.length > 0 ? config : defaultAttacks.ground;
+    airList = groundList;
+  } else if (config.ground || config.air) {
+    groundList = Array.isArray(config.ground) && config.ground.length > 0 ? config.ground : defaultAttacks.ground;
+    airList = Array.isArray(config.air) && config.air.length > 0 ? config.air : (groundList || defaultAttacks.air);
+  } else if (config.clip || config.colliderScriptId || config.hitbox) {
+    groundList = [config];
+    airList = [config];
+  }
+}
+
+let facing = String(inputs.facingDirection || '').trim().toLowerCase();
+if (facing !== 'left' && facing !== 'right') {
+  if (phys && (phys.facingDirection === 'left' || phys.facingDirection === 'right')) {
+    facing = phys.facingDirection;
+  } else if (transform && typeof transform.flipX === 'boolean') {
+    facing = transform.flipX ? 'left' : 'right';
+  } else {
+    facing = state.lastFacing || 'right';
+  }
+}
+state.lastFacing = facing;
+
+let isGrounded = true;
+if (typeof inputs.isGrounded === 'boolean') {
+  isGrounded = inputs.isGrounded;
+} else if (phys && typeof phys.isGrounded === 'boolean') {
+  isGrounded = Boolean(phys.isGrounded);
+}
+
+const keyAttack = String(inputs.keyAttack || '').trim().toLowerCase();
+const isAttackPressed = Boolean(keyboard && typeof keyboard.isPressed === 'function' && keyAttack && keyboard.isPressed(keyAttack));
+const isTriggerActive = Boolean(inputs.triggerAttack === true || inputs.triggerAttack === 'true');
+const isAttackTriggered = isAttackPressed || isTriggerActive;
+
+const attackCooldown = Number(inputs.attackCooldown ?? (node.data?.values?.attackCooldown || 0));
+const comboBufferTime = Number(inputs.comboBufferTime ?? 0.35);
+const autoLockMovement = inputs.autoLockMovement !== false && inputs.autoLockMovement !== 'false';
+
+function findClip(clips, clipName) {
+  if (!clips || !clipName) return null;
+  const arr = Array.isArray(clips) ? clips : Object.values(clips);
+  const targetLower = String(clipName).trim().toLowerCase();
+  return arr.find(c =>
+    c.id === clipName ||
+    c.scriptId === clipName ||
+    c.name === clipName ||
+    String(c.id || '').toLowerCase() === targetLower ||
+    String(c.scriptId || '').toLowerCase() === targetLower ||
+    String(c.name || '').toLowerCase() === targetLower
+  ) || null;
+}
+
+function triggerAttack(comboIdx) {
+  const list = isGrounded ? groundList : airList;
+  const attackDef = list[comboIdx % list.length];
+  state.isAttacking = true;
+  state.currentCombo = comboIdx;
+  state.comboTimer = comboBufferTime;
+  state.bufferAttack = false;
+  state.hasTriggeredHitboxActive = false;
+  state.hitEntitiesThisAttack = [];
+  state.currentAttackDef = attackDef;
+
+  if (animator && attackDef && attackDef.clip) {
+    const rawClips = animator.clips;
+    const clipObj = findClip(rawClips, attackDef.clip);
+    const resolvedId = clipObj ? clipObj.id : attackDef.clip;
+    animator.currentClip = resolvedId;
+    animator._activeClipId = '';
+    animator._elapsedTime = 0;
+    animator.isPlaying = true;
+    if (clipObj) clipObj.frameIndex = 0;
+    state.activeClipId = resolvedId;
+  }
+
+  if (attackDef && attackDef.forwardStep && isGrounded && transform) {
+    const step = attackDef.forwardStep * (facing === 'left' ? -1 : 1);
+    if (context.collider && typeof context.collider.moveAndSlide === 'function') {
+      context.collider.moveAndSlide(target, step, 0);
+    } else {
+      transform.x += step;
+    }
+  }
+
+  outputs.onAttackStart = true;
+}
+
+const canStartAttack = !state.isAttacking && (state.cooldownTimer <= 0);
+
+if (!state.isAttacking) {
+  if (state.comboTimer > 0) {
+    state.comboTimer -= dt;
+    if (state.comboTimer <= 0) {
+      state.currentCombo = 0;
+    }
+  }
+
+  if (canStartAttack && isAttackTriggered) {
+    const nextCombo = (state.comboTimer > 0 && isGrounded && attackCooldown <= 0) ? (state.currentCombo + 1) : 0;
+    triggerAttack(nextCombo);
+  }
+} else {
+  if (isAttackTriggered) {
+    state.bufferAttack = true;
+  }
+
+  const attackDef = state.currentAttackDef;
+  const activeClipId = animator ? (animator.currentClip || state.activeClipId) : state.activeClipId;
+  const rawClips = animator ? animator.clips : [];
+  const clipObj = findClip(rawClips, activeClipId);
+
+  const currentFrame = (clipObj && typeof clipObj.frameIndex === 'number') ? clipObj.frameIndex : 0;
+  const totalFrames = (clipObj && Array.isArray(clipObj.frames)) ? clipObj.frames.length : 1;
+  const isAnimFinished = animator ? (!animator.isPlaying || currentFrame >= totalFrames - 1) : false;
+
+  const startFrame = attackDef ? (attackDef.startFrame ?? (attackDef.hitbox && attackDef.hitbox.startFrame) ?? 1) : 1;
+  const endFrame = attackDef ? (attackDef.endFrame ?? (attackDef.hitbox && attackDef.hitbox.endFrame) ?? Math.max(startFrame, totalFrames - 1)) : 1;
+
+  const isHitboxFrame = currentFrame >= startFrame && currentFrame <= endFrame;
+  const colScriptId = attackDef?.colliderScriptId || attackDef?.colliderId;
+
+  if (isHitboxFrame) {
+    if (!state.hasTriggeredHitboxActive) {
+      outputs.onHitboxActive = true;
+      state.hasTriggeredHitboxActive = true;
+    }
+
+    if (colScriptId && context.collider?.setShapeEnabled) {
+      context.collider.setShapeEnabled(target, colScriptId, true);
+    }
+
+    const targetTag = String(inputs.targetTag || 'enemy').trim();
+    const sign = (facing === 'left') ? -1 : 1;
+    let hitCandidates = [];
+
+    if (colScriptId && context.collider && typeof context.collider.checkHitbox === 'function') {
+      const hits = context.collider.checkHitbox(target, colScriptId, targetTag, ['hurtbox', 'solid', 'trigger']) || [];
+      hitCandidates = hits.map(h => h.entity);
+    } else {
+      if (targetTag && context.entity && typeof context.entity.getAllByTag === 'function') {
+        const candidates = context.entity.getAllByTag(targetTag);
+
+        let hbW = 40, hbH = 32, hbOffX = 32, hbOffY = 0;
+        if (colScriptId && target.components?.Collider?.data) {
+          const colShape = target.components.Collider.data.find(s => s.scriptId === colScriptId || s.id === colScriptId);
+          if (colShape) {
+            hbW = Number(colShape.width || 40);
+            hbH = Number(colShape.height || 32);
+            hbOffX = Number(colShape.offsetX || 0);
+            hbOffY = Number(colShape.offsetY || 0);
+          }
+        } else {
+          const hb = (attackDef && attackDef.hitbox) ? attackDef.hitbox : { offsetX: 32, offsetY: 0, width: 40, height: 32 };
+          hbW = Number(hb.width || 40);
+          hbH = Number(hb.height || 32);
+          hbOffX = Number(hb.offsetX ?? 32);
+          hbOffY = Number(hb.offsetY ?? 0);
+        }
+
+        const hbCenterX = (transform ? transform.x : 0) + (hbOffX * sign);
+        const hbCenterY = (transform ? transform.y : 0) + hbOffY;
+        const hbMinX = hbCenterX - (hbW * 0.5);
+        const hbMaxX = hbCenterX + (hbW * 0.5);
+        const hbMinY = hbCenterY - (hbH * 0.5);
+        const hbMaxY = hbCenterY + (hbH * 0.5);
+
+        for (let i = 0; i < candidates.length; i++) {
+          const other = candidates[i];
+          if (!other || other.active === false || other.id === target.id) continue;
+          if (state.hitEntitiesThisAttack.includes(other.id)) continue;
+
+          let overlaps = false;
+          const otherCollider = other.components?.Collider;
+          if (otherCollider && Array.isArray(otherCollider.data) && otherCollider.data.length > 0) {
+            const otherT = other.components.Transform || { x: 0, y: 0, width: 32, height: 32 };
+            for (const cB of otherCollider.data) {
+              if (cB.enabled === false) continue;
+              const bW = Number(cB.width || otherT.width || 32);
+              const bH = Number(cB.height || otherT.height || 32);
+              const bX = (otherT.x || 0) + Number(cB.offsetX || 0);
+              const bY = (otherT.y || 0) + Number(cB.offsetY || 0);
+              if (hbMinX < (bX + bW * 0.5) && hbMaxX > (bX - bW * 0.5) &&
+                  hbMinY < (bY + bH * 0.5) && hbMaxY > (bY - bH * 0.5)) {
+                overlaps = true;
+                break;
+              }
+            }
+          }
+
+          if (!overlaps) {
+            const oT = other.components && (other.components.Transform || other.components.UITransform);
+            if (oT) {
+              const oW = (oT.width || 32) * Math.abs(oT.scaleX ?? 1);
+              const oH = (oT.height || 32) * Math.abs(oT.scaleY ?? 1);
+              const oPivotX = oT.pivotX ?? 0.5;
+              const oPivotY = oT.pivotY ?? 0.5;
+              const oMinX = oT.x - (oW * oPivotX);
+              const oMaxX = oMinX + oW;
+              const oMinY = oT.y - (oH * oPivotY);
+              const oMaxY = oMinY + oH;
+              overlaps = (hbMinX < oMaxX && hbMaxX > oMinX && hbMinY < oMaxY && hbMaxY > oMinY);
+            }
+          }
+
+          if (overlaps) {
+            hitCandidates.push(other);
+          }
+        }
+      }
+    }
+
+    for (let i = 0; i < hitCandidates.length; i++) {
+      const other = hitCandidates[i];
+      if (!other || state.hitEntitiesThisAttack.includes(other.id)) continue;
+      state.hitEntitiesThisAttack.push(other.id);
+      const dmg = Number(attackDef ? attackDef.damage : 10) || 10;
+      
+      if (other.components && other.components.Health) {
+        other.components.Health.current = Math.max(0, (other.components.Health.current ?? 100) - dmg);
+      } else if (typeof other.hp === 'number') {
+        other.hp = Math.max(0, other.hp - dmg);
+      }
+
+      const kbX = (attackDef?.knockbackX ?? attackDef?.knockback?.x ?? 150) * sign;
+      const kbY = Number(attackDef?.knockbackY ?? attackDef?.knockback?.y ?? -50);
+
+      other._knockback = {
+        duration: 0.25,
+        velocityX: kbX,
+        velocityY: kbY
+      };
+
+      if (other.components && other.components.Physics) {
+        other.components.Physics.velocityX = kbX;
+        other.components.Physics.velocityY = kbY;
+        other.components.Physics.isGrounded = false;
+        other.components.Physics._isIntentionalMove = true;
+      }
+
+      if (other.components && other.components.Transform) {
+        const nudgeX = (kbX > 0 ? 12 : -12);
+        other.components.Transform.x += nudgeX;
+        other.components.Transform.y -= 6;
+      }
+
+      outputs.onHit = true;
+      outputs.hitTarget = other.id || other.scriptId || '';
+      outputs.damage = dmg;
+    }
+  } else {
+    if (colScriptId && context.collider?.setShapeEnabled) {
+      context.collider.setShapeEnabled(target, colScriptId, false);
+    }
+  }
+
+  if (isAnimFinished) {
+    if (colScriptId && context.collider?.setShapeEnabled) {
+      context.collider.setShapeEnabled(target, colScriptId, false);
+    }
+    if (state.bufferAttack && isGrounded && attackCooldown <= 0) {
+      triggerAttack(state.currentCombo + 1);
+    } else {
+      state.isAttacking = false;
+      state.comboTimer = comboBufferTime;
+      if (attackCooldown > 0) {
+        state.cooldownTimer = attackCooldown;
+      }
+      outputs.onAttackEnd = true;
+    }
+  }
+}
+
+const canMove = !(autoLockMovement && state.isAttacking && isGrounded);
+
+outputs.execOut = true;
+outputs.isAttacking = state.isAttacking;
+outputs.canMove = canMove;
+outputs.isCoolingDown = state.cooldownTimer > 0;
+outputs.cooldownRemaining = Math.max(0, state.cooldownTimer || 0);
+outputs.currentCombo = state.currentCombo;
+outputs.currentClip = animator ? (animator.currentClip || state.activeClipId || '') : (state.activeClipId || '');
+if (!outputs.damage) outputs.damage = state.currentAttackDef ? (state.currentAttackDef.damage || 0) : 0;
+if (!outputs.hitTarget) outputs.hitTarget = '';
+
+return;`
+        }
+      }
+    },
+    {
+      type: 'enemyChaser',
+      label: 'Enemy Chaser',
+      description: 'Smart enemy platformer AI with patrol, player chasing, attack range detection, and movement states.',
+      dynamicMode: 'none',
+      defaultData: {
+        settings: {
+          headerTitle: 'Enemy Chaser',
+          headerColor: '#FF6F00',
+          category: 'Helper & Tool'
+        },
+        inputs: [
+          { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'targetEntity', dataType: 'string', color: '#F48FB1', defaultValue: 'self' },
+          { id: 'playerTag', dataType: 'string', color: '#F48FB1', defaultValue: 'player' },
+          { id: 'detectRadius', dataType: 'number', color: '#64B5F6', defaultValue: 250 },
+          { id: 'loseRadius', dataType: 'number', color: '#64B5F6', defaultValue: 350 },
+          { id: 'stopRadius', dataType: 'number', color: '#64B5F6', defaultValue: 45 },
+          { id: 'chaseSpeed', dataType: 'number', color: '#64B5F6', defaultValue: 160 },
+          { id: 'patrolSpeed', dataType: 'number', color: '#64B5F6', defaultValue: 70 },
+          { id: 'patrolDistance', dataType: 'number', color: '#64B5F6', defaultValue: 100 },
+          { id: 'autoFlipX', dataType: 'boolean', color: '#E57373', defaultValue: true }
+        ],
+        outputs: [
+          { id: 'execOut', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'onTargetAcquired', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'onTargetLost', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'onInAttackRange', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'isChasing', dataType: 'boolean', color: '#81C784' },
+          { id: 'inAttackRange', dataType: 'boolean', color: '#81C784' },
+          { id: 'movementState', dataType: 'string', color: '#F48FB1' },
+          { id: 'distanceToTarget', dataType: 'number', color: '#64B5F6' },
+          { id: 'facingDirection', dataType: 'string', color: '#F48FB1' },
+          { id: 'targetPlayer', dataType: 'string', color: '#F48FB1' }
+        ],
+        data: {
+          values: {
+            targetEntity: 'self',
+            playerTag: 'player',
+            detectRadius: 250,
+            loseRadius: 350,
+            stopRadius: 45,
+            chaseSpeed: 160,
+            patrolSpeed: 70,
+            patrolDistance: 100,
+            autoFlipX: true
+          },
+          code:
+`const targetId = inputs.targetEntity || 'self';
+const target = context.assert.exists(context.entity.get(targetId));
+const phys = target.components && target.components.Physics;
+const transform = target.components && target.components.Transform;
+const dt = Number(context.dt || context.deltaTime || 0.016);
+
+if (!target._ai) {
+  target._ai = {
+    spawnX: transform ? transform.x : 0,
+    patrolDir: 1,
+    isChasing: false,
+    inAttackRange: false,
+    facing: 'right',
+    targetId: null
+  };
+}
+const ai = target._ai;
+
+const isKnockedBack = Boolean(target._knockback && target._knockback.duration > 0);
+if (isKnockedBack) {
+  target._knockback.duration -= dt;
+  if (phys) phys.movementState = 'hit';
+  outputs.execOut = true;
+  outputs.movementState = 'hit';
+  return;
+}
+
+const isCombatAttacking = Boolean(target._combat && target._combat.isAttacking);
+if (isCombatAttacking) {
+  if (phys) {
+    phys.velocityX = 0;
+    phys.movementState = 'attack';
+  }
+  outputs.execOut = true;
+  outputs.isChasing = ai.isChasing;
+  outputs.inAttackRange = true;
+  outputs.movementState = 'attack';
+  outputs.facingDirection = ai.facing;
+  outputs.targetPlayer = ai.targetId || '';
+  return;
+}
+
+const playerTag = String(inputs.playerTag || 'player').trim();
+const detectRadius = Number(inputs.detectRadius ?? 250);
+const loseRadius = Number(inputs.loseRadius ?? 350);
+const stopRadius = Number(inputs.stopRadius ?? 45);
+const chaseSpeed = Number(inputs.chaseSpeed ?? 160);
+const patrolSpeed = Number(inputs.patrolSpeed ?? 70);
+const patrolDistance = Number(inputs.patrolDistance ?? 100);
+const autoFlipX = inputs.autoFlipX !== false && inputs.autoFlipX !== 'false';
+
+let closestPlayer = null;
+let minDistance = Infinity;
+let playerDeltaX = 0;
+
+let players = [];
+if (context.entity && typeof context.entity.getAllByTag === 'function') {
+  players = context.entity.getAllByTag(playerTag) || [];
+  if (players.length === 0 && playerTag.toLowerCase() !== playerTag) {
+    players = context.entity.getAllByTag(playerTag.toLowerCase()) || [];
+  }
+}
+if (players.length === 0 && context.entity && typeof context.entity.get === 'function') {
+  const byName = context.entity.get(playerTag) || context.entity.get(playerTag.toLowerCase());
+  if (byName) players = [byName];
+}
+
+const selfX = transform ? transform.x : 0;
+const selfY = transform ? transform.y : 0;
+
+for (let i = 0; i < players.length; i++) {
+  const p = players[i];
+  if (!p || p.active === false || p.id === target.id) continue;
+  const pT = p.components && (p.components.Transform || p.components.UITransform);
+  if (!pT) continue;
+  const dx = pT.x - selfX;
+  const dy = pT.y - selfY;
+  const dist = Math.sqrt(dx * dx + dy * dy);
+  if (dist < minDistance) {
+    minDistance = dist;
+    closestPlayer = p;
+    playerDeltaX = dx;
+  }
+}
+
+let wasChasing = ai.isChasing;
+let isChasing = false;
+let inAttackRange = false;
+let moveVelX = 0;
+let movementState = 'idle';
+
+if (closestPlayer) {
+  ai.targetId = closestPlayer.id || closestPlayer.scriptId;
+  const currentThreshold = wasChasing ? loseRadius : detectRadius;
+  if (minDistance <= currentThreshold) {
+    isChasing = true;
+    if (minDistance <= stopRadius) {
+      inAttackRange = true;
+      moveVelX = 0;
+      movementState = 'idle';
+      ai.facing = playerDeltaX < 0 ? 'left' : 'right';
+      outputs.onInAttackRange = true;
+    } else {
+      const dirX = playerDeltaX < 0 ? -1 : 1;
+      ai.facing = dirX < 0 ? 'left' : 'right';
+      moveVelX = dirX * chaseSpeed;
+      movementState = 'run';
+    }
+  }
+}
+
+if (!isChasing) {
+  ai.targetId = null;
+  if (patrolDistance > 0 && transform) {
+    const minX = ai.spawnX - patrolDistance;
+    const maxX = ai.spawnX + patrolDistance;
+    if (transform.x <= minX) ai.patrolDir = 1;
+    else if (transform.x >= maxX) ai.patrolDir = -1;
+    ai.facing = ai.patrolDir < 0 ? 'left' : 'right';
+    moveVelX = ai.patrolDir * patrolSpeed;
+    movementState = 'walk';
+  } else {
+    moveVelX = 0;
+    movementState = 'idle';
+  }
+}
+
+if (!wasChasing && isChasing) {
+  outputs.onTargetAcquired = true;
+} else if (wasChasing && !isChasing) {
+  outputs.onTargetLost = true;
+}
+ai.isChasing = isChasing;
+ai.inAttackRange = inAttackRange;
+
+if (phys) {
+  phys.velocityX = moveVelX;
+  phys.facingDirection = ai.facing;
+  phys.movementState = movementState;
+} else if (context.collider && typeof context.collider.moveAndSlide === 'function') {
+  context.collider.moveAndSlide(target, moveVelX * dt, 0);
+} else if (transform) {
+  transform.x += moveVelX * dt;
+}
+
+if (transform && autoFlipX) {
+  transform.flipX = (ai.facing === 'left');
+}
+
+outputs.execOut = true;
+outputs.isChasing = isChasing;
+outputs.inAttackRange = inAttackRange;
+outputs.movementState = movementState;
+outputs.distanceToTarget = isFinite(minDistance) ? minDistance : -1;
+outputs.facingDirection = ai.facing;
+outputs.targetPlayer = ai.targetId || '';
+
+return;`
+        }
+      }
+    },
+    {
+      type: 'enemyCombat',
+      label: 'Enemy Combat',
+      description: 'All-in-one enemy attack helper with cooldown, frame-accurate hitbox window, auto clip playing, damage, and player knockback.',
+      dynamicMode: 'none',
+      defaultData: {
+        settings: {
+          headerTitle: 'Enemy Combat',
+          headerColor: '#C2185B',
+          category: 'Helper & Tool'
+        },
+        inputs: [
+          { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'triggerAttack', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'targetEntity', dataType: 'string', color: '#F48FB1', defaultValue: 'self' },
+          { id: 'playerTag', dataType: 'string', color: '#F48FB1', defaultValue: 'player' },
+          { id: 'attackClip', dataType: 'string', color: '#F48FB1', defaultValue: 'attack' },
+          { id: 'attackCooldown', dataType: 'number', color: '#64B5F6', defaultValue: 1.5 },
+          { id: 'startFrame', dataType: 'number', color: '#64B5F6', defaultValue: 1 },
+          { id: 'endFrame', dataType: 'number', color: '#64B5F6', defaultValue: 3 },
+          { id: 'hitboxConfig', dataType: 'map', color: '#FF8A65' },
+          { id: 'damage', dataType: 'number', color: '#64B5F6', defaultValue: 10 },
+          { id: 'knockbackX', dataType: 'number', color: '#64B5F6', defaultValue: 180 },
+          { id: 'knockbackY', dataType: 'number', color: '#64B5F6', defaultValue: -60 },
+          { id: 'autoTriggerInRange', dataType: 'boolean', color: '#E57373', defaultValue: true },
+          { id: 'facingDirection', dataType: 'string', color: '#F48FB1', defaultValue: '' }
+        ],
+        outputs: [
+          { id: 'execOut', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'onAttackStart', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'onHitboxActive', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'onHit', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'onAttackEnd', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'isAttacking', dataType: 'boolean', color: '#81C784' },
+          { id: 'isCoolingDown', dataType: 'boolean', color: '#81C784' },
+          { id: 'cooldownRemaining', dataType: 'number', color: '#64B5F6' },
+          { id: 'currentClip', dataType: 'string', color: '#F48FB1' },
+          { id: 'damageDealt', dataType: 'number', color: '#64B5F6' },
+          { id: 'hitPlayer', dataType: 'string', color: '#F48FB1' }
+        ],
+        data: {
+          values: {
+            targetEntity: 'self',
+            playerTag: 'player',
+            attackClip: 'attack',
+            attackCooldown: 1.5,
+            startFrame: 1,
+            endFrame: 3,
+            hitboxConfig: { offsetX: 30, offsetY: 0, width: 36, height: 32 },
+            damage: 10,
+            knockbackX: 180,
+            knockbackY: -60,
+            autoTriggerInRange: true,
+            facingDirection: ''
+          },
+          code:
+`const targetId = inputs.targetEntity || 'self';
+const target = context.assert.exists(context.entity.get(targetId));
+const animator = target.components && target.components.SpriteAnimator;
+const phys = target.components && target.components.Physics;
+const transform = target.components && target.components.Transform;
+const dt = Number(context.dt || context.deltaTime || 0.016);
+
+if (!target._combat) {
+  target._combat = {
+    isAttacking: false,
+    cooldownTimer: 0,
+    hasTriggeredHitboxActive: false,
+    hitEntitiesThisAttack: [],
+    lastFacing: 'right',
+    activeClipId: ''
+  };
+}
+const state = target._combat;
+
+if (state.cooldownTimer > 0) {
+  state.cooldownTimer = Math.max(0, state.cooldownTimer - dt);
+}
+
+let facing = String(inputs.facingDirection || '').trim().toLowerCase();
+if (facing !== 'left' && facing !== 'right') {
+  if (target._ai && target._ai.facing) {
+    facing = target._ai.facing;
+  } else if (phys && (phys.facingDirection === 'left' || phys.facingDirection === 'right')) {
+    facing = phys.facingDirection;
+  } else if (transform && typeof transform.flipX === 'boolean') {
+    facing = transform.flipX ? 'left' : 'right';
+  } else {
+    facing = state.lastFacing || 'right';
+  }
+}
+state.lastFacing = facing;
+
+let hb = inputs.hitboxConfig;
+if (!hb && node.data && node.data.values && node.data.values.hitboxConfig) {
+  hb = node.data.values.hitboxConfig;
+}
+if (typeof hb === 'string') {
+  try { hb = JSON.parse(hb); } catch (e) { hb = null; }
+}
+const hitbox = (hb && typeof hb === 'object') ? hb : { offsetX: 30, offsetY: 0, width: 36, height: 32 };
+
+const attackClipName = String(inputs.attackClip || (node.data && node.data.values && node.data.values.attackClip) || 'attack').trim();
+const attackCooldown = Number(inputs.attackCooldown ?? 1.5);
+const startFrame = Number(inputs.startFrame ?? 1);
+const endFrame = Number(inputs.endFrame ?? 3);
+const damage = Number(inputs.damage ?? 10);
+const knockbackX = Number(inputs.knockbackX ?? 180);
+const knockbackY = Number(inputs.knockbackY ?? -60);
+const autoTriggerInRange = inputs.autoTriggerInRange !== false && inputs.autoTriggerInRange !== 'false';
+
+function findClip(clips, clipName) {
+  if (!clips || !clipName) return null;
+  const arr = Array.isArray(clips) ? clips : Object.values(clips);
+  const targetLower = String(clipName).trim().toLowerCase();
+  return arr.find(c =>
+    c.id === clipName ||
+    c.scriptId === clipName ||
+    c.name === clipName ||
+    String(c.id || '').toLowerCase() === targetLower ||
+    String(c.scriptId || '').toLowerCase() === targetLower ||
+    String(c.name || '').toLowerCase() === targetLower
+  ) || null;
+}
+
+function startAttack() {
+  state.isAttacking = true;
+  state.hasTriggeredHitboxActive = false;
+  state.hitEntitiesThisAttack = [];
+
+  if (animator && attackClipName) {
+    const rawClips = animator.clips;
+    const clipObj = findClip(rawClips, attackClipName);
+    const resolvedId = clipObj ? clipObj.id : attackClipName;
+    animator.currentClip = resolvedId;
+    animator._activeClipId = '';
+    animator._elapsedTime = 0;
+    animator.isPlaying = true;
+    if (clipObj) clipObj.frameIndex = 0;
+    state.activeClipId = resolvedId;
+  }
+
+  outputs.onAttackStart = true;
+}
+
+const canAttack = !state.isAttacking && state.cooldownTimer <= 0;
+const isExplicitTrigger = Boolean(inputs.triggerAttack === true);
+const isInRange = Boolean(target._ai && target._ai.inAttackRange);
+
+if (canAttack && (isExplicitTrigger || (autoTriggerInRange && isInRange))) {
+  startAttack();
+}
+
+if (state.isAttacking) {
+  const activeClipId = animator ? (animator.currentClip || state.activeClipId) : state.activeClipId;
+  const rawClips = animator ? animator.clips : [];
+  const clipObj = findClip(rawClips, activeClipId);
+
+  const currentFrame = (clipObj && typeof clipObj.frameIndex === 'number') ? clipObj.frameIndex : 0;
+  const totalFrames = (clipObj && Array.isArray(clipObj.frames)) ? clipObj.frames.length : 1;
+  const isAnimFinished = animator ? (!animator.isPlaying || currentFrame >= totalFrames - 1) : false;
+
+  const isHitboxFrame = (currentFrame >= startFrame && currentFrame <= endFrame);
+  const colScriptId = hitbox?.colliderScriptId || (node.data && node.data.values && node.data.values.colliderScriptId);
+
+  if (isHitboxFrame) {
+    if (!state.hasTriggeredHitboxActive) {
+      outputs.onHitboxActive = true;
+      state.hasTriggeredHitboxActive = true;
+    }
+
+    if (colScriptId && context.collider?.setShapeEnabled) {
+      context.collider.setShapeEnabled(target, colScriptId, true);
+    }
+
+    const playerTag = String(inputs.playerTag || 'player').trim();
+    const sign = (facing === 'left') ? -1 : 1;
+    let hitCandidates = [];
+
+    if (colScriptId && context.collider && typeof context.collider.checkHitbox === 'function') {
+      const hits = context.collider.checkHitbox(target, colScriptId, playerTag, ['hurtbox', 'solid', 'trigger']) || [];
+      hitCandidates = hits.map(h => h.entity);
+    } else {
+      let candidates = [];
+      if (context.entity && typeof context.entity.getAllByTag === 'function') {
+        candidates = context.entity.getAllByTag(playerTag) || [];
+        if (candidates.length === 0 && playerTag.toLowerCase() !== playerTag) {
+          candidates = context.entity.getAllByTag(playerTag.toLowerCase()) || [];
+        }
+      }
+      if (candidates.length === 0 && context.entity && typeof context.entity.get === 'function') {
+        const byName = context.entity.get(playerTag) || context.entity.get(playerTag.toLowerCase());
+        if (byName) candidates = [byName];
+      }
+
+      if (candidates.length > 0) {
+        let hbW = 36, hbH = 32, hbOffX = 30, hbOffY = 0;
+        if (colScriptId && target.components?.Collider?.data) {
+          const colShape = target.components.Collider.data.find(s => s.scriptId === colScriptId || s.id === colScriptId);
+          if (colShape) {
+            hbW = Number(colShape.width || 36);
+            hbH = Number(colShape.height || 32);
+            hbOffX = Number(colShape.offsetX || 0);
+            hbOffY = Number(colShape.offsetY || 0);
+          }
+        } else {
+          hbW = Number(hitbox.width || 36);
+          hbH = Number(hitbox.height || 32);
+          hbOffX = Number(hitbox.offsetX ?? 30);
+          hbOffY = Number(hitbox.offsetY ?? 0);
+        }
+
+        const hbCenterX = (transform ? transform.x : 0) + (hbOffX * sign);
+        const hbCenterY = (transform ? transform.y : 0) + hbOffY;
+        const hbMinX = hbCenterX - (hbW * 0.5);
+        const hbMaxX = hbCenterX + (hbW * 0.5);
+        const hbMinY = hbCenterY - (hbH * 0.5);
+        const hbMaxY = hbCenterY + (hbH * 0.5);
+
+        for (let i = 0; i < candidates.length; i++) {
+          const player = candidates[i];
+          if (!player || player.active === false || player.id === target.id) continue;
+          if (state.hitEntitiesThisAttack.includes(player.id)) continue;
+
+          let overlaps = false;
+          const playerCollider = player.components?.Collider;
+          if (playerCollider && Array.isArray(playerCollider.data) && playerCollider.data.length > 0) {
+            const playerT = player.components.Transform || { x: 0, y: 0, width: 32, height: 32 };
+            for (const cB of playerCollider.data) {
+              if (cB.enabled === false) continue;
+              const bW = Number(cB.width || playerT.width || 32);
+              const bH = Number(cB.height || playerT.height || 32);
+              const bX = (playerT.x || 0) + Number(cB.offsetX || 0);
+              const bY = (playerT.y || 0) + Number(cB.offsetY || 0);
+              if (hbMinX < (bX + bW * 0.5) && hbMaxX > (bX - bW * 0.5) &&
+                  hbMinY < (bY + bH * 0.5) && hbMaxY > (bY - bH * 0.5)) {
+                overlaps = true;
+                break;
+              }
+            }
+          }
+
+          if (!overlaps) {
+            const pT = player.components && (player.components.Transform || player.components.UITransform);
+            if (pT) {
+              const pW = (pT.width || 32) * Math.abs(pT.scaleX ?? 1);
+              const pH = (pT.height || 32) * Math.abs(pT.scaleY ?? 1);
+              const pPivotX = pT.pivotX ?? 0.5;
+              const pPivotY = pT.pivotY ?? 0.5;
+              const pMinX = pT.x - (pW * pPivotX);
+              const pMaxX = pMinX + pW;
+              const pMinY = pT.y - (pH * pPivotY);
+              const pMaxY = pMinY + pH;
+              overlaps = (hbMinX < pMaxX && hbMaxX > pMinX && hbMinY < pMaxY && hbMaxY > pMinY);
+            }
+          }
+
+          if (overlaps) {
+            hitCandidates.push(player);
+          }
+        }
+      }
+    }
+
+    for (let i = 0; i < hitCandidates.length; i++) {
+      const player = hitCandidates[i];
+      if (!player || state.hitEntitiesThisAttack.includes(player.id)) continue;
+      state.hitEntitiesThisAttack.push(player.id);
+
+      if (player.components && player.components.Health) {
+        player.components.Health.current = Math.max(0, (player.components.Health.current ?? 100) - damage);
+      } else if (typeof player.hp === 'number') {
+        player.hp = Math.max(0, player.hp - damage);
+      }
+
+      const kbX = knockbackX * sign;
+      const kbY = knockbackY;
+
+      player._knockback = {
+        duration: 0.25,
+        velocityX: kbX,
+        velocityY: kbY
+      };
+
+      if (player.components && player.components.Physics) {
+        player.components.Physics.velocityX = kbX;
+        player.components.Physics.velocityY = kbY;
+        player.components.Physics.isGrounded = false;
+        player.components.Physics._isIntentionalMove = true;
+      }
+
+      if (player.components && player.components.Transform) {
+        const nudgeX = (kbX > 0 ? 12 : -12);
+        player.components.Transform.x += nudgeX;
+        player.components.Transform.y -= 6;
+      }
+
+      outputs.onHit = true;
+      outputs.hitPlayer = player.id || player.scriptId || '';
+      outputs.damageDealt = damage;
+    }
+  } else {
+    if (colScriptId && context.collider?.setShapeEnabled) {
+      context.collider.setShapeEnabled(target, colScriptId, false);
+    }
+  }
+
+  if (isAnimFinished) {
+    if (colScriptId && context.collider?.setShapeEnabled) {
+      context.collider.setShapeEnabled(target, colScriptId, false);
+    }
+    state.isAttacking = false;
+    state.cooldownTimer = attackCooldown;
+    outputs.onAttackEnd = true;
+  }
+}
+
+outputs.execOut = true;
+outputs.isAttacking = state.isAttacking;
+outputs.isCoolingDown = state.cooldownTimer > 0;
+outputs.cooldownRemaining = state.cooldownTimer;
+outputs.currentClip = animator ? (animator.currentClip || state.activeClipId || '') : (state.activeClipId || '');
+if (!outputs.damageDealt) outputs.damageDealt = damage;
+if (!outputs.hitPlayer) outputs.hitPlayer = '';
 
 return;`
         }

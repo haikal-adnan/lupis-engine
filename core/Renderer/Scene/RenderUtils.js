@@ -559,12 +559,16 @@ export default class RenderUtils {
         });
     }
 
-    static processColliderDebug(comps, globalT, trans, renderQueue, solidColor, triggerColor) {
+    static processColliderDebug(comps, globalT, trans, renderQueue, solidColor, triggerColor, hitboxColor, hurtboxColor) {
         if (Config.ENGINE_MODE !== 'editor' || !comps?.Collider || !Array.isArray(comps.Collider.data)) return;
 
-        const tRotRad = trans.rotation;
+        const isFlippedX = Boolean(globalT.flipX);
+        const tRotRad = (trans.rotation || 0) * (isFlippedX ? -1 : 1);
         const cosT = Math.cos(tRotRad);
         const sinT = Math.sin(tRotRad);
+
+        const defHitboxColor = hitboxColor || [1, 0.15, 0.15, 0.85];
+        const defHurtboxColor = hurtboxColor || [0, 0.75, 1, 0.85];
 
         for (let i = 0; i < comps.Collider.data.length; i++) {
             const c = comps.Collider.data[i];
@@ -575,22 +579,28 @@ export default class RenderUtils {
 
             const cW = (c.autoFit ? globalT.width : c.width) * scaleX;
             const cH = (c.autoFit ? globalT.height : c.height) * scaleY;
-            const pX = c.pivotX ?? 0.5;
-            const pY = c.pivotY ?? 0.5;
+            let pX = c.pivotX ?? 0.5;
+            let pY = c.pivotY ?? 0.5;
 
             const localTlX = -globalT.width * scaleX * (globalT.pivotX ?? 0.5) + (c.offsetX || 0) * scaleX;
             const localTlY = -globalT.height * scaleY * (globalT.pivotY ?? 0.5) + (c.offsetY || 0) * scaleY;
 
-            const localPx = localTlX + cW * pX;
-            const localPy = localTlY + cH * pY;
+            let localPx = localTlX + cW * pX;
+            let localPy = localTlY + cH * pY;
+
+            const shouldFlipX = isFlippedX && (c.autoFlipX !== false);
+            if (shouldFlipX) {
+                localPx = -localPx;
+                pX = 1 - pX;
+            }
 
             const isLockRot = Boolean(c.lockWorldRotation);
             const worldPx = isLockRot ? (trans.x + localPx) : (trans.x + localPx * cosT - localPy * sinT);
             const worldPy = isLockRot ? (trans.y + localPy) : (trans.y + localPx * sinT + localPy * cosT);
 
-            const totalRot = isLockRot 
-                ? ((c.rotation || 0) * (Math.PI / 180)) 
-                : (c.autoFit ? tRotRad : tRotRad + ((c.rotation || 0) * (Math.PI / 180)));
+            let totalRot = isLockRot 
+                ? ((c.rotation || 0) * (Math.PI / 180) * (shouldFlipX ? -1 : 1)) 
+                : (c.autoFit ? tRotRad : tRotRad + (((c.rotation || 0) * (Math.PI / 180)) * (shouldFlipX ? -1 : 1)));
 
             const cRadius = Math.max(0, Math.min(
                 (Number(c.cornerRadius) || 0) * Math.min(scaleX, scaleY),
@@ -604,12 +614,17 @@ export default class RenderUtils {
                 pivotX: pX, pivotY: pY
             };
 
+            let strokeColor = solidColor;
+            if (c.type === 'trigger') strokeColor = triggerColor;
+            else if (c.type === 'hitbox') strokeColor = defHitboxColor;
+            else if (c.type === 'hurtbox') strokeColor = defHurtboxColor;
+
             renderQueue.push({
                 type: "shape",
                 transformData: debugTrans,
                 shapeOptions: {
                     type: "rectStroke",
-                    color: c.type === 'trigger' ? triggerColor : solidColor,
+                    color: strokeColor,
                     thickness: 2, opacity: 1.0, flipX: false, flipY: false,
                     cornerRadius: cRadius
                 }
