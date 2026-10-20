@@ -1346,6 +1346,118 @@ outputs.execOut = true;
 return;`
         }
       }
+    },
+    {
+      type: 'onAnimationFrame',
+      label: 'On Animation Frame',
+      description: 'Fires execution triggers when an animation clip enters, stays active in, or exits a specific frame range.',
+      dynamicMode: 'none',
+      defaultData: {
+        settings: {
+          headerTitle: 'On Animation Frame',
+          headerColor: '#AB47BC',
+          category: 'Animation & Tween'
+        },
+        inputs: [
+          { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'targetEntity', dataType: 'string', color: '#F48FB1', defaultValue: 'self' },
+          { id: 'clipId', dataType: 'string', color: '#F48FB1', defaultValue: '' },
+          { id: 'frameIndex', dataType: 'number', color: '#64B5F6', defaultValue: 1 },
+          { id: 'endFrame', dataType: 'number', color: '#64B5F6' }
+        ],
+        outputs: [
+          { id: 'execOut', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'onFrameEnter', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'onFrameActive', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'onFrameExit', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'currentFrame', dataType: 'number', color: '#64B5F6' },
+          { id: 'isActive', dataType: 'boolean', color: '#81C784' }
+        ],
+        data: {
+          values: {
+            targetEntity: 'self',
+            clipId: '',
+            frameIndex: 1
+          },
+          code:
+`const targetId = inputs.targetEntity || 'self';
+let entity = false;
+if (context.entity && typeof context.entity.get === 'function') {
+  entity = context.entity.get(targetId);
+}
+if (!entity && context.owner && (targetId === 'self' || targetId === '')) {
+  entity = context.owner;
+}
+if (!entity) {
+  outputs.execOut = true;
+  outputs.isActive = false;
+  outputs.currentFrame = 0;
+  return;
+}
+
+const anim = entity.components && entity.components.SpriteAnimator;
+if (!anim) {
+  outputs.execOut = true;
+  outputs.isActive = false;
+  outputs.currentFrame = 0;
+  return;
+}
+
+const rawClips = anim.clips;
+const clips = Array.isArray(rawClips) ? rawClips : (rawClips && typeof rawClips === 'object' ? Object.values(rawClips) : []);
+const currentClipId = anim.currentClip;
+let activeClip = false;
+for (let i = 0; i < clips.length; i++) {
+  const c = clips[i];
+  if (c.id === currentClipId || c.scriptId === currentClipId || c.name === currentClipId) {
+    activeClip = c;
+    break;
+  }
+}
+
+const curFrame = (activeClip && typeof activeClip.frameIndex === 'number') ? activeClip.frameIndex : 0;
+outputs.currentFrame = curFrame;
+
+let clipMatches = true;
+const targetClip = String(inputs.clipId || '').trim();
+if (targetClip) {
+  clipMatches = Boolean(
+    activeClip && (
+      activeClip.id === targetClip ||
+      activeClip.scriptId === targetClip ||
+      activeClip.name === targetClip
+    )
+  );
+}
+
+const startFrame = Number(inputs.frameIndex) || 0;
+const rawEnd = Number(inputs.endFrame);
+const endFrame = isNaN(rawEnd) ? startFrame : rawEnd;
+
+const isWithinRange = Boolean(clipMatches && curFrame >= startFrame && curFrame <= endFrame);
+outputs.isActive = isWithinRange;
+
+const stateKey = '_animFrame_' + (entity.id || targetId);
+const prevState = Boolean(context.state[stateKey]);
+context.state[stateKey] = isWithinRange;
+
+if (isWithinRange && !prevState) {
+  outputs.onFrameEnter = true;
+  if (typeof context.triggerFlow === 'function') context.triggerFlow('onFrameEnter');
+}
+if (isWithinRange) {
+  outputs.onFrameActive = true;
+  if (typeof context.triggerFlow === 'function') context.triggerFlow('onFrameActive');
+}
+if (!isWithinRange && prevState) {
+  outputs.onFrameExit = true;
+  if (typeof context.triggerFlow === 'function') context.triggerFlow('onFrameExit');
+}
+
+outputs.execOut = true;
+return;`
+        }
+      }
     }
   ]
 };

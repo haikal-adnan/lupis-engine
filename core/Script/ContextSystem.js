@@ -10,6 +10,7 @@ import { SceneContextHandler } from "./Context/SceneContextHandler.js";
 import { AssetContextHandler } from "./Context/AssetContextHandler.js";
 import { UIContextHandler } from "./Context/UIContextHandler.js";
 import { LifecycleContextHandler } from "./Context/LifecycleContextHandler.js";
+import { ToolkitContextHandler } from "../Toolkit/ToolkitContextHandler.js";
 
 export { ScriptAssertionError, getScriptContextMetadata, formatNotificationMessage };
 
@@ -38,6 +39,7 @@ export default class ContextSystem {
     this.assetHandler = new AssetContextHandler(this);
     this.uiHandler = new UIContextHandler(this);
     this.lifecycleHandler = new LifecycleContextHandler(this);
+    this.toolkitHandler = new ToolkitContextHandler(this);
   }
 
   createExecutionContext(runner, node) {
@@ -68,7 +70,7 @@ export default class ContextSystem {
 
     const contextParams = { runner, node, nodeMeta, nodeName, failAssert };
 
-    return {
+    const execContext = {
       owner: runner.owner,
       node: node,
       get dt() { return game.deltaTime; },
@@ -93,6 +95,7 @@ export default class ContextSystem {
       },
       input: this.inputHandler.createFacade(contextParams),
       ui: this.uiHandler.createFacade(contextParams),
+      toolkit: this.toolkitHandler.createFacade(contextParams),
       notify: (message, source = 'Notification', type = 'log') => this.consoleHandler.notify(contextParams, message, source, type),
       signal: this.lifecycleHandler.createSignalFacade(contextParams),
       lifecycle: this.lifecycleHandler.createLifecycleFacade(contextParams),
@@ -145,5 +148,8 @@ export default class ContextSystem {
       getVariable: (key) => runner.getVariable(key),
       hasVariable: (key) => runner.hasVariable(key)
     };
+
+    contextParams.context = execContext;
+    return execContext;
   }
 }

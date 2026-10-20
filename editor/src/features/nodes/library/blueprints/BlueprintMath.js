@@ -425,6 +425,41 @@ return;`
 return;`
         }
       }
+    },
+    {
+      type: 'snapValue',
+      label: 'Snap Value',
+      description: 'Snaps a numeric value to the nearest step increment with optional min and max limits.',
+      dynamicMode: 'none',
+      defaultData: {
+        settings: {
+          headerTitle: 'Snap Value',
+          headerColor: '#00796B',
+          category: 'Math & Random'
+        },
+        inputs: [
+          { id: 'value', dataType: 'number', color: '#64B5F6', defaultValue: 0 },
+          { id: 'step', dataType: 'number', color: '#64B5F6', defaultValue: 10 },
+          { id: 'min', dataType: 'number', color: '#64B5F6' },
+          { id: 'max', dataType: 'number', color: '#64B5F6' }
+        ],
+        outputs: [
+          { id: 'result', dataType: 'number', color: '#64B5F6' }
+        ],
+        data: {
+          values: { value: 0, step: 10 },
+          code:
+`const val = Number(inputs.value) || 0;
+const step = Math.abs(Number(inputs.step)) || 1;
+let res = Math.round(val / step) * step;
+const min = Number(inputs.min);
+const max = Number(inputs.max);
+if (!isNaN(min)) res = Math.max(min, res);
+if (!isNaN(max)) res = Math.min(max, res);
+outputs.result = Number(res.toFixed(6));
+return;`
+        }
+      }
     }
   ]
 };

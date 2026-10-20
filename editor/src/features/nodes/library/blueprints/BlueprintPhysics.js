@@ -404,5 +404,403 @@ return;`
         }
       }
     }
+,
+    {
+      type: 'applyKnockback',
+      label: 'Apply Knockback',
+      description: 'Applies impulse knockback force to an entity with deceleration friction over time.',
+      dynamicMode: 'none',
+      defaultData: {
+        settings: {
+          headerTitle: 'Apply Knockback',
+          headerColor: '#EF5350',
+          category: 'Physics & Collision'
+        },
+        inputs: [
+          { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'targetEntity', dataType: 'string', color: '#F48FB1', defaultValue: 'self' },
+          { id: 'forceX', dataType: 'number', color: '#64B5F6', defaultValue: 200 },
+          { id: 'forceY', dataType: 'number', color: '#64B5F6', defaultValue: -100 },
+          { id: 'duration', dataType: 'number', color: '#64B5F6', defaultValue: 300 },
+          { id: 'friction', dataType: 'number', color: '#64B5F6', defaultValue: 0.9 }
+        ],
+        outputs: [
+          { id: 'execOut', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'onFinished', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'isKnocked', dataType: 'boolean', color: '#81C784' }
+        ],
+        data: {
+          values: {
+            targetEntity: 'self',
+            forceX: 200,
+            forceY: -100,
+            duration: 300,
+            friction: 0.9
+          },
+          code:
+`const targetId = inputs.targetEntity || 'self';
+const entity = context.assert.exists(context.entity.get(targetId));
+const phys = entity.components && entity.components.Physics;
+
+const forceX = Number(inputs.forceX) || 0;
+const forceY = Number(inputs.forceY) || 0;
+const rawDuration = Number(inputs.duration);
+const duration = isNaN(rawDuration) ? 300 : Math.max(0, rawDuration);
+const friction = Number(inputs.friction) || 0.9;
+
+if (phys) {
+  phys.velocityX = forceX;
+  phys.velocityY = forceY;
+  phys._knockbackActive = true;
+}
+
+outputs.isKnocked = true;
+outputs.execOut = true;
+
+if (duration <= 0) {
+  outputs.isKnocked = false;
+  outputs.onFinished = true;
+  if (typeof context.triggerFlow === 'function') context.triggerFlow('onFinished');
+  return;
+}
+
+context.state.knockbackRemaining = duration;
+context.state.knockbackVx = forceX;
+context.state.knockbackVy = forceY;
+context.state.isKnocked = true;
+
+if (typeof context.onTick === 'function') {
+  context.onTick((dt) => {
+    if (!context.state.isKnocked) return;
+    const deltaSec = typeof dt === 'number' ? dt : Number(context.dt || 0.016);
+    const deltaMs = deltaSec * 1000;
+    context.state.knockbackRemaining -= deltaMs;
+    context.state.knockbackVx *= friction;
+    context.state.knockbackVy *= friction;
+
+    if (phys) {
+      phys.velocityX = context.state.knockbackVx;
+      phys.velocityY = context.state.knockbackVy;
+    }
+
+    if (context.state.knockbackRemaining <= 0) {
+      context.state.isKnocked = false;
+      if (phys) {
+        phys._knockbackActive = false;
+      }
+      outputs.isKnocked = false;
+      outputs.onFinished = true;
+      if (typeof context.triggerFlow === 'function') context.triggerFlow('onFinished');
+    }
+  });
+}
+return;`
+        }
+      }
+    },
+    {
+      type: 'raycast2D',
+      label: 'Raycast 2D',
+      description: 'Projects a 2D ray in a direction to detect obstacles, colliders, or entities with line of sight.',
+      dynamicMode: 'none',
+      defaultData: {
+        settings: {
+          headerTitle: 'Raycast 2D',
+          headerColor: '#26A69A',
+          category: 'Physics & Collision'
+        },
+        inputs: [
+          { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'sourceEntity', dataType: 'string', color: '#F48FB1', defaultValue: 'self' },
+          { id: 'useEntityOrigin', dataType: 'boolean', color: '#E57373', defaultValue: true },
+          { id: 'originX', dataType: 'number', color: '#64B5F6', defaultValue: 0 },
+          { id: 'originY', dataType: 'number', color: '#64B5F6', defaultValue: 0 },
+          { id: 'dirX', dataType: 'number', color: '#64B5F6', defaultValue: 1 },
+          { id: 'dirY', dataType: 'number', color: '#64B5F6', defaultValue: 0 },
+          { id: 'distance', dataType: 'number', color: '#64B5F6', defaultValue: 100 },
+          { id: 'stepSize', dataType: 'number', color: '#64B5F6', defaultValue: 8 },
+          { id: 'targetTag', dataType: 'string', color: '#F48FB1', defaultValue: '' }
+        ],
+        outputs: [
+          { id: 'execOut', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'onHit', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'onMiss', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'hasHit', dataType: 'boolean', color: '#81C784' },
+          { id: 'hitX', dataType: 'number', color: '#64B5F6' },
+          { id: 'hitY', dataType: 'number', color: '#64B5F6' },
+          { id: 'hitDistance', dataType: 'number', color: '#64B5F6' },
+          { id: 'hitEntity', dataType: 'string', color: '#F48FB1' }
+        ],
+        data: {
+          values: {
+            sourceEntity: 'self',
+            useEntityOrigin: true,
+            originX: 0,
+            originY: 0,
+            dirX: 1,
+            dirY: 0,
+            distance: 100,
+            stepSize: 8,
+            targetTag: ''
+          },
+          code:
+`const srcId = inputs.sourceEntity || 'self';
+const source = (context.entity && typeof context.entity.get === 'function') ? context.entity.get(srcId) : false;
+let startX = Number(inputs.originX) || 0;
+let startY = Number(inputs.originY) || 0;
+
+if (inputs.useEntityOrigin && source) {
+  const tr = source.components && (source.components.Transform || source.components.UITransform);
+  if (tr) {
+    startX += (typeof tr.x === 'number' ? tr.x : 0);
+    startY += (typeof tr.y === 'number' ? tr.y : 0);
+  }
+}
+
+const rawDx = Number(inputs.dirX) || 0;
+const rawDy = Number(inputs.dirY) || 0;
+const len = Math.sqrt(rawDx * rawDx + rawDy * rawDy) || 1;
+const ndx = rawDx / len;
+const ndy = rawDy / len;
+
+const maxDist = Math.max(0, Number(inputs.distance) || 100);
+const step = Math.max(1, Number(inputs.stepSize) || 8);
+const filterTag = String(inputs.targetTag || '').trim();
+
+let candidates = [];
+if (context.game && context.game.world && Array.isArray(context.game.world.entities)) {
+  candidates = context.game.world.entities;
+} else if (context.entity && typeof context.entity.getAllByTag === 'function' && filterTag) {
+  candidates = context.entity.getAllByTag(filterTag);
+}
+
+let hitFound = false;
+let hitDist = maxDist;
+let hitPx = startX + ndx * maxDist;
+let hitPy = startY + ndy * maxDist;
+let hitTarget = '';
+
+for (let d = 0; d <= maxDist; d += step) {
+  const px = startX + ndx * d;
+  const py = startY + ndy * d;
+
+  for (let i = 0; i < candidates.length; i++) {
+    const other = candidates[i];
+    if (other.active === false) continue;
+    if (source && (other === source || (source.id && other.id === source.id))) continue;
+    if (filterTag) {
+      const oTag = other.tag || (other.components && other.components.Tags && other.components.Tags.value);
+      if (oTag !== filterTag) continue;
+    }
+
+    const t = other.components && (other.components.Transform || other.components.UITransform);
+    if (!t) continue;
+
+    const shapes = other.components && other.components.Collider && Array.isArray(other.components.Collider.data) ? other.components.Collider.data : false;
+    let inside = false;
+
+    if (shapes && shapes.length > 0) {
+      for (let s = 0; s < shapes.length; s++) {
+        const shape = shapes[s];
+        if (!shape.enabled) continue;
+        const bw = shape.width || t.width || 32;
+        const bh = shape.height || t.height || 32;
+        const bx = (t.x || 0) + (shape.offsetX || 0) - bw * 0.5;
+        const by = (t.y || 0) + (shape.offsetY || 0) - bh * 0.5;
+        if (px >= bx && px <= bx + bw && py >= by && py <= by + bh) {
+          inside = true;
+          break;
+        }
+      }
+    } else {
+      const bw = t.width || 32;
+      const bh = t.height || 32;
+      const bx = (t.x || 0) - bw * 0.5;
+      const by = (t.y || 0) - bh * 0.5;
+      if (px >= bx && px <= bx + bw && py >= by && py <= by + bh) {
+        inside = true;
+      }
+    }
+
+    if (inside) {
+      hitFound = true;
+      hitDist = d;
+      hitPx = px;
+      hitPy = py;
+      hitTarget = other.id || other.scriptId || '';
+      break;
+    }
+  }
+
+  if (hitFound) break;
+}
+
+outputs.hasHit = hitFound;
+outputs.hitX = Number(hitPx.toFixed(2));
+outputs.hitY = Number(hitPy.toFixed(2));
+outputs.hitDistance = Number(hitDist.toFixed(2));
+outputs.hitEntity = hitTarget;
+
+if (hitFound) {
+  outputs.onHit = true;
+  if (typeof context.triggerFlow === 'function') context.triggerFlow('onHit');
+} else {
+  outputs.onMiss = true;
+  if (typeof context.triggerFlow === 'function') context.triggerFlow('onMiss');
+}
+
+outputs.execOut = true;
+return;`
+        }
+      }
+    },
+    {
+      type: 'manageCollider',
+      label: 'Manage Collider',
+      description: 'Dynamically modify, add, remove, or toggle entity colliders and shapes.',
+      dynamicMode: 'none',
+      defaultData: {
+        settings: {
+          headerTitle: 'Manage Collider',
+          headerColor: '#689F38',
+          category: 'Physics & Collision'
+        },
+        inputs: [
+          { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'targetEntity', dataType: 'string', color: '#F48FB1', defaultValue: 'self' },
+          { id: 'operation', dataType: 'string', color: '#F48FB1', defaultValue: 'modify' },
+          { id: 'shapeId', dataType: 'string', color: '#F48FB1', defaultValue: 'default' },
+          { id: 'shapeType', dataType: 'string', color: '#F48FB1', defaultValue: 'box' },
+          { id: 'offsetX', dataType: 'number', color: '#64B5F6', defaultValue: 0 },
+          { id: 'offsetY', dataType: 'number', color: '#64B5F6', defaultValue: 0 },
+          { id: 'width', dataType: 'number', color: '#64B5F6', defaultValue: 32 },
+          { id: 'height', dataType: 'number', color: '#64B5F6', defaultValue: 32 },
+          { id: 'isTrigger', dataType: 'boolean', color: '#E57373', defaultValue: false },
+          { id: 'enabled', dataType: 'boolean', color: '#E57373', defaultValue: true }
+        ],
+        outputs: [
+          { id: 'execOut', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'success', dataType: 'boolean', color: '#81C784' },
+          { id: 'shapeCount', dataType: 'number', color: '#64B5F6' }
+        ],
+        data: {
+          values: {
+            targetEntity: 'self',
+            operation: 'modify',
+            shapeId: 'default',
+            shapeType: 'box',
+            offsetX: 0,
+            offsetY: 0,
+            width: 32,
+            height: 32,
+            isTrigger: false,
+            enabled: true
+          },
+          options: {
+            operation: [
+              { label: 'Modify Shape', value: 'modify' },
+              { label: 'Add Shape', value: 'add' },
+              { label: 'Remove Shape', value: 'remove' },
+              { label: 'Toggle Collider', value: 'toggle' }
+            ],
+            shapeType: [
+              { label: 'Box / Rectangle', value: 'box' },
+              { label: 'Circle', value: 'circle' }
+            ]
+          },
+          code:
+`const targetId = inputs.targetEntity || 'self';
+const entity = context.assert.exists(context.entity.get(targetId));
+
+if (!entity.components) {
+  entity.components = {};
+}
+if (!entity.components.Collider) {
+  entity.components.Collider = { enabled: true, data: [] };
+}
+if (!Array.isArray(entity.components.Collider.data)) {
+  entity.components.Collider.data = [];
+}
+
+const colComp = entity.components.Collider;
+const op = String(inputs.operation || 'modify').toLowerCase();
+const rawShapeId = inputs.shapeId;
+const sId = typeof rawShapeId === 'string' ? rawShapeId.trim() : '';
+let success = false;
+
+if (op === 'add') {
+  const newShape = {
+    id: sId || ('shape_' + Date.now()),
+    scriptId: sId || 'shape',
+    type: inputs.shapeType || 'box',
+    offsetX: Number(inputs.offsetX) || 0,
+    offsetY: Number(inputs.offsetY) || 0,
+    width: Number(inputs.width) || 32,
+    height: Number(inputs.height) || 32,
+    radius: (Number(inputs.width) || 32) / 2,
+    isTrigger: Boolean(inputs.isTrigger),
+    enabled: typeof inputs.enabled === 'boolean' ? inputs.enabled : true,
+    autoFit: false
+  };
+  colComp.data.push(newShape);
+  success = true;
+} else if (op === 'remove') {
+  const prevCount = colComp.data.length;
+  if (sId) {
+    colComp.data = colComp.data.filter(s => s.id !== sId && s.scriptId !== sId);
+  } else {
+    colComp.data.pop();
+  }
+  success = colComp.data.length < prevCount;
+} else if (op === 'modify') {
+  let targetShape = false;
+  if (sId) {
+    for (let i = 0; i < colComp.data.length; i++) {
+      if (colComp.data[i].id === sId || colComp.data[i].scriptId === sId) {
+        targetShape = colComp.data[i];
+        break;
+      }
+    }
+  }
+  if (!targetShape && colComp.data.length > 0) {
+    targetShape = colComp.data[0];
+  }
+  if (targetShape) {
+    if (typeof inputs.width === 'number' && !isNaN(inputs.width)) targetShape.width = inputs.width;
+    if (typeof inputs.height === 'number' && !isNaN(inputs.height)) targetShape.height = inputs.height;
+    if (typeof inputs.offsetX === 'number' && !isNaN(inputs.offsetX)) targetShape.offsetX = inputs.offsetX;
+    if (typeof inputs.offsetY === 'number' && !isNaN(inputs.offsetY)) targetShape.offsetY = inputs.offsetY;
+    if (inputs.shapeType) targetShape.type = inputs.shapeType;
+    if (typeof inputs.isTrigger === 'boolean') targetShape.isTrigger = inputs.isTrigger;
+    if (typeof inputs.enabled === 'boolean') targetShape.enabled = inputs.enabled;
+    targetShape.radius = (targetShape.width || 32) / 2;
+    success = true;
+  }
+} else if (op === 'toggle') {
+  if (sId) {
+    let s = false;
+    for (let i = 0; i < colComp.data.length; i++) {
+      if (colComp.data[i].id === sId || colComp.data[i].scriptId === sId) {
+        s = colComp.data[i];
+        break;
+      }
+    }
+    if (s) {
+      s.enabled = !s.enabled;
+      success = true;
+    }
+  } else {
+    colComp.enabled = !colComp.enabled;
+    success = true;
+  }
+}
+
+outputs.success = success;
+outputs.shapeCount = colComp.data.length;
+outputs.execOut = true;
+return;`
+        }
+      }
+    }
   ]
 };

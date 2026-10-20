@@ -501,10 +501,10 @@ return;`
         }
       }
     },
-{
+    {
       type: 'logicTypewriter',
       label: 'Typewriter Effect',
-      description: 'Animates text character by character.',
+      description: 'Animates text character by character with skip support and character pulse triggers.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -514,51 +514,98 @@ return;`
         },
         inputs: [
           { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'skip', dataType: 'execution', color: '#FFFFFF' },
           { id: 'targetEntity', dataType: 'string', color: '#F48FB1', defaultValue: 'self' },
           { id: 'text', dataType: 'string', color: '#F48FB1', defaultValue: '' },
           { id: 'speed', dataType: 'number', color: '#64B5F6', defaultValue: 50 }
         ],
         outputs: [
           { id: 'execOut', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'onChar', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'onComplete', dataType: 'execution', color: '#FFFFFF' },
           { id: 'isTyping', dataType: 'boolean', color: '#E57373' },
-          { id: 'onComplete', dataType: 'execution', color: '#FFFFFF' }
+          { id: 'currentText', dataType: 'string', color: '#F48FB1' }
         ],
         data: {
           values: { speed: 50, targetEntity: 'self', text: '' },
-          code: 
-`const entity = context.assert.exists(context.entity.get(inputs.targetEntity), 'Target entity must exist');
-const comp = context.assert.hasComponent(entity, 'TextRenderer');
+          code:
+`const targetId = inputs.targetEntity || 'self';
+let comp = false;
+if (context.entity && typeof context.entity.get === 'function') {
+  const entity = context.entity.get(targetId);
+  if (entity && entity.components && entity.components.TextRenderer) {
+    comp = entity.components.TextRenderer;
+  }
+}
 
 const speed = Math.max(1, Number(inputs.speed) || 50);
-const inputText = inputs.text;
+const rawInput = inputs.text;
+const isSkip = Boolean(context.currentInputPort === 'skip' || inputs.skip);
+
+if (isSkip && context.state.isTyping) {
+  context.state.typewriterIndex = context.state.cachedTarget.length;
+  context.state.isTyping = false;
+  const fullText = context.state.cachedTarget;
+  if (comp) comp.value = fullText;
+  outputs.currentText = fullText;
+  outputs.isTyping = false;
+  outputs.onComplete = true;
+  if (typeof context.triggerFlow === 'function') context.triggerFlow('onComplete');
+  outputs.execOut = true;
+  return;
+}
 
 if (!context.state.isTyping) {
   context.state.isTyping = true;
-  context.state.cachedTarget = inputText !== '' ? inputText : comp.value;
+  context.state.cachedTarget = typeof rawInput === 'string' && rawInput.length > 0 ? rawInput : (comp && comp.value ? comp.value : '');
   context.state.typewriterIndex = 0;
   context.state.typewriterTimer = 0;
-  comp.value = '';
+  if (comp) comp.value = '';
 }
 
-const dt = context.dt * 1000;
-context.state.typewriterTimer += dt;
-
-while (context.state.typewriterTimer >= speed && context.state.typewriterIndex < context.state.cachedTarget.length) {
-  context.state.typewriterTimer -= speed;
-  context.state.typewriterIndex++;
+function advanceStep(deltaMs) {
+  context.state.typewriterTimer += deltaMs;
+  let advanced = false;
+  while (context.state.typewriterTimer >= speed && context.state.typewriterIndex < context.state.cachedTarget.length) {
+    context.state.typewriterTimer -= speed;
+    context.state.typewriterIndex++;
+    advanced = true;
+  }
+  const cur = context.state.cachedTarget.slice(0, context.state.typewriterIndex);
+  if (comp) comp.value = cur;
+  outputs.currentText = cur;
+  if (advanced) {
+    outputs.onChar = true;
+    if (typeof context.triggerFlow === 'function') context.triggerFlow('onChar');
+  }
+  if (context.state.typewriterIndex >= context.state.cachedTarget.length) {
+    context.state.isTyping = false;
+    context.state.typewriterTimer = 0;
+    outputs.isTyping = false;
+    outputs.onComplete = true;
+    if (typeof context.triggerFlow === 'function') context.triggerFlow('onComplete');
+  } else {
+    outputs.isTyping = true;
+    outputs.execOut = true;
+  }
 }
 
-comp.value = context.state.cachedTarget.slice(0, context.state.typewriterIndex);
-
-if (context.state.typewriterIndex >= context.state.cachedTarget.length) {
-  context.state.isTyping = false;
-  context.state.typewriterTimer = 0;
-  outputs.isTyping = false;
-  outputs.onComplete = true;
+if (typeof context.onTick === 'function') {
+  if (!context.state._boundTick) {
+    context.state._boundTick = true;
+    context.onTick((tickDt) => {
+      if (!context.state.isTyping) return;
+      const dMs = (typeof tickDt === 'number' ? tickDt : Number(context.dt || 0.016)) * 1000;
+      advanceStep(dMs);
+    });
+  }
 } else {
-  outputs.isTyping = true;
-  outputs.execOut = true;
+  const dMs = Number(context.dt || context.deltaTime || 0.016) * 1000;
+  advanceStep(dMs);
 }
+
+outputs.currentText = context.state.cachedTarget.slice(0, context.state.typewriterIndex);
+outputs.isTyping = context.state.isTyping;
 return;`
         }
       }

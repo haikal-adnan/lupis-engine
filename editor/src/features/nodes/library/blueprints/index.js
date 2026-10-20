@@ -9,6 +9,10 @@ import { BlueprintMath } from './BlueprintMath.js';
 import { BlueprintLifecycle } from './BlueprintLifecycle.js';
 import { BlueprintSystem } from './BlueprintSystem.js';
 import { BlueprintHelperTool } from './BlueprintHelperTool.js';
+import { BlueprintUI } from './BlueprintUI.js';
+import { BlueprintDialogue } from './BlueprintDialogue.js';
+import { BlueprintPlatformer } from './BlueprintPlatformer.js';
+import { BlueprintAI } from './BlueprintAI.js';
 
 export { BlueprintCategoryTemplate } from './Blueprint.js';
 
@@ -24,6 +28,10 @@ export {
   BlueprintLifecycle,
   BlueprintSystem,
   BlueprintHelperTool,
+  BlueprintUI,
+  BlueprintDialogue,
+  BlueprintPlatformer,
+  BlueprintAI,
   // Backward compatibility re-export aliases
   BlueprintFlow as BlueprintBoolean,
   BlueprintFlow as BlueprintComparison,

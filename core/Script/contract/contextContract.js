@@ -13,7 +13,8 @@ export const CONTEXT_NAMESPACES = Object.freeze([
   'state',
   'console',
   'assert',
-  'audio'
+  'audio',
+  'toolkit'
 ]);
 
 export const CONTEXT_ASSERT_METHODS = Object.freeze([
@@ -63,4 +64,3 @@ export const CONTEXT_ROOT_PROPERTIES = Object.freeze([
   'deltaTime',
   'state'
 ]);
-
