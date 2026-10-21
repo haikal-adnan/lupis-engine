@@ -13,7 +13,10 @@ export const prefabSchema = (data = {}) => {
   entityData.prefabId = null; 
   entityData.parentId = null; 
   entityData.overridden = false;
-  entityData.scriptId = finalScriptId;
+  const originalEntityScriptId = data.data && (data.data.scriptId || data.data.name);
+  entityData.scriptId = originalEntityScriptId 
+    ? sanitizeScriptId(originalEntityScriptId, finalScriptId) 
+    : finalScriptId;
   entityData.type = finalType;
 
   if (entityData.components) {
@@ -25,7 +28,10 @@ export const prefabSchema = (data = {}) => {
   }
 
   const childrenData = (data.children || []).map(child => {
-    const c = entitySchema({ ...child, id: child.id, parentId: child.parentId });
+    const rawChildScriptId = child.scriptId && child.scriptId !== 'undefined' 
+      ? child.scriptId 
+      : (child.name || child.type || 'child');
+    const c = entitySchema({ ...child, scriptId: rawChildScriptId, id: child.id, parentId: child.parentId });
     
     c.overridden = false;
     if (c.components) {

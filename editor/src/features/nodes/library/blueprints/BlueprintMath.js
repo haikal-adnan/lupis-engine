@@ -27,7 +27,9 @@ export const BlueprintMath = {
         data: {
           values: { v0: 0, v1: 0 },
           code: 
-`const numbers = Object.values(inputs);
+`const v0 = inputs.v0;
+const v1 = inputs.v1;
+const numbers = Object.values(inputs);
 const sum = numbers.reduce((acc, curr) => acc + curr, 0);
 outputs.result = sum;
 return;`
@@ -55,7 +57,9 @@ return;`
         data: {
           values: { v0: 0, v1: 0 },
           code: 
-`const numbers = Object.values(inputs);
+`const v0 = inputs.v0;
+const v1 = inputs.v1;
+const numbers = Object.values(inputs);
 const diff = numbers.reduce((acc, curr, idx) => idx === 0 ? curr : acc - curr, 0);
 outputs.result = diff;
 return;`
@@ -83,7 +87,9 @@ return;`
         data: {
           values: { v0: 1, v1: 1 },
           code: 
-`const numbers = Object.values(inputs);
+`const v0 = inputs.v0;
+const v1 = inputs.v1;
+const numbers = Object.values(inputs);
 const product = numbers.reduce((acc, curr) => acc * curr, 1);
 outputs.result = product;
 return;`
@@ -111,7 +117,9 @@ return;`
         data: {
           values: { v0: 0, v1: 1 },
           code: 
-`const numbers = Object.values(inputs);
+`const v0 = inputs.v0;
+const v1 = inputs.v1;
+const numbers = Object.values(inputs);
 const quotient = numbers.reduce((acc, curr, idx) => {
   if (idx === 0) return curr;
   return curr !== 0 ? acc / curr : 0;

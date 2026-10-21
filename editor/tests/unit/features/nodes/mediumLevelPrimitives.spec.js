@@ -31,6 +31,12 @@ describe('Medium & Low Level Blueprint Primitives Specification', () => {
           return entity.components[compName];
         }
       },
+      entity: {
+        get: vi.fn((id) => (mockContextExt.game?.world?.entities || []).find(e => e.id === id || e.scriptId === id)),
+        getAll: () => (mockContextExt.game?.world?.entities || []),
+        getAllByTag: (t) => (mockContextExt.game?.world?.entities || []).filter(e => (e.tag === t || (e.components?.Tags?.value === t))),
+        ...(mockContextExt.entity || {})
+      },
       ...mockContextExt
     };
 

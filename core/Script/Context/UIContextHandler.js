@@ -159,7 +159,14 @@ export class UIContextHandler {
     return (px >= left - padX && px <= right + padX && py >= top - padY && py <= bottom + padY);
   }
 
-  processVolumeSliders(state, configInput, inputs, outputs, context) {
+  processVolumeSliders(stateOrParams, configOrCtx, inputsMaybe, outputsMaybe, contextMaybe) {
+    const isDirect = (arguments.length <= 2 && typeof stateOrParams === 'object' && !inputsMaybe);
+    const inputs = isDirect ? stateOrParams : (inputsMaybe || {});
+    const context = isDirect ? configOrCtx : contextMaybe;
+    const state = isDirect ? (context && context.state ? context.state : {}) : (stateOrParams || {});
+    const configInput = isDirect ? (inputs && inputs.config ? inputs.config : false) : configOrCtx;
+    const outputs = (!isDirect && outputsMaybe) ? outputsMaybe : {};
+
     const updateSliderVisual = (s, v) => this.updateSliderVisual(s, v, context);
     const isPointerOverSlider = (s, px, py) => this.isPointerOverSlider(s, px, py, context);
 
@@ -472,9 +479,26 @@ export class UIContextHandler {
     }
 
     outputs.execOut = true;
+    const result = {
+      execOut: true,
+      onChanged: Boolean(outputs.onChanged),
+      changedChannel: outputs.changedChannel || '',
+      currentVolume: typeof outputs.currentVolume === 'number' ? outputs.currentVolume : 0,
+      masterVolume: typeof outputs.masterVolume === 'number' ? outputs.masterVolume : 100,
+      vocalVolume: typeof outputs.vocalVolume === 'number' ? outputs.vocalVolume : 100,
+      sfxVolume: typeof outputs.sfxVolume === 'number' ? outputs.sfxVolume : 100,
+      backgroundVolume: typeof outputs.backgroundVolume === 'number' ? outputs.backgroundVolume : 100
+    };
+    Object.assign(outputs, result);
+    return result;
   }
 
-  processAtomicSlider(state, inputs, outputs, context) {
+  processAtomicSlider(stateOrParams, inputsOrContext, outputsMaybe, contextMaybe) {
+    const isDirect = (arguments.length <= 2 && typeof stateOrParams === 'object' && !outputsMaybe && !contextMaybe);
+    const inputs = isDirect ? stateOrParams : (inputsOrContext || {});
+    const context = isDirect ? inputsOrContext : contextMaybe;
+    const state = isDirect ? (context && context.state ? context.state : {}) : (stateOrParams || {});
+    const outputs = (!isDirect && outputsMaybe) ? outputsMaybe : {};
     const barName = typeof inputs.barEntity === 'string' ? inputs.barEntity.trim() : '';
     const handlerName = typeof inputs.handlerEntity === 'string' ? inputs.handlerEntity.trim() : '';
 
@@ -734,9 +758,23 @@ export class UIContextHandler {
     outputs.value = state.value;
     outputs.normalized = Number(norm.toFixed(4));
     outputs.execOut = true;
+    const result = {
+      execOut: true,
+      value: outputs.value,
+      normalized: outputs.normalized,
+      onChanged: Boolean(outputs.onChanged)
+    };
+    Object.assign(outputs, result);
+    return result;
   }
 
-  processSwitchButton(state, inputs, outputs, isImage, context) {
+  processSwitchButton(stateOrParams, inputsOrContext, outputsMaybe, isImageMaybe, contextMaybe) {
+    const isDirect = (arguments.length <= 3 && typeof stateOrParams === 'object' && !contextMaybe);
+    const inputs = isDirect ? stateOrParams : (inputsOrContext || {});
+    const isImage = isDirect ? Boolean(outputsMaybe) : Boolean(isImageMaybe);
+    const context = isDirect ? inputsOrContext : contextMaybe;
+    const state = isDirect ? (context && context.state ? context.state : {}) : (stateOrParams || {});
+    const outputs = (!isDirect && outputsMaybe) ? outputsMaybe : {};
     const knobName = typeof inputs.knobEntity === 'string' ? inputs.knobEntity.trim() : '';
     const trackName = typeof inputs.trackEntity === 'string' ? inputs.trackEntity.trim() : '';
     const onTextName = typeof inputs.onTextEntity === 'string' ? inputs.onTextEntity.trim() : (typeof inputs.textEntity === 'string' ? inputs.textEntity.trim() : '');
@@ -1083,6 +1121,657 @@ export class UIContextHandler {
 
     outputs.isOn = state.isOn;
     outputs.execOut = true;
+    const result = {
+      execOut: true,
+      isOn: outputs.isOn,
+      onOn: Boolean(outputs.onOn),
+      onOff: Boolean(outputs.onOff)
+    };
+    Object.assign(outputs, result);
+    return result;
+  }
+
+  processGridSpawner(stateOrParams, inputsOrContext, outputsMaybe, contextMaybe) {
+    const isDirect = (arguments.length <= 2 && typeof stateOrParams === 'object' && !outputsMaybe && !contextMaybe);
+    const inputs = isDirect ? stateOrParams : (inputsOrContext || {});
+    const context = isDirect ? inputsOrContext : contextMaybe;
+    const outputs = (!isDirect && outputsMaybe) ? outputsMaybe : {};
+
+    const prefabName = typeof inputs.prefabName === 'string' ? inputs.prefabName.trim() : '';
+    const rawTotal = typeof inputs.totalCount === 'number' ? inputs.totalCount : Number(inputs.totalCount);
+    const totalCount = (!isNaN(rawTotal) && rawTotal >= 0) ? Math.floor(rawTotal) : 0;
+    const rawCols = typeof inputs.columns === 'number' ? inputs.columns : Number(inputs.columns);
+    const columns = (!isNaN(rawCols) && rawCols > 0) ? Math.floor(rawCols) : 5;
+    const spacingX = typeof inputs.spacingX === 'number' ? inputs.spacingX : (Number(inputs.spacingX) || 0);
+    const spacingY = typeof inputs.spacingY === 'number' ? inputs.spacingY : (Number(inputs.spacingY) || 0);
+    const startX = typeof inputs.startX === 'number' ? inputs.startX : (Number(inputs.startX) || 0);
+    const startY = typeof inputs.startY === 'number' ? inputs.startY : (Number(inputs.startY) || 0);
+    const parentEntityName = typeof inputs.parentEntity === 'string' ? inputs.parentEntity.trim() : '';
+    const layerId = typeof inputs.layerId === 'string' ? inputs.layerId.trim() : '';
+    const dataList = Array.isArray(inputs.dataList) ? inputs.dataList : [];
+
+    let parentEnt = null;
+    if (parentEntityName && context && context.entity && typeof context.entity.get === 'function') {
+      parentEnt = context.entity.get(parentEntityName);
+    }
+
+    const spawnedEntities = [];
+    let lastSpawnedId = '';
+    let lastIndex = 0;
+    let lastRow = 0;
+    let lastCol = 0;
+    let lastData = null;
+
+    if (!prefabName) {
+      if (context && context.console && typeof context.console.warn === 'function') {
+        context.console.warn('[UIGridSpawner] Prefab name is empty.');
+      }
+      const emptyResult = {
+        execOut: true,
+        onSpawnItem: false,
+        spawnedEntity: '',
+        itemIndex: 0,
+        rowIndex: 0,
+        colIndex: 0,
+        itemData: null,
+        spawnedEntities: []
+      };
+      Object.assign(outputs, emptyResult);
+      return emptyResult;
+    }
+
+    for (let i = 0; i < totalCount; i++) {
+      const col = i % columns;
+      const row = Math.floor(i / columns);
+
+      const posX = startX + (col * spacingX);
+      const posY = startY + (row * spacingY);
+
+      const itemData = i < dataList.length ? dataList[i] : null;
+
+      let spawned = null;
+      if (context && context.prefab && typeof context.prefab.spawn === 'function') {
+        spawned = context.prefab.spawn(prefabName, posX, posY, layerId);
+      }
+
+      if (spawned) {
+        if (parentEnt) {
+          if (typeof parentEnt.addChild === 'function') {
+            parentEnt.addChild(spawned);
+          } else {
+            spawned.parentId = parentEnt.id;
+            if (Array.isArray(parentEnt.children) && !parentEnt.children.some(c => c.id === spawned.id)) {
+              parentEnt.children.push(spawned);
+            }
+          }
+        }
+
+        const spawnedId = spawned.scriptId || spawned.id || '';
+        spawnedEntities.push(spawnedId);
+
+        lastSpawnedId = spawnedId;
+        lastIndex = i;
+        lastRow = row;
+        lastCol = col;
+        lastData = itemData;
+
+        outputs.spawnedEntity = spawnedId;
+        outputs.itemIndex = i;
+        outputs.rowIndex = row;
+        outputs.colIndex = col;
+        outputs.itemData = itemData;
+        outputs.onSpawnItem = true;
+
+        if (context && typeof context.triggerFlow === 'function') {
+          context.triggerFlow('onSpawnItem');
+        }
+      }
+    }
+
+    outputs.execOut = true;
+    outputs.onSpawnItem = false;
+    outputs.spawnedEntity = lastSpawnedId;
+    outputs.itemIndex = lastIndex;
+    outputs.rowIndex = lastRow;
+    outputs.colIndex = lastCol;
+    outputs.itemData = lastData;
+    outputs.spawnedEntities = spawnedEntities;
+
+    const result = {
+      execOut: true,
+      onSpawnItem: false,
+      spawnedEntity: lastSpawnedId,
+      itemIndex: lastIndex,
+      rowIndex: lastRow,
+      colIndex: lastCol,
+      itemData: lastData,
+      spawnedEntities
+    };
+    return result;
+  }
+
+  processPrefabBinder(stateOrParams, inputsOrContext, outputsMaybe, contextMaybe) {
+    const isDirect = (arguments.length <= 2 && typeof stateOrParams === 'object' && !outputsMaybe && !contextMaybe);
+    const inputs = isDirect ? stateOrParams : (inputsOrContext || {});
+    const context = isDirect ? inputsOrContext : contextMaybe;
+    const outputs = (!isDirect && outputsMaybe) ? outputsMaybe : {};
+
+    const rawTarget = inputs.targetEntity !== undefined ? inputs.targetEntity : 'self';
+    const targetEntityName = (typeof rawTarget === 'string') 
+      ? rawTarget.trim() 
+      : (rawTarget?.scriptId || rawTarget?.id || 'self');
+
+    let root = null;
+    if (context && context.entity && typeof context.entity.get === 'function') {
+      root = context.entity.get(targetEntityName);
+    } else if (this.game && this.game.world && Array.isArray(this.game.world.entities)) {
+      root = this.game.world.entities.find(e => e.id === targetEntityName || e.scriptId === targetEntityName) || null;
+    }
+
+    if (!root) {
+      const emptyRes = { execOut: true, targetEntity: '', boundCount: 0 };
+      Object.assign(outputs, emptyRes);
+      return emptyRes;
+    }
+
+    const data = inputs.data !== undefined ? inputs.data : null;
+    const itemIndex = typeof inputs.itemIndex === 'number' ? inputs.itemIndex : (Number(inputs.itemIndex) || 0);
+
+    let bindings = inputs.bindings;
+    if (typeof bindings === 'string') {
+      try { bindings = JSON.parse(bindings); } catch (_) { bindings = []; }
+    }
+    const rules = Array.isArray(bindings) 
+      ? bindings 
+      : (bindings && typeof bindings === 'object' ? Object.values(bindings) : []);
+
+    const resolvePath = (obj, path) => {
+      if (!path || path === '.' || path === 'this' || path === 'self') return obj;
+      if (obj === null || obj === undefined) return undefined;
+      if (typeof obj !== 'object') return obj;
+      const parts = String(path).split(/[.\[\]]+/).filter(Boolean);
+      let cur = obj;
+      for (const p of parts) {
+        if (cur === null || cur === undefined) return undefined;
+        if (cur instanceof Map) {
+          if (cur.has(p)) {
+            cur = cur.get(p);
+          } else if (/^\d+$/.test(p) && cur.has(Number(p))) {
+            cur = cur.get(Number(p));
+          } else {
+            cur = undefined;
+          }
+        } else if (Array.isArray(cur)) {
+          const idx = Number(p);
+          cur = (Number.isInteger(idx) && idx >= 0 && idx < cur.length) ? cur[idx] : cur[p];
+        } else {
+          cur = cur[p];
+        }
+      }
+      return cur;
+    };
+
+    const resolveScopedVariable = (expression) => {
+      if (!expression || typeof expression !== 'string') return { found: false };
+      const trimmed = expression.trim();
+      const scopeMatch = trimmed.match(/^(local|global)(?:[:.]|\(([^)]+)\))(.*)$/i);
+      if (!scopeMatch) return { found: false };
+
+      const scope = scopeMatch[1].toLowerCase();
+      const varName = (scopeMatch[2] || scopeMatch[3] || '').replace(/^[:.]/, '').trim();
+      const subPath = scopeMatch[2] ? (scopeMatch[3] || '').replace(/^[:.]/, '').trim() : '';
+
+      if (!varName) return { found: false };
+
+      try {
+        let rootVal = undefined;
+        if (scope === 'local' && context && typeof context.getLocal === 'function') {
+          rootVal = context.getLocal(varName);
+        } else if (scope === 'global' && context && typeof context.getGlobal === 'function') {
+          rootVal = context.getGlobal(varName);
+        }
+        if (rootVal === undefined && context && typeof context.getVariable === 'function') {
+          rootVal = context.getVariable(varName);
+        }
+
+        if (rootVal !== undefined) {
+          const finalVal = subPath ? resolvePath(rootVal, subPath) : rootVal;
+          return { found: true, val: finalVal };
+        }
+      } catch (_) {
+        return { found: false };
+      }
+      return { found: false };
+    };
+
+    const interpolatePath = (pathStr) => {
+      if (typeof pathStr !== 'string') return pathStr;
+      if (!pathStr.includes('{')) return pathStr;
+      return pathStr.replace(/\{([^}]+)\}/g, (_, expr) => {
+        const trimmed = expr.trim();
+        if (trimmed === 'index') return String(itemIndex);
+        if (trimmed === 'index + 1' || trimmed === 'index+1') return String(itemIndex + 1);
+
+        const scoped = resolveScopedVariable(trimmed);
+        if (scoped.found && scoped.val !== undefined && scoped.val !== null) {
+          return String(scoped.val);
+        }
+
+        const val = resolvePath(data, trimmed);
+        return val !== undefined && val !== null ? String(val) : '';
+      });
+    };
+
+    const evaluateTemplate = (template, dataObj, idx) => {
+      if (typeof template !== 'string') return String(template ?? '');
+      return template.replace(/\{([^}]+)\}/g, (_, expr) => {
+        const trimmed = expr.trim();
+        if (trimmed === 'index') return String(idx);
+        if (trimmed === 'index + 1' || trimmed === 'index+1') return String(idx + 1);
+
+        const scoped = resolveScopedVariable(trimmed);
+        if (scoped.found) {
+          return scoped.val !== undefined && scoped.val !== null ? String(scoped.val) : '';
+        }
+
+        const val = resolvePath(dataObj, trimmed);
+        return val !== undefined && val !== null ? String(val) : '';
+      });
+    };
+
+    const findEntity = (rootEnt, name) => {
+      if (!name || name === 'self' || name === rootEnt.scriptId || name === rootEnt.id) {
+        return rootEnt;
+      }
+      if (context && context.entity && typeof context.entity.getChildByName === 'function') {
+        const ch = context.entity.getChildByName(rootEnt, name);
+        if (ch) return ch;
+      }
+      if (context && context.entity && typeof context.entity.getChildren === 'function') {
+        const children = context.entity.getChildren(rootEnt) || [];
+        const search = String(name).trim().toLowerCase();
+        const ch = children.find(c => {
+          const sId = String(c.scriptId || '').toLowerCase();
+          return sId === search || sId.startsWith(search + '_');
+        });
+        if (ch) return ch;
+      }
+      if (this.game && this.game.world && Array.isArray(this.game.world.entities)) {
+        const search = String(name).trim().toLowerCase();
+        const ch = this.game.world.entities.find(e => {
+          if (e.parentId !== rootEnt.id && e.parentId !== rootEnt.scriptId) return false;
+          const sId = String(e.scriptId || '').toLowerCase();
+          return sId === search || sId.startsWith(search + '_');
+        });
+        if (ch) return ch;
+      }
+      return null;
+    };
+
+    const resolveAsset = (assetId) => {
+      if (!assetId) return assetId;
+      if (context && context.asset && typeof context.asset.resolveId === 'function') {
+        const resolved = context.asset.resolveId(assetId);
+        if (resolved) return resolved;
+      }
+      return assetId;
+    };
+
+    const inferComponent = (ent, prop) => {
+      if (!ent || !prop) return null;
+      const p = String(prop).toLowerCase();
+      if (['active', 'visible', 'tag', 'tags', 'zindex', 'orderindex'].includes(p)) {
+        return 'Entity';
+      }
+      if (!ent.components) return null;
+      if (ent.components.TextRenderer && ['value', 'text', 'content', 'fontsize', 'align', 'alignline', 'autoline', 'maxline', 'linespacing', 'letterspacing', 'overflow', 'outlinewidth', 'outlinecolor', 'shadowenabled', 'shadowcolor'].includes(p)) {
+        return 'TextRenderer';
+      }
+      if (ent.components.SpriteRenderer && ['assetid', 'filtermode', 'usesdf', 'sourcex', 'sourcey', 'sourcewidth', 'sourceheight'].includes(p)) {
+        return 'SpriteRenderer';
+      }
+      if (ent.components.UITransform && ['anchorx', 'anchory', 'isratiolocked', 'isscalelocked'].includes(p)) {
+        return 'UITransform';
+      }
+      if ((ent.components.UITransform || ent.components.Transform) && ['scale', 'scalex', 'scaley', 'size', 'width', 'height', 'x', 'y', 'pivotx', 'pivoty', 'flipx', 'flipy', 'rotation'].includes(p)) {
+        return ent.components.UITransform ? 'UITransform' : 'Transform';
+      }
+      if (ent.components.Audio && ['audiotype', 'volume', 'ismute', 'pitch', 'loop', 'autoplay', 'spatial', 'fadein', 'fadeout', 'refdistance', 'maxdistance'].includes(p)) {
+        return 'Audio';
+      }
+      if (ent.components.Physics && ['mass', 'gravityscale', 'isfrozen', 'drag', 'velocityx', 'velocityy', 'isgrounded', 'movementstate', 'facingdirection', 'aligntoslope'].includes(p)) {
+        return 'Physics';
+      }
+      if (ent.components.SpriteAnimator && ['currentclip', 'clip', 'isplaying'].includes(p)) {
+        return 'SpriteAnimator';
+      }
+      if (ent.components.ShapeRenderer && ['isfilled', 'fillopacity', 'outlineopacity', 'elements'].includes(p)) {
+        return 'ShapeRenderer';
+      }
+      if (ent.components.Tilemap && ['issolid'].includes(p)) {
+        return 'Tilemap';
+      }
+      for (const [cName, cObj] of Object.entries(ent.components)) {
+        if (cObj && typeof cObj === 'object' && prop in cObj) {
+          return cName;
+        }
+      }
+      return null;
+    };
+
+    let boundCount = 0;
+
+    for (const rule of rules) {
+      if (!rule || typeof rule !== 'object') continue;
+      const targetName = rule.target || rule.child || 'self';
+      const targetEnt = findEntity(root, targetName);
+      if (!targetEnt) continue;
+
+      const rawProp = rule.property || rule.prop || rule.field;
+      const compName = rule.component || rule.comp || inferComponent(targetEnt, rawProp) || 'Entity';
+      const prop = rawProp || (compName === 'TextRenderer' ? 'value' : (compName === 'SpriteRenderer' ? 'assetId' : ''));
+
+      // Resolve raw value from data or global/local variable
+      let val = undefined;
+      const rawPath = rule.path !== undefined && rule.path !== null ? rule.path : rule.source;
+
+      if (rule.template !== undefined && rule.template !== null && rule.template !== '') {
+        val = evaluateTemplate(rule.template, data, itemIndex);
+      } else if (rawPath !== undefined && rawPath !== null) {
+        if (typeof rawPath === 'string') {
+          const evaluatedPath = interpolatePath(rawPath);
+          const scoped = resolveScopedVariable(evaluatedPath);
+          if (scoped.found) {
+            val = scoped.val;
+          } else {
+            val = resolvePath(data, evaluatedPath);
+          }
+        } else {
+          val = resolvePath(data, rawPath);
+        }
+      } else if (rule.value !== undefined) {
+        val = rule.value;
+      } else {
+        val = data;
+      }
+
+      // Mapping table / switch
+      const mapping = rule.switch || rule.mapping || rule.map || rule.match;
+      if (mapping && typeof mapping === 'object') {
+        const strKey = String(val);
+        if (strKey in mapping) {
+          val = mapping[strKey];
+        } else if (val in mapping) {
+          val = mapping[val];
+        } else if ('default' in mapping) {
+          val = mapping['default'];
+        }
+      }
+
+      if (val === undefined && rule.defaultValue !== undefined) {
+        val = rule.defaultValue;
+      }
+
+      // Global Variable support
+      const isGlobal = rule.global !== undefined || rule.scope === 'global' || compName === 'GlobalVariable';
+      if (isGlobal) {
+        const globalVarName = rule.global || rule.variable || rule.var || prop;
+        if (globalVarName) {
+          try {
+            if (context && typeof context.setGlobal === 'function') {
+              context.setGlobal(globalVarName, val);
+            } else if (this.game?.variables?.setGlobal) {
+              this.game.variables.setGlobal(globalVarName, val);
+            } else if (context && typeof context.setVariable === 'function') {
+              context.setVariable(globalVarName, val);
+            }
+            boundCount++;
+          } catch (e) {
+            if (context?.console?.warn) context.console.warn(`[UI Prefab Binder] Failed to set global variable '${globalVarName}':`, e);
+          }
+        }
+        continue;
+      }
+
+      // Local Script Variable support (by scriptId, assetId, or first script)
+      const isLocal = rule.local !== undefined || rule.variable !== undefined || rule.var !== undefined || rule.scope === 'local' || compName === 'LocalVariable' || compName === 'ScriptVariable' || compName === 'ScriptController' || compName === 'Variable';
+      if (isLocal) {
+        const localVarName = rule.local || rule.variable || rule.var || prop;
+        const targetScriptFilter = rule.script || rule.scriptId || rule.assetId;
+
+        if (targetEnt.components && targetEnt.components.ScriptController) {
+          const sc = targetEnt.components.ScriptController;
+          if (Array.isArray(sc.data) && sc.data.length > 0) {
+            let matchedInstance = null;
+            if (targetScriptFilter) {
+              const filterStr = String(targetScriptFilter).trim().toLowerCase();
+              matchedInstance = sc.data.find(inst => {
+                if (String(inst.assetId || '').toLowerCase() === filterStr || String(inst.id || '').toLowerCase() === filterStr) return true;
+                const scriptAsset = this.game?.world?.scripts?.[inst.assetId];
+                if (scriptAsset) {
+                  const sId = String(scriptAsset.scriptId || scriptAsset.name || '').toLowerCase();
+                  if (sId === filterStr) return true;
+                }
+                return false;
+              });
+            }
+            if (!matchedInstance) {
+              matchedInstance = sc.data[0];
+            }
+
+            if (matchedInstance) {
+              if (!matchedInstance.variables) matchedInstance.variables = {};
+              if (localVarName === 'variables' && typeof val === 'object' && val !== null) {
+                Object.assign(matchedInstance.variables, val);
+              } else if (localVarName) {
+                matchedInstance.variables[localVarName] = val;
+              }
+              if (localVarName === 'active') matchedInstance.active = Boolean(val);
+
+              // Also sync with live runner if already running on entity
+              if (this.game?.scriptSystem?.runners && localVarName && localVarName !== 'variables') {
+                const liveRunner = this.game.scriptSystem.runners.find(r => 
+                  (r.owner === targetEnt || r.owner?.id === targetEnt.id) &&
+                  (!targetScriptFilter || String(r.data?.scriptId || r.data?.id || '').toLowerCase() === String(targetScriptFilter).toLowerCase() || r.data?.id === matchedInstance.assetId)
+                );
+                if (liveRunner && typeof liveRunner.setLocalVariable === 'function') {
+                  liveRunner.setLocalVariable(localVarName, val);
+                }
+              }
+              boundCount++;
+            }
+          }
+        }
+        continue;
+      }
+
+      // Apply to Entity top-level fields
+      if (compName === 'Entity') {
+        if (prop === 'active') targetEnt.active = Boolean(val);
+        else if (prop === 'visible') targetEnt.visible = Boolean(val);
+        else if (prop === 'tag') targetEnt.tag = String(val);
+        else if (prop === 'tags') targetEnt.tags = Array.isArray(val) ? val : [String(val)];
+        else if (prop === 'zIndex') targetEnt.zIndex = Number(val);
+        else if (prop === 'orderIndex') targetEnt.orderIndex = Number(val);
+        else if (prop === 'opacity') targetEnt.opacity = Number(val);
+        else targetEnt[prop] = val;
+        boundCount++;
+        continue;
+      }
+
+      // Ensure component container
+      if (!targetEnt.components) targetEnt.components = {};
+      if (!targetEnt.components[compName]) targetEnt.components[compName] = {};
+      const comp = targetEnt.components[compName];
+
+      // Component schema handling (covers all components in componentSchema.js)
+      switch (compName) {
+        case 'SpriteRenderer':
+          if (prop === 'assetId') comp.assetId = resolveAsset(String(val));
+          else if (prop === 'color') comp.color = String(val);
+          else if (prop === 'opacity') comp.opacity = Number(val);
+          else if (prop === 'sourceX') comp.sourceX = Number(val);
+          else if (prop === 'sourceY') comp.sourceY = Number(val);
+          else if (prop === 'sourceWidth') comp.sourceWidth = Number(val);
+          else if (prop === 'sourceHeight') comp.sourceHeight = Number(val);
+          else if (prop === 'filterMode') comp.filterMode = String(val);
+          else if (prop === 'useSDF') comp.useSDF = Boolean(val);
+          else comp[prop] = val;
+          break;
+
+        case 'TextRenderer':
+          if (prop === 'value' || prop === 'text' || prop === 'content') comp.value = val !== undefined && val !== null ? String(val) : '';
+          else if (prop === 'assetId' || prop === 'fontAsset') comp.assetId = resolveAsset(String(val));
+          else if (prop === 'fontSize') comp.fontSize = Number(val);
+          else if (prop === 'color') comp.color = String(val);
+          else if (prop === 'opacity') comp.opacity = Number(val);
+          else if (prop === 'align') comp.align = String(val);
+          else if (prop === 'alignLine' || prop === 'alignV' || prop === 'verticalAlign') comp.alignLine = String(val);
+          else if (prop === 'maxLine') comp.maxLine = Math.max(1, Number(val));
+          else if (prop === 'autoLine') comp.autoLine = Boolean(val);
+          else if (prop === 'lineSpacing') comp.lineSpacing = Number(val);
+          else if (prop === 'letterSpacing') comp.letterSpacing = Number(val);
+          else if (prop === 'overflow') comp.overflow = String(val);
+          else if (prop === 'outlineWidth') comp.outlineWidth = Number(val);
+          else if (prop === 'outlineColor') comp.outlineColor = String(val);
+          else if (prop === 'shadowEnabled') comp.shadowEnabled = Boolean(val);
+          else if (prop === 'shadowColor') comp.shadowColor = String(val);
+          else if (prop === 'shadowOpacity') comp.shadowOpacity = Number(val);
+          else if (prop === 'shadowOffsetX') comp.shadowOffsetX = Number(val);
+          else if (prop === 'shadowOffsetY') comp.shadowOffsetY = Number(val);
+          else if (prop === 'shadowBlur') comp.shadowBlur = Number(val);
+          else comp[prop] = val;
+          break;
+
+        case 'Transform':
+        case 'UITransform': {
+          const comps = [targetEnt.components.UITransform, targetEnt.components.Transform].filter(Boolean);
+          for (const c of comps) {
+            if (prop === 'x') c.x = Number(val);
+            else if (prop === 'y') c.y = Number(val);
+            else if (prop === 'rotation') c.rotation = Number(val);
+            else if (prop === 'scaleX') c.scaleX = Number(val);
+            else if (prop === 'scaleY') c.scaleY = Number(val);
+            else if (prop === 'scale') { c.scaleX = Number(val); c.scaleY = Number(val); }
+            else if (prop === 'pivotX') c.pivotX = Number(val);
+            else if (prop === 'pivotY') c.pivotY = Number(val);
+            else if (prop === 'flipX') c.flipX = Boolean(val);
+            else if (prop === 'flipY') c.flipY = Boolean(val);
+            else if (prop === 'width') c.width = Number(val);
+            else if (prop === 'height') c.height = Number(val);
+            else if (prop === 'size') { c.width = Number(val); c.height = Number(val); }
+            else if (prop === 'isRatioLocked') c.isRatioLocked = Boolean(val);
+            else if (prop === 'isScaleLocked') c.isScaleLocked = Boolean(val);
+            else if (prop === 'anchorX') c.anchorX = Number(val);
+            else if (prop === 'anchorY') c.anchorY = Number(val);
+            else c[prop] = val;
+          }
+          break;
+        }
+
+        case 'Audio':
+          if (prop === 'assetId') comp.assetId = resolveAsset(String(val));
+          else if (prop === 'audioType') comp.audioType = String(val);
+          else if (prop === 'volume') comp.volume = Number(val);
+          else if (prop === 'pitch') comp.pitch = Number(val);
+          else if (prop === 'isMute') comp.isMute = Boolean(val);
+          else if (prop === 'loop') comp.loop = Boolean(val);
+          else if (prop === 'autoplay') comp.autoplay = Boolean(val);
+          else if (prop === 'spatial') comp.spatial = Boolean(val);
+          else if (prop === 'persist') comp.persist = Boolean(val);
+          else if (prop === 'fadeIn') comp.fadeIn = Number(val);
+          else if (prop === 'fadeOut') comp.fadeOut = Number(val);
+          else if (prop === 'refDistance') comp.refDistance = Number(val);
+          else if (prop === 'maxDistance') comp.maxDistance = Number(val);
+          else comp[prop] = val;
+          break;
+
+        case 'Collider':
+          if (prop === 'data' && Array.isArray(val)) comp.data = val;
+          else if (prop === 'enabled') {
+            comp.enabled = Boolean(val);
+            if (Array.isArray(comp.data)) comp.data.forEach(s => s.enabled = Boolean(val));
+          } else {
+            if (Array.isArray(comp.data) && comp.data.length > 0) {
+              const shapeIdx = typeof rule.shapeIndex === 'number' ? rule.shapeIndex : 0;
+              if (comp.data[shapeIdx]) comp.data[shapeIdx][prop] = val;
+            }
+            comp[prop] = val;
+          }
+          break;
+
+        case 'Physics':
+          if (prop === 'enabled') comp.enabled = Boolean(val);
+          else if (prop === 'type') comp.type = String(val);
+          else if (prop === 'mass') comp.mass = Number(val);
+          else if (prop === 'gravityScale') comp.gravityScale = Number(val);
+          else if (prop === 'drag') comp.drag = Number(val);
+          else if (prop === 'isFrozen') comp.isFrozen = Boolean(val);
+          else if (prop === 'velocityX') comp.velocityX = Number(val);
+          else if (prop === 'velocityY') comp.velocityY = Number(val);
+          else if (prop === 'isGrounded') comp.isGrounded = Boolean(val);
+          else if (prop === 'movementState') comp.movementState = String(val);
+          else if (prop === 'facingDirection') comp.facingDirection = String(val);
+          else if (prop === 'alignToSlope') comp.alignToSlope = Boolean(val);
+          else if (prop === 'slopeAdaptSpeed') comp.slopeAdaptSpeed = Number(val);
+          else if (prop === 'maxSlopeAngle') comp.maxSlopeAngle = Number(val);
+          else if (prop === 'keepColliderUpright') comp.keepColliderUpright = Boolean(val);
+          else comp[prop] = val;
+          break;
+
+        case 'SpriteAnimator':
+          if (prop === 'currentClip' || prop === 'clip') comp.currentClip = String(val);
+          else if (prop === 'active') comp.active = Boolean(val);
+          else if (prop === 'isPlaying') comp.isPlaying = Boolean(val);
+          else if (prop === 'clips' && Array.isArray(val)) comp.clips = val;
+          else comp[prop] = val;
+          break;
+
+        case 'ShapeRenderer':
+          if (prop === 'color') comp.color = String(val);
+          else if (prop === 'opacity') comp.opacity = Number(val);
+          else if (prop === 'isFilled') comp.isFilled = Boolean(val);
+          else if (prop === 'fillOpacity') comp.fillOpacity = Number(val);
+          else if (prop === 'outlineWidth') comp.outlineWidth = Number(val);
+          else if (prop === 'outlineColor') comp.outlineColor = String(val);
+          else if (prop === 'outlineOpacity') comp.outlineOpacity = Number(val);
+          else if (prop === 'type') comp.type = String(val);
+          else if (prop === 'elements' && Array.isArray(val)) comp.elements = val;
+          else if (prop === 'enablePolygonCollision') comp.enablePolygonCollision = Boolean(val);
+          else if (prop === 'enableSegmentCollision') comp.enableSegmentCollision = Boolean(val);
+          else if (prop === 'enableCircleCollision') comp.enableCircleCollision = Boolean(val);
+          else comp[prop] = val;
+          break;
+
+        case 'Tilemap':
+          if (prop === 'width') comp.width = Number(val);
+          else if (prop === 'height') comp.height = Number(val);
+          else if (prop === 'assetId') comp.assetId = resolveAsset(String(val));
+          else if (prop === 'opacity') comp.opacity = Number(val);
+          else if (prop === 'isSolid') comp.isSolid = Boolean(val);
+          else if (prop === 'filterMode') comp.filterMode = String(val);
+          else if (prop === 'data') comp.data = typeof val === 'object' && val !== null ? val : {};
+          else comp[prop] = val;
+          break;
+
+        default:
+          comp[prop] = val;
+          break;
+      }
+
+      boundCount++;
+    }
+
+    const finalTargetId = root.scriptId || root.id || '';
+    outputs.targetEntity = finalTargetId;
+    outputs.boundCount = boundCount;
+    outputs.execOut = true;
+
+    return {
+      execOut: true,
+      targetEntity: finalTargetId,
+      boundCount
+    };
   }
 
   createFacade(contextParams) {
@@ -1113,7 +1802,9 @@ export class UIContextHandler {
       updateSliderVisual: (s, volume, ctx) => this.updateSliderVisual(s, volume, getCtx(ctx)),
       processVolumeSliders: (state, config, inputs, outputs, ctx) => this.processVolumeSliders(state, config, inputs, outputs, getCtx(ctx)),
       processAtomicSlider: (state, inputs, outputs, ctx) => this.processAtomicSlider(state, inputs, outputs, getCtx(ctx)),
-      processSwitchButton: (state, inputs, outputs, isImage, ctx) => this.processSwitchButton(state, inputs, outputs, isImage, getCtx(ctx))
+      processSwitchButton: (state, inputs, outputs, isImage, ctx) => this.processSwitchButton(state, inputs, outputs, isImage, getCtx(ctx)),
+      processGridSpawner: (state, inputs, outputs, ctx) => this.processGridSpawner(state, inputs, outputs, getCtx(ctx)),
+      processPrefabBinder: (state, inputs, outputs, ctx) => this.processPrefabBinder(state, inputs, outputs, getCtx(ctx))
     };
   }
 }

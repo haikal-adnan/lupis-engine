@@ -302,17 +302,48 @@ export const useProjectStore = defineStore('project', {
     },
 
     addTag(newTag) {
-      const cleanTag = newTag.trim();
+      const cleanTag = String(newTag || '').trim().replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+      if (!cleanTag) return false;
+      if (!Array.isArray(this.project.tags)) this.project.tags = [];
       const exists = this.project.tags.some(t => t.toLowerCase() === cleanTag.toLowerCase());
       if (!exists) {
         this.project.tags.push(cleanTag);
         this.markAsDirty();
+        return true;
       }
+      return false;
     },
 
     removeTag(tagToRemove) {
-      this.project.tags = this.project.tags.filter(t => t !== tagToRemove);
+      const lower = String(tagToRemove || '').trim().toLowerCase();
+      if (!lower || lower === 'untagged') return false;
+      if (!Array.isArray(this.project.tags)) return false;
+      this.project.tags = this.project.tags.filter(t => t.toLowerCase() !== lower);
       this.markAsDirty();
+      return true;
+    },
+
+    renameTag(oldTag, newTag) {
+      const oldClean = String(oldTag || '').trim();
+      const newClean = String(newTag || '').trim().replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+      if (!oldClean || !newClean) return false;
+      if (oldClean.toLowerCase() === 'untagged') return false;
+      if (!Array.isArray(this.project.tags)) return false;
+
+      const oldLower = oldClean.toLowerCase();
+      const newLower = newClean.toLowerCase();
+
+      // Check if new name exists (other than oldTag itself)
+      const duplicate = this.project.tags.some(t => t.toLowerCase() === newLower && t.toLowerCase() !== oldLower);
+      if (duplicate) return false;
+
+      const idx = this.project.tags.findIndex(t => t.toLowerCase() === oldLower);
+      if (idx !== -1) {
+        this.project.tags[idx] = newClean;
+        this.markAsDirty();
+        return true;
+      }
+      return false;
     },
 
     setTickRate(rate) {

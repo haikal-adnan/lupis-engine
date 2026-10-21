@@ -203,6 +203,137 @@ describe('Dialogue Runner & Infinite Loop Protection Integration', () => {
     return { runner, btn1, btn2, btn3, txt1, txt2, txt3 };
   }
 
+  function setupFullDialogueAndChoiceScript(mockGame, options = {}) {
+    const textEntity = {
+      id: 'dialogText',
+      components: {
+        TextRenderer: { value: '', color: '#FFFFFF' }
+      }
+    };
+    const btn1 = { id: 'btnChoice1', visible: false, components: { Transform: {} } };
+    const btn2 = { id: 'btnChoice2', visible: false, components: { Transform: {} } };
+    const btn3 = { id: 'btnChoice3', visible: false, components: { Transform: {} } };
+    const txt1 = { id: 'btnChoice1Text', visible: false, components: { TextRenderer: { value: '' } } };
+    const txt2 = { id: 'btnChoice2Text', visible: false, components: { TextRenderer: { value: '' } } };
+    const txt3 = { id: 'btnChoice3Text', visible: false, components: { TextRenderer: { value: '' } } };
+
+    mockGame.entityRegistry.set('dialogText', textEntity);
+    mockGame.entityRegistry.set('btnChoice1', btn1);
+    mockGame.entityRegistry.set('btnChoice2', btn2);
+    mockGame.entityRegistry.set('btnChoice3', btn3);
+    mockGame.entityRegistry.set('btnChoice1Text', txt1);
+    mockGame.entityRegistry.set('btnChoice2Text', txt2);
+    mockGame.entityRegistry.set('btnChoice3Text', txt3);
+
+    const origCreateExecutionContext = mockGame.contextSystem.createExecutionContext.bind(mockGame.contextSystem);
+    mockGame.contextSystem.createExecutionContext = (runner, node) => {
+      const ctx = origCreateExecutionContext(runner, node);
+      ctx.entity = {
+        get: (id) => mockGame.entityRegistry.get(id),
+        getChildren: () => []
+      };
+      ctx.input.isPointerOver = (entity, useRaycast) => {
+        if (typeof mockGame.isPointerOver === 'function') {
+          return mockGame.isPointerOver(entity, useRaycast);
+        }
+        return false;
+      };
+      return ctx;
+    };
+
+    const dialogMap = options.dialogMap || {
+      d_choice: {
+        speaker: 'narrator',
+        text: 'Silakan tentukan pilihanmu sekarang!',
+        choices: [
+          { text: 'Pilihan Pertama', next: 'd_first' },
+          { text: 'Pilihan Kedua', next: 'd_second' }
+        ]
+      },
+      d_first: {
+        speaker: 'narrator',
+        text: 'Kamu memilih pertama.',
+        next: false
+      },
+      d_second: {
+        speaker: 'narrator',
+        text: 'Kamu memilih kedua.',
+        next: false
+      }
+    };
+
+    const scriptData = {
+      id: 'script_vn_full',
+      localVariables: [],
+      nodes: [
+        {
+          id: 'node_dialogue_runner',
+          type: 'vnDialogueRunner',
+          inputs: vnDialogueRunnerDef.defaultData.inputs,
+          outputs: vnDialogueRunnerDef.defaultData.outputs,
+          data: {
+            values: {
+              ...vnDialogueRunnerDef.defaultData.data.values,
+              dialogMap,
+              dialogId: 'd_choice',
+              speed: 40,
+              ...options.dialogueValues
+            },
+            code: vnDialogueRunnerDef.defaultData.data.code
+          }
+        },
+        {
+          id: 'node_choice_presenter',
+          type: 'vnChoicePresenter',
+          inputs: vnChoicePresenterDef.defaultData.inputs,
+          outputs: vnChoicePresenterDef.defaultData.outputs,
+          data: {
+            values: {
+              ...vnChoicePresenterDef.defaultData.data.values,
+              ...options.choiceValues
+            },
+            code: vnChoicePresenterDef.defaultData.data.code
+          }
+        }
+      ],
+      edges: [
+        {
+          source: 'node_dialogue_runner',
+          sourceHandle: 'onChoice',
+          target: 'node_choice_presenter',
+          targetHandle: 'execIn'
+        },
+        {
+          source: 'node_dialogue_runner',
+          sourceHandle: 'choices',
+          target: 'node_choice_presenter',
+          targetHandle: 'choices'
+        },
+        {
+          source: 'node_choice_presenter',
+          sourceHandle: 'execOut',
+          target: 'node_dialogue_runner',
+          targetHandle: 'execIn'
+        },
+        {
+          source: 'node_choice_presenter',
+          sourceHandle: 'nextDialogId',
+          target: 'node_dialogue_runner',
+          targetHandle: 'dialogId'
+        },
+        {
+          source: 'node_dialogue_runner',
+          sourceHandle: 'onNext',
+          target: 'node_dialogue_runner',
+          targetHandle: 'execIn'
+        }
+      ]
+    };
+
+    const runner = new ScriptRunner(mockGame, scriptData, { id: 'ent_runner' });
+    return { runner, textEntity, btn1, btn2, btn3, txt1, txt2, txt3 };
+  }
+
   describe('Typewriter Functionality', () => {
     it('animates text character by character according to delta time and speed', () => {
       const { mockGame } = createMockVnGame();
@@ -700,6 +831,107 @@ describe('Dialogue Runner & Infinite Loop Protection Integration', () => {
       expect(outputs.nextDialogId).toBe('d_forest');
 
       vi.useRealTimers();
+    });
+
+    it('does not re-trigger typewriter when player clicks outside choice buttons during choice presentation', () => {
+      const { mockGame } = createMockVnGame();
+      const { runner, textEntity, btn1 } = setupFullDialogueAndChoiceScript(mockGame);
+      const diagNode = runner.nodeMap.get('node_dialogue_runner');
+
+      // Start dialogue with choices
+      runner._executeNodeLogic(diagNode, 'execIn');
+
+      // Advance frames so typewriter finishes typing
+      for (let i = 0; i < 100; i++) {
+        runner.update(0.016);
+        if (btn1.visible) break;
+      }
+
+      expect(btn1.visible).toBe(true);
+      expect(textEntity.components.TextRenderer.value).toBe('Silakan tentukan pilihanmu sekarang!');
+
+      // Player clicks outside choice buttons (isPointerOver returns false)
+      mockGame.isPointerOver = () => false;
+      mockGame.input.pointer.down = true;
+      runner.update(0.016);
+      mockGame.input.pointer.down = false;
+      runner.update(0.016);
+
+      // Must remain at full text and NOT restart typewriter to empty string or char 0
+      expect(textEntity.components.TextRenderer.value).toBe('Silakan tentukan pilihanmu sekarang!');
+
+      // Advance a few more ticks - text must stay unchanged
+      runner.update(0.050);
+      expect(textEntity.components.TextRenderer.value).toBe('Silakan tentukan pilihanmu sekarang!');
+      expect(btn1.visible).toBe(true);
+    });
+
+    it('skips typewriter immediately when clicked, presents choices, and ignores subsequent clicks outside choice', () => {
+      const { mockGame } = createMockVnGame();
+      const { runner, textEntity, btn1 } = setupFullDialogueAndChoiceScript(mockGame);
+      const diagNode = runner.nodeMap.get('node_dialogue_runner');
+
+      runner._executeNodeLogic(diagNode, 'execIn');
+
+      // Run 2 ticks (only 1 or 2 characters typed)
+      runner.update(0.016);
+      runner.update(0.016);
+      expect(textEntity.components.TextRenderer.value.length).toBeLessThan('Silakan tentukan pilihanmu sekarang!'.length);
+
+      // Player clicks to fast-forward/skip typewriter
+      mockGame.input.pointer.down = true;
+      runner.update(0.016);
+      mockGame.input.pointer.down = false;
+      runner.update(0.016);
+
+      // Text immediately finishes and choices appear
+      expect(textEntity.components.TextRenderer.value).toBe('Silakan tentukan pilihanmu sekarang!');
+      expect(btn1.visible).toBe(true);
+
+      // Subsequent click outside choices must NOT restart typewriter
+      mockGame.isPointerOver = () => false;
+      mockGame.input.pointer.down = true;
+      runner.update(0.016);
+      mockGame.input.pointer.down = false;
+      runner.update(0.016);
+
+      expect(textEntity.components.TextRenderer.value).toBe('Silakan tentukan pilihanmu sekarang!');
+      runner.update(0.050);
+      expect(textEntity.components.TextRenderer.value).toBe('Silakan tentukan pilihanmu sekarang!');
+    });
+
+    it('advances to selected choice dialogue line when a choice button is clicked', () => {
+      const { mockGame } = createMockVnGame();
+      const { runner, textEntity, btn1 } = setupFullDialogueAndChoiceScript(mockGame, {
+        choiceValues: { activationDelay: 0 }
+      });
+      const diagNode = runner.nodeMap.get('node_dialogue_runner');
+
+      runner._executeNodeLogic(diagNode, 'execIn');
+
+      for (let i = 0; i < 100; i++) {
+        runner.update(0.016);
+        if (btn1.visible) break;
+      }
+
+      expect(btn1.visible).toBe(true);
+
+      // Hover and click btnChoice1
+      mockGame.isPointerOver = (entity) => entity.id === 'btnChoice1';
+      mockGame.input.pointer.down = true;
+      runner.update(0.016);
+      mockGame.input.pointer.down = false;
+      runner.update(0.016);
+
+      // Choice buttons hidden
+      expect(btn1.visible).toBe(false);
+
+      // Advance frames for typewriter of chosen line 'd_first'
+      for (let i = 0; i < 100; i++) {
+        runner.update(0.016);
+      }
+
+      expect(textEntity.components.TextRenderer.value).toBe('Kamu memilih pertama.');
     });
   });
 

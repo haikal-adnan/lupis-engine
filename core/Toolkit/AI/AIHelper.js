@@ -1,4 +1,9 @@
-export function processEnemyChaser(state, inputs, outputs, context) {
+export function processEnemyChaser(stateOrParams, inputsOrContext, outputsMaybe, contextMaybe) {
+  const isDirect = !outputsMaybe && (!contextMaybe || typeof contextMaybe !== 'object');
+  const inputs = isDirect ? (stateOrParams || {}) : (inputsOrContext || {});
+  const context = isDirect ? inputsOrContext : contextMaybe;
+  const state = isDirect ? (context && context.state ? context.state : {}) : (stateOrParams || {});
+  const outputs = (!isDirect && outputsMaybe) ? outputsMaybe : {};
   const targetId = inputs.targetEntity || 'self';
   const target = context.assert.exists(context.entity.get(targetId));
   const phys = target.components && target.components.Physics;
@@ -22,8 +27,29 @@ export function processEnemyChaser(state, inputs, outputs, context) {
     target._knockback.duration -= dt;
     if (phys) phys.movementState = 'hit';
     outputs.execOut = true;
+    outputs.isChasing = Boolean(ai.isChasing);
+    outputs.inAttackRange = Boolean(ai.inAttackRange);
     outputs.movementState = 'hit';
-    return;
+    outputs.distanceToTarget = -1;
+    outputs.facingDirection = ai.facing || 'right';
+    outputs.targetPlayer = ai.targetId || '';
+    outputs.onTargetAcquired = false;
+    outputs.onTargetLost = false;
+    outputs.onInAttackRange = false;
+    const result = {
+      execOut: true,
+      onTargetAcquired: false,
+      onTargetLost: false,
+      onInAttackRange: false,
+      isChasing: Boolean(ai.isChasing),
+      inAttackRange: Boolean(ai.inAttackRange),
+      movementState: 'hit',
+      distanceToTarget: -1,
+      facingDirection: ai.facing || 'right',
+      targetPlayer: ai.targetId || ''
+    };
+    Object.assign(outputs, result);
+    return result;
   }
 
   const isCombatAttacking = Boolean(target._combat && target._combat.isAttacking);
@@ -33,12 +59,28 @@ export function processEnemyChaser(state, inputs, outputs, context) {
       phys.movementState = 'attack';
     }
     outputs.execOut = true;
-    outputs.isChasing = ai.isChasing;
+    outputs.isChasing = Boolean(ai.isChasing);
     outputs.inAttackRange = true;
     outputs.movementState = 'attack';
-    outputs.facingDirection = ai.facing;
+    outputs.facingDirection = ai.facing || 'right';
     outputs.targetPlayer = ai.targetId || '';
-    return;
+    outputs.onTargetAcquired = false;
+    outputs.onTargetLost = false;
+    outputs.onInAttackRange = false;
+    const result = {
+      execOut: true,
+      onTargetAcquired: false,
+      onTargetLost: false,
+      onInAttackRange: false,
+      isChasing: Boolean(ai.isChasing),
+      inAttackRange: true,
+      movementState: 'attack',
+      distanceToTarget: 0,
+      facingDirection: ai.facing || 'right',
+      targetPlayer: ai.targetId || ''
+    };
+    Object.assign(outputs, result);
+    return result;
   }
 
   const playerTag = String(inputs.playerTag || 'player').trim();
@@ -154,4 +196,18 @@ export function processEnemyChaser(state, inputs, outputs, context) {
   outputs.distanceToTarget = closestPlayer ? Number(minDistance.toFixed(2)) : -1;
   outputs.facingDirection = ai.facing;
   outputs.targetPlayer = ai.targetId || '';
+  const result = {
+    execOut: true,
+    onTargetAcquired: Boolean(outputs.onTargetAcquired),
+    onTargetLost: Boolean(outputs.onTargetLost),
+    onInAttackRange: Boolean(outputs.onInAttackRange),
+    isChasing,
+    inAttackRange,
+    movementState,
+    distanceToTarget: outputs.distanceToTarget,
+    facingDirection: outputs.facingDirection,
+    targetPlayer: outputs.targetPlayer
+  };
+  Object.assign(outputs, result);
+  return result;
 }

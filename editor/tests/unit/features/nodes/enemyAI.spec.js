@@ -294,4 +294,40 @@ describe('Enemy AI (enemyChaser & enemyCombat) Blueprint & Execution Tests', () 
     expect(animOut.currentClip).toBe('clip_idle');
     expect(animOut.activeState).toBe('idle');
   });
+
+  it('enemyChaser handles knockback and combat attacking states without undefined isChasing error', () => {
+    const { stepChaser, enemyEntity } = createMockEnvironment({ x: 250, y: 100 });
+
+    // 1. Normal chase
+    let res = stepChaser();
+    expect(res.isChasing).toBe(true);
+
+    // 2. Knockback active: must still output isChasing (boolean) and hit movementState
+    enemyEntity._knockback = { duration: 0.5 };
+    res = stepChaser();
+    expect(res).toBeDefined();
+    expect(typeof res.isChasing).toBe('boolean');
+    expect(res.movementState).toBe('hit');
+
+    // 3. Combat attack active: must still output isChasing (boolean) and attack movementState
+    enemyEntity._knockback.duration = 0;
+    enemyEntity._combat = { isAttacking: true };
+    res = stepChaser();
+    expect(res).toBeDefined();
+    expect(typeof res.isChasing).toBe('boolean');
+    expect(res.movementState).toBe('attack');
+  });
+
+  it('enemyChaser safely handles missing/undefined helper return without throwing cannot read properties of undefined', () => {
+    const { runner, script } = createMockEnvironment();
+    runner.game.contextSystem.toolkitHandler.createFacade = () => ({
+      ai: {
+        processChaser: () => undefined
+      }
+    });
+
+    expect(() => {
+      runner._executeNodeLogic(script.nodes[0], 'execIn');
+    }).not.toThrow();
+  });
 });

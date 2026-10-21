@@ -2,34 +2,87 @@
  * CollectableHelper.js
  * High-level toolkit helper for collectables, pickups, and interactive items in Lupis Engine.
  * Adheres to Tier 2 (Extensible Node) architectural contract.
+ * Uses smart animator clip resolution and playback logic aligned with PlatformerHelper.
  */
 
-function findClip(clips, nameOrId) {
-  if (!Array.isArray(clips) || !nameOrId) return null;
-  const lower = String(nameOrId).trim().toLowerCase();
-  return clips.find(c => c && (
-    c.id === nameOrId || 
-    c.name === nameOrId || 
-    String(c.id).toLowerCase() === lower || 
-    String(c.name).toLowerCase() === lower
-  )) || null;
+function extractTargetClipName(raw) {
+  if (!raw || typeof raw !== 'string') return '';
+  const parts = raw.split(',').map(s => s.trim()).filter(Boolean);
+  return parts.length > 0 ? parts[0] : '';
 }
 
-function playClipSafe(animator, clipName) {
+export function findClip(rawClips, targetClipName) {
+  if (!rawClips || !targetClipName) return null;
+  const clips = Array.isArray(rawClips) ? rawClips : (rawClips && typeof rawClips === 'object' ? Object.values(rawClips) : []);
+  if (!clips.length) return null;
+
+  const targetStr = extractTargetClipName(targetClipName);
+  if (!targetStr) return null;
+  const targetLower = targetStr.toLowerCase();
+
+  // 1. Exact match (prefer non-category clip)
+  for (let i = 0; i < clips.length; i++) {
+    const c = clips[i];
+    if (!c || c.type === 'category') continue;
+    if (c.scriptId === targetStr || c.id === targetStr || c.name === targetStr) {
+      return c;
+    }
+  }
+
+  // 2. Case-insensitive match (prefer non-category clip)
+  for (let i = 0; i < clips.length; i++) {
+    const c = clips[i];
+    if (!c || c.type === 'category') continue;
+    if (
+      String(c.scriptId || '').toLowerCase() === targetLower ||
+      String(c.id || '').toLowerCase() === targetLower ||
+      String(c.name || '').toLowerCase() === targetLower
+    ) {
+      return c;
+    }
+  }
+
+  // 3. Fallback without category filter (for older or custom clip schemas)
+  for (let i = 0; i < clips.length; i++) {
+    const c = clips[i];
+    if (!c) continue;
+    if (c.scriptId === targetStr || c.id === targetStr || c.name === targetStr) {
+      return c;
+    }
+    if (
+      String(c.scriptId || '').toLowerCase() === targetLower ||
+      String(c.id || '').toLowerCase() === targetLower ||
+      String(c.name || '').toLowerCase() === targetLower
+    ) {
+      return c;
+    }
+  }
+
+  return null;
+}
+
+export function playClipSafe(animator, clipName, forceRestart = false) {
   if (!animator || !clipName) return 0.35;
-  const rawClips = animator.clips || [];
-  const clipObj = findClip(rawClips, clipName);
-  const resolvedId = clipObj ? clipObj.id : clipName;
+  const rawClips = animator.clips;
+  const targetClipName = extractTargetClipName(clipName);
+  if (!targetClipName) return 0.35;
 
-  animator.currentClip = resolvedId;
-  animator._activeClipId = '';
-  animator._elapsedTime = 0;
-  animator.isPlaying = true;
-  if (clipObj) clipObj.frameIndex = 0;
+  const matchedClip = findClip(rawClips, targetClipName);
+  const resolvedId = matchedClip ? matchedClip.id : targetClipName;
 
-  if (clipObj && Array.isArray(clipObj.frames) && clipObj.fps) {
-    const frameCount = clipObj.frames.length;
-    const fps = clipObj.fps > 0 ? clipObj.fps : 12;
+  if (resolvedId && (animator.currentClip !== resolvedId || forceRestart)) {
+    animator.currentClip = resolvedId;
+    animator._activeClipId = '';
+    animator._elapsedTime = 0;
+    animator.isPlaying = true;
+    if (matchedClip) matchedClip.frameIndex = 0;
+  } else if (animator.currentClip && !animator.isPlaying) {
+    animator.isPlaying = true;
+  }
+
+  if (matchedClip && Array.isArray(matchedClip.frames) && matchedClip.fps) {
+    const frameCount = matchedClip.frames.length;
+    const fps = matchedClip.fps > 0 ? matchedClip.fps : 12;
     return frameCount / fps;
   }
   return 0.35;
@@ -50,7 +103,8 @@ export function applyBobbing(target, dt = 0.016, speed = 3.5, amplitude = 4) {
       isCollected: false,
       state: 'idle',
       animTimer: 0,
-      respawnTimer: 0
+      respawnTimer: 0,
+      lastClip: ''
     };
   }
 
@@ -101,9 +155,9 @@ export function checkOverlap(target, collectorTag = 'player', pickupDistance = 3
 }
 
 /**
- * Plays collect animation (if any) and cleans up entity via context.entity.destroy.
+ * Plays collect animation (if any and clip exists) and cleans up entity via context.entity.destroy.
  */
-export function playAnimationAndDestroy(target, collectClip, context) {
+export function playAnimationAndDestroy(target, collectClip, context, node = null) {
   if (!target || target._isDestroyed) return;
 
   // Disable collider immediately to prevent duplicate pickup
@@ -113,14 +167,26 @@ export function playAnimationAndDestroy(target, collectClip, context) {
 
   const animator = target.components && target.components.SpriteAnimator;
   if (!target._collectable) {
-    target._collectable = { state: 'idle', animTimer: 0, respawnTimer: 0, isCollected: false };
+    target._collectable = { state: 'idle', animTimer: 0, respawnTimer: 0, isCollected: false, lastClip: '' };
   }
 
-  if (animator && collectClip) {
-    const duration = playClipSafe(animator, collectClip);
+  const clipInput = String(
+    collectClip !== undefined ? collectClip :
+    (node && node.data && node.data.values && (node.data.values.collectClip ?? node.data.values.collectClips)) || ''
+  ).trim();
+
+  const targetClipName = extractTargetClipName(clipInput);
+  const matchedClip = (animator && targetClipName) ? findClip(animator.clips, targetClipName) : null;
+
+  // Only defer destruction if a matching collection animation clip actually exists
+  if (animator && matchedClip) {
+    const duration = playClipSafe(animator, targetClipName, true);
     target._collectable.state = 'animating_destroy';
     target._collectable.animTimer = duration;
+    target._collectable.lastClip = animator.currentClip || '';
   } else {
+    // If no clip exists, destroy immediately
+    target._collectable.state = 'destroyed';
     if (context?.entity && typeof context.entity.destroy === 'function') {
       context.entity.destroy(target);
     }
@@ -128,9 +194,9 @@ export function playAnimationAndDestroy(target, collectClip, context) {
 }
 
 /**
- * Deactivates entity (active = false) after playing collection animation, with optional respawn scheduling.
+ * Deactivates entity (active = false) after playing collection animation (if clip exists), with optional respawn scheduling.
  */
-export function deactivateAndScheduleRespawn(target, collectClip, respawnTime = 0, context = null) {
+export function deactivateAndScheduleRespawn(target, collectClip, respawnTime = 0, context = null, node = null) {
   if (!target || target._isDestroyed) return;
 
   if (target.components?.Collider) {
@@ -139,15 +205,25 @@ export function deactivateAndScheduleRespawn(target, collectClip, respawnTime = 
 
   const animator = target.components && target.components.SpriteAnimator;
   if (!target._collectable) {
-    target._collectable = { state: 'idle', animTimer: 0, respawnTimer: 0, isCollected: false };
+    target._collectable = { state: 'idle', animTimer: 0, respawnTimer: 0, isCollected: false, lastClip: '' };
   }
 
   target._collectable.respawnTimer = Number(respawnTime) || 0;
 
-  if (animator && collectClip) {
-    const duration = playClipSafe(animator, collectClip);
+  const clipInput = String(
+    collectClip !== undefined ? collectClip :
+    (node && node.data && node.data.values && (node.data.values.collectClip ?? node.data.values.collectClips)) || ''
+  ).trim();
+
+  const targetClipName = extractTargetClipName(clipInput);
+  const matchedClip = (animator && targetClipName) ? findClip(animator.clips, targetClipName) : null;
+
+  // Only animate if a matching collection animation clip actually exists
+  if (animator && matchedClip) {
+    const duration = playClipSafe(animator, targetClipName, true);
     target._collectable.state = 'animating_deactivate';
     target._collectable.animTimer = duration;
+    target._collectable.lastClip = animator.currentClip || '';
   } else {
     target.active = false;
     target.visible = false;
@@ -157,14 +233,49 @@ export function deactivateAndScheduleRespawn(target, collectClip, respawnTime = 
 
 /**
  * Main process pipeline for Collectable Item node.
+ * Aligned with platformerAnimator logic for clip resolution and state management.
  */
-export function processCollectable(state, inputs, outputs, context) {
-  const targetId = inputs.targetEntity || 'self';
+export function processCollectable(stateOrParams, inputsOrContext, outputsMaybe, contextMaybe, nodeMaybe) {
+  const isDirect = (arguments.length <= 2 && typeof stateOrParams === 'object' && !outputsMaybe && !contextMaybe);
+  const inputs = isDirect ? stateOrParams : (inputsOrContext || {});
+  const context = isDirect ? inputsOrContext : contextMaybe;
+  const state = isDirect ? (context && context.state ? context.state : {}) : (stateOrParams || {});
+  const outputs = (!isDirect && outputsMaybe) ? outputsMaybe : {};
+  const node = isDirect ? (inputs && inputs._node ? inputs._node : null) : (nodeMaybe || context?.node);
+
+  const targetId = inputs.targetEntity || (node && node.data && node.data.values && node.data.values.targetEntity) || 'self';
   const target = context.entity ? context.entity.get(targetId) : null;
-  if (!target || target._isDestroyed) return;
+
+  // Guard against missing or already destroyed entities (never return undefined!)
+  if (!target || target._isDestroyed) {
+    const fallbackVal = typeof inputs.scoreValue === 'number' ? inputs.scoreValue : (node && node.data && node.data.values && typeof node.data.values.scoreValue === 'number' ? node.data.values.scoreValue : 1);
+    outputs.execOut = true;
+    outputs.isCollected = true;
+    outputs.collectorEntity = outputs.collectorEntity || '';
+    outputs.value = fallbackVal;
+    outputs.currentClip = '';
+    outputs.onCollected = false;
+    outputs.onAnimationEnd = false;
+    outputs.onRespawn = false;
+    outputs.onClipChanged = false;
+    const fallbackResult = {
+      execOut: true,
+      isCollected: true,
+      collectorEntity: outputs.collectorEntity || '',
+      value: fallbackVal,
+      currentClip: '',
+      onCollected: false,
+      onAnimationEnd: false,
+      onRespawn: false,
+      onClipChanged: false
+    };
+    Object.assign(outputs, fallbackResult);
+    return fallbackResult;
+  }
 
   const dt = typeof context.dt === 'number' ? context.dt : 0.016;
   const transform = target.components && (target.components.Transform || target.components.UITransform);
+  const animator = target.components && target.components.SpriteAnimator;
 
   if (!target._collectable) {
     target._collectable = {
@@ -174,47 +285,80 @@ export function processCollectable(state, inputs, outputs, context) {
       state: 'idle',
       animTimer: 0,
       respawnTimer: 0,
-      hasInitializedIdle: false
+      lastClip: ''
     };
   }
 
   const cState = target._collectable;
 
-  // Initialize idle clip on first run
-  if (!cState.hasInitializedIdle && inputs.idleClip && target.components?.SpriteAnimator) {
-    playClipSafe(target.components.SpriteAnimator, inputs.idleClip);
-    cState.hasInitializedIdle = true;
-  }
+  const idleInput = String(
+    inputs.idleClip !== undefined ? inputs.idleClip :
+    (inputs.idleClips !== undefined ? inputs.idleClips :
+    (node && node.data && node.data.values && (node.data.values.idleClip ?? node.data.values.idleClips)) || '')
+  ).trim();
 
-  outputs.value = typeof inputs.scoreValue === 'number' ? inputs.scoreValue : 1;
+  const idleTargetName = extractTargetClipName(idleInput);
+
+  let clipChanged = false;
+
+  outputs.value = typeof inputs.scoreValue === 'number' ? inputs.scoreValue : (node && node.data && node.data.values && typeof node.data.values.scoreValue === 'number' ? node.data.values.scoreValue : 1);
   outputs.isCollected = Boolean(cState.isCollected);
 
   // --- Phase A: Handling Animating Destroy ---
   if (cState.state === 'animating_destroy') {
     cState.animTimer -= dt;
-    if (cState.animTimer <= 0) {
+    const isAnimFinished = cState.animTimer <= 0 || (animator && !animator.isPlaying);
+    if (isAnimFinished) {
+      cState.state = 'destroyed';
       outputs.onAnimationEnd = true;
       if (typeof context.triggerFlow === 'function') context.triggerFlow('onAnimationEnd');
       if (context.entity && typeof context.entity.destroy === 'function') {
         context.entity.destroy(target);
       }
     }
+    outputs.currentClip = animator ? (animator.currentClip || cState.lastClip || '') : '';
     outputs.execOut = true;
-    return;
+    const result = {
+      execOut: true,
+      isCollected: true,
+      collectorEntity: outputs.collectorEntity || '',
+      value: outputs.value,
+      currentClip: outputs.currentClip,
+      onCollected: false,
+      onAnimationEnd: Boolean(outputs.onAnimationEnd),
+      onRespawn: false,
+      onClipChanged: false
+    };
+    Object.assign(outputs, result);
+    return result;
   }
 
   // --- Phase B: Handling Animating Deactivate ---
   if (cState.state === 'animating_deactivate') {
     cState.animTimer -= dt;
-    if (cState.animTimer <= 0) {
+    const isAnimFinished = cState.animTimer <= 0 || (animator && !animator.isPlaying);
+    if (isAnimFinished) {
       outputs.onAnimationEnd = true;
       if (typeof context.triggerFlow === 'function') context.triggerFlow('onAnimationEnd');
       target.active = false;
       target.visible = false;
       cState.state = 'despawned';
     }
+    outputs.currentClip = animator ? (animator.currentClip || cState.lastClip || '') : '';
     outputs.execOut = true;
-    return;
+    const result = {
+      execOut: true,
+      isCollected: true,
+      collectorEntity: outputs.collectorEntity || '',
+      value: outputs.value,
+      currentClip: outputs.currentClip,
+      onCollected: false,
+      onAnimationEnd: Boolean(outputs.onAnimationEnd),
+      onRespawn: false,
+      onClipChanged: false
+    };
+    Object.assign(outputs, result);
+    return result;
   }
 
   // --- Phase C: Handling Despawned & Respawn Timer ---
@@ -236,8 +380,21 @@ export function processCollectable(state, inputs, outputs, context) {
           target.components.Collider.active = true;
         }
 
-        if (inputs.idleClip && target.components?.SpriteAnimator) {
-          playClipSafe(target.components.SpriteAnimator, inputs.idleClip);
+        // Restore idle animation clip immediately on respawn if configured
+        if (animator && idleTargetName) {
+          const rawClips = animator.clips;
+          const matchedClip = findClip(rawClips, idleTargetName);
+          const resolvedClipId = matchedClip ? matchedClip.id : idleTargetName;
+
+          if (resolvedClipId) {
+            animator.currentClip = resolvedClipId;
+            animator._activeClipId = '';
+            animator._elapsedTime = 0;
+            animator.isPlaying = true;
+            if (matchedClip) matchedClip.frameIndex = 0;
+            clipChanged = true;
+            cState.lastClip = resolvedClipId;
+          }
         }
 
         outputs.isCollected = false;
@@ -245,37 +402,104 @@ export function processCollectable(state, inputs, outputs, context) {
         if (typeof context.triggerFlow === 'function') context.triggerFlow('onRespawn');
       }
     }
+    outputs.currentClip = animator ? (animator.currentClip || cState.lastClip || '') : '';
     outputs.execOut = true;
-    return;
+    const result = {
+      execOut: true,
+      isCollected: Boolean(cState.isCollected),
+      collectorEntity: outputs.collectorEntity || '',
+      value: outputs.value,
+      currentClip: outputs.currentClip,
+      onCollected: false,
+      onAnimationEnd: false,
+      onRespawn: Boolean(outputs.onRespawn),
+      onClipChanged: Boolean(clipChanged)
+    };
+    Object.assign(outputs, result);
+    return result;
   }
 
   // If entity is inactive, stop processing idle mechanics
   if (target.active === false) {
+    outputs.currentClip = animator ? (animator.currentClip || cState.lastClip || '') : '';
     outputs.execOut = true;
-    return;
+    const result = {
+      execOut: true,
+      isCollected: Boolean(cState.isCollected),
+      collectorEntity: outputs.collectorEntity || '',
+      value: outputs.value,
+      currentClip: outputs.currentClip,
+      onCollected: false,
+      onAnimationEnd: false,
+      onRespawn: false,
+      onClipChanged: false
+    };
+    Object.assign(outputs, result);
+    return result;
   }
 
   // --- Phase D: Idle Bobbing ---
-  if (inputs.autoBobbing !== false && inputs.autoBobbing !== 'false') {
+  const autoBobbingVal = inputs.autoBobbing !== undefined 
+    ? inputs.autoBobbing 
+    : (node && node.data && node.data.values && node.data.values.autoBobbing !== undefined ? node.data.values.autoBobbing : true);
+
+  if (cState.state === 'idle' && autoBobbingVal !== false && autoBobbingVal !== 'false') {
     applyBobbing(target, dt);
   }
 
-  // --- Phase E: Collision & Interaction Detection ---
-  const collectorTag = String(inputs.collectorTag || 'player').trim();
+  // --- Phase E: Idle Animation Synchronization (PlatformerHelper style) ---
+  if (cState.state === 'idle' && animator && idleTargetName) {
+    const rawClips = animator.clips;
+    const matchedClip = findClip(rawClips, idleTargetName);
+    const resolvedClipId = matchedClip ? matchedClip.id : idleTargetName;
+
+    if (resolvedClipId && animator.currentClip !== resolvedClipId) {
+      animator.currentClip = resolvedClipId;
+      animator._activeClipId = '';
+      animator._elapsedTime = 0;
+      animator.isPlaying = true;
+      if (matchedClip) matchedClip.frameIndex = 0;
+      clipChanged = true;
+    } else if (animator.currentClip && !animator.isPlaying) {
+      animator.isPlaying = true;
+    }
+    cState.lastClip = animator.currentClip || resolvedClipId;
+  }
+
+  // --- Phase F: Collision & Interaction Detection ---
+  const collectorTag = String(inputs.collectorTag || (node && node.data && node.data.values && node.data.values.collectorTag) || 'player').trim();
   const collector = checkOverlap(target, collectorTag, 32, context);
 
-  if (collector && inputs.canCollect !== false && inputs.canCollect !== 'false') {
+  const canCollectVal = inputs.canCollect !== undefined 
+    ? inputs.canCollect 
+    : (node && node.data && node.data.values && node.data.values.canCollect !== undefined ? node.data.values.canCollect : true);
+
+  if (collector && canCollectVal !== false && canCollectVal !== 'false') {
     // Mode check: keyboard interact key
-    if (inputs.pickupMode === 'interact_key') {
-      const key = String(inputs.interactKey || 'e').toLowerCase();
+    const pickupMode = inputs.pickupMode || (node && node.data && node.data.values && node.data.values.pickupMode) || 'collision';
+    if (pickupMode === 'interact_key') {
+      const key = String(inputs.interactKey || (node && node.data && node.data.values && node.data.values.interactKey) || 'e').toLowerCase();
       const keyboard = context.input && context.input.keyboard;
       const isPressed = keyboard && (
         (typeof keyboard.isJustPressed === 'function' && keyboard.isJustPressed(key)) ||
         (typeof keyboard.isDown === 'function' && keyboard.isDown(key))
       );
       if (!isPressed) {
+        outputs.currentClip = animator ? (animator.currentClip || cState.lastClip || '') : '';
         outputs.execOut = true;
-        return;
+        const result = {
+          execOut: true,
+          isCollected: Boolean(cState.isCollected),
+          collectorEntity: outputs.collectorEntity || '',
+          value: outputs.value,
+          currentClip: outputs.currentClip,
+          onCollected: false,
+          onAnimationEnd: false,
+          onRespawn: false,
+          onClipChanged: Boolean(clipChanged)
+        };
+        Object.assign(outputs, result);
+        return result;
       }
     }
 
@@ -283,7 +507,7 @@ export function processCollectable(state, inputs, outputs, context) {
     cState.isCollected = true;
     outputs.isCollected = true;
     outputs.collectorEntity = collector.scriptId || collector.id || '';
-    outputs.value = typeof inputs.scoreValue === 'number' ? inputs.scoreValue : 1;
+    outputs.value = typeof inputs.scoreValue === 'number' ? inputs.scoreValue : (node && node.data && node.data.values && typeof node.data.values.scoreValue === 'number' ? node.data.values.scoreValue : 1);
     outputs.onCollected = true;
 
     // Disable collider immediately to prevent multi-hit
@@ -292,8 +516,9 @@ export function processCollectable(state, inputs, outputs, context) {
     }
 
     // Play Audio SFX
-    if (inputs.sfxName && context.audio && typeof context.audio.play === 'function') {
-      context.audio.play(inputs.sfxName);
+    const sfx = inputs.sfxName || (node && node.data && node.data.values && node.data.values.sfxName);
+    if (sfx && context.audio && typeof context.audio.play === 'function') {
+      context.audio.play(sfx);
     }
 
     // Trigger execution output pin
@@ -302,18 +527,59 @@ export function processCollectable(state, inputs, outputs, context) {
     }
 
     // Execute Despawn Action Strategy
-    const action = String(inputs.despawnAction || 'destroy').toLowerCase();
+    const action = String(inputs.despawnAction || (node && node.data && node.data.values && node.data.values.despawnAction) || 'destroy').toLowerCase();
+    const collectClipName = inputs.collectClip !== undefined 
+      ? inputs.collectClip 
+      : (inputs.collectClips !== undefined 
+        ? inputs.collectClips 
+        : (node && node.data && node.data.values && (node.data.values.collectClip ?? node.data.values.collectClips)) || '');
+
     if (action === 'destroy') {
-      playAnimationAndDestroy(target, inputs.collectClip, context);
+      playAnimationAndDestroy(target, collectClipName, context, node);
+      if (target._collectable?.state === 'destroyed') {
+        outputs.onAnimationEnd = true;
+        if (typeof context.triggerFlow === 'function') {
+          context.triggerFlow('onAnimationEnd');
+        }
+      }
     } else if (action === 'deactivate') {
-      const respawnTime = typeof inputs.respawnTime === 'number' ? inputs.respawnTime : 0;
-      deactivateAndScheduleRespawn(target, inputs.collectClip, respawnTime, context);
+      const respawnTime = typeof inputs.respawnTime === 'number' 
+        ? inputs.respawnTime 
+        : (node && node.data && node.data.values && typeof node.data.values.respawnTime === 'number' ? node.data.values.respawnTime : 0);
+      deactivateAndScheduleRespawn(target, collectClipName, respawnTime, context, node);
+      if (target._collectable?.state === 'despawned') {
+        outputs.onAnimationEnd = true;
+        if (typeof context.triggerFlow === 'function') {
+          context.triggerFlow('onAnimationEnd');
+        }
+      }
     } else if (action === 'none') {
-      if (inputs.collectClip && target.components?.SpriteAnimator) {
-        playClipSafe(target.components.SpriteAnimator, inputs.collectClip);
+      const targetClipName = extractTargetClipName(collectClipName);
+      const matchedClip = (animator && targetClipName) ? findClip(animator.clips, targetClipName) : null;
+      if (matchedClip && animator) {
+        playClipSafe(animator, targetClipName, true);
+        cState.lastClip = animator.currentClip || '';
       }
     }
   }
 
+  outputs.currentClip = animator ? (animator.currentClip || cState.lastClip || '') : '';
+  if (clipChanged) {
+    outputs.onClipChanged = true;
+  }
+
   outputs.execOut = true;
+  const result = {
+    execOut: true,
+    isCollected: Boolean(cState.isCollected),
+    collectorEntity: outputs.collectorEntity || '',
+    value: outputs.value,
+    currentClip: outputs.currentClip,
+    onCollected: Boolean(outputs.onCollected),
+    onAnimationEnd: Boolean(outputs.onAnimationEnd),
+    onRespawn: Boolean(outputs.onRespawn),
+    onClipChanged: Boolean(outputs.onClipChanged)
+  };
+  Object.assign(outputs, result);
+  return result;
 }

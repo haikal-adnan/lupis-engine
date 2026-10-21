@@ -106,10 +106,7 @@ graph TD
   1. The entire multi-frame state machine and logic **must live in `core/Toolkit/<Domain>/<Domain>Helper.js`**.
   2. The blueprint `data.code` must only act as a dispatch bridge:
      ```javascript
-     let helper = context.toolkit && context.toolkit.platformer;
-     if (!helper && context.game && context.game.contextSystem) {
-       helper = context.game.contextSystem.toolkitHandler.platformerHelper;
-     }
+     const helper = context.toolkit && context.toolkit.platformer;
      if (helper) {
        helper.processController(context.state, inputs, outputs, context);
      }

@@ -16,7 +16,7 @@
   >
     <div 
       class="absolute inset-0 pointer-events-none transition-opacity duration-500 ease-out" 
-      :class="interaction.hoveredId || selectedNodeIds.length || selectedEdgeId ? 'opacity-5' : 'opacity-10'"
+      :class="selectedNodeIds.length || selectedEdgeId ? 'opacity-5' : 'opacity-10'"
       :style="{
         backgroundImage: isDark 
           ? 'radial-gradient(#ffffff 1px, transparent 1px)' 
@@ -144,7 +144,6 @@
           :is-dragging="interaction.mode === 'drag' && selectedNodeIds.includes(node.id)"
           @drag-start="startDragNode($event, node)"
           @connect-start="(e, portId, portType) => startConnect(e, node.id, portId, portType)"
-          @node-hover="(id) => interaction.hoveredId = id"
           @node-contextmenu="openMenu"
         />
       </div>

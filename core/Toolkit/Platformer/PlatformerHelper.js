@@ -71,7 +71,12 @@ function isStandingOnOneWayPlatform(target, oneWayTag, context) {
   return false;
 }
 
-export function processPlatformerController(state, inputs, outputs, context) {
+export function processPlatformerController(stateOrParams, inputsOrContext, outputsMaybe, contextMaybe) {
+  const isDirect = !outputsMaybe && (!contextMaybe || typeof contextMaybe !== 'object');
+  const inputs = isDirect ? stateOrParams : (inputsOrContext || {});
+  const context = isDirect ? inputsOrContext : contextMaybe;
+  const state = isDirect ? (context && context.state ? context.state : {}) : (stateOrParams || {});
+  const outputs = (!isDirect && outputsMaybe) ? outputsMaybe : {};
   const targetId = inputs.targetEntity || 'self';
   const target = context.assert.exists(context.entity.get(targetId));
   const phys = target.components && target.components.Physics;
@@ -187,9 +192,30 @@ export function processPlatformerController(state, inputs, outputs, context) {
   outputs.velocityX = phys ? (phys.velocityX || 0) : (moveDirX * speed);
   outputs.velocityY = phys ? (phys.velocityY || 0) : 0;
   outputs.execOut = true;
+  const result = {
+    isGrounded,
+    isGroundedOnOneWay: Boolean(onOneWay),
+    groundType: phys ? (phys.groundType || (onOneWay ? 'entity' : null)) : null,
+    movementState: isCombatAttacking ? 'attack' : (phys ? phys.movementState : (moveDirX !== 0 ? 'running' : 'idle')),
+    facingDirection: phys ? (phys.facingDirection || 'right') : (moveDirX < 0 ? 'left' : 'right'),
+    velocityX: phys ? (phys.velocityX || 0) : (moveDirX * speed),
+    velocityY: phys ? (phys.velocityY || 0) : 0,
+    onJump: didJump,
+    onLand: Boolean(outputs.onLand),
+    onDrop: didDrop,
+    execOut: true
+  };
+  Object.assign(outputs, result);
+  return result;
 }
 
-export function processPlatformerAnimator(state, inputs, outputs, context, node) {
+export function processPlatformerAnimator(stateOrParams, inputsOrContext, outputsMaybe, contextMaybe, nodeMaybe) {
+  const isDirect = (arguments.length <= 2 && typeof stateOrParams === 'object' && !outputsMaybe && !contextMaybe);
+  const inputs = isDirect ? stateOrParams : (inputsOrContext || {});
+  const context = isDirect ? inputsOrContext : contextMaybe;
+  const state = isDirect ? (context && context.state ? context.state : {}) : (stateOrParams || {});
+  const outputs = (!isDirect && outputsMaybe) ? outputsMaybe : {};
+  const node = isDirect ? (inputs && inputs._node ? inputs._node : null) : nodeMaybe;
   const targetId = inputs.targetEntity || 'self';
   const target = context.assert.exists(context.entity.get(targetId));
   const animator = context.assert.hasComponent(target, 'SpriteAnimator');
@@ -378,7 +404,16 @@ export function processPlatformerAnimator(state, inputs, outputs, context, node)
     if (clipChanged) {
       outputs.onClipChanged = true;
     }
-    return;
+    const result = {
+      execOut: true,
+      currentClip: outputs.currentClip,
+      activeState: 'hit',
+      facingDirection: facing,
+      isFlipped: shouldFlip,
+      onClipChanged: Boolean(outputs.onClipChanged)
+    };
+    Object.assign(outputs, result);
+    return result;
   }
 
   const combatState = target._combat || state.platformerCombat;
@@ -409,7 +444,16 @@ export function processPlatformerAnimator(state, inputs, outputs, context, node)
     outputs.activeState = 'attack';
     outputs.facingDirection = facing;
     outputs.isFlipped = shouldFlip;
-    return;
+    const result = {
+      execOut: true,
+      currentClip: outputs.currentClip,
+      activeState: 'attack',
+      facingDirection: facing,
+      isFlipped: shouldFlip,
+      onClipChanged: false
+    };
+    Object.assign(outputs, result);
+    return result;
   }
 
   if (!moveState) {
@@ -483,7 +527,17 @@ export function processPlatformerAnimator(state, inputs, outputs, context, node)
     outputs.currentClip = animator.currentClip || '';
     outputs.activeState = moveState;
     outputs.facingDirection = facing;
-    return;
+    outputs.isFlipped = false;
+    const result = {
+      execOut: true,
+      currentClip: outputs.currentClip,
+      activeState: moveState,
+      facingDirection: facing,
+      isFlipped: false,
+      onClipChanged: false
+    };
+    Object.assign(outputs, result);
+    return result;
   }
 
   let autoFlipX = true;
@@ -554,4 +608,14 @@ export function processPlatformerAnimator(state, inputs, outputs, context, node)
   if (clipChanged) {
     outputs.onClipChanged = true;
   }
+  const result = {
+    execOut: true,
+    currentClip: outputs.currentClip,
+    activeState: resolvedState,
+    facingDirection: facing,
+    isFlipped: shouldFlip,
+    onClipChanged: Boolean(outputs.onClipChanged)
+  };
+  Object.assign(outputs, result);
+  return result;
 }

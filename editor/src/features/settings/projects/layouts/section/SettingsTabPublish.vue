@@ -127,7 +127,7 @@
         <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
         Target Project: <strong class="text-foreground">{{ currentProjectId || 'None Selected' }}</strong>
       </span>
-      <span>Lupis Engine v1.0</span>
+      <span>Lupis Engine v0.1.0</span>
     </div>
 
   </div>

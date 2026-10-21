@@ -575,17 +575,64 @@ return;`
             path: ''
           },
           code: 
-`const col = inputs.collection;
-const pathString = inputs.path;
+`let col = inputs.collection;
+if (typeof col === 'string') {
+  const trimmed = col.trim();
+  if ((trimmed.startsWith('{') && trimmed.endsWith('}')) || (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
+    try {
+      col = JSON.parse(trimmed);
+    } catch (_) {}
+  }
+}
 
-const parts = pathString.split(/[.\\[\\]]+/).filter(p => p !== '');
+const pathString = inputs.path ? String(inputs.path) : '';
+const parts = pathString.split(/[.\\[\\]]+/).map(p => p.replace(/^['"]|['"]$/g, '')).filter(p => p !== '');
 let current = col;
 let isFound = true;
 
+if (parts.length === 0) {
+  outputs.value = current ? current : null;
+  outputs.found = Boolean(current);
+  return;
+}
+
 for (let i = 0; i < parts.length; i++) {
   const part = parts[i];
-  if (current && typeof current === 'object' && part in current) {
-    current = current[part];
+  if (!current || typeof current !== 'object') {
+    isFound = false;
+    current = null;
+    break;
+  }
+
+  if (current instanceof Map) {
+    if (current.has(part)) {
+      current = current.get(part);
+    } else if (/^\\d+$/.test(part) && current.has(Number(part))) {
+      current = current.get(Number(part));
+    } else {
+      isFound = false;
+      current = null;
+      break;
+    }
+  } else if (Array.isArray(current)) {
+    const idx = Number(part);
+    if (Number.isInteger(idx) && idx >= 0 && idx < current.length) {
+      current = current[idx];
+    } else if (part in current) {
+      current = current[part];
+    } else {
+      isFound = false;
+      current = null;
+      break;
+    }
+  } else if (typeof current === 'object') {
+    if (Object.prototype.hasOwnProperty.call(current, part) || part in current) {
+      current = current[part];
+    } else {
+      isFound = false;
+      current = null;
+      break;
+    }
   } else {
     isFound = false;
     current = null;
@@ -593,7 +640,7 @@ for (let i = 0; i < parts.length; i++) {
   }
 }
 
-outputs.value = current;
+outputs.value = isFound ? current : null;
 outputs.found = isFound;
 return;`
         }
@@ -626,31 +673,63 @@ return;`
             path: ''
           },
           code: 
-`const targetCol = context.assert.exists(inputs.collection, 'Target collection must not be null or undefined');
-const pathString = inputs.path;
-const newVal = inputs.value;
+`let targetCol = inputs.collection;
+if (typeof targetCol === 'string') {
+  const trimmed = targetCol.trim();
+  if ((trimmed.startsWith('{') && trimmed.endsWith('}')) || (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
+    try {
+      targetCol = JSON.parse(trimmed);
+    } catch (_) {}
+  }
+}
 
-const cloned = Array.isArray(targetCol) ? [...targetCol] : { ...targetCol };
-const parts = pathString.split(/[.\\[\\]]+/).filter(p => p !== '');
-let current = cloned;
+targetCol = context.assert.exists(targetCol, 'Target collection must not be null or undefined');
+const pathString = inputs.path ? String(inputs.path) : '';
+const newVal = inputs.value;
+const parts = pathString.split(/[.\\[\\]]+/).map(p => p.replace(/^['"]|['"]$/g, '')).filter(p => p !== '');
+
+function getProp(obj, key) {
+  if (obj instanceof Map) {
+    if (obj.has(key)) return obj.get(key);
+    if (/^\\d+$/.test(key) && obj.has(Number(key))) return obj.get(Number(key));
+    return undefined;
+  }
+  return obj[key];
+}
+
+function setProp(obj, key, val) {
+  if (obj instanceof Map) {
+    if (/^\\d+$/.test(key) && obj.has(Number(key))) {
+      obj.set(Number(key), val);
+    } else {
+      obj.set(key, val);
+    }
+  } else {
+    obj[key] = val;
+  }
+}
+
+let current = targetCol;
 
 for (let i = 0; i < parts.length - 1; i++) {
   const part = parts[i];
   const nextPart = parts[i + 1];
-  const isNextIndex = /^\d+$/.test(nextPart);
+  const isNextIndex = /^\\d+$/.test(nextPart);
 
-  if (!current[part]) {
-    current[part] = isNextIndex ? [] : {};
+  let nextVal = getProp(current, part);
+  if (!nextVal || typeof nextVal !== 'object') {
+    nextVal = isNextIndex ? [] : {};
+    setProp(current, part, nextVal);
   }
-  current = current[part];
+  current = nextVal;
 }
 
 if (parts.length > 0) {
   const lastPart = parts[parts.length - 1];
-  current[lastPart] = newVal;
+  setProp(current, lastPart, newVal);
 }
 
-outputs.collectionOut = cloned;
+outputs.collectionOut = targetCol;
 outputs.valueOut = newVal;
 outputs.execOut = true;
 return;`

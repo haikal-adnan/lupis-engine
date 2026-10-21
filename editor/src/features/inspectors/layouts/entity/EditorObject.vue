@@ -121,14 +121,41 @@
 
 
     <PropertyRow label="Tag">
+      <!-- Assigned Tags (Displayed below title tag, above dropdown) -->
+      <div v-if="currentEntityTags.length > 0" class="flex flex-col gap-1 w-full mb-1.5" data-testid="assigned-tags-list">
+        <div 
+          v-for="assignedTag in currentEntityTags" 
+          :key="assignedTag"
+          class="group flex items-center justify-between h-7 px-2.5 rounded-md border border-input bg-secondary/30 hover:bg-secondary/50 text-foreground transition-all duration-150 select-none"
+          :data-testid="`entity-tag-item-${assignedTag}`"
+        >
+          <span class="text-xs font-mono font-medium truncate">
+            {{ assignedTag }}
+          </span>
+
+          <button
+            type="button"
+            @click.stop="handleRemoveTagFromEntity(assignedTag)"
+            :title="`Remove tag ${assignedTag}`"
+            class="opacity-0 group-hover:opacity-100 flex items-center justify-center h-5 w-5 rounded hover:bg-destructive hover:text-destructive-foreground text-muted-foreground transition-all duration-150 ml-auto shrink-0"
+            :data-testid="`remove-entity-tag-${assignedTag}`"
+          >
+            <Trash2 class="w-3 h-3" />
+          </button>
+        </div>
+      </div>
+
+      <!-- Dropdown for Creating, Selecting, Renaming, and Deleting Tags -->
       <BaseSelect 
-        v-model="safeTag" 
+        v-model="selectDropdownValue" 
         :options="tagOptions" 
         :editable="true" 
         action-label="Create New Tag..." 
-        placeholder="Select Tag" 
-        @action="handleAddTag" 
-        @delete="handleDeleteTag" 
+        placeholder="Select tag..." 
+        @action="handleCreateNewTag" 
+        @select="handleSelectTagFromDropdown"
+        @rename="handleRenameTagInProject"
+        @delete="handleDeleteTagFromProject" 
         data-testid="object-tag-select"
       />
     </PropertyRow>
@@ -196,11 +223,12 @@ import {
   useInspectorBinding 
 } from "@inspectors/inspectors.js";
 
-import { useWorkspaceActions } from "@workspaces/workspaces.js"
+import { useWorkspaceActions, useWorkspaceStore } from "@workspaces/workspaces.js"
 import { usePrefabActions } from '@prefabs/prefabs.js';
 import { useSceneStore } from '@scenes/scenes.js';
 import { useProjectStore } from '@projects/projects.js'
 import { usePrefabStore } from '@prefabs/prefabs.js';
+import { engineBridge } from "@engines/engines.js";
 import { 
   usePrompt,
   useConfirm,
@@ -218,7 +246,8 @@ import {
 } from '@components/components.js';
 
 // 1. Selection State
-const { selectedEntity } = useInspectorSelection()
+const { selectedEntity, isEditingMasterPrefab } = useInspectorSelection()
+const workspaceStore = useWorkspaceStore()
 
 // 2. Prefab & Component Operations
 const { 
@@ -301,40 +330,262 @@ const locked = computed({
   }
 })
 
-const tag = bindEntityProp('tag')
-const safeTag = computed({
-  get: () => tag.value || 'Untagged',
-  set: (val) => {
-    tag.value = val
-    markAsOverridden()
+const selectDropdownValue = ref('')
+
+const sanitizeTagName = (val) => {
+  if (!val) return ''
+  return String(val).trim().replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '')
+}
+
+const currentEntityTags = computed(() => {
+  const ent = selectedEntity.value
+  if (!ent) return []
+  if (Array.isArray(ent.tags)) {
+    return ent.tags
   }
+  if (ent.tag && String(ent.tag).toLowerCase() !== 'untagged') {
+    return [ent.tag]
+  }
+  return []
 })
 
 const tagOptions = computed(() => {
   const project = projectStore.project
-  if (!project || !project.tags) return [{ label: 'Untagged', value: 'Untagged' }]
-  return project.tags.map(t => ({ label: t, value: t }))
+  const rawList = project?.tags || ['Untagged', 'Player', 'Enemy']
+  const entityTagsLower = new Set(currentEntityTags.value.map(t => t.toLowerCase()))
+
+  return rawList
+    .filter(t => String(t).toLowerCase() !== 'untagged')
+    .map(t => ({
+      label: t,
+      value: t,
+      disabled: entityTagsLower.has(String(t).toLowerCase())
+    }))
 })
 
-const handleAddTag = async () => {
-  const newTag = await prompt({ title: 'Create New Tag', message: 'Enter name:', placeholder: 'e.g. Water', confirmText: 'Create' })
-  if (!newTag) return
-  const cleanTag = newTag.trim()
-  if (!cleanTag) return
-  const currentTags = projectStore.project?.tags || []
-  if (currentTags.some(t => t.toLowerCase() === cleanTag.toLowerCase())) {
-    await alert({ title: 'Tag Exists', message: `Tag "${cleanTag}" already in use.`, type: 'warning' })
-    return
+const applyTagsToEntity = (newTags) => {
+  if (!selectedEntity.value) return
+  const id = selectedEntity.value.id
+
+  const cleanTags = []
+  const seen = new Set()
+  for (const t of newTags) {
+    const clean = sanitizeTagName(t)
+    if (clean && !seen.has(clean.toLowerCase())) {
+      seen.add(clean.toLowerCase())
+      cleanTags.push(clean)
+    }
   }
-  projectStore.addTag(cleanTag)
-  safeTag.value = cleanTag
+
+  const primaryTag = cleanTags[0] || 'untagged'
+
+  if (isEditingMasterPrefab && isEditingMasterPrefab.value) {
+    prefabStore.updatePrefab(workspaceStore.activeTab.id, {
+      tags: cleanTags,
+      tag: primaryTag
+    })
+    engineBridge.updatePrefabMasterProp?.({
+      prefabId: workspaceStore.activeTab.id,
+      prop: 'tags',
+      value: cleanTags
+    })
+    engineBridge.updatePrefabMasterProp?.({
+      prefabId: workspaceStore.activeTab.id,
+      prop: 'tag',
+      value: primaryTag
+    })
+  } else {
+    sceneStore.updateEntityProp(id, 'tags', cleanTags)
+    sceneStore.updateEntityProp(id, 'tag', primaryTag)
+  }
+
+  markAsOverridden()
 }
 
-const handleDeleteTag = async (tagToDelete) => {
-  if (tagToDelete === 'Untagged') return
-  if (await confirm({ title: 'Delete Tag?', message: `Delete "${tagToDelete}"?`, type: 'danger', confirmText: 'Delete' })) {
-    if (safeTag.value === tagToDelete) safeTag.value = 'Untagged'
+const handleSelectTagFromDropdown = (chosenTag) => {
+  if (!chosenTag) return
+  const clean = sanitizeTagName(chosenTag)
+  if (!clean || clean.toLowerCase() === 'untagged') {
+    selectDropdownValue.value = ''
+    return
+  }
+
+  const current = [...currentEntityTags.value]
+  if (current.some(t => t.toLowerCase() === clean.toLowerCase())) {
+    selectDropdownValue.value = ''
+    return
+  }
+
+  current.push(clean)
+  applyTagsToEntity(current)
+  selectDropdownValue.value = ''
+}
+
+const handleRemoveTagFromEntity = (tagToRemove) => {
+  const targetLower = String(tagToRemove).trim().toLowerCase()
+  const nextTags = currentEntityTags.value.filter(t => String(t).trim().toLowerCase() !== targetLower)
+  applyTagsToEntity(nextTags)
+}
+
+const handleCreateNewTag = async () => {
+  const rawInput = await prompt({
+    title: 'Create New Tag',
+    message: 'Enter tag name (a-z, A-Z, 0-9, _):',
+    placeholder: 'e.g. Water_Obstacle',
+    confirmText: 'Create'
+  })
+  if (!rawInput) return
+
+  const cleanTag = sanitizeTagName(rawInput)
+  if (!cleanTag) {
+    await alert({
+      title: 'Invalid Tag',
+      message: 'Tag name can only contain letters, numbers, and underscores (a-zA-Z0-9_).',
+      type: 'warning'
+    })
+    return
+  }
+
+  const currentTags = projectStore.project?.tags || []
+  if (currentTags.some(t => t.toLowerCase() === cleanTag.toLowerCase())) {
+    await alert({
+      title: 'Tag Exists',
+      message: `Tag "${cleanTag}" already exists.`,
+      type: 'warning'
+    })
+    return
+  }
+
+  projectStore.addTag(cleanTag)
+
+  const current = [...currentEntityTags.value]
+  if (!current.some(t => t.toLowerCase() === cleanTag.toLowerCase())) {
+    current.push(cleanTag)
+    applyTagsToEntity(current)
+  }
+  selectDropdownValue.value = ''
+}
+
+const renameTagAcrossAllScenes = (oldTag, newTag) => {
+  const oldLower = String(oldTag).trim().toLowerCase()
+  const scenes = sceneStore.scenes || []
+
+  for (const scene of scenes) {
+    if (!Array.isArray(scene.entities)) continue
+    for (const ent of scene.entities) {
+      let changed = false
+      if (Array.isArray(ent.tags)) {
+        const nextTags = []
+        const seen = new Set()
+        for (const t of ent.tags) {
+          const mapped = String(t).trim().toLowerCase() === oldLower ? newTag : t
+          const mappedLower = mapped.toLowerCase()
+          if (!seen.has(mappedLower)) {
+            seen.add(mappedLower)
+            nextTags.push(mapped)
+          }
+        }
+        if (JSON.stringify(nextTags) !== JSON.stringify(ent.tags)) {
+          ent.tags = nextTags
+          ent.tag = nextTags[0] || 'untagged'
+          changed = true
+        }
+      } else if (ent.tag && String(ent.tag).trim().toLowerCase() === oldLower) {
+        ent.tag = newTag
+        ent.tags = [newTag]
+        changed = true
+      }
+
+      if (changed && engineBridge?.updateEntityProp) {
+        engineBridge.updateEntityProp({ id: ent.id, prop: 'tags', value: ent.tags })
+        engineBridge.updateEntityProp({ id: ent.id, prop: 'tag', value: ent.tag })
+      }
+    }
+  }
+}
+
+const handleRenameTagInProject = async (tagToRename) => {
+  if (String(tagToRename).toLowerCase() === 'untagged') return
+
+  const rawInput = await prompt({
+    title: 'Rename Tag',
+    message: `Enter new name for "${tagToRename}" (a-z, A-Z, 0-9, _):`,
+    placeholder: tagToRename,
+    confirmText: 'Rename'
+  })
+  if (!rawInput) return
+
+  const newCleanTag = sanitizeTagName(rawInput)
+  if (!newCleanTag) {
+    await alert({
+      title: 'Invalid Tag',
+      message: 'Tag name can only contain letters, numbers, and underscores (a-zA-Z0-9_).',
+      type: 'warning'
+    })
+    return
+  }
+
+  if (newCleanTag.toLowerCase() === tagToRename.toLowerCase() && newCleanTag === tagToRename) {
+    return
+  }
+
+  const currentTags = projectStore.project?.tags || []
+  const duplicate = currentTags.some(t => t.toLowerCase() === newCleanTag.toLowerCase() && t.toLowerCase() !== tagToRename.toLowerCase())
+  if (duplicate) {
+    await alert({
+      title: 'Tag Exists',
+      message: `Tag "${newCleanTag}" already exists.`,
+      type: 'warning'
+    })
+    return
+  }
+
+  projectStore.renameTag(tagToRename, newCleanTag)
+  renameTagAcrossAllScenes(tagToRename, newCleanTag)
+  selectDropdownValue.value = ''
+}
+
+const removeTagAcrossAllScenes = (tagToRemove) => {
+  const targetLower = String(tagToRemove).trim().toLowerCase()
+  const scenes = sceneStore.scenes || []
+
+  for (const scene of scenes) {
+    if (!Array.isArray(scene.entities)) continue
+    for (const ent of scene.entities) {
+      let changed = false
+      if (Array.isArray(ent.tags)) {
+        const nextTags = ent.tags.filter(t => String(t).trim().toLowerCase() !== targetLower)
+        if (nextTags.length !== ent.tags.length) {
+          ent.tags = nextTags
+          ent.tag = nextTags[0] || 'untagged'
+          changed = true
+        }
+      } else if (ent.tag && String(ent.tag).trim().toLowerCase() === targetLower) {
+        ent.tag = 'untagged'
+        ent.tags = []
+        changed = true
+      }
+
+      if (changed && engineBridge?.updateEntityProp) {
+        engineBridge.updateEntityProp({ id: ent.id, prop: 'tags', value: ent.tags })
+        engineBridge.updateEntityProp({ id: ent.id, prop: 'tag', value: ent.tag })
+      }
+    }
+  }
+}
+
+const handleDeleteTagFromProject = async (tagToDelete) => {
+  if (String(tagToDelete).toLowerCase() === 'untagged') return
+
+  if (await confirm({
+    title: 'Delete Tag?',
+    message: `Delete tag "${tagToDelete}" from project? It will be removed from all entities.`,
+    type: 'danger',
+    confirmText: 'Delete'
+  })) {
     projectStore.removeTag(tagToDelete)
+    removeTagAcrossAllScenes(tagToDelete)
+    selectDropdownValue.value = ''
   }
 }
 

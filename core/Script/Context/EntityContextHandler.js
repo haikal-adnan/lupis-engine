@@ -65,9 +65,13 @@ export class EntityContextHandler {
         if (entitySystem && typeof entitySystem.destroyByTag === 'function') {
           return entitySystem.destroyByTag(tag);
         }
-        const targetTag = String(tag).trim();
+        const targetTag = String(tag).trim().toLowerCase();
         const entities = world?.entities || [];
-        const matches = entities.filter(e => e.tag === targetTag);
+        const matches = entities.filter(e => {
+          if (typeof e.hasTag === 'function') return e.hasTag(targetTag);
+          if (Array.isArray(e.tags)) return e.tags.some(t => String(t).trim().toLowerCase() === targetTag);
+          return String(e.tag || '').trim().toLowerCase() === targetTag;
+        });
         let count = 0;
         for (const ent of matches) {
           if (!ent._isDestroyed && entitySystem && typeof entitySystem.destroyEntity === 'function') {
@@ -98,6 +102,26 @@ export class EntityContextHandler {
         if (!entity) return [];
         const entities = world?.entities || [];
         return entities.filter(e => e.parentId === entity.id);
+      },
+
+      getChildByName: (entity, childName) => {
+        if (!entity || !childName) return null;
+        const entities = world?.entities || [];
+        let parentEnt = entity;
+        if (typeof entity === 'string') {
+          parentEnt = (entitySystem && typeof entitySystem.getEntity === 'function')
+            ? entitySystem.getEntity(entity, runner.owner)
+            : entities.find(e => e.id === entity || e.scriptId === entity);
+        }
+        if (!parentEnt) return null;
+        const children = (entitySystem && typeof entitySystem.getChildren === 'function')
+          ? entitySystem.getChildren(parentEnt)
+          : entities.filter(e => e.parentId === parentEnt.id);
+        const search = String(childName).trim().toLowerCase();
+        return children.find(c => {
+          const sId = String(c.scriptId || '').toLowerCase();
+          return sId === search || sId.startsWith(search + '_');
+        }) || null;
       },
 
       getRoot: (entity) => {
@@ -137,11 +161,18 @@ export class EntityContextHandler {
         let closest = null;
         let minDistanceSq = Infinity;
 
+        const targetTag = String(tag || '').trim().toLowerCase();
+        if (!targetTag) return null;
+
         for (const other of entities) {
-          if (other.active === false) continue;
+          if (other.active === false || other._isDestroyed) continue;
           if (excludeId && other.id === excludeId) continue;
-          const otherTag = other.tag || other.components?.Tags?.value;
-          if (otherTag === tag) {
+          const match = typeof other.hasTag === 'function'
+            ? other.hasTag(targetTag)
+            : (Array.isArray(other.tags)
+                ? other.tags.some(t => String(t).trim().toLowerCase() === targetTag)
+                : String(other.tag || other.components?.Tags?.value || '').trim().toLowerCase() === targetTag);
+          if (match) {
             const t = other.components?.Transform || other.components?.UITransform;
             const ox = t ? (t.x || 0) : 0;
             const oy = t ? (t.y || 0) : 0;
@@ -157,16 +188,41 @@ export class EntityContextHandler {
         return closest;
       },
 
+      getAll: () => {
+        const entities = world?.entities || [];
+        return entities.filter(e => !e._isDestroyed && e.active !== false);
+      },
+
       getAllByTag: (tag) => {
         if (entitySystem && typeof entitySystem.getAllByTag === 'function') {
           return entitySystem.getAllByTag(tag);
         }
+        const targetTag = String(tag || '').trim().toLowerCase();
+        if (!targetTag) return [];
         const entities = world?.entities || [];
         return entities.filter(e => {
-          if (e.active === false) return false;
+          if (e.active === false || e._isDestroyed) return false;
+          if (typeof e.hasTag === 'function') return e.hasTag(targetTag);
+          if (Array.isArray(e.tags)) return e.tags.some(t => String(t).trim().toLowerCase() === targetTag);
           const otherTag = e.tag || e.components?.Tags?.value;
-          return otherTag === tag;
+          return String(otherTag || '').trim().toLowerCase() === targetTag;
         });
+      },
+
+      countByTag: (tag) => {
+        if (!tag) return 0;
+        if (entitySystem && typeof entitySystem.getAllByTag === 'function') {
+          return entitySystem.getAllByTag(tag).length;
+        }
+        const targetTag = String(tag).trim().toLowerCase();
+        const entities = world?.entities || [];
+        return entities.filter(e => {
+          if (e.active === false || e._isDestroyed) return false;
+          if (typeof e.hasTag === 'function') return e.hasTag(targetTag);
+          if (Array.isArray(e.tags)) return e.tags.some(t => String(t).trim().toLowerCase() === targetTag);
+          const otherTag = e.tag || e.components?.Tags?.value;
+          return String(otherTag || '').trim().toLowerCase() === targetTag;
+        }).length;
       },
 
       findByName: (name) => {

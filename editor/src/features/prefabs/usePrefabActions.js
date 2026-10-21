@@ -66,9 +66,15 @@ export function usePrefabActions() {
         delete child.layerId;
         delete child.orderIndex;
         delete child.prefabId;
+        if (!child.scriptId || child.scriptId === 'undefined') {
+          child.scriptId = child.name || child.type || 'child';
+        }
       });
 
       cleanData.parentId = null;
+      if (!cleanData.scriptId || cleanData.scriptId === 'undefined') {
+        cleanData.scriptId = cleanData.name || 'entity';
+      }
       type = cleanData.type; 
       
       dataPayload = { data: cleanData, children: cleanChildren };
@@ -282,15 +288,17 @@ export function usePrefabActions() {
     const nextOrderIndex = maxOrder + 1;
 
     const existingEntities = sceneStore.activeScene.entities;
-    const baseName = prefab.scriptId; 
+    const baseName = (prefab.data && (prefab.data.scriptId || prefab.data.name)) || prefab.scriptId || 'entity'; 
     const regex = new RegExp(`^${baseName}_(\\d+)$`);
 
     let maxIndex = 0;
     existingEntities.forEach(ent => {
-      const match = ent.scriptId.match(regex);
-      if (match) {
-        const num = parseInt(match[1], 10);
-        if (num > maxIndex) maxIndex = num;
+      if (ent && ent.scriptId) {
+        const match = ent.scriptId.match(regex);
+        if (match) {
+          const num = parseInt(match[1], 10);
+          if (num > maxIndex) maxIndex = num;
+        }
       }
     });
 
@@ -330,7 +338,11 @@ export function usePrefabActions() {
         clonedChild.id = newChildId;
         
         const shortHash = GenerateUUID().split('-')[0];
-        clonedChild.scriptId = `${clonedChild.scriptId}_${shortHash}`;
+        const rawChildBase = clonedChild.scriptId || clonedChild.name || clonedChild.type || 'child';
+        const childBase = (rawChildBase === 'undefined' || rawChildBase === 'null' || !rawChildBase)
+          ? (clonedChild.name || clonedChild.type || 'child')
+          : rawChildBase;
+        clonedChild.scriptId = `${childBase}_${shortHash}`;
         clonedChild.layerId = targetLayerId; 
 
         return clonedChild;

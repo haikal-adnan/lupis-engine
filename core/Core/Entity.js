@@ -8,7 +8,7 @@ export default class Entity {
         this.locked = false;
 
         this.type = "entity";    
-        this.tag = "untagged";   
+        this.tags = [];   
         this.layerId = "layer_root"; 
         this.prefabId = null;
 
@@ -23,6 +23,56 @@ export default class Entity {
         this.isDirty = false;
         
         this._editor = {}; 
+    }
+
+    get tag() {
+        return (this.tags && this.tags.length > 0) ? this.tags[0] : "untagged";
+    }
+
+    set tag(val) {
+        if (!val || String(val).toLowerCase() === "untagged") {
+            this.tags = [];
+        } else {
+            const clean = String(val).trim();
+            if (clean) {
+                this.tags = [clean];
+            }
+        }
+    }
+
+    hasTag(tag) {
+        if (!tag || !Array.isArray(this.tags)) return false;
+        const target = String(tag).trim().toLowerCase();
+        return this.tags.some(t => String(t).trim().toLowerCase() === target);
+    }
+
+    hasAnyTag(tagList = []) {
+        if (!Array.isArray(tagList)) return false;
+        return tagList.some(t => this.hasTag(t));
+    }
+
+    hasAllTags(tagList = []) {
+        if (!Array.isArray(tagList) || tagList.length === 0) return false;
+        return tagList.every(t => this.hasTag(t));
+    }
+
+    addTag(tag) {
+        const clean = String(tag || '').trim().replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+        if (!clean) return false;
+        if (!Array.isArray(this.tags)) this.tags = [];
+        if (!this.hasTag(clean)) {
+            this.tags.push(clean);
+            return true;
+        }
+        return false;
+    }
+
+    removeTag(tag) {
+        if (!tag || !Array.isArray(this.tags)) return false;
+        const target = String(tag).trim().toLowerCase();
+        const initialLen = this.tags.length;
+        this.tags = this.tags.filter(t => String(t).trim().toLowerCase() !== target);
+        return this.tags.length !== initialLen;
     }
 
     addComponent(name, data) {

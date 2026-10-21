@@ -1,4 +1,10 @@
-export function processPlatformerCombat(state, inputs, outputs, context, node) {
+export function processPlatformerCombat(stateOrParams, inputsOrContext, outputsMaybe, contextMaybe, nodeMaybe) {
+  const isDirect = !outputsMaybe && (!contextMaybe || typeof contextMaybe !== 'object');
+  const inputs = isDirect ? stateOrParams : (inputsOrContext || {});
+  const context = isDirect ? inputsOrContext : contextMaybe;
+  const state = isDirect ? (context && context.state ? context.state : {}) : (stateOrParams || {});
+  const outputs = (!isDirect && outputsMaybe) ? outputsMaybe : {};
+  const node = isDirect ? (inputs && inputs._node ? inputs._node : null) : nodeMaybe;
   const targetId = inputs.targetEntity || 'self';
   const target = context.assert.exists(context.entity.get(targetId));
   const animator = target.components && target.components.SpriteAnimator;
@@ -390,9 +396,32 @@ export function processPlatformerCombat(state, inputs, outputs, context, node) {
   outputs.currentClip = animator ? (animator.currentClip || cState.activeClipId || '') : (cState.activeClipId || '');
   if (!outputs.damage) outputs.damage = cState.currentAttackDef ? (cState.currentAttackDef.damage || 0) : 0;
   if (!outputs.hitTarget) outputs.hitTarget = '';
+  const result = {
+    execOut: true,
+    onAttackStart: Boolean(outputs.onAttackStart),
+    onHitboxActive: Boolean(outputs.onHitboxActive),
+    onHit: Boolean(outputs.onHit),
+    onAttackEnd: Boolean(outputs.onAttackEnd),
+    isAttacking: outputs.isAttacking,
+    canMove: outputs.canMove,
+    isCoolingDown: outputs.isCoolingDown,
+    cooldownRemaining: outputs.cooldownRemaining,
+    currentCombo: outputs.currentCombo,
+    currentClip: outputs.currentClip,
+    hitTarget: outputs.hitTarget,
+    damage: outputs.damage
+  };
+  Object.assign(outputs, result);
+  return result;
 }
 
-export function processEnemyCombat(state, inputs, outputs, context, node) {
+export function processEnemyCombat(stateOrParams, inputsOrContext, outputsMaybe, contextMaybe, nodeMaybe) {
+  const isDirect = !outputsMaybe && (!contextMaybe || typeof contextMaybe !== 'object');
+  const inputs = isDirect ? stateOrParams : (inputsOrContext || {});
+  const context = isDirect ? inputsOrContext : contextMaybe;
+  const state = isDirect ? (context && context.state ? context.state : {}) : (stateOrParams || {});
+  const outputs = (!isDirect && outputsMaybe) ? outputsMaybe : {};
+  const node = isDirect ? (inputs && inputs._node ? inputs._node : null) : nodeMaybe;
   const targetId = inputs.targetEntity || 'self';
   const target = context.assert.exists(context.entity.get(targetId));
   const animator = target.components && target.components.SpriteAnimator;
@@ -667,4 +696,19 @@ export function processEnemyCombat(state, inputs, outputs, context, node) {
   outputs.currentClip = animator ? (animator.currentClip || cState.activeClipId || '') : (cState.activeClipId || '');
   if (!outputs.damageDealt) outputs.damageDealt = 0;
   if (!outputs.hitPlayer) outputs.hitPlayer = '';
+  const result = {
+    execOut: true,
+    onAttackStart: Boolean(outputs.onAttackStart),
+    onHitboxActive: Boolean(outputs.onHitboxActive),
+    onHit: Boolean(outputs.onHit),
+    onAttackEnd: Boolean(outputs.onAttackEnd),
+    isAttacking: outputs.isAttacking,
+    isCoolingDown: outputs.isCoolingDown,
+    cooldownRemaining: outputs.cooldownRemaining,
+    currentClip: outputs.currentClip,
+    damageDealt: outputs.damageDealt,
+    hitPlayer: outputs.hitPlayer
+  };
+  Object.assign(outputs, result);
+  return result;
 }

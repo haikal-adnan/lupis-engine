@@ -102,8 +102,12 @@ export default class EntitySystem {
         const world = this.game?.world;
         if (!tag || !world || !Array.isArray(world.entities)) return 0;
 
-        const targetTag = String(tag).trim();
-        const matches = world.entities.filter(e => e.tag === targetTag);
+        const targetTag = String(tag).trim().toLowerCase();
+        const matches = world.entities.filter(e => {
+            if (typeof e.hasTag === 'function') return e.hasTag(targetTag);
+            if (Array.isArray(e.tags)) return e.tags.some(t => String(t).trim().toLowerCase() === targetTag);
+            return String(e.tag || '').trim().toLowerCase() === targetTag;
+        });
         let count = 0;
 
         for (const entity of matches) {
@@ -233,12 +237,18 @@ export default class EntitySystem {
 
         let closest = null;
         let minDistanceSq = Infinity;
+        const targetTag = String(tag || '').trim().toLowerCase();
+        if (!targetTag) return null;
 
         for (const other of entities) {
             if (other.active === false) continue;
             if (excludeId && other.id === excludeId) continue;
-            const otherTag = other.tag || other.components?.Tags?.value;
-            if (otherTag === tag) {
+            const match = typeof other.hasTag === 'function'
+                ? other.hasTag(targetTag)
+                : (Array.isArray(other.tags)
+                    ? other.tags.some(t => String(t).trim().toLowerCase() === targetTag)
+                    : String(other.tag || other.components?.Tags?.value || '').trim().toLowerCase() === targetTag);
+            if (match) {
                 const t = other.components?.Transform || other.components?.UITransform;
                 const ox = t ? (t.x || 0) : 0;
                 const oy = t ? (t.y || 0) : 0;
@@ -256,10 +266,49 @@ export default class EntitySystem {
 
     getAllByTag(tag) {
         const entities = this.game?.world?.entities || [];
+        const targetTag = String(tag || '').trim().toLowerCase();
+        if (!targetTag) return [];
+
         return entities.filter(e => {
             if (e.active === false) return false;
+            if (typeof e.hasTag === 'function') return e.hasTag(targetTag);
+            if (Array.isArray(e.tags)) return e.tags.some(t => String(t).trim().toLowerCase() === targetTag);
             const otherTag = e.tag || e.components?.Tags?.value;
-            return otherTag === tag;
+            return String(otherTag || '').trim().toLowerCase() === targetTag;
+        });
+    }
+
+    getEntitiesByTag(tag) {
+        return this.getAllByTag(tag);
+    }
+
+    getEntitiesByAnyTag(tags = []) {
+        if (!Array.isArray(tags) || tags.length === 0) return [];
+        const targetTags = tags.map(t => String(t).trim().toLowerCase()).filter(Boolean);
+        const entities = this.game?.world?.entities || [];
+        return entities.filter(e => {
+            if (e.active === false) return false;
+            return targetTags.some(t => {
+                if (typeof e.hasTag === 'function') return e.hasTag(t);
+                if (Array.isArray(e.tags)) return e.tags.some(tagItem => String(tagItem).trim().toLowerCase() === t);
+                const otherTag = e.tag || e.components?.Tags?.value;
+                return String(otherTag || '').trim().toLowerCase() === t;
+            });
+        });
+    }
+
+    getEntitiesByAllTags(tags = []) {
+        if (!Array.isArray(tags) || tags.length === 0) return [];
+        const targetTags = tags.map(t => String(t).trim().toLowerCase()).filter(Boolean);
+        const entities = this.game?.world?.entities || [];
+        return entities.filter(e => {
+            if (e.active === false) return false;
+            return targetTags.every(t => {
+                if (typeof e.hasTag === 'function') return e.hasTag(t);
+                if (Array.isArray(e.tags)) return e.tags.some(tagItem => String(tagItem).trim().toLowerCase() === t);
+                const otherTag = e.tag || e.components?.Tags?.value;
+                return String(otherTag || '').trim().toLowerCase() === t;
+            });
         });
     }
 

@@ -525,6 +525,7 @@ describe('injectLayer Node & Layer Injection System', () => {
       let audioVolumes = { background: 30 };
       const mockContext = {
         game,
+        ui: game.contextSystem.uiHandler,
         audio: {
           getVolume: vi.fn(() => 30),
           setVolume: vi.fn((bus, v) => { audioVolumes[bus] = v; })
@@ -603,6 +604,7 @@ describe('injectLayer Node & Layer Injection System', () => {
       // 4. Run switchButtonShape in Scene 2
       const mockContext = {
         game,
+        ui: game.contextSystem.uiHandler,
         entity: {
           get: vi.fn(id => game.world.entities.find(e => e.id === id || e.scriptId === id))
         },

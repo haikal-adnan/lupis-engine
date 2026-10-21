@@ -24,7 +24,7 @@ export default class ScriptSystem {
         this.runners.forEach(runner => {
             const isUIEntity = runner.owner && (
                 uiLayerIds.has(runner.owner.layerId) || 
-                runner.owner.tag === 'ui'
+                (typeof runner.owner.hasTag === 'function' ? runner.owner.hasTag('ui') : runner.owner.tag === 'ui')
             );
 
             // UI scripts or scripts with runInPause flag continue running during pause

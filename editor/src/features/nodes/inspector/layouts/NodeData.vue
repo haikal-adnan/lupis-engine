@@ -326,7 +326,7 @@
 <script setup>
 import { computed } from 'vue';
 import { Sliders, Variable, Edit3, Plus } from 'lucide-vue-next';
-import { VariableInputGroup, VariableSelect, useNodeInspector, useVariableConfig } from '@nodes/nodes.js';
+import { VariableInputGroup, VariableSelect, useNodeInspector, useVariableConfig, useNodeBlueprint } from '@nodes/nodes.js';
 import { PropertySection, PropertyRow, BaseInput, BaseNumber, BaseSelect, IconButton } from '@components/components.js';
 import { useScriptStore } from '@scripts/scripts.js';
 import { useProjectStore } from '@projects/projects.js';
@@ -335,6 +335,7 @@ const props = defineProps({ node: Object });
 const scriptStore = useScriptStore();
 const projectStore = useProjectStore();
 const { getVarColor, getDefaultValueForType, sanitizeVariableValue } = useVariableConfig();
+const { getNodeBlueprint } = useNodeBlueprint();
 
 const { 
   node, 
@@ -629,12 +630,18 @@ function getPlaceholder(key, value, type) {
   return '';
 }
 
+function getBlueprintOptions(key) {
+  if (!node.value?.type) return null;
+  const bp = getNodeBlueprint(node.value.type);
+  return bp?.defaultData?.data?.options?.[key] || null;
+}
+
 function hasOptions(key) {
-  return !!node.value?.data?.options?.[key];
+  return !!(node.value?.data?.options?.[key] || getBlueprintOptions(key));
 }
 
 function getOptions(key) {
-  return node.value?.data?.options?.[key] || [];
+  return node.value?.data?.options?.[key] || getBlueprintOptions(key) || [];
 }
 
 function isPrimitive(val) {
@@ -644,13 +651,12 @@ function isPrimitive(val) {
 function getInputDataType(port, val) {
   if (port && (port.dataType || port.type)) {
     const type = String(port.dataType || port.type).toLowerCase();
-    if (type !== 'any') {
-      if (['number', 'float', 'int'].includes(type)) return 'number';
-      if (['boolean', 'bool'].includes(type)) return 'boolean';
-      if (['string', 'text'].includes(type)) return 'string';
-      if (['list', 'array'].includes(type)) return 'list';
-      if (['map', 'object'].includes(type)) return 'map';
-    }
+    if (type === 'any') return 'any';
+    if (['number', 'float', 'int'].includes(type)) return 'number';
+    if (['boolean', 'bool'].includes(type)) return 'boolean';
+    if (['string', 'text'].includes(type)) return 'string';
+    if (['list', 'array'].includes(type)) return 'list';
+    if (['map', 'object'].includes(type)) return 'map';
   }
   if (val !== null && val !== undefined && val !== '') return typeof val;
   return 'string';

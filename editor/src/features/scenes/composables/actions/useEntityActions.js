@@ -709,6 +709,19 @@ export const useEntityActions = {
       const oldValue = entity[propName];
       entity[propName] = value;
 
+      if (propName === 'tags') {
+        entity.tag = (Array.isArray(value) && value.length > 0) ? value[0] : 'untagged';
+      } else if (propName === 'tag') {
+        if (!Array.isArray(entity.tags)) entity.tags = [];
+        if (value && String(value).toLowerCase() !== 'untagged') {
+          if (!entity.tags.some(t => t.toLowerCase() === String(value).toLowerCase())) {
+            entity.tags = [value];
+          }
+        } else {
+          entity.tags = [];
+        }
+      }
+
       if (recordHistory) {
         const { recordPropChange } = useSceneHistory();
         recordPropChange(entityId, propName, oldValue, value);

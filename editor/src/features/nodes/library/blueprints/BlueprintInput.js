@@ -43,6 +43,10 @@ export const BlueprintInput = {
 `context.onTick(() => {
   const keyboard = context.input.keyboard;
   const action = inputs.action.toLowerCase();
+  const defaultK0 = inputs.key0;
+  const defaultK1 = inputs.key1;
+  outputs.onKey0 = false;
+  outputs.onKey1 = false;
 
   const keyKeys = Object.keys(inputs)
     .filter(k => k.startsWith('key'))
@@ -75,7 +79,7 @@ export const BlueprintInput = {
     }
   }
 
-  const legacyRaw = inputs.keys;
+  const legacyRaw = (node.data && node.data.values && node.data.values.keys) || '';
   if (typeof legacyRaw === 'string' && legacyRaw.length > 0) {
     const legacyTokens = legacyRaw.split(',').map(t => t.trim().toLowerCase());
     const activeOutputs = node.outputs || [];
@@ -380,7 +384,8 @@ if (!pointer || isLayerFrozen) {
 }
 
 const isPointerDown = Boolean(pointer.down);
-const isHovering = Boolean(context.input.isPointerOver(entity, inputs.useRaycast));
+const useColliderBounds = inputs.useColliderBounds;
+const isHovering = Boolean(useColliderBounds && context.collider ? context.collider.checkOverlap(entity, 'pointer') : context.input.isPointerOver(entity, inputs.useRaycast));
 
 outputs.isHovering = isHovering;
 outputs.isHolding = isHovering && isPointerDown;

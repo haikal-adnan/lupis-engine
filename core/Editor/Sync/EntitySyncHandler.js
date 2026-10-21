@@ -195,6 +195,12 @@ export class EntitySyncHandler {
         e[prop] = value;
         if (prop === "visible") e.visible = value;
         if (prop === "active") e.active = value;
+        if (prop === "tags") {
+            e.tags = Array.isArray(value) ? [...value] : [];
+        }
+        if (prop === "tag") {
+            e.tag = value;
+        }
 
         if (prop === "zIndex" || prop === "orderIndex") {
             const layer = this._findLayer(e.layerId);

@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { ALL_BLUEPRINTS } from '@nodes/library/blueprints/index.js';
 import {
   CODE_PANEL_PARAM_NAMES,
   VALID_CONTEXT_PROPERTIES,
@@ -298,7 +299,7 @@ describe('CodePanel Contract & Blueprint Evaluation', () => {
       expect(code).not.toContain("outputs.execOut");
     });
 
-    it('recognizes delegated inputs and outputs forwarding to helpers without false-positive unused port warnings', () => {
+    it('flags warnings when inputs or outputs are forwarded generically without explicit port references in code (no bypass allowed)', () => {
       const helperNode = {
         id: 'node_toolkit',
         inputs: [
@@ -311,7 +312,7 @@ describe('CodePanel Contract & Blueprint Evaluation', () => {
         ]
       };
 
-      const code = `
+      const unexposedCode = `
         const helper = context.toolkit.platformer;
         if (helper) {
           helper.processController(context.state, inputs, outputs, context);
@@ -319,14 +320,51 @@ describe('CodePanel Contract & Blueprint Evaluation', () => {
         return;
       `;
 
-      const result = validateCodePanelContract(code, { node: helperNode });
-      expect(result.hasSyntaxError).toBe(false);
-      expect(result.issues).toEqual([]);
-      expect(result.isValid).toBe(true);
+      const unexposedResult = validateCodePanelContract(unexposedCode, { node: helperNode });
+      expect(unexposedResult.isValid).toBe(false);
+      expect(unexposedResult.issues).toContain("Input Port 'targetEntity' is defined on node, but never read in code.");
+      expect(unexposedResult.issues).toContain("Input Port 'speed' is defined on node, but never read in code.");
+      expect(unexposedResult.issues).toContain("Output Port 'execOut' is defined on node, but never set in code.");
+      expect(unexposedResult.issues).toContain("Output Port 'velocityX' is defined on node, but never set in code.");
+
+      const explicitCode = `
+        const targetEntity = inputs.targetEntity;
+        const speed = inputs.speed;
+        const helper = context.toolkit.platformer;
+        if (helper) {
+          const res = helper.processController({ targetEntity, speed }, context);
+          outputs.velocityX = res.velocityX;
+        }
+        outputs.execOut = true;
+        return;
+      `;
+
+      const explicitResult = validateCodePanelContract(explicitCode, { node: helperNode });
+      expect(explicitResult.hasSyntaxError).toBe(false);
+      expect(explicitResult.issues).toEqual([]);
+      expect(explicitResult.isValid).toBe(true);
     });
 
     it('returns default fallback when node is null', () => {
       expect(generateDefaultNodeCode(null)).toContain('Write your node logic here');
+    });
+
+    it('validates that all blueprint items across all 11 categories pass with 0 contract issues', () => {
+      let totalNodes = 0;
+      const issues = [];
+
+      ALL_BLUEPRINTS.forEach(bp => {
+        bp.items.forEach(item => {
+          totalNodes++;
+          const res = validateCodePanelContract(item.defaultData.data?.code, { node: item.defaultData, blueprint: bp });
+          if (res.issues.length > 0) {
+            issues.push({ blueprint: bp.id, type: item.type, issues: res.issues });
+          }
+        });
+      });
+
+      expect(totalNodes).toBeGreaterThan(140);
+      expect(issues).toEqual([]);
     });
   });
 });

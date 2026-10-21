@@ -64,7 +64,20 @@ export const entitySchema = (data = {}) => {
     id: data.id || `${GenerateUUID()}`,
     scriptId: scriptId,
     type: type,
-    tag: data.tag || "untagged",
+    tags: (() => {
+      const raw = Array.isArray(data.tags) ? data.tags : (data.tag && data.tag !== 'untagged' ? [data.tag] : []);
+      const result = [];
+      const seen = new Set();
+      for (const t of raw) {
+        const clean = String(t || '').trim().replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+        if (clean && !seen.has(clean.toLowerCase())) {
+          seen.add(clean.toLowerCase());
+          result.push(clean);
+        }
+      }
+      return result;
+    })(),
+    tag: (Array.isArray(data.tags) && data.tags.length > 0) ? data.tags[0] : (data.tag || "untagged"),
     
     zIndex: Number(data.zIndex ?? 0), 
     orderIndex: Number(data.orderIndex ?? 0),

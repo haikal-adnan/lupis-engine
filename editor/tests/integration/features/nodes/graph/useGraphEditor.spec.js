@@ -231,6 +231,81 @@ describe('Graph Editor Integration', () => {
     })
   })
 
+  describe('Node Relationship & Selection Visibility (isRelated)', () => {
+    it('returns true for all nodes when no node is selected, ignoring hover states', async () => {
+      const nodeA = { id: 'node_1' }
+      const nodeB = { id: 'node_2' }
+      const nodeC = { id: 'node_3' }
+      const edge = { id: 'e_1', source: 'node_1', target: 'node_2' }
+
+      await setupMockScriptEnvironment({
+        scriptId: 'script_related_test',
+        nodes: [nodeA, nodeB, nodeC],
+        edges: [edge]
+      })
+      scriptStore.setActiveScript(scriptStore.getScriptById('script_related_test'))
+      scriptStore.setSelectedNodes([])
+
+      const graphEditor = useGraphEditor()
+
+      // Set hoveredId (e.g. from hovering an edge or previous hover)
+      graphEditor.interaction.hoveredId = 'node_1'
+
+      // All nodes and edges should remain related (not dimmed) when nothing is selected
+      expect(graphEditor.isRelated('node_1')).toBe(true)
+      expect(graphEditor.isRelated('node_2')).toBe(true)
+      expect(graphEditor.isRelated('node_3')).toBe(true)
+      expect(graphEditor.isRelated('e_1')).toBe(true)
+    })
+
+    it('highlights selected node and its connected nodes and edges while dimming unrelated ones', async () => {
+      const nodeA = { id: 'node_a' }
+      const nodeB = { id: 'node_b' }
+      const nodeC = { id: 'node_c' }
+      const edgeAB = { id: 'e_ab', source: 'node_a', target: 'node_b' }
+      const edgeBC = { id: 'e_bc', source: 'node_b', target: 'node_c' }
+
+      await setupMockScriptEnvironment({
+        scriptId: 'script_related_single',
+        nodes: [nodeA, nodeB, nodeC],
+        edges: [edgeAB, edgeBC]
+      })
+      scriptStore.setActiveScript(scriptStore.getScriptById('script_related_single'))
+      scriptStore.setSelectedNodes(['node_a'])
+
+      const graphEditor = useGraphEditor()
+
+      // Selected node and connected nodeB / edgeAB should be related
+      expect(graphEditor.isRelated('node_a')).toBe(true)
+      expect(graphEditor.isRelated('node_b')).toBe(true)
+      expect(graphEditor.isRelated('e_ab')).toBe(true)
+
+      // Unconnected nodeC and edgeBC should NOT be related (dimmed)
+      expect(graphEditor.isRelated('node_c')).toBe(false)
+      expect(graphEditor.isRelated('e_bc')).toBe(false)
+    })
+
+    it('filters strictly to selected nodes when multiple nodes are selected', async () => {
+      const nodeA = { id: 'node_a' }
+      const nodeB = { id: 'node_b' }
+      const nodeC = { id: 'node_c' }
+
+      await setupMockScriptEnvironment({
+        scriptId: 'script_related_multi',
+        nodes: [nodeA, nodeB, nodeC],
+        edges: []
+      })
+      scriptStore.setActiveScript(scriptStore.getScriptById('script_related_multi'))
+      scriptStore.setSelectedNodes(['node_a', 'node_b'])
+
+      const graphEditor = useGraphEditor()
+
+      expect(graphEditor.isRelated('node_a')).toBe(true)
+      expect(graphEditor.isRelated('node_b')).toBe(true)
+      expect(graphEditor.isRelated('node_c')).toBe(false)
+    })
+  })
+
   describe('Negative & Edge Cases', () => {
     it('[Bad Path] rejects connection between incompatible port data types and triggers pop alert', async () => {
       // Arrange

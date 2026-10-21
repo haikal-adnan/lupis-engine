@@ -220,6 +220,78 @@ test.describe('Blueprint Logic, Math & Data Management E2E Testing', () => {
     });
   });
 
+  // 6b. GET VALUE BY PATH (FROM COLLECTION LIST/MAP)
+  test('retrieves nested property from collection map using getFromPath', async ({ blueprintRunner }) => {
+    await blueprintRunner.runTest({
+      testName: 'Get From Path Test',
+      entityName: 'GetPathEntity',
+      scriptName: 'Script_GetPath',
+      variables: [
+        {
+          name: 'playerData',
+          type: 'map',
+          rawJson: { stats: { hp: 100 } },
+        },
+      ],
+      nodes: [
+        { id: 'start', type: 'eventGameStart', pos: { x: 100, y: 100 } },
+        { id: 'getVar', type: 'variableGet', pos: { x: 100, y: 250 } },
+        {
+          id: 'getPathNode',
+          type: 'getFromPath',
+          pos: { x: 350, y: 200 },
+          inspectorValues: { path: { value: 'stats.hp', type: 'string' } },
+        },
+        { id: 'notif', type: 'uiNotification', pos: { x: 650, y: 100 } },
+      ],
+      variableBindings: [{ nodeId: 'getVar', varName: 'playerData' }],
+      connections: [
+        { source: 'getVar', sourceHandle: 'value', target: 'getPathNode', targetHandle: 'collection' },
+        { source: 'getPathNode', sourceHandle: 'value', target: 'notif', targetHandle: 'message' },
+        { source: 'start', sourceHandle: 'execOut', target: 'notif', targetHandle: 'execIn' },
+      ],
+      expectedLog: 100,
+    });
+  });
+
+  // 6c. SET VALUE BY PATH (IN COLLECTION LIST/MAP)
+  test('updates nested property in collection map using setFromPath', async ({ blueprintRunner }) => {
+    await blueprintRunner.runTest({
+      testName: 'Set From Path Test',
+      entityName: 'SetPathEntity',
+      scriptName: 'Script_SetPath',
+      variables: [
+        {
+          name: 'character',
+          type: 'map',
+          rawJson: { profile: { title: 'Novice' } },
+        },
+      ],
+      nodes: [
+        { id: 'start', type: 'eventGameStart', pos: { x: 100, y: 100 } },
+        { id: 'getVar', type: 'variableGet', pos: { x: 100, y: 250 } },
+        {
+          id: 'setPathNode',
+          type: 'setFromPath',
+          pos: { x: 350, y: 150 },
+          inspectorValues: {
+            path: { value: 'profile.title', type: 'string' },
+            value: { value: 'Champion', type: 'string' },
+          },
+        },
+        { id: 'notif', type: 'uiNotification', pos: { x: 650, y: 100 } },
+      ],
+      variableBindings: [{ nodeId: 'getVar', varName: 'character' }],
+      connections: [
+        { source: 'start', sourceHandle: 'execOut', target: 'setPathNode', targetHandle: 'execIn' },
+        { source: 'getVar', sourceHandle: 'value', target: 'setPathNode', targetHandle: 'collection' },
+        { source: 'setPathNode', sourceHandle: 'execOut', target: 'notif', targetHandle: 'execIn' },
+        { source: 'setPathNode', sourceHandle: 'valueOut', target: 'notif', targetHandle: 'message' },
+      ],
+      expectedLog: 'Champion',
+    });
+  });
+
   // 7. CONTROL LOOP RANGE ITERATION
   test('executes for loop range and outputs final index on completed', async ({ blueprintRunner }) => {
     await blueprintRunner.runTest({

@@ -42,6 +42,7 @@ export const CANONICAL_PORT_IDS = Object.freeze({
   parentEntity: 'Parent entity identifier',
   childEntity: 'Child entity identifier',
   childEntities: 'List of child entity identifiers',
+  childName: 'Name of the child entity to find',
   prefabName: 'Name of the prefab to spawn',
   targetLayer: 'Target layer identifier',
   layerId: 'Layer ID',
@@ -166,7 +167,21 @@ export const CANONICAL_PORT_IDS = Object.freeze({
   sfxName: 'Audio asset played on collection',
   despawnAction: 'Lifecycle action after collection (destroy, deactivate, none)',
   respawnTime: 'Delay in seconds before item respawns',
-  autoBobbing: 'Whether item bobs up and down smoothly'
+  autoBobbing: 'Whether item bobs up and down smoothly',
+  totalCount: 'Total number of items to generate or count',
+  columns: 'Number of columns in a grid layout',
+  spacingX: 'Horizontal spacing between items in a grid layout',
+  spacingY: 'Vertical spacing between items in a grid layout',
+  startX: 'Starting X coordinate for layout or range',
+  startY: 'Starting Y coordinate for layout or range',
+  dataList: 'List of data objects for data binding or generation',
+  onSpawnItem: 'Triggered when an individual item is spawned in a loop or grid',
+  spawnedEntity: 'Identifier of the entity that was just spawned',
+  itemIndex: 'Index of the current item being processed in a collection',
+  rowIndex: 'Row index in a 2D grid layout',
+  colIndex: 'Column index in a 2D grid layout',
+  itemData: 'Data associated with the current item',
+  spawnedEntities: 'List of all spawned entity identifiers'
 });
 
 export function isValidPortId(id) {

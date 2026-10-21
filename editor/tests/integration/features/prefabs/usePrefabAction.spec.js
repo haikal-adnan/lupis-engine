@@ -208,6 +208,32 @@ describe('Integration Test: PrefabActions', () => {
       expect(engineBridge.selectEntity).toHaveBeenCalledWith([instance.id])
     })
 
+    it('preserves source entity scriptId and ensures children have valid non-undefined scriptId', async () => {
+      // Arrange
+      const prefab = await actions.createPrefab('PrefabAsset_Level')
+      prefab.data = {
+        id: 'p-root',
+        scriptId: 'panelLevelLayout',
+        type: 'ui',
+        components: { UITransform: { x: 0, y: 0 } }
+      }
+      prefab.children = [
+        { id: 'child-1', parentId: 'p-root', name: 'levelStar1', type: 'ui' },
+        { id: 'child-2', parentId: 'p-root', scriptId: 'undefined', type: 'ui' }
+      ]
+
+      // Act
+      const instance = actions.instantiatePrefab(prefab.id, { x: 100, y: 200 })
+
+      // Assert
+      expect(instance.scriptId).toBe('panelLevelLayout_1')
+      const children = sceneStore.activeScene.entities.filter(e => e.parentId === instance.id)
+      expect(children).toHaveLength(2)
+      expect(children[0].scriptId.startsWith('levelStar1_')).toBe(true)
+      expect(children[0].scriptId.includes('undefined')).toBe(false)
+      expect(children[1].scriptId.includes('undefined')).toBe(false)
+    })
+
     it('links multiple entities to prefab after dialog confirmation', async () => {
       // Arrange
       const prefab = await actions.createPrefab('Rock')

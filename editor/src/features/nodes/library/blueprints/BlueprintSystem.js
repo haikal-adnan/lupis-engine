@@ -292,6 +292,8 @@ return;`
           },
           code: 
 `const formatStr = inputs.format;
+const v0 = inputs.v0;
+const v1 = inputs.v1;
 
 const formatted = formatStr.replace(/{([^{}]+)}/g, (_, path) => {
   const parts = path.split('.');
@@ -337,6 +339,8 @@ return;`
           },
           code: 
 `const sep = inputs.separator;
+const v0 = inputs.v0;
+const v1 = inputs.v1;
 
 const collection = Object.entries(inputs)
   .filter(([key]) => key !== 'separator')

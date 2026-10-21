@@ -17,8 +17,6 @@
         transform: `translate(${Math.round(position.x)}px, ${Math.round(position.y)}px) translateZ(0)`
     }"
     @mousedown="$emit('drag-start',$event)"
-    @mouseenter="$emit('node-hover', data.id)"
-    @mouseleave="$emit('node-hover', null)"
     @contextmenu.stop.prevent="$emit('node-contextmenu',$event, data)"
     @dblclick.stop="openEditor"
   >
@@ -141,7 +139,7 @@ const props = defineProps({
   isDragging: Boolean
 })
 
-defineEmits(['drag-start', 'node-hover', 'connect-start', 'connect-end', 'node-contextmenu'])
+defineEmits(['drag-start', 'connect-start', 'connect-end', 'node-contextmenu'])
 
 const workspaceStore = useWorkspaceStore()
 const { prompt } = usePrompt()

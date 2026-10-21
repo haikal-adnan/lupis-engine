@@ -515,13 +515,14 @@ export function useGraphEditor() {
       return selectedNodeIds.value.includes(targetId)
     }
 
-    const subjectId = interaction.hoveredId || (selectedCount === 1 ? selectedNodeIds.value[0] : selectedNodeId.value)
+    const subjectId = selectedCount === 1 ? selectedNodeIds.value[0] : selectedNodeId.value
     if (!subjectId) return true
     if (subjectId === targetId) return true
 
     const connectedEdge = edges.value.find(e => 
       (e.source === subjectId && e.target === targetId) || 
-      (e.target === subjectId && e.source === targetId)
+      (e.target === subjectId && e.source === targetId) ||
+      (e.id === targetId && (e.source === subjectId || e.target === subjectId))
     )
     return !!connectedEdge
   }

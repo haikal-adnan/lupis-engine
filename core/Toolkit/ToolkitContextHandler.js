@@ -17,7 +17,7 @@ export class ToolkitContextHandler {
   }
 
   createFacade(contextParams) {
-    const getCtx = (ctx) => ctx || contextParams.context;
+    const getCtx = (ctx) => ctx || contextParams?.context;
 
     return {
       dialogue: {
@@ -25,22 +25,37 @@ export class ToolkitContextHandler {
         presentChoices: (state, inputs, outputs, ctx) => processChoicePresenter(state, inputs, outputs, getCtx(ctx))
       },
       platformer: {
-        processController: (state, inputs, outputs, ctx) => processPlatformerController(state, inputs, outputs, getCtx(ctx)),
-        processAnimator: (state, inputs, outputs, ctx) => processPlatformerAnimator(state, inputs, outputs, getCtx(ctx), contextParams.node)
+        processController: (...args) => {
+          if (args.length <= 2 || (args[2] === undefined && args[3] === undefined)) {
+            return processPlatformerController(args[0], getCtx(args[1]));
+          }
+          return processPlatformerController(args[0], args[1], args[2], getCtx(args[3]));
+        },
+        processAnimator: (state, inputs, outputs, ctx) => processPlatformerAnimator(state, inputs, outputs, getCtx(ctx), contextParams?.node)
       },
       combat: {
-        processPlatformerCombat: (state, inputs, outputs, ctx) => processPlatformerCombat(state, inputs, outputs, getCtx(ctx), contextParams.node),
-        processEnemyCombat: (state, inputs, outputs, ctx) => processEnemyCombat(state, inputs, outputs, getCtx(ctx), contextParams.node)
+        processPlatformerCombat: (state, inputs, outputs, ctx) => processPlatformerCombat(state, inputs, outputs, getCtx(ctx), contextParams?.node),
+        processEnemyCombat: (...args) => {
+          if (args.length <= 2 || (args[2] === undefined && args[3] === undefined)) {
+            return processEnemyCombat(args[0], getCtx(args[1]));
+          }
+          return processEnemyCombat(args[0], args[1], args[2], getCtx(args[3]), contextParams?.node);
+        }
       },
       ai: {
-        processChaser: (state, inputs, outputs, ctx) => processEnemyChaser(state, inputs, outputs, getCtx(ctx))
+        processChaser: (...args) => {
+          if (args.length <= 2 || (args[2] === undefined && args[3] === undefined)) {
+            return processEnemyChaser(args[0], getCtx(args[1]));
+          }
+          return processEnemyChaser(args[0], args[1], args[2], getCtx(args[3]));
+        }
       },
       collectable: {
-        processCollectable: (state, inputs, outputs, ctx) => processCollectable(state, inputs, outputs, getCtx(ctx)),
+        processCollectable: (state, inputs, outputs, ctx) => processCollectable(state, inputs, outputs, getCtx(ctx), contextParams?.node),
         applyBobbing: (target, dt, speed, amp) => applyBobbing(target, dt, speed, amp),
         checkOverlap: (target, tag, dist, ctx) => checkOverlap(target, tag, dist, getCtx(ctx)),
-        playAnimationAndDestroy: (target, clip, ctx) => playAnimationAndDestroy(target, clip, getCtx(ctx)),
-        deactivateAndScheduleRespawn: (target, clip, respawnTime, ctx) => deactivateAndScheduleRespawn(target, clip, respawnTime, getCtx(ctx))
+        playAnimationAndDestroy: (target, clip, ctx) => playAnimationAndDestroy(target, clip, getCtx(ctx), contextParams?.node),
+        deactivateAndScheduleRespawn: (target, clip, respawnTime, ctx) => deactivateAndScheduleRespawn(target, clip, respawnTime, getCtx(ctx), contextParams?.node)
       }
     };
   }

@@ -54,13 +54,40 @@ export const BlueprintAI = {
             autoFlipX: true
           },
           code:
-`let helper = context.toolkit && context.toolkit.ai;
-if (!helper && context.game && context.game.contextSystem) {
-  helper = context.game.contextSystem.toolkitHandler.aiHelper;
-}
+`const targetEntity = inputs.targetEntity;
+const playerTag = inputs.playerTag;
+const detectRadius = inputs.detectRadius;
+const loseRadius = inputs.loseRadius;
+const stopRadius = inputs.stopRadius;
+const chaseSpeed = inputs.chaseSpeed;
+const patrolSpeed = inputs.patrolSpeed;
+const patrolDistance = inputs.patrolDistance;
+const autoFlipX = inputs.autoFlipX;
+
+const helper = context.toolkit && context.toolkit.ai;
 if (helper) {
-  helper.processChaser(context.state, inputs, outputs, context);
+  const res = helper.processChaser({
+    targetEntity,
+    playerTag,
+    detectRadius,
+    loseRadius,
+    stopRadius,
+    chaseSpeed,
+    patrolSpeed,
+    patrolDistance,
+    autoFlipX
+  }, context) || {};
+  outputs.isChasing = res.isChasing;
+  outputs.inAttackRange = res.inAttackRange;
+  outputs.movementState = res.movementState;
+  outputs.distanceToTarget = res.distanceToTarget;
+  outputs.facingDirection = res.facingDirection;
+  outputs.targetPlayer = res.targetPlayer;
+  outputs.onTargetAcquired = res.onTargetAcquired;
+  outputs.onTargetLost = res.onTargetLost;
+  outputs.onInAttackRange = res.onInAttackRange;
 }
+outputs.execOut = true;
 return;`
         }
       }
@@ -121,13 +148,35 @@ return;`
             facingDirection: ''
           },
           code:
-`let helper = context.toolkit && context.toolkit.combat;
-if (!helper && context.game && context.game.contextSystem) {
-  helper = context.game.contextSystem.toolkitHandler.combatHelper;
-}
+`const targetEntity = inputs.targetEntity;
+const playerTag = inputs.playerTag;
+const attackClip = inputs.attackClip;
+const attackCooldown = inputs.attackCooldown;
+const startFrame = inputs.startFrame;
+const endFrame = inputs.endFrame;
+const hitboxConfig = inputs.hitboxConfig;
+const damage = inputs.damage;
+const knockbackX = inputs.knockbackX;
+const knockbackY = inputs.knockbackY;
+const autoTriggerInRange = inputs.autoTriggerInRange;
+const facingDirection = inputs.facingDirection;
+const triggerAttack = inputs.triggerAttack;
+
+const helper = context.toolkit && context.toolkit.combat;
 if (helper) {
-  helper.processEnemyCombat(context.state, inputs, outputs, context);
+  const res = helper.processEnemyCombat(context.state, inputs, outputs, context);
+  outputs.isAttacking = res.isAttacking;
+  outputs.isCoolingDown = res.isCoolingDown;
+  outputs.cooldownRemaining = res.cooldownRemaining;
+  outputs.currentClip = res.currentClip;
+  outputs.damageDealt = res.damageDealt;
+  outputs.hitPlayer = res.hitPlayer;
+  outputs.onAttackStart = res.onAttackStart;
+  outputs.onHitboxActive = res.onHitboxActive;
+  outputs.onHit = res.onHit;
+  outputs.onAttackEnd = res.onAttackEnd;
 }
+outputs.execOut = true;
 return;`
         }
       }

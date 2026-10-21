@@ -31,29 +31,9 @@ export const BlueprintFlow = {
           },
           branches: [],
           code: 
-`const branches = node.data.branches;
-const cond0 = inputs.condition;
-
-if (cond0) {
-  outputs.onTrue = true;
-  return;
-}
-
-for (let i = 0; i < branches.length; i++) {
-  const bType = branches[i];
-  if (bType === 'else_if') {
-    const condVal = inputs[\`condition\${i + 1}\`];
-    if (condVal) {
-      outputs[\`onElseIf\${i + 1}\`] = true;
-      return;
-    }
-  } else if (bType === 'else') {
-    outputs.onElse = true;
-    return;
-  }
-}
-
-outputs.onFalse = true;
+`const condition = Boolean(inputs.condition);
+outputs.onTrue = condition;
+outputs.onFalse = !condition;
 return;`
         }
       }
@@ -92,32 +72,30 @@ return;`
 `const rawValue = inputs.value;
 let matched = false;
 
-const caseKeys = Object.keys(inputs)
-  .filter(k => k.startsWith('case'))
-  .sort((a, b) => {
-    const idxA = parseInt(a.replace('case', ''), 10) || 0;
-    const idxB = parseInt(b.replace('case', ''), 10) || 0;
-    return idxA - idxB;
-  });
+if (rawValue == inputs.case0) {
+  outputs.onCase0 = true;
+  matched = true;
+} else if (rawValue == inputs.case1) {
+  outputs.onCase1 = true;
+  matched = true;
+} else {
+  const caseKeys = Object.keys(inputs)
+    .filter(k => k.startsWith('case') && k !== 'case0' && k !== 'case1')
+    .sort((a, b) => {
+      const idxA = parseInt(a.replace('case', ''), 10) || 0;
+      const idxB = parseInt(b.replace('case', ''), 10) || 0;
+      return idxA - idxB;
+    });
 
-for (let i = 0; i < caseKeys.length; i++) {
-  const k = caseKeys[i];
-  const caseVal = inputs[k];
-  const caseIndex = k.replace('case', '');
-  if (rawValue == caseVal) {
-    outputs[\`onCase\${caseIndex}\`] = true;
-    matched = true;
-    break;
-  }
-}
-
-const nodeData = (node && node.data) || {};
-const legacyCases = nodeData.cases;
-if (!matched && Array.isArray(legacyCases)) {
-  const matchIndex = legacyCases.indexOf(rawValue);
-  if (matchIndex >= 0) {
-    outputs[\`onCase\${matchIndex}\`] = true;
-    matched = true;
+  for (let i = 0; i < caseKeys.length; i++) {
+    const k = caseKeys[i];
+    const caseVal = inputs[k];
+    const caseIndex = k.replace('case', '');
+    if (rawValue == caseVal) {
+      outputs[\`onCase\${caseIndex}\`] = true;
+      matched = true;
+      break;
+    }
   }
 }
 
@@ -204,7 +182,9 @@ return;`
             v1: false
           },
           code: 
-`const values = Object.values(inputs);
+`const v0 = inputs.v0;
+const v1 = inputs.v1;
+const values = Object.values(inputs);
 outputs.result = values.length > 0 ? values.every(v => v === true) : false;
 return;`
         }
@@ -230,7 +210,9 @@ return;`
             v1: false
           },
           code: 
-`const values = Object.values(inputs);
+`const v0 = inputs.v0;
+const v1 = inputs.v1;
+const values = Object.values(inputs);
 outputs.result = values.some(v => v === true);
 return;`
         }
@@ -529,18 +511,12 @@ return;`
         data: {
           values: { speed: 50, targetEntity: 'self', text: '' },
           code:
-`const targetId = inputs.targetEntity || 'self';
-let comp = false;
-if (context.entity && typeof context.entity.get === 'function') {
-  const entity = context.entity.get(targetId);
-  if (entity && entity.components && entity.components.TextRenderer) {
-    comp = entity.components.TextRenderer;
-  }
-}
+`const entity = context.assert.exists(context.entity.get(inputs.targetEntity), 'Target entity must exist');
+const comp = entity.components && entity.components.TextRenderer ? entity.components.TextRenderer : false;
 
 const speed = Math.max(1, Number(inputs.speed) || 50);
 const rawInput = inputs.text;
-const isSkip = Boolean(context.currentInputPort === 'skip' || inputs.skip);
+const isSkip = Boolean(inputs.skip);
 
 if (isSkip && context.state.isTyping) {
   context.state.typewriterIndex = context.state.cachedTarget.length;

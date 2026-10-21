@@ -93,7 +93,7 @@
                 ]"
               >
                 <span 
-                  class="truncate pr-8 flex-1 block text-left"
+                  class="truncate pr-16 flex-1 block text-left"
                   :class="{ 'italic text-muted-foreground/60': option.disabled }"
                 >
                   {{ option.label }}
@@ -105,19 +105,36 @@
                   </svg>
                 </span>
 
-                <button 
-                  v-if="editable && option.value !== 'untagged' && !option.disabled"
-                  type="button"
-                  :aria-label="`Delete ${option.label}`"
-                  :data-testid="`delete-option-${option.value}`"
-                  @click.stop="triggerDelete(option)"
-                  class="absolute right-2 hidden group-hover:flex items-center justify-center h-6 w-6 rounded-sm hover:bg-destructive hover:text-destructive-foreground text-muted-foreground transition-colors"
-                  title="Delete Tag"
+                <div 
+                  v-if="editable && String(option.value).toLowerCase() !== 'untagged' && !option.disabled"
+                  class="absolute right-2 hidden group-hover:flex items-center gap-1 z-10"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
-                  </svg>
-                </button>
+                  <button 
+                    type="button"
+                    :aria-label="`Rename ${option.label}`"
+                    :data-testid="`rename-option-${option.value}`"
+                    @click.stop="triggerRename(option)"
+                    class="flex items-center justify-center h-6 w-6 rounded-sm hover:bg-accent hover:text-foreground text-muted-foreground transition-colors"
+                    title="Rename Tag"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
+                      <path d="m15 5 4 4"/>
+                    </svg>
+                  </button>
+                  <button 
+                    type="button"
+                    :aria-label="`Delete ${option.label}`"
+                    :data-testid="`delete-option-${option.value}`"
+                    @click.stop="triggerDelete(option)"
+                    class="flex items-center justify-center h-6 w-6 rounded-sm hover:bg-destructive hover:text-destructive-foreground text-muted-foreground transition-colors"
+                    title="Delete Tag"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+                    </svg>
+                  </button>
+                </div>
               </li>
               
               <li v-if="options.length === 0" class="px-3 py-2.5 text-xs text-muted-foreground text-center" data-testid="select-empty">
@@ -149,7 +166,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['action', 'delete'])
+const emit = defineEmits(['action', 'delete', 'rename', 'select'])
 const model = defineModel()
 const id = useId()
 
@@ -217,6 +234,7 @@ function removeListeners() {
 function select(option) {
   if (option.disabled) return
   model.value = option.value
+  emit('select', option.value)
   close()
 }
 
@@ -227,6 +245,10 @@ function triggerAction() {
 
 function triggerDelete(option) {
   emit('delete', option.value);
+}
+
+function triggerRename(option) {
+  emit('rename', option.value);
 }
 
 const vClickOutside = {

@@ -25,8 +25,8 @@ export const BlueprintCollectable = {
           { id: 'interactKey', dataType: 'string', color: '#F48FB1', defaultValue: 'e' },
           { id: 'scoreValue', dataType: 'number', color: '#64B5F6', defaultValue: 1 },
           { id: 'canCollect', dataType: 'boolean', color: '#81C784', defaultValue: true },
-          { id: 'idleClip', dataType: 'string', color: '#F48FB1', defaultValue: 'idle' },
-          { id: 'collectClip', dataType: 'string', color: '#F48FB1', defaultValue: 'collected' },
+          { id: 'idleClip', dataType: 'string', color: '#F48FB1', defaultValue: '' },
+          { id: 'collectClip', dataType: 'string', color: '#F48FB1', defaultValue: '' },
           { id: 'sfxName', dataType: 'string', color: '#F48FB1', defaultValue: '' },
           { id: 'despawnAction', dataType: 'string', color: '#F48FB1', defaultValue: 'destroy' },
           { id: 'respawnTime', dataType: 'number', color: '#64B5F6', defaultValue: 0 },
@@ -49,66 +49,50 @@ export const BlueprintCollectable = {
             interactKey: 'e',
             scoreValue: 1,
             canCollect: true,
-            idleClip: 'idle',
-            collectClip: 'collected',
+            idleClip: '',
+            collectClip: '',
             sfxName: '',
             despawnAction: 'destroy',
             respawnTime: 0,
             autoBobbing: true
           },
+          options: {
+            pickupMode: [
+              { label: 'Collision', value: 'collision' },
+              { label: 'Interact Key', value: 'interact_key' }
+            ],
+            despawnAction: [
+              { label: 'Destroy', value: 'destroy' },
+              { label: 'Deactivate', value: 'deactivate' },
+              { label: 'None', value: 'none' }
+            ]
+          },
           code: 
-`const helper = context.toolkit && context.toolkit.collectable;
-if (!helper) return;
+`const targetEntity = inputs.targetEntity;
+const collectorTag = inputs.collectorTag;
+const pickupMode = inputs.pickupMode;
+const interactKey = inputs.interactKey;
+const scoreValue = inputs.scoreValue;
+const canCollect = inputs.canCollect;
+const idleClip = inputs.idleClip;
+const collectClip = inputs.collectClip;
+const sfxName = inputs.sfxName;
+const despawnAction = inputs.despawnAction;
+const respawnTime = inputs.respawnTime;
+const autoBobbing = inputs.autoBobbing;
 
-const target = context.entity.get(inputs.targetEntity || 'self');
-if (!target || target._isDestroyed || target.active === false) return;
-
-// 1. Initial idle clip setup
-if (inputs.idleClip && !target._hasInitializedIdle && target.components && target.components.SpriteAnimator) {
-  target._hasInitializedIdle = true;
-}
-
-// 2. Idle sinusoidal bobbing
-if (inputs.autoBobbing) {
-  helper.applyBobbing(target, context.dt);
-}
-
-// 3. Collision overlap detection
-const collector = helper.checkOverlap(target, inputs.collectorTag);
-
-if (collector && inputs.canCollect !== false) {
-  if (inputs.pickupMode === 'interact_key') {
-    const key = String(inputs.interactKey || 'e').toLowerCase();
-    const keyboard = context.input && context.input.keyboard;
-    const isPressed = keyboard && (
-      (typeof keyboard.isJustPressed === 'function' && keyboard.isJustPressed(key)) ||
-      (typeof keyboard.isDown === 'function' && keyboard.isDown(key))
-    );
-    if (!isPressed) {
-      outputs.execOut = true;
-      return;
-    }
-  }
-
-  outputs.collectorEntity = collector.scriptId || collector.id || '';
-  outputs.value = typeof inputs.scoreValue === 'number' ? inputs.scoreValue : 1;
-  outputs.isCollected = true;
-  outputs.onCollected = true;
-  context.triggerFlow('onCollected');
-
-  if (inputs.sfxName && context.audio) {
-    context.audio.play(inputs.sfxName);
-  }
-
-  if (inputs.despawnAction === 'destroy') {
-    outputs.onAnimationEnd = true;
-    helper.playAnimationAndDestroy(target, inputs.collectClip, context);
-  } else if (inputs.despawnAction === 'deactivate') {
-    outputs.onRespawn = true;
-    helper.deactivateAndScheduleRespawn(target, inputs.collectClip, inputs.respawnTime, context);
+const helper = context.toolkit && context.toolkit.collectable;
+if (helper) {
+  const res = helper.processCollectable(context.state, inputs, outputs, context);
+  if (res) {
+    outputs.isCollected = res.isCollected;
+    outputs.collectorEntity = res.collectorEntity;
+    outputs.value = res.value;
+    outputs.onCollected = res.onCollected;
+    outputs.onAnimationEnd = res.onAnimationEnd;
+    outputs.onRespawn = res.onRespawn;
   }
 }
-
 outputs.execOut = true;
 return;`
         }

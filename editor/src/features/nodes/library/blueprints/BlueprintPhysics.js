@@ -124,8 +124,9 @@ return;`
 let hitObject = context.collider.checkSolid(entity);
 
 if (hitObject && inputs.tag && inputs.tag.trim() !== '') {
-  const objTag = hitObject.tag || (hitObject.components && hitObject.components.Tags && hitObject.components.Tags.value);
-  if (objTag !== inputs.tag) {
+  const targetLower = inputs.tag.trim().toLowerCase();
+  const match = typeof hitObject.hasTag === 'function' ? hitObject.hasTag(targetLower) : (Array.isArray(hitObject.tags) ? hitObject.tags.some(t => String(t).trim().toLowerCase() === targetLower) : String(hitObject.tag || (hitObject.components && hitObject.components.Tags && hitObject.components.Tags.value) || '').trim().toLowerCase() === targetLower);
+  if (!match) {
     hitObject = null;
   }
 }
@@ -568,10 +569,10 @@ const step = Math.max(1, Number(inputs.stepSize) || 8);
 const filterTag = String(inputs.targetTag || '').trim();
 
 let candidates = [];
-if (context.game && context.game.world && Array.isArray(context.game.world.entities)) {
-  candidates = context.game.world.entities;
-} else if (context.entity && typeof context.entity.getAllByTag === 'function' && filterTag) {
+if (filterTag && context.entity && typeof context.entity.getAllByTag === 'function') {
   candidates = context.entity.getAllByTag(filterTag);
+} else if (context.entity && typeof context.entity.getAll === 'function') {
+  candidates = context.entity.getAll();
 }
 
 let hitFound = false;
@@ -589,8 +590,9 @@ for (let d = 0; d <= maxDist; d += step) {
     if (other.active === false) continue;
     if (source && (other === source || (source.id && other.id === source.id))) continue;
     if (filterTag) {
-      const oTag = other.tag || (other.components && other.components.Tags && other.components.Tags.value);
-      if (oTag !== filterTag) continue;
+      const targetLower = String(filterTag).trim().toLowerCase();
+      const match = typeof other.hasTag === 'function' ? other.hasTag(targetLower) : (Array.isArray(other.tags) ? other.tags.some(t => String(t).trim().toLowerCase() === targetLower) : String(other.tag || (other.components && other.components.Tags && other.components.Tags.value) || '').trim().toLowerCase() === targetLower);
+      if (!match) continue;
     }
 
     const t = other.components && (other.components.Transform || other.components.UITransform);

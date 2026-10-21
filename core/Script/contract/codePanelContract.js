@@ -200,17 +200,40 @@ export function validateCodePanelContract(code, options = {}) {
   const usedInputKeys = extractUsedInputs(codeStr);
   const usedOutputKeys = extractUsedOutputs(codeStr);
 
-  const allValidInputIdentifiers = targetNode.inputs?.flatMap(p => [p.label, p.id]).filter(Boolean) || [];
-  const allValidOutputIdentifiers = targetNode.outputs?.flatMap(p => [p.label, p.id]).filter(Boolean) || [];
+  const dynamicMode = targetNode.dynamicMode || targetNode.data?.dynamicMode || 'none';
+  const propertyOptions = targetNode.data?.propertyOptions || targetNode.propertyOptions || [];
+  const propertyOptionKeys = propertyOptions.map(p => p.value).filter(Boolean);
+
+  const dynamicInputKeys = (dynamicMode === 'inputProperty' || (propertyOptions.length > 0 && dynamicMode !== 'outputProperty')) ? propertyOptionKeys : [];
+  const dynamicOutputKeys = (dynamicMode === 'outputProperty' || (propertyOptions.length > 0 && dynamicMode !== 'inputProperty')) ? propertyOptionKeys : [];
+
+  const allValidInputIdentifiers = [
+    ...(targetNode.inputs?.flatMap(p => [p.label, p.id]).filter(Boolean) || []),
+    ...dynamicInputKeys
+  ];
+  const allValidOutputIdentifiers = [
+    ...(targetNode.outputs?.flatMap(p => [p.label, p.id]).filter(Boolean) || []),
+    ...dynamicOutputKeys
+  ];
 
   usedInputKeys.forEach(inputKey => {
-    if (!allValidInputIdentifiers.includes(inputKey)) {
+    const isDynamicAllowed = 
+      (dynamicMode === 'switch' && /^case\d+$/.test(inputKey)) ||
+      (dynamicMode === 'keyboard' && /^key\d+$/.test(inputKey)) ||
+      (dynamicMode === 'sequential' && /^v\d+$/.test(inputKey));
+
+    if (!allValidInputIdentifiers.includes(inputKey) && !isDynamicAllowed) {
       issues.push(`Input '${inputKey}' is used in code, but is not defined in Node Input Ports.`);
     }
   });
 
   usedOutputKeys.forEach(outputKey => {
-    if (!allValidOutputIdentifiers.includes(outputKey)) {
+    const isDynamicAllowed = 
+      (dynamicMode === 'switch' && /^onCase\d+$/.test(outputKey)) ||
+      (dynamicMode === 'keyboard' && /^onKey\d+$/.test(outputKey)) ||
+      (dynamicMode === 'sequential' && /^v\d+$/.test(outputKey));
+
+    if (!allValidOutputIdentifiers.includes(outputKey) && !isDynamicAllowed) {
       issues.push(`Output '${outputKey}' is set in code, but is not defined in Node Output Ports.`);
     }
   });
@@ -222,13 +245,9 @@ export function validateCodePanelContract(code, options = {}) {
 
   const definedOutputPorts = targetNode.outputs || [];
 
-  const cleanCode = stripComments(codeStr);
-  const isInputsForwarded = /\binputs\b(?!\s*[\.\[])/.test(cleanCode);
-  const isOutputsForwarded = /\boutputs\b(?!\s*[\.\[])/.test(cleanCode);
-
   let matchedInputsCount = 0;
   dataInputPorts.forEach(port => {
-    const isUsed = isInputsForwarded || (port.label && usedInputKeys.includes(port.label)) || (port.id && usedInputKeys.includes(port.id));
+    const isUsed = (port.label && usedInputKeys.includes(port.label)) || (port.id && usedInputKeys.includes(port.id));
     if (isUsed) {
       matchedInputsCount++;
     } else {
@@ -238,7 +257,7 @@ export function validateCodePanelContract(code, options = {}) {
 
   let matchedOutputsCount = 0;
   definedOutputPorts.forEach(port => {
-    const isUsed = isOutputsForwarded || (port.label && usedOutputKeys.includes(port.label)) || (port.id && usedOutputKeys.includes(port.id));
+    const isUsed = (port.label && usedOutputKeys.includes(port.label)) || (port.id && usedOutputKeys.includes(port.id));
     if (isUsed) {
       matchedOutputsCount++;
     } else {

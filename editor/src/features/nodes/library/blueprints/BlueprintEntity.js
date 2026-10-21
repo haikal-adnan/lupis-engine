@@ -191,7 +191,58 @@ return;`
         }
       }
     },
-{
+    {
+      type: 'entityGetChildByName',
+      label: 'Get Child By Name',
+      description: 'Finds a child entity under a parent by its prefab or original script name.',
+      dynamicMode: 'none',
+      defaultData: {
+        settings: {
+          headerTitle: 'Get Child By Name',
+          headerColor: '#8E24AA',
+          category: 'Entity & Transform'
+        },
+        inputs: [
+          { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'targetEntity', dataType: 'string', color: '#F48FB1', defaultValue: 'self' },
+          { id: 'childName', dataType: 'string', color: '#F48FB1', defaultValue: '' }
+        ],
+        outputs: [
+          { id: 'execOut', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'childEntity', dataType: 'string', color: '#F48FB1' },
+          { id: 'found', dataType: 'boolean', color: '#E57373' }
+        ],
+        data: {
+          values: { targetEntity: 'self', childName: '' },
+          code:
+`const targetEntity = inputs.targetEntity;
+const childName = inputs.childName;
+
+let matched = '';
+if (context.entity && typeof context.entity.getChildByName === 'function') {
+  const child = context.entity.getChildByName(targetEntity, childName);
+  if (child) matched = child.scriptId || child.id || '';
+} else if (context.entity && typeof context.entity.getChildren === 'function') {
+  const parent = context.entity.get(targetEntity);
+  const children = context.entity.getChildren(parent);
+  const search = String(childName || '').trim().toLowerCase();
+  if (search && children) {
+    const item = children.find(c => {
+      const sId = String(c.scriptId || '').toLowerCase();
+      return sId === search || sId.startsWith(search + '_');
+    });
+    if (item) matched = item.scriptId || item.id || '';
+  }
+}
+
+outputs.childEntity = matched;
+outputs.found = Boolean(matched);
+outputs.execOut = true;
+return;`
+        }
+      }
+    },
+    {
       type: 'entityGetParent',
       label: 'Get Entity Parent',
       description: 'Retrieves the parent entity ID of the target entity.',
@@ -243,6 +294,7 @@ return;`
           propertyOptions: [
             { value: 'entityId', label: 'Entity ID', type: 'string', color: '#F48FB1' },
             { value: 'tagName', label: 'Tag Name', type: 'string', color: '#F48FB1' },
+            { value: 'tags', label: 'Tags', type: 'list', color: '#4DD0E1' },
             { value: 'active', label: 'Active', type: 'boolean', color: '#E57373' },
             { value: 'visible', label: 'Visible', type: 'boolean', color: '#E57373' }
           ],
@@ -251,6 +303,7 @@ return;`
 
 outputs.entityId = entity.scriptId;
 outputs.tagName = entity.tag;
+outputs.tags = Array.isArray(entity.tags) ? [...entity.tags] : (entity.tag && entity.tag !== 'untagged' ? [entity.tag] : []);
 outputs.active = entity.active;
 outputs.visible = entity.visible;
 return;`
@@ -290,7 +343,11 @@ return;`
 const propKeys = ['tag', 'active', 'visible'];
 for (const key of propKeys) {
   if (key in inputs) {
-    entity[key] = inputs[key];
+    if (key === 'tag') {
+      entity.tag = inputs.tag;
+    } else {
+      entity[key] = inputs[key];
+    }
   }
 }
 
@@ -326,6 +383,190 @@ return;`
 
 outputs.targetEntity = closest ? closest.scriptId : '';
 outputs.found = Boolean(closest);
+return;`
+        }
+      }
+    },
+    {
+      type: 'entityCountByTag',
+      label: 'Count Entities by Tag',
+      description: 'Counts active entities in the scene that have a specific tag.',
+      dynamicMode: 'none',
+      defaultData: {
+        settings: {
+          headerTitle: 'Count by Tag',
+          headerColor: '#00838F',
+          category: 'Entity & Transform'
+        },
+        inputs: [
+          { id: 'tag', dataType: 'string', color: '#F48FB1', defaultValue: 'Enemy' }
+        ],
+        outputs: [
+          { id: 'count', dataType: 'number', color: '#64B5F6' },
+          { id: 'hasAny', dataType: 'boolean', color: '#E57373' }
+        ],
+        data: {
+          values: { tag: 'Enemy' },
+          code: 
+`const tag = inputs.tag;
+const count = context.entity && typeof context.entity.countByTag === 'function'
+  ? context.entity.countByTag(tag)
+  : (context.entity && typeof context.entity.getAllByTag === 'function' ? context.entity.getAllByTag(tag).length : 0);
+
+outputs.count = count;
+outputs.hasAny = count > 0;
+return;`
+        }
+      }
+    },
+    {
+      type: 'entityHasTag',
+      label: 'Entity Has Tag',
+      description: 'Checks if an entity has a specific tag.',
+      dynamicMode: 'none',
+      defaultData: {
+        settings: {
+          headerTitle: 'Has Tag',
+          headerColor: '#00838F',
+          category: 'Entity & Transform'
+        },
+        inputs: [
+          { id: 'targetEntity', dataType: 'string', color: '#F48FB1', defaultValue: 'self' },
+          { id: 'tag', dataType: 'string', color: '#F48FB1', defaultValue: 'Enemy' }
+        ],
+        outputs: [
+          { id: 'hasTag', dataType: 'boolean', color: '#E57373' }
+        ],
+        data: {
+          values: { targetEntity: 'self', tag: 'Enemy' },
+          code: 
+`const entity = context.assert.exists(context.entity.get(inputs.targetEntity), 'Target entity must exist');
+const tag = inputs.tag;
+const match = typeof entity.hasTag === 'function'
+  ? entity.hasTag(tag)
+  : (Array.isArray(entity.tags) ? entity.tags.some(t => String(t).trim().toLowerCase() === String(tag).trim().toLowerCase()) : String(entity.tag || '').trim().toLowerCase() === String(tag).trim().toLowerCase());
+
+outputs.hasTag = Boolean(match);
+return;`
+        }
+      }
+    },
+    {
+      type: 'entityGetAllByTag',
+      label: 'Get All Entities by Tag',
+      description: 'Finds all active entities in the scene with a specific tag as a list of script IDs.',
+      dynamicMode: 'none',
+      defaultData: {
+        settings: {
+          headerTitle: 'Get All by Tag',
+          headerColor: '#00838F',
+          category: 'Entity & Transform'
+        },
+        inputs: [
+          { id: 'tag', dataType: 'string', color: '#F48FB1', defaultValue: 'Enemy' }
+        ],
+        outputs: [
+          { id: 'entities', dataType: 'list', color: '#4DD0E1' },
+          { id: 'count', dataType: 'number', color: '#64B5F6' }
+        ],
+        data: {
+          values: { tag: 'Enemy' },
+          code: 
+`const tag = inputs.tag;
+const list = context.entity && typeof context.entity.getAllByTag === 'function'
+  ? context.entity.getAllByTag(tag)
+  : [];
+
+outputs.entities = list.map(e => e.scriptId || e.id);
+outputs.count = list.length;
+return;`
+        }
+      }
+    },
+    {
+      type: 'entityAddTag',
+      label: 'Add Tag to Entity',
+      description: 'Adds a tag to the target entity during runtime.',
+      dynamicMode: 'none',
+      defaultData: {
+        settings: {
+          headerTitle: 'Add Tag',
+          headerColor: '#00838F',
+          category: 'Entity & Transform'
+        },
+        inputs: [
+          { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'targetEntity', dataType: 'string', color: '#F48FB1', defaultValue: 'self' },
+          { id: 'tag', dataType: 'string', color: '#F48FB1', defaultValue: '' }
+        ],
+        outputs: [
+          { id: 'execOut', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'success', dataType: 'boolean', color: '#E57373' }
+        ],
+        data: {
+          values: { targetEntity: 'self', tag: '' },
+          code: 
+`const entity = context.assert.exists(context.entity.get(inputs.targetEntity), 'Target entity must exist');
+const tag = inputs.tag;
+let success = false;
+if (typeof entity.addTag === 'function') {
+  success = entity.addTag(tag);
+} else {
+  if (!Array.isArray(entity.tags)) entity.tags = entity.tag && entity.tag !== 'untagged' ? [entity.tag] : [];
+  const clean = String(tag || '').trim().replace(/\\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+  if (clean && !entity.tags.some(t => t.toLowerCase() === clean.toLowerCase())) {
+    entity.tags.push(clean);
+    entity.tag = entity.tags[0];
+    success = true;
+  }
+}
+
+outputs.success = success;
+outputs.execOut = true;
+return;`
+        }
+      }
+    },
+    {
+      type: 'entityRemoveTag',
+      label: 'Remove Tag from Entity',
+      description: 'Removes a tag from the target entity during runtime.',
+      dynamicMode: 'none',
+      defaultData: {
+        settings: {
+          headerTitle: 'Remove Tag',
+          headerColor: '#00838F',
+          category: 'Entity & Transform'
+        },
+        inputs: [
+          { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'targetEntity', dataType: 'string', color: '#F48FB1', defaultValue: 'self' },
+          { id: 'tag', dataType: 'string', color: '#F48FB1', defaultValue: '' }
+        ],
+        outputs: [
+          { id: 'execOut', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'success', dataType: 'boolean', color: '#E57373' }
+        ],
+        data: {
+          values: { targetEntity: 'self', tag: '' },
+          code: 
+`const entity = context.assert.exists(context.entity.get(inputs.targetEntity), 'Target entity must exist');
+const tag = inputs.tag;
+let success = false;
+if (typeof entity.removeTag === 'function') {
+  success = entity.removeTag(tag);
+} else {
+  if (Array.isArray(entity.tags)) {
+    const targetLower = String(tag || '').trim().toLowerCase();
+    const prevLen = entity.tags.length;
+    entity.tags = entity.tags.filter(t => t.toLowerCase() !== targetLower);
+    entity.tag = entity.tags[0] || 'untagged';
+    success = entity.tags.length !== prevLen;
+  }
+}
+
+outputs.success = success;
+outputs.execOut = true;
 return;`
         }
       }

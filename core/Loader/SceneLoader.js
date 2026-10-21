@@ -117,7 +117,13 @@ export default class SceneLoader {
 
         entity.scriptId = finalData.scriptId; 
         entity.type = finalData.type;
-        entity.tag = finalData.tag;
+        if (Array.isArray(finalData.tags)) {
+            entity.tags = finalData.tags.map(t => String(t).trim()).filter(Boolean);
+        } else if (finalData.tag && String(finalData.tag).toLowerCase() !== 'untagged') {
+            entity.tags = [String(finalData.tag).trim()];
+        } else {
+            entity.tags = [];
+        }
         entity.layerId = finalData.layerId;
         entity.parentId = finalData.parentId;
 
@@ -169,7 +175,18 @@ export default class SceneLoader {
         merged.parentId = instance.parentId;
         merged.layerId = instance.layerId;
         merged.prefabId = instance.prefabId;
-        merged.tag = instance.tag;
+        if (Array.isArray(instance.tags)) {
+            merged.tags = [...instance.tags];
+        } else if (instance.tag && String(instance.tag).toLowerCase() !== 'untagged') {
+            merged.tags = [String(instance.tag).trim()];
+        } else if (Array.isArray(template.tags)) {
+            merged.tags = [...template.tags];
+        } else if (template.tag && String(template.tag).toLowerCase() !== 'untagged') {
+            merged.tags = [String(template.tag).trim()];
+        } else {
+            merged.tags = [];
+        }
+        merged.tag = merged.tags[0] || instance.tag || template.tag || 'untagged';
         merged.active = instance.active;
         merged.visible = instance.visible;
         merged.locked = instance.locked;

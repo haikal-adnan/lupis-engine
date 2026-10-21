@@ -10,11 +10,18 @@ export default class ColliderSystem {
         if (other.components?.Tilemap?.isOneWay || other.components?.Tilemap?.oneWay) return true;
         if (other.components?.Collider?.isOneWay || other.components?.Collider?.oneWay) return true;
         if (!oneWayTag) return false;
-        const tag = other.tag || other.components?.Tags?.value || other.components?.Tilemap?.tag || '';
-        if (!tag || typeof tag !== 'string') return false;
+
         const targets = String(oneWayTag).split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
         if (targets.length === 0) return false;
-        const tags = tag.split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
+
+        if (typeof other.hasTag === 'function') {
+            if (targets.some(target => other.hasTag(target))) return true;
+        }
+
+        const rawTags = Array.isArray(other.tags) 
+            ? other.tags 
+            : String(other.tag || other.components?.Tags?.value || other.components?.Tilemap?.tag || '').split(',');
+        const tags = rawTags.map(t => String(t).trim().toLowerCase()).filter(Boolean);
         return targets.some(target => tags.includes(target));
     }
 
@@ -259,8 +266,13 @@ export default class ColliderSystem {
             if (other.layerId && inactiveLayers.has(other.layerId)) continue;
 
             if (targetTag && targetTag.trim() !== '') {
-                const otherTag = other.tag || other.components?.Tags?.value;
-                if (otherTag !== targetTag) continue;
+                const targetLower = targetTag.trim().toLowerCase();
+                const match = typeof other.hasTag === 'function'
+                    ? other.hasTag(targetLower)
+                    : (Array.isArray(other.tags)
+                        ? other.tags.some(t => String(t).trim().toLowerCase() === targetLower)
+                        : String(other.tag || other.components?.Tags?.value || '').trim().toLowerCase() === targetLower);
+                if (!match) continue;
             }
 
             const otherBounds = this.getBounds(other);
@@ -460,8 +472,13 @@ export default class ColliderSystem {
             if (other.layerId && inactiveLayers.has(other.layerId)) continue;
             
             if (targetTag && targetTag.trim() !== "") {
-                const otherTag = other.tag || other.components?.Tags?.value;
-                if (otherTag !== targetTag) continue; 
+                const targetLower = targetTag.trim().toLowerCase();
+                const match = typeof other.hasTag === 'function'
+                    ? other.hasTag(targetLower)
+                    : (Array.isArray(other.tags)
+                        ? other.tags.some(t => String(t).trim().toLowerCase() === targetLower)
+                        : String(other.tag || other.components?.Tags?.value || '').trim().toLowerCase() === targetLower);
+                if (!match) continue; 
             }
 
             const isOneWay = Boolean(oneWayTag && this.isOneWayPlatform(other, oneWayTag));
@@ -546,8 +563,13 @@ export default class ColliderSystem {
             if (other.layerId && inactiveLayers.has(other.layerId)) continue;
 
             if (targetTag && targetTag.trim() !== "") {
-                const otherTag = other.tag || other.components?.Tags?.value;
-                if (otherTag !== targetTag) continue; 
+                const targetLower = targetTag.trim().toLowerCase();
+                const match = typeof other.hasTag === 'function'
+                    ? other.hasTag(targetLower)
+                    : (Array.isArray(other.tags)
+                        ? other.tags.some(t => String(t).trim().toLowerCase() === targetLower)
+                        : String(other.tag || other.components?.Tags?.value || '').trim().toLowerCase() === targetLower);
+                if (!match) continue; 
             }
 
             let collided = false;

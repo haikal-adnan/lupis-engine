@@ -128,7 +128,16 @@ export function useInspectorBinding(
 
   function bindEntityProp(propName) {
     return computed({
-      get: () => getEntity() ? getEntity()[propName] : '',
+      get: () => {
+        const ent = getEntity();
+        if (!ent) return propName === 'tags' ? [] : '';
+        if (propName === 'tags') {
+          if (Array.isArray(ent.tags)) return ent.tags;
+          if (ent.tag && ent.tag !== 'untagged') return [ent.tag];
+          return [];
+        }
+        return ent[propName] ?? '';
+      },
       set: (val) => {
         const ent = getEntity();
         if (!ent) return;

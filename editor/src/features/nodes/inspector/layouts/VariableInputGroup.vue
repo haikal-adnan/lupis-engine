@@ -12,7 +12,7 @@
         />
       </div>
 
-      <BaseDropdown v-if="!isStringType" align="right">
+      <BaseDropdown v-if="!isStringType && modifierOptions.length > 0" align="right">
         <template #trigger="{ isOpen }">
           <button 
             type="button"

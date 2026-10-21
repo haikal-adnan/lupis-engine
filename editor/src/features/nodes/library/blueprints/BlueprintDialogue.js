@@ -47,12 +47,26 @@ export const BlueprintDialogue = {
             speed: 40
           },
           code:
-`let helper = context.toolkit && context.toolkit.dialogue;
-if (!helper && context.game && context.game.contextSystem) {
-  helper = context.game.contextSystem.toolkitHandler.dialogueRunnerHelper;
-}
+`const dialogMap = inputs.dialogMap;
+const charMap = inputs.charMap;
+const dialogId = inputs.dialogId;
+const textEntity = inputs.textEntity;
+const speakerEntity = inputs.speakerEntity;
+const portraitEntity = inputs.portraitEntity;
+const nameEntity = inputs.nameEntity;
+const clickEntity = inputs.clickEntity;
+const speed = inputs.speed;
+
+const helper = context.toolkit && context.toolkit.dialogue;
 if (helper) {
-  helper.runDialogue(context.state, inputs, outputs, context);
+  const res = helper.runDialogue(context.state, inputs, outputs, context);
+  if (res) {
+    outputs.onNext = res.onNext;
+    outputs.onChoice = res.onChoice;
+    outputs.onEnd = res.onEnd;
+    outputs.nextDialogId = res.nextDialogId;
+    outputs.choices = res.choices;
+  }
 }
 return;`
         }
@@ -88,12 +102,18 @@ return;`
             activationDelay: 250
           },
           code:
-`let helper = context.toolkit && context.toolkit.dialogue;
-if (!helper && context.game && context.game.contextSystem) {
-  helper = context.game.contextSystem.toolkitHandler.dialogueRunnerHelper;
-}
+`const choices = inputs.choices;
+const buttonEntities = inputs.buttonEntities;
+const textEntities = inputs.textEntities;
+const activationDelay = inputs.activationDelay;
+
+const helper = context.toolkit && context.toolkit.dialogue;
 if (helper) {
-  helper.presentChoices(context.state, inputs, outputs, context);
+  const res = helper.presentChoices(context.state, inputs, outputs, context);
+  if (res) {
+    outputs.execOut = res.execOut;
+    outputs.nextDialogId = res.nextDialogId;
+  }
 }
 return;`
         }
@@ -131,17 +151,24 @@ let count = 0;
 function resolveToken(key) {
   if (key in map) return { found: true, val: map[key] };
   if (context.state && (key in context.state)) return { found: true, val: context.state[key] };
-  if (context.local && typeof context.local.get === 'function') {
-    const v = context.local.get(key);
-    if (Boolean(v) || v === 0) return { found: true, val: v };
-  }
   if (context.global && typeof context.global.get === 'function') {
-    const v = context.global.get(key);
-    if (Boolean(v) || v === 0) return { found: true, val: v };
+    const gVal = context.global.get(key);
+    if (gVal || gVal === 0 || gVal === false) return { found: true, val: gVal };
   }
-  if (context.game && context.game.variables && typeof context.game.variables.getGlobal === 'function') {
-    const v = context.game.variables.getGlobal(key);
-    if (Boolean(v) || v === 0) return { found: true, val: v };
+  if (context.local && typeof context.local.get === 'function') {
+    const lVal = context.local.get(key);
+    if (lVal || lVal === 0 || lVal === false) return { found: true, val: lVal };
+  }
+  if (typeof context.getGlobal === 'function') {
+    const gVal = context.getGlobal(key);
+    if (gVal || gVal === 0 || gVal === false) return { found: true, val: gVal };
+  }
+  if (typeof context.getLocal === 'function') {
+    const lVal = context.getLocal(key);
+    if (lVal || lVal === 0 || lVal === false) return { found: true, val: lVal };
+  }
+  if (typeof context.hasVariable === 'function' && context.hasVariable(key)) {
+    return { found: true, val: context.getVariable(key) };
   }
   return { found: false, val: '' };
 }

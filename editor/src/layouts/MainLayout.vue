@@ -39,7 +39,7 @@ watch(() => route.fullPath, () => {
         <div @click="router.push('/dashboard')" class="flex items-center gap-2.5 cursor-pointer min-w-fit shrink-0 group">
           <img src="/assets/logo.svg" alt="Lupis Engine Logo" class="w-8 h-8 object-contain" />
           <span class="font-bold tracking-tight text-lg">Lupis Engine</span>
-          <span v-if="isDocsPage" class="hidden lg:inline-flex text-[10px] bg-cyan-500/10 text-cyan-500 px-1.5 py-0.5 rounded font-bold border border-cyan-500/20 ml-1">v1.0</span>
+          <span v-if="isDocsPage" class="hidden lg:inline-flex text-[10px] bg-cyan-500/10 text-cyan-500 px-1.5 py-0.5 rounded font-bold border border-cyan-500/20 ml-1">v0.1.0</span>
         </div>
 
         <div class="flex-1 max-w-xl hidden md:block">

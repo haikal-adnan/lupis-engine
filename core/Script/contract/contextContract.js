@@ -14,7 +14,10 @@ export const CONTEXT_NAMESPACES = Object.freeze([
   'console',
   'assert',
   'audio',
-  'toolkit'
+  'toolkit',
+  'asset',
+  'global',
+  'local'
 ]);
 
 export const CONTEXT_ASSERT_METHODS = Object.freeze([

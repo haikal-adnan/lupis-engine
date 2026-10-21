@@ -49,7 +49,9 @@ export default class PrefabSystem {
             baseOrderIndex = targetLayer.entities.reduce((max, e) => Math.max(max, e.orderIndex || 0), -1);
         }
 
-        let finalRootScriptId = 'script_' + GenerateUUID(16);
+        const uniqueSuffix = GenerateUUID(16).substring(0, 8);
+        const baseRootName = (prefabData && (prefabData.scriptId || prefabData.name)) || (prefabIdentifier || 'entity');
+        let finalRootScriptId = `${baseRootName}_${uniqueSuffix}`;
 
         if (typeof customScriptId === 'string' && customScriptId.trim() !== "") {
             let sanitizedId = customScriptId.toLowerCase().replace(/[^a-z0-9_]/g, '');
@@ -72,7 +74,6 @@ export default class PrefabSystem {
 
         const idMap = {};
         const allNewData = [];
-        const uniqueSuffix = GenerateUUID(16).substring(0, 8);
 
         const rootData = JSON.parse(JSON.stringify(prefabData));
         const newRootId = 'ent_' + GenerateUUID(16);
@@ -105,7 +106,9 @@ export default class PrefabSystem {
                 baseOrderIndex++;
 
                 c.id = newChildId;
-                c.scriptId = `${c.scriptId}_${uniqueSuffix}`;
+                const rawBase = c.scriptId || c.name || c.type || 'child';
+                const childBase = (rawBase === 'undefined' || rawBase === 'null' || !rawBase) ? (c.name || c.type || 'child') : rawBase;
+                c.scriptId = `${childBase}_${uniqueSuffix}`;
                 c.layerId = targetLayerId;
                 c.zIndex = zIndex;
                 c.orderIndex = baseOrderIndex;

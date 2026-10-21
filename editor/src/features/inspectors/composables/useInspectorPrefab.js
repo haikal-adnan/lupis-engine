@@ -149,9 +149,11 @@ export function useInspectorPrefab(selectedEntityParam, isEditingMasterPrefabPar
 
     // 2. Reset entity properties (tag, active, overridden)
     console.groupCollapsed('Step 2: Syncing Entity Properties & Recording History');
-    const tag = master.data.tag || 'Untagged';
+    const tags = Array.isArray(master.data.tags) ? [...master.data.tags] : (master.data.tag && master.data.tag !== 'Untagged' ? [master.data.tag] : []);
+    const tag = tags[0] || master.data.tag || 'Untagged';
     const active = master.data.active ?? true;
 
+    const oldTags = Array.isArray(ent.tags) ? [...ent.tags] : (ent.tag && ent.tag !== 'Untagged' ? [ent.tag] : []);
     const oldTag = ent.tag;
     const oldActive = ent.active;
 
@@ -159,14 +161,17 @@ export function useInspectorPrefab(selectedEntityParam, isEditingMasterPrefabPar
     console.log(`  Active: ${oldActive} -> ${active}`);
     console.log('  Overridden Flag: true -> false');
 
+    sceneStore.updateEntityProp(id, 'tags', tags);
     sceneStore.updateEntityProp(id, 'tag', tag);
     sceneStore.updateEntityProp(id, 'active', active);
     sceneStore.updateEntityProp(id, 'overridden', false);
 
+    engineBridge.updateEntityProp({ id, prop: 'tags', value: tags });
     engineBridge.updateEntityProp({ id, prop: 'tag', value: tag });
     engineBridge.updateEntityProp({ id, prop: 'active', value: active });
 
     // Record History Undo/Redo
+    recordPropChange(id, 'tags', oldTags, tags);
     recordPropChange(id, 'tag', oldTag, tag);
     recordPropChange(id, 'active', oldActive, active);
 

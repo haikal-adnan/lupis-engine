@@ -1,4 +1,9 @@
-export function processDialogueRunner(state, inputs, outputs, context) {
+export function processDialogueRunner(stateOrParams, inputsOrContext, outputsMaybe, contextMaybe) {
+  const isDirect = (arguments.length <= 2 && typeof stateOrParams === 'object' && !outputsMaybe && !contextMaybe);
+  const inputs = isDirect ? stateOrParams : (inputsOrContext || {});
+  const context = isDirect ? inputsOrContext : contextMaybe;
+  const state = isDirect ? (context && context.state ? context.state : {}) : (stateOrParams || {});
+  const outputs = (!isDirect && outputsMaybe) ? outputsMaybe : {};
   let dialogMap = inputs.dialogMap || inputs.dialogueMap;
 
   if (!dialogMap) {
@@ -38,13 +43,21 @@ export function processDialogueRunner(state, inputs, outputs, context) {
 
   const entry = dialogMap ? dialogMap[dialogId] : false;
 
+  const makeResult = () => ({
+    onNext: Boolean(outputs.onNext),
+    onChoice: Boolean(outputs.onChoice),
+    onEnd: Boolean(outputs.onEnd),
+    nextDialogId: outputs.nextDialogId || '',
+    choices: outputs.choices || []
+  });
+
   if (!entry) {
     if (context.console && typeof context.console.warn === 'function') {
       context.console.warn("[Dialogue Runner] Dialog ID '" + (dialogId || '') + "' not found in Dialog Map.");
     }
     outputs.onEnd = true;
     context.triggerFlow('onEnd');
-    return;
+    return makeResult();
   }
 
   const now = Date.now();
@@ -60,7 +73,7 @@ export function processDialogueRunner(state, inputs, outputs, context) {
       }
       outputs.onEnd = true;
       context.triggerFlow('onEnd');
-      return;
+      return makeResult();
     }
   } else {
     guard.lastTime = now;
@@ -452,12 +465,11 @@ export function processDialogueRunner(state, inputs, outputs, context) {
       }
     } else {
       if (isClick) {
-        state.vnCompleted = true;
         if (entry.choices && Array.isArray(entry.choices) && entry.choices.length > 0) {
-          outputs.choices = entry.choices;
-          outputs.onChoice = true;
-          context.triggerFlow('onChoice');
-        } else if (entry.next) {
+          return;
+        }
+        state.vnCompleted = true;
+        if (entry.next) {
           state.vnNextDialogId = entry.next;
           outputs.nextDialogId = entry.next;
           outputs.onNext = true;
@@ -470,9 +482,23 @@ export function processDialogueRunner(state, inputs, outputs, context) {
       }
     }
   });
+  const result = {
+    onNext: Boolean(outputs.onNext),
+    onChoice: Boolean(outputs.onChoice),
+    onEnd: Boolean(outputs.onEnd),
+    nextDialogId: outputs.nextDialogId || '',
+    choices: outputs.choices || []
+  };
+  Object.assign(outputs, result);
+  return result;
 }
 
-export function processChoicePresenter(state, inputs, outputs, context) {
+export function processChoicePresenter(stateOrParams, inputsOrContext, outputsMaybe, contextMaybe) {
+  const isDirect = (arguments.length <= 2 && typeof stateOrParams === 'object' && !outputsMaybe && !contextMaybe);
+  const inputs = isDirect ? stateOrParams : (inputsOrContext || {});
+  const context = isDirect ? inputsOrContext : contextMaybe;
+  const state = isDirect ? (context && context.state ? context.state : {}) : (stateOrParams || {});
+  const outputs = (!isDirect && outputsMaybe) ? outputsMaybe : {};
   const choices = inputs.choices;
   const buttons = inputs.buttonEntities || ['btnChoice1', 'btnChoice2', 'btnChoice3'];
   const textEntities = inputs.textEntities || ['btnChoice1Text', 'btnChoice2Text', 'btnChoice3Text'];
@@ -690,4 +716,10 @@ export function processChoicePresenter(state, inputs, outputs, context) {
       }
     }
   });
+  const result = {
+    execOut: Boolean(outputs.execOut),
+    nextDialogId: outputs.nextDialogId || ''
+  };
+  Object.assign(outputs, result);
+  return result;
 }

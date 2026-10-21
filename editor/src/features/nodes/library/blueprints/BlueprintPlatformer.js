@@ -55,13 +55,41 @@ export const BlueprintPlatformer = {
             dropNudge: 6
           },
           code: 
-`let helper = context.toolkit && context.toolkit.platformer;
-if (!helper && context.game && context.game.contextSystem) {
-  helper = context.game.contextSystem.toolkitHandler.platformerHelper;
-}
+`const targetEntity = inputs.targetEntity;
+const speed = inputs.speed;
+const jumpForce = inputs.jumpForce;
+const keyLeft = inputs.keyLeft;
+const keyRight = inputs.keyRight;
+const keyJump = inputs.keyJump;
+const keyDown = inputs.keyDown;
+const oneWayTag = inputs.oneWayTag;
+const dropNudge = inputs.dropNudge;
+
+const helper = context.toolkit && context.toolkit.platformer;
 if (helper) {
-  helper.processController(context.state, inputs, outputs, context);
+  const res = helper.processController({
+    targetEntity,
+    speed,
+    jumpForce,
+    keyLeft,
+    keyRight,
+    keyJump,
+    keyDown,
+    oneWayTag,
+    dropNudge
+  }, context);
+  outputs.isGrounded = res.isGrounded;
+  outputs.isGroundedOnOneWay = res.isGroundedOnOneWay;
+  outputs.groundType = res.groundType;
+  outputs.movementState = res.movementState;
+  outputs.facingDirection = res.facingDirection;
+  outputs.velocityX = res.velocityX;
+  outputs.velocityY = res.velocityY;
+  outputs.onJump = res.onJump;
+  outputs.onLand = res.onLand;
+  outputs.onDrop = res.onDrop;
 }
+outputs.execOut = true;
 return;`
         }
       }
@@ -114,13 +142,28 @@ return;`
             autoFlipX: true
           },
           code: 
-`let helper = context.toolkit && context.toolkit.platformer;
-if (!helper && context.game && context.game.contextSystem) {
-  helper = context.game.contextSystem.toolkitHandler.platformerHelper;
-}
+`const targetEntity = inputs.targetEntity;
+const idleClips = inputs.idleClips;
+const walkClips = inputs.walkClips;
+const runClips = inputs.runClips;
+const jumpClips = inputs.jumpClips;
+const fallClips = inputs.fallClips;
+const hitClips = inputs.hitClips;
+const isHit = inputs.isHit;
+const movementState = inputs.movementState;
+const facingDirection = inputs.facingDirection;
+const autoFlipX = inputs.autoFlipX;
+
+const helper = context.toolkit && context.toolkit.platformer;
 if (helper) {
-  helper.processAnimator(context.state, inputs, outputs, context);
+  const res = helper.processAnimator(context.state, inputs, outputs, context);
+  outputs.currentClip = res.currentClip;
+  outputs.activeState = res.activeState;
+  outputs.facingDirection = res.facingDirection;
+  outputs.isFlipped = res.isFlipped;
+  outputs.onClipChanged = res.onClipChanged;
 }
+outputs.execOut = true;
 return;`
         }
       }
@@ -213,13 +256,34 @@ return;`
             }
           },
           code: 
-`let helper = context.toolkit && context.toolkit.combat;
-if (!helper && context.game && context.game.contextSystem) {
-  helper = context.game.contextSystem.toolkitHandler.combatHelper;
-}
+`const targetEntity = inputs.targetEntity;
+const triggerAttack = inputs.triggerAttack;
+const keyAttack = inputs.keyAttack;
+const targetTag = inputs.targetTag;
+const facingDirection = inputs.facingDirection;
+const isGrounded = inputs.isGrounded;
+const attacksConfig = inputs.attacksConfig;
+const attackCooldown = inputs.attackCooldown;
+const comboBufferTime = inputs.comboBufferTime;
+const autoLockMovement = inputs.autoLockMovement;
+
+const helper = context.toolkit && context.toolkit.combat;
 if (helper) {
-  helper.processPlatformerCombat(context.state, inputs, outputs, context);
+  const res = helper.processPlatformerCombat(context.state, inputs, outputs, context);
+  outputs.isAttacking = res.isAttacking;
+  outputs.canMove = res.canMove;
+  outputs.isCoolingDown = res.isCoolingDown;
+  outputs.cooldownRemaining = res.cooldownRemaining;
+  outputs.currentCombo = res.currentCombo;
+  outputs.currentClip = res.currentClip;
+  outputs.hitTarget = res.hitTarget;
+  outputs.damage = res.damage;
+  outputs.onAttackStart = res.onAttackStart;
+  outputs.onHitboxActive = res.onHitboxActive;
+  outputs.onHit = res.onHit;
+  outputs.onAttackEnd = res.onAttackEnd;
 }
+outputs.execOut = true;
 return;`
         }
       }
