@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="https://raw.githubusercontent.com/haikal-adnan/lupis-engine/master/editor/public/assets/logo.svg" alt="Lupis Engine logo" width="96" height="96" />
+<img alt="Lupis Engine logo" width="128" height="128" src="https://github.com/user-attachments/assets/54a69b7c-acfd-4ef6-b4ef-5a9397a169c4" />
 
 # Lupis Engine
 
