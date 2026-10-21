@@ -53,8 +53,10 @@ export function useInspectorBinding(
   function bindSettingProp(category, propName) {
     return computed({
       get: () => {
-        if (category === 'ui' || category === 'grid' || category === 'camera') {
-          return projectStore.project?.settings?.[category]?.[propName];
+        if (category === 'ui' || category === 'grid' || category === 'camera' || category === 'colliders' || category === 'world') {
+          const val = projectStore.project?.settings?.[category]?.[propName];
+          if (category === 'colliders' && val === undefined) return true;
+          return val;
         }
         if (category === 'autoSave') {
           return projectStore.project?.settings?.autoSave?.[propName];
@@ -63,12 +65,20 @@ export function useInspectorBinding(
         if (!category && (propName === 'tickRate' || propName === 'initialSceneId')) {
           return projectStore.project?.settings?.[propName];
         }
+        if (!category && propName === 'showRulers') {
+          if (sceneStore.activeScene?.settings?.showRulers !== undefined) {
+            return sceneStore.activeScene.settings.showRulers;
+          }
+          return projectStore.project?.settings?.showRulers ?? true;
+        }
         const s = sceneStore.activeScene?.settings;
         if (!s) return undefined;
         return category ? s[category]?.[propName] : s[propName];
       },
       set: (val) => {
         if (category === 'ui') projectStore.updateUISettings({ [propName]: val });
+        else if (category === 'world') projectStore.updateWorldSettings({ [propName]: val });
+        else if (category === 'colliders') projectStore.updateColliderSettings({ [propName]: val });
         else if (category === 'autoSave') projectStore.updateAutoSaveSettings({ [propName]: val });
         else if (category === 'grid') {
           const grid = projectStore.project.settings.grid;
@@ -90,12 +100,27 @@ export function useInspectorBinding(
             projectStore.markAsDirty();
           }
         }
-        else if (!sceneStore.activeScene) return;
-        else if (category === 'worldBounds') sceneStore.updateWorldBounds({ [propName]: val });
-        else if (category === 'physics') sceneStore.updatePhysicsSettings({ [propName]: val });
+        else if (category === 'worldBounds') {
+          if (sceneStore.activeScene) sceneStore.updateWorldBounds({ [propName]: val });
+          if (projectStore.project?.settings?.worldBounds) {
+            projectStore.project.settings.worldBounds[propName] = val;
+            projectStore.markAsDirty();
+          }
+        }
+        else if (category === 'physics') {
+          if (sceneStore.activeScene) sceneStore.updatePhysicsSettings({ [propName]: val });
+        }
         else if (!category) {
           if (propName === 'backgroundColor') sceneStore.setBackgroundColor(val);
-          else if (propName === 'showRulers' && val !== sceneStore.activeScene.settings.showRulers) sceneStore.toggleRulers();
+          else if (propName === 'showRulers') {
+            if (sceneStore.activeScene && val !== sceneStore.activeScene.settings.showRulers) {
+              sceneStore.toggleRulers();
+            }
+            if (projectStore.project?.settings) {
+              projectStore.project.settings.showRulers = val;
+              projectStore.markAsDirty();
+            }
+          }
         }
       }
     });

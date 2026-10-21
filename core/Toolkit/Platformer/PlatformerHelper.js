@@ -1,8 +1,96 @@
+function isEntityOneWay(entity, oneWayTag) {
+  if (!entity || !oneWayTag) return false;
+  if (entity.components?.Tilemap?.isOneWay || entity.components?.Tilemap?.oneWay) return true;
+  if (entity.components?.Collider?.isOneWay || entity.components?.Collider?.oneWay) return true;
+  const tag = entity.tag || entity.components?.Tags?.value || entity.components?.Tilemap?.tag || '';
+  if (!tag || typeof tag !== 'string') return false;
+  const targets = oneWayTag.split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
+  if (targets.length === 0) return false;
+  const tags = tag.split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
+  return targets.some(target => tags.includes(target));
+}
+
+function getBoxCorners(b) {
+  if (b.vertices) return b.vertices;
+  const cx = b.x, cy = b.y;
+  const cos = Math.cos(b.rotation || 0), sin = Math.sin(b.rotation || 0);
+  const left = -b.w * (b.pivotX ?? 0.5);
+  const right = b.w * (1 - (b.pivotX ?? 0.5));
+  const top = -b.h * (b.pivotY ?? 0.5);
+  const bottom = b.h * (1 - (b.pivotY ?? 0.5));
+  return [
+    { x: cx + left*cos - top*sin, y: cy + left*sin + top*cos },
+    { x: cx + right*cos - top*sin, y: cy + right*sin + top*cos },
+    { x: cx + right*cos - bottom*sin, y: cy + right*sin + bottom*cos },
+    { x: cx + left*cos - bottom*sin, y: cy + left*sin + bottom*cos }
+  ];
+}
+
+function isStandingOnOneWayPlatform(target, oneWayTag, context) {
+  if (!oneWayTag) return false;
+  const phys = target.components && target.components.Physics;
+  if (phys) {
+    if (phys.isGroundedOnOneWay) return true;
+    if (phys.groundEntity && isEntityOneWay(phys.groundEntity, oneWayTag)) return true;
+  }
+  const colliderSys = (context.game && context.game.colliderSystem) || context.colliderSystem;
+  if (!colliderSys || typeof colliderSys.getBounds !== 'function') return false;
+  const entities = context.game?.world?.entities || [];
+  const boundsList = colliderSys.getBounds(target).filter(b => b.type === 'solid');
+  if (boundsList.length === 0) return false;
+
+  const getCorners = typeof colliderSys._getObbCorners === 'function' ? (b) => colliderSys._getObbCorners(b) : getBoxCorners;
+
+  for (const bA of boundsList) {
+    const corners = getCorners(bA);
+    const bottomY = Math.max(...corners.map(c => c.y));
+    const minX = Math.min(...corners.map(c => c.x));
+    const maxX = Math.max(...corners.map(c => c.x));
+    const sensor = {
+      x: minX + 2,
+      y: bottomY,
+      w: Math.max(1, (maxX - minX) - 4),
+      h: 6,
+      rotation: 0,
+      pivotX: 0,
+      pivotY: 0
+    };
+    for (const other of entities) {
+      if (other === target || other.active === false) continue;
+      if (!isEntityOneWay(other, oneWayTag)) continue;
+      if (other.components?.Tilemap && other.components.Tilemap.isSolid) {
+        if (colliderSys._getTilemapHitBounds && colliderSys._getTilemapHitBounds(sensor, other)) return true;
+      } else if (other.components?.Collider || other.components?.ShapeRenderer) {
+        const oBounds = colliderSys.getBounds(other).filter(b => b.type === 'solid');
+        for (const bB of oBounds) {
+          if (colliderSys._obbIntersect && colliderSys._obbIntersect(sensor, bB)) return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
 export function processPlatformerController(state, inputs, outputs, context) {
   const targetId = inputs.targetEntity || 'self';
   const target = context.assert.exists(context.entity.get(targetId));
   const phys = target.components && target.components.Physics;
   const keyboard = context.input.keyboard;
+
+  const oneWayTag = String(inputs.oneWayTag !== undefined ? inputs.oneWayTag : 'platform').trim();
+  target._oneWayTag = oneWayTag;
+  if (phys) phys._oneWayTag = oneWayTag;
+
+  const dt = typeof context.dt === 'number' ? context.dt : 0.016;
+
+  if (!context.game || !context.game.physicsSystem) {
+    if (typeof target._dropThroughTimer === 'number' && target._dropThroughTimer > 0) {
+      target._dropThroughTimer = Math.max(0, target._dropThroughTimer - dt);
+    }
+    if (phys && typeof phys._dropThroughTimer === 'number' && phys._dropThroughTimer > 0) {
+      phys._dropThroughTimer = Math.max(0, phys._dropThroughTimer - dt);
+    }
+  }
 
   if (!state.platformer) {
     state.platformer = { wasGrounded: false };
@@ -17,8 +105,6 @@ export function processPlatformerController(state, inputs, outputs, context) {
   const speed = typeof inputs.speed === 'number' ? inputs.speed : 260;
   const jumpForce = typeof inputs.jumpForce === 'number' ? inputs.jumpForce : 520;
   const dropNudge = typeof inputs.dropNudge === 'number' ? inputs.dropNudge : 6;
-
-  const dt = typeof context.dt === 'number' ? context.dt : 0.016;
   const combatState = target._combat;
   const isCombatAttacking = Boolean(combatState && combatState.isAttacking);
 
@@ -36,24 +122,36 @@ export function processPlatformerController(state, inputs, outputs, context) {
   const isGrounded = Boolean(phys ? phys.isGrounded : true);
   const isDownPressed = keyboard ? keyboard.isDown(keyDown) : false;
   const isJumpTriggered = !isCombatAttacking && !isKnockedBack && keyboard && keyboard.isPressed(keyJump);
+  const isDownTriggered = !isCombatAttacking && !isKnockedBack && keyboard && keyboard.isPressed(keyDown);
 
   let didDrop = false;
   let didJump = false;
 
-  if (isGrounded && isDownPressed && isJumpTriggered) {
+  const onOneWay = isGrounded && isStandingOnOneWayPlatform(target, oneWayTag, context);
+  const wantsDrop = (isDownPressed && isJumpTriggered) || (isDownTriggered && keyboard && keyboard.isDown(keyJump));
+
+  if (onOneWay && wantsDrop) {
+    const dropDuration = 0.25;
+    target._dropThroughTimer = dropDuration;
+    target._dropThroughEntity = phys ? phys.groundEntity : null;
+    if (phys) {
+      phys._dropThroughTimer = dropDuration;
+      phys._dropThroughEntity = phys.groundEntity;
+      phys.velocityY = Math.max(120, (phys.velocityY || 0) + 120);
+      phys.isGrounded = false;
+      phys.isGroundedOnOneWay = false;
+      phys.groundEntity = null;
+    }
     if (target.components && target.components.Transform) {
       target.components.Transform.y += dropNudge;
-      if (phys) {
-        phys.velocityY = Math.max(100, (phys.velocityY || 0) + 100);
-        phys.isGrounded = false;
-      }
-      didDrop = true;
-      outputs.onDrop = true;
     }
+    didDrop = true;
+    outputs.onDrop = true;
   } else if (isGrounded && isJumpTriggered) {
     if (phys) {
       phys.velocityY = -Math.abs(jumpForce);
       phys.isGrounded = false;
+      phys.isGroundedOnOneWay = false;
     }
     didJump = true;
     outputs.onJump = true;
@@ -82,6 +180,8 @@ export function processPlatformerController(state, inputs, outputs, context) {
   pState.wasGrounded = isGrounded;
 
   outputs.isGrounded = isGrounded;
+  outputs.isGroundedOnOneWay = Boolean(onOneWay);
+  outputs.groundType = phys ? (phys.groundType || (onOneWay ? 'entity' : null)) : null;
   outputs.movementState = isCombatAttacking ? 'attack' : (phys ? phys.movementState : (moveDirX !== 0 ? 'running' : 'idle'));
   outputs.facingDirection = phys ? (phys.facingDirection || 'right') : (moveDirX < 0 ? 'left' : 'right');
   outputs.velocityX = phys ? (phys.velocityX || 0) : (moveDirX * speed);

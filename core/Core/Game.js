@@ -198,6 +198,17 @@ export default class Game {
         this.syncSystem = null;
     }
 
+    endFrame() {
+        if (this.input) {
+            if (this.input.keyboard && typeof this.input.keyboard.endFrame === 'function') {
+                this.input.keyboard.endFrame();
+            }
+            if (this.input.mouse && typeof this.input.mouse.endFrame === 'function') {
+                this.input.mouse.endFrame();
+            }
+        }
+    }
+
     update(dt) {
         this.deltaTime = dt; 
 
@@ -217,14 +228,7 @@ export default class Game {
                 this.camera.update(this.isPaused ? 0 : dt, this.world, this.renderer.gl.canvas);
             }
 
-            if (this.input) {
-                if (this.input.keyboard && typeof this.input.keyboard.endFrame === 'function') {
-                    this.input.keyboard.endFrame();
-                }
-                if (this.input.mouse && typeof this.input.mouse.endFrame === 'function') {
-                    this.input.mouse.endFrame();
-                }
-            }
+            this.endFrame();
         }
     }
 
@@ -240,6 +244,8 @@ export default class Game {
             if (this.selection) this.selection.update();
             if (this.transform) this.transform.update();
             if (this.pointerCoords) this.pointerCoords.update();
+
+            this.endFrame();
         }
 
         if (this.renderer) {

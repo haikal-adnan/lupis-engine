@@ -559,7 +559,7 @@ export default class RenderUtils {
         });
     }
 
-    static processColliderDebug(comps, globalT, trans, renderQueue, solidColor, triggerColor, hitboxColor, hurtboxColor) {
+    static processColliderDebug(comps, globalT, trans, renderQueue, solidColor, triggerColor, hitboxColor, hurtboxColor, collidersConfig) {
         if (Config.ENGINE_MODE !== 'editor' || !comps?.Collider || !Array.isArray(comps.Collider.data)) return;
 
         const isFlippedX = Boolean(globalT.flipX);
@@ -573,6 +573,14 @@ export default class RenderUtils {
         for (let i = 0; i < comps.Collider.data.length; i++) {
             const c = comps.Collider.data[i];
             if (!c || !c.enabled) continue;
+
+            const cType = c.type || 'solid';
+            if (collidersConfig) {
+                if (cType === 'solid' && collidersConfig.solid === false) continue;
+                if (cType === 'trigger' && collidersConfig.trigger === false) continue;
+                if (cType === 'hitbox' && collidersConfig.hitbox === false) continue;
+                if (cType === 'hurtbox' && collidersConfig.hurtbox === false) continue;
+            }
 
             const scaleX = Math.abs(globalT.scaleX ?? 1);
             const scaleY = Math.abs(globalT.scaleY ?? 1);

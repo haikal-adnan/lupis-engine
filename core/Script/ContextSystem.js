@@ -71,6 +71,7 @@ export default class ContextSystem {
     const contextParams = { runner, node, nodeMeta, nodeName, failAssert };
 
     const execContext = {
+      game: this.game,
       owner: runner.owner,
       node: node,
       get dt() { return game.deltaTime; },

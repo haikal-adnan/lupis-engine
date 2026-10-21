@@ -347,7 +347,42 @@ export const useProjectStore = defineStore('project', {
     },
 
     updateUISettings(updates) {
+      if (!this.project.settings.ui) {
+        this.project.settings.ui = { width: 1920, height: 1080, showUIBorder: true, active: true, smartGuides: true, visible: true };
+      }
       Object.assign(this.project.settings.ui, updates);
+      this.markAsDirty();
+    },
+
+    updateWorldSettings(updates) {
+      if (!this.project.settings.world) {
+        this.project.settings.world = { active: true, visible: true };
+      }
+      Object.assign(this.project.settings.world, updates);
+      this.markAsDirty();
+    },
+
+    toggleWorldVisibility() {
+      if (!this.project.settings.world) {
+        this.project.settings.world = { active: true, visible: true };
+      }
+      const cur = this.project.settings.world.visible !== false && this.project.settings.world.active !== false;
+      this.updateWorldSettings({ active: !cur, visible: !cur });
+    },
+
+    toggleUIVisibility() {
+      if (!this.project.settings.ui) {
+        this.project.settings.ui = { width: 1920, height: 1080, showUIBorder: true, active: true, smartGuides: true, visible: true };
+      }
+      const cur = this.project.settings.ui.visible !== false && this.project.settings.ui.active !== false;
+      this.updateUISettings({ active: !cur, visible: !cur });
+    },
+
+    updateColliderSettings(updates) {
+      if (!this.project.settings.colliders) {
+        this.project.settings.colliders = { solid: true, trigger: true, hitbox: true, hurtbox: true };
+      }
+      Object.assign(this.project.settings.colliders, updates);
       this.markAsDirty();
     },
 

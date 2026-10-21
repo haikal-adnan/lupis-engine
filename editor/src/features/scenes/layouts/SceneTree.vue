@@ -10,8 +10,34 @@
       role="region"
       aria-label="World"
     >
+      <template #header-extra>
+        <button
+          v-if="!isWorldVisible"
+          type="button"
+          @click.stop="toggleWorldVisibility"
+          class="p-0.5 rounded text-amber-500 hover:text-amber-400 cursor-pointer"
+          title="World Layer Hidden (Click to Show)"
+          data-testid="hierarchy-world-visibility-indicator"
+        >
+          <EyeOff class="w-3.5 h-3.5" />
+        </button>
+      </template>
+
       <template #menu="{ close }">
-        <div class="p-1 space-y-0.5 min-w-[140px]">
+        <div class="p-1 space-y-0.5 min-w-[150px]">
+           <button 
+             type="button"
+             @click="toggleWorldVisibility(); close()" 
+             class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-accent hover:text-accent-foreground transition-colors"
+             :aria-label="isWorldVisible ? 'Hide World Layer' : 'Show World Layer'"
+             data-testid="hierarchy-world-toggle-visibility-button"
+           >
+              <component :is="isWorldVisible ? EyeOff : Eye" class="w-3.5 h-3.5 mr-2 text-muted-foreground" />
+              <span>{{ isWorldVisible ? 'Hide World Layer' : 'Show World Layer' }}</span>
+           </button>
+
+           <div class="h-[1px] bg-border my-1"></div>
+
            <button 
              type="button"
              @click="handleAddLayer('world'); close()" 
@@ -26,7 +52,7 @@
       </template>
 
       <div 
-        class="min-h-[80px] relative pb-4 transition-colors duration-200" 
+        class="min-h-[80px] relative pb-4 transition-colors duration-200 w-full min-w-full" 
         @dragover.prevent="allowDrop" 
         @drop.prevent="(e) => handleEmptyDrop(e, 'world')"
         data-testid="hierarchy-world-tree"
@@ -59,8 +85,34 @@
       role="region"
       aria-label="User Interface"
     >
+      <template #header-extra>
+        <button
+          v-if="!isUIVisible"
+          type="button"
+          @click.stop="toggleUIVisibility"
+          class="p-0.5 rounded text-amber-500 hover:text-amber-400 cursor-pointer"
+          title="UI Layer Hidden (Click to Show)"
+          data-testid="hierarchy-ui-visibility-indicator"
+        >
+          <EyeOff class="w-3.5 h-3.5" />
+        </button>
+      </template>
+
       <template #menu="{ close }">
         <div class="p-1 space-y-0.5 min-w-[150px]">
+           <button 
+             type="button"
+             @click="toggleUIVisibility(); close()" 
+             class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-accent hover:text-accent-foreground transition-colors"
+             :aria-label="isUIVisible ? 'Hide UI Layer' : 'Show UI Layer'"
+             data-testid="hierarchy-ui-toggle-visibility-button"
+           >
+              <component :is="isUIVisible ? EyeOff : Eye" class="w-3.5 h-3.5 mr-2 text-muted-foreground" />
+              <span>{{ isUIVisible ? 'Hide UI Layer' : 'Show UI Layer' }}</span>
+           </button>
+
+           <div class="h-[1px] bg-border my-1"></div>
+
            <button 
              type="button"
              @click="openUIEditor(); close()" 
@@ -88,7 +140,7 @@
       </template>
 
       <div 
-        class="min-h-[120px] relative pb-6" 
+        class="min-h-[120px] relative pb-6 w-full min-w-full" 
         @dragover.prevent="allowDrop" 
         @drop.prevent="(e) => handleEmptyDrop(e, 'ui')"
         data-testid="hierarchy-ui-tree"
@@ -124,11 +176,12 @@
 
 <script setup>
 import { computed } from 'vue';
-import { LayoutTemplate, AppWindow, Plus } from 'lucide-vue-next';
+import { LayoutTemplate, AppWindow, Plus, Eye, EyeOff } from 'lucide-vue-next';
 import { PropertySection } from '@components/components.js';
 
 import { useWorkspaceStore } from '@workspaces/workspaces.js';
 import { useSceneStore, SceneNode } from '@scenes/scenes.js';
+import { useProjectStore } from '@projects/projects.js';
 
 const props = defineProps({
   data: { type: Object, default: () => ({ worldTree: [], uiTree: [] }) },
@@ -139,6 +192,18 @@ const emit = defineEmits(['select', 'contextmenu', 'drop']);
 
 const workspaceStore = useWorkspaceStore();
 const sceneStore = useSceneStore();
+const projectStore = useProjectStore();
+
+const isWorldVisible = computed(() => projectStore.project?.settings?.world?.visible !== false && projectStore.project?.settings?.world?.active !== false);
+const isUIVisible = computed(() => projectStore.project?.settings?.ui?.visible !== false && projectStore.project?.settings?.ui?.active !== false);
+
+const toggleWorldVisibility = () => {
+  projectStore.toggleWorldVisibility();
+};
+
+const toggleUIVisibility = () => {
+  projectStore.toggleUIVisibility();
+};
 
 const sortNodes = (nodes) => {
   return [...nodes].sort((a, b) => {

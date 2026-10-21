@@ -21,6 +21,23 @@
 
     <template #menu="{ close }">
       <div class="p-1 space-y-0.5 min-w-[160px]" data-testid="layer-menu-content">
+        <button 
+          @click="visible = !visible; close()" 
+          class="menu-item" 
+          data-testid="layer-menu-toggle-visibility-btn"
+        >
+          <component :is="visible ? EyeOff : Eye" class="w-3.5 h-3.5 mr-2 opacity-70" />
+          {{ visible ? 'Hide Layer' : 'Show Layer' }}
+        </button>
+        <button 
+          @click="active = !active; close()" 
+          class="menu-item" 
+          data-testid="layer-menu-toggle-active-btn"
+        >
+          <Power class="w-3.5 h-3.5 mr-2 opacity-70" />
+          {{ active ? 'Deactivate Layer' : 'Activate Layer' }}
+        </button>
+        <div class="h-px bg-border my-1"></div>
         <button @click="onCopyId(); close()" class="menu-item" data-testid="layer-copy-id-btn">
           <Copy class="w-3.5 h-3.5 mr-2 opacity-70" /> Copy ID
         </button>

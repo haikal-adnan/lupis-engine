@@ -107,10 +107,16 @@ export class SelectionHit {
             return (b.orderIndex ?? 0) - (a.orderIndex ?? 0);
         });
 
+        const isWorldActive = world?.settings?.world?.active !== false && world?.settings?.world?.visible !== false;
+        const isUIActive = world?.settings?.ui?.active !== false && world?.settings?.ui?.visible !== false;
+
         for (const layer of allLayers) {
             if (layer.active === false || layer.visible === false || layer.locked) continue;
 
             const isUILayer = layersUI.includes(layer);
+            if (isUILayer && !isUIActive) continue;
+            if (!isUILayer && !isWorldActive) continue;
+
             const rootBounds = isUILayer ? uiRootBounds : null;
 
             if (!layer.entities) continue;
@@ -139,10 +145,16 @@ export class SelectionHit {
         const layersUI = world.layersUI || [];
         const allLayers = [...layersWorld, ...layersUI];
 
+        const isWorldActive = world?.settings?.world?.active !== false && world?.settings?.world?.visible !== false;
+        const isUIActive = world?.settings?.ui?.active !== false && world?.settings?.ui?.visible !== false;
+
         for (const layer of allLayers) {
             if (layer.active === false || layer.visible === false || layer.locked) continue;
 
             const isUILayer = layersUI.includes(layer);
+            if (isUILayer && !isUIActive) continue;
+            if (!isUILayer && !isWorldActive) continue;
+
             const rootBounds = isUILayer ? uiRootBounds : null;
 
             if (!layer.entities) continue;

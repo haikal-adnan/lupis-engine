@@ -84,10 +84,42 @@ if (inputs.destroyParent && entity.parentId) {
       break;
     }
   }
-  context.entity.destroy(topParent.scriptId);
+  context.entity.destroy(topParent);
 } else {
-  context.entity.destroy(entity.scriptId);
+  context.entity.destroy(entity);
 }
+outputs.execOut = true;
+return;`
+        }
+      }
+    },
+{
+      type: 'entityDestroyByTag',
+      label: 'Destroy Entities by Tag',
+      description: 'Removes all entities matching the specified tag from the world.',
+      dynamicMode: 'none',
+      defaultData: {
+        settings: {
+          headerTitle: 'Destroy by Tag',
+          headerColor: '#D32F2F',
+          category: 'Entity & Transform'
+        },
+        inputs: [
+          { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'tag', dataType: 'string', color: '#F48FB1', defaultValue: '' }
+        ],
+        outputs: [
+          { id: 'execOut', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'count', dataType: 'number', color: '#64B5F6' }
+        ],
+        data: {
+          values: {
+            tag: ''
+          },
+          code: 
+`const tag = inputs.tag;
+const count = context.entity && typeof context.entity.destroyByTag === 'function' ? context.entity.destroyByTag(tag) : 0;
+outputs.count = count;
 outputs.execOut = true;
 return;`
         }
@@ -489,6 +521,43 @@ if ('opacity' in inputs) {
   layer.opacity = Math.max(0, Math.min(100, inputs.opacity)) / 100;
 }
 
+outputs.execOut = true;
+return;`
+        }
+      }
+    },
+    {
+      type: 'layerDestroy',
+      label: 'Destroy Layer',
+      description: 'Removes a layer and optionally its entities from the world.',
+      dynamicMode: 'none',
+      defaultData: {
+        settings: {
+          headerTitle: 'Destroy Layer',
+          headerColor: '#6A1B9A',
+          category: 'Entity & Transform'
+        },
+        inputs: [
+          { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'targetLayer', dataType: 'string', color: '#F48FB1', defaultValue: 'self' },
+          { id: 'destroyEntities', dataType: 'boolean', color: '#E57373', defaultValue: true }
+        ],
+        outputs: [
+          { id: 'execOut', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'success', dataType: 'boolean', color: '#E57373' }
+        ],
+        data: {
+          values: {
+            targetLayer: 'self',
+            destroyEntities: true
+          },
+          code: 
+`const target = inputs.targetLayer;
+const destroyEnts = inputs.destroyEntities !== false;
+const success = context.layer && typeof context.layer.destroy === 'function'
+  ? context.layer.destroy(target, destroyEnts)
+  : false;
+outputs.success = Boolean(success);
 outputs.execOut = true;
 return;`
         }

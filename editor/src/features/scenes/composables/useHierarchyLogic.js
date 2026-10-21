@@ -1,11 +1,13 @@
 import { computed } from 'vue';
 import { useSceneStore } from '@scenes/scenes.js';
 import { useWorkspaceStore } from '@workspaces/workspaces.js';
+import { useProjectStore } from '@projects/projects.js';
 import { usePopAlert } from '@composables/composables.js';
 
 export function useHierarchyLogic() {
   const sceneStore = useSceneStore();
   const workspaceStore = useWorkspaceStore();
+  const projectStore = useProjectStore();
   const { showPop } = usePopAlert();
 
   const entities = computed(() => sceneStore.activeEntities || []);
@@ -102,9 +104,18 @@ export function useHierarchyLogic() {
     };
 
     allLayers.forEach(layer => {
+      const isUI = layer._section === 'ui' || 
+                   layer.scriptId === 'l_hud' || 
+                   layer.scriptId === 'l_menu' ||
+                   (layer.scriptId && layer.scriptId.toLowerCase().includes('ui'));
+
+      const sectionInactive = isUI 
+        ? (projectStore.project?.settings?.ui?.active === false || projectStore.project?.settings?.ui?.visible === false)
+        : (projectStore.project?.settings?.world?.active === false || projectStore.project?.settings?.world?.visible === false);
+
       const layerLocked = Boolean(layer.locked);
-      const layerHidden = layer.visible === false;
-      const layerInactive = layer.active === false;
+      const layerHidden = layer.visible === false || sectionInactive;
+      const layerInactive = layer.active === false || sectionInactive;
 
       layer.effectiveLocked = layerLocked;
       layer.effectiveVisible = !layerHidden;

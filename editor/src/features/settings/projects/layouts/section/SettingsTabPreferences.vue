@@ -76,17 +76,41 @@
         </PropertyRow>
       </div>
     </section>
+
+    <!-- Section: Editor Rulers -->
+    <section class="space-y-5">
+      <div class="border-b border-border pb-2">
+        <h4 class="text-sm font-bold text-foreground">Editor Rulers</h4>
+        <p class="text-xs text-muted-foreground mt-0.5">Toggle and configure rulers along the editor workspace canvas.</p>
+      </div>
+
+      <div class="space-y-4">
+        <div class="flex items-center gap-4 py-1">
+          <BaseCheckbox 
+            v-model="showRulers" 
+            label="Show Editor Rulers" 
+            box-size="w-4 h-4" 
+            icon-size="w-3 h-3" 
+            text-size="text-sm" 
+            data-testid="preferences-show-rulers-toggle"
+          />
+        </div>
+      </div>
+    </section>
   </div>
 </template>
 
 <script setup>
 import { Sun, Moon } from 'lucide-vue-next';
-import { PropertyRow, BaseButton } from '@components/components.js';
+import { PropertyRow, BaseButton, BaseCheckbox } from '@components/components.js';
 import { useTheme } from '@composables/composables.js';
+import { useInspectorBinding } from '@inspectors/inspectors.js';
 
 defineProps({ info: Object });
 
 const { isDark, toggleTheme } = useTheme();
+const { bindSettingProp } = useInspectorBinding();
+const showRulers = bindSettingProp(null, 'showRulers');
 
 function setDarkTheme(wantDark) {
   if (isDark.value !== wantDark) {

@@ -14,12 +14,22 @@ export default class World {
         this.settings = {
             tickRate: 60,
             backgroundColor: "#222222",
-            worldBounds: { x: -1000, y: -1000, width: 2000, height: 2000 },
+            worldBounds: { x: -1000, y: -1000, width: 2000, height: 2000, active: true },
             grid: {
                 width: 32, height: 32, color: "#ffffff", opacity: 0.1, visible: true, snap: true
             },
             ui: {
-                width: 1920, height: 1080, showUIBorder: true, active: true, smartGuides: true
+                width: 1920, height: 1080, showUIBorder: true, active: true, smartGuides: true, visible: true
+            },
+            world: {
+                active: true,
+                visible: true
+            },
+            colliders: {
+                solid: true,
+                trigger: true,
+                hitbox: true,
+                hurtbox: true
             },
             showRulers: true
         };
@@ -78,6 +88,11 @@ export default class World {
                 }
             }
         }
+    }
+
+    removeLayer(layerId) {
+        this.layersWorld = this.layersWorld.filter(l => l.id !== layerId);
+        this.layersUI = this.layersUI.filter(l => l.id !== layerId);
     }
 
     setupLayers(worldData, uiData) { 

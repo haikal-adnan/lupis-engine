@@ -28,6 +28,16 @@ export class EntitySyncHandler {
     }
 
     onDeleteEntity(id) {
+        if (Array.isArray(this.ctx.world?.entities)) {
+            this.ctx.world.entities = this.ctx.world.entities.filter(e => e.id !== id);
+        }
+        if (this.ctx.world?.scriptIdMap) {
+            for (const [key, ent] of this.ctx.world.scriptIdMap.entries()) {
+                if (ent && ent.id === id) {
+                    this.ctx.world.scriptIdMap.delete(key);
+                }
+            }
+        }
         const allLayers = [...this.ctx.world.layersWorld, ...this.ctx.world.layersUI];
         for (const layer of allLayers) {
             if (!layer.entities) continue;

@@ -30,7 +30,7 @@
         <slot name="header-extra"></slot>
       </div>
 
-      <div v-if="showMenu" class="flex items-center shrink-0" @click.stop>
+      <div v-if="showMenu" class="flex items-center shrink-0 sticky right-1 z-10" @click.stop>
         <BaseDropdown align="right">
           <template #trigger>
             <button 

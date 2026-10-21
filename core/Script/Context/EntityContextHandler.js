@@ -16,6 +16,9 @@ export class EntityContextHandler {
           }
           return runner.owner;
         }
+        if (typeof targetId === 'object' && targetId !== null) {
+          return targetId;
+        }
         if (entitySystem && typeof entitySystem.getEntity === 'function') {
           return entitySystem.getEntity(targetId, runner.owner);
         }
@@ -31,9 +34,48 @@ export class EntityContextHandler {
 
       destroy: (entity) => {
         if (!entity) return;
-        if (entitySystem && typeof entitySystem.destroyEntity === 'function') {
-          entitySystem.destroyEntity(entity);
+        let targetEntity = entity;
+        if (typeof entity === 'string') {
+          if (entity === 'self') {
+            targetEntity = runner.owner;
+          } else if (entitySystem && typeof entitySystem.getEntity === 'function') {
+            targetEntity = entitySystem.getEntity(entity, runner.owner);
+          } else {
+            const searchKey = String(entity).trim();
+            const searchLower = searchKey.toLowerCase();
+            const searchSlug = searchLower.replace(/\s+/g, '_');
+            const entities = world?.entities || [];
+            targetEntity = entities.find(e => 
+              e.id === searchKey || 
+              (e.scriptId && (e.scriptId.toLowerCase() === searchLower || e.scriptId.toLowerCase() === searchSlug))
+            ) || null;
+          }
         }
+        if (!targetEntity) return;
+        if (entitySystem && typeof entitySystem.destroyEntity === 'function') {
+          entitySystem.destroyEntity(targetEntity);
+        }
+      },
+
+      destroyByTag: (tag) => {
+        if (!tag) return 0;
+        if (entitySystem && typeof entitySystem.destroyEntitiesByTag === 'function') {
+          return entitySystem.destroyEntitiesByTag(tag);
+        }
+        if (entitySystem && typeof entitySystem.destroyByTag === 'function') {
+          return entitySystem.destroyByTag(tag);
+        }
+        const targetTag = String(tag).trim();
+        const entities = world?.entities || [];
+        const matches = entities.filter(e => e.tag === targetTag);
+        let count = 0;
+        for (const ent of matches) {
+          if (!ent._isDestroyed && entitySystem && typeof entitySystem.destroyEntity === 'function') {
+            entitySystem.destroyEntity(ent);
+            count++;
+          }
+        }
+        return count;
       },
 
       clone: (entity) => {

@@ -14,6 +14,39 @@ All node scripts (`data.code`) and custom scripts must adhere to strict runtime 
 2. **Zero Defensive Null-Checking**: Node logic must never use optional chaining (`?.`), nullish coalescing (`??`), or silent fallbacks (`if (!entity) return;`) for required engine invariants.
 3. **Fail-Fast Invariant Enforcement**: When an entity, component, or data type is required, nodes must use `context.assert.*`. Assertion failures throw a `ScriptAssertionError`, emit a structured `console:error` event, and halt execution immediately without downstream flow leakage.
 4. **Context-Aware Logging**: All logging, warnings, and errors must use `context.console.*`, which automatically tags each message with the active Scene, Entity, Script, and Node metadata.
+5. **4-Tier Hierarchy Alignment**: Node scripts consume Context based on their architectural tier:
+   - **Tier 1 (Preset Nodes)**: Consume `context.toolkit.*` via a compact facade dispatcher.
+   - **Tier 2 (Extensible Nodes)**: Consume modular sub-methods on `context.toolkit.*` paired with open, customizable execution pipelines in CodePanel.
+   - **Tier 3 (Logic & Utility Nodes)**: Pure data, arithmetic, or flow control with minimal/no subsystem mutations.
+   - **Tier 4 (Atomic & Primitive Nodes)**: 1:1 direct calls to subsystem domain facades (`context.entity`, `context.audio`, `context.collider`, etc.).
+6. **Context Generality & Reusability Gate**:
+   - `ContextSystem` must remain strictly **general, domain-focused, and node-agnostic**.
+   - **Prohibition of Single-Node Coupling**: Never inject functions or state into `ContextSystem` (including `context.toolkit`) that are only used by one specific node and cannot be reused across other nodes or game systems.
+   - **Inline Fallback**: Any one-off, specialized, or private node calculations must remain written directly inside `node.data.code`. This prevents `ContextSystem` from decaying into an unmaintainable "junk drawer" of fragmented node logic.
+
+---
+
+### 1.1 Context Admission Gate (Checklist for Adding New Context Functions)
+
+Before adding any new method or property to `core/Script/ContextSystem.js` or `core/Toolkit/`:
+
+```mermaid
+flowchart TD
+    Start["Proposal for New Context Function"] --> Q1{"Is it needed by multiple nodes or systems?"}
+    Q1 -- No --> Reject["REJECT from Context System<br/>Write directly in node.data.code"]
+    Q1 -- Yes --> Q2{"Is it a generic engine domain capability or universal gameplay kit?"}
+    Q2 -- No --> Reject
+    Q2 -- Yes --> Q3{"Does it maintain zero coupling to any single node ID or type?"}
+    Q3 -- No --> Reject
+    Q3 -- Yes --> Accept["ACCEPT: Add to ContextSystem or ToolkitFacade"]
+```
+
+| Admission Criteria | Invariant Rule | Action if Failed |
+| :--- | :--- | :--- |
+| **High Reusability** | Must be beneficial to multiple independent nodes or gameplay systems. | Keep inside `node.data.code`. |
+| **Domain Generality** | Must represent a general capability (querying, transforming, playing audio, managing states), not a hyper-specific script quirk. | Inline into the specific node definition. |
+| **Decoupled Architecture** | Removing any specific node must leave the Context method fully functional and meaningful. | Keep logic local to the node. |
+| **Subsystem Isolation** | Must mediate access to private engine subsystems without leaking `context.game`. | Disallow raw access. |
 
 ---
 
@@ -110,6 +143,7 @@ Queries and manages Entities in the active world.
 | :--- | :--- | :--- | :--- |
 | `get(targetId)` | `targetId: string` | `Entity \| null` | Resolves entity by `'self'`, UUID string, or `scriptId` (case-insensitive slug). |
 | `destroy(entity)` | `entity: Entity \| string` | `void` | Removes the target entity and its component state from the active world. |
+| `destroyByTag(tag)` | `tag: string` | `number` | Removes all active entities matching the specified tag and returns the count of destroyed entities. |
 | `clone(entity)` | `entity: Entity` | `Entity` | Duplicates an existing entity hierarchy. |
 | `getParent(entity)` | `entity: Entity` | `Entity \| null` | Retrieves the parent entity if `parentId` is defined. |
 | `getChildren(entity)` | `entity: Entity` | `Entity[]` | Returns all immediate child entities. |
@@ -134,6 +168,9 @@ Queries and manages Entities in the active world.
 | Method | Parameters | Returns | Description |
 | :--- | :--- | :--- | :--- |
 | `get(layerId)` | `layerId: string` | `Layer \| null` | Resolves a layer by `'self'`, layer UUID, or layer `scriptId`. |
+| `destroy(layerId, destroyEntities?)` | `layerId: string, destroyEntities?: boolean` | `boolean` | Removes the specified layer from the active world, optionally destroying its entities (defaults to `true`). |
+| `freezeInput(layerId, active?, type?)` | `layerId: string, active?: boolean, type?: string` | `boolean` | Freezes or unfreezes inputs on the specified layer. |
+| `isInputFrozen(layerId, type?)` | `layerId: string, type?: string` | `boolean` | Checks if input is frozen on the specified layer. |
 
 ---
 
@@ -258,10 +295,32 @@ Enables loose communication across different entities and script graphs without 
 
 ---
 
-## 6. Example: Writing a Custom Node with Context API
+### 5.16 `context.toolkit` (High-Level Gameplay & Modular Helpers)
+
+The **Toolkit Facade** (`core/Toolkit/ToolkitContextHandler.js`) provides high-level domain helpers for **Tier 1 (Preset)** and **Tier 2 (Extensible)** nodes, encapsulating complex multi-frame mechanics, physics accumulators, and multi-subsystem orchestration.
+
+| Sub-Domain | Method / Property | Description |
+| :--- | :--- | :--- |
+| `dialogue` | `runDialogue(state, inputs, outputs, ctx)` | Orchestrates visual novel dialogue lines, typewriter FX, portrait sprites, and audio beeps. |
+| `dialogue` | `presentChoices(state, inputs, outputs, ctx)` | Dynamically mounts interactive choice buttons and handles selection dispatch. |
+| `platformer` | `processController(state, inputs, outputs, ctx)` | Complete 2D platformer physics controller (horizontal acceleration, jump buffering, coyote time, one-way drop-through). |
+| `platformer` | `processAnimator(state, inputs, outputs, ctx, node)` | Smart state-based sprite animator with automatic facing flip (`idle`, `run`, `jump`, `fall`, `hit`). |
+| `combat` | `processPlatformerCombat(state, inputs, outputs, ctx, node)` | Multi-hit combo state machine, hitbox timing windows, and target knockback. |
+| `combat` | `processEnemyCombat(state, inputs, outputs, ctx, node)` | AI enemy combat attack cycles, proximity triggers, and hurtbox reactions. |
+| `ai` | `processChaser(state, inputs, outputs, ctx)` | Target tracking, line-of-sight checks, and pursuit steering. |
+| `collectable` | `processCollectable(state, inputs, outputs, ctx)` | *(Tier 1 & 2)* Auto-pickup overlap detection, idle sinusoidal bobbing, audio trigger, collection animation, and lifecycle despawn/respawn. |
+| `collectable` | `applyBobbing(entity, dt)` | Modular sub-function: Applies smooth floating sine wave to entity transform. |
+| `collectable` | `checkOverlap(entity, tag)` | Modular sub-function: Queries active overlapping collectors by tag. |
+| `collectable` | `playAnimationAndDestroy(entity, clip)` | Modular sub-function: Plays collection clip and cleans up entity after animation ends. |
+
+---
+
+## 6. Examples: Writing Nodes Across the Tiers
+
+### 6.1 Tier 4 Example: Atomic Subsystem Action (`moveAndSlide`)
 
 ```javascript
-// Node Contract: Read inputs, perform logic via context facades, assign outputs
+// Tier 4 Contract: 1:1 direct subsystem facade call, fail-fast assertions
 const targetId = inputs.targetEntity;
 const moveSpeed = context.assert.isNumber(inputs.speed, 'Speed must be a valid number');
 
@@ -280,6 +339,43 @@ context.collider.moveAndSlide(entity, velocityX, 0);
 
 // 4. Output results and continue execution flow
 outputs.velocityX = velocityX;
+outputs.execOut = true;
+return;
+```
+
+### 6.2 Tier 2 Example: Extensible Modular Pipeline (`collectableItem`)
+
+```javascript
+// Tier 2 Contract: Modular toolkit helper + open editable pipeline in CodePanel
+const helper = context.toolkit && context.toolkit.collectable;
+if (!helper) return;
+
+// 1. Visual hover effect (user can disable or tweak formula directly)
+if (inputs.autoBobbing) {
+  helper.applyBobbing(context.owner, context.dt);
+}
+
+// 2. Overlap detection with collector entity
+const collector = helper.checkOverlap(context.owner, inputs.collectorTag);
+if (collector && inputs.canCollect !== false) {
+  outputs.collectorEntity = collector.scriptId || collector.id;
+  outputs.value = inputs.scoreValue || 1;
+  outputs.onCollected = true;
+  context.triggerFlow('onCollected');
+
+  // 3. User can modify or add custom effects right here!
+  if (inputs.sfxName && context.audio) {
+    context.audio.play(inputs.sfxName);
+  }
+
+  // 4. Lifecycle resolution strategy
+  if (inputs.despawnAction === 'destroy') {
+    helper.playAnimationAndDestroy(context.owner, inputs.collectClip);
+  } else if (inputs.despawnAction === 'deactivate') {
+    helper.deactivateAndScheduleRespawn(context.owner, inputs.respawnTime);
+  }
+}
+
 outputs.execOut = true;
 return;
 ```

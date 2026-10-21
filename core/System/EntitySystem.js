@@ -7,7 +7,11 @@ export default class EntitySystem {
     }
 
     getEntity(targetId, ownerEntity = null) {
-        if (!targetId || typeof targetId !== 'string' || targetId.trim().toLowerCase() === 'self') {
+        if (!targetId) return ownerEntity;
+        if (typeof targetId === 'object') {
+            return targetId;
+        }
+        if (typeof targetId !== 'string' || targetId.trim().toLowerCase() === 'self') {
             return ownerEntity;
         }
 
@@ -24,37 +28,65 @@ export default class EntitySystem {
         return found || null;
     }
     
-    destroyEntity(entity) {
-        const world = this.game.world;
-        if (!entity || !world) return;
+    destroyEntity(target) {
+        const world = this.game?.world;
+        if (!target || !world) return;
+
+        let entity = target;
+        if (typeof target === 'string') {
+            entity = this.getEntity(target) || (world.entities ? world.entities.find(e => e.id === target) : null);
+        }
+        if (!entity || !entity.id) return;
+
+        // Mark as destroyed so script runners, cameras, and external systems immediately stop
+        entity._isDestroyed = true;
 
         const entityId = entity.id;
 
-        const children = world.entities.filter(e => e.parentId === entityId);
+        // Cascade destroy children from world.entities
+        const children = (world.entities || []).filter(e => e.parentId === entityId);
         for (const child of children) {
-            this.destroyEntity(child);
+            if (!child._isDestroyed) {
+                this.destroyEntity(child);
+            }
         }
 
+        // Also cascade destroy from entity.children if any
+        if (Array.isArray(entity.children)) {
+            for (const child of [...entity.children]) {
+                if (child && !child._isDestroyed) {
+                    this.destroyEntity(child);
+                }
+            }
+        }
+
+        // Unlink from parent children array if it has one
         if (entity.parentId) {
-            const parent = world.entities.find(e => e.id === entity.parentId);
+            const parent = (world.entities || []).find(e => e.id === entity.parentId);
             if (parent && Array.isArray(parent.children)) {
                 parent.children = parent.children.filter(c => c.id !== entityId);
             }
         }
 
+        // Clean up from scriptIdMap
         if (world.scriptIdMap && entity.scriptId) {
             world.scriptIdMap.delete(entity.scriptId);
         }
 
-        world.entities = world.entities.filter(e => e.id !== entityId);
+        // Remove from world.entities
+        if (Array.isArray(world.entities)) {
+            world.entities = world.entities.filter(e => e.id !== entityId);
+        }
 
-        if (world.allLayers) {
-            const layer = world.allLayers.find(l => l.id === entity.layerId);
+        // Remove from all layers (both world and UI layers)
+        const allLayers = world.allLayers || [];
+        for (const layer of allLayers) {
             if (layer && Array.isArray(layer.entities)) {
                 layer.entities = layer.entities.filter(e => e.id !== entityId);
             }
         }
 
+        // Clean up entity scripts, physics bodies, and colliders
         if (this.game.scriptSystem && typeof this.game.scriptSystem.removeEntityScripts === 'function') {
             this.game.scriptSystem.removeEntityScripts(entity);
         }
@@ -64,6 +96,28 @@ export default class EntitySystem {
         if (this.game.colliderSystem && typeof this.game.colliderSystem.removeCollider === 'function') {
             this.game.colliderSystem.removeCollider(entity);
         }
+    }
+
+    destroyEntitiesByTag(tag) {
+        const world = this.game?.world;
+        if (!tag || !world || !Array.isArray(world.entities)) return 0;
+
+        const targetTag = String(tag).trim();
+        const matches = world.entities.filter(e => e.tag === targetTag);
+        let count = 0;
+
+        for (const entity of matches) {
+            if (!entity._isDestroyed) {
+                this.destroyEntity(entity);
+                count++;
+            }
+        }
+
+        return count;
+    }
+
+    destroyByTag(tag) {
+        return this.destroyEntitiesByTag(tag);
     }
 
     async cloneEntity(sourceEntity) {

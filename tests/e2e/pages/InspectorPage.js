@@ -102,8 +102,32 @@ export class InspectorPage {
   // =========================================================================
   // PROJECT & SCENE INSPECTOR ACTIONS (Deselected State)
   // =========================================================================
+  async toggleProjectUIBounds() {
+    await this.page.getByTestId('project-show-ui-bounds-toggle').click();
+  }
+
+  async toggleProjectWorldBounds() {
+    await this.page.getByTestId('project-show-world-bounds-toggle').click();
+  }
+
+  async toggleProjectColliderSolid() {
+    await this.page.getByTestId('project-show-collider-solid-toggle').click();
+  }
+
+  async toggleProjectColliderTrigger() {
+    await this.page.getByTestId('project-show-collider-trigger-toggle').click();
+  }
+
+  async toggleProjectColliderHitbox() {
+    await this.page.getByTestId('project-show-collider-hitbox-toggle').click();
+  }
+
+  async toggleProjectColliderHurtbox() {
+    await this.page.getByTestId('project-show-collider-hurtbox-toggle').click();
+  }
+
   async toggleProjectGridGuide() {
-    await this.page.getByTestId('project-show-grid-toggle').click();
+    await this.page.getByTestId('project-show-world-bounds-toggle').click();
   }
 
   async toggleProjectSnapGrid() {

@@ -150,7 +150,23 @@ export const CANONICAL_PORT_IDS = Object.freeze({
   rightKey: 'Key assigned to Right',
   scaleNormal: 'Normal scale factor',
   scaleHover: 'Scale factor when hovered',
-  scalePressed: 'Scale factor when pressed'
+  scalePressed: 'Scale factor when pressed',
+  onCollected: 'Triggered when item is collected',
+  onAnimationEnd: 'Triggered when collect animation finishes',
+  onRespawn: 'Triggered when collectable item respawns',
+  isCollected: 'Whether item has been collected',
+  collectorEntity: 'Entity that collected the item',
+  collectorTag: 'Tag of entities that can collect the item',
+  pickupMode: 'Pickup detection mode (collision or interact_key)',
+  interactKey: 'Key to press for pickup interaction',
+  scoreValue: 'Score or value awarded on pickup',
+  canCollect: 'Conditional gate whether item is currently collectible',
+  idleClip: 'Idle animation clip name',
+  collectClip: 'Collection animation clip name',
+  sfxName: 'Audio asset played on collection',
+  despawnAction: 'Lifecycle action after collection (destroy, deactivate, none)',
+  respawnTime: 'Delay in seconds before item respawns',
+  autoBobbing: 'Whether item bobs up and down smoothly'
 });
 
 export function isValidPortId(id) {

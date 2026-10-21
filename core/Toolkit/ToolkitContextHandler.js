@@ -2,6 +2,13 @@ import { processDialogueRunner, processChoicePresenter } from './Dialogue/Dialog
 import { processPlatformerController, processPlatformerAnimator } from './Platformer/PlatformerHelper.js';
 import { processPlatformerCombat, processEnemyCombat } from './Combat/CombatHelper.js';
 import { processEnemyChaser } from './AI/AIHelper.js';
+import {
+  processCollectable,
+  applyBobbing,
+  checkOverlap,
+  playAnimationAndDestroy,
+  deactivateAndScheduleRespawn
+} from './Collectable/CollectableHelper.js';
 
 export class ToolkitContextHandler {
   constructor(contextSystem) {
@@ -27,6 +34,13 @@ export class ToolkitContextHandler {
       },
       ai: {
         processChaser: (state, inputs, outputs, ctx) => processEnemyChaser(state, inputs, outputs, getCtx(ctx))
+      },
+      collectable: {
+        processCollectable: (state, inputs, outputs, ctx) => processCollectable(state, inputs, outputs, getCtx(ctx)),
+        applyBobbing: (target, dt, speed, amp) => applyBobbing(target, dt, speed, amp),
+        checkOverlap: (target, tag, dist, ctx) => checkOverlap(target, tag, dist, getCtx(ctx)),
+        playAnimationAndDestroy: (target, clip, ctx) => playAnimationAndDestroy(target, clip, getCtx(ctx)),
+        deactivateAndScheduleRespawn: (target, clip, respawnTime, ctx) => deactivateAndScheduleRespawn(target, clip, respawnTime, getCtx(ctx))
       }
     };
   }

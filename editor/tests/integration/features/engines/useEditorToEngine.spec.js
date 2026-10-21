@@ -323,10 +323,10 @@ describe('Integration Test: useEditorToEngine (100% Coverage)', () => {
     it('sends updateEditorState when setTileSelection and clearTileSelection are called', () => {
       const rect = { x: 0, y: 0, w: 2, h: 2 };
       workspaceStore.setTileSelection(rect);
-      expect(engineBridge.updateEditorState).toHaveBeenCalledWith({ tileSelection: rect });
+      expect(engineBridge.updateEditorState).toHaveBeenCalledWith({ tileSelection: rect, activeTool: 'brush' });
 
       workspaceStore.clearTileSelection();
-      expect(engineBridge.updateEditorState).toHaveBeenCalledWith({ tileSelection: null });
+      expect(engineBridge.updateEditorState).toHaveBeenCalledWith({ tileSelection: null, activeTool: 'select' });
     });
   });
 

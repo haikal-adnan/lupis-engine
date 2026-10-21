@@ -195,7 +195,7 @@ Node definitions live in `@nodes/library/blueprints/`, organized into **10 conso
 | :--- | :--- | :--- | :---: | :--- |
 | `BlueprintFlow.js` | Flow & Logic | `flow_logic` | 13 | Branch (If/Else), Switch, Compare, And, Or, Not, For Loop, For Each, While Loop, Flow Merge, Delay, Cooldown, Typewriter |
 | `BlueprintInput.js` | Input & Controls | `input_controls` | 7 | On Key Event, Get Key State, Calculate Axis 2D, Simulate Key, On Click / Tap, On Drag / Swipe, Entity Pointer Event |
-| `BlueprintEntity.js` | Entity & Transform | `game_entity` | 12 | Spawn Prefab, Destroy Entity, Clone Entity, Get/Set Children & Parent, Get/Set Entity Info, Find Closest by Tag, Get/Set Transform, Get/Set Layer |
+| `BlueprintEntity.js` | Entity & Transform | `game_entity` | 14 | Spawn Prefab, Destroy Entity, Destroy by Tag, Destroy Layer, Clone Entity, Get/Set Children & Parent, Get/Set Entity Info, Find Closest by Tag, Get/Set Transform, Get/Set Layer |
 | `BlueprintPhysics.js` | Physics & Collision | `game_physics` | 6 | Move and Slide, Solid Collision, Trigger Zone, Get/Set Physics Info, Set Face Direction |
 | `BlueprintRenderer.js` | Rendering & Camera | `game_renderer` | 14 | Get/Set Sprite, Get/Set Text, Get/Set Shape, Get/Set Tilemap, Batch Set, Fade Screen Transition, Camera Follow / Stop Follow / Set Transform / Get Info |
 | `BlueprintAnimation.js` | Animation & Tweens | `game_animation` | 16 | Tween Value, Move To, Scale To, Rotate To, Resize To, Fade To, Crop Image, Fill Amount, Shake Transform, Button Scale Effect, Play/Pause Animation, Get/Set Animator & Clip Props |

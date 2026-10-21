@@ -38,7 +38,7 @@ export default class ScriptSystem {
         if (!entity) return;
 
         this.runners = this.runners.filter(runner => {
-            if (runner.owner === entity) {
+            if (runner.owner === entity || (entity.id && runner.owner?.id === entity.id)) {
                 if (typeof runner.destroy === 'function') {
                     runner.destroy();
                 }

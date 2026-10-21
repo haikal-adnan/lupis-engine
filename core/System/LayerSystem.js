@@ -41,4 +41,39 @@ export default class LayerSystem {
         if (!entity || !entity.layerId) return false;
         return this.isInputFrozen(entity.layerId, inputType, entity);
     }
+
+    destroyLayer(layerTarget, destroyEntities = true, contextEntity = null) {
+        const layer = this.getLayer(layerTarget, contextEntity);
+        if (!layer) return false;
+
+        const layerId = layer.id;
+        const world = this.game?.world;
+        if (!world) return false;
+
+        if (destroyEntities && this.game.entitySystem) {
+            const allEntities = [...(world.entities || [])];
+            const entitiesToDestroy = allEntities.filter(e => e.layerId === layerId);
+            if (Array.isArray(layer.entities)) {
+                for (const e of layer.entities) {
+                    if (!entitiesToDestroy.includes(e)) {
+                        entitiesToDestroy.push(e);
+                    }
+                }
+            }
+            for (const ent of entitiesToDestroy) {
+                if (!ent._isDestroyed) {
+                    this.game.entitySystem.destroyEntity(ent);
+                }
+            }
+        }
+
+        if (Array.isArray(world.layersWorld)) {
+            world.layersWorld = world.layersWorld.filter(l => l.id !== layerId);
+        }
+        if (Array.isArray(world.layersUI)) {
+            world.layersUI = world.layersUI.filter(l => l.id !== layerId);
+        }
+
+        return true;
+    }
 }

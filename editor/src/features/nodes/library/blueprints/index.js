@@ -13,6 +13,7 @@ import { BlueprintUI } from './BlueprintUI.js';
 import { BlueprintDialogue } from './BlueprintDialogue.js';
 import { BlueprintPlatformer } from './BlueprintPlatformer.js';
 import { BlueprintAI } from './BlueprintAI.js';
+import { BlueprintCollectable } from './BlueprintCollectable.js';
 
 export { BlueprintCategoryTemplate } from './Blueprint.js';
 
@@ -32,6 +33,7 @@ export {
   BlueprintDialogue,
   BlueprintPlatformer,
   BlueprintAI,
+  BlueprintCollectable,
   // Backward compatibility re-export aliases
   BlueprintFlow as BlueprintBoolean,
   BlueprintFlow as BlueprintComparison,

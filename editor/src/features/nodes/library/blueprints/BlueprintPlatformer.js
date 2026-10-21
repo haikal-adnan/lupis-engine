@@ -35,6 +35,8 @@ export const BlueprintPlatformer = {
           { id: 'onLand', dataType: 'execution', color: '#FFFFFF' },
           { id: 'onDrop', dataType: 'execution', color: '#FFFFFF' },
           { id: 'isGrounded', dataType: 'boolean', color: '#81C784' },
+          { id: 'isGroundedOnOneWay', dataType: 'boolean', color: '#81C784' },
+          { id: 'groundType', dataType: 'string', color: '#F48FB1' },
           { id: 'movementState', dataType: 'string', color: '#F48FB1' },
           { id: 'facingDirection', dataType: 'string', color: '#F48FB1' },
           { id: 'velocityX', dataType: 'number', color: '#64B5F6' },

@@ -1,5 +1,5 @@
 <template>
-  <div class="select-none font-sans relative min-w-max" data-testid="hierarchy-node-root">
+  <div class="select-none font-sans relative min-w-full w-full" data-testid="hierarchy-node-root">
     <div
       ref="dragGhostRef"
       class="fixed -top-[9999px] bg-foreground text-background px-2 py-1 rounded text-xs font-bold z-50 shadow-md border border-border"
@@ -16,7 +16,7 @@
     </div>
 
     <div
-      class="group/node relative flex items-center w-full border border-transparent py-0.5 pr-2 text-xs cursor-default transition-none whitespace-nowrap"
+      class="group/node relative flex items-center w-full min-w-full border border-transparent py-0.5 pr-1 text-xs cursor-default transition-none whitespace-nowrap"
       data-testid="hierarchy-node"
       :data-node-id="node.id"
       :data-node-name="node.scriptId"
@@ -95,15 +95,23 @@
       </span>
 
       <div 
-        class="flex items-center gap-1 opacity-0 group-hover/node:opacity-100 transition-opacity ml-auto"
-        :class="{ 'opacity-100': locked || !visible }"
+        class="sticky right-1 ml-auto shrink-0 flex items-center gap-0.5 z-20 px-1 py-0.5 rounded"
+        :class="[
+          (locked || !visible)
+            ? 'opacity-100 pointer-events-auto' 
+            : 'opacity-0 pointer-events-none group-hover/node:opacity-100 group-hover/node:pointer-events-auto',
+          isSelected 
+            ? 'bg-[#1e293b] text-white' 
+            : 'bg-background group-hover/node:bg-muted'
+        ]"
       >
         <button 
           type="button"
-          class="p-1 rounded hover:bg-white/20 cursor-pointer border-none bg-transparent" 
+          class="w-5 h-5 flex items-center justify-center p-0.5 rounded hover:bg-white/20 cursor-pointer border-none bg-transparent" 
+          :class="locked ? 'opacity-100' : 'opacity-0 group-hover/node:opacity-100'"
           data-testid="hierarchy-node-lock-button"
           :aria-label="locked ? 'Unlock node' : 'Lock node'"
-          title="Toggle Lock"
+          :title="locked ? 'Unlock node' : 'Lock node'"
           @click.stop="toggleLock"
         >
             <Lock v-if="locked" class="w-3 h-3 text-amber-500" />
@@ -111,13 +119,14 @@
         </button>
         <button 
           type="button"
-          class="p-1 rounded hover:bg-white/20 cursor-pointer border-none bg-transparent" 
+          class="w-5 h-5 flex items-center justify-center p-0.5 rounded hover:bg-white/20 cursor-pointer border-none bg-transparent" 
+          :class="!visible ? 'opacity-100' : 'opacity-0 group-hover/node:opacity-100'"
           data-testid="hierarchy-node-visibility-button"
           :aria-label="visible ? 'Hide node' : 'Show node'"
-          title="Toggle Visibility"
+          :title="visible ? 'Hide node' : 'Show node'"
           @click.stop="toggleVisibility"
         >
-            <EyeOff v-if="!visible" class="w-3.5 h-3.5 text-muted-foreground" />
+            <EyeOff v-if="!visible" class="w-3.5 h-3.5 text-amber-500/80" />
             <Eye v-else class="w-3.5 h-3.5 text-muted-foreground opacity-50 hover:opacity-100" />
         </button>
       </div>

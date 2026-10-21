@@ -201,4 +201,178 @@ describe('Collider Schema & ColliderSystem Enhancements', () => {
       expect(hits[0].targetBound.scriptId).toBe('enemy_hurtbox');
     });
   });
+
+  describe('Tilemap Collision & moveAndSlide', () => {
+    function createTilemapGame(entities = []) {
+      const mockGame = {
+        world: {
+          entities,
+          layersWorld: [{ _id: 'layer_1', visible: true, active: true }],
+          layersUI: []
+        }
+      };
+      const cs = new ColliderSystem(mockGame);
+      mockGame.colliderSystem = cs;
+      return { mockGame, cs };
+    }
+
+    it('detects collision with solid tilemap and blocks penetration via moveAndSlide', () => {
+      const tilemap = {
+        id: 'tilemap_1',
+        active: true,
+        components: {
+          Transform: { x: 0, y: 0, width: 32, height: 32, scaleX: 1, scaleY: 1, rotation: 0 },
+          Tilemap: {
+            width: 32,
+            height: 32,
+            isSolid: true,
+            data: {
+              '0,1': 1, // Tile at x=0..32, y=32..64 (floor)
+              '1,1': 1
+            }
+          }
+        }
+      };
+
+      const player = {
+        id: 'player_1',
+        active: true,
+        components: {
+          Transform: { x: 16, y: 16, width: 32, height: 32, pivotX: 0.5, pivotY: 0.5 },
+          Collider: {
+            data: [
+              { scriptId: 'col_body', type: 'solid', enabled: true, autoFit: true }
+            ]
+          }
+        }
+      };
+
+      const { cs } = createTilemapGame([tilemap, player]);
+
+      // Initially player is at y=16 (bounds y: 0..32). Tile is at y: 32..64. No collision yet.
+      expect(cs.checkSolid(player)).toBeNull();
+
+      // Moving downwards towards tile by 20px (would reach y=36, penetrating into tile by 4px)
+      const hit = cs.moveAndSlide(player, 0, 20);
+
+      expect(hit).toBeDefined();
+      expect(hit.y).toBe(tilemap);
+      // Player should be resting on top of tile (y around 16, top edge of tile is 32, player bottom is y + 16 = 32, so player.y <= 16)
+      expect(player.components.Transform.y).toBeLessThanOrEqual(16.01);
+      expect(player.components.Transform.y).toBeGreaterThan(15.9);
+    });
+
+    it('allows player to pass through when tilemap isSolid is false', () => {
+      const tilemap = {
+        id: 'tilemap_pass',
+        active: true,
+        components: {
+          Transform: { x: 0, y: 0, width: 32, height: 32, scaleX: 1, scaleY: 1, rotation: 0 },
+          Tilemap: {
+            width: 32,
+            height: 32,
+            isSolid: false,
+            data: {
+              '0,1': 1
+            }
+          }
+        }
+      };
+
+      const player = {
+        id: 'player_pass',
+        active: true,
+        components: {
+          Transform: { x: 16, y: 16, width: 32, height: 32, pivotX: 0.5, pivotY: 0.5 },
+          Collider: {
+            data: [
+              { scriptId: 'col_body', type: 'solid', enabled: true, autoFit: true }
+            ]
+          }
+        }
+      };
+
+      const { cs } = createTilemapGame([tilemap, player]);
+
+      const hit = cs.moveAndSlide(player, 0, 20);
+      expect(hit).toBeNull();
+      expect(player.components.Transform.y).toBe(36);
+    });
+
+    it('blocks horizontal movement against a tilemap wall', () => {
+      const tilemap = {
+        id: 'tilemap_wall',
+        active: true,
+        components: {
+          Transform: { x: 0, y: 0, width: 32, height: 32, scaleX: 1, scaleY: 1, rotation: 0 },
+          Tilemap: {
+            width: 32,
+            height: 32,
+            isSolid: true,
+            data: {
+              '2,0': 1 // Wall tile at x=64..96, y=0..32
+            }
+          }
+        }
+      };
+
+      const player = {
+        id: 'player_wall',
+        active: true,
+        components: {
+          Transform: { x: 40, y: 16, width: 32, height: 32, pivotX: 0.5, pivotY: 0.5 },
+          Collider: {
+            data: [
+              { scriptId: 'col_body', type: 'solid', enabled: true, autoFit: true }
+            ]
+          }
+        }
+      };
+
+      const { cs } = createTilemapGame([tilemap, player]);
+
+      // Player spans x: 24..56. Wall starts at x=64. Moving right by 20px would reach x=60 (bounds x: 44..76, penetrating wall by 12px)
+      const hit = cs.moveAndSlide(player, 20, 0);
+
+      expect(hit).toBeDefined();
+      expect(hit.x).toBe(tilemap);
+      // Player right edge (Transform.x + 16) should not penetrate wall (64)
+      expect(player.components.Transform.x).toBeLessThanOrEqual(48.01);
+    });
+
+    it('supports negative tile coordinates and checkOverlap', () => {
+      const tilemap = {
+        id: 'tilemap_neg',
+        active: true,
+        components: {
+          Transform: { x: 0, y: 0, width: 32, height: 32, scaleX: 1, scaleY: 1, rotation: 0 },
+          Tilemap: {
+            width: 32,
+            height: 32,
+            isSolid: true,
+            data: {
+              '-1,0': 1 // Tile at x=-32..0, y=0..32
+            }
+          }
+        }
+      };
+
+      const player = {
+        id: 'player_neg',
+        active: true,
+        components: {
+          Transform: { x: -16, y: 16, width: 32, height: 32, pivotX: 0.5, pivotY: 0.5 },
+          Collider: {
+            data: [
+              { scriptId: 'col_body', type: 'solid', enabled: true, autoFit: true }
+            ]
+          }
+        }
+      };
+
+      const { cs } = createTilemapGame([tilemap, player]);
+      expect(cs.checkSolid(player)).toBe(tilemap);
+      expect(cs.checkOverlap(player)).toBe(tilemap);
+    });
+  });
 });

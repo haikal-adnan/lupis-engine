@@ -7,7 +7,7 @@ import {
   Plus, Trash2, Edit2, RefreshCw, 
   Cuboid, Image, Type, Square, InspectionPanel,
   Maximize, Copy, Scissors, Clipboard, Files, Layers,
-  Box 
+  Box, Eye, EyeOff
 } from 'lucide-vue-next';
 
 export function useHierarchyMenu(handlers) {
@@ -106,7 +106,14 @@ export function useHierarchyMenu(handlers) {
       items.push({ separator: true });
 
       if (isLayer) {
+        const isVisible = node.visible !== false;
         items.push(
+          { 
+            label: isVisible ? 'Hide Layer' : 'Show Layer', 
+            icon: isVisible ? EyeOff : Eye, 
+            action: () => runAction(() => sceneStore.updateLayerProp(node.id, 'visible', !isVisible)) 
+          },
+          { separator: true },
           { label: 'Duplicate', icon: Files, shortcut: 'Ctrl+D', action: () => runAction(() => duplicate(node.id)) },
           { label: 'Copy Layer', icon: Copy, action: () => runAction(() => copy(node.id)) },
           { label: 'Cut Layer', icon: Scissors, action: () => runAction(() => cut(node.id)) }

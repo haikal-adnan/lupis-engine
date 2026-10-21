@@ -78,7 +78,8 @@ export function extractUsedOutputs(code) {
   const clean = stripComments(code);
   const matches = [
     ...[...clean.matchAll(/\boutputs\[\s*['"]([^'"]+)['"]\s*\]/g)].map(m => m[1]),
-    ...[...clean.matchAll(/\boutputs\.([A-Za-z0-9_$]+)\s*[+\-*/%&|^]?=/g)].map(m => m[1])
+    ...[...clean.matchAll(/\boutputs\.([A-Za-z0-9_$]+)\s*[+\-*/%&|^]?=/g)].map(m => m[1]),
+    ...[...clean.matchAll(/\bcontext\.triggerFlow\(\s*['"]([^'"]+)['"]\s*\)/g)].map(m => m[1])
   ];
   return [...new Set(matches)];
 }
@@ -221,9 +222,13 @@ export function validateCodePanelContract(code, options = {}) {
 
   const definedOutputPorts = targetNode.outputs || [];
 
+  const cleanCode = stripComments(codeStr);
+  const isInputsForwarded = /\binputs\b(?!\s*[\.\[])/.test(cleanCode);
+  const isOutputsForwarded = /\boutputs\b(?!\s*[\.\[])/.test(cleanCode);
+
   let matchedInputsCount = 0;
   dataInputPorts.forEach(port => {
-    const isUsed = (port.label && usedInputKeys.includes(port.label)) || (port.id && usedInputKeys.includes(port.id));
+    const isUsed = isInputsForwarded || (port.label && usedInputKeys.includes(port.label)) || (port.id && usedInputKeys.includes(port.id));
     if (isUsed) {
       matchedInputsCount++;
     } else {
@@ -233,7 +238,7 @@ export function validateCodePanelContract(code, options = {}) {
 
   let matchedOutputsCount = 0;
   definedOutputPorts.forEach(port => {
-    const isUsed = (port.label && usedOutputKeys.includes(port.label)) || (port.id && usedOutputKeys.includes(port.id));
+    const isUsed = isOutputsForwarded || (port.label && usedOutputKeys.includes(port.label)) || (port.id && usedOutputKeys.includes(port.id));
     if (isUsed) {
       matchedOutputsCount++;
     } else {

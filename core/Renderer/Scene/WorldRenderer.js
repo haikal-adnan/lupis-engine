@@ -21,13 +21,19 @@ export default class WorldRenderer {
         const activeTab = tabs?.find(t => t.id === activeTabId);
         const isIsolationMode = activeTab?.type === "tilemap";
 
+        if (world?._editors) {
+            world._editors.isIsolationMode = isIsolationMode;
+        }
+
         if (world?.gridRenderer && !isIsolationMode && !isUIMode) {
             this._flushAll();
             world.gridRenderer(this.renderer.shape, proj);
             this.renderer.shape?.flush();
         }
 
-        if (Config.ENGINE_MODE === 'editor' && !isIsolationMode) {
+        const isWorldActive = world?.settings?.world?.active !== false && world?.settings?.world?.visible !== false;
+
+        if (Config.ENGINE_MODE === 'editor' && !isIsolationMode && isWorldActive) {
             this._renderWorldBounds(world, proj);
         }
 
@@ -50,6 +56,8 @@ export default class WorldRenderer {
 
     _collectRenderables(world, activeTabId, isIsolationMode, isUIMode, tilemapContext, proj) {
         const isEditor = Config.ENGINE_MODE === 'editor';
+        const isWorldActive = world?.settings?.world?.active !== false && world?.settings?.world?.visible !== false;
+        const isUIActive = world?.settings?.ui?.active !== false && world?.settings?.ui?.visible !== false;
         const layers = [...(world?.layersWorld || []), ...(world?.layersUI || [])]; 
         RenderUtils.sortItems(layers);
 
@@ -57,7 +65,9 @@ export default class WorldRenderer {
             const layer = layers[li];
             if (!layer || layer.active === false || layer.visible === false || !layer.entities) continue;
 
-            const isUILayer = layer.scriptId === 'ui' || layer.scriptId?.toLowerCase().includes('ui');
+            const isUILayer = layer.scriptId === 'ui' || layer.scriptId?.toLowerCase().includes('ui') || (world?.layersUI?.includes(layer));
+            if (isUILayer && !isUIActive) continue;
+            if (!isUILayer && !isWorldActive) continue;
             if (!isEditor && isUILayer) continue;
 
             const layerOpacity = layer.opacity ?? 1.0; 
@@ -139,7 +149,7 @@ export default class WorldRenderer {
                 RenderUtils.processShape(comps, currentOpacity, flipX, flipY, entityId, this.renderQueue, trans);
             }
 
-            RenderUtils.processColliderDebug(comps, globalT, trans, this.renderQueue, this.colliderColorSolid, this.colliderColorTrigger, this.colliderColorHitbox, this.colliderColorHurtbox);
+            RenderUtils.processColliderDebug(comps, globalT, trans, this.renderQueue, this.colliderColorSolid, this.colliderColorTrigger, this.colliderColorHitbox, this.colliderColorHurtbox, world?.settings?.colliders);
 
             if (comps.TextRenderer) {
                 RenderUtils.processText(comps, currentOpacity, flipX, flipY, rawT, world, this.renderQueue, trans);

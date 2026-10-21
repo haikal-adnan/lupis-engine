@@ -29,6 +29,13 @@ export const sceneSchema = (data = {}, projectId = null) => {
         active: data.settings?.worldBounds?.active ?? true,
       },
 
+      colliders: {
+        solid: data.settings?.colliders?.solid ?? true,
+        trigger: data.settings?.colliders?.trigger ?? true,
+        hitbox: data.settings?.colliders?.hitbox ?? true,
+        hurtbox: data.settings?.colliders?.hurtbox ?? true
+      },
+
       showRulers: data.settings?.showRulers ?? true
     },
 

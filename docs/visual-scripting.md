@@ -64,7 +64,7 @@ graph TD
 | :--- | :--- | :--- | :--- | :---: | :--- |
 | **Flow & Logic** | `flow_logic` | `#3F51B5` | `GitBranch` | **13** | `logicBranch` (If/Else), `logicSwitch`, `logicCompare`, `logicAnd`, `logicOr`, `logicNot`, `logicLoop` (For), `logicForEach`, `logicWhile`, `logicFlowMerge`, `logicDelay`, `logicCooldown`, `logicTypewriter`. |
 | **Input & Controls** | `input_controls` | `#4CAF50` | `Gamepad2` | **7** | `eventOnKey`, `getKeyState`, `calculateAxis2d`, `simulateKey`, `eventPointerTap` (Unified Click/Tap), `eventPointerDrag` (Unified Drag/Swipe), `mouseEntityInteract`. |
-| **Entity & Transform** | `game_entity` | `#64B5F6` | `Box` | **12** | `entitySpawn`, `entityDestroy` (with `destroyParent` toggle), `entityClone`, `entityGetChildren`, `entityGetParent`, `getObject`, `setObject`, `findClosestByTag`, `getTransform`, `setTransform`, `getLayer`, `setLayer`. |
+| **Entity & Transform** | `game_entity` | `#64B5F6` | `Box` | **14** | `entitySpawn`, `entityDestroy` (with `destroyParent` toggle), `entityDestroyByTag`, `layerDestroy`, `entityClone`, `entityGetChildren`, `entityGetParent`, `getObject`, `setObject`, `findClosestByTag`, `getTransform`, `setTransform`, `getLayer`, `setLayer`. |
 | **Physics & Collision** | `game_physics` | `#8BC34A` | `Activity` | **6** | `moveAndSlide`, `solidCollision`, `triggerZone`, `getPhysics`, `setPhysics`, `setFaceDirection`. |
 | **Rendering & Camera** | `game_renderer` | `#00ACC1` | `Palette` | **14** | `getSprite`, `setSprite`, `getText`, `setText`, `getShape`, `setShape`, `getTilemap`, `setTilemap`, `batchSet`, `actionFadeScreen`, `actionCameraFollow`, `actionCameraStopFollow`, `actionCameraSetTransform`, `queryCameraInfo`. |
 | **Animation** | `game_animation` | `#E91E63` | `Film` | **16** | 10 Tweens (`logicTweenValue`, `tweenMoveTo`, `tweenScaleTo`, `tweenRotateTo`, `tweenResizeTo`, `tweenFadeTo`, `tweenCropTo`, `tweenFillAmount`, `actionShakeTransform`, `uiButtonScaleEffect`) + 6 Animator Clips (`playAnimation`, `pauseAnimation`, `getAnimator`, `setAnimator`, `getClipProp`, `setClipProp`). |
@@ -76,40 +76,117 @@ graph TD
 
 ---
 
-## 3. Dual-Tier Architecture: Visual Nodes & The Code Panel
+## 3. The 4-Tier Node Hierarchy & Authoring Contract
 
-Lupis Engine bridges the gap between novice creators and advanced game engineers through a **two-tiered development pipeline**:
+To balance **out-of-the-box convenience for beginners** and **unlimited extensibility for advanced engineers**, Lupis Engine structures all visual script nodes and custom behaviors into a **4-Tier Node Hierarchy**:
 
-### 3.1 Tier 1: Visual Scripting for ~80% of 2D Game Genres
-The 129 nodes empower designers and beginner developers to build full game loops across major 2D genres without touching a line of code:
-- **2D Platformers**: `calculateAxis2d` $\rightarrow$ `moveAndSlide` $\rightarrow$ `solidCollision` $\rightarrow$ `playAnimation`.
-- **Top-Down RPGs**: `triggerZone` $\rightarrow$ `vnDialogueRunner` $\rightarrow$ `setTransform` $\rightarrow$ `listPush`.
-- **Visual Novels / Story Games**: `vnDialogueRunner` $\rightarrow$ `vnChoicePresenter` $\rightarrow$ `actionFadeScreen`.
-- **Arcade / Bullet Hell**: `entitySpawn` $\rightarrow$ `mathDirection2d` $\rightarrow$ `setPhysics` $\rightarrow$ `actionShakeTransform`.
-- **Hyper-casual / Clickers**: `eventPointerTap` $\rightarrow$ `uiButtonScaleEffect` $\rightarrow$ `mathAdd` $\rightarrow$ `setText`.
+```mermaid
+graph TD
+    T1["Tier 1: Preset Nodes (High Level)<br/>All-in-One Plug & Play"] --> T2["Tier 2: Extensible Nodes (Mid-High Level)<br/>Configurable Semi-Open Templates"]
+    T2 --> T3["Tier 3: Logic & Utility Nodes (Mid Level)<br/>Control Flow & Data Crunching"]
+    T3 --> T4["Tier 4: Atomic / Primitive Nodes (Low Level)<br/>Direct Engine Subsystem Facades"]
+```
 
-### 3.2 High-Level "God Nodes" vs. Spaghetti Graphs
-Rather than forcing users to wire 20+ atomic math/loop pins for complex recurring mechanics, Lupis Engine introduces **High-Level Composite ("God") Nodes**:
-- **`volumeSliderManager`**: Automatically manages 4 volume sliders (Master, Vocal, SFX, BGM), computes transforms & screen bounds dynamically, handles image crop (`SpriteRenderer`) & shape resize (`ShapeRenderer`), manages drag/click interaction, and optionally updates indicator text labels (`TextRenderer`) with `"{value}%"`.
-- **`vnDialogueRunner`**: Handles character portraits, speaker names, typewriter text interpolation, sound triggers, and variable bindings in a single configured node.
-- **`vnChoicePresenter`**: Dynamically displays choice buttons, handles click events, variable parsing, and action triggers.
-- **`actionSetGameState`**: Manages pause, resume, restart, and quit actions via a simple drop-down mode selector.
-- **`uiButtonScaleEffect`**: Handles hover, press, raycast testing, and spring-like lerp scale animation within one node.
+### 3.1 Tier Classification Matrix
 
-### 3.3 Tier 2: The Code Panel for Advanced Game Systems
-For the remaining 20% of specialized, algorithmic game features:
-- **A\* Pathfinding & Grid Search**
-- **Procedural Level / Dungeon Generation**
-- **Complex Inventory / Crafting Trees**
-- **Custom Shader & Post-Processing Effects**
+| Tier | Name | Target Persona | Code Location | CodePanel View | State & Complexity | Example Nodes |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Tier 1** | **Preset Nodes**<br>*(High Level)* | Beginner / Solo Dev | `core/Toolkit/` Helper | Minimal Dispatcher (3–5 lines) | Stateful, multi-frame, full domain orchestration | `platformerController`, `vnDialogueRunner`, `volumeSliderManager` |
+| **Tier 2** | **Extensible Nodes**<br>*(Mid-High Level)* | Gameplay Designer / Scripter | `core/Toolkit/` (Modular) + Blueprint Code | Semi-Open Modular Pipeline | Stateful, hook-driven, parameter-rich | `collectableItem`, `platformerCombat`, `enemyPatrol` |
+| **Tier 3** | **Logic & Utility Nodes**<br>*(Mid Level)* | All Developers | Inline `node.data.code` | Full Transparent Code | Pure, stateless, flow/math only | `logicBranch` (If/Else), `logicDelay`, `mathDistance2d`, `listShuffle` |
+| **Tier 4** | **Atomic / Primitive Nodes**<br>*(Low Level)* | Advanced Programmer / System Architect | Inline `node.data.code` | Direct Context Facade Calls | Single instruction, 1:1 Engine API mapping | `entityDestroy`, `playAudio`, `getTransform`, `setSprite` |
 
-Developers can select any node in the graph, switch to the **Code Panel**, and write raw JavaScript/TypeScript directly using the standard [Context System API](context-system.md).
+---
+
+### 3.2 Tier Invariants & Authoring Guidelines
+
+#### Tier 1: Preset Nodes (High-Level Plug & Play)
+* **Goal**: Provide instant, zero-wire functionality for recurring game systems.
+* **Authoring Rule**:
+  1. The entire multi-frame state machine and logic **must live in `core/Toolkit/<Domain>/<Domain>Helper.js`**.
+  2. The blueprint `data.code` must only act as a dispatch bridge:
+     ```javascript
+     let helper = context.toolkit && context.toolkit.platformer;
+     if (!helper && context.game && context.game.contextSystem) {
+       helper = context.game.contextSystem.toolkitHandler.platformerHelper;
+     }
+     if (helper) {
+       helper.processController(context.state, inputs, outputs, context);
+     }
+     return;
+     ```
+  3. All persistent transient states must be attached to the target entity (`target._controller`) or node state (`context.state`).
+
+#### Tier 2: Extensible Nodes (Mid-High Level Templates)
+* **Goal**: Deliver high-level functionality while giving users complete freedom to inspect, customize, or override the behavior.
+* **Authoring Rule**:
+  1. The underlying helper in `core/Toolkit/` **must expose granular, modular sub-functions** (e.g. `helper.applyBobbing()`, `helper.checkOverlap()`, `helper.playAnimationAndDestroy()`).
+  2. The code shown in the **Code Panel** must not be an opaque one-liner; it should present a clean, commented modular pipeline that users can edit or extend:
+     ```javascript
+     const helper = context.toolkit.collectable;
+     
+     // 1. Optional visual idle bobbing
+     if (inputs.autoBobbing) {
+       helper.applyBobbing(context.owner, context.dt);
+     }
+     
+     // 2. Detection hook
+     const collector = helper.checkOverlap(context.owner, inputs.collectorTag);
+     if (collector && inputs.canCollect !== false) {
+       outputs.collectorEntity = collector.scriptId || collector.id;
+       outputs.onCollected = true;
+       context.triggerFlow('onCollected');
+       
+       // 3. Despawn lifecycle strategy
+       if (inputs.despawnAction === 'destroy') {
+         helper.playAnimationAndDestroy(context.owner, inputs.collectClip);
+       } else if (inputs.despawnAction === 'deactivate') {
+         helper.deactivateAndScheduleRespawn(context.owner, inputs.respawnTime);
+       }
+     }
+     outputs.execOut = true;
+     return;
+     ```
+  3. **Mandatory Event Hooks**: Must provide execution output pins (e.g., `onCollected`, `onHit`, `onAnimationEnd`, `onRespawn`) so users can wire custom behaviors without touching code.
+  4. **Inversion of Control**: Must support non-destructive options like `despawnAction: 'none'` or `canCollect: false` so external graph nodes can control lifecycle.
+
+#### Tier 3: Logic & Utility Nodes (Mid Level)
+* **Goal**: Provide standard control flow, arithmetic, data transforms, and timers.
+* **Authoring Rule**:
+  1. Must be **100% self-contained** inside `node.data.code`.
+  2. Must **never mutate engine subsystem entities** directly.
+  3. Pure math nodes must have zero execution pins (pure data).
+  4. Flow nodes (`branch`, `loop`, `delay`) route execution wires via `context.triggerFlow(portName)` or outputs assignments.
+
+#### Tier 4: Atomic & Primitive Nodes (Low Level)
+* **Goal**: Direct 1:1 exposure of Context System APIs (`context.entity`, `context.audio`, `context.collider`, etc.).
+* **Authoring Rule**:
+  1. Must perform **one single atomic action**.
+  2. Must strictly enforce fail-fast validation using `context.assert.*`. Never rely on defensive optional chaining (`?.`) or silent ignores.
+  3. Must terminate with `outputs.execOut = true; return;`.
+
+---
+
+### 3.3 Decision Tree: "Which Tier Should I Build?"
+
+```mermaid
+flowchart TD
+    Start["New Node Requirement"] --> Q1{"Does it directly wrap 1 engine subsystem API?"}
+    Q1 -- Yes --> T4["Build Tier 4: Atomic / Primitive Node<br/>(Direct Context Facade)"]
+    Q1 -- No --> Q2{"Is it pure math, data conversion, or generic flow control?"}
+    Q2 -- Yes --> T3["Build Tier 3: Logic & Utility Node<br/>(Self-Contained Inline Code)"]
+    Q2 -- No --> QR{"Is the helper logic reusable across multiple nodes or entities?"}
+    QR -- No --> SingleNode["Write directly in node.data.code<br/>(Do NOT pollute ContextSystem)"]
+    QR -- Yes --> Q3{"Should users be able to easily tweak the internal pipeline in CodePanel?"}
+    Q3 -- Yes --> T2["Build Tier 2: Extensible Node<br/>(Modular Helper + Open CodePanel Pipeline)"]
+    Q3 -- No --> T1["Build Tier 1: Preset Node<br/>(All-in-One Blackbox Helper)"]
+```
 
 ---
 
 ## 4. Visual Scripting Contracts & Port Rules
 
-To guarantee runtime safety and zero downstream errors, all nodes follow these strict standards:
+To guarantee runtime safety, deterministic compilation, and zero downstream errors, all nodes across all 4 tiers must adhere to these strict contracts:
 
 1. **T-001 Alphanumeric Port IDs**:
    All port IDs must strictly match `/^[A-Za-z][A-Za-z0-9]{0,31}$/`. Spaces, dashes (`-`), dots (`.`), and underscores (`_`) are strictly forbidden.
@@ -124,5 +201,11 @@ To guarantee runtime safety and zero downstream errors, all nodes follow these s
    Every node code snippet must terminate with an explicit `return;`.
 6. **Zero Defensive Null-Checking**:
    Nodes must never use `?.` or `??` for invariant validation. Instead, use `context.assert.*` which halts node execution cleanly on contract violation.
+7. **Execution Context Sandbox**:
+   Node code is strictly prohibited from accessing `context.game`. All communication must use `context.<domain>` or `context.toolkit.<domain>`.
+8. **Context Generality & Reusability Gate**:
+   - Never introduce node-specific functions into the Context System.
+   - If an algorithm, state calculation, or mechanic is only needed by one specific node and lacks broad reusability, it **must be written directly in `node.data.code`**.
+   - `ContextSystem` must remain strictly general, domain-focused, and completely decoupled from any single node's identity.
 
 For detailed documentation on the runtime context API available to nodes, see [Context System API Reference](context-system.md).

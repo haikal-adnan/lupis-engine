@@ -20,7 +20,7 @@ export default class TilemapTool {
         const editors = this.world?._editors;
         if (!editors) return;
 
-        const activeTool = editors.activeTool;
+        const activeTool = editors.activeTool || 'select';
         const activeId = editors.activeTabId;
         const entity = TilemapMath.findEntity(this.world, activeId);
 

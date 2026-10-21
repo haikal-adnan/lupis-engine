@@ -42,12 +42,12 @@
           "type": "table",
           "headers": ["Quick Action", "Fungsi"],
           "rows": [
-            ["Show Grid Guide", "Menampilkan garis bantu *grid* pada area kerja *scene*."],
-            ["Snap to Grid", "Memastikan objek bergeser dengan presisi mengikuti letak dan jarak *grid*."],
-            ["Show Editor Rulers", "Menampilkan penggaris metrik di tepi antarmuka area kerja."],
-            ["Enable UI Layer", "Mengaktifkan dan memprioritaskan lapisan khusus antarmuka pengguna (*User Interface*)."],
-            ["Show UI Bounds", "Menampilkan garis batas pembatas (*bounding box*) pada seluruh elemen UI."],
-            ["Background Color", "Memodifikasi warna latar belakang utama dari *scene* yang sedang aktif."]
+            ["Show UI Bound", "Menampilkan garis batas pembatas (*bounding box*) pada seluruh elemen UI."],
+            ["Show World Bounds", "Menampilkan batas area kerja dunia (*world bounds*)."],
+            ["Show Collider Solid Bounds", "Menampilkan garis pembatas collider bertipe solid untuk fisika dan blocking."],
+            ["Show Collider Trigger Bounds", "Menampilkan garis pembatas collider bertipe trigger untuk deteksi area/event."],
+            ["Show Collider Hitbox Bounds", "Menampilkan garis pembatas collider bertipe hitbox untuk area serang/damage dealer."],
+            ["Show Collider Hurtbox Bounds", "Menampilkan garis pembatas collider bertipe hurtbox untuk area penerima damage/target."]
           ]
         }
       ]

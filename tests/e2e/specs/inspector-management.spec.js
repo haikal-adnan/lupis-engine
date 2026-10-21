@@ -73,14 +73,14 @@ test.describe('Property Inspector: Basic Components & Prefab E2E', () => {
     await expect(inspector.layerSection).toHaveCount(0);
     await expect(inspector.objectSection).toHaveCount(0);
 
-    const showGridCheckbox = inspector.checkbox('project-show-grid-toggle');
+    const showBoundsCheckbox = inspector.checkbox('project-show-world-bounds-toggle');
 
     // The initial state is made deterministic (setChecked waits and verifies) instead of being read at a single point in time
-    await showGridCheckbox.setChecked(true);
-    await expect(showGridCheckbox).toBeChecked();
+    await showBoundsCheckbox.setChecked(true);
+    await expect(showBoundsCheckbox).toBeChecked();
 
-    await inspector.toggleProjectGridGuide();
-    await expect(showGridCheckbox).not.toBeChecked();
+    await inspector.toggleProjectWorldBounds();
+    await expect(showBoundsCheckbox).not.toBeChecked();
 
     const sceneBgColorPicker = page.getByTestId('scene-bg-color-picker');
     await expect(sceneBgColorPicker).toBeVisible();

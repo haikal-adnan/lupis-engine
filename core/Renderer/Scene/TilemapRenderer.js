@@ -119,14 +119,17 @@ export default class TilemapRenderer {
             const dstX = rData.tfX + rotatedX;
             const dstY = rData.tfY + rotatedY;
 
+            const tileOverlapX = currentOpacity < 0.999 ? 0 : overlapFixX;
+            const tileOverlapY = currentOpacity < 0.999 ? 0 : overlapFixY;
+
             this.image.draw(
                 asset,
                 { x: srcX, y: srcY, w: rData.tileW, h: rData.tileH },
                 { 
                     x: dstX, 
                     y: dstY, 
-                    width: scaledTileW + overlapFixX, 
-                    height: scaledTileH + overlapFixY, 
+                    width: scaledTileW + tileOverlapX, 
+                    height: scaledTileH + tileOverlapY, 
                     rotation: rData.rotation, 
                     scaleX: 1, 
                     scaleY: 1, 

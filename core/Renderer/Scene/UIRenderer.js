@@ -22,7 +22,7 @@ export default class UIRenderer {
             active: true, width: 1920, height: 1080, showUIBorder: true 
         };
 
-        if (!uiSettings.active) return;
+        if (!uiSettings.active || uiSettings.visible === false) return;
 
         if (isEditor) {
             if (isSceneMode && uiSettings.showUIBorder) {
@@ -93,7 +93,7 @@ export default class UIRenderer {
             RenderUtils.processText(comps, currentOpacity, flipX, flipY, rawT, world, this.renderQueue, trans);
         }
 
-        RenderUtils.processColliderDebug(comps, absT, trans, this.renderQueue, this.colliderColorSolid, this.colliderColorTrigger, this.colliderColorHitbox, this.colliderColorHurtbox);
+        RenderUtils.processColliderDebug(comps, absT, trans, this.renderQueue, this.colliderColorSolid, this.colliderColorTrigger, this.colliderColorHitbox, this.colliderColorHurtbox, world?.settings?.colliders);
     }
 
     _renderWorkspaceGizmos(proj, w, h) {

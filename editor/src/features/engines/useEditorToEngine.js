@@ -28,6 +28,10 @@ export function useEditorToEngine(projectStore, sceneStore, assetStore, workspac
           
           case 'toggleUIBorder': engineBridge.updateProjectSettings({ ui: { showUIBorder: s.ui.showUIBorder } }); break;
           case 'updateUISettings': engineBridge.updateProjectSettings({ ui: args[0] }); break;
+          case 'toggleUIVisibility': engineBridge.updateProjectSettings({ ui: s.ui }); break;
+          case 'updateWorldSettings': engineBridge.updateProjectSettings({ world: args[0] }); break;
+          case 'toggleWorldVisibility': engineBridge.updateProjectSettings({ world: s.world }); break;
+          case 'updateColliderSettings': engineBridge.updateProjectSettings({ colliders: args[0] }); break;
           case 'updateCameraSettings': engineBridge.updateProjectSettings({ camera: args[0] }); break;
         }
       });
@@ -110,7 +114,7 @@ export function useEditorToEngine(projectStore, sceneStore, assetStore, workspac
           case 'toggleGridVisibility': engineBridge.updateEditorState({ tilemapContext: { showGrid: workspaceStore.tilemapContext.showGrid } }); break;
           case 'setGridVisibility': engineBridge.updateEditorState({ tilemapContext: { showGrid: args[0] } }); break;
           case 'setTileSelection':
-          case 'clearTileSelection': engineBridge.updateEditorState({ tileSelection: workspaceStore.tileSelection }); break;
+          case 'clearTileSelection': engineBridge.updateEditorState({ tileSelection: workspaceStore.tileSelection, activeTool: workspaceStore.activeTool }); break;
         }
       });
     });

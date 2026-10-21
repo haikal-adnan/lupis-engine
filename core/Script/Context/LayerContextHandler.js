@@ -16,6 +16,9 @@ export class LayerContextHandler {
       },
       isInputFrozen: (layerId, type = 'all') => {
         return layerSystem ? layerSystem.isInputFrozen(layerId, type, runner.owner) : false;
+      },
+      destroy: (layerId, destroyEntities = true) => {
+        return layerSystem ? layerSystem.destroyLayer(layerId, destroyEntities, runner.owner) : false;
       }
     };
   }

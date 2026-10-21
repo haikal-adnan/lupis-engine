@@ -3,6 +3,7 @@ import { BlueprintUI } from './BlueprintUI.js';
 import { BlueprintDialogue } from './BlueprintDialogue.js';
 import { BlueprintPlatformer } from './BlueprintPlatformer.js';
 import { BlueprintAI } from './BlueprintAI.js';
+import { BlueprintCollectable } from './BlueprintCollectable.js';
 
 export const BlueprintHelperTool = {
   id: 'helper_tool',
@@ -13,6 +14,7 @@ export const BlueprintHelperTool = {
     ...BlueprintUI.items,
     ...BlueprintDialogue.items,
     ...BlueprintPlatformer.items,
-    ...BlueprintAI.items
+    ...BlueprintAI.items,
+    ...BlueprintCollectable.items
   ]
 };

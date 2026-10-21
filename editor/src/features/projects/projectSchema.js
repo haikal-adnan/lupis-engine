@@ -37,6 +37,7 @@ export const projectSchema = (data = {}) => {
         height: Number(data.settings?.ui?.height ?? 1080),
         showUIBorder: data.settings?.ui?.showUIBorder ?? true,
         active: data.settings?.ui?.active ?? true,
+        visible: data.settings?.ui?.visible ?? true,
         smartGuides: data.settings?.ui?.smartGuides ?? true
       },
 
@@ -45,6 +46,18 @@ export const projectSchema = (data = {}) => {
         y: Number(data.settings?.camera?.y ?? 540),
         zoom: Number(data.settings?.camera?.zoom ?? 1),
         lerp: Number(data.settings?.camera?.lerp ?? 0.1)
+      },
+
+      world: {
+        active: data.settings?.world?.active ?? true,
+        visible: data.settings?.world?.visible ?? true
+      },
+
+      colliders: {
+        solid: data.settings?.colliders?.solid ?? true,
+        trigger: data.settings?.colliders?.trigger ?? true,
+        hitbox: data.settings?.colliders?.hitbox ?? true,
+        hurtbox: data.settings?.colliders?.hurtbox ?? true
       },
 
       grid: {

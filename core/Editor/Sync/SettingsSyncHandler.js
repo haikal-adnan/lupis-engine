@@ -25,6 +25,14 @@ export class SettingsSyncHandler {
             if (!this.ctx.world.settings.camera) this.ctx.world.settings.camera = {};
             Object.assign(this.ctx.world.settings.camera, payload.camera);
         }
+        if (payload.world) {
+            if (!this.ctx.world.settings.world) this.ctx.world.settings.world = {};
+            Object.assign(this.ctx.world.settings.world, payload.world);
+        }
+        if (payload.colliders) {
+            if (!this.ctx.world.settings.colliders) this.ctx.world.settings.colliders = {};
+            Object.assign(this.ctx.world.settings.colliders, payload.colliders);
+        }
         if (payload.tickRate !== undefined) {
             this.ctx.world.settings.tickRate = payload.tickRate;
         }
@@ -35,6 +43,14 @@ export class SettingsSyncHandler {
 
         if (payload.physics) Object.assign(this.ctx.world.settings.physics, payload.physics);
         if (payload.worldBounds) Object.assign(this.ctx.world.settings.worldBounds, payload.worldBounds);
+        if (payload.world) {
+            if (!this.ctx.world.settings.world) this.ctx.world.settings.world = {};
+            Object.assign(this.ctx.world.settings.world, payload.world);
+        }
+        if (payload.colliders) {
+            if (!this.ctx.world.settings.colliders) this.ctx.world.settings.colliders = {};
+            Object.assign(this.ctx.world.settings.colliders, payload.colliders);
+        }
         if (payload.backgroundColor !== undefined) this.ctx.world.settings.backgroundColor = payload.backgroundColor;
         if (payload.showRulers !== undefined) this.ctx.world.settings.showRulers = payload.showRulers;
     }

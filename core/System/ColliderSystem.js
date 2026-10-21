@@ -1,6 +1,21 @@
+import RenderUtils from "../Renderer/Scene/RenderUtils.js";
+
 export default class ColliderSystem {
     constructor(game) {
         this.game = game;
+    }
+
+    isOneWayPlatform(other, oneWayTag) {
+        if (!other) return false;
+        if (other.components?.Tilemap?.isOneWay || other.components?.Tilemap?.oneWay) return true;
+        if (other.components?.Collider?.isOneWay || other.components?.Collider?.oneWay) return true;
+        if (!oneWayTag) return false;
+        const tag = other.tag || other.components?.Tags?.value || other.components?.Tilemap?.tag || '';
+        if (!tag || typeof tag !== 'string') return false;
+        const targets = String(oneWayTag).split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
+        if (targets.length === 0) return false;
+        const tags = tag.split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
+        return targets.some(target => tags.includes(target));
     }
 
     moveAndSlide(entity, dx, dy) {
@@ -73,6 +88,9 @@ export default class ColliderSystem {
         const transform = entity.components.Transform;
         const startX = transform.x;
         const startY = transform.y;
+
+        this._currentStepDx = dx;
+        this._currentStepDy = dy;
 
         let hits = { x: null, y: null, normals: [] };
         
@@ -157,6 +175,9 @@ export default class ColliderSystem {
                 transform.y = blockedY;
             }
         }
+
+        this._currentStepDx = 0;
+        this._currentStepDy = 0;
 
         return hasCollision ? hits : null;
     }
@@ -291,57 +312,116 @@ export default class ColliderSystem {
     }
 
     _getTilemapHitBounds(boundsA, tilemapEntity) {
-        const tm = tilemapEntity.components.Tilemap;
-        const t = tilemapEntity.components.Transform || { x: 0, y: 0, pivotX: 0, pivotY: 0, scaleX: 1, scaleY: 1 };
-        
-        const scaleX = t.scaleX || 1;
-        const scaleY = t.scaleY || 1;
-        const scaledTileW = (tm.tileWidth || 32) * Math.abs(scaleX);
-        const scaledTileH = (tm.tileHeight || 32) * Math.abs(scaleY);
-        const cols = tm.width || 0;
-        const rows = tm.height || 0;
-        
-        const startX = t.x - ((cols * scaledTileW) * (t.pivotX ?? 0));
-        const startY = t.y - ((rows * scaledTileH) * (t.pivotY ?? 0));
-        
+        const tm = tilemapEntity?.components?.Tilemap;
+        if (!tm || !tm.data) return null;
+
+        const tileW = Number(tm.width || tm.tileWidth) || 32;
+        const tileH = Number(tm.height || tm.tileHeight) || 32;
+        if (tileW <= 0 || tileH <= 0) return null;
+
+        const tf = RenderUtils ? RenderUtils.getGlobalTransform(tilemapEntity, this.game?.world) : (tilemapEntity.components?.Transform || { x: 0, y: 0, scaleX: 1, scaleY: 1, rotation: 0 });
+        const scaleX = (tf.flipX ? -1 : 1) * (tf.scaleX ?? 1);
+        const scaleY = (tf.flipY ? -1 : 1) * (tf.scaleY ?? 1);
+        if (scaleX === 0 || scaleY === 0) return null;
+
+        const rotRad = (tf.rotation || 0) * (Math.PI / 180);
+        const cosR = Math.cos(rotRad);
+        const sinR = Math.sin(rotRad);
+
+        const scaledTileW = tileW * scaleX;
+        const scaledTileH = tileH * scaleY;
+        const absTileW = Math.abs(scaledTileW);
+        const absTileH = Math.abs(scaledTileH);
+
         const corners = this._getObbCorners(boundsA);
-        const minX = Math.min(...corners.map(c => c.x));
-        const maxX = Math.max(...corners.map(c => c.x));
-        const minY = Math.min(...corners.map(c => c.y));
-        const maxY = Math.max(...corners.map(c => c.y));
+        if (!corners || corners.length === 0) return null;
 
-        let startCol = Math.floor((minX - startX) / scaledTileW);
-        let endCol = Math.ceil((maxX - startX) / scaledTileW);
-        let startRow = Math.floor((minY - startY) / scaledTileH);
-        let endRow = Math.ceil((maxY - startY) / scaledTileH);
+        let minLocalX = Infinity;
+        let maxLocalX = -Infinity;
+        let minLocalY = Infinity;
+        let maxLocalY = -Infinity;
 
-        startCol = Math.max(0, Math.min(cols, startCol));
-        endCol = Math.max(0, Math.min(cols, endCol));
-        startRow = Math.max(0, Math.min(rows, startRow));
-        endRow = Math.max(0, Math.min(rows, endRow));
+        for (let i = 0; i < corners.length; i++) {
+            const c = corners[i];
+            const dx = c.x - tf.x;
+            const dy = c.y - tf.y;
+            const lx = (dx * cosR) + (dy * sinR);
+            const ly = (-dx * sinR) + (dy * cosR);
 
-        for (let y = startRow; y < endRow; y++) {
-            for (let x = startCol; x < endCol; x++) {
-                const index = y * cols + x;
-                if (tm.data && tm.data[index] > 0) {
-                    const tileBounds = {
-                        x: startX + (x * scaledTileW),
-                        y: startY + (y * scaledTileH),
-                        w: scaledTileW,
-                        h: scaledTileH,
-                        rotation: 0,
-                        pivotX: 0, 
-                        pivotY: 0,
-                        type: 'solid'
-                    };
-                    
-                    if (this._obbIntersect(boundsA, tileBounds)) {
-                        return tileBounds;
+            if (lx < minLocalX) minLocalX = lx;
+            if (lx > maxLocalX) maxLocalX = lx;
+            if (ly < minLocalY) minLocalY = ly;
+            if (ly > maxLocalY) maxLocalY = ly;
+        }
+
+        let minGx, maxGx, minGy, maxGy;
+        if (scaledTileW > 0) {
+            minGx = Math.floor(minLocalX / scaledTileW);
+            maxGx = Math.floor(maxLocalX / scaledTileW);
+        } else {
+            minGx = Math.floor(maxLocalX / scaledTileW);
+            maxGx = Math.floor(minLocalX / scaledTileW);
+        }
+
+        if (scaledTileH > 0) {
+            minGy = Math.floor(minLocalY / scaledTileH);
+            maxGy = Math.floor(maxLocalY / scaledTileH);
+        } else {
+            minGy = Math.floor(maxLocalY / scaledTileH);
+            maxGy = Math.floor(minLocalY / scaledTileH);
+        }
+
+        let bestHit = null;
+        let maxOverlap = -1;
+
+        for (let gy = minGy; gy <= maxGy; gy++) {
+            for (let gx = minGx; gx <= maxGx; gx++) {
+                const key = `${gx},${gy}`;
+                let tileId = 0;
+                if (Array.isArray(tm.data)) {
+                    const cols = Number(tm.cols || tm.columns) || 0;
+                    if (cols > 0 && gx >= 0 && gx < cols && gy >= 0) {
+                        tileId = tm.data[gy * cols + gx] || 0;
+                    }
+                } else if (tm.data && typeof tm.data === 'object') {
+                    tileId = tm.data[key] || 0;
+                }
+
+                if (!tileId || tileId <= 0) continue;
+
+                const x1 = gx * scaledTileW;
+                const x2 = (gx + 1) * scaledTileW;
+                const y1 = gy * scaledTileH;
+                const y2 = (gy + 1) * scaledTileH;
+
+                const lxMin = Math.min(x1, x2);
+                const lyMin = Math.min(y1, y2);
+
+                const dstX = tf.x + (lxMin * cosR - lyMin * sinR);
+                const dstY = tf.y + (lxMin * sinR + lyMin * cosR);
+
+                const tileBounds = {
+                    x: dstX,
+                    y: dstY,
+                    w: absTileW,
+                    h: absTileH,
+                    rotation: rotRad,
+                    pivotX: 0,
+                    pivotY: 0,
+                    type: 'solid'
+                };
+
+                const hit = this._obbIntersect(boundsA, tileBounds);
+                if (hit) {
+                    if (hit.overlap > maxOverlap) {
+                        maxOverlap = hit.overlap;
+                        bestHit = tileBounds;
                     }
                 }
             }
         }
-        return null;
+
+        return bestHit;
     }
 
     _findCollision(entity, requiredType = null, targetTag = null) {
@@ -352,6 +432,23 @@ export default class ColliderSystem {
         const currentName = entity.scriptId || currentId;
         const entities = this.game.world.entities;
         const inactiveLayers = this._getInactiveLayers();
+
+        const oneWayTag = entity._oneWayTag || entity.components?.Physics?._oneWayTag;
+        const isDropping = Boolean((entity._dropThroughTimer > 0) || (entity.components?.Physics?._dropThroughTimer > 0));
+        const phys = entity.components?.Physics;
+        const isMovingUp = Boolean((phys && phys.velocityY < -0.01) || (this._currentStepDy !== undefined && this._currentStepDy < -0.001));
+
+        let currFeetY = -Infinity;
+        const solidBoundsA = boundsAList.filter(b => b.type === 'solid');
+        if (solidBoundsA.length > 0) {
+            for (let b of solidBoundsA) {
+                const c = this._getObbCorners(b);
+                const maxCy = Math.max(...c.map(pt => pt.y));
+                if (maxCy > currFeetY) currFeetY = maxCy;
+            }
+        }
+        const stepDy = this._currentStepDy || 0;
+        const prevFeetY = currFeetY - stepDy;
 
         for (let i = 0; i < entities.length; i++) {
             const other = entities[i];
@@ -367,6 +464,14 @@ export default class ColliderSystem {
                 if (otherTag !== targetTag) continue; 
             }
 
+            const isOneWay = Boolean(oneWayTag && this.isOneWayPlatform(other, oneWayTag));
+
+            if (isOneWay) {
+                if (isDropping || isMovingUp) {
+                    continue;
+                }
+            }
+
             if (other.components.Tilemap && other.components.Tilemap.isSolid) {
                 if (requiredType !== null && requiredType !== 'solid') continue;
                 
@@ -374,7 +479,19 @@ export default class ColliderSystem {
                     if (requiredType !== null && bA.type !== requiredType) continue;
                     const hitBounds = this._getTilemapHitBounds(bA, other);
                     if (hitBounds) {
-                        console.log(`[ColliderSystem] Collision (Tilemap): '${currentName}' collided with '${otherName}'`);
+                        if (isOneWay) {
+                            const tbCorners = this._getObbCorners(hitBounds);
+                            const platformTopY = Math.min(...tbCorners.map(c => c.y));
+                            const tolerance = Math.max(6, Math.abs(stepDy) + 2);
+                            if (prevFeetY > platformTopY + tolerance) {
+                                continue;
+                            }
+                            const intersect = this._obbIntersect(bA, hitBounds);
+                            if (!intersect || (intersect.axis && intersect.axis.y >= -0.25)) {
+                                continue;
+                            }
+                        }
+                        console.log(`[ColliderSystem] Collision (Tilemap${isOneWay ? ' One-Way' : ''}): '${currentName}' collided with '${otherName}'`);
                         return other;
                     }
                 }
@@ -387,7 +504,19 @@ export default class ColliderSystem {
                     for (let bB of boundsBList) {
                         if (requiredType !== null && bB.type !== requiredType) continue;
                         if (this._obbIntersect(bA, bB)) {
-                            console.log(`[ColliderSystem] Collision detected: '${currentName}' (${currentId}) <---> '${otherName}' (${otherId})`);
+                            if (isOneWay) {
+                                const bBCorners = this._getObbCorners(bB);
+                                const platformTopY = Math.min(...bBCorners.map(c => c.y));
+                                const tolerance = Math.max(6, Math.abs(stepDy) + 2);
+                                if (prevFeetY > platformTopY + tolerance) {
+                                    continue;
+                                }
+                                const intersect = this._obbIntersect(bA, bB);
+                                if (!intersect || (intersect.axis && intersect.axis.y >= -0.25)) {
+                                    continue;
+                                }
+                            }
+                            console.log(`[ColliderSystem] Collision detected${isOneWay ? ' (One-Way)' : ''}: '${currentName}' (${currentId}) <---> '${otherName}' (${otherId})`);
                             return other;
                         }
                     }
@@ -856,7 +985,7 @@ export default class ColliderSystem {
         let mtv = null;
 
         for (let bA of boundsAList) {
-            if (other.components.Tilemap) {
+            if (other.components.Tilemap && Boolean(other.components.Tilemap.isSolid)) {
                 let hitBounds = this._getTilemapHitBounds(bA, other);
                 if (hitBounds) {
                     mtv = this._obbIntersect(bA, hitBounds);
@@ -875,6 +1004,21 @@ export default class ColliderSystem {
         }
 
         if (!mtv || !mtv.axis || !Number.isFinite(mtv.overlap)) return null;
+
+        const oneWayTag = entity._oneWayTag || entity.components?.Physics?._oneWayTag;
+        const isOneWay = Boolean(oneWayTag && this.isOneWayPlatform(other, oneWayTag));
+
+        if (isOneWay) {
+            const isDropping = Boolean((entity._dropThroughTimer > 0) || (entity.components?.Physics?._dropThroughTimer > 0));
+            const isMovingUp = Boolean((entity.components?.Physics?.velocityY < -0.01) || (this._currentStepDy !== undefined && this._currentStepDy < -0.001));
+            if (isDropping || isMovingUp) {
+                return null;
+            }
+            // One-way platforms only act as floors (pushing up), never walls or ceilings
+            if (mtv.axis.y >= -0.25) {
+                return null;
+            }
+        }
 
         // Walkable floor or slope: normal points upward (axis.y < -0.25, up to ~75 deg)
         // Resolve purely vertically so horizontal walking velocity is never pushed backwards uphill!

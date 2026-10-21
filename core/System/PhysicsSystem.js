@@ -27,6 +27,47 @@ export default class PhysicsSystem {
 
             if (phys.isFrozen) continue;
 
+            if (typeof phys._dropThroughTimer === 'number' && phys._dropThroughTimer > 0) {
+                phys._dropThroughTimer = Math.max(0, phys._dropThroughTimer - dt);
+                entity._dropThroughTimer = phys._dropThroughTimer;
+            } else if (typeof entity._dropThroughTimer === 'number' && entity._dropThroughTimer > 0) {
+                entity._dropThroughTimer = Math.max(0, entity._dropThroughTimer - dt);
+            }
+
+            if (entity._dropThroughEntity && (entity._dropThroughTimer > 0 || phys._dropThroughTimer > 0)) {
+                const dropEnt = entity._dropThroughEntity;
+                const colSys = this.game.colliderSystem;
+                let dropBottomY = -Infinity;
+                if (dropEnt.components?.Tilemap) {
+                    const sensorTemp = { x: entity.components.Transform.x, y: entity.components.Transform.y, w: 2, h: 2, rotation: 0, pivotX: 0.5, pivotY: 0.5 };
+                    const tb = colSys._getTilemapHitBounds(sensorTemp, dropEnt);
+                    if (tb) {
+                        const c = colSys._getObbCorners(tb);
+                        dropBottomY = Math.max(...c.map(pt => pt.y));
+                    }
+                } else if (dropEnt.components?.Collider || dropEnt.components?.ShapeRenderer) {
+                    const bList = colSys.getBounds(dropEnt).filter(b => b.type === 'solid');
+                    for (let b of bList) {
+                        const c = colSys._getObbCorners(b);
+                        const bY = Math.max(...c.map(pt => pt.y));
+                        if (bY > dropBottomY) dropBottomY = bY;
+                    }
+                }
+                const playerBounds = colSys.getBounds(entity).filter(b => b.type === 'solid');
+                let playerTopY = Infinity;
+                for (let pb of playerBounds) {
+                    const c = colSys._getObbCorners(pb);
+                    const minY = Math.min(...c.map(pt => pt.y));
+                    if (minY < playerTopY) playerTopY = minY;
+                }
+                if (dropBottomY > -Infinity && playerTopY > dropBottomY + 2) {
+                    entity._dropThroughTimer = 0;
+                    phys._dropThroughTimer = 0;
+                    entity._dropThroughEntity = null;
+                    phys._dropThroughEntity = null;
+                }
+            }
+
             phys.collisionInfo = { hitSolid: null, hitSolidX: null, hitSolidY: null, hitTrigger: null };
 
             const preDragVelocityX = phys.velocityX;
@@ -175,17 +216,25 @@ export default class PhysicsSystem {
             physComponent.isGrounded = false;
             physComponent.groundAngle = 0;
             physComponent.groundNormal = { x: 0, y: -1 };
+            physComponent.isGroundedOnOneWay = false;
+            physComponent.groundEntity = null;
+            physComponent.groundType = null;
             return;
         }
 
         let isGrounded = false;
         let groundAngle = 0;
         let groundNormal = { x: 0, y: -1 };
+        let dominant = null;
         const entities = this.game.world.entities;
 
         if (!inactiveLayers) {
             inactiveLayers = colliderSys._getInactiveLayers();
         }
+
+        const oneWayTag = physComponent._oneWayTag || entity._oneWayTag;
+        const isDropping = Boolean((entity._dropThroughTimer > 0) || (physComponent._dropThroughTimer > 0));
+        const isMovingUp = physComponent.velocityY < -10;
 
         for (let bA of boundsList) {
             const corners = colliderSys._getObbCorners(bA);
@@ -216,6 +265,9 @@ export default class PhysicsSystem {
                 if (other === entity || other.active === false) continue;
                 if (other.layerId && inactiveLayers.has(other.layerId)) continue;
 
+                const isOneWay = Boolean(oneWayTag && colliderSys.isOneWayPlatform(other, oneWayTag));
+                if (isOneWay && (isDropping || isMovingUp)) continue;
+
                 const col = other.components.Collider;
                 const shape = other.components.ShapeRenderer;
                 const hasCollider = col && col.data && col.data.some(c => c.enabled);
@@ -224,23 +276,43 @@ export default class PhysicsSystem {
                 if (other.components.Tilemap && other.components.Tilemap.isSolid) {
                     const hitBounds = colliderSys._getTilemapHitBounds(sensor, other);
                     if (hitBounds) {
-                        const tmLeft = hitBounds.x;
-                        const tmRight = hitBounds.x + hitBounds.w;
+                        const tbCorners = colliderSys._getObbCorners(hitBounds);
+                        const platformTopY = Math.min(...tbCorners.map(c => c.y));
+                        if (isOneWay && bottomY > platformTopY + 4) {
+                            continue;
+                        }
+                        const rotRad = hitBounds.rotation || 0;
+                        const candAngle = rotRad * (180 / Math.PI);
+                        const candNormal = { x: Math.sin(rotRad), y: -Math.cos(rotRad) };
+
+                        const tmLeft = Math.min(...tbCorners.map(c => c.x));
+                        const tmRight = Math.max(...tbCorners.map(c => c.x));
+
                         const distToCenter = (footCenterX >= tmLeft && footCenterX <= tmRight)
                             ? 0
                             : Math.min(Math.abs(footCenterX - tmLeft), Math.abs(footCenterX - tmRight));
                         const overlapWidth = Math.max(0, Math.min(sensorRight, tmRight) - Math.max(sensorLeft, tmLeft));
 
                         candidates.push({
-                            angle: 0,
-                            normal: { x: 0, y: -1 },
+                            angle: candAngle,
+                            normal: candNormal,
                             distToCenter,
-                            overlapWidth
+                            overlapWidth,
+                            isOneWay,
+                            entity: other,
+                            groundType: 'tilemap'
                         });
                     }
                 } else if (hasCollider || hasShape) {
                     const otherBounds = colliderSys.getBounds(other).filter(b => b.type === 'solid');
                     for (let bB of otherBounds) {
+                        if (isOneWay) {
+                            const bBCorners = colliderSys._getObbCorners(bB);
+                            const platformTopY = Math.min(...bBCorners.map(c => c.y));
+                            if (bottomY > platformTopY + 4) {
+                                continue;
+                            }
+                        }
                         const intersectRes = colliderSys._obbIntersect(sensor, bB);
                         if (intersectRes) {
                             let candAngle = 0;
@@ -292,7 +364,10 @@ export default class PhysicsSystem {
                                     angle: candAngle,
                                     normal: candNormal,
                                     distToCenter,
-                                    overlapWidth
+                                    overlapWidth,
+                                    isOneWay,
+                                    entity: other,
+                                    groundType: 'entity'
                                 });
                             }
                         }
@@ -327,7 +402,7 @@ export default class PhysicsSystem {
                     return diffA - diffB;
                 });
 
-                const dominant = candidates[0];
+                dominant = candidates[0];
                 groundAngle = dominant.angle;
                 groundNormal = dominant.normal;
 
@@ -346,9 +421,15 @@ export default class PhysicsSystem {
             physComponent._lastSlideNormal = null;
             physComponent.groundAngle = 0;
             physComponent.groundNormal = { x: 0, y: -1 };
+            physComponent.isGroundedOnOneWay = false;
+            physComponent.groundEntity = null;
+            physComponent.groundType = null;
         } else {
             physComponent.groundAngle = groundAngle;
             physComponent.groundNormal = groundNormal;
+            physComponent.isGroundedOnOneWay = Boolean(dominant && dominant.isOneWay);
+            physComponent.groundEntity = dominant ? dominant.entity : null;
+            physComponent.groundType = dominant ? dominant.groundType : null;
         }
 
         physComponent.isGrounded = isGrounded;

@@ -94,10 +94,12 @@ describe('CodePanel Contract & Blueprint Evaluation', () => {
         outputs["isGrounded"] = true;
         outputs.execOut = true;
         outputs.counter += 1;
+        context.triggerFlow('onComplete');
+        context.triggerFlow("onCustomEvent");
         // outputs.ignored = 0;
       `;
       const outputs = extractUsedOutputs(code);
-      expect(outputs).toEqual(expect.arrayContaining(['result', 'velocity', 'isGrounded', 'execOut', 'counter']));
+      expect(outputs).toEqual(expect.arrayContaining(['result', 'velocity', 'isGrounded', 'execOut', 'counter', 'onComplete', 'onCustomEvent']));
       expect(outputs).not.toContain('ignored');
     });
 
@@ -294,6 +296,33 @@ describe('CodePanel Contract & Blueprint Evaluation', () => {
       expect(code).toContain("const x = inputs['Value X'];");
       expect(code).toContain("outputs['Value Y'] = null;");
       expect(code).not.toContain("outputs.execOut");
+    });
+
+    it('recognizes delegated inputs and outputs forwarding to helpers without false-positive unused port warnings', () => {
+      const helperNode = {
+        id: 'node_toolkit',
+        inputs: [
+          { id: 'targetEntity', label: 'targetEntity', dataType: 'string' },
+          { id: 'speed', label: 'speed', dataType: 'number' }
+        ],
+        outputs: [
+          { id: 'execOut', label: 'execOut', dataType: 'execution' },
+          { id: 'velocityX', label: 'velocityX', dataType: 'number' }
+        ]
+      };
+
+      const code = `
+        const helper = context.toolkit.platformer;
+        if (helper) {
+          helper.processController(context.state, inputs, outputs, context);
+        }
+        return;
+      `;
+
+      const result = validateCodePanelContract(code, { node: helperNode });
+      expect(result.hasSyntaxError).toBe(false);
+      expect(result.issues).toEqual([]);
+      expect(result.isValid).toBe(true);
     });
 
     it('returns default fallback when node is null', () => {
