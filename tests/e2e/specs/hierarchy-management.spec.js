@@ -282,10 +282,10 @@ test.describe('Hierarchy & Scene Comprehensive E2E Management', () => {
 
       // Verify the active tab switched to the UI Editor. Hierarchy rows are excluded
       // so the assertion cannot pass vacuously (Section 7.3).
-      // TODO contract: give the editor tab its own test ID and replace this selector.
+      // Verified accessible tab role for workspace tabs.
       const activeTab = page
-        .locator('[aria-selected="true"]:not([data-testid="hierarchy-node"])')
-        .filter({ hasText: 'UI Editor' });
+        .getByRole('tab', { name: 'UI Editor' });
+      await expect(activeTab).toHaveAttribute('aria-selected', 'true');
       await expect(activeTab).toBeVisible();
     });
   });

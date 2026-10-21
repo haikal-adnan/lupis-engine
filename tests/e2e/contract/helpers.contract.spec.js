@@ -8,8 +8,8 @@ import { test, expect } from '../fixtures.js';
  * when this project passes.
  *
  * Rule: only test helper behavior (menu, prompt, confirm), never feature logic.
- * Keep scenarios as simple as possible and add a new scenario every time a
- * bug helper ditemukan.
+ * Keep scenarios as simple as possible and add a new scenario every time
+ * a helper bug is discovered.
  */
 const SCENE_OPTIONS = 'hierarchy-scene-options-button';
 

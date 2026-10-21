@@ -22,7 +22,7 @@ async function installBusSpy(page) {
     const originalEmit = targetBus.emit.bind(targetBus);
 
     targetBus.emit = (event, ...args) => {
-      if (event === 'editor:entity:update-component' || event === 'editor:layer:update') {
+      if (event === 'editor:entity:update-component' || event === 'editor:layer:update' || event === 'editor:entity:update-prop') {
         const payload = args[0];
         window.__capturedEngineEvents.push(JSON.parse(JSON.stringify(payload)));
       }
@@ -131,6 +131,35 @@ test.describe('Property Inspector: Basic Components & Prefab E2E', () => {
         expect.objectContaining({ componentName: 'Transform', path: 'rotation', value: 90 })
       ])
     );
+  });
+
+  // =========================================================================
+  // MULTI-TAG ENTITY MANAGEMENT
+  // =========================================================================
+  test('assigns multiple tags to entity, renders tag chips, and removes tag via inspector', async ({ page, hierarchy, popup, inspector }) => {
+    const worldLayer = hierarchy.nodeByName('World Layer');
+    const entityNode = await hierarchy.addEntity(popup, worldLayer, ['Add Entity', 'Empty Entity']);
+    await expect(entityNode).toBeVisible();
+    await entityNode.click();
+
+    await inspector.setEntityTag('Player');
+    await expect(inspector.assignedTagItem('Player')).toBeVisible();
+
+    await inspector.setEntityTag('Enemy');
+    await expect(inspector.assignedTagItem('Enemy')).toBeVisible();
+
+    await expect(inspector.assignedTagsList).toBeVisible();
+    await expect(inspector.assignedTagItem('Player')).toBeVisible();
+    await expect(inspector.assignedTagItem('Enemy')).toBeVisible();
+
+    await inspector.removeEntityTag('Enemy');
+    await expect(inspector.assignedTagItem('Enemy')).toHaveCount(0);
+    await expect(inspector.assignedTagItem('Player')).toBeVisible();
+
+    await expect.poll(async () => {
+      const events = await page.evaluate(() => window.__capturedEngineEvents || []);
+      return events.some(e => e.prop === 'tags');
+    }).toBe(true);
   });
 
   // =========================================================================

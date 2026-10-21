@@ -14,6 +14,7 @@ jobs:
   lint-and-standards:
     name: Standards & Lint Check
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -41,6 +42,7 @@ jobs:
   editor-build-and-test:
     name: Editor Unit Tests & Build
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -70,6 +72,7 @@ jobs:
   service-smoke-check:
     name: Backend Service Check
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -94,8 +97,9 @@ jobs:
 
   e2e-testing:
     name: Playwright Full E2E Test Suite
-    needs: [editor-build-and-test, service-smoke-check]
+    needs: [lint-and-standards, editor-build-and-test, service-smoke-check]
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4

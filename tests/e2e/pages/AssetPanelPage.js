@@ -23,7 +23,7 @@ export class AssetPanelPage {
   }
 
   get panel() {
-    return this.page.locator('div.relative.h-full.flex.flex-col').filter({ hasText: 'Assets' }).first();
+    return this.page.getByTestId('asset-panel').or(this.page.locator('div.relative.h-full.flex.flex-col').filter({ hasText: 'Assets' })).first();
   }
 
   /** Loading overlay shown while an upload is in progress */

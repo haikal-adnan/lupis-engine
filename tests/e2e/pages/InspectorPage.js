@@ -206,6 +206,22 @@ export class InspectorPage {
     await option.click();
   }
 
+  get assignedTagsList() {
+    return this.objectSection.getByTestId('assigned-tags-list');
+  }
+
+  assignedTagItem(tag) {
+    return this.objectSection.getByTestId(`entity-tag-item-${tag}`);
+  }
+
+  async removeEntityTag(tag) {
+    const item = this.assignedTagItem(tag);
+    await expect(item).toBeVisible();
+    const removeBtn = this.objectSection.getByTestId(`remove-entity-tag-${tag}`);
+    await removeBtn.click();
+    await expect(item).toHaveCount(0);
+  }
+
   async toggleEntityActive() {
     await this.page.getByTestId('object-active-toggle').click();
   }

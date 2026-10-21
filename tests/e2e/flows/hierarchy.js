@@ -277,10 +277,10 @@ export class WorkspaceToolsCrud {
     await openBtn.click();
 
     // Exclude hierarchy rows so the assertion is not vacuous (Section 7.3).
-    // TODO contract: give the editor tab its own test ID (e.g. editor-tab) and replace this selector.
+    // Verified accessible tab role for workspace tabs.
     const activeTab = this.page
-      .locator('[aria-selected="true"]:not([data-testid="hierarchy-node"])')
-      .filter({ hasText: 'UI Editor' });
+      .getByRole('tab', { name: 'UI Editor' });
+    await expect(activeTab).toHaveAttribute('aria-selected', 'true');
     await expect(activeTab).toBeVisible();
   }
 

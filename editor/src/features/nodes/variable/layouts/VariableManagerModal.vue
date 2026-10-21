@@ -16,6 +16,7 @@
       >
         <div 
           class="w-full md:w-[920px] max-w-5xl h-[85vh] max-h-[800px] bg-card border border-border rounded-xl shadow-2xl flex flex-col relative overflow-hidden my-auto" 
+          data-testid="variable-modal"
           @mousedown.stop
         >
           <!-- Top Bar Header -->

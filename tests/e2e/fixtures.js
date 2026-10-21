@@ -28,10 +28,11 @@ import { ensureProject } from './flows/dashboard.js';
 import { BlueprintTestRunner } from './flows/blueprint.js';
 
 export const test = base.extend({
-  // Disable CSS animations and transitions so E2E runs stay deterministic
+  // Disable CSS animations and devtools overlays so E2E runs stay deterministic
   page: async ({ page }, use) => {
     await page.addInitScript(() => {
-      window.addEventListener('DOMContentLoaded', () => {
+      const injectStyle = () => {
+        if (document.getElementById('disable-e2e-animations')) return;
         const style = document.createElement('style');
         style.id = 'disable-e2e-animations';
         style.innerHTML = `
@@ -39,9 +40,18 @@ export const test = base.extend({
             transition: none !important;
             animation: none !important;
           }
+          #__vue-devtools-container__, [data-v-inspector-ignore="true"] {
+            display: none !important;
+            pointer-events: none !important;
+          }
         `;
-        document.head.appendChild(style);
-      });
+        (document.head || document.documentElement).appendChild(style);
+      };
+      if (document.readyState === 'loading') {
+        window.addEventListener('DOMContentLoaded', injectStyle);
+      } else {
+        injectStyle();
+      }
     });
     await use(page);
   },

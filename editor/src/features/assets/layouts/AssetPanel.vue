@@ -2,6 +2,7 @@
   <div 
     ref="panelRef"
     class="relative h-full flex flex-col bg-background text-foreground select-none overflow-hidden"
+    data-testid="asset-panel"
     @click="handleBackgroundClick"
     @contextmenu.prevent="handleContextMenu($event, null)"
     tabindex="0"

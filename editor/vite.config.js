@@ -41,7 +41,7 @@ export default defineConfig({
 
   plugins: [
     vue(),
-    vueDevTools(),
+    ...(process.env.DISABLE_DEVTOOLS === 'true' || process.env.CI ? [] : [vueDevTools()]),
     svgLoader({
       defaultImport: 'component',
       svgoConfig: {

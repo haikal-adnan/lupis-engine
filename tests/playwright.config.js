@@ -24,7 +24,7 @@ export default defineConfig({
   // that is genuinely slow use test.slow() once at its start, with a comment explaining why.
   timeout: 30_000,
   expect: { timeout: 20_000 },
-  workers: process.env.CI ? 1 : undefined,
+  workers: process.env.CI ? 2 : undefined,
   reporter: [
     ['html', { outputFolder: 'playwright-report', open: 'never' }],
     ['list'],
@@ -43,6 +43,9 @@ export default defineConfig({
       url: 'http://localhost:4000/api/health',
       reuseExistingServer: !process.env.CI,
       timeout: 60_000,
+      env: {
+        DISABLE_DEVTOOLS: 'true',
+      },
     },
     {
       command: 'npm run dev',
@@ -50,6 +53,9 @@ export default defineConfig({
       url: 'http://localhost:6500',
       reuseExistingServer: !process.env.CI,
       timeout: 60_000,
+      env: {
+        DISABLE_DEVTOOLS: 'true',
+      },
     },
   ],
   projects: [
