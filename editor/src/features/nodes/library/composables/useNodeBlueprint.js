@@ -1,17 +1,70 @@
 import { ref, computed } from 'vue';
-import { ALL_BLUEPRINTS, findBlueprintByType } from '../blueprints/index.js';
+import { Cpu } from 'lucide-vue-next';
+import { ALL_BLUEPRINTS, findBlueprintByType, BlueprintCustom, CUSTOM_NODE_TEMPLATE } from '../blueprints/index.js';
+import { useProjectStore } from '@projects/projects.js';
+import { GenerateUUID } from '@utils/utils.js';
+
+export function createCustomNodeInstance(position = { x: 100, y: 100 }) {
+  return {
+    id: GenerateUUID(),
+    type: 'customScript',
+    name: 'Custom Node',
+    label: 'Custom Node',
+    role: 'action',
+    isCustomScript: true,
+    position: { ...position },
+    inputs: [
+      { id: 'execIn', dataType: 'execution', color: '#FFFFFF' }
+    ],
+    outputs: [
+      { id: 'execOut', dataType: 'execution', color: '#FFFFFF' }
+    ],
+    settings: {
+      headerTitle: 'Custom Node',
+      headerColor: '#8B5CF6',
+      category: 'Custom',
+      description: 'Custom script node'
+    },
+    data: {
+      values: {},
+      code: 'return;'
+    }
+  };
+}
 
 export function useNodeBlueprint() {
   const searchQuery = ref('');
+  const projectStore = useProjectStore();
 
   const nodeGroups = [...ALL_BLUEPRINTS].sort((a, b) => a.label.localeCompare(b.label));
 
+  const customGroup = computed(() => {
+    let customList = [];
+    try {
+      customList = projectStore.activeProject?.customBlueprints || [];
+    } catch {
+      customList = [];
+    }
+    return {
+      id: 'custom',
+      label: 'Custom',
+      color: '#8B5CF6',
+      icon: Cpu,
+      items: customList
+    };
+  });
+
+  const libraryGroups = computed(() => {
+    return [customGroup.value, ...nodeGroups];
+  });
+
   const filteredGroups = computed(() => {
-    if (!searchQuery.value) return nodeGroups;
+    const groups = libraryGroups.value;
+    if (!searchQuery.value) return groups;
     
     const q = searchQuery.value.toLowerCase();
     
-    return nodeGroups.map(g => ({
+    return groups.map(g => ({
       ...g,
       items: g.items.filter(i => i.label.toLowerCase().includes(q))
     })).filter(g => g.items.length > 0);
@@ -23,6 +76,15 @@ export function useNodeBlueprint() {
   };
 
   const getNodeBlueprint = (type) => {
+    if (type === 'customScript') {
+      return CUSTOM_NODE_TEMPLATE;
+    }
+    try {
+      const custom = projectStore.activeProject?.customBlueprints?.find(b => b.type === type);
+      if (custom) return custom;
+    } catch {
+      // safe fallback if store is not in Pinia context
+    }
     return findBlueprintByType(type);
   };
 
@@ -103,6 +165,8 @@ ${bodyLogic.trim()}`;
 
   return {
     nodeGroups,
+    libraryGroups,
+    customGroup,
     searchQuery,
     filteredGroups,
     onDragNode,

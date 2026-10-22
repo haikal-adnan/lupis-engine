@@ -5,6 +5,9 @@ import { useScriptStore } from '@scripts/scripts.js';
 import { useScriptHistory } from '@historys/historys.js';
 import { useWorkspaceStore } from '@workspaces/workspaces.js';
 import { useDynamicPortManager } from '@nodes/nodes.js';
+import { PORT_ID_REGEX } from '../../contract/portIds.js';
+import { getPortColor } from '../../contract/portTypes.js';
+import { isUserCustomNode } from '../layouts/custom/index.js';
 
 export function useNodeLogic() {
   const scriptStore = useScriptStore();
@@ -79,7 +82,7 @@ export function useNodeLogic() {
   }
 
   function deleteSelectedNode() {
-    if (selectedNode.value && confirm('Delete this node?')) {
+    if (selectedNode.value) {
       const nodeToDelete = selectedNode.value;
       const connectedEdges = scriptStore.activeScript.edges.filter(
         e => e.source === nodeToDelete.id || e.target === nodeToDelete.id
@@ -115,18 +118,119 @@ export function useNodeLogic() {
     if (!selectedNode.value) return;
 
     const node = selectedNode.value;
+    if (!isUserCustomNode(node)) {
+      // System nodes are immutable for port names
+      return;
+    }
+
+    const cleanLabel = String(newLabel || '').trim();
+    if (!cleanLabel) return;
+
     const portsKey = type === 'input' ? 'inputs' : 'outputs';
     const updatedPorts = [...(node[portsKey] || [])];
     const portIndex = updatedPorts.findIndex(p => p.id === portId);
 
     if (portIndex > -1) {
-      const oldLabel = updatedPorts[portIndex].label;
-      if (oldLabel === newLabel) return;
+      const oldPort = updatedPorts[portIndex];
+      if (oldPort.label === cleanLabel && oldPort.id === cleanLabel) return;
 
-      updatedPorts[portIndex] = { ...updatedPorts[portIndex], label: newLabel };
-      scriptHistory.recordNodeDataChange(node.id, `${portsKey}.${portIndex}.label`, oldLabel, newLabel);
-      scriptStore.updateNodeInActive(node.id, { [portsKey]: updatedPorts });
+      const canUpdateId = PORT_ID_REGEX.test(cleanLabel);
+      const targetId = canUpdateId ? cleanLabel : oldPort.id;
+
+      updatedPorts[portIndex] = {
+        ...oldPort,
+        id: targetId,
+        label: cleanLabel
+      };
+
+      if (canUpdateId && targetId !== oldPort.id) {
+        if (scriptStore.activeScript?.edges) {
+          scriptStore.activeScript.edges.forEach(edge => {
+            if (type === 'input' && edge.target === node.id && edge.targetHandle === portId) {
+              edge.targetHandle = targetId;
+            } else if (type === 'output' && edge.source === node.id && edge.sourceHandle === portId) {
+              edge.sourceHandle = targetId;
+            }
+          });
+        }
+
+        const values = { ...(node.data?.values || {}) };
+        if (type === 'input' && values[portId] !== undefined) {
+          values[targetId] = values[portId];
+          delete values[portId];
+        }
+        if (node.data) {
+          node.data.values = values;
+        }
+      }
+
+      scriptHistory.recordNodeDataChange(node.id, `${portsKey}.${portIndex}.label`, oldPort.label, cleanLabel);
+      scriptStore.updateNodeInActive(node.id, {
+        [portsKey]: updatedPorts,
+        ...(node.data ? { data: node.data } : {})
+      });
     }
+  }
+
+  function updatePortDataType(portId, type = 'input', newDataType) {
+    if (!selectedNode.value) return;
+
+    const node = selectedNode.value;
+    if (!isUserCustomNode(node)) return;
+
+    const portsKey = type === 'input' ? 'inputs' : 'outputs';
+    const updatedPorts = [...(node[portsKey] || [])];
+    const portIndex = updatedPorts.findIndex(p => p.id === portId);
+    if (portIndex === -1) return;
+
+    const color = getPortColor(newDataType);
+    const oldType = updatedPorts[portIndex].dataType;
+    if (oldType === newDataType) return;
+
+    updatedPorts[portIndex] = {
+      ...updatedPorts[portIndex],
+      dataType: newDataType,
+      color
+    };
+
+    const values = { ...(node.data?.values || {}) };
+    if (type === 'input') {
+      if (newDataType === 'number') values[portId] = 0;
+      else if (newDataType === 'boolean') values[portId] = false;
+      else if (newDataType === 'string') values[portId] = '';
+    }
+
+    scriptStore.updateNodeInActive(node.id, {
+      [portsKey]: updatedPorts,
+      ...(node.data ? { data: { ...node.data, values } } : {})
+    });
+  }
+
+  function movePort(portId, type = 'input', direction = 'up') {
+    if (!selectedNode.value) return;
+
+    const node = selectedNode.value;
+    if (!isUserCustomNode(node)) return;
+
+    const portsKey = type === 'input' ? 'inputs' : 'outputs';
+    const ports = [...(node[portsKey] || [])];
+    const idx = ports.findIndex(p => p.id === portId);
+    if (idx === -1) return;
+
+    if (direction === 'up') {
+      if (idx === 0) return;
+      if (ports[idx - 1]?.dataType === 'execution') return;
+      const temp = ports[idx];
+      ports[idx] = ports[idx - 1];
+      ports[idx - 1] = temp;
+    } else if (direction === 'down') {
+      if (idx >= ports.length - 1) return;
+      const temp = ports[idx];
+      ports[idx] = ports[idx + 1];
+      ports[idx + 1] = temp;
+    }
+
+    scriptStore.updateNodeInActive(node.id, { [portsKey]: ports });
   }
 
   // =========================================================================
@@ -164,6 +268,8 @@ export function useNodeLogic() {
     isInputConnected,
     disconnectInvalidEdges,
     updatePortLabel,
+    updatePortDataType,
+    movePort,
     startScriptTransaction,
     endScriptTransactionWithDelay,
 

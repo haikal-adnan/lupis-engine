@@ -97,12 +97,36 @@
         </div>
       </div>
     </section>
+
+    <!-- Section: Code Editor Preferences -->
+    <section class="space-y-5">
+      <div class="border-b border-border pb-2">
+        <h4 class="text-sm font-bold text-foreground">Code Editor</h4>
+        <p class="text-xs text-muted-foreground mt-0.5">Customize your script and custom node code editor settings.</p>
+      </div>
+
+      <div class="space-y-4">
+        <PropertyRow label="Code Zoom Level">
+          <div class="flex items-center gap-3">
+            <BaseNumber 
+              v-model="codeZoom" 
+              :min="70" 
+              :max="200" 
+              :step="10"
+              class="w-24 font-mono text-xs" 
+              data-testid="preferences-code-zoom-input"
+            />
+            <span class="text-xs text-muted-foreground">%</span>
+          </div>
+        </PropertyRow>
+      </div>
+    </section>
   </div>
 </template>
 
 <script setup>
 import { Sun, Moon } from 'lucide-vue-next';
-import { PropertyRow, BaseButton, BaseCheckbox } from '@components/components.js';
+import { PropertyRow, BaseButton, BaseCheckbox, BaseNumber } from '@components/components.js';
 import { useTheme } from '@composables/composables.js';
 import { useInspectorBinding } from '@inspectors/inspectors.js';
 
@@ -111,6 +135,7 @@ defineProps({ info: Object });
 const { isDark, toggleTheme } = useTheme();
 const { bindSettingProp } = useInspectorBinding();
 const showRulers = bindSettingProp(null, 'showRulers');
+const codeZoom = bindSettingProp('codeEditor', 'zoom');
 
 function setDarkTheme(wantDark) {
   if (isDark.value !== wantDark) {

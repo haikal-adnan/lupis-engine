@@ -2,6 +2,7 @@ import { ref, watch, onUnmounted } from 'vue'
 import { useScriptHistory } from '@historys/historys.js'
 import { useScriptStore } from '@scripts/scripts.js'
 import { useProjectStore } from '@projects/projects.js'
+import { isUserCustomNode } from '@nodes/nodes.js'
 
 export function useCodeHistory(extractedNodeId, targetNode, options = {}) {
   const debounceMs = options.debounceMs || 800
@@ -30,11 +31,15 @@ export function useCodeHistory(extractedNodeId, targetNode, options = {}) {
     { immediate: true }
   )
 
+  // Watch for port changes: custom nodes made by users should never auto-reset code data!
   watch(
-    () => targetNode.value?.outputs,
-    (newOutputs, oldOutputs) => {
+    () => [targetNode.value?.outputs, targetNode.value?.inputs],
+    () => {
       const node = targetNode.value
-      if (!node || !oldOutputs) return
+      if (!node) return
+
+      // User custom nodes must NEVER auto-reset code when inputs or outputs change
+      if (isUserCustomNode(node)) return
 
       const isOutputProperty = node.dynamicMode === 'outputProperty'
       const hasPropertyOptions = Array.isArray(node.data?.propertyOptions) && node.data.propertyOptions.length > 0
@@ -58,6 +63,9 @@ export function useCodeHistory(extractedNodeId, targetNode, options = {}) {
       const defaultCode = blueprintItem.defaultData.data.code
       codeContent.value = defaultCode
       commitCode(defaultCode)
+    } else if (isUserCustomNode(node)) {
+      codeContent.value = 'return;'
+      commitCode('return;')
     }
   }
 

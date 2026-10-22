@@ -38,11 +38,11 @@
 
       <div v-if="!sidebarSearchQuery" class="flex flex-col gap-4 mt-1">
         
-        <div v-if="recentNodes.length > 0">
+        <div>
           <div class="flex items-center gap-2 text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">
             <Clock class="w-3.5 h-3.5" /> Recent
           </div>
-          <div class="space-y-1">
+          <div v-if="recentNodes.length > 0" class="space-y-1">
             <div 
               v-for="node in recentNodes" :key="'rec-'+node.type"
               data-testid="node-library-sidebar-recent-item"
@@ -63,6 +63,21 @@
               <span class="truncate flex-1 font-medium group-hover:text-blue-600 dark:group-hover:text-blue-400">{{ node.label }}</span>
             </div>
           </div>
+          <div v-else class="text-xs text-muted-foreground/60 italic px-2 py-1">
+            No recent nodes
+          </div>
+
+          <!-- Align Bottom Recent: Add Custom Node Button -->
+          <button
+            type="button"
+            @click="handleAddCustomNodeToCanvas"
+            class="w-full mt-2.5 flex items-center justify-center gap-1.5 py-1.5 px-2 text-xs font-medium rounded border border-dashed border-purple-500/40 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 hover:text-purple-300 transition-colors cursor-pointer group"
+            data-testid="node-library-add-custom-node-btn"
+            title="Add Custom Node directly to Graph"
+          >
+            <Cpu class="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
+            <span>+ Add Custom Node</span>
+          </button>
         </div>
 
       </div>
@@ -115,12 +130,14 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
-import { Component, Clock, X, Search } from 'lucide-vue-next';
+import { ref, computed, unref } from 'vue';
+import { Component, Clock, X, Search, Cpu } from 'lucide-vue-next';
 
 import { BaseButton, PropertySection } from '@components/components.js';
 import { NodeBlueprintModal } from '@nodes/nodes.js'; 
-import { useNodeBlueprint, useNodePreferences, useGraphEditor } from '@nodes/nodes.js';
+import { useNodeBlueprint, useNodePreferences, useGraphEditor, createCustomNodeInstance } from '@nodes/nodes.js';
+import { useScriptHistory } from '@historys/historys.js';
+import { usePopAlert } from '@composables/composables.js';
 import { GenerateUUID } from '@utils/utils.js';
 
 const isModalOpen = ref(false);
@@ -129,14 +146,17 @@ const sidebarSearchQuery = ref('');
 const { nodeGroups, onDragNode } = useNodeBlueprint();
 const { recentNodes, addToRecent } = useNodePreferences();
 const { getCenterPos, store } = useGraphEditor();
+const scriptHistory = useScriptHistory();
+const { showPop } = usePopAlert();
 
 const sidebarSearchResults = computed(() => {
   if (!sidebarSearchQuery.value) return [];
   
   const query = sidebarSearchQuery.value.toLowerCase();
   const results = [];
+  const groups = unref(nodeGroups) || [];
 
-  nodeGroups.forEach(group => {
+  groups.forEach(group => {
     const isGroupMatch = group.label?.toLowerCase().includes(query);
 
     group.items?.forEach(item => {
@@ -169,6 +189,22 @@ const handleAddNodeToCanvas = (template) => {
   addToRecent(template.type);
 };
 
+const handleAddCustomNodeToCanvas = () => {
+  const centerPos = getCenterPos();
+  const newNode = createCustomNodeInstance({
+    x: Math.round((centerPos.x - 100) / 20) * 20,
+    y: Math.round((centerPos.y - 50) / 20) * 20
+  });
+
+  store.addNodeToActive(newNode);
+  scriptHistory.recordAddNode(newNode);
+  store.setSelectedNode(newNode.id);
+  showPop({
+    title: 'Custom Node Added',
+    message: 'A new custom node template has been added to the graph canvas.',
+    type: 'success'
+  });
+};
 </script>
 
 <style scoped>

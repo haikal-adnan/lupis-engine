@@ -8,7 +8,7 @@
       interaction.mode === 'pan' ? 'cursor-grabbing' : 'cursor-default'
     ]"
     @mousedown.middle="startPan" 
-    @mousedown.left="onCanvasMouseDown" 
+    @mousedown.left="handleCanvasMouseDown" 
     @wheel.prevent="handleWheel"
     @contextmenu.prevent="handleBackgroundContext"
     @dragover.prevent 
@@ -208,10 +208,19 @@ const {
   handleKeyDown
 } = useGraphEditor()
 
-const { contextMenu, openMenu, closeMenu } = useNodeMenu()
+const { contextMenu, openMenu, openBackgroundMenu, closeMenu } = useNodeMenu()
 
-const handleBackgroundContext = () => {
+const handleCanvasMouseDown = (e) => {
   closeMenu()
+  onCanvasMouseDown(e)
+}
+
+const handleBackgroundContext = (event) => {
+  const r = panelRef.value?.getBoundingClientRect() || { left: 0, top: 0 }
+  const graphX = Math.round(((event.clientX - r.left - camera.value.x) / camera.value.scale) / GRID_SIZE) * GRID_SIZE
+  const graphY = Math.round(((event.clientY - r.top - camera.value.y) / camera.value.scale) / GRID_SIZE) * GRID_SIZE
+
+  openBackgroundMenu(event, { x: graphX, y: graphY })
 }
 
 onMounted(() => {

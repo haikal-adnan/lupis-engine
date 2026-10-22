@@ -4,7 +4,12 @@
     <ScrollArea v-if="targetInspectorNode" class="flex-1" data-testid="node-inspector-single-node-content">
       <div class="p-2 space-y-1">
         <NodeHeader />
-        <NodeData />
+        <component 
+          v-if="customInspectorComponent" 
+          :is="customInspectorComponent" 
+          :node="targetInspectorNode" 
+        />
+        <NodeData v-else />
         <NodePorts />
       </div>
     </ScrollArea>
@@ -50,6 +55,7 @@ import { Workflow, Layers } from 'lucide-vue-next';
 import { NodeHeader, NodeData, NodePorts, NodeEdge, useNodeLogic } from '@nodes/nodes.js';
 import { ScrollArea } from '@components/components.js';
 import { useWorkspaceStore } from '@workspaces/workspaces.js';
+import { getCustomInspectorForNode } from './custom/index.js';
 
 const workspaceStore = useWorkspaceStore();
 const { selectedNode, scriptStore } = useNodeLogic();
@@ -67,5 +73,9 @@ const targetInspectorNode = computed(() => {
     return scriptStore.activeScript.nodes.find(n => n.id === tabNodeId);
   }
   return selectedNode.value;
+});
+
+const customInspectorComponent = computed(() => {
+  return getCustomInspectorForNode(targetInspectorNode.value);
 });
 </script>

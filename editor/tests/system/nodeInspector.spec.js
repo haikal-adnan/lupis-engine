@@ -14,6 +14,7 @@ import { setupMockOPFS, createMockEmptyProject } from '@tests/tests.js';
 vi.mock('@composables/composables.js', () => ({
   usePopAlert: vi.fn(() => ({ showPop: vi.fn() })),
   usePrompt: vi.fn(() => ({ prompt: vi.fn() })),
+  useConfirm: vi.fn(() => ({ confirm: vi.fn().mockResolvedValue(true) })),
   useTheme: vi.fn(() => ({ isDark: { value: true } }))
 }));
 

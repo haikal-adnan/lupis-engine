@@ -15,6 +15,12 @@ vi.mock('@nodes/nodes.js', async (importOriginal) => {
 vi.mock('@composables/composables.js', () => ({
   usePopAlert: vi.fn(() => ({
     showPop: vi.fn()
+  })),
+  usePrompt: vi.fn(() => ({
+    prompt: vi.fn().mockResolvedValue('Custom Blueprint')
+  })),
+  useConfirm: vi.fn(() => ({
+    confirm: vi.fn().mockResolvedValue(true)
   }))
 }))
 

@@ -1,15 +1,26 @@
 import { ref } from 'vue'
-import { Copy, Trash2, Code, RotateCcw, RefreshCw } from 'lucide-vue-next'
+import { Copy, Trash2, Code, RotateCcw, RefreshCw, Cpu, Save } from 'lucide-vue-next'
 import { GenerateUUID } from '@utils/utils.js'
 import { useScriptStore } from '@scripts/scripts.js'
 import { useWorkspaceStore } from '@workspaces/workspaces.js'
 import { useScriptHistory } from '@historys/historys.js'
+import { useProjectStore } from '@projects/projects.js'
+import { usePopAlert, usePrompt, useConfirm } from '@composables/composables.js'
 import { resetNodeToDefault, overrideNodeFromBlueprint } from '@nodes/library/composables/useNodeOverride.js'
+import { createCustomNodeInstance } from '@nodes/library/composables/useNodeBlueprint.js'
+import { isUserCustomNode, saveCustomBlueprintToLibrary } from '../../inspector/layouts/custom/index.js'
 
 export function useNodeMenu() {
   const store = useScriptStore()
   const workspaceStore = useWorkspaceStore()
   const scriptHistory = useScriptHistory()
+  const projectStore = useProjectStore()
+  const popAlertComposable = typeof usePopAlert === 'function' ? usePopAlert() : null
+  const showPop = popAlertComposable?.showPop || (() => {})
+  const promptComposable = typeof usePrompt === 'function' ? usePrompt() : null
+  const prompt = promptComposable?.prompt || (async () => null)
+  const confirmComposable = typeof useConfirm === 'function' ? useConfirm() : null
+  const confirm = confirmComposable?.confirm || (async () => true)
   const contextMenu = ref({ visible: false, x: 0, y: 0, items: [], nodeId: null })
 
   const handlers = {
@@ -124,7 +135,20 @@ export function useNodeMenu() {
         label: 'Edit Code', 
         icon: Code, 
         action: () => handlers.openCodeEditor(node) 
-      },
+      }
+    ]
+
+    if (isUserCustomNode(node)) {
+      items.push({
+        label: 'Save as Blueprint',
+        icon: Save,
+        action: async () => {
+          await saveCustomBlueprintToLibrary(node, projectStore, { prompt, showPop })
+        }
+      })
+    }
+
+    items.push(
       { separator: true },
       {
         label: updateLabel,
@@ -150,7 +174,7 @@ export function useNodeMenu() {
         shortcut: 'Del / Backspace', 
         action: () => handlers.deleteSelectedNodes(node.id) 
       }
-    ]
+    )
 
     contextMenu.value = {
       visible: true,
@@ -161,6 +185,34 @@ export function useNodeMenu() {
     }
   }
 
+  const openBackgroundMenu = (event, graphPos) => {
+    const items = [
+      { 
+        label: 'Add Custom Node', 
+        icon: Cpu, 
+        action: () => {
+          const newNode = createCustomNodeInstance(graphPos)
+          store.addNodeToActive(newNode)
+          scriptHistory.recordAddNode(newNode)
+          store.setSelectedNode(newNode.id)
+          showPop({
+            title: 'Custom Node Added',
+            message: 'A new custom node template has been added to the graph canvas.',
+            type: 'success'
+          })
+        } 
+      }
+    ]
+
+    contextMenu.value = {
+      visible: true,
+      x: event.clientX,
+      y: event.clientY,
+      items,
+      nodeId: null
+    }
+  }
+
   const closeMenu = () => {
     contextMenu.value.visible = false
   }
@@ -168,6 +220,7 @@ export function useNodeMenu() {
   return {
     contextMenu,
     openMenu,
+    openBackgroundMenu,
     closeMenu
   }
 }

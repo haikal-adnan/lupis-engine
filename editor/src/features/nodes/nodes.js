@@ -11,7 +11,7 @@ export { useVariableLogic } from '@nodes/variable/composables/useVariableLogic.j
 export { default as VariableManagerModal } from '@nodes/variable/layouts/VariableManagerModal.vue'
 export { default as VariablePanel } from '@nodes/variable/layouts/VariablePanel.vue'
 
-export { useNodeBlueprint } from '@nodes/library/composables/useNodeBlueprint.js'
+export { useNodeBlueprint, createCustomNodeInstance } from '@nodes/library/composables/useNodeBlueprint.js'
 export { useNodePreferences } from '@nodes/library/composables/useNodePreferences.js'
 export { useVariableConfig } from '@nodes/library/composables/useVariableConfig.js'
 export { 
@@ -38,6 +38,7 @@ export { default as NodeHeader } from '@nodes/inspector/layouts/NodeHeader.vue'
 export { default as NodeData } from '@nodes/inspector/layouts/NodeData.vue'
 export { default as NodeEdge } from '@nodes/inspector/layouts/NodeEdge.vue'
 export { default as NodePorts } from '@nodes/inspector/layouts/NodePorts.vue'
+export * from './inspector/layouts/custom/index.js'
 
 // Contract & Blueprints Barrels
 export * from './contract/index.js';

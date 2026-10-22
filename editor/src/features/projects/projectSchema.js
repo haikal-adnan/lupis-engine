@@ -68,6 +68,10 @@ export const projectSchema = (data = {}) => {
         visible: data.settings?.grid?.visible ?? true,
         snap: data.settings?.grid?.snap ?? true       
       },
+
+      codeEditor: {
+        zoom: Number(data.settings?.codeEditor?.zoom ?? 100)
+      },
     },
 
     globalVariables: Array.isArray(data.globalVariables) 
@@ -82,6 +86,10 @@ export const projectSchema = (data = {}) => {
     tags: Array.isArray(data.tags) && data.tags.length > 0 
       ? data.tags 
       : ['Untagged', 'Player', 'Enemy'],
+
+    customBlueprints: Array.isArray(data.customBlueprints)
+      ? data.customBlueprints
+      : [],
 
     scenes: defaultScenes 
   };

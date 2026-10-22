@@ -468,6 +468,35 @@ outputs.result = Number(res.toFixed(6));
 return;`
         }
       }
+    },
+    {
+      type: 'mathChain',
+      label: 'Math Chain',
+      description: 'Sequential calculation pipeline combining multiple math steps',
+      dynamicMode: 'sequential',
+      defaultData: {
+        settings: {
+          headerTitle: 'Math Chain',
+          headerColor: '#009688',
+          category: 'Math & Random'
+        },
+        inputs: [
+          { id: 'v0', dataType: 'number', color: '#64B5F6', defaultValue: 0 },
+          { id: 'v1', dataType: 'number', color: '#64B5F6', defaultValue: 0 }
+        ],
+        outputs: [
+          { id: 'result', dataType: 'number', color: '#64B5F6' }
+        ],
+        data: {
+          ops: ['add'],
+          values: { v0: 0, v1: 0 },
+          code:
+`let res = Number(inputs.v0) || 0;
+res = res + (Number(inputs.v1) || 0);
+outputs.result = Number(res.toFixed(6));
+return;`
+        }
+      }
     }
   ]
 };

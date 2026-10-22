@@ -1,4 +1,4 @@
-import { ref, computed } from 'vue';
+import { ref, computed, unref } from 'vue';
 import { useNodeBlueprint } from '@nodes/nodes.js';
 
 const getStorageItem = (key, fallback = []) => {
@@ -20,7 +20,8 @@ export function useNodePreferences() {
 
   const allNodesMap = computed(() => {
     const map = new Map();
-    nodeGroups.forEach(g => {
+    const groups = unref(nodeGroups) || [];
+    groups.forEach(g => {
       g.items?.forEach(item => map.set(item.type, item));
     });
     return map;

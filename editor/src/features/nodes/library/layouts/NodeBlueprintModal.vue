@@ -52,7 +52,7 @@
 
           <div class="flex flex-1 min-h-0">
             
-            <div class="w-56 border-r border-border bg-muted/5 flex flex-col overflow-y-auto custom-scroll shrink-0 p-4 gap-6">
+            <div class="w-56 border-r border-border bg-muted/5 flex flex-col justify-between overflow-y-auto custom-scroll shrink-0 p-4 gap-6">
               <div>
                 <div class="flex items-center gap-2 text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">
                   <Clock class="w-3.5 h-3.5" /> Recent
@@ -72,6 +72,20 @@
                   </div>
                 </div>
               </div>
+
+              <!-- Align Bottom Recent: Add Custom Node Button -->
+              <div class="pt-3 border-t border-border/50">
+                <button
+                  type="button"
+                  @click="handleAddCustomNodeToCanvas"
+                  class="w-full flex items-center justify-center gap-1.5 py-1.5 px-2 text-xs font-medium rounded border border-dashed border-purple-500/40 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 hover:text-purple-300 transition-colors cursor-pointer group"
+                  data-testid="node-library-modal-add-custom-btn"
+                  title="Add Custom Node directly to Graph"
+                >
+                  <Cpu class="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
+                  <span>+ Add Custom Node</span>
+                </button>
+              </div>
             </div>
 
             <div class="flex-1 bg-background overflow-y-auto custom-scroll p-6 relative">
@@ -89,7 +103,7 @@
                   </div>
                 </div>
                 
-                <div data-testid="node-library-modal-category-items" class="grid grid-cols-2 xl:grid-cols-3 gap-2">
+                <div v-if="activeGroup.items?.length > 0" data-testid="node-library-modal-category-items" class="grid grid-cols-2 xl:grid-cols-3 gap-2">
                   <NodeListItem 
                     v-for="item in activeGroup.items" 
                     :key="item.type" 
@@ -97,12 +111,15 @@
                     @add="handleAddNodeToCanvas(item)"
                   />
                 </div>
+                <div v-else class="py-12 text-center text-sm text-muted-foreground italic border-2 border-dashed border-border rounded-xl">
+                  No custom nodes saved in this project yet.
+                </div>
               </div>
 
               <div v-else>
                 <div v-if="!searchQuery" class="grid grid-cols-2 xl:grid-cols-3 gap-4">
                   <div 
-                    v-for="group in nodeGroups" 
+                    v-for="group in libraryGroups" 
                     :key="group.label"
                     data-testid="node-library-modal-category-card"
                     :data-category-label="group.label"
@@ -149,15 +166,19 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
-import { Search, X, ChevronLeft, Component, Clock } from 'lucide-vue-next';
-import { useNodeBlueprint, useNodePreferences, useGraphEditor, NodeListItem } from '@nodes/nodes.js';
+import { Search, X, ChevronLeft, Component, Clock, Cpu } from 'lucide-vue-next';
+import { useNodeBlueprint, useNodePreferences, useGraphEditor, NodeListItem, createCustomNodeInstance } from '@nodes/nodes.js';
+import { useScriptHistory } from '@historys/historys.js';
+import { usePopAlert } from '@composables/composables.js';
 
 const props = defineProps({ isOpen: Boolean });
 const emit = defineEmits(['close']);
 
-const { addNodeAtSpawn } = useGraphEditor();
-const { nodeGroups, searchQuery, filteredGroups } = useNodeBlueprint();
+const { addNodeAtSpawn, getCenterPos, store } = useGraphEditor();
+const { nodeGroups, libraryGroups, searchQuery, filteredGroups } = useNodeBlueprint();
 const { recentNodes } = useNodePreferences();
+const scriptHistory = useScriptHistory();
+const { showPop } = usePopAlert();
 
 const activeGroup = ref(null);
 
@@ -184,6 +205,24 @@ const flatSearchResults = computed(() => {
 const handleAddNodeToCanvas = (template) => {
   addNodeAtSpawn(template);
   closeModal();
+};
+
+const handleAddCustomNodeToCanvas = () => {
+  const centerPos = getCenterPos();
+  const newNode = createCustomNodeInstance({
+    x: Math.round((centerPos.x - 100) / 20) * 20,
+    y: Math.round((centerPos.y - 50) / 20) * 20
+  });
+
+  store.addNodeToActive(newNode);
+  scriptHistory.recordAddNode(newNode);
+  store.setSelectedNode(newNode.id);
+  closeModal();
+  showPop({
+    title: 'Custom Node Added',
+    message: 'A new custom node template has been added to the graph canvas.',
+    type: 'success'
+  });
 };
 
 const onOutsideMouseDown = (e) => isMouseDownOutside.value = e.target === e.currentTarget;

@@ -1,15 +1,13 @@
 <template>
   <div class="w-full h-full flex flex-col bg-[#1e1e1e] text-gray-300 font-mono text-sm select-none overflow-hidden">
-    <!-- Top Editor Bar / Breadcrumbs & Status -->
+    <!-- Top Editor Bar / Breadcrumb & Status -->
     <div class="h-9 bg-[#252526] border-b border-[#3c3c3c] flex items-center justify-between px-4 shrink-0 text-xs text-gray-400">
       <div class="flex items-center gap-2">
         <span class="text-pink-500 font-semibold">{{ scriptName }}</span>
-        <span>/</span>
-        <span class="text-gray-200 font-medium">{{ nodeTitle }}</span>
-        
+
         <div class="h-4 w-[1px] bg-[#3c3c3c] mx-1"></div>
 
-        <!-- Auto Save Status Indicator -->
+        <!-- Auto Save / Synced Status Indicator -->
         <div class="flex items-center gap-1.5 font-sans text-[11px]">
           <span 
             class="px-2 py-0.5 rounded font-medium transition-colors duration-200 flex items-center gap-1.5"
@@ -41,65 +39,37 @@
             Warnings ({{ validationResult.issues.length }})
           </span>
         </div>
-
       </div>
       
-      <!-- Action Buttons -->
+      <!-- Right Actions: Reset Code -->
       <div class="flex items-center gap-2 text-[11px]">
-        <!-- Zoom Out / Zoom In Buttons -->
-        <div class="flex items-center bg-zinc-800 rounded border border-zinc-700/60 overflow-hidden font-sans">
-          <button 
-            @click="zoomOut" 
-            :disabled="zoomLevel <= 70"
-            title="Zoom Out (-10%)"
-            class="px-2 py-1 hover:bg-zinc-700 disabled:opacity-40 text-gray-300 transition-colors cursor-pointer disabled:cursor-not-allowed border-r border-zinc-700/60"
-          >
-            -
-          </button>
-          
-          <button
-            @click="resetZoom"
-            title="Reset Zoom to 100%"
-            class="px-2 py-1 hover:bg-zinc-700 text-gray-300 transition-colors text-[10px] font-mono"
-          >
-            {{ zoomLevel }}%
-          </button>
-
-          <button 
-            @click="zoomIn" 
-            :disabled="zoomLevel >= 200"
-            title="Zoom In (+10%)"
-            class="px-2 py-1 hover:bg-zinc-700 disabled:opacity-40 text-gray-300 transition-colors cursor-pointer disabled:cursor-not-allowed border-l border-zinc-700/60"
-          >
-            +
-          </button>
-        </div>
-
-        <div class="h-4 w-[1px] bg-[#3c3c3c] mx-0.5"></div>
-
         <!-- Reset Code Button -->
         <button 
-          @click="resetCode" 
-          :disabled="!targetNode"
+          @click="handleResetCode" 
+          :disabled="!targetNode || isReadOnly"
           class="px-3 py-1 bg-zinc-700 hover:bg-zinc-600 disabled:opacity-50 text-white rounded font-sans transition-colors cursor-pointer disabled:cursor-not-allowed"
+          data-testid="codepanel-reset-code-btn"
         >
           Reset Code
         </button>
-
-        <div class="h-4 w-[1px] bg-[#3c3c3c] mx-1"></div>
-        <span>UTF-8</span>
-        <span>JavaScript</span>
       </div>
     </div>
 
     <!-- Main Workspace Area -->
     <div class="flex-1 flex overflow-hidden">
-      <!-- Line Numbers Area (Mengikuti skala ukuran font) -->
+      <!-- Line Numbers Area (Mengikuti skala ukuran font dari preference) -->
       <div 
-        class="w-12 bg-[#1e1e1e] border-r border-[#2d2d2d] py-3 text-right pr-3 select-none text-gray-600 font-mono text-xs leading-6 shrink-0"
-        :style="{ fontSize: `${fontSize}px`, lineHeight: `${lineHeight}px` }"
+        ref="lineNumbersRef"
+        class="w-12 bg-[#1e1e1e] border-r border-[#2d2d2d] py-3 text-right pr-3 select-none text-gray-600 font-mono text-xs shrink-0 overflow-hidden"
+        :style="{ fontSize: `${fontSize}px` }"
       >
-        <div v-for="line in lineCount" :key="line">{{ line }}</div>
+        <div 
+          v-for="line in lineCount" 
+          :key="line"
+          :style="{ height: `${lineHeight}px`, lineHeight: `${lineHeight}px` }"
+        >
+          {{ line }}
+        </div>
       </div>
 
       <!-- Code Textarea & Syntax Highlighting Overlay Area -->
@@ -117,9 +87,11 @@
           <textarea
             ref="textareaRef"
             v-model="codeContent"
+            :readonly="isReadOnly"
             spellcheck="false"
             placeholder="// Write your node logic here..."
             class="code-textarea absolute inset-0 w-full h-full bg-transparent p-3 outline-none resize-none font-mono text-xs leading-6 selection:bg-[#264f78] placeholder:text-gray-600 font-normal whitespace-pre overflow-auto"
+            :class="{ 'cursor-not-allowed select-text opacity-85': isReadOnly }"
             :style="{ fontSize: `${fontSize}px`, lineHeight: `${lineHeight}px` }"
             @input="handleCodeInput"
             @keydown="handleEditorKeyDown"
@@ -159,18 +131,38 @@
       class="h-6 text-white px-3 flex items-center justify-between text-[11px] shrink-0 font-sans transition-colors duration-200 z-10"
       :class="validationResult.hasSyntaxError ? 'bg-red-950/80 border-t border-red-500/50 text-red-300' : (!validationResult.isValid ? 'bg-zinc-800 border-t border-amber-500/40 text-amber-300' : 'bg-[#007acc]')"
     >
-
       <div class="flex items-center gap-4">
-        <span class="font-medium">Node Name: {{ nodeTitle }}</span>
-        <span v-if="targetNode" class="font-mono">
+        <span class="font-medium" data-testid="codepanel-bottom-node-title">Node: {{ nodeTitle }}</span>
+        <span v-if="targetNode" class="font-mono opacity-80 text-[10px]">
           Inputs: {{ validationResult.usedInputsCount }}/{{ dataInputPorts.length }} | 
-          Outputs: {{ validationResult.usedOutputsCount }}/{{ definedOutputPorts.length }} | 
-          Vars Used: {{ validationResult.usedVarsCount }}
+          Outputs: {{ validationResult.usedOutputsCount }}/{{ definedOutputPorts.length }}
         </span>
       </div>
-      <div class="flex items-center gap-3">
-        <span>Zoom: {{ zoomLevel }}%</span>
-        <span>Spaces: 2</span>
+
+      <!-- Right Side: System Node (Read Only) with Unlock Icon or Custom Node -->
+      <div class="flex items-center gap-2">
+        <template v-if="!isCustomNode">
+          <span class="flex items-center gap-1.5 opacity-90 text-[11px]" data-testid="codepanel-system-node-indicator">
+            <Lock class="w-3 h-3 text-blue-200" />
+            <span>System Node (Read Only)</span>
+          </span>
+          <button 
+            type="button"
+            @click="unlockNode"
+            title="Unlock to Custom Node"
+            class="flex items-center gap-1 px-2 py-0.5 rounded bg-white/20 hover:bg-white/30 text-white font-medium text-[10px] transition-colors cursor-pointer"
+            data-testid="codepanel-unlock-btn"
+          >
+            <Unlock class="w-3 h-3" />
+            <span>Unlock</span>
+          </button>
+        </template>
+        <template v-else>
+          <span class="flex items-center gap-1.5 font-medium text-white/90 text-[11px]" data-testid="codepanel-custom-node-indicator">
+            <Cpu class="w-3.5 h-3.5 text-purple-300" />
+            <span>Custom Node</span>
+          </span>
+        </template>
       </div>
     </div>
   </div>
@@ -178,6 +170,7 @@
 
 <script setup>
 import { computed, watch, ref } from 'vue'
+import { Lock, Unlock, Cpu } from 'lucide-vue-next'
 import Prism from 'prismjs'
 import 'prismjs/components/prism-javascript'
 
@@ -185,38 +178,30 @@ import { useWorkspaceStore } from '@workspaces/workspaces.js'
 import { useScriptStore } from '@scripts/scripts.js'
 import { useProjectStore } from '@projects/projects.js'
 import { useCodeHistory } from '@historys/historys.js'
+import { useConfirm, usePopAlert } from '@composables/composables.js'
 import { validateCodePanelContract } from '@nodes/contract/codePanelContract.js'
-
+import { isUserCustomNode } from '../../inspector/layouts/custom/index.js'
 
 const workspaceStore = useWorkspaceStore()
 const scriptStore = useScriptStore()
 const projectStore = useProjectStore()
+const confirmComposable = typeof useConfirm === 'function' ? useConfirm() : null
+const confirm = confirmComposable?.confirm || (async () => true)
+const { showPop } = usePopAlert()
 
 const textareaRef = ref(null)
 const highlightRef = ref(null)
+const lineNumbersRef = ref(null)
 
-const zoomLevel = ref(100) 
 const baseFontSize = 12 
 const baseLineHeight = 24 
 
+const zoomLevel = computed(() => {
+  return Number(projectStore.activeProject?.settings?.codeEditor?.zoom ?? 100)
+})
+
 const fontSize = computed(() => Math.round((baseFontSize * zoomLevel.value) / 100))
 const lineHeight = computed(() => Math.round((baseLineHeight * zoomLevel.value) / 100))
-
-const zoomIn = () => {
-  if (zoomLevel.value < 200) {
-    zoomLevel.value += 10
-  }
-}
-
-const zoomOut = () => {
-  if (zoomLevel.value > 70) {
-    zoomLevel.value -= 10
-  }
-}
-
-const resetZoom = () => {
-  zoomLevel.value = 100
-}
 
 const activeTabId = computed(() => workspaceStore.activeTab?.id || '')
 
@@ -231,6 +216,55 @@ const targetNode = computed(() => {
   if (!scriptStore.activeScript || !extractedNodeId.value) return null
   return scriptStore.activeScript.nodes.find(n => n.id === extractedNodeId.value)
 })
+
+const isCustomNode = computed(() => {
+  return isUserCustomNode(targetNode.value)
+})
+
+const isReadOnly = computed(() => {
+  return !isCustomNode.value
+})
+
+const unlockNode = async () => {
+  if (!targetNode.value) return
+  const isConfirmed = await confirm({
+    title: 'Unlock to Custom Node',
+    message: 'Unlock this node to custom script? Its code will become fully editable.',
+    confirmText: 'Unlock',
+    cancelText: 'Cancel',
+    type: 'warning'
+  })
+  if (isConfirmed) {
+    scriptStore.updateNodeInActive(targetNode.value.id, {
+      isCustomScript: true,
+      originalType: targetNode.value.type
+    })
+    showPop({
+      title: 'Node Code Unlocked',
+      message: `Node "${nodeTitle.value}" has been unlocked to a Custom Node with fully editable code.`,
+      type: 'success'
+    })
+  }
+}
+
+const handleResetCode = async () => {
+  if (!targetNode.value || isReadOnly.value) return
+  const isConfirmed = await confirm({
+    title: 'Reset Code',
+    message: 'Reset code to default blueprint code? Any unsaved edits will be lost.',
+    confirmText: 'Reset',
+    cancelText: 'Cancel',
+    type: 'warning'
+  })
+  if (isConfirmed) {
+    resetCode()
+    showPop({
+      title: 'Code Reset',
+      message: `Code for node "${nodeTitle.value}" has been restored to default template.`,
+      type: 'info'
+    })
+  }
+}
 
 const scriptName = computed(() => scriptStore.activeScript?.name || 'Script')
 const nodeTitle = computed(() => targetNode.value?.settings?.headerTitle || targetNode.value?.label || 'Node')
@@ -264,9 +298,14 @@ const highlightedCode = computed(() => {
 })
 
 const syncScroll = () => {
-  if (textareaRef.value && highlightRef.value) {
-    highlightRef.value.scrollTop = textareaRef.value.scrollTop
-    highlightRef.value.scrollLeft = textareaRef.value.scrollLeft
+  if (textareaRef.value) {
+    if (highlightRef.value) {
+      highlightRef.value.scrollTop = textareaRef.value.scrollTop
+      highlightRef.value.scrollLeft = textareaRef.value.scrollLeft
+    }
+    if (lineNumbersRef.value) {
+      lineNumbersRef.value.scrollTop = textareaRef.value.scrollTop
+    }
   }
 }
 
@@ -274,7 +313,6 @@ const dataInputPorts = computed(() => {
   if (!targetNode.value || !Array.isArray(targetNode.value.inputs)) return []
   return targetNode.value.inputs.filter(p => {
     const dType = String(p.dataType || '').toLowerCase()
-    const pId = String(p.id || '').toLowerCase()
     return dType !== 'execution'
   })
 })
@@ -292,9 +330,8 @@ const validationResult = computed(() => {
   })
 })
 
-
 const lineCount = computed(() => {
-  const lines = codeContent.value.split('\n').length
+  const lines = (codeContent.value || '').split('\n').length
   return Math.max(lines, 25)
 })
 </script>

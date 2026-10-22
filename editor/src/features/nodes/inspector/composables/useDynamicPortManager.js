@@ -5,6 +5,7 @@ import { usePopAlert, usePrompt } from '@composables/composables.js';
 import { useNodeBlueprint } from '@nodes/nodes.js';
 import { PROTECTED_PORTS } from '../../contract/portIds.js';
 import { keyToPortId } from '../../contract/keyPortNames.js';
+import { isUserCustomNode } from '../layouts/custom/index.js';
 
 // Singleton state to keep target dropdown synchronized across components
 const activeDropdownTarget = ref(null);
@@ -305,6 +306,25 @@ export function useDynamicPortManager() {
 
   async function addDynamicPort(node, type = 'input', explicitOption = null) {
     if (!node) return;
+
+    if (isUserCustomNode(node)) {
+      const ports = type === 'input' ? (node.inputs || []) : (node.outputs || []);
+      const prefix = type === 'input' ? 'input' : 'result';
+      let nextIdx = 1;
+      while (ports.some(p => p.id === `${prefix}${nextIdx}`)) {
+        nextIdx++;
+      }
+      const newPortId = (type === 'output' && ports.length === 0) ? 'result' : `${prefix}${nextIdx}`;
+      const newPort = {
+        id: newPortId,
+        label: newPortId,
+        dataType: 'number',
+        color: '#64B5F6'
+      };
+      scriptStore.addNodePort(node.id, type, newPort);
+      return;
+    }
+
     const mode = getDynamicMode(node);
 
     // A. Mode Property Dynamic (inputProperty / outputProperty)
@@ -372,6 +392,9 @@ export function useDynamicPortManager() {
 
   function canDeleteInputPort(node, portId) {
     if (!node || !portId) return false;
+    if (isUserCustomNode(node)) {
+      return true;
+    }
     if (PROTECTED_PORTS.includes(portId)) return false;
 
     if (node.type === 'logicSwitch') {
@@ -399,6 +422,9 @@ export function useDynamicPortManager() {
 
   function canDeleteOutputPort(node, portId) {
     if (!node || !portId) return false;
+    if (isUserCustomNode(node)) {
+      return true;
+    }
     if (PROTECTED_PORTS.includes(portId)) return false;
 
     if (node.type === 'logicSwitch') {

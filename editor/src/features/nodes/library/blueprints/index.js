@@ -1,3 +1,4 @@
+import { BlueprintCustom, CUSTOM_NODE_TEMPLATE } from './BlueprintCustom.js';
 import { BlueprintFlow } from './BlueprintFlow.js';
 import { BlueprintInput } from './BlueprintInput.js';
 import { BlueprintEntity } from './BlueprintEntity.js';
@@ -19,6 +20,8 @@ import { BlueprintCollectable } from './BlueprintCollectable.js';
 export { BlueprintCategoryTemplate } from './Blueprint.js';
 
 export {
+  BlueprintCustom,
+  CUSTOM_NODE_TEMPLATE,
   BlueprintFlow,
   BlueprintInput,
   BlueprintEntity,
@@ -80,6 +83,9 @@ export const ALL_BLUEPRINTS = Object.freeze([
 export const allBlueprints = ALL_BLUEPRINTS;
 
 export function findBlueprintByType(type) {
+  if (type === 'customScript') {
+    return CUSTOM_NODE_TEMPLATE;
+  }
   for (const group of ALL_BLUEPRINTS) {
     if (Array.isArray(group.items)) {
       const found = group.items.find(item => item.type === type);

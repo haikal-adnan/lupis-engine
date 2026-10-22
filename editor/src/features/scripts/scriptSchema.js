@@ -50,6 +50,8 @@ export const createScriptNode = (data = {}) => {
     type: data.type || "unknown_node",
     role: data.role || getNodeRole({ inputs, outputs }),
     dynamicMode: data.dynamicMode || "none",
+    ...(data.isCustomScript !== undefined ? { isCustomScript: Boolean(data.isCustomScript) } : {}),
+    ...(data.originalType ? { originalType: data.originalType } : {}),
     position: {
       x: data.position?.x ?? 0,
       y: data.position?.y ?? 0
