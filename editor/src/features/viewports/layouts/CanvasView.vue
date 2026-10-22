@@ -121,10 +121,6 @@ const handleEntityModified = (entities) => {
             }
         }
 
-        if (comps.Tilemap && comps.Tilemap.data) {
-            sceneStore.updateComponentProp(id, 'Tilemap', 'data', comps.Tilemap.data);
-        }
-
         if (comps.ShapeRenderer) {
             if (comps.ShapeRenderer.elements !== undefined) {
                 sceneStore.updateComponentProp(id, 'ShapeRenderer', 'elements', comps.ShapeRenderer.elements);

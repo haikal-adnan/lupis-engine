@@ -97,12 +97,26 @@ export default class TilemapRenderer {
     }
 
     _setTileQuadVertices(rData, scaledTileW, scaledTileH, cosR, sinR, gx, gy) {
-        const lx0 = gx * scaledTileW;
-        const lx1 = (gx + 1) * scaledTileW;
-        const ly0 = gy * scaledTileH;
-        const ly1 = (gy + 1) * scaledTileH;
-
         const v = this._reusableVertices;
+        const lx0 = gx * scaledTileW;
+        const ly0 = gy * scaledTileH;
+
+        if (rData.rotation === 0) {
+            const x0 = rData.tfX + lx0;
+            const x1 = x0 + scaledTileW;
+            const y0 = rData.tfY + ly0;
+            const y1 = y0 + scaledTileH;
+
+            v.tl.x = x0; v.tl.y = y0;
+            v.tr.x = x1; v.tr.y = y0;
+            v.bl.x = x0; v.bl.y = y1;
+            v.br.x = x1; v.br.y = y1;
+            return v;
+        }
+
+        const lx1 = lx0 + scaledTileW;
+        const ly1 = ly0 + scaledTileH;
+
         v.tl.x = rData.tfX + (lx0 * cosR - ly0 * sinR);
         v.tl.y = rData.tfY + (lx0 * sinR + ly0 * cosR);
         v.tr.x = rData.tfX + (lx1 * cosR - ly0 * sinR);
@@ -235,7 +249,6 @@ export default class TilemapRenderer {
         const cosR = Math.cos(rData.rotation);
         const sinR = Math.sin(rData.rotation);
 
-        const visibleCellsCount = (range.maxX - range.minX + 1) * (range.maxY - range.minY + 1);
         const placedTiles = tm._placedTiles || [];
 
         const src = this._reusableSource;
@@ -245,25 +258,18 @@ export default class TilemapRenderer {
         const opt = this._reusableOptions;
         opt.filterMode = filterMode;
 
-        // Adaptive spatial query:
-        // When viewport covers fewer cells than placed tiles, iterate the visible grid coordinates (Spatial Culling).
-        // When zoomed out or sparse, iterate placed tiles and cull individually.
-        if (visibleCellsCount <= placedTiles.length) {
-            for (let y = range.minY; y <= range.maxY; y++) {
-                for (let x = range.minX; x <= range.maxX; x++) {
-                    const tileId = tm.data[`${x},${y}`];
-                    if (!tileId || tileId <= 0) continue;
+        // Iterate placed tiles with fast AABB viewport bounds check (zero heap string allocations)
+        const minX = range.minX;
+        const maxX = range.maxX;
+        const minY = range.minY;
+        const maxY = range.maxY;
+        const totalPlaced = placedTiles.length;
 
-                    this._renderSingleTile(tileId, x, y, rData, scaledTileW, scaledTileH, cosR, sinR, tilesetCols, baseOpacity, dragState, asset, proj, src, opt);
-                }
-            }
-        } else {
-            for (let i = 0; i < placedTiles.length; i++) {
-                const pt = placedTiles[i];
-                if (pt.x < range.minX || pt.x > range.maxX || pt.y < range.minY || pt.y > range.maxY) continue;
+        for (let i = 0; i < totalPlaced; i++) {
+            const pt = placedTiles[i];
+            if (pt.x < minX || pt.x > maxX || pt.y < minY || pt.y > maxY) continue;
 
-                this._renderSingleTile(pt.tileId, pt.x, pt.y, rData, scaledTileW, scaledTileH, cosR, sinR, tilesetCols, baseOpacity, dragState, asset, proj, src, opt);
-            }
+            this._renderSingleTile(pt.tileId, pt.x, pt.y, rData, scaledTileW, scaledTileH, cosR, sinR, tilesetCols, baseOpacity, dragState, asset, proj, src, opt);
         }
 
         this.image?.flush();

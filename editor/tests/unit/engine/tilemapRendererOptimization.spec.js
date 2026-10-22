@@ -182,4 +182,33 @@ describe('TilemapRenderer Performance Optimizations', () => {
         // At scale 0.05, 32px tile is 1.6px on screen (< 5px threshold) -> grid drawing is safely skipped
         expect(shape.drawLine).not.toHaveBeenCalled();
     });
+
+    it('calculates unrotated tile quad vertices using fast-path additions without trigonometric multiplications', () => {
+        const image = createMockImage();
+        const shape = createMockShape();
+        const game = createMockGame(0, 0, 1, 800, 600);
+        const renderer = new TilemapRenderer(image, shape, game);
+
+        const rData = {
+            tfX: 100,
+            tfY: 200,
+            scaleX: 1,
+            scaleY: 1,
+            rotation: 0,
+            tileW: 32,
+            tileH: 32
+        };
+
+        const v = renderer._setTileQuadVertices(rData, 32, 32, 1, 0, 2, 3);
+        // gx=2 => local x=64, tfX=100 => tl.x=164, tr.x=196
+        // gy=3 => local y=96, tfY=200 => tl.y=296, bl.y=328
+        expect(v.tl.x).toBe(164);
+        expect(v.tl.y).toBe(296);
+        expect(v.tr.x).toBe(196);
+        expect(v.tr.y).toBe(296);
+        expect(v.bl.x).toBe(164);
+        expect(v.bl.y).toBe(328);
+        expect(v.br.x).toBe(196);
+        expect(v.br.y).toBe(328);
+    });
 });

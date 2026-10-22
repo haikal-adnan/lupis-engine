@@ -29,16 +29,16 @@ export function useTilemapLogic() {
     return sceneStore.activeScene.entities.find(e => String(e.id) === String(id)) || null;
   });
 
-  // Auto-close tab if entity becomes a prefab
+  // Auto-close tab if entity becomes a prefab or deleted
   watch(
-    [() => workspaceStore.activeTab, selectedEntity],
-    ([activeTab, entity]) => {
+    [() => workspaceStore.activeTab, () => selectedEntity.value?.id, () => selectedEntity.value?.prefabId],
+    ([activeTab, entityId, prefabId]) => {
       if (activeTab?.type !== 'tilemap') return;
-      if (!entity || entity.prefabId) {
+      if (!entityId || prefabId) {
         workspaceStore.closeTab(activeTab.id);
       }
     },
-    { immediate: true, deep: true }
+    { immediate: true }
   );
 
   const hasTilemap = computed(() => !!selectedEntity.value?.components?.Tilemap);
