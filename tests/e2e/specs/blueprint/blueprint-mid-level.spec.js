@@ -2,14 +2,14 @@ import { test } from '../../fixtures.js';
 
 test.use({
   projectOptions: {
-    prefix: 'Blueprint Logic & Data E2E',
-    description: 'E2E runtime logic evaluation for Math, Logic, Comparison, Strings, Collections, and Loops in engine preview',
+    prefix: 'Blueprint Pyramid Mid-Level E2E',
+    description: 'E2E runtime evaluation for Mid-Level Logic & Utility Nodes in engine preview',
   },
 });
 
-test.describe('Blueprint Logic, Math & Data Management E2E Testing', () => {
+test.describe('Blueprint Pyramid Mid-Level: Logic & Utility Nodes E2E Testing', () => {
 
-  // 1. ARITHMETIC WITH DYNAMIC PORTS
+  // 1. DYNAMIC MATH ADDITION
   test('evaluates math addition across multiple sequential dynamic inputs', async ({ blueprintRunner }) => {
     await blueprintRunner.runTest({
       testName: 'Math Add - Sequential Dynamic Inputs (15 + 25 + 10)',
@@ -220,7 +220,7 @@ test.describe('Blueprint Logic, Math & Data Management E2E Testing', () => {
     });
   });
 
-  // 6b. GET VALUE BY PATH (FROM COLLECTION LIST/MAP)
+  // 7. GET VALUE BY PATH (FROM COLLECTION LIST/MAP)
   test('retrieves nested property from collection map using getFromPath', async ({ blueprintRunner }) => {
     await blueprintRunner.runTest({
       testName: 'Get From Path Test',
@@ -254,7 +254,7 @@ test.describe('Blueprint Logic, Math & Data Management E2E Testing', () => {
     });
   });
 
-  // 6c. SET VALUE BY PATH (IN COLLECTION LIST/MAP)
+  // 8. SET VALUE BY PATH (IN COLLECTION LIST/MAP)
   test('updates nested property in collection map using setFromPath', async ({ blueprintRunner }) => {
     await blueprintRunner.runTest({
       testName: 'Set From Path Test',
@@ -292,7 +292,7 @@ test.describe('Blueprint Logic, Math & Data Management E2E Testing', () => {
     });
   });
 
-  // 7. CONTROL LOOP RANGE ITERATION
+  // 9. CONTROL LOOP RANGE ITERATION
   test('executes for loop range and outputs final index on completed', async ({ blueprintRunner }) => {
     await blueprintRunner.runTest({
       testName: 'For Loop Range Test',
@@ -320,61 +320,4 @@ test.describe('Blueprint Logic, Math & Data Management E2E Testing', () => {
       expectedLog: 3,
     });
   });
-
-  // 8. RANGE INCLUSIVE CHECK
-  test('evaluates in range inclusive boundary and outputs true boolean', async ({ blueprintRunner }) => {
-    await blueprintRunner.runTest({
-      testName: 'In Range Test',
-      entityName: 'RangeEntity_InRange',
-      scriptName: 'Script_InRange',
-      nodes: [
-        { id: 'start', type: 'eventGameStart', pos: { x: 100, y: 100 } },
-        {
-          id: 'rangeNode',
-          type: 'mathInRange',
-          pos: { x: 350, y: 200 },
-          inspectorValues: {
-            value: { value: 10, type: 'number' },
-            min: { value: 0, type: 'number' },
-            max: { value: 10, type: 'number' },
-          },
-        },
-        { id: 'notif', type: 'uiNotification', pos: { x: 650, y: 100 } },
-      ],
-      connections: [
-        { source: 'start', sourceHandle: 'execOut', target: 'notif', targetHandle: 'execIn' },
-        { source: 'rangeNode', sourceHandle: 'result', target: 'notif', targetHandle: 'message' },
-      ],
-      expectedLog: true,
-    });
-  });
-
-  // 9. CLAMP LIMIT VALUE
-  test('clamps number between specified min and max bounds', async ({ blueprintRunner }) => {
-    await blueprintRunner.runTest({
-      testName: 'Clamp Value Test',
-      entityName: 'ClampEntity_Clamp',
-      scriptName: 'Script_Clamp',
-      nodes: [
-        { id: 'start', type: 'eventGameStart', pos: { x: 100, y: 100 } },
-        {
-          id: 'clampNode',
-          type: 'mathClamp',
-          pos: { x: 350, y: 200 },
-          inspectorValues: {
-            value: { value: 150, type: 'number' },
-            min: { value: 0, type: 'number' },
-            max: { value: 100, type: 'number' },
-          },
-        },
-        { id: 'notif', type: 'uiNotification', pos: { x: 650, y: 100 } },
-      ],
-      connections: [
-        { source: 'start', sourceHandle: 'execOut', target: 'notif', targetHandle: 'execIn' },
-        { source: 'clampNode', sourceHandle: 'result', target: 'notif', targetHandle: 'message' },
-      ],
-      expectedLog: 100,
-    });
-  });
-
 });

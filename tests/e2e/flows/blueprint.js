@@ -41,7 +41,7 @@ export class BlueprintTestRunner {
     nodes = [],
     variableBindings = [],
     connections = [],
-    action, // <-- Tambahkan parameter ini
+    action, // Optional action callback in preview popup
     expectedLog,
     expectedSource = 'Notification',
   }) {

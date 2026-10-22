@@ -105,10 +105,9 @@ export class NodeInspectorPage {
     await deleteBtn.click();
 
     const confirmModal = this.page.getByTestId('base-confirm');
-    if (await confirmModal.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await confirmModal.getByTestId('confirm-action-button').click();
-      await expect(confirmModal).toHaveCount(0);
-    }
+    await expect(confirmModal).toBeVisible();
+    await confirmModal.getByTestId('confirm-action-button').click();
+    await expect(confirmModal).toHaveCount(0);
   }
 
   get customBadge() {
@@ -300,13 +299,13 @@ export class NodeInspectorPage {
     await row.hover();
 
     const directBtn = row.getByTestId('node-inspector-input-port-remove-btn');
-    if (await directBtn.isVisible().catch(() => false)) {
+    if (await directBtn.isVisible()) {
       await directBtn.click();
       return;
     }
 
     const menuTrigger = row.getByTestId('node-inspector-input-port-menu-trigger');
-    if (await menuTrigger.isVisible().catch(() => false)) {
+    if (await menuTrigger.isVisible()) {
       await menuTrigger.click();
       const deleteItem = this.page.getByRole('button', { name: /delete port/i });
       await expect(deleteItem).toBeVisible();
@@ -320,13 +319,13 @@ export class NodeInspectorPage {
     await row.hover();
 
     const directBtn = row.getByTestId('node-inspector-output-port-remove-btn');
-    if (await directBtn.isVisible().catch(() => false)) {
+    if (await directBtn.isVisible()) {
       await directBtn.click();
       return;
     }
 
     const menuTrigger = row.getByTestId('node-inspector-output-port-menu-trigger');
-    if (await menuTrigger.isVisible().catch(() => false)) {
+    if (await menuTrigger.isVisible()) {
       await menuTrigger.click();
       const deleteItem = this.page.getByRole('button', { name: /delete port/i });
       await expect(deleteItem).toBeVisible();

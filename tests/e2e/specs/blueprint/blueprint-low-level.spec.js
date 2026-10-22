@@ -2,12 +2,12 @@ import { test } from '../../fixtures.js';
 
 test.use({
   projectOptions: {
-    prefix: 'Blueprint Entity & Transform E2E',
-    description: 'E2E runtime logic evaluation for Entity lifecycle, Transform properties, and Layer management in engine preview',
+    prefix: 'Blueprint Pyramid Low-Level E2E',
+    description: 'E2E runtime evaluation for Low-Level Atomic & Primitive Nodes in engine preview',
   },
 });
 
-test.describe('Blueprint Entity, Transform & Layer Management E2E Testing', () => {
+test.describe('Blueprint Pyramid Low-Level: Atomic & Primitive Nodes E2E Testing', () => {
 
   // 1. SPAWN PREFAB ENTITY
   test('spawns prefab entity into world layer and triggers execution out', async ({
@@ -248,7 +248,7 @@ test.describe('Blueprint Entity, Transform & Layer Management E2E Testing', () =
       ],
       nodes: [
         { id: 'start', type: 'eventGameStart', pos: { x: 100, y: 100 } },
-        { id: 'varTarget', type: 'variableGet', pos: { x: 100, y: 200 } },
+        { id: 'varLayer', type: 'variableGet', pos: { x: 100, y: 200 } },
         { id: 'varZ', type: 'variableGet', pos: { x: 100, y: 300 } },
         {
           id: 'setLayer',
@@ -265,19 +265,116 @@ test.describe('Blueprint Entity, Transform & Layer Management E2E Testing', () =
         { id: 'notif', type: 'uiNotification', pos: { x: 850, y: 100 } },
       ],
       variableBindings: [
-        { nodeId: 'varTarget', varName: 'targetLayer' },
+        { nodeId: 'varLayer', varName: 'targetLayer' },
         { nodeId: 'varZ', varName: 'newZIndex' },
       ],
       connections: [
         { source: 'start', sourceHandle: 'execOut', target: 'setLayer', targetHandle: 'execIn' },
-        { source: 'varTarget', sourceHandle: 'value', target: 'setLayer', targetHandle: 'targetLayer' },
+        { source: 'varLayer', sourceHandle: 'value', target: 'setLayer', targetHandle: 'targetLayer' },
         { source: 'varZ', sourceHandle: 'value', target: 'setLayer', targetHandle: 'zIndex' },
         { source: 'setLayer', sourceHandle: 'execOut', target: 'notif', targetHandle: 'execIn' },
-        { source: 'varTarget', sourceHandle: 'value', target: 'getLayer', targetHandle: 'targetLayer' },
+        { source: 'varLayer', sourceHandle: 'value', target: 'getLayer', targetHandle: 'targetLayer' },
         { source: 'getLayer', sourceHandle: 'zIndex', target: 'notif', targetHandle: 'message' },
       ],
       expectedLog: 7,
     });
   });
 
+  // 7. KINEMATIC MOVE AND SLIDE
+  test('applies velocity and executes move and slide flow safely', async ({
+    blueprintRunner,
+    hierarchyCrud,
+    inspectorCrud,
+    hierarchy,
+  }) => {
+    const worldLayer = hierarchy.nodeByName('World Layer');
+    const physEntity = await hierarchyCrud.entity.create(worldLayer, 'empty');
+    await physEntity.click();
+    await inspectorCrud.configureObjectMetaData({ scriptId: 'FrozenEntity' });
+    await inspectorCrud.setupPhysics('Dynamic (Standard)', 1.0, 1.0);
+
+    await blueprintRunner.runTest({
+      testName: 'Move and Slide - Frozen Entity Early Return',
+      entityName: 'FrozenEntity',
+      scriptName: 'Script_MoveSlide_Frozen',
+      variables: [
+        { name: 'targetId', type: 'string', value: 'self' },
+        { name: 'freezeVal', type: 'boolean', value: true },
+        { name: 'vx', type: 'number', value: 300 },
+      ],
+      nodes: [
+        { id: 'start', type: 'eventGameStart', pos: { x: 100, y: 100 } },
+        { id: 'varTarget', type: 'variableGet', pos: { x: 100, y: 200 } },
+        { id: 'varFreeze', type: 'variableGet', pos: { x: 100, y: 300 } },
+        { id: 'varVx', type: 'variableGet', pos: { x: 100, y: 400 } },
+        {
+          id: 'setPhysics',
+          type: 'setPhysics',
+          pos: { x: 350, y: 100 },
+          dynamicInputs: ['Is Frozen'],
+        },
+        { id: 'moveSlide', type: 'moveAndSlide', pos: { x: 600, y: 100 } },
+        {
+          id: 'notif',
+          type: 'uiNotification',
+          pos: { x: 850, y: 100 },
+          inspectorValues: { message: { value: 'Frozen Move Slide Passed', type: 'string' } },
+        },
+      ],
+      variableBindings: [
+        { nodeId: 'varTarget', varName: 'targetId' },
+        { nodeId: 'varFreeze', varName: 'freezeVal' },
+        { nodeId: 'varVx', varName: 'vx' },
+      ],
+      connections: [
+        { source: 'start', sourceHandle: 'execOut', target: 'setPhysics', targetHandle: 'execIn' },
+        { source: 'varTarget', sourceHandle: 'value', target: 'setPhysics', targetHandle: 'targetEntity' },
+        { source: 'varFreeze', sourceHandle: 'value', target: 'setPhysics', targetHandle: 'isFrozen' },
+        { source: 'setPhysics', sourceHandle: 'execOut', target: 'moveSlide', targetHandle: 'execIn' },
+        { source: 'varTarget', sourceHandle: 'value', target: 'moveSlide', targetHandle: 'targetEntity' },
+        { source: 'varVx', sourceHandle: 'value', target: 'moveSlide', targetHandle: 'velocityX' },
+        { source: 'moveSlide', sourceHandle: 'execOut', target: 'notif', targetHandle: 'execIn' },
+      ],
+      expectedLog: 'Frozen Move Slide Passed',
+    });
+  });
+
+  // 8. COLLIDER & SOLID COLLISION
+  test('reads self entity ID and triggers execution out via solid collision', async ({
+    blueprintRunner,
+    hierarchyCrud,
+    inspectorCrud,
+    hierarchy,
+  }) => {
+    const worldLayer = hierarchy.nodeByName('World Layer');
+    const testerEntity = await hierarchyCrud.entity.create(worldLayer, 'empty');
+    await testerEntity.click();
+    await inspectorCrud.configureObjectMetaData({ scriptId: 'Solid_Tester_ID' });
+    await inspectorCrud.setupCollider();
+
+    await blueprintRunner.runTest({
+      testName: 'Solid Collision - Read Self ID',
+      entityName: 'Solid_Tester_ID',
+      scriptName: 'Script_Solid_ReadSelf',
+      variables: [
+        { name: 'targetId', type: 'string', value: 'self' },
+      ],
+      nodes: [
+        { id: 'start', type: 'eventGameStart', pos: { x: 100, y: 100 } },
+        { id: 'varTarget', type: 'variableGet', pos: { x: 100, y: 250 } },
+        { id: 'solidNode', type: 'solidCollision', pos: { x: 350, y: 150 } },
+        { id: 'notif', type: 'uiNotification', pos: { x: 650, y: 100 } },
+      ],
+      variableBindings: [
+        { nodeId: 'varTarget', varName: 'targetId' },
+      ],
+      connections: [
+        { source: 'start', sourceHandle: 'execOut', target: 'solidNode', targetHandle: 'execIn' },
+        { source: 'varTarget', sourceHandle: 'value', target: 'solidNode', targetHandle: 'targetEntity' },
+        { source: 'solidNode', sourceHandle: 'execOut', target: 'notif', targetHandle: 'execIn' },
+        { source: 'solidNode', sourceHandle: 'selfEntity', target: 'notif', targetHandle: 'message' },
+      ],
+      expectedLog: 'Solid_Tester_ID',
+    });
+  });
 });

@@ -90,6 +90,10 @@ export class NodeGraphPage {
     return this.page.locator(`[data-testid="graph-node"][data-node-type="${type}"]`);
   }
 
+  firstNodeByType(type) {
+    return this.nodesByType(type).first();
+  }
+
   nodeById(id) {
     return this.page.locator(`[data-testid="graph-node"][data-node-id="${id}"]`);
   }

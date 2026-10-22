@@ -14,11 +14,10 @@ All node scripts (`data.code`) and custom scripts must adhere to strict runtime 
 2. **Zero Defensive Null-Checking**: Node logic must never use optional chaining (`?.`), nullish coalescing (`??`), or silent fallbacks (`if (!entity) return;`) for required engine invariants.
 3. **Fail-Fast Invariant Enforcement**: When an entity, component, or data type is required, nodes must use `context.assert.*`. Assertion failures throw a `ScriptAssertionError`, emit a structured `console:error` event, and halt execution immediately without downstream flow leakage.
 4. **Context-Aware Logging**: All logging, warnings, and errors must use `context.console.*`, which automatically tags each message with the active Scene, Entity, Script, and Node metadata.
-5. **4-Tier Hierarchy Alignment**: Node scripts consume Context based on their architectural tier:
-   - **Tier 1 (Preset Nodes)**: Consume `context.toolkit.*` via a compact facade dispatcher.
-   - **Tier 2 (Extensible Nodes)**: Consume modular sub-methods on `context.toolkit.*` paired with open, customizable execution pipelines in CodePanel.
-   - **Tier 3 (Logic & Utility Nodes)**: Pure data, arithmetic, or flow control with minimal/no subsystem mutations.
-   - **Tier 4 (Atomic & Primitive Nodes)**: 1:1 direct calls to subsystem domain facades (`context.entity`, `context.audio`, `context.collider`, etc.).
+5. **3-Tier Hierarchy Alignment**: Node scripts consume Context based on their architectural tier:
+   - **Tier 1 (High-Level Nodes)**: Consume `context.toolkit.*` (as compact facade dispatchers or modular extensible pipelines with event hooks).
+   - **Tier 2 (Mid-Level Nodes)**: Pure data, arithmetic, or flow control with minimal/no subsystem mutations (`node.data.code` self-contained).
+   - **Tier 3 (Low-Level Nodes)**: 1:1 direct calls to subsystem domain facades (`context.entity`, `context.audio`, `context.collider`, etc.).
 6. **Context Generality & Reusability Gate**:
    - `ContextSystem` must remain strictly **general, domain-focused, and node-agnostic**.
    - **Prohibition of Single-Node Coupling**: Never inject functions or state into `ContextSystem` (including `context.toolkit`) that are only used by one specific node and cannot be reused across other nodes or game systems.
@@ -297,7 +296,7 @@ Enables loose communication across different entities and script graphs without 
 
 ### 5.16 `context.toolkit` (High-Level Gameplay & Modular Helpers)
 
-The **Toolkit Facade** (`core/Toolkit/ToolkitContextHandler.js`) provides high-level domain helpers for **Tier 1 (Preset)** and **Tier 2 (Extensible)** nodes, encapsulating complex multi-frame mechanics, physics accumulators, and multi-subsystem orchestration.
+The **Toolkit Facade** (`core/Toolkit/ToolkitContextHandler.js`) provides high-level domain helpers for **Tier 1 (High-Level)** nodes, encapsulating complex multi-frame mechanics, physics accumulators, and multi-subsystem orchestration.
 
 | Sub-Domain | Method / Property | Description |
 | :--- | :--- | :--- |
@@ -308,7 +307,7 @@ The **Toolkit Facade** (`core/Toolkit/ToolkitContextHandler.js`) provides high-l
 | `combat` | `processPlatformerCombat(state, inputs, outputs, ctx, node)` | Multi-hit combo state machine, hitbox timing windows, and target knockback. |
 | `combat` | `processEnemyCombat(state, inputs, outputs, ctx, node)` | AI enemy combat attack cycles, proximity triggers, and hurtbox reactions. |
 | `ai` | `processChaser(state, inputs, outputs, ctx)` | Target tracking, line-of-sight checks, and pursuit steering. |
-| `collectable` | `processCollectable(state, inputs, outputs, ctx)` | *(Tier 1 & 2)* Auto-pickup overlap detection, idle sinusoidal bobbing, audio trigger, collection animation, and lifecycle despawn/respawn. |
+| `collectable` | `processCollectable(state, inputs, outputs, ctx)` | *(Tier 1)* Auto-pickup overlap detection, idle sinusoidal bobbing, audio trigger, collection animation, and lifecycle despawn/respawn. |
 | `collectable` | `applyBobbing(entity, dt)` | Modular sub-function: Applies smooth floating sine wave to entity transform. |
 | `collectable` | `checkOverlap(entity, tag)` | Modular sub-function: Queries active overlapping collectors by tag. |
 | `collectable` | `playAnimationAndDestroy(entity, clip)` | Modular sub-function: Plays collection clip and cleans up entity after animation ends. |
@@ -317,10 +316,10 @@ The **Toolkit Facade** (`core/Toolkit/ToolkitContextHandler.js`) provides high-l
 
 ## 6. Examples: Writing Nodes Across the Tiers
 
-### 6.1 Tier 4 Example: Atomic Subsystem Action (`moveAndSlide`)
+### 6.1 Tier 3 Example: Atomic Subsystem Action (`moveAndSlide`)
 
 ```javascript
-// Tier 4 Contract: 1:1 direct subsystem facade call, fail-fast assertions
+// Tier 3 Contract: 1:1 direct subsystem facade call, fail-fast assertions
 const targetId = inputs.targetEntity;
 const moveSpeed = context.assert.isNumber(inputs.speed, 'Speed must be a valid number');
 
@@ -343,10 +342,10 @@ outputs.execOut = true;
 return;
 ```
 
-### 6.2 Tier 2 Example: Extensible Modular Pipeline (`collectableItem`)
+### 6.2 Tier 1 Example: Extensible Modular Pipeline (`collectableItem`)
 
 ```javascript
-// Tier 2 Contract: Modular toolkit helper + open editable pipeline in CodePanel
+// Tier 1 Contract: Modular toolkit helper + open editable pipeline in CodePanel
 const helper = context.toolkit && context.toolkit.collectable;
 if (!helper) return;
 

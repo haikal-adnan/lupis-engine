@@ -76,35 +76,33 @@ graph TD
 
 ---
 
-## 3. The 4-Tier Node Hierarchy & Authoring Contract
+## 3. The 3-Tier Node Hierarchy & Authoring Contract
 
-To balance **out-of-the-box convenience for beginners** and **unlimited extensibility for advanced engineers**, Lupis Engine structures all visual script nodes and custom behaviors into a **4-Tier Node Hierarchy**:
+To balance **out-of-the-box convenience for beginners** and **unlimited extensibility for advanced engineers**, Lupis Engine structures all visual script nodes and custom behaviors into a **3-Tier Node Hierarchy**:
 
 ```mermaid
 graph TD
-    T1["Tier 1: Preset Nodes (High Level)<br/>All-in-One Plug & Play"] --> T2["Tier 2: Extensible Nodes (Mid-High Level)<br/>Configurable Semi-Open Templates"]
-    T2 --> T3["Tier 3: Logic & Utility Nodes (Mid Level)<br/>Control Flow & Data Crunching"]
-    T3 --> T4["Tier 4: Atomic / Primitive Nodes (Low Level)<br/>Direct Engine Subsystem Facades"]
+    T1["Tier 1: High-Level Nodes<br/>Preset & Extensible Gameplay Systems"] --> T2["Tier 2: Mid-Level Nodes<br/>Pure Logic, Control Flow & Collections"]
+    T2 --> T3["Tier 3: Low-Level Nodes<br/>Direct Engine Subsystem Facades"]
 ```
 
 ### 3.1 Tier Classification Matrix
 
 | Tier | Name | Target Persona | Code Location | CodePanel View | State & Complexity | Example Nodes |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Tier 1** | **Preset Nodes**<br>*(High Level)* | Beginner / Solo Dev | `core/Toolkit/` Helper | Minimal Dispatcher (3–5 lines) | Stateful, multi-frame, full domain orchestration | `platformerController`, `vnDialogueRunner`, `volumeSliderManager` |
-| **Tier 2** | **Extensible Nodes**<br>*(Mid-High Level)* | Gameplay Designer / Scripter | `core/Toolkit/` (Modular) + Blueprint Code | Semi-Open Modular Pipeline | Stateful, hook-driven, parameter-rich | `collectableItem`, `platformerCombat`, `enemyPatrol` |
-| **Tier 3** | **Logic & Utility Nodes**<br>*(Mid Level)* | All Developers | Inline `node.data.code` | Full Transparent Code | Pure, stateless, flow/math only | `logicBranch` (If/Else), `logicDelay`, `mathDistance2d`, `listShuffle` |
-| **Tier 4** | **Atomic / Primitive Nodes**<br>*(Low Level)* | Advanced Programmer / System Architect | Inline `node.data.code` | Direct Context Facade Calls | Single instruction, 1:1 Engine API mapping | `entityDestroy`, `playAudio`, `getTransform`, `setSprite` |
+| **Tier 1** | **High-Level Nodes**<br>*(Presets & Extensible Templates)* | Gameplay Designer / Solo Dev | `core/Toolkit/` + Blueprint Code | Dispatcher or Modular Pipeline | Stateful, multi-frame, full domain orchestration & event hooks | `platformerController`, `topDownController`, `collectableItem`, `platformerCombat`, `volumeSliderManager` |
+| **Tier 2** | **Mid-Level Nodes**<br>*(Pure Logic & Utility)* | All Developers | Inline `node.data.code` | Full Transparent Code | Pure, stateless, flow/math/collections | `logicBranch` (If/Else), `logicLoop`, `mathDistance2d`, `listShuffle`, `getFromPath` |
+| **Tier 3** | **Low-Level Nodes**<br>*(Atomic Primitives)* | Advanced Programmer / System Architect | Inline `node.data.code` | Direct Context Facade Calls | Single instruction, 1:1 Engine API mapping | `entityDestroy`, `entitySpawn`, `getTransform`, `setLayer`, `moveAndSlide`, `solidCollision` |
 
 ---
 
 ### 3.2 Tier Invariants & Authoring Guidelines
 
-#### Tier 1: Preset Nodes (High-Level Plug & Play)
-* **Goal**: Provide instant, zero-wire functionality for recurring game systems.
+#### Tier 1: High-Level Nodes (Preset & Extensible Gameplay Systems)
+* **Goal**: Provide rich, complete gameplay systems—both as instant plug-and-play presets and configurable semi-open templates.
 * **Authoring Rule**:
-  1. The entire multi-frame state machine and logic **must live in `core/Toolkit/<Domain>/<Domain>Helper.js`**.
-  2. The blueprint `data.code` must only act as a dispatch bridge:
+  1. The multi-frame state machine and helper logic **must live in `core/Toolkit/<Domain>/<Domain>Helper.js`**.
+  2. **Preset Pattern (Plug & Play)**: For all-in-one nodes (`platformerController`, `volumeSliderManager`), the blueprint `data.code` acts as a clean dispatcher:
      ```javascript
      const helper = context.toolkit && context.toolkit.platformer;
      if (helper) {
@@ -112,13 +110,7 @@ graph TD
      }
      return;
      ```
-  3. All persistent transient states must be attached to the target entity (`target._controller`) or node state (`context.state`).
-
-#### Tier 2: Extensible Nodes (Mid-High Level Templates)
-* **Goal**: Deliver high-level functionality while giving users complete freedom to inspect, customize, or override the behavior.
-* **Authoring Rule**:
-  1. The underlying helper in `core/Toolkit/` **must expose granular, modular sub-functions** (e.g. `helper.applyBobbing()`, `helper.checkOverlap()`, `helper.playAnimationAndDestroy()`).
-  2. The code shown in the **Code Panel** must not be an opaque one-liner; it should present a clean, commented modular pipeline that users can edit or extend:
+  3. **Extensible Template Pattern**: For customizable gameplay nodes (`collectableItem`, `platformerCombat`, `enemyChaser`), the helper exposes modular sub-functions (`helper.applyBobbing()`, `helper.checkOverlap()`, `helper.playAnimationAndDestroy()`), and the **Code Panel** displays a clean, commented modular pipeline:
      ```javascript
      const helper = context.toolkit.collectable;
      
@@ -144,18 +136,18 @@ graph TD
      outputs.execOut = true;
      return;
      ```
-  3. **Mandatory Event Hooks**: Must provide execution output pins (e.g., `onCollected`, `onHit`, `onAnimationEnd`, `onRespawn`) so users can wire custom behaviors without touching code.
-  4. **Inversion of Control**: Must support non-destructive options like `despawnAction: 'none'` or `canCollect: false` so external graph nodes can control lifecycle.
+  4. **Mandatory Event Hooks**: Must provide execution output pins (`onCollected`, `onHit`, `onAnimationEnd`, etc.) so users can wire custom behaviors without touching code.
+  5. **Inversion of Control**: Must support non-destructive parameters (`despawnAction: 'none'`, `canCollect: false`) so external graph nodes can control lifecycle.
 
-#### Tier 3: Logic & Utility Nodes (Mid Level)
-* **Goal**: Provide standard control flow, arithmetic, data transforms, and timers.
+#### Tier 2: Mid-Level Nodes (Logic & Utility)
+* **Goal**: Provide standard control flow, arithmetic, data transforms, and collection operations.
 * **Authoring Rule**:
   1. Must be **100% self-contained** inside `node.data.code`.
   2. Must **never mutate engine subsystem entities** directly.
   3. Pure math nodes must have zero execution pins (pure data).
   4. Flow nodes (`branch`, `loop`, `delay`) route execution wires via `context.triggerFlow(portName)` or outputs assignments.
 
-#### Tier 4: Atomic & Primitive Nodes (Low Level)
+#### Tier 3: Low-Level Nodes (Atomic & Primitive)
 * **Goal**: Direct 1:1 exposure of Context System APIs (`context.entity`, `context.audio`, `context.collider`, etc.).
 * **Authoring Rule**:
   1. Must perform **one single atomic action**.
@@ -169,21 +161,42 @@ graph TD
 ```mermaid
 flowchart TD
     Start["New Node Requirement"] --> Q1{"Does it directly wrap 1 engine subsystem API?"}
-    Q1 -- Yes --> T4["Build Tier 4: Atomic / Primitive Node<br/>(Direct Context Facade)"]
+    Q1 -- Yes --> T3["Build Tier 3: Low-Level Node<br/>(Direct Context Facade)"]
     Q1 -- No --> Q2{"Is it pure math, data conversion, or generic flow control?"}
-    Q2 -- Yes --> T3["Build Tier 3: Logic & Utility Node<br/>(Self-Contained Inline Code)"]
+    Q2 -- Yes --> T2["Build Tier 2: Mid-Level Node<br/>(Self-Contained Inline Code)"]
     Q2 -- No --> QR{"Is the helper logic reusable across multiple nodes or entities?"}
     QR -- No --> SingleNode["Write directly in node.data.code<br/>(Do NOT pollute ContextSystem)"]
-    QR -- Yes --> Q3{"Should users be able to easily tweak the internal pipeline in CodePanel?"}
-    Q3 -- Yes --> T2["Build Tier 2: Extensible Node<br/>(Modular Helper + Open CodePanel Pipeline)"]
-    Q3 -- No --> T1["Build Tier 1: Preset Node<br/>(All-in-One Blackbox Helper)"]
+    QR -- Yes --> T1["Build Tier 1: High-Level Node<br/>(Toolkit Helper Preset or Extensible Template)"]
 ```
+
+---
+
+### 3.4 The 3-Tier Testing Pyramid Architecture
+
+The Playwright runtime test suite (`tests/e2e/specs/blueprint/`) maps directly 1:1 to the **3-Tier Hierarchy**:
+
+```mermaid
+graph TD
+    High["Tier 1 (High-Level): Preset & Extensible Gameplay Systems<br/>blueprint-high-level.spec.js"]
+    Mid["Tier 2 (Mid-Level): Pure Logic, Utility & Collections<br/>blueprint-mid-level.spec.js"]
+    Low["Tier 3 (Low-Level): Atomic Engine Facades & Primitives<br/>blueprint-low-level.spec.js"]
+    High --> Mid
+    Mid --> Low
+```
+
+| Layer / Tier | Authoring Tier | Spec File | Verification Scope | Example Test Scenarios |
+| :--- | :--- | :--- | :--- | :--- |
+| **High Level** | **Tier 1 (High-Level)** | `blueprint-high-level.spec.js` | Full composite gameplay systems, multi-frame state machines, controllers, and hook-driven extensible templates with customizable lifecycle policies. | • `platformerController` horizontal run & jump state<br>• `topDownController` 8-direction velocity & facing<br>• `volumeSliderManager` multi-channel audio setup<br>• `collectableItem` detection, hooks & IoC override<br>• `platformerCombat` hurtbox & health pipeline<br>• `enemyChaser` target acquisition & patrol |
+| **Mid Level** | **Tier 2 (Mid-Level)** | `blueprint-mid-level.spec.js` | Pure stateless evaluations, control flow routing, arithmetic, string templating, collection queries/mutations, nested object path access, and loops. | • `mathAdd` dynamic multi-port summation<br>• `mathDistance2d` Euclidean vector distance<br>• `logicCompare` + `logicBranch` conditional routing<br>• `stringFormat` positional token interpolation<br>• `listGet` & `mapGet` collection retrieval<br>• `getFromPath` & `setFromPath` nested property traversal<br>• `logicLoop` range index accumulation |
+| **Low Level** | **Tier 3 (Low-Level)** | `blueprint-low-level.spec.js` | Direct 1:1 Context facade operations, entity lifecycle commands, transform spatial mutations, scene graph layer sorting, kinematic physics velocity, and solid collision response. | • `entitySpawn` prefab instantiation<br>• `entityDestroy` removal with cascading child cleanup<br>• `entityClone` entity duplication<br>• `getTransform` / `setTransform` position & rotation<br>• `setLayer` Z-index sorting<br>• `moveAndSlide` kinematic velocity integration<br>• `solidCollision` obstacle containment |
+
+Each test compiles a visual graph within an isolated scenario, boots the WebGL preview popup, and verifies real runtime behavior through deterministic notification logs. See [`tests/BLUEPRINT-TESTING.md`](../tests/BLUEPRINT-TESTING.md) for detailed guidelines.
 
 ---
 
 ## 4. Visual Scripting Contracts & Port Rules
 
-To guarantee runtime safety, deterministic compilation, and zero downstream errors, all nodes across all 4 tiers must adhere to these strict contracts:
+To guarantee runtime safety, deterministic compilation, and zero downstream errors, all nodes across all 3 tiers must adhere to these strict contracts:
 
 1. **T-001 Alphanumeric Port IDs**:
    All port IDs must strictly match `/^[A-Za-z][A-Za-z0-9]{0,31}$/`. Spaces, dashes (`-`), dots (`.`), and underscores (`_`) are strictly forbidden.

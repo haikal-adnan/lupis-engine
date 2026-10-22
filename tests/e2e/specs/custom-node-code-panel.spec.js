@@ -30,7 +30,7 @@ test.describe('Custom Node & Code Panel E2E Testing Suite', () => {
     const customNodes = nodeGraph.nodesByType('customScript');
     await expect(customNodes).toHaveCount(1);
 
-    const customNode = customNodes.first();
+    const customNode = nodeGraph.firstNodeByType('customScript');
     const nodeId = await customNode.getAttribute('data-node-id');
     await nodeGraph.selectNodeById(nodeId);
 
@@ -58,7 +58,7 @@ test.describe('Custom Node & Code Panel E2E Testing Suite', () => {
     // 5. Add Custom Dynamic Ports
     await nodeInspector.addDynamicInputPort();
     const addedPortId = await nodeInspector.inputPortIdAt(-1);
-    await expect(addedPortId).toBeTruthy();
+    expect(addedPortId).toBeTruthy();
 
     // Rename the port to speedMultiplier
     await nodeInspector.renameInputPort(addedPortId, 'speedMultiplier');
@@ -89,7 +89,7 @@ test.describe('Custom Node & Code Panel E2E Testing Suite', () => {
   }) => {
     // 1. Create Custom Node
     await nodeLibrary.addCustomNodeViaLibrary();
-    const customNode = nodeGraph.nodesByType('customScript').first();
+    const customNode = nodeGraph.firstNodeByType('customScript');
     const nodeId = await customNode.getAttribute('data-node-id');
     await nodeGraph.selectNodeById(nodeId);
 
@@ -178,7 +178,7 @@ test.describe('Custom Node & Code Panel E2E Testing Suite', () => {
   }) => {
     // 1. Create custom node
     await nodeLibrary.addCustomNodeViaLibrary();
-    const customNode = nodeGraph.nodesByType('customScript').first();
+    const customNode = nodeGraph.firstNodeByType('customScript');
     const nodeId = await customNode.getAttribute('data-node-id');
     await nodeGraph.selectNodeById(nodeId);
 

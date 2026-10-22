@@ -211,6 +211,9 @@ node tests/scripts/check-standard.mjs
 
 # End-to-end browser tests (Playwright)
 cd tests && npm test
+
+# Blueprint runtime testing pyramid (Playwright)
+cd tests && npm run test:blueprint
 ```
 
 ## Contributing

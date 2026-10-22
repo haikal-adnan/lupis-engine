@@ -24,7 +24,7 @@ spec expects that message.
 
 ```
 e2e/
-├── specs/blueprint/        <- specs live here (blueprint-*.spec.js)
+├── specs/blueprint/        <- specs live here (blueprint-low-level.spec.js, blueprint-mid-level.spec.js, blueprint-high-level.spec.js)
 ├── flows/blueprint.js      <- BlueprintTestRunner (scenario executor)
 ├── flows/nodeGraph.js      <- NodeGraphCrudObject: openGraphForEntity, spawnDirect, connectDirect
 ├── flows/nodeInspector.js  <- NodeInspectorCrudObject: ports, values, modifiers
@@ -120,11 +120,10 @@ project through the automatic fixture, so tests are independent and can run in p
 
 ## 5. Step-by-step: adding a test for a new node
 
-1. **Pick the category file.** Add to the appropriate category spec:
-   - `blueprint-logic-data.spec.js` (Math, Logic, Comparison, Strings, Collections, Loops)
-   - `blueprint-entity-transform.spec.js` (Entities, Transform, Layers)
-   - `blueprint-lifecycle-events.spec.js` (Lifecycle, Events, Signals, Scenes)
-   - `blueprint-physics-gameplay.spec.js` (Physics, Colliders, Camera, Animator, Input)
+1. **Pick the tier spec based on the 3-Tier Testing Pyramid (`docs/visual-scripting.md`):**
+   - `blueprint-low-level.spec.js` (Tier 3: Low-Level / Atomic & Primitive Nodes — direct engine subsystem facades: entity lifecycle, transform, physics, solid collision, layer)
+   - `blueprint-mid-level.spec.js` (Tier 2: Mid-Level / Logic & Utility Nodes — pure math, distance, compare/branch, strings, lists, maps, path navigation, loops)
+   - `blueprint-high-level.spec.js` (Tier 1: High-Level Nodes — plug-and-play controllers and customizable gameplay templates: `platformerController`, `topDownController`, `volumeSliderManager`, `collectableItem`, `platformerCombat`, `enemyChaser`)
 2. **Find a similar existing test** and copy it as a template.
 3. **Design the smallest graph** that proves one behavior: `eventGameStart` -> (your node) -> `uiNotification`.
 4. **Make the result observable.** The message printed by `uiNotification` must depend on the behavior under
@@ -134,8 +133,8 @@ project through the automatic fixture, so tests are independent and can run in p
    For branch tests, use different messages per path (`'Greater Success'` vs `'False Branch Executed'`).
 6. **Run it alone**, then repeat to check for flakiness:
    ```
-   npx playwright test e2e/specs/blueprint/blueprint-logic-data.spec.js -g "your test title"
-   npx playwright test e2e/specs/blueprint/blueprint-logic-data.spec.js -g "your test title" --repeat-each=10
+   npx playwright test e2e/specs/blueprint/blueprint-mid-level.spec.js -g "your test title"
+   npx playwright test e2e/specs/blueprint/blueprint-mid-level.spec.js -g "your test title" --repeat-each=10
    ```
 7. **Run the standard check** before committing: `node scripts/check-standard.mjs`.
 
