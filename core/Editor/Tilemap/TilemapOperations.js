@@ -1,6 +1,21 @@
 import { bus } from '../../Util/EventBus.js';
 import { TilemapMath } from './TilemapMath.js';
 
+function areTileDataEqual(dataA, dataB) {
+    if (dataA === dataB) return true;
+    if (!dataA || !dataB) return false;
+
+    const keysA = Object.keys(dataA);
+    const keysB = Object.keys(dataB);
+    if (keysA.length !== keysB.length) return false;
+
+    for (let i = 0; i < keysA.length; i++) {
+        const key = keysA[i];
+        if (dataA[key] !== dataB[key]) return false;
+    }
+    return true;
+}
+
 export class TilemapOperations {
     constructor() {
         this.blockBucket = false;
@@ -183,7 +198,7 @@ export class TilemapOperations {
         if (!entity || !tm?.data) return;
         if (stroke.entityId !== entity.id) return;
 
-        if (JSON.stringify(stroke.initialData) !== JSON.stringify(tm.data)) {
+        if (!areTileDataEqual(stroke.initialData, tm.data)) {
             this.applyDataChange(entity, tm, tm.data, stroke.initialData, `${stroke.toolName} Tiles`);
         }
     }
@@ -207,6 +222,7 @@ export class TilemapOperations {
     applyDataChange(entity, tm, newData, oldData = null, description = 'Update Tilemap') {
         tm.data = newData;
         entity.isDirty = true;
+        TilemapMath.invalidateBounds(tm);
         const payload = { entityId: entity.id, newData: newData };
         if (oldData) {
             payload.oldData = oldData;

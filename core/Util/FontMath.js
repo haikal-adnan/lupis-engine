@@ -1,4 +1,12 @@
+const _measureCaches = new WeakMap();
+
 export default class FontMath {
+    static clearCache(font) {
+        if (font && typeof font === "object") {
+            _measureCaches.delete(font);
+        }
+    }
+
     static measureText(font, str, size, options = {}) {
         if (!font || !font.chars || !font.info || str === undefined || str === null || str === "") {
             const fallbackW = Number(options.width) > 0 ? Number(options.width) : (Number(options.maxWidth) > 0 ? Number(options.maxWidth) : 0);
@@ -9,10 +17,6 @@ export default class FontMath {
             };
         }
 
-        const scale = size / font.info.size;
-        const lineH = (font.common?.lineHeight || 10) * scale * (options.lineSpacing || 1.2);
-        const lSpacing = (options.letterSpacing || 0) * scale;
-        
         const limitWidth = (Number(options.width) > 0) 
             ? Number(options.width) 
             : ((Number(options.maxWidth) > 0) ? Number(options.maxWidth) : Infinity);
@@ -21,6 +25,29 @@ export default class FontMath {
         const maxLine = Math.max(1, Number(options.maxLine ?? 1));
         const effectiveMaxLine = autoLine ? Infinity : maxLine;
         const isEllipsis = options.overflow === "ellipsis";
+        const lineSpacing = Number(options.lineSpacing || 1.2);
+        const letterSpacing = Number(options.letterSpacing || 0);
+        const overflow = options.overflow || "";
+
+        let fontCache = null;
+        let cacheKey = null;
+
+        if (typeof font === "object" && font !== null && !options.noCache) {
+            fontCache = _measureCaches.get(font);
+            if (!fontCache) {
+                fontCache = new Map();
+                _measureCaches.set(font, fontCache);
+            }
+            cacheKey = `${str}|${size}|${limitWidth}|${autoLine ? 1 : 0}|${effectiveMaxLine}|${lineSpacing}|${letterSpacing}|${overflow}`;
+            const cached = fontCache.get(cacheKey);
+            if (cached) {
+                return cached;
+            }
+        }
+
+        const scale = size / font.info.size;
+        const lineH = (font.common?.lineHeight || 10) * scale * lineSpacing;
+        const lSpacing = letterSpacing * scale;
 
         const getCharAdvance = (ch) => {
             const g = font.chars[ch.charCodeAt(0)];
@@ -211,7 +238,7 @@ export default class FontMath {
         const calculatedHeight = Math.max(0, yMax - yMin);
         const finalWidth = (limitWidth !== Infinity) ? limitWidth : Math.max(0, xMax - xMin);
 
-        return {
+        const result = {
             lines,
             lineWidths,
             wordCounts,
@@ -222,5 +249,19 @@ export default class FontMath {
             baseline: (font.common?.base || 0) * scale,
             lineH
         };
+
+        if (fontCache && cacheKey) {
+            if (fontCache.size >= 1000) {
+                const iter = fontCache.keys();
+                for (let k = 0; k < 200; k++) {
+                    const n = iter.next();
+                    if (n.done) break;
+                    fontCache.delete(n.value);
+                }
+            }
+            fontCache.set(cacheKey, result);
+        }
+
+        return result;
     }
 }

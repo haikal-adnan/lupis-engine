@@ -86,10 +86,10 @@ export default class EditorRenderer {
             color,
             this.projection,
             rotation,
-            1, 1, 
-            0, 0, 
-            1,  
-            false, false, 
+            textOptions.scaleX ?? 1, textOptions.scaleY ?? 1, 
+            textOptions.pivotX ?? 0, textOptions.pivotY ?? 0, 
+            textOptions.alpha ?? 1,  
+            textOptions.flipX ?? false, textOptions.flipY ?? false, 
             options 
         );
     }

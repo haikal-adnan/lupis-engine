@@ -64,9 +64,6 @@ export function ApplyResizeToEntity(ent, world, force = false) {
                 tr._lastAutoLine = autoLine;
                 tr._lastOverflow = overflow;
                 tr._lastWidth = currentWidth;
-
-                if (t.scaleX !== undefined) t.scaleX = 1;
-                if (t.scaleY !== undefined) t.scaleY = 1;
             }
         }
     }

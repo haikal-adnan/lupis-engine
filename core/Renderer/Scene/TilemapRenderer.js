@@ -18,6 +18,17 @@ export default class TilemapRenderer {
             selectionBlue: HexToVec4("#008cff"),
             selectionBlueFill: HexToVec4("#008cff33")
         };
+
+        // Reusable structures for zero-allocation quad rendering
+        this._reusableVertices = {
+            tl: { x: 0, y: 0 },
+            tr: { x: 0, y: 0 },
+            bl: { x: 0, y: 0 },
+            br: { x: 0, y: 0 }
+        };
+        this._reusableSource = { x: 0, y: 0, w: 0, h: 0 };
+        this._reusableOptions = { opacity: 1, filterMode: 'pixelated' };
+        this._reusableRange = { minX: 0, maxX: 0, minY: 0, maxY: 0, isCulled: false };
     }
 
     _calculateRenderData(entity, tm, world) {
@@ -85,9 +96,130 @@ export default class TilemapRenderer {
         };
     }
 
+    _setTileQuadVertices(rData, scaledTileW, scaledTileH, cosR, sinR, gx, gy) {
+        const lx0 = gx * scaledTileW;
+        const lx1 = (gx + 1) * scaledTileW;
+        const ly0 = gy * scaledTileH;
+        const ly1 = (gy + 1) * scaledTileH;
+
+        const v = this._reusableVertices;
+        v.tl.x = rData.tfX + (lx0 * cosR - ly0 * sinR);
+        v.tl.y = rData.tfY + (lx0 * sinR + ly0 * cosR);
+        v.tr.x = rData.tfX + (lx1 * cosR - ly0 * sinR);
+        v.tr.y = rData.tfY + (lx1 * sinR + ly0 * cosR);
+        v.bl.x = rData.tfX + (lx0 * cosR - ly1 * sinR);
+        v.bl.y = rData.tfY + (lx0 * sinR + ly1 * cosR);
+        v.br.x = rData.tfX + (lx1 * cosR - ly1 * sinR);
+        v.br.y = rData.tfY + (lx1 * sinR + ly1 * cosR);
+        return v;
+    }
+
+    _getViewportGridRange(rData, bounds) {
+        const range = this._reusableRange;
+        const cam = this.game?.camera;
+        const canvas = this.game?.renderer?.canvas;
+
+        if (!cam || !canvas) {
+            range.minX = bounds.minX;
+            range.maxX = bounds.maxX;
+            range.minY = bounds.minY;
+            range.maxY = bounds.maxY;
+            range.isCulled = false;
+            return range;
+        }
+
+        const scaledTileW = rData.tileW * rData.scaleX;
+        const scaledTileH = rData.tileH * rData.scaleY;
+        if (scaledTileW === 0 || scaledTileH === 0) {
+            range.isCulled = true;
+            return range;
+        }
+
+        const camScale = Math.max(0.001, cam.scale || 1);
+        const halfViewW = (canvas.width / camScale) * 0.5;
+        const halfViewH = (canvas.height / camScale) * 0.5;
+
+        const left = cam.x - halfViewW;
+        const right = cam.x + halfViewW;
+        const top = cam.y - halfViewH;
+        const bottom = cam.y + halfViewH;
+
+        const invRot = -rData.rotation;
+        const cosInv = Math.cos(invRot);
+        const sinInv = Math.sin(invRot);
+
+        let minLocalX = Infinity, maxLocalX = -Infinity;
+        let minLocalY = Infinity, maxLocalY = -Infinity;
+
+        // Top-left corner
+        let dx = left - rData.tfX;
+        let dy = top - rData.tfY;
+        let lx = (dx * cosInv) - (dy * sinInv);
+        let ly = (dx * sinInv) + (dy * cosInv);
+        if (lx < minLocalX) minLocalX = lx; if (lx > maxLocalX) maxLocalX = lx;
+        if (ly < minLocalY) minLocalY = ly; if (ly > maxLocalY) maxLocalY = ly;
+
+        // Top-right corner
+        dx = right - rData.tfX;
+        dy = top - rData.tfY;
+        lx = (dx * cosInv) - (dy * sinInv);
+        ly = (dx * sinInv) + (dy * cosInv);
+        if (lx < minLocalX) minLocalX = lx; if (lx > maxLocalX) maxLocalX = lx;
+        if (ly < minLocalY) minLocalY = ly; if (ly > maxLocalY) maxLocalY = ly;
+
+        // Bottom-right corner
+        dx = right - rData.tfX;
+        dy = bottom - rData.tfY;
+        lx = (dx * cosInv) - (dy * sinInv);
+        ly = (dx * sinInv) + (dy * cosInv);
+        if (lx < minLocalX) minLocalX = lx; if (lx > maxLocalX) maxLocalX = lx;
+        if (ly < minLocalY) minLocalY = ly; if (ly > maxLocalY) maxLocalY = ly;
+
+        // Bottom-left corner
+        dx = left - rData.tfX;
+        dy = bottom - rData.tfY;
+        lx = (dx * cosInv) - (dy * sinInv);
+        ly = (dx * sinInv) + (dy * cosInv);
+        if (lx < minLocalX) minLocalX = lx; if (lx > maxLocalX) maxLocalX = lx;
+        if (ly < minLocalY) minLocalY = ly; if (ly > maxLocalY) maxLocalY = ly;
+
+        const g0x = minLocalX / scaledTileW;
+        const g1x = maxLocalX / scaledTileW;
+        const g0y = minLocalY / scaledTileH;
+        const g1y = maxLocalY / scaledTileH;
+
+        const minGx = Math.floor(Math.min(g0x, g1x)) - 1;
+        const maxGx = Math.ceil(Math.max(g0x, g1x)) + 1;
+        const minGy = Math.floor(Math.min(g0y, g1y)) - 1;
+        const maxGy = Math.ceil(Math.max(g0y, g1y)) + 1;
+
+        const finalMinX = Math.max(minGx, bounds.minX);
+        const finalMaxX = Math.min(maxGx, bounds.maxX);
+        const finalMinY = Math.max(minGy, bounds.minY);
+        const finalMaxY = Math.min(maxGy, bounds.maxY);
+
+        if (finalMinX > finalMaxX || finalMinY > finalMaxY) {
+            range.isCulled = true;
+            return range;
+        }
+
+        range.minX = finalMinX;
+        range.maxX = finalMaxX;
+        range.minY = finalMinY;
+        range.maxY = finalMaxY;
+        range.isCulled = false;
+        return range;
+    }
+
     _drawTiles(entity, tm, rData, world, proj, editors, externalOpacity = 1.0) {
         const asset = world?.assets?.textures?.[tm.assetId];
         if (!asset || !tm.data) return;
+
+        const bounds = TilemapMath.getBounds(tm);
+        if (!bounds.hasTiles) return;
+
+        const range = this._getViewportGridRange(rData, bounds);
+        if (range.isCulled) return;
 
         const textureWidth = asset.width;
         const tilesetCols = Math.floor(textureWidth / rData.tileW);
@@ -103,35 +235,62 @@ export default class TilemapRenderer {
         const cosR = Math.cos(rData.rotation);
         const sinR = Math.sin(rData.rotation);
 
-        for (const [key, tileId] of Object.entries(tm.data)) {
-            if (!tileId || tileId <= 0) continue;
+        const visibleCellsCount = (range.maxX - range.minX + 1) * (range.maxY - range.minY + 1);
+        const placedTiles = tm._placedTiles || [];
 
-            const [xStr, yStr] = key.split(',');
-            const x = Number(xStr);
-            const y = Number(yStr);
+        const src = this._reusableSource;
+        src.w = rData.tileW;
+        src.h = rData.tileH;
 
-            let currentOpacity = baseOpacity;
-            if (dragState) {
-                const isInSource = x >= dragState.sourceX && x < dragState.sourceX + dragState.w &&
-                                   y >= dragState.sourceY && y < dragState.sourceY + dragState.h;
-                if (isInSource) currentOpacity *= 0.4;
+        const opt = this._reusableOptions;
+        opt.filterMode = filterMode;
+
+        // Adaptive spatial query:
+        // When viewport covers fewer cells than placed tiles, iterate the visible grid coordinates (Spatial Culling).
+        // When zoomed out or sparse, iterate placed tiles and cull individually.
+        if (visibleCellsCount <= placedTiles.length) {
+            for (let y = range.minY; y <= range.maxY; y++) {
+                for (let x = range.minX; x <= range.maxX; x++) {
+                    const tileId = tm.data[`${x},${y}`];
+                    if (!tileId || tileId <= 0) continue;
+
+                    this._renderSingleTile(tileId, x, y, rData, scaledTileW, scaledTileH, cosR, sinR, tilesetCols, baseOpacity, dragState, asset, proj, src, opt);
+                }
             }
+        } else {
+            for (let i = 0; i < placedTiles.length; i++) {
+                const pt = placedTiles[i];
+                if (pt.x < range.minX || pt.x > range.maxX || pt.y < range.minY || pt.y > range.maxY) continue;
 
-            const actualIndex = tileId - 1;
-            const srcX = (actualIndex % tilesetCols) * rData.tileW;
-            const srcY = Math.floor(actualIndex / tilesetCols) * rData.tileH;
-
-            const vertices = this._getTileQuadVertices(rData, scaledTileW, scaledTileH, cosR, sinR, x, y);
-
-            this.image.drawQuad(
-                asset,
-                { x: srcX, y: srcY, w: rData.tileW, h: rData.tileH },
-                vertices,
-                { opacity: currentOpacity, filterMode },
-                proj
-            );
+                this._renderSingleTile(pt.tileId, pt.x, pt.y, rData, scaledTileW, scaledTileH, cosR, sinR, tilesetCols, baseOpacity, dragState, asset, proj, src, opt);
+            }
         }
+
         this.image?.flush();
+    }
+
+    _renderSingleTile(tileId, x, y, rData, scaledTileW, scaledTileH, cosR, sinR, tilesetCols, baseOpacity, dragState, asset, proj, src, opt) {
+        let currentOpacity = baseOpacity;
+        if (dragState) {
+            const isInSource = x >= dragState.sourceX && x < dragState.sourceX + dragState.w &&
+                               y >= dragState.sourceY && y < dragState.sourceY + dragState.h;
+            if (isInSource) currentOpacity *= 0.4;
+        }
+
+        const actualIndex = tileId - 1;
+        src.x = (actualIndex % tilesetCols) * rData.tileW;
+        src.y = Math.floor(actualIndex / tilesetCols) * rData.tileH;
+        opt.opacity = currentOpacity;
+
+        const vertices = this._setTileQuadVertices(rData, scaledTileW, scaledTileH, cosR, sinR, x, y);
+
+        this.image.drawQuad(
+            asset,
+            src,
+            vertices,
+            opt,
+            proj
+        );
     }
 
     _drawEditorGizmos(entity, tm, rData, world, proj, editors) {
@@ -151,50 +310,61 @@ export default class TilemapRenderer {
         const cosR = Math.cos(rData.rotation);
         const sinR = Math.sin(rData.rotation);
 
-        // 1. Grid Lines Viewport
+        // 1. Grid Lines Viewport with LOD and line clamping
         const showGrid = editors?.tilemapContext?.showGrid ?? true;
         if (showGrid) {
             const camScale = Math.max(0.001, cam.scale || 1);
-            const gridThickness = 1 / camScale;
-            const halfViewW = (canvas.width / camScale) / 2 + absTileW * 2;
-            const halfViewH = (canvas.height / camScale) / 2 + absTileH * 2;
-            const viewRadius = Math.hypot(halfViewW, halfViewH);
+            const screenTileW = absTileW * camScale;
+            const screenTileH = absTileH * camScale;
 
-            const centerGridX = Math.floor((cam.x - rData.tfX) / scaledTileW);
-            const centerGridY = Math.floor((cam.y - rData.tfY) / scaledTileH);
+            // Only draw grid if tiles are at least 5 pixels on screen to avoid performance drops and visual noise
+            if (screenTileW >= 5 && screenTileH >= 5) {
+                let step = 1;
+                if (screenTileW < 12) step = 4;
+                else if (screenTileW < 20) step = 2;
 
-            const spanX = Math.ceil(viewRadius / absTileW) + 2;
-            const spanY = Math.ceil(viewRadius / absTileH) + 2;
+                const gridThickness = 1 / camScale;
+                const halfViewW = (canvas.width / camScale) * 0.5 + absTileW * 2;
+                const halfViewH = (canvas.height / camScale) * 0.5 + absTileH * 2;
+                const viewRadius = Math.hypot(halfViewW, halfViewH);
 
-            const minX = centerGridX - spanX;
-            const maxX = centerGridX + spanX;
-            const minY = centerGridY - spanY;
-            const maxY = centerGridY + spanY;
+                const centerGridX = Math.floor((cam.x - rData.tfX) / scaledTileW);
+                const centerGridY = Math.floor((cam.y - rData.tfY) / scaledTileH);
 
-            for (let i = minX; i <= maxX; i++) {
-                const xLocal = i * scaledTileW;
+                const maxSpan = 120;
+                const spanX = Math.min(Math.ceil(viewRadius / absTileW) + 2, maxSpan);
+                const spanY = Math.min(Math.ceil(viewRadius / absTileH) + 2, maxSpan);
+
+                const minX = Math.floor((centerGridX - spanX) / step) * step;
+                const maxX = Math.ceil((centerGridX + spanX) / step) * step;
+                const minY = Math.floor((centerGridY - spanY) / step) * step;
+                const maxY = Math.ceil((centerGridY + spanY) / step) * step;
+
                 const yLocalStart = minY * scaledTileH;
                 const yLocalEnd = maxY * scaledTileH;
 
-                const x1 = rData.tfX + (xLocal * cosR - yLocalStart * sinR);
-                const y1 = rData.tfY + (xLocal * sinR + yLocalStart * cosR);
-                const x2 = rData.tfX + (xLocal * cosR - yLocalEnd * sinR);
-                const y2 = rData.tfY + (xLocal * sinR + yLocalEnd * cosR);
+                for (let i = minX; i <= maxX; i += step) {
+                    const xLocal = i * scaledTileW;
+                    const x1 = rData.tfX + (xLocal * cosR - yLocalStart * sinR);
+                    const y1 = rData.tfY + (xLocal * sinR + yLocalStart * cosR);
+                    const x2 = rData.tfX + (xLocal * cosR - yLocalEnd * sinR);
+                    const y2 = rData.tfY + (xLocal * sinR + yLocalEnd * cosR);
 
-                this.shape.drawLine(x1, y1, x2, y2, this.colors.grid, gridThickness, proj);
-            }
+                    this.shape.drawLine(x1, y1, x2, y2, this.colors.grid, gridThickness, proj);
+                }
 
-            for (let j = minY; j <= maxY; j++) {
-                const yLocal = j * scaledTileH;
                 const xLocalStart = minX * scaledTileW;
                 const xLocalEnd = maxX * scaledTileW;
 
-                const x1 = rData.tfX + (xLocalStart * cosR - yLocal * sinR);
-                const y1 = rData.tfY + (xLocalStart * sinR + yLocal * cosR);
-                const x2 = rData.tfX + (xLocalEnd * cosR - yLocal * sinR);
-                const y2 = rData.tfY + (xLocalEnd * sinR + yLocal * cosR);
+                for (let j = minY; j <= maxY; j += step) {
+                    const yLocal = j * scaledTileH;
+                    const x1 = rData.tfX + (xLocalStart * cosR - yLocal * sinR);
+                    const y1 = rData.tfY + (xLocalStart * sinR + yLocal * cosR);
+                    const x2 = rData.tfX + (xLocalEnd * cosR - yLocal * sinR);
+                    const y2 = rData.tfY + (xLocalEnd * sinR + yLocal * cosR);
 
-                this.shape.drawLine(x1, y1, x2, y2, this.colors.grid, gridThickness, proj);
+                    this.shape.drawLine(x1, y1, x2, y2, this.colors.grid, gridThickness, proj);
+                }
             }
         }
 
@@ -246,6 +416,12 @@ export default class TilemapRenderer {
             const drawGridY = gridY - (ds.offY || 0);
 
             const filterMode = tm.filterMode || "pixelated";
+            const src = this._reusableSource;
+            src.w = rData.tileW;
+            src.h = rData.tileH;
+            const opt = this._reusableOptions;
+            opt.opacity = 0.8;
+            opt.filterMode = filterMode;
 
             for (let dy = 0; dy < ds.h; dy++) {
                 for (let dx = 0; dx < ds.w; dx++) {
@@ -255,16 +431,16 @@ export default class TilemapRenderer {
                     const ty = drawGridY + dy;
 
                     const actualIndex = tileId - 1;
-                    const srcX = (actualIndex % tilesetCols) * rData.tileW;
-                    const srcY = Math.floor(actualIndex / tilesetCols) * rData.tileH;
+                    src.x = (actualIndex % tilesetCols) * rData.tileW;
+                    src.y = Math.floor(actualIndex / tilesetCols) * rData.tileH;
 
-                    const vertices = this._getTileQuadVertices(rData, scaledTileW, scaledTileH, cosR, sinR, tx, ty);
+                    const vertices = this._setTileQuadVertices(rData, scaledTileW, scaledTileH, cosR, sinR, tx, ty);
 
                     this.image.drawQuad(
                         asset,
-                        { x: srcX, y: srcY, w: rData.tileW, h: rData.tileH },
+                        src,
                         vertices,
-                        { opacity: 0.8, filterMode },
+                        opt,
                         proj
                     );
                 }
@@ -327,21 +503,28 @@ export default class TilemapRenderer {
         const cosR = Math.cos(rData.rotation);
         const sinR = Math.sin(rData.rotation);
 
+        const src = this._reusableSource;
+        src.w = rData.tileW;
+        src.h = rData.tileH;
+        const opt = this._reusableOptions;
+        opt.opacity = 0.6;
+        opt.filterMode = filterMode;
+
         for (let dy = 0; dy < selection.h; dy++) {
             for (let dx = 0; dx < selection.w; dx++) {
                 const tx = gridX + dx;
                 const ty = gridY + dy;
                 
-                const vertices = this._getTileQuadVertices(rData, scaledTileW, scaledTileH, cosR, sinR, tx, ty);
+                const vertices = this._setTileQuadVertices(rData, scaledTileW, scaledTileH, cosR, sinR, tx, ty);
 
-                const srcX = (selection.x + dx) * rData.tileW;
-                const srcY = (selection.y + dy) * rData.tileH;
+                src.x = (selection.x + dx) * rData.tileW;
+                src.y = (selection.y + dy) * rData.tileH;
                 
                 this.image.drawQuad(
                     asset, 
-                    { x: srcX, y: srcY, w: rData.tileW, h: rData.tileH }, 
+                    src, 
                     vertices, 
-                    { opacity: 0.6, filterMode }, 
+                    opt, 
                     proj
                 );
             }

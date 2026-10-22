@@ -550,6 +550,7 @@ export default class RenderUtils {
                     trans.height = rawT.height;
                 }
             }
+            textOptions.measurement = measurement;
         }
 
         renderQueue.push({

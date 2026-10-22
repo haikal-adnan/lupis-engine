@@ -34,55 +34,114 @@ export class TilemapMath {
     }
 
     /**
-     * Hitung Bounding Box aktual berdasarkan sebaran tile terisi.
+     * Invalidate cached bounds so it will be recalculated on next query.
+     */
+    static invalidateBounds(tm) {
+        if (tm) tm._boundsDirty = true;
+    }
+
+    /**
+     * Hitung Bounding Box aktual berdasarkan sebaran tile terisi dengan caching terintegrasi.
      */
     static getBounds(tm) {
+        if (!tm) {
+            return {
+                minX: 0, maxX: 0, minY: 0, maxY: 0,
+                offsetX: 0, offsetY: 0,
+                width: 32,
+                height: 32,
+                hasTiles: false
+            };
+        }
+
         const tileW = Number(tm.width) || 32;
         const tileH = Number(tm.height) || 32;
 
-        const keys = Object.keys(tm?.data || {});
-        const activeKeys = [];
-
-        for (const key of keys) {
-            const id = tm.data[key];
-            if (id && id > 0) activeKeys.push(key);
+        // Fast-path: return cached bounds if data reference hasn't changed and not marked dirty
+        if (
+            !tm._boundsDirty &&
+            tm._bounds &&
+            tm._boundsDataRef === tm.data &&
+            tm._boundsTileW === tileW &&
+            tm._boundsTileH === tileH
+        ) {
+            return tm._bounds;
         }
 
-        if (activeKeys.length === 0) {
-            return {
+        const data = tm.data;
+        if (!data) {
+            const defaultBounds = {
                 minX: 0, maxX: 0, minY: 0, maxY: 0,
                 offsetX: 0, offsetY: 0,
                 width: tileW,
                 height: tileH,
                 hasTiles: false
             };
+            tm._bounds = defaultBounds;
+            tm._boundsDataRef = data;
+            tm._boundsTileW = tileW;
+            tm._boundsTileH = tileH;
+            tm._boundsDirty = false;
+            tm._placedTiles = [];
+            return defaultBounds;
         }
 
         let minX = Infinity, maxX = -Infinity;
         let minY = Infinity, maxY = -Infinity;
+        let hasTiles = false;
+        const placedTiles = [];
 
-        for (const key of activeKeys) {
-            const [xStr, yStr] = key.split(',');
-            const x = Number(xStr);
-            const y = Number(yStr);
+        // Single-pass extraction without intermediate arrays or split() allocations
+        for (const key in data) {
+            const id = data[key];
+            if (!id || id <= 0) continue;
 
+            const commaIdx = key.indexOf(',');
+            if (commaIdx === -1) continue;
+
+            const x = parseInt(key.substring(0, commaIdx), 10);
+            const y = parseInt(key.substring(commaIdx + 1), 10);
+            if (isNaN(x) || isNaN(y)) continue;
+
+            hasTiles = true;
             if (x < minX) minX = x;
             if (x > maxX) maxX = x;
             if (y < minY) minY = y;
             if (y > maxY) maxY = y;
+
+            placedTiles.push({ x, y, tileId: id });
         }
 
-        const cols = maxX - minX + 1;
-        const rows = maxY - minY + 1;
+        let bounds;
+        if (!hasTiles) {
+            bounds = {
+                minX: 0, maxX: 0, minY: 0, maxY: 0,
+                offsetX: 0, offsetY: 0,
+                width: tileW,
+                height: tileH,
+                hasTiles: false
+            };
+        } else {
+            const cols = maxX - minX + 1;
+            const rows = maxY - minY + 1;
+            bounds = {
+                minX, maxX, minY, maxY,
+                offsetX: minX * tileW,
+                offsetY: minY * tileH,
+                width: cols * tileW,
+                height: rows * tileH,
+                hasTiles: true
+            };
+        }
 
-        return {
-            minX, maxX, minY, maxY,
-            offsetX: minX * tileW,
-            offsetY: minY * tileH,
-            width: cols * tileW,
-            height: rows * tileH,
-            hasTiles: true
-        };
+        tm._bounds = bounds;
+        tm._boundsDataRef = data;
+        tm._boundsTileW = tileW;
+        tm._boundsTileH = tileH;
+        tm._boundsDirty = false;
+        tm._placedTiles = placedTiles;
+
+        return bounds;
     }
 
     static getTilemapQuadVertices(absPos, tm, rotationRad, scaleX, scaleY) {

@@ -161,6 +161,31 @@ describe('Shape and Tilemap Math Calculations Unit Tests', () => {
             expect(boundsZero.hasTiles).toBe(false);
         });
 
+        it('caches bounds and reuses cache until invalidated or data changes', () => {
+            const tm = {
+                width: 32,
+                height: 32,
+                data: { '0,0': 1, '5,5': 2 }
+            };
+
+            const bounds1 = TilemapMath.getBounds(tm);
+            expect(bounds1.hasTiles).toBe(true);
+            expect(bounds1.maxX).toBe(5);
+
+            // Second call returns identical cached reference
+            const bounds2 = TilemapMath.getBounds(tm);
+            expect(bounds2).toBe(bounds1);
+            expect(tm._placedTiles.length).toBe(2);
+
+            // Invalidate bounds
+            TilemapMath.invalidateBounds(tm);
+            tm.data['10,10'] = 3;
+            const bounds3 = TilemapMath.getBounds(tm);
+            expect(bounds3).not.toBe(bounds1);
+            expect(bounds3.maxX).toBe(10);
+            expect(tm._placedTiles.length).toBe(3);
+        });
+
         it('getMouseGridPosition calculates integer grid cell from canvas mouse input', () => {
             const entity = {
                 components: {
