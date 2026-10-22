@@ -69,6 +69,8 @@
             v-for="varName in detectedVariables" 
             :key="varName"
             class="bg-secondary/20 p-2 rounded border border-border relative"
+            data-testid="node-inspector-port-row"
+            :data-port-id="varName"
           >
             <div class="flex items-center justify-between mb-1">
               <span class="text-[10px] font-mono font-bold text-blue-400">{ {{ varName }} }</span>
@@ -83,6 +85,7 @@
                 @update:model-value="(v) => updateValue(varName, v)"
                 placeholder="Default value..."
                 class="h-7 text-xs w-full bg-background/50 focus:bg-background font-mono"
+                data-testid="node-inspector-port-text-input"
               />
             </div>
           </div>

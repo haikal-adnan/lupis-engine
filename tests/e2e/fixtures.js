@@ -11,6 +11,7 @@ import { AnimatorPage } from './pages/AnimatorPage.js';
 import { VariablePage } from './pages/VariablePage.js';
 import { NodeGraphPage } from './pages/NodeGraphPage.js';
 import { NodeInspectorPage } from './pages/NodeInspectorPage.js';
+import { CodePanelPage } from './pages/CodePanelPage.js';
 import { PreviewPage } from './pages/PreviewPage.js';
 import { SettingsModalPage } from './pages/SettingsModalPage.js';
 
@@ -137,6 +138,10 @@ export const test = base.extend({
 
   nodeInspector: async ({ page, project }, use) => {
     await use(new NodeInspectorPage(page));
+  },
+
+  codePanel: async ({ page, project }, use) => {
+    await use(new CodePanelPage(page));
   },
 
   hierarchyCrud: async ({ page, project }, use) => {

@@ -48,6 +48,14 @@ test.describe('Node Inspector Panel E2E Testing Suite', () => {
     const firstInputId = await nodeInspector.inputPortIdAt(0);
     const firstOutputId = await nodeInspector.outputPortIdAt(0);
 
+    // Safeguard check on system node: port labels are locked (readonly)
+    const inputField = nodeInspector.inputPortRowById(firstInputId).getByTestId('node-inspector-input-port-label-input');
+    await expect(inputField).toHaveAttribute('readonly', '');
+
+    // Convert node to Custom Node to unlock customizable ports
+    await nodeInspector.convertToCustomNode();
+    await expect(inputField).not.toHaveAttribute('readonly', '');
+
     await nodeInspector.renameInputPort(firstInputId, 'Input Utama');
     await nodeInspector.renameOutputPort(firstOutputId, 'Sum Result');
 

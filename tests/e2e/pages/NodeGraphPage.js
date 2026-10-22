@@ -44,6 +44,19 @@ export class NodeGraphPage {
     this.modalCategoryItems = this.modal.getByTestId('node-library-modal-category-items');
     this.modalSearchResults = this.modal.getByTestId('node-library-modal-search-results');
     this.modalItems = this.modalCategoryItems.or(this.modalSearchResults).locator('[data-node-type]');
+    this.addCustomNodeBtn = page.getByTestId('node-library-add-custom-node-btn');
+    this.modalAddCustomNodeBtn = this.modal.getByTestId('node-library-modal-add-custom-btn');
+  }
+
+  async addCustomNodeViaLibrary() {
+    await expect(this.addCustomNodeBtn).toBeVisible();
+    await this.addCustomNodeBtn.click();
+  }
+
+  async addCustomNodeViaModal() {
+    await this.openModal();
+    await expect(this.modalAddCustomNodeBtn).toBeVisible();
+    await this.modalAddCustomNodeBtn.click();
   }
 
   collectPageErrors() {
@@ -277,11 +290,15 @@ export class NodeGraphPage {
     await expect(anyCard).toBeVisible();
   }
 
-  async openCategory(categoryLabel) {
-    await this.ensureCategoryList();
-    const card = this.modal.locator(
+  modalCategoryCardByLabel(categoryLabel) {
+    return this.modal.locator(
       `[data-testid="node-library-modal-category-card"][data-category-label="${categoryLabel}" i]`
     );
+  }
+
+  async openCategory(categoryLabel) {
+    await this.ensureCategoryList();
+    const card = this.modalCategoryCardByLabel(categoryLabel);
     await expect(card).toBeVisible();
     await card.click();
     await expect(this.modalBackBtn).toBeVisible();

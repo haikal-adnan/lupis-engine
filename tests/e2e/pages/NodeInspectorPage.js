@@ -103,6 +103,109 @@ export class NodeInspectorPage {
     const deleteBtn = this.page.getByTestId('node-inspector-header-delete-btn');
     await expect(deleteBtn).toBeVisible();
     await deleteBtn.click();
+
+    const confirmModal = this.page.getByTestId('base-confirm');
+    if (await confirmModal.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await confirmModal.getByTestId('confirm-action-button').click();
+      await expect(confirmModal).toHaveCount(0);
+    }
+  }
+
+  get customBadge() {
+    return this.headerSection.getByTestId('node-inspector-header-custom-badge');
+  }
+
+  get roleSelect() {
+    return this.headerSection.getByTestId('node-inspector-header-role-select');
+  }
+
+  async convertToCustomNode() {
+    const menuTrigger = this.headerSection
+      .getByTestId('node-inspector-header-section-menu-trigger')
+      .or(this.headerSection.getByTestId('property-section-menu-trigger'))
+      .or(this.headerSection.locator('[data-element="section-menu-trigger"]'))
+      .first();
+
+    await menuTrigger.click();
+
+    const setCustomBtn = this.page.getByTestId('node-inspector-header-set-custom-btn');
+    await expect(setCustomBtn).toBeVisible();
+    await setCustomBtn.click();
+    await expect(this.customBadge).toBeVisible();
+  }
+
+  async openCodePanelFromHeader() {
+    const menuTrigger = this.headerSection
+      .getByTestId('node-inspector-header-section-menu-trigger')
+      .or(this.headerSection.getByTestId('property-section-menu-trigger'))
+      .or(this.headerSection.locator('[data-element="section-menu-trigger"]'))
+      .first();
+
+    await menuTrigger.click();
+
+    const openCodeBtn = this.page.getByTestId('node-inspector-header-open-code-btn');
+    await expect(openCodeBtn).toBeVisible();
+    await openCodeBtn.click();
+  }
+
+  async setNodeRole(role) {
+    await this.controls.selectOption('node-inspector-header-role-select', role, this.headerSection);
+  }
+
+  async saveAsBlueprint(blueprintName) {
+    const menuTrigger = this.headerSection
+      .getByTestId('node-inspector-header-section-menu-trigger')
+      .or(this.headerSection.getByTestId('property-section-menu-trigger'))
+      .or(this.headerSection.locator('[data-element="section-menu-trigger"]'))
+      .first();
+
+    await menuTrigger.click();
+
+    const saveBtn = this.page.getByTestId('node-inspector-header-save-custom-btn');
+    await expect(saveBtn).toBeVisible();
+    await saveBtn.click();
+
+    if (blueprintName) {
+      const promptModal = this.page.getByTestId('base-prompt');
+      await expect(promptModal).toBeVisible();
+      const input = promptModal.getByTestId('prompt-input');
+      await input.fill(blueprintName);
+      await promptModal.getByTestId('prompt-confirm-button').click();
+      await expect(promptModal).toHaveCount(0);
+    }
+  }
+
+  async revertToPreset() {
+    const menuTrigger = this.headerSection
+      .getByTestId('node-inspector-header-section-menu-trigger')
+      .or(this.headerSection.getByTestId('property-section-menu-trigger'))
+      .or(this.headerSection.locator('[data-element="section-menu-trigger"]'))
+      .first();
+
+    await menuTrigger.click();
+
+    const revertBtn = this.page.getByTestId('node-inspector-header-revert-preset-btn');
+    await expect(revertBtn).toBeVisible();
+    await revertBtn.click();
+
+    const confirmModal = this.page.getByTestId('base-confirm');
+    await expect(confirmModal).toBeVisible();
+    await confirmModal.getByTestId('confirm-action-button').click();
+    await expect(confirmModal).toHaveCount(0);
+  }
+
+  async changePortDataType(portId, targetType, portCategory = 'input') {
+    const row = portCategory === 'input' ? this.inputPortRowById(portId) : this.outputPortRowById(portId);
+    await expect(row).toBeVisible();
+    const menuTrigger = portCategory === 'input' 
+      ? row.getByTestId('node-inspector-input-port-menu-trigger') 
+      : row.getByTestId('node-inspector-output-port-menu-trigger');
+    await expect(menuTrigger).toBeVisible();
+    await menuTrigger.click();
+
+    const optionBtn = this.page.getByRole('button', { name: new RegExp(`^\\s*${targetType}\\s*$`, 'i') });
+    await expect(optionBtn).toBeVisible();
+    await optionBtn.click();
   }
 
   // =========================================================================
@@ -181,7 +284,6 @@ export class NodeInspectorPage {
     const input = row.getByTestId('node-inspector-input-port-label-input');
     await input.fill(newLabel);
     await input.press('Enter');
-    await input.blur();
   }
 
   async renameOutputPort(portId, newLabel) {
@@ -190,21 +292,46 @@ export class NodeInspectorPage {
     const input = row.getByTestId('node-inspector-output-port-label-input');
     await input.fill(newLabel);
     await input.press('Enter');
-    await input.blur();
   }
 
   async removeInputPort(portId) {
     const row = this.inputPortRowById(portId);
     await expect(row).toBeVisible();
     await row.hover();
-    await row.getByTestId('node-inspector-input-port-remove-btn').click();
+
+    const directBtn = row.getByTestId('node-inspector-input-port-remove-btn');
+    if (await directBtn.isVisible().catch(() => false)) {
+      await directBtn.click();
+      return;
+    }
+
+    const menuTrigger = row.getByTestId('node-inspector-input-port-menu-trigger');
+    if (await menuTrigger.isVisible().catch(() => false)) {
+      await menuTrigger.click();
+      const deleteItem = this.page.getByRole('button', { name: /delete port/i });
+      await expect(deleteItem).toBeVisible();
+      await deleteItem.click();
+    }
   }
 
   async removeOutputPort(portId) {
     const row = this.outputPortRowById(portId);
     await expect(row).toBeVisible();
     await row.hover();
-    await row.getByTestId('node-inspector-output-port-remove-btn').click();
+
+    const directBtn = row.getByTestId('node-inspector-output-port-remove-btn');
+    if (await directBtn.isVisible().catch(() => false)) {
+      await directBtn.click();
+      return;
+    }
+
+    const menuTrigger = row.getByTestId('node-inspector-output-port-menu-trigger');
+    if (await menuTrigger.isVisible().catch(() => false)) {
+      await menuTrigger.click();
+      const deleteItem = this.page.getByRole('button', { name: /delete port/i });
+      await expect(deleteItem).toBeVisible();
+      await deleteItem.click();
+    }
   }
 
   async addDynamicInputPort(propertyName = null) {

@@ -14,7 +14,11 @@
 
       <div class="px-1 py-1 space-y-3">
         <!-- BASE VALUE (v0) -->
-        <div class="bg-secondary/20 p-2 rounded border border-border relative overflow-hidden group">
+        <div 
+          class="bg-secondary/20 p-2 rounded border border-border relative overflow-hidden group"
+          data-testid="node-inspector-port-row"
+          data-port-id="v0"
+        >
           <div class="flex items-center justify-between mb-1">
             <label class="text-[9px] text-muted-foreground uppercase font-bold">
               Base Value (v0)
@@ -29,6 +33,7 @@
               :model-value="getValue('v0')" 
               @update:model-value="(v) => updateValue('v0', v)"
               class="h-7 text-xs font-mono w-full text-center bg-background/50 focus:bg-background transition-colors"
+              data-testid="node-inspector-port-number-input"
             />
           </div>
         </div>
@@ -39,6 +44,8 @@
             v-for="(op, index) in ops" 
             :key="index" 
             class="relative group"
+            data-testid="node-inspector-port-row"
+            :data-port-id="`v${index + 1}`"
           >
             <div class="absolute -left-[19px] top-1/2 w-4 h-[2px] bg-border"></div>
 
@@ -78,6 +85,7 @@
                     :model-value="getValue(`v${index + 1}`)" 
                     @update:model-value="(v) => updateValue(`v${index + 1}`, v)"
                     class="h-7 text-xs font-mono w-full text-center bg-background/50 focus:bg-background"
+                    data-testid="node-inspector-port-number-input"
                   />
                 </div>
               </div>
