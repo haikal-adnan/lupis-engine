@@ -2,7 +2,7 @@ export default class GLContext {
     constructor(canvas) {
         const opts = {
             alpha: false,
-            antialias: true,
+            antialias: false,
             depth: false,
             stencil: false,
             preserveDrawingBuffer: true,

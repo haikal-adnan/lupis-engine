@@ -130,6 +130,7 @@ export default class RendererManager {
         const bgColorHex = sceneSettings?.backgroundColor || "#222222";
         const bgColor = HexToVec4(bgColorHex);
         
+        this.gl.disable(this.gl.DEPTH_TEST);
         this.gl.clearColor(bgColor[0], bgColor[1], bgColor[2], bgColor[3]);
         this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
     }

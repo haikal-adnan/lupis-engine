@@ -66,7 +66,7 @@ export default class ImageRenderer {
         `;
 
         const fs = this.isWebGL2 ? `#version 300 es
-            precision mediump float;
+            precision highp float;
             in vec2 vUV; in float vAlpha; in vec2 vDimension;
             out vec4 outColor;
             
@@ -98,7 +98,11 @@ export default class ImageRenderer {
             }
         ` : `
             ${hasDeriv ? "#extension GL_OES_standard_derivatives : enable" : ""}
+            #ifdef GL_FRAGMENT_PRECISION_HIGH
+            precision highp float;
+            #else
             precision mediump float;
+            #endif
             varying vec2 vUV; varying float vAlpha; varying vec2 vDimension;
             
             uniform sampler2D uTex;
@@ -173,14 +177,81 @@ export default class ImageRenderer {
         this.cache.bindVAO(null);
     }
 
+    drawQuad(texRes, source, vertices, options, projection) {
+        if (!projection || !vertices) return;
+        this.lastProjection = projection;
+
+        const { 
+            opacity = 1, useCheckerboard = false,
+            filterMode = 'pixelated', useSDF = false,
+            uvInset
+        } = options || {};
+
+        const isValidTexture = texRes && texRes.glTexture;
+        const shouldChecker = useCheckerboard || !isValidTexture;
+        const targetGLTexture = shouldChecker ? this.whiteTexture : texRes.glTexture;
+        const dimW = shouldChecker ? (source?.w || 32) : 0;
+        const dimH = shouldChecker ? (source?.h || 32) : 0;
+
+        if (this.currentTexture !== targetGLTexture || 
+            this.currentFilterMode !== filterMode || 
+            this.currentUseSDF !== useSDF) {
+            
+            this.flush();
+            this.currentTexture = targetGLTexture;
+            this.currentFilterMode = filterMode;
+            this.currentUseSDF = useSDF;
+        }
+
+        let u0 = 0, v0 = 0, u1 = 1, v1 = 1;
+        if (!shouldChecker && isValidTexture) {
+            const tw = texRes.width || 1; 
+            const th = texRes.height || 1;
+
+            const isSubRect = (source.w < tw || source.h < th || source.x > 0 || source.y > 0);
+            let insetX = 0;
+            let insetY = 0;
+            if (isSubRect) {
+                const defaultInset = 0.5;
+                const eps = uvInset !== undefined ? uvInset : defaultInset;
+                insetX = eps / tw;
+                insetY = eps / th;
+            }
+
+            u0 = (source.x / tw) + insetX;
+            v0 = (source.y / th) + insetY;
+            u1 = ((source.x + source.w) / tw) - insetX;
+            v1 = ((source.y + source.h) / th) - insetY;
+        }
+
+        const d = this.bufferData;
+        let i = this.bufferIndex;
+
+        d[i++] = vertices.tl.x; d[i++] = vertices.tl.y; d[i++] = u0; d[i++] = v0; d[i++] = opacity; d[i++] = dimW; d[i++] = dimH;
+        d[i++] = vertices.tr.x; d[i++] = vertices.tr.y; d[i++] = u1; d[i++] = v0; d[i++] = opacity; d[i++] = dimW; d[i++] = dimH;
+        d[i++] = vertices.bl.x; d[i++] = vertices.bl.y; d[i++] = u0; d[i++] = v1; d[i++] = opacity; d[i++] = dimW; d[i++] = dimH;
+        d[i++] = vertices.tr.x; d[i++] = vertices.tr.y; d[i++] = u1; d[i++] = v0; d[i++] = opacity; d[i++] = dimW; d[i++] = dimH;
+        d[i++] = vertices.br.x; d[i++] = vertices.br.y; d[i++] = u1; d[i++] = v1; d[i++] = opacity; d[i++] = dimW; d[i++] = dimH;
+        d[i++] = vertices.bl.x; d[i++] = vertices.bl.y; d[i++] = u0; d[i++] = v1; d[i++] = opacity; d[i++] = dimW; d[i++] = dimH;
+
+        this.bufferIndex = i;
+        if (i >= this.bufferData.length) this.flush();
+    }
+
     draw(texRes, source, transform, options, projection) {
         if (!projection) return;
+
+        if (transform && transform.tl && transform.tr && transform.bl && transform.br) {
+            return this.drawQuad(texRes, source, transform, options, projection);
+        }
+
         this.lastProjection = projection;
 
         const { x, y, width: w, height: h, rotation: rot, scaleX: sx = 1, scaleY: sy = 1, pivotX: px = 0.5, pivotY: py = 0.5 } = transform;
         const { 
             flipX = false, flipY = false, opacity = 1, useCheckerboard = false,
-            filterMode = 'pixelated', useSDF = false 
+            filterMode = 'pixelated', useSDF = false,
+            uvInset
         } = options || {};
 
         const isValidTexture = texRes && texRes.glTexture;
@@ -207,8 +278,21 @@ export default class ImageRenderer {
         if (!shouldChecker && isValidTexture) {
             const tw = texRes.width || 1; 
             const th = texRes.height || 1;
-            u0 = source.x / tw; v0 = source.y / th;
-            u1 = (source.x + source.w) / tw; v1 = (source.y + source.h) / th;
+
+            const isSubRect = (source.w < tw || source.h < th || source.x > 0 || source.y > 0);
+            let insetX = 0;
+            let insetY = 0;
+            if (isSubRect) {
+                const defaultInset = 0.5;
+                const eps = uvInset !== undefined ? uvInset : defaultInset;
+                insetX = eps / tw;
+                insetY = eps / th;
+            }
+
+            u0 = (source.x / tw) + insetX;
+            v0 = (source.y / th) + insetY;
+            u1 = ((source.x + source.w) / tw) - insetX;
+            v1 = ((source.y + source.h) / th) - insetY;
         }
 
         const d = this.bufferData;

@@ -71,6 +71,20 @@ export default class TilemapRenderer {
         this.shape?.flush();
     }
 
+    _getTileQuadVertices(rData, scaledTileW, scaledTileH, cosR, sinR, gx, gy) {
+        const lx0 = gx * scaledTileW;
+        const lx1 = (gx + 1) * scaledTileW;
+        const ly0 = gy * scaledTileH;
+        const ly1 = (gy + 1) * scaledTileH;
+
+        return {
+            tl: { x: rData.tfX + (lx0 * cosR - ly0 * sinR), y: rData.tfY + (lx0 * sinR + ly0 * cosR) },
+            tr: { x: rData.tfX + (lx1 * cosR - ly0 * sinR), y: rData.tfY + (lx1 * sinR + ly0 * cosR) },
+            bl: { x: rData.tfX + (lx0 * cosR - ly1 * sinR), y: rData.tfY + (lx0 * sinR + ly1 * cosR) },
+            br: { x: rData.tfX + (lx1 * cosR - ly1 * sinR), y: rData.tfY + (lx1 * sinR + ly1 * cosR) }
+        };
+    }
+
     _drawTiles(entity, tm, rData, world, proj, editors, externalOpacity = 1.0) {
         const asset = world?.assets?.textures?.[tm.assetId];
         if (!asset || !tm.data) return;
@@ -88,9 +102,6 @@ export default class TilemapRenderer {
 
         const cosR = Math.cos(rData.rotation);
         const sinR = Math.sin(rData.rotation);
-
-        const overlapFixX = 0.4 * Math.abs(rData.scaleX);
-        const overlapFixY = 0.4 * Math.abs(rData.scaleY);
 
         for (const [key, tileId] of Object.entries(tm.data)) {
             if (!tileId || tileId <= 0) continue;
@@ -110,32 +121,12 @@ export default class TilemapRenderer {
             const srcX = (actualIndex % tilesetCols) * rData.tileW;
             const srcY = Math.floor(actualIndex / tilesetCols) * rData.tileH;
 
-            const tileLocalX = x * scaledTileW;
-            const tileLocalY = y * scaledTileH;
+            const vertices = this._getTileQuadVertices(rData, scaledTileW, scaledTileH, cosR, sinR, x, y);
 
-            const rotatedX = (tileLocalX * cosR) - (tileLocalY * sinR);
-            const rotatedY = (tileLocalX * sinR) + (tileLocalY * cosR);
-
-            const dstX = rData.tfX + rotatedX;
-            const dstY = rData.tfY + rotatedY;
-
-            const tileOverlapX = currentOpacity < 0.999 ? 0 : overlapFixX;
-            const tileOverlapY = currentOpacity < 0.999 ? 0 : overlapFixY;
-
-            this.image.draw(
+            this.image.drawQuad(
                 asset,
                 { x: srcX, y: srcY, w: rData.tileW, h: rData.tileH },
-                { 
-                    x: dstX, 
-                    y: dstY, 
-                    width: scaledTileW + tileOverlapX, 
-                    height: scaledTileH + tileOverlapY, 
-                    rotation: rData.rotation, 
-                    scaleX: 1, 
-                    scaleY: 1, 
-                    pivotX: 0, 
-                    pivotY: 0 
-                },
+                vertices,
                 { opacity: currentOpacity, filterMode },
                 proj
             );
@@ -164,6 +155,7 @@ export default class TilemapRenderer {
         const showGrid = editors?.tilemapContext?.showGrid ?? true;
         if (showGrid) {
             const camScale = Math.max(0.001, cam.scale || 1);
+            const gridThickness = 1 / camScale;
             const halfViewW = (canvas.width / camScale) / 2 + absTileW * 2;
             const halfViewH = (canvas.height / camScale) / 2 + absTileH * 2;
             const viewRadius = Math.hypot(halfViewW, halfViewH);
@@ -189,7 +181,7 @@ export default class TilemapRenderer {
                 const x2 = rData.tfX + (xLocal * cosR - yLocalEnd * sinR);
                 const y2 = rData.tfY + (xLocal * sinR + yLocalEnd * cosR);
 
-                this.shape.drawLine(x1, y1, x2, y2, this.colors.grid, 1, proj);
+                this.shape.drawLine(x1, y1, x2, y2, this.colors.grid, gridThickness, proj);
             }
 
             for (let j = minY; j <= maxY; j++) {
@@ -202,12 +194,13 @@ export default class TilemapRenderer {
                 const x2 = rData.tfX + (xLocalEnd * cosR - yLocal * sinR);
                 const y2 = rData.tfY + (xLocalEnd * sinR + yLocal * cosR);
 
-                this.shape.drawLine(x1, y1, x2, y2, this.colors.grid, 1, proj);
+                this.shape.drawLine(x1, y1, x2, y2, this.colors.grid, gridThickness, proj);
             }
         }
 
         const activeTab = editors.tabs?.find(t => String(t.id) === String(editors.activeTabId));
         if (activeTab?.type === 'tilemap') {
+            const camScale = Math.max(0.001, cam.scale || 1);
             const bounds = TilemapMath.getBounds(tm);
             const boundsLocalX = bounds.minX * scaledTileW;
             const boundsLocalY = bounds.minY * scaledTileH;
@@ -223,7 +216,7 @@ export default class TilemapRenderer {
 
             this.shape.drawParametricShape(
                 "rectangle", boundsDstX, boundsDstY, boundsScaledW, boundsScaledH,
-                [0, 0, 0, 0], this.colors.border, false, 2, 0, 4,
+                [0, 0, 0, 0], this.colors.border, false, 2 / camScale, 0, 4,
                 proj, rData.rotation, 1, 1, 0, 0, false, false
             );
         }
@@ -265,29 +258,12 @@ export default class TilemapRenderer {
                     const srcX = (actualIndex % tilesetCols) * rData.tileW;
                     const srcY = Math.floor(actualIndex / tilesetCols) * rData.tileH;
 
-                    const tileLocalX = tx * scaledTileW;
-                    const tileLocalY = ty * scaledTileH;
+                    const vertices = this._getTileQuadVertices(rData, scaledTileW, scaledTileH, cosR, sinR, tx, ty);
 
-                    const rotatedX = (tileLocalX * cosR) - (tileLocalY * sinR);
-                    const rotatedY = (tileLocalX * sinR) + (tileLocalY * cosR);
-
-                    const dstX = rData.tfX + rotatedX;
-                    const dstY = rData.tfY + rotatedY;
-
-                    this.image.draw(
+                    this.image.drawQuad(
                         asset,
                         { x: srcX, y: srcY, w: rData.tileW, h: rData.tileH },
-                        {
-                            x: dstX,
-                            y: dstY,
-                            width: scaledTileW,
-                            height: scaledTileH,
-                            rotation: rData.rotation,
-                            scaleX: 1,
-                            scaleY: 1,
-                            pivotX: 0,
-                            pivotY: 0
-                        },
+                        vertices,
                         { opacity: 0.8, filterMode },
                         proj
                     );
@@ -328,15 +304,17 @@ export default class TilemapRenderer {
         const dstX = rData.tfX + rotatedX;
         const dstY = rData.tfY + rotatedY;
 
+        const camScale = Math.max(0.001, this.game?.camera?.scale || 1);
+
         this.shape.drawParametricShape(
             "rectangle", dstX, dstY, highlightW, highlightH,
-            [0, 0, 0, 0], colorFill, true, 1, 0, 4,
+            [0, 0, 0, 0], colorFill, true, 1 / camScale, 0, 4,
             proj, rData.rotation, 1, 1, 0, 0, false, false
         );
 
         this.shape.drawParametricShape(
             "rectangle", dstX, dstY, highlightW, highlightH,
-            [0, 0, 0, 0], colorBorder, false, 2, 0, 4,
+            [0, 0, 0, 0], colorBorder, false, 2 / camScale, 0, 4,
             proj, rData.rotation, 1, 1, 0, 0, false, false
         );
     }
@@ -354,32 +332,15 @@ export default class TilemapRenderer {
                 const tx = gridX + dx;
                 const ty = gridY + dy;
                 
-                const tileLocalX = tx * scaledTileW;
-                const tileLocalY = ty * scaledTileH;
-
-                const rotatedX = (tileLocalX * cosR) - (tileLocalY * sinR);
-                const rotatedY = (tileLocalX * sinR) + (tileLocalY * cosR);
-
-                const dstX = rData.tfX + rotatedX;
-                const dstY = rData.tfY + rotatedY;
+                const vertices = this._getTileQuadVertices(rData, scaledTileW, scaledTileH, cosR, sinR, tx, ty);
 
                 const srcX = (selection.x + dx) * rData.tileW;
                 const srcY = (selection.y + dy) * rData.tileH;
                 
-                this.image.draw(
+                this.image.drawQuad(
                     asset, 
                     { x: srcX, y: srcY, w: rData.tileW, h: rData.tileH }, 
-                    { 
-                        x: dstX, 
-                        y: dstY, 
-                        width: scaledTileW, 
-                        height: scaledTileH, 
-                        rotation: rData.rotation, 
-                        scaleX: 1, 
-                        scaleY: 1, 
-                        pivotX: 0, 
-                        pivotY: 0 
-                    }, 
+                    vertices, 
                     { opacity: 0.6, filterMode }, 
                     proj
                 );
@@ -390,6 +351,9 @@ export default class TilemapRenderer {
     }
 
     _renderHighlightRect(rData, gridX, gridY, w, h, color, proj, thickness = 2) {
+        const camScale = Math.max(0.001, this.game?.camera?.scale || 1);
+        const finalThickness = thickness / camScale;
+
         const scaledTileW = rData.tileW * rData.scaleX;
         const scaledTileH = rData.tileH * rData.scaleY;
 
@@ -410,7 +374,7 @@ export default class TilemapRenderer {
 
         this.shape.drawParametricShape(
             "rectangle", dstX, dstY, highlightW, highlightH,
-            [0, 0, 0, 0], color, false, thickness, 0, 4,
+            [0, 0, 0, 0], color, false, finalThickness, 0, 4,
             proj, rData.rotation, 1, 1, 0, 0, false, false
         );
     }

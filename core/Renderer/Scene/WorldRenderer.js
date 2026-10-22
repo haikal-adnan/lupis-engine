@@ -45,11 +45,8 @@ export default class WorldRenderer {
             const activeEntity = RenderUtils.findEntityById(world, activeTabId);
             if (activeEntity?.components?.Tilemap) {
                 this._flushAll();
-                const gl = this.game?.renderer?.gl;
-                if (gl) gl.disable(gl.DEPTH_TEST);
                 this.tilemapRenderer?.renderOnlyGizmos(activeEntity, world, proj);
                 this._flushAll();
-                if (gl) gl.enable(gl.DEPTH_TEST);
             }
         }
     }
