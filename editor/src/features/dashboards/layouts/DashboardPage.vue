@@ -224,23 +224,23 @@ const processImport = async (file) => {
           aria-label="File Drop Zone"
           data-testid="drop-zone-overlay"
           :data-invalid="isInvalidFileDragged"
-          class="fixed inset-0 z-50 bg-background/85 backdrop-blur-md flex flex-col items-center justify-center p-6 pointer-events-none select-none"
+          class="fixed inset-0 z-50 bg-background/90 flex flex-col items-center justify-center p-6 pointer-events-none select-none"
         >
           <div 
-            class="max-w-md w-full bg-card/90 border-2 border-dashed rounded-3xl p-8 md:p-10 flex flex-col items-center text-center shadow-2xl backdrop-blur-xl transition-colors duration-300 relative overflow-hidden"
+            class="max-w-md w-full bg-card border-2 border-dashed rounded-3xl p-8 md:p-10 flex flex-col items-center text-center shadow-2xl transition-colors duration-150 relative overflow-hidden"
             :class="isInvalidFileDragged ? 'border-destructive/80 bg-destructive/5' : 'border-cyan-500/80 bg-cyan-500/5'"
           >
             <div 
-              class="absolute -top-20 -left-20 w-40 h-40 rounded-full blur-3xl pointer-events-none"
+              class="absolute -top-20 -left-20 w-40 h-40 rounded-full opacity-30 pointer-events-none"
               :class="isInvalidFileDragged ? 'bg-destructive/20' : 'bg-cyan-500/20'"
             ></div>
             <div 
-              class="absolute -bottom-20 -right-20 w-40 h-40 rounded-full blur-3xl pointer-events-none"
+              class="absolute -bottom-20 -right-20 w-40 h-40 rounded-full opacity-30 pointer-events-none"
               :class="isInvalidFileDragged ? 'bg-destructive/20' : 'bg-cyan-500/20'"
             ></div>
 
             <div 
-              class="w-20 h-20 rounded-2xl flex items-center justify-center mb-6 animate-bounce border transition-colors shadow-lg"
+              class="w-20 h-20 rounded-2xl flex items-center justify-center mb-6 border transition-colors shadow-lg"
               :class="isInvalidFileDragged 
                 ? 'bg-destructive/10 border-destructive/30 text-destructive shadow-destructive/10' 
                 : 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400 shadow-cyan-500/10'"
@@ -267,7 +267,7 @@ const processImport = async (file) => {
                   ? 'text-red-400 bg-red-500/10 border-red-500/20' 
                   : 'text-cyan-400 bg-cyan-500/10 border-cyan-500/20'"
               >
-                <span class="w-1.5 h-1.5 rounded-full animate-ping" :class="isInvalidFileDragged ? 'bg-red-400' : 'bg-cyan-400'"></span>
+                <span class="w-1.5 h-1.5 rounded-full" :class="isInvalidFileDragged ? 'bg-red-400' : 'bg-cyan-400'"></span>
                 {{ isInvalidFileDragged ? '.lupisproject Only' : 'Ready to Import' }}
               </span>
             </div>

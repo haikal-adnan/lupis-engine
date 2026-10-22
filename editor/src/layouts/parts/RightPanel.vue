@@ -17,11 +17,11 @@ defineEmits(['toggle'])
 </script>
 
 <template>
-  <div class="h-full flex flex-col bg-editor-sidebar overflow-hidden border-l border-border transition-all duration-300">
+  <div class="h-full flex flex-col bg-editor-sidebar overflow-hidden border-l border-border">
     
     <div
       v-if="!collapsed"
-      class="h-10 shrink-0 flex items-center justify-between px-2 border-b border-border bg-muted/40 backdrop-blur-sm"
+      class="h-10 shrink-0 flex items-center justify-between px-2 border-b border-border bg-muted/70"
     >
       <h3
         data-testid="right-panel-title"

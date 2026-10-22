@@ -54,7 +54,7 @@
       >
         <div
           v-if="isOpen"
-          class="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 sm:p-6"
+          class="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4 sm:p-6"
           @click.self="closeModal"
           role="dialog"
           aria-modal="true"
@@ -330,7 +330,7 @@
               </div>
 
               <!-- Viewport Hint Overlay -->
-              <div class="absolute top-3 left-3 text-[10px] text-white/50 bg-black/60 backdrop-blur px-2.5 py-1 rounded-md pointer-events-none flex items-center gap-2">
+              <div class="absolute top-3 left-3 text-[10px] text-white/70 bg-black/80 px-2.5 py-1 rounded-md pointer-events-none flex items-center gap-2">
                 <span>Drag handles to crop</span>
                 <span>•</span>
                 <span>Space + drag to pan</span>

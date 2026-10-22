@@ -5,7 +5,7 @@
     :aria-selected="active"
     data-testid="base-tab"
     @click="$emit('click')"
-    class="group relative flex items-center justify-start h-full min-w-[140px] max-w-[200px] gap-2 px-3 outline-none select-none transition-all duration-200 text-xs font-medium border-t-2 border-x-0 border-b-0"
+    class="group relative flex items-center justify-start h-full min-w-[140px] max-w-[200px] gap-2 px-3 outline-none select-none transition-colors duration-75 text-xs font-medium border-t-2 border-x-0 border-b-0"
     :class="[
       active 
         ? 'border-primary bg-primary/10 text-foreground' 
@@ -29,7 +29,7 @@
       role="button"
       aria-label="Close tab"
       data-testid="close-tab-button"
-      class="absolute right-1.5 p-0.5 rounded-sm hover:bg-muted/50 transition-all duration-200 z-10 text-muted-foreground hover:text-destructive flex items-center justify-center"
+      class="absolute right-1.5 p-0.5 rounded-sm hover:bg-muted/50 transition-colors duration-75 z-10 text-muted-foreground hover:text-destructive flex items-center justify-center"
       :class="active ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'"
       @click.stop="$emit('close')"
     >

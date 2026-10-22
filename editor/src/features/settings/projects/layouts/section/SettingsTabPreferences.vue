@@ -1,5 +1,5 @@
 <template>
-  <div class="animate-in fade-in duration-300 space-y-8 relative" data-testid="settings-tab-preferences-content">
+  <div class="space-y-8 relative" data-testid="settings-tab-preferences-content">
     <!-- Section: Editor Appearance -->
     <section class="space-y-5">
       <div class="border-b border-border pb-2">
@@ -98,6 +98,31 @@
       </div>
     </section>
 
+    <!-- Section: Performance & Motion -->
+    <section class="space-y-5">
+      <div class="border-b border-border pb-2">
+        <h4 class="text-sm font-bold text-foreground">Performance & Motion</h4>
+        <p class="text-xs text-muted-foreground mt-0.5">Optimize graphics rendering and latency for desktop and low-spec environments.</p>
+      </div>
+
+      <div class="space-y-4">
+        <div class="flex items-center gap-4 py-1">
+          <BaseCheckbox 
+            v-model="isReduceMotion" 
+            @update:model-value="setReduceMotion"
+            label="High Performance Mode (Reduce Motion)" 
+            box-size="w-4 h-4" 
+            icon-size="w-3 h-3" 
+            text-size="text-sm" 
+            data-testid="preferences-reduce-motion-toggle"
+          />
+        </div>
+        <p class="text-xs text-muted-foreground">
+          Disables all UI animations and transitions for instant zero-latency response, maximum FPS, and lower CPU/GPU power consumption.
+        </p>
+      </div>
+    </section>
+
     <!-- Section: Code Editor Preferences -->
     <section class="space-y-5">
       <div class="border-b border-border pb-2">
@@ -127,12 +152,13 @@
 <script setup>
 import { Sun, Moon } from 'lucide-vue-next';
 import { PropertyRow, BaseButton, BaseCheckbox, BaseNumber } from '@components/components.js';
-import { useTheme } from '@composables/composables.js';
+import { useTheme, usePerformance } from '@composables/composables.js';
 import { useInspectorBinding } from '@inspectors/inspectors.js';
 
 defineProps({ info: Object });
 
 const { isDark, toggleTheme } = useTheme();
+const { isReduceMotion, setReduceMotion } = usePerformance();
 const { bindSettingProp } = useInspectorBinding();
 const showRulers = bindSettingProp(null, 'showRulers');
 const codeZoom = bindSettingProp('codeEditor', 'zoom');

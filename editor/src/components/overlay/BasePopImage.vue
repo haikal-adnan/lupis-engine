@@ -10,7 +10,7 @@
     >
       <div 
         v-if="state.isOpen" 
-        class="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 sm:p-6"
+        class="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4 sm:p-6"
         @click.self="closeImage"
         role="dialog"
         aria-modal="true"
@@ -64,7 +64,7 @@
             </div>
 
             <div 
-              class="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-background/80 backdrop-blur-md p-1 rounded-md border border-border shadow-lg" 
+              class="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-background/95 p-1 rounded-md border border-border shadow-lg" 
               @mousedown.stop
               role="toolbar"
               aria-label="Image zoom controls"

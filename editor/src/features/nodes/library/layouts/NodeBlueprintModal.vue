@@ -11,7 +11,7 @@
       <div 
         v-if="isOpen" 
         data-testid="node-library-modal-backdrop"
-        class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-6"
+        class="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-6"
         @mousedown="onOutsideMouseDown"
         @mouseup="onOutsideMouseUp"
       >

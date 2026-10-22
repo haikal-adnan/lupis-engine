@@ -27,7 +27,7 @@
         >
           <!-- Badge LINKED / NOT SET -->
           <template #actions>
-            <span v-if="isInputConnected(variableSetInputPort.id)" class="text-[9px] font-mono text-green-400 animate-pulse font-bold" data-testid="node-inspector-port-linked-badge">
+            <span v-if="isInputConnected(variableSetInputPort.id)" class="text-[9px] font-mono text-green-400 font-bold" data-testid="node-inspector-port-linked-badge">
               LINKED
             </span>
             <span v-else-if="isErrorNotSet(variableSetInputPort.id, getPortValue(variableSetInputPort))" class="text-[9px] font-mono text-red-500 font-bold uppercase tracking-tighter">
@@ -151,7 +151,7 @@
           :data-port-index="idx"
         >
           <template #actions>
-            <span v-if="isInputConnected(port.id)" class="text-[9px] font-mono text-green-400 animate-pulse font-bold" data-testid="node-inspector-port-linked-badge">
+            <span v-if="isInputConnected(port.id)" class="text-[9px] font-mono text-green-400 font-bold" data-testid="node-inspector-port-linked-badge">
               LINKED
             </span>
             <span v-else-if="isErrorNotSet(port.id, getPortValue(port))" class="text-[9px] font-mono text-red-500 font-bold uppercase tracking-tighter">

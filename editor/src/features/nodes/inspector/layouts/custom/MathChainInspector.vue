@@ -19,7 +19,7 @@
             <label class="text-[9px] text-muted-foreground uppercase font-bold">
               Base Value (v0)
             </label>
-            <span v-if="isConnected('v0')" class="text-[9px] text-green-400 font-mono animate-pulse">
+            <span v-if="isConnected('v0')" class="text-[9px] text-green-400 font-mono font-bold">
               LINKED
             </span>
           </div>
@@ -38,7 +38,7 @@
           <div 
             v-for="(op, index) in ops" 
             :key="index" 
-            class="relative group animate-in fade-in slide-in-from-left-2"
+            class="relative group"
           >
             <div class="absolute -left-[19px] top-1/2 w-4 h-[2px] bg-border"></div>
 
@@ -68,7 +68,7 @@
                   <label class="text-[9px] text-muted-foreground uppercase font-bold">
                     Operand (v{{ index + 1 }})
                   </label>
-                  <span v-if="isConnected(`v${index + 1}`)" class="text-[9px] text-green-400 font-mono animate-pulse">
+                  <span v-if="isConnected(`v${index + 1}`)" class="text-[9px] text-green-400 font-mono font-bold">
                     LINKED
                   </span>
                 </div>

@@ -109,7 +109,6 @@
             fill="#3b82f6"
             stroke="white"
             stroke-width="2"
-            class="animate-pulse"
           />
         </g>
 
@@ -152,10 +151,10 @@
     <div class="absolute bottom-5 right-5 flex gap-2 pointer-events-none z-30">
       <div 
         data-testid="graph-canvas-camera-badge"
-        class="px-3 py-1 text-[10px] rounded border backdrop-blur font-mono tabular-nums shadow-sm transition-all"
+        class="px-3 py-1 text-[10px] rounded border font-mono tabular-nums shadow-sm"
         :class="isDark 
-          ? 'bg-black/50 text-slate-300 border-white/10' 
-          : 'bg-white/80 text-slate-600 border-black/10'"
+          ? 'bg-zinc-900/90 text-slate-300 border-white/10' 
+          : 'bg-slate-100/90 text-slate-600 border-black/10'"
       >
         X: {{ camera.x.toFixed(0) }} Y: {{ camera.y.toFixed(0) }} | Zoom: {{ (camera.scale * 100).toFixed(0) }}%
       </div>

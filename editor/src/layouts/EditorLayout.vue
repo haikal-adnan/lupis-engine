@@ -23,7 +23,7 @@ const CONFIG = {
   SNAP_OPEN: 100,      
   DEFAULT_LEFT: 288,
   DEFAULT_RIGHT: 320,
-  TRANSITION: '300ms cubic-bezier(0.25, 0.8, 0.25, 1)',
+  TRANSITION: '150ms cubic-bezier(0.16, 1, 0.3, 1)',
   OVERLAY_MARGIN: 48 
 }
 
@@ -182,9 +182,7 @@ const canvasStyle = computed(() => ({
   '--left-width': `${left.activeWidth.value}px`,
   '--right-width': `${right.activeWidth.value}px`,
   bottom: `${actualBottomBarHeight.value + currentBottomHeight.value}px`, 
-  transition: isAnyPanelResizing.value
-    ? 'none' 
-    : `padding ${CONFIG.TRANSITION}, bottom ${CONFIG.TRANSITION}`
+  transition: 'none'
 }))
 </script>
 
@@ -207,7 +205,7 @@ const canvasStyle = computed(() => ({
     >
       
       <div 
-        class="absolute inset-x-0 top-0 z-0 pl-[var(--left-width)] pr-[var(--right-width)] will-change-[padding, bottom]"
+        class="absolute inset-x-0 top-0 z-0 pl-[var(--left-width)] pr-[var(--right-width)]"
         :style="canvasStyle"
       >
         <div class="h-full w-full overflow-hidden relative bg-slate-900/50">

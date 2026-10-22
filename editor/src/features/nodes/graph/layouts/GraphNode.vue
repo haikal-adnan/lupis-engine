@@ -4,7 +4,7 @@
     data-testid="graph-node"
     :data-node-id="data.id"
     :data-node-type="data.type"
-    class="node-container absolute w-[200px] flex flex-col select-none border-2 rounded-lg transition-all duration-300 ease-in-out" 
+    class="node-container absolute w-[200px] flex flex-col select-none border-2 rounded-lg transition-[border-color,box-shadow] duration-150 ease-out" 
     :class="[
       isDragging ? 'transition-none' : '',
       'bg-white dark:bg-[#252526]',
@@ -72,7 +72,7 @@
             data-testid="graph-node-input-port"
             :data-port-id="input.id"
             :data-port-type="input.dataType"
-            class="relative -left-1.5 w-3 h-3 rounded-full border-2 transition-transform hover:scale-125 cursor-crosshair pointer-events-auto z-30 border-white dark:border-[#18181b]"
+            class="relative -left-1.5 w-3 h-3 rounded-full border-2 transition-colors hover:ring-2 hover:ring-blue-400 cursor-crosshair pointer-events-auto z-30 border-white dark:border-[#18181b]"
             :style="{ backgroundColor: input.color }" 
             @mousedown.stop="$emit('connect-start',$event, input.id, 'input')" 
             @mouseup="$emit('connect-end', input.id)"
@@ -101,7 +101,7 @@
             data-testid="graph-node-output-port"
             :data-port-id="output.id"
             :data-port-type="output.dataType"
-            class="relative -right-1.5 w-3 h-3 rounded-full border-2 transition-transform hover:scale-125 cursor-crosshair pointer-events-auto z-30 border-white dark:border-[#18181b]"
+            class="relative -right-1.5 w-3 h-3 rounded-full border-2 transition-colors hover:ring-2 hover:ring-blue-400 cursor-crosshair pointer-events-auto z-30 border-white dark:border-[#18181b]"
             :style="{ backgroundColor: output.color }" 
             @mousedown.stop="$emit('connect-start',$event, output.id, 'output')"
             @mouseenter="showTooltip($event, output.dataType)"

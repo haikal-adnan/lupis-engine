@@ -24,7 +24,7 @@
     >
       <div 
         v-if="state.isOpen" 
-        class="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 sm:p-6"
+        class="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4 sm:p-6"
         @click.self="handleClose"
         role="dialog"
         aria-modal="true"

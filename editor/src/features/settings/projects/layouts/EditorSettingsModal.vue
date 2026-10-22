@@ -14,7 +14,7 @@
         aria-modal="true"
         aria-label="Project Settings"
         data-testid="editor-settings-modal"
-        class="fixed inset-0 z-[100] flex items-center justify-center bg-background/80 backdrop-blur-sm p-4 sm:p-6"
+        class="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4 sm:p-6"
         @mousedown="onOutsideMouseDown"
         @mouseup="onOutsideMouseUp"
       >

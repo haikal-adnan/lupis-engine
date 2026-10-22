@@ -1,6 +1,6 @@
 <template>
   <div class="flex-1 flex flex-col min-w-0 bg-background">
-    <div class="h-14 px-8 border-b border-border flex items-center justify-between shrink-0 bg-background/95 backdrop-blur z-10">
+    <div class="h-14 px-8 border-b border-border flex items-center justify-between shrink-0 bg-background z-10">
       <div class="flex items-center gap-3">
         <component :is="activeTabInfo.icon" class="w-5 h-5 text-muted-foreground" />
         <div>

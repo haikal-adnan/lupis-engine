@@ -1,5 +1,5 @@
 <template>
-  <div class="animate-in fade-in duration-300 space-y-8 relative" data-testid="settings-tab-project-content">
+  <div class="space-y-8 relative" data-testid="settings-tab-project-content">
     
     <!-- Section 1: Project Identity -->
     <section class="space-y-5">
@@ -82,21 +82,21 @@
                 <span 
                   v-if="hasCustomThumbnail"
                   data-testid="thumbnail-badge-custom" 
-                  class="text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-500/90 text-white backdrop-blur shadow-sm uppercase tracking-wider"
+                  class="text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-600 text-white shadow-sm uppercase tracking-wider"
                 >
                   Custom Thumbnail
                 </span>
                 <span 
                   v-else-if="hasSnapshotThumbnail"
                   data-testid="thumbnail-badge-snapshot" 
-                  class="text-[10px] px-2 py-0.5 rounded-full font-bold bg-sky-500/90 text-white backdrop-blur shadow-sm uppercase tracking-wider"
+                  class="text-[10px] px-2 py-0.5 rounded-full font-bold bg-sky-600 text-white shadow-sm uppercase tracking-wider"
                 >
                   Scene Snapshot
                 </span>
                 <span 
                   v-else
                   data-testid="thumbnail-badge-default" 
-                  class="text-[9px] px-2 py-0.5 rounded-full font-bold bg-muted/80 text-muted-foreground backdrop-blur border border-border uppercase tracking-wider"
+                  class="text-[9px] px-2 py-0.5 rounded-full font-bold bg-muted text-muted-foreground border border-border uppercase tracking-wider"
                 >
                   Default Icon
                 </span>

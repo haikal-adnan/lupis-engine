@@ -9,7 +9,7 @@
   >
     <div 
       v-if="isUploading" 
-      class="absolute inset-0 z-[100] flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm cursor-wait transition-opacity"
+      class="absolute inset-0 z-[100] flex flex-col items-center justify-center bg-black/75 cursor-wait"
       style="pointer-events: all;"
       @click.stop
       @contextmenu.stop

@@ -2,7 +2,7 @@
   <div 
     v-if="overlayConfig"
     data-testid="viewport-overlay-container"
-    class="absolute left-0 right-0 pointer-events-none flex items-center justify-center z-50 transition-all duration-300 ease-out"
+    class="absolute left-0 right-0 pointer-events-none flex items-center justify-center z-50"
     :class="{ 'translate-y-10 opacity-0': !overlayConfig.showGrid && !overlayConfig.showPlay }"
   >
     <div class="flex items-center p-1 bg-background rounded-xl border border-border shadow-lg pointer-events-auto gap-1">
@@ -48,7 +48,7 @@
         data-testid="viewport-overlay-play-button"
         class="h-8 rounded-full px-4 gap-2 text-xs font-bold"
       >
-        <RefreshCw v-if="isPreviewing" class="w-3.5 h-3.5 animate-spin-slow" />
+        <RefreshCw v-if="isPreviewing" class="w-3.5 h-3.5" />
         <Play v-else class="w-3.5 h-3.5 fill-current" />
         <span>{{ isPreviewing ? 'Update' : 'Play' }}</span>
       </BaseButton>

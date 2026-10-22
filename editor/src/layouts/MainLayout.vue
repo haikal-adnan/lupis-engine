@@ -33,7 +33,7 @@ watch(() => route.fullPath, () => {
 
 <template>
   <div class="min-h-screen bg-background text-foreground font-sans flex flex-col selection:bg-cyan-500/30">
-    <header class="h-16 border-b border-border sticky top-0 bg-background/95 backdrop-blur-md z-50 px-4 lg:px-6">
+    <header class="h-16 border-b border-border sticky top-0 bg-background z-50 px-4 lg:px-6">
       <div class="max-w-[1400px] mx-auto w-full h-full flex items-center justify-between gap-4">
         
         <div @click="router.push('/dashboard')" class="flex items-center gap-2.5 cursor-pointer min-w-fit shrink-0 group">

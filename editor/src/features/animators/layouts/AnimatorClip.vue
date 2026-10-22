@@ -84,7 +84,7 @@
                 <span v-if="node.type === 'category'" class="text-[10px] font-bold opacity-50 bg-muted px-2 py-0.5 rounded-full ml-1">
                   {{ node._uiChildren?.length || 0 }}
                 </span>
-                <PlayCircle v-else-if="activeClipId === node.id" class="w-4 h-4 text-primary animate-pulse shrink-0 ml-1" />
+                <PlayCircle v-else-if="activeClipId === node.id" class="w-4 h-4 text-primary shrink-0 ml-1" />
               </div>
 
               <div v-show="dragState.targetId === node.id && dragState.position === 'bottom'" class="absolute -bottom-[1px] left-1 right-1 h-[2px] bg-primary z-10 pointer-events-none rounded-full"></div>

@@ -106,7 +106,7 @@ const handleSmartRouting = async (url) => {
 
     <main class="flex-1 min-w-0 min-h-screen px-4 py-4 lg:py-8 lg:px-12 xl:pr-8 xl:pl-12 pb-24 w-full relative" ref="contentContainer">
       
-      <div v-if="props.searchQuery" class="animate-in fade-in slide-in-from-bottom-4 duration-300 w-full">
+      <div v-if="props.searchQuery" class="w-full">
          <h2 class="text-2xl font-bold text-foreground mb-6 flex items-center gap-2">
             <Search class="w-6 h-6 text-cyan-500" />
             Pencarian Dokumen: <span class="text-cyan-500">"{{ props.searchQuery }}"</span>
@@ -137,7 +137,7 @@ const handleSmartRouting = async (url) => {
          </div>
       </div>
 
-      <div v-else class="animate-in fade-in duration-300">
+      <div v-else>
         <div v-if="activeContent" class="mb-6 text-sm text-muted-foreground flex items-center gap-2 flex-wrap">
           <span>Docs</span> <span class="text-border">/</span>
           <span>{{ activeContent.category || 'Documentation' }}</span> <span class="text-border">/</span>

@@ -55,7 +55,7 @@
           </div>
 
           <!-- Hold options -->
-          <div v-if="map.trigger === 'hold'" class="flex items-center gap-2 mt-2 pt-2 border-t border-white/5 animate-in fade-in slide-in-from-top-1">
+          <div v-if="map.trigger === 'hold'" class="flex items-center gap-2 mt-2 pt-2 border-t border-white/5">
             <span class="text-[9px] text-muted-foreground whitespace-nowrap">Hold (ms):</span>
             <BaseNumber 
               :model-value="map.threshold || 0" 

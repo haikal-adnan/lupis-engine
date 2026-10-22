@@ -195,9 +195,9 @@ onBeforeUnmount(() => {
     <!-- Overlay Drag Over -->
     <div 
       v-if="isDraggingOver" 
-      class="absolute inset-0 bg-cyan-500/10 border-2 border-dashed border-cyan-500 rounded-xl z-40 backdrop-blur-sm flex flex-col items-center justify-center text-cyan-500 transition-all pointer-events-none"
+      class="absolute inset-0 bg-cyan-500/10 border-2 border-dashed border-cyan-500 rounded-xl z-40 flex flex-col items-center justify-center text-cyan-500 transition-colors pointer-events-none"
     >
-      <UploadCloud class="w-12 h-12 mb-2 animate-bounce" />
+      <UploadCloud class="w-12 h-12 mb-2" />
       <p class="font-semibold text-sm">Lepaskan file di sini untuk mengunggah</p>
       <p class="text-xs opacity-75 mt-1">Hanya format .js, .json, .png, .jpg, .webp</p>
     </div>
@@ -335,7 +335,7 @@ onBeforeUnmount(() => {
     </div>
 
     <!-- Modal Create New Item -->
-    <div v-if="showNewModal" class="fixed inset-0 backdrop-blur-sm z-50 flex items-center justify-center p-4" :class="isDark ? 'bg-black/80' : 'bg-black/40'">
+    <div v-if="showNewModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" :class="isDark ? 'bg-black/80' : 'bg-black/60'">
       <div 
         class="p-5 rounded-xl max-w-sm w-full space-y-4 shadow-xl border transition-colors duration-300 font-sans"
         :class="isDark ? 'bg-[#252526] border-white/10 text-slate-200' : 'bg-white border-black/10 text-slate-800'"

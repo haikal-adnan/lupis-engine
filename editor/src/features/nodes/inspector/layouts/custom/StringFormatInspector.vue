@@ -72,7 +72,7 @@
           >
             <div class="flex items-center justify-between mb-1">
               <span class="text-[10px] font-mono font-bold text-blue-400">{ {{ varName }} }</span>
-              <span v-if="isConnected(varName)" class="text-[9px] text-green-400 font-mono animate-pulse">
+              <span v-if="isConnected(varName)" class="text-[9px] text-green-400 font-mono font-bold">
                 LINKED
               </span>
             </div>

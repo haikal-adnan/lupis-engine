@@ -1,5 +1,5 @@
 <template>
-  <div class="animate-in fade-in duration-300 space-y-10">
+  <div class="space-y-10">
     <section class="space-y-5">
       <div class="border-b border-border pb-2">
         <h4 class="text-sm font-bold text-foreground">Editor Grid</h4>

@@ -57,7 +57,7 @@
       
       <div 
         v-if="isControlledByAnimator" 
-        class="absolute -inset-1.5 z-10 bg-black/70 backdrop-blur-[1px] flex flex-col items-center justify-center rounded-md text-center"
+        class="absolute -inset-1.5 z-10 bg-black/80 flex flex-col items-center justify-center rounded-md text-center"
         data-testid="sprite-renderer-animator-overlay"
       >
         <Film class="w-6 h-6 text-white/80 mb-1.5" />

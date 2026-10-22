@@ -6,7 +6,7 @@
     :aria-pressed="isActive"
     :aria-disabled="disabled || undefined"
     :disabled="disabled"
-    class="group relative flex items-center justify-center shrink-0 transition-all duration-200 border outline-none 
+    class="group relative flex items-center justify-center shrink-0 transition-colors duration-75 border outline-none 
            focus:outline-none focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary 
            disabled:opacity-50 disabled:cursor-not-allowed"
     :class="[
@@ -31,7 +31,7 @@
              rounded shadow-sm whitespace-nowrap z-50 pointer-events-none
              opacity-0 scale-95 translate-y-1 
              group-hover:opacity-100 group-hover:scale-100 group-hover:translate-y-0
-             transition-all duration-200 delay-100 origin-bottom"
+             transition-opacity duration-75 delay-75 origin-bottom"
     >
       {{ tooltip }}
     </span>

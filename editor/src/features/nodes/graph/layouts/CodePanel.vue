@@ -13,7 +13,7 @@
             class="px-2 py-0.5 rounded font-medium transition-colors duration-200 flex items-center gap-1.5"
             :class="isDirty ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'"
           >
-            <span class="w-1.5 h-1.5 rounded-full" :class="isDirty ? 'bg-amber-400 animate-pulse' : 'bg-emerald-400'"></span>
+            <span class="w-1.5 h-1.5 rounded-full" :class="isDirty ? 'bg-amber-400' : 'bg-emerald-400'"></span>
             {{ isDirty ? 'Saving...' : 'Synced' }}
           </span>
         </div>

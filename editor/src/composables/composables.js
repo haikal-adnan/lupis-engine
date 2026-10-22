@@ -6,6 +6,7 @@ export { usePopAudio } from '@composables/usePopAudio.js'
 export { usePopImage } from '@composables/usePopImage.js'
 
 export { useTheme } from '@composables/useTheme.js'
+export { usePerformance } from '@composables/usePerformance.js'
 export { useTab } from '@composables/useTab.js'
 export { useLayoutState } from '@composables/useLayoutState.js'
 export { useClipboard } from '@composables/useClipboard.js'
