@@ -7,7 +7,7 @@ import { startEngine } from "@core/RuntimeEditor.js";
 import { useTheme } from '@composables/composables.js';
 import { useSceneHistory, useTilemapHistory } from '@historys/historys.js';
 
-import { engineBridge, useEngineSync, prepareEngineData, useEngineToEditor } from "@engines/engines.js";
+import { engineBridge, useEngineSync, prepareEngineData, flushPendingEngineUpdates } from "@engines/engines.js";
 import { BaseContextMenu } from "@components/components.js";
 import { useCanvasLogic, useCanvasMenu } from '@viewports/viewports.js';
 
@@ -15,7 +15,6 @@ const workspaceStore = useWorkspaceStore();
 const projectStore = useProjectStore();
 const sceneStore = useSceneStore();
 
-const { listen: listenEngineToEditor } = useEngineToEditor(sceneStore);
 const { recordTransformChange } = useSceneHistory();
 const { startStrokeTransaction, endStrokeTransaction, recordTilemapPropChange } = useTilemapHistory();
 const { initSync } = useEngineSync();
@@ -71,7 +70,9 @@ const handlePointerDown = (e) => {
 
 const handleEntityModified = (entities) => {
     if (workspaceStore.engine?.syncComponent?.isInternalUpdate) return;
+    if (!isPointerDown) return;
 
+    isDraggingEntity = true;
     const list = Array.isArray(entities) ? entities : [entities];
 
     list.forEach(engEnt => {
@@ -87,59 +88,11 @@ const handleEntityModified = (entities) => {
                 _editor: deepClone(currentEntity._editor || {})
             });
         }
-
-        const comps = engEnt.components;
-        if (!comps) return;
-
-        const t = comps.Transform || comps.UITransform;
-        const compName = comps.UITransform ? 'UITransform' : 'Transform';
-
-        if (t) {
-            const payload = {
-                x: t.x, 
-                y: t.y,
-                width: t.width,    
-                height: t.height, 
-                rotation: t.rotation,
-                scaleX: t.scaleX, 
-                scaleY: t.scaleY,
-                pivotX: t.pivotX, 
-                pivotY: t.pivotY,
-                flipX: t.flipX ?? false,
-                flipY: t.flipY ?? false,
-                isRatioLocked: t.isRatioLocked ?? false,
-                overridden: t.overridden ?? false
-            };
-
-            if (t.anchorX !== undefined) payload.anchorX = t.anchorX;
-            if (t.anchorY !== undefined) payload.anchorY = t.anchorY;
-
-            sceneStore.syncTransformFromEngine(id, payload);
-
-            if (t.overridden) {
-                sceneStore.updateComponentProp(id, compName, 'overridden', true);
-            }
-        }
-
-        if (comps.ShapeRenderer) {
-            if (comps.ShapeRenderer.elements !== undefined) {
-                sceneStore.updateComponentProp(id, 'ShapeRenderer', 'elements', comps.ShapeRenderer.elements);
-            }
-        }
-
-        if (comps.TextRenderer && comps.TextRenderer.fontSize !== undefined) {
-            if (currentEntity.components?.TextRenderer?.fontSize !== comps.TextRenderer.fontSize) {
-                sceneStore.updateComponentData(id, 'TextRenderer', { fontSize: comps.TextRenderer.fontSize });
-            }
-        }
     });
-
-    if (isPointerDown) {
-        isDraggingEntity = true;
-    }
 };
 
 const handlePointerUp = () => {
+    flushPendingEngineUpdates(sceneStore);
     endStrokeTransaction('Paint Tilemap on Canvas');
 
     if (initialEntitySnapshots.size > 0) {
@@ -220,7 +173,6 @@ const initializeCanvas = async () => {
         if (instance) {
             workspaceStore.setEngine(instance);
             engineBridge.setupListeners();
-            listenEngineToEditor();
             
             workspaceStore.engine.bus.on("entity:modified", handleEntityModified);
             engineBridge.updateTheme(isDark.value);

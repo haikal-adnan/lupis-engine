@@ -18,8 +18,15 @@ export const engineBridge = {
 
     engine.bus.on("entity:modified", (entities) => {
         if (engine.syncComponent?.isInternalUpdate) return;
-        const list = Array.isArray(entities) ? entities : [entities];
+        const list = Array.isArray(entities) ? entities : (entities ? [entities] : []);
         
+        // If high-level synchronizer (useEngineToEditor) is registered, delegate exclusively to prevent duplicate sync
+        if (onNativeEntityModified) {
+            onNativeEntityModified(list);
+            return;
+        }
+
+        // Fallback for standalone / tests without useEngineToEditor
         list.forEach(entity => {
             const id = entity.id;
             const transform = entity.components?.Transform || entity.components?.UITransform;
@@ -45,8 +52,6 @@ export const engineBridge = {
                 }
             }
         });
-
-        if (onNativeEntityModified) onNativeEntityModified(entities);
     });
 
     engine.bus.on("editor:tool:pickup", (data) => {
