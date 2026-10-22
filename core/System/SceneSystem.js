@@ -125,12 +125,33 @@ export default class SceneSystem {
 
         const rw = world.settings.ui?.width || 1920;
         const rh = world.settings.ui?.height || 1080;
-        this.game.camera.snapTo(rw / 2, rh / 2);
 
-        if (Config.ENGINE_MODE === "runtime") {
-            this.game.camera.scale = 1;
-        } else {
-            this.game.camera.scale = 0.5;
+        if (this.game.camera) {
+            if (Config.ENGINE_MODE === "runtime") {
+                const camSettings = world.settings?.camera;
+                const camX = (camSettings?.x !== undefined && camSettings?.x !== null && !isNaN(camSettings.x))
+                    ? Number(camSettings.x)
+                    : rw / 2;
+                const camY = (camSettings?.y !== undefined && camSettings?.y !== null && !isNaN(camSettings.y))
+                    ? Number(camSettings.y)
+                    : rh / 2;
+                this.game.camera.snapTo(camX, camY);
+
+                const camZoom = camSettings?.zoom;
+                this.game.camera.scale = (typeof camZoom === 'number' && !isNaN(camZoom) && camZoom > 0)
+                    ? Number(camZoom)
+                    : 1;
+
+                const camLerp = camSettings?.lerp;
+                if (typeof camLerp === 'number' && !isNaN(camLerp)) {
+                    const clampedLerp = Math.max(0, Math.min(1, Number(camLerp)));
+                    this.game.camera.lerp = clampedLerp;
+                    this.game.camera.defaultLerp = clampedLerp;
+                }
+            } else {
+                this.game.camera.snapTo(rw / 2, rh / 2);
+                this.game.camera.scale = 0.5;
+            }
         }
 
         if (this.game.cameraController) {

@@ -1,5 +1,6 @@
 import { processDialogueRunner, processChoicePresenter } from './Dialogue/DialogueRunnerHelper.js';
 import { processPlatformerController, processPlatformerAnimator } from './Platformer/PlatformerHelper.js';
+import { processTopDownController, processTopDownAnimator } from './TopDown/TopDownHelper.js';
 import { processPlatformerCombat, processEnemyCombat } from './Combat/CombatHelper.js';
 import { processEnemyChaser } from './AI/AIHelper.js';
 import {
@@ -32,6 +33,15 @@ export class ToolkitContextHandler {
           return processPlatformerController(args[0], args[1], args[2], getCtx(args[3]));
         },
         processAnimator: (state, inputs, outputs, ctx) => processPlatformerAnimator(state, inputs, outputs, getCtx(ctx), contextParams?.node)
+      },
+      topdown: {
+        processController: (...args) => {
+          if (args.length <= 2 || (args[2] === undefined && args[3] === undefined)) {
+            return processTopDownController(args[0], getCtx(args[1]));
+          }
+          return processTopDownController(args[0], args[1], args[2], getCtx(args[3]));
+        },
+        processAnimator: (state, inputs, outputs, ctx) => processTopDownAnimator(state, inputs, outputs, getCtx(ctx), contextParams?.node)
       },
       combat: {
         processPlatformerCombat: (state, inputs, outputs, ctx) => processPlatformerCombat(state, inputs, outputs, getCtx(ctx), contextParams?.node),

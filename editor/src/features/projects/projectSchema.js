@@ -44,8 +44,8 @@ export const projectSchema = (data = {}) => {
       camera: {
         x: Number(data.settings?.camera?.x ?? 960),
         y: Number(data.settings?.camera?.y ?? 540),
-        zoom: Number(data.settings?.camera?.zoom ?? 1),
-        lerp: Number(data.settings?.camera?.lerp ?? 0.1)
+        zoom: Number(data.settings?.camera?.zoom ?? 1) > 0 ? Number(data.settings?.camera?.zoom ?? 1) : 1,
+        lerp: Math.max(0, Math.min(1, Number(data.settings?.camera?.lerp ?? 0.1)))
       },
 
       world: {

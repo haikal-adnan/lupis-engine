@@ -56,6 +56,12 @@ export function useInspectorBinding(
         if (category === 'ui' || category === 'grid' || category === 'camera' || category === 'colliders' || category === 'world') {
           const val = projectStore.project?.settings?.[category]?.[propName];
           if (category === 'colliders' && val === undefined) return true;
+          if (category === 'camera' && val === undefined) {
+            if (propName === 'zoom') return 1;
+            if (propName === 'lerp') return 0.1;
+            if (propName === 'x') return (projectStore.project?.settings?.ui?.width || 1920) / 2;
+            if (propName === 'y') return (projectStore.project?.settings?.ui?.height || 1080) / 2;
+          }
           return val;
         }
         if (category === 'autoSave') {

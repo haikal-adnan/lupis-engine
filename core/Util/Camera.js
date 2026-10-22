@@ -7,7 +7,8 @@ export default class Camera {
         this.scale = 1;
         this.target = null;
         this.offset = { x: 0, y: 0 }; 
-        this.lerp = 0.5;
+        this.lerp = 0.1;
+        this.defaultLerp = 0.1;
         this.isFirstFrameTracking = false; 
     }
 
@@ -16,9 +17,13 @@ export default class Camera {
         this.y = y;
     }
 
-    setTarget(entity, speed = 0.1, offset = { x: 0, y: 0 }) {
+    setTarget(entity, speed, offset = { x: 0, y: 0 }) {
         this.target = entity;
-        this.lerp = (typeof speed === 'number' && !isNaN(speed)) ? speed : 0.1;
+        if (typeof speed === 'number' && !isNaN(speed)) {
+            this.lerp = speed;
+        } else if (typeof this.defaultLerp === 'number') {
+            this.lerp = this.defaultLerp;
+        }
         this.offset = {
             x: (offset && typeof offset.x === 'number') ? offset.x : 0,
             y: (offset && typeof offset.y === 'number') ? offset.y : 0
@@ -28,7 +33,9 @@ export default class Camera {
 
     clearTarget() {
         this.target = null;
-        this.lerp = 0.5;
+        if (typeof this.defaultLerp === 'number') {
+            this.lerp = this.defaultLerp;
+        }
         this.isFirstFrameTracking = false;
     }
 
@@ -39,6 +46,9 @@ export default class Camera {
                 const transform = this.target.components.Transform;
                 tX = Number(transform.x) || 0;
                 tY = Number(transform.y) || 0;
+            } else if (typeof this.target.x === 'number' && typeof this.target.y === 'number') {
+                tX = this.target.x;
+                tY = this.target.y;
             }
 
             const desiredX = tX + this.offset.x;
@@ -50,7 +60,8 @@ export default class Camera {
                 this.isFirstFrameTracking = false;
             } else {
                 const safeDt = dt || 0.016; 
-                const k = 1 - Math.pow(1 - this.lerp, safeDt * 60.0); 
+                const clampedLerp = Math.max(0, Math.min(1, (typeof this.lerp === 'number' && !isNaN(this.lerp)) ? this.lerp : 0.1));
+                const k = 1 - Math.pow(1 - clampedLerp, safeDt * 60.0); 
 
                 let nx = this.x + (desiredX - this.x) * k;
                 let ny = this.y + (desiredY - this.y) * k;

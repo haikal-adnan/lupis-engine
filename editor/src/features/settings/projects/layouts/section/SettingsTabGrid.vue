@@ -41,8 +41,8 @@
 
     <section class="space-y-5">
       <div class="border-b border-border pb-2">
-        <h4 class="text-sm font-bold text-foreground">Editor Camera</h4>
-        <p class="text-xs text-muted-foreground mt-0.5">The default editor viewport perspective relative to the game world.</p>
+        <h4 class="text-sm font-bold text-foreground">Camera</h4>
+        <p class="text-xs text-muted-foreground mt-0.5">The default camera viewport perspective, zoom, and follow smoothing in preview and runtime.</p>
       </div>
       
       <div class="space-y-6">

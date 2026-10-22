@@ -428,6 +428,9 @@ export const useProjectStore = defineStore('project', {
     },
 
     updateCameraSettings(updates) {
+      if (!this.project) return;
+      if (!this.project.settings) this.project.settings = {};
+      if (!this.project.settings.camera) this.project.settings.camera = {};
       Object.assign(this.project.settings.camera, updates);
       this.markAsDirty();
     },

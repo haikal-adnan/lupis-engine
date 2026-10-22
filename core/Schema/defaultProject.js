@@ -25,8 +25,8 @@ export const DEFAULT_PROJECT_PAYLOAD = {
         smartGuides: true
       },
       camera: {
-        x: 0,
-        y: 0,
+        x: 960,
+        y: 540,
         zoom: 1,
         lerp: 0.1
       },
