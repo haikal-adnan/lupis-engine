@@ -84,13 +84,19 @@ Leaving the editor with unsaved changes shows a warning. Auto-save is off by def
 
 ## Shortcuts
 
-| Shortcut | Action |
-| :--- | :--- |
-| `W` | Move tool |
-| `E` | Rotate tool |
-| `R` | Scale tool |
-| `Delete` / `Backspace` | Delete selection |
-| `Ctrl + D` | Duplicate selection |
-| `Ctrl + Z` / `Ctrl + Y` | Undo / redo |
-| `F` | Focus camera on selection |
-| `Space` + drag | Pan viewport |
+Key shortcuts commonly used in the editor. For the comprehensive per-tab mapping, see [editor-shortcuts.md](editor-shortcuts.md).
+
+| Shortcut | Action | Context |
+| :--- | :--- | :--- |
+| `Ctrl + S` | Save project | Global |
+| `Ctrl + Z` / `Ctrl + Y` | Undo / redo | Global |
+| `Space` + drag | Pan viewport camera | Viewports |
+| `Mouse Wheel` | Zoom viewport | Viewports |
+| `Ctrl + Click` | Select direct child entity | Scene Viewport |
+| `Shift + Click` / drag | Additive multi-selection | Hierarchy / Viewports |
+| `Ctrl + D` | Duplicate selection | Hierarchy / Animator |
+| `Delete` | Delete selection | Hierarchy / Graphs / Timeline |
+| `V`, `B`, `E`, `G`, `I` | Select, Brush, Eraser, Bucket, Eyedropper | Tilemap Editor |
+| `V`, `E`, `P`, `S`, `L`, `G`, `C` | Shape drawing & editing tools | Custom Shape Editor |
+| `Ctrl + Drag` | Marquee box select nodes | Blueprint Graph |
+| `Escape` | Clear selection / close modal | Inspector / Modals |

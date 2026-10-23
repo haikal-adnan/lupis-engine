@@ -550,6 +550,40 @@ describe('useNodeOverride & Blueprint Sync Mechanism', () => {
       });
     });
 
+    it('ensures valueModes is guaranteed to be variable when variableBindings is present during sync node', async () => {
+      const nodeWithVarBindingOnly = {
+        id: 'node_sync_var',
+        type: 'actionSetGameState',
+        position: { x: 50, y: 50 },
+        settings: { headerTitle: 'Set Game State' },
+        inputs: [
+          { id: 'execIn', dataType: 'execution' },
+          { id: 'action', dataType: 'string' }
+        ],
+        outputs: [
+          { id: 'execOut', dataType: 'execution' }
+        ],
+        data: {
+          values: { action: '' }, // empty string value
+          variableBindings: { action: 'var_game_state_1' } // using variable
+          // valueModes omitted or not initialized
+        }
+      };
+
+      const script = {
+        id: 'script_sync_var_test',
+        nodes: [nodeWithVarBindingOnly],
+        edges: []
+      };
+
+      const result = overrideNodeFromBlueprint(nodeWithVarBindingOnly, script);
+
+      expect(result.success).toBe(true);
+      // Synchronized valueModes must ensure 'variable' so inspector UI does not detect it as "Not Set"
+      expect(nodeWithVarBindingOnly.data.valueModes.action).toBe('variable');
+      expect(nodeWithVarBindingOnly.data.variableBindings.action).toBe('var_game_state_1');
+    });
+
     it('preserves dynamic ports on nodes supporting dynamicMode', async () => {
       const dynamicMathNode = {
         id: 'node_dynamic_math',

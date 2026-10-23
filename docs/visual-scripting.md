@@ -39,40 +39,42 @@ Every node belongs to one of three roles:
 
 ---
 
-## 2. The 10 Consolidated Blueprint Modules (128 Nodes)
+## 2. The 11 Blueprint Modules (165 Built-in Nodes)
 
-The visual scripting library is consolidated into **10 core modules** located in `editor/src/features/nodes/library/blueprints/`, offering **128 atomic and composite nodes**:
+The visual scripting library is organized into **11 core category modules** (plus `BlueprintCustom`) located in `editor/src/features/nodes/library/blueprints/`, offering **165 built-in atomic and composite nodes**. For the complete specification of every node, port, option, and default code, see [Blueprint Nodes Reference](blueprint-nodes.md).
 
 ```mermaid
 graph TD
-    A["Lupis Engine Blueprint Library (128 Nodes)"]
-    A --> C1["1. Flow & Logic (13)"]
-    A --> C2["2. Input & Controls (7)"]
-    A --> C3["3. Entity & Transform (12)"]
-    A --> C4["4. Physics & Collision (6)"]
+    A["Lupis Engine Blueprint Library (165 Built-in Nodes)"]
+    A --> C1["1. Flow & Logic (14)"]
+    A --> C2["2. Input & Controls (8)"]
+    A --> C3["3. Entity & Transform (20)"]
+    A --> C4["4. Physics & Collision (9)"]
     A --> C5["5. Rendering & Camera (14)"]
-    A --> C6["6. Animation (16)"]
+    A --> C6["6. Animation (17)"]
     A --> C7["7. Collections & Data (20)"]
-    A --> C8["8. Math & Random (12)"]
-    A --> C9["9. Scene & Lifecycle (11)"]
-    A --> C10["10. Audio & System (17)"]
+    A --> C8["8. Math & Random (16)"]
+    A --> C9["9. Scene & Lifecycle (13)"]
+    A --> C10["10. Audio & System (15)"]
+    A --> C11["11. Helper & Tool (19)"]
 ```
 
 ### Module Breakdown
 
-| Module | Category ID | Color | Icon | Nodes Count | Included Node Types |
+| Module | Category ID | Color | Icon | Nodes Count | Reference |
 | :--- | :--- | :--- | :--- | :---: | :--- |
-| **Flow & Logic** | `flow_logic` | `#3F51B5` | `GitBranch` | **13** | `logicBranch` (If/Else), `logicSwitch`, `logicCompare`, `logicAnd`, `logicOr`, `logicNot`, `logicLoop` (For), `logicForEach`, `logicWhile`, `logicFlowMerge`, `logicDelay`, `logicCooldown`, `logicTypewriter`. |
-| **Input & Controls** | `input_controls` | `#4CAF50` | `Gamepad2` | **7** | `eventOnKey`, `getKeyState`, `calculateAxis2d`, `simulateKey`, `eventPointerTap` (Unified Click/Tap), `eventPointerDrag` (Unified Drag/Swipe), `mouseEntityInteract`. |
-| **Entity & Transform** | `game_entity` | `#64B5F6` | `Box` | **14** | `entitySpawn`, `entityDestroy` (with `destroyParent` toggle), `entityDestroyByTag`, `layerDestroy`, `entityClone`, `entityGetChildren`, `entityGetParent`, `getObject`, `setObject`, `findClosestByTag`, `getTransform`, `setTransform`, `getLayer`, `setLayer`. |
-| **Physics & Collision** | `game_physics` | `#8BC34A` | `Activity` | **6** | `moveAndSlide`, `solidCollision`, `triggerZone`, `getPhysics`, `setPhysics`, `setFaceDirection`. |
-| **Rendering & Camera** | `game_renderer` | `#00ACC1` | `Palette` | **14** | `getSprite`, `setSprite`, `getText`, `setText`, `getShape`, `setShape`, `getTilemap`, `setTilemap`, `batchSet`, `actionFadeScreen`, `actionCameraFollow`, `actionCameraStopFollow`, `actionCameraSetTransform`, `queryCameraInfo`. |
-| **Animation** | `game_animation` | `#E91E63` | `Film` | **16** | 10 Tweens (`logicTweenValue`, `tweenMoveTo`, `tweenScaleTo`, `tweenRotateTo`, `tweenResizeTo`, `tweenFadeTo`, `tweenCropTo`, `tweenFillAmount`, `actionShakeTransform`, `uiButtonScaleEffect`) + 6 Animator Clips (`playAnimation`, `pauseAnimation`, `getAnimator`, `setAnimator`, `getClipProp`, `setClipProp`). |
-| **Collections & Data** | `data_collections` | `#FF8A65` | `Database` | **20** | 10 List Nodes (`listGet`, `listSet`, `listPush`, `listInsert`, `listRemoveAt`, `listLength`, `listContains`, `listIndexOf`, `listConcat`, `listShuffle`) + 8 Map Nodes (`mapGet`, `mapSet`, `mapRemove`, `mapHas`, `mapMerge`, `mapKeys`, `mapValues`, `mapSize`) + 2 Nested Path Accessors (`getFromPath`, `setFromPath`). |
-| **Math & Random** | `math_operations` | `#009688` | `Calculator` | **12** | 8 Math Operations (`mathAdd`, `mathSubtract`, `mathMultiply`, `mathDivide`, `mathNegate`, `mathRound`, `mathDistance2d`, `mathDirection2d`) + 4 Random Operations (`randomSmart`, `randomChance`, `randomFromList`, `randomColor`). |
-| **Scene & Lifecycle** | `game_lifecycle` | `#9C27B0` | `PlayCircle` | **12** | 6 Lifecycle Events (`eventTick`, `eventGameStart`, `eventGamePause`, `eventGameResume`, `eventGameRestart`, `eventGameQuit`) + 2 Game State Actions (`actionSetGameState`, `changeScreen`) + 4 Scene Nodes (`eventSceneStart`, `changeScene`, `restartScene`, `getCurrentScene`). |
-| **Audio & System** | `system_utilities` | `#06B6D4` | `Sliders` | **15** | 5 Audio Nodes (`playAudio`, `stopAudio`, `setAudioVolume`, `getAudioVolume`, `setAudioMute`) + 2 Variables (`variableGet`, `variableSet`) + 4 Strings (`stringFormat`, `stringJoin`, `stringLength`, `anyToString`) + 2 Signals (`actionEmitSignal`, `eventOnSignal`) + 2 Notifications. |
-| **Helper & Tool** | `helper_tool` | `#AB47BC` | `Wrench` | **5** | `volumeSliderManager` (Unified 4-Channel Automatic Slider), `switchButtonShape` (Shape-based Toggle Switch with Sliding Knob, `isOn` boolean output & `onOn`/`onOff` execution outputs), `switchButtonImage` (Image-based Toggle Switch with 1-4 Assets Support, `isOn` boolean output & `onOn`/`onOff` execution outputs), `vnDialogueRunner` (Dialogue Runner), `vnChoicePresenter` (Choice Presenter). |
+| **Flow & Logic** | `flow_logic` | `#3F51B5` | `GitBranch` | **14** | [§2.1 Flow & Logic](blueprint-nodes.md#21-flow-logic) |
+| **Input & Controls** | `input_controls` | `#4CAF50` | `Gamepad2` | **8** | [§2.2 Input & Controls](blueprint-nodes.md#22-input-controls) |
+| **Entity & Transform** | `game_entity` | `#64B5F6` | `Box` | **20** | [§2.3 Entity & Transform](blueprint-nodes.md#23-game-entity) |
+| **Physics & Collision** | `game_physics` | `#8BC34A` | `Activity` | **9** | [§2.4 Physics & Collision](blueprint-nodes.md#24-game-physics) |
+| **Rendering & Camera** | `game_renderer` | `#00ACC1` | `Palette` | **14** | [§2.5 Rendering & Camera](blueprint-nodes.md#25-game-renderer) |
+| **Animation** | `game_animation` | `#E91E63` | `Film` | **17** | [§2.6 Animation](blueprint-nodes.md#26-game-animation) |
+| **Collections & Data** | `data_collections` | `#FF8A65` | `Database` | **20** | [§2.7 Collections & Data](blueprint-nodes.md#27-data-collections) |
+| **Math & Random** | `math_operations` | `#009688` | `Calculator` | **16** | [§2.8 Math & Random](blueprint-nodes.md#28-math-operations) |
+| **Scene & Lifecycle** | `game_lifecycle` | `#9C27B0` | `PlayCircle` | **13** | [§2.9 Scene & Lifecycle](blueprint-nodes.md#29-game-lifecycle) |
+| **Audio & System** | `system_utilities` | `#06B6D4` | `Sliders` | **15** | [§2.10 Audio & System](blueprint-nodes.md#210-system-utilities) |
+| **Helper & Tool** | `helper_tool` | `#AB47BC` | `Wrench` | **19** | [§2.11 Helper & Tool](blueprint-nodes.md#211-helper-tool) |
+| **Custom** | `custom` | `#8B5CF6` | `Cpu` | **1** *(template)* | [§2.12 Custom](blueprint-nodes.md#212-custom) |
 
 ---
 

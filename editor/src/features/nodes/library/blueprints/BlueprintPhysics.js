@@ -422,7 +422,7 @@ return;`
           { id: 'targetEntity', dataType: 'string', color: '#F48FB1', defaultValue: 'self' },
           { id: 'forceX', dataType: 'number', color: '#64B5F6', defaultValue: 200 },
           { id: 'forceY', dataType: 'number', color: '#64B5F6', defaultValue: -100 },
-          { id: 'duration', dataType: 'number', color: '#64B5F6', defaultValue: 300 },
+          { id: 'duration', dataType: 'number', color: '#64B5F6', defaultValue: 0.3 },
           { id: 'friction', dataType: 'number', color: '#64B5F6', defaultValue: 0.9 }
         ],
         outputs: [
@@ -435,7 +435,7 @@ return;`
             targetEntity: 'self',
             forceX: 200,
             forceY: -100,
-            duration: 300,
+            duration: 0.3,
             friction: 0.9
           },
           code:
@@ -446,7 +446,7 @@ const phys = entity.components && entity.components.Physics;
 const forceX = Number(inputs.forceX) || 0;
 const forceY = Number(inputs.forceY) || 0;
 const rawDuration = Number(inputs.duration);
-const duration = isNaN(rawDuration) ? 300 : Math.max(0, rawDuration);
+const duration = isNaN(rawDuration) ? 0.3 : Math.max(0, rawDuration);
 const friction = Number(inputs.friction) || 0.9;
 
 if (phys) {
@@ -474,8 +474,7 @@ if (typeof context.onTick === 'function') {
   context.onTick((dt) => {
     if (!context.state.isKnocked) return;
     const deltaSec = typeof dt === 'number' ? dt : Number(context.dt || 0.016);
-    const deltaMs = deltaSec * 1000;
-    context.state.knockbackRemaining -= deltaMs;
+    context.state.knockbackRemaining -= deltaSec;
     context.state.knockbackVx *= friction;
     context.state.knockbackVy *= friction;
 

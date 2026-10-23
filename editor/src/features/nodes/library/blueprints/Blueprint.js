@@ -43,9 +43,9 @@ import { Boxes } from 'lucide-vue-next';
  *          `data`, `pretty`, `reset`, `found`, `volume`, `pitch`, `audioType`
  *    - Status Boolean (pola `is`/`has`/`use`):
  *        * `isDown`, `isColliding`, `isInside`, `isHovering`, `isHolding`, `isTyping`,
- *          `hasTarget`, `useRaycast`, `useColliderBounds`, `isMute`
+ *          `hasTarget`, `useRaycast`, `useColliderBounds`, `isMute`, `isActive`, `isLooping`
  *    - Waktu & Durasi:
- *        * `deltaTime`, `duration`, `delay`
+ *        * `deltaTime`, `duration`, `delay`, `elapsedTime`, `remainingTime`, `progress`
  *    - Koleksi & Data:
  *        * `list`, `map`, `item`, `key`, `index`, `eventData`
  *        * Tambahan: `collection`, `path`, `listA`, `listB`, `mapA`, `mapB`, `keysList`,

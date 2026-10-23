@@ -648,10 +648,10 @@ export function processChoicePresenter(stateOrParams, inputsOrContext, outputsMa
     const isPointerDown = pointer && pointer.down;
 
     const rawDelay = Number(inputs.activationDelay);
-    const delay = isNaN(rawDelay) ? 250 : Math.max(0, rawDelay);
+    const delay = isNaN(rawDelay) ? 0.25 : Math.max(0, rawDelay);
     const now = Date.now();
 
-    if (now - state.choiceShowTime < delay) {
+    if ((now - state.choiceShowTime) / 1000 < delay) {
       state.choiceWasDown = Boolean(isPointerDown);
       return;
     }

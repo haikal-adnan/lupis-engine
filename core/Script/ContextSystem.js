@@ -105,12 +105,13 @@ export default class ContextSystem {
         fade: (mode, duration, color, onComplete) => {
           const ts = this.game.transitionSystem;
           if (!ts) return;
+          const dur = (duration !== undefined && !isNaN(Number(duration))) ? Math.max(0.0001, Number(duration)) : 1.0;
           if (mode === 'fade_out') {
-            ts.fadeOut(duration, color, onComplete);
+            ts.fadeOut(dur, color, onComplete);
           } else if (mode === 'fade_in') {
-            ts.fadeIn(duration, color, onComplete);
+            ts.fadeIn(dur, color, onComplete);
           } else if (mode === 'fade') {
-            const half = duration / 2;
+            const half = dur / 2;
             ts.fadeOut(half, color, () => {
               ts.fadeIn(half, color, onComplete);
             });

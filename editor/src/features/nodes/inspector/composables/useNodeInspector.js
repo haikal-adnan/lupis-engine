@@ -46,9 +46,15 @@ export function useNodeInspector(props = {}) {
 
   const isNotSet = (value) => value === undefined || value === null || value === '';
 
-  const isErrorNotSet = (key, value) => {
+  const isErrorNotSet = (key, value = null) => {
     if (String(key).startsWith('targetEntity') || String(key).startsWith('targetLayer')) return false;
-    return isNotSet(value);
+    const mode = getMode(key);
+    if (mode === 'variable') {
+      const binding = getVariableBinding(key);
+      return isNotSet(binding);
+    }
+    const val = value !== null && value !== undefined ? value : getValue(key);
+    return isNotSet(val);
   };
 
   const disconnectInvalidEdges = (portId, newDataType = null) => {
@@ -91,15 +97,45 @@ export function useNodeInspector(props = {}) {
   }
 
   function getMode(key) {
-    return node.value?.data?.valueModes?.[key] || 'input';
+    const modes = node.value?.data?.valueModes || {};
+    if (modes[key]) return modes[key];
+
+    const allPorts = [...(node.value?.inputs || []), ...(node.value?.outputs || [])];
+    const matchingPort = allPorts.find(p => p.id === key || p.label === key);
+    if (matchingPort) {
+      if (matchingPort.id && modes[matchingPort.id]) return modes[matchingPort.id];
+      if (matchingPort.label && modes[matchingPort.label]) return modes[matchingPort.label];
+    }
+
+    if (getVariableBinding(key)) return 'variable';
+    return 'input';
   }
 
   function getVariableBinding(key) {
-    return node.value?.data?.variableBindings?.[key] || null;
+    const bindings = node.value?.data?.variableBindings;
+    if (!bindings) return null;
+    if (bindings[key] !== undefined && bindings[key] !== null && bindings[key] !== '') return bindings[key];
+
+    const allPorts = [...(node.value?.inputs || []), ...(node.value?.outputs || [])];
+    const matchingPort = allPorts.find(p => p.id === key || p.label === key);
+    if (matchingPort) {
+      if (matchingPort.id && bindings[matchingPort.id]) return bindings[matchingPort.id];
+      if (matchingPort.label && bindings[matchingPort.label]) return bindings[matchingPort.label];
+    }
+    return null;
   }
 
   function getVariableModifier(key) {
-    return node.value?.data?.variableModifiers?.[key] || { type: 'none', value: 0 };
+    const mods = node.value?.data?.variableModifiers;
+    if (mods?.[key]) return mods[key];
+
+    const allPorts = [...(node.value?.inputs || []), ...(node.value?.outputs || [])];
+    const matchingPort = allPorts.find(p => p.id === key || p.label === key);
+    if (matchingPort) {
+      if (matchingPort.id && mods?.[matchingPort.id]) return mods[matchingPort.id];
+      if (matchingPort.label && mods?.[matchingPort.label]) return mods[matchingPort.label];
+    }
+    return { type: 'none', value: 0 };
   }
 
   function updateNodeDataField(path, newValue) {

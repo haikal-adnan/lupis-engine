@@ -10,8 +10,14 @@ Lupis Engine is a web-based 2D/2.5D game engine with a visual editor. The runtim
 | [Architecture](architecture.md) | Understand how the runtime, editor, and service fit together. |
 | [Core API](core-api.md) | Start the engine, create entities, and use the runtime subsystems. |
 | [Visual scripting](visual-scripting.md) | Understand blueprint graphs, pins, and script execution. |
+| [Blueprint nodes](blueprint-nodes.md) | Reference all 165 built-in blueprint nodes, ports, options, and defaults. |
 | [Context System](context-system.md) | Reference the runtime scripting facade, domains, and assertion contracts. |
+| [Dashboard & Project Management](markdown/dashboard.md) | Manage projects, import/export archives, and configure OPFS workspace storage. |
+| [Scene Hierarchy](markdown/scene-hierarchy.md) | Organize scenes, world and UI layers, entity parent-child trees, and prefabs. |
+| [Bottom Dock Panels](markdown/bottom-dock.md) | Manage assets, world/UI prefabs, runtime console diagnostics, and blueprint scripts. |
 | [Editor guide](editor-guide.md) | Use the editor: panels, tools, assets, shortcuts. |
+| [Editor shortcuts](editor-shortcuts.md) | Look up all keyboard and mouse shortcuts mapped across editor tabs and tools. |
+| [Editor menus](editor-menus.md) | Reference all context menus, dropdowns, and burger menus across the editor. |
 | [Editor reference](editor-reference.md) | Work on the editor codebase: stores, history, compiler, bridge. |
 | [Schema contract](schema-contract.md) | Look up the authoritative data schemas, file formats, bridge events, and REST API. |
 

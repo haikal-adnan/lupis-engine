@@ -21,7 +21,7 @@ export const BlueprintAnimation = {
           { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
           { id: 'startValue', dataType: 'number', color: '#64B5F6', defaultValue: 0 },
           { id: 'endValue', dataType: 'number', color: '#64B5F6', defaultValue: 100 },
-          { id: 'duration', dataType: 'number', color: '#64B5F6', defaultValue: 1000 }
+          { id: 'duration', dataType: 'number', color: '#64B5F6', defaultValue: 1.0 }
         ],
         outputs: [
           { id: 'onUpdate', dataType: 'execution', color: '#FFFFFF' },
@@ -32,7 +32,7 @@ export const BlueprintAnimation = {
           values: {
             startValue: 0,
             endValue: 100,
-            duration: 1000,
+            duration: 1.0,
             easing: 'smooth'
           },
           options: {
@@ -47,7 +47,7 @@ export const BlueprintAnimation = {
 `const start = Number(inputs.startValue) || 0;
 const end = Number(inputs.endValue) || 0;
 const rawDuration = Number(inputs.duration);
-const duration = isNaN(rawDuration) ? 1000 : Math.max(0, rawDuration);
+const duration = isNaN(rawDuration) ? 1 : Math.max(0, rawDuration);
 const easing = (node.data && node.data.values && node.data.values.easing) ? node.data.values.easing : 'smooth';
 
 if (duration <= 0) {
@@ -74,8 +74,8 @@ function easeFactor(type, p) {
 
 context.onTick((dt) => {
   if (!context.state.isActive) return;
-  const deltaMs = (typeof dt === 'number' ? dt : context.dt) * 1000;
-  context.state.elapsed += deltaMs;
+  const deltaSec = typeof dt === 'number' ? dt : Number(context.dt || 0.016);
+  context.state.elapsed += deltaSec;
 
   const progress = Math.min(context.state.elapsed / context.state.duration, 1.0);
   const factor = easeFactor(easing, progress);
@@ -115,7 +115,7 @@ return;`
           { id: 'targetEntity', dataType: 'string', color: '#F48FB1', defaultValue: 'self' },
           { id: 'x', dataType: 'number', color: '#64B5F6', defaultValue: 0 },
           { id: 'y', dataType: 'number', color: '#64B5F6', defaultValue: 0 },
-          { id: 'duration', dataType: 'number', color: '#64B5F6', defaultValue: 1000 }
+          { id: 'duration', dataType: 'number', color: '#64B5F6', defaultValue: 1.0 }
         ],
         outputs: [
           { id: 'execOut', dataType: 'execution', color: '#FFFFFF' },
@@ -126,7 +126,7 @@ return;`
             targetEntity: 'self',
             x: 0,
             y: 0,
-            duration: 1000,
+            duration: 1.0,
             easing: 'smooth'
           },
           options: {
@@ -143,7 +143,7 @@ return;`
 const targetX = Number(inputs.x) || 0;
 const targetY = Number(inputs.y) || 0;
 const rawDuration = Number(inputs.duration);
-const duration = isNaN(rawDuration) ? 1000 : Math.max(0, rawDuration);
+const duration = isNaN(rawDuration) ? 1 : Math.max(0, rawDuration);
 const easing = (node.data && node.data.values && node.data.values.easing) ? node.data.values.easing : 'smooth';
 
 const entity = context.assert.exists(context.entity.get(targetId), 'Target entity must exist');
@@ -183,8 +183,8 @@ function easeFactor(type, p) {
 
 context.onTick((dt) => {
   if (!context.state.isActive) return;
-  const deltaMs = (typeof dt === 'number' ? dt : context.dt) * 1000;
-  context.state.elapsed += deltaMs;
+  const deltaSec = typeof dt === 'number' ? dt : Number(context.dt || 0.016);
+  context.state.elapsed += deltaSec;
 
   const progress = Math.min(context.state.elapsed / context.state.duration, 1.0);
   const factor = easeFactor(easing, progress);
@@ -223,7 +223,7 @@ return;`
           { id: 'targetEntity', dataType: 'string', color: '#F48FB1', defaultValue: 'self' },
           { id: 'scaleX', dataType: 'number', color: '#64B5F6', defaultValue: 1.0 },
           { id: 'scaleY', dataType: 'number', color: '#64B5F6', defaultValue: 1.0 },
-          { id: 'duration', dataType: 'number', color: '#64B5F6', defaultValue: 500 }
+          { id: 'duration', dataType: 'number', color: '#64B5F6', defaultValue: 0.5 }
         ],
         outputs: [
           { id: 'execOut', dataType: 'execution', color: '#FFFFFF' },
@@ -234,7 +234,7 @@ return;`
             targetEntity: 'self',
             scaleX: 1.0,
             scaleY: 1.0,
-            duration: 500,
+            duration: 0.5,
             easing: 'smooth'
           },
           options: {
@@ -251,7 +251,7 @@ return;`
 const targetScaleX = Number(inputs.scaleX) || 1;
 const targetScaleY = Number(inputs.scaleY) || 1;
 const rawDuration = Number(inputs.duration);
-const duration = isNaN(rawDuration) ? 500 : Math.max(0, rawDuration);
+const duration = isNaN(rawDuration) ? 0.5 : Math.max(0, rawDuration);
 const easing = (node.data && node.data.values && node.data.values.easing) ? node.data.values.easing : 'smooth';
 
 const entity = context.assert.exists(context.entity.get(targetId), 'Target entity must exist');
@@ -291,8 +291,8 @@ function easeFactor(type, p) {
 
 context.onTick((dt) => {
   if (!context.state.isActive) return;
-  const deltaMs = (typeof dt === 'number' ? dt : context.dt) * 1000;
-  context.state.elapsed += deltaMs;
+  const deltaSec = typeof dt === 'number' ? dt : Number(context.dt || 0.016);
+  context.state.elapsed += deltaSec;
 
   const progress = Math.min(context.state.elapsed / context.state.duration, 1.0);
   const factor = easeFactor(easing, progress);
@@ -330,7 +330,7 @@ return;`
           { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
           { id: 'targetEntity', dataType: 'string', color: '#F48FB1', defaultValue: 'self' },
           { id: 'rotation', dataType: 'number', color: '#64B5F6', defaultValue: 0 },
-          { id: 'duration', dataType: 'number', color: '#64B5F6', defaultValue: 500 }
+          { id: 'duration', dataType: 'number', color: '#64B5F6', defaultValue: 0.5 }
         ],
         outputs: [
           { id: 'execOut', dataType: 'execution', color: '#FFFFFF' },
@@ -340,7 +340,7 @@ return;`
           values: {
             targetEntity: 'self',
             rotation: 0,
-            duration: 500,
+            duration: 0.5,
             easing: 'smooth'
           },
           options: {
@@ -356,7 +356,7 @@ return;`
 `const targetId = inputs.targetEntity;
 const targetRotation = Number(inputs.rotation) || 0;
 const rawDuration = Number(inputs.duration);
-const duration = isNaN(rawDuration) ? 500 : Math.max(0, rawDuration);
+const duration = isNaN(rawDuration) ? 0.5 : Math.max(0, rawDuration);
 const easing = (node.data && node.data.values && node.data.values.easing) ? node.data.values.easing : 'smooth';
 
 const entity = context.assert.exists(context.entity.get(targetId), 'Target entity must exist');
@@ -393,8 +393,8 @@ function easeFactor(type, p) {
 
 context.onTick((dt) => {
   if (!context.state.isActive) return;
-  const deltaMs = (typeof dt === 'number' ? dt : context.dt) * 1000;
-  context.state.elapsed += deltaMs;
+  const deltaSec = typeof dt === 'number' ? dt : Number(context.dt || 0.016);
+  context.state.elapsed += deltaSec;
 
   const progress = Math.min(context.state.elapsed / context.state.duration, 1.0);
   const factor = easeFactor(easing, progress);
@@ -431,7 +431,7 @@ return;`
           { id: 'targetEntity', dataType: 'string', color: '#F48FB1', defaultValue: 'self' },
           { id: 'width', dataType: 'number', color: '#64B5F6', defaultValue: 100 },
           { id: 'height', dataType: 'number', color: '#64B5F6', defaultValue: 100 },
-          { id: 'duration', dataType: 'number', color: '#64B5F6', defaultValue: 500 }
+          { id: 'duration', dataType: 'number', color: '#64B5F6', defaultValue: 0.5 }
         ],
         outputs: [
           { id: 'execOut', dataType: 'execution', color: '#FFFFFF' },
@@ -442,7 +442,7 @@ return;`
             targetEntity: 'self',
             width: 100,
             height: 100,
-            duration: 500,
+            duration: 0.5,
             easing: 'smooth'
           },
           options: {
@@ -459,7 +459,7 @@ return;`
 const targetWidth = Number(inputs.width) || 0;
 const targetHeight = Number(inputs.height) || 0;
 const rawDuration = Number(inputs.duration);
-const duration = isNaN(rawDuration) ? 500 : Math.max(0, rawDuration);
+const duration = isNaN(rawDuration) ? 0.5 : Math.max(0, rawDuration);
 const easing = (node.data && node.data.values && node.data.values.easing) ? node.data.values.easing : 'smooth';
 
 const entity = context.assert.exists(context.entity.get(targetId), 'Target entity must exist');
@@ -499,8 +499,8 @@ function easeFactor(type, p) {
 
 context.onTick((dt) => {
   if (!context.state.isActive) return;
-  const deltaMs = (typeof dt === 'number' ? dt : context.dt) * 1000;
-  context.state.elapsed += deltaMs;
+  const deltaSec = typeof dt === 'number' ? dt : Number(context.dt || 0.016);
+  context.state.elapsed += deltaSec;
 
   const progress = Math.min(context.state.elapsed / context.state.duration, 1.0);
   const factor = easeFactor(easing, progress);
@@ -538,7 +538,7 @@ return;`
           { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
           { id: 'targetEntity', dataType: 'string', color: '#F48FB1', defaultValue: 'self' },
           { id: 'opacity', dataType: 'number', color: '#64B5F6', defaultValue: 1.0 },
-          { id: 'duration', dataType: 'number', color: '#64B5F6', defaultValue: 500 }
+          { id: 'duration', dataType: 'number', color: '#64B5F6', defaultValue: 0.5 }
         ],
         outputs: [
           { id: 'execOut', dataType: 'execution', color: '#FFFFFF' },
@@ -548,7 +548,7 @@ return;`
           values: {
             targetEntity: 'self',
             opacity: 1.0,
-            duration: 500,
+            duration: 0.5,
             easing: 'smooth'
           },
           options: {
@@ -563,7 +563,7 @@ return;`
 `const targetId = inputs.targetEntity;
 const targetOpacity = Math.max(0, Math.min(1, Number(inputs.opacity) || 0));
 const rawDuration = Number(inputs.duration);
-const duration = isNaN(rawDuration) ? 500 : Math.max(0, rawDuration);
+const duration = isNaN(rawDuration) ? 0.5 : Math.max(0, rawDuration);
 const easing = (node.data && node.data.values && node.data.values.easing) ? node.data.values.easing : 'smooth';
 
 const entity = context.assert.exists(context.entity.get(targetId), 'Target entity must exist');
@@ -602,8 +602,8 @@ function easeFactor(type, p) {
 
 context.onTick((dt) => {
   if (!context.state.isActive) return;
-  const deltaMs = (typeof dt === 'number' ? dt : context.dt) * 1000;
-  context.state.elapsed += deltaMs;
+  const deltaSec = typeof dt === 'number' ? dt : Number(context.dt || 0.016);
+  context.state.elapsed += deltaSec;
 
   const progress = Math.min(context.state.elapsed / context.state.duration, 1.0);
   const factor = easeFactor(easing, progress);
@@ -647,7 +647,7 @@ return;`
           { id: 'sourceY', dataType: 'number', color: '#64B5F6', defaultValue: 0 },
           { id: 'sourceWidth', dataType: 'number', color: '#64B5F6', defaultValue: 100 },
           { id: 'sourceHeight', dataType: 'number', color: '#64B5F6', defaultValue: 100 },
-          { id: 'duration', dataType: 'number', color: '#64B5F6', defaultValue: 500 }
+          { id: 'duration', dataType: 'number', color: '#64B5F6', defaultValue: 0.5 }
         ],
         outputs: [
           { id: 'execOut', dataType: 'execution', color: '#FFFFFF' },
@@ -660,7 +660,7 @@ return;`
             sourceY: 0,
             sourceWidth: 100,
             sourceHeight: 100,
-            duration: 500,
+            duration: 0.5,
             easing: 'linear'
           },
           options: {
@@ -678,7 +678,7 @@ const targetSY = Number(inputs.sourceY) || 0;
 const targetSW = Number(inputs.sourceWidth) || 0;
 const targetSH = Number(inputs.sourceHeight) || 0;
 const rawDuration = Number(inputs.duration);
-const duration = isNaN(rawDuration) ? 500 : Math.max(0, rawDuration);
+const duration = isNaN(rawDuration) ? 0.5 : Math.max(0, rawDuration);
 const easing = (node.data && node.data.values && node.data.values.easing) ? node.data.values.easing : 'linear';
 
 const entity = context.assert.exists(context.entity.get(targetId), 'Target entity must exist');
@@ -716,8 +716,8 @@ function easeFactor(type, p) {
 
 context.onTick((dt) => {
   if (!context.state.isActive) return;
-  const deltaMs = (typeof dt === 'number' ? dt : context.dt) * 1000;
-  context.state.elapsed += deltaMs;
+  const deltaSec = typeof dt === 'number' ? dt : Number(context.dt || 0.016);
+  context.state.elapsed += deltaSec;
 
   const progress = Math.min(context.state.elapsed / context.state.duration, 1.0);
   const factor = easeFactor(easing, progress);
@@ -900,8 +900,8 @@ function easeFactor(type, p) {
 
 context.onTick((dt) => {
   if (!context.state.isActive) return;
-  const deltaMs = (typeof dt === 'number' ? dt : context.dt) * 1000;
-  context.state.elapsed += deltaMs;
+  const deltaSec = typeof dt === 'number' ? dt : Number(context.dt || 0.016);
+  context.state.elapsed += deltaSec;
 
   const progress = Math.min(context.state.elapsed / context.state.duration, 1.0);
   const factor = easeFactor(easing, progress);
@@ -938,7 +938,7 @@ return;`
           { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
           { id: 'targetEntity', dataType: 'string', color: '#F48FB1', defaultValue: 'self' },
           { id: 'intensity', dataType: 'number', color: '#64B5F6', defaultValue: 10 },
-          { id: 'duration', dataType: 'number', color: '#64B5F6', defaultValue: 500 }
+          { id: 'duration', dataType: 'number', color: '#64B5F6', defaultValue: 0.5 }
         ],
         outputs: [
           { id: 'execOut', dataType: 'execution', color: '#FFFFFF' },
@@ -948,13 +948,13 @@ return;`
           values: {
             targetEntity: 'self',
             intensity: 10,
-            duration: 500
+            duration: 0.5
           },
           code: 
 `const targetId = inputs.targetEntity;
 const intensity = Number(inputs.intensity) || 10;
 const rawDuration = Number(inputs.duration);
-const duration = isNaN(rawDuration) ? 500 : Math.max(0, rawDuration);
+const duration = isNaN(rawDuration) ? 0.5 : Math.max(0, rawDuration);
 
 const entity = context.assert.exists(context.entity.get(targetId), 'Target entity must exist');
 const t = entity.components.UITransform || context.assert.hasComponent(entity, 'Transform');
@@ -975,8 +975,8 @@ context.state.isActive = true;
 
 context.onTick((dt) => {
   if (!context.state.isActive) return;
-  const deltaMs = (typeof dt === 'number' ? dt : context.dt) * 1000;
-  context.state.elapsed += deltaMs;
+  const deltaSec = typeof dt === 'number' ? dt : Number(context.dt || 0.016);
+  context.state.elapsed += deltaSec;
 
   const progress = Math.min(context.state.elapsed / context.state.duration, 1.0);
   const currentIntensity = context.state.intensity * (1.0 - progress);

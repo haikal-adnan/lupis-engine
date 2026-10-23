@@ -12,20 +12,20 @@ export default class TransitionSystem {
         this.onComplete = null;
     }
 
-    fadeOut(durationMs = 1000, colorHex = "#000000", callback = null) {
+    fadeOut(duration = 1.0, colorHex = "#000000", callback = null) {
         this.active = true;
         this.state = 'fade_out'; 
-        this.duration = (durationMs || 1000) / 1000; 
+        this.duration = Math.max(0.0001, Number(duration !== undefined ? duration : 1.0)); 
         this.timer = 0.0;
         this.alpha = 0.0;
         this.color = HexToVec4(colorHex);
         this.onComplete = callback;
     }
 
-    fadeIn(durationMs = 1000, colorHex = "#000000", callback = null) {
+    fadeIn(duration = 1.0, colorHex = "#000000", callback = null) {
         this.active = true;
         this.state = 'fade_in'; 
-        this.duration = (durationMs || 1000) / 1000; 
+        this.duration = Math.max(0.0001, Number(duration !== undefined ? duration : 1.0)); 
         this.timer = 0.0;
         this.alpha = 1.0;
         this.color = HexToVec4(colorHex);

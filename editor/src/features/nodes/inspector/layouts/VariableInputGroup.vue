@@ -64,7 +64,7 @@
       <BaseInput
         :model-value="customText"
         :disabled="disabled"
-        placeholder="{value} {value.upper} {value.lower}"
+        placeholder="{value}"
         @update:model-value="handleUpdateCustomText"
         data-testid="node-inspector-var-group-custom-text-input"
       />

@@ -670,21 +670,11 @@ interface ScriptEdge {
 | `list` | `#4DD0E1` (cyan) |
 | `map` | `#FF8A65` (coral) |
 
-### 8.4 Consolidated Blueprint Catalog and Context System Contract
+### 8.4 Blueprint Node Catalog and Context System Contract
 
-The production node library is structured into 10 domain modules containing 128 nodes (registered in [`editor/src/features/nodes/library/blueprints/index.js`](../editor/src/features/nodes/library/blueprints/index.js)):
-- `BlueprintFlow` (`flow_logic`, 13 nodes)
-- `BlueprintInput` (`input_controls`, 7 nodes)
-- `BlueprintEntity` (`game_entity`, 12 nodes)
-- `BlueprintPhysics` (`game_physics`, 6 nodes)
-- `BlueprintRenderer` (`game_renderer`, 14 nodes)
-- `BlueprintAnimation` (`game_animation`, 16 nodes)
-- `BlueprintCollections` (`data_collections`, 20 nodes)
-- `BlueprintMath` (`math_operations`, 14 nodes)
-- `BlueprintLifecycle` (`game_lifecycle`, 11 nodes)
-- `BlueprintSystem` (`system_utilities`, 17 nodes)
+For the complete catalog and specifications of all blueprint nodes across all category modules (registered in [`editor/src/features/nodes/library/blueprints/index.js`](../editor/src/features/nodes/library/blueprints/index.js)), see [Blueprint Nodes Reference](blueprint-nodes.md).
 
-All nodes evaluate against the 15 runtime domain facades provided by `ContextSystem` (`context.audio`, `context.scenes`, `context.transform`, `context.variables`, etc.). Nodes must never access internal engine state directly (`context.game`) or introduce defensive null checks (`?.` or `??`). See [Visual Scripting Guide](visual-scripting.md) and [Context System Reference](context-system.md).
+All nodes evaluate against the runtime domain facades provided by `ContextSystem` (`context.entity`, `context.audio`, `context.scene`, `context.toolkit`, etc.). Nodes must never access internal engine state directly (`context.game`) or introduce defensive null checks (`?.` or `??`). See [Visual Scripting Guide](visual-scripting.md) and [Context System Reference](context-system.md).
 
 ## 9. Engine initialization payload contract
 

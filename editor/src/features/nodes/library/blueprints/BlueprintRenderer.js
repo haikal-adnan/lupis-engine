@@ -480,7 +480,7 @@ return;`
 {
       type: 'actionFadeScreen',
       label: 'Fade Screen',
-      description: 'Fades the screen to black (or any color) and vice versa.',
+      description: 'Fades the screen to black (or any color) and vice versa over duration in seconds.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -491,7 +491,7 @@ return;`
         inputs: [
           { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
           { id: 'mode', dataType: 'string', color: '#F48FB1', defaultValue: 'fade_out' },
-          { id: 'duration', dataType: 'number', color: '#64B5F6', defaultValue: 1000 },
+          { id: 'duration', dataType: 'number', color: '#64B5F6', defaultValue: 1.0 },
           { id: 'color', dataType: 'string', color: '#F48FB1', defaultValue: '#000000' }
         ],
         outputs: [
@@ -501,7 +501,7 @@ return;`
         data: {
           values: {
             mode: 'fade_out',
-            duration: 1000,
+            duration: 1.0,
             color: '#000000'
           },
           options: {
@@ -512,9 +512,11 @@ return;`
             ]
           },
           code: 
-`outputs.execOut = true;
+`const rawDuration = Number(inputs.duration);
+const duration = isNaN(rawDuration) ? 1.0 : Math.max(0, rawDuration);
+outputs.execOut = true;
 
-context.transition.fade(inputs.mode, inputs.duration, inputs.color, () => {
+context.transition.fade(inputs.mode, duration, inputs.color, () => {
   outputs.onComplete = true;
   context.triggerFlow('onComplete');
 });

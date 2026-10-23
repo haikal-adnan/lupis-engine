@@ -99,6 +99,12 @@ export function overrideVariableNode(node, script, defaultData) {
   const preservedBindings = node.data?.variableBindings ? { ...node.data.variableBindings } : {};
   const preservedModes = node.data?.valueModes ? { ...node.data.valueModes } : {};
 
+  Object.keys(preservedBindings).forEach(pId => {
+    if (preservedBindings[pId] && !preservedModes[pId]) {
+      preservedModes[pId] = 'variable';
+    }
+  });
+
   // Preserve existing inputs/outputs structure
   if (isGet) {
     node.inputs = [];
@@ -320,6 +326,10 @@ export function overrideNodeFromBlueprint(node, script) {
   const preservedPropertyOptions = node.data?.propertyOptions ? [...node.data.propertyOptions] : undefined;
 
   const validPortIdSet = new Set(newInputs.map(p => p.id));
+  newInputs.forEach(p => {
+    if (p.label) validPortIdSet.add(p.label);
+  });
+
   Object.keys(preservedModifiers).forEach(pId => {
     if (!validPortIdSet.has(pId)) delete preservedModifiers[pId];
   });
@@ -328,6 +338,13 @@ export function overrideNodeFromBlueprint(node, script) {
   });
   Object.keys(preservedModes).forEach(pId => {
     if (!validPortIdSet.has(pId)) delete preservedModes[pId];
+  });
+
+  // Guarantee that any port with a preserved variable binding maintains mode 'variable'
+  Object.keys(preservedBindings).forEach(pId => {
+    if (preservedBindings[pId] && !preservedModes[pId]) {
+      preservedModes[pId] = 'variable';
+    }
   });
 
   // 7. Reset code to blueprint and sync template data

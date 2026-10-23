@@ -179,7 +179,7 @@ export function useVariableLogic(scopeProps) {
     if (relatedNodes.length === 0) return;
 
     relatedNodes.forEach(node => {
-      const isGet = node.type === 'variable_get';
+      const isGet = node.type === 'variableGet' || node.type === 'variable_get';
       const newTitle = isGet ? `Get ${name}` : `Set ${name}`;
       
       node.data.scope = scope;

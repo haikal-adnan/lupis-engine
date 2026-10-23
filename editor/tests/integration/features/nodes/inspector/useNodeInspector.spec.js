@@ -315,4 +315,119 @@ describe('useNodeInspector Integration', () => {
       expect(scriptStore.selectedNodeId).toBe('node_a');
     });
   });
+
+  describe('isErrorNotSet & Variable Input Synchronization', () => {
+    it('returns false for variable-bound input even if direct value is empty string or undefined', async () => {
+      const nodeWithVar = {
+        id: 'node_var_test',
+        type: 'actionSetGameState',
+        inputs: [{ id: 'action', dataType: 'string' }],
+        data: {
+          values: { action: '' },
+          valueModes: { action: 'variable' },
+          variableBindings: { action: 'var_state_id' }
+        }
+      };
+
+      const env = await setupMockScriptEnvironment({ nodes: [nodeWithVar] });
+      const scriptStore = useScriptStore();
+      scriptStore.setActiveScript(env.script);
+      scriptStore.setSelectedNode('node_var_test');
+
+      const inspector = useNodeInspector();
+
+      expect(inspector.getMode('action')).toBe('variable');
+      expect(inspector.getVariableBinding('action')).toBe('var_state_id');
+      expect(inspector.isErrorNotSet('action', '')).toBe(false);
+      expect(inspector.isErrorNotSet('action')).toBe(false);
+    });
+
+    it('returns true when in variable mode but variable binding is empty or null', async () => {
+      const nodeUnboundVar = {
+        id: 'node_unbound_test',
+        type: 'actionSetGameState',
+        inputs: [{ id: 'action', dataType: 'string' }],
+        data: {
+          values: { action: '' },
+          valueModes: { action: 'variable' },
+          variableBindings: { action: null }
+        }
+      };
+
+      const env = await setupMockScriptEnvironment({ nodes: [nodeUnboundVar] });
+      const scriptStore = useScriptStore();
+      scriptStore.setActiveScript(env.script);
+      scriptStore.setSelectedNode('node_unbound_test');
+
+      const inspector = useNodeInspector();
+
+      expect(inspector.getMode('action')).toBe('variable');
+      expect(inspector.isErrorNotSet('action')).toBe(true);
+      expect(inspector.isErrorNotSet('action', '')).toBe(true);
+    });
+
+    it('infers mode as variable if variableBindings exists even when valueModes is omitted', async () => {
+      const nodeOmittedMode = {
+        id: 'node_omitted_mode',
+        type: 'actionSetGameState',
+        inputs: [{ id: 'speed', dataType: 'number' }],
+        data: {
+          values: { speed: 0 },
+          variableBindings: { speed: 'var_speed_1' }
+        }
+      };
+
+      const env = await setupMockScriptEnvironment({ nodes: [nodeOmittedMode] });
+      const scriptStore = useScriptStore();
+      scriptStore.setActiveScript(env.script);
+      scriptStore.setSelectedNode('node_omitted_mode');
+
+      const inspector = useNodeInspector();
+
+      expect(inspector.getMode('speed')).toBe('variable');
+      expect(inspector.isErrorNotSet('speed', 0)).toBe(false);
+    });
+
+    it('checks direct value in input mode properly', async () => {
+      const nodeDirect = {
+        id: 'node_direct',
+        type: 'actionSetGameState',
+        inputs: [{ id: 'msg', dataType: 'string' }],
+        data: {
+          values: { msg: '' },
+          valueModes: { msg: 'input' }
+        }
+      };
+
+      const env = await setupMockScriptEnvironment({ nodes: [nodeDirect] });
+      const scriptStore = useScriptStore();
+      scriptStore.setActiveScript(env.script);
+      scriptStore.setSelectedNode('node_direct');
+
+      const inspector = useNodeInspector();
+
+      expect(inspector.getMode('msg')).toBe('input');
+      expect(inspector.isErrorNotSet('msg', '')).toBe(true);
+      expect(inspector.isErrorNotSet('msg', 'hello')).toBe(false);
+    });
+
+    it('always returns false for targetEntity and targetLayer defaults', async () => {
+      const nodeTarget = {
+        id: 'node_target',
+        type: 'someType',
+        inputs: [{ id: 'targetEntity', dataType: 'string' }],
+        data: { values: { targetEntity: '' } }
+      };
+
+      const env = await setupMockScriptEnvironment({ nodes: [nodeTarget] });
+      const scriptStore = useScriptStore();
+      scriptStore.setActiveScript(env.script);
+      scriptStore.setSelectedNode('node_target');
+
+      const inspector = useNodeInspector();
+
+      expect(inspector.isErrorNotSet('targetEntity', '')).toBe(false);
+      expect(inspector.isErrorNotSet('targetLayer', '')).toBe(false);
+    });
+  });
 });

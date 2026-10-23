@@ -786,7 +786,7 @@ describe('Dialogue Runner & Infinite Loop Protection Integration', () => {
 
       const { runner, btn1, txt1 } = setupChoicePresenterScript(mockGame, {
         choices,
-        activationDelay: 250
+        activationDelay: 0.25
       });
 
       const node = runner.nodeMap.get('node_choice_presenter');
@@ -977,18 +977,18 @@ describe('Dialogue Runner & Infinite Loop Protection Integration', () => {
 
     it('logicDelay counts down across frames and fires completed when elapsed', () => {
       const { mockGame } = createMockVnGame();
-      const { runner } = setupDelayScript(mockGame, { duration: 500 });
+      const { runner } = setupDelayScript(mockGame, { duration: 0.5 });
       const node = runner.nodeMap.get('node_delay');
       const flowSpy = vi.spyOn(runner, 'executeFlow');
 
       runner._executeNodeLogic(node, 'execIn');
       expect(flowSpy).not.toHaveBeenCalled();
 
-      // Advance by 250ms (0.25s) -> still not completed
+      // Advance by 0.25s -> still not completed
       runner.update(0.25);
       expect(flowSpy).not.toHaveBeenCalled();
 
-      // Advance by another 300ms (0.3s) -> total 550ms -> completed
+      // Advance by another 0.3s -> total 0.55s -> completed
       runner.update(0.3);
       expect(flowSpy).toHaveBeenCalledWith('node_delay', 'completed');
     });
@@ -1022,7 +1022,7 @@ describe('Dialogue Runner & Infinite Loop Protection Integration', () => {
     it('logicCooldown handles ready and cooling states based on elapsed time', () => {
       vi.useFakeTimers();
       const { mockGame } = createMockVnGame();
-      const { runner } = setupCooldownScript(mockGame, { duration: 300 });
+      const { runner } = setupCooldownScript(mockGame, { duration: 0.3 });
       const node = runner.nodeMap.get('node_cooldown');
       const flowSpy = vi.spyOn(runner, 'executeFlow');
 

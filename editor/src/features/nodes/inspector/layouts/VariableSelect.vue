@@ -64,7 +64,7 @@
             type="button"
             @click="selectVariable(v)"
             class="w-full flex items-center justify-between px-2 py-1.5 rounded text-xs hover:bg-muted/80 transition-colors text-left group"
-            :class="{ 'bg-primary/10 text-primary font-semibold': modelValue === v.id }"
+            :class="{ 'bg-primary/10 text-primary font-semibold': modelValue === v.id || selectedVariable?.id === v.id }"
             data-testid="node-inspector-variable-select-option"
             :data-variable-id="v.id"
             :data-variable-name="v.name"
@@ -148,7 +148,15 @@ const filteredVariables = computed(() => {
 });
 
 const selectedVariable = computed(() => {
-  return allVariables.value.find(v => v.id === props.modelValue);
+  if (!props.modelValue) return null;
+  const raw = String(props.modelValue);
+  const cleanId = raw.startsWith('global:') ? raw.slice(7) : (raw.startsWith('local:') ? raw.slice(6) : raw);
+  return allVariables.value.find(v => 
+    v.id === props.modelValue || 
+    v.id === cleanId || 
+    v.name === props.modelValue || 
+    v.name === cleanId
+  ) || null;
 });
 
 function toggleDropdown() {

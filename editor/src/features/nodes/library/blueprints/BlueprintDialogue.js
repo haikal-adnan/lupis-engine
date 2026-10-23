@@ -88,7 +88,7 @@ return;`
           { id: 'choices', dataType: 'list', color: '#81C784' },
           { id: 'buttonEntities', dataType: 'list', color: '#81C784', defaultValue: ['btnChoice1', 'btnChoice2', 'btnChoice3'] },
           { id: 'textEntities', dataType: 'list', color: '#81C784', defaultValue: ['btnChoice1Text', 'btnChoice2Text', 'btnChoice3Text'] },
-          { id: 'activationDelay', dataType: 'number', color: '#64B5F6', defaultValue: 250 }
+          { id: 'activationDelay', dataType: 'number', color: '#64B5F6', defaultValue: 0.25 }
         ],
         outputs: [
           { id: 'execOut', dataType: 'execution', color: '#FFFFFF' },
@@ -99,7 +99,7 @@ return;`
             choices: [],
             buttonEntities: ['btnChoice1', 'btnChoice2', 'btnChoice3'],
             textEntities: ['btnChoice1Text', 'btnChoice2Text', 'btnChoice3Text'],
-            activationDelay: 250
+            activationDelay: 0.25
           },
           code:
 `const choices = inputs.choices;

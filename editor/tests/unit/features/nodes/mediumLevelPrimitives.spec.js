@@ -211,7 +211,7 @@ describe('Medium & Low Level Blueprint Primitives Specification', () => {
         targetEntity: 'enemy_1',
         forceX: 300,
         forceY: -150,
-        duration: 200,
+        duration: 0.2,
         friction: 0.8
       }, {}, {
         entity: { get: () => entity }
@@ -223,7 +223,7 @@ describe('Medium & Low Level Blueprint Primitives Specification', () => {
       expect(phys.velocityY).toBe(-150);
       expect(phys._knockbackActive).toBe(true);
       expect(context.state.isKnocked).toBe(true);
-      expect(context.state.knockbackRemaining).toBe(200);
+      expect(context.state.knockbackRemaining).toBe(0.2);
     });
 
     it('completes immediately when duration is 0', () => {
@@ -255,7 +255,7 @@ describe('Medium & Low Level Blueprint Primitives Specification', () => {
         targetEntity: 'enemy_3',
         forceX: 200,
         forceY: -100,
-        duration: 50,
+        duration: 0.05,
         friction: 0.5
       }, {}, {
         entity: { get: () => entity },
@@ -267,7 +267,7 @@ describe('Medium & Low Level Blueprint Primitives Specification', () => {
       // Tick 1 (30ms passed)
       tickCallback(0.03);
       expect(phys.velocityX).toBe(100);
-      expect(context.state.knockbackRemaining).toBe(20);
+      expect(context.state.knockbackRemaining).toBeCloseTo(0.02, 4);
       expect(context.state.isKnocked).toBe(true);
 
       // Tick 2 (30ms passed, duration expired)

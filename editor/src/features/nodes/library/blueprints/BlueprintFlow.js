@@ -395,7 +395,7 @@ return;`
 {
       type: 'logicDelay',
       label: 'Delay',
-      description: 'Delays execution for a specified duration in milliseconds.',
+      description: 'Delays execution for a specified duration in seconds.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -405,16 +405,16 @@ return;`
         },
         inputs: [
           { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
-          { id: 'duration', dataType: 'number', color: '#64B5F6', defaultValue: 500 }
+          { id: 'duration', dataType: 'number', color: '#64B5F6', defaultValue: 1 }
         ],
         outputs: [
           { id: 'completed', dataType: 'execution', color: '#FFFFFF' }
         ],
         data: {
-          values: { duration: 500 },
+          values: { duration: 1 },
           code: 
 `const rawDuration = Number(inputs.duration);
-const duration = isNaN(rawDuration) ? 500 : Math.max(0, rawDuration);
+const duration = isNaN(rawDuration) ? 1 : Math.max(0, rawDuration);
 
 if (duration <= 0) {
   outputs.completed = true;
@@ -427,8 +427,8 @@ context.state.isDelayActive = true;
 
 context.onTick((dt) => {
   if (!context.state.isDelayActive) return;
-  const deltaMs = (typeof dt === 'number' ? dt : context.dt) * 1000;
-  context.state.delayRemaining -= deltaMs;
+  const deltaSec = typeof dt === 'number' ? dt : Number(context.dt || 0.016);
+  context.state.delayRemaining -= deltaSec;
 
   if (context.state.delayRemaining <= 0) {
     context.state.isDelayActive = false;
@@ -443,7 +443,7 @@ return;`
 {
       type: 'logicCooldown',
       label: 'Cooldown / Interval',
-      description: 'Passes execution only if the cooldown duration (ms) has been reached.',
+      description: 'Passes execution only if the cooldown duration in seconds has been reached.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -453,21 +453,21 @@ return;`
         },
         inputs: [
           { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
-          { id: 'duration', dataType: 'number', color: '#64B5F6', defaultValue: 500 }
+          { id: 'duration', dataType: 'number', color: '#64B5F6', defaultValue: 0.5 }
         ],
         outputs: [
           { id: 'onReady', dataType: 'execution', color: '#FFFFFF' },
           { id: 'onCooling', dataType: 'execution', color: '#FFFFFF' }
         ],
         data: {
-          values: { duration: 500 },
+          values: { duration: 0.5 },
           code: 
 `const rawDuration = Number(inputs.duration);
-const targetDuration = isNaN(rawDuration) ? 500 : Math.max(0, rawDuration);
+const targetDuration = isNaN(rawDuration) ? 0.5 : Math.max(0, rawDuration);
 const currentTime = Date.now();
 
 const lastTime = typeof context.state.lastExecuteTime === 'number' ? context.state.lastExecuteTime : 0;
-const elapsed = currentTime - lastTime;
+const elapsed = (currentTime - lastTime) / 1000;
 
 if (elapsed >= targetDuration) {
   context.state.lastExecuteTime = currentTime;
@@ -478,6 +478,122 @@ if (elapsed >= targetDuration) {
   outputs.onReady = false;
   outputs.onCooling = true;
   context.triggerFlow('onCooling');
+}
+return;`
+        }
+      }
+    },
+    {
+      type: 'logicTimer',
+      label: 'Timer',
+      description: 'Runs a countdown or looping timer in seconds with update progress and completion triggers.',
+      dynamicMode: 'none',
+      defaultData: {
+        settings: {
+          headerTitle: 'Timer',
+          headerColor: '#607D8B',
+          category: 'Flow & Logic'
+        },
+        inputs: [
+          { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'duration', dataType: 'number', color: '#64B5F6', defaultValue: 1 },
+          { id: 'isLooping', dataType: 'boolean', color: '#E57373', defaultValue: false },
+          { id: 'reset', dataType: 'boolean', color: '#E57373', defaultValue: false }
+        ],
+        outputs: [
+          { id: 'onUpdate', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'onComplete', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'elapsedTime', dataType: 'number', color: '#64B5F6' },
+          { id: 'remainingTime', dataType: 'number', color: '#64B5F6' },
+          { id: 'progress', dataType: 'number', color: '#64B5F6' },
+          { id: 'isActive', dataType: 'boolean', color: '#E57373' }
+        ],
+        data: {
+          values: {
+            duration: 1,
+            isLooping: false,
+            reset: false
+          },
+          code: 
+`const rawDuration = Number(inputs.duration);
+const duration = isNaN(rawDuration) ? 1 : Math.max(0, rawDuration);
+const isLooping = Boolean(inputs.isLooping);
+const isReset = Boolean(inputs.reset);
+
+if (isReset) {
+  context.state.isActive = false;
+  context.state.elapsedTime = 0;
+  outputs.elapsedTime = 0;
+  outputs.remainingTime = duration;
+  outputs.progress = 0;
+  outputs.isActive = false;
+  outputs.onUpdate = false;
+  outputs.onComplete = false;
+  return;
+}
+
+if (duration <= 0) {
+  outputs.elapsedTime = 0;
+  outputs.remainingTime = 0;
+  outputs.progress = 1;
+  outputs.isActive = false;
+  outputs.onUpdate = false;
+  outputs.onComplete = true;
+  if (typeof context.triggerFlow === 'function') context.triggerFlow('onComplete');
+  return;
+}
+
+context.state.duration = duration;
+context.state.isLooping = isLooping;
+context.state.elapsedTime = 0;
+context.state.isActive = true;
+
+outputs.elapsedTime = 0;
+outputs.remainingTime = duration;
+outputs.progress = 0;
+outputs.isActive = true;
+outputs.onUpdate = false;
+outputs.onComplete = false;
+
+if (typeof context.onTick === 'function') {
+  context.onTick((dt) => {
+    if (!context.state.isActive) return;
+
+    const deltaSec = typeof dt === 'number' ? dt : Number(context.dt || 0.016);
+    context.state.elapsedTime += deltaSec;
+
+    const targetDuration = context.state.duration;
+    const isFinished = context.state.elapsedTime >= targetDuration;
+
+    let currentElapsed = context.state.elapsedTime;
+    if (isFinished && !context.state.isLooping) {
+      currentElapsed = targetDuration;
+    }
+
+    const clampedElapsed = Math.min(currentElapsed, targetDuration);
+    const remaining = Math.max(0, targetDuration - clampedElapsed);
+    const ratio = targetDuration > 0 ? Math.min(1, clampedElapsed / targetDuration) : 1;
+
+    outputs.elapsedTime = clampedElapsed;
+    outputs.remainingTime = remaining;
+    outputs.progress = ratio;
+    outputs.isActive = context.state.isActive;
+
+    outputs.onUpdate = true;
+    if (typeof context.triggerFlow === 'function') context.triggerFlow('onUpdate');
+
+    if (isFinished) {
+      outputs.onComplete = true;
+      if (typeof context.triggerFlow === 'function') context.triggerFlow('onComplete');
+
+      if (context.state.isLooping) {
+        context.state.elapsedTime = context.state.elapsedTime % targetDuration;
+      } else {
+        context.state.isActive = false;
+        outputs.isActive = false;
+      }
+    }
+  });
 }
 return;`
         }
