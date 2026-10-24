@@ -4,7 +4,7 @@
       <template #actions>
         <button
           @click="unlockToCustom"
-          class="text-[10px] text-amber-400 hover:text-amber-300 flex items-center gap-1 transition-colors"
+          class="text-[10px] text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 flex items-center gap-1 transition-colors"
           title="Unlock code and switch to Custom Script Inspector"
         >
           <Unlock class="w-3 h-3" />
@@ -23,7 +23,7 @@
             <label class="text-[9px] text-muted-foreground uppercase font-bold">
               Base Value (v0)
             </label>
-            <span v-if="isConnected('v0')" class="text-[9px] text-green-400 font-mono font-bold">
+            <span v-if="isConnected('v0')" class="text-[9px] text-emerald-600 dark:text-green-400 font-mono font-bold">
               LINKED
             </span>
           </div>

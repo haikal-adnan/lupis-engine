@@ -24,19 +24,19 @@
             [{{ parsedContext.scene }}]
           </span>
           <span 
-            class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-sky-500/10 text-sky-400 border border-sky-500/20"
+            class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20"
             :title="`Entity Script ID: ${parsedContext.entityScriptId}`"
           >
             [{{ parsedContext.entityScriptId }}]
           </span>
           <span 
-            class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-purple-500/10 text-purple-400 border border-purple-500/20"
+            class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20"
             :title="`Script: ${parsedContext.script}`"
           >
             [{{ parsedContext.script }}]
           </span>
           <span 
-            class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+            class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
             :title="`Node: ${parsedContext.node}`"
           >
             [{{ parsedContext.node }}]
@@ -116,8 +116,8 @@ const rowColorClass = computed(() => {
 
 const messageColorClass = computed(() => {
   switch (props.log.type) {
-    case 'error': return 'text-rose-400'
-    case 'warn': return 'text-amber-400'
+    case 'error': return 'text-rose-600 dark:text-rose-400'
+    case 'warn': return 'text-amber-600 dark:text-amber-400'
     default: return 'text-foreground'
   }
 })

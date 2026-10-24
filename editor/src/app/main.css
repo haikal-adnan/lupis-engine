@@ -24,8 +24,8 @@
     --muted: hsl(210 40% 96%);
     --muted-foreground: hsl(215 7% 46%);
 
-    --accent: hsl(217 91% 60%);
-    --accent-foreground: hsl(0 0% 100%);
+    --accent: hsl(210 40% 95%);
+    --accent-foreground: hsl(220 11% 20%);
 
     --destructive: hsl(0 84% 60%);
     --destructive-foreground: hsl(0 0% 100%);

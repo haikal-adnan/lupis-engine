@@ -6,6 +6,7 @@
     :aria-pressed="isActive"
     :aria-disabled="disabled || undefined"
     :disabled="disabled"
+    :title="tooltip || undefined"
     class="group relative flex items-center justify-center shrink-0 transition-colors duration-75 border outline-none 
            focus:outline-none focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary 
            disabled:opacity-50 disabled:cursor-not-allowed"

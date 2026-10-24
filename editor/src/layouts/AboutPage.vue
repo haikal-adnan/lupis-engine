@@ -71,7 +71,7 @@ const assets = [
 
 <template>
   <section class="w-full max-w-4xl mx-auto px-6 pt-32 pb-10">
-    <p class="text-xs font-bold uppercase tracking-widest text-cyan-400 mb-3">About Project</p>
+    <p class="text-xs font-bold uppercase tracking-widest text-cyan-600 dark:text-cyan-400 mb-3">About Project</p>
     <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight mb-4 text-foreground">
       {{ projectInfo.title }}
     </h1>
@@ -83,11 +83,11 @@ const assets = [
   <div class="w-full max-w-4xl mx-auto px-6"><hr class="border-border" /></div>
 
   <section class="w-full max-w-4xl mx-auto px-6 py-10">
-    <p class="text-xs font-bold uppercase tracking-widest text-cyan-400 mb-5">Mission & Research Goals</p>
+    <p class="text-xs font-bold uppercase tracking-widest text-cyan-600 dark:text-cyan-400 mb-5">Mission & Research Goals</p>
     <p class="text-lg text-foreground leading-relaxed text-justify">
       {{ projectInfo.mission }} Focused on genres: 
       <span v-for="(genre, index) in projectInfo.targetGenres" :key="genre">
-        <span class="text-cyan-400 font-semibold">{{ genre }}</span>
+        <span class="text-cyan-600 dark:text-cyan-400 font-semibold">{{ genre }}</span>
         <span v-if="index < projectInfo.targetGenres.length - 1">, </span>
       </span>.
     </p>
@@ -96,14 +96,14 @@ const assets = [
   <div class="w-full max-w-4xl mx-auto px-6"><hr class="border-border" /></div>
 
   <section class="w-full max-w-4xl mx-auto px-6 py-10">
-    <p class="text-xs font-bold uppercase tracking-widest text-cyan-400 mb-6">Core Technologies</p>
+    <p class="text-xs font-bold uppercase tracking-widest text-cyan-600 dark:text-cyan-400 mb-6">Core Technologies</p>
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
       <div 
         v-for="tech in technologies" 
         :key="tech.title" 
         class="bg-card border border-border rounded-xl p-5 hover:border-cyan-500/20 transition-colors"
       >
-        <component :is="tech.icon" class="w-5 h-5 text-cyan-400 mb-3" />
+        <component :is="tech.icon" class="w-5 h-5 text-cyan-600 dark:text-cyan-400 mb-3" />
         <h3 class="text-lg font-bold mb-2">{{ tech.title }}</h3>
         <p class="text-muted-foreground text-sm leading-relaxed">{{ tech.description }}</p>
       </div>
@@ -113,15 +113,15 @@ const assets = [
   <div class="w-full max-w-4xl mx-auto px-6"><hr class="border-border" /></div>
 
   <section class="w-full max-w-4xl mx-auto px-6 py-10">
-    <p class="text-xs font-bold uppercase tracking-widest text-cyan-400 mb-6">Author</p>
+    <p class="text-xs font-bold uppercase tracking-widest text-cyan-600 dark:text-cyan-400 mb-6">Author</p>
     
     <div class="flex flex-col md:flex-row gap-8 items-start bg-card border border-border rounded-xl p-6 md:p-8">
-      <div class="w-20 h-20 rounded-full bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 text-xl font-bold tracking-wider shrink-0">
+      <div class="w-20 h-20 rounded-full bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-600 dark:text-cyan-400 text-xl font-bold tracking-wider shrink-0">
         {{ author.initials }}
       </div>
       <div class="flex-1 w-full">
         <h3 class="text-2xl font-bold text-foreground mb-0.5">{{ author.name }}</h3>
-        <p class="text-cyan-400 font-medium text-sm mb-5">{{ author.role }}</p>
+        <p class="text-cyan-600 dark:text-cyan-400 font-medium text-sm mb-5">{{ author.role }}</p>
         
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-12 pt-5 border-t border-border">
           <div>
@@ -144,10 +144,10 @@ const assets = [
   <div class="w-full max-w-4xl mx-auto px-6"><hr class="border-border" /></div>
 
   <section class="w-full max-w-4xl mx-auto px-6 py-10">
-    <p class="text-xs font-bold uppercase tracking-widest text-cyan-400 mb-6">Advisors</p>
+    <p class="text-xs font-bold uppercase tracking-widest text-cyan-600 dark:text-cyan-400 mb-6">Advisors</p>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
       <div v-for="advisor in advisors" :key="advisor.name" class="flex items-center gap-4">
-        <div class="w-14 h-14 rounded-full bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 font-bold tracking-wider shrink-0">
+        <div class="w-14 h-14 rounded-full bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-600 dark:text-cyan-400 font-bold tracking-wider shrink-0">
           {{ advisor.initials }}
         </div>
         <div>
@@ -161,7 +161,7 @@ const assets = [
   <div class="w-full max-w-4xl mx-auto px-6"><hr class="border-border" /></div>
 
   <section class="w-full max-w-4xl mx-auto px-6 py-10">
-    <p class="text-xs font-bold uppercase tracking-widest text-cyan-400 mb-6">Academic References & Bibliography</p>
+    <p class="text-xs font-bold uppercase tracking-widest text-cyan-600 dark:text-cyan-400 mb-6">Academic References & Bibliography</p>
     <div class="space-y-3 font-mono text-xs md:text-sm text-muted-foreground leading-relaxed">
       <p v-for="(refText, index) in references" :key="index">
         <span class="text-foreground mr-1 font-bold">{{ refText.substring(0, 3) }}</span>{{ refText.substring(3) }}
@@ -172,9 +172,9 @@ const assets = [
   <div class="w-full max-w-4xl mx-auto px-6"><hr class="border-border" /></div>
 
   <section class="w-full max-w-4xl mx-auto px-6 py-10">
-    <p class="text-xs font-bold uppercase tracking-widest text-cyan-400 mb-6">License & Open Source</p>
+    <p class="text-xs font-bold uppercase tracking-widest text-cyan-600 dark:text-cyan-400 mb-6">License & Open Source</p>
     <div class="bg-card border border-border rounded-xl p-6">
-      <h4 class="text-cyan-400 font-mono text-sm font-semibold mb-4 italic">MIT License</h4>
+      <h4 class="text-cyan-600 dark:text-cyan-400 font-mono text-sm font-semibold mb-4 italic">MIT License</h4>
       <div class="space-y-4 font-mono text-[11px] md:text-xs text-muted-foreground leading-relaxed">
         <p>Copyright (c) 2026 Lupis Engine Contributors</p>
         <p>Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files...</p>
@@ -186,7 +186,7 @@ const assets = [
   <div class="w-full max-w-4xl mx-auto px-6"><hr class="border-border" /></div>
 
   <section class="w-full max-w-4xl mx-auto px-6 py-10">
-    <p class="text-xs font-bold uppercase tracking-widest text-cyan-400 mb-6">Asset Credits</p>
+    <p class="text-xs font-bold uppercase tracking-widest text-cyan-600 dark:text-cyan-400 mb-6">Asset Credits</p>
     <div class="overflow-hidden border border-border rounded-xl bg-card">
       <table class="w-full text-left border-collapse text-xs md:text-sm">
         <thead>

@@ -243,17 +243,17 @@ const processImport = async (file) => {
               class="w-20 h-20 rounded-2xl flex items-center justify-center mb-6 border transition-colors shadow-lg"
               :class="isInvalidFileDragged 
                 ? 'bg-destructive/10 border-destructive/30 text-destructive shadow-destructive/10' 
-                : 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400 shadow-cyan-500/10'"
+                : 'bg-cyan-500/10 border-cyan-500/30 text-cyan-600 dark:text-cyan-400 shadow-cyan-500/10'"
             >
               <AlertCircle v-if="isInvalidFileDragged" class="w-10 h-10" :stroke-width="2" />
               <FileCode2 v-else class="w-10 h-10" :stroke-width="2" />
             </div>
 
-            <h2 class="text-2xl font-black tracking-tight text-white mb-2.5" data-testid="drop-zone-title">
+            <h2 class="text-2xl font-black tracking-tight text-foreground mb-2.5" data-testid="drop-zone-title">
               {{ isInvalidFileDragged ? 'Unsupported File Format' : 'Drop .lupisproject File' }}
             </h2>
 
-            <p class="text-sm font-medium text-slate-300 leading-relaxed max-w-xs">
+            <p class="text-sm font-medium text-muted-foreground leading-relaxed max-w-xs">
               {{ isInvalidFileDragged 
                 ? 'Only .lupisproject files can be loaded into the workspace.' 
                 : 'Release the .lupisproject file to extract and load the project into storage.' 
@@ -264,10 +264,10 @@ const processImport = async (file) => {
               <span 
                 class="text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-wider border flex items-center gap-1.5"
                 :class="isInvalidFileDragged 
-                  ? 'text-red-400 bg-red-500/10 border-red-500/20' 
-                  : 'text-cyan-400 bg-cyan-500/10 border-cyan-500/20'"
+                  ? 'text-red-500 dark:text-red-400 bg-red-500/10 border-red-500/20' 
+                  : 'text-cyan-600 dark:text-cyan-400 bg-cyan-500/10 border-cyan-500/20'"
               >
-                <span class="w-1.5 h-1.5 rounded-full" :class="isInvalidFileDragged ? 'bg-red-400' : 'bg-cyan-400'"></span>
+                <span class="w-1.5 h-1.5 rounded-full" :class="isInvalidFileDragged ? 'bg-red-500' : 'bg-cyan-500'"></span>
                 {{ isInvalidFileDragged ? '.lupisproject Only' : 'Ready to Import' }}
               </span>
             </div>

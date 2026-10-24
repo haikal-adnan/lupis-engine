@@ -9,13 +9,15 @@
     tabindex="0"
   >
     <div class="flex items-center gap-2 px-3 h-10 border-b border-border shrink-0">
-      <button 
+      <IconButton 
         @click.stop="toggleViewMode" 
-        class="p-1.5 hover:bg-secondary rounded-md text-muted-foreground hover:text-foreground transition-colors"
+        ghost
+        :tooltip="viewMode === 'grid' ? 'Switch to List View' : 'Switch to Grid View'"
         :title="viewMode === 'grid' ? 'Switch to List View' : 'Switch to Grid View'"
+        aria-label="Toggle View Mode"
       >
         <component :is="viewMode === 'grid' ? List : LayoutGrid" class="w-4 h-4" />
-      </button>
+      </IconButton>
 
       <div class="w-px h-4 bg-border mx-1"></div>
 
@@ -57,14 +59,17 @@
       <div class="flex-1"></div>
 
       <BaseSearchInput data-testid="search-script-input" v-model="searchQuery" placeholder="Search scripts..." />
-      <button 
+      <IconButton 
         data-testid="create-script-btn"
         @click.stop="createScript('component')" 
-        class="p-1.5 hover:bg-primary/10 text-muted-foreground hover:text-primary rounded-md transition-colors"
+        ghost
+        tooltip="New Script"
         title="New Script"
+        aria-label="New Script"
+        class="hover:bg-primary/10 hover:text-primary"
       >
         <Plus class="w-4 h-4" />
-      </button>
+      </IconButton>
     </div>
 
     <div 
@@ -142,6 +147,7 @@ import { LayoutGrid, List, FileCode2, ChevronRight, Plus } from 'lucide-vue-next
 
 import {
   BaseSearchInput,
+  IconButton,
   BaseContextMenu,
 } from '@components/components.js';
 

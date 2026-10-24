@@ -29,16 +29,16 @@
           : 'w-4 h-4 mr-2'
       ]"
     >
-      <Folder v-if="isFolder" :class="[viewMode === 'grid' ? 'w-full h-full' : 'w-4 h-4', 'text-amber-400/90 fill-current']" :stroke-width="1.5" />
+      <Folder v-if="isFolder" :class="[viewMode === 'grid' ? 'w-full h-full' : 'w-4 h-4', 'text-amber-500 dark:text-amber-400/90 fill-current']" :stroke-width="1.5" />
       <div v-else-if="assetType === 'texture'" class="w-full h-full flex items-center justify-center bg-checkerboard rounded-sm overflow-hidden">
         <img v-if="thumbnailUrl" :src="thumbnailUrl" class="max-w-full max-h-full object-contain pixelated" loading="lazy" draggable="false" />
         <Image v-else class="text-muted-foreground" :class="viewMode === 'grid' ? 'w-6 h-6' : 'w-3.5 h-3.5'" />
       </div>
       <div v-else-if="assetType === 'font'" class="w-full h-full flex items-center justify-center rounded-sm overflow-hidden">
-        <Type class="text-blue-400" :class="iconSizeClass" />
+        <Type class="text-blue-500 dark:text-blue-400" :class="iconSizeClass" />
       </div>
       <Music v-else-if="['audio', 'sound'].includes(assetType)" class="text-emerald-500" :class="iconSizeClass" />
-      <FileCode v-else-if="assetType === 'script'" class="text-yellow-500" :class="iconSizeClass" />
+      <FileCode v-else-if="assetType === 'script'" class="text-amber-600 dark:text-yellow-500" :class="iconSizeClass" />
       <File v-else class="text-muted-foreground" :class="iconSizeClass" />
     </div>
 

@@ -17,7 +17,7 @@
         :class="[
           active(p) 
             ? 'bg-primary shadow-sm scale-110' 
-            : 'bg-slate-700 hover:bg-muted-foreground/40'
+            : 'bg-secondary hover:bg-muted-foreground/40 dark:bg-slate-700'
         ]"
       />
     </div>

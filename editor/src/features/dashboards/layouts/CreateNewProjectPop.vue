@@ -52,14 +52,14 @@
           </div>
 
           <div class="px-4 py-3 bg-muted/30 border-t border-border flex justify-end gap-2">
-            <button 
-              type="button"
+            <BaseButton 
+              ghost
+              height-class="h-7"
               data-testid="cancel-create-project-btn"
               @click="handleCancel"
-              class="px-3 py-1.5 text-xs font-medium text-foreground bg-transparent hover:bg-muted border border-border rounded transition-colors"
             >
               Cancel
-            </button>
+            </BaseButton>
             
             <button 
               type="button"
@@ -79,7 +79,7 @@
 
 <script setup>
 import { ref, watch, nextTick } from 'vue';
-import { BaseInput } from '@components/components.js';
+import { BaseInput, BaseButton } from '@components/components.js';
 
 const props = defineProps({
   isOpen: {

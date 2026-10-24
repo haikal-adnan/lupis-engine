@@ -4,7 +4,7 @@
       <template #actions>
         <button
           @click="unlockToCustom"
-          class="text-[10px] text-amber-400 hover:text-amber-300 flex items-center gap-1 transition-colors"
+          class="text-[10px] text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 flex items-center gap-1 transition-colors"
           title="Unlock code and switch to Custom Script Inspector"
         >
           <Unlock class="w-3 h-3" />
@@ -28,7 +28,7 @@
 
               <button 
                 @click="removeStep(index)"
-                class="absolute -top-2 -right-2 bg-background border border-border p-1 rounded-full opacity-0 group-hover:opacity-100 hover:text-red-400 hover:border-red-400 transition-all z-20 shadow-sm"
+                class="absolute -top-2 -right-2 bg-background border border-border p-1 rounded-full opacity-0 group-hover:opacity-100 hover:text-destructive hover:border-destructive transition-all z-20 shadow-sm"
                 title="Remove Step"
               >
                 <Trash2 class="w-3 h-3" />
@@ -38,7 +38,7 @@
               <div class="mb-2 relative">
                 <div class="flex items-center justify-between mb-1">
                   <label class="text-[9px] text-muted-foreground uppercase font-bold">Target Entity</label>
-                  <span v-if="isConnected(`targetEntity${index}`)" class="text-[9px] text-green-400 font-mono font-bold">
+                  <span v-if="isConnected(`targetEntity${index}`)" class="text-[9px] text-emerald-600 dark:text-green-400 font-mono font-bold">
                     LINKED
                   </span>
                 </div>

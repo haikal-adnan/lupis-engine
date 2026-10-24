@@ -312,7 +312,7 @@ onUnmounted(() => {
 
 <template>
   <div 
-    class="w-full h-full relative overflow-hidden flex flex-col bg-slate-900 select-none"
+    class="w-full h-full relative overflow-hidden flex flex-col bg-editor-canvas select-none"
     @contextmenu.prevent="handleContextMenu"
     @click="closeMenu"
   >

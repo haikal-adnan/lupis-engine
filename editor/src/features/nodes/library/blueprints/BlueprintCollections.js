@@ -801,9 +801,9 @@ if (typeof list === 'string') {
   }
 }
 
-const key = inputs.key !== undefined && inputs.key !== null ? String(inputs.key).trim() : '';
+const key = inputs.key ? String(inputs.key).trim() : '';
 const targetVal = inputs.value;
-const extractKey = inputs.extractKey !== undefined && inputs.extractKey !== null ? String(inputs.extractKey).trim() : '';
+const extractKey = inputs.extractKey ? String(inputs.extractKey).trim() : '';
 
 let foundIndex = -1;
 let foundItem = null;
@@ -813,7 +813,9 @@ if (Array.isArray(list) && key !== '') {
     const entry = list[i];
     if (entry && typeof entry === 'object') {
       const propVal = entry instanceof Map ? entry.get(key) : entry[key];
-      if (propVal === targetVal || (propVal !== undefined && targetVal !== undefined && String(propVal) === String(targetVal))) {
+      const hasProp = Boolean(propVal || propVal === 0 || propVal === false);
+      const hasTarget = Boolean(targetVal || targetVal === 0 || targetVal === false);
+      if (propVal === targetVal || (hasProp && hasTarget && String(propVal) === String(targetVal))) {
         foundIndex = i;
         foundItem = entry;
         break;
@@ -831,7 +833,7 @@ if (isFound && extractKey !== '') {
   if (foundItem instanceof Map) {
     outputs.value = foundItem.has(extractKey) ? foundItem.get(extractKey) : null;
   } else {
-    outputs.value = foundItem[extractKey] !== undefined ? foundItem[extractKey] : null;
+    outputs.value = Object.prototype.hasOwnProperty.call(foundItem, extractKey) ? foundItem[extractKey] : null;
   }
 } else {
   outputs.value = isFound ? foundItem : null;

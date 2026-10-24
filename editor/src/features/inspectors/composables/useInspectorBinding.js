@@ -64,6 +64,13 @@ export function useInspectorBinding(
           }
           return val;
         }
+        if (category === 'codeEditor') {
+          const val = projectStore.project?.settings?.codeEditor?.[propName];
+          if (propName === 'zoom') {
+            return Number(val ?? 100);
+          }
+          return val;
+        }
         if (category === 'autoSave') {
           return projectStore.project?.settings?.autoSave?.[propName];
         }
@@ -115,6 +122,18 @@ export function useInspectorBinding(
         }
         else if (category === 'physics') {
           if (sceneStore.activeScene) sceneStore.updatePhysicsSettings({ [propName]: val });
+        }
+        else if (category === 'codeEditor') {
+          if (typeof projectStore.updateCodeEditorSettings === 'function') {
+            projectStore.updateCodeEditorSettings({ [propName]: Number(val) });
+          } else {
+            if (!projectStore.project.settings) projectStore.project.settings = {};
+            if (!projectStore.project.settings.codeEditor) {
+              projectStore.project.settings.codeEditor = { zoom: 100 };
+            }
+            projectStore.project.settings.codeEditor[propName] = Number(val);
+            projectStore.markAsDirty();
+          }
         }
         else if (!category) {
           if (propName === 'backgroundColor') sceneStore.setBackgroundColor(val);

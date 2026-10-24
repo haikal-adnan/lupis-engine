@@ -10,15 +10,16 @@
     :data-current-folder="currentFolderId || 'root'"
   >
     <div class="flex items-center gap-2 px-3 h-10 border-b border-border shrink-0">
-      <button 
+      <IconButton 
         @click.stop="toggleViewMode" 
-        class="p-1.5 hover:bg-secondary rounded-md text-muted-foreground hover:text-foreground transition-colors"
+        ghost
+        :tooltip="viewMode === 'grid' ? 'Switch to List View' : 'Switch to Grid View'"
         :title="viewMode === 'grid' ? 'Switch to List View' : 'Switch to Grid View'"
         data-testid="toggle-view-mode-btn"
         :aria-label="viewMode === 'grid' ? 'Switch to List View' : 'Switch to Grid View'"
       >
         <component :is="viewMode === 'grid' ? List : LayoutGrid" class="w-4 h-4" />
-      </button>
+      </IconButton>
 
       <div class="w-px h-4 bg-border mx-1"></div>
 
@@ -165,6 +166,7 @@ import { LayoutGrid, List, Box, ChevronRight } from 'lucide-vue-next';
 
 import {
   BaseSearchInput,
+  IconButton,
   BaseContextMenu,
 } from '@components/components.js';
 

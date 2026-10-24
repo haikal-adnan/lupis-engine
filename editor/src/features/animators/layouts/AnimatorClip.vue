@@ -6,16 +6,22 @@
         <div class="text-xs font-bold text-foreground uppercase tracking-wider">Animation Clips</div>
         <BaseDropdown align="right">
           <template #trigger="{ isOpen }">
-            <button class="h-8 w-8 flex items-center justify-center rounded-md border border-transparent hover:bg-muted text-muted-foreground transition-colors" data-testid="animator-tree-more-menu">
+            <IconButton 
+              ghost 
+              :active="isOpen"
+              tooltip="More Options"
+              aria-label="More Options"
+              data-testid="animator-tree-more-menu"
+            >
               <MoreVertical class="w-4 h-4" />
-            </button>
+            </IconButton>
           </template>
           <template #default="{ close }">
             <div class="flex flex-col text-xs min-w-[160px] p-1">
-              <button @click="handlers.createNewCategory(); close()" class="dropdown-item flex items-center px-2 py-2 rounded-md hover:bg-accent" data-testid="animator-tree-new-category-btn">
+              <button @click="handlers.createNewCategory(); close()" class="dropdown-item flex items-center px-2 py-2 rounded-md hover:bg-accent hover:text-accent-foreground" data-testid="animator-tree-new-category-btn">
                 <FolderPlus class="w-4 h-4 mr-2" /> <span>New Category</span>
               </button>
-              <button @click="handlers.createNewClip(); close()" class="dropdown-item flex items-center px-2 py-2 rounded-md hover:bg-accent" data-testid="animator-tree-new-clip-btn">
+              <button @click="handlers.createNewClip(); close()" class="dropdown-item flex items-center px-2 py-2 rounded-md hover:bg-accent hover:text-accent-foreground" data-testid="animator-tree-new-clip-btn">
                 <Film class="w-4 h-4 mr-2" /> <span>New Clip</span>
               </button>
               <div class="h-px bg-border my-1"></div>
@@ -104,7 +110,7 @@
                   @dragover.prevent.stop="onDragOver($event, child)"
                   @dragleave.prevent.stop="onDragLeave"
                   @drop.prevent.stop="onDrop($event, child)"
-                  :class="activeClipId === child.id ? 'bg-primary/15 border-primary text-primary shadow-sm' : 'bg-transparent border-transparent text-muted-foreground hover:bg-accent hover:text-foreground hover:border-border/50'"
+                  :class="activeClipId === child.id ? 'bg-primary/15 border-primary text-primary shadow-sm' : 'bg-transparent border-transparent text-muted-foreground hover:bg-accent hover:text-accent-foreground hover:border-border/50'"
                   @click.stop="selectClip(child.id)"
                   @contextmenu.prevent.stop="handleContextMenu($event, child)"
                   data-testid="animator-tree-node"
@@ -144,7 +150,7 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { Search, MoreVertical, FolderPlus, Film, Folder, FolderOpen, ChevronRight, ChevronDown, PlayCircle, Trash2 } from 'lucide-vue-next';
-import { BaseDropdown, BaseContextMenu, ScrollArea } from "@components/components.js";
+import { BaseDropdown, IconButton, BaseContextMenu, ScrollArea } from "@components/components.js";
 import { useAnimatorLogic, useAnimatorMenu } from '@animators/animators.js';
 
 const { 

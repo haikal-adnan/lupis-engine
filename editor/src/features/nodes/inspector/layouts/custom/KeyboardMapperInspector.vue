@@ -4,7 +4,7 @@
       <template #actions>
         <button
           @click="unlockToCustom"
-          class="text-[10px] text-amber-400 hover:text-amber-300 flex items-center gap-1 transition-colors"
+          class="text-[10px] text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 flex items-center gap-1 transition-colors"
           title="Unlock code and switch to Custom Script Inspector"
         >
           <Unlock class="w-3 h-3" />
@@ -20,7 +20,7 @@
         >
           <button 
             @click="removeMapping(index)"
-            class="absolute top-1 right-1 opacity-0 group-hover:opacity-100 p-1 hover:bg-red-500/20 rounded text-muted-foreground hover:text-red-400 transition-all z-10"
+            class="absolute top-1 right-1 opacity-0 group-hover:opacity-100 p-1 hover:bg-destructive/20 rounded text-muted-foreground hover:text-destructive transition-all z-10"
             title="Remove Mapping"
           >
             <Trash2 class="w-3 h-3" />
@@ -50,7 +50,7 @@
 
           <!-- Port Output Preview -->
           <div class="flex items-center justify-between text-[10px] text-muted-foreground pt-1 border-t border-border/40">
-            <span class="font-mono text-[9px] text-blue-400">Port: onKey{{ index }}</span>
+            <span class="font-mono text-[9px] text-blue-600 dark:text-blue-400">Port: onKey{{ index }}</span>
             <span class="font-mono text-[9px] text-zinc-400">{{ map.key || '?' }} ({{ map.trigger }})</span>
           </div>
 

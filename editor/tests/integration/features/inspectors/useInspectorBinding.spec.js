@@ -158,6 +158,18 @@ describe('useInspectorBinding Integration', () => {
       expect(projectStore.syncStatus).toBe('dirty')
     })
 
+    it('reads and updates project codeEditor zoom settings through computed binding', () => {
+      const { bindSettingProp } = setupBinding()
+      const zoomBinding = bindSettingProp('codeEditor', 'zoom')
+
+      expect(zoomBinding.value).toBe(100)
+
+      zoomBinding.value = 130
+      expect(projectStore.project.settings.codeEditor.zoom).toBe(130)
+      expect(zoomBinding.value).toBe(130)
+      expect(projectStore.syncStatus).toBe('dirty')
+    })
+
     it('reads and updates active scene background color settings through computed binding', () => {
       setupMockSceneEnvironment()
       const { bindSettingProp } = setupBinding()

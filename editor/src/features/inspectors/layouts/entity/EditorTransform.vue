@@ -37,7 +37,7 @@
           <div class="h-px bg-border my-1"></div>
           <button 
             @click="fitToChildren(); close()" 
-            class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-accent hover:text-accent-foreground transition-colors text-blue-400 hover:text-blue-300"
+            class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-accent hover:text-accent-foreground transition-colors text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
           >
             <Maximize class="w-3.5 h-3.5 mr-2 opacity-70" /> Fit All Child to Me
           </button>

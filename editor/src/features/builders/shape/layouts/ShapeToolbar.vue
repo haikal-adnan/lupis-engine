@@ -69,7 +69,7 @@
           class="w-full h-7 text-xs gap-2 justify-center"
           ghost
         >
-          <Eye v-if="context.showOthers" class="w-3.5 h-3.5 text-white" />
+          <Eye v-if="context.showOthers" class="w-3.5 h-3.5 text-primary dark:text-white" />
           <EyeOff v-else class="w-3.5 h-3.5 text-muted-foreground" />
           <span>{{ context.showOthers ? 'Scene Visible' : 'Scene Hidden' }}</span>
         </BaseButton>

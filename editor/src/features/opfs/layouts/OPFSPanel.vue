@@ -212,7 +212,7 @@ onBeforeUnmount(() => {
         :class="isDark ? 'border-white/10 bg-black/20' : 'border-black/5 bg-gray-100/70'"
       >
         <span class="text-xs font-bold tracking-wider uppercase flex items-center gap-1.5 font-mono" :class="isDark ? 'text-slate-400' : 'text-slate-500'">
-          <Box class="w-4 h-4 text-cyan-400" /> OPFS Explorer
+          <Box class="w-4 h-4 text-cyan-600 dark:text-cyan-400" /> OPFS Explorer
         </span>
 
         <div class="flex items-center gap-1">

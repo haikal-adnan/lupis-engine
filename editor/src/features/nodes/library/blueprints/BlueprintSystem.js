@@ -292,7 +292,7 @@ return;`
             format: 'Score: {v0} / {v1}'
           },
           code: 
-`const rawFmt = inputs.format !== undefined && inputs.format !== null ? inputs.format : 'Score: {v0} / {v1}';
+`const rawFmt = Object.prototype.hasOwnProperty.call(inputs, 'format') ? inputs.format : 'Score: {v0} / {v1}';
 const formatStr = String(rawFmt);
 const v0 = inputs.v0;
 const v1 = inputs.v1;
@@ -300,7 +300,7 @@ const v1 = inputs.v1;
 const formatted = formatStr.replace(/{([^{}]+)}/g, (_, path) => {
   const parts = path.split('.');
   const rootKey = parts[0].trim();
-  let val = inputs[rootKey] !== undefined ? inputs[rootKey] : (inputs['v' + rootKey] !== undefined ? inputs['v' + rootKey] : undefined);
+  let val = Object.prototype.hasOwnProperty.call(inputs, rootKey) ? inputs[rootKey] : (Object.prototype.hasOwnProperty.call(inputs, 'v' + rootKey) ? inputs['v' + rootKey] : '');
 
   for (let i = 1; i < parts.length; i++) {
     if (val && typeof val === 'object') {
@@ -308,7 +308,8 @@ const formatted = formatStr.replace(/{([^{}]+)}/g, (_, path) => {
     }
   }
 
-  return typeof val === 'object' ? JSON.stringify(val) : String(val !== undefined ? val : '');
+  const hasVal = Boolean(val || val === 0 || val === false);
+  return typeof val === 'object' ? JSON.stringify(val) : String(hasVal ? val : '');
 });
 
 outputs.result = formatted;
@@ -481,7 +482,8 @@ return;`
 `const val = inputs.value;
 const def = Number(inputs.default) || 0;
 const num = Number(val);
-outputs.result = (!isNaN(num) && val !== '' && val !== null && val !== undefined) ? num : def;
+const hasVal = Boolean(val || val === 0 || val === false);
+outputs.result = (!isNaN(num) && val !== '' && hasVal) ? num : def;
 return;`
         }
       } 

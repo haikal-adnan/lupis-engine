@@ -30,7 +30,7 @@
       :aria-disabled="isInactive ? 'true' : 'false'"
       :class="[
         isSelected
-          ? 'bg-blue-600/20 text-white'
+          ? 'bg-primary/15 text-primary font-semibold dark:bg-primary/25 dark:text-primary-foreground'
           : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground',
         isDragOver && dragPosition === 'inside'
           ? 'ring-2 ring-blue-500 ring-inset bg-blue-500/10 z-10'
@@ -48,7 +48,7 @@
     >
       <button
         type="button"
-        class="w-4 h-5 flex items-center justify-center -ml-1 mr-0.5 shrink-0 cursor-pointer hover:bg-white/10 rounded border-none bg-transparent p-0"
+        class="w-4 h-5 flex items-center justify-center -ml-1 mr-0.5 shrink-0 cursor-pointer hover:bg-muted rounded border-none bg-transparent p-0"
         data-testid="hierarchy-node-toggle"
         :aria-label="isOpen ? 'Collapse node' : 'Expand node'"
         @click.stop="toggle"
@@ -59,7 +59,7 @@
           class="w-3 h-3 transition-transform pointer-events-none"
           :class="[
             (!hasChildren && node.type !== 'layer') ? 'opacity-0' : 'opacity-70',
-            isSelected ? 'text-white' : 'text-muted-foreground'
+            isSelected ? 'text-primary dark:text-primary-foreground' : 'text-muted-foreground'
           ]"
         />
       </button>
@@ -68,9 +68,9 @@
         :is="getIcon"
         class="w-3.5 h-3.5 mr-2 shrink-0 pointer-events-none"
         :class="[
-            isSelected ? 'text-white' : '',
+            isSelected ? 'text-primary dark:text-primary-foreground' : '',
             node.type === 'layer' ? 'text-blue-500' : 
-            (isPrefab && !isSelected ? 'text-sky-400' : 'opacity-70')
+            (isPrefab && !isSelected ? 'text-sky-600 dark:text-sky-400' : 'opacity-70')
         ]"
       />
 
@@ -78,7 +78,7 @@
         class="py-1 pointer-events-none mr-2 flex-grow flex items-center gap-2 whitespace-nowrap" 
         :class="{ 
             'font-bold': node.type === 'layer',
-            'text-sky-400 font-medium': isPrefab && !isSelected,
+            'text-sky-600 dark:text-sky-400 font-medium': isPrefab && !isSelected,
             'opacity-50': !visible || isInactive 
         }"
       >
@@ -86,7 +86,7 @@
         
         <span 
           v-if="node.zIndex !== undefined && node.zIndex !== null" 
-          class="text-[9px] bg-white/10 px-1 rounded text-muted-foreground font-mono min-w-[14px] text-center"
+          class="text-[9px] bg-muted px-1 rounded text-muted-foreground font-mono min-w-[14px] text-center"
           title="Z-Index Layer"
           data-z-index
         >
@@ -101,13 +101,13 @@
             ? 'opacity-100 pointer-events-auto' 
             : 'opacity-0 pointer-events-none group-hover/node:opacity-100 group-hover/node:pointer-events-auto',
           isSelected 
-            ? 'bg-[#1e293b] text-white' 
+            ? 'bg-primary/15 dark:bg-slate-800 text-foreground dark:text-white' 
             : 'bg-background group-hover/node:bg-muted'
         ]"
       >
         <button 
           type="button"
-          class="w-5 h-5 flex items-center justify-center p-0.5 rounded hover:bg-white/20 cursor-pointer border-none bg-transparent" 
+          class="w-5 h-5 flex items-center justify-center p-0.5 rounded hover:bg-muted cursor-pointer border-none bg-transparent" 
           :class="locked ? 'opacity-100' : 'opacity-0 group-hover/node:opacity-100'"
           data-testid="hierarchy-node-lock-button"
           :aria-label="locked ? 'Unlock node' : 'Lock node'"
@@ -119,7 +119,7 @@
         </button>
         <button 
           type="button"
-          class="w-5 h-5 flex items-center justify-center p-0.5 rounded hover:bg-white/20 cursor-pointer border-none bg-transparent" 
+          class="w-5 h-5 flex items-center justify-center p-0.5 rounded hover:bg-muted cursor-pointer border-none bg-transparent" 
           :class="!visible ? 'opacity-100' : 'opacity-0 group-hover/node:opacity-100'"
           data-testid="hierarchy-node-visibility-button"
           :aria-label="visible ? 'Hide node' : 'Show node'"

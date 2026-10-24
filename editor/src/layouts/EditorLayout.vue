@@ -200,7 +200,7 @@ const canvasStyle = computed(() => ({
     </header>
 
     <div 
-      class="absolute inset-x-0 z-0 bg-black/90"
+      class="absolute inset-x-0 z-0 bg-editor-bg"
       :style="{ top: CONFIG.HEADER_HEIGHT + 'px', bottom: 0 }"
     >
       
@@ -208,7 +208,7 @@ const canvasStyle = computed(() => ({
         class="absolute inset-x-0 top-0 z-0 pl-[var(--left-width)] pr-[var(--right-width)]"
         :style="canvasStyle"
       >
-        <div class="h-full w-full overflow-hidden relative bg-slate-900/50">
+        <div class="h-full w-full overflow-hidden relative bg-editor-canvas">
           <slot name="canvas" />
         </div>
       </div>

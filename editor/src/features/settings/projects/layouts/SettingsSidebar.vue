@@ -9,7 +9,7 @@
       </h2>
     </div>
     
-    <nav class="flex-1 p-3 space-y-1 overflow-y-auto custom-scroll">
+    <nav class="flex-1 p-3 space-y-1 overflow-y-auto custom-scroll overscroll-contain">
       <div class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2 px-3 pt-2">
         Configuration
       </div>
@@ -22,7 +22,7 @@
         :class="active === tab.id ? 'text-primary font-semibold bg-primary/10' : 'text-muted-foreground hover:bg-muted hover:text-foreground'"
       >
         <div 
-          class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-1/2 bg-primary rounded-r-full transition-transform duration-300"
+          class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-1/2 bg-primary rounded-r-full transition-transform duration-150"
           :class="active === tab.id ? 'scale-y-100' : 'scale-y-0'"
         ></div>
         

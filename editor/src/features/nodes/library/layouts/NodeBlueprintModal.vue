@@ -25,9 +25,15 @@
                 </h2>
                 <p class="text-xs text-muted-foreground mt-0.5">Browse and double-click to add nodes to your graph</p>
               </div>
-              <button data-testid="node-library-modal-close-btn" @click="closeModal" class="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
+              <IconButton 
+                data-testid="node-library-modal-close-btn" 
+                ghost
+                tooltip="Close (Esc)"
+                aria-label="Close"
+                @click="closeModal"
+              >
                 <X class="w-5 h-5" />
-              </button>
+              </IconButton>
             </div>
 
             <div class="relative">
@@ -78,7 +84,7 @@
                 <button
                   type="button"
                   @click="handleAddCustomNodeToCanvas"
-                  class="w-full flex items-center justify-center gap-1.5 py-1.5 px-2 text-xs font-medium rounded border border-dashed border-purple-500/40 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 hover:text-purple-300 transition-colors cursor-pointer group"
+                  class="w-full flex items-center justify-center gap-1.5 py-1.5 px-2 text-xs font-medium rounded border border-dashed border-purple-500/40 bg-purple-500/10 hover:bg-purple-500/20 text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 transition-colors cursor-pointer group"
                   data-testid="node-library-modal-add-custom-btn"
                   title="Add Custom Node directly to Graph"
                 >
@@ -166,6 +172,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import { IconButton } from '@components/components.js';
 import { Search, X, ChevronLeft, Component, Clock, Cpu } from 'lucide-vue-next';
 import { useNodeBlueprint, useNodePreferences, useGraphEditor, NodeListItem, createCustomNodeInstance } from '@nodes/nodes.js';
 import { useScriptHistory } from '@historys/historys.js';

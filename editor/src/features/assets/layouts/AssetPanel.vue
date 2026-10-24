@@ -24,13 +24,15 @@
     </div>
 
     <div class="flex items-center gap-2 px-3 h-10 border-b border-border shrink-0">
-      <button 
+      <IconButton 
         @click.stop="toggleViewMode"
-        class="p-1.5 rounded-md hover:bg-secondary/80 text-muted-foreground hover:text-foreground transition-colors border border-transparent hover:border-border/50"
+        ghost
+        :tooltip="viewMode === 'grid' ? 'Switch to List View' : 'Switch to Grid View'"
         :title="viewMode === 'grid' ? 'Switch to List View' : 'Switch to Grid View'"
+        aria-label="Toggle View Mode"
       >
         <component :is="viewMode === 'grid' ? List : LayoutGrid" class="w-4 h-4" />
-      </button>
+      </IconButton>
 
       <div class="w-px h-4 bg-border mx-1"></div>
 
@@ -84,15 +86,17 @@
 
       <div class="w-px h-4 bg-border mx-1"></div>
       
-      <button 
+      <IconButton 
         @click.stop="triggerUpload"
-        class="p-1.5 hover:bg-primary/10 text-muted-foreground hover:text-primary rounded-md transition-colors"
-        :class="{ 'opacity-50 cursor-not-allowed': isUploading }"
+        ghost
         :disabled="isUploading"
+        tooltip="Import Asset"
         title="Import Asset"
+        aria-label="Import Asset"
+        class="hover:bg-primary/10 hover:text-primary"
       >
         <Plus class="w-4 h-4" />
-      </button>
+      </IconButton>
     </div>
 
     <div 
@@ -169,6 +173,7 @@ import { LayoutGrid, List, ChevronRight, Plus, FolderPlus } from 'lucide-vue-nex
 
 import {
   BaseSearchInput,
+  IconButton,
   BaseContextMenu
 } from '@components/components.js'
 import { AssetItem } from '@assets/assets.js'

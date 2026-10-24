@@ -50,7 +50,7 @@
           <div class="h-px bg-border my-1"></div>
           <button 
             @click="fitToChildren(); close()" 
-            class="menu-item text-blue-400 hover:text-blue-300"
+            class="menu-item text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
           >
             <Maximize class="w-3.5 h-3.5 mr-2 opacity-70" /> Fit All Child to Me
           </button>

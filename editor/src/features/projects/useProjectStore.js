@@ -435,6 +435,16 @@ export const useProjectStore = defineStore('project', {
       this.markAsDirty();
     },
 
+    updateCodeEditorSettings(updates) {
+      if (!this.project) return;
+      if (!this.project.settings) this.project.settings = {};
+      if (!this.project.settings.codeEditor) {
+        this.project.settings.codeEditor = { zoom: 100 };
+      }
+      Object.assign(this.project.settings.codeEditor, updates);
+      this.markAsDirty();
+    },
+
     updateDebugSettings(updates) {
       Object.assign(this.project.settings.debug, updates);
       this.markAsDirty();

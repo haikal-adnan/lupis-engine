@@ -23,13 +23,15 @@
 
       <div class="w-px h-4 bg-border mx-1"></div>
 
-      <button 
+      <IconButton 
         @click="triggerClear" 
-        class="p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive rounded transition-colors" 
-        title="Clear Console"
+        ghost
+        tooltip="Clear Console"
+        aria-label="Clear Console"
+        class="hover:bg-destructive/10 hover:text-destructive"
       >
         <Trash2 class="w-4 h-4" />
-      </button>
+      </IconButton>
     </div>
 
     <div 
@@ -55,7 +57,7 @@
 <script setup>
 import { ref, computed, watch, nextTick, onMounted } from 'vue'
 import { Trash2 } from 'lucide-vue-next'
-import { BaseSearchInput } from '@components/components.js';
+import { BaseSearchInput, IconButton } from '@components/components.js';
 import { useConsoleStore, ConsoleItem } from '@consoles/consoles.js'
 import { useWorkspaceStore } from '@workspaces/workspaces.js'
 import { storeToRefs } from 'pinia'

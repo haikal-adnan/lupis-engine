@@ -10,6 +10,10 @@ const props = defineProps({
   title: {
     type: String,
     default: 'Explorer' 
+  },
+  locked: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -60,7 +64,8 @@ defineEmits(['toggle'])
 
     <div
       v-show="!collapsed"
-      class="flex-1 overflow-y-auto scrollbar-thin bg-background relative"
+      class="flex-1 scrollbar-thin bg-background relative"
+      :class="locked ? 'overflow-hidden pointer-events-none select-none' : 'overflow-y-auto'"
     >
       <slot />
     </div>

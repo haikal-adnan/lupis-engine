@@ -4,7 +4,7 @@
       <template #actions>
         <button
           @click="unlockToCustom"
-          class="text-[10px] text-amber-400 hover:text-amber-300 flex items-center gap-1 transition-colors"
+          class="text-[10px] text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 flex items-center gap-1 transition-colors"
           title="Unlock code and switch to Custom Script Inspector"
         >
           <Unlock class="w-3 h-3" />
@@ -27,23 +27,23 @@
             <div class="bg-secondary/20 p-2 pt-2.5 rounded border border-border relative">
               <div class="flex items-center justify-between mb-1.5">
                 <div class="flex items-center gap-1.5">
-                  <span class="text-[9px] font-mono font-bold text-pink-400">
+                  <span class="text-[9px] font-mono font-bold text-pink-600 dark:text-pink-400">
                     Port: {{ getFormatPortId(index) }}
                   </span>
                   <span class="text-muted-foreground/40 text-[9px]">→</span>
-                  <span class="text-[9px] font-mono font-bold text-amber-400">
+                  <span class="text-[9px] font-mono font-bold text-amber-600 dark:text-amber-400">
                     Output: {{ getOutputPortId(index) }}
                   </span>
                 </div>
 
                 <div class="flex items-center gap-1">
-                  <span v-if="isConnected(getFormatPortId(index))" class="text-[9px] text-green-400 font-mono font-bold">
+                  <span v-if="isConnected(getFormatPortId(index))" class="text-[9px] text-emerald-600 dark:text-green-400 font-mono font-bold">
                     LINKED
                   </span>
                   <button 
                     v-if="formats.length > 1"
                     @click="removeFormat(index)"
-                    class="p-0.5 rounded text-muted-foreground hover:text-red-400 transition-colors"
+                    class="p-0.5 rounded text-muted-foreground hover:text-destructive transition-colors"
                     title="Remove Format Template"
                   >
                     <Trash2 class="w-3 h-3" />
@@ -91,8 +91,8 @@
             :data-port-id="varName"
           >
             <div class="flex items-center justify-between mb-1">
-              <span class="text-[10px] font-mono font-bold text-blue-400">{ {{ varName }} }</span>
-              <span v-if="isConnected(varName)" class="text-[9px] text-green-400 font-mono font-bold">
+              <span class="text-[10px] font-mono font-bold text-blue-600 dark:text-blue-400">{ {{ varName }} }</span>
+              <span v-if="isConnected(varName)" class="text-[9px] text-emerald-600 dark:text-green-400 font-mono font-bold">
                 LINKED
               </span>
             </div>

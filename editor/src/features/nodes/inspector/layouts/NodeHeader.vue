@@ -47,7 +47,7 @@
             class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs hover:bg-accent text-foreground transition-colors"
             data-testid="node-inspector-header-open-code-btn"
           >
-            <Code2 class="w-3.5 h-3.5 mr-2 text-blue-400" />
+            <Code2 class="w-3.5 h-3.5 mr-2 text-blue-500 dark:text-blue-400" />
             Edit Node Script
           </button>
 
@@ -57,7 +57,7 @@
             type="button"
             role="menuitem"
             @click="handleRevertToPreset(); close()" 
-            class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs hover:bg-accent text-amber-400 transition-colors"
+            class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs hover:bg-accent text-amber-600 dark:text-amber-400 transition-colors"
             data-testid="node-inspector-header-revert-preset-btn"
           >
             <RotateCcw class="w-3.5 h-3.5 mr-2" />
@@ -76,7 +76,7 @@
             class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs hover:bg-accent text-foreground transition-colors"
             data-testid="node-inspector-header-set-custom-btn"
           >
-            <Cpu class="w-3.5 h-3.5 mr-2 text-purple-400" />
+            <Cpu class="w-3.5 h-3.5 mr-2 text-purple-600 dark:text-purple-400" />
             Set as Custom Node
           </button>
           <div class="h-px bg-border my-1" role="separator"></div>

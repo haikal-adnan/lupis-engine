@@ -7,18 +7,18 @@
           <h3 class="text-sm font-bold text-foreground">{{ activeTabInfo.label }}</h3>
         </div>
       </div>
-      <button 
+      <IconButton 
         data-testid="close-settings-modal-btn"
-        @click="$emit('close')" 
-        class="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-all outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
-        title="Close (Esc)"
+        ghost
+        tooltip="Close (Esc)"
         aria-label="Close Settings"
+        @click="$emit('close')"
       >
         <X class="w-4 h-4" />
-      </button>
+      </IconButton>
     </div>
 
-    <div class="flex-1 overflow-y-auto custom-scroll p-8">
+    <div class="flex-1 overflow-y-auto custom-scroll p-8 overscroll-contain">
       <div class="max-w-2xl mx-auto w-full">
         <SettingsTabProject v-if="activeTabId === 'project'" :info="activeTabInfo" />
         <SettingsTabPreferences v-else-if="activeTabId === 'preferences'" :info="activeTabInfo" />
@@ -35,6 +35,7 @@
 
 <script setup>
 import { X } from 'lucide-vue-next';
+import { IconButton } from '@components/components.js';
 import {
   SettingsTabEngine,
   SettingsTabPhysics,

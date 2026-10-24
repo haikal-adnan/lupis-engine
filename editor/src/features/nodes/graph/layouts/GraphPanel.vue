@@ -154,7 +154,7 @@
         class="px-3 py-1 text-[10px] rounded border font-mono tabular-nums shadow-sm"
         :class="isDark 
           ? 'bg-zinc-900/90 text-slate-300 border-white/10' 
-          : 'bg-slate-100/90 text-slate-600 border-black/10'"
+          : 'bg-background/90 text-foreground border-border'"
       >
         X: {{ camera.x.toFixed(0) }} Y: {{ camera.y.toFixed(0) }} | Zoom: {{ (camera.scale * 100).toFixed(0) }}%
       </div>

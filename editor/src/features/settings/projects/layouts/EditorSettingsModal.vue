@@ -1,12 +1,12 @@
 <template>
   <Teleport to="body">
     <Transition
-      enter-active-class="transition duration-300 ease-out"
-      enter-from-class="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+      enter-active-class="transition duration-150 ease-out"
+      enter-from-class="opacity-0 translate-y-2 sm:translate-y-0 sm:scale-95"
       enter-to-class="opacity-100 translate-y-0 sm:scale-100"
-      leave-active-class="transition duration-200 ease-in"
+      leave-active-class="transition duration-75 ease-in"
       leave-from-class="opacity-100 translate-y-0 sm:scale-100"
-      leave-to-class="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+      leave-to-class="opacity-0 translate-y-2 sm:translate-y-0 sm:scale-95"
     >
       <div 
         v-if="isOpen" 
@@ -14,13 +14,17 @@
         aria-modal="true"
         aria-label="Project Settings"
         data-testid="editor-settings-modal"
-        class="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4 sm:p-6"
+        class="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4 sm:p-6 overscroll-none"
         @mousedown="onOutsideMouseDown"
         @mouseup="onOutsideMouseUp"
+        @wheel.prevent
+        @touchmove.prevent
       >
         <div 
-          class="w-full max-w-[1100px] h-[700px] bg-background border border-border rounded-xl shadow-2xl flex relative overflow-hidden" 
+          class="w-full max-w-[1100px] h-[700px] bg-background border border-border rounded-xl shadow-2xl flex relative overflow-hidden overscroll-contain" 
           @mousedown.stop
+          @wheel.stop
+          @touchmove.stop
         >
           <SettingsSidebar 
             :tabs="TABS" 

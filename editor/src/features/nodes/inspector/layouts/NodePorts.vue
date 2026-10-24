@@ -19,7 +19,7 @@
           :data-port-id="port.id"
         >
           <div class="flex-1 min-w-0 flex items-center gap-2 px-2 py-1 bg-secondary/20 border border-border rounded text-xs hover:bg-secondary/30 transition-colors">
-            <div class="w-2 h-2 rounded-full shrink-0" :style="{ backgroundColor: getPortColor(port) }"></div>
+            <div class="w-2 h-2 rounded-full shrink-0 border border-slate-300 dark:border-slate-600" :style="{ backgroundColor: getPortColor(port) }"></div>
             
             <input 
               :value="port.label || port.id"
@@ -215,7 +215,7 @@
           :data-port-id="port.id"
         >
           <div class="flex-1 min-w-0 flex items-center gap-2 px-2 py-1 bg-secondary/20 border border-border rounded text-xs hover:bg-secondary/30 transition-colors">
-            <div class="w-2 h-2 rounded-full shrink-0" :style="{ backgroundColor: getPortColor(port) }"></div>
+            <div class="w-2 h-2 rounded-full shrink-0 border border-slate-300 dark:border-slate-600" :style="{ backgroundColor: getPortColor(port) }"></div>
             
             <input 
               :value="port.label || port.id"

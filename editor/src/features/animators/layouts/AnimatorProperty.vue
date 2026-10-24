@@ -5,7 +5,7 @@
       <BaseInput 
         v-model="scriptId" 
         placeholder="e.g. walk_anim" 
-        class="w-full font-mono text-xs text-blue-400" 
+        class="w-full font-mono text-xs text-blue-600 dark:text-blue-400" 
         :disabled="!activeClipData"
         data-testid="animator-property-script-id"
       />

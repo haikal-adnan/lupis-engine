@@ -33,7 +33,7 @@
     >
       <Folder 
         v-if="isFolder" 
-        :class="[viewMode === 'grid' ? 'w-full h-full' : 'w-4 h-4', 'text-amber-400/90 fill-current']" 
+        :class="[viewMode === 'grid' ? 'w-full h-full' : 'w-4 h-4', 'text-amber-500 dark:text-amber-400/90 fill-current']" 
         :stroke-width="1.5" 
       />
 

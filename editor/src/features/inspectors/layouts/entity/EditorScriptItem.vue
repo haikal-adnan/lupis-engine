@@ -15,7 +15,7 @@
       </button>
 
       <div class="flex-1 min-w-0 flex items-center gap-1.5 overflow-hidden">
-        <FileCode2 class="w-3.5 h-3.5 text-blue-400 shrink-0" />
+        <FileCode2 class="w-3.5 h-3.5 text-blue-500 dark:text-blue-400 shrink-0" />
         <span class="text-xs font-medium truncate" :title="scriptName" data-testid="script-item-name">{{ scriptName }}</span>
       </div>
 
@@ -27,7 +27,7 @@
         </template>
         <template #default="{ close }">
           <div class="flex flex-col min-w-[120px]">
-             <button @click="openGraph" class="flex items-center px-2 py-1.5 hover:bg-accent text-xs text-left transition-colors" data-testid="script-item-open-graph-btn">
+             <button @click="openGraph" class="flex items-center px-2 py-1.5 hover:bg-accent hover:text-accent-foreground text-xs text-left transition-colors" data-testid="script-item-open-graph-btn">
                 <Workflow class="w-3.5 h-3.5 mr-2" /> Open Graph
              </button>
              <div class="h-px bg-border my-1"></div>

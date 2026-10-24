@@ -129,6 +129,7 @@ const onLayoutDragOpen = () => {
       :hide-left="isLeftHidden"
       :hide-right="isRightHidden"
       :hide-bottom="isBottomHidden"
+      :class="{ 'pointer-events-none select-none': workspaceStore.isSettingsModalOpen }"
       @close="onLayoutClosePanel"
       @drag-open="onLayoutDragOpen"
     >
@@ -147,6 +148,7 @@ const onLayoutDragOpen = () => {
           v-if="!isLeftHidden" 
           :collapsed="isLeftSidebarCollapsed"
           :title="currentLayout.leftTitle"
+          :locked="workspaceStore.isSettingsModalOpen"
           @toggle="toggleLeftSidebar" 
         >
           <component :is="currentLayout.left" />
@@ -158,6 +160,7 @@ const onLayoutDragOpen = () => {
           v-if="!isRightHidden"
           :collapsed="isRightSidebarCollapsed"
           :title="currentLayout.rightTitle"
+          :locked="workspaceStore.isSettingsModalOpen"
           @toggle="toggleRightSidebar" 
         >
           <component :is="currentLayout.right" />
