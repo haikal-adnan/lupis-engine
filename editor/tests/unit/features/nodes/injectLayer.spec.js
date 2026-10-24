@@ -4,6 +4,7 @@ import { BlueprintHelperTool } from '@nodes/library/blueprints/BlueprintHelperTo
 import { validateCodePanelContract } from '@nodes/contract/codePanelContract.js';
 import Game from '@core/Core/Game.js';
 import Config from '@core/Core/Config.js';
+import PointerRaycast from '@core/System/PointerRaycast.js';
 
 describe('injectLayer Node & Layer Injection System', () => {
   const injectNode = BlueprintLifecycle.items.find(item => item.type === 'injectLayer');
@@ -14,10 +15,17 @@ describe('injectLayer Node & Layer Injection System', () => {
       expect(injectNode.label).toBe('Inject Layer');
 
       const inputIds = injectNode.defaultData.inputs.map(p => p.id);
-      expect(inputIds).toEqual(['execIn', 'sceneName', 'layerName', 'targetLayer', 'inheritState']);
+      expect(inputIds).toEqual(['execIn', 'sceneTemplate', 'layerTemplate', 'targetScene', 'targetLayer', 'inheritState']);
 
       const outputIds = injectNode.defaultData.outputs.map(p => p.id);
       expect(outputIds).toEqual(['execOut', 'success', 'isFirstLoad']);
+
+      // Verify default values
+      const defaultValues = injectNode.defaultData.data.values;
+      expect(defaultValues.layerTemplate).toBeNull();
+      expect(defaultValues.targetScene).toBe('self');
+      expect(defaultValues.targetLayer).toBe('self');
+      expect(defaultValues.inheritState).toBe(true);
 
       // Enforce no label property exists on ports
       [...injectNode.defaultData.inputs, ...injectNode.defaultData.outputs].forEach(port => {
@@ -52,7 +60,7 @@ describe('injectLayer Node & Layer Injection System', () => {
     it('executes blueprint code and properly delegates to context.scene.injectLayer', () => {
       const mockContext = {
         scene: {
-          injectLayer: vi.fn((scene, layer, inherit, target) => ({
+          injectLayer: vi.fn((scene, layer, inherit, targetLayer, targetScene) => ({
             success: true,
             isFirstLoad: inherit
           }))
@@ -62,8 +70,9 @@ describe('injectLayer Node & Layer Injection System', () => {
       const executeCode = new Function('inputs', 'outputs', 'context', 'node', injectNode.defaultData.data.code);
 
       const inputs = {
-        sceneName: 'Template_UI',
-        layerName: 'Settings_Layer',
+        sceneTemplate: 'Template_UI',
+        layerTemplate: 'Settings_Layer',
+        targetScene: 'Main_Scene',
         targetLayer: 'Custom_Target',
         inheritState: true
       };
@@ -71,16 +80,22 @@ describe('injectLayer Node & Layer Injection System', () => {
 
       executeCode(inputs, outputs, mockContext, injectNode);
 
-      expect(mockContext.scene.injectLayer).toHaveBeenCalledWith('Template_UI', 'Settings_Layer', true, 'Custom_Target');
+      expect(mockContext.scene.injectLayer).toHaveBeenCalledWith('Template_UI', 'Settings_Layer', true, 'Custom_Target', 'Main_Scene');
       expect(outputs.execOut).toBe(true);
       expect(outputs.success).toBe(true);
       expect(outputs.isFirstLoad).toBe(true);
+
+      // Verify inheritState false passes false
+      inputs.inheritState = false;
+      executeCode(inputs, outputs, mockContext, injectNode);
+      expect(mockContext.scene.injectLayer).toHaveBeenCalledWith('Template_UI', 'Settings_Layer', false, 'Custom_Target', 'Main_Scene');
+      expect(outputs.isFirstLoad).toBe(false);
     });
 
-    it('executes blueprint code when optional targetLayer is omitted', () => {
+    it('executes blueprint code when layerTemplate is null and targetScene/targetLayer default to self', () => {
       const mockContext = {
         scene: {
-          injectLayer: vi.fn((scene, layer, inherit, target) => ({
+          injectLayer: vi.fn((scene, layer, inherit, targetLayer, targetScene) => ({
             success: true,
             isFirstLoad: inherit
           }))
@@ -90,15 +105,16 @@ describe('injectLayer Node & Layer Injection System', () => {
       const executeCode = new Function('inputs', 'outputs', 'context', 'node', injectNode.defaultData.data.code);
 
       const inputs = {
-        sceneName: 'Template_UI',
-        layerName: 'Settings_Layer',
-        inheritState: true
+        sceneTemplate: 'Template_UI',
+        layerTemplate: null,
+        targetScene: 'self',
+        targetLayer: 'self'
       };
       const outputs = {};
 
       executeCode(inputs, outputs, mockContext, injectNode);
 
-      expect(mockContext.scene.injectLayer).toHaveBeenCalledWith('Template_UI', 'Settings_Layer', true, '');
+      expect(mockContext.scene.injectLayer).toHaveBeenCalledWith('Template_UI', null, true, 'self', 'self');
       expect(outputs.execOut).toBe(true);
       expect(outputs.success).toBe(true);
     });
@@ -456,10 +472,10 @@ describe('injectLayer Node & Layer Injection System', () => {
       expect(injectedHud.opacity).toBe(0);
     });
 
-    it('defaults inheritState to true in blueprint node when input is omitted', () => {
+    it('defaults targetScene and targetLayer to self and layerTemplate to null in blueprint node when inputs are omitted', () => {
       const mockContext = {
         scene: {
-          injectLayer: vi.fn((scene, layer, inherit, target) => ({
+          injectLayer: vi.fn((scene, layer, inherit, targetLayer, targetScene) => ({
             success: true,
             isFirstLoad: inherit
           }))
@@ -468,17 +484,15 @@ describe('injectLayer Node & Layer Injection System', () => {
 
       const executeCode = new Function('inputs', 'outputs', 'context', 'node', injectNode.defaultData.data.code);
 
-      // inputs does not contain inheritState or targetLayer
+      // inputs only contains sceneTemplate
       const inputs = {
-        sceneName: 'Template_UI',
-        layerName: 'Settings_Layer'
+        sceneTemplate: 'Template_UI'
       };
       const outputs = {};
 
       executeCode(inputs, outputs, mockContext, injectNode);
 
-      // inheritState must default to true
-      expect(mockContext.scene.injectLayer).toHaveBeenCalledWith('Template_UI', 'Settings_Layer', true, '');
+      expect(mockContext.scene.injectLayer).toHaveBeenCalledWith('Template_UI', null, true, 'self', 'self');
       expect(outputs.execOut).toBe(true);
     });
 
@@ -634,6 +648,99 @@ describe('injectLayer Node & Layer Injection System', () => {
       expect(mockContext.state.offX).toBe(0);
       expect(mockContext.state.onX).toBe(40);
       expect(injectedKnob.components.UITransform.x).toBe(40);
+    });
+
+    it('injects layer successfully when layerIdentifier is null and targetLayer is self', () => {
+      // When layerTemplate is null and targetLayer is 'self', it should pick the first layer from sourceScene
+      const result = game.sceneSystem.injectLayer('Template_UI', null, true, 'self', 'self');
+      expect(result.success).toBe(true);
+      expect(game.world.layersUI.some(l => l.scriptId === 'Settings_Layer')).toBe(true);
+    });
+
+    it('injects layer successfully into specified targetScene other than self', () => {
+      const scene2Data = {
+        id: 'scene_2',
+        scriptId: 'Scene_2',
+        layersWorld: [],
+        layersUI: [],
+        entities: []
+      };
+      game.sceneSystem.setSceneCache([templateSceneData, mainSceneData, scene2Data]);
+      const result = game.sceneSystem.injectLayer('Template_UI', 'Settings_Layer', true, 'self', 'Scene_2');
+      expect(result.success).toBe(true);
+      const scene2 = game.sceneSystem._sceneDataCache.find(s => s.id === 'scene_2');
+      expect(scene2.layersUI.some(l => l.scriptId === 'Settings_Layer')).toBe(true);
+    });
+
+    it('preserves existing target layer zIndex and renders/picks layer with zIndex 1 in front of zIndex 0', () => {
+      // 1. Add an existing 'layerPause' with zIndex = 1 to main scene
+      const pauseLayer = {
+        id: 'layer_pause_custom',
+        scriptId: 'layerPause',
+        zIndex: 1,
+        orderIndex: 0,
+        visible: true,
+        active: true,
+        entities: []
+      };
+      game.world.layersUI.push(pauseLayer);
+
+      // Add a HUD entity in HUD_Layer (zIndex: 0)
+      const hudEntity = {
+        id: 'ent_hud_button',
+        scriptId: 'hud_btn',
+        type: 'ui',
+        layerId: 'layer_hud',
+        visible: true,
+        active: true,
+        components: {
+          UITransform: { x: 100, y: 100, width: 200, height: 200, pivotX: 0.5, pivotY: 0.5, anchorX: 0, anchorY: 0 }
+        }
+      };
+      game.world.addEntity(hudEntity);
+
+      // Template layer has zIndex: 0 (or default)
+      const tLayer = templateSceneData.layersUI[0];
+      tLayer.zIndex = 0;
+
+      // 2. Inject template layer into 'layerPause'
+      const result = game.sceneSystem.injectLayer('Template_UI', null, true, 'layerPause');
+      expect(result.success).toBe(true);
+
+      // 3. Verify 'layerPause' kept its zIndex = 1
+      const foundPause = game.world.layersUI.find(l => l.scriptId === 'layerPause');
+      expect(foundPause).toBeDefined();
+      expect(foundPause.zIndex).toBe(1);
+
+      // 4. Verify layersUI is properly ordered: HUD_Layer (zIndex: 0) before layerPause (zIndex: 1)
+      const hudIdx = game.world.layersUI.findIndex(l => l.scriptId === 'HUD_Layer');
+      const pauseIdx = game.world.layersUI.findIndex(l => l.scriptId === 'layerPause');
+      expect(hudIdx).toBeLessThan(pauseIdx);
+
+      // 5. Verify the injected entity is attached to layerPause
+      const modal = game.world.entities.find(e => e.scriptId === 'modal_panel');
+      expect(modal).toBeDefined();
+      expect(modal.layerId).toBe(foundPause.id);
+      expect(foundPause.entities.some(e => e.id === modal.id)).toBe(true);
+
+      // 6. Test PointerRaycast ordering: pointer hovering over the overlapping region (100, 100)
+      // Position modal_panel over the same coordinates
+      modal.components.UITransform.x = 100;
+      modal.components.UITransform.y = 100;
+      modal.components.UITransform.width = 200;
+      modal.components.UITransform.height = 200;
+      modal.components.UITransform.anchorX = 0;
+      modal.components.UITransform.anchorY = 0;
+
+      game.input = {
+        getPointer: () => ({ x: 100, y: 100 }),
+        mouse: { canvas: { width: 1920, height: 1080 } }
+      };
+
+      const topEntity = PointerRaycast.getTopEntityUnderPointer(game);
+      // Top entity must be an entity from layerPause (modal or its child), NOT the HUD button!
+      expect(topEntity.layerId).toBe(foundPause.id);
+      expect(topEntity.id).not.toBe(hudEntity.id);
     });
   });
 });

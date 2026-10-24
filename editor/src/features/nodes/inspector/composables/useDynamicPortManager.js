@@ -406,6 +406,10 @@ export function useDynamicPortManager() {
       return String(portId).startsWith('key');
     }
 
+    if (node.type === 'stringFormat') {
+      if (portId === 'format' || String(portId).startsWith('format')) return false;
+    }
+
     const mode = getDynamicMode(node);
     if (mode === 'sequential') {
       return true;

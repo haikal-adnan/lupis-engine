@@ -97,6 +97,7 @@ export function useNodeBlueprint() {
 
   const syncDynamicInputsAndCode = (node) => {
     if (!node || !Array.isArray(node.inputs)) return;
+    if (['stringFormat', 'batchSet', 'mathChain', 'eventOnKey', 'eventAdvancedKey', 'logicSwitch'].includes(node.type)) return;
 
     if (!node.data) node.data = {};
     if (!node.data.values) node.data.values = {};

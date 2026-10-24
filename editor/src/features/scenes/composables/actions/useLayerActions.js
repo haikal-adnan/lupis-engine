@@ -92,6 +92,10 @@ export const useLayerActions = {
 
         const { recordLayerPropChange } = useSceneHistory();
         recordLayerPropChange(layerId, 'zIndex', oldVal, val);
+
+        if (typeof engineBridge?.updateLayerProp === 'function') {
+          engineBridge.updateLayerProp(layerId, 'zIndex', val);
+        }
       }
     }
   },
@@ -156,6 +160,13 @@ export const useLayerActions = {
     }
 
     if (!collection || !draggedLayer) return;
+
+    const targetLayer = collection.find(l => l.id === targetId);
+    if (!targetLayer) return;
+
+    const draggedZ = draggedLayer.zIndex ?? 0;
+    const targetZ = targetLayer.zIndex ?? 0;
+    if (draggedZ !== targetZ) return;
 
     const oldState = collection.map(l => ({ id: l.id, orderIndex: l.orderIndex }));
 
@@ -306,6 +317,9 @@ export const useLayerActions = {
       if (recordHistory && oldValue !== value) {
         const { recordLayerPropChange } = useSceneHistory();
         recordLayerPropChange(layerId, propName, oldValue, value);
+      }
+      if (typeof engineBridge?.updateLayerProp === 'function') {
+        engineBridge.updateLayerProp(layerId, propName, value);
       }
       return { id: layerId, prop: propName, value };
     }

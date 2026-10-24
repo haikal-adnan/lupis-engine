@@ -16,10 +16,14 @@ export default class AnimatorSystem {
             ? (world.layersUI || [])
             : [...(world.layersWorld || []), ...(world.layersUI || [])];
 
+        const processedEntities = new Set();
+
         for (const layer of layers) {
             if (layer.active === false || layer.visible === false || !layer.entities) continue;
             
             for (const entity of layer.entities) {
+                if (!entity || processedEntities.has(entity)) continue;
+                processedEntities.add(entity);
                 this._processAnimator(entity, dt);
             }
         }

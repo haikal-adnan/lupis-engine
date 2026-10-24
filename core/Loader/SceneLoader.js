@@ -36,7 +36,7 @@ export default class SceneLoader {
         };
 
         this.world.layersWorld = parseLayers(sceneData.layersWorld, 0);
-        this.world.layersUI = parseLayers(sceneData.layersUI, 100);
+        this.world.layersUI = parseLayers(sceneData.layersUI, 0);
 
         if (this.world.layersWorld.length === 0) {
             this.world.layersWorld.push({ 
@@ -47,7 +47,7 @@ export default class SceneLoader {
         if (this.world.layersUI.length === 0) {
             this.world.layersUI.push({ 
                 id: "layer_ui_root", scriptId: "root_ui", 
-                visible: true, locked: false, zIndex: 100, orderIndex: 0, entities: [] 
+                visible: true, locked: false, zIndex: 0, orderIndex: 0, entities: [] 
             });
         }
 

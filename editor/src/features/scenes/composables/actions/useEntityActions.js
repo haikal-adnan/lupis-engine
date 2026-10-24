@@ -572,7 +572,15 @@ export const useEntityActions = {
       String(e.id) !== String(draggedId)
     );
 
-    targetSiblings.sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0));
+    targetSiblings.sort((a, b) => {
+      const zA = a.zIndex ?? 0;
+      const zB = b.zIndex ?? 0;
+      if (zA !== zB) return zA - zB;
+      const oA = a.orderIndex ?? 0;
+      const oB = b.orderIndex ?? 0;
+      if (oA !== oB) return oA - oB;
+      return String(a.id || '').localeCompare(String(b.id || ''));
+    });
 
     if (insertionType === 'inside' || insertionType === 'append' || !referenceId) {
       targetSiblings.push(entity);
@@ -602,7 +610,15 @@ export const useEntityActions = {
         e.layerId === oldLayerId && 
         String(e.id) !== String(draggedId)
       );
-      oldSiblings.sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0));
+      oldSiblings.sort((a, b) => {
+        const zA = a.zIndex ?? 0;
+        const zB = b.zIndex ?? 0;
+        if (zA !== zB) return zA - zB;
+        const oA = a.orderIndex ?? 0;
+        const oB = b.orderIndex ?? 0;
+        if (oA !== oB) return oA - oB;
+        return String(a.id || '').localeCompare(String(b.id || ''));
+      });
       oldSiblings.forEach((sibling, index) => {
         sibling.orderIndex = index;
         if (engineBridge && engineBridge.updateEntityProp) {

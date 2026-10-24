@@ -209,6 +209,17 @@ describe('Layer Actions Integration', () => {
         position: 'top'
       })
     })
+
+    it('[Bad Path] prevents reordering layers with different zIndex and preserves original zIndex without engine call', () => {
+      const layer2 = sceneStoreState.addLayer('Layer 2', 'world')
+      layer2.zIndex = 2
+
+      sceneStoreState.reorderLayer(layer2.id, 'layer_w1', 'top')
+
+      expect(layer2.zIndex).toBe(2)
+      expect(sceneStoreState.activeScene.layersWorld.find(l => l.id === 'layer_w1').zIndex).toBe(0)
+      expect(engineBridge.reorderLayer).not.toHaveBeenCalled()
+    })
   })
 
   describe('Layer Duplication & Paste (duplicateLayer & pasteLayer)', () => {

@@ -61,7 +61,12 @@ return;`
           code: 
 `const list = inputs.list;
 const index = inputs.index;
-const value = inputs.value;
+let value = inputs.value;
+if (typeof value === 'string' && value.trim() !== '') {
+  try {
+    value = JSON.parse(value.trim());
+  } catch (_) {}
+}
 
 list[index] = value;
 
@@ -95,7 +100,12 @@ return;`
           values: { value: '' },
           code: 
 `const list = inputs.list;
-const value = inputs.value;
+let value = inputs.value;
+if (typeof value === 'string' && value.trim() !== '') {
+  try {
+    value = JSON.parse(value.trim());
+  } catch (_) {}
+}
 
 list.push(value);
 
@@ -131,7 +141,12 @@ return;`
           code: 
 `const list = inputs.list;
 const index = inputs.index;
-const value = inputs.value;
+let value = inputs.value;
+if (typeof value === 'string' && value.trim() !== '') {
+  try {
+    value = JSON.parse(value.trim());
+  } catch (_) {}
+}
 
 list.splice(index, 0, value);
 
@@ -375,7 +390,12 @@ return;`
           code: 
 `const mapData = inputs.map;
 const key = inputs.key;
-const value = inputs.value;
+let value = inputs.value;
+if (typeof value === 'string' && value.trim() !== '') {
+  try {
+    value = JSON.parse(value.trim());
+  } catch (_) {}
+}
 
 mapData[key] = value;
 
@@ -685,7 +705,12 @@ if (typeof targetCol === 'string') {
 
 targetCol = context.assert.exists(targetCol, 'Target collection must not be null or undefined');
 const pathString = inputs.path ? String(inputs.path) : '';
-const newVal = inputs.value;
+let newVal = inputs.value;
+if (typeof newVal === 'string' && newVal.trim() !== '') {
+  try {
+    newVal = JSON.parse(newVal.trim());
+  } catch (_) {}
+}
 const parts = pathString.split(/[.\\[\\]]+/).map(p => p.replace(/^['"]|['"]$/g, '')).filter(p => p !== '');
 
 function getProp(obj, key) {
@@ -732,6 +757,85 @@ if (parts.length > 0) {
 outputs.collectionOut = targetCol;
 outputs.valueOut = newVal;
 outputs.execOut = true;
+return;`
+        }
+      }
+    },
+    {
+      type: 'listFindObject',
+      label: 'List Find Object',
+      description: 'Searches for an object in a list whose property matches a specified value, with optional property extraction.',
+      dynamicMode: 'none',
+      defaultData: {
+        settings: {
+          headerTitle: 'Find Object',
+          headerColor: '#0891B2',
+          category: 'Collections & Data'
+        },
+        inputs: [
+          { id: 'list', dataType: 'list', color: '#4DD0E1' },
+          { id: 'key', dataType: 'string', color: '#F48FB1', defaultValue: '' },
+          { id: 'value', dataType: 'any', color: '#B0BEC5' },
+          { id: 'extractKey', dataType: 'string', color: '#F48FB1', defaultValue: '' }
+        ],
+        outputs: [
+          { id: 'item', dataType: 'any', color: '#B0BEC5' },
+          { id: 'value', dataType: 'any', color: '#B0BEC5' },
+          { id: 'index', dataType: 'number', color: '#64B5F6' },
+          { id: 'found', dataType: 'boolean', color: '#E57373' }
+        ],
+        data: {
+          values: {
+            key: '',
+            value: '',
+            extractKey: ''
+          },
+          code: 
+`let list = inputs.list;
+if (typeof list === 'string') {
+  const trimmed = list.trim();
+  if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+    try {
+      list = JSON.parse(trimmed);
+    } catch (_) {}
+  }
+}
+
+const key = inputs.key !== undefined && inputs.key !== null ? String(inputs.key).trim() : '';
+const targetVal = inputs.value;
+const extractKey = inputs.extractKey !== undefined && inputs.extractKey !== null ? String(inputs.extractKey).trim() : '';
+
+let foundIndex = -1;
+let foundItem = null;
+
+if (Array.isArray(list) && key !== '') {
+  for (let i = 0; i < list.length; i++) {
+    const entry = list[i];
+    if (entry && typeof entry === 'object') {
+      const propVal = entry instanceof Map ? entry.get(key) : entry[key];
+      if (propVal === targetVal || (propVal !== undefined && targetVal !== undefined && String(propVal) === String(targetVal))) {
+        foundIndex = i;
+        foundItem = entry;
+        break;
+      }
+    }
+  }
+}
+
+const isFound = foundIndex !== -1;
+outputs.item = isFound ? foundItem : null;
+outputs.index = foundIndex;
+outputs.found = isFound;
+
+if (isFound && extractKey !== '') {
+  if (foundItem instanceof Map) {
+    outputs.value = foundItem.has(extractKey) ? foundItem.get(extractKey) : null;
+  } else {
+    outputs.value = foundItem[extractKey] !== undefined ? foundItem[extractKey] : null;
+  }
+} else {
+  outputs.value = isFound ? foundItem : null;
+}
 return;`
         }
       }

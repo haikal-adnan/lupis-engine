@@ -287,24 +287,28 @@ return;`
           { id: 'result', dataType: 'string', color: '#F48FB1' }
         ],
         data: { 
+          formats: ['Score: {v0} / {v1}'],
           values: {
             format: 'Score: {v0} / {v1}'
           },
           code: 
-`const formatStr = inputs.format;
+`const rawFmt = inputs.format !== undefined && inputs.format !== null ? inputs.format : 'Score: {v0} / {v1}';
+const formatStr = String(rawFmt);
 const v0 = inputs.v0;
 const v1 = inputs.v1;
 
 const formatted = formatStr.replace(/{([^{}]+)}/g, (_, path) => {
   const parts = path.split('.');
   const rootKey = parts[0].trim();
-  let val = inputs[rootKey];
+  let val = inputs[rootKey] !== undefined ? inputs[rootKey] : (inputs['v' + rootKey] !== undefined ? inputs['v' + rootKey] : undefined);
 
   for (let i = 1; i < parts.length; i++) {
-    val = val[parts[i].trim()];
+    if (val && typeof val === 'object') {
+      val = val[parts[i].trim()];
+    }
   }
 
-  return typeof val === 'object' ? JSON.stringify(val) : String(val);
+  return typeof val === 'object' ? JSON.stringify(val) : String(val !== undefined ? val : '');
 });
 
 outputs.result = formatted;
@@ -409,6 +413,75 @@ const isPretty = inputs.pretty;
 const formatted = typeof val === 'object' ? JSON.stringify(val, null, isPretty ? 2 : 0) : String(val);
 
 outputs.result = formatted;
+return;`
+        }
+      } 
+    },
+{ 
+      type: 'anyToBoolean', 
+      label: 'Any To Boolean', 
+      description: 'Converts any data value (such as string "true"/"false", number 1/0, etc.) into a boolean.', 
+      dynamicMode: 'none',
+      defaultData: { 
+        settings: { 
+          headerTitle: 'To Bool', 
+          headerColor: '#F57C00', 
+          category: 'Audio & System' 
+        },
+        inputs: [
+          { id: 'value', dataType: 'any', color: '#B0BEC5' }
+        ],
+        outputs: [
+          { id: 'result', dataType: 'boolean', color: '#E57373' }
+        ],
+        data: {
+          values: {
+            value: ''
+          },
+          code: 
+`const val = inputs.value;
+if (typeof val === 'boolean') {
+  outputs.result = val;
+} else if (typeof val === 'string') {
+  const trimmed = val.trim().toLowerCase();
+  outputs.result = (trimmed === 'true' || trimmed === '1');
+} else if (typeof val === 'number') {
+  outputs.result = val !== 0;
+} else {
+  outputs.result = Boolean(val);
+}
+return;`
+        }
+      } 
+    },
+{ 
+      type: 'anyToNumber', 
+      label: 'Any To Number', 
+      description: 'Converts a string or any data value into a numeric value with a fallback default.', 
+      dynamicMode: 'none',
+      defaultData: { 
+        settings: { 
+          headerTitle: 'To Number', 
+          headerColor: '#F57C00', 
+          category: 'Audio & System' 
+        },
+        inputs: [
+          { id: 'value', dataType: 'any', color: '#B0BEC5' },
+          { id: 'default', dataType: 'number', color: '#64B5F6', defaultValue: 0 }
+        ],
+        outputs: [
+          { id: 'result', dataType: 'number', color: '#64B5F6' }
+        ],
+        data: {
+          values: {
+            value: '',
+            default: 0
+          },
+          code: 
+`const val = inputs.value;
+const def = Number(inputs.default) || 0;
+const num = Number(val);
+outputs.result = (!isNaN(num) && val !== '' && val !== null && val !== undefined) ? num : def;
 return;`
         }
       } 

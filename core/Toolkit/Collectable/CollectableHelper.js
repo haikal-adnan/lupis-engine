@@ -245,6 +245,10 @@ export function processCollectable(stateOrParams, inputsOrContext, outputsMaybe,
 
   const targetId = inputs.targetEntity || (node && node.data && node.data.values && node.data.values.targetEntity) || 'self';
   const target = context.entity ? context.entity.get(targetId) : null;
+  const itemEntity = target ? (target.scriptId || target.id || '') : (targetId !== 'self' ? targetId : '');
+
+  outputs.itemEntity = outputs.itemEntity || itemEntity;
+  outputs.collectorEntity = outputs.collectorEntity || '';
 
   // Guard against missing or already destroyed entities (never return undefined!)
   if (!target || target._isDestroyed) {
@@ -252,6 +256,7 @@ export function processCollectable(stateOrParams, inputsOrContext, outputsMaybe,
     outputs.execOut = true;
     outputs.isCollected = true;
     outputs.collectorEntity = outputs.collectorEntity || '';
+    outputs.itemEntity = outputs.itemEntity || itemEntity;
     outputs.value = fallbackVal;
     outputs.currentClip = '';
     outputs.onCollected = false;
@@ -262,6 +267,7 @@ export function processCollectable(stateOrParams, inputsOrContext, outputsMaybe,
       execOut: true,
       isCollected: true,
       collectorEntity: outputs.collectorEntity || '',
+      itemEntity: outputs.itemEntity || itemEntity,
       value: fallbackVal,
       currentClip: '',
       onCollected: false,
@@ -322,6 +328,7 @@ export function processCollectable(stateOrParams, inputsOrContext, outputsMaybe,
       execOut: true,
       isCollected: true,
       collectorEntity: outputs.collectorEntity || '',
+      itemEntity: outputs.itemEntity || itemEntity,
       value: outputs.value,
       currentClip: outputs.currentClip,
       onCollected: false,
@@ -350,6 +357,7 @@ export function processCollectable(stateOrParams, inputsOrContext, outputsMaybe,
       execOut: true,
       isCollected: true,
       collectorEntity: outputs.collectorEntity || '',
+      itemEntity: outputs.itemEntity || itemEntity,
       value: outputs.value,
       currentClip: outputs.currentClip,
       onCollected: false,
@@ -408,6 +416,7 @@ export function processCollectable(stateOrParams, inputsOrContext, outputsMaybe,
       execOut: true,
       isCollected: Boolean(cState.isCollected),
       collectorEntity: outputs.collectorEntity || '',
+      itemEntity: outputs.itemEntity || itemEntity,
       value: outputs.value,
       currentClip: outputs.currentClip,
       onCollected: false,
@@ -427,6 +436,7 @@ export function processCollectable(stateOrParams, inputsOrContext, outputsMaybe,
       execOut: true,
       isCollected: Boolean(cState.isCollected),
       collectorEntity: outputs.collectorEntity || '',
+      itemEntity: outputs.itemEntity || itemEntity,
       value: outputs.value,
       currentClip: outputs.currentClip,
       onCollected: false,
@@ -491,6 +501,7 @@ export function processCollectable(stateOrParams, inputsOrContext, outputsMaybe,
           execOut: true,
           isCollected: Boolean(cState.isCollected),
           collectorEntity: outputs.collectorEntity || '',
+          itemEntity: outputs.itemEntity || itemEntity,
           value: outputs.value,
           currentClip: outputs.currentClip,
           onCollected: false,
@@ -507,6 +518,7 @@ export function processCollectable(stateOrParams, inputsOrContext, outputsMaybe,
     cState.isCollected = true;
     outputs.isCollected = true;
     outputs.collectorEntity = collector.scriptId || collector.id || '';
+    outputs.itemEntity = itemEntity;
     outputs.value = typeof inputs.scoreValue === 'number' ? inputs.scoreValue : (node && node.data && node.data.values && typeof node.data.values.scoreValue === 'number' ? node.data.values.scoreValue : 1);
     outputs.onCollected = true;
 
@@ -573,6 +585,7 @@ export function processCollectable(stateOrParams, inputsOrContext, outputsMaybe,
     execOut: true,
     isCollected: Boolean(cState.isCollected),
     collectorEntity: outputs.collectorEntity || '',
+    itemEntity: outputs.itemEntity || itemEntity,
     value: outputs.value,
     currentClip: outputs.currentClip,
     onCollected: Boolean(outputs.onCollected),

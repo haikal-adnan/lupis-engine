@@ -14,9 +14,12 @@ export class SceneContextHandler {
       getCurrentId: () => sceneSystem?.getCurrentSceneId(),
       getCurrentData: () => sceneSystem?.getCurrentScene(),
       getAllScenes: () => sceneSystem?.getAvailableScenes(),
-      injectLayer: (sceneName, layerName, inheritState = true, targetLayer = '') => {
+      injectLayer: (sceneName, layerName = null, inheritState = true, targetLayer = 'self', targetScene = 'self') => {
         const inherit = inheritState !== false && inheritState !== 'false';
-        return sceneSystem ? sceneSystem.injectLayer(sceneName, layerName, inherit, targetLayer) : { success: false, isFirstLoad: false };
+        return sceneSystem ? sceneSystem.injectLayer(sceneName, layerName, inherit, targetLayer, targetScene) : { success: false, isFirstLoad: false };
+      },
+      resetLayer: (sceneName = 'self', layerName = null) => {
+        return sceneSystem ? Boolean(sceneSystem.resetLayer(sceneName, layerName)) : false;
       }
     };
   }

@@ -39,6 +39,7 @@ export const BlueprintCollectable = {
           { id: 'onRespawn', dataType: 'execution', color: '#FFFFFF' },
           { id: 'isCollected', dataType: 'boolean', color: '#81C784' },
           { id: 'collectorEntity', dataType: 'string', color: '#F48FB1' },
+          { id: 'itemEntity', dataType: 'string', color: '#F48FB1' },
           { id: 'value', dataType: 'number', color: '#64B5F6' }
         ],
         data: {
@@ -87,6 +88,7 @@ if (helper) {
   if (res) {
     outputs.isCollected = res.isCollected;
     outputs.collectorEntity = res.collectorEntity;
+    outputs.itemEntity = res.itemEntity;
     outputs.value = res.value;
     outputs.onCollected = res.onCollected;
     outputs.onAnimationEnd = res.onAnimationEnd;

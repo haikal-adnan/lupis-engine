@@ -775,49 +775,141 @@ export class UIContextHandler {
     const context = isDirect ? inputsOrContext : contextMaybe;
     const state = isDirect ? (context && context.state ? context.state : {}) : (stateOrParams || {});
     const outputs = (!isDirect && outputsMaybe) ? outputsMaybe : {};
-    const knobName = typeof inputs.knobEntity === 'string' ? inputs.knobEntity.trim() : '';
-    const trackName = typeof inputs.trackEntity === 'string' ? inputs.trackEntity.trim() : '';
-    const onTextName = typeof inputs.onTextEntity === 'string' ? inputs.onTextEntity.trim() : (typeof inputs.textEntity === 'string' ? inputs.textEntity.trim() : '');
-    const offTextName = typeof inputs.offTextEntity === 'string' ? inputs.offTextEntity.trim() : '';
+    const resolveEntity = (rawTarget, allowSelf = false) => {
+      if (!rawTarget) {
+        if (allowSelf) {
+          if (context && context.entity && typeof context.entity.get === 'function') {
+            try {
+              const selfEnt = context.entity.get('self');
+              if (selfEnt) return selfEnt;
+            } catch (_) {}
+          }
+          if (context?.runner?.owner) return context.runner.owner;
+          if (context?.owner) return context.owner;
+        }
+        return null;
+      }
 
-    let knobEnt = false;
-    if (knobName && context && context.entity && typeof context.entity.get === 'function') {
-      knobEnt = context.entity.get(knobName);
-    }
+      if (typeof rawTarget === 'object') {
+        return rawTarget;
+      }
 
-    let trackEnt = false;
-    if (trackName && context && context.entity && typeof context.entity.get === 'function') {
-      trackEnt = context.entity.get(trackName);
-    }
+      if (typeof rawTarget !== 'string') return null;
 
-    let onTextEnt = false;
-    if (onTextName && context && context.entity && typeof context.entity.get === 'function') {
-      onTextEnt = context.entity.get(onTextName);
-    }
+      const targetStr = rawTarget.trim();
+      if (!targetStr) {
+        if (allowSelf) {
+          if (context && context.entity && typeof context.entity.get === 'function') {
+            try {
+              const selfEnt = context.entity.get('self');
+              if (selfEnt) return selfEnt;
+            } catch (_) {}
+          }
+          if (context?.runner?.owner) return context.runner.owner;
+          if (context?.owner) return context.owner;
+        }
+        return null;
+      }
 
-    let offTextEnt = false;
-    if (offTextName && context && context.entity && typeof context.entity.get === 'function') {
-      offTextEnt = context.entity.get(offTextName);
-    }
+      if (targetStr.toLowerCase() === 'self') {
+        if (context && context.entity && typeof context.entity.get === 'function') {
+          try {
+            const selfEnt = context.entity.get('self');
+            if (selfEnt) return selfEnt;
+          } catch (_) {}
+        }
+        if (context?.runner?.owner) return context.runner.owner;
+        if (context?.owner) return context.owner;
+      }
+
+      if (context && context.entity && typeof context.entity.get === 'function') {
+        try {
+          const found = context.entity.get(targetStr);
+          if (found) return found;
+        } catch (_) {}
+      }
+
+      const entitySystem = (this.game && this.game.entitySystem) || (context?.game?.entitySystem);
+      if (entitySystem && typeof entitySystem.getEntity === 'function') {
+        try {
+          const found = entitySystem.getEntity(targetStr, context?.runner?.owner || context?.owner);
+          if (found) return found;
+        } catch (_) {}
+      }
+
+      const world = (this.game && this.game.world) || (context?.game?.world);
+      if (world) {
+        if (world.scriptIdMap && typeof world.scriptIdMap.get === 'function') {
+          const mapped = world.scriptIdMap.get(targetStr);
+          if (mapped) return mapped;
+        }
+
+        const searchKey = targetStr;
+        const searchLower = searchKey.toLowerCase();
+        const searchSlug = searchLower.replace(/\s+/g, '_');
+
+        const pool = [];
+        if (Array.isArray(world.entities)) pool.push(...world.entities);
+        const layers = world.allLayers || [];
+        for (const l of layers) {
+          if (Array.isArray(l.entities)) pool.push(...l.entities);
+        }
+
+        const owner = context?.runner?.owner || context?.owner;
+        if (owner && Array.isArray(owner.children)) {
+          for (const ch of owner.children) {
+            if (ch && typeof ch === 'object') pool.push(ch);
+          }
+        }
+
+        const found = pool.find(e => {
+          if (!e) return false;
+          if (e.id === searchKey || (e.id && String(e.id).toLowerCase() === searchLower)) return true;
+          if (e.scriptId && (String(e.scriptId).toLowerCase() === searchLower || String(e.scriptId).toLowerCase() === searchSlug)) return true;
+          if (e.name && (String(e.name).toLowerCase() === searchLower || String(e.name).toLowerCase() === searchSlug)) return true;
+          return false;
+        });
+
+        if (found) return found;
+      }
+
+      return null;
+    };
+
+    const rawKnob = (inputs.knobEntity !== undefined && inputs.knobEntity !== '') ? inputs.knobEntity : inputs.targetEntity;
+    const knobEnt = resolveEntity(rawKnob, true);
+    const trackEnt = resolveEntity(inputs.trackEntity, false);
+    const onTextEnt = resolveEntity(inputs.onTextEntity || inputs.textEntity, false);
+    const offTextEnt = resolveEntity(inputs.offTextEntity, false);
 
     if (!knobEnt) {
-      if (knobName && context && context.console && typeof context.console.warn === 'function') {
-        context.console.warn((isImage ? '[SwitchImage]' : '[SwitchShape]') + ' Knob entity not found: ' + knobName);
+      if (context && context.console && typeof context.console.warn === 'function') {
+        const identifier = typeof rawKnob === 'string' ? rawKnob : (rawKnob?.scriptId || rawKnob?.id || '');
+        if (identifier) {
+          context.console.warn((isImage ? '[SwitchImage]' : '[SwitchShape]') + ' Knob entity not found: ' + identifier);
+        }
       }
-      outputs.execOut = true;
-      return;
+      const emptyRes = {
+        execOut: true,
+        isOn: Boolean(inputs.isOn),
+        onOn: false,
+        onOff: false
+      };
+      Object.assign(outputs, emptyRes);
+      return emptyRes;
     }
 
     const self = this;
 
     function isPointerOverEntity(ent) {
       if (!ent) return false;
+      const input = (context && context.input) || (self.game && self.game.input);
       try {
-        if (context && context.input && typeof context.input.isPointerOver === 'function') {
-          if (context.input.isPointerOver(ent)) return true;
+        if (input && typeof input.isPointerOver === 'function') {
+          if (input.isPointerOver(ent)) return true;
         }
       } catch (err) {}
-      const pointer = context && context.input && typeof context.input.getPointer === 'function' ? context.input.getPointer() : false;
+      const pointer = input && typeof input.getPointer === 'function' ? input.getPointer() : false;
       if (!pointer || typeof pointer.x !== 'number' || typeof pointer.y !== 'number') return false;
       const t = ent.components && (ent.components.UITransform || ent.components.Transform);
       if (!t) return false;
@@ -969,13 +1061,26 @@ export class UIContextHandler {
           applyShapeColor(trackEnt, trackColor);
         }
       } else {
+        const resolveAsset = (assetId) => {
+          if (!assetId) return assetId;
+          if (context && context.asset && typeof context.asset.resolveId === 'function') {
+            const resolved = context.asset.resolveId(assetId);
+            if (resolved) return resolved;
+          }
+          return assetId;
+        };
         const knobImg = isVisuallyOn ? (inputs.knobOnImage || inputs.knobOffImage) : (inputs.knobOffImage || inputs.knobOnImage);
         const trackImg = isVisuallyOn ? (inputs.trackOnImage || inputs.trackOffImage) : (inputs.trackOffImage || inputs.trackOnImage);
-        if (knobEnt && knobEnt.components && knobEnt.components.SpriteRenderer && knobImg) {
-          knobEnt.components.SpriteRenderer.assetId = knobImg;
+        const finalKnobImg = resolveAsset(knobImg);
+        const finalTrackImg = resolveAsset(trackImg);
+
+        if (knobEnt && knobEnt.components && finalKnobImg) {
+          const comp = knobEnt.components.SpriteRenderer || knobEnt.components.ImageRenderer;
+          if (comp) comp.assetId = finalKnobImg;
         }
-        if (trackEnt && trackEnt.components && trackEnt.components.SpriteRenderer && trackImg) {
-          trackEnt.components.SpriteRenderer.assetId = trackImg;
+        if (trackEnt && trackEnt.components && finalTrackImg) {
+          const comp = trackEnt.components.SpriteRenderer || trackEnt.components.ImageRenderer;
+          if (comp) comp.assetId = finalTrackImg;
         }
       }
 
@@ -1009,7 +1114,8 @@ export class UIContextHandler {
       if (onTextEnt && isPointerOverEntity(onTextEnt)) return true;
       if (offTextEnt && isPointerOverEntity(offTextEnt)) return true;
 
-      const pointer = context && context.input && typeof context.input.getPointer === 'function' ? context.input.getPointer() : false;
+      const input = (context && context.input) || (self.game && self.game.input);
+      const pointer = input && typeof input.getPointer === 'function' ? input.getPointer() : false;
       if (!pointer || typeof pointer.x !== 'number' || typeof pointer.y !== 'number') return false;
 
       const px = pointer.x;
@@ -1030,8 +1136,9 @@ export class UIContextHandler {
     }
 
     function updateStep() {
-      const pointer = context && context.input && typeof context.input.getPointer === 'function' ? context.input.getPointer() : false;
-      const mouse = context && context.input ? context.input.mouse : false;
+      const input = (context && context.input) || (self.game && self.game.input);
+      const pointer = input && typeof input.getPointer === 'function' ? input.getPointer() : false;
+      const mouse = input ? input.mouse : false;
       const mouseIsDown = Boolean(mouse && (
         (typeof mouse.isDown === 'function' && (mouse.isDown(0) || mouse.isDown('left'))) ||
         (typeof mouse.isPressed === 'function' && mouse.isPressed('left'))

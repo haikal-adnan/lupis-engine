@@ -182,5 +182,118 @@ describe('BlueprintCollections Specification & Path Nodes', () => {
       expect(out.collectionOut.hero.hp).toBe(200);
       expect(out.valueOut).toBe(200);
     });
+
+    it('smart-casts string "false", "true", numbers, and JSON when setting value', () => {
+      const obj = { level2: { lock: true, maxScore: 0 } };
+
+      const out1 = executeSetFromPath({ collection: obj, path: 'level2.lock', value: 'false' });
+      expect(out1.collectionOut.level2.lock).toBe(false);
+      expect(typeof out1.collectionOut.level2.lock).toBe('boolean');
+
+      const out2 = executeSetFromPath({ collection: obj, path: 'level2.lock', value: 'true' });
+      expect(out2.collectionOut.level2.lock).toBe(true);
+      expect(typeof out2.collectionOut.level2.lock).toBe('boolean');
+
+      const out3 = executeSetFromPath({ collection: obj, path: 'level2.maxScore', value: '150' });
+      expect(out3.collectionOut.level2.maxScore).toBe(150);
+      expect(typeof out3.collectionOut.level2.maxScore).toBe('number');
+    });
+  });
+
+  describe('Find Object in List (listFindObject) Runtime Logic', () => {
+    function executeListFindObject(inputs) {
+      const findNode = BlueprintCollections.items.find(i => i.type === 'listFindObject');
+      const code = findNode.defaultData.data.code;
+      const fn = new Function('inputs', 'outputs', 'context', 'node', code + '\nreturn outputs;');
+      const outputs = {};
+      fn(inputs, outputs, {}, findNode);
+      return outputs;
+    }
+
+    const testLevelData = [
+      { nameLevel: '1', sceneLevel: 'level1', lock: false, unlockLevel: '2' },
+      { nameLevel: '2', sceneLevel: 'sceneLevel2', lock: true, unlockLevel: '3' },
+      { nameLevel: '3', sceneLevel: 'sceneLevel3', lock: true, unlockLevel: '4' }
+    ];
+
+    it('defines listFindObject with expected ports', () => {
+      const findNode = BlueprintCollections.items.find(i => i.type === 'listFindObject');
+      expect(findNode).toBeDefined();
+      expect(findNode.defaultData.inputs.find(p => p.id === 'list')?.dataType).toBe('list');
+      expect(findNode.defaultData.inputs.find(p => p.id === 'key')?.dataType).toBe('string');
+      expect(findNode.defaultData.inputs.find(p => p.id === 'value')?.dataType).toBe('any');
+      expect(findNode.defaultData.inputs.find(p => p.id === 'extractKey')?.dataType).toBe('string');
+
+      expect(findNode.defaultData.outputs.find(p => p.id === 'item')?.dataType).toBe('any');
+      expect(findNode.defaultData.outputs.find(p => p.id === 'value')?.dataType).toBe('any');
+      expect(findNode.defaultData.outputs.find(p => p.id === 'index')?.dataType).toBe('number');
+      expect(findNode.defaultData.outputs.find(p => p.id === 'found')?.dataType).toBe('boolean');
+    });
+
+    it('finds level by nameLevel and returns full item object', () => {
+      const res = executeListFindObject({
+        list: testLevelData,
+        key: 'nameLevel',
+        value: '2'
+      });
+
+      expect(res.found).toBe(true);
+      expect(res.index).toBe(1);
+      expect(res.item).toEqual({ nameLevel: '2', sceneLevel: 'sceneLevel2', lock: true, unlockLevel: '3' });
+    });
+
+    it('extracts unlockLevel directly when extractKey is specified', () => {
+      const res = executeListFindObject({
+        list: testLevelData,
+        key: 'nameLevel',
+        value: '1',
+        extractKey: 'unlockLevel'
+      });
+
+      expect(res.found).toBe(true);
+      expect(res.index).toBe(0);
+      expect(res.value).toBe('2');
+      expect(res.item.nameLevel).toBe('1');
+    });
+
+    it('matches flexibly when value is passed as number instead of string', () => {
+      const res = executeListFindObject({
+        list: testLevelData,
+        key: 'nameLevel',
+        value: 3,
+        extractKey: 'unlockLevel'
+      });
+
+      expect(res.found).toBe(true);
+      expect(res.index).toBe(2);
+      expect(res.value).toBe('4');
+    });
+
+    it('handles not found gracefully', () => {
+      const res = executeListFindObject({
+        list: testLevelData,
+        key: 'nameLevel',
+        value: '999',
+        extractKey: 'unlockLevel'
+      });
+
+      expect(res.found).toBe(false);
+      expect(res.index).toBe(-1);
+      expect(res.item).toBeNull();
+      expect(res.value).toBeNull();
+    });
+
+    it('supports list passed as JSON string', () => {
+      const jsonList = JSON.stringify(testLevelData);
+      const res = executeListFindObject({
+        list: jsonList,
+        key: 'nameLevel',
+        value: '2',
+        extractKey: 'unlockLevel'
+      });
+
+      expect(res.found).toBe(true);
+      expect(res.value).toBe('3');
+    });
   });
 });

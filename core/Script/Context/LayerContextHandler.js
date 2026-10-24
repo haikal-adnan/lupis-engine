@@ -19,6 +19,9 @@ export class LayerContextHandler {
       },
       destroy: (layerId, destroyEntities = true) => {
         return layerSystem ? layerSystem.destroyLayer(layerId, destroyEntities, runner.owner) : false;
+      },
+      reset: (sceneName = 'self', layerName = null) => {
+        return this.game?.sceneSystem ? Boolean(this.game.sceneSystem.resetLayer(sceneName, layerName || runner?.owner?.layerId)) : false;
       }
     };
   }

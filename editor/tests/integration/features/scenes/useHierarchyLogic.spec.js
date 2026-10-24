@@ -205,6 +205,31 @@ describe('Hierarchy Logic Integration', () => {
       }))
     })
 
+    it('[Bad Path] displays warning pop alert when reordering layers with different Z-Index values', () => {
+      const layer1 = createMockLayer({ id: 'l_1', name: 'Layer 1', section: 'world', zIndex: 0, orderIndex: 0 })
+      const layer2 = createMockLayer({ id: 'l_2', name: 'Layer 2', section: 'world', zIndex: 2, orderIndex: 1 })
+
+      setupMockSceneEnvironment({
+        layersWorld: [layer1, layer2]
+      })
+
+      const sceneStore = useSceneStore()
+      const { moveEntity, treeData } = useHierarchyLogic()
+      const targetLayerNode = treeData.value.worldTree.find(n => n.id === 'l_1')
+
+      moveEntity('l_2', targetLayerNode, 'top')
+
+      expect(mockShowPop).toHaveBeenCalledWith(expect.objectContaining({
+        title: 'Action Restricted',
+        message: 'Cannot reorder layers with different Z-Index (2 vs 0).',
+        type: 'warning'
+      }))
+
+      const worldLayers = sceneStore.activeScene.layersWorld
+      expect(worldLayers.find(l => l.id === 'l_2').zIndex).toBe(2)
+      expect(worldLayers.find(l => l.id === 'l_1').zIndex).toBe(0)
+    })
+
     it('[Bad Path] triggers pop alert error when moving entity inside its own descendant', () => {
       const layer = createMockLayer({ id: 'l_world', section: 'world' })
       const parentEntity = createMockEntity({ id: 'e_parent', layerId: 'l_world', parentId: null })

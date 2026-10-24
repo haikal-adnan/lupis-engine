@@ -352,6 +352,17 @@ describe('Engine Math, Matrix & Utility Calculations', () => {
             const sorted = RenderUtils.getHierarchicalOrder(entities);
             expect(sorted.map(e => e.id)).toEqual(['grandparent', 'parent', 'child', 'uncle', 'other_root']);
         });
+
+        it('consistently sorts layers by zIndex then orderIndex for layer > zIndex > orderIndex architecture', () => {
+            const layers = [
+                { id: 'layer_b', zIndex: 0, orderIndex: 1 },
+                { id: 'layer_a', zIndex: 0, orderIndex: 0 },
+                { id: 'layer_c', zIndex: 1, orderIndex: 0 }
+            ];
+
+            const sorted = RenderUtils.sortItems(layers);
+            expect(sorted.map(l => l.id)).toEqual(['layer_a', 'layer_b', 'layer_c']);
+        });
     });
 
     describe('FontMath - Text Measurement and Wrapping', () => {

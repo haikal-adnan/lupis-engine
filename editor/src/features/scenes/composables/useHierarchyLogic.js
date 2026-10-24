@@ -187,6 +187,19 @@ export function useHierarchyLogic() {
         showPop({ title: 'Invalid Move', message: 'Cannot move Layer between World and UI sections.', type: 'error' });
         return;
       }
+
+      const draggedZ = draggedLayer.zIndex ?? 0;
+      const targetZ = targetNode.zIndex ?? 0;
+
+      if (draggedZ !== targetZ) {
+        showPop({ 
+          title: 'Action Restricted', 
+          message: `Cannot reorder layers with different Z-Index (${draggedZ} vs ${targetZ}).`, 
+          type: 'warning' 
+        });
+        return;
+      }
+
       sceneStore.reorderLayer(draggedId, targetNode.id, position);
       return;
     }
@@ -235,8 +248,7 @@ export function useHierarchyLogic() {
         return;
       }
 
-      const isSameParent = (draggedEntity.parentId || null) === (targetNode.parentId || null);
-      if (targetNode.type !== 'layer' && (position === 'top' || position === 'bottom') && isSameParent) {
+      if (targetNode.type !== 'layer' && (position === 'top' || position === 'bottom')) {
         const targetZ = targetNode.zIndex ?? 0;
         const draggedZ = draggedEntity.zIndex ?? 0;
 

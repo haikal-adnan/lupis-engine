@@ -54,8 +54,7 @@ export default class WorldRenderer {
     _collectRenderables(world, activeTabId, isIsolationMode, isUIMode, tilemapContext, proj) {
         const isEditor = Config.ENGINE_MODE === 'editor';
         const isWorldActive = world?.settings?.world?.active !== false && world?.settings?.world?.visible !== false;
-        const isUIActive = world?.settings?.ui?.active !== false && world?.settings?.ui?.visible !== false;
-        const layers = [...(world?.layersWorld || []), ...(world?.layersUI || [])]; 
+        const layers = [...(world?.layersWorld || [])]; 
         RenderUtils.sortItems(layers);
 
         for (let li = 0; li < layers.length; li++) {
@@ -63,16 +62,14 @@ export default class WorldRenderer {
             if (!layer || layer.active === false || layer.visible === false || !layer.entities) continue;
 
             const isUILayer = layer.scriptId === 'ui' || layer.scriptId?.toLowerCase().includes('ui') || (world?.layersUI?.includes(layer));
-            if (isUILayer && !isUIActive) continue;
-            if (!isUILayer && !isWorldActive) continue;
-            if (!isEditor && isUILayer) continue;
+            if (isUILayer || !isWorldActive) continue;
 
             const layerOpacity = layer.opacity ?? 1.0; 
             const allEntities = RenderUtils.getHierarchicalOrder(layer.entities);
 
             for (const e of allEntities) {
                 const isEntityUI = e?.type === 'ui' || e?.type === 'ui_entity' || e?.components?.UITransform || isUILayer;
-                if (!isEditor && isEntityUI) continue;
+                if (isEntityUI) continue;
 
                 let entityVisualOpacity = layerOpacity; 
 

@@ -30,8 +30,17 @@ export default class Entity {
     }
 
     set tag(val) {
-        if (!val || String(val).toLowerCase() === "untagged") {
+        if (!val || (typeof val === 'string' && val.toLowerCase() === "untagged")) {
             this.tags = [];
+        } else if (Array.isArray(val)) {
+            const list = [];
+            for (const item of val) {
+                const clean = String(item || '').trim().replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+                if (clean && !list.some(t => t.toLowerCase() === clean.toLowerCase())) {
+                    list.push(clean);
+                }
+            }
+            this.tags = list;
         } else {
             const clean = String(val).trim();
             if (clean) {

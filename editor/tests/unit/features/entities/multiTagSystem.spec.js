@@ -5,6 +5,7 @@ import EntitySystem from '@core/System/EntitySystem.js';
 import ColliderSystem from '@core/System/ColliderSystem.js';
 import { useProjectStore } from '@projects/projects.js';
 import { entitySchema } from '@scenes/scenes.js';
+import { BlueprintEntity } from '@nodes/library/blueprints/BlueprintEntity.js';
 
 describe('Multi-Tag System Tests', () => {
   beforeEach(() => {
@@ -266,7 +267,7 @@ describe('Multi-Tag System Tests', () => {
   });
 
   describe('Blueprint Tag Nodes & getObject Outputs', () => {
-    it('getObject outputs tags as list even when empty or 1 tag', () => {
+    it('getObject outputs tags and tag as list even when empty or 1 tag', () => {
       const eEmpty = new Entity('e_empty');
       const eSingle = new Entity('e_single');
       eSingle.addTag('Hero');
@@ -283,25 +284,98 @@ describe('Multi-Tag System Tests', () => {
         };
 
         const entity = context.assert.exists(context.entity.get(inputs.targetEntity), 'Target entity must exist');
+        const tagList = Array.isArray(entity.tags) ? [...entity.tags] : (entity.tag && entity.tag !== 'untagged' ? [entity.tag] : []);
         outputs.entityId = entity.scriptId;
-        outputs.tagName = entity.tag;
-        outputs.tags = Array.isArray(entity.tags) ? [...entity.tags] : (entity.tag && entity.tag !== 'untagged' ? [entity.tag] : []);
+        outputs.tag = tagList;
         outputs.active = entity.active;
         outputs.visible = entity.visible;
         return outputs;
       };
 
       const outEmpty = runGetObject(eEmpty);
-      expect(Array.isArray(outEmpty.tags)).toBe(true);
-      expect(outEmpty.tags).toEqual([]);
+      expect(Array.isArray(outEmpty.tag)).toBe(true);
+      expect(outEmpty.tag).toEqual([]);
 
       const outSingle = runGetObject(eSingle);
-      expect(Array.isArray(outSingle.tags)).toBe(true);
-      expect(outSingle.tags).toEqual(['Hero']);
+      expect(Array.isArray(outSingle.tag)).toBe(true);
+      expect(outSingle.tag).toEqual(['Hero']);
 
       const outMulti = runGetObject(eMulti);
-      expect(Array.isArray(outMulti.tags)).toBe(true);
-      expect(outMulti.tags).toEqual(['Enemy', 'Boss']);
+      expect(Array.isArray(outMulti.tag)).toBe(true);
+      expect(outMulti.tag).toEqual(['Enemy', 'Boss']);
+    });
+
+    it('setObject updates tags and tag when given a list or comma string', () => {
+      const ent = new Entity('ent_test');
+      const runSetObject = (target, inputObj) => {
+        const inputs = { targetEntity: 'self', ...inputObj };
+        const outputs = {};
+        const context = {
+          assert: { exists: (v) => v },
+          entity: { get: () => target }
+        };
+
+        const entity = context.assert.exists(context.entity.get(inputs.targetEntity), 'Target entity must exist');
+        const propKeys = ['tag', 'tags', 'active', 'visible'];
+        for (const key of propKeys) {
+          if (key in inputs) {
+            if (key === 'tag' || key === 'tags') {
+              const val = inputs[key];
+              if (Array.isArray(val)) {
+                entity.tags = val.map(t => String(t).trim().replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '')).filter(Boolean);
+              } else if (typeof val === 'string') {
+                const parts = val.split(',').map(s => s.trim().replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '')).filter(Boolean);
+                if (parts.length > 1) {
+                  entity.tags = parts;
+                } else {
+                  entity.tag = val;
+                }
+              } else {
+                entity.tag = val;
+              }
+            } else {
+              entity[key] = inputs[key];
+            }
+          }
+        }
+        outputs.execOut = true;
+        return outputs;
+      };
+
+      // Set via array
+      runSetObject(ent, { tag: ['banana', 'new'] });
+      expect(ent.tags).toEqual(['banana', 'new']);
+      expect(ent.hasTag('banana')).toBe(true);
+      expect(ent.hasTag('new')).toBe(true);
+
+      // Set via comma string
+      runSetObject(ent, { tag: 'grape, old, new' });
+      expect(ent.tags).toEqual(['grape', 'old', 'new']);
+      expect(ent.hasTag('grape')).toBe(true);
+      expect(ent.hasTag('old')).toBe(true);
+      expect(ent.hasTag('new')).toBe(true);
+    });
+
+    it('getObject and setObject blueprint definitions use singular "tag" with type "list" without duplicates', () => {
+      const getObj = BlueprintEntity.items.find(i => i.type === 'getObject');
+      const setObj = BlueprintEntity.items.find(i => i.type === 'setObject');
+
+      expect(getObj.defaultData.data.propertyOptions.map(p => p.value)).toEqual([
+        'entityId',
+        'tag',
+        'active',
+        'visible'
+      ]);
+      const getTagProp = getObj.defaultData.data.propertyOptions.find(p => p.value === 'tag');
+      expect(getTagProp.type).toBe('list');
+
+      expect(setObj.defaultData.data.propertyOptions.map(p => p.value)).toEqual([
+        'tag',
+        'active',
+        'visible'
+      ]);
+      const setTagProp = setObj.defaultData.data.propertyOptions.find(p => p.value === 'tag');
+      expect(setTagProp.type).toBe('list');
     });
 
     it('entityCountByTag counts active matching entities', () => {

@@ -354,7 +354,7 @@ return;`
     { 
       type: 'injectLayer', 
       label: 'Inject Layer', 
-      description: 'Injects a reusable layer and its entities from another scene into the active scene.', 
+      description: 'Injects a reusable layer and its entities from another scene template into the target scene.', 
       dynamicMode: 'none',
       defaultData: { 
         settings: { 
@@ -364,9 +364,10 @@ return;`
         },
         inputs: [
           { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
-          { id: 'sceneName', dataType: 'string', color: '#F48FB1', defaultValue: '' },
-          { id: 'layerName', dataType: 'string', color: '#F48FB1', defaultValue: '' },
-          { id: 'targetLayer', dataType: 'string', color: '#F48FB1', defaultValue: '' },
+          { id: 'sceneTemplate', dataType: 'string', color: '#F48FB1', defaultValue: '' },
+          { id: 'layerTemplate', dataType: 'string', color: '#F48FB1', defaultValue: null },
+          { id: 'targetScene', dataType: 'string', color: '#F48FB1', defaultValue: 'self' },
+          { id: 'targetLayer', dataType: 'string', color: '#F48FB1', defaultValue: 'self' },
           { id: 'inheritState', dataType: 'boolean', color: '#4CAF50', defaultValue: true }
         ], 
         outputs: [
@@ -376,20 +377,61 @@ return;`
         ],
         data: {
           values: {
-            sceneName: '',
-            layerName: '',
-            targetLayer: '',
+            sceneTemplate: '',
+            layerTemplate: null,
+            targetScene: 'self',
+            targetLayer: 'self',
             inheritState: true
           },
           code: 
-`const sceneName = String(inputs.sceneName);
-const layerName = String(inputs.layerName);
-const targetLayer = inputs.targetLayer ? String(inputs.targetLayer) : '';
+`const sceneTemplate = inputs.sceneTemplate ? String(inputs.sceneTemplate) : '';
+const layerTemplate = inputs.layerTemplate ? String(inputs.layerTemplate) : null;
+const targetScene = inputs.targetScene ? String(inputs.targetScene) : 'self';
+const targetLayer = inputs.targetLayer ? String(inputs.targetLayer) : 'self';
 const inheritState = inputs.inheritState !== false && inputs.inheritState !== 'false';
 
-const res = context.scene.injectLayer(sceneName, layerName, inheritState, targetLayer);
-outputs.success = Boolean(res.success);
-outputs.isFirstLoad = Boolean(res.isFirstLoad);
+const res = context.scene.injectLayer(sceneTemplate, layerTemplate, inheritState, targetLayer, targetScene);
+outputs.success = Boolean(res && res.success);
+outputs.isFirstLoad = Boolean(res && res.isFirstLoad);
+outputs.execOut = true;
+return;`
+        }
+      } 
+    },
+    { 
+      type: 'resetLayer', 
+      label: 'Reset Layer', 
+      description: 'Resets a layer to its initial state from the scene template, clearing runtime modifications and restoring initial entities.', 
+      dynamicMode: 'none',
+      defaultData: { 
+        settings: { 
+          headerTitle: 'Reset Layer', 
+          headerColor: '#8E24AA', 
+          category: 'Scene & Lifecycle' 
+        },
+        inputs: [
+          { id: 'execIn', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'sceneName', dataType: 'string', color: '#F48FB1', defaultValue: '' },
+          { id: 'layerName', dataType: 'string', color: '#F48FB1', defaultValue: '' }
+        ], 
+        outputs: [
+          { id: 'execOut', dataType: 'execution', color: '#FFFFFF' },
+          { id: 'success', dataType: 'boolean', color: '#4CAF50' }
+        ],
+        data: {
+          values: {
+            sceneName: '',
+            layerName: ''
+          },
+          code: 
+`const sceneName = inputs.sceneName ? String(inputs.sceneName) : '';
+const layerName = inputs.layerName ? String(inputs.layerName) : '';
+
+const success = context.scene && typeof context.scene.resetLayer === 'function'
+  ? context.scene.resetLayer(sceneName, layerName)
+  : false;
+
+outputs.success = Boolean(success);
 outputs.execOut = true;
 return;`
         }

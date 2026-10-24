@@ -394,20 +394,22 @@ if (isHovering) {
   outputs.onHover = true;
 }
 
+const wasDown = Boolean(state.wasDown);
+
 if (isHovering && isPointerDown) {
-  if (!state.wasDown) {
+  if (!wasDown) {
     outputs.onDown = true;
   } else {
     outputs.onHold = true;
   }
 }
 
-if (!isPointerDown && state.wasDown) {
+if (!isPointerDown && wasDown) {
   outputs.onUp = true;
 }
 
 state.wasHovering = isHovering;
-state.wasDown = isPointerDown;
+state.wasDown = isPointerDown && (wasDown || isHovering);
 context.state.interactStates.set(entity.scriptId, state);
 
 return;`

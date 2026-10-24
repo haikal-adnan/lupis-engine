@@ -103,12 +103,12 @@ export default class RenderUtils {
         }
 
         return items.sort((a, b) => {
-            const zA = a?.zIndex ?? 0;
-            const zB = b?.zIndex ?? 0;
+            const zA = Number(a?.zIndex ?? 0);
+            const zB = Number(b?.zIndex ?? 0);
             if (zA !== zB) return zA - zB;
 
-            const oA = a?.orderIndex ?? 0;
-            const oB = b?.orderIndex ?? 0;
+            const oA = Number(a?.orderIndex ?? 0);
+            const oB = Number(b?.orderIndex ?? 0);
             if (oA !== oB) return oA - oB;
 
             const idA = String(a?.id || "");

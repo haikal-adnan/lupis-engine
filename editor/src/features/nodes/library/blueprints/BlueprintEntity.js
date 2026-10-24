@@ -293,17 +293,17 @@ return;`
           },
           propertyOptions: [
             { value: 'entityId', label: 'Entity ID', type: 'string', color: '#F48FB1' },
-            { value: 'tagName', label: 'Tag Name', type: 'string', color: '#F48FB1' },
-            { value: 'tags', label: 'Tags', type: 'list', color: '#4DD0E1' },
+            { value: 'tag', label: 'Tag', type: 'list', color: '#4DD0E1' },
             { value: 'active', label: 'Active', type: 'boolean', color: '#E57373' },
             { value: 'visible', label: 'Visible', type: 'boolean', color: '#E57373' }
           ],
           code: 
 `const entity = context.assert.exists(context.entity.get(inputs.targetEntity), 'Target entity must exist');
 
+const tagList = Array.isArray(entity.tags) ? [...entity.tags] : (entity.tag && entity.tag !== 'untagged' ? [entity.tag] : []);
+
 outputs.entityId = entity.scriptId;
-outputs.tagName = entity.tag;
-outputs.tags = Array.isArray(entity.tags) ? [...entity.tags] : (entity.tag && entity.tag !== 'untagged' ? [entity.tag] : []);
+outputs.tag = tagList;
 outputs.active = entity.active;
 outputs.visible = entity.visible;
 return;`
@@ -333,7 +333,7 @@ return;`
             targetEntity: 'self'
           },
           propertyOptions: [
-            { value: 'tag', label: 'Tag', type: 'string', color: '#F48FB1' },
+            { value: 'tag', label: 'Tag', type: 'list', color: '#4DD0E1' },
             { value: 'active', label: 'Active', type: 'boolean', color: '#E57373' },
             { value: 'visible', label: 'Visible', type: 'boolean', color: '#E57373' }
           ],
@@ -344,7 +344,19 @@ const propKeys = ['tag', 'active', 'visible'];
 for (const key of propKeys) {
   if (key in inputs) {
     if (key === 'tag') {
-      entity.tag = inputs.tag;
+      const val = inputs.tag;
+      if (Array.isArray(val)) {
+        entity.tags = val.map(t => String(t).trim().replace(/\\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '')).filter(Boolean);
+      } else if (typeof val === 'string') {
+        const parts = val.split(',').map(s => s.trim().replace(/\\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '')).filter(Boolean);
+        if (parts.length > 1) {
+          entity.tags = parts;
+        } else {
+          entity.tag = val;
+        }
+      } else {
+        entity.tag = val;
+      }
     } else {
       entity[key] = inputs[key];
     }

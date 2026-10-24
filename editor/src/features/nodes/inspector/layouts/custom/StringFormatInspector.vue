@@ -19,29 +19,47 @@
             v-for="(fmt, index) in formats" 
             :key="'fmt_' + index" 
             class="relative group mt-2"
+            data-testid="node-inspector-port-row"
+            :data-port-id="getFormatPortId(index)"
           >
             <div class="absolute -left-[14px] top-1/2 w-3 h-[2px] bg-border"></div>
 
-            <div class="bg-secondary/20 p-2 pt-3 rounded border border-border relative">
-              <div class="absolute -top-2 left-2 bg-background border border-border px-1.5 py-0.5 rounded text-[9px] font-black text-amber-400 z-10 shadow-sm">
-                Output: {{ formats.length === 1 ? 'result' : `result${index}` }}
+            <div class="bg-secondary/20 p-2 pt-2.5 rounded border border-border relative">
+              <div class="flex items-center justify-between mb-1.5">
+                <div class="flex items-center gap-1.5">
+                  <span class="text-[9px] font-mono font-bold text-pink-400">
+                    Port: {{ getFormatPortId(index) }}
+                  </span>
+                  <span class="text-muted-foreground/40 text-[9px]">→</span>
+                  <span class="text-[9px] font-mono font-bold text-amber-400">
+                    Output: {{ getOutputPortId(index) }}
+                  </span>
+                </div>
+
+                <div class="flex items-center gap-1">
+                  <span v-if="isConnected(getFormatPortId(index))" class="text-[9px] text-green-400 font-mono font-bold">
+                    LINKED
+                  </span>
+                  <button 
+                    v-if="formats.length > 1"
+                    @click="removeFormat(index)"
+                    class="p-0.5 rounded text-muted-foreground hover:text-red-400 transition-colors"
+                    title="Remove Format Template"
+                  >
+                    <Trash2 class="w-3 h-3" />
+                  </button>
+                </div>
               </div>
 
-              <button 
-                v-if="formats.length > 1"
-                @click="removeFormat(index)"
-                class="absolute -top-2 -right-2 bg-background border border-border p-1 rounded-full opacity-0 group-hover:opacity-100 hover:text-red-400 hover:border-red-400 transition-all z-20 shadow-sm"
-                title="Remove Format Template"
-              >
-                <Trash2 class="w-3 h-3" />
-              </button>
-
-              <BaseInput 
-                :model-value="fmt" 
-                @update:model-value="(v) => updateFormat(index, v)" 
-                placeholder="e.g. Player: {name} | HP: {hp}" 
-                class="w-full text-xs font-mono mt-1"
-              />
+              <div :class="{ 'opacity-40 pointer-events-none filter grayscale': isConnected(getFormatPortId(index)) }">
+                <BaseInput 
+                  :model-value="fmt" 
+                  @update:model-value="(v) => updateFormat(index, v)" 
+                  placeholder="e.g. Player: {name} | HP: {hp}" 
+                  class="w-full text-xs font-mono"
+                  data-testid="node-inspector-port-text-input"
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -100,7 +118,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { computed, onMounted } from 'vue';
 import { FileText, Trash2, Plus, Unlock } from 'lucide-vue-next';
 import { useScriptStore } from '@scripts/scripts.js';
 import { useConfirm, usePopAlert } from '@composables/composables.js';
@@ -123,20 +141,43 @@ const formats = computed(() => {
   if (Array.isArray(props.node.data?.formats) && props.node.data.formats.length > 0) {
     return props.node.data.formats;
   }
+  if (props.node.data?.values?.format !== undefined && props.node.data.values.format !== '') {
+    return [props.node.data.values.format];
+  }
   if (props.node.data?.format) {
     return [props.node.data.format];
+  }
+  const formatInput = props.node.inputs?.find(p => p.id === 'format');
+  if (formatInput?.defaultValue !== undefined && formatInput.defaultValue !== '') {
+    return [formatInput.defaultValue];
   }
   return ['Score: {v0} / {v1}'];
 });
 
+function getFormatPortId(index, total = formats.value.length) {
+  return total === 1 ? 'format' : `format${index}`;
+}
+
+function getOutputPortId(index, total = formats.value.length) {
+  return total === 1 ? 'result' : `result${index}`;
+}
+
 const detectedVariables = computed(() => {
   const vars = new Set();
+  const formatPortIds = new Set(formats.value.map((_, i) => getFormatPortId(i)));
+
   formats.value.forEach(fmt => {
     const matches = [...String(fmt || '').matchAll(/\{([^{}]+)\}/g)];
     matches.forEach(m => {
       const raw = m[1].split('.')[0].trim();
+      let varName = null;
       if (/^[A-Za-z][A-Za-z0-9]*$/.test(raw)) {
-        vars.add(raw);
+        varName = raw;
+      } else if (/^[0-9]+$/.test(raw)) {
+        varName = `v${raw}`;
+      }
+      if (varName && !formatPortIds.has(varName)) {
+        vars.add(varName);
       }
     });
   });
@@ -164,14 +205,16 @@ function updateValue(portId, newValue) {
 
 function generateStringCode(fmtList) {
   const blocks = fmtList.map((fmt, i) => {
-    const outPort = fmtList.length === 1 ? 'result' : 'result' + i;
-    const safeFmt = JSON.stringify(fmt);
+    const inPort = getFormatPortId(i, fmtList.length);
+    const outPort = getOutputPortId(i, fmtList.length);
+    const safeFmt = JSON.stringify(fmt || '');
     return [
-      'const fmt' + i + ' = ' + safeFmt + ';',
+      'const rawFmt' + i + ' = inputs.' + inPort + ' !== undefined && inputs.' + inPort + ' !== null ? inputs.' + inPort + ' : ' + safeFmt + ';',
+      'const fmt' + i + ' = String(rawFmt' + i + ');',
       'outputs.' + outPort + ' = fmt' + i + '.replace(/\\{([^{}]+)\\}/g, function(_, path) {',
       '  const parts = path.split(".");',
       '  const rootKey = parts[0].trim();',
-      '  let val = inputs[rootKey];',
+      '  let val = inputs[rootKey] !== undefined ? inputs[rootKey] : (inputs["v" + rootKey] !== undefined ? inputs["v" + rootKey] : undefined);',
       '  for (let p = 1; p < parts.length; p++) {',
       '    if (val && typeof val === "object") {',
       '      val = val[parts[p].trim()];',
@@ -186,13 +229,33 @@ function generateStringCode(fmtList) {
 }
 
 function syncStructure(newFormats) {
+  const oldTotal = formats.value.length;
+  const newTotal = newFormats.length;
+
+  const formatInputs = newFormats.map((fmt, i) => {
+    const id = getFormatPortId(i, newTotal);
+    return {
+      id,
+      dataType: 'string',
+      color: '#F48FB1',
+      defaultValue: fmt ?? ''
+    };
+  });
+
+  const formatPortIds = new Set(formatInputs.map(p => p.id));
   const vars = new Set();
   newFormats.forEach(fmt => {
     const matches = [...String(fmt || '').matchAll(/\{([^{}]+)\}/g)];
     matches.forEach(m => {
       const raw = m[1].split('.')[0].trim();
+      let varName = null;
       if (/^[A-Za-z][A-Za-z0-9]*$/.test(raw)) {
-        vars.add(raw);
+        varName = raw;
+      } else if (/^[0-9]+$/.test(raw)) {
+        varName = `v${raw}`;
+      }
+      if (varName && !formatPortIds.has(varName)) {
+        vars.add(varName);
       }
     });
   });
@@ -200,7 +263,15 @@ function syncStructure(newFormats) {
   const currentValues = props.node.data?.values || {};
   const newValues = { ...currentValues };
 
-  const newInputs = Array.from(vars).map(varName => {
+  newFormats.forEach((fmt, i) => {
+    const portId = getFormatPortId(i, newTotal);
+    newValues[portId] = fmt ?? '';
+  });
+  if (newTotal === 1) {
+    newValues.format = newFormats[0] ?? '';
+  }
+
+  const varInputs = Array.from(vars).map(varName => {
     if (newValues[varName] === undefined) {
       newValues[varName] = '';
     }
@@ -212,16 +283,41 @@ function syncStructure(newFormats) {
     };
   });
 
+  const newInputs = [...formatInputs, ...varInputs];
+
   const newOutputs = newFormats.map((_, i) => ({
-    id: newFormats.length === 1 ? 'result' : `result${i}`,
+    id: getOutputPortId(i, newTotal),
     dataType: 'string',
     color: '#F48FB1'
   }));
 
-  const validInKeys = new Set(newInputs.map(p => p.id));
-  const validOutKeys = new Set(newOutputs.map(p => p.id));
-
+  // Remap and clean edges
   if (store.activeScript?.edges) {
+    store.activeScript.edges = store.activeScript.edges.map(edge => {
+      // Transition 1 -> >1: remap format -> format0 and result -> result0
+      if (oldTotal === 1 && newTotal > 1) {
+        if (edge.target === props.node.id && edge.targetHandle === 'format') {
+          return { ...edge, targetHandle: 'format0' };
+        }
+        if (edge.source === props.node.id && edge.sourceHandle === 'result') {
+          return { ...edge, sourceHandle: 'result0' };
+        }
+      }
+      // Transition >1 -> 1: remap format0 -> format and result0 -> result
+      if (oldTotal > 1 && newTotal === 1) {
+        if (edge.target === props.node.id && edge.targetHandle === 'format0') {
+          return { ...edge, targetHandle: 'format' };
+        }
+        if (edge.source === props.node.id && edge.sourceHandle === 'result0') {
+          return { ...edge, sourceHandle: 'result' };
+        }
+      }
+      return edge;
+    });
+
+    const validInKeys = new Set(newInputs.map(p => p.id));
+    const validOutKeys = new Set(newOutputs.map(p => p.id));
+
     store.activeScript.edges = store.activeScript.edges.filter(edge => {
       if (edge.target === props.node.id) {
         return validInKeys.has(edge.targetHandle);
@@ -261,6 +357,16 @@ function removeFormat(index) {
   newFormats.splice(index, 1);
   syncStructure(newFormats);
 }
+
+onMounted(() => {
+  const currentInputs = props.node.inputs || [];
+  const expectedFormatPortId = getFormatPortId(0, formats.value.length);
+  const hasFormatPort = currentInputs.some(p => p.id === expectedFormatPortId || p.id === 'format');
+  const hasCode = Boolean(props.node.data?.code);
+  if (!hasFormatPort || !hasCode) {
+    syncStructure(formats.value);
+  }
+});
 
 async function unlockToCustom() {
   let isConfirmed = false;

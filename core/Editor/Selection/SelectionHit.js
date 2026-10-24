@@ -98,14 +98,17 @@ export class SelectionHit {
 
         const layersWorld = world.layersWorld || [];
         const layersUI = world.layersUI || [];
-        const allLayers = [...layersWorld, ...layersUI];
 
-        allLayers.sort((a, b) => {
-            const zA = a.zIndex ?? 0;
-            const zB = b.zIndex ?? 0;
+        const sortLayersDescending = (a, b) => {
+            const zA = Number(a.zIndex ?? 0);
+            const zB = Number(b.zIndex ?? 0);
             if (zA !== zB) return zB - zA;
-            return (b.orderIndex ?? 0) - (a.orderIndex ?? 0);
-        });
+            return Number(b.orderIndex ?? 0) - Number(a.orderIndex ?? 0);
+        };
+
+        const sortedUILayers = [...layersUI].sort(sortLayersDescending);
+        const sortedWorldLayers = [...layersWorld].sort(sortLayersDescending);
+        const allLayers = [...sortedUILayers, ...sortedWorldLayers];
 
         const isWorldActive = world?.settings?.world?.active !== false && world?.settings?.world?.visible !== false;
         const isUIActive = world?.settings?.ui?.active !== false && world?.settings?.ui?.visible !== false;
@@ -143,7 +146,17 @@ export class SelectionHit {
 
         const layersWorld = world.layersWorld || [];
         const layersUI = world.layersUI || [];
-        const allLayers = [...layersWorld, ...layersUI];
+
+        const sortLayersDescending = (a, b) => {
+            const zA = Number(a.zIndex ?? 0);
+            const zB = Number(b.zIndex ?? 0);
+            if (zA !== zB) return zB - zA;
+            return Number(b.orderIndex ?? 0) - Number(a.orderIndex ?? 0);
+        };
+
+        const sortedUILayers = [...layersUI].sort(sortLayersDescending);
+        const sortedWorldLayers = [...layersWorld].sort(sortLayersDescending);
+        const allLayers = [...sortedUILayers, ...sortedWorldLayers];
 
         const isWorldActive = world?.settings?.world?.active !== false && world?.settings?.world?.visible !== false;
         const isUIActive = world?.settings?.ui?.active !== false && world?.settings?.ui?.visible !== false;

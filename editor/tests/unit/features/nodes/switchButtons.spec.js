@@ -587,6 +587,173 @@ describe('Switch Buttons Blueprint & Execution Tests', () => {
       expect(knob.components.UITransform.x).toBe(-60);
       expect(knob.components.SpriteRenderer.assetId).toBe('knob_off.png');
     });
+
+    it('successfully reads entity when knobEntity is passed as entity object directly', () => {
+      const knob = {
+        id: 'KnobObj1',
+        scriptId: 'KnobObj1',
+        components: {
+          UITransform: { x: 50, y: 50, width: 40, height: 40, pivotX: 0, pivotY: 0, anchorX: 0, anchorY: 0 },
+          SpriteRenderer: { assetId: 'initial.png' }
+        }
+      };
+      const { mockGame } = createMockGame([knob]);
+      const scriptData = {
+        id: 'test_obj_knob',
+        nodes: [
+          {
+            id: 'node_obj_knob',
+            type: 'switchButtonImage',
+            inputs: imageSwitchDef.defaultData.inputs,
+            outputs: imageSwitchDef.defaultData.outputs,
+            data: {
+              values: {
+                knobEntity: knob, // Direct object!
+                trackEntity: '',
+                isOn: false,
+                duration: 0,
+                slideDist: 20,
+                knobOffImage: 'knob_off.png',
+                knobOnImage: 'knob_on.png'
+              },
+              code: imageSwitchDef.defaultData.data.code
+            }
+          }
+        ],
+        edges: []
+      };
+
+      const runner = new ScriptRunner(mockGame, scriptData);
+      expect(() => {
+        runner._executeNodeLogic(scriptData.nodes[0], 'execIn');
+      }).not.toThrow();
+
+      expect(knob.components.SpriteRenderer.assetId).toBe('knob_off.png');
+    });
+
+    it('falls back to runner.owner when knobEntity is empty or self', () => {
+      const ownerEntity = {
+        id: 'SelfKnob',
+        scriptId: 'SelfKnob',
+        components: {
+          UITransform: { x: 10, y: 10, width: 30, height: 30, pivotX: 0, pivotY: 0, anchorX: 0, anchorY: 0 },
+          SpriteRenderer: { assetId: 'initial.png' }
+        }
+      };
+      const { mockGame } = createMockGame([ownerEntity]);
+      const scriptData = {
+        id: 'test_self_knob',
+        nodes: [
+          {
+            id: 'node_self_knob',
+            type: 'switchButtonImage',
+            inputs: imageSwitchDef.defaultData.inputs,
+            outputs: imageSwitchDef.defaultData.outputs,
+            data: {
+              values: {
+                knobEntity: '', // Empty, defaults to self
+                targetEntity: 'self',
+                isOn: false,
+                duration: 0,
+                slideDist: 20,
+                knobOffImage: 'knob_off.png',
+                knobOnImage: 'knob_on.png'
+              },
+              code: imageSwitchDef.defaultData.data.code
+            }
+          }
+        ],
+        edges: []
+      };
+
+      const runner = new ScriptRunner(mockGame, scriptData);
+      runner.owner = ownerEntity;
+      runner._executeNodeLogic(scriptData.nodes[0], 'execIn');
+
+      expect(ownerEntity.components.SpriteRenderer.assetId).toBe('knob_off.png');
+    });
+
+    it('resolves entity from layersUI/allLayers and resolves assetId', () => {
+      const knob = {
+        id: 'UIKnobLayer',
+        scriptId: 'ui_knob_layer',
+        components: {
+          UITransform: { x: 10, y: 10, width: 30, height: 30, pivotX: 0, pivotY: 0, anchorX: 0, anchorY: 0 },
+          ImageRenderer: { assetId: 'raw_asset_id' } // ImageRenderer supported!
+        }
+      };
+      // knob is NOT in world.entities, but in layersUI!
+      const { mockGame } = createMockGame([]);
+      mockGame.world.layersUI = [
+        { id: 'layer_ui_1', entities: [knob] }
+      ];
+      mockGame.world.allLayers = [
+        { id: 'layer_ui_1', entities: [knob] }
+      ];
+
+      const scriptData = {
+        id: 'test_layer_knob',
+        nodes: [
+          {
+            id: 'node_layer_knob',
+            type: 'switchButtonImage',
+            inputs: imageSwitchDef.defaultData.inputs,
+            outputs: imageSwitchDef.defaultData.outputs,
+            data: {
+              values: {
+                knobEntity: 'UI_Knob_Layer', // Case-insensitive and slug-matched
+                isOn: false,
+                duration: 0,
+                slideDist: 0,
+                knobOffImage: 'knob_off.png',
+                knobOnImage: 'knob_on.png'
+              },
+              code: imageSwitchDef.defaultData.data.code
+            }
+          }
+        ],
+        edges: []
+      };
+
+      const runner = new ScriptRunner(mockGame, scriptData);
+      runner._executeNodeLogic(scriptData.nodes[0], 'execIn');
+
+      expect(knob.components.ImageRenderer.assetId).toBe('knob_off.png');
+    });
+
+    it('gracefully returns safe outputs without throwing when knob entity is truly missing', () => {
+      const { mockGame } = createMockGame([]);
+      const scriptData = {
+        id: 'test_missing_knob',
+        nodes: [
+          {
+            id: 'node_missing_knob',
+            type: 'switchButtonImage',
+            inputs: imageSwitchDef.defaultData.inputs,
+            outputs: imageSwitchDef.defaultData.outputs,
+            data: {
+              values: {
+                knobEntity: 'NonExistentKnob',
+                isOn: false
+              },
+              code: imageSwitchDef.defaultData.data.code
+            }
+          }
+        ],
+        edges: []
+      };
+
+      const runner = new ScriptRunner(mockGame, scriptData);
+      const executeFlowSpy = vi.spyOn(runner, 'executeFlow');
+      expect(() => {
+        runner._executeNodeLogic(scriptData.nodes[0], 'execIn');
+      }).not.toThrow();
+
+      const outputs = runner.nodeOutputs.get('node_missing_knob');
+      expect(outputs).toBeDefined();
+      expect(executeFlowSpy).toHaveBeenCalledWith('node_missing_knob', 'execOut');
+      expect(outputs.isOn).toBe(false);
+    });
   });
 });
 

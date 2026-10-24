@@ -33,6 +33,7 @@ describe('Collectable Item Blueprint & Execution Tests', () => {
       'onRespawn',
       'isCollected',
       'collectorEntity',
+      'itemEntity',
       'value'
     ]);
     expect(collectableDef.defaultData.data.options).toBeDefined();
@@ -134,6 +135,7 @@ describe('Collectable Item Blueprint & Execution Tests', () => {
       expect(outputs.isCollected).toBe(true);
       expect(outputs.value).toBe(10);
       expect(outputs.collectorEntity).toBe('hero');
+      expect(outputs.itemEntity).toBe('coin_gold');
       expect(outputs.onCollected).toBe(true);
       expect(mockContext.triggerFlow).toHaveBeenCalledWith('onCollected');
     });

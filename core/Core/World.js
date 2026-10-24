@@ -47,7 +47,9 @@ export default class World {
     }
 
     addEntity(entity) {
-        this.entities.push(entity);
+        if (!this.entities.some(e => e === entity || e.id === entity.id)) {
+            this.entities.push(entity);
+        }
         
         let targetLayer = this.layersWorld.find(l => l.id === entity.layerId);
         
@@ -57,11 +59,15 @@ export default class World {
 
         if (targetLayer) {
             if (!targetLayer.entities) targetLayer.entities = [];
-            targetLayer.entities.push(entity);
+            if (!targetLayer.entities.some(e => e === entity || e.id === entity.id)) {
+                targetLayer.entities.push(entity);
+            }
         } else {
             if (this.layersWorld.length > 0) {
                  if (!this.layersWorld[0].entities) this.layersWorld[0].entities = [];
-                 this.layersWorld[0].entities.push(entity);
+                 if (!this.layersWorld[0].entities.some(e => e === entity || e.id === entity.id)) {
+                     this.layersWorld[0].entities.push(entity);
+                 }
             }
         }
     }

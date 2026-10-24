@@ -195,9 +195,11 @@ const offTextColor = inputs.offTextColor;
 const ui = context.ui;
 if (ui) {
   const res = ui.processSwitchButton(context.state, inputs, outputs, false, context);
-  outputs.isOn = res.isOn;
-  outputs.onOn = res.onOn;
-  outputs.onOff = res.onOff;
+  if (res) {
+    outputs.isOn = res.isOn;
+    outputs.onOn = res.onOn;
+    outputs.onOff = res.onOff;
+  }
 }
 outputs.execOut = true;
 return;`
@@ -280,9 +282,11 @@ const offTextColor = inputs.offTextColor;
 const ui = context.ui;
 if (ui) {
   const res = ui.processSwitchButton(context.state, inputs, outputs, true, context);
-  outputs.isOn = res.isOn;
-  outputs.onOn = res.onOn;
-  outputs.onOff = res.onOff;
+  if (res) {
+    outputs.isOn = res.isOn;
+    outputs.onOn = res.onOn;
+    outputs.onOff = res.onOff;
+  }
 }
 outputs.execOut = true;
 return;`

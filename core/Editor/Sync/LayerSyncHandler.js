@@ -43,7 +43,26 @@ export class LayerSyncHandler {
 
     onUpdateLayerProp({ id, prop, value }) {
         const layer = this._findLayer(id);
-        if (layer) layer[prop] = value;
+        if (layer) {
+            layer[prop] = value;
+            if (prop === "zIndex" || prop === "orderIndex") {
+                if (this.ctx.world?.layersUI?.includes(layer)) {
+                    this.ctx.world.layersUI.sort((a, b) => {
+                        const zA = a.zIndex ?? 0;
+                        const zB = b.zIndex ?? 0;
+                        if (zA !== zB) return zA - zB;
+                        return (a.orderIndex ?? 0) - (b.orderIndex ?? 0);
+                    });
+                } else if (this.ctx.world?.layersWorld?.includes(layer)) {
+                    this.ctx.world.layersWorld.sort((a, b) => {
+                        const zA = a.zIndex ?? 0;
+                        const zB = b.zIndex ?? 0;
+                        if (zA !== zB) return zA - zB;
+                        return (a.orderIndex ?? 0) - (b.orderIndex ?? 0);
+                    });
+                }
+            }
+        }
     }
 
     onReorderLayer({ id, targetId, position }) {
@@ -57,7 +76,15 @@ export class LayerSyncHandler {
 
         if (oldIndex === -1) return;
 
-        const [movedLayer] = layers.splice(oldIndex, 1);
+        const movedLayer = layers[oldIndex];
+        const targetLayer = layers.find(l => l.id === targetId);
+        if (!targetLayer) return;
+
+        const movedZ = movedLayer.zIndex ?? 0;
+        const targetZ = targetLayer.zIndex ?? 0;
+        if (movedZ !== targetZ) return;
+
+        layers.splice(oldIndex, 1);
         let targetIndex = layers.findIndex(l => l.id === targetId);
 
         if (position === "bottom") targetIndex += 1;
