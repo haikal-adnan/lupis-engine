@@ -23,7 +23,7 @@ export function createCustomNodeInstance(position = { x: 100, y: 100 }) {
       headerTitle: 'Custom Node',
       headerColor: '#8B5CF6',
       category: 'Custom',
-      description: 'Custom script node'
+      description: 'Custom script node with user-defined ports, parameters, and executable logic.'
     },
     data: {
       values: {},

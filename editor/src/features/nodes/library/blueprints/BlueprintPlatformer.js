@@ -9,7 +9,7 @@ export const BlueprintPlatformer = {
     {
       type: 'platformerController',
       label: 'Platformer Controller',
-      description: 'All-in-one platformer movement helper (Left, Right, Jump, Drop-Through Platform, Land Detection).',
+      description: 'Controls 2D platformer character movement including walking, jumping, one-way platform drop-through, and landing detection.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -97,7 +97,7 @@ return;`
     {
       type: 'platformerAnimator',
       label: 'Platformer Animator',
-      description: 'Smart platformer animator helper (idle, run, jump, fall, auto left/right orientation and auto-flip).',
+      description: 'Synchronizes platformer animation states (idle, run, jump, fall) and automatically mirrors sprite facing direction.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -171,7 +171,7 @@ return;`
     {
       type: 'platformerCombat',
       label: 'Platformer Combat',
-      description: 'Robust melee combo attack manager with buffer window, cooldowns, and automatic hitbox overlaps.',
+      description: 'Manages melee combo attack chains, input buffering, cooldowns, and automatic attack hitbox detection.',
       dynamicMode: 'none',
       defaultData: {
         settings: {

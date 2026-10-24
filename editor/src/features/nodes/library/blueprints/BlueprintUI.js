@@ -9,7 +9,7 @@ export const BlueprintUI = {
     {
       type: 'volumeSliderManager',
       label: 'Volume Slider Manager',
-      description: 'Unified 4-channel automatic volume slider manager with auto crop & handle positioning.',
+      description: 'Manages a 4-channel audio volume slider with automatic fill cropping and knob positioning.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -62,7 +62,7 @@ return;`
     {
       type: 'atomicSlider',
       label: 'Atomic Slider',
-      description: 'Mengatur slider modular berbasis nilai bebas (misal 0-160), mendukung bar shape/sprite, knob independen atau child, pembulatan step, serta arah reverse.',
+      description: 'Manages a modular value slider supporting shape/sprite bars, knob dragging, step snapping, and reverse direction.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -122,7 +122,7 @@ return;`
     {
       type: 'switchButtonShape',
       label: 'Switch Button Shape',
-      description: 'Mengatur interaksi switch toggle berbasis ShapeRenderer dengan animasi geser knob, area klik slide distance, dan dukungan 2 teks (ON/OFF).',
+      description: 'Manages a shape-based toggle switch with sliding knob animation, hit testing, and dual ON/OFF labels.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -207,7 +207,7 @@ return;`
     {
       type: 'switchButtonImage',
       label: 'Switch Button Image',
-      description: 'Mengatur interaksi switch toggle berbasis SpriteRenderer dengan animasi geser knob, pergantian gambar ON/OFF, dan area klik interaktif.',
+      description: 'Manages a sprite-based toggle switch with sliding knob animation, image swapping, and interactive click bounds.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -292,7 +292,7 @@ return;`
     {
       type: 'uiGridSpawner',
       label: 'UI Grid Spawner',
-      description: 'Spawns and positions entity prefabs into a 2D grid layout with per-item callback flow.',
+      description: 'Spawns and arranges entity prefabs in a 2D grid layout with per-item callback execution.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -367,7 +367,7 @@ return;`
     {
       type: 'uiPrefabBinder',
       label: 'UI Prefab Data Binder',
-      description: 'God node untuk otomatisasi hidrasi child entity & komponen (Sprite, Text, Transform, Audio, Collider, Physics, Animator, Shape, Tilemap, Script) pada prefab berdasarkan item data / collection.',
+      description: 'Hydrates child entities and components of a prefab instance using data from an item or collection.',
       dynamicMode: 'none',
       defaultData: {
         settings: {

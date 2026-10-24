@@ -9,7 +9,7 @@ export const BlueprintAnimation = {
 {
       type: 'logicTweenValue',
       label: 'Tween Value',
-      description: 'Generates interpolated numeric values over time with a single execution trigger.',
+      description: 'Interpolates a numeric value from start to end over time using a chosen easing curve.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -102,7 +102,7 @@ return;`
 {
       type: 'tweenMoveTo',
       label: 'Move To',
-      description: 'Animates entity position towards target coordinates over a duration.',
+      description: 'Animates entity position towards target coordinates over a specified duration.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -210,7 +210,7 @@ return;`
 {
       type: 'tweenScaleTo',
       label: 'Scale To',
-      description: 'Animates entity scale towards target values over a duration.',
+      description: 'Animates entity scale towards target values over a specified duration.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -318,7 +318,7 @@ return;`
 {
       type: 'tweenRotateTo',
       label: 'Rotate To',
-      description: 'Animates entity rotation (degrees) towards target angle over a duration.',
+      description: 'Animates entity rotation towards a target angle in degrees over a specified duration.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -418,7 +418,7 @@ return;`
 {
       type: 'tweenResizeTo',
       label: 'Resize To',
-      description: 'Animates entity width and height towards target size over a duration.',
+      description: 'Animates entity dimensions towards a target width and height over a specified duration.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -526,7 +526,7 @@ return;`
 {
       type: 'tweenFadeTo',
       label: 'Fade To',
-      description: 'Animates opacity (0.0 - 1.0) for SpriteRenderer, ShapeRenderer, and TextRenderer over a duration.',
+      description: 'Animates entity renderer opacity towards a target value over a specified duration.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -632,7 +632,7 @@ return;`
 {
       type: 'tweenCropTo',
       label: 'Crop Image',
-      description: 'Animates sprite source rect (sourceX, sourceY, sourceWidth, sourceHeight) over a duration.',
+      description: 'Animates sprite texture crop rect coordinates over a specified duration.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -747,7 +747,7 @@ return;`
 {
       type: 'tweenFillAmount',
       label: 'Fill Amount',
-      description: 'Sets or animates fill percentage (0 to 100%) with 4-directional wipe (Left to Right, Right to Left, Top to Bottom, Bottom to Top). Set duration to 0 for instant fill.',
+      description: 'Sets or animates sprite fill percentage (0–100%) using a directional wipe transition.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -926,7 +926,7 @@ return;`
 {
       type: 'actionShakeTransform',
       label: 'Shake Transform',
-      description: 'Procedural shake effect with decay, perfect for impacts, explosions, or UI feedback.',
+      description: 'Applies a decaying screen or entity position shake effect for impacts and feedback.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -1007,7 +1007,7 @@ return;`
 {
       type: 'uiButtonScaleEffect',
       label: 'Button Scale Effect',
-      description: 'Handles button hover, click, and scale interpolation (Lerp) automatically within a single node.',
+      description: 'Manages interactive button hover and click scaling effects with smooth interpolation.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -1096,7 +1096,7 @@ return;`
 {
       type: 'playAnimation',
       label: 'Play Animation',
-      description: 'Plays the animation. Use On Complete for logic execution after the animation finishes.',
+      description: 'Plays a designated animation clip on the target entity with completion callbacks.',
       dynamicMode: 'none',
       defaultData: {
         settings: { headerTitle: 'Play Animation', headerColor: '#8E24AA', category: 'Animation & Tweens' },
@@ -1153,7 +1153,7 @@ return;`
 {
       type: 'pauseAnimation',
       label: 'Pause Animation',
-      description: 'Temporarily pauses the animation at the current frame.',
+      description: 'Pauses the currently playing animation clip at its current frame.',
       dynamicMode: 'none',
       defaultData: {
         settings: { headerTitle: 'Pause Animation', headerColor: '#8E24AA', category: 'Animation & Tweens' },
@@ -1183,7 +1183,7 @@ return;`
 {
       type: 'getAnimator',
       label: 'Get Animator',
-      description: 'Mendapatkan properti animator dari entity target.',
+      description: 'Retrieves sprite animator properties including active clip ID, playing state, and flip.',
       dynamicMode: 'outputProperty',
       defaultData: {
         settings: { headerTitle: 'Get Animator', headerColor: '#8E24AA', category: 'Animation & Tweens' },
@@ -1218,7 +1218,7 @@ return;`
 {
       type: 'setAnimator',
       label: 'Set Animator',
-      description: 'Mengatur properti animator pada entity target.',
+      description: 'Sets sprite animator properties including current clip, enabled state, and flip.',
       dynamicMode: 'inputProperty',
       defaultData: {
         settings: { headerTitle: 'Set Animator', headerColor: '#8E24AA', category: 'Animation & Tweens' },
@@ -1273,7 +1273,7 @@ return;`
 {
       type: 'getClipProp',
       label: 'Get Clip Prop',
-      description: 'Mendapatkan properti spesifik dari animasi clip.',
+      description: 'Retrieves specific animation clip properties such as frame rate, looping state, and frame count.',
       dynamicMode: 'outputProperty',
       defaultData: {
         settings: { headerTitle: 'Get Clip Property', headerColor: '#8E24AA', category: 'Animation & Tweens' },
@@ -1310,7 +1310,7 @@ return;`
 {
       type: 'setClipProp',
       label: 'Set Clip Prop',
-      description: 'Mengatur properti spesifik dari animasi clip.',
+      description: 'Sets animation clip properties including frame rate (FPS) and looping state.',
       dynamicMode: 'inputProperty',
       defaultData: {
         settings: { headerTitle: 'Set Clip Property', headerColor: '#8E24AA', category: 'Animation & Tweens' },
@@ -1350,7 +1350,7 @@ return;`
     {
       type: 'onAnimationFrame',
       label: 'On Animation Frame',
-      description: 'Fires execution triggers when an animation clip enters, stays active in, or exits a specific frame range.',
+      description: 'Fires execution triggers when an animation clip enters, stays within, or exits a frame range.',
       dynamicMode: 'none',
       defaultData: {
         settings: {

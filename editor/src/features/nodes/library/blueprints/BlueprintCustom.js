@@ -3,7 +3,7 @@ import { Cpu } from 'lucide-vue-next';
 export const CUSTOM_NODE_TEMPLATE = {
   type: 'customScript',
   label: 'Custom Node',
-  description: 'Custom script node with user-defined ports and logic code',
+  description: 'Custom script node with user-defined ports, parameters, and executable logic.',
   role: 'action',
   dynamicMode: 'none',
   defaultData: {
@@ -13,7 +13,7 @@ export const CUSTOM_NODE_TEMPLATE = {
       headerTitle: 'Custom Node',
       headerColor: '#8B5CF6',
       category: 'Custom',
-      description: 'Custom script node'
+      description: 'Custom script node with user-defined ports, parameters, and executable logic.'
     },
     inputs: [
       { id: 'execIn', dataType: 'execution', color: '#FFFFFF' }

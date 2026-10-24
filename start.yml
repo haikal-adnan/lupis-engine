@@ -80,7 +80,6 @@ services:
       VITE_BACKEND_URL: *service_url
       VITE_GAME_DEBUG: "true"
       VITE_ENV: development
-      # Mengaktifkan polling jika event file system Docker Host tidak terdeteksi langsung oleh Vite
       CHOKIDAR_USEPOLLING: "true"
     depends_on:
       - core

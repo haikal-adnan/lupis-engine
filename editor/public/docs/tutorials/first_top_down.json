@@ -1,0 +1,216 @@
+{
+  "title": "Your First Top-Down RPG",
+  "category": "Tutorials",
+  "description": "Create a 2D top-down RPG with painted tilemaps, 8-way character movement, 4-direction animations, and interactive world triggers.",
+  "sections": [
+    {
+      "id": "what-you-will-build",
+      "title": "What you will build",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "In this tutorial, you will build a 2D top-down RPG exploration scene in about **20 minutes**. You will paint a tilemap world, move a character smoothly in eight directions with zero gravity, animate directional walk cycles, and add interactive chests and area triggers."
+        },
+        {
+          "type": "features",
+          "items": [
+            {
+              "title": "Painted Tilemap Level",
+              "desc": "Design floors, paths, and walls using the built-in **Tilemap** brush and bucket tools."
+            },
+            {
+              "title": "8-Way Normalized Motion",
+              "desc": "Move and sprint smoothly without diagonal speed boosts using **Top-Down Controller**."
+            },
+            {
+              "title": "Directional Animation",
+              "desc": "Switch up, down, and side walk clips automatically with **Top-Down Animator**."
+            },
+            {
+              "title": "Interactive World Objects",
+              "desc": "Open chests and trigger zone events when the player explores the map."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "before-you-start",
+      "title": "Before you start",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "Complete [Quick Start](getting_started/quick_start) first so you are familiar with creating projects and adding components. Import a top-down tileset image and a 4-direction character spritesheet into the **Assets** dock."
+        },
+        {
+          "type": "table",
+          "headers": ["Component or node", "Where to find it", "Role in this tutorial"],
+          "rows": [
+            [
+              "[Tilemap](components/renderers/tilemap)",
+              "[Property Inspector](interface/property_inspector)",
+              "Paints grid-aligned terrain tiles for floors, roads, and walls."
+            ],
+            [
+              "[Physics Body](components/physics_body) & [Multi-Collider](components/multi_collider)",
+              "**Property Inspector**",
+              "Provides zero-gravity sliding collision around walls and obstacles."
+            ],
+            [
+              "[Top-Down Movement](behaviour/movement/top_down)",
+              "[Helper & Tool Nodes](node_library/helper_tool)",
+              "Handles 8-directional input, sprint multipliers, and directional sprite clips."
+            ],
+            [
+              "[Triggers & Hitboxes](behaviour/physics_and_collision/triggers_and_hitboxes)",
+              "**Helper & Tool Nodes**",
+              "Detects when the player enters a zone or presses **E** near a chest."
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "paint-the-tilemap-and-obstacles",
+      "title": "Paint the tilemap and obstacles",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "Begin by painting your ground terrain on a [Tilemap](components/renderers/tilemap) entity and placing solid colliders around walls or trees."
+        },
+        {
+          "type": "steps",
+          "items": [
+            "In the [Scene Hierarchy](interface/scene_hierarchy), create an entity named **WorldGround** on your world layer.",
+            "Select **WorldGround**, click **Add Component** in the [Property Inspector](interface/property_inspector), and choose **Tilemap**.",
+            "Assign your tileset image in the **Tilemap** component, set the tile grid size (for example **32 x 32**), and use the **Brush** (**B**) and **Bucket** (**G**) tools in the [Scene Viewport](interface/scene_viewport) to paint grass and stone paths.",
+            "Create a second entity named **Walls** above **WorldGround**, attach **Tilemap**, [Physics Body](components/physics_body) (**Static**), and [Multi-Collider](components/multi_collider), and add box collider shapes over impassable walls and trees."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "create-the-player",
+      "title": "Create the player",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "Next, configure the player entity with zero gravity and a foot-aligned collider so the character slides cleanly around corners."
+        },
+        {
+          "type": "steps",
+          "items": [
+            "In the [Scene Hierarchy](interface/scene_hierarchy), create an entity named **Hero**, set its **Tag** to **player** in the [Property Inspector](interface/property_inspector) header, and place it on the path.",
+            "Attach [Image Renderer](components/renderers/sprite_renderer), [Sprite Animator](components/sprite_animator), [Physics Body](components/physics_body), and [Multi-Collider](components/multi_collider) to **Hero**.",
+            "In **Physics Body**, set **Body Type** to **Dynamic**, set **Gravity Scale** to **0**, and enable **Fixed Rotation**.",
+            "In **Multi-Collider**, resize and offset the box shape so it covers only the lower half (feet) of the character sprite.",
+            "In **Sprite Animator**, create six clips named **idle_down**, **idle_up**, **idle_side**, **walk_down**, **walk_up**, and **walk_side**."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "add-movement-and-interactions",
+      "title": "Add movement and interactions",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "Wire **Hero**'s movement graph and add an interactive treasure chest that opens when the player presses **E**."
+        },
+        {
+          "type": "steps",
+          "items": [
+            "Attach a [Script Controller](components/script_controller) to **Hero** and open its script in the [Graph & Node Concepts](visual_scripting/graph_concepts) editor.",
+            "Add [On Tick](node_library/game_lifecycle#node-eventTick) and connect its execution and **deltaTime** pins to [Top-Down Controller](node_library/helper_tool#node-topDownController) with **Speed** set to **180** and **Sprint Multiplier** set to **1.5**.",
+            "Add [Top-Down Animator](node_library/helper_tool#node-topDownAnimator) after **Top-Down Controller**, connect **isMoving**, **isSprinting**, and **facingDirection**, and leave **Use Side Flip** enabled so one side clip covers both left and right movement.",
+            "Wire [On Scene Start](node_library/game_lifecycle#node-eventSceneStart) to [Camera Follow](node_library/game_renderer#node-actionCameraFollow) so the camera tracks **Hero** across the map.",
+            "Create a **Chest** entity with **Image Renderer**, **Sprite Animator** (**closed** and **open** clips), **Physics Body** (**Static**), **Multi-Collider** (**Is Sensor** enabled), and **Script Controller**.",
+            "In **Chest**'s graph, wire **On Tick** to [Collectable Item](node_library/helper_tool#node-collectableItem) with **Collector Tag** set to **player**, **Pickup Mode** set to **interact_key**, **Interact Key** set to **e**, and **Collect Clip** set to **open**."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "test-the-game",
+      "title": "Test the game",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "Playtest your top-down RPG level in the viewport."
+        },
+        {
+          "type": "steps",
+          "items": [
+            "Click **Play** in the top bar.",
+            "Move around the tilemap using **W**, **A**, **S**, and **D**, and hold **Shift** to sprint.",
+            "Walk into a wall to verify that **Hero** slides smoothly along the collider edge without rotating or getting stuck.",
+            "Walk up to **Chest** and press **E** to trigger the opening animation, then click **Stop** and press **Ctrl + S** to save."
+          ]
+        },
+        {
+          "type": "alert",
+          "variant": "tip",
+          "message": "If your character floats downward on its own, double-check that **Gravity Scale** on **Hero**'s [Physics Body](components/physics_body) is set to **0**."
+        }
+      ]
+    },
+    {
+      "id": "try-the-sample-project",
+      "title": "Try the sample project",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "Download the completed Top-Down RPG **.lupisproject** sample archive to inspect the painted tilemap, directional animations, and interactive objects directly in the editor."
+        },
+        {
+          "type": "table",
+          "headers": ["Sample project", "What it includes", "Download link"],
+          "rows": [
+            [
+              "**Top-Down RPG Sample**",
+              "Painted tilemap village, 8-way character controller, 4-direction animations, camera follow, and interactive pickups.",
+              "[Download Top-Down RPG Sample (.lupisproject)](#sample-top-down-rpg)"
+            ]
+          ]
+        },
+        {
+          "type": "steps",
+          "items": [
+            "Click the download link in the table above to save the **.lupisproject** archive to your computer.",
+            "Open the **My Projects** dashboard in Lupis Engine (see [Project & Export](getting_started/project_and_export#manage-projects)).",
+            "Drag and drop the downloaded **.lupisproject** file onto the dashboard, or click **Load Project** and select the file.",
+            "Click the imported project card to open the editor, then click **Play** in the top bar to explore the RPG scene."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "next-steps",
+      "title": "Next steps",
+      "blocks": [
+        {
+          "type": "table",
+          "headers": ["Page", "Use it when"],
+          "rows": [
+            [
+              "[Top-Down Movement](behaviour/movement/top_down)",
+              "You want to add footstep sound effects, 4-way grid-locked movement, or custom dash mechanics."
+            ],
+            [
+              "[Patrol & Basic Motion](behaviour/movement/basic_motion)",
+              "You want to add roaming townsfolk or chasing monsters with **Enemy Chaser**."
+            ],
+            [
+              "[Your First Visual Novel Game](tutorials/building_game_ui)",
+              "You want to add character portraits, typewriter dialogue boxes, and branching choices when talking to NPCs."
+            ],
+            [
+              "[Project & Export](getting_started/project_and_export)",
+              "You want to package your RPG into a standalone Web (.ZIP) or Windows (.EXE) build."
+            ]
+          ]
+        }
+      ]
+    }
+  ]
+}

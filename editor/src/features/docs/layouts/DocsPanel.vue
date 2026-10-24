@@ -34,17 +34,27 @@ const searchResults = computed(() => {
   return searchDocs(props.searchQuery);
 });
 
-watch(() => route.params.docPath, (newPath) => {
+watch(() => route.params.docPath, async (newPath) => {
   if (newPath) {
     const pathId = Array.isArray(newPath) ? newPath.join('/') : newPath;
     
     if (pathId !== currentDocId.value) {
-      changeDocument(pathId);
+      await changeDocument(pathId);
+    }
+    if (route.hash) {
+      const sectionId = route.hash.replace('#', '');
+      setTimeout(() => {
+        scrollToHeading(sectionId);
+      }, 150);
     }
   }
 }, { immediate: true });
 
 const navigateAndPush = (docId) => {
+  if (docId.includes('#')) {
+    handleSmartRouting(docId);
+    return;
+  }
   if (docId !== currentDocId.value) {
     router.push({ path: `/docs/${docId}` }); 
     changeDocument(docId); 
@@ -109,13 +119,13 @@ const handleSmartRouting = async (url) => {
       <div v-if="props.searchQuery" class="w-full">
          <h2 class="text-2xl font-bold text-foreground mb-6 flex items-center gap-2">
             <Search class="w-6 h-6 text-cyan-500" />
-            Pencarian Dokumen: <span class="text-cyan-500">"{{ props.searchQuery }}"</span>
+            Documentation Search: <span class="text-cyan-500">"{{ props.searchQuery }}"</span>
          </h2>
 
          <div v-if="searchResults.length === 0" class="flex flex-col items-center justify-center py-20 text-center bg-muted/20 rounded-xl border border-border border-dashed">
             <Box class="w-12 h-12 text-muted-foreground/30 mb-4" />
-            <p class="text-lg font-medium text-foreground">Tidak ada dokumen yang ditemukan</p>
-            <p class="text-sm text-muted-foreground mt-1">Coba gunakan istilah lain atau periksa ejaan Anda.</p>
+            <p class="text-lg font-medium text-foreground">No documentation found</p>
+            <p class="text-sm text-muted-foreground mt-1">Try searching for a different keyword or check your spelling.</p>
          </div>
 
          <div v-else class="grid grid-cols-1 gap-3">

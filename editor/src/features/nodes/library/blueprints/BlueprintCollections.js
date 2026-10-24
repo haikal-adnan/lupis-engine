@@ -9,7 +9,7 @@ export const BlueprintCollections = {
 {
       type: 'listGet',
       label: 'List Get',
-      description: 'Retrieves an item from the List by its index.',
+      description: 'Retrieves an item from a list at the specified index.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -38,7 +38,7 @@ return;`
 {
       type: 'listSet',
       label: 'List Set',
-      description: 'Updates the value of an item at a specified index.',
+      description: 'Updates the value of an item in a list at the specified index.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -74,7 +74,7 @@ return;`
 {
       type: 'listPush',
       label: 'List Push',
-      description: 'Appends a new item to the end of the List.',
+      description: 'Appends a new item to the end of a list.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -108,7 +108,7 @@ return;`
 {
       type: 'listInsert',
       label: 'List Insert',
-      description: 'Inserts an item into the List at a specified index.',
+      description: 'Inserts an item into a list at the specified index.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -144,7 +144,7 @@ return;`
 {
       type: 'listRemoveAt',
       label: 'List Remove At',
-      description: 'Removes an item from the List at a specified index.',
+      description: 'Removes an item from a list at the specified index.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -178,7 +178,7 @@ return;`
 {
       type: 'listLength',
       label: 'List Length',
-      description: 'Returns the total number of items contained in the List.',
+      description: 'Returns the total number of items in a list.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -203,7 +203,7 @@ return;`
 {
       type: 'listContains',
       label: 'List Contains',
-      description: 'Checks whether a specified value exists inside the List.',
+      description: 'Checks whether a specified value exists in a list.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -232,7 +232,7 @@ return;`
 {
       type: 'listIndexOf',
       label: 'List IndexOf',
-      description: 'Finds the index of a specified value within the List. Returns -1 if not found.',
+      description: 'Finds the index of a value in a list, returning -1 if not found.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -261,7 +261,7 @@ return;`
 {
       type: 'listConcat',
       label: 'List Concat',
-      description: 'Merges two Lists together into a single new List.',
+      description: 'Concatenates two lists into a single new list.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -289,7 +289,7 @@ return;`
 {
       type: 'listShuffle',
       label: 'List Shuffle',
-      description: 'Randomly shuffles the order of elements within the List.',
+      description: 'Randomly shuffles the order of elements within a list.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -323,7 +323,7 @@ return;`
 {
       type: 'mapGet',
       label: 'Map Get',
-      description: 'Retrieves a value from the Map based on its key.',
+      description: 'Retrieves a value from a map associated with the specified key.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -352,7 +352,7 @@ return;`
 {
       type: 'mapSet',
       label: 'Map Set',
-      description: 'Adds or updates a value for a specific key within the Map.',
+      description: 'Adds or updates a key-value pair in a map.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -388,7 +388,7 @@ return;`
 {
       type: 'mapRemove',
       label: 'Map Remove',
-      description: 'Removes the specified key and its associated value from the Map.',
+      description: 'Removes a key and its associated value from a map.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -422,7 +422,7 @@ return;`
 {
       type: 'mapHas',
       label: 'Map Has',
-      description: 'Checks whether a specified key exists inside the Map.',
+      description: 'Checks whether a specified key exists in a map.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -451,7 +451,7 @@ return;`
 {
       type: 'mapMerge',
       label: 'Map Merge',
-      description: 'Merges two Maps into a new single Map (keys in Map B overwrite matching keys in Map A).',
+      description: 'Merges two maps into a new map, with values from Map B overriding Map A.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -479,7 +479,7 @@ return;`
 {
       type: 'mapKeys',
       label: 'Map Keys',
-      description: 'Returns a List containing all the keys found inside the Map.',
+      description: 'Returns a list containing all keys from a map.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -504,7 +504,7 @@ return;`
 {
       type: 'mapValues',
       label: 'Map Values',
-      description: 'Returns a List containing all the values found inside the Map.',
+      description: 'Returns a list containing all values from a map.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -529,7 +529,7 @@ return;`
 {
       type: 'mapSize',
       label: 'Map Size',
-      description: 'Counts the total number of key-value pairs stored in the Map.',
+      description: 'Returns the total number of key-value pairs stored in a map.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -554,7 +554,7 @@ return;`
 {
       type: 'getFromPath',
       label: 'Get Value by Path',
-      description: 'Membaca nilai spesifik di dalam List atau Map menggunakan path string (cth: "users.0.name" atau "items[1].id").',
+      description: 'Reads a nested value from a list or map using a dot/bracket path string.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -649,7 +649,7 @@ return;`
 {
       type: 'setFromPath',
       label: 'Set Value by Path',
-      description: 'Menetapkan atau memperbarui nilai di dalam List atau Map bersarang (nested) menggunakan path string.',
+      description: 'Sets or updates a nested value in a list or map using a dot/bracket path string.',
       dynamicMode: 'none',
       defaultData: {
         settings: {

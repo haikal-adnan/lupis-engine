@@ -9,7 +9,7 @@ export const BlueprintAI = {
     {
       type: 'enemyChaser',
       label: 'Enemy Chaser',
-      description: 'AI enemy navigation helper: distance checking, auto chase/patrol, and range alerts.',
+      description: 'Navigates AI enemy behavior with target distance checking, automatic chasing, patrol waypoints, and proximity alerts.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -95,7 +95,7 @@ return;`
     {
       type: 'enemyCombat',
       label: 'Enemy Combat',
-      description: 'Hostile attack helper with cooldowns, range verification, and hitbox execution against target player.',
+      description: 'Manages hostile enemy attacks with range verification, attack cooldowns, and target hitbox execution.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -185,7 +185,7 @@ return;`
     {
       type: 'proximitySensor',
       label: 'Proximity Sensor',
-      description: 'Detects entities within a 2D radius, calculates distance, direction vector, and facing direction.',
+      description: 'Detects target entities within a 2D radius, computing distance, normalized direction, and facing angle.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -290,7 +290,7 @@ return;`
     {
       type: 'pingPongStepper',
       label: 'Ping Pong Stepper',
-      description: 'Steps an entity position or value back and forth between min and max limits, triggering onBounce.',
+      description: 'Oscillates an entity position or numeric value back and forth between limits, triggering a bounce callback.',
       dynamicMode: 'none',
       defaultData: {
         settings: {

@@ -2,11 +2,13 @@
 import { ref, computed, watch } from 'vue'; 
 import { useRoute, useRouter } from 'vue-router';
 import { 
-  Search, BookOpen, LayoutDashboard, Settings, Menu, X 
+  Search, BookOpen, LayoutDashboard, Sun, Moon, Menu, X 
 } from 'lucide-vue-next';
+import { useTheme } from '@composables/composables.js';
 
 const route = useRoute();
 const router = useRouter();
+const { isDark, toggleTheme } = useTheme();
 
 const isMobileMenuOpen = ref(false);
 const searchQuery = ref('');
@@ -37,7 +39,7 @@ watch(() => route.fullPath, () => {
       <div class="max-w-[1400px] mx-auto w-full h-full flex items-center justify-between gap-4">
         
         <div @click="router.push('/dashboard')" class="flex items-center gap-2.5 cursor-pointer min-w-fit shrink-0 group">
-          <img src="/assets/logo.svg" alt="Lupis Engine Logo" class="w-8 h-8 object-contain" />
+          <img :src="'/assets/logo.svg'" alt="Lupis Engine Logo" class="w-8 h-8 object-contain" />
           <span class="font-bold tracking-tight text-lg">Lupis Engine</span>
           <span v-if="isDocsPage" class="hidden lg:inline-flex text-[10px] bg-cyan-500/10 text-cyan-500 px-1.5 py-0.5 rounded font-bold border border-cyan-500/20 ml-1">v0.1.0</span>
         </div>
@@ -66,11 +68,18 @@ watch(() => route.fullPath, () => {
             <BookOpen class="w-4 h-4" /> Documentation
           </router-link>
 
-          <router-link to="/settings" class="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors hidden md:flex" active-class="text-foreground">
-            <Settings class="w-4 h-4" /> Settings
-          </router-link>
+          <button 
+            type="button"
+            @click="toggleTheme" 
+            class="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors focus:outline-none flex items-center justify-center cursor-pointer"
+            :title="isDark ? 'Switch to light mode' : 'Switch to dark mode'"
+            :aria-label="isDark ? 'Switch to light mode' : 'Switch to dark mode'"
+          >
+            <Sun v-if="isDark" class="w-4 h-4 text-amber-500 hover:text-amber-400 transition-colors" />
+            <Moon v-else class="w-4 h-4 text-slate-700 hover:text-slate-900 dark:text-slate-300 transition-colors" />
+          </button>
 
-          <button @click="toggleMobileMenu" class="md:hidden p-2 text-muted-foreground hover:text-foreground transition-colors focus:outline-none">
+          <button @click="toggleMobileMenu" class="md:hidden p-2 text-muted-foreground hover:text-foreground transition-colors focus:outline-none cursor-pointer">
             <Menu v-if="!isMobileMenuOpen" class="w-6 h-6" />
             <X v-else class="w-6 h-6" />
           </button>
@@ -90,12 +99,8 @@ watch(() => route.fullPath, () => {
             <LayoutDashboard class="w-5 h-5 text-muted-foreground" /> Dashboard
           </router-link>
           
-          <router-link to="/docs" class="flex items-center gap-2 text-base font-medium text-foreground py-2 border-b border-border">
+          <router-link to="/docs" class="flex items-center gap-2 text-base font-medium text-foreground py-2">
             <BookOpen class="w-5 h-5 text-muted-foreground" /> Documentation
-          </router-link>
-
-          <router-link to="/settings" class="flex items-center gap-2 text-base font-medium text-foreground py-2 border-b border-border">
-            <Settings class="w-5 h-5 text-muted-foreground" /> Settings
           </router-link>
         </div>
       </transition>

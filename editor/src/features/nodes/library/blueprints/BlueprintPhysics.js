@@ -9,7 +9,7 @@ export const BlueprintPhysics = {
 {
       type: 'moveAndSlide',
       label: 'Move and Slide',
-      description: 'Move character with collision handling (For Kinematic Bodies)',
+      description: 'Moves a kinematic body with automatic obstacle collision sliding and ground detection.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -94,7 +94,7 @@ return;`
 {
       type: 'solidCollision',
       label: 'Solid Collision',
-      description: 'Check if an object is hitting a solid wall or obstacle.',
+      description: 'Checks whether an entity collides with solid obstacles or tilemaps at an offset position.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -150,7 +150,7 @@ return;`
 {
       type: 'triggerZone',
       label: 'Trigger Zone',
-      description: 'Detects when an object enters, stays, or exits an area.',
+      description: 'Detects when an entity enters, stays inside, or exits a trigger collision zone.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -223,7 +223,7 @@ return;`
 {
       type: 'getPhysics',
       label: 'Get Physics Info',
-      description: 'Get physics component properties like Velocity, Grounded, Mass, etc.',
+      description: 'Retrieves physics properties including velocity, grounded state, mass, and drag.',
       dynamicMode: 'outputProperty',
       defaultData: {
         settings: {
@@ -273,7 +273,7 @@ return;`
 {
       type: 'setPhysics',
       label: 'Set Physics Info',
-      description: 'Set physics component properties like Velocity, Mass, etc.',
+      description: 'Sets physics properties including velocity, gravity scale, mass, and drag.',
       dynamicMode: 'inputProperty',
       defaultData: {
         settings: {
@@ -334,7 +334,7 @@ return;`
 {
       type: 'setFaceDirection',
       label: 'Set Face Direction',
-      description: 'Automatically sets the entity facing direction based on 2D Axis inputs',
+      description: 'Sets entity horizontal or vertical facing direction based on 2D axis movement.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -409,7 +409,7 @@ return;`
     {
       type: 'applyKnockback',
       label: 'Apply Knockback',
-      description: 'Applies impulse knockback force to an entity with deceleration friction over time.',
+      description: 'Applies an impulse knockback force to an entity with configurable friction decay.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -501,7 +501,7 @@ return;`
     {
       type: 'raycast2D',
       label: 'Raycast 2D',
-      description: 'Projects a 2D ray in a direction to detect obstacles, colliders, or entities with line of sight.',
+      description: 'Casts a 2D ray to detect obstacles, colliders, or entities along a line of sight.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -658,7 +658,7 @@ return;`
     {
       type: 'manageCollider',
       label: 'Manage Collider',
-      description: 'Dynamically modify, add, remove, or toggle entity colliders and shapes.',
+      description: 'Modifies, adds, removes, or toggles entity collider shapes and trigger settings.',
       dynamicMode: 'none',
       defaultData: {
         settings: {

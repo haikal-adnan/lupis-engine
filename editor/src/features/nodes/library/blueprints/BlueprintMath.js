@@ -9,7 +9,7 @@ export const BlueprintMath = {
 { 
       type: 'mathAdd', 
       label: 'Add (+)', 
-      description: 'Add numbers together (Val 1 + Val 2 + ...)', 
+      description: 'Adds multiple numeric inputs together sequentially.', 
       dynamicMode: 'sequential', 
       defaultData: { 
         settings: { 
@@ -39,7 +39,7 @@ return;`
 { 
       type: 'mathSubtract', 
       label: 'Subtract (-)', 
-      description: 'Subtract numbers (Val 1 - Val 2 - ...)', 
+      description: 'Subtracts subsequent numeric inputs from the first input value.', 
       dynamicMode: 'sequential', 
       defaultData: { 
         settings: { 
@@ -69,7 +69,7 @@ return;`
 { 
       type: 'mathMultiply', 
       label: 'Multiply (*)', 
-      description: 'Multiply numbers together (Val 1 * Val 2 * ...)', 
+      description: 'Multiplies multiple numeric inputs together sequentially.', 
       dynamicMode: 'sequential', 
       defaultData: { 
         settings: { 
@@ -99,7 +99,7 @@ return;`
 { 
       type: 'mathDivide', 
       label: 'Divide (/)', 
-      description: 'Divide numbers (Val 1 / Val 2 / ...)', 
+      description: 'Divides the first numeric input by subsequent input values.', 
       dynamicMode: 'sequential', 
       defaultData: { 
         settings: { 
@@ -132,7 +132,7 @@ return;`
 { 
       type: 'mathNegate', 
       label: 'Negate', 
-      description: 'Invert (-A)', 
+      description: 'Inverts the sign of a numeric input (multiplies by -1).', 
       dynamicMode: 'none', 
       defaultData: { 
         settings: { 
@@ -159,7 +159,7 @@ return;`
 { 
       type: 'mathRound', 
       label: 'Rounding (Floor/Ceil)', 
-      description: 'Round, floor, or ceil a number', 
+      description: 'Rounds a number to the nearest integer using round, floor, or ceil mode.', 
       dynamicMode: 'none', 
       defaultData: { 
         settings: { 
@@ -189,7 +189,7 @@ return;`
     { 
       type: 'mathInRange', 
       label: 'In Range', 
-      description: 'Check if a number is within a min and max range (min <= value <= max)', 
+      description: 'Checks whether a number falls within an inclusive minimum and maximum range.', 
       dynamicMode: 'none', 
       defaultData: { 
         settings: { 
@@ -220,7 +220,7 @@ return;`
     { 
       type: 'mathClamp', 
       label: 'Clamp', 
-      description: 'Clamp a number between a minimum and maximum limit', 
+      description: 'Clamps a number between specified minimum and maximum bounds.', 
       dynamicMode: 'none', 
       defaultData: { 
         settings: { 
@@ -251,7 +251,7 @@ return;`
     { 
       type: 'mathDistance2d', 
       label: 'Distance 2D', 
-      description: 'Calculate distance between two 2D points', 
+      description: 'Calculates the Euclidean distance between two 2D points.', 
       dynamicMode: 'none', 
       defaultData: { 
         settings: { 
@@ -284,7 +284,7 @@ return;`
 { 
       type: 'mathDirection2d', 
       label: 'Direction 2D', 
-      description: 'Get normalized direction vector and angle from A to B', 
+      description: 'Calculates the normalized direction vector and angle in degrees from point A to B.', 
       dynamicMode: 'none', 
       defaultData: { 
         settings: { 
@@ -329,7 +329,7 @@ return;`
 {
       type: 'randomSmart',
       label: 'Random Number',
-      description: 'Generates a random number. Outputs an integer if inputs are integers, or a float if inputs are decimals.',
+      description: 'Generates a random number within a range, matching integer or float input precision.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -365,7 +365,7 @@ return;`
 {
       type: 'randomChance',
       label: 'Random Chance',
-      description: 'Outputs true (Success) or false (Failure) based on a specified probability percentage (0 - 100).',
+      description: 'Evaluates a random probability check based on a percentage chance (0–100%).',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -390,7 +390,7 @@ return;`
 {
       type: 'randomFromList',
       label: 'List Get Random',
-      description: 'Retrieves a single random item from within the provided List or Array.',
+      description: 'Picks a random item and its index from a provided list.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -415,7 +415,7 @@ return;`
 {
       type: 'randomColor',
       label: 'Random Color',
-      description: 'Generates a random color formatted as a Hex string (e.g., #A3F10C).',
+      description: 'Generates a random hex color string (e.g. #A3F10C).',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -437,7 +437,7 @@ return;`
     {
       type: 'snapValue',
       label: 'Snap Value',
-      description: 'Snaps a numeric value to the nearest step increment with optional min and max limits.',
+      description: 'Snaps a number to the nearest step increment with optional min/max clamping.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -472,7 +472,7 @@ return;`
     {
       type: 'mathChain',
       label: 'Math Chain',
-      description: 'Sequential calculation pipeline combining multiple math steps',
+      description: 'Executes a configurable multi-step arithmetic calculation pipeline.',
       dynamicMode: 'sequential',
       defaultData: {
         settings: {

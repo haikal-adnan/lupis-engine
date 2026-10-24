@@ -103,30 +103,35 @@ app.post("/api/convert-font", (req, res) => {
     fs.writeFileSync(inputFontPath, req.file.buffer);
 
     const msdfBin = path.join(__dirname, "node_modules", ".bin", "msdf-bmfont");
-    // Optimize font size for MSDF conversion: 32px for large fonts (> 1MB) to prevent bezier degenerate singularities and ensure fast generation within 20s
-    const isLargeFont = req.file.size > 1024 * 1024;
-    const fontSize = isLargeFont ? 32 : 36;
-    const cmd = `"${msdfBin}" "${inputFontPath}" -o "${outputFntPath}" -s ${fontSize} --fieldType msdf --texture-size 2048,2048 --distance-range 8 --texture-padding 8 --smart-size --pot --square`;
+    // Standard size 32px avoids msdfgen bezier degenerate singularities (which can cause infinite loops on complex glyphs like 'J')
+    const primarySize = 32;
 
-    console.log(`[Job ${jobId}] Running MSDF BMFont conversion (size: ${fontSize}px)...`);
-
-    exec(cmd, { timeout: 20000, maxBuffer: 10 * 1024 * 1024 }, (error, stdout, stderr) => {
-      const cleanup = () => {
-        if (fs.existsSync(jobFolder)) {
-          fs.rmSync(jobFolder, { recursive: true, force: true });
-          console.log(`[Job ${jobId}] Temporary directory cleaned up.`);
-        }
-      };
-
-      if (error) {
-        console.error(`[Job ${jobId}] Conversion error:`, error.message);
-        if (stderr) console.error(`[Job ${jobId}] Stderr:`, stderr);
-        cleanup();
-        if (error.killed || error.signal === "SIGTERM") {
-          return res.status(504).json({ success: false, error: "Font conversion timed out (20 seconds)." });
-        }
-        return res.status(500).json({ success: false, error: "Failed to process MSDF BMFont generator." });
+    const cleanup = () => {
+      if (fs.existsSync(jobFolder)) {
+        fs.rmSync(jobFolder, { recursive: true, force: true });
+        console.log(`[Job ${jobId}] Temporary directory cleaned up.`);
       }
+    };
+
+    const runConversion = (fontSize, isRetry = false) => {
+      const cmd = `"${msdfBin}" "${inputFontPath}" -o "${outputFntPath}" -s ${fontSize} --fieldType msdf --texture-size 2048,2048 --distance-range 8 --texture-padding 8 --smart-size --pot --square`;
+
+      console.log(`[Job ${jobId}] Running MSDF BMFont conversion (size: ${fontSize}px${isRetry ? ', retry' : ''})...`);
+
+      exec(cmd, { timeout: 15000, maxBuffer: 10 * 1024 * 1024 }, (error, stdout, stderr) => {
+        if (error) {
+          if (!isRetry) {
+            console.warn(`[Job ${jobId}] Conversion attempt at ${fontSize}px failed: ${error.message}. Retrying with alternate size (34px)...`);
+            return runConversion(34, true);
+          }
+          console.error(`[Job ${jobId}] Conversion error:`, error.message);
+          if (stderr) console.error(`[Job ${jobId}] Stderr:`, stderr);
+          cleanup();
+          if (error.killed || error.signal === "SIGTERM") {
+            return res.status(504).json({ success: false, error: "Font conversion timed out (20 seconds)." });
+          }
+          return res.status(500).json({ success: false, error: "Failed to process MSDF BMFont generator." });
+        }
 
       if (stdout) console.log(`[Job ${jobId} Stdout]:\n${stdout.trim()}`);
 
@@ -168,7 +173,10 @@ app.post("/api/convert-font", (req, res) => {
       });
 
       archive.finalize();
-    });
+      });
+    };
+
+    runConversion(primarySize);
   });
 });
 

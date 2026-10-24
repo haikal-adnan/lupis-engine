@@ -9,7 +9,7 @@ export const BlueprintEntity = {
 {
       type: 'entitySpawn',
       label: 'Spawn Prefab',
-      description: 'Instantiates a new entity prefab into the world at specified position.',
+      description: 'Instantiates a prefab entity into the scene at a specified position and layer.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -50,7 +50,7 @@ return;`
 {
       type: 'entityDestroy',
       label: 'Destroy Entity',
-      description: 'Removes an entity from the world.',
+      description: 'Destroys an entity and removes it from the active scene.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -96,7 +96,7 @@ return;`
 {
       type: 'entityDestroyByTag',
       label: 'Destroy Entities by Tag',
-      description: 'Removes all entities matching the specified tag from the world.',
+      description: 'Destroys all active entities matching the specified tag.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -128,7 +128,7 @@ return;`
 {
       type: 'entityClone',
       label: 'Clone Entity',
-      description: 'Creates a duplicate of an existing entity.',
+      description: 'Creates an exact clone of an existing entity with all its components.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -158,7 +158,7 @@ return;`
 {
       type: 'entityGetChildren',
       label: 'Get Entity Children',
-      description: 'Retrieves all child entities or a specific child by index.',
+      description: 'Retrieves all child entity IDs or a specific child entity by index.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -194,7 +194,7 @@ return;`
     {
       type: 'entityGetChildByName',
       label: 'Get Child By Name',
-      description: 'Finds a child entity under a parent by its prefab or original script name.',
+      description: 'Finds a child entity under a parent by its name or prefab origin.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -275,7 +275,7 @@ return;`
 {
       type: 'getObject',
       label: 'Get Object Info',
-      description: 'Get entity info like Entity ID, Name, Tag, Active, Visible',
+      description: 'Retrieves entity metadata including ID, name, tag, active state, and visibility.',
       dynamicMode: 'outputProperty',
       defaultData: {
         settings: {
@@ -313,7 +313,7 @@ return;`
 {
       type: 'setObject',
       label: 'Set Object Info',
-      description: 'Set entity info like Tag, Active, Visible',
+      description: 'Updates entity metadata including tag, active state, and visibility.',
       dynamicMode: 'inputProperty',
       defaultData: {
         settings: {
@@ -359,7 +359,7 @@ return;`
 {
       type: 'findClosestByTag',
       label: 'Find Closest By Tag',
-      description: 'Finds the nearest active entity with a specific tag relative to a 2D position',
+      description: 'Finds the nearest active entity with a specific tag relative to a 2D position.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -390,7 +390,7 @@ return;`
     {
       type: 'entityCountByTag',
       label: 'Count Entities by Tag',
-      description: 'Counts active entities in the scene that have a specific tag.',
+      description: 'Returns the total number of active entities in the scene with a specific tag.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -422,7 +422,7 @@ return;`
     {
       type: 'entityHasTag',
       label: 'Entity Has Tag',
-      description: 'Checks if an entity has a specific tag.',
+      description: 'Checks whether an entity has a specific tag assigned.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -454,7 +454,7 @@ return;`
     {
       type: 'entityGetAllByTag',
       label: 'Get All Entities by Tag',
-      description: 'Finds all active entities in the scene with a specific tag as a list of script IDs.',
+      description: 'Retrieves all active entity IDs in the scene matching a specific tag as a list.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -486,7 +486,7 @@ return;`
     {
       type: 'entityAddTag',
       label: 'Add Tag to Entity',
-      description: 'Adds a tag to the target entity during runtime.',
+      description: 'Adds a tag to the target entity at runtime.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -530,7 +530,7 @@ return;`
     {
       type: 'entityRemoveTag',
       label: 'Remove Tag from Entity',
-      description: 'Removes a tag from the target entity during runtime.',
+      description: 'Removes a tag from the target entity at runtime.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -574,7 +574,7 @@ return;`
 {
       type: 'getTransform',
       label: 'Get Transform',
-      description: 'Get specific transform properties of Self or Target.',
+      description: 'Retrieves transform properties (position, rotation, scale, z-index) of an entity.',
       dynamicMode: 'outputProperty',
       defaultData: {
         settings: {
@@ -624,7 +624,7 @@ return;`
 {
       type: 'setTransform',
       label: 'Set Transform',
-      description: 'Teleport or modify absolute transform properties.',
+      description: 'Sets transform properties (position, rotation, scale, z-index) on an entity.',
       dynamicMode: 'inputProperty',
       defaultData: {
         settings: {
@@ -677,7 +677,7 @@ return;`
 {
       type: 'getLayer',
       label: 'Get Layer Info',
-      description: 'Get layer info like ID, Name, Visible, Locked, Z-Index, Opacity',
+      description: 'Retrieves layer properties including name, visibility, locked state, z-index, and opacity.',
       dynamicMode: 'outputProperty',
       defaultData: {
         settings: {
@@ -721,7 +721,7 @@ return;`
 {
       type: 'setLayer',
       label: 'Set Layer Info',
-      description: 'Set layer info like Visible, Locked, Z-Index, Opacity',
+      description: 'Sets layer properties including visibility, locked state, z-index, and opacity.',
       dynamicMode: 'inputProperty',
       defaultData: {
         settings: {
@@ -770,7 +770,7 @@ return;`
     {
       type: 'layerDestroy',
       label: 'Destroy Layer',
-      description: 'Removes a layer and optionally its entities from the world.',
+      description: 'Removes a layer from the scene, with an option to destroy all its entities.',
       dynamicMode: 'none',
       defaultData: {
         settings: {

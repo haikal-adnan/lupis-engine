@@ -1,0 +1,193 @@
+{
+  "title": "Project & Export",
+  "category": "Getting Started",
+  "description": "Manage projects on the Dashboard, configure Project Settings and auto-save, and export your game to Web (.ZIP), Windows (.EXE), or .lupisproject archives.",
+  "sections": [
+    {
+      "id": "overview",
+      "title": "Overview",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "Lupis Engine stores your active projects in fast local storage and lets you package them into portable project archives, standalone HTML5 web builds, or Windows desktop executables."
+        },
+        {
+          "type": "features",
+          "items": [
+            {
+              "title": "Project Archives",
+              "desc": "Save or load single-file **.lupisproject** bundles to back up or share your work."
+            },
+            {
+              "title": "Auto-Save & Snapshots",
+              "desc": "Sync changes automatically on a timer and capture viewport cover thumbnails."
+            },
+            {
+              "title": "Web Standalone (.ZIP)",
+              "desc": "Bundle your game into an HTML5 package ready for itch.io or any static web host."
+            },
+            {
+              "title": "Desktop App (.EXE)",
+              "desc": "Compile your project into a standalone Windows executable for offline play."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "manage-projects",
+      "title": "Manage projects",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "You create, import, rename, and back up projects from the **My Projects** dashboard."
+        },
+        {
+          "type": "steps",
+          "items": [
+            "To import an existing project backup, drag and drop a **.lupisproject** file anywhere onto the **My Projects** dashboard, or click **Load Project** and select the file.",
+            "Right-click any project card on the dashboard to open its context menu.",
+            "Choose **Open** or **Open in New Tab** to launch the project in the [Editor Overview](interface/editor_overview) workspace.",
+            "Choose **Save Project** to download a compressed **.lupisproject** backup file to your computer.",
+            "Choose **Rename** or **Edit Description** to update the project's title and summary, or choose **Delete Project** to remove it from storage."
+          ]
+        },
+        {
+          "type": "alert",
+          "variant": "danger",
+          "message": "Clicking **Delete Project** permanently removes the project folder from storage and cannot be undone. Always export a **.lupisproject** archive first if you may need the project later."
+        }
+      ]
+    },
+    {
+      "id": "project-settings-and-saving",
+      "title": "Project settings and saving",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "Inside the editor, open **Project Settings** to configure your game's metadata, startup scene, canvas resolution, physics defaults, and storage synchronization."
+        },
+        {
+          "type": "table",
+          "headers": ["Settings tab", "Key options", "Purpose"],
+          "rows": [
+            [
+              "**Project Info**",
+              "**Project Name**, **Version**, **Game Thumbnail**, **Enable Auto Save**, **Revert Changes**",
+              "Manages project identity, cover images (**Upload Thumbnail** or **Capture Scene Now**), and storage sync."
+            ],
+            [
+              "**Preferences**",
+              "Editor appearance and workspace preferences",
+              "Customizes theme and visual workspace behavior."
+            ],
+            [
+              "**Engine & Canvas**",
+              "**Initial Scene**, **Simulation Tick Rate**, **Global Background**, **Target Resolution**",
+              "Sets the startup scene, frame rate (default **60 FPS**), UI layer bounds, and resolution presets."
+            ],
+            [
+              "**Physics & Bounds**",
+              "Global gravity, drag coefficients, and world boundary limits",
+              "Configures default simulation forces applied to [Physics Body](components/physics_body) entities."
+            ],
+            [
+              "**Grid & Camera**",
+              "Grid snapping guidelines and default camera perspective",
+              "Controls alignment guides in the [Scene Viewport](interface/scene_viewport)."
+            ],
+            [
+              "**Debugging**",
+              "Collider wireframes and runtime performance overlays",
+              "Displays visual diagnostics while testing your game."
+            ],
+            [
+              "**Publish & Export**",
+              "**Export Web (.ZIP)**, **Build App (.EXE)**, **Export (.lupisproject)**",
+              "Packages your project into distributable builds or backup archives."
+            ]
+          ]
+        },
+        {
+          "type": "alert",
+          "variant": "tip",
+          "message": "In **Project Info**, turn on **Enable Auto Save** and set **Auto Save Interval** (in minutes) so the editor writes unsaved modifications to storage automatically. You can also click **Revert Changes** before saving to reload the last saved state."
+        }
+      ]
+    },
+    {
+      "id": "export-your-game",
+      "title": "Export your game",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "The **Publish & Export** tab (**Build & Publish Module**) in **Project Settings** provides three export formats."
+        },
+        {
+          "type": "table",
+          "headers": ["Export option", "Button", "What it produces"],
+          "rows": [
+            [
+              "**Web Standalone (.ZIP)**",
+              "**Export Web (.ZIP)**",
+              "An HTML5 bundle containing the engine runtime, scripts, and assets, ready to upload to itch.io or any web server."
+            ],
+            [
+              "**Desktop App (.EXE)**",
+              "**Build App (.EXE)** / **Download (.EXE)**",
+              "A standalone Windows executable package for offline desktop play."
+            ],
+            [
+              "**Lupis Project Archive**",
+              "**Export (.lupisproject)**",
+              "A single compressed **.lupisproject** file containing all scenes, node graphs, and assets for backup or re-importing."
+            ]
+          ]
+        },
+        {
+          "type": "steps",
+          "items": [
+            "Press **Ctrl + S** (or click **Save Project** in **Project Settings**) so all recent scene and script edits are committed.",
+            "Open **Project Settings**, select **Engine & Canvas**, and confirm that **Initial Scene** and **Target Resolution** are set to your desired startup level and screen size.",
+            "Select the **Publish & Export** tab on the left sidebar of **Project Settings**.",
+            "For a web build, click **Export Web (.ZIP)**. Your browser downloads the packaged HTML5 **.zip** archive.",
+            "For a Windows build, click **Build App (.EXE)**, wait for the compilation to finish, and click the green **Download (.EXE)** button."
+          ]
+        },
+        {
+          "type": "alert",
+          "variant": "warning",
+          "message": "Compiling a **Desktop App (.EXE)** requires the backend service running on port **4000** (see [Installation & Setup](getting_started/installation#run-with-docker))."
+        }
+      ]
+    },
+    {
+      "id": "related",
+      "title": "Related",
+      "blocks": [
+        {
+          "type": "table",
+          "headers": ["Page", "Use it when"],
+          "rows": [
+            [
+              "[Installation & Setup](getting_started/installation)",
+              "You need to start the Docker or Node.js backend service for **.EXE** desktop builds."
+            ],
+            [
+              "[Quick Start](getting_started/quick_start)",
+              "You want to create and test a new project from the Dashboard."
+            ],
+            [
+              "[Editor Overview](interface/editor_overview)",
+              "You want to explore the top bar controls, save indicator, and workspace docks."
+            ],
+            [
+              "[Entities & Prefabs](components/entities_and_prefabs)",
+              "You want to package reusable entity templates inside your project."
+            ]
+          ]
+        }
+      ]
+    }
+  ]
+}

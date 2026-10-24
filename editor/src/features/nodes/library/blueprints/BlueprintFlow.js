@@ -9,7 +9,7 @@ export const BlueprintFlow = {
 {
       type: 'logicBranch',
       label: 'Branch (If/Else)',
-      description: 'Splits the execution path based on a boolean condition.',
+      description: 'Branches execution flow to On True or On False based on a boolean condition.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -41,7 +41,7 @@ return;`
 {
       type: 'logicSwitch',
       label: 'Switch',
-      description: 'Directs execution to a specific path based on the data type and its value.',
+      description: 'Routes execution flow to the matching case output based on an input value.',
       dynamicMode: 'switch',
       defaultData: {
         settings: {
@@ -109,7 +109,7 @@ return;`
 {
       type: 'logicCompare',
       label: 'Compare',
-      description: 'Compares two values (numbers or strings) based on an operator.',
+      description: 'Compares two values using a selected relational operator (==, !=, >, <, >=, <=).',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -165,7 +165,7 @@ return;`
 {
       type: 'logicAnd',
       label: 'And',
-      description: 'True if all dynamic inputs are true.',
+      description: 'Outputs true if all connected boolean inputs evaluate to true.',
       dynamicMode: 'sequential',
       defaultData: {
         settings: { headerTitle: 'And', headerColor: '#E57373', category: 'Flow & Logic' },
@@ -193,7 +193,7 @@ return;`
 {
       type: 'logicOr',
       label: 'Or',
-      description: 'True if at least one input is true.',
+      description: 'Outputs true if at least one connected boolean input evaluates to true.',
       dynamicMode: 'sequential',
       defaultData: {
         settings: { headerTitle: 'Or', headerColor: '#E57373', category: 'Flow & Logic' },
@@ -221,7 +221,7 @@ return;`
 {
       type: 'logicNot',
       label: 'Not',
-      description: 'Inverts the boolean value.',
+      description: 'Inverts the input boolean value (NOT operation).',
       dynamicMode: 'none',
       defaultData: {
         settings: { headerTitle: 'Not', headerColor: '#E57373', category: 'Flow & Logic' },
@@ -244,7 +244,7 @@ return;`
 {
       type: 'logicLoop',
       label: 'For Loop',
-      description: 'Repeats execution from a Start value to an End value, incrementing by the specified Step.',
+      description: 'Executes a loop body for each step from Start to End, then triggers completed.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -292,7 +292,7 @@ return;`
 {
       type: 'logicForEach',
       label: 'For Each',
-      description: 'Repeats execution for each individual item contained within the List.',
+      description: 'Iterates over each item in a list, outputting the current element and index.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -328,7 +328,7 @@ return;`
 {
       type: 'logicWhile',
       label: 'While Loop',
-      description: 'Continuously loops execution as long as the input condition remains true.',
+      description: 'Executes a loop body repeatedly as long as the condition remains true.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -369,7 +369,7 @@ return;`
 {
       type: 'logicFlowMerge',
       label: 'Flow Merge',
-      description: 'Merges multiple execution streams into a single output.',
+      description: 'Merges multiple execution input flows into a single unified output flow.',
       dynamicMode: 'sequential',
       defaultData: {
         settings: {
@@ -395,7 +395,7 @@ return;`
 {
       type: 'logicDelay',
       label: 'Delay',
-      description: 'Delays execution for a specified duration in seconds.',
+      description: 'Pauses execution flow for a specified duration in seconds before continuing.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -443,7 +443,7 @@ return;`
 {
       type: 'logicCooldown',
       label: 'Cooldown / Interval',
-      description: 'Passes execution only if the cooldown duration in seconds has been reached.',
+      description: 'Allows execution to pass only if the specified cooldown duration in seconds has elapsed.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -486,7 +486,7 @@ return;`
     {
       type: 'logicTimer',
       label: 'Timer',
-      description: 'Runs a countdown or looping timer in seconds with update progress and completion triggers.',
+      description: 'Runs a countdown or looping timer in seconds with progress updates and completion triggers.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -602,7 +602,7 @@ return;`
     {
       type: 'logicTypewriter',
       label: 'Typewriter Effect',
-      description: 'Animates text character by character with skip support and character pulse triggers.',
+      description: 'Reveals text character by character with configurable speed, skip control, and character pulse triggers.',
       dynamicMode: 'none',
       defaultData: {
         settings: {

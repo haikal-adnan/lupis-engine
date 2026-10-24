@@ -1,16 +1,9 @@
 FROM node:20-slim
 
-RUN dpkg --add-architecture i386 && \
-    apt-get update && apt-get install -y \
-    build-essential \
-    libcairo2-dev \
-    libpango1.0-dev \
-    libjpeg-dev \
-    libgif-dev \
-    librsvg2-dev \
-    wine \
-    wine32 \
-    wine64 \
+# Runtime libraries for msdfgen.linux (no wine, no cairo, no build tools needed)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libfreetype6 \
+    libpng16-16 \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

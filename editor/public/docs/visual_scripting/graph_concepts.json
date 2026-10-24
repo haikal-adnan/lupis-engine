@@ -1,0 +1,143 @@
+{
+  "title": "Graph & Node Concepts",
+  "category": "Visual Scripting",
+  "description": "Build game logic by connecting event, action, and data nodes in the graph editor. Learn how execution flow, typed data ports, and edge modifiers work.",
+  "sections": [
+    {
+      "id": "overview",
+      "title": "Overview",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "Visual scripting in Lupis Engine lets you create gameplay logic by wiring nodes together on an interactive canvas. You create scripts in the **Scripts** panel of the bottom dock, attach them to entities with a [Script Controller](components/script_controller), and edit their node graphs in workspace tabs."
+        },
+        {
+          "type": "features",
+          "items": [
+            {
+              "title": "Node Roles",
+              "desc": "Combine **Event**, **Action**, and **Pure** nodes to trigger and process game logic."
+            },
+            {
+              "title": "Typed Data Ports",
+              "desc": "Pass numbers, strings, booleans, lists, and maps through color-coded pins."
+            },
+            {
+              "title": "Direct & Variable Inputs",
+              "desc": "Type values directly, bind a variable, or connect another node's output pin."
+            },
+            {
+              "title": "Edge Modifiers",
+              "desc": "Click any data wire to apply math, string, or boolean operations inline."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "key-concepts",
+      "title": "Key concepts",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "Every node in the [Overview & Architecture](node_library/overview) catalog belongs to one of three roles. A node's role determines whether it starts execution, performs an action in sequence, or calculates data on demand."
+        },
+        {
+          "type": "table",
+          "headers": ["Role", "Execution Pins", "Purpose", "Examples"],
+          "rows": [
+            ["Event", "Output only (execOut)", "Starts an execution chain when an engine lifecycle callback, input, or signal fires.", "[On Tick](node_library/game_lifecycle#node-eventTick), [On Scene Start](node_library/game_lifecycle#node-eventSceneStart), [On Key](node_library/input_controls#node-eventOnKey)"],
+            ["Action", "Input & Output (execIn, execOut)", "Updates entity state, plays audio, moves bodies, or routes flow when triggered.", "[Branch](node_library/flow_logic#node-logicBranch), [Set Transform](node_library/game_entity#node-setTransform), [Move and Slide](node_library/game_physics#node-moveAndSlide)"],
+            ["Pure", "None (Data only)", "Computes or reads a value on demand whenever a connected Action node runs.", "[Add](node_library/math_operations#node-mathAdd), [Compare](node_library/flow_logic#node-logicCompare), [Get Transform](node_library/game_entity#node-getTransform)"]
+          ]
+        },
+        {
+          "type": "text",
+          "content": "Nodes receive inputs on their left side and send outputs from their right side. Port colors indicate the data type carried by each pin and wire."
+        },
+        {
+          "type": "table",
+          "headers": ["Port Type", "Badge", "Pin Color", "Description"],
+          "rows": [
+            ["execution", "Execution", "White", "Directs chronological execution order from one node's **execOut** to the next node's **execIn**."],
+            ["number", "Number", "Blue", "Carries integers and decimals such as speed, health, timers, or coordinates."],
+            ["string", "String", "Pink", "Carries text values, entity IDs, tags, or animation clip names."],
+            ["boolean", "Boolean", "Red", "Carries true or false conditions for branches and state flags."],
+            ["list", "Array", "Cyan / Green", "Carries ordered arrays of items managed with [Variables & Collections](visual_scripting/variables_and_collections)."],
+            ["map", "Object", "Orange", "Carries key-value dictionaries for structured data."],
+            ["any", "Any", "Gray", "Accepts or outputs any data type."]
+          ]
+        },
+        {
+          "type": "alert",
+          "variant": "info",
+          "message": "Selecting a node displays its **Header**, **Parameters**, and **Ports Configuration** sections in the [Property Inspector](interface/property_inspector). In **Parameters**, click the toggle button next to any unconnected input to switch between **Direct Input** and **Variable** binding."
+        }
+      ]
+    },
+    {
+      "id": "how-it-works",
+      "title": "How it works",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "When you open a script tab from the **Scripts** panel, the left sidebar switches to **Variables** and **Node Library**, the center displays the graph canvas, and the right panel inspects the selected node or wire."
+        },
+        {
+          "type": "steps",
+          "items": [
+            "In the bottom bar, click **Scripts**, click **+** to create a script, and double-click the script to open its graph tab.",
+            "In the left sidebar under **Node Library**, search for a node or click **Open Node Library** to browse all 11 categories.",
+            "Double-click a node or drag it onto the canvas to place it.",
+            "Drag from a right-side output pin (**execOut** or a data output) to a left-side input pin on another node to connect a wire.",
+            "Select a node to edit its unconnected input values in the **Parameters** section of the [Property Inspector](interface/property_inspector).",
+            "Click any data wire between two nodes to open the **Edge Modifier** section, where you can apply inline operations such as **Add (+)**, **Multiply (x)**, **Append (Suffix)**, or **Invert (NOT !)** without adding an extra node."
+          ]
+        },
+        {
+          "type": "alert",
+          "variant": "tip",
+          "message": "Dynamic nodes such as [Switch](node_library/flow_logic#node-logicSwitch), [Add](node_library/math_operations#node-mathAdd), and [Set Transform](node_library/game_entity#node-setTransform) let you add or remove ports in **Parameters** or **Ports Configuration** using **+ Add Case**, **+ Add Value**, or **+ Select property...**."
+        }
+      ]
+    },
+    {
+      "id": "example",
+      "title": "Example",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "Build a movement graph that reads directional keys every frame, scales the input vector with edge modifiers, and moves the entity."
+        },
+        {
+          "type": "steps",
+          "items": [
+            "Open your script in the graph editor and add an [On Tick](node_library/game_lifecycle#node-eventTick) node from [Scene & Lifecycle](node_library/game_lifecycle).",
+            "Add a [Calculate Axis 2D](node_library/input_controls#node-calculateAxis2d) node from [Input & Controls](node_library/input_controls) and a [Move and Slide](node_library/game_physics#node-moveAndSlide) node from [Physics & Collision](node_library/game_physics).",
+            "Connect **execOut** on **On Tick** to **execIn** on **Calculate Axis 2D**, then connect **execOut** on **Calculate Axis 2D** to **execIn** on **Move and Slide**.",
+            "Drag data wires from **axisX** and **axisY** on **Calculate Axis 2D** to **velocityX** and **velocityY** on **Move and Slide**.",
+            "Click each green data wire, set **Operation** to **Multiply (x)** in **Edge Modifier**, and set **Operand Value** to **200**.",
+            "Attach the script to an entity via [Script Controller](components/script_controller#add-the-component) and click **Play** in the [Scene Viewport](interface/scene_viewport) to move with **W**, **A**, **S**, and **D**."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "related",
+      "title": "Related",
+      "blocks": [
+        {
+          "type": "table",
+          "headers": ["Page", "Use it when"],
+          "rows": [
+            ["[Script Controller](components/script_controller)", "You want to attach scripts to an entity and override local variables in the inspector."],
+            ["[Variables & Collections](visual_scripting/variables_and_collections)", "You want to store local or global data, lists, and maps."],
+            ["[Custom Node & Code Panel](visual_scripting/custom_node_and_code)", "You want to inspect node code or create custom JavaScript nodes."],
+            ["[Overview & Architecture](node_library/overview)", "You want to browse all built-in nodes across the 11 categories."],
+            ["[Shortcuts Reference](interface/shortcuts#visual-scripting-and-code)", "You want keyboard and mouse shortcuts for panning, selecting, and editing nodes."]
+          ]
+        }
+      ]
+    }
+  ]
+}

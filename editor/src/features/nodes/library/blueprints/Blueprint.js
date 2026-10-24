@@ -121,7 +121,7 @@ export const BlueprintCategoryTemplate = {
     {
       type: 'eventExampleNode',
       label: 'On Custom Event',
-      description: 'Dipicu saat event tertentu dieksekusi oleh sistem.',
+      description: 'Triggers execution flow when the specified system event occurs.',
       dynamicMode: 'none',
 
       defaultData: {
@@ -163,7 +163,7 @@ return;`
     {
       type: 'actionExampleNode',
       label: 'Do Something',
-      description: 'Mengeksekusi aksi pada target entity atau sistem.',
+      description: 'Executes an action on a target entity or subsystem.',
       dynamicMode: 'none',
 
       defaultData: {
@@ -232,7 +232,7 @@ return;`
     {
       type: 'dynamicSequentialNode',
       label: 'Sequential Collection',
-      description: 'Automatically adds/removes sequential ports (v0, v1, ...).',
+      description: 'Dynamically adds or removes sequential input ports (v0, v1, ...).',
       dynamicMode: 'sequential',
 
       defaultData: {
@@ -283,7 +283,7 @@ return;`
     {
       type: 'dynamicSetPropertyNode',
       label: 'Set Entity Property',
-      description: 'Dynamically adds input ports based on property options.',
+      description: 'Dynamically adds input ports based on selectable property options.',
       dynamicMode: 'inputProperty',
 
       defaultData: {
@@ -330,7 +330,7 @@ return;`
     {
       type: 'dynamicGetPropertyNode',
       label: 'Get Entity Property',
-      description: 'Dynamically adds output ports based on property options.',
+      description: 'Dynamically adds output ports based on selectable property options.',
       dynamicMode: 'outputProperty',
       defaultData: {
         settings: {
@@ -371,7 +371,7 @@ return;`
     {
       type: 'pureDataNode',
       label: 'Negate Number',
-      description: 'Pure data node without execution ports; result is evaluated on read.',
+      description: 'Evaluates pure data without execution ports, calculating outputs on demand.',
       dynamicMode: 'none',
 
       defaultData: {
@@ -418,7 +418,7 @@ return;`
     {
       type: 'branchExampleNode',
       label: 'Branch',
-      description: 'Selects an execution flow based on a boolean condition.',
+      description: 'Branches execution flow to On True or On False based on a boolean condition.',
       dynamicMode: 'none',
 
       defaultData: {

@@ -9,7 +9,7 @@ export const BlueprintInput = {
 { 
       type: 'eventOnKey', 
       label: 'On Key Event', 
-      description: 'Triggers individual execution outputs automatically synced with configured key strings.',
+      description: 'Triggers execution outputs when mapped keyboard keys are pressed, held, or released.',
       dynamicMode: 'keyboard',
       defaultData: { 
         settings: { 
@@ -106,7 +106,7 @@ return;`
 { 
       type: 'getKeyState', 
       label: 'Get Key State', 
-      description: 'Returns true if the specified key is currently held down.',
+      description: 'Checks whether a specified keyboard key is currently pressed, held, or released.',
       dynamicMode: 'none',
       defaultData: { 
         settings: { 
@@ -137,7 +137,7 @@ return;`
 { 
       type: 'calculateAxis2d', 
       label: 'Calculate Axis 2D', 
-      description: 'Calculates directional X and Y axes based on assigned key strings.',
+      description: 'Calculates normalized 2D movement axes (-1 to 1) from directional key inputs.',
       dynamicMode: 'none',
       defaultData: { 
         settings: { 
@@ -189,7 +189,7 @@ return;`
 { 
       type: 'simulateKey', 
       label: 'Simulate Key', 
-      description: 'Dispatches synthetic keyboard events for UI interaction or virtual pads.',
+      description: 'Simulates keyboard key press or release events programmatically.',
       dynamicMode: 'none',
       defaultData: { 
         settings: { 
@@ -237,7 +237,7 @@ return;`
 {
       type: 'eventPointerTap',
       label: 'On Click / Tap',
-      description: 'Triggered when screen is clicked (PC) or tapped (Mobile)',
+      description: 'Fires when the pointer (mouse click or touch tap) is clicked or tapped on screen.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -276,7 +276,7 @@ return;`
 {
       type: 'eventPointerDrag',
       label: 'Global Mouse Drag',
-      description: 'Triggered continuously while mouse is held down and moving.',
+      description: 'Fires continuously while the pointer is held down and dragged across the screen.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -326,7 +326,7 @@ return;`
 {
       type: 'mouseEntityInteract',
       label: 'Entity Mouse Event',
-      description: 'Checks if the mouse is interacting with an entity. Can use Raycast (respects Z-Index/blocking) or Direct bounds check.',
+      description: 'Detects pointer hover, click, down, or up interactions on an entity via bounds or raycast.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -417,7 +417,7 @@ return;`
     {
       type: 'freezeLayerInput',
       label: 'Freeze Layer Input',
-      description: 'Freezes or unfreezes pointer, keyboard, or all inputs for all entities in a layer.',
+      description: 'Freezes or unfreezes input events (pointer, keyboard, or all) for all entities on a layer.',
       dynamicMode: 'none',
       defaultData: {
         settings: {

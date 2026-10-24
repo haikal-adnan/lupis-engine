@@ -9,7 +9,7 @@ export const BlueprintLifecycle = {
 {
       type: 'eventTick',
       label: 'On Tick',
-      description: 'Runs every frame. Use for continuous logic.',
+      description: 'Fires every engine frame with delta time in seconds for continuous updates.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -36,7 +36,7 @@ return;`
 {
       type: 'eventGameStart',
       label: 'On Game Start',
-      description: 'Triggered once when the game begins.',
+      description: 'Fires once when the game runtime initializes and starts.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -61,7 +61,7 @@ return;`
 {
       type: 'eventGamePause',
       label: 'On Game Pause',
-      description: 'Triggered when the game is paused.',
+      description: 'Fires when the game is paused.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -86,7 +86,7 @@ return;`
 {
       type: 'eventGameResume',
       label: 'On Game Resume',
-      description: 'Triggered when the game is resumed.',
+      description: 'Fires when the game resumes from a paused state.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -111,7 +111,7 @@ return;`
 {
       type: 'eventGameRestart',
       label: 'On Game Restart',
-      description: 'Triggered when the entire game is restarted.',
+      description: 'Fires when the entire game runtime is restarted.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -136,7 +136,7 @@ return;`
 {
       type: 'eventGameQuit',
       label: 'On Game Quit',
-      description: 'Triggered when the game begins quitting or closing.',
+      description: 'Fires when the game receives a quit or close command.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -161,7 +161,7 @@ return;`
     {
       type: 'actionSetGameState',
       label: 'Set Game State',
-      description: 'Controls game state (pause, resume, restart, or quit).',
+      description: 'Controls the engine game state (pause, resume, restart, or quit).',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -207,7 +207,7 @@ return;`
     {
       type: 'changeScreen',
       label: 'Change Screen',
-      description: 'Changes display mode between windowed and fullscreen.',
+      description: 'Toggles display mode between windowed and fullscreen with custom dimensions.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -247,7 +247,7 @@ return;`
 {
       type: 'eventSceneStart',
       label: 'On Scene Start',
-      description: 'Triggered exactly once when the scene has successfully loaded and started.',
+      description: 'Fires once when the active scene finishes loading and begins execution.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -274,7 +274,7 @@ return;`
 { 
       type: 'changeScene', 
       label: 'Change Scene', 
-      description: 'Switches to another scene using the specified Scene Name.', 
+      description: 'Transitions to a target scene by name with an optional screen fade effect.', 
       dynamicMode: 'none',
       defaultData: { 
         settings: { 
@@ -306,7 +306,7 @@ return;`
 { 
       type: 'restartScene', 
       label: 'Restart Scene', 
-      description: 'Reloads the currently active scene.', 
+      description: 'Reloads the current active scene, resetting its entities and state.', 
       dynamicMode: 'none',
       defaultData: { 
         settings: { 
@@ -354,7 +354,7 @@ return;`
     { 
       type: 'injectLayer', 
       label: 'Inject Layer', 
-      description: 'Injects a reusable layer and its entities from another scene into the active scene with optional state inheritance.', 
+      description: 'Injects a reusable layer and its entities from another scene into the active scene.', 
       dynamicMode: 'none',
       defaultData: { 
         settings: { 

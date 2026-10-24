@@ -9,7 +9,7 @@ export const BlueprintRenderer = {
 {
       type: 'getSprite',
       label: 'Get Sprite',
-      description: 'Get properties of the Image Renderer',
+      description: 'Retrieves sprite renderer properties including asset, color, dimensions, opacity, and flip.',
       dynamicMode: 'outputProperty',
       defaultData: {
         settings: {
@@ -53,7 +53,7 @@ return;`
 {
       type: 'setSprite',
       label: 'Set Sprite',
-      description: 'Set properties of the Image Renderer',
+      description: 'Sets sprite renderer properties including asset, color, dimensions, opacity, and flip.',
       dynamicMode: 'inputProperty',
       defaultData: {
         settings: {
@@ -111,7 +111,7 @@ return;`
 {
       type: 'getText',
       label: 'Get Text',
-      description: 'Get properties of the Text Renderer',
+      description: 'Retrieves text renderer properties including content, font, size, color, and opacity.',
       dynamicMode: 'outputProperty',
       defaultData: {
         settings: {
@@ -183,7 +183,7 @@ return;`
 {
       type: 'setText',
       label: 'Set Text',
-      description: 'Set properties of the Text Renderer',
+      description: 'Sets text renderer properties including content, font, size, color, and opacity.',
       dynamicMode: 'inputProperty',
       defaultData: {
         settings: {
@@ -242,7 +242,7 @@ return;`
 {
       type: 'getShape',
       label: 'Get Shape',
-      description: 'Get properties of the Shape Renderer',
+      description: 'Retrieves shape renderer properties including shape type, color, thickness, and dimensions.',
       dynamicMode: 'outputProperty',
       defaultData: {
         settings: {
@@ -284,7 +284,7 @@ return;`
 {
       type: 'setShape',
       label: 'Set Shape',
-      description: 'Set properties of the Shape Renderer',
+      description: 'Sets shape renderer properties including shape type, color, thickness, and dimensions.',
       dynamicMode: 'inputProperty',
       defaultData: {
         settings: {
@@ -331,7 +331,7 @@ return;`
 {
       type: 'getTilemap',
       label: 'Get Tilemap',
-      description: 'Get properties of the Tilemap Component',
+      description: 'Retrieves tilemap properties including tileset asset, grid dimensions, solid state, and opacity.',
       dynamicMode: 'outputProperty',
       defaultData: {
         settings: {
@@ -375,7 +375,7 @@ return;`
 {
       type: 'setTilemap',
       label: 'Set Tilemap',
-      description: 'Set properties of the Tilemap Component',
+      description: 'Sets tilemap properties including tileset asset, solid collision, and opacity.',
       dynamicMode: 'inputProperty',
       defaultData: {
         settings: {
@@ -424,7 +424,7 @@ return;`
 {
       type: 'batchSet',
       label: 'Batch Set Properties',
-      description: 'Set multiple properties in one execution node',
+      description: 'Updates multiple component properties across one or more entities in a single step.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -480,7 +480,7 @@ return;`
 {
       type: 'actionFadeScreen',
       label: 'Fade Screen',
-      description: 'Fades the screen to black (or any color) and vice versa over duration in seconds.',
+      description: 'Fades the screen to or from a color over a specified duration in seconds.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -527,7 +527,7 @@ return;`
 {
       type: 'actionCameraFollow',
       label: 'Camera Follow',
-      description: 'Makes the camera smoothly follow the target entity.',
+      description: 'Attaches the camera to smoothly follow a target entity with configurable lerp speed.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -568,7 +568,7 @@ return;`
 {
       type: 'actionCameraStopFollow',
       label: 'Stop Camera Follow',
-      description: 'Stops the camera from following the target entity.',
+      description: 'Stops the camera from following its current target entity.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -594,7 +594,7 @@ return;`
 {
       type: 'actionCameraSetTransform',
       label: 'Set Camera Transform',
-      description: 'Sets camera position (X, Y), zoom scale, and interpolation speed (smoothness).',
+      description: 'Sets camera position, zoom scale, and interpolation smoothing speed.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -630,7 +630,7 @@ return;`
 {
       type: 'queryCameraInfo',
       label: 'Get Camera Info',
-      description: 'Pure node to read current camera coordinates, zoom scale, smoothness, and target scriptId.',
+      description: 'Reads current camera coordinates, zoom scale, smoothing speed, and follow target entity ID.',
       dynamicMode: 'none',
       defaultData: {
         settings: {

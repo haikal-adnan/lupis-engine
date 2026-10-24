@@ -1,0 +1,150 @@
+{
+  "title": "Top-Down Movement",
+  "category": "Movement",
+  "description": "Build an 8-directional top-down character controller with normalized diagonal speed, sprinting, mouse aiming, and directional animations.",
+  "sections": [
+    {
+      "id": "overview",
+      "title": "Overview",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "The [Top-Down Controller](node_library/helper_tool#node-topDownController) node handles 8-directional movement on the X and Y axes with diagonal speed normalization and sprint multipliers. Connect its outputs to [Top-Down Animator](node_library/helper_tool#node-topDownAnimator) to drive 4-way, 8-way, or angle-rotated character sprites."
+        },
+        {
+          "type": "features",
+          "items": [
+            {
+              "title": "8-Way Movement",
+              "desc": "Smooth horizontal, vertical, and diagonal movement with automatic normalization."
+            },
+            {
+              "title": "Sprint Support",
+              "desc": "Hold **Shift** (or any mapped sprint key) to multiply movement speed and fire **onSprint**."
+            },
+            {
+              "title": "Mouse Aiming",
+              "desc": "Turn on **faceMouse** to calculate facing angle and direction toward the cursor."
+            },
+            {
+              "title": "Directional Clips",
+              "desc": "Switch between **4-Way (Cardinal)**, **8-Way**, or **Rotation** animation modes."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "requirements",
+      "title": "Requirements",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "Configure your character [entity](components/entities_and_prefabs) for zero-gravity 2D movement on the X and Y plane."
+        },
+        {
+          "type": "table",
+          "headers": ["Requirement", "Configuration"],
+          "rows": [
+            ["[Physics Body](components/physics_body)", "Set **Body Type** to **Dynamic (Standard)**, **Gravity Scale** to **0.00**, and **Linear Drag** to **5.00** or higher so the character stops crisply."],
+            ["[Multi-Collider](components/multi_collider)", "Attach a **Solid (Physics)** box or circle collider positioned around the character's feet or torso."],
+            ["[Image Renderer](components/renderers/sprite_renderer) & [Sprite Animator](components/sprite_animator)", "Create directional clips (such as **idle_down**, **walk_down**, **walk_up**, **walk_side**) or single clips for rotation mode."],
+            ["[Script Controller](components/script_controller)", "Attach to the character entity to run the top-down script."]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "setup",
+      "title": "Setup",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "Connect **Top-Down Controller** and **Top-Down Animator** in a visual script."
+        },
+        {
+          "type": "steps",
+          "items": [
+            "Select your character entity, check its **Physics Body** section in the [Property Inspector](interface/property_inspector), and set **Gravity Scale** to **0**.",
+            "Open your character script in the [visual scripting](visual_scripting/graph_concepts) editor and add an [On Tick](node_library/game_lifecycle#node-eventTick) node.",
+            "Add a [Top-Down Controller](node_library/helper_tool#node-topDownController) node and a [Top-Down Animator](node_library/helper_tool#node-topDownAnimator) node from [Helper & Tool](node_library/helper_tool).",
+            "Connect **execOut** on **On Tick** to **execIn** on **Top-Down Controller**, and **execOut** on **Top-Down Controller** to **execIn** on **Top-Down Animator**.",
+            "Wire **movementState**, **facingDirection**, and **facingAngle** from **Top-Down Controller** into the matching inputs on **Top-Down Animator**.",
+            "Select **Top-Down Animator**, choose your **Direction Mode** (**4-Way**, **8-Way**, or **Rotation**), enter your clip names, and click **Play** in the [Scene Viewport](interface/scene_viewport)."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "settings",
+      "title": "Settings",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "Adjust these inputs on **Top-Down Controller** and **Top-Down Animator** in the **Parameters** section."
+        },
+        {
+          "type": "table",
+          "headers": ["Setting", "Recommended value", "Effect"],
+          "rows": [
+            ["speed", "180 to 240", "Base walking speed in pixels per second."],
+            ["sprintMultiplier", "1.4 to 1.7", "Multiplies **speed** while **keySprint** (default **shift**) is held down."],
+            ["normalizeDiagonal", "True", "Prevents diagonal movement from being 41 percent faster than cardinal movement."],
+            ["faceMouse", "False (RPG) / True (Shooter)", "When **True**, aims **facingDirection** and **facingAngle** toward the mouse cursor instead of the movement keys."],
+            ["directionMode", "4way / 8way / rotation", "On **Top-Down Animator**, selects whether clips are chosen by 4 cardinal directions, 8 directions, or sprite rotation angle."],
+            ["autoFlipX", "True", "Automatically mirrors horizontal side animations when switching between **left** and **right**."]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "variations",
+      "title": "Variations",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "Customize the controller for twin-stick shooters, footsteps, or custom axis math."
+        },
+        {
+          "type": "table",
+          "headers": ["Variation", "How to build it"],
+          "rows": [
+            ["Twin-Stick / Mouse Aim Shooter", "Set **faceMouse** to **True** on **Top-Down Controller** and set **directionMode** to **rotation** on **Top-Down Animator** so the character rotates toward the cursor while moving with **W**, **A**, **S**, and **D**."],
+            ["Footstep Dust or Audio", "Connect the **onMove** or **onSprint** execution output of **Top-Down Controller** to a [Cooldown](node_library/flow_logic#node-logicCooldown) node followed by [Play Audio](node_library/system_utilities#node-playAudio)."],
+            ["Custom Low-Level Movement", "Combine [Calculate Axis 2D](node_library/input_controls#node-calculateAxis2d), [Set Face Direction](node_library/game_physics#node-setFaceDirection), and [Move and Slide](node_library/game_physics#node-moveAndSlide) when you want custom acceleration formulas."]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "common-issues",
+      "title": "Common issues",
+      "blocks": [
+        {
+          "type": "table",
+          "headers": ["Problem", "Solution"],
+          "rows": [
+            ["Character falls toward the bottom of the screen when the game starts", "Set **Gravity Scale** to **0** in the character's **Physics Body** component."],
+            ["Character moves faster diagonally than horizontally", "Set **normalizeDiagonal** to **True** on the **Top-Down Controller** node."],
+            ["Character collider blocks doorways that look wide enough", "Reduce the **Size (px)** of the character's **Solid (Physics)** collider so it covers only the lower half (feet) of the sprite."]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "related",
+      "title": "Related",
+      "blocks": [
+        {
+          "type": "table",
+          "headers": ["Page", "Use it when"],
+          "rows": [
+            ["[Patrol & Basic Motion](behaviour/movement/basic_motion)", "You want to add AI enemies that patrol and chase your top-down player."],
+            ["[Triggers & Hitboxes](behaviour/physics_and_collision/triggers_and_hitboxes)", "You want to add item pickups, interaction zones, and combat."],
+            ["[Your First Top-Down RPG](tutorials/first_top_down)", "You want a complete step-by-step tutorial for building a top-down RPG."]
+          ]
+        }
+      ]
+    }
+  ]
+}

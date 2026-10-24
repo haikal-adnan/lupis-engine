@@ -9,7 +9,7 @@ export const BlueprintCollectable = {
     {
       type: 'collectableItem',
       label: 'Collectable Item',
-      description: 'Extensible collectable helper with auto-pickup, bobbing effect, collection animation, SFX, and respawn/destroy lifecycle.',
+      description: 'Manages collectible item interactions including auto-pickup, floating bob effect, SFX, score reward, and respawn lifecycle.',
       dynamicMode: 'none',
       defaultData: {
         settings: {

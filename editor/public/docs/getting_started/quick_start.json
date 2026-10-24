@@ -1,0 +1,157 @@
+{
+  "title": "Quick Start",
+  "category": "Getting Started",
+  "description": "Create your first project, place a player and ground in the scene, attach movement logic, and playtest your game in under five minutes.",
+  "sections": [
+    {
+      "id": "overview",
+      "title": "Overview",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "This guide walks you through building a playable platformer scene from scratch. In a few minutes, you will create a project, add physical entities, wire a movement node, and test your character in the viewport."
+        },
+        {
+          "type": "features",
+          "items": [
+            {
+              "title": "Create a Project",
+              "desc": "Initialize a new game workspace from the **My Projects** dashboard."
+            },
+            {
+              "title": "Build the Scene",
+              "desc": "Place a solid ground floor and a dynamic player entity in the viewport."
+            },
+            {
+              "title": "Wire Movement",
+              "desc": "Connect **On Tick** to **Platformer Controller** for instant keyboard controls."
+            },
+            {
+              "title": "Play & Save",
+              "desc": "Run the live simulation in the editor and save your project to storage."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "create-a-project",
+      "title": "Create a project",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "Start on the **Dashboard** (**My Projects**) to create a new project container."
+        },
+        {
+          "type": "steps",
+          "items": [
+            "On the **My Projects** page, click **New** next to the heading (or click **Create First Project** if your project list is empty).",
+            "In the **New Project** dialog, enter a **Project Name** such as **My First Game** and an optional **Description**.",
+            "Click **Create**. The editor opens your new project in the [Editor Overview](interface/editor_overview) workspace."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "place-entities-in-the-scene",
+      "title": "Place entities in the scene",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "Next, create a solid floor and a player character using the [Scene Hierarchy](interface/scene_hierarchy), [Scene Viewport](interface/scene_viewport), and [Property Inspector](interface/property_inspector)."
+        },
+        {
+          "type": "steps",
+          "items": [
+            "In the **Scene Hierarchy** on the left, add an entity to your world layer and rename it **Ground**.",
+            "With **Ground** selected, click **Add Component** in the **Property Inspector** and add [Shape Renderer](components/renderers/shape_renderer), [Physics Body](components/physics_body), and [Multi-Collider](components/multi_collider).",
+            "In the **Property Inspector**, set **Ground**'s [Transform](components/transform) **Size** to **800 x 40**, position it near the bottom of the camera view, and set **Physics Body** **Body Type** to **Static**.",
+            "Create a second entity in the **Scene Hierarchy**, rename it **Player**, and position it above **Ground** in the **Scene Viewport**.",
+            "Add **Shape Renderer** (or [Image Renderer](components/renderers/sprite_renderer)), **Physics Body**, and **Multi-Collider** to **Player**.",
+            "In **Player**'s **Physics Body**, keep **Body Type** set to **Dynamic** and enable **Fixed Rotation** so the character stays upright."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "add-movement-logic",
+      "title": "Add movement logic",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "Now attach a visual script to **Player** so you can run and jump with the keyboard."
+        },
+        {
+          "type": "steps",
+          "items": [
+            "Select **Player** in the [Scene Hierarchy](interface/scene_hierarchy), click **Add Component** in the [Property Inspector](interface/property_inspector), and choose [Script Controller](components/script_controller).",
+            "In the **Script Controller** section, create or assign a script and open it in the [Graph & Node Concepts](visual_scripting/graph_concepts) editor at the bottom dock.",
+            "Right-click the graph canvas, search for [On Tick](node_library/game_lifecycle#node-eventTick), and place it in the graph.",
+            "Right-click the canvas again, add [Platformer Controller](node_library/helper_tool#node-platformerController), and connect the white execution pin from **On Tick** into **Platformer Controller**.",
+            "Connect the **deltaTime** output pin of **On Tick** to the **deltaTime** input pin of **Platformer Controller**."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "play-and-save",
+      "title": "Play and save",
+      "blocks": [
+        {
+          "type": "text",
+          "content": "Test your scene directly inside the viewport and save your changes to storage."
+        },
+        {
+          "type": "steps",
+          "items": [
+            "Click **Play** in the top bar. **Player** falls onto **Ground**.",
+            "Press **A** and **D** (or the **Left** and **Right** arrow keys) to move horizontally, and press **W** or **Space** to jump.",
+            "Click **Stop** in the top bar to return to edit mode, then press **Ctrl + S** to save your project."
+          ]
+        },
+        {
+          "type": "shortcuts",
+          "items": [
+            { "keys": ["Ctrl", "S"], "description": "Save the project" },
+            { "keys": ["Ctrl", "Z"], "description": "Undo the last action" },
+            { "keys": ["Space", "Left Click"], "description": "Pan the Scene Viewport" },
+            { "keys": ["Scroll"], "description": "Zoom the Scene Viewport" }
+          ]
+        },
+        {
+          "type": "alert",
+          "variant": "tip",
+          "message": "Check the status indicator in the top bar: a green dot means your project is synced with storage, while a red dot indicates unsaved changes."
+        }
+      ]
+    },
+    {
+      "id": "related",
+      "title": "Related",
+      "blocks": [
+        {
+          "type": "table",
+          "headers": ["Page", "Use it when"],
+          "rows": [
+            [
+              "[Your First Platformer Game](tutorials/first_platformer)",
+              "You want to expand this scene with sprite animations, collectibles, hazards, and camera follow."
+            ],
+            [
+              "[Your First Top-Down RPG](tutorials/first_top_down)",
+              "You want to build an 8-directional top-down adventure instead of a platformer."
+            ],
+            [
+              "[Project & Export](getting_started/project_and_export)",
+              "You want to configure canvas resolution, auto-save, or export your game."
+            ],
+            [
+              "[Shortcuts Reference](interface/shortcuts)",
+              "You want the full list of keyboard shortcuts for every editor panel."
+            ]
+          ]
+        }
+      ]
+    }
+  ]
+}

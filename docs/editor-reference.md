@@ -52,7 +52,7 @@ flowchart TD
 editor/src/
 ├── app/
 │   ├── main.js            # Entry point; registers Pinia and the router
-│   └── router.js          # Routes: /dashboard, /editor/:idProject, /docs, /settings
+│   └── router.js          # Routes: /dashboard, /editor/:idProject, /docs
 ├── features/
 │   ├── animators/         # Sprite keyframe sequencer and clips
 │   ├── assets/            # Asset import, directory tree, OPFS storage

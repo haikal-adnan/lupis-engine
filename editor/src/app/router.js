@@ -34,9 +34,7 @@ const routes = [
   },
   {
     path: '/settings',
-    name: 'Settings',
-    component: () => import('@/features/settings/workspaces/layouts/SettingsPage.vue'), 
-    meta: { layout: 'MainLayout' }
+    redirect: '/dashboard'
   },
   {
     path: '/dashboard',

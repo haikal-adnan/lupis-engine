@@ -1,10 +1,8 @@
 <script setup>
 import { 
-  Info, Zap, BookOpen, Box, Layers, 
-  AlertTriangle, AlertCircle, Lightbulb, Check
+  Info, BookOpen, 
+  AlertTriangle, AlertCircle, Lightbulb 
 } from 'lucide-vue-next';
-
-const iconMap = { Zap, BookOpen, Box, Layers };
 
 defineProps({
   data: {
@@ -16,12 +14,16 @@ defineProps({
 const emit = defineEmits(['smartNavigate']);
 
 const formatDataType = (text) => {
-  const types = ['String', 'Number', 'Boolean', 'Vector2', 'Object', 'Array'];
+  const types = ['String', 'Number', 'Boolean', 'Vector2', 'Object', 'Array', 'Execution', 'Any'];
   if (types.includes(text)) {
     let color = 'text-cyan-600 dark:text-cyan-400 bg-cyan-500/10 border-cyan-500/20'; 
-    if (text === 'String') color = 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/20';
+    if (text === 'String') color = 'text-pink-600 dark:text-pink-400 bg-pink-500/10 border-pink-500/20';
     if (text === 'Number' || text === 'Vector2') color = 'text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/20';
-    if (text === 'Boolean') color = 'text-pink-600 dark:text-pink-400 bg-pink-500/10 border-pink-500/20';
+    if (text === 'Boolean') color = 'text-rose-600 dark:text-rose-400 bg-rose-500/10 border-rose-500/20';
+    if (text === 'Execution') color = 'text-slate-700 dark:text-slate-300 bg-slate-500/15 border-slate-500/30 font-semibold';
+    if (text === 'Any') color = 'text-slate-500 dark:text-slate-400 bg-slate-500/10 border-slate-500/20';
+    if (text === 'Array') color = 'text-cyan-600 dark:text-cyan-400 bg-cyan-500/10 border-cyan-500/20';
+    if (text === 'Object') color = 'text-orange-600 dark:text-orange-400 bg-orange-500/10 border-orange-500/20';
     
     return `<span class="px-1.5 py-0.5 rounded text-[11px] font-mono border ${color}">${text}</span>`;
   }
@@ -102,7 +104,6 @@ const handleContentClick = (e) => {
 
         <div v-else-if="block.type === 'features'" class="grid grid-cols-1 md:grid-cols-2 gap-4 my-8 not-prose">
           <div v-for="feat in block.items" :key="feat.title" class="border border-border rounded-xl p-5 bg-card hover:border-cyan-500/40 transition-colors">
-            <component :is="iconMap[feat.icon]" class="w-5 h-5 mb-3" :class="feat.color" />
             <h3 class="font-semibold text-foreground mb-1">{{ feat.title }}</h3>
             <p class="text-sm text-foreground/80 text-justify" v-html="renderMarkdown(feat.desc)"></p>
           </div>

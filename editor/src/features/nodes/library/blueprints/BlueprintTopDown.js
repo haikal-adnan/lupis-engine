@@ -9,7 +9,7 @@ export const BlueprintTopDown = {
     {
       type: 'topDownController',
       label: 'Top-Down Controller',
-      description: 'Keyboard-driven top-down movement controller with diagonal normalization, sprint, and direction facing.',
+      description: 'Controls 8-directional top-down character movement with diagonal speed normalization and sprint support.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -101,7 +101,7 @@ return;`
     {
       type: 'topDownAnimator',
       label: 'Top-Down Animator',
-      description: 'Smart 4-way, 8-way, and angle-based animator helper for top-down characters.',
+      description: 'Synchronizes 4-way, 8-way, or angle-based animation clips for top-down character movement.',
       dynamicMode: 'none',
       defaultData: {
         settings: {

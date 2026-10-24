@@ -9,7 +9,7 @@ export const BlueprintDialogue = {
     {
       type: 'vnDialogueRunner',
       label: 'Dialogue Runner',
-      description: 'Menjalankan alur dialog visual novel: efek typewriter, nama pembicara, potret karakter, dan interpolasi variabel.',
+      description: 'Runs visual novel dialogue sequences with typewriter text effects, speaker name, character portraits, and token interpolation.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -75,7 +75,7 @@ return;`
     {
       type: 'vnChoicePresenter',
       label: 'Choice Presenter',
-      description: 'Menampilkan tombol pilihan secara dinamis, mengelola interaksi klik pemain, dan memicu sinyal aksi.',
+      description: 'Presents interactive choice buttons dynamically, handles player selection clicks, and triggers chosen branch signals.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -123,7 +123,7 @@ return;`
     {
       type: 'interpolateVariables',
       label: 'Interpolate Variables',
-      description: 'Replaces {variable} tokens in text with values from custom map, local state, or global variables.',
+      description: 'Replaces {variable} tokens in text with values from a custom map, local state, or global variables.',
       dynamicMode: 'none',
       defaultData: {
         settings: {

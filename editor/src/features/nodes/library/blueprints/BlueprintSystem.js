@@ -9,7 +9,7 @@ export const BlueprintSystem = {
 {
       type: 'playAudio',
       label: 'Play Audio',
-      description: 'Plays audio on the specified entity with an Audio component.',
+      description: 'Plays an audio clip on an entity with an Audio component.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -40,7 +40,7 @@ return;`
 {
       type: 'stopAudio',
       label: 'Stop Audio',
-      description: 'Stops audio playback on the specified entity.',
+      description: 'Stops audio playback on the target entity.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -70,7 +70,7 @@ return;`
 {
       type: 'setAudioVolume',
       label: 'Set Volume',
-      description: 'Sets volume for an audio channel (master, background, sfx, or voice) in range 0 - 100.',
+      description: 'Sets the volume level (0–100) for a specified audio channel.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -111,7 +111,7 @@ return;`
 {
       type: 'getAudioVolume',
       label: 'Get Volume',
-      description: 'Retrieves current volume of an audio channel (master, background, sfx, or voice) in range 0 - 100.',
+      description: 'Retrieves the current volume level (0–100) of a specified audio channel.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -139,7 +139,7 @@ return;`
 {
       type: 'setAudioMute',
       label: 'Set Channel Mute',
-      description: 'Mutes or unmutes a specific audio channel (master, background, sfx, or voice).',
+      description: 'Mutes or unmutes a specified audio channel.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -172,7 +172,7 @@ return;`
 {
       type: 'variableGet',
       label: 'Get Variable',
-      description: 'Membaca nilai dari variabel lokal atau global.',
+      description: 'Retrieves the value of a script-local or global variable.',
       dynamicMode: 'none',
       dynamicData: null,
 
@@ -212,7 +212,7 @@ return;`
 {
       type: 'variableSet',
       label: 'Set Variable',
-      description: 'Menetapkan nilai ke variabel lokal atau global.',
+      description: 'Sets the value of a script-local or global variable.',
       dynamicMode: 'none',
       dynamicData: null,
 
@@ -270,7 +270,7 @@ return;`
 { 
       type: 'stringFormat', 
       label: 'Format String', 
-      description: 'Hub for multiple text formats using {variables}', 
+      description: 'Formats a template string by replacing {v0}, {v1}, etc. with input values.', 
       dynamicMode: 'sequential',
       defaultData: { 
         settings: { 
@@ -315,7 +315,7 @@ return;`
 { 
       type: 'stringJoin', 
       label: 'Join Strings', 
-      description: 'Join multiple strings with a separator', 
+      description: 'Joins multiple strings into a single text output using a specified separator.', 
       dynamicMode: 'sequential', 
       defaultData: { 
         settings: { 
@@ -354,7 +354,7 @@ return;`
 { 
       type: 'stringLength', 
       label: 'String Length', 
-      description: 'Get the number of characters in a string', 
+      description: 'Returns the character count of an input string.', 
       dynamicMode: 'none',
       defaultData: { 
         settings: { 
@@ -382,7 +382,7 @@ return;`
 { 
       type: 'anyToString', 
       label: 'Any To String', 
-      description: 'Convert any data type (including List & Map) to a readable string', 
+      description: 'Converts any data value (including lists and maps) into a readable string.', 
       dynamicMode: 'none',
       defaultData: { 
         settings: { 
@@ -416,7 +416,7 @@ return;`
 {
       type: 'actionEmitSignal',
       label: 'Emit Signal',
-      description: 'Broadcasts a message to the entire system listening for this signal.',
+      description: 'Broadcasts a global signal with optional payload to all listening nodes.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -444,7 +444,7 @@ return;`
 {
       type: 'eventOnSignal',
       label: 'On Signal Received',
-      description: 'Triggers the flow when a matching global signal is received.',
+      description: 'Fires execution flow when a matching global signal is received.',
       dynamicMode: 'none',
       defaultData: {
         settings: {
@@ -477,7 +477,7 @@ return;`
 { 
       type: 'uiNotification', 
       label: 'Notification', 
-      description: 'Display a UI notification toast to the player when triggered by execution flow',
+      description: 'Displays an in-game notification toast message when triggered.',
       dynamicMode: 'none',
       defaultData: { 
         settings: { 
@@ -508,7 +508,7 @@ return;`
 { 
       type: 'debugNotification', 
       label: 'Debug Notification', 
-      description: 'Automatically evaluates and displays notification on tick update loop without execution pin',
+      description: 'Continuously evaluates and displays a debug notification on each tick without execution pins.',
       dynamicMode: 'none',
       defaultData: { 
         role: 'event',
