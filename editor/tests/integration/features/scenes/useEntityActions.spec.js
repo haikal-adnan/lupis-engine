@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
-import { useEntityActions, entitySchema, layerSchema } from '@scenes/scenes.js'
+import { useSceneStore, useEntityActions, entitySchema, layerSchema } from '@scenes/scenes.js'
 import { engineBridge } from '@engines/engines.js'
 import { usePopAlert, useConfirm } from '@composables/composables.js'
 import { useSceneHistory } from '@historys/historys.js'
@@ -50,39 +50,59 @@ vi.mock('@historys/historys.js', () => {
 })
 
 describe('Entity Actions Integration', () => {
+  let sceneStore
+  let entityActions
   let sceneStoreState
 
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
 
-    // Prepare mock state for sceneStore adopting useEntityActions
-    sceneStoreState = {
-      selectedEntityIds: [],
-      activeScene: {
-        id: 'scene_1',
-        layersWorld: [
-          layerSchema({ id: 'layer_world_1', scriptId: 'World_Root' })
-        ],
-        layersUI: [
-          layerSchema({ id: 'layer_ui_1', scriptId: 'UI_Root' })
-        ],
-        entities: [
-          entitySchema({
-            id: 'ent_1',
-            scriptId: 'sprite_1',
-            layerId: 'layer_world_1',
-            type: 'entity',
-            x: 0,
-            y: 0,
-            components: {
-              SpriteRenderer: { color: '#FFFFFF' }
-            }
-          })
-        ]
-      },
-      ...useEntityActions
+    sceneStore = useSceneStore()
+    const activeScene = {
+      id: 'scene_1',
+      layersWorld: [
+        layerSchema({ id: 'layer_world_1', scriptId: 'World_Root' })
+      ],
+      layersUI: [
+        layerSchema({ id: 'layer_ui_1', scriptId: 'UI_Root' })
+      ],
+      entities: [
+        entitySchema({
+          id: 'ent_1',
+          scriptId: 'sprite_1',
+          layerId: 'layer_world_1',
+          type: 'entity',
+          x: 0,
+          y: 0,
+          components: {
+            SpriteRenderer: { color: '#FFFFFF' }
+          }
+        })
+      ]
     }
+    sceneStore.scenes = [activeScene]
+    sceneStore.activeSceneId = 'scene_1'
+    sceneStore.selectedEntityIds = []
+
+    entityActions = useEntityActions()
+
+    sceneStoreState = new Proxy(sceneStore, {
+      get(target, prop) {
+        if (prop in entityActions) return entityActions[prop]
+        return target[prop]
+      },
+      set(target, prop, value) {
+        if (prop === 'activeScene') {
+          if (value === null) {
+            target.activeSceneId = null
+          }
+          return true
+        }
+        target[prop] = value
+        return true
+      }
+    })
   })
 
   describe('Entity Creation (createEntity)', () => {

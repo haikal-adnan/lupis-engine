@@ -1,4 +1,4 @@
-import { TilemapMath } from './Tilemap/TilemapMath.js';
+import { TilemapMath } from '../System/TilemapSystem/TilemapMath.js';
 import { TilemapOperations } from './Tilemap/TilemapOperations.js';
 import { TilemapSelection } from './Tilemap/TilemapSelection.js';
 

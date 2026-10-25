@@ -1,5 +1,6 @@
 import ScriptRunner from "./ScriptRunner.js";
 
+// Coordinates lifecycle, frame updates, and teardown of active script runner instances
 export default class ScriptSystem {
     constructor(game) {
         this.game = game;
@@ -17,6 +18,7 @@ export default class ScriptSystem {
         this.runners.forEach(runner => runner.start());
     }
 
+    // Updates active runners; UI and runInPause scripts execute during game pause
     update(dt) {
         const isPaused = this.game.isPaused;
         const uiLayerIds = new Set((this.game.world.layersUI || []).map(l => l.id));
@@ -27,7 +29,6 @@ export default class ScriptSystem {
                 (typeof runner.owner.hasTag === 'function' ? runner.owner.hasTag('ui') : runner.owner.tag === 'ui')
             );
 
-            // UI scripts or scripts with runInPause flag continue running during pause
             if (!isPaused || isUIEntity || runner.runInPause) {
                 runner.update(dt);
             }

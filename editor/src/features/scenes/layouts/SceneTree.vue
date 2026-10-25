@@ -180,7 +180,7 @@ import { LayoutTemplate, AppWindow, Plus, Eye, EyeOff } from 'lucide-vue-next';
 import { PropertySection } from '@components/components.js';
 
 import { useWorkspaceStore } from '@workspaces/workspaces.js';
-import { useSceneStore, SceneNode } from '@scenes/scenes.js';
+import { useSceneStore, useLayerActions, SceneNode } from '@scenes/scenes.js';
 import { useProjectStore } from '@projects/projects.js';
 
 const props = defineProps({
@@ -192,6 +192,7 @@ const emit = defineEmits(['select', 'contextmenu', 'drop']);
 
 const workspaceStore = useWorkspaceStore();
 const sceneStore = useSceneStore();
+const { addLayer } = useLayerActions();
 const projectStore = useProjectStore();
 
 const isWorldVisible = computed(() => projectStore.project?.settings?.world?.visible !== false && projectStore.project?.settings?.world?.active !== false);
@@ -236,7 +237,7 @@ const openUIEditor = () => {
     }
 };
 
-const handleAddLayer = (section) => sceneStore.addLayer("New Layer", section);
+const handleAddLayer = (section) => addLayer("New Layer", section);
 const handleDrop = (payload) => emit('drop', payload);
 const allowDrop = (e) => { e.dataTransfer.dropEffect = 'move'; };
 

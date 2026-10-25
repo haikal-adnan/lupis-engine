@@ -12,6 +12,7 @@ export {
   CustomScriptInspector
 };
 
+// Maps node types to specialized custom inspector layout components
 export const MANAGED_CUSTOM_INSPECTORS = {
   eventAdvancedKey: KeyboardMapperInspector,
   inputKeyboardMapper: KeyboardMapperInspector,
@@ -21,13 +22,7 @@ export const MANAGED_CUSTOM_INSPECTORS = {
   mathChain: MathChainInspector
 };
 
-/**
- * Checks if a node is a User Custom Node.
- * Can come from ANY blueprint in the system or created by user,
- * when converted/unlocked by the user or defined as customScript / custom_*.
- * @param {Object} node 
- * @returns {boolean}
- */
+// Checks if a node has user-editable source code and custom ports
 export function isUserCustomNode(node) {
   if (!node) return false;
   return Boolean(
@@ -37,64 +32,33 @@ export function isUserCustomNode(node) {
   );
 }
 
-/**
- * Checks if a node is a Custom Inspector Node.
- * Same as a system node, the only difference is it renders a custom inspector for its node data.
- * The rest of its behavior is identical to a system node.
- * If converted to a user custom node, it is no longer managed by the custom inspector.
- * @param {Object} node 
- * @returns {boolean}
- */
+// Checks if a node uses a specialized inspector layout rather than generic inspector
 export function isCustomInspectorNode(node) {
   if (!node || isUserCustomNode(node)) return false;
   return Boolean(MANAGED_CUSTOM_INSPECTORS[node.type]);
 }
 
-/**
- * Checks if a node is a System Node (either generic system node or custom inspector node).
- * @param {Object} node 
- * @returns {boolean}
- */
 export function isSystemNode(node) {
   if (!node) return false;
   return !isUserCustomNode(node);
 }
 
-/**
- * Returns the matching custom inspector component for a given node, or null if generic inspector should be used.
- * @param {Object} node 
- * @returns {Component|null}
- */
+// Resolves dedicated inspector Vue component for a node
 export function getCustomInspectorForNode(node) {
   if (!node) return null;
 
-  // 1. If it's a custom node user, use CustomScriptInspector (which renders NodeData)
   if (isUserCustomNode(node)) {
     return CustomScriptInspector;
   }
 
-  // 2. If it is one of the managed custom node types, return its dedicated inspector
   return MANAGED_CUSTOM_INSPECTORS[node.type] || null;
 }
 
-/**
- * Checks if a node is currently managed by a custom inspector (meaning its code is controlled by UI)
- * @param {Object} node 
- * @returns {boolean}
- */
 export function isNodeManagedByCustomInspector(node) {
   return isCustomInspectorNode(node);
 }
 
-/**
- * Saves a node definition into the active project's customBlueprints library.
- * Supports prompting for blueprint name via atomic usePrompt modal.
- * Any name is allowed, and unique ID ensures safe co-existence of identical names.
- * @param {Object} node 
- * @param {Object} projectStore 
- * @param {Function|Object} [options] showPop function OR options object { prompt, showPop, blueprintName }
- * @returns {Promise<boolean>}
- */
+// Exports a configured node instance to the active project's custom blueprint library
 export async function saveCustomBlueprintToLibrary(node, projectStore, options = {}) {
   if (!node) return false;
   const project = projectStore?.activeProject || projectStore?.project;
@@ -103,12 +67,12 @@ export async function saveCustomBlueprintToLibrary(node, projectStore, options =
 
   if (!project) {
     if (showPop) {
-    showPop({
-      title: 'Save Blueprint Failed',
-      message: 'No active project found to save the custom blueprint.',
-      type: 'error'
-    });
-  }
+      showPop({
+        title: 'Save Blueprint Failed',
+        message: 'No active project found to save the custom blueprint.',
+        type: 'error'
+      });
+    }
     return false;
   }
 
@@ -124,7 +88,7 @@ export async function saveCustomBlueprintToLibrary(node, projectStore, options =
     });
 
     if (inputName === null) {
-      return false; // User cancelled prompt
+      return false;
     }
     finalName = String(inputName).trim() || defaultName;
   } else if (!finalName) {

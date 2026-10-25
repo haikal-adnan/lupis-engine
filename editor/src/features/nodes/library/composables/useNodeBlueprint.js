@@ -4,6 +4,7 @@ import { ALL_BLUEPRINTS, findBlueprintByType, BlueprintCustom, CUSTOM_NODE_TEMPL
 import { useProjectStore } from '@projects/projects.js';
 import { GenerateUUID } from '@utils/utils.js';
 
+// Factory creating a custom script node instance with default ports and boilerplate code
 export function createCustomNodeInstance(position = { x: 100, y: 100 }) {
   return {
     id: GenerateUUID(),
@@ -32,6 +33,7 @@ export function createCustomNodeInstance(position = { x: 100, y: 100 }) {
   };
 }
 
+// Manages blueprint library categories, custom blueprints, search filtering, and node dragging
 export function useNodeBlueprint() {
   const searchQuery = ref('');
   const projectStore = useProjectStore();
@@ -83,7 +85,7 @@ export function useNodeBlueprint() {
       const custom = projectStore.activeProject?.customBlueprints?.find(b => b.type === type);
       if (custom) return custom;
     } catch {
-      // safe fallback if store is not in Pinia context
+      // Safe fallback if store is not in Pinia context
     }
     return findBlueprintByType(type);
   };
@@ -95,6 +97,7 @@ export function useNodeBlueprint() {
     return '';
   };
 
+  // Re-indexes data input ports and regenerates the collection array in generated code
   const syncDynamicInputsAndCode = (node) => {
     if (!node || !Array.isArray(node.inputs)) return;
     if (['stringFormat', 'batchSet', 'mathChain', 'eventOnKey', 'eventAdvancedKey', 'logicSwitch'].includes(node.type)) return;
@@ -104,13 +107,11 @@ export function useNodeBlueprint() {
 
     const execInputs = node.inputs.filter(p => {
       const dType = String(p.dataType || '').toLowerCase();
-      const pId = String(p.id || '').toLowerCase();
       return dType === 'execution';
     });
 
     const dataInputs = node.inputs.filter(p => {
       const dType = String(p.dataType || '').toLowerCase();
-      const pId = String(p.id || '').toLowerCase();
       return dType !== 'execution';
     });
 

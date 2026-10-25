@@ -1,3 +1,5 @@
+// Prefab authoring, instantiation, linking, and master template synchronization.
+
 import { usePrefabStore } from '@prefabs/prefabs.js';
 import { useSceneStore } from '@scenes/scenes.js';
 import { prefabSchema } from '@prefabs/prefabs.js';
@@ -30,6 +32,7 @@ export function usePrefabActions() {
     return getValidUniqueScriptId(desiredName, store.prefabs, p => p.scriptId, excludeId);
   };
 
+  // Creates a new prefab template from scratch or from an entity tree snapshot
   const createPrefab = async (
     name = "New Prefab", 
     folderId = null, 
@@ -189,6 +192,7 @@ export function usePrefabActions() {
     showPop({ title: 'Saved', message: `Prefab data updated.`, type: 'success' });
   };
 
+  // Replaces entity components with prefab defaults while preserving position
   const linkPrefabToEntities = async (prefabId, entityIds) => {
     const prefab = store.getPrefabById(prefabId);
 
@@ -245,6 +249,7 @@ export function usePrefabActions() {
     });
   };
 
+  // Spawns a new instance of a prefab into the active scene layer
   const instantiatePrefab = (prefabId, options = {}) => {
     const prefab = store.getPrefabById(prefabId);
 
@@ -333,7 +338,6 @@ export function usePrefabActions() {
       const clonedChildren = prefab.children.map(child => {
         const clonedChild = JSON.parse(JSON.stringify(child));
         const newChildId = GenerateUUID();
-        
         idMap[clonedChild.id] = newChildId; 
         clonedChild.id = newChildId;
         
@@ -377,6 +381,7 @@ export function usePrefabActions() {
     return newRootEntity;
   };
 
+  // Applies modifications from a scene instance back into the master template
   const applyToMasterPrefab = async (entityId) => {
     const entities = sceneStore.activeScene.entities;
     const entity = entities.find(e => e.id === entityId);

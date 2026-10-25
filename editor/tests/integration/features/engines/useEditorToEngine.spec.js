@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { setActivePinia, createPinia } from 'pinia';
+import { setActivePinia, createPinia, defineStore } from 'pinia';
 
 import { engineBridge, useEditorToEngine } from '@engines/engines.js';
 import { useProjectStore } from '@projects/projects.js';
@@ -16,6 +16,46 @@ vi.mock('@composables/composables.js', () => ({
   useConfirm: () => ({ confirm: vi.fn(() => Promise.resolve(true)) }),
   usePrompt: () => ({ prompt: vi.fn(() => Promise.resolve('TestScript')) })
 }));
+
+
+const useMockSceneStore = defineStore('scene', {
+  state: () => ({
+    scenes: [],
+    activeSceneId: null,
+    selectedEntityIds: []
+  }),
+  getters: {
+    activeScene: (state) => state.scenes.find(s => s.id === state.activeSceneId) || null
+  },
+  actions: {
+    clearSelection() { this.selectedEntityIds = []; },
+    patchComponent(entityId, comp, updates) {},
+    setBackgroundColor(color) {
+      if (this.activeScene?.settings) this.activeScene.settings.backgroundColor = color;
+    },
+    updateWorldBounds(bounds) { return bounds; },
+    updatePhysicsSettings(physics) { return physics; },
+    toggleRulers() {
+      if (this.activeScene?.settings) this.activeScene.settings.showRulers = !this.activeScene.settings.showRulers;
+    },
+    createEntity(type) {
+      if (type === 'invalid') return null;
+      return { id: 'ent_123', type };
+    },
+    deleteEntity(id) { return id !== 'non_existent'; },
+    updateEntityScriptId(id, scriptId) { return { id, scriptId }; },
+    moveEntity(id, options) { return { id, ...options }; },
+    updateComponentProp(id, comp, prop, val) { return { entityId: id, componentName: comp, path: prop, value: val }; },
+    updateEntityProp(id, prop, val) { return { id, prop, value: val }; },
+    updateLayerProp(id, prop, val) { return { id, prop, value: val }; },
+    addComponent(id, comp) { return { entityId: id, componentName: comp }; },
+    removeComponent(id, comp, record) { return { entityId: id, componentName: comp }; },
+    addLayer(name, section, record) { return { id: 'layer_new', name, section }; },
+    updateLayerScriptId(id, scriptId) { return { id, scriptId }; },
+    deleteLayer(id, record) { return id !== 'non_existent_layer'; },
+    reorderLayer(id, targetId, pos) { return { id, targetId, pos }; }
+  }
+});
 
 describe('Integration Test: useEditorToEngine (100% Coverage)', () => {
   let projectStore;
@@ -41,7 +81,7 @@ describe('Integration Test: useEditorToEngine (100% Coverage)', () => {
     });
 
     projectStore = useProjectStore();
-    sceneStore = useSceneStore();
+    sceneStore = useMockSceneStore();
     assetStore = useAssetStore();
     workspaceStore = useWorkspaceStore();
     scriptStore = useScriptStore();

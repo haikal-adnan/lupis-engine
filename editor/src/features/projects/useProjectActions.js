@@ -1,3 +1,5 @@
+// Project storage operations, directory scaffolding, and manifest synchronization.
+
 import { APP_STORAGE_DIR } from '@utils/constanta.js';
 
 export function useProjectActions() {
@@ -21,6 +23,7 @@ export function useProjectActions() {
     await writable.close();
   };
 
+  // Retrieves all project manifests from OPFS sorted by update date
   const getProjects = async () => {
     const projectsDir = await getUserProjectsDir();
     const projectsList = [];
@@ -35,6 +38,7 @@ export function useProjectActions() {
     return projectsList.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
   };
 
+  // Reads a project and its scenes, prefabs, scripts, folders, and assets from OPFS
   const getProjectById = async (projectId) => {
     const projectsDir = await getUserProjectsDir();
     const projectDir = await projectsDir.getDirectoryHandle(projectId);
@@ -108,6 +112,7 @@ export function useProjectActions() {
     };
   };
 
+  // Scaffolds a new project directory in OPFS with default scene and layer hierarchies
   const createProject = async ({ projectName, description = ""}) => {
     const projectId = 'proj_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8);
     const projectsDir = await getUserProjectsDir();
@@ -148,7 +153,7 @@ export function useProjectActions() {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       settings: {
-        initialSceneId: defaultSceneId, // Set initialSceneId ke default scene
+        initialSceneId: defaultSceneId,
         tickRate: 60,
         grid: { visible: true, snap: true, width: 32, height: 32, color: '#333333', opacity: 0.5 },
         ui: { showUIBorder: true },
@@ -190,6 +195,7 @@ export function useProjectActions() {
     return true;
   };
 
+  // Writes all project files and metadata indexes to OPFS
   const syncProject = async (projectId, syncPayload) => {
     const projectsDir = await getUserProjectsDir();
     const projectDir = await projectsDir.getDirectoryHandle(projectId, { create: true });

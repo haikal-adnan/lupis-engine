@@ -1,6 +1,6 @@
 import Config from "../../Core/Config.js";
 import RenderUtils from "./RenderUtils.js";
-import { TilemapMath } from "../../Editor/Tilemap/TilemapMath.js";
+import { TilemapMath } from "../../System/TilemapSystem/TilemapMath.js";
 
 export default class WorldRenderer { 
     constructor(image, text, shape, game, tilemapRenderer) {

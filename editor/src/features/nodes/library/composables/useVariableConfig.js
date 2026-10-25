@@ -1,5 +1,6 @@
 import { computed } from 'vue';
 
+// Provides variable type definitions, UI color coding, and sanitization routines
 export function useVariableConfig() {
   const VAR_TYPES = Object.freeze({
     STRING: 'string',
@@ -67,6 +68,7 @@ export function useVariableConfig() {
     return getDefaultValueForType(itemType);
   };
 
+  // Normalizes raw values according to the target variable schema
   const sanitizeVariableValue = (value, type) => {
     if (!type) return value;
     const t = String(type).toLowerCase();

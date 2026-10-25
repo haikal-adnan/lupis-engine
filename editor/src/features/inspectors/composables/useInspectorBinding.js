@@ -1,5 +1,5 @@
 import { computed } from 'vue';
-import { useSceneStore } from '@scenes/scenes.js';
+import { useSceneStore, useEntityActions, useSettingActions } from '@scenes/scenes.js';
 import { useProjectStore } from '@projects/projects.js';
 import { useAssetStore } from '@assets/assets.js';
 import { usePrefabStore } from '@prefabs/prefabs.js';
@@ -30,6 +30,8 @@ export function useInspectorBinding(
   const markAsOverridden = markAsOverriddenParam || prefab.markAsOverridden;
 
   const sceneStore = useSceneStore();
+  const entityActions = useEntityActions();
+  const settingActions = useSettingActions();
   const projectStore = useProjectStore();
   const assetStore = useAssetStore();
   const prefabStore = usePrefabStore();
@@ -114,14 +116,14 @@ export function useInspectorBinding(
           }
         }
         else if (category === 'worldBounds') {
-          if (sceneStore.activeScene) sceneStore.updateWorldBounds({ [propName]: val });
+          if (sceneStore.activeScene) settingActions.updateWorldBounds({ [propName]: val });
           if (projectStore.project?.settings?.worldBounds) {
             projectStore.project.settings.worldBounds[propName] = val;
             projectStore.markAsDirty();
           }
         }
         else if (category === 'physics') {
-          if (sceneStore.activeScene) sceneStore.updatePhysicsSettings({ [propName]: val });
+          if (sceneStore.activeScene) settingActions.updatePhysicsSettings({ [propName]: val });
         }
         else if (category === 'codeEditor') {
           if (typeof projectStore.updateCodeEditorSettings === 'function') {
@@ -136,10 +138,10 @@ export function useInspectorBinding(
           }
         }
         else if (!category) {
-          if (propName === 'backgroundColor') sceneStore.setBackgroundColor(val);
+          if (propName === 'backgroundColor') settingActions.setBackgroundColor(val);
           else if (propName === 'showRulers') {
             if (sceneStore.activeScene && val !== sceneStore.activeScene.settings.showRulers) {
-              sceneStore.toggleRulers();
+              settingActions.toggleRulers();
             }
             if (projectStore.project?.settings) {
               projectStore.project.settings.showRulers = val;
@@ -173,7 +175,7 @@ export function useInspectorBinding(
           prefabStore.updatePrefab(workspaceStore.activeTab.id, { [propName]: val });
           engineBridge.updatePrefabMasterProp?.({ prefabId: workspaceStore.activeTab.id, prop: propName, value: val });
         } else {
-          sceneStore.updateEntityProp(ent.id, propName, val);
+          entityActions.updateEntityProp(ent.id, propName, val);
         }
       }
     });
@@ -223,9 +225,9 @@ export function useInspectorBinding(
             engineBridge.updatePrefabMasterComponentProp?.({ prefabId: workspaceStore.activeTab.id, componentName: compName, prop: pName, value: pValue });
           } else {
             const id = ent.id;
-            sceneStore.updateComponentProp(id, compName, pName, pValue);
+            entityActions.updateComponentProp(id, compName, pName, pValue);
             if (getPrefabIdVal()) {
-              if (pName !== 'x' && pName !== 'y') sceneStore.updateComponentProp(id, compName, 'overridden', true);
+              if (pName !== 'x' && pName !== 'y') entityActions.updateComponentProp(id, compName, 'overridden', true);
             }
 
             engineBridge.updateComponentProp?.({
@@ -262,7 +264,7 @@ export function useInspectorBinding(
       const id = ent.id;
       const oldVal = ent.components?.ScriptController?.data?.[index]?.[fieldPath];
 
-      sceneStore.updateComponentProp(id, 'ScriptController', fullPath, value);
+      entityActions.updateComponentProp(id, 'ScriptController', fullPath, value);
       recordComponentChange(id, 'ScriptController', fullPath, oldVal, value);
     }
   }
@@ -283,11 +285,11 @@ export function useInspectorBinding(
       const id = ent.id;
       const oldList = JSON.parse(JSON.stringify(scriptsData.value));
 
-      sceneStore.updateComponentProp(id, 'ScriptController', 'data', currentList);
+      entityActions.updateComponentProp(id, 'ScriptController', 'data', currentList);
       recordComponentChange(id, 'ScriptController', 'data', oldList, currentList);
 
       if (getPrefabIdVal()) {
-        sceneStore.updateComponentProp(id, 'ScriptController', 'overridden', true);
+        entityActions.updateComponentProp(id, 'ScriptController', 'overridden', true);
         if (typeof markAsOverridden === 'function') markAsOverridden();
       }
     }
@@ -306,11 +308,11 @@ export function useInspectorBinding(
       const id = ent.id;
       const oldList = JSON.parse(JSON.stringify(scriptsData.value));
 
-      sceneStore.updateComponentProp(id, 'ScriptController', 'data', currentList);
+      entityActions.updateComponentProp(id, 'ScriptController', 'data', currentList);
       recordComponentChange(id, 'ScriptController', 'data', oldList, currentList);
 
       if (getPrefabIdVal()) {
-        sceneStore.updateComponentProp(id, 'ScriptController', 'overridden', true);
+        entityActions.updateComponentProp(id, 'ScriptController', 'overridden', true);
         if (typeof markAsOverridden === 'function') markAsOverridden();
       }
     }
@@ -340,8 +342,8 @@ export function useInspectorBinding(
       const t = ent.components[transformComp];
       const oldScaleX = t.scaleX ?? 1;
       const oldScaleY = t.scaleY ?? 1;
-      sceneStore.updateComponentProp(id, transformComp, 'scaleX', 1);
-      sceneStore.updateComponentProp(id, transformComp, 'scaleY', 1);
+      entityActions.updateComponentProp(id, transformComp, 'scaleX', 1);
+      entityActions.updateComponentProp(id, transformComp, 'scaleY', 1);
       recordComponentChange(id, transformComp, 'scaleX', oldScaleX, 1);
       recordComponentChange(id, transformComp, 'scaleY', oldScaleY, 1);
     }

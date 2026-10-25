@@ -14,20 +14,12 @@ import { ToolkitContextHandler } from "../Toolkit/ToolkitContextHandler.js";
 
 export { ScriptAssertionError, getScriptContextMetadata, formatNotificationMessage };
 
-/**
- * ContextSystem (Engine Gate 2 / Subsystem Facade)
- * Strict runtime gateway for script nodes.
- *
- * Rules:
- * 1. Node code NEVER accesses `context.game`.
- * 2. Missing resources (Entity, Layer, Global Variable) THROW explicit errors with context.
- * 3. All access is cleanly segmented into domain facades.
- */
+// Primary runtime gateway and subsystem facade for visual script nodes
 export default class ContextSystem {
   constructor(game) {
     this.game = game;
 
-    // Subsystem Facade Handlers (mirip SyncComponent)
+    // Subsystem facade handlers
     this.consoleHandler = new ConsoleContextHandler(this);
     this.assertHandler = new AssertContextHandler(this);
     this.entityHandler = new EntityContextHandler(this);
@@ -42,6 +34,7 @@ export default class ContextSystem {
     this.toolkitHandler = new ToolkitContextHandler(this);
   }
 
+  // Constructs sandboxed execution context for a specific node during a tick
   createExecutionContext(runner, node) {
     const game = this.game;
     const nodeState = typeof runner.getNodeState === 'function' 
@@ -81,10 +74,13 @@ export default class ContextSystem {
       console: this.consoleHandler.createFacade(contextParams),
       assert: this.assertHandler.createFacade(contextParams),
       entity: this.entityHandler.createFacade(contextParams),
+
       prefab: {
         spawn: (...args) => this.game.prefabSystem?.spawnPrefab(...args)
       },
+
       layer: this.layerHandler.createFacade(contextParams),
+
       collider: {
         checkSolid: (entity) => this.game.colliderSystem?.checkSolid(entity),
         checkOverlap: (entity, filterTag) => this.game.colliderSystem?.checkOverlap(entity, filterTag),
@@ -94,6 +90,7 @@ export default class ContextSystem {
         checkHitbox: (attacker, hitboxIdentifier, filterTag, targetTypes) => this.game.colliderSystem?.checkHitbox(attacker, hitboxIdentifier, filterTag, targetTypes),
         getBounds: (entity) => this.game.colliderSystem?.getBounds(entity)
       },
+
       input: this.inputHandler.createFacade(contextParams),
       ui: this.uiHandler.createFacade(contextParams),
       toolkit: this.toolkitHandler.createFacade(contextParams),
@@ -101,6 +98,7 @@ export default class ContextSystem {
       signal: this.lifecycleHandler.createSignalFacade(contextParams),
       lifecycle: this.lifecycleHandler.createLifecycleFacade(contextParams),
       audio: this.audioHandler.createFacade(contextParams),
+
       transition: {
         fade: (mode, duration, color, onComplete) => {
           const ts = this.game.transitionSystem;
@@ -118,6 +116,7 @@ export default class ContextSystem {
           }
         }
       },
+
       camera: this.cameraHandler.createFacade(contextParams),
       asset: this.assetHandler.createFacade(contextParams),
       scene: this.sceneHandler.createFacade(contextParams),
@@ -134,7 +133,7 @@ export default class ContextSystem {
       onQuit: (callback) => this.lifecycleHandler.onQuit(contextParams, callback),
       isPaused: () => Boolean(this.game?.isPaused),
 
-      // Variables
+      // Scoped variable access
       getLocal: (key) => runner.getLocalVariable(key),
       setLocal: (key, val) => runner.setLocalVariable(key, val),
       getGlobal: (key) => {

@@ -1,23 +1,31 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
-import { useSceneActions } from '@scenes/scenes.js'
+import { useSceneStore, useSceneActions } from '@scenes/scenes.js'
 import { useProjectStore } from '@projects/projects.js'
 import { setupMockOPFS, createMockEmptyProject } from '@tests/tests.js'
 
 describe('Scene Actions Integration', () => {
+  let sceneStore
+  let sceneActions
   let sceneStoreState
 
   beforeEach(() => {
     setActivePinia(createPinia())
     setupMockOPFS()
 
-    // Prepare mock state for sceneStore adopting useSceneActions
-    sceneStoreState = {
-      scenes: [],
-      activeSceneId: null,
-      selectedEntityIds: [],
-      ...useSceneActions
-    }
+    sceneStore = useSceneStore()
+    sceneStore.scenes = []
+    sceneStore.activeSceneId = null
+    sceneStore.selectedEntityIds = []
+
+    sceneActions = useSceneActions()
+
+    sceneStoreState = new Proxy(sceneStore, {
+      get(target, prop) {
+        if (prop in sceneActions) return sceneActions[prop]
+        return target[prop]
+      }
+    })
   })
 
   // Helper to ensure mock project has valid scenes property

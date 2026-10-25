@@ -1,9 +1,4 @@
-/**
- * CollectableHelper.js
- * High-level toolkit helper for collectables, pickups, and interactive items in Lupis Engine.
- * Adheres to Tier 2 (Extensible Node) architectural contract.
- * Uses smart animator clip resolution and playback logic aligned with PlatformerHelper.
- */
+// Toolkit helper for collectables, pickups, and interactive items
 
 function extractTargetClipName(raw) {
   if (!raw || typeof raw !== 'string') return '';
@@ -88,9 +83,7 @@ export function playClipSafe(animator, clipName, forceRestart = false) {
   return 0.35;
 }
 
-/**
- * Applies smooth sinusoidal bobbing effect to entity's Y transform.
- */
+// Applies smooth sinusoidal bobbing effect to entity Y transform
 export function applyBobbing(target, dt = 0.016, speed = 3.5, amplitude = 4) {
   if (!target || target.active === false || target._isDestroyed) return;
   const transform = target.components && (target.components.Transform || target.components.UITransform);
@@ -114,9 +107,7 @@ export function applyBobbing(target, dt = 0.016, speed = 3.5, amplitude = 4) {
   target.isDirty = true;
 }
 
-/**
- * Checks overlap between target and active collectors matching collectorTag.
- */
+// Checks overlap between target and active collectors matching collectorTag
 export function checkOverlap(target, collectorTag = 'player', pickupDistance = 32, context = null) {
   if (!target || target.active === false || target._isDestroyed) return null;
 
@@ -154,9 +145,7 @@ export function checkOverlap(target, collectorTag = 'player', pickupDistance = 3
   return null;
 }
 
-/**
- * Plays collect animation (if any and clip exists) and cleans up entity via context.entity.destroy.
- */
+// Plays collect animation and cleans up entity via context.entity.destroy
 export function playAnimationAndDestroy(target, collectClip, context, node = null) {
   if (!target || target._isDestroyed) return;
 
@@ -193,9 +182,7 @@ export function playAnimationAndDestroy(target, collectClip, context, node = nul
   }
 }
 
-/**
- * Deactivates entity (active = false) after playing collection animation (if clip exists), with optional respawn scheduling.
- */
+// Deactivates entity after playing collection animation, with optional respawn scheduling
 export function deactivateAndScheduleRespawn(target, collectClip, respawnTime = 0, context = null, node = null) {
   if (!target || target._isDestroyed) return;
 
@@ -231,10 +218,7 @@ export function deactivateAndScheduleRespawn(target, collectClip, respawnTime = 
   }
 }
 
-/**
- * Main process pipeline for Collectable Item node.
- * Aligned with platformerAnimator logic for clip resolution and state management.
- */
+// Main process pipeline for Collectable Item node
 export function processCollectable(stateOrParams, inputsOrContext, outputsMaybe, contextMaybe, nodeMaybe) {
   const isDirect = (arguments.length <= 2 && typeof stateOrParams === 'object' && !outputsMaybe && !contextMaybe);
   const inputs = isDirect ? stateOrParams : (inputsOrContext || {});

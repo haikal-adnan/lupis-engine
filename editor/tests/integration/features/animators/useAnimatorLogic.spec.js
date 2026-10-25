@@ -1,7 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { nextTick } from 'vue'
-import { useAnimatorLogic, useAnimatorMenu } from '@animators/animators.js'
+import { useAnimatorLogic, useAnimatorMenu, useAnimatorActions } from '@animators/animators.js'
+import * as animatorsModule from '@animators/animators.js'
+import * as animatorActionsModule from '@animators/composables/useAnimatorActions.js'
 import { useSceneStore } from '@scenes/scenes.js'
 import { useWorkspaceStore } from '@workspaces/workspaces.js'
 import { useAssetStore } from '@assets/assets.js'
@@ -103,6 +105,7 @@ describe('useAnimatorLogic Integration', () => {
   let assetStore
   let animatorHistory
   let mockEntityData
+  let animatorActions
 
   beforeEach(() => {
     setActivePinia(createPinia())
@@ -113,6 +116,10 @@ describe('useAnimatorLogic Integration', () => {
     assetStore = useAssetStore()
     animatorHistory = useAnimatorHistory()
 
+    animatorActions = useAnimatorActions()
+    vi.spyOn(animatorsModule, 'useAnimatorActions').mockReturnValue(animatorActions)
+    vi.spyOn(animatorActionsModule, 'useAnimatorActions').mockReturnValue(animatorActions)
+
     mockEntityData = createMockAnimatorEntity({ name: 'Player Sprite' })
     const { entity, mockAsset } = mockEntityData
 
@@ -120,12 +127,12 @@ describe('useAnimatorLogic Integration', () => {
     assetStore.initAssets([mockAsset])
 
     // Gunakan vi.spyOn untuk mengawasi dan meng-override aksi Pinia sceneStore
-    vi.spyOn(sceneStore, '_saveAnimatorClips').mockImplementation((entityId, clips) => {
+    vi.spyOn(animatorActions, '_saveAnimatorClips').mockImplementation((entityId, clips) => {
       const ent = sceneStore.activeScene?.entities.find(e => e.id === entityId)
       if (ent?.components?.SpriteAnimator) ent.components.SpriteAnimator.clips = clips
     })
 
-    vi.spyOn(sceneStore, 'animatorCreateCategory').mockImplementation((entityId, targetId) => {
+    vi.spyOn(animatorActions, 'animatorCreateCategory').mockImplementation((entityId, targetId) => {
       const ent = sceneStore.activeScene?.entities.find(e => e.id === entityId)
       if (ent?.components?.SpriteAnimator) {
         ent.components.SpriteAnimator.clips.push({
@@ -138,7 +145,7 @@ describe('useAnimatorLogic Integration', () => {
       }
     })
 
-    vi.spyOn(sceneStore, 'animatorCreateClip').mockImplementation((entityId, targetId) => {
+    vi.spyOn(animatorActions, 'animatorCreateClip').mockImplementation((entityId, targetId) => {
       const ent = sceneStore.activeScene?.entities.find(e => e.id === entityId)
       if (ent?.components?.SpriteAnimator) {
         ent.components.SpriteAnimator.clips.push({
@@ -154,7 +161,7 @@ describe('useAnimatorLogic Integration', () => {
       }
     })
 
-    vi.spyOn(sceneStore, 'animatorDeleteNode').mockImplementation((entityId, id) => {
+    vi.spyOn(animatorActions, 'animatorDeleteNode').mockImplementation((entityId, id) => {
       const ent = sceneStore.activeScene?.entities.find(e => e.id === entityId)
       if (ent?.components?.SpriteAnimator) {
         const clips = ent.components.SpriteAnimator.clips
@@ -164,13 +171,13 @@ describe('useAnimatorLogic Integration', () => {
       return null
     })
 
-    vi.spyOn(sceneStore, 'animatorGetNodeClone').mockImplementation((entityId, id) => {
+    vi.spyOn(animatorActions, 'animatorGetNodeClone').mockImplementation((entityId, id) => {
       const ent = sceneStore.activeScene?.entities.find(e => e.id === entityId)
       const node = ent?.components?.SpriteAnimator?.clips?.find(c => c.id === id)
       return node ? JSON.parse(JSON.stringify(node)) : null
     })
 
-    vi.spyOn(sceneStore, 'animatorPasteNode').mockImplementation((entityId, targetId, nodeData) => {
+    vi.spyOn(animatorActions, 'animatorPasteNode').mockImplementation((entityId, targetId, nodeData) => {
       const ent = sceneStore.activeScene?.entities.find(e => e.id === entityId)
       if (ent?.components?.SpriteAnimator) {
         const clone = JSON.parse(JSON.stringify(nodeData.node || nodeData))
@@ -180,7 +187,7 @@ describe('useAnimatorLogic Integration', () => {
       }
     })
 
-    vi.spyOn(sceneStore, 'animatorRenameNode').mockImplementation((entityId, id, newName) => {
+    vi.spyOn(animatorActions, 'animatorRenameNode').mockImplementation((entityId, id, newName) => {
       const ent = sceneStore.activeScene?.entities.find(e => e.id === entityId)
       const node = ent?.components?.SpriteAnimator?.clips?.find(c => c.id === id)
       if (node) node.name = newName
@@ -266,8 +273,8 @@ describe('useAnimatorLogic Integration', () => {
 
       logic.duplicateNode(mockEntityData.defaultClip.id)
 
-      expect(sceneStore.animatorGetNodeClone).toHaveBeenCalledWith(mockEntityData.entity.id, mockEntityData.defaultClip.id)
-      expect(sceneStore.animatorPasteNode).toHaveBeenCalled()
+      expect(animatorActions.animatorGetNodeClone).toHaveBeenCalledWith(mockEntityData.entity.id, mockEntityData.defaultClip.id)
+      expect(animatorActions.animatorPasteNode).toHaveBeenCalled()
       expect(logic.realClipsData.value.length).toBe(initialLength + 1)
     })
 

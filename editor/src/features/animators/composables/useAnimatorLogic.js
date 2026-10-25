@@ -1,5 +1,6 @@
 import { ref, computed, watch, onUnmounted } from 'vue';
 import { useSceneStore } from '@scenes/scenes.js';
+import { useAnimatorActions } from '@animators/composables/useAnimatorActions.js';
 import { useWorkspaceStore } from '@workspaces/workspaces.js';
 import { useAssetStore } from '@assets/assets.js';
 import { usePopAlert, usePrompt, useConfirm } from '@composables/composables.js';
@@ -15,6 +16,7 @@ const gridSize = ref(32);
 
 export function useAnimatorLogic() {
   const sceneStore = useSceneStore();
+  const animatorActions = useAnimatorActions();
   const workspaceStore = useWorkspaceStore();
   const assetStore = useAssetStore();
   const { showPop } = usePopAlert();
@@ -118,7 +120,7 @@ export function useAnimatorLogic() {
 
   const syncAnimatorData = () => {
     if (activeEntityId.value) {
-      sceneStore._saveAnimatorClips(activeEntityId.value, realClipsData.value);
+      animatorActions._saveAnimatorClips(activeEntityId.value, realClipsData.value);
     }
   };
 
@@ -194,7 +196,7 @@ export function useAnimatorLogic() {
     const catIndex = clips.findIndex(c => c.id === categoryId);
     if (catIndex !== -1) {
       clips[catIndex] = { ...clips[catIndex], isOpen: !clips[catIndex].isOpen };
-      sceneStore._saveAnimatorClips(activeEntityId.value, clips);
+      animatorActions._saveAnimatorClips(activeEntityId.value, clips);
       animatorHistory.recordClipsTreeChange(activeEntityId.value, `Toggle category ${categoryId}`, oldClips, clips);
     }
   };
@@ -202,7 +204,7 @@ export function useAnimatorLogic() {
   const createCategory = (targetId) => { 
     if (activeEntityId.value) {
       const oldClips = JSON.parse(JSON.stringify(realClipsData.value));
-      sceneStore.animatorCreateCategory(activeEntityId.value, targetId);
+      animatorActions.animatorCreateCategory(activeEntityId.value, targetId);
       animatorHistory.recordClipsTreeChange(activeEntityId.value, 'Create Animator Category', oldClips, realClipsData.value);
     } 
   };
@@ -210,7 +212,7 @@ export function useAnimatorLogic() {
   const createClip = (targetId) => { 
     if (activeEntityId.value) {
       const oldClips = JSON.parse(JSON.stringify(realClipsData.value));
-      sceneStore.animatorCreateClip(activeEntityId.value, targetId);
+      animatorActions.animatorCreateClip(activeEntityId.value, targetId);
       animatorHistory.recordClipsTreeChange(activeEntityId.value, 'Create Animator Clip', oldClips, realClipsData.value);
     } 
   };
@@ -218,7 +220,7 @@ export function useAnimatorLogic() {
   const deleteNode = (id) => {
     if (activeEntityId.value) {
       const oldClips = JSON.parse(JSON.stringify(realClipsData.value));
-      sceneStore.animatorDeleteNode(activeEntityId.value, id);
+      animatorActions.animatorDeleteNode(activeEntityId.value, id);
       if (activeClipId.value === id) activeClipId.value = null;
       animatorHistory.recordClipsTreeChange(activeEntityId.value, `Delete Animator Node ${id}`, oldClips, realClipsData.value);
     }
@@ -227,9 +229,9 @@ export function useAnimatorLogic() {
   const duplicateNode = (id) => {
     if (activeEntityId.value) {
       const oldClips = JSON.parse(JSON.stringify(realClipsData.value));
-      const nodeData = sceneStore.animatorGetNodeClone(activeEntityId.value, id);
+      const nodeData = animatorActions.animatorGetNodeClone(activeEntityId.value, id);
       if (nodeData) {
-        sceneStore.animatorPasteNode(activeEntityId.value, id, nodeData);
+        animatorActions.animatorPasteNode(activeEntityId.value, id, nodeData);
         animatorHistory.recordClipsTreeChange(activeEntityId.value, `Duplicate Animator Node ${id}`, oldClips, realClipsData.value);
       }
     }
@@ -237,7 +239,7 @@ export function useAnimatorLogic() {
 
   const copyNode = (id) => {
     if (!activeEntityId.value) return;
-    const nodeData = sceneStore.animatorGetNodeClone(activeEntityId.value, id);
+    const nodeData = animatorActions.animatorGetNodeClone(activeEntityId.value, id);
     if (nodeData) {
       workspaceStore.setClipboard('animator_node', nodeData, 'copy');
       showPop({ title: 'Copied', message: 'Node copied to clipboard.', type: 'info' });
@@ -247,7 +249,7 @@ export function useAnimatorLogic() {
   const cutNode = (id) => {
     if (!activeEntityId.value) return;
     const oldClips = JSON.parse(JSON.stringify(realClipsData.value));
-    const deletedNode = sceneStore.animatorDeleteNode(activeEntityId.value, id);
+    const deletedNode = animatorActions.animatorDeleteNode(activeEntityId.value, id);
     if (deletedNode) {
       workspaceStore.setClipboard('animator_node', { node: deletedNode, children: [] }, 'cut');
       if (activeClipId.value === id) activeClipId.value = null;
@@ -262,7 +264,7 @@ export function useAnimatorLogic() {
     if (type !== 'animator_node' || !data) return;
 
     const oldClips = JSON.parse(JSON.stringify(realClipsData.value));
-    sceneStore.animatorPasteNode(activeEntityId.value, targetId, data);
+    animatorActions.animatorPasteNode(activeEntityId.value, targetId, data);
     if (mode === 'cut') workspaceStore.clearClipboard();
     animatorHistory.recordClipsTreeChange(activeEntityId.value, 'Paste Animator Node', oldClips, realClipsData.value);
   };
@@ -284,7 +286,7 @@ export function useAnimatorLogic() {
 
     if (newName !== null && newName.trim() !== '' && newName !== nodeToRename.scriptId) {
       const oldName = nodeToRename.scriptId;
-      sceneStore.animatorRenameNode(activeEntityId.value, id, newName.trim());
+      animatorActions.animatorRenameNode(activeEntityId.value, id, newName.trim());
       showPop({ title: 'Success!', message: `${labelType} name has been updated.`, type: 'success' });
       animatorHistory.recordClipPropChange(activeEntityId.value, id, 'scriptId', oldName, newName.trim());
     }
@@ -304,7 +306,7 @@ export function useAnimatorLogic() {
       draggedNode.parentId = null;
       clips.splice(dragIdx, 1);
       clips.push(draggedNode);
-      sceneStore._saveAnimatorClips(activeEntityId.value, clips);
+      animatorActions._saveAnimatorClips(activeEntityId.value, clips);
       animatorHistory.recordClipsTreeChange(activeEntityId.value, `Move Node ${draggedId} to root`, oldClips, clips);
       return;
     }
@@ -328,7 +330,7 @@ export function useAnimatorLogic() {
     if (position === 'bottom' || position === 'inside') insertIdx += 1;
 
     clips.splice(insertIdx, 0, draggedNode);
-    sceneStore._saveAnimatorClips(activeEntityId.value, clips);
+    animatorActions._saveAnimatorClips(activeEntityId.value, clips);
     animatorHistory.recordClipsTreeChange(activeEntityId.value, `Move Node ${draggedId}`, oldClips, clips);
   };
 

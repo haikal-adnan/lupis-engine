@@ -1,3 +1,5 @@
+// Asset ingestion, font conversion, and asset metadata operations.
+
 import { useAssetStore } from '@assets/assets.js';
 import { useFolderStore } from '@folders/folders.js';
 import { assetSchema, useFontConverter } from '@assets/assets.js';
@@ -19,6 +21,7 @@ export function useAssetActions() {
   const { showPop } = usePopAlert();
   const { convertTtfToBmFont } = useFontConverter();
 
+  // Ingests a raw file, converts fonts or extracts media metadata, and persists the asset
   const importAsset = async (file) => {
     if (!file) return null;
     assetStore.setUploading(true);

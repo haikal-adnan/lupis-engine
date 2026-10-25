@@ -1,3 +1,4 @@
+// Top-level domain namespaces accessible on context
 export const CONTEXT_NAMESPACES = Object.freeze([
   'entity',
   'layer',
@@ -20,6 +21,7 @@ export const CONTEXT_NAMESPACES = Object.freeze([
   'local'
 ]);
 
+// Validation methods exposed by context.assert
 export const CONTEXT_ASSERT_METHODS = Object.freeze([
   'isTrue',
   'isFalse',
@@ -34,12 +36,14 @@ export const CONTEXT_ASSERT_METHODS = Object.freeze([
   'fail'
 ]);
 
+// Diagnostic logging methods exposed by context.console
 export const CONTEXT_CONSOLE_METHODS = Object.freeze([
   'log',
   'warn',
   'error'
 ]);
 
+// Execution flow control and variable access methods on root context
 export const CONTEXT_ROOT_METHODS = Object.freeze([
   'onTick',
   'triggerFlow',
@@ -60,6 +64,7 @@ export const CONTEXT_ROOT_METHODS = Object.freeze([
   'hasVariable'
 ]);
 
+// Built-in properties provided directly on the root context object
 export const CONTEXT_ROOT_PROPERTIES = Object.freeze([
   'owner',
   'node',

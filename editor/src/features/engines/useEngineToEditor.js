@@ -1,5 +1,6 @@
 import { engineBridge } from "@engines/engines.js";
 import { useTilemapHistory } from "@historys/historys.js";
+import { useEntityActions } from "@scenes/scenes.js";
 
 // Coalescing state for frame-boundary batching
 const pendingTransforms = new Map();
@@ -23,18 +24,20 @@ export function flushPendingEngineUpdates(sceneStore) {
     return;
   }
 
+  const { updateComponentProp } = useEntityActions();
+
   // 1. Flush transforms & UITransforms
   pendingTransforms.forEach(({ payload, isOverridden, compName }, id) => {
     sceneStore.syncTransformFromEngine(id, payload);
     if (isOverridden) {
-      sceneStore.updateComponentProp(id, compName, 'overridden', true);
+      updateComponentProp(id, compName, 'overridden', true);
     }
   });
   pendingTransforms.clear();
 
   // 2. Flush ShapeRenderer elements
   pendingShapeUpdates.forEach((elements, id) => {
-    sceneStore.updateComponentProp(id, 'ShapeRenderer', 'elements', elements);
+    updateComponentProp(id, 'ShapeRenderer', 'elements', elements);
   });
   pendingShapeUpdates.clear();
 
@@ -127,7 +130,8 @@ export function useEngineToEditor(sceneStore) {
 
     engineBridge.onTilemapDataUpdated((payload) => {
       if (payload && payload.entityId && payload.newData) {
-        sceneStore.syncTilemapDataFromEngine(payload.entityId, payload.newData);
+        const { syncTilemapDataFromEngine } = useEntityActions();
+        syncTilemapDataFromEngine(payload.entityId, payload.newData);
         if (payload.oldData && JSON.stringify(payload.oldData) !== JSON.stringify(payload.newData)) {
           tilemapHistory.recordTilemapDataChange(
             payload.entityId,

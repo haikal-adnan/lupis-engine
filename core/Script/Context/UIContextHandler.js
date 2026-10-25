@@ -1,11 +1,13 @@
 import PointerRaycast from '../../System/PointerRaycast.js';
 
+// Subsystem handler providing UI transforms, hit testing, widgets, and layout management
 export class UIContextHandler {
   constructor(contextSystem) {
     this.contextSystem = contextSystem;
     this.game = contextSystem.game;
   }
 
+  // Evaluates whether a UI entity is active, visible, and unblocked by input freeze
   isEntityInteractable(entity, context = null) {
     if (!entity || entity._isDestroyed) return false;
     const game = this.game || context?.game;
@@ -36,6 +38,7 @@ export class UIContextHandler {
     return true;
   }
 
+  // Computes cumulative global pixel coordinates for a UI entity
   getGlobalTransform(entity, context) {
     if (!entity) return { x: 0, y: 0 };
     const game = this.game;
@@ -68,6 +71,7 @@ export class UIContextHandler {
     return { x: gx, y: gy };
   }
 
+  // Tests whether the pointer cursor is hovering inside an entity's UI bounding box
   isPointerOver(entity, padX = 0, padY = 0, context = null) {
     if (!entity) return false;
     if (!this.isEntityInteractable(entity, context)) return false;
@@ -102,6 +106,7 @@ export class UIContextHandler {
     return (px >= left - padX && px <= right + padX && py >= top - padY && py <= bottom + padY);
   }
 
+  // Normalizes an audio bus name into canonical mixer channel keys
   resolveAudioBus(key) {
     const k = String(key || '').toLowerCase().trim();
     if (k === 'vocal' || k === 'voice') return 'voice';
@@ -111,6 +116,7 @@ export class UIContextHandler {
     return k;
   }
 
+  // Updates visual components of a UI slider widget based on volume value
   updateSliderVisual(s, volume, context) {
     if (!s || !s.tBar) return;
 
@@ -169,6 +175,7 @@ export class UIContextHandler {
     }
   }
 
+  // Tests whether the pointer cursor is over the active bounding area of a slider track or knob
   isPointerOverSlider(s, px, py, context) {
     if (!s || !s.barEntity || !s.tBar) return false;
 
@@ -203,6 +210,7 @@ export class UIContextHandler {
     return (px >= left - padX && px <= right + padX && py >= top - padY && py <= bottom + padY);
   }
 
+  // Processes multi-bus audio volume slider control set (master, voice, sfx, background)
   processVolumeSliders(stateOrParams, configOrCtx, inputsMaybe, outputsMaybe, contextMaybe) {
     const isDirect = (arguments.length <= 2 && typeof stateOrParams === 'object' && !inputsMaybe);
     const inputs = isDirect ? stateOrParams : (inputsMaybe || {});
@@ -548,6 +556,7 @@ export class UIContextHandler {
     return result;
   }
 
+  // Processes a single generic UI slider widget
   processAtomicSlider(stateOrParams, inputsOrContext, outputsMaybe, contextMaybe) {
     const isDirect = (arguments.length <= 2 && typeof stateOrParams === 'object' && !outputsMaybe && !contextMaybe);
     const inputs = isDirect ? stateOrParams : (inputsOrContext || {});
@@ -845,6 +854,7 @@ export class UIContextHandler {
     return result;
   }
 
+  // Processes a toggle switch button widget supporting text labels or image sprite swaps
   processSwitchButton(stateOrParams, inputsOrContext, outputsMaybe, isImageMaybe, contextMaybe) {
     const isDirect = (arguments.length <= 3 && typeof stateOrParams === 'object' && !contextMaybe);
     const inputs = isDirect ? stateOrParams : (inputsOrContext || {});
@@ -1330,6 +1340,7 @@ export class UIContextHandler {
     return result;
   }
 
+  // Spawns and arranges UI prefab instances into a 2D grid matrix layout
   processGridSpawner(stateOrParams, inputsOrContext, outputsMaybe, contextMaybe) {
     const isDirect = (arguments.length <= 2 && typeof stateOrParams === 'object' && !outputsMaybe && !contextMaybe);
     const inputs = isDirect ? stateOrParams : (inputsOrContext || {});
@@ -1449,6 +1460,7 @@ export class UIContextHandler {
     return result;
   }
 
+  // Binds runtime dynamic data properties to target components across an entity and its children
   processPrefabBinder(stateOrParams, inputsOrContext, outputsMaybe, contextMaybe) {
     const isDirect = (arguments.length <= 2 && typeof stateOrParams === 'object' && !outputsMaybe && !contextMaybe);
     const inputs = isDirect ? stateOrParams : (inputsOrContext || {});
@@ -1803,7 +1815,7 @@ export class UIContextHandler {
       if (!targetEnt.components[compName]) targetEnt.components[compName] = {};
       const comp = targetEnt.components[compName];
 
-      // Component schema handling (covers all components in componentSchema.js)
+      // Component schema property assignment
       switch (compName) {
         case 'SpriteRenderer':
           if (prop === 'assetId') comp.assetId = resolveAsset(String(val));
@@ -1983,6 +1995,7 @@ export class UIContextHandler {
         const uiLayerIds = new Set((game.world?.layersUI || []).map(l => l.id));
         return uiLayerIds.has(layerId);
       },
+
       dispatchEvent: (event) => {
         const canvas = game.renderer?.gl?.canvas || game.renderer?.canvas || game.canvas;
         if (canvas && typeof canvas.dispatchEvent === 'function') {
@@ -1992,10 +2005,11 @@ export class UIContextHandler {
           window.dispatchEvent(event);
         }
       },
+
       notify: (message, source = 'Notification', type = 'log') => {
         this.contextSystem.consoleHandler.notify(contextParams, message, source, type);
       },
-      // Atomic & Reusable Primitives
+
       getGlobalTransform: (entity, ctx) => this.getGlobalTransform(entity, getCtx(ctx)),
       isEntityInteractable: (entity, ctx) => this.isEntityInteractable(entity, getCtx(ctx)),
       isPointerOver: (entity, padX, padY, ctx) => this.isPointerOver(entity, padX, padY, getCtx(ctx)),

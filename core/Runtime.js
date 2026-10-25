@@ -1,12 +1,13 @@
 import Game from "./Core/Game.js";
 import RuntimeLoader from "./Loader/RuntimeLoader.js";
 import { bus } from "./Util/EventBus.js";
+import LupisPackageHelper from "./Util/LupisPackageHelper.js";
 
 async function fetchJsonWithFallback(url, fallbackValue = null) {
     try {
-        const response = await fetch(url);
-        if (!response.ok) return fallbackValue;
-        return await response.json();
+        const result = await LupisPackageHelper.fetchJson(url, null);
+        if (result !== null) return result;
+        return fallbackValue;
     } catch (e) {
         console.warn(`[Main] Optional JSON not found at ${url}, using fallback.`);
         return fallbackValue;
@@ -60,19 +61,35 @@ export async function startEngine(canvasSource, baseURL, initialData = {}, mode 
 
     try {
         let payload = initialData;
+        let effectiveBaseURL = baseURL || "./project";
 
         if (!payload || !payload.assets) {
-            const cleanBaseURL = baseURL.replace(/\/$/, "");
-            const projectJsonUrl = `${cleanBaseURL}/project.json`;
-            
-            console.log(`[Main] ${mode.toUpperCase()} mode: Fetching project structure from ${cleanBaseURL}...`);
-            
-            const response = await fetch(projectJsonUrl);
-            if (!response.ok) {
-                throw new Error(`Failed to load project.json from ${projectJsonUrl} (Status: ${response.status})`);
+            let cleanBaseURL = effectiveBaseURL.replace(/\/$/, "");
+
+            if (cleanBaseURL.endsWith(".lupisproject")) {
+                const archiveLoaded = await LupisPackageHelper.tryLoadArchiveFromUrl(cleanBaseURL, "./project");
+                if (!archiveLoaded) {
+                    throw new Error(`Failed to load or decode .lupisproject archive from ${cleanBaseURL}`);
+                }
+                cleanBaseURL = "./project";
+                effectiveBaseURL = "./project";
             }
-            
-            const projectMeta = await response.json();
+
+            const projectJsonUrl = `${cleanBaseURL}/project.json`;
+            console.log(`[Main] ${mode.toUpperCase()} mode: Fetching project structure from ${cleanBaseURL}...`);
+
+            let projectMeta = await LupisPackageHelper.fetchJson(projectJsonUrl, null);
+
+            if (!projectMeta) {
+                const fallbackArchiveLoaded = await LupisPackageHelper.tryLoadArchiveFromUrl("./game.lupisproject", cleanBaseURL);
+                if (fallbackArchiveLoaded) {
+                    projectMeta = await LupisPackageHelper.fetchJson(projectJsonUrl, null);
+                }
+            }
+
+            if (!projectMeta) {
+                throw new Error(`Failed to load project.json from ${projectJsonUrl}`);
+            }
 
             let [assetsData, scenesData, prefabsData, scriptsData] = await Promise.all([
                 fetchJsonWithFallback(`${cleanBaseURL}/workspaces/assets.json`, []),
@@ -86,8 +103,9 @@ export async function startEngine(canvasSource, baseURL, initialData = {}, mode 
             const rawPrefabs = Array.isArray(prefabsData) ? prefabsData : (prefabsData?.items || []);
             const rawScripts = Array.isArray(scriptsData) ? scriptsData : (scriptsData?.items || []);
 
-            const [fullScenes, fullScripts] = await Promise.all([
+            const [fullScenes, fullPrefabs, fullScripts] = await Promise.all([
                 loadDetailedItems(cleanBaseURL, rawScenes, "scenes"),
+                loadDetailedItems(cleanBaseURL, rawPrefabs, "prefabs"),
                 loadDetailedItems(cleanBaseURL, rawScripts, "scripts")
             ]);
 
@@ -102,7 +120,7 @@ export async function startEngine(canvasSource, baseURL, initialData = {}, mode 
                 project: projectMeta,
                 assets: resolvedAssets,
                 scenes: fullScenes,
-                prefabs: rawPrefabs,
+                prefabs: fullPrefabs,
                 scripts: finalScripts,
                 onProgress
             };
@@ -110,7 +128,7 @@ export async function startEngine(canvasSource, baseURL, initialData = {}, mode 
             payload.onProgress = onProgress;
         }
 
-        await loader.initializeGame(game, canvas, baseURL, mode, payload);
+        await loader.initializeGame(game, canvas, effectiveBaseURL, mode, payload);
         
         return { game, bus };
         

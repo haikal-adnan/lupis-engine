@@ -1,5 +1,6 @@
 import { GenerateUUID, sanitizeScriptId } from '@utils/utils.js';
 
+// Constructs and normalizes rendering and simulation layer parameters
 export const layerSchema = (data = {}) => {
   const scriptId = sanitizeScriptId(
     data.scriptId || `layer_${GenerateUUID().slice(0, 8)}`,

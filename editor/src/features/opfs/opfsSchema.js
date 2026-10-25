@@ -1,5 +1,4 @@
-// @opfs/opfsSchema.js
-
+// OPFS file tree entry item schema factory
 export const opfsItemSchema = (data = {}) => ({
   name: data.name || '',
   kind: data.kind || 'file',
@@ -9,6 +8,7 @@ export const opfsItemSchema = (data = {}) => ({
   children: Array.isArray(data.children) ? data.children : undefined
 });
 
+// OPFS workspace state schema factory
 export const opfsSchema = (data = {}) => ({
   fileTree: data.fileTree || [],
   activeFile: data.activeFile || null,
@@ -20,6 +20,7 @@ export const opfsSchema = (data = {}) => ({
   allowedExtensions: data.allowedExtensions || ['js', 'json', 'png', 'jpg', 'jpeg', 'webp', 'scene', 'prefab']
 });
 
+// Determines editor file category from a file name extension
 export const getFileTypeByExtension = (fileName = '') => {
   if (!fileName || typeof fileName !== 'string' || !fileName.includes('.')) {
     return 'unsupported';

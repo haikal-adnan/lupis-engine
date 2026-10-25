@@ -1,9 +1,11 @@
+// Subsystem handler providing asset resolution and identifier lookup for script nodes
 export class AssetContextHandler {
   constructor(contextSystem) {
     this.contextSystem = contextSystem;
     this.game = contextSystem.game;
   }
 
+  // Searches asset registry by UUID, scriptId, or slugified name
   getAsset(idOrScriptId) {
     if (!idOrScriptId) return null;
     const world = this.game?.world;
@@ -21,6 +23,7 @@ export class AssetContextHandler {
     ) || null;
   }
 
+  // Resolves a human-readable scriptId or reference into its canonical asset UUID
   resolveId(idOrScriptId) {
     if (!idOrScriptId) return null;
     const world = this.game?.world;

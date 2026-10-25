@@ -1,4 +1,5 @@
 export { useAnimatorLogic } from '@animators/composables/useAnimatorLogic.js'
+export { useAnimatorActions } from '@animators/composables/useAnimatorActions.js'
 export { useAnimatorMenu } from '@animators/composables/useAnimatorMenu.js'
 
 export { default as AnimatorClip } from '@animators/layouts/AnimatorClip.vue'

@@ -123,7 +123,7 @@ import { Layers, Copy, Trash2, Eye, EyeOff, Lock, Unlock, Power } from 'lucide-v
 
 import { useInspectorSelection } from "@inspectors/inspectors.js";
 
-import { useSceneStore } from '@scenes/scenes.js';
+import { useSceneStore, useLayerActions } from '@scenes/scenes.js';
 
 import { 
   useClipboard,
@@ -146,6 +146,7 @@ const { selectedLayerId } = useInspectorSelection()
 
 const { handleCopyId } = useWorkspaceActions()
 const sceneStore = useSceneStore()
+const { updateLayerProp, deleteLayer } = useLayerActions()
 const { copy } = useClipboard()
 const { confirm } = useConfirm()
 const { showPop } = usePopAlert()
@@ -190,29 +191,29 @@ const commitScriptId = () => {
     localScriptId.value = originalId
     setTimeout(() => { hasIdError.value = false }, 1000)
   } else {
-    sceneStore.updateLayerProp(layer.value.id, 'scriptId', newId)
+    updateLayerProp(layer.value.id, 'scriptId', newId)
   }
 }
 
 
 const zIndex = computed({
   get: () => layer.value?.zIndex ?? 0,
-  set: (val) => { if (layer.value) sceneStore.updateLayerProp(layer.value.id, 'zIndex', val) }
+  set: (val) => { if (layer.value) updateLayerProp(layer.value.id, 'zIndex', val) }
 })
 
 const active = computed({
   get: () => layer.value?.active ?? true,
-  set: (val) => { if (layer.value) sceneStore.updateLayerProp(layer.value.id, 'active', val) }
+  set: (val) => { if (layer.value) updateLayerProp(layer.value.id, 'active', val) }
 })
 
 const visible = computed({
   get: () => layer.value?.visible ?? true,
-  set: (val) => { if (layer.value) sceneStore.updateLayerProp(layer.value.id, 'visible', val) }
+  set: (val) => { if (layer.value) updateLayerProp(layer.value.id, 'visible', val) }
 })
 
 const locked = computed({
   get: () => layer.value?.locked ?? false,
-  set: (val) => { if (layer.value) sceneStore.updateLayerProp(layer.value.id, 'locked', val) }
+  set: (val) => { if (layer.value) updateLayerProp(layer.value.id, 'locked', val) }
 })
 
 const displayOpacity = computed({
@@ -222,7 +223,7 @@ const displayOpacity = computed({
   set: (val) => {
     if (layer.value) {
       const rawVal = parseFloat((val / 100).toFixed(2));
-      sceneStore.updateLayerProp(layer.value.id, 'opacity', rawVal);
+      updateLayerProp(layer.value.id, 'opacity', rawVal);
     }
   }
 });
@@ -239,7 +240,7 @@ const onDelete = async () => {
     type: 'danger', 
     confirmText: 'Delete' 
   })) {
-    sceneStore.deleteLayer(layer.value.id)
+    deleteLayer(layer.value.id)
     sceneStore.clearSelection()
   }
 }

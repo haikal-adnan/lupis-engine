@@ -1,5 +1,3 @@
-// Location: src/editor/nodes/composables/useNodeInspector.js
-
 import { computed } from 'vue';
 import { useScriptStore } from '@scripts/scripts.js';
 import { useScriptHistory } from '@historys/historys.js';
@@ -7,13 +5,13 @@ import { usePopAlert } from '@composables/composables.js';
 import { useVariableConfig, useNodeLogic, useDynamicPortManager } from '@nodes/nodes.js';
 import { GenerateUUID } from '@utils/utils.js';
 
+// Manages inspector state, field binding, value mode toggling, and edge pruning
 export function useNodeInspector(props = {}) {
   const scriptStore = useScriptStore();
   const scriptHistory = useScriptHistory();
   const { showPop } = usePopAlert();
   const { getVarColor } = useVariableConfig();
 
-  // Custom value synchronization delegated directly to unified Dynamic Port Manager
   const { handleNodeValueSync } = useDynamicPortManager();
 
   const { 
@@ -31,6 +29,7 @@ export function useNodeInspector(props = {}) {
   const startScriptTransaction = scriptHistory.startTransaction;
   const endScriptTransactionWithDelay = scriptHistory.endTransactionWithDelay;
 
+  // Resolves the currently inspected node from props or active script selection
   const node = computed(() => {
     if (props.node) return props.node;
     if (!scriptStore.activeScript || !scriptStore.selectedNodeId) return null;
@@ -46,6 +45,7 @@ export function useNodeInspector(props = {}) {
 
   const isNotSet = (value) => value === undefined || value === null || value === '';
 
+  // Tests whether a port value is missing while not wired
   const isErrorNotSet = (key, value = null) => {
     if (String(key).startsWith('targetEntity') || String(key).startsWith('targetLayer')) return false;
     const mode = getMode(key);
@@ -57,6 +57,7 @@ export function useNodeInspector(props = {}) {
     return isNotSet(val);
   };
 
+  // Severs connected edges if the new data type is incompatible
   const disconnectInvalidEdges = (portId, newDataType = null) => {
     if (!node.value || !scriptStore.activeScript?.edges) return;
 
@@ -138,6 +139,7 @@ export function useNodeInspector(props = {}) {
     return { type: 'none', value: 0 };
   }
 
+  // Updates nested path on node and records history
   function updateNodeDataField(path, newValue) {
     if (!node.value) return;
     const oldValue = path.split('.').reduce((o, i) => o?.[i], node.value);
@@ -156,7 +158,6 @@ export function useNodeInspector(props = {}) {
     const currentValues = node.value?.data?.values || {};
     updateNodeDataField('data.values', { ...currentValues, [key]: value });
 
-    // Delegate custom value synchronization (e.g. parse keys for event_on_key)
     handleNodeValueSync(node.value, key, value, disconnectInvalidEdges);
   }
 
@@ -186,6 +187,7 @@ export function useNodeInspector(props = {}) {
     updateNodeDataField('data.variableModifiers', updatedMods);
   }
 
+  // Creates two-way reactive computed binding to nested node property
   function bindNodeProp(path) {
     return computed({
       get: () => {
@@ -261,7 +263,6 @@ export function useNodeInspector(props = {}) {
     disconnectInvalidEdges,
     deleteSelectedNode,
 
-    // Dynamic Port Controls
     activeDropdownTarget,
     availableOptions,
     effectiveDynamicMode,

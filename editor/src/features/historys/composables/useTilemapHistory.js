@@ -1,5 +1,5 @@
 import { useHistory } from '@historys/historys.js';
-import { useSceneStore } from '@scenes/scenes.js';
+import { useSceneStore, useEntityActions } from '@scenes/scenes.js';
 import { engineBridge } from '@engines/engines.js';
 
 let activeTransaction = null;
@@ -38,6 +38,7 @@ if (typeof window !== 'undefined' && !window.__TILEMAP_HISTORY_LISTENERS_SET__) 
 export function useTilemapHistory() {
   const { record, undo, redo, logHistory } = useHistory();
   const sceneStore = useSceneStore();
+  const { updateComponentProp } = useEntityActions();
 
   const deepClone = (data) => (data ? JSON.parse(JSON.stringify(data)) : null);
 
@@ -70,13 +71,13 @@ export function useTilemapHistory() {
       type: 'CHANGE_TILEMAP_DATA',
       description: `${description} on ${entityId}`,
       undo: () => {
-        sceneStore.updateComponentProp(entityId, 'Tilemap', 'data', deepClone(initialData));
+        updateComponentProp(entityId, 'Tilemap', 'data', deepClone(initialData));
         if (sceneStore.activeSceneId === targetSceneId) {
           engineBridge.updateComponentProp({ entityId, componentName: 'Tilemap', path: 'data', value: deepClone(initialData) });
         }
       },
       redo: () => {
-        sceneStore.updateComponentProp(entityId, 'Tilemap', 'data', deepClone(finalData));
+        updateComponentProp(entityId, 'Tilemap', 'data', deepClone(finalData));
         if (sceneStore.activeSceneId === targetSceneId) {
           engineBridge.updateComponentProp({ entityId, componentName: 'Tilemap', path: 'data', value: deepClone(finalData) });
         }
@@ -100,13 +101,13 @@ export function useTilemapHistory() {
       type: 'CHANGE_TILEMAP_DATA',
       description: `${description} on ${entityId}`,
       undo: () => {
-        sceneStore.updateComponentProp(entityId, 'Tilemap', 'data', deepClone(clonedOldData));
+        updateComponentProp(entityId, 'Tilemap', 'data', deepClone(clonedOldData));
         if (sceneStore.activeSceneId === targetSceneId) {
           engineBridge.updateComponentProp({ entityId, componentName: 'Tilemap', path: 'data', value: deepClone(clonedOldData) });
         }
       },
       redo: () => {
-        sceneStore.updateComponentProp(entityId, 'Tilemap', 'data', deepClone(clonedNewData));
+        updateComponentProp(entityId, 'Tilemap', 'data', deepClone(clonedNewData));
         if (sceneStore.activeSceneId === targetSceneId) {
           engineBridge.updateComponentProp({ entityId, componentName: 'Tilemap', path: 'data', value: deepClone(clonedNewData) });
         }
@@ -141,7 +142,7 @@ export function useTilemapHistory() {
         if (!scene) return;
 
         const valToApply = deepClone(originalOldValue);
-        sceneStore.updateComponentProp(entityId, 'Tilemap', propPath, valToApply);
+        updateComponentProp(entityId, 'Tilemap', propPath, valToApply);
 
         if (sceneStore.activeSceneId === targetSceneId) {
           engineBridge.updateComponentProp({
@@ -157,7 +158,7 @@ export function useTilemapHistory() {
         if (!scene) return;
 
         const valToApply = deepClone(clonedNewValue);
-        sceneStore.updateComponentProp(entityId, 'Tilemap', propPath, valToApply);
+        updateComponentProp(entityId, 'Tilemap', propPath, valToApply);
 
         if (sceneStore.activeSceneId === targetSceneId) {
           engineBridge.updateComponentProp({

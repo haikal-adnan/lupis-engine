@@ -1,3 +1,5 @@
+// Workspace layout, document tabs, dock navigation, and tool selections.
+
 import { defineStore } from 'pinia';
 import { markRaw } from 'vue'; 
 import { useSceneStore } from '@scenes/scenes.js'; 
@@ -15,7 +17,6 @@ export const useWorkspaceStore = defineStore('workspace', {
     loadingMessage: '',
     error: null,
 
-    // PERSISTENSI: Ambil fallback nilai awal dari localStorage
     activeProjectId: localStorage.getItem('lupis_activeProjectId') || null,
     
     clipboard: {
@@ -53,13 +54,16 @@ export const useWorkspaceStore = defineStore('workspace', {
 
   getters: {
     isEngineReady: (state) => state.engine !== null, 
+
     assetBaseUrl: (state) => {
-        if (!state.activeProjectId) return '';
-        return `${state.config.cdnUrl}/projects/${state.activeProjectId}/`;
+      if (!state.activeProjectId) return '';
+      return `${state.config.cdnUrl}/projects/${state.activeProjectId}/`;
     },
+
     activeTab: (state) => {
-        return state.tabs.find(t => t.id === state.activeTabId) || state.tabs[0];
+      return state.tabs.find(t => t.id === state.activeTabId) || state.tabs[0];
     },
+
     currentBottomTab: (state) => state.activeBottomTabId,
     hasClipboardData: (state) => !!state.clipboard.data,
     hasTileSelection: (state) => !!state.tileSelection,
@@ -95,6 +99,7 @@ export const useWorkspaceStore = defineStore('workspace', {
       this.engine = instance ? markRaw(instance) : null;
     },
 
+    // Updates active project ID and persists to localStorage
     setProjectId(id) {
       this.activeProjectId = id;
       if (id) {
@@ -165,33 +170,32 @@ export const useWorkspaceStore = defineStore('workspace', {
       this.isSettingsModalOpen = !this.isSettingsModalOpen;
     },
 
+    // Switches active tab and resets tab-specific bottom panels
     setActiveTab(id) {
-      const currentTab = this.tabs.find(t => t.id === this.activeTabId)
-      const nextTab = this.tabs.find(t => t.id === id)
+      const currentTab = this.tabs.find(t => t.id === this.activeTabId);
+      const nextTab = this.tabs.find(t => t.id === id);
 
-      if (!nextTab) return
+      if (!nextTab) return;
 
       if (nextTab.type === 'animator') {
-        const sceneStore = useSceneStore()
-        const entity = sceneStore.activeScene?.entities?.find(e => e.id === nextTab.id)
+        const sceneStore = useSceneStore();
+        const entity = sceneStore.activeScene?.entities?.find(e => e.id === nextTab.id);
         if (!entity || entity.prefabId || !entity.components?.SpriteAnimator) {
-          this.closeTab(nextTab.id)
-          return
+          this.closeTab(nextTab.id);
+          return;
         }
       }
 
-      // If switching between different tab types
       if (currentTab && currentTab.type !== nextTab.type) {
-        const specificTabs = TAB_SPECIFIC_BOTTOM_TABS[currentTab.type] || []
+        const specificTabs = TAB_SPECIFIC_BOTTOM_TABS[currentTab.type] || [];
 
-        // If current bottom bar is specific to previous editor (e.g. timeline in animator)
         if (specificTabs.includes(this.activeBottomTabId)) {
-          this.isBottomBarOpen = false
-          this.activeBottomTabId = 'assets' // reset to general tab
+          this.isBottomBarOpen = false;
+          this.activeBottomTabId = 'assets';
         }
       }
 
-      this.activeTabId = id
+      this.activeTabId = id;
     },
   
     closeTab(id) {
@@ -220,6 +224,7 @@ export const useWorkspaceStore = defineStore('workspace', {
       }
     },
 
+    // Updates tile selection rect and switches tool to brush
     setTileSelection(rect) {
       this.tileSelection = rect;
       if (rect) this.activeTool = 'brush';

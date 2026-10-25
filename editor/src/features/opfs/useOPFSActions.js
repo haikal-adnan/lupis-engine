@@ -1,3 +1,5 @@
+// OPFS file operations, directory scanning, and project import/export.
+
 import { computed } from 'vue';
 import JSZip from 'jszip';
 import { useOPFSStore, getFileTypeByExtension } from '@opfs/opfs.js';
@@ -23,6 +25,7 @@ export function useOPFSActions() {
     return await appDir.getDirectoryHandle('projects', { create: true });
   };
 
+  // Traverses relative path segments, creating intermediate directories if needed
   const resolveDirectoryPath = async (baseHandle, targetPath, options = { create: true }) => {
     const parts = Array.isArray(targetPath) 
       ? targetPath 
@@ -35,6 +38,7 @@ export function useOPFSActions() {
     return currentDir;
   };
 
+  // Writes binary or text content to a named file handle
   const writeFileToHandle = async (dirHandle, fileName, content) => {
     const fileHandle = await dirHandle.getFileHandle(fileName, { create: true });
     const writable = await fileHandle.createWritable();
@@ -56,6 +60,7 @@ export function useOPFSActions() {
     return URL.createObjectURL(file);
   };
 
+  // Recursively scans a directory handle and returns a sorted tree
   const scanDirectory = async (dirHandle, path = '') => {
     const items = [];
     if (typeof dirHandle.entries !== 'function') return items;
@@ -105,6 +110,7 @@ export function useOPFSActions() {
     }
   };
 
+  // Reads file content or creates blob URL depending on file type
   const openFile = async (fileItem) => {
     opfsStore.setLoading(true);
     try {
@@ -127,6 +133,7 @@ export function useOPFSActions() {
     }
   };
 
+  // Flushes active file buffer back to OPFS
   const saveActiveFile = async (contentOverride = null) => {
     if (!opfsStore.activeFile || !opfsStore.activeFile.handle) {
       showPop({ title: 'Failed to Save File', message: 'No active file to save.', type: 'error' });
@@ -179,6 +186,7 @@ export function useOPFSActions() {
     }
   };
 
+  // Deletes an entry and clears the active editor tab if opened
   const deleteEntry = async (item) => {
     opfsStore.setLoading(true);
     try {
@@ -208,6 +216,7 @@ export function useOPFSActions() {
     }
   };
 
+  // Saves dropped files into OPFS, filtering unsupported extensions
   const handleDropFiles = async (files, targetDirPath = '') => {
     opfsStore.setLoading(true);
     const saved = [];
@@ -258,6 +267,7 @@ export function useOPFSActions() {
     }
   };
 
+  // Recursively adds OPFS directory contents into a zip folder
   const _addDirectoryToZip = async (dirHandle, zipFolder) => {
     for await (const [name, handle] of dirHandle.entries()) {
       if (handle.kind === 'file') {
@@ -269,6 +279,7 @@ export function useOPFSActions() {
     }
   };
 
+  // Extracts zip entries into an OPFS directory handle
   const _writeZipEntryToOPFS = async (zipObject, targetDirHandle) => {
     for (const relativePath of Object.keys(zipObject.files)) {
       const entry = zipObject.files[relativePath];
@@ -286,6 +297,7 @@ export function useOPFSActions() {
     }
   };
 
+  // Packages and encodes a project into a .lupisproject download
   const exportToLupisProject = async (projectId = null) => {
     opfsStore.setLoading(true);
     try {
@@ -340,6 +352,7 @@ export function useOPFSActions() {
     }
   };
 
+  // Decodes and extracts a .lupisproject archive into OPFS storage
   const importFromLupisProject = async (file) => {
     opfsStore.setLoading(true);
     try {

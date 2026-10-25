@@ -1,10 +1,7 @@
 import { calculateQuadVertices } from "../../Util/calculateQuadVertices.js";
 import RenderUtils from "../../Renderer/Scene/RenderUtils.js";
 
-/**
- * Pure function: Calculates Axis-Aligned Bounding Box (AABB) for a given UI entity.
- * Works with or without a TransformGeometry helper instance.
- */
+// Calculates Axis-Aligned Bounding Box (AABB) for a UI entity
 export function calculateEntityAABB(entity, world = null, geometry = null) {
     if (!entity) return null;
     const comps = entity.components || {};
@@ -72,10 +69,7 @@ export function calculateEntityAABB(entity, world = null, geometry = null) {
     };
 }
 
-/**
- * Pure function: Given start bounds, translation delta (rawDx, rawDy),
- * candidate bounding boxes, and canvas bounds, computes snapped delta and active guide lines.
- */
+// Computes snapped translation delta and active guide lines against candidates and canvas bounds
 export function findSnapAdjustment({
     startBounds,
     rawDx,
@@ -107,9 +101,7 @@ export function findSnapAdjustment({
         allTargets.push(c);
     }
 
-    // ----------------------------------------------------
-    // X AXIS SNAPPING
-    // ----------------------------------------------------
+    // X-axis snapping
     const draggedXPoints = [
         { type: 'left', val: currentBounds.left },
         { type: 'centerX', val: currentBounds.centerX },
@@ -149,9 +141,7 @@ export function findSnapAdjustment({
 
     const finalDx = snappedValX !== null ? rawDx + bestDiffX : rawDx;
 
-    // ----------------------------------------------------
-    // Y AXIS SNAPPING
-    // ----------------------------------------------------
+    // Y-axis snapping
     const draggedYPoints = [
         { type: 'top', val: currentBounds.top },
         { type: 'centerY', val: currentBounds.centerY },
@@ -191,9 +181,7 @@ export function findSnapAdjustment({
 
     const finalDy = snappedValY !== null ? rawDy + bestDiffY : rawDy;
 
-    // ----------------------------------------------------
-    // GENERATE ALIGNMENT GUIDE LINES
-    // ----------------------------------------------------
+    // Alignment guide line generation
     const snappedBounds = {
         left: startBounds.left + finalDx,
         right: startBounds.right + finalDx,
@@ -267,9 +255,7 @@ export function findSnapAdjustment({
     };
 }
 
-/**
- * Pure function: Computes snap adjustments during resizing of an edge/corner handle.
- */
+// Computes snap adjustments during edge or corner handle resizing
 export function findResizeSnapAdjustment({
     startBounds,
     rawDx,
@@ -403,9 +389,7 @@ export function findResizeSnapAdjustment({
     return { dx: finalDx, dy: finalDy, guides };
 }
 
-/**
- * UISmartGuides Class: Integrates Smart Guides calculation & rendering for Lupis Engine's UI Tab.
- */
+// Manages Smart Guides calculation and rendering for the editor UI tab
 export class UISmartGuides {
     constructor(world, game, geometry) {
         this.world = world;
@@ -417,8 +401,6 @@ export class UISmartGuides {
         this.candidates = [];
         this.activeGuides = [];
         this.resizeType = null;
-
-        // Selection blue line color: [0, 0.6, 1, 1]
         this.lineColor = [0, 0.6, 1, 1];
     }
 

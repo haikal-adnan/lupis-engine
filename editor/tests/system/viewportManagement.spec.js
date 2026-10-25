@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 
-import { useSceneStore } from '@scenes/scenes.js'
+import { useSceneStore, useEntityActions } from '@scenes/scenes.js'
 import { useProjectStore } from '@projects/projects.js'
 import { useWorkspaceStore } from '@workspaces/workspaces.js'
 import { useAssetStore } from '@assets/assets.js'
@@ -160,7 +160,7 @@ describe('Canvas Management & Engine Sync Integration', () => {
       const entity = createMockEntity({ id: 'ent_store_mod_1' })
       setupMockSceneEnvironment({ entities: [entity] })
 
-      sceneStore.updateEntityScriptId('ent_store_mod_1', 'renamed_hero')
+      useEntityActions().updateEntityScriptId('ent_store_mod_1', 'renamed_hero')
 
       // Assert
       expect(engineBridge.updateEntityScriptId).toHaveBeenCalledWith('ent_store_mod_1', 'renamed_hero')

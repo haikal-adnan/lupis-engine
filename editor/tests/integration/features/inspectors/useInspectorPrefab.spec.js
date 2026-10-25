@@ -3,7 +3,8 @@ import { setActivePinia, createPinia } from 'pinia'
 import { ref } from 'vue'
 
 import { useInspectorPrefab } from '@inspectors/inspectors.js'
-import { useSceneStore } from '@scenes/scenes.js'
+import { useSceneStore, useEntityActions } from '@scenes/scenes.js'
+import * as scenesModule from '@scenes/scenes.js'
 import { usePrefabStore } from '@prefabs/prefabs.js'
 import { useWorkspaceStore } from '@workspaces/workspaces.js'
 import { useProjectStore, projectSchema } from '@projects/projects.js'
@@ -20,6 +21,7 @@ describe('useInspectorPrefab Integration', () => {
   let prefabStore
   let workspaceStore
   let projectStore
+  let entityActions
 
   let selectedEntityRef
   let isEditingMasterPrefabRef
@@ -34,6 +36,8 @@ describe('useInspectorPrefab Integration', () => {
     prefabStore = usePrefabStore()
     workspaceStore = useWorkspaceStore()
     projectStore = useProjectStore()
+    entityActions = scenesModule.useEntityActions()
+    vi.spyOn(scenesModule, 'useEntityActions').mockReturnValue(entityActions)
 
     // 3. Mock confirm dialog
     vi.spyOn(composables, 'useConfirm').mockReturnValue({
@@ -254,7 +258,7 @@ describe('useInspectorPrefab Integration', () => {
       setupMockSceneEnvironment({ entities: [parentPrefab, child] })
       selectedEntityRef.value = sceneStore.activeScene.entities[1]
 
-      const spyAdd = vi.spyOn(sceneStore, 'addComponent')
+      const spyAdd = vi.spyOn(entityActions, 'addComponent')
 
       const { addComponentToSelection } = setupPrefabBinding()
 
@@ -268,7 +272,7 @@ describe('useInspectorPrefab Integration', () => {
       setupMockSceneEnvironment({ entities: [regularEntity] })
       selectedEntityRef.value = sceneStore.activeScene.entities[0]
 
-      const spyAdd = vi.spyOn(sceneStore, 'addComponent').mockImplementation(() => {})
+      const spyAdd = vi.spyOn(entityActions, 'addComponent').mockImplementation(() => {})
 
       const { addComponentToSelection } = setupPrefabBinding()
 

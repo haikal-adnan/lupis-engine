@@ -1,5 +1,6 @@
 import { GenerateUUID } from '@utils/utils.js';
 
+// Normalizes root project settings, global variables, tags, and scene registries
 export const projectSchema = (data = {}) => {
   const defaultScenes = data.scenes || [];
   const firstSceneId = defaultScenes.length > 0 

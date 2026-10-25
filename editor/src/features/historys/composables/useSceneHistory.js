@@ -1,5 +1,5 @@
 import { useHistory } from '@historys/historys.js';
-import { useSceneStore } from '@scenes/scenes.js';
+import { useSceneStore, useEntityActions, useLayerActions } from '@scenes/scenes.js';
 import { engineBridge } from '@engines/engines.js';
 import { usePrefabStore } from '@prefabs/prefabs.js';
 
@@ -46,6 +46,8 @@ if (typeof window !== 'undefined' && !window.__HISTORY_LISTENERS_SET__) {
 export function useSceneHistory() {
   const { record, undo, redo, logHistory } = useHistory();
   const sceneStore = useSceneStore();
+  const entityActions = useEntityActions();
+  const layerActions = useLayerActions();
   const prefabStore = usePrefabStore();
 
   const deepClone = (data) => (data ? JSON.parse(JSON.stringify(data)) : null);
@@ -96,7 +98,7 @@ export function useSceneHistory() {
       undo: () => {
         const scene = sceneStore.getSceneById(targetSceneId);
         if (!scene) return;
-        sceneStore.updateComponentProp(entityId, componentName, propPath, originalOldValue);
+        entityActions.updateComponentProp(entityId, componentName, propPath, originalOldValue);
         if (sceneStore.activeSceneId === targetSceneId) {
           engineBridge.updateComponentProp({ entityId, componentName, path: propPath, value: originalOldValue });
         }
@@ -104,7 +106,7 @@ export function useSceneHistory() {
       redo: () => {
         const scene = sceneStore.getSceneById(targetSceneId);
         if (!scene) return;
-        sceneStore.updateComponentProp(entityId, componentName, propPath, newValue);
+        entityActions.updateComponentProp(entityId, componentName, propPath, newValue);
         if (sceneStore.activeSceneId === targetSceneId) {
           engineBridge.updateComponentProp({ entityId, componentName, path: propPath, value: newValue });
         }
@@ -119,8 +121,8 @@ export function useSceneHistory() {
     record({
       type: 'ADD_COMPONENT',
       description: `Add ${componentName} to ${entityId}`,
-      undo: () => sceneStore.removeComponent(entityId, componentName, false),
-      redo: () => sceneStore.addComponent(entityId, componentName, null, false)
+      undo: () => entityActions.removeComponent(entityId, componentName, false),
+      redo: () => entityActions.addComponent(entityId, componentName, null, false)
     });
   };
 
@@ -132,8 +134,8 @@ export function useSceneHistory() {
     record({
       type: 'REMOVE_COMPONENT',
       description: `Remove ${componentName} from ${entityId}`,
-      undo: () => sceneStore.addComponent(entityId, componentName, clonedData, false),
-      redo: () => sceneStore.removeComponent(entityId, componentName, false)
+      undo: () => entityActions.addComponent(entityId, componentName, clonedData, false),
+      redo: () => entityActions.removeComponent(entityId, componentName, false)
     });
   };
 
@@ -164,7 +166,7 @@ export function useSceneHistory() {
         const scene = sceneStore.getSceneById(targetSceneId);
         if (!scene) return;
         clonedEntities.forEach((ent) => {
-          if (sceneStore.restoreEntity) sceneStore.restoreEntity(ent);
+          if (entityActions.restoreEntity) entityActions.restoreEntity(ent);
           else scene.entities.push(ent);
 
           if (sceneStore.activeSceneId === targetSceneId) engineBridge.createEntity(ent);
@@ -172,7 +174,7 @@ export function useSceneHistory() {
       },
       redo: () => {
         clonedEntities.forEach((ent) => {
-          sceneStore.deleteEntity(ent.id, false);
+          entityActions.deleteEntity(ent.id, false);
           if (sceneStore.activeSceneId === targetSceneId) engineBridge.deleteEntity(ent.id);
         });
       }
@@ -189,13 +191,13 @@ export function useSceneHistory() {
       type: 'CREATE_ENTITY',
       description: `Create entity ${cloned.name || cloned.id}`,
       undo: () => {
-        sceneStore.deleteEntity(cloned.id, false);
+        entityActions.deleteEntity(cloned.id, false);
         if (sceneStore.activeSceneId === targetSceneId) engineBridge.deleteEntity(cloned.id);
       },
       redo: () => {
         const scene = sceneStore.getSceneById(targetSceneId);
         if (!scene) return;
-        if (sceneStore.restoreEntity) sceneStore.restoreEntity(cloned);
+        if (entityActions.restoreEntity) entityActions.restoreEntity(cloned);
         else scene.entities.push(cloned);
 
         if (sceneStore.activeSceneId === targetSceneId) engineBridge.createEntity(cloned);
@@ -228,7 +230,7 @@ export function useSceneHistory() {
         const scene = sceneStore.getSceneById(targetSceneId);
         if (!scene) return;
 
-        sceneStore.moveEntity(draggedId, oldContext, false);
+        entityActions.moveEntity(draggedId, oldContext, false);
 
         if (oldTransform && compName) {
           const ent = scene.entities.find(e => e.id === draggedId);
@@ -261,7 +263,7 @@ export function useSceneHistory() {
         const scene = sceneStore.getSceneById(targetSceneId);
         if (!scene) return;
 
-        sceneStore.moveEntity(draggedId, newContext, false);
+        entityActions.moveEntity(draggedId, newContext, false);
 
         if (newTransform && compName) {
           const ent = scene.entities.find(e => e.id === draggedId);
@@ -301,13 +303,13 @@ export function useSceneHistory() {
       type: 'CHANGE_PROP',
       description: `Change ${propName} on ${id}`,
       undo: () => {
-        sceneStore.updateEntityProp(id, propName, oldValue, false);
+        entityActions.updateEntityProp(id, propName, oldValue, false);
         if (sceneStore.activeSceneId === targetSceneId) {
           engineBridge.updateEntityProp({ id, prop: propName, value: oldValue });
         }
       },
       redo: () => {
-        sceneStore.updateEntityProp(id, propName, newValue, false);
+        entityActions.updateEntityProp(id, propName, newValue, false);
         if (sceneStore.activeSceneId === targetSceneId) {
           engineBridge.updateEntityProp({ id, prop: propName, value: newValue });
         }
@@ -324,8 +326,8 @@ export function useSceneHistory() {
     record({
       type: 'ADD_LAYER',
       description: `Add layer ${clonedLayer.name}`,
-      undo: () => sceneStore.deleteLayer(clonedLayer.id, false),
-      redo: () => sceneStore.restoreLayer(clonedLayer, section)
+      undo: () => layerActions.deleteLayer(clonedLayer.id, false),
+      redo: () => layerActions.restoreLayer(clonedLayer, section)
     });
   };
 
@@ -340,14 +342,14 @@ export function useSceneHistory() {
       type: 'DELETE_LAYER',
       description: `Delete layer ${clonedLayer.name}`,
       undo: () => {
-        sceneStore.restoreLayer(clonedLayer, section);
+        layerActions.restoreLayer(clonedLayer, section);
         const scene = sceneStore.getSceneById(targetSceneId);
         if (scene && clonedEntities.length > 0) {
           scene.entities.push(...clonedEntities);
           if (sceneStore.activeSceneId === targetSceneId) engineBridge.createEntity(clonedEntities);
         }
       },
-      redo: () => sceneStore.deleteLayer(clonedLayer.id, false)
+      redo: () => layerActions.deleteLayer(clonedLayer.id, false)
     });
   };
 
@@ -358,8 +360,8 @@ export function useSceneHistory() {
     record({
       type: 'CHANGE_LAYER_PROP',
       description: `Change layer ${propName} on ${layerId}`,
-      undo: () => sceneStore.updateLayerProp(layerId, propName, oldValue, false),
-      redo: () => sceneStore.updateLayerProp(layerId, propName, newValue, false)
+      undo: () => layerActions.updateLayerProp(layerId, propName, oldValue, false),
+      redo: () => layerActions.updateLayerProp(layerId, propName, newValue, false)
     });
   };
 
@@ -373,8 +375,8 @@ export function useSceneHistory() {
     record({
       type: 'REORDER_LAYER',
       description: `Reorder layer ${draggedId}`,
-      undo: () => sceneStore.applyLayerOrderState(oldCloned),
-      redo: () => sceneStore.applyLayerOrderState(newCloned)
+      undo: () => layerActions.applyLayerOrderState(oldCloned),
+      redo: () => layerActions.applyLayerOrderState(newCloned)
     });
   };
 
@@ -443,7 +445,7 @@ export function useSceneHistory() {
 
         const idsToDelete = clonedEntities.map(e => e.id);
         idsToDelete.forEach(id => {
-          sceneStore.deleteEntity(id, false);
+          entityActions.deleteEntity(id, false);
           if (sceneStore.activeSceneId === targetSceneId) {
             engineBridge.deleteEntity(id);
           }

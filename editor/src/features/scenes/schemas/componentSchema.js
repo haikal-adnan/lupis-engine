@@ -1,6 +1,8 @@
 import { GenerateUUID, sanitizeScriptId } from '@utils/utils.js';
 
+// ECS Component schema factories and sanitizers
 export const componentSchema = {
+  // 2D position, scale, rotation, and dimensions
   Transform: (data = {}, defaults = { width: 100, height: 100 }) => ({
     x: Number(data.x ?? 0),
     y: Number(data.y ?? 0),
@@ -18,6 +20,7 @@ export const componentSchema = {
     overridden: Boolean(data.overridden ?? false)
   }),
 
+  // Extends Transform with normalized parent anchor coordinates
   UITransform: (data = {}, defaults = { width: 160, height: 40 }) => ({
     ...componentSchema.Transform(data, defaults),
     anchorX: Number(data.anchorX ?? 0.5),
@@ -25,6 +28,7 @@ export const componentSchema = {
     overridden: Boolean(data.overridden ?? false)
   }),
 
+  // Audio emitter for playback, spatialization, volume, and looping
   Audio: (data = {}) => {
     const validTypes = ['background', 'sfx', 'voice'];
     const rawType = data.audioType || data.type || 'sfx';
@@ -50,6 +54,7 @@ export const componentSchema = {
     };
   },
 
+  // Geometric solid, trigger, hitbox, or hurtbox shapes
   Collider: (data = {}) => {
     const validTypes = ['solid', 'trigger', 'hitbox', 'hurtbox'];
     const formatShape = (shape = {}, index = 0) => {
@@ -90,6 +95,7 @@ export const componentSchema = {
     };
   },
 
+  // Rigid body velocity, gravity, damping, and platformer/topdown movement
   Physics: (data = {}) => {
     const defaultMotionMode = data.motionMode || (Number(data.gravityScale ?? 1.0) === 0 ? "topdown" : "platformer");
     const defaultGravity = defaultMotionMode === "topdown" ? 0 : Number(data.gravityScale ?? 1.0);
@@ -116,6 +122,7 @@ export const componentSchema = {
     };
   },
 
+  // Sprite animation clips, timelines, and playback state
   SpriteAnimator: (data = {}) => {
     const rawClips = Array.isArray(data.clips)
       ? data.clips
@@ -155,6 +162,7 @@ export const componentSchema = {
     };
   },
 
+  // Static textures or sub-regions of texture atlases
   SpriteRenderer: (inputData = {}) => ({
     assetId: inputData.assetId || null,
     sourceX: Number(inputData.sourceX ?? 0),
@@ -169,6 +177,7 @@ export const componentSchema = {
     overridden: Boolean(inputData.overridden ?? false)
   }),
 
+  // MSDF text typography, alignment, wrapping, and drop shadows
   TextRenderer: (inputData = {}) => ({
     value: inputData.value || "New Text",
     mode: inputData.mode || "static",
@@ -195,6 +204,7 @@ export const componentSchema = {
     overridden: Boolean(inputData.overridden ?? false)
   }),
 
+  // Custom 2D vector polygons, points, fills, and strokes
   ShapeRenderer: (inputData = {}) => {
     let elements = Array.isArray(inputData.elements) ? inputData.elements : [];
 
@@ -237,6 +247,7 @@ export const componentSchema = {
     };
   },
 
+  // Grid tile layers and collision settings
   Tilemap: (inputData = {}) => ({
     width: Number(inputData.width ?? inputData.tileWidth ?? 16),
     height: Number(inputData.height ?? inputData.tileHeight ?? 16),
@@ -251,12 +262,14 @@ export const componentSchema = {
     overridden: Boolean(inputData.overridden ?? false)
   }),
 
+  // Visual scripting graphs attached to entity
   ScriptController: (inputData = {}) => ({
     data: Array.isArray(inputData.data) ? inputData.data : [],
     ...inputData,
     overridden: Boolean(inputData.overridden ?? false)
   }),
 
+  // Factory creating initialized component by type name
   create: (type, data = {}) => {
     const factory = componentSchema[type];
     if (factory) {

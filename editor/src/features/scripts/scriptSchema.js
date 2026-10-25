@@ -1,6 +1,7 @@
 import { GenerateUUID, sanitizeScriptId } from '@utils/utils.js';
 import { getNodeRole } from '@nodes/contract/nodeRoles.js';
 
+// Graph node pin port factory
 export const createScriptPort = (data = {}) => ({
   id: data.id || GenerateUUID(),
   dataType: data.dataType || "any",
@@ -9,6 +10,7 @@ export const createScriptPort = (data = {}) => ({
   defaultValue: data.defaultValue ?? null
 });
 
+// Script-scoped variable factory
 export const createScriptVariable = (data = {}) => ({
   id: data.id || GenerateUUID(),
   name: sanitizeScriptId(data.name || "new_variable", "new_variable"),
@@ -17,6 +19,7 @@ export const createScriptVariable = (data = {}) => ({
   defaultValue: data.defaultValue ?? 0
 });
 
+// Blueprint graph node factory with port arrays, default values, and placement coordinates
 export const createScriptNode = (data = {}) => {
   const safeData = data.data ? JSON.parse(JSON.stringify(data.data)) : {};
   if (!safeData.values) {
@@ -71,6 +74,7 @@ export const createScriptNode = (data = {}) => {
   };
 };
 
+// Graph connection edge factory
 export const createScriptEdge = (data = {}) => ({
   id: data.id || GenerateUUID(),
   source: data.source,
@@ -80,6 +84,7 @@ export const createScriptEdge = (data = {}) => ({
   modifier: data.modifier ? { ...data.modifier } : {}
 });
 
+// Constructs and normalizes blueprint graphs containing variables, nodes, and edges
 export const scriptSchema = (data = {}) => {
   const scriptId = sanitizeScriptId(
     data.scriptId || `script_${GenerateUUID().slice(0, 8)}`,

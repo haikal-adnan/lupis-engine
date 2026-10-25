@@ -6,6 +6,7 @@ import { useVariableConfig } from '@nodes/nodes.js';
 import { usePopAlert } from '@composables/composables.js';
 import { useScriptHistory } from '@historys/historys.js';
 
+// Manages variable definitions, collections, drag-and-drop, and variable node instantiation
 export function useVariableLogic(scopeProps) {
   const scriptStore = useScriptStore();
   const projectStore = useProjectStore();
@@ -73,6 +74,7 @@ export function useVariableLogic(scopeProps) {
     return newVar;
   };
 
+  // Updates variable property and syncs referencing canvas nodes
   const updateVariable = (indexOrId, key, value) => {
     const newList = JSON.parse(JSON.stringify(variables.value));
     let targetIndex = typeof indexOrId === 'number' ? indexOrId : newList.findIndex(v => v.id === indexOrId);
@@ -165,6 +167,7 @@ export function useVariableLogic(scopeProps) {
     }
   };
 
+  // Syncs all canvas getter/setter nodes bound to the updated variable
   const syncNodesWithVariable = (updatedVar) => {
     if (!scriptStore.activeScript) return;
 
@@ -277,6 +280,7 @@ return;`;
     event.dataTransfer.effectAllowed = 'copy';
   };
 
+  // Spawns a variable getter or setter node directly onto the canvas
   const addNodeToCanvas = (variable, pos = null, actionType = 'variableGet', isScreenPos = false) => {
     if (!scriptStore.activeScript) {
       showPop({

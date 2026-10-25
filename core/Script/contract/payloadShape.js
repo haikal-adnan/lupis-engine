@@ -1,5 +1,6 @@
 export const SCHEMA_VERSION = 3;
 
+// Validates baseline structural integrity of a serialized visual script payload
 export function checkPayloadBasic(payload) {
   if (!payload || typeof payload !== 'object') {
     throw new Error('[PayloadContract] Payload must be an object.');

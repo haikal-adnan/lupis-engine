@@ -1,4 +1,4 @@
-// lokasi: src/editor/scripts/composables/useScriptActions.js
+// Visual script creation, deletion, renaming, cloning, and entity attachment.
 
 import { useScriptStore } from '@scripts/scripts.js';
 import { useSceneStore } from '@scenes/scenes.js';
@@ -29,6 +29,7 @@ export function useScriptActions() {
     return getValidUniqueScriptId(desiredName, scriptStore.scripts, s => s.scriptId, excludeId);
   };
 
+  // Prompts for a script name and saves a new blueprint definition
   const createScript = async (type = 'component', folderId = null) => {
     const projectId = projectStore.activeProject?.id || projectStore.project?.id || null;
     const targetFolderId = folderId !== null ? folderId : (folderStore.activeFolderId || null);
@@ -144,6 +145,7 @@ export function useScriptActions() {
     return clone;
   };
 
+  // Attaches a script to an entity ScriptController with default variable values
   const applyToEntity = (script, entity) => {
     if (!script || !entity) return;
 

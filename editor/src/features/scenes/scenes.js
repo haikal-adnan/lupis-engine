@@ -2,7 +2,6 @@ export { useSceneActions } from '@scenes/composables/actions/useSceneActions.js'
 export { useLayerActions } from '@scenes/composables/actions/useLayerActions.js'
 export { useEntityActions } from '@scenes/composables/actions/useEntityActions.js'
 export { useSettingActions } from '@scenes/composables/actions/useSettingActions.js'
-export { useAnimatorActions } from '@scenes/composables/actions/useAnimatorActions.js'
 
 export { useHierarchyFilter } from '@scenes/composables/useHierarchyFilter.js'
 export { useHierarchyLogic } from '@scenes/composables/useHierarchyLogic.js'

@@ -1,5 +1,6 @@
 import { sanitizeScriptId } from "../Util/identifier.js";
 
+// Core runtime asset schema factory
 export const assetSchema = (data = {}) => {
   const meta = data.meta || {};
   const type = data.type || "texture";
@@ -42,6 +43,7 @@ export const assetSchema = (data = {}) => {
   return asset;
 };
 
+// Creates a default asset instance populated with type-specific fallback metadata
 export const createDefaultAsset = (overrideData = {}) => {
   const type = overrideData.type || "texture";
   const meta = overrideData.meta || {};
@@ -77,6 +79,7 @@ export const createDefaultAsset = (overrideData = {}) => {
   return assetSchema(baseData);
 };
 
+// Built-in default MSDF font asset definition used across all text rendering fallbacks
 export const DEFAULT_SYSTEM_FONT_ASSET = assetSchema({
   id: "system_default",
   scriptId: "system_default_font",
@@ -90,6 +93,7 @@ export const DEFAULT_SYSTEM_FONT_ASSET = assetSchema({
   }
 });
 
+// Standard asset template factories for quick asset prototyping
 export const DEFAULT_ASSET_TEMPLATES = {
   TEXTURE: () => createDefaultAsset({ type: "texture", scriptId: "default_texture" }),
   AUDIO: () => createDefaultAsset({ type: "audio", scriptId: "default_audio" }),

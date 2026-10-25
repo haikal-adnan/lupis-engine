@@ -8,7 +8,7 @@ import {
 } from 'lucide-vue-next'
 import { useAssetActions } from '@assets/assets.js'
 import { useFolderStore, useFolderActions } from '@folders/folders.js';
-import { useSceneStore } from '@scenes/scenes.js';
+import { useSceneStore, useEntityActions } from '@scenes/scenes.js';
 
 import { 
   usePopAlert,
@@ -17,12 +17,14 @@ import {
 } from '@composables/composables.js';
 
 import { useWorkspaceStore } from '@workspaces/workspaces.js';
-import { useAnimatorLogic } from '@animators/animators.js'
+import { useAnimatorLogic, useAnimatorActions } from '@animators/animators.js'
 
 export function useAssetMenu(selectedIdRef, triggerUploadCb, logicActions) {
   const { deleteAsset, renameAsset } = useAssetActions()
   const { createNewFolder, deleteFolder, renameFolder } = useFolderActions()
   const sceneStore = useSceneStore()
+  const { updateComponentProp } = useEntityActions()
+  const { _getAnimatorClips, _saveAnimatorClips } = useAnimatorActions()
   const folderStore = useFolderStore()
   const workspaceStore = useWorkspaceStore()
   const { activeClipId } = useAnimatorLogic()
@@ -59,7 +61,7 @@ export function useAssetMenu(selectedIdRef, triggerUploadCb, logicActions) {
     }
 
     try {
-      sceneStore.updateComponentProp(entityId, componentName, 'assetId', asset.id)
+      updateComponentProp(entityId, componentName, 'assetId', asset.id)
       showPop({ title: 'Success', message: `Applied "${asset.scriptId || asset.id}" to ${componentName}.`, type: 'success' })
     } catch (error) {
       showPop({ title: 'Failed', message: 'Failed to apply asset.', type: 'error' })
@@ -71,13 +73,13 @@ export function useAssetMenu(selectedIdRef, triggerUploadCb, logicActions) {
     const entityId = workspaceStore.activeTab?.id
     if (!entityId || !activeClipId.value) return
 
-    const clips = [...sceneStore._getAnimatorClips(entityId)]
+    const clips = [..._getAnimatorClips(entityId)]
     const clipIndex = clips.findIndex(c => c.id === activeClipId.value)
     
     if (clipIndex !== -1) {
       try {
         clips[clipIndex].assetId = asset.id
-        sceneStore._saveAnimatorClips(entityId, clips)
+        _saveAnimatorClips(entityId, clips)
         showPop({ title: 'Success', message: `Applied texture to clip.`, type: 'success' })
       } catch (error) {
         showPop({ title: 'Error', message: 'Failed to update clip asset.', type: 'error' })

@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 
 // Import target modules langsung dari source file (tanpa barrel)
-import { useSceneStore } from '@scenes/scenes.js'
+import { useSceneStore, useEntityActions } from '@scenes/scenes.js'
 import { useWorkspaceStore } from '@workspaces/workspaces.js'
 import { useAssetStore } from '@assets/assets.js'
 import { engineBridge } from '@engines/engines.js'
@@ -371,7 +371,7 @@ describe('Tilemap Panel System Integration Test', () => {
       // Wire bus event from TilemapOperations to Pinia sceneStore and history
       bus.on('editor:tilemap:update-data', (payload) => {
         if (payload?.entityId === entityId && payload?.newData) {
-          sceneStore.syncTilemapDataFromEngine(payload.entityId, payload.newData)
+          useEntityActions().syncTilemapDataFromEngine(payload.entityId, payload.newData)
           if (payload.oldData) {
             tilemapHistory.recordTilemapDataChange(
               payload.entityId,

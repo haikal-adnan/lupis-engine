@@ -42,8 +42,11 @@ services:
     environment:
       NODE_ENV: development
       PORT: *service_raw_port
+      CORE_URL: http://core
+    volumes:
+      - ./core:/engine:ro
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:4000/api/health"]
+      test: ["CMD", "node", "-e", "fetch('http://localhost:4000/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
       interval: 5s
       timeout: 3s
       retries: 3

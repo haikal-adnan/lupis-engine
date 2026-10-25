@@ -1,5 +1,4 @@
-// assets/defaultProject.js
-
+// Fallback engine project initialization payload with default configuration, layers, and scene definitions
 export const DEFAULT_PROJECT_PAYLOAD = {
   project: {
     id: "default_runtime_project",

@@ -1,12 +1,18 @@
-import { layerSchema } from '@scenes/scenes.js'; 
+// World and UI layer hierarchy operations, ordering, and synchronization.
+
+import { useSceneStore } from '@scenes/useSceneStore.js';
+import { layerSchema } from '@scenes/schemas/layerSchema.js'; 
 import { engineBridge } from "@engines/engines.js";
 import { GenerateUUID, sanitizeScriptId, getValidUniqueScriptId, isScriptIdDuplicate } from '@utils/utils.js';
 import { usePopAlert } from '@composables/composables.js';
 import { useSceneHistory } from '@historys/historys.js';
 
-export const useLayerActions = {
-  addLayer(name, section = 'world', recordHistory = true) {
-    const scene = this.activeScene;
+export function useLayerActions() {
+  const store = useSceneStore();
+
+  // Appends a new layer to the specified scene section and syncs with engine bridge
+  const addLayer = (name, section = 'world', recordHistory = true) => {
+    const scene = store.activeScene;
     if (!scene) return null;
     
     const collection = section === 'ui' ? scene.layersUI : scene.layersWorld;
@@ -36,19 +42,19 @@ export const useLayerActions = {
     }
 
     return newLayer;
-  },
+  };
 
-  restoreLayer(layerData, section) {
-    const scene = this.activeScene;
+  const restoreLayer = (layerData, section) => {
+    const scene = store.activeScene;
     if (!scene) return;
 
     const collection = section === 'ui' ? scene.layersUI : scene.layersWorld;
     collection.push(layerData);
     engineBridge.addLayer(layerData);
-  },
+  };
 
-  updateLayerScriptId(layerId, newScriptId) {
-    const scene = this.activeScene;
+  const updateLayerScriptId = (layerId, newScriptId) => {
+    const scene = store.activeScene;
     if (!scene || !newScriptId || !newScriptId.trim()) return false;
 
     let layer = scene.layersWorld?.find(l => l.id === layerId) || 
@@ -75,10 +81,10 @@ export const useLayerActions = {
       return true;
     }
     return true;
-  },
+  };
 
-  updateLayerZIndex(layerId, newZIndex) {
-    const scene = this.activeScene;
+  const updateLayerZIndex = (layerId, newZIndex) => {
+    const scene = store.activeScene;
     if (!scene) return;
 
     let layer = scene.layersWorld?.find(l => l.id === layerId) || 
@@ -98,10 +104,11 @@ export const useLayerActions = {
         }
       }
     }
-  },
+  };
   
-  deleteLayer(layerId, recordHistory = true) {
-    const scene = this.activeScene;
+  // Removes a layer and its member entities, enforcing minimum layer limits
+  const deleteLayer = (layerId, recordHistory = true) => {
+    const scene = store.activeScene;
     if (!scene) return;
     const { showPop } = usePopAlert();
 
@@ -143,10 +150,11 @@ export const useLayerActions = {
     scene.layersUI = scene.layersUI.filter(l => l.id !== layerId);
 
     engineBridge.deleteLayer(layerId);
-  },
+  };
 
-  reorderLayer(draggedId, targetId, position) {
-    const scene = this.activeScene;
+  // Reorders layers within the same section and Z-index tier
+  const reorderLayer = (draggedId, targetId, position) => {
+    const scene = store.activeScene;
     if (!scene) return;
     
     let collection = null;
@@ -187,20 +195,21 @@ export const useLayerActions = {
 
     const { recordReorderLayer } = useSceneHistory();
     recordReorderLayer(draggedId, targetId, position, oldState, newState);
-  },
+  };
 
-  applyLayerOrderState(orderState) {
-    const scene = this.activeScene;
+  const applyLayerOrderState = (orderState) => {
+    const scene = store.activeScene;
     if (!scene || !orderState) return;
 
     orderState.forEach(item => {
       let layer = scene.layersWorld?.find(l => l.id === item.id) || scene.layersUI?.find(l => l.id === item.id);
       if (layer) layer.orderIndex = item.orderIndex;
     });
-  },
+  };
 
-  getLayerData(layerIds) {
-    const scene = this.activeScene;
+  // Bundles layer metadata and member entities for clipboard or duplication
+  const getLayerData = (layerIds) => {
+    const scene = store.activeScene;
     if (!scene) return null;
 
     const ids = Array.isArray(layerIds) ? layerIds : [layerIds];
@@ -224,10 +233,11 @@ export const useLayerActions = {
       }
     });
     return result.length > 0 ? result : null;
-  },
+  };
 
-  pasteLayer(clipboardWrapper, targetSection = 'world') {
-    const scene = this.activeScene;
+  // Pastes a bundled layer and re-keys its entities with fresh unique IDs
+  const pasteLayer = (clipboardWrapper, targetSection = 'world') => {
+    const scene = store.activeScene;
     if (!scene || !clipboardWrapper?.data) return [];
     const { showPop } = usePopAlert();
 
@@ -294,20 +304,20 @@ export const useLayerActions = {
     });
 
     return createdLayerIds;
-  },
+  };
 
-  duplicateLayer(layerId) {
-    const data = this.getLayerData(layerId);
+  const duplicateLayer = (layerId) => {
+    const data = getLayerData(layerId);
     if (!data || data.length === 0) return [];
 
     const targetSection = data[0].section;
     const mockClipboard = { type: 'layer', data: data, mode: 'copy' };
 
-    return this.pasteLayer(mockClipboard, targetSection);
-  },
+    return pasteLayer(mockClipboard, targetSection);
+  };
 
-  updateLayerProp(layerId, propName, value, recordHistory = true) {
-    const scene = this.activeScene;
+  const updateLayerProp = (layerId, propName, value, recordHistory = true) => {
+    const scene = store.activeScene;
     if (!scene) return;
     const layer = scene.layersWorld.find(l => l.id === layerId) || scene.layersUI.find(l => l.id === layerId);
     if (layer) {
@@ -323,5 +333,19 @@ export const useLayerActions = {
       }
       return { id: layerId, prop: propName, value };
     }
-  }
-};
+  };
+
+  return {
+    addLayer,
+    restoreLayer,
+    updateLayerScriptId,
+    updateLayerZIndex,
+    deleteLayer,
+    reorderLayer,
+    applyLayerOrderState,
+    getLayerData,
+    pasteLayer,
+    duplicateLayer,
+    updateLayerProp
+  };
+}

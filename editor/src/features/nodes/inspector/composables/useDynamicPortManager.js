@@ -7,12 +7,10 @@ import { PROTECTED_PORTS } from '../../contract/portIds.js';
 import { keyToPortId } from '../../contract/keyPortNames.js';
 import { isUserCustomNode } from '../layouts/custom/index.js';
 
-// Singleton state to keep target dropdown synchronized across components
+// Shared target dropdown state across components
 const activeDropdownTarget = ref(null);
 
-/**
- * Helper: Multi-key parser for On Key events
- */
+// Parses comma-separated key string into lowercase key tokens, preserving escaped commas
 function parseKeysString(rawKeys) {
   if (!rawKeys || !rawKeys.trim()) return [];
   const rawTokens = String(rawKeys).split(',').map(t => t.trim().toLowerCase());
@@ -36,6 +34,7 @@ function parseKeysString(rawKeys) {
   return parsedKeys;
 }
 
+// Manages dynamic port operations, property bindings, and switch/key synchronization
 export function useDynamicPortManager() {
   const scriptStore = useScriptStore();
   const scriptHistory = useScriptHistory();
@@ -43,9 +42,7 @@ export function useDynamicPortManager() {
   const { prompt } = usePrompt();
   const { getNodeBlueprint } = useNodeBlueprint();
 
-  // =========================================================================
-  // 1. REGISTRY: Custom Value Change Handlers (Inspector Input Sync)
-  // =========================================================================
+  // Syncs key event triggers with output execution ports
   const onKeyHandler = (node, key, value, disconnectEdges) => {
     if (key === 'keys' || key === 'key') {
       const parsedKeys = parseKeysString(value);
@@ -83,6 +80,7 @@ export function useDynamicPortManager() {
     }
   };
 
+  // Syncs switch case values with node.data.cases array
   function syncSwitchCases(node) {
     if (!node || node.type !== 'logicSwitch') return;
     if (!node.data) node.data = {};
@@ -114,9 +112,7 @@ export function useDynamicPortManager() {
     logicSwitch: switchHandler
   };
 
-  // =========================================================================
-  // 2. REGISTRY: Custom Add Port Handlers
-  // =========================================================================
+  // Adds paired case input and onCase output ports for logicSwitch
   const switchCaseHandler = (node, { scriptHistory }) => {
     let nextIndex = 0;
     while (
@@ -160,6 +156,7 @@ export function useDynamicPortManager() {
     scriptHistory.recordPortChange(node.id, 'ADD', newOutputPort, 'output', []);
   };
 
+  // Adds paired key input and onKey output ports for key event nodes
   const keyEventHandler = (node, { scriptHistory }) => {
     let nextIndex = 0;
     while (
@@ -208,9 +205,7 @@ export function useDynamicPortManager() {
     eventAdvancedKey: keyEventHandler
   };
 
-  // =========================================================================
-  // 3. REGISTRY: Default Port Dynamic Resolver (Sequential)
-  // =========================================================================
+  // Resolves default port types and colors for sequential ports
   function getDynamicPortDefaults(nodeType, nextIndex, bpPorts = []) {
     if (['eventOnKey', 'eventAdvancedKey'].includes(nodeType)) {
       return { id: `onKey${nextIndex}`, dataType: 'execution', color: '#FFFFFF' };
@@ -244,9 +239,6 @@ export function useDynamicPortManager() {
     return { id: `v${nextIndex}`, dataType: 'any', color: '#B0BEC5' };
   }
 
-  // =========================================================================
-  // 4. METADATA & PROPERTY HELPERS
-  // =========================================================================
   function getDynamicMode(node) {
     if (!node) return 'none';
     const bp = getNodeBlueprint(node.type);
@@ -255,6 +247,7 @@ export function useDynamicPortManager() {
       : (bp?.dynamicMode || 'none');
   }
 
+  // Returns unselected property options that can be added to the node
   function getAvailableProperties(node) {
     if (!node) return [];
     const bp = getNodeBlueprint(node.type);
@@ -293,9 +286,6 @@ export function useDynamicPortManager() {
     };
   }
 
-  // =========================================================================
-  // 5. CORE ACTIONS: VALUE SYNC, ADD & REMOVE PORT
-  // =========================================================================
   function handleNodeValueSync(node, key, value, disconnectEdges) {
     if (!node) return;
     const handler = valueChangeHandlers[node.type];
@@ -327,7 +317,7 @@ export function useDynamicPortManager() {
 
     const mode = getDynamicMode(node);
 
-    // A. Mode Property Dynamic (inputProperty / outputProperty)
+    // Property-driven dynamic mode
     if (
       (type === 'input' && mode === 'inputProperty') ||
       (type === 'output' && mode === 'outputProperty')
@@ -367,14 +357,14 @@ export function useDynamicPortManager() {
       return;
     }
 
-    // B. Custom Node Handlers (e.g.: logicSwitch)
+    // Node-specific add handler
     const customAddHandler = addPortHandlers[node.type];
     if (customAddHandler) {
       await customAddHandler(node, { prompt, scriptHistory });
       return;
     }
 
-    // C. Mode Sequential Dynamic (math, string join, logic, dsb)
+    // Sequential dynamic mode
     if (mode === 'sequential') {
       const newPort = resolveNextSequentialPort(node, type);
 
@@ -450,6 +440,7 @@ export function useDynamicPortManager() {
     return false;
   }
 
+  // Deletes a dynamic port, severs connected wires, and cleans up paired ports
   function removeDynamicPort(node, portId, type = 'input') {
     if (!node) return;
 
@@ -497,7 +488,7 @@ export function useDynamicPortManager() {
       (type === 'output' && e.source === activeNode.id && e.sourceHandle === targetId)
     );
 
-    // 1. Identify paired port to remove
+    // Identify paired port to remove in dual-port nodes
     let pairedPort = null;
     if (activeNode.type === 'logicSwitch') {
       if (type === 'input' && String(targetId).startsWith('case')) {
@@ -517,15 +508,14 @@ export function useDynamicPortManager() {
       }
     }
 
-    // 2. Remove primary port from scriptStore
+    // Remove primary and paired ports
     scriptStore.removeNodePort(activeNode.id, type, targetId);
 
-    // 3. Remove paired port from scriptStore if present
     if (pairedPort) {
       scriptStore.removeNodePort(activeNode.id, pairedPort.type, pairedPort.id);
     }
 
-    // 4. Clean up node.data.values and cases on the fresh node in scriptStore
+    // Clean up cached values and switch cases
     const freshNode = scriptStore.activeScript?.nodes?.find(n => n.id === node.id) || activeNode;
     if (freshNode.data?.values) {
       if (type === 'input') {
@@ -540,7 +530,6 @@ export function useDynamicPortManager() {
       syncSwitchCases(freshNode);
     }
 
-    // 5. Persist the updated node.data in activeScript
     scriptStore.saveActiveScript();
 
     if (target) {

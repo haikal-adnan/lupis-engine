@@ -1,4 +1,5 @@
 import OPFSHelper from "../../Util/opfsHelper.js";
+import LupisPackageHelper from "../../Util/LupisPackageHelper.js";
 
 let __audioID = 1;
 
@@ -23,22 +24,26 @@ export default class GLAudioResource {
 
     const ext = asset.meta?.extension || '';
 
-    if (asset.fileKey && ext) {
-      const fileName = `${asset.fileKey}${ext}`;
+    if (asset.fileKey && (ext || asset.meta?.lupisDataFile)) {
+      const rawFileName = `${asset.fileKey}${ext}`;
+      const protectedFileName = asset.meta?.lupisDataFile || `${asset.fileKey}.lupisdata`;
 
       if (typeof opfsConfig === 'object' && opfsConfig !== null && opfsConfig.projectId) {
-        audioBuffer = await this._getOpfsAudioBuffer(opfsConfig.projectId, fileName);
-        resolvedSrc = `opfs://projects/${opfsConfig.projectId}/${fileName}`;
+        audioBuffer = await this._getOpfsAudioBuffer(opfsConfig.projectId, rawFileName);
+        resolvedSrc = `opfs://projects/${opfsConfig.projectId}/${rawFileName}`;
       } 
       else if (typeof opfsConfig === 'string' && opfsConfig.length > 0) {
         const cleanBaseURL = opfsConfig.replace(/\/$/, "");
-        resolvedSrc = (asset.fileUrl && (asset.fileUrl.startsWith('http') || asset.fileUrl.startsWith('/')))
+        const targetFile = (asset.meta?.protected || asset.meta?.lupisDataFile) ? protectedFileName : rawFileName;
+
+        resolvedSrc = (asset.fileUrl && (asset.fileUrl.startsWith('http') || asset.fileUrl.startsWith('/')) && !asset.meta?.protected)
           ? asset.fileUrl
-          : `${cleanBaseURL}/assets/${fileName}`;
-        audioBuffer = await this._loadAudio(resolvedSrc);
+          : `${cleanBaseURL}/assets/${targetFile}`;
+
+        audioBuffer = await this._loadAudio(resolvedSrc, `${cleanBaseURL}/assets/${protectedFileName}`);
       } 
       else {
-        resolvedSrc = asset.fileUrl || fileName;
+        resolvedSrc = asset.fileUrl || rawFileName;
         audioBuffer = await this._loadAudio(resolvedSrc);
       }
     } else if (asset.fileUrl) {
@@ -56,7 +61,7 @@ export default class GLAudioResource {
     };
   }
 
-  async _loadAudio(url) {
+  async _loadAudio(url, fallbackProtectedUrl = null) {
     try {
       if (url.startsWith('opfs://')) {
         const parsed = OPFSHelper.parseOpfsUrl(url);
@@ -65,12 +70,18 @@ export default class GLAudioResource {
         }
       }
 
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      let decodedBuffer;
+      try {
+        decodedBuffer = await LupisPackageHelper.fetchBuffer(url);
+      } catch (fetchErr) {
+        if (fallbackProtectedUrl && fallbackProtectedUrl !== url) {
+          decodedBuffer = await LupisPackageHelper.fetchBuffer(fallbackProtectedUrl);
+        } else {
+          throw fetchErr;
+        }
       }
-      const arrayBuffer = await response.arrayBuffer();
-      return await this.audioContext.decodeAudioData(arrayBuffer);
+
+      return await this.audioContext.decodeAudioData(decodedBuffer);
     } catch (error) {
       console.error(`[GLAudioResource] Failed to load/decode audio: ${url}`, error);
       return null;

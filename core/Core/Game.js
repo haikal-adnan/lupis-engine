@@ -14,6 +14,7 @@ import SceneSystem from "../System/SceneSystem.js";
 import PrefabSystem from "../System/PrefabSystem.js";
 import EntitySystem from "../System/EntitySystem.js";
 import LayerSystem from "../System/LayerSystem.js";
+import TilemapSystem from "../System/TilemapSystem/TilemapSystem.js";
 import ContextSystem from "../Script/ContextSystem.js";
 import EventManager from "../Script/EventManager.js";
 import InputManager from "../Input/InputManager.js";
@@ -41,6 +42,7 @@ export default class Game {
         this.prefabSystem = new PrefabSystem(this);
         this.entitySystem = new EntitySystem(this);
         this.layerSystem = new LayerSystem(this);
+        this.tilemapSystem = new TilemapSystem(this);
         this.contextSystem = new ContextSystem(this); 
 
         this.audio = null;

@@ -1,5 +1,5 @@
 import { computed } from 'vue';
-import { useSceneStore } from '@scenes/scenes.js';
+import { useSceneStore, useEntityActions } from '@scenes/scenes.js';
 import { usePrefabStore } from '@prefabs/prefabs.js';
 import { useWorkspaceStore } from '@workspaces/workspaces.js';
 import { usePopAlert } from '@composables/composables.js';
@@ -9,6 +9,7 @@ import { computeGlobalTransform } from '@utils/utils.js';
 
 export function useInspectorTransform(selectedEntity, isEditingMasterPrefab) {
   const sceneStore = useSceneStore();
+  const entityActions = useEntityActions();
   const prefabStore = usePrefabStore();
   const workspaceStore = useWorkspaceStore();
   const { showPop } = usePopAlert();
@@ -147,10 +148,10 @@ export function useInspectorTransform(selectedEntity, isEditingMasterPrefab) {
 
     const compName = getTransformCompName(ent);
     
-    sceneStore.updateComponentProp(parentId, compName, 'width', newWidth);
-    sceneStore.updateComponentProp(parentId, compName, 'height', newHeight);
-    sceneStore.updateComponentProp(parentId, compName, 'pivotX', newPivotX);
-    sceneStore.updateComponentProp(parentId, compName, 'pivotY', newPivotY);
+    entityActions.updateComponentProp(parentId, compName, 'width', newWidth);
+    entityActions.updateComponentProp(parentId, compName, 'height', newHeight);
+    entityActions.updateComponentProp(parentId, compName, 'pivotX', newPivotX);
+    entityActions.updateComponentProp(parentId, compName, 'pivotY', newPivotY);
 
     engineBridge.patchComponent({
       entityId: parentId,
@@ -184,7 +185,7 @@ export function useInspectorTransform(selectedEntity, isEditingMasterPrefab) {
       const id = ent.id;
 
       Object.entries(updates).forEach(([prop, val]) => {
-        sceneStore.updateComponentProp(id, compName, prop, val);
+        entityActions.updateComponentProp(id, compName, prop, val);
       });
 
       const newSnapshot = JSON.parse(JSON.stringify(ent));
@@ -226,10 +227,10 @@ export function useInspectorTransform(selectedEntity, isEditingMasterPrefab) {
       const id = ent.id;
       const oldSnapshot = JSON.parse(JSON.stringify(ent));
 
-      sceneStore.updateComponentProp(id, compName, 'pivotX', newPx);
-      sceneStore.updateComponentProp(id, compName, 'pivotY', newPy);
-      sceneStore.updateComponentProp(id, compName, 'x', currentX + worldDx);
-      sceneStore.updateComponentProp(id, compName, 'y', currentY + worldDy);
+      entityActions.updateComponentProp(id, compName, 'pivotX', newPx);
+      entityActions.updateComponentProp(id, compName, 'pivotY', newPy);
+      entityActions.updateComponentProp(id, compName, 'x', currentX + worldDx);
+      entityActions.updateComponentProp(id, compName, 'y', currentY + worldDy);
 
       const newSnapshot = JSON.parse(JSON.stringify(ent));
       recordTransformChange([{ id, oldSnapshot, newSnapshot }]);
@@ -257,8 +258,8 @@ export function useInspectorTransform(selectedEntity, isEditingMasterPrefab) {
       const id = ent.id;
       const oldSnapshot = JSON.parse(JSON.stringify(ent));
 
-      sceneStore.updateComponentProp(id, compName, 'width', targetWidth);
-      sceneStore.updateComponentProp(id, compName, 'height', targetHeight);
+      entityActions.updateComponentProp(id, compName, 'width', targetWidth);
+      entityActions.updateComponentProp(id, compName, 'height', targetHeight);
       
       if (engineBridge.updateComponentProp) {
         engineBridge.updateComponentProp({ entityId: id, componentName: compName, path: 'width', value: targetWidth });

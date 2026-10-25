@@ -1,3 +1,4 @@
+// Constructs grouping folder containers for assets, scripts, prefabs, and scenes
 export const folderSchema = (data = {}) => {
   const folderId = data.id || `folder_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
 

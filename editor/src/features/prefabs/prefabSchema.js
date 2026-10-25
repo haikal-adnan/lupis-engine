@@ -1,6 +1,7 @@
 import { entitySchema } from '@scenes/scenes.js'; 
 import { sanitizeScriptId } from '@utils/utils.js';
 
+// Normalizes entity hierarchies into reusable archetype templates with reset overrides
 export const prefabSchema = (data = {}) => {
   const entityData = data.data ? entitySchema(data.data) : entitySchema({});
   

@@ -6,7 +6,8 @@ import { useEngineToEditor } from '@engines/useEngineToEditor.js'
 import { engineBridge } from '@engines/engines.js'
 
 // Import related Pinia store
-import { useSceneStore } from '@scenes/scenes.js'
+import { useSceneStore, useEntityActions } from '@scenes/scenes.js'
+import * as scenesModule from '@scenes/scenes.js'
 
 // OPFS mock helper
 import { setupMockOPFS } from '@tests/tests.js'
@@ -38,19 +39,22 @@ vi.mock('@engines/engines.js', () => {
 
 describe('Integration Test: useEngineToEditor', () => {
   let sceneStore
+  let entityActions
 
   beforeEach(() => {
     // 1. Initialize Pinia & Mock Environment
     setActivePinia(createPinia())
     setupMockOPFS()
 
-    // 2. Initialize sceneStore
+    // 2. Initialize sceneStore & entityActions
     sceneStore = useSceneStore()
+    entityActions = useEntityActions()
+    vi.spyOn(scenesModule, 'useEntityActions').mockReturnValue(entityActions)
 
-    // Spy synchronization methods on sceneStore
+    // Spy synchronization methods
     vi.spyOn(sceneStore, 'syncTransformFromEngine').mockImplementation(() => {})
-    vi.spyOn(sceneStore, 'updateComponentProp').mockImplementation(() => {})
-    vi.spyOn(sceneStore, 'syncTilemapDataFromEngine').mockImplementation(() => {})
+    vi.spyOn(entityActions, 'updateComponentProp').mockImplementation(() => {})
+    vi.spyOn(entityActions, 'syncTilemapDataFromEngine').mockImplementation(() => {})
   })
 
   afterEach(() => {
@@ -120,7 +124,7 @@ describe('Integration Test: useEngineToEditor', () => {
         isRatioLocked: true,
         overridden: false
       })
-      expect(sceneStore.updateComponentProp).not.toHaveBeenCalled()
+      expect(entityActions.updateComponentProp).not.toHaveBeenCalled()
     })
 
     it('synchronizes UITransform with anchorX/anchorY and updates overridden status', () => {
@@ -172,7 +176,7 @@ describe('Integration Test: useEngineToEditor', () => {
         anchorY: 0.5
       })
 
-      expect(sceneStore.updateComponentProp).toHaveBeenCalledWith('456', 'UITransform', 'overridden', true)
+      expect(entityActions.updateComponentProp).toHaveBeenCalledWith('456', 'UITransform', 'overridden', true)
     })
 
     it('processes multiple entities in a single event payload', () => {
@@ -213,7 +217,7 @@ describe('Integration Test: useEngineToEditor', () => {
       engineBridge.__triggerTilemapUpdated(mockTilemapPayload)
 
       // Assert
-      expect(sceneStore.syncTilemapDataFromEngine).toHaveBeenCalledWith('tilemap-ent-1', [
+      expect(entityActions.syncTilemapDataFromEngine).toHaveBeenCalledWith('tilemap-ent-1', [
         [1, 1, 1],
         [0, 2, 0]
       ])
@@ -235,7 +239,7 @@ describe('Integration Test: useEngineToEditor', () => {
       engineBridge.__triggerTilemapUpdated(mockTilemapPayload)
 
       // Assert
-      expect(sceneStore.syncTilemapDataFromEngine).toHaveBeenCalledWith('tilemap-ent-1', { '1,1': 2 })
+      expect(entityActions.syncTilemapDataFromEngine).toHaveBeenCalledWith('tilemap-ent-1', { '1,1': 2 })
     })
   })
 
@@ -285,7 +289,7 @@ describe('Integration Test: useEngineToEditor', () => {
       engineBridge.__triggerTilemapUpdated({ newData: [[1]] }) // without entityId
 
       // Assert
-      expect(sceneStore.syncTilemapDataFromEngine).not.toHaveBeenCalled()
+      expect(entityActions.syncTilemapDataFromEngine).not.toHaveBeenCalled()
     })
   })
 })

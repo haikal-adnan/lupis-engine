@@ -1,3 +1,4 @@
+// Subsystem handler providing game lifecycle hooks, global signal event bus, and flow control
 export class LifecycleContextHandler {
   constructor(contextSystem) {
     this.contextSystem = contextSystem;
@@ -18,6 +19,7 @@ export class LifecycleContextHandler {
     };
   }
 
+  // Cross-entity signal bus facade with auto-unsubscription on script destroy
   createSignalFacade({ runner }) {
     const game = this.game;
 
@@ -25,6 +27,7 @@ export class LifecycleContextHandler {
       emit: (signalName, data) => {
         game?.events?.emit(signalName, data);
       },
+
       on: (signalName, callback) => {
         game?.events?.on(signalName, callback);
         runner._registeredEvents.push({ eventName: signalName, callback });
@@ -39,6 +42,7 @@ export class LifecycleContextHandler {
     runner._customTickListeners.set(node.id, callback);
   }
 
+  // Manually activates an execution output pin on this node
   triggerFlow({ runner, node }, portName) {
     const nodeOutputs = runner.nodeOutputs.get(node.id);
     if (nodeOutputs && nodeOutputs[portName] === true) {

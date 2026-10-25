@@ -1,3 +1,4 @@
+// Subsystem handler providing entity queries, hierarchy traversal, tag filtering, and lifecycle operations
 export class EntityContextHandler {
   constructor(contextSystem) {
     this.contextSystem = contextSystem;
@@ -9,6 +10,7 @@ export class EntityContextHandler {
     const world = this.game?.world;
 
     return {
+      // Resolves an entity by reference, UUID, scriptId, or 'self'
       get: (targetId) => {
         if (!targetId || targetId === 'self') {
           if (!runner.owner) {
@@ -139,6 +141,7 @@ export class EntityContextHandler {
         return current;
       },
 
+      // Finds the nearest entity matching a tag using squared distance
       findClosestByTag: (tag, fromXOrEntity, optFromY) => {
         if (entitySystem && typeof entitySystem.findClosestByTag === 'function') {
           return entitySystem.findClosestByTag(tag, fromXOrEntity, optFromY);

@@ -225,7 +225,7 @@ import {
 
 import { useWorkspaceActions, useWorkspaceStore } from "@workspaces/workspaces.js"
 import { usePrefabActions } from '@prefabs/prefabs.js';
-import { useSceneStore } from '@scenes/scenes.js';
+import { useSceneStore, useEntityActions } from '@scenes/scenes.js';
 import { useProjectStore } from '@projects/projects.js'
 import { usePrefabStore } from '@prefabs/prefabs.js';
 import { engineBridge } from "@engines/engines.js";
@@ -265,6 +265,7 @@ const prefabStore = usePrefabStore()
 const { handleDeleteEntity, handleCopyId } = useWorkspaceActions()
 const { applyToMasterPrefab } = usePrefabActions()
 const sceneStore = useSceneStore()
+const { updateEntityProp, updateEntityScriptId } = useEntityActions()
 const projectStore = useProjectStore()
 const { prompt } = usePrompt()
 const { confirm } = useConfirm()
@@ -311,14 +312,14 @@ const toggleActive = () => {
   if (!selectedEntity.value) return
   const newVal = !active.value
   const id = selectedEntity.value.id
-  sceneStore.updateEntityProp(id, 'active', newVal) 
+  updateEntityProp(id, 'active', newVal) 
   markAsOverridden()
 }
 
 const visible = computed({
   get: () => selectedEntity.value?.visible ?? true,
   set: (val) => {
-    if (selectedEntity.value) sceneStore.updateEntityProp(selectedEntity.value.id, 'visible', val)
+    if (selectedEntity.value) updateEntityProp(selectedEntity.value.id, 'visible', val)
   }
 })
 
@@ -326,7 +327,7 @@ const locked = computed({
   get: () => selectedEntity.value?.locked || false, 
   set: (val) => {
     if (!selectedEntity.value) return
-    sceneStore.updateEntityProp(selectedEntity.value.id, 'locked', val) 
+    updateEntityProp(selectedEntity.value.id, 'locked', val) 
   }
 })
 
@@ -395,8 +396,8 @@ const applyTagsToEntity = (newTags) => {
       value: primaryTag
     })
   } else {
-    sceneStore.updateEntityProp(id, 'tags', cleanTags)
-    sceneStore.updateEntityProp(id, 'tag', primaryTag)
+    updateEntityProp(id, 'tags', cleanTags)
+    updateEntityProp(id, 'tag', primaryTag)
   }
 
   markAsOverridden()
@@ -623,8 +624,7 @@ const commitScriptId = async () => {
     }, 100)
   } else {
     hasIdError.value = false
-    if (sceneStore.updateEntityScriptId) sceneStore.updateEntityScriptId(selectedEntity.value.id, newId)
-    else sceneStore.updateEntityProp(selectedEntity.value.id, 'scriptId', newId)
+    updateEntityScriptId(selectedEntity.value.id, newId)
     markAsOverridden()
     isProcessing.value = false
   }

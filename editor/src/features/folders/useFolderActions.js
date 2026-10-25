@@ -1,3 +1,5 @@
+// Folder tree operations including recursive deletion and cloning.
+
 import { useFolderStore } from '@folders/folders.js';
 import { useAssetStore } from '@assets/assets.js';
 import { usePrefabStore } from '@prefabs/prefabs.js';
@@ -22,6 +24,7 @@ export function useFolderActions() {
   const { showPop } = usePopAlert();
   const { prompt } = usePrompt(); 
 
+  // Prompts for a name and inserts a new folder into the active section
   const createNewFolder = async (options = {}) => {
     const defaultName = options.defaultName || 'New Folder';
     const parentId = options.parentId || null;
@@ -61,6 +64,7 @@ export function useFolderActions() {
     return newFolder;
   };
 
+  // Recursively deletes a folder and its nested items across stores
   const deleteFolder = async (folderId) => {
     const cascadeDelete = async (currentFolderId) => {
       const subFolders = folderStore.folders.filter(f => f.parentId === currentFolderId);
@@ -97,7 +101,6 @@ export function useFolderActions() {
 
   const renameFolder = async (folderId, newName) => {
     const cleanName = newName.trim();
-
     await folderStore.updateFolder(folderId, { name: cleanName });
     
     showPop({ 
@@ -110,7 +113,6 @@ export function useFolderActions() {
   const duplicateFolder = async (folderId) => {
     const original = folderStore.getFolderById(folderId);
 
-    // Tambahkan guard clause di sini
     if (!original) {
       return null;
     }

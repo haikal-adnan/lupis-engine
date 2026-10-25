@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
 import { useSceneHistory } from '@historys/historys.js';
-import { useSceneStore } from '@scenes/scenes.js';
+import { useSceneStore, useEntityActions, useLayerActions } from '@scenes/scenes.js';
 import { usePrefabStore } from '@prefabs/prefabs.js';
 import { useWorkspaceStore } from '@workspaces/workspaces.js';
 import { setupMockSceneEnvironment, createMockEntity, createMockLayer } from '@tests/tests.js';
@@ -43,6 +43,8 @@ describe('useSceneHistory Integration', () => {
   let workspaceStore;
   let sceneHistory;
   let targetScene;
+  let entityActions;
+  let layerActions;
 
   beforeEach(() => {
     // Inisialisasi Pinia instans baru untuk isolasi test
@@ -58,6 +60,8 @@ describe('useSceneHistory Integration', () => {
     workspaceStore.tabs = [{ id: 'tab_scene_1', type: 'scene', sceneId: targetScene.id }];
 
     sceneHistory = useSceneHistory();
+    entityActions = useEntityActions();
+    layerActions = useLayerActions();
   });
 
   afterEach(() => {
@@ -81,7 +85,7 @@ describe('useSceneHistory Integration', () => {
 
       // Act
       sceneHistory.recordComponentChange('ent_1', 'SpriteRenderer', 'color', oldColor, newColor);
-      sceneStore.updateComponentProp('ent_1', 'SpriteRenderer', 'color', newColor);
+      entityActions.updateComponentProp('ent_1', 'SpriteRenderer', 'color', newColor);
 
       expect(targetScene.entities[0].components.SpriteRenderer.color).toBe('#FF0000');
 
@@ -139,7 +143,7 @@ describe('useSceneHistory Integration', () => {
 
       // Act
       const deletedList = [entityToDelete];
-      sceneStore.deleteEntity('ent_to_delete', false);
+      entityActions.deleteEntity('ent_to_delete', false);
       sceneHistory.recordEntityDelete(deletedList);
 
       expect(targetScene.entities).toHaveLength(0);
@@ -161,7 +165,7 @@ describe('useSceneHistory Integration', () => {
       const newLayer = createMockLayer({ id: 'layer_foreground', name: 'Foreground', section: 'world' });
 
       // Act
-      sceneStore.restoreLayer(newLayer, 'world');
+      layerActions.restoreLayer(newLayer, 'world');
       sceneHistory.recordAddLayer(newLayer, 'world');
 
       expect(targetScene.layersWorld.some(l => l.id === 'layer_foreground')).toBe(true);
@@ -183,7 +187,7 @@ describe('useSceneHistory Integration', () => {
 
       // Act
       sceneHistory.recordLayerPropChange(layerId, 'name', oldName, newName);
-      sceneStore.updateLayerProp(layerId, 'name', newName, false);
+      layerActions.updateLayerProp(layerId, 'name', newName, false);
 
       expect(targetScene.layersWorld[0].name).toBe('Renamed_Layer');
 

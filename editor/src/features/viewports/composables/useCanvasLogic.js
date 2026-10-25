@@ -1,4 +1,4 @@
-import { useSceneStore } from '@scenes/scenes.js';
+import { useSceneStore, useEntityActions } from '@scenes/scenes.js';
 import { useHistory } from '@historys/historys.js'; 
 import { engineBridge } from "@engines/engines.js";
 import { usePrefabActions } from '@prefabs/prefabs.js';
@@ -11,6 +11,7 @@ import {
 
 export function useCanvasLogic() {
   const sceneStore = useSceneStore();
+  const entityActions = useEntityActions();
   const { showPop } = usePopAlert();
   const { createPrefab, linkPrefabToEntities } = usePrefabActions();
   const { prompt } = usePrompt(); 
@@ -19,16 +20,16 @@ export function useCanvasLogic() {
   const getSelectedIds = () => sceneStore.selectedEntityIds || [];
 
   const createEntityAtPosition = (type, layerId, x, y) => {
-    const newEntity = sceneStore.createEntity(type, layerId, { x, y });
+    const newEntity = entityActions.createEntity(type, layerId, { x, y });
     const newEntityId = typeof newEntity === 'object' ? newEntity?.id : newEntity;
     
     if (newEntityId) {
       record({
         undo: () => {
-          sceneStore.deleteEntity(newEntityId);
+          entityActions.deleteEntity(newEntityId);
         },
         redo: () => {
-          sceneStore.createEntity(type, layerId, { x, y });
+          entityActions.createEntity(type, layerId, { x, y });
         }
       });
     }
@@ -81,8 +82,8 @@ export function useCanvasLogic() {
 
             previousPositions.push({ id: ent.id, compName, oldX, oldY, newX, newY });
 
-            sceneStore.updateComponentProp(ent.id, compName, 'x', newX);
-            sceneStore.updateComponentProp(ent.id, compName, 'y', newY);
+            entityActions.updateComponentProp(ent.id, compName, 'x', newX);
+            entityActions.updateComponentProp(ent.id, compName, 'y', newY);
 
             engineBridge.updateComponentProp({
                 entityId: ent.id,
@@ -102,16 +103,16 @@ export function useCanvasLogic() {
     record({
       undo: () => {
         previousPositions.forEach(({ id, compName, oldX, oldY }) => {
-          sceneStore.updateComponentProp(id, compName, 'x', oldX);
-          sceneStore.updateComponentProp(id, compName, 'y', oldY);
+          entityActions.updateComponentProp(id, compName, 'x', oldX);
+          entityActions.updateComponentProp(id, compName, 'y', oldY);
           engineBridge.updateComponentProp({ entityId: id, componentName: compName, path: 'x', value: oldX });
           engineBridge.updateComponentProp({ entityId: id, componentName: compName, path: 'y', value: oldY });
         });
       },
       redo: () => {
         previousPositions.forEach(({ id, compName, newX, newY }) => {
-          sceneStore.updateComponentProp(id, compName, 'x', newX);
-          sceneStore.updateComponentProp(id, compName, 'y', newY);
+          entityActions.updateComponentProp(id, compName, 'x', newX);
+          entityActions.updateComponentProp(id, compName, 'y', newY);
           engineBridge.updateComponentProp({ entityId: id, componentName: compName, path: 'x', value: newX });
           engineBridge.updateComponentProp({ entityId: id, componentName: compName, path: 'y', value: newY });
         });
@@ -134,16 +135,16 @@ export function useCanvasLogic() {
         const oldZ = entity.zIndex || 0;
         const newZ = oldZ + 1;
 
-        sceneStore.updateEntityProp(id, 'zIndex', newZ);
+        entityActions.updateEntityProp(id, 'zIndex', newZ);
         engineBridge.updateEntityProp({ id, prop: 'zIndex', value: newZ });
 
         record({
           undo: () => {
-            sceneStore.updateEntityProp(id, 'zIndex', oldZ);
+            entityActions.updateEntityProp(id, 'zIndex', oldZ);
             engineBridge.updateEntityProp({ id, prop: 'zIndex', value: oldZ });
           },
           redo: () => {
-            sceneStore.updateEntityProp(id, 'zIndex', newZ);
+            entityActions.updateEntityProp(id, 'zIndex', newZ);
             engineBridge.updateEntityProp({ id, prop: 'zIndex', value: newZ });
           }
         });
@@ -160,16 +161,16 @@ export function useCanvasLogic() {
         const oldZ = entity.zIndex || 0;
         const newZ = oldZ - 1;
 
-        sceneStore.updateEntityProp(id, 'zIndex', newZ);
+        entityActions.updateEntityProp(id, 'zIndex', newZ);
         engineBridge.updateEntityProp({ id, prop: 'zIndex', value: newZ });
 
         record({
           undo: () => {
-            sceneStore.updateEntityProp(id, 'zIndex', oldZ);
+            entityActions.updateEntityProp(id, 'zIndex', oldZ);
             engineBridge.updateEntityProp({ id, prop: 'zIndex', value: oldZ });
           },
           redo: () => {
-            sceneStore.updateEntityProp(id, 'zIndex', newZ);
+            entityActions.updateEntityProp(id, 'zIndex', newZ);
             engineBridge.updateEntityProp({ id, prop: 'zIndex', value: newZ });
           }
         });
@@ -191,7 +192,7 @@ export function useCanvasLogic() {
             const updatedEditor = { ...currentEditor, locked: newLockState };
             changes.push({ id, oldEditor: currentEditor, newEditor: updatedEditor });
 
-            sceneStore.updateEntityProp(id, '_editor', updatedEditor);
+            entityActions.updateEntityProp(id, '_editor', updatedEditor);
             engineBridge.updateEntityProp({ id, prop: '_editor', value: updatedEditor });
         }
     });
@@ -200,13 +201,13 @@ export function useCanvasLogic() {
       record({
         undo: () => {
           changes.forEach(({ id, oldEditor }) => {
-            sceneStore.updateEntityProp(id, '_editor', oldEditor);
+            entityActions.updateEntityProp(id, '_editor', oldEditor);
             engineBridge.updateEntityProp({ id, prop: '_editor', value: oldEditor });
           });
         },
         redo: () => {
           changes.forEach(({ id, newEditor }) => {
-            sceneStore.updateEntityProp(id, '_editor', newEditor);
+            entityActions.updateEntityProp(id, '_editor', newEditor);
             engineBridge.updateEntityProp({ id, prop: '_editor', value: newEditor });
           });
         }
@@ -227,7 +228,7 @@ export function useCanvasLogic() {
 
             changes.push({ id, oldVisible, newVisible });
 
-            sceneStore.updateEntityProp(id, 'visible', newVisible);
+            entityActions.updateEntityProp(id, 'visible', newVisible);
             engineBridge.updateEntityProp({ id, prop: 'visible', value: newVisible });
         }
     });
@@ -236,13 +237,13 @@ export function useCanvasLogic() {
       record({
         undo: () => {
           changes.forEach(({ id, oldVisible }) => {
-            sceneStore.updateEntityProp(id, 'visible', oldVisible);
+            entityActions.updateEntityProp(id, 'visible', oldVisible);
             engineBridge.updateEntityProp({ id, prop: 'visible', value: oldVisible });
           });
         },
         redo: () => {
           changes.forEach(({ id, newVisible }) => {
-            sceneStore.updateEntityProp(id, 'visible', newVisible);
+            entityActions.updateEntityProp(id, 'visible', newVisible);
             engineBridge.updateEntityProp({ id, prop: 'visible', value: newVisible });
           });
         }
@@ -263,7 +264,7 @@ export function useCanvasLogic() {
 
             changes.push({ id, oldActive, newActive });
 
-            sceneStore.updateEntityProp(id, 'active', newActive);
+            entityActions.updateEntityProp(id, 'active', newActive);
             engineBridge.updateEntityProp({ id, prop: 'active', value: newActive });
         }
     });
@@ -272,13 +273,13 @@ export function useCanvasLogic() {
       record({
         undo: () => {
           changes.forEach(({ id, oldActive }) => {
-            sceneStore.updateEntityProp(id, 'active', oldActive);
+            entityActions.updateEntityProp(id, 'active', oldActive);
             engineBridge.updateEntityProp({ id, prop: 'active', value: oldActive });
           });
         },
         redo: () => {
           changes.forEach(({ id, newActive }) => {
-            sceneStore.updateEntityProp(id, 'active', newActive);
+            entityActions.updateEntityProp(id, 'active', newActive);
             engineBridge.updateEntityProp({ id, prop: 'active', value: newActive });
           });
         }
@@ -295,17 +296,17 @@ export function useCanvasLogic() {
             return entity ? JSON.parse(JSON.stringify(entity)) : null;
           }).filter(Boolean);
 
-          [...ids].forEach(id => sceneStore.deleteEntity(id));
+          [...ids].forEach(id => entityActions.deleteEntity(id));
 
           record({
             undo: () => {
               deletedEntities.forEach(ent => {
-                if (sceneStore.restoreEntity) sceneStore.restoreEntity(ent);
+                if (entityActions.restoreEntity) entityActions.restoreEntity(ent);
                 else sceneStore.activeScene?.entities?.push(ent);
               });
             },
             redo: () => {
-              deletedEntities.forEach(ent => sceneStore.deleteEntity(ent.id));
+              deletedEntities.forEach(ent => entityActions.deleteEntity(ent.id));
             }
           });
       }
@@ -314,16 +315,16 @@ export function useCanvasLogic() {
   const duplicateEntity = () => {
       const ids = getSelectedIds();
       if (ids.length > 0) {
-        const duplicatedIds = sceneStore.duplicateEntity(ids);
+        const duplicatedIds = entityActions.duplicateEntity(ids);
 
         record({
           undo: () => {
             if (Array.isArray(duplicatedIds)) {
-              duplicatedIds.forEach(id => sceneStore.deleteEntity(id));
+              duplicatedIds.forEach(id => entityActions.deleteEntity(id));
             }
           },
           redo: () => {
-            sceneStore.duplicateEntity(ids);
+            entityActions.duplicateEntity(ids);
           }
         });
       }

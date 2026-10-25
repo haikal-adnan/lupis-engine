@@ -1,9 +1,4 @@
-/**
- * ValueModifier.js
- * Pure value modification operations for Script variables.
- * Assumes valid types pre-checked by Editor Gate 1.
- */
-
+// Transforms an input value via arithmetic, string, logic, array, or template formatters
 export function applyModifier(rawVal, modifier) {
   if (!modifier) return rawVal;
 
@@ -88,6 +83,7 @@ export function applyModifier(rawVal, modifier) {
   return val;
 }
 
+// Sequentially applies an array or single modifier to an input value
 export function applyModifiers(rawVal, modifiers) {
   if (!modifiers) return rawVal;
   if (Array.isArray(modifiers)) {

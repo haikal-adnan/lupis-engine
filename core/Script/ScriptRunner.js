@@ -1,16 +1,8 @@
 import { applyModifiers } from './ValueModifier.js';
 import { ScriptAssertionError } from './ContextSystem.js';
+import LupisPackageHelper from '../Util/LupisPackageHelper.js';
 
-/**
- * ScriptRunner.js
- * Universal, type-agnostic node graph executor for Lupis Engine.
- * 
- * Rules:
- * 1. Operates purely on raw pre-processed values from Editor Gate 1.
- * 2. No port labels, no aliases, no proxies, no type guessing.
- * 3. O(1) flow and data lookup via pre-indexed adjacency maps.
- * 4. Runtime errors carry full context: scriptId, nodeId, node type.
- */
+// Visual script graph executor managing flow propagation, data resolution, and node lifecycles
 export default class ScriptRunner {
     constructor(game, scriptData, ownerEntity = null) {
         this.game = game;
@@ -27,7 +19,7 @@ export default class ScriptRunner {
         this.localVariables = new Map();
         this.nameToIdMap = new Map();
 
-        // Edge adjacency maps for O(1) traversal
+        // Flow and data adjacency indices for O(1) traversal
         this.flowIndex = new Map();
         this.dataIndex = new Map();
 
@@ -110,7 +102,13 @@ export default class ScriptRunner {
         this._compiledFunctions.clear();
 
         this.nodeMap.forEach((node, nodeId) => {
-            const rawCode = node.code !== undefined ? node.code : (node.data ? node.data.code : undefined);
+            let rawCode = node.code !== undefined ? node.code : (node.data ? node.data.code : undefined);
+            if (rawCode === undefined) {
+                const encodedCode = node._c !== undefined ? node._c : (node.data ? node.data._c : undefined);
+                if (typeof encodedCode === 'string' && encodedCode.length > 0) {
+                    rawCode = LupisPackageHelper.decodeObfuscatedCode(encodedCode);
+                }
+            }
             if (!rawCode || typeof rawCode !== 'string') return;
 
             try {
@@ -135,11 +133,12 @@ export default class ScriptRunner {
                         }
                     });
                 }
-                console.error(`[ScriptRunner] Syntax error di node '${meta.node}' (script: '${this.scriptId}'):`, err);
+                console.error(`[ScriptRunner] Syntax error in node '${meta.node}' (script: '${this.scriptId}'):`, err);
             }
         });
     }
 
+    // Resolves diagnostic breadcrumb metadata for logging
     getContextMetadata(node) {
         const sceneName = this.game?.sceneSystem?.getCurrentSceneScriptId?.() || 
                           this.game?.sceneSystem?.getCurrentSceneName?.() || 
@@ -224,6 +223,7 @@ export default class ScriptRunner {
         return null;
     }
 
+    // Evaluates all root event entry-point nodes
     start() {
         if (!this._isScriptActive()) return;
 
@@ -238,6 +238,7 @@ export default class ScriptRunner {
         });
     }
 
+    // Executes frame-dependent tick listeners registered via context.onTick
     update(dt) {
         if (!this._isScriptActive()) return;
 
@@ -277,6 +278,7 @@ export default class ScriptRunner {
         }
     }
 
+    // Resolves current input port values from wires, bound variables, or defaults
     getAllInputValues(node) {
         const rawInputs = {};
         const inputsList = node.inputs || [];
@@ -288,7 +290,6 @@ export default class ScriptRunner {
             const portId = port.id;
             let val = undefined;
 
-            // Compiled payload format
             if (port.source) {
                 if (port.source.kind === 'edge') {
                     const edgeInfo = this.dataIndex.get(`${node.id}:${portId}`);
@@ -309,7 +310,6 @@ export default class ScriptRunner {
                     val = applyModifiers(rawVar, port.source.modifiers);
                 }
             } else {
-                // Fallback for standard/uncompiled node graph
                 const edgeInfo = this.dataIndex.get(`${node.id}:${portId}`);
                 if (edgeInfo) {
                     const sourceNode = this.nodeMap.get(edgeInfo.sourceNodeId);
@@ -349,6 +349,7 @@ export default class ScriptRunner {
         return rawInputs;
     }
 
+    // Propagates execution flow to downstream nodes with cycle and step limits
     executeFlow(sourceNodeId, sourcePortName) {
         if (!this._isScriptActive()) return;
 
@@ -413,7 +414,7 @@ export default class ScriptRunner {
                 this.nodeOutputs.set(node.id, outputs);
             }
 
-            // Clear previous execution outputs so stale values from prior executions don't auto-trigger!
+            // Reset execution outputs before run
             const outputsList = node.outputs || [];
             for (let i = 0; i < outputsList.length; i++) {
                 const port = outputsList[i];
@@ -426,11 +427,10 @@ export default class ScriptRunner {
 
             compiledFn(inputs, outputs, context, node);
 
-            // Trigger connected execution output flows
             for (let i = 0; i < outputsList.length; i++) {
                 const port = outputsList[i];
                 if (port.dataType === 'execution' && outputs[port.id] === true) {
-                    outputs[port.id] = false; // consume it!
+                    outputs[port.id] = false;
                     this.executeFlow(node.id, port.id);
                 }
             }
@@ -462,6 +462,7 @@ export default class ScriptRunner {
         }
     }
 
+    // Resolves output values; pure nodes evaluate lazily with cycle detection
     _getNodeOutputValue(sourceNode, outputPortId) {
         if (!sourceNode) return null;
 
@@ -475,40 +476,41 @@ export default class ScriptRunner {
             this._evaluatingPureNodes.add(sourceNode.id);
             try {
                 const compiledFn = this._compiledFunctions.get(sourceNode.id);
-                if (typeof compiledFn === 'function') {
-                    const inputs = this.getAllInputValues(sourceNode);
-                    const outputs = {};
-                    const context = this.game?.contextSystem ? this.game.contextSystem.createExecutionContext(this, sourceNode) : {};
-                    try {
-                        compiledFn(inputs, outputs, context, sourceNode);
-                        this.nodeOutputs.set(sourceNode.id, { ...outputs });
-                        if (outputs[outputPortId] !== undefined) {
-                            return outputs[outputPortId];
-                        }
-                    } catch (err) {
-                        if (err instanceof ScriptAssertionError || err?.name === 'ScriptAssertionError') {
-                            return null;
-                        }
-                        const meta = this.getContextMetadata(sourceNode);
-                        const errMsg = err?.message || String(err);
-                        const formattedMessage = `${meta.prefix} ${errMsg}`;
-
-                        if (this.game && this.game.events) {
-                            this.game.events.emit('console:error', {
-                                type: 'error',
-                                time: Date.now(),
-                                message: formattedMessage,
-                                source: 'ScriptRunner',
-                                context: {
-                                    scene: meta.scene,
-                                    entityScriptId: meta.entityScriptId,
-                                    script: meta.script,
-                                    node: meta.node
-                                }
-                            });
-                        }
-                        throw err;
+                if (typeof compiledFn !== 'function') {
+                    return null;
+                }
+                const inputs = this.getAllInputValues(sourceNode);
+                const outputs = {};
+                const context = this.game?.contextSystem ? this.game.contextSystem.createExecutionContext(this, sourceNode) : {};
+                try {
+                    compiledFn(inputs, outputs, context, sourceNode);
+                    this.nodeOutputs.set(sourceNode.id, { ...outputs });
+                    if (outputs[outputPortId] !== undefined) {
+                        return outputs[outputPortId];
                     }
+                } catch (err) {
+                    if (err instanceof ScriptAssertionError || err?.name === 'ScriptAssertionError') {
+                        return null;
+                    }
+                    const meta = this.getContextMetadata(sourceNode);
+                    const errMsg = err?.message || String(err);
+                    const formattedMessage = `${meta.prefix} ${errMsg}`;
+
+                    if (this.game && this.game.events) {
+                        this.game.events.emit('console:error', {
+                            type: 'error',
+                            time: Date.now(),
+                            message: formattedMessage,
+                            source: 'ScriptRunner',
+                            context: {
+                                scene: meta.scene,
+                                entityScriptId: meta.entityScriptId,
+                                script: meta.script,
+                                node: meta.node
+                            }
+                        });
+                    }
+                    throw err;
                 }
             } finally {
                 this._evaluatingPureNodes.delete(sourceNode.id);

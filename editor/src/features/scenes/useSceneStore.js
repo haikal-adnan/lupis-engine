@@ -1,12 +1,7 @@
+// Scene management, layers, entity hierarchies, components, and viewport selections.
+
 import { defineStore } from 'pinia';
 import { useProjectStore } from '@projects/projects.js';
-import { 
-  useSceneActions, 
-  useLayerActions, 
-  useEntityActions, 
-  useSettingActions, 
-  useAnimatorActions 
-} from '@scenes/scenes.js';
 
 export const useSceneStore = defineStore('scene', {
   state: () => ({
@@ -17,7 +12,6 @@ export const useSceneStore = defineStore('scene', {
 
   getters: {
     activeScene: (state) => state.scenes.find(s => s.id === state.activeSceneId),
-    
     getSceneById: (state) => (id) => state.scenes.find(s => s.id === id),
     
     sceneOptions: (state) => state.scenes.map(scene => ({
@@ -30,6 +24,7 @@ export const useSceneStore = defineStore('scene', {
       return scene ? scene.entities : [];
     },
     
+    // Combines world and UI layers of the active scene into a single tagged list
     activeLayers: (state) => {
       const scene = state.scenes.find(s => s.id === state.activeSceneId);
       if (!scene) return [];
@@ -45,12 +40,7 @@ export const useSceneStore = defineStore('scene', {
   },
 
   actions: {
-    ...useSceneActions,
-    ...useLayerActions,
-    ...useEntityActions,
-    ...useSettingActions,
-    ...useAnimatorActions,
-
+    // Initializes scenes and activates initial scene from project settings
     initScenes(sceneList, initialSceneId = null) {
       this.scenes = Array.isArray(sceneList) ? sceneList : [];
       if (this.scenes.length > 0) {
@@ -120,6 +110,7 @@ export const useSceneStore = defineStore('scene', {
       }
     },
 
+    // Synchronizes component updates emitted by the runtime engine
     syncComponentFromEngine(entityId, componentName, data) {
       const scene = this.activeScene;
       if (!scene) return;
@@ -137,6 +128,7 @@ export const useSceneStore = defineStore('scene', {
       };
     },
 
+    // Fast transform synchronization for gizmo drags and physics ticks
     syncTransformFromEngine(entityId, transformData) {
       const scene = this.activeScene;
       if (!scene) return;

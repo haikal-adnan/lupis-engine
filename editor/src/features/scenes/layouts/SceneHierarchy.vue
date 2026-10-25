@@ -56,13 +56,17 @@ import {
   useHierarchyMenu,
   HierarchyToolbar,
   SceneTree,
-  useSceneStore
+  useSceneStore,
+  useEntityActions,
+  useLayerActions
 } from '@scenes/scenes.js'
 
 import { engineBridge } from "@engines/engines.js";
 import { usePrefabActions } from '@prefabs/prefabs.js';
 
 const sceneStore = useSceneStore()
+const entityActions = useEntityActions()
+const layerActions = useLayerActions()
 const { prompt } = usePrompt() 
 const { treeData, moveEntity } = useHierarchyLogic()
 const { searchQuery, filteredData } = useHierarchyFilter(treeData)
@@ -75,13 +79,13 @@ const isRefreshing = ref(false)
 const handlers = {
   addLayer: async () => {
     const name = await prompt({ title: 'New Layer', message: 'Enter layer name:', defaultValue: 'New Layer', confirmText: 'Create' })
-    if (name) sceneStore.addLayer(name)
+    if (name) layerActions.addLayer(name)
   },
   renameLayer: async (layerId) => {
     const layer = sceneStore.activeLayers.find(l => l.id === layerId)
     if (!layer) return
     const newName = await prompt({ title: 'Rename Layer', defaultValue: layer.scriptId, confirmText: 'Rename' })
-    if (newName?.trim()) sceneStore.updateLayerScriptId(layerId, newName)
+    if (newName?.trim()) layerActions.updateLayerScriptId(layerId, newName)
   },
   changeZIndex: async (layerId) => {
     const layer = sceneStore.activeLayers.find(l => l.id === layerId)
@@ -93,16 +97,16 @@ const handlers = {
       confirmText: 'Update',
     })
     if (newZ !== null && newZ !== undefined) {
-       sceneStore.updateLayerZIndex(layerId, newZ)
+       layerActions.updateLayerZIndex(layerId, newZ)
     }
   },
-  createEntity: (...args) => sceneStore.createEntity(...args),
+  createEntity: (...args) => entityActions.createEntity(...args),
   renameEntity: async (entityId) => {
     const entity = sceneStore.activeEntities.find(e => e.id === entityId)
     if (!entity) return
     const title = 'Rename Entity'
     const newName = await prompt({ title, defaultValue: entity.scriptId, confirmText: 'Rename' })
-    if (newName?.trim()) sceneStore.updateEntityScriptId(entityId, newName)
+    if (newName?.trim()) entityActions.updateEntityScriptId(entityId, newName)
   },
   
   useAsPrefab: async (entityId) => {

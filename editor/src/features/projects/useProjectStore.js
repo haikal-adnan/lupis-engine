@@ -1,3 +1,5 @@
+// Project manifest, editor settings, synchronization status, and save/load cycles.
+
 import { defineStore } from 'pinia';
 import { toRaw } from 'vue';
 import { normalizer } from '@utils/utils.js';
@@ -23,6 +25,8 @@ export const useProjectStore = defineStore('project', {
     activeProject: (state) => state.project,
     isDirty: (state) => state.syncStatus === 'dirty',
     isSynced: (state) => state.syncStatus === 'synced',
+    
+    // Consolidates project metadata and engine settings for configuration dialogs
     projectSettings: (state) => ({
       name: state.project?.name,
       description: state.project?.description,
@@ -51,6 +55,7 @@ export const useProjectStore = defineStore('project', {
       useWorkspaceStore().$reset();
     },
 
+    // Loads a project by ID from storage, normalizes schemas, and initializes stores
     async loadProject(projectId) {
       this.clearProjectData();
       const workspaceStore = useWorkspaceStore();
@@ -90,6 +95,7 @@ export const useProjectStore = defineStore('project', {
       workspaceStore.setLoading(false);
     },
 
+    // Reloads the active project from storage and resyncs engine and stores
     async syncFromServer() {
       const workspaceStore = useWorkspaceStore();
       const assetStore = useAssetStore();
@@ -143,6 +149,7 @@ export const useProjectStore = defineStore('project', {
       workspaceStore.setLoading(false);
     },
 
+    // Captures canvas snapshot and persists all project store data to OPFS
     async saveProjectToServer(options = {}) {
       const workspaceStore = useWorkspaceStore();
       const { syncProject } = useProjectActions();
@@ -152,7 +159,6 @@ export const useProjectStore = defineStore('project', {
       workspaceStore.setSaving(true, isAuto ? 'Auto-saving project...' : 'Saving project to storage...');
 
       try {
-        // Capture last snapshot from scene canvas if available
         try {
           if (typeof document !== 'undefined') {
             const canvas = document.querySelector('canvas');
@@ -172,7 +178,7 @@ export const useProjectStore = defineStore('project', {
             }
           }
         } catch {
-          // Fallback gracefully in headless/mock test environments
+          // Graceful fallback for mock or headless test environments
         }
 
         const sceneStore = useSceneStore();
@@ -181,7 +187,6 @@ export const useProjectStore = defineStore('project', {
         const assetStore = useAssetStore();
         const folderStore = useFolderStore();
 
-        // Sync folder & asset structure data
         await folderStore.syncFoldersToOPFS();
         await assetStore.syncAssetsToOPFS();
 
@@ -333,7 +338,6 @@ export const useProjectStore = defineStore('project', {
       const oldLower = oldClean.toLowerCase();
       const newLower = newClean.toLowerCase();
 
-      // Check if new name exists (other than oldTag itself)
       const duplicate = this.project.tags.some(t => t.toLowerCase() === newLower && t.toLowerCase() !== oldLower);
       if (duplicate) return false;
 

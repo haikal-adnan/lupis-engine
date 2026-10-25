@@ -1,3 +1,5 @@
+// Standard dictionary, validation rules, and protected system ports for visual script nodes.
+
 export const PORT_ID_REGEX = /^[A-Za-z][A-Za-z0-9]{0,31}$/;
 
 export const PROTECTED_PORTS = Object.freeze([

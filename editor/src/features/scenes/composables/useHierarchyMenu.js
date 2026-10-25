@@ -1,7 +1,7 @@
 import { ref } from 'vue'; 
 import { useWorkspaceStore } from '@workspaces/workspaces.js';
 import { useClipboard } from '@composables/composables.js';
-import { useSceneStore } from '@scenes/scenes.js';
+import { useSceneStore, useLayerActions } from '@scenes/scenes.js';
 
 import { 
   Plus, Trash2, Edit2, RefreshCw, 
@@ -14,6 +14,7 @@ export function useHierarchyMenu(handlers) {
   const contextMenu = ref({ visible: false, x: 0, y: 0, items: [] });
   const workspaceStore = useWorkspaceStore();
   const sceneStore = useSceneStore();
+  const { updateLayerProp } = useLayerActions();
   const { copy, cut, paste, duplicate, remove } = useClipboard();
 
   const closeMenu = () => {
@@ -111,7 +112,7 @@ export function useHierarchyMenu(handlers) {
           { 
             label: isVisible ? 'Hide Layer' : 'Show Layer', 
             icon: isVisible ? EyeOff : Eye, 
-            action: () => runAction(() => sceneStore.updateLayerProp(node.id, 'visible', !isVisible)) 
+            action: () => runAction(() => updateLayerProp(node.id, 'visible', !isVisible)) 
           },
           { separator: true },
           { label: 'Duplicate', icon: Files, shortcut: 'Ctrl+D', action: () => runAction(() => duplicate(node.id)) },

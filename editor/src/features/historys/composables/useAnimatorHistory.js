@@ -1,5 +1,6 @@
 import { useHistory } from '@historys/historys.js';
 import { useSceneStore } from '@scenes/scenes.js';
+import { useAnimatorActions } from '@animators/animators.js';
 
 let activeTransaction = null;
 let clearTransactionTimer = null;
@@ -49,7 +50,8 @@ export function useAnimatorHistory() {
 
   const commitClipsState = (entityId, clipsData) => {
     if (!entityId || !clipsData) return;
-    sceneStore._saveAnimatorClips(entityId, deepClone(clipsData));
+    const { _saveAnimatorClips } = useAnimatorActions();
+    _saveAnimatorClips(entityId, deepClone(clipsData));
   };
 
   const setPropByPath = (clips, targetId, path, val) => {

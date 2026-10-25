@@ -13,6 +13,7 @@
     "buildDependenciesFromSource": false,
     "files": [
       "main.js",
+      "preload.js",
       "web/**/*"
     ],
     "win": {

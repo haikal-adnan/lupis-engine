@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
-import { useSceneStore } from '@scenes/scenes.js'
+import { useSceneStore, useSceneActions } from '@scenes/scenes.js'
 import { useProjectStore } from '@projects/projects.js'
 import { engineBridge } from '@engines/engines.js'
 import {
@@ -13,6 +13,7 @@ import {
 describe('Scene Management Integration', () => {
   let sceneStore
   let projectStore
+  let sceneActions
 
   beforeEach(() => {
     setActivePinia(createPinia())
@@ -20,6 +21,7 @@ describe('Scene Management Integration', () => {
 
     sceneStore = useSceneStore()
     projectStore = useProjectStore()
+    sceneActions = useSceneActions()
 
     // Inisialisasi state project minimal
     projectStore.project = {
@@ -43,7 +45,7 @@ describe('Scene Management Integration', () => {
       const newSceneScriptId = 'Level_2_Forest'
 
       // Act
-      const createdScene = sceneStore.addScene({ scriptId: newSceneScriptId })
+      const createdScene = sceneActions.addScene({ scriptId: newSceneScriptId })
 
       // Assert
       expect(sceneStore.scenes).toHaveLength(initialSceneCount + 1)
@@ -94,7 +96,7 @@ describe('Scene Management Integration', () => {
       sceneStore.initScenes([targetScene])
 
       // Act
-      sceneStore.updateSceneScriptId(targetScene.id, 'Renamed_Scene_Name')
+      sceneActions.updateSceneScriptId(targetScene.id, 'Renamed_Scene_Name')
 
       // Assert
       const updatedScene = sceneStore.getSceneById(targetScene.id)
@@ -113,7 +115,7 @@ describe('Scene Management Integration', () => {
       sceneStore.initScenes([originalScene])
 
       // Act
-      const duplicatedScene = sceneStore.duplicateScene(originalScene.id)
+      const duplicatedScene = sceneActions.duplicateScene(originalScene.id)
 
       // Assert
       expect(sceneStore.scenes).toHaveLength(2)
@@ -135,7 +137,7 @@ describe('Scene Management Integration', () => {
       sceneStore.setActiveScene(scene2.id)
 
       // Act
-      sceneStore.removeScene(scene2.id)
+      sceneActions.removeScene(scene2.id)
 
       // Assert
       expect(sceneStore.scenes).toHaveLength(1)
@@ -150,7 +152,7 @@ describe('Scene Management Integration', () => {
 
       // Act & Assert
       expect(() => {
-        sceneStore.removeScene(singleScene.id)
+        sceneActions.removeScene(singleScene.id)
       }).toThrow('MIN_SCENE_LIMIT')
 
       expect(sceneStore.scenes).toHaveLength(1)

@@ -1,9 +1,11 @@
 import { useWorkspaceStore } from '@workspaces/workspaces.js';
-import { useSceneStore } from '@scenes/scenes.js';
+import { useSceneStore, useEntityActions, useLayerActions } from '@scenes/scenes.js';
 
 export function useClipboard() {
   const workspaceStore = useWorkspaceStore();
   const sceneStore = useSceneStore();
+  const entityActions = useEntityActions();
+  const layerActions = useLayerActions();
 
   const getTargets = (explicitId) => {
     if (explicitId) return [explicitId];
@@ -21,10 +23,10 @@ export function useClipboard() {
     if (targets.length === 0) return;
 
     if (isLayerId(targets[0])) {
-      const data = sceneStore.getLayerData(targets[0]);
+      const data = layerActions.getLayerData(targets[0]);
       if (data) workspaceStore.setClipboard('layer', data, 'copy');
     } else {
-      const data = sceneStore.getEntityDataForClipboard(targets);
+      const data = entityActions.getEntityDataForClipboard(targets);
       if (data && data.length > 0) workspaceStore.setClipboard('entity', data, 'copy');
     }
   };
@@ -34,16 +36,16 @@ export function useClipboard() {
     if (targets.length === 0) return;
 
     if (isLayerId(targets[0])) {
-      const data = sceneStore.getLayerData(targets[0]);
+      const data = layerActions.getLayerData(targets[0]);
       if (data) {
         workspaceStore.setClipboard('layer', data, 'cut');
-        sceneStore.deleteLayer(targets[0]);
+        layerActions.deleteLayer(targets[0]);
       }
     } else {
-      const data = sceneStore.getEntityDataForClipboard(targets);
+      const data = entityActions.getEntityDataForClipboard(targets);
       if (data && data.length > 0) {
         workspaceStore.setClipboard('entity', data, 'cut');
-        targets.forEach(id => sceneStore.deleteEntity(id));
+        targets.forEach(id => entityActions.deleteEntity(id));
       }
     }
   };
@@ -53,9 +55,9 @@ export function useClipboard() {
     if (targets.length === 0) return;
 
     if (isLayerId(targets[0])) {
-      return sceneStore.duplicateLayer(targets[0]);
+      return layerActions.duplicateLayer(targets[0]);
     } else {
-      return sceneStore.duplicateEntity(targets);
+      return entityActions.duplicateEntity(targets);
     }
   };
 
@@ -64,9 +66,9 @@ export function useClipboard() {
     if (targets.length === 0) return;
 
     if (isLayerId(targets[0])) {
-      sceneStore.deleteLayer(targets[0]);
+      layerActions.deleteLayer(targets[0]);
     } else {
-      targets.forEach(id => sceneStore.deleteEntity(id));
+      targets.forEach(id => entityActions.deleteEntity(id));
     }
   };
 
@@ -80,7 +82,7 @@ export function useClipboard() {
       const sourceData = Array.isArray(data) ? data[0] : data;
       const targetSection = sourceData?.section || 'world';
 
-      resultIds = sceneStore.pasteLayer(workspaceStore.clipboard, targetSection);
+      resultIds = layerActions.pasteLayer(workspaceStore.clipboard, targetSection);
       
     } else if (type === 'entity') {
       let context = {};
@@ -102,7 +104,7 @@ export function useClipboard() {
         }
       }
 
-      resultIds = sceneStore.pasteEntity(data, context);
+      resultIds = entityActions.pasteEntity(data, context);
     }
 
     if (mode === 'cut') {

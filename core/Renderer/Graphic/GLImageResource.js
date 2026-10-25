@@ -1,4 +1,5 @@
 import OPFSHelper from "../../Util/opfsHelper.js";
+import LupisPackageHelper from "../../Util/LupisPackageHelper.js";
 
 let __textureID = 1;
 
@@ -16,30 +17,49 @@ export default class GLImageResource {
     let srcForImage = '';
 
     const ext = asset.meta?.extension || '';
+    const isOpfsMode = typeof opfsConfig === 'object' && opfsConfig !== null && opfsConfig.projectId;
 
-    if (asset.fileKey && ext) {
-      const fileName = `${asset.fileKey}${ext}`;
+    if (asset.fileKey && (ext || asset.meta?.lupisDataFile)) {
+      const rawFileName = `${asset.fileKey}${ext}`;
+      const protectedFileName = asset.meta?.lupisDataFile || `${asset.fileKey}.lupisdata`;
 
-      if (typeof opfsConfig === 'object' && opfsConfig !== null && opfsConfig.projectId) {
-        objectUrl = await this._getOpfsBlobUrl(opfsConfig.projectId, fileName);
+      if (isOpfsMode) {
+        objectUrl = await this._getOpfsBlobUrl(opfsConfig.projectId, rawFileName);
         srcForImage = objectUrl;
-      } 
-      else if (typeof opfsConfig === 'string' && opfsConfig.length > 0) {
+      } else if (typeof opfsConfig === 'string' && opfsConfig.length > 0) {
         const cleanBaseURL = opfsConfig.replace(/\/$/, "");
-        if (asset.fileUrl && (asset.fileUrl.startsWith('http') || asset.fileUrl.startsWith('/'))) {
+        const targetFile = (asset.meta?.protected || asset.meta?.lupisDataFile) ? protectedFileName : rawFileName;
+
+        if (asset.fileUrl && (asset.fileUrl.startsWith('http') || asset.fileUrl.startsWith('/')) && !asset.meta?.protected) {
           srcForImage = asset.fileUrl;
         } else {
-          srcForImage = `${cleanBaseURL}/assets/${fileName}`;
+          srcForImage = `${cleanBaseURL}/assets/${targetFile}`;
         }
-      } 
-      else {
-        srcForImage = asset.fileUrl || fileName;
+      } else {
+        srcForImage = asset.fileUrl || rawFileName;
       }
     } else {
       srcForImage = asset.fileUrl || '';
     }
 
     try {
+      if (!isOpfsMode && srcForImage && !srcForImage.startsWith('blob:') && !srcForImage.startsWith('data:')) {
+        if (srcForImage.endsWith('.lupisdata') || asset.meta?.protected || LupisPackageHelper.hasVirtualArchive()) {
+          objectUrl = await LupisPackageHelper.createDecodedBlobUrl(srcForImage);
+          srcForImage = objectUrl;
+        } else if (asset.fileKey && typeof opfsConfig === 'string' && opfsConfig.length > 0) {
+          try {
+            objectUrl = await LupisPackageHelper.createDecodedBlobUrl(srcForImage);
+            srcForImage = objectUrl;
+          } catch {
+            const cleanBaseURL = opfsConfig.replace(/\/$/, "");
+            const fallbackProtectedUrl = `${cleanBaseURL}/assets/${asset.fileKey}.lupisdata`;
+            objectUrl = await LupisPackageHelper.createDecodedBlobUrl(fallbackProtectedUrl);
+            srcForImage = objectUrl;
+          }
+        }
+      }
+
       const img = await this._loadImage(srcForImage);
       const textureData = this._uploadToGPU(img);
       textureData.src = srcForImage;
@@ -80,6 +100,9 @@ export default class GLImageResource {
         targetUrl = await OPFSHelper.createBlobUrl(parsed.projectId, parsed.fileName);
         isBlob = true;
       }
+    } else if (url.endsWith('.lupisdata') || LupisPackageHelper.hasVirtualArchive()) {
+      targetUrl = await LupisPackageHelper.createDecodedBlobUrl(url);
+      isBlob = true;
     }
 
     try {

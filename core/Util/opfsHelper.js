@@ -1,19 +1,9 @@
-/**
- * OPFS (Origin Private File System) Helper Module
- * Centralized utility for handling all local storage operations in Lupis Engine.
- */
-
 const ROOT_APP_DIR = 'lupis-engine';
 const PROJECTS_DIR = 'projects';
 const ASSETS_DIR = 'assets';
 
 export class OPFSHelper {
-  /**
-   * Mengambil handle ke direktori assets milik project spesifik.
-   * Path: lupis-engine / projects / {projectId} / assets
-   * @param {string|number} projectId 
-   * @returns {Promise<FileSystemDirectoryHandle>}
-   */
+  // Returns directory handle for a project's assets folder (lupis-engine/projects/{projectId}/assets)
   static async getProjectAssetsDir(projectId) {
     try {
       const root = await navigator.storage.getDirectory();
@@ -27,12 +17,6 @@ export class OPFSHelper {
     }
   }
 
-  /**
-   * Reads a file from OPFS and returns a File object.
-   * @param {string|number} projectId 
-   * @param {string} fileName 
-   * @returns {Promise<File>}
-   */
   static async getFile(projectId, fileName) {
     try {
       const assetsDir = await this.getProjectAssetsDir(projectId);
@@ -44,12 +28,6 @@ export class OPFSHelper {
     }
   }
 
-  /**
-   * Writes/Saves Blob or File into OPFS.
-   * @param {string|number} projectId 
-   * @param {string} fileName 
-   * @param {Blob|File|ArrayBuffer|string} content 
-   */
   static async saveFile(projectId, fileName, content) {
     try {
       const assetsDir = await this.getProjectAssetsDir(projectId);
@@ -65,11 +43,6 @@ export class OPFSHelper {
     }
   }
 
-  /**
-   * Deletes a file from OPFS.
-   * @param {string|number} projectId 
-   * @param {string} fileName 
-   */
   static async deleteFile(projectId, fileName) {
     try {
       const assetsDir = await this.getProjectAssetsDir(projectId);
@@ -81,45 +54,22 @@ export class OPFSHelper {
     }
   }
 
-  /**
-   * Reads file as Blob URL (used for Image & Font Texture Blob URL).
-   * Note: Remember to call URL.revokeObjectURL(url) when finished!
-   * @param {string|number} projectId 
-   * @param {string} fileName 
-   * @returns {Promise<string>}
-   */
+  // Caller is responsible for calling URL.revokeObjectURL(url) when finished
   static async createBlobUrl(projectId, fileName) {
     const file = await this.getFile(projectId, fileName);
     return URL.createObjectURL(file);
   }
 
-  /**
-   * Reads file as ArrayBuffer (used for decodeAudioData Web Audio API).
-   * @param {string|number} projectId 
-   * @param {string} fileName 
-   * @returns {Promise<ArrayBuffer>}
-   */
   static async readAsArrayBuffer(projectId, fileName) {
     const file = await this.getFile(projectId, fileName);
     return await file.arrayBuffer();
   }
 
-  /**
-   * Reads file as text (used for `.fnt` BMFont/XML).
-   * @param {string|number} projectId 
-   * @param {string} fileName 
-   * @returns {Promise<string>}
-   */
   static async readAsText(projectId, fileName) {
     const file = await this.getFile(projectId, fileName);
     return await file.text();
   }
 
-  /**
-   * Returns list of all file names in project assets folder.
-   * @param {string|number} projectId 
-   * @returns {Promise<string[]>}
-   */
   static async listAssetFiles(projectId) {
     try {
       const assetsDir = await this.getProjectAssetsDir(projectId);
@@ -136,12 +86,7 @@ export class OPFSHelper {
     }
   }
 
-  /**
-   * Utility parser to resolve opfs:// URI schemes
-   * Supported formats: "opfs://projects/123/asset_key.png" or "opfs://123/asset_key.png"
-   * @param {string} opfsUrl 
-   * @returns {{ projectId: string, fileName: string } | null}
-   */
+  // Resolves "opfs://projects/{id}/{file}" or "opfs://{id}/{file}"
   static parseOpfsUrl(opfsUrl) {
     if (!opfsUrl || !opfsUrl.startsWith('opfs://')) return null;
     const cleanPath = opfsUrl.replace('opfs://', '');

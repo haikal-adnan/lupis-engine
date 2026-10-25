@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { setActivePinia, createPinia } from 'pinia';
-import { useSceneStore, entitySchema, layerSchema } from '@scenes/scenes.js';
+import { useSceneStore, useEntityActions, useLayerActions, entitySchema, layerSchema } from '@scenes/scenes.js';
 import { useWorkspaceStore } from '@workspaces/workspaces.js';
 import { useClipboard } from '@composables/composables.js';
 import { engineBridge } from '@engines/engines.js';
@@ -34,6 +34,8 @@ describe('Entity Duplication, Copy-Paste Hierarchy & Clipboard Isolation', () =>
   let sceneStore;
   let workspaceStore;
   let clipboard;
+  let entityActions;
+  let layerActions;
 
   beforeEach(() => {
     setActivePinia(createPinia());
@@ -42,6 +44,8 @@ describe('Entity Duplication, Copy-Paste Hierarchy & Clipboard Isolation', () =>
     sceneStore = useSceneStore();
     workspaceStore = useWorkspaceStore();
     clipboard = useClipboard();
+    entityActions = useEntityActions();
+    layerActions = useLayerActions();
 
     const defaultLayer = layerSchema({
       id: 'layer_world_default',
@@ -87,7 +91,7 @@ describe('Entity Duplication, Copy-Paste Hierarchy & Clipboard Isolation', () =>
       sceneStore.selectedEntityIds = ['ent_parent_1', 'ent_child_1'];
 
       // Act
-      const clonedIds = sceneStore.duplicateEntity();
+      const clonedIds = entityActions.duplicateEntity();
 
       // Assert:
       // Both new parent and its child are returned and selected
@@ -130,7 +134,7 @@ describe('Entity Duplication, Copy-Paste Hierarchy & Clipboard Isolation', () =>
       sceneStore.selectedEntityIds = ['p_src', 'c_src'];
 
       // Act 1: Duplicate
-      const clonedIds = sceneStore.duplicateEntity();
+      const clonedIds = entityActions.duplicateEntity();
       expect(clonedIds).toHaveLength(2);
       expect(sceneStore.selectedEntityIds).toEqual(clonedIds);
 
@@ -139,7 +143,7 @@ describe('Entity Duplication, Copy-Paste Hierarchy & Clipboard Isolation', () =>
 
       // Act 2: Delete via selected targets (just like user pressing Delete after duplicate)
       const targetsToDelete = [...sceneStore.selectedEntityIds];
-      targetsToDelete.forEach(id => sceneStore.deleteEntity(id));
+      targetsToDelete.forEach(id => entityActions.deleteEntity(id));
 
       // Assert
       expect(sceneStore.activeScene.entities).toHaveLength(2); // Only original p_src and c_src remain
@@ -169,7 +173,7 @@ describe('Entity Duplication, Copy-Paste Hierarchy & Clipboard Isolation', () =>
       sceneStore.selectedEntityIds = ['ent_a', 'ent_b'];
 
       // Act
-      const clonedIds = sceneStore.duplicateEntity();
+      const clonedIds = entityActions.duplicateEntity();
 
       // Assert
       const clones = sceneStore.activeScene.entities.filter(e => clonedIds.includes(e.id));
@@ -271,7 +275,7 @@ describe('Entity Duplication, Copy-Paste Hierarchy & Clipboard Isolation', () =>
       sceneStore.activeScene.entities.push(parent, child);
 
       // Act: Duplicate source layer
-      const createdLayerIds = sceneStore.duplicateLayer(sourceLayer.id);
+      const createdLayerIds = layerActions.duplicateLayer(sourceLayer.id);
 
       // Assert
       expect(createdLayerIds).toHaveLength(1);

@@ -1,4 +1,5 @@
 import OPFSHelper from "../../Util/opfsHelper.js";
+import LupisPackageHelper from "../../Util/LupisPackageHelper.js";
 
 export default class GLFontResource {
   constructor(gl) {
@@ -48,6 +49,8 @@ export default class GLFontResource {
       if (asset.fileKey) {
         const xmlFileName = `${asset.fileKey}.fnt`;
         const texFileName = `${asset.fileKey}.png`;
+        const protectedXmlName = asset.meta?.fntLupisData || `${asset.fileKey}_fnt.lupisdata`;
+        const protectedTexName = asset.meta?.texLupisData || `${asset.fileKey}_tex.lupisdata`;
 
         if (typeof opfsConfig === 'object' && opfsConfig !== null && opfsConfig.projectId) {
           const [fetchedXmlText, blobUrl] = await Promise.all([
@@ -77,13 +80,48 @@ export default class GLFontResource {
         } 
         else if (typeof opfsConfig === 'string' && opfsConfig.length > 0) {
           const cleanBaseURL = opfsConfig.replace(/\/$/, "");
-          if (asset.fileUrl && (asset.fileUrl.startsWith('http') || asset.fileUrl.startsWith('/'))) {
+          const isProtected = Boolean(asset.meta?.protected || asset.meta?.fntLupisData || asset.meta?.texLupisData);
+
+          if (!isProtected && asset.fileUrl && (asset.fileUrl.startsWith('http') || asset.fileUrl.startsWith('/'))) {
             xmlUrl = asset.fileUrl;
             texUrl = asset.meta?.textureUrl || `${cleanBaseURL}/assets/${texFileName}`;
           } else {
-            xmlUrl = `${cleanBaseURL}/assets/${xmlFileName}`;
-            texUrl = `${cleanBaseURL}/assets/${texFileName}`;
+            xmlUrl = `${cleanBaseURL}/assets/${isProtected ? protectedXmlName : xmlFileName}`;
+            texUrl = `${cleanBaseURL}/assets/${isProtected ? protectedTexName : texFileName}`;
           }
+
+          try {
+            const [fetchedText, decodedTexBlobUrl] = await Promise.all([
+              LupisPackageHelper.fetchText(xmlUrl),
+              LupisPackageHelper.createDecodedBlobUrl(texUrl, 'image/png')
+            ]);
+            xmlText = fetchedText;
+            textureBlobUrl = decodedTexBlobUrl;
+          } catch {
+            const fallbackXmlUrl = `${cleanBaseURL}/assets/${protectedXmlName}`;
+            const fallbackTexUrl = `${cleanBaseURL}/assets/${protectedTexName}`;
+            const [fetchedText, decodedTexBlobUrl] = await Promise.all([
+              LupisPackageHelper.fetchText(fallbackXmlUrl),
+              LupisPackageHelper.createDecodedBlobUrl(fallbackTexUrl, 'image/png')
+            ]);
+            xmlText = fetchedText;
+            textureBlobUrl = decodedTexBlobUrl;
+          }
+
+          const img = await this._loadImage(textureBlobUrl);
+          const fontData = this._parseFontXML(xmlText);
+          const glTexture = this._uploadFontTexture(img);
+
+          return {
+            id: asset.id,
+            fileurl: xmlUrl,
+            textureurl: texUrl,
+            glTexture: glTexture,
+            chars: fontData.chars,
+            common: fontData.common,
+            info: fontData.info,
+            ready: true
+          };
         } 
         else {
           xmlUrl = asset.fileUrl || xmlFileName;
@@ -94,14 +132,19 @@ export default class GLFontResource {
         texUrl = asset.meta?.textureUrl || '';
       }
 
-      const [xmlRes, img] = await Promise.all([
-        fetch(xmlUrl),
-        this._loadImage(texUrl)
+      const [fetchedText, decodedTexBlobUrl] = await Promise.all([
+        LupisPackageHelper.fetchText(xmlUrl),
+        texUrl.startsWith('blob:') || texUrl.startsWith('data:')
+          ? Promise.resolve(texUrl)
+          : LupisPackageHelper.createDecodedBlobUrl(texUrl, 'image/png')
       ]);
 
-      if (!xmlRes.ok) throw new Error(`Failed to fetch XML: ${xmlUrl}`);
-      xmlText = await xmlRes.text();
+      xmlText = fetchedText;
+      if (decodedTexBlobUrl !== texUrl) {
+        textureBlobUrl = decodedTexBlobUrl;
+      }
 
+      const img = await this._loadImage(decodedTexBlobUrl);
       const fontData = this._parseFontXML(xmlText);
       const glTexture = this._uploadFontTexture(img);
 
@@ -199,11 +242,13 @@ export default class GLFontResource {
         base: +commonNode.getAttribute("base"),
         lineHeight: lineHeight,
         stdYMin: stdYMin,
-        stdYMax: stdYMax
+        stdYMax: stdYMax,
+        stdHeight: stdYMax - stdYMin,
+        stdCenterY: (stdYMin + stdYMax) / 2
       },
       info: {
-        size: +infoNode.getAttribute("size"),
-        distance: +(distNode?.getAttribute("distanceRange") ?? 4)
+        size: Math.abs(+infoNode.getAttribute("size")),
+        distanceRange: distNode ? +distNode.getAttribute("distanceRange") : 4
       }
     };
   }

@@ -1,11 +1,13 @@
 import { computed } from 'vue';
-import { useSceneStore } from '@scenes/scenes.js';
+import { useSceneStore, useEntityActions, useLayerActions } from '@scenes/scenes.js';
 import { useWorkspaceStore } from '@workspaces/workspaces.js';
 import { useProjectStore } from '@projects/projects.js';
 import { usePopAlert } from '@composables/composables.js';
 
 export function useHierarchyLogic() {
   const sceneStore = useSceneStore();
+  const { moveEntity: moveEntityAction } = useEntityActions();
+  const { reorderLayer } = useLayerActions();
   const workspaceStore = useWorkspaceStore();
   const projectStore = useProjectStore();
   const { showPop } = usePopAlert();
@@ -200,7 +202,7 @@ export function useHierarchyLogic() {
         return;
       }
 
-      sceneStore.reorderLayer(draggedId, targetNode.id, position);
+      reorderLayer(draggedId, targetNode.id, position);
       return;
     }
 
@@ -208,7 +210,7 @@ export function useHierarchyLogic() {
     if (draggedEntity) {
       // Case without targetNode: move to root
       if (!targetNode) {
-        sceneStore.moveEntity(draggedId, {
+        moveEntityAction(draggedId, {
           newParentId: null, 
           newLayerId: draggedEntity.layerId, 
           insertionType: 'append',
@@ -284,7 +286,7 @@ export function useHierarchyLogic() {
         context.insertionType = position === 'top' ? 'before' : 'after';
       }
 
-      sceneStore.moveEntity(draggedId, context);
+      moveEntityAction(draggedId, context);
     }
   };
 

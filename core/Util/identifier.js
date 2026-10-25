@@ -1,23 +1,17 @@
-/**
- * Identifier Utility for Lupis Engine Core (Schema Contract v3)
- * Enforces:
- * - Two-Identity Contract: id (UUID) + scriptId (Semantic slug)
- * - scriptId format: ^[a-zA-Z0-9_]+$
- * - Case-insensitive uniqueness
- */
-
 export const SCRIPT_ID_REGEX = /^[a-zA-Z0-9_]+$/;
 
 export function isValidScriptId(val) {
   return typeof val === 'string' && val.length > 0 && SCRIPT_ID_REGEX.test(val);
 }
 
+// Sanitizes a string into alphanumeric and underscore characters
 export function sanitizeScriptId(raw, fallbackVal = 'item') {
   if (typeof raw !== 'string') return fallbackVal;
   const sanitized = raw.trim().replace(/[\s-]+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
   return sanitized.length > 0 ? sanitized : fallbackVal;
 }
 
+// Generates a unique script identifier by appending an incremental numeric suffix if needed
 export function getValidUniqueScriptId(desired, existing = [], keyExtractor = 'scriptId', excludeId = null) {
   const clean = sanitizeScriptId(desired);
   

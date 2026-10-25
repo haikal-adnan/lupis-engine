@@ -1,4 +1,4 @@
-// lokasi: src/editor/scripts/stores/useScriptStore.js
+// Visual blueprint graphs, node logic trees, port connections, and OPFS persistence.
 
 import { defineStore } from 'pinia';
 import { toRaw } from 'vue';
@@ -34,8 +34,11 @@ export const useScriptStore = defineStore('script', {
         originalData: s
       }));
     },
+
     getScriptById: (state) => (id) => state.scripts.find(s => s.id === id),
+
     componentScripts: (state) => state.scripts.filter(s => s.type === 'component'),
+
     selectedNode: (state) => {
       if (!state.activeScript) return null;
       if (state.selectedNodeIds.length === 1) {
@@ -46,14 +49,17 @@ export const useScriptStore = defineStore('script', {
       }
       return null;
     },
+
     selectedNodes: (state) => {
       if (!state.activeScript) return [];
       return state.activeScript.nodes.filter(n => state.selectedNodeIds.includes(n.id));
     },
+
     selectedEdge: (state) => {
       if (!state.activeScript || !state.selectedEdgeId) return null;
       return state.activeScript.edges.find(e => e.id === state.selectedEdgeId);
     },
+
     isInputConnected: (state) => (nodeId, handleId) => {
       if (!state.activeScript?.edges) return false;
       return state.activeScript.edges.some(edge => 
@@ -84,6 +90,7 @@ export const useScriptStore = defineStore('script', {
       return { scriptsDir, workspacesDir };
     },
 
+    // Serializes script index metadata to scripts.json in OPFS
     async syncScriptsMetaToOPFS() {
       const workspaceStore = useWorkspaceStore();
       const opfs = useOPFSActions();
@@ -101,6 +108,7 @@ export const useScriptStore = defineStore('script', {
       await opfs.writeFileToHandle(workspacesDir, 'scripts.json', JSON.stringify(scriptMetas, null, 2));
     },
 
+    // Persists individual script graph ({id}.json) to OPFS
     async saveScriptToOPFS(script) {
       const opfs = useOPFSActions();
       const { scriptsDir } = await this._getScriptDirectories();
@@ -113,6 +121,7 @@ export const useScriptStore = defineStore('script', {
       await this.syncScriptsMetaToOPFS();
     },
 
+    // Flushes active script buffer and persists all scripts to OPFS
     async syncAllScriptsToOPFS() {
       if (this.activeScript) {
         this.saveActiveScript();
@@ -158,6 +167,7 @@ export const useScriptStore = defineStore('script', {
       }
     },
 
+    // Deletes script file from OPFS and removes it from store
     async removeScript(scriptId) {
       const script = this.getScriptById(scriptId);
       if (!script) return;
@@ -228,6 +238,7 @@ export const useScriptStore = defineStore('script', {
       }
     },
 
+    // Spawns a blueprint node from the catalog at the specified position
     spawnNodeByType(type, customLabel, position = { x: 300, y: 200 }, extraData = {}) {
       if (!this.activeScript) return null;
 
@@ -290,6 +301,7 @@ export const useScriptStore = defineStore('script', {
       this.saveActiveScript();
     },
 
+    // Deletes nodes and connected edges from the active script
     removeNodeFromActive(nodeId) {
       if (!this.activeScript) return;
       const idsToRemove = Array.isArray(nodeId) ? nodeId : [nodeId];
@@ -305,6 +317,7 @@ export const useScriptStore = defineStore('script', {
       this.saveActiveScript();
     },
 
+    // Adds a dynamic input or output pin to a node
     addNodePort(nodeId, type, portData) {
       if (!this.activeScript) return;
       const node = this.activeScript.nodes.find(n => n.id === nodeId);
@@ -351,6 +364,7 @@ export const useScriptStore = defineStore('script', {
       this.saveActiveScript();
     },
 
+    // Removes a dynamic port and detaches connected edges
     removeNodePort(nodeId, type, portId) {
       if (!this.activeScript) return;
       const node = this.activeScript.nodes.find(n => n.id === nodeId);
@@ -429,6 +443,7 @@ export const useScriptStore = defineStore('script', {
       }
     },
 
+    // Flushes active script changes into the script list and marks project dirty
     saveActiveScript() {
       if (!this.activeScript) return;
       const projectStore = useProjectStore();

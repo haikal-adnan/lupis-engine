@@ -1,6 +1,7 @@
 import { entitySchema, layerSchema } from '@scenes/scenes.js';
 import { GenerateUUID, sanitizeScriptId } from '@utils/utils.js';
 
+// Constructs and normalizes scene configurations, layers, and entity collections
 export const sceneSchema = (data = {}, projectId = null) => {
   const sceneId = data.id || `scene_${GenerateUUID()}`;
   const scriptId = sanitizeScriptId(

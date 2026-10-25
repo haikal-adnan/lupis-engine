@@ -1,3 +1,5 @@
+// Keyboard key name mapping to visual script port identifiers.
+
 const KEY_NAME_MAP = {
   ',': 'Comma',
   '+': 'Plus',
@@ -61,6 +63,7 @@ const KEY_NAME_MAP = {
   'cmd': 'Command'
 };
 
+// Maps hardware key strings to port identifiers prefixed with 'on'
 export function keyToPortId(rawKey) {
   if (!rawKey || typeof rawKey !== 'string') return 'onKey';
   const cleanKey = rawKey.trim().toLowerCase();

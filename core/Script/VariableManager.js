@@ -1,3 +1,4 @@
+// Manages project-wide global variables across scenes and caches script variable schemas
 export default class VariableManager {
     constructor() {
         this.globals = new Map();

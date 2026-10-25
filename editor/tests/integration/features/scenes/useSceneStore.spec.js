@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
-import { useSceneStore, sceneSchema, entitySchema, layerSchema } from '@scenes/scenes.js'
+import { useSceneStore, useSceneActions, sceneSchema, entitySchema, layerSchema } from '@scenes/scenes.js'
 import { useProjectStore } from '@projects/projects.js'
 import { setupMockOPFS, createMockEmptyProject } from '@tests/tests.js'
 
@@ -248,13 +248,14 @@ describe('Scene Store Integration', () => {
     })
   })
 
-  describe('Action Composition Integration with Project Store (useSceneActions via Store)', () => {
-    it('adds scene via composed action and registers it in project store', async () => {
+  describe('Direct Action Integration with useSceneActions', () => {
+    it('adds scene via useSceneActions and registers it in project store and scene store', async () => {
       // Arrange
       const projectStore = await prepareProjectStore()
+      const { addScene } = useSceneActions()
 
       // Act
-      const newScene = sceneStore.addScene({ scriptId: 'New_Level' })
+      const newScene = addScene({ scriptId: 'New_Level' })
 
       // Assert
       expect(sceneStore.scenes.length).toBe(1)

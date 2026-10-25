@@ -1,5 +1,5 @@
 import { computed } from 'vue';
-import { useSceneStore } from '@scenes/scenes.js';
+import { useSceneStore, useEntityActions } from '@scenes/scenes.js';
 import { usePrefabStore } from '@prefabs/prefabs.js';
 import { useWorkspaceStore } from '@workspaces/workspaces.js';
 import { usePopAlert } from '@composables/composables.js';
@@ -9,6 +9,7 @@ import { useInspectorSelection } from './useInspectorSelection.js';
 
 export function useInspectorPrefab(selectedEntityParam, isEditingMasterPrefabParam) {
   const sceneStore = useSceneStore();
+  const entityActions = useEntityActions();
   const prefabStore = usePrefabStore();
   const workspaceStore = useWorkspaceStore();
   const { showPop } = usePopAlert();
@@ -67,9 +68,9 @@ export function useInspectorPrefab(selectedEntityParam, isEditingMasterPrefabPar
   function markAsOverridden(componentName) {
     const ent = getEntity();
     if (ent && prefabId.value && !getEditingMaster()) {
-      sceneStore.updateEntityProp(ent.id, 'overridden', true);
+      entityActions.updateEntityProp(ent.id, 'overridden', true);
       if (componentName && ent.components?.[componentName]) {
-        sceneStore.updateComponentProp(ent.id, componentName, 'overridden', true);
+        entityActions.updateComponentProp(ent.id, componentName, 'overridden', true);
       }
     }
   }
@@ -161,10 +162,10 @@ export function useInspectorPrefab(selectedEntityParam, isEditingMasterPrefabPar
     console.log(`  Active: ${oldActive} -> ${active}`);
     console.log('  Overridden Flag: true -> false');
 
-    sceneStore.updateEntityProp(id, 'tags', tags);
-    sceneStore.updateEntityProp(id, 'tag', tag);
-    sceneStore.updateEntityProp(id, 'active', active);
-    sceneStore.updateEntityProp(id, 'overridden', false);
+    entityActions.updateEntityProp(id, 'tags', tags);
+    entityActions.updateEntityProp(id, 'tag', tag);
+    entityActions.updateEntityProp(id, 'active', active);
+    entityActions.updateEntityProp(id, 'overridden', false);
 
     engineBridge.updateEntityProp({ id, prop: 'tags', value: tags });
     engineBridge.updateEntityProp({ id, prop: 'tag', value: tag });
@@ -233,11 +234,11 @@ export function useInspectorPrefab(selectedEntityParam, isEditingMasterPrefabPar
     const id = ent.id;
     const oldPrefabId = ent.prefabId;
 
-    sceneStore.updateEntityProp(id, 'prefabId', null);
-    sceneStore.updateEntityProp(id, 'overridden', false);
+    entityActions.updateEntityProp(id, 'prefabId', null);
+    entityActions.updateEntityProp(id, 'overridden', false);
     
     const comps = ent.components || {};
-    Object.keys(comps).forEach(compName => sceneStore.updateComponentProp(id, compName, 'overridden', false));
+    Object.keys(comps).forEach(compName => entityActions.updateComponentProp(id, compName, 'overridden', false));
     engineBridge.updateEntityProp({ id, prop: 'prefabId', value: null });
 
     recordPropChange(id, 'prefabId', oldPrefabId, null);
@@ -263,7 +264,7 @@ export function useInspectorPrefab(selectedEntityParam, isEditingMasterPrefabPar
     } else {
       const hasComponent = ent.components && ent.components[componentName];
       if (hasComponent) return false;
-      sceneStore.addComponent(ent.id, componentName);
+      entityActions.addComponent(ent.id, componentName);
       recordAddComponent(ent.id, componentName);
       return true;
     }
@@ -296,7 +297,7 @@ export function useInspectorPrefab(selectedEntityParam, isEditingMasterPrefabPar
       });
     } else {
       const savedComponentData = ent.components?.[compName];
-      await sceneStore.removeComponent(ent.id, compName);
+      await entityActions.removeComponent(ent.id, compName);
       recordRemoveComponent(ent.id, compName, savedComponentData);
     }
   }

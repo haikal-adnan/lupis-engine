@@ -1,4 +1,8 @@
-import { componentSchema, entitySchema } from '@scenes/scenes.js';
+// Entity lifecycle, hierarchies, reparenting, and component management.
+
+import { useSceneStore } from '@scenes/useSceneStore.js';
+import { componentSchema } from '@scenes/schemas/componentSchema.js';
+import { entitySchema } from '@scenes/schemas/entitySchema.js';
 import { GenerateUUID, sanitizeScriptId, getValidUniqueScriptId, isScriptIdDuplicate, computeGlobalTransform, worldToLocalTransform } from '@utils/utils.js';
 import { engineBridge } from "@engines/engines.js";
 import { useConfirm, usePopAlert } from '@composables/composables.js';
@@ -10,6 +14,7 @@ const round = (num, decimals = 2) => {
   return Math.round(num * factor) / factor;
 };
 
+// Validates whether an entity or parent is restricted by a locked prefab instance
 const checkPrefabRestriction = (entities, entityId, targetParentId = null) => {
     if (!entities) return null;
 
@@ -36,10 +41,13 @@ const checkPrefabRestriction = (entities, entityId, targetParentId = null) => {
     return null; 
 };
 
-export const useEntityActions = {
-  filterTopLevelEntityIds(entityIds) {
+export function useEntityActions() {
+  const store = useSceneStore();
+
+  // Filters entity IDs to exclude descendants of selected ancestors
+  const filterTopLevelEntityIds = (entityIds) => {
     if (!Array.isArray(entityIds) || entityIds.length === 0) return [];
-    const entities = this.activeScene?.entities || [];
+    const entities = store.activeScene?.entities || [];
     const idSet = new Set(entityIds);
     const entityMap = new Map(entities.map(e => [e.id, e]));
 
@@ -55,67 +63,64 @@ export const useEntityActions = {
       }
       return true;
     });
-  },
+  };
 
-  getHierarchyData(entityId) {
-    const entities = this.activeScene?.entities;
+  // Collects root entity and all its recursive descendants
+  const getHierarchyData = (entityId) => {
+    const entities = store.activeScene?.entities;
     if (!entities) return null;
-    
+
     const root = entities.find(e => e.id === entityId);
     if (!root) return null;
 
     const descendants = [];
     const loopChildren = (parentId) => {
-        const children = entities.filter(e => e.parentId === parentId);
-        children.forEach(child => {
-            descendants.push(child);
-            loopChildren(child.id);
-        });
+      const children = entities.filter(e => e.parentId === parentId);
+      children.forEach(child => {
+        descendants.push(child);
+        loopChildren(child.id);
+      });
     };
-    loopChildren(entityId);
-    
-    return { root, descendants };
-  },
 
-  createClones(root, descendants, targetLayerId, targetParentId, nextOrderIndex) {
+    loopChildren(root.id);
+    return {
+      root: JSON.parse(JSON.stringify(root)),
+      descendants: JSON.parse(JSON.stringify(descendants))
+    };
+  };
+
+  // Clones an entity hierarchy with new IDs and remapped parent references
+  const createClones = (root, descendants, targetLayerId, targetParentId, nextOrderIndex) => {
      const idMap = {};
+     const clonedRoot = JSON.parse(JSON.stringify(root));
      const newRootId = GenerateUUID();
-     idMap[root.id] = newRootId;
+     idMap[clonedRoot.id] = newRootId;
 
-     const effectiveLayerId = targetLayerId || root.layerId;
-     const effectiveParentId = targetParentId !== undefined ? targetParentId : root.parentId;
+     clonedRoot.id = newRootId;
+     clonedRoot.layerId = targetLayerId;
+     clonedRoot.parentId = targetParentId;
+     clonedRoot.orderIndex = nextOrderIndex;
 
-     let assignedOrderIndex = nextOrderIndex;
-     if (assignedOrderIndex === undefined) {
-         const siblings = (this.activeScene?.entities || []).filter(e => 
-             e.parentId === effectiveParentId && e.layerId === effectiveLayerId
-         );
-         const maxOrder = siblings.reduce((max, node) => 
-             (node.orderIndex > max ? node.orderIndex : max), -1
-         );
-         assignedOrderIndex = maxOrder + 1;
-     }
-
-     const clonedRoot = {
-        ...JSON.parse(JSON.stringify(root)),
-        id: newRootId,
-        scriptId: `${root.scriptId}_${GenerateUUID().split('-')[0]}`,
-        layerId: effectiveLayerId,
-        parentId: effectiveParentId,
-        orderIndex: assignedOrderIndex
-     };
+     const baseScriptId = clonedRoot.scriptId || 'entity';
+     const siblings = (store.activeScene?.entities || []).filter(e => 
+         e.parentId === targetParentId && e.layerId === targetLayerId
+     );
+     clonedRoot.scriptId = getValidUniqueScriptId(`${baseScriptId}_copy`, siblings, e => e.scriptId);
      delete clonedRoot.name;
 
      const clonedDescendants = descendants.map(child => {
-        const newId = GenerateUUID();
-        idMap[child.id] = newId;
-        return {
-            ...JSON.parse(JSON.stringify(child)),
-            id: newId,
-            scriptId: `${child.scriptId}_${GenerateUUID().split('-')[0]}`,
-            layerId: effectiveLayerId,
-            orderIndex: child.orderIndex ?? 0
-        };
+        const clonedChild = JSON.parse(JSON.stringify(child));
+        const newChildId = GenerateUUID();
+        idMap[clonedChild.id] = newChildId;
+
+        clonedChild.id = newChildId;
+        clonedChild.layerId = targetLayerId;
+        
+        const childBase = clonedChild.scriptId || 'child';
+        clonedChild.scriptId = `${childBase}_${GenerateUUID().slice(0, 4)}`;
+        delete clonedChild.name;
+
+        return clonedChild;
      });
 
      clonedDescendants.forEach(child => {
@@ -125,10 +130,11 @@ export const useEntityActions = {
      });
 
      return [clonedRoot, ...clonedDescendants];
-  },
+  };
 
-  createEntity(type, contextNodeOrLayerId, overrides = {}) {
-    const scene = this.activeScene;
+  // Instantiates a new entity with default components and positions it in the scene
+  const createEntity = (type, contextNodeOrLayerId, overrides = {}) => {
+    const scene = store.activeScene;
     if (!scene) return false;
 
     const { showPop } = usePopAlert();
@@ -204,7 +210,6 @@ export const useEntityActions = {
     } 
     else if (type === 'tilemap') {
       components.Tilemap = componentSchema.create('Tilemap');
-      // Do not set rigid width/height on Transform to allow dynamic bounds similar to Shape
       components.Transform = { ...rawTransform };
     }
     else if (type === 'audio') {
@@ -263,7 +268,7 @@ export const useEntityActions = {
     });
 
     scene.entities.push(newEntity);
-    this.selectedEntityIds = [newEntity.id];
+    store.selectedEntityIds = [newEntity.id];
 
     if (engineBridge.createEntity) {
         engineBridge.createEntity(newEntity);
@@ -274,42 +279,43 @@ export const useEntityActions = {
     recordEntityCreate(newEntity);
 
     return newEntity; 
-  },
+  };
 
-  restoreEntity(entityData) {
-    if (!this.activeScene) return;
-    this.activeScene.entities.push(entityData);
-  },
+  const restoreEntity = (entityData) => {
+    if (!store.activeScene) return;
+    store.activeScene.entities.push(entityData);
+  };
 
-  duplicateEntity(entityIds) {
-    if (!this.activeScene) return false;
+  // Clones entities and subtrees, updating selections and engine state
+  const duplicateEntity = (entityIds) => {
+    if (!store.activeScene) return false;
     const { showPop } = usePopAlert();
 
-    const targetIds = entityIds !== undefined ? entityIds : this.selectedEntityIds;
+    const targetIds = entityIds !== undefined ? entityIds : store.selectedEntityIds;
     const rawIds = Array.isArray(targetIds) ? targetIds : (targetIds ? [targetIds] : []);
     if (rawIds.length === 0) return false;
 
     for (const id of rawIds) {
-        const restrictionMsg = checkPrefabRestriction(this.activeScene.entities, id);
+        const restrictionMsg = checkPrefabRestriction(store.activeScene.entities, id);
         if (restrictionMsg) {
             showPop({ title: 'Prefab Restriction', message: restrictionMsg, type: 'warning' });
             return false;
         }
     }
 
-    const idsToDuplicate = this.filterTopLevelEntityIds(rawIds);
+    const idsToDuplicate = filterTopLevelEntityIds(rawIds);
 
     const allNewEntities = [];
     const newRootIds = [];
 
     idsToDuplicate.forEach(id => {
-        const data = this.getHierarchyData(id);
+        const data = getHierarchyData(id);
         if (!data) return;
 
         const targetParentId = data.root.parentId;
         const targetLayerId = data.root.layerId;
 
-        const existingSiblings = this.activeScene.entities.filter(e =>
+        const existingSiblings = store.activeScene.entities.filter(e =>
             e.parentId === targetParentId && e.layerId === targetLayerId
         );
         const batchSiblings = allNewEntities.filter(e =>
@@ -320,36 +326,38 @@ export const useEntityActions = {
         );
         const nextOrderIndex = maxOrder + 1;
 
-        const clones = this.createClones(data.root, data.descendants, targetLayerId, targetParentId, nextOrderIndex);
+        const clones = createClones(data.root, data.descendants, targetLayerId, targetParentId, nextOrderIndex);
         allNewEntities.push(...clones);
         if (clones.length > 0) newRootIds.push(clones[0].id);
     });
 
-    this.activeScene.entities.push(...allNewEntities);
+    store.activeScene.entities.push(...allNewEntities);
     engineBridge.createEntity(allNewEntities); 
 
     const allNewIds = allNewEntities.map(e => e.id);
-    this.selectedEntityIds = allNewIds;
+    store.selectedEntityIds = allNewIds;
     engineBridge.selectEntity(allNewIds);
 
     const { recordEntityCreate } = useSceneHistory();
     allNewEntities.forEach(ent => recordEntityCreate(ent));
 
     return allNewIds;
-  },
+  };
 
-  getEntityDataForClipboard(entityIds) {
+  // Packages selected entities and hierarchies for clipboard copy
+  const getEntityDataForClipboard = (entityIds) => {
       const rawIds = Array.isArray(entityIds) ? entityIds : [entityIds];
-      const ids = this.filterTopLevelEntityIds(rawIds);
-      return ids.map(id => this.getHierarchyData(id)).filter(item => item !== null);
-  },
+      const ids = filterTopLevelEntityIds(rawIds);
+      return ids.map(id => getHierarchyData(id)).filter(item => item !== null);
+  };
 
-  pasteEntity(clipboardDataArray, targetContext = {}) {
-      if (!this.activeScene || !clipboardDataArray) return false;
+  // Clones and inserts clipboard entity hierarchies into target layer or parent
+  const pasteEntity = (clipboardDataArray, targetContext = {}) => {
+      if (!store.activeScene || !clipboardDataArray) return false;
       const { showPop } = usePopAlert();
 
       if (targetContext.parentId !== undefined) {
-          const restrictionMsg = checkPrefabRestriction(this.activeScene.entities, null, targetContext.parentId);
+          const restrictionMsg = checkPrefabRestriction(store.activeScene.entities, null, targetContext.parentId);
           if (restrictionMsg) {
               showPop({ title: 'Prefab Restriction', message: restrictionMsg, type: 'warning' });
               return false;
@@ -368,7 +376,7 @@ export const useEntityActions = {
           if (targetContext.parentId !== undefined) targetParentId = targetContext.parentId;
           if (targetContext.layerId !== undefined) targetLayerId = targetContext.layerId;
 
-          const existingSiblings = this.activeScene.entities.filter(e =>
+          const existingSiblings = store.activeScene.entities.filter(e =>
               e.parentId === targetParentId && e.layerId === targetLayerId
           );
           const batchSiblings = allNewClones.filter(e =>
@@ -379,34 +387,34 @@ export const useEntityActions = {
           );
           const nextOrderIndex = maxOrder + 1;
 
-          const clones = this.createClones(root, descendants, targetLayerId, targetParentId, nextOrderIndex);
+          const clones = createClones(root, descendants, targetLayerId, targetParentId, nextOrderIndex);
           allNewClones.push(...clones);
           if (clones.length > 0) newRootIds.push(clones[0].id);
       });
       
-      this.activeScene.entities.push(...allNewClones);
+      store.activeScene.entities.push(...allNewClones);
       engineBridge.createEntity(allNewClones);
 
       const allNewIds = allNewClones.map(e => e.id);
-      this.selectedEntityIds = allNewIds;
+      store.selectedEntityIds = allNewIds;
       engineBridge.selectEntity(allNewIds);
 
       const { recordEntityCreate } = useSceneHistory();
       allNewClones.forEach(ent => recordEntityCreate(ent));
 
       return allNewIds;
-  },
+  };
 
-  updateEntityScriptId(entityId, newScriptId) {
-    if (!this.activeScene || !newScriptId || !newScriptId.trim()) return false;
+  const updateEntityScriptId = (entityId, newScriptId) => {
+    if (!store.activeScene || !newScriptId || !newScriptId.trim()) return false;
 
     const sanitizedId = sanitizeScriptId(newScriptId);
     if (!sanitizedId) return false;
 
-    const isDuplicate = isScriptIdDuplicate(sanitizedId, this.activeScene.entities, e => e.scriptId, entityId);
+    const isDuplicate = isScriptIdDuplicate(sanitizedId, store.activeScene.entities, e => e.scriptId, entityId);
     if (isDuplicate) return false;
 
-    const entity = this.activeScene.entities.find(e => e.id === entityId);
+    const entity = store.activeScene.entities.find(e => e.id === entityId);
     if (entity) {
       const oldVal = entity.scriptId;
       entity.scriptId = sanitizedId;
@@ -415,6 +423,9 @@ export const useEntityActions = {
       const { recordPropChange } = useSceneHistory();
       recordPropChange(entityId, 'scriptId', oldVal, sanitizedId);
 
+      if (engineBridge.updateEntityScriptId) {
+        engineBridge.updateEntityScriptId(entityId, sanitizedId);
+      }
       if (engineBridge.updateEntityProp) {
         engineBridge.updateEntityProp({ id: entityId, prop: 'scriptId', value: sanitizedId });
       }
@@ -422,24 +433,24 @@ export const useEntityActions = {
       return { id: entityId, prop: 'scriptId', value: sanitizedId };
     }
     return false;
-  },
+  };
 
-
-  deleteEntity(entityId, recordHistory = true) {
-    if (!this.activeScene) return false;
-    const targetEntity = this.activeScene.entities.find(e => e.id === entityId);
+  // Deletes an entity and cascades deletion to all descendants
+  const deleteEntity = (entityId, recordHistory = true) => {
+    if (!store.activeScene) return false;
+    const targetEntity = store.activeScene.entities.find(e => e.id === entityId);
     if (!targetEntity) return false;
 
     const { showPop } = usePopAlert();
 
-    const restrictionMsg = checkPrefabRestriction(this.activeScene.entities, entityId);
+    const restrictionMsg = checkPrefabRestriction(store.activeScene.entities, entityId);
     if (restrictionMsg) {
         showPop({ title: 'Prefab Restriction', message: restrictionMsg, type: 'warning' });
         return false;
     }
 
     const getDescendants = (parentId) => {
-      const children = this.activeScene.entities.filter(e => e.parentId === parentId);
+      const children = store.activeScene.entities.filter(e => e.parentId === parentId);
       let ids = children.map(c => c.id);
       children.forEach(child => {
         ids = [...ids, ...getDescendants(child.id)];
@@ -448,51 +459,52 @@ export const useEntityActions = {
     };
 
     const idsToDelete = [entityId, ...getDescendants(entityId)];
-    const deletedEntities = this.activeScene.entities.filter(e => idsToDelete.includes(e.id));
+    const deletedEntities = store.activeScene.entities.filter(e => idsToDelete.includes(e.id));
     
     if (recordHistory && deletedEntities.length > 0) {
       const { recordEntityDelete } = useSceneHistory();
       recordEntityDelete(deletedEntities);
     }
 
-    this.activeScene.entities = this.activeScene.entities.filter(e => !idsToDelete.includes(e.id));
-    this.selectedEntityIds = this.selectedEntityIds.filter(id => !idsToDelete.includes(id));
+    store.activeScene.entities = store.activeScene.entities.filter(e => !idsToDelete.includes(e.id));
+    store.selectedEntityIds = store.selectedEntityIds.filter(id => !idsToDelete.includes(id));
     
-    if (this.selectedEntityIds.length === 0) {
+    if (store.selectedEntityIds.length === 0) {
       engineBridge.clearSelection();
     } else {
-      engineBridge.selectEntity(this.selectedEntityIds);
+      engineBridge.selectEntity(store.selectedEntityIds);
     }
 
     idsToDelete.forEach(id => engineBridge.deleteEntity(id));
 
     return true;
-  },
+  };
 
-  applyEntityOrderState(orderStates) {
-    if (!this.activeScene || !Array.isArray(orderStates)) return;
+  const applyEntityOrderState = (orderStates) => {
+    if (!store.activeScene || !Array.isArray(orderStates)) return;
 
     orderStates.forEach(({ id, orderIndex }) => {
-      const entity = this.activeScene.entities.find(e => e.id === id);
+      const entity = store.activeScene.entities.find(e => e.id === id);
       if (entity) {
         entity.orderIndex = orderIndex;
       }
     });
-  },
+  };
 
-  moveEntity(draggedId, targetContext, recordHistory = true) {
-    if (!this.activeScene) return false;
+  // Moves or reparents an entity, recalculating local transform to preserve world placement
+  const moveEntity = (draggedId, targetContext, recordHistory = true) => {
+    if (!store.activeScene) return false;
 
     const { newParentId, newLayerId, insertionType, referenceId } = targetContext;
 
-    const restrictionMsg = checkPrefabRestriction(this.activeScene.entities, draggedId, newParentId);
+    const restrictionMsg = checkPrefabRestriction(store.activeScene.entities, draggedId, newParentId);
     if (restrictionMsg) {
       const { showPop } = usePopAlert();
       showPop({ title: 'Prefab Restriction', message: restrictionMsg, type: 'warning' });
       return false;
     }
 
-    const entities = this.activeScene.entities;
+    const entities = store.activeScene.entities;
     const entity = entities.find(e => String(e.id) === String(draggedId));
     if (!entity) return false;
 
@@ -520,7 +532,7 @@ export const useEntityActions = {
     let newTransform = null;
 
     if (oldParentId !== resolvedParentId && compName && entity.components[compName]) {
-      const uiSettings = this.activeScene?.settings?.ui || { width: 1920, height: 1080 };
+      const uiSettings = store.activeScene?.settings?.ui || { width: 1920, height: 1080 };
       const getEntityById = (id) => entities.find(e => String(e.id) === String(id));
       const currentGlobal = computeGlobalTransform(entity, getEntityById, uiSettings);
       if (currentGlobal) {
@@ -667,12 +679,13 @@ export const useEntityActions = {
     }
 
     return true;
-  },
+  };
 
-  updateComponentProp(entityId, componentName, path, value) {
-    if (!this.activeScene) return false;
+  // Updates component property, maintaining aspect ratio if locked
+  const updateComponentProp = (entityId, componentName, path, value) => {
+    if (!store.activeScene) return false;
 
-    const entity = this.activeScene.entities.find(e => e.id === entityId);
+    const entity = store.activeScene.entities.find(e => e.id === entityId);
     if (!entity || !entity.components || !entity.components[componentName]) return false;
     
     const comp = entity.components[componentName];
@@ -705,21 +718,21 @@ export const useEntityActions = {
     
     target[keys[keys.length - 1]] = value;
 
-    // Re-trigger Vue/Pinia reactivity: create a new reference for the components object
+    // Trigger Vue/Pinia reactivity via reference replacement
     entity.components[componentName] = JSON.parse(JSON.stringify(comp));
     entity.components = { ...entity.components };
 
     return { entityId, componentName, path, value };
-  },
+  };
 
-  updateEntityProp(entityId, propName, value, recordHistory = true) {
-    if (!this.activeScene) return false;
+  const updateEntityProp = (entityId, propName, value, recordHistory = true) => {
+    if (!store.activeScene) return false;
 
     if (propName === 'scriptId' || propName === 'name') {
-      return this.updateEntityScriptId(entityId, value);
+      return updateEntityScriptId(entityId, value);
     }
 
-    const entity = this.activeScene.entities.find(e => e.id === entityId);
+    const entity = store.activeScene.entities.find(e => e.id === entityId);
     if (entity) {
       if (entity[propName] === value) return false; 
       const oldValue = entity[propName];
@@ -746,24 +759,25 @@ export const useEntityActions = {
       return { id: entityId, prop: propName, value };
     }
     return false;
-  },
+  };
 
-  syncTilemapDataFromEngine(entityId, newData) {
-    if (!this.activeScene) return false;
+  const syncTilemapDataFromEngine = (entityId, newData) => {
+    if (!store.activeScene) return false;
 
-    const entity = this.activeScene.entities.find(e => e.id === entityId);
+    const entity = store.activeScene.entities.find(e => e.id === entityId);
     if (entity?.components?.Tilemap) {
       entity.components.Tilemap.data = newData;
       return true;
     }
     return false;
-  },
+  };
 
-  addComponent(entityId, componentName, initialData = null, recordHistory = true) {
-    if (!this.activeScene) return false;
+  // Attaches a component to an entity and records history
+  const addComponent = (entityId, componentName, initialData = null, recordHistory = true) => {
+    if (!store.activeScene) return false;
     const { showPop } = usePopAlert();
 
-    const entity = this.activeScene.entities.find(e => e.id === entityId);
+    const entity = store.activeScene.entities.find(e => e.id === entityId);
     if (!entity) return false;
     
     if (entity.prefabId) {
@@ -828,15 +842,16 @@ export const useEntityActions = {
     }
 
     return { entityId, componentName, data: newComponentData };
-  },
+  };
 
-  async removeComponent(entityId, componentName, recordHistory = true) {
-    if (!this.activeScene) return false;
+  // Detaches a component, checking dependencies and syncing engine bridge
+  const removeComponent = async (entityId, componentName, recordHistory = true) => {
+    if (!store.activeScene) return false;
     
     const { showPop } = usePopAlert();
     const { confirm } = useConfirm();
 
-    const entity = this.activeScene.entities.find(e => e.id === entityId);
+    const entity = store.activeScene.entities.find(e => e.id === entityId);
     if (!entity || !entity.components[componentName]) {
         showPop({ title: 'Error', message: 'Component not found.', type: 'error' });
         return false;
@@ -897,5 +912,25 @@ export const useEntityActions = {
         showPop({ title: 'Failed', message: 'Could not remove component.', type: 'error' });
         return false;
     }
-  }
-};
+  };
+
+  return {
+    filterTopLevelEntityIds,
+    getHierarchyData,
+    createClones,
+    createEntity,
+    restoreEntity,
+    duplicateEntity,
+    getEntityDataForClipboard,
+    pasteEntity,
+    updateEntityScriptId,
+    deleteEntity,
+    applyEntityOrderState,
+    moveEntity,
+    updateComponentProp,
+    updateEntityProp,
+    syncTilemapDataFromEngine,
+    addComponent,
+    removeComponent
+  };
+}

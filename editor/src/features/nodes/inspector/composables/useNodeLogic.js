@@ -1,5 +1,3 @@
-// lokasi: src/editor/nodes/composables/useNodeLogic.js
-
 import { computed } from 'vue';
 import { useScriptStore } from '@scripts/scripts.js';
 import { useScriptHistory } from '@historys/historys.js';
@@ -9,6 +7,7 @@ import { PORT_ID_REGEX } from '../../contract/portIds.js';
 import { getPortColor } from '../../contract/portTypes.js';
 import { isUserCustomNode } from '../layouts/custom/index.js';
 
+// Manages node inspector state, port reconfiguration, and structural edits
 export function useNodeLogic() {
   const scriptStore = useScriptStore();
   const scriptHistory = useScriptHistory();
@@ -31,7 +30,6 @@ export function useNodeLogic() {
     return scriptStore.activeScript.nodes.find(n => n.id === scriptStore.selectedNodeId) || null;
   });
 
-  // Delegasi dynamicMode & opsi properti ke useDynamicPortManager
   const availableOptions = computed(() => {
     return dynamicManager.getAvailableProperties(selectedNode.value);
   });
@@ -119,7 +117,7 @@ export function useNodeLogic() {
 
     const node = selectedNode.value;
     if (!isUserCustomNode(node)) {
-      // System nodes are immutable for port names
+      // System nodes have immutable port identifiers
       return;
     }
 
@@ -233,9 +231,7 @@ export function useNodeLogic() {
     scriptStore.updateNodeInActive(node.id, { [portsKey]: ports });
   }
 
-  // =========================================================================
-  // OPERASI PORT DINAMIS (DELEGASI KE useDynamicPortManager)
-  // =========================================================================
+  // Dynamic port handlers delegated to useDynamicPortManager
   const handleAddPort = async (type = 'input') => {
     await dynamicManager.addDynamicPort(selectedNode.value, type);
   };

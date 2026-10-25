@@ -1,23 +1,31 @@
+// Sprite animator category, clip hierarchy, and timeline data operations.
+
+import { useSceneStore } from '@scenes/useSceneStore.js';
 import { GenerateUUID } from '@utils/utils.js';
 import { engineBridge } from "@engines/engines.js";
 
-export const useAnimatorActions = {
-  _getAnimatorClips(entityId) {
-    if (!this.activeScene) return [];
-    const entity = this.activeScene.entities.find(e => e.id === entityId);
+export function useAnimatorActions() {
+  const store = useSceneStore();
+
+  const _getAnimatorClips = (entityId) => {
+    if (!store.activeScene) return [];
+    const entity = store.activeScene.entities.find(e => e.id === entityId);
     const animator = entity?.components?.SpriteAnimator;
     if (!animator || !animator.clips) return [];
     return Array.isArray(animator.clips) ? animator.clips : [];
-  },
+  };
 
-  _saveAnimatorClips(entityId, newClips) {
+  // Flushes clips to SpriteAnimator component and engine bridge
+  const _saveAnimatorClips = (entityId, newClips) => {
     const cleanClips = newClips.map(c => {
       const clean = { ...c };
       delete clean._uiChildren; 
       return clean;
     });
 
-    this.patchComponent(entityId, 'SpriteAnimator', { clips: cleanClips });
+    if (store.patchComponent) {
+      store.patchComponent(entityId, 'SpriteAnimator', { clips: cleanClips });
+    }
     if (engineBridge.patchComponent) {
       engineBridge.patchComponent({
         entityId,
@@ -25,9 +33,9 @@ export const useAnimatorActions = {
         updates: { clips: cleanClips }
       });
     }
-  },
+  };
 
-  _generateUniqueClipScriptId(clips, base = 'New_Clip') {
+  const _generateUniqueClipScriptId = (clips, base = 'New_Clip') => {
     let candidate = base;
     let counter = 1;
     const existing = new Set((clips || []).map(c => (c.scriptId || '').toLowerCase()));
@@ -35,24 +43,25 @@ export const useAnimatorActions = {
       candidate = `${base}_${counter++}`;
     }
     return candidate;
-  },
+  };
 
-  _cloneAnimatorNode(node) {
+  const _cloneAnimatorNode = (node) => {
     const clone = JSON.parse(JSON.stringify(node));
     clone.id = `anim_${GenerateUUID().split('-')[0]}`;
     delete clone.name;
     delete clone.children;
     delete clone._uiChildren;
     return clone;
-  },
+  };
 
-  animatorCreateCategory(entityId, targetId = null) {
-    const clips = [...this._getAnimatorClips(entityId)];
+  // Creates a category folder in the entity SpriteAnimator component
+  const animatorCreateCategory = (entityId, targetId = null) => {
+    const clips = [..._getAnimatorClips(entityId)];
 
     const newNode = { 
       id: GenerateUUID(), 
       type: 'category', 
-      scriptId: this._generateUniqueClipScriptId(clips, 'New_Category'), 
+      scriptId: _generateUniqueClipScriptId(clips, 'New_Category'), 
       assetId: null,
       parentId: null, 
       fps: 12, isLooping: true, frames: [], sources: {}, baseSize: { w: 32, h: 32 }, pivot: { x: 0.5, y: 1 },
@@ -63,11 +72,12 @@ export const useAnimatorActions = {
     };
 
     clips.push(newNode);
-    this._saveAnimatorClips(entityId, clips);
-  },
+    _saveAnimatorClips(entityId, clips);
+  };
 
-  animatorCreateClip(entityId, targetId = null) {
-    const clips = [...this._getAnimatorClips(entityId)];
+  // Creates an animation clip inside a category or at root
+  const animatorCreateClip = (entityId, targetId = null) => {
+    const clips = [..._getAnimatorClips(entityId)];
 
     let parentId = null;
     if (targetId) {
@@ -79,7 +89,7 @@ export const useAnimatorActions = {
     const newNode = { 
       id: GenerateUUID(), 
       type: 'clip', 
-      scriptId: this._generateUniqueClipScriptId(clips, 'New_Clip'),
+      scriptId: _generateUniqueClipScriptId(clips, 'New_Clip'),
       assetId: null,
       parentId: parentId,
       fps: 12, isLooping: true, frames: [], sources: {}, baseSize: { w: 32, h: 32 }, pivot: { x: 0.5, y: 1 },
@@ -89,11 +99,12 @@ export const useAnimatorActions = {
     };
 
     clips.push(newNode);
-    this._saveAnimatorClips(entityId, clips);
-  },
+    _saveAnimatorClips(entityId, clips);
+  };
 
-  animatorDeleteNode(entityId, nodeId) {
-    let clips = JSON.parse(JSON.stringify(this._getAnimatorClips(entityId)));
+  // Deletes a clip or category and cascades deletion to child clips
+  const animatorDeleteNode = (entityId, nodeId) => {
+    let clips = JSON.parse(JSON.stringify(_getAnimatorClips(entityId)));
     const nodeIndex = clips.findIndex(c => c.id === nodeId);
     let deletedNode = null;
 
@@ -104,24 +115,25 @@ export const useAnimatorActions = {
       if (deletedNode.type === 'category') {
          clips = clips.filter(c => c.parentId !== deletedNode.id);
       }
-      this._saveAnimatorClips(entityId, clips);
+      _saveAnimatorClips(entityId, clips);
     }
     return deletedNode;
-  },
+  };
 
-  animatorRenameNode(entityId, nodeId, newName) {
-    const clips = [...this._getAnimatorClips(entityId)];
+  const animatorRenameNode = (entityId, nodeId, newName) => {
+    const clips = [..._getAnimatorClips(entityId)];
     const nodeIndex = clips.findIndex(c => c.id === nodeId);
     
     if (nodeIndex !== -1) {
       clips[nodeIndex].scriptId = newName;
       delete clips[nodeIndex].name;
-      this._saveAnimatorClips(entityId, clips);
+      _saveAnimatorClips(entityId, clips);
     }
-  },
+  };
 
-  animatorGetNodeClone(entityId, nodeId) {
-    const clips = this._getAnimatorClips(entityId);
+  // Bundles an animator node and children for copy/paste
+  const animatorGetNodeClone = (entityId, nodeId) => {
+    const clips = _getAnimatorClips(entityId);
     const node = clips.find(c => c.id === nodeId);
     if (!node) return null;
 
@@ -130,13 +142,14 @@ export const useAnimatorActions = {
        cloneBundle.children = clips.filter(c => c.parentId === node.id).map(c => JSON.parse(JSON.stringify(c)));
     }
     return cloneBundle;
-  },
+  };
 
-  animatorPasteNode(entityId, targetId, clipboardBundle) {
-    const clips = JSON.parse(JSON.stringify(this._getAnimatorClips(entityId)));
+  // Clones and inserts an animator bundle into the SpriteAnimator component
+  const animatorPasteNode = (entityId, targetId, clipboardBundle) => {
+    const clips = JSON.parse(JSON.stringify(_getAnimatorClips(entityId)));
     const { node, children } = clipboardBundle;
     
-    const cloneNode = this._cloneAnimatorNode(node);
+    const cloneNode = _cloneAnimatorNode(node);
     
     let parentId = null;
     if (targetId) {
@@ -151,7 +164,7 @@ export const useAnimatorActions = {
        
        if (children && children.length > 0) {
          children.forEach(child => {
-           const childClone = this._cloneAnimatorNode(child);
+           const childClone = _cloneAnimatorNode(child);
            childClone.parentId = cloneNode.id; 
            clips.push(childClone);
          });
@@ -161,6 +174,19 @@ export const useAnimatorActions = {
        clips.push(cloneNode);
     }
 
-    this._saveAnimatorClips(entityId, clips);
-  }
-};
+    _saveAnimatorClips(entityId, clips);
+  };
+
+  return {
+    _getAnimatorClips,
+    _saveAnimatorClips,
+    _generateUniqueClipScriptId,
+    _cloneAnimatorNode,
+    animatorCreateCategory,
+    animatorCreateClip,
+    animatorDeleteNode,
+    animatorRenameNode,
+    animatorGetNodeClone,
+    animatorPasteNode
+  };
+}

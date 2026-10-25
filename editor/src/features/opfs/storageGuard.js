@@ -3,14 +3,9 @@ import { usePopAlert } from '@composables/composables.js';
 let monitorInterval = null;
 let lastAlertTimestamp = 0;
 let lastAlertLevel = null;
-const ALERT_COOLDOWN_MS = 3 * 60 * 1000; // 3 minutes cooldown between repeated warnings
+const ALERT_COOLDOWN_MS = 3 * 60 * 1000;
 
-/**
- * Requests the browser to mark this origin's storage as Persistent.
- * Persistent storage is exempt from automated browser LRU eviction when disk space is low.
- *
- * @returns {Promise<{ isPersisted: boolean, supported: boolean }>}
- */
+// Requests browser to mark origin storage as persistent to prevent automated eviction
 export async function initStoragePersistence() {
   if (typeof window === 'undefined' || !navigator.storage || !navigator.storage.persist) {
     return { isPersisted: false, supported: false };
@@ -40,15 +35,7 @@ export async function initStoragePersistence() {
   }
 }
 
-/**
- * Checks storage quota, estimates remaining capacity, and triggers English toast warnings
- * if storage pressure or critical capacity is detected.
- *
- * @param {Object} options
- * @param {boolean} [options.notify=true] Whether to show UI toast notification
- * @param {boolean} [options.forceNotify=false] Bypass cooldown
- * @returns {Promise<{ healthy: boolean, availableMB: number, percentUsed: number, quotaMB: number, usageMB: number }>}
- */
+// Checks storage quota and warns when storage capacity is low or critical
 export async function checkStorageQuota(options = {}) {
   const { notify = true, forceNotify = false } = options;
   const defaultResult = {
@@ -135,14 +122,7 @@ export async function checkStorageQuota(options = {}) {
   }
 }
 
-/**
- * Handles an unexpected quota exceeded error during project saving.
- * Triggers an English alert and executes emergency project export to disk.
- *
- * @param {string|number} projectId
- * @param {Function} exportFn
- * @param {Error} error
- */
+// Alerts user and triggers emergency project export when disk write fails
 export async function handleQuotaExceededEmergency(projectId, exportFn, error) {
   console.error('[StorageGuard] Storage quota exceeded during write:', error);
   const { showPop } = usePopAlert();
@@ -169,17 +149,12 @@ export async function handleQuotaExceededEmergency(projectId, exportFn, error) {
   }
 }
 
-/**
- * Starts periodic storage monitoring in the background.
- *
- * @param {number} [intervalMs=60000] Interval in milliseconds
- */
+// Starts periodic background storage monitoring
 export function startStorageMonitor(intervalMs = 60000) {
   if (typeof window === 'undefined') return;
 
   stopStorageMonitor();
 
-  // Run initial check after a brief startup delay
   setTimeout(() => {
     checkStorageQuota({ notify: true }).catch(() => {});
   }, 3000);
@@ -193,9 +168,7 @@ export function startStorageMonitor(intervalMs = 60000) {
   }
 }
 
-/**
- * Stops background storage monitoring.
- */
+// Stops background storage monitoring
 export function stopStorageMonitor() {
   if (monitorInterval) {
     clearInterval(monitorInterval);

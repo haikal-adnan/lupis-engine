@@ -10,6 +10,7 @@ import { resetNodeToDefault, overrideNodeFromBlueprint } from '@nodes/library/co
 import { createCustomNodeInstance } from '@nodes/library/composables/useNodeBlueprint.js'
 import { isUserCustomNode, saveCustomBlueprintToLibrary } from '../../inspector/layouts/custom/index.js'
 
+// Manages context menus for canvas nodes and background actions
 export function useNodeMenu() {
   const store = useScriptStore()
   const workspaceStore = useWorkspaceStore()
@@ -24,6 +25,7 @@ export function useNodeMenu() {
   const contextMenu = ref({ visible: false, x: 0, y: 0, items: [], nodeId: null })
 
   const handlers = {
+    // Clones selected or target nodes with position offset
     duplicateNode: (nodeId) => {
       const targetIds = store.selectedNodeIds.length > 0 ? store.selectedNodeIds : [nodeId]
 
@@ -41,6 +43,7 @@ export function useNodeMenu() {
       })
     },
     
+    // Removes selected nodes and connected edges, recording undo history
     deleteSelectedNodes: (nodeId) => {
       const targetIds = store.selectedNodeIds.length > 0 ? [...store.selectedNodeIds] : [nodeId]
 
@@ -63,6 +66,7 @@ export function useNodeMenu() {
       store.saveActiveScript()
     },
 
+    // Resets selected nodes to their blueprint default state
     resetNode: (nodeId) => {
       const targetIds = store.selectedNodeIds.length > 0 ? [...store.selectedNodeIds] : [nodeId]
       if (!store.activeScript) return
@@ -85,6 +89,7 @@ export function useNodeMenu() {
       store.saveActiveScript()
     },
 
+    // Syncs selected nodes with updated blueprint definitions
     applyUpdateToNode: (nodeId) => {
       const targetIds = store.selectedNodeIds.length > 0 ? [...store.selectedNodeIds] : [nodeId]
       if (!store.activeScript) return
@@ -185,6 +190,7 @@ export function useNodeMenu() {
     }
   }
 
+  // Opens canvas background menu for adding nodes at coordinates
   const openBackgroundMenu = (event, graphPos) => {
     const items = [
       { 

@@ -1,3 +1,5 @@
+// Reusable entity prefab templates and OPFS persistence.
+
 import { defineStore } from 'pinia';
 import { useWorkspaceStore } from '@workspaces/workspaces.js';
 import { useOPFSActions } from '@opfs/opfs.js';
@@ -31,15 +33,11 @@ export const usePrefabStore = defineStore('prefab', {
       }));
     },
 
-    /**
-     * DOMAIN LOGIC: Menentukan struktur path OPFS spesifik Prefab & Workspaces
-     */
     async _getPrefabDirectories() {
       const workspaceStore = useWorkspaceStore();
       const opfs = useOPFSActions();
       
       const projectId = String(workspaceStore.activeProjectId);
-
       const projectsRootDir = await opfs.getProjectsRootDirectory();
 
       const prefabsDir = await opfs.resolveDirectoryPath(projectsRootDir, `${projectId}/prefabs`);
@@ -48,9 +46,7 @@ export const usePrefabStore = defineStore('prefab', {
       return { prefabsDir, workspacesDir };
     },
 
-    /**
-     * Menyinkronkan metadata prefabs.json ke OPFS
-     */
+    // Serializes prefab index metadata to prefabs.json in OPFS
     async syncPrefabsMetaToOPFS() {
       const workspaceStore = useWorkspaceStore();
       const opfs = useOPFSActions();
@@ -69,9 +65,7 @@ export const usePrefabStore = defineStore('prefab', {
       await opfs.writeFileToHandle(workspacesDir, 'prefabs.json', jsonContent);
     },
 
-    /**
-     * Menyimpan single file prefab data ({id}.json) dan metadata
-     */
+    // Persists individual prefab definition file ({id}.json) to OPFS
     async savePrefabToOPFS(prefab) {
       const opfs = useOPFSActions();
       const { prefabsDir } = await this._getPrefabDirectories();
@@ -109,6 +103,7 @@ export const usePrefabStore = defineStore('prefab', {
       }
     },
 
+    // Deletes prefab JSON file and updates index in OPFS
     async removePrefab(id) {
       const prefab = this.getPrefabById(id);
       if (!prefab) return;

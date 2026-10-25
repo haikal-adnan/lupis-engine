@@ -6,9 +6,6 @@ import {
   CONTEXT_ROOT_PROPERTIES
 } from './contextContract.js';
 
-/**
- * Standard parameters available inside every custom node script.
- */
 export const CODE_PANEL_PARAM_NAMES = Object.freeze([
   'inputs',
   'outputs',
@@ -16,22 +13,13 @@ export const CODE_PANEL_PARAM_NAMES = Object.freeze([
   'node'
 ]);
 
-/**
- * Valid ContextSystem property names accessible on `context`.
- */
 export const VALID_CONTEXT_PROPERTIES = Object.freeze(new Set([
   ...CONTEXT_NAMESPACES,
   ...CONTEXT_ROOT_METHODS,
   ...CONTEXT_ROOT_PROPERTIES
 ]));
 
-/**
- * Strips single-line and multi-line comments from JavaScript source code
- * without corrupting string literals or URLs with slashes.
- * 
- * @param {string} code - Raw JavaScript code
- * @returns {string} Code with comments removed
- */
+// Strips single-line and multi-line comments while preserving string literals
 export function stripComments(code) {
   if (typeof code !== 'string') return '';
   return code.replace(
@@ -40,20 +28,9 @@ export function stripComments(code) {
   );
 }
 
-/**
- * Backward compatibility alias for stripComments.
- */
 export const stripStringsAndComments = stripComments;
 
-/**
- * Extracts input port identifier names read in code:
- * - inputs['myPort']
- * - inputs["myPort"]
- * - inputs.myPort
- * 
- * @param {string} code - JavaScript source code
- * @returns {string[]} Unique list of input port keys
- */
+// Extracts input port identifier names read in code
 export function extractUsedInputs(code) {
   if (!code || typeof code !== 'string') return [];
   const clean = stripComments(code);
@@ -64,15 +41,7 @@ export function extractUsedInputs(code) {
   return [...new Set(matches)];
 }
 
-/**
- * Extracts output port identifier names assigned or referenced in code:
- * - outputs['myPort'] = ...
- * - outputs.myPort = ...
- * - outputs['myPort']
- * 
- * @param {string} code - JavaScript source code
- * @returns {string[]} Unique list of output port keys
- */
+// Extracts output port identifier names assigned or referenced in code
 export function extractUsedOutputs(code) {
   if (!code || typeof code !== 'string') return [];
   const clean = stripComments(code);
@@ -84,14 +53,7 @@ export function extractUsedOutputs(code) {
   return [...new Set(matches)];
 }
 
-/**
- * Extracts local variable keys referenced in code:
- * - context.getLocal('varName')
- * - context.setLocal('varName', value)
- * 
- * @param {string} code - JavaScript source code
- * @returns {string[]} Unique list of local variable keys
- */
+// Extracts local variable keys referenced in code
 export function extractUsedLocalVariables(code) {
   if (!code || typeof code !== 'string') return [];
   const clean = stripComments(code);
@@ -100,14 +62,7 @@ export function extractUsedLocalVariables(code) {
   return [...new Set([...localGetMatches, ...localSetMatches])];
 }
 
-/**
- * Extracts global variable keys referenced in code:
- * - context.getGlobal('varName')
- * - context.setGlobal('varName', value)
- * 
- * @param {string} code - JavaScript source code
- * @returns {string[]} Unique list of global variable keys
- */
+// Extracts global variable keys referenced in code
 export function extractUsedGlobalVariables(code) {
   if (!code || typeof code !== 'string') return [];
   const clean = stripComments(code);
@@ -116,12 +71,7 @@ export function extractUsedGlobalVariables(code) {
   return [...new Set([...globalGetMatches, ...globalSetMatches])];
 }
 
-/**
- * Extracts all property accesses on `context` (e.g. context.entity, context.foo).
- * 
- * @param {string} code - JavaScript source code
- * @returns {string[]} Unique list of accessed context properties
- */
+// Extracts all property accesses on context
 export function extractContextAccesses(code) {
   if (!code || typeof code !== 'string') return [];
   const clean = stripComments(code);
@@ -132,30 +82,7 @@ export function extractContextAccesses(code) {
   return [...new Set(matches)];
 }
 
-/**
- * Validates a node's code against the CodePanel and Engine Visual Scripting Contract.
- * 
- * Invariants & Contract Rules:
- * 1. Port Identification:
- *    - All inputs read in code MUST match an existing node input port ID or label.
- *    - All outputs assigned in code MUST match an existing node output port ID or label.
- *    - Defined data input ports should be consumed in the logic.
- *    - Defined output ports should be assigned in the logic.
- * 2. Variable Scope:
- *    - Keys in context.getLocal/setLocal MUST exist in script.localVariables.
- *    - Keys in context.getGlobal/setGlobal MUST exist in project.globalVariables.
- * 3. Context API Conformance:
- *    - Properties accessed on `context` should exist in ContextSystem contract.
- * 4. JavaScript Syntax Integrity:
- *    - Code must be parsable as valid JavaScript function body.
- * 
- * @param {string} code - The JavaScript source code of the node
- * @param {Object} options - Contextual data for validation
- * @param {Object} [options.node] - Target node object (with inputs and outputs arrays)
- * @param {Array} [options.localVariables] - Script local variables list
- * @param {Array} [options.globalVariables] - Project global variables list
- * @returns {Object} Structured validation result
- */
+// Validates a node's code against input/output ports, variables, and context API
 export function validateCodePanelContract(code, options = {}) {
   const targetNode = options.node || null;
   const localVariables = Array.isArray(options.localVariables) ? options.localVariables : [];
@@ -185,7 +112,7 @@ export function validateCodePanelContract(code, options = {}) {
   let hasSyntaxError = false;
   let syntaxError = null;
 
-  // 1. Basic Syntax Verification
+  // Basic syntax verification
   if (codeStr.trim().length > 0) {
     try {
       new Function('inputs', 'outputs', 'context', 'node', codeStr);
@@ -196,7 +123,7 @@ export function validateCodePanelContract(code, options = {}) {
     }
   }
 
-  // 2. Ports Validation (Inputs & Outputs)
+  // Ports validation
   const usedInputKeys = extractUsedInputs(codeStr);
   const usedOutputKeys = extractUsedOutputs(codeStr);
 
@@ -265,7 +192,7 @@ export function validateCodePanelContract(code, options = {}) {
     }
   });
 
-  // 3. Variables Validation (Local & Global)
+  // Variables validation
   const usedLocalVars = extractUsedLocalVariables(codeStr);
   const usedGlobalVars = extractUsedGlobalVariables(codeStr);
 
@@ -284,7 +211,7 @@ export function validateCodePanelContract(code, options = {}) {
     }
   });
 
-  // 4. Context API Conformance Check
+  // Context API conformance check
   const contextAccesses = extractContextAccesses(codeStr);
   const unrecognizedContextProps = [];
   contextAccesses.forEach(prop => {
@@ -312,13 +239,7 @@ export function validateCodePanelContract(code, options = {}) {
   };
 }
 
-/**
- * Generates initial boilerplate code for a node based on its defined ports.
- * Useful when scaffolding new nodes or resetting custom code.
- * 
- * @param {Object} node - Target node object
- * @returns {string} Boilerplate code string
- */
+// Generates initial boilerplate code for a node based on its defined ports
 export function generateDefaultNodeCode(node) {
   if (!node) return '// Write your node logic here...\n';
 

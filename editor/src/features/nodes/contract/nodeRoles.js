@@ -1,9 +1,12 @@
+// Node execution roles (event, action, pure) and classification utilities.
+
 export const NODE_ROLES = Object.freeze({
   EVENT: 'event',
   ACTION: 'action',
   PURE: 'pure'
 });
 
+// Resolves node execution role from explicit declaration or execution port presence
 export function getNodeRole(nodeDef) {
   if (nodeDef && nodeDef.role) {
     return nodeDef.role;

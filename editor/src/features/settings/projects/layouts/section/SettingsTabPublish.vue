@@ -10,7 +10,7 @@
             Build & Publish Module
           </h2>
           <p class="text-xs text-muted-foreground mt-0.5">
-            Export your active project into web bundles, desktop executables, or backup project archives.
+            Export your active project into protected web bundles, all-in-one desktop executables, or backup project archives.
           </p>
         </div>
       </div>
@@ -27,10 +27,10 @@
             <div>
               <div class="flex items-center gap-2">
                 <h3 class="font-bold text-sm text-foreground">Web Standalone (.ZIP)</h3>
-                <span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">HTML5 Bundle</span>
+                <span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">HTML5 Protected</span>
               </div>
               <p class="text-xs text-muted-foreground mt-1 max-w-xl leading-relaxed">
-                Bundles game engine scripts, canvas renderers, and project assets into an HTML5 web structure ready to host on web servers or platforms like itch.io.
+                Bundles obfuscated blueprint logic, <code>.lupisdata</code> protected assets, and an entry <code>index.html</code> at root ready to run immediately with any local or web server.
               </p>
             </div>
           </div>
@@ -55,10 +55,10 @@
             <div>
               <div class="flex items-center gap-2">
                 <h3 class="font-bold text-sm text-foreground">Desktop App (.EXE)</h3>
-                <span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20">Windows Native</span>
+                <span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20">All-in-One Portable</span>
               </div>
               <p class="text-xs text-muted-foreground mt-1 max-w-xl leading-relaxed">
-                Compiles your game into an independent desktop executable (.EXE) package built for offline gameplay on Windows operating systems.
+                Compiles an all-in-one standalone executable (.EXE) with the game logic and protected assets securely embedded inside. 1-click play with zero external files.
               </p>
             </div>
           </div>
@@ -102,7 +102,7 @@
                 <span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">Project Backup</span>
               </div>
               <p class="text-xs text-muted-foreground mt-1 max-w-xl leading-relaxed">
-                Saves all project scenes, scripts, node visual graphs, and asset files into a single compressed <code>.lupisproject</code> file to share or import back in Dashboard.
+                Saves all raw project scenes, scripts, node visual graphs, and asset files into a single compressed <code>.lupisproject</code> file to share or import back in Dashboard.
               </p>
             </div>
           </div>

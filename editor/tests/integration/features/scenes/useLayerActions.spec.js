@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
-import { useLayerActions, layerSchema } from '@scenes/scenes.js'
+import { useSceneStore, useLayerActions, layerSchema } from '@scenes/scenes.js'
 import { engineBridge } from '@engines/engines.js'
 import { usePopAlert } from '@composables/composables.js'
 import { useSceneHistory } from '@historys/historys.js'
@@ -43,28 +43,49 @@ vi.mock('@historys/historys.js', () => {
 })
 
 describe('Layer Actions Integration', () => {
+  let sceneStore
+  let layerActions
   let sceneStoreState
 
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
 
-    // Prepare mock state for sceneStore adopting useLayerActions
-    sceneStoreState = {
-      activeScene: {
-        id: 'scene_1',
-        layersWorld: [
-          layerSchema({ id: 'layer_w1', scriptId: 'World_Root', orderIndex: 0, zIndex: 0 })
-        ],
-        layersUI: [
-          layerSchema({ id: 'layer_u1', scriptId: 'UI_Root', orderIndex: 0, zIndex: 0 })
-        ],
-        entities: [
-          { id: 'entity_1', scriptId: 'Player', layerId: 'layer_w1', type: 'sprite' }
-        ]
-      },
-      ...useLayerActions
+    sceneStore = useSceneStore()
+    const activeScene = {
+      id: 'scene_1',
+      layersWorld: [
+        layerSchema({ id: 'layer_w1', scriptId: 'World_Root', orderIndex: 0, zIndex: 0 })
+      ],
+      layersUI: [
+        layerSchema({ id: 'layer_u1', scriptId: 'UI_Root', orderIndex: 0, zIndex: 0 })
+      ],
+      entities: [
+        { id: 'entity_1', scriptId: 'Player', layerId: 'layer_w1', type: 'sprite' }
+      ]
     }
+    sceneStore.scenes = [activeScene]
+    sceneStore.activeSceneId = 'scene_1'
+    sceneStore.selectedEntityIds = []
+
+    layerActions = useLayerActions()
+
+    sceneStoreState = new Proxy(sceneStore, {
+      get(target, prop) {
+        if (prop in layerActions) return layerActions[prop]
+        return target[prop]
+      },
+      set(target, prop, value) {
+        if (prop === 'activeScene') {
+          if (value === null) {
+            target.activeSceneId = null
+          }
+          return true
+        }
+        target[prop] = value
+        return true
+      }
+    })
   })
 
   describe('Add Layer (addLayer)', () => {

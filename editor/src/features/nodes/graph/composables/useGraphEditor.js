@@ -1,3 +1,5 @@
+// Canvas viewport interactions, camera pan/zoom, wire connections, and marquee selection.
+
 import { isTypeCompatible } from '../../contract/portTypes.js';
 import { ref, shallowReactive, computed, nextTick } from 'vue'
 import { useScriptStore } from '@scripts/scripts.js'
@@ -56,6 +58,7 @@ export function useGraphEditor() {
 
   const snap = (val) => (val / GRID_SIZE | 0) * GRID_SIZE
 
+  // Calculates viewport center coordinates in graph space
   const getCenterPos = () => {
     if (!panelRef.value) {
       return {
@@ -75,6 +78,7 @@ export function useGraphEditor() {
 
   const NODE_SPAWN_OFFSET_Y = 50
 
+  // Finds an unoccupied canvas position near viewport center
   const getSpawnPos = () => {
     const center = getCenterPos()
     const pos = { x: center.x - NODE_WIDTH / 2, y: center.y - NODE_SPAWN_OFFSET_Y }
@@ -90,6 +94,7 @@ export function useGraphEditor() {
     return pos
   }
 
+  // Instantiates a blueprint template at target coordinates
   const addNodeFromTemplate = (template, position) => {
     const payload = {
       id: GenerateUUID(),
@@ -108,6 +113,7 @@ export function useGraphEditor() {
 
   const addNodeAtSpawn = (template) => addNodeFromTemplate(template, getSpawnPos())
 
+  // Deletes selected nodes and connected edges from the active script
   const deleteSelectedNodes = () => {
     const targets = selectedNodeIds.value.length > 0 
       ? [...selectedNodeIds.value] 
@@ -146,6 +152,7 @@ export function useGraphEditor() {
     }
   }
 
+  // Converts mouse client coordinates to graph world coordinates
   const getClientPos = (e) => {
     if (!cachedRect && panelRef.value) cachedRect = panelRef.value.getBoundingClientRect()
     const r = cachedRect || { left: 0, top: 0 }
@@ -164,6 +171,7 @@ export function useGraphEditor() {
     return { x: x1, y: y1, w: x2 - x1, h: y2 - y1 }
   })
 
+  // Computes rendered node pixel height from port count and visible fields
   const getNodeHeight = (node) => {
     const inputCount = node.inputs?.length || 0
     const outputCount = node.outputs?.length || 0
@@ -174,6 +182,7 @@ export function useGraphEditor() {
     return HEADER_HEIGHT + portArea + variableArea
   }
 
+  // Computes graph space coordinates of a node pin handle
   const getPortPos = (nodeId, portId, type = null) => {
     let node = nodes.value.find(n => n.id === nodeId)
     if (!node) return { x: 0, y: 0 }
@@ -209,6 +218,7 @@ export function useGraphEditor() {
     return { x: nodeX + (NODE_WIDTH / 2), y: nodeY + HEADER_HEIGHT }
   }
 
+  // Initiates wire connection drag from a node pin
   const startConnect = (e, nodeId, handleId, type = 'output') => {
     if (e.button !== 0) return
     e.preventDefault()
@@ -235,6 +245,7 @@ export function useGraphEditor() {
     }
   }
 
+  // Handles click or drag on an existing wire connection
   const startMoveEdge = (e, edge) => {
     if (e.button !== 0) return
     e.preventDefault()
@@ -248,6 +259,7 @@ export function useGraphEditor() {
     interaction.mode = 'edge_click_or_drag'
   }
 
+  // Initiates dragging for a node or multi-selected group
   const startDragNode = (e, node) => {
     if (e.button !== 0) return
     e.preventDefault()
@@ -282,6 +294,7 @@ export function useGraphEditor() {
     interaction.initialNodePositions = initialPositions
   }
 
+  // Handles background mouse down to initiate panning or marquee selection
   const onCanvasMouseDown = (e) => {
     if (e.button === 0) {
       const isCtrlPressed = e.ctrlKey || e.metaKey
@@ -309,6 +322,7 @@ export function useGraphEditor() {
     }
   }
 
+  // Global mouse move handler for panning, marquee, wire drawing, and node dragging
   const handleGlobalMouseMove = (e) => {
     if (!interaction.mode) return
 
@@ -417,6 +431,7 @@ export function useGraphEditor() {
     }
   }
 
+  // Global mouse up handler committing moves, connections, or panning
   const handleGlobalMouseUp = () => {
     if (interaction.mode === 'edge_click_or_drag') {
       interaction.mode = null
@@ -506,6 +521,7 @@ export function useGraphEditor() {
     cachedRect = null 
   }
 
+  // Checks if a node is related to current selection for canvas dimming
   const isRelated = (targetId) => {
     if (interaction.mode === 'connect' || interaction.mode === 'drag') return true
 
@@ -527,6 +543,7 @@ export function useGraphEditor() {
     return !!connectedEdge
   }
 
+  // Handles mouse wheel events for zoom and axis scrolling
   const handleWheel = (e) => {
     if (e.ctrlKey) e.preventDefault()
     if (!panelRef.value) return
@@ -541,7 +558,7 @@ export function useGraphEditor() {
       store.updateCamera({ x: camera.value.x - (e.deltaY / camera.value.scale) }) 
       return 
     }
-    
+
     const mouseX = e.clientX - rect.left
     const mouseY = e.clientY - rect.top
     const delta = e.deltaY < 0 ? 1 : -1
@@ -569,6 +586,7 @@ export function useGraphEditor() {
     interaction.startCam = { x: camera.value.x, y: camera.value.y }
   }
 
+  // Generates SVG cubic bezier path string between two port coordinates
   const getPathD = (p1, p2) => {
     const dist = Math.abs(p1.x - p2.x)
     const controlDist = Math.min(dist * 0.5, 150)
@@ -613,6 +631,7 @@ export function useGraphEditor() {
     return Math.max(28, text.length * 6.5 + 12)
   }
 
+  // Handles dropping blueprint templates and variables onto the graph canvas
   const onDrop = (event) => {
     const worldPos = getClientPos(event)
     const finalPos = { x: snap(worldPos.x), y: snap(worldPos.y) }

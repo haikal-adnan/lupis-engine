@@ -39,16 +39,12 @@ export function useExportApp() {
       return;
     }
 
-    const iframe = document.createElement('iframe');
-    iframe.style.display = 'none';
-    iframe.src = exeDownloadUrl.value;
-    document.body.appendChild(iframe);
-
-    setTimeout(() => {
-      if (document.body.contains(iframe)) {
-        document.body.removeChild(iframe);
-      }
-    }, 60000);
+    const link = document.createElement('a');
+    link.href = exeDownloadUrl.value;
+    link.setAttribute('download', `${projectId || 'game'}.exe`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const exportApp = async (projectId, format = 'exe') => {
@@ -66,7 +62,7 @@ export function useExportApp() {
     exportType.value = targetFormat;
 
     try {
-      const backendUrl = workspaceStore.backendBaseUrl || 'http://localhost:4000';
+      const backendUrl = workspaceStore.config?.backendUrl || workspaceStore.backendBaseUrl || 'http://localhost:4000';
 
       const isHealthy = await _checkBackendHealth(backendUrl);
       if (!isHealthy) {
@@ -87,7 +83,8 @@ export function useExportApp() {
         throw new Error(`Project folder '${projectId}' not found in local storage (OPFS).`);
       }
 
-      // 1. Extract updatedAt from OPFS project.json (used by ZIP and EXE)
+      // 1. Extract name and updatedAt from OPFS project.json
+      let projectName = projectId;
       let updatedAt = new Date().toISOString();
       try {
         const projectFileHandle = await targetProjectDir.getFileHandle('project.json');
@@ -96,6 +93,9 @@ export function useExportApp() {
         const projectJson = JSON.parse(projectText);
         if (projectJson.updatedAt) {
           updatedAt = projectJson.updatedAt;
+        }
+        if (projectJson.name) {
+          projectName = projectJson.name.trim().replace(/[/\\?%*:|"<>]/g, '').replace(/\s+/g, '_') || projectId;
         }
       } catch (err) {
         console.warn('Failed to read project.json from OPFS, using fallback timestamp.', err);
@@ -110,6 +110,7 @@ export function useExportApp() {
       const formData = new FormData();
       formData.append('projectZip', projectBlob, `${projectId}.zip`);
       formData.append('projectId', projectId);
+      formData.append('projectName', projectName);
       formData.append('updatedAt', updatedAt);
 
       // 4. Handle ZIP format
@@ -129,7 +130,7 @@ export function useExportApp() {
 
         const link = document.createElement('a');
         link.href = downloadUrl;
-        link.download = `${projectId}.zip`;
+        link.download = `${projectName}.zip`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -137,7 +138,7 @@ export function useExportApp() {
 
         showPop({
           title: 'Export Successful',
-          message: `Standalone Web Application (.zip) for project '${projectId}' downloaded successfully.`,
+          message: `Standalone Web Application (.zip) for project "${projectName}" downloaded successfully! Ready to run with index.html.`,
           type: 'success'
         });
 
@@ -160,7 +161,7 @@ export function useExportApp() {
 
       showPop({
         title: 'EXE Build Complete!',
-        message: `Application compilation for '${projectId}' succeeded! Click 'Download (.EXE)' to download.`,
+        message: `Standalone executable (.EXE) for "${projectName}" is ready! Click 'Download (.EXE)' to download.`,
         type: 'success'
       });
 

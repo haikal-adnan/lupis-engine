@@ -1,3 +1,5 @@
+// Project asset records, blob caches, and OPFS persistence.
+
 import { defineStore } from 'pinia';
 import { useWorkspaceStore } from '@workspaces/workspaces.js';
 import { useOPFSActions } from '@opfs/opfs.js';
@@ -26,25 +28,20 @@ export const useAssetStore = defineStore('asset', {
       this.assets = assetList;
     },
 
-    /**
-     * DOMAIN LOGIC: Menentukan struktur path lanjutan spesifik Asset & Workspaces
-     */
     async _getAssetDirectories() {
       const workspaceStore = useWorkspaceStore();
       const opfs = useOPFSActions();
       
       const projectId = String(workspaceStore.activeProjectId);
 
-      // 1. Ambil Root Directory "lupis-engine/projects/"
       const projectsRootDir = await opfs.getProjectsRootDirectory();
-
-      // 2. Tentukan path lanjutan internal domain
       const assetsDir = await opfs.resolveDirectoryPath(projectsRootDir, `${projectId}/assets`);
       const workspacesDir = await opfs.resolveDirectoryPath(projectsRootDir, `${projectId}/workspaces`);
 
       return { assetsDir, workspacesDir };
     },
 
+    // Serializes asset definitions to assets.json in OPFS
     async syncAssetsToOPFS() {
       const opfs = useOPFSActions();
       const { workspacesDir } = await this._getAssetDirectories();
@@ -55,6 +52,7 @@ export const useAssetStore = defineStore('asset', {
       await opfs.writeFileToHandle(workspacesDir, 'assets.json', jsonContent);
     },
 
+    // Persists asset files to OPFS and registers the asset in state
     async addAsset(asset, rawFile, extraFiles) {
       const opfs = useOPFSActions();
       const { assetsDir } = await this._getAssetDirectories();
@@ -65,7 +63,7 @@ export const useAssetStore = defineStore('asset', {
       // Save primary file
       await opfs.writeFileToHandle(assetsDir, savedFileName, rawFile);
 
-      // Save extra files (such as .fnt and .png for BMFont)
+      // Save auxiliary files such as BMFont descriptors
       for (const item of extraFiles) {
         await opfs.writeFileToHandle(assetsDir, item.fileName, item.file);
       }
@@ -83,6 +81,7 @@ export const useAssetStore = defineStore('asset', {
       return true;
     },
 
+    // Revokes cached URL and deletes binary files from OPFS before removing from state
     async removeAsset(assetId) {
       const asset = this.getAssetById(assetId);
       if (!asset) return;
@@ -118,6 +117,7 @@ export const useAssetStore = defineStore('asset', {
       }
     },
 
+    // Clones asset metadata and duplicates its files in OPFS storage
     async duplicateAsset(assetId) {
       const original = this.getAssetById(assetId);
       if (!original) return;
@@ -170,6 +170,7 @@ export const useAssetStore = defineStore('asset', {
       await this.syncAssetsToOPFS();
     },
 
+    // Returns cached blob URL or loads binary data from OPFS
     async getAssetUrlById(id) {
       if (this.blobUrlCache.has(id)) {
         return this.blobUrlCache.get(id);

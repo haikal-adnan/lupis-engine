@@ -1,5 +1,5 @@
 import { HexToVec4 } from "../../Util/HexToVec4.js";
-import { TilemapMath } from "../../Editor/Tilemap/TilemapMath.js";
+import { TilemapMath } from "../../System/TilemapSystem/TilemapMath.js";
 import RenderUtils from "./RenderUtils.js";
 
 export default class TilemapRenderer {

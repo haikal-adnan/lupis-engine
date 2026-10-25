@@ -1,5 +1,5 @@
 import { bus } from '../../Util/EventBus.js';
-import { TilemapMath } from './TilemapMath.js';
+import { TilemapMath } from '../../System/TilemapSystem/TilemapMath.js';
 
 function areTileDataEqual(dataA, dataB) {
     if (dataA === dataB) return true;
@@ -21,16 +21,13 @@ export class TilemapOperations {
         this.blockBucket = false;
     }
 
-    /**
-     * Paint or erase tile at specified grid coordinates
-     */
+    // Paint or erase tile at specified grid coordinates
     paint(world, entity, tm, gridX, gridY, assetId, selection, isEraser = false) {
         if (!tm || !tm.data) return;
 
         const newData = { ...tm.data };
         let isChanged = false;
 
-        // --- ERASER MODE ---
         if (isEraser) {
             const eraserW = selection?.w || 1;
             const eraserH = selection?.h || 1;
@@ -52,7 +49,6 @@ export class TilemapOperations {
             return;
         }
 
-        // --- MODE BRUSH / PAINT ---
         if (!selection) return;
         const asset = world?.assets?.textures?.[assetId];
         if (!asset) return;
@@ -78,9 +74,7 @@ export class TilemapOperations {
         if (isChanged) this.applyDataChange(entity, tm, newData);
     }
 
-    /**
-     * Clear all tiles within rectangular marquee area
-     */
+    // Clear all tiles within rectangular marquee area
     deleteArea(entity, tm, startX, startY, width = 1, height = 1) {
         if (!tm || !tm.data) return;
 
@@ -109,9 +103,7 @@ export class TilemapOperations {
         }
     }
 
-    /**
-     * Strict Bounded Bucket Fill
-     */
+    // Bounded flood fill within active tile boundaries
     handleBucket(world, entity, tm, gridX, gridY, selection) {
         if (!selection || !tm.data) return;
         if (this.blockBucket) return;

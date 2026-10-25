@@ -1,3 +1,5 @@
+// Runtime diagnostics, script logs, and cross-window console synchronization.
+
 import { defineStore } from 'pinia'
 import { bus } from '@core/Util/EventBus.js'
 import { econsole } from '@core/Util/EngineConsole.js'
@@ -20,14 +22,15 @@ export const useConsoleStore = defineStore('engine-console', {
     },
 
     processLogEntry(entry) {
-        return {
-            ...entry, 
-            type: entry.type === 'log' ? 'info' : entry.type,
-            source: entry.source || 'System', 
-            formattedTime: this.formatTime(entry.time || Date.now())
-        }
+      return {
+        ...entry, 
+        type: entry.type === 'log' ? 'info' : entry.type,
+        source: entry.source || 'System', 
+        formattedTime: this.formatTime(entry.time || Date.now())
+      }
     },
 
+    // Appends a log entry to the buffer, capped at 1,000 entries
     addLog(entry) {
       this.logs.push(this.processLogEntry(entry))
       if (this.logs.length > 1000) this.logs.shift()
@@ -41,6 +44,7 @@ export const useConsoleStore = defineStore('engine-console', {
       }
     },
 
+    // Manages broadcast channel scoped to the active project
     setProjectChannel(projectId) {
       const channelName = projectId ? `lupis_engine_preview_channel_${projectId}` : BROADCAST_CHANNEL_NAME
       if (this.channel && this.channel.name === channelName) return
@@ -61,6 +65,7 @@ export const useConsoleStore = defineStore('engine-console', {
       }
     },
 
+    // Listens to event bus console events and cross-window logs
     initListeners(projectId) {
       if (this.isListening) {
         if (projectId) {

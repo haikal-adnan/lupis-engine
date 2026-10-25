@@ -1,4 +1,5 @@
-//@nodes/nodes.js
+// Exports visual script node graph components, inspector composables, and contracts.
+
 export { useGraphEditor } from '@nodes/graph/composables/useGraphEditor.js'
 export { useNodeMenu } from '@nodes/graph/composables/useNodeMenu.js'
 
@@ -40,6 +41,6 @@ export { default as NodeEdge } from '@nodes/inspector/layouts/NodeEdge.vue'
 export { default as NodePorts } from '@nodes/inspector/layouts/NodePorts.vue'
 export * from './inspector/layouts/custom/index.js'
 
-// Contract & Blueprints Barrels
+// --- Contracts and blueprints ---
 export * from './contract/index.js';
-export * from './library/blueprints/index.js';
+export * from './library/blueprints/index.js';

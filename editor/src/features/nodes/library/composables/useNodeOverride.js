@@ -7,6 +7,7 @@ import { useProjectStore } from '@projects/projects.js';
 import { useWorkspaceStore } from '@workspaces/workspaces.js';
 import { getPortColor } from '../../contract/portTypes.js';
 
+// Normalizes raw data types to canonical scripting types
 export function normalizeDataType(dataType) {
   const t = String(dataType || 'any').trim().toLowerCase();
   if (t === 'int' || t === 'float') return 'number';
@@ -14,6 +15,7 @@ export function normalizeDataType(dataType) {
   return t;
 }
 
+// Checks if two port types can maintain a wire connection without errors
 export function arePortTypesCompatible(typeA, typeB) {
   const a = normalizeDataType(typeA);
   const b = normalizeDataType(typeB);
@@ -31,16 +33,17 @@ export function getDefaultValueByDataType(dataType) {
   return '';
 }
 
+// Resolves a variable definition by ID in local and global scopes
 export function findVariableDefinition(varId, script) {
   if (!varId) return null;
 
-  // 1. Check local variables of the script being overridden
+  // 1. Script-local variables
   if (script && Array.isArray(script.localVariables)) {
     const found = script.localVariables.find(v => v.id === varId);
     if (found) return { ...found, scope: 'Local' };
   }
 
-  // 2. Check scriptStore activeScript or scripts
+  // 2. Active script store variables
   try {
     const scriptStore = useScriptStore();
     if (scriptStore?.activeScript?.localVariables) {
@@ -59,7 +62,7 @@ export function findVariableDefinition(varId, script) {
     // Non-fatal if store is outside pinia context
   }
 
-  // 3. Check global variables in projectStore
+  // 3. Project global variables
   try {
     const projectStore = useProjectStore();
     const globals = projectStore?.project?.globalVariables || projectStore?.activeProject?.globalVariables || [];
@@ -72,6 +75,7 @@ export function findVariableDefinition(varId, script) {
   return null;
 }
 
+// Reconciles variable getters/setters with the scoped variable definition
 export function overrideVariableNode(node, script, defaultData) {
   const isGet = node.type === 'variableGet' || node.type === 'variable_get';
   const varId = node.data?.variableId;
@@ -93,7 +97,7 @@ export function overrideVariableNode(node, script, defaultData) {
   node.settings.category = 'Variable';
   node.label = title;
 
-  // Preserve node values, modifiers, bindings, modes
+  // Preserve existing node values, modifiers, bindings, and modes
   const oldValues = (node.data && node.data.values) ? { ...node.data.values } : {};
   const preservedModifiers = node.data?.variableModifiers ? { ...node.data.variableModifiers } : {};
   const preservedBindings = node.data?.variableBindings ? { ...node.data.variableBindings } : {};
@@ -105,7 +109,6 @@ export function overrideVariableNode(node, script, defaultData) {
     }
   });
 
-  // Preserve existing inputs/outputs structure
   if (isGet) {
     node.inputs = [];
     node.outputs = [
@@ -146,7 +149,7 @@ export function overrideVariableNode(node, script, defaultData) {
     };
   }
 
-  // Preserve valid port IDs for edge pruning
+  // Prune edges pointing to removed or altered port IDs
   const validInIds = new Set(node.inputs.map(p => p.id));
   const validOutIds = new Set(node.outputs.map(p => p.id));
 
@@ -165,17 +168,7 @@ export function overrideVariableNode(node, script, defaultData) {
   return { success: true, node };
 }
 
-/**
- * Reconciles and overrides a single node based on its latest blueprint definition.
- * - Preserves existing values for ports that exist in the new blueprint with compatible data type.
- * - Preserves dynamic ports (sequential, switch cases, dynamic properties, etc.) and their connections.
- * - Preserves variable nodes (variableGet, variableSet) with their bound variables, types, codes, and connections.
- * - Preserves variableModifiers, variableBindings, and valueModes on node inputs.
- * - Preserves edge connections (and edge modifiers) for compatible ports.
- * - Adds new ports with template default values.
- * - Resets code to blueprint default code (except variable nodes).
- * - Disconnects edges for ports whose dataType is genuinely incompatible or was removed.
- */
+// Reconciles and overrides a node from its blueprint, preserving compatible values and dynamic ports
 export function overrideNodeFromBlueprint(node, script) {
   if (!node || !node.type) return { success: false, reason: 'invalid_node' };
 
@@ -189,7 +182,7 @@ export function overrideNodeFromBlueprint(node, script) {
     return overrideVariableNode(node, script, defaultData);
   }
 
-  // 1. Prepare raw inputs/outputs from blueprint
+  // Prepare raw inputs/outputs from blueprint
   const rawInputs = Array.isArray(defaultData.inputs) ? defaultData.inputs : [];
   const rawOutputs = Array.isArray(defaultData.outputs) ? defaultData.outputs : [];
 
@@ -204,7 +197,6 @@ export function overrideNodeFromBlueprint(node, script) {
     Boolean(node.data?.cases) ||
     Boolean(node.data?.propertyOptions);
 
-  // Template inputs with updated blueprint defaults, preserving compatible custom labels/types
   const templateInputs = rawInputs.map(portDef => {
     const oldPort = oldInputs.find(p => p.id === portDef.id);
     const basePort = createScriptPort(portDef);
@@ -216,14 +208,12 @@ export function overrideNodeFromBlueprint(node, script) {
     };
   });
 
-  // Preserve dynamic inputs that were added to the node
   const preservedDynamicInputs = supportsDynamic
     ? oldInputs.filter(p => !templateInputIds.has(p.id))
     : [];
 
   const newInputs = [...templateInputs, ...preservedDynamicInputs];
 
-  // Template outputs
   const templateOutputs = rawOutputs.map(portDef => {
     const oldPort = oldOutputs.find(p => p.id === portDef.id);
     const basePort = createScriptPort(portDef);
@@ -235,19 +225,17 @@ export function overrideNodeFromBlueprint(node, script) {
     };
   });
 
-  // Preserve dynamic outputs
   const preservedDynamicOutputs = supportsDynamic
     ? oldOutputs.filter(p => !templateOutputIds.has(p.id))
     : [];
 
   const newOutputs = [...templateOutputs, ...preservedDynamicOutputs];
 
-  // 2. Identify ports with matching ID AND compatible dataType
+  // Identify ports with compatible data types
   const preservedInputPortIds = new Set();
   newInputs.forEach(newPort => {
     const oldPort = oldInputs.find(p => p.id === newPort.id);
     if (!templateInputIds.has(newPort.id)) {
-      // Dynamic port that was preserved
       preservedInputPortIds.add(newPort.id);
     } else if (oldPort && arePortTypesCompatible(oldPort.dataType, newPort.dataType)) {
       preservedInputPortIds.add(newPort.id);
@@ -258,14 +246,13 @@ export function overrideNodeFromBlueprint(node, script) {
   newOutputs.forEach(newPort => {
     const oldPort = oldOutputs.find(p => p.id === newPort.id);
     if (!templateOutputIds.has(newPort.id)) {
-      // Dynamic port that was preserved
       preservedOutputPortIds.add(newPort.id);
     } else if (oldPort && arePortTypesCompatible(oldPort.dataType, newPort.dataType)) {
       preservedOutputPortIds.add(newPort.id);
     }
   });
 
-  // 3. Sever edges for disconnected / changed / removed ports
+  // Sever edges for incompatible or removed ports
   if (script && Array.isArray(script.edges)) {
     script.edges = script.edges.filter(edge => {
       if (edge.target === node.id) {
@@ -278,11 +265,10 @@ export function overrideNodeFromBlueprint(node, script) {
     });
   }
 
-  // 4. Update inputs and outputs
   node.inputs = newInputs;
   node.outputs = newOutputs;
 
-  // 5. Reconcile node values
+  // Reconcile node values
   const oldValues = (node.data && node.data.values) ? { ...node.data.values } : {};
   const blueprintDefaultValues = (defaultData.data && defaultData.data.values) ? defaultData.data.values : {};
   const newValues = {};
@@ -305,7 +291,6 @@ export function overrideNodeFromBlueprint(node, script) {
     }
   });
 
-  // Retain extra keys from oldValues and blueprintDefaultValues
   Object.keys(oldValues).forEach(key => {
     if (newValues[key] === undefined) {
       newValues[key] = oldValues[key];
@@ -317,7 +302,7 @@ export function overrideNodeFromBlueprint(node, script) {
     }
   });
 
-  // 6. Preserve and clean up variableModifiers, variableBindings, valueModes
+  // Clean up variable bindings for removed ports
   const preservedModifiers = node.data?.variableModifiers ? { ...node.data.variableModifiers } : {};
   const preservedBindings = node.data?.variableBindings ? { ...node.data.variableBindings } : {};
   const preservedModes = node.data?.valueModes ? { ...node.data.valueModes } : {};
@@ -340,14 +325,13 @@ export function overrideNodeFromBlueprint(node, script) {
     if (!validPortIdSet.has(pId)) delete preservedModes[pId];
   });
 
-  // Guarantee that any port with a preserved variable binding maintains mode 'variable'
   Object.keys(preservedBindings).forEach(pId => {
     if (preservedBindings[pId] && !preservedModes[pId]) {
       preservedModes[pId] = 'variable';
     }
   });
 
-  // 7. Reset code to blueprint and sync template data
+  // Reset code to blueprint and sync template metadata
   const templateData = defaultData.data ? JSON.parse(JSON.stringify(defaultData.data)) : {};
   node.data = {
     ...templateData,
@@ -366,7 +350,6 @@ export function overrideNodeFromBlueprint(node, script) {
     node.data.options = JSON.parse(JSON.stringify(templateData.options));
   }
 
-  // 8. Sync settings, dynamicMode, role
   if (!node.settings) node.settings = {};
   node.settings.headerColor = defaultData.settings?.headerColor || node.settings.headerColor || '#3B82F6';
   node.settings.category = defaultData.settings?.category || node.settings.category || 'General';
@@ -379,12 +362,7 @@ export function overrideNodeFromBlueprint(node, script) {
   return { success: true, node };
 }
 
-/**
- * Resets a single node to default template:
- * - Keeps id and position
- * - Resets all ports, values, data, code, settings to defaults
- * - Automatically disconnects all connected edges
- */
+// Resets a node to its fresh template while keeping its ID and position
 export function resetNodeToDefault(node, script) {
   if (!node || !node.type) return { success: false, reason: 'invalid_node' };
 
@@ -408,7 +386,6 @@ export function resetNodeToDefault(node, script) {
     data: defaultData.data ? JSON.parse(JSON.stringify(defaultData.data)) : {}
   });
 
-  // Mutate node in place
   Object.keys(node).forEach(key => {
     if (key !== 'id' && key !== 'position') {
       delete node[key];
@@ -416,7 +393,6 @@ export function resetNodeToDefault(node, script) {
   });
   Object.assign(node, freshNode);
 
-  // Automatically disconnect all edges connected to this node
   if (script && Array.isArray(script.edges)) {
     script.edges = script.edges.filter(e => e.source !== node.id && e.target !== node.id);
   }
@@ -424,9 +400,6 @@ export function resetNodeToDefault(node, script) {
   return { success: true, node };
 }
 
-/**
- * Overrides all nodes in the given script graph.
- */
 export function overrideAllScriptNodes(script) {
   if (!script || !Array.isArray(script.nodes)) return { success: false, count: 0 };
 
@@ -441,11 +414,6 @@ export function overrideAllScriptNodes(script) {
   return { success: true, count };
 }
 
-/**
- * Overrides all nodes across an array of scripts.
- * @param {Array} scripts - Array of script objects.
- * @returns {{ success: boolean, totalOverriddenNodes: number, affectedScriptsCount: number }}
- */
 export function overrideAllProjectNodes(scripts) {
   if (!Array.isArray(scripts) || scripts.length === 0) {
     return { success: false, totalOverriddenNodes: 0, affectedScriptsCount: 0 };
@@ -467,9 +435,7 @@ export function overrideAllProjectNodes(scripts) {
   return { success: true, totalOverriddenNodes, affectedScriptsCount };
 }
 
-/**
- * Composable for UI interactions (dialog confirmation, toast, store syncing).
- */
+// Manages batch node overrides across scripts with history and confirmation
 export function useNodeOverride() {
   const scriptStore = useScriptStore();
   const scriptHistory = useScriptHistory();
@@ -514,7 +480,6 @@ export function useNodeOverride() {
 
     if (!isConfirmed) return false;
 
-    // If an active script is currently open in canvas, flush its current state first
     if (scriptStore.activeScript && typeof scriptStore.saveActiveScript === 'function') {
       scriptStore.saveActiveScript();
     }
@@ -573,7 +538,7 @@ export function useNodeOverride() {
         await scriptStore.syncAllScriptsToOPFS();
       }
     } catch {
-      // Non-fatal if OPFS sync is not directly available; projectStore is marked dirty
+      // Non-fatal if OPFS sync is not directly available
     }
 
     showPop({

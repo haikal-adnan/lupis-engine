@@ -1,7 +1,7 @@
 import { test, expect } from '../fixtures.js';
 
 /**
- * CONTRACT TESTS for the Project Sync & Dirty State Machine (docs/schema-contract.md Section 2.1).
+ * CONTRACT TESTS for the Project Sync & Dirty State Machine.
  *
  * Invariants:
  * 1. Initial State: Newly opened project starts in 'synced' state.

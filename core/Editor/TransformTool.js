@@ -169,8 +169,6 @@ export default class TransformTool {
         }
     }
 
-    // Editor/TransformTool.js
-
     beginResize(handle, px, py) {
         const validEntities = (this.selection?.selectedList || []).filter(e => this._isInteractive(e));
         if (!validEntities.length) return;

@@ -1,3 +1,4 @@
+// Subsystem handler providing audio playback, spatial audio dispatch, and mixer channel control
 export class AudioContextHandler {
   constructor(contextSystem) {
     this.contextSystem = contextSystem;
@@ -9,6 +10,7 @@ export class AudioContextHandler {
     const entitySystem = this.game?.entitySystem;
 
     return {
+      // Plays audio attached to an entity or as a global one-shot sound
       play: (targetEntityOrAssetId, options = {}) => {
         if (!audioSystem) return null;
         if (!targetEntityOrAssetId || targetEntityOrAssetId === 'self') {
@@ -49,16 +51,22 @@ export class AudioContextHandler {
       },
 
       stopAll: () => audioSystem?.stopAll(),
+
       setVolume: (type, volume) => audioSystem?.setVolume(type, volume),
       getVolume: (type) => audioSystem?.getVolume(type),
+
       setMasterVolume: (volume) => audioSystem?.setMasterVolume(volume),
       getMasterVolume: () => audioSystem?.getMasterVolume(),
+
       setBackgroundVolume: (volume) => audioSystem?.setBackgroundVolume(volume),
       getBackgroundVolume: () => audioSystem?.getBackgroundVolume(),
+
       setSfxVolume: (volume) => audioSystem?.setSfxVolume(volume),
       getSfxVolume: () => audioSystem?.getSfxVolume(),
+
       setVoiceVolume: (volume) => audioSystem?.setVoiceVolume(volume),
       getVoiceVolume: () => audioSystem?.getVoiceVolume(),
+
       setMute: (type, isMute) => audioSystem?.setMute(type, isMute),
       isMuted: (type) => audioSystem?.isMuted(type)
     };

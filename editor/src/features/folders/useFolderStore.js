@@ -1,3 +1,5 @@
+// Folder tree state for organizing assets, prefabs, and scripts.
+
 import { defineStore } from 'pinia';
 import { useWorkspaceStore } from '@workspaces/workspaces.js';
 
@@ -11,6 +13,7 @@ export const useFolderStore = defineStore('folder', {
     getFolderById: (state) => (id) => state.folders.find(f => f.id === id),
     projectFolders: (state) => state.folders,
     
+    // Builds slash-delimited breadcrumb path string (e.g. "Sprites/Player")
     getFolderPathString: (state) => (folderId) => {
       const pathParts = [];
       let current = state.folders.find(f => f.id === folderId);
@@ -38,6 +41,7 @@ export const useFolderStore = defineStore('folder', {
       this.activeFolderId = folderId;
     },
 
+    // Resolves OPFS workspace directory handle for active project
     async _getWorkspaceDirHandle() {
       const workspaceStore = useWorkspaceStore();
       const projectId = workspaceStore.activeProjectId;
@@ -50,6 +54,7 @@ export const useFolderStore = defineStore('folder', {
       return await projectDir.getDirectoryHandle('workspaces', { create: true });
     },
 
+    // Serializes folder hierarchy to folders.json in OPFS
     async syncFoldersToOPFS() {
       const workspaceDir = await this._getWorkspaceDirHandle();
 

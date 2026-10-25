@@ -11,6 +11,7 @@ import {
   deactivateAndScheduleRespawn
 } from './Collectable/CollectableHelper.js';
 
+// Subsystem handler providing high-level gameplay kits and controller facades for script nodes
 export class ToolkitContextHandler {
   constructor(contextSystem) {
     this.contextSystem = contextSystem;
@@ -25,6 +26,7 @@ export class ToolkitContextHandler {
         runDialogue: (state, inputs, outputs, ctx) => processDialogueRunner(state, inputs, outputs, getCtx(ctx)),
         presentChoices: (state, inputs, outputs, ctx) => processChoicePresenter(state, inputs, outputs, getCtx(ctx))
       },
+
       platformer: {
         processController: (...args) => {
           if (args.length <= 2 || (args[2] === undefined && args[3] === undefined)) {
@@ -32,8 +34,10 @@ export class ToolkitContextHandler {
           }
           return processPlatformerController(args[0], args[1], args[2], getCtx(args[3]));
         },
+
         processAnimator: (state, inputs, outputs, ctx) => processPlatformerAnimator(state, inputs, outputs, getCtx(ctx), contextParams?.node)
       },
+
       topdown: {
         processController: (...args) => {
           if (args.length <= 2 || (args[2] === undefined && args[3] === undefined)) {
@@ -41,10 +45,13 @@ export class ToolkitContextHandler {
           }
           return processTopDownController(args[0], args[1], args[2], getCtx(args[3]));
         },
+
         processAnimator: (state, inputs, outputs, ctx) => processTopDownAnimator(state, inputs, outputs, getCtx(ctx), contextParams?.node)
       },
+
       combat: {
         processPlatformerCombat: (state, inputs, outputs, ctx) => processPlatformerCombat(state, inputs, outputs, getCtx(ctx), contextParams?.node),
+
         processEnemyCombat: (...args) => {
           if (args.length <= 2 || (args[2] === undefined && args[3] === undefined)) {
             return processEnemyCombat(args[0], getCtx(args[1]));
@@ -52,6 +59,7 @@ export class ToolkitContextHandler {
           return processEnemyCombat(args[0], args[1], args[2], getCtx(args[3]), contextParams?.node);
         }
       },
+
       ai: {
         processChaser: (...args) => {
           if (args.length <= 2 || (args[2] === undefined && args[3] === undefined)) {
@@ -60,6 +68,7 @@ export class ToolkitContextHandler {
           return processEnemyChaser(args[0], args[1], args[2], getCtx(args[3]));
         }
       },
+
       collectable: {
         processCollectable: (state, inputs, outputs, ctx) => processCollectable(state, inputs, outputs, getCtx(ctx), contextParams?.node),
         applyBobbing: (target, dt, speed, amp) => applyBobbing(target, dt, speed, amp),

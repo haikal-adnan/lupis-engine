@@ -2,11 +2,12 @@ import { reactive, watch } from 'vue';
 import { useWorkspaceStore } from '@workspaces/workspaces.js';
 import { useSceneStore } from '@scenes/scenes.js';
 
-// Set to `false` to disable all console logs in this file
 const ENABLE_LOGS = true; 
 
+// Undo/redo stacks keyed by active scene or tab ID
 export const historyStore = reactive({});
 
+// Provides undo/redo command execution, transaction management, and keyboard shortcut listeners
 export function useHistory(options = {}) {
   const workspaceStore = useWorkspaceStore();
   const sceneStore = useSceneStore();
@@ -36,7 +37,7 @@ export function useHistory(options = {}) {
   };
 
   const logHistory = (actionType = '') => {
-    if (!ENABLE_LOGS) return; // Cease logging if disabled
+    if (!ENABLE_LOGS) return;
 
     const key = getHistoryKey();
     console.group(`[useHistory] ${actionType} | Key: "${key}"`);
@@ -50,6 +51,7 @@ export function useHistory(options = {}) {
     window.logHistory = logHistory;
   }
 
+  // Merges actions sharing a transactionKey, or appends a new action
   const record = (action) => {
     const history = getActiveHistory();
     if (!history) return;

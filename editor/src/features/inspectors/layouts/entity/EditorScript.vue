@@ -237,7 +237,7 @@ import {
 
 import { useScriptStore } from '@scripts/scripts.js';
 import { useWorkspaceStore } from '@workspaces/workspaces.js';
-import { useSceneStore } from '@scenes/scenes.js';
+import { useSceneStore, useEntityActions } from '@scenes/scenes.js';
 
 import { 
   useConfirm,
@@ -272,12 +272,13 @@ const {
 const scriptStore = useScriptStore()
 const workspaceStore = useWorkspaceStore()
 const sceneStore = useSceneStore()
+const { updateComponentProp } = useEntityActions()
 const { confirm } = useConfirm()
 const { showPop } = usePopAlert()
 
 const markComponentAsOverridden = () => {
   if (selectedEntity.value && prefabId.value) {
-     sceneStore.updateComponentProp(selectedEntity.value.id, 'ScriptController', 'overridden', true)
+     updateComponentProp(selectedEntity.value.id, 'ScriptController', 'overridden', true)
   }
 }
 

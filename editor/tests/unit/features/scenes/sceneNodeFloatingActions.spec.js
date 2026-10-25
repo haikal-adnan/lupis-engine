@@ -3,12 +3,15 @@ import { mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import SceneNode from '@scenes/layouts/SceneNode.vue';
 import SceneTree from '@scenes/layouts/SceneTree.vue';
-import { useSceneStore, sceneSchema, entitySchema, layerSchema } from '@scenes/scenes.js';
+import { useSceneStore, useEntityActions, useLayerActions, sceneSchema, entitySchema, layerSchema } from '@scenes/scenes.js';
+import * as scenesModule from '@scenes/scenes.js';
 import { useProjectStore, projectSchema } from '@projects/projects.js';
 
 describe('SceneNode Floating Figma-Style Actions and Context Menu', () => {
   let sceneStore;
   let projectStore;
+  let entityActions;
+  let layerActions;
 
   beforeEach(() => {
     setActivePinia(createPinia());
@@ -19,6 +22,10 @@ describe('SceneNode Floating Figma-Style Actions and Context Menu', () => {
     const scene = sceneSchema({ id: 'scene_test', scriptId: 'Scene_1' });
     sceneStore.scenes = [scene];
     sceneStore.activeSceneId = scene.id;
+    entityActions = scenesModule.useEntityActions();
+    layerActions = scenesModule.useLayerActions();
+    vi.spyOn(scenesModule, 'useEntityActions').mockReturnValue(entityActions);
+    vi.spyOn(scenesModule, 'useLayerActions').mockReturnValue(layerActions);
   });
 
   describe('Layout & Structure', () => {
@@ -192,7 +199,7 @@ describe('SceneNode Floating Figma-Style Actions and Context Menu', () => {
 
   describe('User Actions & Events', () => {
     it('triggers sceneStore.updateEntityProp when lock button is clicked', async () => {
-      const updateEntityPropSpy = vi.spyOn(sceneStore, 'updateEntityProp').mockImplementation(() => {});
+      const updateEntityPropSpy = vi.spyOn(entityActions, 'updateEntityProp').mockImplementation(() => {});
 
       const node = {
         id: 'ent_1',
@@ -214,7 +221,7 @@ describe('SceneNode Floating Figma-Style Actions and Context Menu', () => {
     });
 
     it('triggers sceneStore.updateEntityProp when visibility button is clicked', async () => {
-      const updateEntityPropSpy = vi.spyOn(sceneStore, 'updateEntityProp').mockImplementation(() => {});
+      const updateEntityPropSpy = vi.spyOn(entityActions, 'updateEntityProp').mockImplementation(() => {});
 
       const node = {
         id: 'ent_1',
@@ -236,7 +243,7 @@ describe('SceneNode Floating Figma-Style Actions and Context Menu', () => {
     });
 
     it('triggers sceneStore.updateLayerProp for layer nodes', async () => {
-      const updateLayerPropSpy = vi.spyOn(sceneStore, 'updateLayerProp').mockImplementation(() => {});
+      const updateLayerPropSpy = vi.spyOn(layerActions, 'updateLayerProp').mockImplementation(() => {});
 
       const node = {
         id: 'layer_1',

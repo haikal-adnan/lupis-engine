@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
 import { useTilemapHistory } from '@historys/historys.js';
-import { useSceneStore } from '@scenes/scenes.js';
+import { useSceneStore, useEntityActions } from '@scenes/scenes.js';
 import { useWorkspaceStore } from '@workspaces/workspaces.js';
 import { setupMockSceneEnvironment, createMockEntity } from '@tests/tests.js';
 
@@ -28,12 +28,14 @@ describe('useTilemapHistory Integration', () => {
   let tilemapHistory;
   let targetScene;
   let entityId;
+  let entityActions;
 
   beforeEach(() => {
     // Inisialisasi Pinia instans baru untuk isolasi test
     setActivePinia(createPinia());
 
     sceneStore = useSceneStore();
+    entityActions = useEntityActions();
     workspaceStore = useWorkspaceStore();
 
     // Setup active tab di workspace agar history key dapat dibuat (`scene_${sceneId}`)
@@ -76,7 +78,7 @@ describe('useTilemapHistory Integration', () => {
       tilemapHistory.startStrokeTransaction(entityId, initialTileData);
 
       // Simulasi pengubahan data tilemap pada store selama proses painting
-      sceneStore.updateComponentProp(entityId, 'Tilemap', 'data', newTileData);
+      entityActions.updateComponentProp(entityId, 'Tilemap', 'data', newTileData);
 
       // Akhiri stroke transaction
       tilemapHistory.endStrokeTransaction('Paint Grass Tiles');
@@ -131,7 +133,7 @@ describe('useTilemapHistory Integration', () => {
 
       // Act
       tilemapHistory.recordTilemapPropChange(entityId, 'tileWidth', oldWidth, newWidth);
-      sceneStore.updateComponentProp(entityId, 'Tilemap', 'tileWidth', newWidth);
+      entityActions.updateComponentProp(entityId, 'Tilemap', 'tileWidth', newWidth);
 
       expect(targetScene.entities[0].components.Tilemap.tileWidth).toBe(32);
 
@@ -151,7 +153,7 @@ describe('useTilemapHistory Integration', () => {
 
       // Act
       tilemapHistory.recordTilemapPropChange(entityId, 'filterMode', oldMode, newMode);
-      sceneStore.updateComponentProp(entityId, 'Tilemap', 'filterMode', newMode);
+      entityActions.updateComponentProp(entityId, 'Tilemap', 'filterMode', newMode);
 
       // Assert Undo
       tilemapHistory.undo();
@@ -188,7 +190,7 @@ describe('useTilemapHistory Integration', () => {
 
       // Act: Record move tiles
       tilemapHistory.recordTilemapDataChange(entityId, oldData, newData, 'Move Marquee Tiles');
-      sceneStore.updateComponentProp(entityId, 'Tilemap', 'data', newData);
+      entityActions.updateComponentProp(entityId, 'Tilemap', 'data', newData);
 
       expect(targetScene.entities[0].components.Tilemap.data).toEqual(newData);
 
@@ -210,7 +212,7 @@ describe('useTilemapHistory Integration', () => {
 
       // Act: Delete area
       tilemapHistory.recordTilemapDataChange(entityId, filledData, deletedData, 'Delete Marquee Tiles');
-      sceneStore.updateComponentProp(entityId, 'Tilemap', 'data', deletedData);
+      entityActions.updateComponentProp(entityId, 'Tilemap', 'data', deletedData);
 
       // Undo deletion
       tilemapHistory.undo();
@@ -223,7 +225,7 @@ describe('useTilemapHistory Integration', () => {
       // Bucket fill
       const bucketData = { '0,1': 9, '1,1': 9 };
       tilemapHistory.recordTilemapDataChange(entityId, deletedData, bucketData, 'Bucket Fill');
-      sceneStore.updateComponentProp(entityId, 'Tilemap', 'data', bucketData);
+      entityActions.updateComponentProp(entityId, 'Tilemap', 'data', bucketData);
 
       tilemapHistory.undo();
       expect(targetScene.entities[0].components.Tilemap.data).toEqual(deletedData);

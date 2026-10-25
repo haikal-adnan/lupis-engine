@@ -1,3 +1,5 @@
+// OPFS directory tree hierarchy, file viewer state, and storage I/O status.
+
 import { defineStore } from 'pinia';
 import { opfsSchema, opfsItemSchema, getFileTypeByExtension } from '@opfs/opfs.js';
 
@@ -27,6 +29,7 @@ export const useOPFSStore = defineStore('opfs', {
       this.fileTree = tree.map(opfsItemSchema);
     },
 
+    // Sets active file node, revoking any previous image URL
     setActiveFile(fileItem, content = '', imgUrl = '') {
       if (this.imageUrl) {
         URL.revokeObjectURL(this.imageUrl);
@@ -40,6 +43,7 @@ export const useOPFSStore = defineStore('opfs', {
       this.fileContent = newContent;
     },
 
+    // Closes active file and revokes preview image URL
     clearActiveFile() {
       if (this.imageUrl) {
         URL.revokeObjectURL(this.imageUrl);

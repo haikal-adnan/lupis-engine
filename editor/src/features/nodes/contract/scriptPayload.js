@@ -1,5 +1,8 @@
+// Invariant validation for serialized script graph payloads.
+
 export const SCHEMA_VERSION = 3;
 
+// Validates root structure of a serialized script graph payload
 export function validatePayloadShape(payload) {
   if (!payload || typeof payload !== 'object') {
     return { valid: false, error: 'Payload must be an object' };

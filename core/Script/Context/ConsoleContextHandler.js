@@ -1,5 +1,6 @@
 import { formatNotificationMessage } from '../../Util/ScriptContextUtils.js';
 
+// Subsystem handler providing diagnostic logging and notifications for script nodes
 export class ConsoleContextHandler {
   constructor(contextSystem) {
     this.contextSystem = contextSystem;

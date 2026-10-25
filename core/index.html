@@ -2,111 +2,170 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Lupis Engine Standalone</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Lupis Engine Game</title>
   
   <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
     html, body { 
-        margin: 0; 
-        padding: 0; 
-        width: 100%; 
-        height: 100%; 
-        overflow: hidden; 
-        background: #000; 
-        display: flex;
-        align-items: center;
-        justify-content: center;
+      width: 100%; 
+      height: 100%; 
+      overflow: hidden; 
+      background: #0d0f12; 
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    #canvas_container {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
     }
 
     #lp_canvas_preview { 
-        display: block; 
-        outline: none; 
-        background: #111;
-        box-shadow: 0 0 50px rgba(0,0,0,0.5); 
-        max-width: 100%;
-        max-height: 100%;
+      display: block; 
+      outline: none; 
+      background: #111418;
+      box-shadow: 0 0 60px rgba(0, 0, 0, 0.7); 
+      max-width: 100%;
+      max-height: 100%;
     }
 
     #loading { 
-        position: absolute; 
-        inset: 0; 
-        display: flex; 
-        flex-direction: column; 
-        align-items: center; 
-        justify-content: center; 
-        color: #888; 
-        font-family: sans-serif; 
-        background: #111; 
-        z-index: 10; 
+      position: absolute; 
+      inset: 0; 
+      display: flex; 
+      flex-direction: column; 
+      align-items: center; 
+      justify-content: center; 
+      color: #94a3b8; 
+      background: #0d0f12; 
+      z-index: 50; 
+      transition: opacity 0.3s ease;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .spinner {
+      width: 36px;
+      height: 36px;
+      border: 3px solid rgba(148, 163, 184, 0.2);
+      border-top-color: #38bdf8;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-bottom: 16px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    #loading-text {
+      font-size: 14px;
+      font-weight: 500;
+      letter-spacing: 0.02em;
     }
     
-    .hidden { display: none !important; }
-  </style>
-
-  <script type="importmap">
-  {
-    "imports": {
-      "/engine/": "/engine/",
-      "/projects/": "/projects/"
+    .hidden { 
+      opacity: 0 !important; 
+      pointer-events: none !important; 
     }
-  }
-  </script>
+  </style>
 </head>
 <body>
-  <div id="loading">Loading Project...</div>
-  <canvas id="lp_canvas_preview" tabindex="0"></canvas>
+  <div id="loading">
+    <div class="spinner"></div>
+    <div id="loading-text">Starting Engine...</div>
+  </div>
 
-<script type="module">
+  <div id="canvas_container">
+    <canvas id="lp_canvas_preview" tabindex="0"></canvas>
+  </div>
+
+  <script type="module">
     import { startEngine } from "./Runtime.js";
 
     const PROJECT_FOLDER = "./project"; 
     const loadingEl = document.getElementById("loading");
+    const loadingTextEl = document.getElementById("loading-text");
     const canvasEl = document.getElementById("lp_canvas_preview");
 
     function setupCanvasResponsiveness(refWidth = 1920, refHeight = 1080) {
-        canvasEl.width = refWidth;
-        canvasEl.height = refHeight;
+      canvasEl.width = refWidth;
+      canvasEl.height = refHeight;
 
-        const onResize = () => {
-            const winW = window.innerWidth;
-            const winH = window.innerHeight;
-            const targetRatio = refWidth / refHeight;
-            const winRatio = winW / winH;
+      const onResize = () => {
+        const winW = window.innerWidth;
+        const winH = window.innerHeight;
+        const targetRatio = refWidth / refHeight;
+        const winRatio = winW / winH;
 
-            let finalW, finalH;
+        let finalW, finalH;
 
-            if (winRatio > targetRatio) {
-                finalH = winH;
-                finalW = finalH * targetRatio;
-            } else {
-                finalW = winW;
-                finalH = finalW / targetRatio;
-            }
+        if (winRatio > targetRatio) {
+          finalH = winH;
+          finalW = finalH * targetRatio;
+        } else {
+          finalW = winW;
+          finalH = finalW / targetRatio;
+        }
 
-            canvasEl.style.width = `${finalW}px`;
-            canvasEl.style.height = `${finalH}px`;
-        };
+        canvasEl.style.width = `${Math.floor(finalW)}px`;
+        canvasEl.style.height = `${Math.floor(finalH)}px`;
+      };
 
-        window.addEventListener('resize', onResize);
-        onResize(); 
+      window.addEventListener("resize", onResize);
+      onResize(); 
     }
 
     async function initStandalone() {
-        try {
-            loadingEl.classList.remove("hidden");
-            loadingEl.innerText = "Starting Engine...";
+      try {
+        loadingEl.classList.remove("hidden");
+        loadingTextEl.innerText = "Loading Project Structure...";
 
-            setupCanvasResponsiveness(1920, 1080);
-            await startEngine(canvasEl, PROJECT_FOLDER);
+        setupCanvasResponsiveness(1920, 1080);
 
-            loadingEl.classList.add("hidden");
-            canvasEl.focus();
-        } catch (error) {
-            loadingEl.innerText = `Error: ${error.message}`;
-            console.error("[Standalone] Error starting game:", error);
+        await startEngine(
+          canvasEl,
+          PROJECT_FOLDER,
+          {},
+          "runtime",
+          (message, percent) => {
+            if (loadingTextEl) {
+              loadingTextEl.innerText = `${message} (${percent}%)`;
+            }
+          }
+        );
+
+        loadingEl.classList.add("hidden");
+        canvasEl.focus();
+      } catch (error) {
+        console.error("[Standalone] Error starting game:", error);
+        if (loadingEl && loadingTextEl) {
+          loadingEl.classList.remove("hidden");
+          const spinner = loadingEl.querySelector(".spinner");
+          if (spinner) spinner.style.display = "none";
+          loadingTextEl.innerHTML = `
+            <div style="color: #ef4444; font-size: 16px; font-weight: bold; margin-bottom: 8px;">Game Launch Failed</div>
+            <div style="color: #94a3b8; font-size: 12px; max-width: 480px; word-break: break-word;">${error.message || error}</div>
+          `;
         }
+      }
     }
 
     initStandalone();
-    </script>
+  </script>
 </body>
 </html>

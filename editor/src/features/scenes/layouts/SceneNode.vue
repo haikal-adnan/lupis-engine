@@ -170,7 +170,7 @@ import {
   ChevronRight, ChevronDown, Layers, Folder, FolderOpen, Cuboid,
   Type, Image, Box, Lock, Unlock, Eye, EyeOff, FileCode
 } from 'lucide-vue-next'
-import { useSceneStore, useNodeDragDrop } from '@scenes/scenes.js';
+import { useSceneStore, useNodeDragDrop, useEntityActions, useLayerActions } from '@scenes/scenes.js';
 
 defineOptions({ name: 'SceneNode' })
 
@@ -182,6 +182,8 @@ const props = defineProps({
 
 const emit = defineEmits(['select', 'contextmenu', 'node-drop'])
 const sceneStore = useSceneStore()
+const { updateEntityProp } = useEntityActions()
+const { updateLayerProp } = useLayerActions()
 
 const isOpen = ref(true)
 
@@ -269,9 +271,9 @@ const toggleVisibility = () => {
     const newVal = !ownVisible.value;
     
     if (isLayer.value) {
-        sceneStore.updateLayerProp(id, 'visible', newVal);
+        updateLayerProp(id, 'visible', newVal);
     } else {
-        sceneStore.updateEntityProp(id, 'visible', newVal); 
+        updateEntityProp(id, 'visible', newVal); 
     }
 }
 
@@ -280,9 +282,9 @@ const toggleLock = () => {
     const newVal = !ownLocked.value;
     
     if (isLayer.value) {
-        sceneStore.updateLayerProp(id, 'locked', newVal);
+        updateLayerProp(id, 'locked', newVal);
     } else {
-        sceneStore.updateEntityProp(id, 'locked', newVal);
+        updateEntityProp(id, 'locked', newVal);
     }
 }
 </script>

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 
-import { useSceneStore } from '@scenes/scenes.js'
+import { useSceneStore, useEntityActions, useLayerActions } from '@scenes/scenes.js'
 import { useProjectStore } from '@projects/projects.js'
 import { engineBridge } from '@engines/engines.js'
 
@@ -28,6 +28,8 @@ vi.mock('@composables/composables.js', () => ({
 describe('Hierarchy Management Integration', () => {
   let sceneStore
   let projectStore
+  let entityActions
+  let layerActions
 
   beforeEach(() => {
     setActivePinia(createPinia())
@@ -35,6 +37,8 @@ describe('Hierarchy Management Integration', () => {
 
     sceneStore = useSceneStore()
     projectStore = useProjectStore()
+    entityActions = useEntityActions()
+    layerActions = useLayerActions()
 
     projectStore.project = {
       id: 'proj_hierarchy_test',
@@ -59,8 +63,8 @@ describe('Hierarchy Management Integration', () => {
       setupMockSceneEnvironment()
 
       // Act
-      const worldLayer = sceneStore.addLayer('World_Layer_2', 'world')
-      const uiLayer = sceneStore.addLayer('HUD_Layer', 'ui')
+      const worldLayer = layerActions.addLayer('World_Layer_2', 'world')
+      const uiLayer = layerActions.addLayer('HUD_Layer', 'ui')
 
       // Assert
       expect(sceneStore.activeScene.layersWorld).toContainEqual(expect.objectContaining({ id: worldLayer.id, scriptId: 'World_Layer_2' }))
@@ -75,8 +79,8 @@ describe('Hierarchy Management Integration', () => {
       setupMockSceneEnvironment({ layersWorld: [worldLayer], layersUI: [uiLayer] })
 
       // Act
-      sceneStore.deleteLayer(worldLayer.id)
-      sceneStore.deleteLayer(uiLayer.id)
+      layerActions.deleteLayer(worldLayer.id)
+      layerActions.deleteLayer(uiLayer.id)
 
       // Assert
       expect(sceneStore.activeScene.layersWorld).toHaveLength(1)
@@ -96,7 +100,7 @@ describe('Hierarchy Management Integration', () => {
       })
 
       // Act
-      sceneStore.deleteLayer(targetLayer.id)
+      layerActions.deleteLayer(targetLayer.id)
 
       // Assert
       expect(sceneStore.activeScene.layersWorld.find(l => l.id === targetLayer.id)).toBeUndefined()
@@ -205,7 +209,7 @@ describe('Hierarchy Management Integration', () => {
       setupMockSceneEnvironment({ entities: [prefabParent, prefabChild] })
 
       // Act: Try creating new entity inside child of prefab instance
-      const result = sceneStore.createEntity('sprite', { id: 'prefab_child_1', type: 'entity', layerId: 'layer_world_default' })
+      const result = entityActions.createEntity('sprite', { id: 'prefab_child_1', type: 'entity', layerId: 'layer_world_default' })
 
       // Assert
       expect(result).toBe(false)
@@ -220,7 +224,7 @@ describe('Hierarchy Management Integration', () => {
       setupMockSceneEnvironment({ entities: [prefabParent, prefabChild] })
 
       // Act
-      const deleteResult = sceneStore.deleteEntity('prefab_nested_child')
+      const deleteResult = entityActions.deleteEntity('prefab_nested_child')
 
       // Assert
       expect(deleteResult).toBe(false)
@@ -259,7 +263,7 @@ describe('Hierarchy Management Integration', () => {
       setupMockSceneEnvironment({ layersWorld: [layerA, layerB, layerC] })
 
       // Act: Move layerC above layerA (position: 'top')
-      sceneStore.reorderLayer('layer_c', 'layer_a', 'top')
+      layerActions.reorderLayer('layer_c', 'layer_a', 'top')
 
       // Assert
       const worldLayers = sceneStore.activeScene.layersWorld

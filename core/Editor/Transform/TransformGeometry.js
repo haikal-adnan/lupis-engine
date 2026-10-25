@@ -1,5 +1,5 @@
 import { calculateQuadVertices } from "../../Util/calculateQuadVertices.js";
-import { TilemapMath } from "../Tilemap/TilemapMath.js";
+import { TilemapMath } from "../../System/TilemapSystem/TilemapMath.js";
 import RenderUtils from "../../Renderer/Scene/RenderUtils.js";
 
 export class TransformGeometry {

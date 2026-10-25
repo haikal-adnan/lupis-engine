@@ -1,6 +1,7 @@
 import { componentSchema } from '@scenes/scenes.js';
 import { GenerateUUID, sanitizeScriptId } from '@utils/utils.js';
 
+// Constructs and normalizes game entities, resolving default transforms and component configurations
 export const entitySchema = (data = {}) => {
   const cleanComponents = {};
 

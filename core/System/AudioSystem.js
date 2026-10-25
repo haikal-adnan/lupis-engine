@@ -9,11 +9,9 @@ export default class AudioSystem {
             this.context = this._createFallbackContext();
         }
         
-        // 1 Master Gain (direct output)
         this.masterGain = this.context.createGain();
         this.masterGain.connect(this.context.destination);
 
-        // 3 Sub-buses connected into Master Gain
         this.backgroundGain = this.context.createGain();
         this.backgroundGain.connect(this.masterGain);
 
@@ -185,11 +183,7 @@ export default class AudioSystem {
         }
     }
 
-    /**
-     * Plays audio based on entity and Audio component data (or optional override data)
-     * @param {Object} entity 
-     * @param {Object} [overrideAudioData] 
-     */
+    // Plays audio based on entity Audio component data or explicit override configuration
     play(entity, overrideAudioData = null) {
         if (this.context.state === 'suspended') {
             this.context.resume().then(() => {
@@ -273,12 +267,7 @@ export default class AudioSystem {
         return nodeId;
     }
 
-    /**
-     * Plays a sound asset directly without an entity (one-shot or looping)
-     * @param {string|AudioBuffer} assetIdOrBuffer
-     * @param {Object} [options]
-     * @returns {string|null} nodeId
-     */
+    // Plays a sound asset directly without an entity binding
     playSound(assetIdOrBuffer, options = {}) {
         if (!assetIdOrBuffer) return null;
         if (this.context.state === 'suspended') {
@@ -319,9 +308,7 @@ export default class AudioSystem {
         return nodeId;
     }
 
-    /**
-     * Stops all active audio nodes across all channels
-     */
+    // Stops all active audio nodes across all channels
     stopAll() {
         for (const [nodeId, nodeData] of this.activeNodes.entries()) {
             try { nodeData.source.stop(); } catch(e) {}
@@ -329,10 +316,7 @@ export default class AudioSystem {
         }
     }
 
-    /**
-     * Stops currently playing audio for a specific entity
-     * @param {Object|string} entityOrId 
-     */
+    // Stops active audio playback for a specific entity
     stop(entityOrId) {
         const targetId = typeof entityOrId === 'string' ? entityOrId : entityOrId?.id;
         if (!targetId) return;

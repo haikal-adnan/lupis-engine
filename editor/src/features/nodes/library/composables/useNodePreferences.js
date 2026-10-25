@@ -12,9 +12,10 @@ const getStorageItem = (key, fallback = []) => {
   return fallback;
 };
 
-// Batasi maksimal 10 item saat memuat dari localStorage
+// Limit to max 10 recent items in storage
 const recentNodesIds = ref(getStorageItem('lupis-recent-nodes').slice(0, 10));
 
+// Manages recently used node blueprints in localStorage
 export function useNodePreferences() {
   const { nodeGroups } = useNodeBlueprint();
 
@@ -38,7 +39,6 @@ export function useNodePreferences() {
     let recents = recentNodesIds.value.filter(id => id !== type);
     recents.unshift(type); 
     
-    // Batasi hingga 10 item
     if (recents.length > 10) recents.pop(); 
     
     recentNodesIds.value = recents;

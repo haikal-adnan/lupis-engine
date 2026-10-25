@@ -1,11 +1,12 @@
 import { computed, ref, watch } from 'vue';
-import { useSceneStore } from '@scenes/scenes.js';
+import { useSceneStore, useEntityActions } from '@scenes/scenes.js';
 import { useWorkspaceStore } from '@workspaces/workspaces.js';
 import { engineBridge } from "@engines/engines.js";
 import { useSceneHistory } from '@historys/historys.js';
 
 export function useShapeEditorLogic() {
   const sceneStore = useSceneStore();
+  const { updateComponentProp } = useEntityActions();
   const workspaceStore = useWorkspaceStore();
   const { recordComponentChange } = useSceneHistory();
   const trigger = ref(0);
@@ -64,7 +65,7 @@ export function useShapeEditorLogic() {
 
           recordComponentChange(targetId, compName, propName, oldValue, val);
 
-          sceneStore.updateComponentProp(
+          updateComponentProp(
             targetId,
             compName,
             propName,
@@ -95,7 +96,7 @@ export function useShapeEditorLogic() {
 
       recordComponentChange(entity.id, 'ShapeRenderer', 'elements', oldElems, currentElems);
 
-      sceneStore.updateComponentProp(entity.id, 'ShapeRenderer', 'elements', currentElems);
+      updateComponentProp(entity.id, 'ShapeRenderer', 'elements', currentElems);
       engineBridge.updateComponentProp({
         entityId: entity.id,
         componentName: 'ShapeRenderer',

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
-import { useAnimatorActions } from '@scenes/scenes.js' // Sesuaikan path alias ke useAnimatorActions
+import { useAnimatorActions } from '@animators/animators.js' // Sesuaikan path alias ke useAnimatorActions
 import { useSceneStore } from '@scenes/scenes.js'
 import { engineBridge } from '@engines/engines.js'
 import { setupMockSceneEnvironment, createMockEntity } from '@tests/tests.js'
@@ -63,11 +63,13 @@ function createMockEntityWithAnimator({
 
 describe('useAnimatorActions Unit & Integration Tests', () => {
   let sceneStore
+  let animatorActions
   let mockData
 
   beforeEach(() => {
     setActivePinia(createPinia())
     sceneStore = useSceneStore()
+    animatorActions = useAnimatorActions()
 
     mockData = createMockEntityWithAnimator()
     setupMockSceneEnvironment({ entities: [mockData.entity] })
@@ -89,18 +91,18 @@ describe('useAnimatorActions Unit & Integration Tests', () => {
 
   describe('Internal Helper Methods (_getAnimatorClips, _saveAnimatorClips, _cloneAnimatorNode)', () => {
     it('_getAnimatorClips returns array of clips for valid entity', () => {
-      const clips = sceneStore._getAnimatorClips(mockData.entity.id)
+      const clips = animatorActions._getAnimatorClips(mockData.entity.id)
       expect(clips).toHaveLength(2)
       expect(clips[0].id).toBe(mockData.defaultCategory.id)
     })
 
     it('_getAnimatorClips returns empty array if entity or animator is missing', () => {
-      expect(sceneStore._getAnimatorClips('invalid_id')).toEqual([])
+      expect(animatorActions._getAnimatorClips('invalid_id')).toEqual([])
       
       const noAnimatorEntity = createMockEntity({ id: 'no_anim' })
       sceneStore.activeScene.entities.push(noAnimatorEntity)
       
-      expect(sceneStore._getAnimatorClips('no_anim')).toEqual([])
+      expect(animatorActions._getAnimatorClips('no_anim')).toEqual([])
     })
 
     it('_saveAnimatorClips strips _uiChildren and syncs with engineBridge', () => {
@@ -111,9 +113,9 @@ describe('useAnimatorActions Unit & Integration Tests', () => {
         }
       ]
 
-      sceneStore._saveAnimatorClips(mockData.entity.id, clipsWithUiChildren)
+      animatorActions._saveAnimatorClips(mockData.entity.id, clipsWithUiChildren)
 
-      const savedClips = sceneStore._getAnimatorClips(mockData.entity.id)
+      const savedClips = animatorActions._getAnimatorClips(mockData.entity.id)
       expect(savedClips[0]._uiChildren).toBeUndefined()
       expect(engineBridge.patchComponent).toHaveBeenCalledWith({
         entityId: mockData.entity.id,
@@ -129,7 +131,7 @@ describe('useAnimatorActions Unit & Integration Tests', () => {
         _uiChildren: [{ id: 'ui_child_1' }]
       }
 
-      const cloned = sceneStore._cloneAnimatorNode(sourceNode)
+      const cloned = animatorActions._cloneAnimatorNode(sourceNode)
 
       expect(cloned.id).toBeDefined()
       expect(cloned.id).not.toBe(sourceNode.id)
@@ -142,11 +144,11 @@ describe('useAnimatorActions Unit & Integration Tests', () => {
 
   describe('Category & Clip Creation (animatorCreateCategory, animatorCreateClip)', () => {
     it('animatorCreateCategory appends a new category node to entity clips', () => {
-      const initialCount = sceneStore._getAnimatorClips(mockData.entity.id).length
+      const initialCount = animatorActions._getAnimatorClips(mockData.entity.id).length
 
-      sceneStore.animatorCreateCategory(mockData.entity.id)
+      animatorActions.animatorCreateCategory(mockData.entity.id)
 
-      const updatedClips = sceneStore._getAnimatorClips(mockData.entity.id)
+      const updatedClips = animatorActions._getAnimatorClips(mockData.entity.id)
       expect(updatedClips).toHaveLength(initialCount + 1)
       
       const newCategory = updatedClips[updatedClips.length - 1]
@@ -156,9 +158,9 @@ describe('useAnimatorActions Unit & Integration Tests', () => {
     })
 
     it('animatorCreateClip creates a clip under target category when target is a category', () => {
-      sceneStore.animatorCreateClip(mockData.entity.id, mockData.defaultCategory.id)
+      animatorActions.animatorCreateClip(mockData.entity.id, mockData.defaultCategory.id)
 
-      const updatedClips = sceneStore._getAnimatorClips(mockData.entity.id)
+      const updatedClips = animatorActions._getAnimatorClips(mockData.entity.id)
       const newClip = updatedClips[updatedClips.length - 1]
 
       expect(newClip).toBeDefined()
@@ -167,9 +169,9 @@ describe('useAnimatorActions Unit & Integration Tests', () => {
     })
 
     it('animatorCreateClip creates a clip under same parent when target is another clip', () => {
-      sceneStore.animatorCreateClip(mockData.entity.id, mockData.defaultClip.id)
+      animatorActions.animatorCreateClip(mockData.entity.id, mockData.defaultClip.id)
 
-      const updatedClips = sceneStore._getAnimatorClips(mockData.entity.id)
+      const updatedClips = animatorActions._getAnimatorClips(mockData.entity.id)
       const newClip = updatedClips[updatedClips.length - 1]
 
       expect(newClip.scriptId).toBeDefined()
@@ -177,9 +179,9 @@ describe('useAnimatorActions Unit & Integration Tests', () => {
     })
 
     it('animatorCreateClip creates a root clip when targetId is null', () => {
-      sceneStore.animatorCreateClip(mockData.entity.id, null)
+      animatorActions.animatorCreateClip(mockData.entity.id, null)
 
-      const updatedClips = sceneStore._getAnimatorClips(mockData.entity.id)
+      const updatedClips = animatorActions._getAnimatorClips(mockData.entity.id)
       const newClip = updatedClips[updatedClips.length - 1]
 
       expect(newClip.parentId).toBeNull()
@@ -188,28 +190,28 @@ describe('useAnimatorActions Unit & Integration Tests', () => {
 
   describe('Node Deletion & Renaming (animatorDeleteNode, animatorRenameNode)', () => {
     it('animatorDeleteNode removes single clip node and returns it', () => {
-      const deleted = sceneStore.animatorDeleteNode(mockData.entity.id, mockData.defaultClip.id)
+      const deleted = animatorActions.animatorDeleteNode(mockData.entity.id, mockData.defaultClip.id)
 
       expect(deleted.id).toBe(mockData.defaultClip.id)
       
-      const remainingClips = sceneStore._getAnimatorClips(mockData.entity.id)
+      const remainingClips = animatorActions._getAnimatorClips(mockData.entity.id)
       expect(remainingClips.find(c => c.id === mockData.defaultClip.id)).toBeUndefined()
     })
 
     it('animatorDeleteNode removes category and cascades deletion to child clips', () => {
       // Menghapus category harus menghapus defaultClip juga karena defaultClip.parentId === category.id
-      const deletedCategory = sceneStore.animatorDeleteNode(mockData.entity.id, mockData.defaultCategory.id)
+      const deletedCategory = animatorActions.animatorDeleteNode(mockData.entity.id, mockData.defaultCategory.id)
 
       expect(deletedCategory.id).toBe(mockData.defaultCategory.id)
 
-      const remainingClips = sceneStore._getAnimatorClips(mockData.entity.id)
+      const remainingClips = animatorActions._getAnimatorClips(mockData.entity.id)
       expect(remainingClips).toHaveLength(0)
     })
 
     it('animatorRenameNode updates node scriptId successfully', () => {
-      sceneStore.animatorRenameNode(mockData.entity.id, mockData.defaultClip.id, 'Run_Animation')
+      animatorActions.animatorRenameNode(mockData.entity.id, mockData.defaultClip.id, 'Run_Animation')
 
-      const clips = sceneStore._getAnimatorClips(mockData.entity.id)
+      const clips = animatorActions._getAnimatorClips(mockData.entity.id)
       const target = clips.find(c => c.id === mockData.defaultClip.id)
 
       expect(target.scriptId).toBe('Run_Animation')
@@ -218,7 +220,7 @@ describe('useAnimatorActions Unit & Integration Tests', () => {
 
   describe('Node Cloning & Pasting (animatorGetNodeClone, animatorPasteNode)', () => {
     it('animatorGetNodeClone returns bundle with child clips for category node', () => {
-      const bundle = sceneStore.animatorGetNodeClone(mockData.entity.id, mockData.defaultCategory.id)
+      const bundle = animatorActions.animatorGetNodeClone(mockData.entity.id, mockData.defaultCategory.id)
 
       expect(bundle).not.toBeNull()
       expect(bundle.node.id).toBe(mockData.defaultCategory.id)
@@ -227,7 +229,7 @@ describe('useAnimatorActions Unit & Integration Tests', () => {
     })
 
     it('animatorGetNodeClone returns bundle with empty children array for clip node', () => {
-      const bundle = sceneStore.animatorGetNodeClone(mockData.entity.id, mockData.defaultClip.id)
+      const bundle = animatorActions.animatorGetNodeClone(mockData.entity.id, mockData.defaultClip.id)
 
       expect(bundle).not.toBeNull()
       expect(bundle.node.id).toBe(mockData.defaultClip.id)
@@ -235,12 +237,12 @@ describe('useAnimatorActions Unit & Integration Tests', () => {
     })
 
     it('animatorPasteNode pastes single clip node under target category', () => {
-      const bundle = sceneStore.animatorGetNodeClone(mockData.entity.id, mockData.defaultClip.id)
-      const initialCount = sceneStore._getAnimatorClips(mockData.entity.id).length
+      const bundle = animatorActions.animatorGetNodeClone(mockData.entity.id, mockData.defaultClip.id)
+      const initialCount = animatorActions._getAnimatorClips(mockData.entity.id).length
 
-      sceneStore.animatorPasteNode(mockData.entity.id, mockData.defaultCategory.id, bundle)
+      animatorActions.animatorPasteNode(mockData.entity.id, mockData.defaultCategory.id, bundle)
 
-      const updatedClips = sceneStore._getAnimatorClips(mockData.entity.id)
+      const updatedClips = animatorActions._getAnimatorClips(mockData.entity.id)
       expect(updatedClips).toHaveLength(initialCount + 1)
 
       const pastedClip = updatedClips[updatedClips.length - 1]
@@ -249,12 +251,12 @@ describe('useAnimatorActions Unit & Integration Tests', () => {
     })
 
     it('animatorPasteNode pastes category with its children at root level', () => {
-      const categoryBundle = sceneStore.animatorGetNodeClone(mockData.entity.id, mockData.defaultCategory.id)
-      const initialCount = sceneStore._getAnimatorClips(mockData.entity.id).length
+      const categoryBundle = animatorActions.animatorGetNodeClone(mockData.entity.id, mockData.defaultCategory.id)
+      const initialCount = animatorActions._getAnimatorClips(mockData.entity.id).length
 
-      sceneStore.animatorPasteNode(mockData.entity.id, null, categoryBundle)
+      animatorActions.animatorPasteNode(mockData.entity.id, null, categoryBundle)
 
-      const updatedClips = sceneStore._getAnimatorClips(mockData.entity.id)
+      const updatedClips = animatorActions._getAnimatorClips(mockData.entity.id)
       // Kategori + 1 anak disalin = +2 nodes total
       expect(updatedClips).toHaveLength(initialCount + 2)
 

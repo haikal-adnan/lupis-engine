@@ -1,3 +1,4 @@
+// Subsystem handler providing scene transitions, queries, layer injection, and reload operations
 export class SceneContextHandler {
   constructor(contextSystem) {
     this.contextSystem = contextSystem;
@@ -14,10 +15,13 @@ export class SceneContextHandler {
       getCurrentId: () => sceneSystem?.getCurrentSceneId(),
       getCurrentData: () => sceneSystem?.getCurrentScene(),
       getAllScenes: () => sceneSystem?.getAvailableScenes(),
+
+      // Injects a layer and entities from a source scene into the active scene
       injectLayer: (sceneName, layerName = null, inheritState = true, targetLayer = 'self', targetScene = 'self') => {
         const inherit = inheritState !== false && inheritState !== 'false';
         return sceneSystem ? sceneSystem.injectLayer(sceneName, layerName, inherit, targetLayer, targetScene) : { success: false, isFirstLoad: false };
       },
+
       resetLayer: (sceneName = 'self', layerName = null) => {
         return sceneSystem ? Boolean(sceneSystem.resetLayer(sceneName, layerName)) : false;
       }

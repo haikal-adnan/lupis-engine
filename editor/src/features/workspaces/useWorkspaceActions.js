@@ -1,10 +1,13 @@
-import { useSceneStore } from '@scenes/scenes.js';
+// Top-level workspace shell actions, deletion prompts, and clipboard helpers.
+
+import { useEntityActions } from '@scenes/scenes.js';
 import { useConfirm } from '@composables/composables.js';
 
 export function useWorkspaceActions() {
-  const sceneStore = useSceneStore();
+  const { deleteEntity } = useEntityActions();
   const { confirm } = useConfirm();
 
+  // Prompts for confirmation before deleting an entity
   const handleDeleteEntity = async (entity) => {
     if (!entity) return;
 
@@ -17,10 +20,11 @@ export function useWorkspaceActions() {
     });
 
     if (isConfirmed) {
-      sceneStore.deleteEntity(entity.id);
+      deleteEntity(entity.id);
     }
   };
 
+  // Copies an identifier string to system clipboard
   const handleCopyId = async (id) => {
     if (!id) return;
     try {

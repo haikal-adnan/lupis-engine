@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { ShapeMath } from '@core/Editor/Shape/ShapeMath.js';
-import { TilemapMath } from '@core/Editor/Tilemap/TilemapMath.js';
+import { TilemapMath } from '@core/System/TilemapSystem/TilemapMath.js';
 import { TilemapSelection } from '@core/Editor/Tilemap/TilemapSelection.js';
 import { TilemapOperations } from '@core/Editor/Tilemap/TilemapOperations.js';
 

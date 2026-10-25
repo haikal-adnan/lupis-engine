@@ -1,3 +1,6 @@
+// Diagnostic error classes and metadata resolution utilities for visual script execution contexts
+
+// Thrown when a script contract invariant assertion fails (context.assert.*)
 export class ScriptAssertionError extends Error {
   constructor(message, nodeId, nodeType, nodeName = null) {
     super(message);
@@ -8,6 +11,7 @@ export class ScriptAssertionError extends Error {
   }
 }
 
+// Resolves diagnostic prefix [Scene] [Entity] [Script] [Node] for console events
 export function getScriptContextMetadata(game, runner, node) {
   if (runner && typeof runner.getContextMetadata === 'function') {
     return runner.getContextMetadata(node);
@@ -48,6 +52,7 @@ export function getScriptContextMetadata(game, runner, node) {
   };
 }
 
+// Formats raw notifications or log values into a human-readable string
 export function formatNotificationMessage(message) {
   if (message === undefined || message === null) {
     return String(message ?? '');

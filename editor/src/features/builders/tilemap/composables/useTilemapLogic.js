@@ -1,6 +1,6 @@
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { storeToRefs } from 'pinia';
-import { useSceneStore } from '@scenes/scenes.js';
+import { useSceneStore, useEntityActions } from '@scenes/scenes.js';
 import { useAssetStore } from '@assets/assets.js';
 import { useWorkspaceStore } from '@workspaces/workspaces.js';
 import { engineBridge } from '@engines/engines.js';
@@ -9,6 +9,7 @@ import { useTilemapHistory } from '@historys/historys.js';
 
 export function useTilemapLogic() {
   const sceneStore = useSceneStore();
+  const { updateComponentProp } = useEntityActions();
   const assetStore = useAssetStore();
   const workspaceStore = useWorkspaceStore();
   const tilemapHistory = useTilemapHistory();
@@ -55,7 +56,7 @@ export function useTilemapLogic() {
 
         tilemapHistory.recordTilemapPropChange(entityId, propName, oldVal, val);
 
-        sceneStore.updateComponentProp(entityId, compName, propName, val);
+        updateComponentProp(entityId, compName, propName, val);
         engineBridge.updateComponentProp({
           entityId,
           componentName: compName,
@@ -197,7 +198,7 @@ export function useTilemapLogic() {
     if (!selectedEntity.value) return;
     const entityId = selectedEntity.value.id;
 
-    sceneStore.updateComponentProp(entityId, 'Tilemap', 'data', newTileData);
+    updateComponentProp(entityId, 'Tilemap', 'data', newTileData);
     engineBridge.updateComponentProp({
       entityId,
       componentName: 'Tilemap',

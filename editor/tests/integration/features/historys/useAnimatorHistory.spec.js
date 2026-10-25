@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
 import { useAnimatorHistory, useHistory } from '@historys/historys.js';
 import { useSceneStore } from '@scenes/scenes.js';
+import { useAnimatorActions } from '@animators/animators.js';
 import { useWorkspaceStore } from '@workspaces/workspaces.js';
 import { setupMockSceneEnvironment, createMockEntity } from '@tests/tests.js';
 
@@ -29,6 +30,7 @@ describe('useAnimatorHistory Integration', () => {
   let animatorHistory;
   let entityId;
   let clipId;
+  let animatorActions;
 
   beforeEach(() => {
     // Inisialisasi Pinia instans baru untuk isolasi test
@@ -36,6 +38,7 @@ describe('useAnimatorHistory Integration', () => {
 
     sceneStore = useSceneStore();
     workspaceStore = useWorkspaceStore();
+    animatorActions = useAnimatorActions();
 
     // Setup active tab di workspace agar history key dapat dibuat (`scene_${sceneId}`)
     const { scene } = setupMockSceneEnvironment();
@@ -89,7 +92,7 @@ describe('useAnimatorHistory Integration', () => {
 
       const clips = sceneStore.activeScene.entities[0].components.SpriteAnimator.clips;
       clips[0].fps = newFps;
-      sceneStore._saveAnimatorClips(entityId, clips);
+      animatorActions._saveAnimatorClips(entityId, clips);
 
       expect(sceneStore.activeScene.entities[0].components.SpriteAnimator.clips[0].fps).toBe(24);
 
@@ -113,7 +116,7 @@ describe('useAnimatorHistory Integration', () => {
 
       const clips = sceneStore.activeScene.entities[0].components.SpriteAnimator.clips;
       clips[0].baseSize = { w: newWidth, h: 32 };
-      sceneStore._saveAnimatorClips(entityId, clips);
+      animatorActions._saveAnimatorClips(entityId, clips);
 
       // Assert Undo
       animatorHistory.undo();
@@ -152,7 +155,7 @@ describe('useAnimatorHistory Integration', () => {
       // Simulate UI component state mutation
       const clips = sceneStore.activeScene.entities[0].components.SpriteAnimator.clips;
       clips[0].frames = newFrames;
-      sceneStore._saveAnimatorClips(entityId, clips);
+      animatorActions._saveAnimatorClips(entityId, clips);
 
       // Assert Undo
       animatorHistory.undo();
@@ -173,7 +176,7 @@ describe('useAnimatorHistory Integration', () => {
 
       const clips = sceneStore.activeScene.entities[0].components.SpriteAnimator.clips;
       clips[0].sources = newSources;
-      sceneStore._saveAnimatorClips(entityId, clips);
+      animatorActions._saveAnimatorClips(entityId, clips);
 
       // Assert Undo
       animatorHistory.undo();
@@ -198,7 +201,7 @@ describe('useAnimatorHistory Integration', () => {
 
       // Act
       animatorHistory.recordClipsTreeChange(entityId, 'Add Run Clip', oldTree, newTree);
-      sceneStore._saveAnimatorClips(entityId, newTree);
+      animatorActions._saveAnimatorClips(entityId, newTree);
 
       expect(sceneStore.activeScene.entities[0].components.SpriteAnimator.clips).toHaveLength(2);
 

@@ -142,7 +142,7 @@ import {
 } from "@components/components.js";
 
 import { useProjectStore } from '@projects/projects.js'
-import { useSceneStore } from '@scenes/scenes.js';
+import { useSceneStore, useSceneActions } from '@scenes/scenes.js';
 import { useAssetStore } from '@assets/assets.js'
 import { useScriptStore } from '@scripts/scripts.js';
 import { usePrefabStore } from '@prefabs/prefabs.js';
@@ -164,6 +164,7 @@ defineEmits(['update:modelValue', 'add-layer']);
 
 const projectStore = useProjectStore();
 const sceneStore = useSceneStore();
+const { addScene, updateSceneScriptId, duplicateScene, removeScene } = useSceneActions();
 const assetStore = useAssetStore();
 const scriptStore = useScriptStore();
 const prefabStore = usePrefabStore();
@@ -204,7 +205,7 @@ const handleCreate = async (close) => {
   
   if (name) {
     try {
-      const newScene = sceneStore.addScene({ scriptId: name });
+      const newScene = addScene({ scriptId: name });
       
       if (newScene?.id) {
         sceneStore.setActiveScene(newScene.id);
@@ -230,7 +231,7 @@ const handleRename = async (close) => {
   const name = await prompt({ title: 'Rename Scene', defaultValue: currentName });
   if (name && name !== currentName) {
     try {
-      sceneStore.updateSceneScriptId(scene.id, name);
+      updateSceneScriptId(scene.id, name);
       showPop({ title: 'Renamed', message: 'Scene identifier updated.', type: 'success' });
     } catch (e) {
       showPop({ title: 'Error', message: 'Failed to rename scene.', type: 'error' });
@@ -263,7 +264,7 @@ const handleDuplicate = async (close) => {
   close();
   if (sceneStore.activeSceneId) {
     try {
-      sceneStore.duplicateScene(sceneStore.activeSceneId);
+      duplicateScene(sceneStore.activeSceneId);
       syncSceneWithEngine();
       showPop({ title: 'Duplicated', message: 'Scene duplicated.', type: 'success' });
     } catch (e) {
@@ -297,7 +298,7 @@ const handleDelete = async (close) => {
       const targetDeleteId = sceneStore.activeSceneId;
       const remainingScene = sceneStore.scenes.find(s => s.id !== targetDeleteId);
       
-      sceneStore.removeScene(targetDeleteId);
+      removeScene(targetDeleteId);
       if (remainingScene) {
         sceneStore.setActiveScene(remainingScene.id);
       }

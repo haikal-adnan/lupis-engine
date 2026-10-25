@@ -265,7 +265,7 @@ import {
   useInspectorPrefab 
 } from "@inspectors/inspectors.js";
 
-import { useSceneStore } from '@scenes/scenes.js';
+import { useEntityActions } from '@scenes/scenes.js';
 import { useWorkspaceStore } from '@workspaces/workspaces.js';
 import { usePrefabStore } from '@prefabs/prefabs.js';
 
@@ -296,7 +296,7 @@ const {
   removeComponent 
 } = useInspectorPrefab(selectedEntity, isEditingMasterPrefab)
 
-const sceneStore = useSceneStore()
+const { updateComponentProp } = useEntityActions()
 const workspaceStore = useWorkspaceStore()
 const prefabStore = usePrefabStore()
 const { confirm } = useConfirm()
@@ -326,7 +326,7 @@ function selectIndex(idx, close) {
 
 const markComponentAsOverridden = () => {
   if (selectedEntity.value && prefabId.value && !isEditingMasterPrefab.value) {
-     sceneStore.updateComponentProp(selectedEntity.value.id, 'Collider', 'overridden', true)
+     updateComponentProp(selectedEntity.value.id, 'Collider', 'overridden', true)
   }
 }
 
@@ -343,7 +343,7 @@ const bindCurrentColliderProp = (propName) => computed({
     if (isEditingMasterPrefab.value) {
       prefabStore.updateComponentProp(workspaceStore.activeTab.id, 'Collider', path, finalVal)
     } else {
-      sceneStore.updateComponentProp(selectedEntity.value.id, 'Collider', path, finalVal)
+      updateComponentProp(selectedEntity.value.id, 'Collider', path, finalVal)
       markComponentAsOverridden()
     }
   }
@@ -392,7 +392,7 @@ const commitScriptId = () => {
   if (isEditingMasterPrefab.value) {
     prefabStore.updateComponentProp(workspaceStore.activeTab.id, 'Collider', path, sanitized)
   } else {
-    sceneStore.updateComponentProp(selectedEntity.value.id, 'Collider', path, sanitized)
+    updateComponentProp(selectedEntity.value.id, 'Collider', path, sanitized)
     markComponentAsOverridden()
   }
 }
@@ -436,7 +436,7 @@ function addNewCollider() {
   if (isEditingMasterPrefab.value) {
     prefabStore.updateComponentProp(workspaceStore.activeTab.id, 'Collider', 'data', currentList)
   } else {
-    sceneStore.updateComponentProp(selectedEntity.value.id, 'Collider', 'data', currentList)
+    updateComponentProp(selectedEntity.value.id, 'Collider', 'data', currentList)
     markComponentAsOverridden()
   }
   selectedIndex.value = currentList.length - 1
@@ -459,7 +459,7 @@ async function removeCurrentCollider() {
       if (isEditingMasterPrefab.value) {
         prefabStore.updateComponentProp(workspaceStore.activeTab.id, 'Collider', 'data', currentList)
       } else {
-        sceneStore.updateComponentProp(selectedEntity.value.id, 'Collider', 'data', currentList)
+        updateComponentProp(selectedEntity.value.id, 'Collider', 'data', currentList)
         markComponentAsOverridden()
       }
       
@@ -505,10 +505,10 @@ function updateColliderPivot({ x: newPx, y: newPy }) {
     prefabStore.updateComponentProp(workspaceStore.activeTab.id, 'Collider', `data.${selectedIndex.value}.offsetX`, newOx);
     prefabStore.updateComponentProp(workspaceStore.activeTab.id, 'Collider', `data.${selectedIndex.value}.offsetY`, newOy);
   } else {
-    sceneStore.updateComponentProp(selectedEntity.value.id, 'Collider', `data.${selectedIndex.value}.pivotX`, newPx);
-    sceneStore.updateComponentProp(selectedEntity.value.id, 'Collider', `data.${selectedIndex.value}.pivotY`, newPy);
-    sceneStore.updateComponentProp(selectedEntity.value.id, 'Collider', `data.${selectedIndex.value}.offsetX`, newOx);
-    sceneStore.updateComponentProp(selectedEntity.value.id, 'Collider', `data.${selectedIndex.value}.offsetY`, newOy);
+    updateComponentProp(selectedEntity.value.id, 'Collider', `data.${selectedIndex.value}.pivotX`, newPx);
+    updateComponentProp(selectedEntity.value.id, 'Collider', `data.${selectedIndex.value}.pivotY`, newPy);
+    updateComponentProp(selectedEntity.value.id, 'Collider', `data.${selectedIndex.value}.offsetX`, newOx);
+    updateComponentProp(selectedEntity.value.id, 'Collider', `data.${selectedIndex.value}.offsetY`, newOy);
     markComponentAsOverridden();
   }
 }

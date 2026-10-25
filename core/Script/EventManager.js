@@ -1,6 +1,8 @@
+// Central publish-subscribe signal bus for engine systems and gameplay events
 export default class EventManager {
     constructor() {
         this.listeners = new Map();
+        this.globalDefinitions = null;
     }
 
     on(eventName, callback) {
@@ -28,6 +30,7 @@ export default class EventManager {
         }
     }
 
+    // Dispatches an event to subscribed listeners with error boundaries
     emit(eventName, ...args) {
         if (!this.listeners.has(eventName)) return;
 

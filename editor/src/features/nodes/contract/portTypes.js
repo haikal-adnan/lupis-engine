@@ -1,3 +1,5 @@
+// Port data types, theme colors, and connection compatibility rules.
+
 export const PORT_DATA_TYPES = Object.freeze([
   'execution',
   'string',
@@ -23,6 +25,7 @@ export function getPortColor(dataType) {
   return PORT_COLORS[norm] || PORT_COLORS.any;
 }
 
+// Checks wire compatibility between port data types
 export function isTypeCompatible(sourceType, targetType) {
   const s = String(sourceType || 'any').toLowerCase();
   const t = String(targetType || 'any').toLowerCase();

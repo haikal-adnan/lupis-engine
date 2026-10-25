@@ -1,5 +1,6 @@
 import { sanitizeScriptId } from '@utils/utils.js';
 
+// Normalizes binary asset metadata, dimensions, file paths, and semantic identifiers
 export const assetSchema = (data = {}) => {
   const meta = data.meta || {};
   const type = data.type || "texture";

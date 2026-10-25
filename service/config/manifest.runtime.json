@@ -1,6 +1,10 @@
 {
   "name": "lupis-engine-runtime",
   "version": "1.0.0",
+  "entry": {
+    "html": "index.html",
+    "runtime": "Runtime.js"
+  },
   "assets": {
     "fonts": [
       "Assets/Fonts/defaultFont.fnt",
@@ -9,8 +13,8 @@
     ]
   },
   "modules": [
-    "Runtime.js",
     "index.html",
+    "Runtime.js",
 
     "Core/Config.js",
     "Core/Entity.js",
@@ -44,11 +48,30 @@
     "Renderer/Scene/UIRenderer.js",
     "Renderer/Scene/WorldRenderer.js",
 
+    "Schema/defaultAsset.js",
+    "Schema/defaultProject.js",
+
     "Script/ContextSystem.js",
     "Script/EventManager.js",
     "Script/ScriptRunner.js",
     "Script/ScriptSystem.js",
+    "Script/ValueModifier.js",
     "Script/VariableManager.js",
+    "Script/Context/AssertContextHandler.js",
+    "Script/Context/AssetContextHandler.js",
+    "Script/Context/AudioContextHandler.js",
+    "Script/Context/CameraContextHandler.js",
+    "Script/Context/ConsoleContextHandler.js",
+    "Script/Context/EntityContextHandler.js",
+    "Script/Context/InputContextHandler.js",
+    "Script/Context/LayerContextHandler.js",
+    "Script/Context/LifecycleContextHandler.js",
+    "Script/Context/SceneContextHandler.js",
+    "Script/Context/UIContextHandler.js",
+    "Script/contract/codePanelContract.js",
+    "Script/contract/contextContract.js",
+    "Script/contract/index.js",
+    "Script/contract/payloadShape.js",
 
     "System/AnimatorSystem.js",
     "System/AudioSystem.js",
@@ -59,7 +82,19 @@
     "System/PointerRaycast.js",
     "System/PrefabSystem.js",
     "System/SceneSystem.js",
+    "System/TilemapSystem.js",
+    "System/TilemapSystem/TilemapMath.js",
+    "System/TilemapSystem/TilemapSystem.js",
+    "System/TilemapSystem/index.js",
     "System/TransitionSystem.js",
+
+    "Toolkit/ToolkitContextHandler.js",
+    "Toolkit/AI/AIHelper.js",
+    "Toolkit/Collectable/CollectableHelper.js",
+    "Toolkit/Combat/CombatHelper.js",
+    "Toolkit/Dialogue/DialogueRunnerHelper.js",
+    "Toolkit/Platformer/PlatformerHelper.js",
+    "Toolkit/TopDown/TopDownHelper.js",
 
     "Util/ApplyResizeToEntity.js",
     "Util/calculateQuadVertices.js",
@@ -70,8 +105,12 @@
     "Util/FontMath.js",
     "Util/GenerateUUID.js",
     "Util/HexToVec4.js",
+    "Util/identifier.js",
+    "Util/LupisPackageHelper.js",
     "Util/MapToCanvasPixels.js",
     "Util/Mat4.js",
-    "Util/MiniConsoleOverlay.js"
+    "Util/MiniConsoleOverlay.js",
+    "Util/opfsHelper.js",
+    "Util/ScriptContextUtils.js"
   ]
 }
