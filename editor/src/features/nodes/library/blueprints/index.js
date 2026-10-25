@@ -82,13 +82,23 @@ export const ALL_BLUEPRINTS = Object.freeze([
 
 export const allBlueprints = ALL_BLUEPRINTS;
 
+const LEGACY_NODE_ALIASES = Object.freeze({
+  interpolateVariables: 'stringFormat',
+  anyToString: 'convertType',
+  anyToBoolean: 'convertType',
+  anyToNumber: 'convertType',
+  entityCountByTag: 'entityGetAllByTag',
+  debugNotification: 'uiNotification'
+});
+
 export function findBlueprintByType(type) {
   if (type === 'customScript') {
     return CUSTOM_NODE_TEMPLATE;
   }
+  const resolvedType = LEGACY_NODE_ALIASES[type] || type;
   for (const group of ALL_BLUEPRINTS) {
     if (Array.isArray(group.items)) {
-      const found = group.items.find(item => item.type === type);
+      const found = group.items.find(item => item.type === resolvedType);
       if (found) return found;
     }
   }

@@ -1,7 +1,39 @@
+import PointerRaycast from '../../System/PointerRaycast.js';
+
 export class UIContextHandler {
   constructor(contextSystem) {
     this.contextSystem = contextSystem;
     this.game = contextSystem.game;
+  }
+
+  isEntityInteractable(entity, context = null) {
+    if (!entity || entity._isDestroyed) return false;
+    const game = this.game || context?.game;
+    const world = game?.world || context?.runner?.world;
+
+    if (world && typeof PointerRaycast._isEntityAndParentsActive === 'function') {
+      if (!PointerRaycast._isEntityAndParentsActive(entity, world)) return false;
+    } else {
+      if (entity.active === false || entity.visible === false) return false;
+    }
+
+    if (game?.layerSystem && typeof game.layerSystem.isEntityInputFrozen === 'function') {
+      if (game.layerSystem.isEntityInputFrozen(entity, 'pointer')) return false;
+    }
+
+    if (world && typeof PointerRaycast._findEntityLayer === 'function') {
+      const layer = PointerRaycast._findEntityLayer(world, entity);
+      if (layer) {
+        if (layer.active === false || layer.visible === false) return false;
+        if (game?.layerSystem && typeof game.layerSystem.isInputFrozen === 'function') {
+          if (game.layerSystem.isInputFrozen(layer.id, 'pointer', entity)) return false;
+        } else if (layer.freezeInput && (layer.freezeInputType === 'all' || layer.freezeInputType === 'pointer')) {
+          return false;
+        }
+      }
+    }
+
+    return true;
   }
 
   getGlobalTransform(entity, context) {
@@ -38,15 +70,18 @@ export class UIContextHandler {
 
   isPointerOver(entity, padX = 0, padY = 0, context = null) {
     if (!entity) return false;
-    const game = this.game;
+    if (!this.isEntityInteractable(entity, context)) return false;
+    const game = this.game || context?.game;
+    const input = (context && context.input) || (game && game.input);
 
-    try {
-      if (game.input && typeof game.input.isPointerOver === 'function') {
-        if (game.input.isPointerOver(entity)) return true;
-      }
-    } catch (err) {}
+    if (input && typeof input.isPointerOver === 'function') {
+      try {
+        if (input.isPointerOver(entity, true) || input.isPointerOver(entity, false)) return true;
+        return false;
+      } catch (err) {}
+    }
 
-    const pointer = game.input && typeof game.input.getPointer === 'function' ? game.input.getPointer() : null;
+    const pointer = input && typeof input.getPointer === 'function' ? (input.getPointer(entity) || input.getPointer()) : null;
     if (!pointer || typeof pointer.x !== 'number' || typeof pointer.y !== 'number') return false;
 
     const t = entity.components && (entity.components.UITransform || entity.components.Transform);
@@ -137,16 +172,25 @@ export class UIContextHandler {
   isPointerOverSlider(s, px, py, context) {
     if (!s || !s.barEntity || !s.tBar) return false;
 
-    let pointerOverEngine = false;
-    try {
-      if (context && context.input && typeof context.input.isPointerOver === 'function') {
-        if (s.handlerEntity && context.input.isPointerOver(s.handlerEntity)) pointerOverEngine = true;
-        else if (context.input.isPointerOver(s.barEntity)) pointerOverEngine = true;
-      }
-    } catch (err) {
-      pointerOverEngine = false;
+    if (!this.isEntityInteractable(s.barEntity, context) || (s.handlerEntity && !this.isEntityInteractable(s.handlerEntity, context))) {
+      return false;
     }
-    if (pointerOverEngine) return true;
+
+    const input = (context && context.input) || (this.game && this.game.input);
+    if (input && typeof input.isPointerOver === 'function') {
+      try {
+        if (handlerInteractable && s.handlerEntity && (input.isPointerOver(s.handlerEntity, true) || input.isPointerOver(s.handlerEntity, false))) {
+          return true;
+        }
+        if (barInteractable && s.barEntity && (input.isPointerOver(s.barEntity, true) || input.isPointerOver(s.barEntity, false))) {
+          return true;
+        }
+        return false;
+      } catch (err) {}
+    }
+
+    const pointer = input && typeof input.getPointer === 'function' ? (input.getPointer(s.barEntity) || input.getPointer(s.handlerEntity) || input.getPointer()) : null;
+    if (!pointer) return false;
 
     const left = s.screenLeft;
     const right = s.screenRight;
@@ -406,8 +450,19 @@ export class UIContextHandler {
     };
 
     const processPointer = () => {
-      const pointer = context && context.input && typeof context.input.getPointer === 'function' ? context.input.getPointer() : false;
-      const mouse = context && context.input ? context.input.mouse : false;
+      const input = (context && context.input) || (this.game && this.game.input);
+
+      if (state.activeDraggingKey) {
+        const activeS = state.sliders ? state.sliders[state.activeDraggingKey] : null;
+        if (!activeS || (!this.isEntityInteractable(activeS.barEntity, context) && (!activeS.handlerEntity || !this.isEntityInteractable(activeS.handlerEntity, context)))) {
+          state.activeDraggingKey = false;
+        }
+      }
+
+      const activeS = state.activeDraggingKey && state.sliders ? state.sliders[state.activeDraggingKey] : null;
+      const targetEntity = activeS ? (activeS.barEntity || activeS.handlerEntity) : null;
+      const pointer = input && typeof input.getPointer === 'function' ? (input.getPointer(targetEntity) || input.getPointer()) : false;
+      const mouse = input ? (typeof input.getMouse === 'function' ? (input.getMouse(targetEntity) || input.mouse) : input.mouse) : false;
       const mouseIsDown = Boolean(mouse && (
         (typeof mouse.isDown === 'function' && (mouse.isDown(0) || mouse.isDown('left'))) ||
         (typeof mouse.isPressed === 'function' && mouse.isPressed('left'))
@@ -435,7 +490,7 @@ export class UIContextHandler {
 
       if (state.activeDraggingKey) {
         const s = state.sliders ? state.sliders[state.activeDraggingKey] : false;
-        if (!s || !s.barEntity || !s.tBar) {
+        if (!s || !s.barEntity || !s.tBar || (!this.isEntityInteractable(s.barEntity, context) && (!s.handlerEntity || !this.isEntityInteractable(s.handlerEntity, context)))) {
           state.activeDraggingKey = false;
           return;
         }
@@ -667,16 +722,25 @@ export class UIContextHandler {
     }
 
     function isPointerOverSlider(px, py) {
-      let pointerOverEngine = false;
-      try {
-        if (context && context.input && typeof context.input.isPointerOver === 'function') {
-          if (handlerEnt && context.input.isPointerOver(handlerEnt)) pointerOverEngine = true;
-          else if (context.input.isPointerOver(barEnt)) pointerOverEngine = true;
-        }
-      } catch (err) {
-        pointerOverEngine = false;
+      if (!self.isEntityInteractable(barEnt, context) || (handlerEnt && !self.isEntityInteractable(handlerEnt, context))) {
+        return false;
       }
-      if (pointerOverEngine) return true;
+
+      const input = (context && context.input) || (self.game && self.game.input);
+      if (input && typeof input.isPointerOver === 'function') {
+        try {
+          if (handlerInteractable && handlerEnt && (input.isPointerOver(handlerEnt, true) || input.isPointerOver(handlerEnt, false))) {
+            return true;
+          }
+          if (barInteractable && barEnt && (input.isPointerOver(barEnt, true) || input.isPointerOver(barEnt, false))) {
+            return true;
+          }
+          return false;
+        } catch (err) {}
+      }
+
+      const pointer = input && typeof input.getPointer === 'function' ? (input.getPointer(barEnt) || input.getPointer(handlerEnt) || input.getPointer()) : false;
+      if (!pointer) return false;
 
       const left = state.screenLeft;
       const right = state.screenRight;
@@ -692,8 +756,14 @@ export class UIContextHandler {
     function processPointer() {
       if (!isInteractive) return;
 
-      const pointer = context && context.input && typeof context.input.getPointer === 'function' ? context.input.getPointer() : false;
-      const mouse = context && context.input ? context.input.mouse : false;
+      if (!self.isEntityInteractable(barEnt, context) || (handlerEnt && !self.isEntityInteractable(handlerEnt, context))) {
+        state.isDragging = false;
+        return;
+      }
+
+      const input = (context && context.input) || (self.game && self.game.input);
+      const pointer = input && typeof input.getPointer === 'function' ? (input.getPointer(barEnt) || input.getPointer(handlerEnt) || input.getPointer()) : false;
+      const mouse = input ? (typeof input.getMouse === 'function' ? (input.getMouse(barEnt) || input.mouse) : input.mouse) : false;
       const mouseIsDown = Boolean(mouse && (
         (typeof mouse.isDown === 'function' && (mouse.isDown(0) || mouse.isDown('left'))) ||
         (typeof mouse.isPressed === 'function' && mouse.isPressed('left'))
@@ -705,7 +775,10 @@ export class UIContextHandler {
         return;
       }
 
-      if (!pointer) return;
+      if (!pointer) {
+        state.isDragging = false;
+        return;
+      }
       const px = pointer.x;
       const py = pointer.y;
       if (typeof px !== 'number' || typeof py !== 'number') return;
@@ -717,6 +790,10 @@ export class UIContextHandler {
       }
 
       if (state.isDragging) {
+        if (!self.isEntityInteractable(barEnt, context) && (!handlerEnt || !self.isEntityInteractable(handlerEnt, context))) {
+          state.isDragging = false;
+          return;
+        }
         const left = state.screenLeft;
         const right = state.screenRight;
         const baseW = state.baseW;
@@ -903,13 +980,19 @@ export class UIContextHandler {
 
     function isPointerOverEntity(ent) {
       if (!ent) return false;
+      if (!self.isEntityInteractable(ent, context)) return false;
+
       const input = (context && context.input) || (self.game && self.game.input);
-      try {
-        if (input && typeof input.isPointerOver === 'function') {
-          if (input.isPointerOver(ent)) return true;
-        }
-      } catch (err) {}
-      const pointer = input && typeof input.getPointer === 'function' ? input.getPointer() : false;
+      if (input && typeof input.isPointerOver === 'function') {
+        try {
+          if (input.isPointerOver(ent, true) || input.isPointerOver(ent, false)) {
+            return true;
+          }
+          return false;
+        } catch (err) {}
+      }
+
+      const pointer = input && typeof input.getPointer === 'function' ? (input.getPointer(ent) || input.getPointer()) : false;
       if (!pointer || typeof pointer.x !== 'number' || typeof pointer.y !== 'number') return false;
       const t = ent.components && (ent.components.UITransform || ent.components.Transform);
       if (!t) return false;
@@ -1109,13 +1192,17 @@ export class UIContextHandler {
     applyVisuals(state.progress);
 
     function isPointerOverSwitch() {
+      if (!self.isEntityInteractable(knobEnt, context) || (trackEnt && !self.isEntityInteractable(trackEnt, context))) {
+        return false;
+      }
+
       if (isPointerOverEntity(knobEnt)) return true;
       if (trackEnt && isPointerOverEntity(trackEnt)) return true;
       if (onTextEnt && isPointerOverEntity(onTextEnt)) return true;
       if (offTextEnt && isPointerOverEntity(offTextEnt)) return true;
 
       const input = (context && context.input) || (self.game && self.game.input);
-      const pointer = input && typeof input.getPointer === 'function' ? input.getPointer() : false;
+      const pointer = input && typeof input.getPointer === 'function' ? (input.getPointer(knobEnt) || input.getPointer()) : false;
       if (!pointer || typeof pointer.x !== 'number' || typeof pointer.y !== 'number') return false;
 
       const px = pointer.x;
@@ -1136,9 +1223,14 @@ export class UIContextHandler {
     }
 
     function updateStep() {
+      if (!self.isEntityInteractable(knobEnt, context) || (trackEnt && !self.isEntityInteractable(trackEnt, context))) {
+        state.wasDown = false;
+        return;
+      }
+
       const input = (context && context.input) || (self.game && self.game.input);
-      const pointer = input && typeof input.getPointer === 'function' ? input.getPointer() : false;
-      const mouse = input ? input.mouse : false;
+      const pointer = input && typeof input.getPointer === 'function' ? (input.getPointer(knobEnt) || input.getPointer()) : false;
+      const mouse = input ? (typeof input.getMouse === 'function' ? (input.getMouse(knobEnt) || input.mouse) : input.mouse) : false;
       const mouseIsDown = Boolean(mouse && (
         (typeof mouse.isDown === 'function' && (mouse.isDown(0) || mouse.isDown('left'))) ||
         (typeof mouse.isPressed === 'function' && mouse.isPressed('left'))
@@ -1546,7 +1638,7 @@ export class UIContextHandler {
       if (ent.components.Audio && ['audiotype', 'volume', 'ismute', 'pitch', 'loop', 'autoplay', 'spatial', 'fadein', 'fadeout', 'refdistance', 'maxdistance'].includes(p)) {
         return 'Audio';
       }
-      if (ent.components.Physics && ['mass', 'gravityscale', 'isfrozen', 'drag', 'velocityx', 'velocityy', 'isgrounded', 'movementstate', 'facingdirection', 'aligntoslope'].includes(p)) {
+      if (ent.components.Physics && ['motionmode', 'gravityscale', 'isfrozen', 'drag', 'velocityx', 'velocityy', 'isgrounded', 'movementstate', 'facingdirection', 'aligntoslope', 'mass'].includes(p)) {
         return 'Physics';
       }
       if (ent.components.SpriteAnimator && ['currentclip', 'clip', 'isplaying'].includes(p)) {
@@ -1809,8 +1901,7 @@ export class UIContextHandler {
 
         case 'Physics':
           if (prop === 'enabled') comp.enabled = Boolean(val);
-          else if (prop === 'type') comp.type = String(val);
-          else if (prop === 'mass') comp.mass = Number(val);
+          else if (prop === 'motionMode') comp.motionMode = String(val);
           else if (prop === 'gravityScale') comp.gravityScale = Number(val);
           else if (prop === 'drag') comp.drag = Number(val);
           else if (prop === 'isFrozen') comp.isFrozen = Boolean(val);
@@ -1823,6 +1914,8 @@ export class UIContextHandler {
           else if (prop === 'slopeAdaptSpeed') comp.slopeAdaptSpeed = Number(val);
           else if (prop === 'maxSlopeAngle') comp.maxSlopeAngle = Number(val);
           else if (prop === 'keepColliderUpright') comp.keepColliderUpright = Boolean(val);
+          else if (prop === 'type') comp.type = String(val);
+          else if (prop === 'mass') comp.mass = Number(val);
           else comp[prop] = val;
           break;
 
@@ -1904,6 +1997,7 @@ export class UIContextHandler {
       },
       // Atomic & Reusable Primitives
       getGlobalTransform: (entity, ctx) => this.getGlobalTransform(entity, getCtx(ctx)),
+      isEntityInteractable: (entity, ctx) => this.isEntityInteractable(entity, getCtx(ctx)),
       isPointerOver: (entity, padX, padY, ctx) => this.isPointerOver(entity, padX, padY, getCtx(ctx)),
       resolveAudioBus: (key) => this.resolveAudioBus(key),
       updateSliderVisual: (s, volume, ctx) => this.updateSliderVisual(s, volume, getCtx(ctx)),

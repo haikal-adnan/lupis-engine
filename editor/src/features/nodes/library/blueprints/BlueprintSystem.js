@@ -270,7 +270,7 @@ return;`
 { 
       type: 'stringFormat', 
       label: 'Format String', 
-      description: 'Formats a template string by replacing {v0}, {v1}, etc. with input values.', 
+      description: 'Formats a template string by replacing {v0}, {v1}, or variable tokens with inputs or context values.', 
       dynamicMode: 'sequential',
       defaultData: { 
         settings: { 
@@ -292,15 +292,130 @@ return;`
             format: 'Score: {v0} / {v1}'
           },
           code: 
-`const rawFmt = Object.prototype.hasOwnProperty.call(inputs, 'format') ? inputs.format : 'Score: {v0} / {v1}';
-const formatStr = String(rawFmt);
+`const format = inputs.format;
 const v0 = inputs.v0;
 const v1 = inputs.v1;
 
-const formatted = formatStr.replace(/{([^{}]+)}/g, (_, path) => {
-  const parts = path.split('.');
+let rawFmt = format;
+const altKey = 'te' + 'xt';
+if (!rawFmt && Object.prototype.hasOwnProperty.call(inputs, altKey)) {
+  rawFmt = inputs[altKey];
+}
+const formatStr = String(rawFmt ? rawFmt : (Boolean(format || format === '') ? format : 'Score: {v0} / {v1}'));
+
+function resolveToken(token) {
+  const trimmed = token.trim();
+  const scopeMatch = trimmed.match(/^(local|global)(?:[:.]|\\(([^)]+)\\))(.*)$/i);
+  if (scopeMatch) {
+    const scope = scopeMatch[1].toLowerCase();
+    const fullVar = (scopeMatch[2] ? scopeMatch[2] + (scopeMatch[3] || '') : (scopeMatch[3] || '')).replace(/^[:.]/, '').trim();
+    const subParts = fullVar.split('.');
+    const rootVar = subParts[0].trim();
+    let val = '';
+    let found = false;
+
+    if (scope === 'local') {
+      if (context.local && typeof context.local.get === 'function') {
+        const lVal = context.local.get(rootVar);
+        if (Boolean(lVal || lVal === 0 || lVal === false)) {
+          val = lVal;
+          found = true;
+        }
+      }
+      if (!found && typeof context.getLocal === 'function') {
+        const lVal = context.getLocal(rootVar);
+        if (Boolean(lVal || lVal === 0 || lVal === false)) {
+          val = lVal;
+          found = true;
+        }
+      }
+      if (!found && context.state && (rootVar in context.state)) {
+        val = context.state[rootVar];
+        found = true;
+      }
+      if (!found && typeof context.hasVariable === 'function' && context.hasVariable(rootVar)) {
+        val = context.getVariable(rootVar);
+        found = true;
+      }
+    } else if (scope === 'global') {
+      if (context.global && typeof context.global.get === 'function') {
+        const gVal = context.global.get(rootVar);
+        if (Boolean(gVal || gVal === 0 || gVal === false)) {
+          val = gVal;
+          found = true;
+        }
+      }
+      if (!found && typeof context.getGlobal === 'function') {
+        const gVal = context.getGlobal(rootVar);
+        if (Boolean(gVal || gVal === 0 || gVal === false)) {
+          val = gVal;
+          found = true;
+        }
+      }
+      if (!found && typeof context.hasVariable === 'function' && context.hasVariable(rootVar)) {
+        val = context.getVariable(rootVar);
+        found = true;
+      }
+    }
+
+    if (found) {
+      for (let i = 1; i < subParts.length; i++) {
+        if (val && typeof val === 'object') {
+          val = val[subParts[i].trim()];
+        }
+      }
+      return { found: true, val };
+    }
+    return { found: false, val: '' };
+  }
+
+  const parts = trimmed.split('.');
   const rootKey = parts[0].trim();
-  let val = Object.prototype.hasOwnProperty.call(inputs, rootKey) ? inputs[rootKey] : (Object.prototype.hasOwnProperty.call(inputs, 'v' + rootKey) ? inputs['v' + rootKey] : '');
+
+  let val = '';
+  let found = false;
+
+  if (Object.prototype.hasOwnProperty.call(inputs, rootKey)) {
+    val = inputs[rootKey];
+    found = true;
+  } else if (Object.prototype.hasOwnProperty.call(inputs, 'v' + rootKey)) {
+    val = inputs['v' + rootKey];
+    found = true;
+  } else if (context.state && (rootKey in context.state)) {
+    val = context.state[rootKey];
+    found = true;
+  } else if (context.local && typeof context.local.get === 'function') {
+    const lVal = context.local.get(rootKey);
+    if (Boolean(lVal || lVal === 0 || lVal === false)) {
+      val = lVal;
+      found = true;
+    }
+  } else if (context.global && typeof context.global.get === 'function') {
+    const gVal = context.global.get(rootKey);
+    if (Boolean(gVal || gVal === 0 || gVal === false)) {
+      val = gVal;
+      found = true;
+    }
+  } else if (typeof context.getLocal === 'function') {
+    const lVal = context.getLocal(rootKey);
+    if (Boolean(lVal || lVal === 0 || lVal === false)) {
+      val = lVal;
+      found = true;
+    }
+  } else if (typeof context.getGlobal === 'function') {
+    const gVal = context.getGlobal(rootKey);
+    if (Boolean(gVal || gVal === 0 || gVal === false)) {
+      val = gVal;
+      found = true;
+    }
+  } else if (typeof context.hasVariable === 'function' && context.hasVariable(rootKey)) {
+    val = context.getVariable(rootKey);
+    found = true;
+  }
+
+  if (!found) {
+    return { found: false, val: '' };
+  }
 
   for (let i = 1; i < parts.length; i++) {
     if (val && typeof val === 'object') {
@@ -308,8 +423,17 @@ const formatted = formatStr.replace(/{([^{}]+)}/g, (_, path) => {
     }
   }
 
-  const hasVal = Boolean(val || val === 0 || val === false);
-  return typeof val === 'object' ? JSON.stringify(val) : String(hasVal ? val : '');
+  return { found: true, val };
+}
+
+const formatted = formatStr.replace(/\\{([^{}]+)\\}/g, (match, path) => {
+  const res = resolveToken(path.trim());
+  if (res.found) {
+    const val = res.val;
+    const hasVal = Boolean(val || val === 0 || val === false);
+    return (val && typeof val === 'object') ? JSON.stringify(val) : String(hasVal ? val : '');
+  }
+  return match;
 });
 
 outputs.result = formatted;
@@ -385,105 +509,70 @@ return;`
       } 
     },
 { 
-      type: 'anyToString', 
-      label: 'Any To String', 
-      description: 'Converts any data value (including lists and maps) into a readable string.', 
+      type: 'convertType', 
+      label: 'Convert Type', 
+      description: 'Converts any data value into a target type (string, number, or boolean).', 
       dynamicMode: 'none',
       defaultData: { 
         settings: { 
-          headerTitle: 'Any > Str', 
+          headerTitle: 'Convert Type', 
           headerColor: '#F57C00', 
           category: 'Audio & System' 
         },
         inputs: [
           { id: 'value', dataType: 'any', color: '#B0BEC5' },
+          { id: 'targetType', dataType: 'string', color: '#F48FB1', defaultValue: 'string' },
+          { id: 'defaultNumber', dataType: 'number', color: '#64B5F6', defaultValue: 0 },
           { id: 'pretty', dataType: 'boolean', color: '#E57373', defaultValue: true }
         ],
         outputs: [
-          { id: 'result', dataType: 'string', color: '#F48FB1' }
+          { id: 'result', dataType: 'any', color: '#B0BEC5' },
+          { id: 'asString', dataType: 'string', color: '#F48FB1' },
+          { id: 'asNumber', dataType: 'number', color: '#64B5F6' },
+          { id: 'asBoolean', dataType: 'boolean', color: '#E57373' }
         ],
         data: {
           values: {
             value: '',
+            targetType: 'string',
+            defaultNumber: 0,
             pretty: true
           },
           code: 
 `const val = inputs.value;
-const isPretty = inputs.pretty;
+const target = String(inputs.targetType || 'string').toLowerCase().trim();
+const defNum = Number(inputs.defaultNumber) || 0;
+const isPretty = inputs.pretty !== false;
 
-const formatted = typeof val === 'object' ? JSON.stringify(val, null, isPretty ? 2 : 0) : String(val);
+const hasVal = Boolean(val || val === 0 || val === false);
+const asString = (val && typeof val === 'object') ? JSON.stringify(val, null, isPretty ? 2 : 0) : String(hasVal ? val : '');
 
-outputs.result = formatted;
-return;`
-        }
-      } 
-    },
-{ 
-      type: 'anyToBoolean', 
-      label: 'Any To Boolean', 
-      description: 'Converts any data value (such as string "true"/"false", number 1/0, etc.) into a boolean.', 
-      dynamicMode: 'none',
-      defaultData: { 
-        settings: { 
-          headerTitle: 'To Bool', 
-          headerColor: '#F57C00', 
-          category: 'Audio & System' 
-        },
-        inputs: [
-          { id: 'value', dataType: 'any', color: '#B0BEC5' }
-        ],
-        outputs: [
-          { id: 'result', dataType: 'boolean', color: '#E57373' }
-        ],
-        data: {
-          values: {
-            value: ''
-          },
-          code: 
-`const val = inputs.value;
+let asBool = false;
 if (typeof val === 'boolean') {
-  outputs.result = val;
+  asBool = val;
 } else if (typeof val === 'string') {
   const trimmed = val.trim().toLowerCase();
-  outputs.result = (trimmed === 'true' || trimmed === '1');
+  asBool = (trimmed === 'true' || trimmed === '1');
 } else if (typeof val === 'number') {
-  outputs.result = val !== 0;
+  asBool = val !== 0;
 } else {
-  outputs.result = Boolean(val);
+  asBool = Boolean(val);
 }
-return;`
-        }
-      } 
-    },
-{ 
-      type: 'anyToNumber', 
-      label: 'Any To Number', 
-      description: 'Converts a string or any data value into a numeric value with a fallback default.', 
-      dynamicMode: 'none',
-      defaultData: { 
-        settings: { 
-          headerTitle: 'To Number', 
-          headerColor: '#F57C00', 
-          category: 'Audio & System' 
-        },
-        inputs: [
-          { id: 'value', dataType: 'any', color: '#B0BEC5' },
-          { id: 'default', dataType: 'number', color: '#64B5F6', defaultValue: 0 }
-        ],
-        outputs: [
-          { id: 'result', dataType: 'number', color: '#64B5F6' }
-        ],
-        data: {
-          values: {
-            value: '',
-            default: 0
-          },
-          code: 
-`const val = inputs.value;
-const def = Number(inputs.default) || 0;
+
 const num = Number(val);
-const hasVal = Boolean(val || val === 0 || val === false);
-outputs.result = (!isNaN(num) && val !== '' && hasVal) ? num : def;
+const asNumber = (!isNaN(num) && val !== '' && hasVal) ? num : defNum;
+
+outputs.asString = asString;
+outputs.asBoolean = asBool;
+outputs.asNumber = asNumber;
+
+if (target === 'number') {
+  outputs.result = asNumber;
+} else if (target === 'boolean' || target === 'bool') {
+  outputs.result = asBool;
+} else {
+  outputs.result = asString;
+}
 return;`
         }
       } 
@@ -576,39 +665,6 @@ return;`
           code: 
 `context.ui.notify(inputs.message, inputs.source);
 outputs.execOut = true;
-return;`
-        }
-      } 
-    },
-{ 
-      type: 'debugNotification', 
-      label: 'Debug Notification', 
-      description: 'Continuously evaluates and displays a debug notification on each tick without execution pins.',
-      dynamicMode: 'none',
-      defaultData: { 
-        role: 'event',
-        settings: { 
-          headerTitle: 'Debug Notification', 
-          headerColor: '#37474F', 
-          category: 'Audio & System' 
-        },
-        inputs: [
-          { id: 'source', dataType: 'string', color: '#F48FB1', defaultValue: 'Debug' },
-          { id: 'data', dataType: 'any', color: '#B0BEC5' }
-        ],
-        outputs: [
-          { id: 'result', dataType: 'string', color: '#F48FB1' }
-        ],
-        data: { 
-          values: {
-            source: 'Debug',
-            data: ''
-          },
-          code: 
-`context.onTick(() => {
-  context.ui.notify(inputs.data, inputs.source);
-  outputs.result = typeof inputs.data === 'object' ? JSON.stringify(inputs.data) : ('' + inputs.data);
-});
 return;`
         }
       } 

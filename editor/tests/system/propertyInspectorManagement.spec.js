@@ -314,7 +314,7 @@ describe('Inspector Property Management Integration Suite', () => {
       addComponentToSelection('Physics')
 
       expect(sceneStore.activeScene.entities[0].components.Physics).toBeDefined()
-      expect(sceneStore.activeScene.entities[0].components.Physics.type).toBe('dynamic')
+      expect(sceneStore.activeScene.entities[0].components.Physics.motionMode).toBe('platformer')
     })
 
     it('removes a component from entity and communicates deletion with engineBridge', async () => {

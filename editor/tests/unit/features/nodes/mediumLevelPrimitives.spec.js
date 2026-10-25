@@ -354,31 +354,33 @@ describe('Medium & Low Level Blueprint Primitives Specification', () => {
   });
 
   // -------------------------------------------------------------
-  // 5. interpolateVariables (BlueprintDialogue)
+  // 5. stringFormat / interpolateVariables (Unified String Templating)
   // -------------------------------------------------------------
-  describe('5. interpolateVariables (Dialogue & Narrative)', () => {
-    const def = BlueprintDialogue.items.find(i => i.type === 'interpolateVariables');
+  describe('5. stringFormat & interpolateVariables (Unified String Templating)', () => {
+    const def = findBlueprintByType('stringFormat');
 
     it('is registered with valid metadata and ports', () => {
       expect(def).toBeDefined();
       expect(findBlueprintByType('interpolateVariables')).toBeDefined();
-      expect(def.defaultData.inputs.map(i => i.id)).toEqual(['text', 'customMap']);
-      expect(def.defaultData.outputs.map(o => o.id)).toEqual(['result', 'tokenCount']);
+      expect(def.defaultData.inputs.some(i => i.id === 'format')).toBe(true);
+      expect(def.defaultData.inputs.some(i => i.id === 'v0')).toBe(true);
+      expect(def.defaultData.inputs.some(i => i.id === 'v1')).toBe(true);
+      expect(def.defaultData.outputs.map(o => o.id)).toEqual(['result']);
     });
 
-    it('interpolates tokens from customMap', () => {
+    it('formats sequential inputs v0 and v1', () => {
       const { outputs } = executeNode(def, {
-        text: 'Welcome {player}, you have {gold} gold coins!',
-        customMap: { player: 'Arthur', gold: 150 }
+        format: 'Score: {v0} / {v1}',
+        v0: 10,
+        v1: 20
       });
 
-      expect(outputs.result).toBe('Welcome Arthur, you have 150 gold coins!');
-      expect(outputs.tokenCount).toBe(2);
+      expect(outputs.result).toBe('Score: 10 / 20');
     });
 
     it('resolves tokens from context global and local variables', () => {
       const { outputs } = executeNode(def, {
-        text: 'Zone: {zoneName}, Level: {level}'
+        format: 'Zone: {zoneName}, Level: {level}'
       }, {
         level: 42
       }, {
@@ -386,16 +388,34 @@ describe('Medium & Low Level Blueprint Primitives Specification', () => {
       });
 
       expect(outputs.result).toBe('Zone: Sanctuary, Level: 42');
-      expect(outputs.tokenCount).toBe(2);
+    });
+
+    it('resolves explicit local(...) and global(...) scoped variables like dialogue runner', () => {
+      const { outputs } = executeNode(def, {
+        format: 'Score : {local(collect)} / {max}',
+        max: 100
+      }, {}, {
+        getLocal: (k) => (k === 'collect' ? 25 : null),
+        getGlobal: (k) => (k === 'gold' ? 999 : null)
+      });
+
+      expect(outputs.result).toBe('Score : 25 / 100');
+
+      const { outputs: outGlobal } = executeNode(def, {
+        format: 'Gold: {global(gold)} coins'
+      }, {}, {
+        getGlobal: (k) => (k === 'gold' ? 999 : null)
+      });
+
+      expect(outGlobal.result).toBe('Gold: 999 coins');
     });
 
     it('retains untouched tokens when variable is not found', () => {
       const { outputs } = executeNode(def, {
-        text: 'Hello {unknown}!'
+        format: 'Hello {unknown}!'
       });
 
       expect(outputs.result).toBe('Hello {unknown}!');
-      expect(outputs.tokenCount).toBe(1);
     });
   });
 

@@ -130,33 +130,6 @@ return;`
       } 
     },
 { 
-      type: 'mathNegate', 
-      label: 'Negate', 
-      description: 'Inverts the sign of a numeric input (multiplies by -1).', 
-      dynamicMode: 'none', 
-      defaultData: { 
-        settings: { 
-          headerTitle: 'Negate', 
-          headerColor: '#00796B', 
-          category: 'Math & Random' 
-        },
-        inputs: [
-          { id: 'a', dataType: 'number', color: '#64B5F6', defaultValue: 0 }
-        ],
-        outputs: [
-          { id: 'result', dataType: 'number', color: '#64B5F6' }
-        ],
-        data: {
-          values: { a: 0 },
-          code: 
-`const val = inputs.a;
-const inverted = -val;
-outputs.result = inverted;
-return;`
-        }
-      } 
-    },
-{ 
       type: 'mathRound', 
       label: 'Rounding (Floor/Ceil)', 
       description: 'Rounds a number to the nearest integer using round, floor, or ceil mode.', 

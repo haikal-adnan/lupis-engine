@@ -203,14 +203,14 @@ test.describe('Property Inspector: Basic Components & Prefab E2E', () => {
     await expect(offsetXInput).toBeDisabled();
 
     await inspector.ensurePhysicsComponent();
-    await inspector.setPhysicsBodyType('Dynamic (Standard)');
-    await inspector.setPhysicsMass(12.5);
+    await inspector.setPhysicsMotionMode('Platformer (Side-Scroll)');
+    await inspector.setPhysicsDrag(12.5);
     await inspector.setPhysicsGravityScale(1.5);
 
-    const massInput = inspector.field('physics-mass-input');
+    const dragInput = inspector.field('physics-drag-input');
     const gravityInput = inspector.field('physics-gravity-scale-input');
 
-    await expect(massInput).toHaveValue('12.5');
+    await expect(dragInput).toHaveValue('12.5');
     await expect(gravityInput).toHaveValue('1.5');
   });
 
@@ -239,7 +239,7 @@ test.describe('Property Inspector: Basic Components & Prefab E2E', () => {
     await inspector.setPosition(320, -150);
     await expect(syncBadge).toBeVisible();
 
-    await inspector.setPhysicsMass(45);
+    await inspector.setPhysicsDrag(45);
     const overrideBadge = inspector.objectSection.getByText('Override', { exact: true });
     await expect(overrideBadge).toBeVisible();
 
@@ -257,8 +257,8 @@ test.describe('Property Inspector: Basic Components & Prefab E2E', () => {
     await expect(menuContainer.getByTestId('menu-item-delete-entity')).toBeVisible();
 
     await inspectorCrud.clickObjectSectionMenuItem('menu-item-revert-to-sync');
-    const massInput = inspector.field('physics-mass-input');
-    await expect(massInput).toHaveValue('1');
+    const dragInput = inspector.field('physics-drag-input');
+    await expect(dragInput).toHaveValue('1');
 
     await inspectorCrud.clickObjectSectionMenuItem('menu-item-unpack-prefab');
     await expect(page.getByTestId('editor-object-section').getByText('Prefab', { exact: true })).toHaveCount(0);

@@ -82,18 +82,21 @@ export default class Keyboard {
 
     isDown(k, contextEntity = null) {
         if (!k) return false;
+        if (contextEntity && (contextEntity.active === false || contextEntity.visible === false)) return false;
         if (this.game?.layerSystem?.isEntityInputFrozen(contextEntity, 'keyboard')) return false;
         return this.keys.has(String(k).toLowerCase());
     }
 
     isPressed(k, contextEntity = null) {
         if (!k) return false;
+        if (contextEntity && (contextEntity.active === false || contextEntity.visible === false)) return false;
         if (this.game?.layerSystem?.isEntityInputFrozen(contextEntity, 'keyboard')) return false;
         return this.pressed.has(String(k).toLowerCase());
     }
 
     isReleased(k, contextEntity = null) {
         if (!k) return false;
+        if (contextEntity && (contextEntity.active === false || contextEntity.visible === false)) return false;
         if (this.game?.layerSystem?.isEntityInputFrozen(contextEntity, 'keyboard')) return false;
         return this.released.has(String(k).toLowerCase());
     }

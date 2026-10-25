@@ -53,29 +53,17 @@
         </BaseButton>
       </PropertyRow>
 
-      <PropertyRow label="Body Type">
+      <PropertyRow label="Motion Mode">
         <BaseSelect 
-          v-model="type" 
-          :options="typeOptions" 
-          placeholder="Select Type"
+          v-model="currentMotionMode" 
+          :options="motionModeOptions" 
+          placeholder="Select Motion Mode"
           class="w-full"
-          data-testid="physics-body-type-select"
+          data-testid="physics-motion-mode-select"
         />
       </PropertyRow>
 
       <div class="h-px bg-border/50 my-2"></div>
-
-      <PropertyRow label="Mass (kg)">
-        <BaseNumber 
-          v-model="mass" 
-          prefix="M" 
-          :min="0.1" 
-          :step="0.01" 
-          :precision="2" 
-          class="font-mono w-full"
-          data-testid="physics-mass-input"
-        />
-      </PropertyRow>
 
       <PropertyRow label="Linear Drag">
         <BaseNumber 
@@ -89,7 +77,7 @@
         />
       </PropertyRow>
 
-      <PropertyRow label="Gravity Scale">
+      <PropertyRow v-if="currentMotionMode !== 'topdown'" label="Gravity Scale">
         <BaseNumber 
           v-model="gravityScale" 
           prefix="G" 
@@ -100,41 +88,48 @@
         />
       </PropertyRow>
 
-      <div class="h-px bg-border/50 my-2"></div>
-
-      <div class="px-1 mb-1">
-        <BaseCheckbox 
-          v-model="alignToSlope" 
-          label="Align to Slope" 
-          data-testid="physics-align-slope-toggle"
-        />
+      <div v-if="currentMotionMode === 'topdown'" class="px-1 text-[11px] text-muted-foreground/80 flex items-center gap-1.5 py-1">
+        <Compass class="w-3.5 h-3.5 text-primary/70 shrink-0" />
+        <span>Top-Down: Gravity is 0, full 2D planar damping.</span>
       </div>
 
-      <template v-if="alignToSlope">
-        <PropertyRow label="Adapt Speed">
-          <BaseNumber 
-            v-model="slopeAdaptSpeed" 
-            prefix="S" 
-            :min="1" 
-            :step="1" 
-            :precision="1" 
-            class="font-mono w-full" 
-            data-testid="physics-slope-speed-input"
-          />
-        </PropertyRow>
+      <template v-if="currentMotionMode !== 'topdown'">
+        <div class="h-px bg-border/50 my-2"></div>
 
-        <PropertyRow label="Max Slope (°)">
-          <BaseNumber 
-            v-model="maxSlopeAngle" 
-            prefix="∠" 
-            :min="5" 
-            :max="89" 
-            :step="1" 
-            :precision="0" 
-            class="font-mono w-full" 
-            data-testid="physics-max-slope-input"
+        <div class="px-1 mb-1">
+          <BaseCheckbox 
+            v-model="alignToSlope" 
+            label="Align to Slope" 
+            data-testid="physics-align-slope-toggle"
           />
-        </PropertyRow>
+        </div>
+
+        <template v-if="alignToSlope">
+          <PropertyRow label="Adapt Speed">
+            <BaseNumber 
+              v-model="slopeAdaptSpeed" 
+              prefix="S" 
+              :min="1" 
+              :step="1" 
+              :precision="1" 
+              class="font-mono w-full" 
+              data-testid="physics-slope-speed-input"
+            />
+          </PropertyRow>
+
+          <PropertyRow label="Max Slope (°)">
+            <BaseNumber 
+              v-model="maxSlopeAngle" 
+              prefix="∠" 
+              :min="5" 
+              :max="89" 
+              :step="1" 
+              :precision="0" 
+              class="font-mono w-full" 
+              data-testid="physics-max-slope-input"
+            />
+          </PropertyRow>
+        </template>
       </template>
     </div>
 
@@ -143,7 +138,7 @@
 
 <script setup>
 import { computed } from 'vue'
-import { Atom, Trash2, RefreshCw } from 'lucide-vue-next'
+import { Atom, Trash2, RefreshCw, Compass } from 'lucide-vue-next'
 
 import { 
   useInspectorSelection, 
@@ -175,19 +170,36 @@ const hasComponent = computed(() => !!selectedEntity.value?.components?.Physics)
 const overridden = getComponentOverrideStatus('Physics')
 
 const enabled = bindComponentProp('Physics', 'enabled')
-const type = bindComponentProp('Physics', 'type')
-const mass = bindComponentProp('Physics', 'mass')
+const motionMode = bindComponentProp('Physics', 'motionMode')
 const drag = bindComponentProp('Physics', 'drag')
 const gravityScale = bindComponentProp('Physics', 'gravityScale')
 const alignToSlope = bindComponentProp('Physics', 'alignToSlope')
 const slopeAdaptSpeed = bindComponentProp('Physics', 'slopeAdaptSpeed')
 const maxSlopeAngle = bindComponentProp('Physics', 'maxSlopeAngle')
 
-const typeOptions = [
-  { label: 'Dynamic (Standard)', value: 'dynamic' },
-  { label: 'Static (Immovable)', value: 'static' },
-  { label: 'Kinematic (Scripted)', value: 'kinematic' }
+const motionModeOptions = [
+  { label: 'Platformer (Side-Scroll)', value: 'platformer' },
+  { label: 'Top-Down', value: 'topdown' },
+  { label: 'Custom / Arcade', value: 'custom' }
 ]
+
+const currentMotionMode = computed({
+  get() {
+    if (motionMode.value) return motionMode.value
+    return (gravityScale.value === 0) ? 'topdown' : 'platformer'
+  },
+  set(val) {
+    motionMode.value = val
+    if (val === 'topdown') {
+      gravityScale.value = 0
+      alignToSlope.value = false
+    } else if (val === 'platformer') {
+      if (gravityScale.value === 0) {
+        gravityScale.value = 1.0
+      }
+    }
+  }
+})
 </script>
 
 <style scoped>

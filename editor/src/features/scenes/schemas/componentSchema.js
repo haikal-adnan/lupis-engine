@@ -90,25 +90,31 @@ export const componentSchema = {
     };
   },
 
-  Physics: (data = {}) => ({
-    enabled: Boolean(data.enabled ?? true),
-    type: data.type || "dynamic",
-    mass: Number(data.mass ?? 1.0),
-    gravityScale: Number(data.gravityScale ?? 1.0),
-    isFrozen: Boolean(data.isFrozen ?? false),
-    drag: Number(data.drag ?? 1.0),
-    velocityX: Number(data.velocityX ?? 0),
-    velocityY: Number(data.velocityY ?? 0),
-    isGrounded: Boolean(data.isGrounded ?? false),
-    movementState: data.movementState || 'idle',
-    facingDirection: data.facingDirection || "right",
-    alignToSlope: Boolean(data.alignToSlope ?? false),
-    slopeAdaptSpeed: Number(data.slopeAdaptSpeed ?? 12),
-    maxSlopeAngle: Number(data.maxSlopeAngle ?? 60),
-    keepColliderUpright: Boolean(data.keepColliderUpright ?? false),
-    ...data,
-    overridden: Boolean(data.overridden ?? false)
-  }),
+  Physics: (data = {}) => {
+    const defaultMotionMode = data.motionMode || (Number(data.gravityScale ?? 1.0) === 0 ? "topdown" : "platformer");
+    const defaultGravity = defaultMotionMode === "topdown" ? 0 : Number(data.gravityScale ?? 1.0);
+
+    return {
+      enabled: Boolean(data.enabled ?? true),
+      motionMode: defaultMotionMode,
+      type: data.type || "dynamic",
+      gravityScale: defaultGravity,
+      isFrozen: Boolean(data.isFrozen ?? false),
+      drag: Number(data.drag ?? 1.0),
+      velocityX: Number(data.velocityX ?? 0),
+      velocityY: Number(data.velocityY ?? 0),
+      isGrounded: Boolean(data.isGrounded ?? false),
+      movementState: data.movementState || 'idle',
+      facingDirection: data.facingDirection || "right",
+      alignToSlope: Boolean(data.alignToSlope ?? false),
+      slopeAdaptSpeed: Number(data.slopeAdaptSpeed ?? 12),
+      maxSlopeAngle: Number(data.maxSlopeAngle ?? 60),
+      keepColliderUpright: Boolean(data.keepColliderUpright ?? false),
+      ...data,
+      motionMode: defaultMotionMode,
+      overridden: Boolean(data.overridden ?? false)
+    };
+  },
 
   SpriteAnimator: (data = {}) => {
     const rawClips = Array.isArray(data.clips)

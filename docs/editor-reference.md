@@ -200,9 +200,9 @@ Node definitions live in `@nodes/library/blueprints/`, organized into **10 conso
 | `BlueprintRenderer.js` | Rendering & Camera | `game_renderer` | 14 | Get/Set Sprite, Get/Set Text, Get/Set Shape, Get/Set Tilemap, Batch Set, Fade Screen Transition, Camera Follow / Stop Follow / Set Transform / Get Info |
 | `BlueprintAnimation.js` | Animation & Tweens | `game_animation` | 16 | Tween Value, Move To, Scale To, Rotate To, Resize To, Fade To, Crop Image, Fill Amount, Shake Transform, Button Scale Effect, Play/Pause Animation, Get/Set Animator & Clip Props |
 | `BlueprintCollections.js` | Collections & Data | `data_collections` | 20 | List Get/Set/Push/Insert/RemoveAt/Length/Contains/IndexOf/Concat/Shuffle, Map Get/Set/Remove/Has/Merge/Keys/Values/Size, Get/Set Value by Path |
-| `BlueprintMath.js` | Math & Random | `math_operations` | 14 | Add, Subtract, Multiply, Divide, Negate, Rounding, In Range, Clamp, Distance 2D, Direction 2D, Random Number, Random Chance, List Get Random, Random Color |
+| `BlueprintMath.js` | Math & Random | `math_operations` | 13 | Add, Subtract, Multiply, Divide, Rounding, In Range, Clamp, Distance 2D, Direction 2D, Random Number, Random Chance, List Get Random, Random Color |
 | `BlueprintLifecycle.js` | Scene & Lifecycle | `game_lifecycle` | 11 | On Tick, On Game Start/Pause/Resume/Restart/Quit, Universal Set Game State Action, On Scene Start, Change Scene, Restart Scene, Get Current Scene |
-| `BlueprintSystem.js` | Audio & System | `system_utilities` | 17 | Play/Stop Audio, Set/Get Volume, Set Channel Mute, Get/Set Variable, Format/Join/Length/AnyToString, Emit/On Signal, Notification & Debug Toasts, VN Dialogue Runner, VN Choice Presenter |
+| `BlueprintSystem.js` | Audio & System | `system_utilities` | 15 | Play/Stop Audio, Set/Get Volume, Set Channel Mute, Get/Set Variable, Format String (with Var Interpolation), Join Strings, String Length, Convert Type (Cast String/Number/Boolean), Emit/On Signal, Notification Toast |
 
 For complete documentation on visual scripting and runtime execution, see [Visual Scripting](visual-scripting.md) and [Context System](context-system.md).
 

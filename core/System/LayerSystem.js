@@ -20,9 +20,25 @@ export default class LayerSystem {
         ) || null;
     }
 
+    _isEntityAndParentsActive(entity) {
+        if (!entity || entity.active === false || entity.visible === false) return false;
+        const world = this.game?.world;
+        if (!world) return true;
+        let current = entity;
+        while (current && current.parentId) {
+            const parentId = current.parentId;
+            current = world.entities ? world.entities.find(e => e.id === parentId || (e.scriptId && e.scriptId === parentId)) : null;
+            if (!current) break;
+            if (current.active === false || current.visible === false) return false;
+        }
+        return true;
+    }
+
     isInputFrozen(layerId, inputType = 'all', contextEntity = null) {
         const layer = this.getLayer(layerId, contextEntity);
-        if (!layer || !layer.freezeInput) return false;
+        if (!layer) return false;
+        if (layer.active === false || layer.visible === false) return true;
+        if (!layer.freezeInput) return false;
         const layerType = (layer.freezeInputType || 'all').toLowerCase();
         const requestedType = (inputType || 'all').toLowerCase();
         if (layerType === 'all' || requestedType === 'all') return true;
@@ -38,8 +54,14 @@ export default class LayerSystem {
     }
 
     isEntityInputFrozen(entity, inputType = 'all') {
-        if (!entity || !entity.layerId) return false;
-        return this.isInputFrozen(entity.layerId, inputType, entity);
+        if (!entity) return false;
+        if (!this._isEntityAndParentsActive(entity)) return true;
+        const layer = this.getLayer(entity.layerId, entity);
+        if (layer && (layer.active === false || layer.visible === false)) return true;
+        if (entity.layerId) {
+            return this.isInputFrozen(entity.layerId, inputType, entity);
+        }
+        return false;
     }
 
     destroyLayer(layerTarget, destroyEntities = true, contextEntity = null) {

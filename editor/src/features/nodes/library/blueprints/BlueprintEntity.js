@@ -400,38 +400,6 @@ return;`
       }
     },
     {
-      type: 'entityCountByTag',
-      label: 'Count Entities by Tag',
-      description: 'Returns the total number of active entities in the scene with a specific tag.',
-      dynamicMode: 'none',
-      defaultData: {
-        settings: {
-          headerTitle: 'Count by Tag',
-          headerColor: '#00838F',
-          category: 'Entity & Transform'
-        },
-        inputs: [
-          { id: 'tag', dataType: 'string', color: '#F48FB1', defaultValue: 'Enemy' }
-        ],
-        outputs: [
-          { id: 'count', dataType: 'number', color: '#64B5F6' },
-          { id: 'hasAny', dataType: 'boolean', color: '#E57373' }
-        ],
-        data: {
-          values: { tag: 'Enemy' },
-          code: 
-`const tag = inputs.tag;
-const count = context.entity && typeof context.entity.countByTag === 'function'
-  ? context.entity.countByTag(tag)
-  : (context.entity && typeof context.entity.getAllByTag === 'function' ? context.entity.getAllByTag(tag).length : 0);
-
-outputs.count = count;
-outputs.hasAny = count > 0;
-return;`
-        }
-      }
-    },
-    {
       type: 'entityHasTag',
       label: 'Entity Has Tag',
       description: 'Checks whether an entity has a specific tag assigned.',

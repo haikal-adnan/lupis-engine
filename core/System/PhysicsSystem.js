@@ -8,9 +8,9 @@ export default class PhysicsSystem {
     update(dt) {
         if (this.game.isPaused) return;
 
-        const sceneSettings = this.game.world.settings.physics || { gravity: 1200, drag: 5 };
-        const GLOBAL_GRAVITY = sceneSettings.gravity;
-        const GLOBAL_DRAG = sceneSettings.drag;
+        const sceneSettings = this.game.world?.settings?.physics || {};
+        const GLOBAL_GRAVITY = typeof sceneSettings.gravity === 'number' ? sceneSettings.gravity : 1200;
+        const GLOBAL_DRAG = typeof sceneSettings.drag === 'number' ? sceneSettings.drag : 5;
 
         const entities = this.game.world.entities;
         const inactiveLayers = this.game.colliderSystem._getInactiveLayers();
@@ -70,9 +70,10 @@ export default class PhysicsSystem {
 
             phys.collisionInfo = { hitSolid: null, hitSolidX: null, hitSolidY: null, hitTrigger: null };
 
+            const isTopDown = phys.motionMode === 'topdown' || (phys.gravityScale === 0 && phys.motionMode !== 'platformer');
             const preDragVelocityX = phys.velocityX;
 
-            if (phys.gravityScale !== 0) {
+            if (!isTopDown && phys.gravityScale !== 0) {
                 phys.velocityY += GLOBAL_GRAVITY * phys.gravityScale * dt;
             }
 
@@ -80,7 +81,7 @@ export default class PhysicsSystem {
                 const effectiveDrag = GLOBAL_DRAG * phys.drag;
                 const damping = Math.max(0, 1 - (effectiveDrag * dt));
                 phys.velocityX *= damping;
-                if (phys.gravityScale === 0) {
+                if (isTopDown || phys.gravityScale === 0) {
                     phys.velocityY *= damping;
                 }
             }
@@ -148,7 +149,7 @@ export default class PhysicsSystem {
                 }
             }
 
-            if (phys.gravityScale !== 0) {
+            if (!isTopDown && phys.gravityScale !== 0) {
                 this._checkGrounded(entity, phys, inactiveLayers);
             } else {
                 phys.isGrounded = true;
@@ -156,13 +157,13 @@ export default class PhysicsSystem {
 
             this._checkTriggers(entity, phys);
 
-            if (phys.gravityScale !== 0) {
+            if (!isTopDown && phys.gravityScale !== 0) {
                 if (phys.isGrounded && phys.velocityY > 0) {
                     phys.velocityY = 0;
                 }
             }
 
-            if (phys.alignToSlope) {
+            if (!isTopDown && phys.alignToSlope) {
                 this._updateSlopeAlignment(entity, phys, dt);
             }
 
@@ -171,7 +172,7 @@ export default class PhysicsSystem {
     }
 
     _updateMovementState(phys, dt) {
-        const isTopDown = phys.gravityScale === 0;
+        const isTopDown = phys.motionMode === 'topdown' || (phys.gravityScale === 0 && phys.motionMode !== 'platformer');
 
         if (isTopDown) {
             if (phys._isIntentionalMove || Math.abs(phys.velocityX) > 50 || Math.abs(phys.velocityY) > 50) {

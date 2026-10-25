@@ -15,12 +15,12 @@
           "type": "features",
           "items": [
             {
-              "title": "Three Body Types",
-              "desc": "Choose **Dynamic** for characters and props, **Static** for walls, or **Kinematic** for scripted platforms."
+              "title": "Motion Modes",
+              "desc": "Choose **Platformer (Side-Scroll)**, **Top-Down**, or **Custom / Arcade** to tailor settings automatically."
             },
             {
               "title": "Gravity & Drag",
-              "desc": "Tune per-entity **Gravity Scale**, **Mass (kg)**, and **Linear Drag**."
+              "desc": "Tune per-entity **Gravity Scale** and **Linear Drag** without editor clutter."
             },
             {
               "title": "Slope Alignment",
@@ -57,11 +57,10 @@
           "headers": ["Property", "Type", "Default", "Description"],
           "rows": [
             ["Simulation", "Boolean", "Running", "Toggles **Running** or **Paused** to enable or freeze physics updates on this entity."],
-            ["Body Type", "String", "Dynamic (Standard)", "Sets the simulation mode: **Dynamic (Standard)** reacts to gravity and forces, **Static (Immovable)** never moves, and **Kinematic (Scripted)** moves by velocity without being pushed by gravity."],
-            ["Mass (kg)", "Number", "1.00", "Mass of the body in kilograms (minimum 0.1)."],
-            ["Linear Drag", "Number", "1.00", "Resistance that slows velocity over time (minimum 0)."],
-            ["Gravity Scale", "Number", "1.00", "Multiplier for scene gravity on this entity. Set to **0** for top-down games or flying entities."],
-            ["Align to Slope", "Boolean", "false", "Rotates the entity automatically to match the angle of sloped surfaces beneath it."],
+            ["Motion Mode", "String", "Platformer (Side-Scroll)", "Sets the motion archetype: **Platformer (Side-Scroll)**, **Top-Down** (0 gravity, planar damping), or **Custom / Arcade**."],
+            ["Linear Drag", "Number", "1.00", "Resistance that slows velocity over time (minimum 0). Crucial for top-down braking friction."],
+            ["Gravity Scale", "Number", "1.00", "Multiplier for scene gravity on this entity (hidden in Top-Down mode)."],
+            ["Align to Slope", "Boolean", "false", "Rotates the entity automatically to match the angle of sloped surfaces beneath it (hidden in Top-Down mode)."],
             ["Adapt Speed", "Number", "12", "Visible when **Align to Slope** is checked. Controls how fast the entity rotates to match a slope."],
             ["Max Slope (deg)", "Number", "60", "Visible when **Align to Slope** is checked. Steepest slope angle (5 to 89 degrees) the entity can climb."]
           ]
@@ -83,12 +82,12 @@
         },
         {
           "type": "table",
-          "headers": ["Entity Role", "Body Type", "Gravity Scale", "Notes"],
+          "headers": ["Entity Role", "Motion Mode", "Gravity Scale", "Notes"],
           "rows": [
-            ["Platformer Player", "**Dynamic (Standard)**", "**1.00** to **2.50**", "Check **Align to Slope** if your level has angled ramps."],
-            ["Top-Down Player / Enemy", "**Dynamic (Standard)**", "**0.00**", "Set **Linear Drag** to **5.00** or higher for crisp stopping."],
-            ["Moving Platform", "**Kinematic (Scripted)**", "**0.00**", "Move with [Ping Pong Stepper](node_library/helper_tool#node-pingPongStepper) or velocity nodes."],
-            ["Static Wall / Prop", "**Static (Immovable)**", "**0.00**", "Blocks dynamic entities without being pushed."]
+            ["Platformer Player", "**Platformer**", "**1.00** to **2.50**", "Check **Align to Slope** if your level has angled ramps."],
+            ["Top-Down Player / Enemy", "**Top-Down**", "**0.00** (Auto)", "Set **Linear Drag** to **5.00** or higher for crisp stopping."],
+            ["Moving Platform / Scripted", "**Custom / Arcade**", "**0.00**", "Move with [Ping Pong Stepper](node_library/helper_tool#node-pingPongStepper) or velocity nodes."],
+            ["Static Wall / Prop", "*(No Physics)*", "N/A", "Only add **Collider** (solid). No Physics Body needed."]
           ]
         }
       ]

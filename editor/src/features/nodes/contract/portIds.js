@@ -193,7 +193,12 @@ export const CANONICAL_PORT_IDS = Object.freeze({
   rowIndex: 'Row index in a 2D grid layout',
   colIndex: 'Column index in a 2D grid layout',
   itemData: 'Data associated with the current item',
-  spawnedEntities: 'List of all spawned entity identifiers'
+  spawnedEntities: 'List of all spawned entity identifiers',
+  targetType: 'Target data type for conversion',
+  defaultNumber: 'Default fallback number',
+  asString: 'Result formatted as string',
+  asNumber: 'Result converted as number',
+  asBoolean: 'Result converted as boolean'
 });
 
 export function isValidPortId(id) {

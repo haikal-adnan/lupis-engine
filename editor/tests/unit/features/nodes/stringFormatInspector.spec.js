@@ -266,4 +266,50 @@ describe('StringFormatInspector & String Format Port Management', () => {
     // Variable inputs (e.g. v0) can be deleted if in sequential mode
     expect(canDeleteInputPort(nodeSingle, 'v0')).toBe(true);
   });
+
+  it('does NOT create ports for local() and global() variables, but creates ports for regular {vars}', async () => {
+    const node = {
+      id: 'node_sf_scoped',
+      type: 'stringFormat',
+      inputs: [
+        { id: 'format', dataType: 'string', defaultValue: 'Score: {v0} / {v1}' }
+      ],
+      outputs: [
+        { id: 'result', dataType: 'string' }
+      ],
+      data: {
+        formats: ['Score : {local(collect)} / {max}'],
+        values: { format: 'Score : {local(collect)} / {max}' },
+        code: ''
+      }
+    };
+
+    scriptStore.activeScript.nodes = [node];
+
+    const wrapper = mount(StringFormatInspector, {
+      props: { node }
+    });
+
+    const updatedNode = scriptStore.activeScript.nodes[0];
+
+    // Format port should exist
+    expect(updatedNode.inputs.some(p => p.id === 'format')).toBe(true);
+
+    // Regular variable {max} SHOULD generate an input port
+    expect(updatedNode.inputs.some(p => p.id === 'max')).toBe(true);
+
+    // Scoped variable {local(collect)} MUST NOT generate an input port
+    expect(updatedNode.inputs.some(p => p.id === 'local(collect)')).toBe(false);
+    expect(updatedNode.inputs.some(p => p.id === 'collect')).toBe(false);
+    expect(updatedNode.inputs.some(p => p.id === 'local')).toBe(false);
+
+    // Test execution with context containing local variable
+    const fn = new Function('inputs', 'outputs', 'context', updatedNode.data.code);
+    const mockContext = {
+      getLocal: (key) => (key === 'collect' ? 15 : null)
+    };
+    const outputs = {};
+    fn({ format: 'Score : {local(collect)} / {max}', max: 100 }, outputs, mockContext);
+    expect(outputs.result).toBe('Score : 15 / 100');
+  });
 });

@@ -78,7 +78,7 @@
           "type": "steps",
           "items": [
             "Select your HUD label entity, inspect its [Text Renderer](components/renderers/text_renderer) component in the [Property Inspector](interface/property_inspector), set **Bind Variable** to your score variable, and set **Bind Format** to **Score: {value}**.",
-            "To format multiple variables in a graph, pass a template string such as **HP: {hp}/{maxHp}** into [Interpolate Variables](node_library/helper_tool#node-interpolateVariables) and connect **Result** to [Set Text](node_library/game_renderer#node-setText).",
+            "To format multiple variables in a graph, pass a template string such as **HP: {hp}/{maxHp}** into [Format String](node_library/system_utilities#node-stringFormat) and connect **Result** to [Set Text](node_library/game_renderer#node-setText).",
             "Create a health bar entity with a [Sprite Renderer](components/renderers/sprite_renderer) component placed over a background frame sprite on your UI layer.",
             "When the player's health changes, divide current health by max health, multiply by **100**, and pass the percentage into [Fill Amount](node_library/game_animation#node-tweenFillAmount) targeting the health bar sprite.",
             "To build an inventory grid, design a single slot entity with child entities named **Icon** (**Sprite Renderer**) and **Count** (**Text Renderer**), then save the slot as a reusable [Prefab](components/entities_and_prefabs).",
@@ -178,8 +178,8 @@
               "Set **Layer ID** on [UI Grid Spawner](node_library/helper_tool#node-uiGridSpawner) to your UI layer or assign the panel container as **Parent Entity**."
             ],
             [
-              "[Interpolate Variables](node_library/helper_tool#node-interpolateVariables) leaves **{token}** unchanged in the text",
-              "Confirm that the variable name inside the curly braces exists in either the connected **Custom Map** input or global state."
+              "[Format String](node_library/system_utilities#node-stringFormat) leaves **{token}** unchanged in the text",
+              "Confirm that the variable name inside the curly braces exists in either the connected **Custom Map** input, port inputs, or global state."
             ]
           ]
         }

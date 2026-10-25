@@ -169,7 +169,11 @@ const detectedVariables = computed(() => {
   formats.value.forEach(fmt => {
     const matches = [...String(fmt || '').matchAll(/\{([^{}]+)\}/g)];
     matches.forEach(m => {
-      const raw = m[1].split('.')[0].trim();
+      const trimmed = m[1].trim();
+      if (/^(local|global)(?:[:.]|\(([^)]*)\))/i.test(trimmed)) {
+        return;
+      }
+      const raw = trimmed.split('.')[0].trim();
       let varName = null;
       if (/^[A-Za-z][A-Za-z0-9]*$/.test(raw)) {
         varName = raw;
@@ -211,16 +215,52 @@ function generateStringCode(fmtList) {
     return [
       'const rawFmt' + i + ' = inputs.' + inPort + ' !== undefined && inputs.' + inPort + ' !== null ? inputs.' + inPort + ' : ' + safeFmt + ';',
       'const fmt' + i + ' = String(rawFmt' + i + ');',
+      'const ctx' + i + ' = typeof context !== "undefined" ? context : null;',
       'outputs.' + outPort + ' = fmt' + i + '.replace(/\\{([^{}]+)\\}/g, function(_, path) {',
-      '  const parts = path.split(".");',
+      '  const trimmed = path.trim();',
+      '  const scopeMatch = trimmed.match(/^(local|global)(?:[:.]|\\(([^)]+)\\))(.*)$/i);',
+      '  if (scopeMatch && ctx' + i + ') {',
+      '    const scope = scopeMatch[1].toLowerCase();',
+      '    const fullVar = (scopeMatch[2] ? scopeMatch[2] + (scopeMatch[3] || "") : (scopeMatch[3] || "")).replace(/^[:.]/, "").trim();',
+      '    const subParts = fullVar.split(".");',
+      '    const rootVar = subParts[0].trim();',
+      '    let val;',
+      '    let found = false;',
+      '    if (scope === "local") {',
+      '      if (ctx' + i + '.local && typeof ctx' + i + '.local.get === "function") { const lVal = ctx' + i + '.local.get(rootVar); if (Boolean(lVal || lVal === 0 || lVal === false)) { val = lVal; found = true; } }',
+      '      if (!found && typeof ctx' + i + '.getLocal === "function") { const lVal = ctx' + i + '.getLocal(rootVar); if (Boolean(lVal || lVal === 0 || lVal === false)) { val = lVal; found = true; } }',
+      '      if (!found && ctx' + i + '.state && (rootVar in ctx' + i + '.state)) { val = ctx' + i + '.state[rootVar]; found = true; }',
+      '      if (!found && typeof ctx' + i + '.hasVariable === "function" && ctx' + i + '.hasVariable(rootVar)) { val = ctx' + i + '.getVariable(rootVar); found = true; }',
+      '    } else if (scope === "global") {',
+      '      if (ctx' + i + '.global && typeof ctx' + i + '.global.get === "function") { const gVal = ctx' + i + '.global.get(rootVar); if (Boolean(gVal || gVal === 0 || gVal === false)) { val = gVal; found = true; } }',
+      '      if (!found && typeof ctx' + i + '.getGlobal === "function") { const gVal = ctx' + i + '.getGlobal(rootVar); if (Boolean(gVal || gVal === 0 || gVal === false)) { val = gVal; found = true; } }',
+      '      if (!found && typeof ctx' + i + '.hasVariable === "function" && ctx' + i + '.hasVariable(rootVar)) { val = ctx' + i + '.getVariable(rootVar); found = true; }',
+      '    }',
+      '    if (found) {',
+      '      for (let p = 1; p < subParts.length; p++) {',
+      '        if (val && typeof val === "object") val = val[subParts[p].trim()];',
+      '      }',
+      '      const hasVal = Boolean(val || val === 0 || val === false);',
+      '      return (val && typeof val === "object") ? JSON.stringify(val) : String(hasVal ? val : "");',
+      '    }',
+      '    return _; // retain token if not found in context',
+      '  }',
+      '  const parts = trimmed.split(".");',
       '  const rootKey = parts[0].trim();',
       '  let val = inputs[rootKey] !== undefined ? inputs[rootKey] : (inputs["v" + rootKey] !== undefined ? inputs["v" + rootKey] : undefined);',
+      '  if (val === undefined && ctx' + i + ' && ctx' + i + '.state && (rootKey in ctx' + i + '.state)) val = ctx' + i + '.state[rootKey];',
+      '  if (val === undefined && ctx' + i + ' && ctx' + i + '.local && typeof ctx' + i + '.local.get === "function") val = ctx' + i + '.local.get(rootKey);',
+      '  if (val === undefined && ctx' + i + ' && typeof ctx' + i + '.getLocal === "function") val = ctx' + i + '.getLocal(rootKey);',
+      '  if (val === undefined && ctx' + i + ' && ctx' + i + '.global && typeof ctx' + i + '.global.get === "function") val = ctx' + i + '.global.get(rootKey);',
+      '  if (val === undefined && ctx' + i + ' && typeof ctx' + i + '.getGlobal === "function") val = ctx' + i + '.getGlobal(rootKey);',
+      '  if (val === undefined && ctx' + i + ' && typeof ctx' + i + '.hasVariable === "function" && ctx' + i + '.hasVariable(rootKey)) val = ctx' + i + '.getVariable(rootKey);',
       '  for (let p = 1; p < parts.length; p++) {',
       '    if (val && typeof val === "object") {',
       '      val = val[parts[p].trim()];',
       '    }',
       '  }',
-      '  return typeof val === "object" ? JSON.stringify(val) : String(val !== undefined ? val : "");',
+      '  const hasVal = Boolean(val || val === 0 || val === false);',
+      '  return typeof val === "object" ? JSON.stringify(val) : (val !== undefined ? String(hasVal ? val : "") : _);',
       '});'
     ].join('\n');
   });
@@ -247,7 +287,11 @@ function syncStructure(newFormats) {
   newFormats.forEach(fmt => {
     const matches = [...String(fmt || '').matchAll(/\{([^{}]+)\}/g)];
     matches.forEach(m => {
-      const raw = m[1].split('.')[0].trim();
+      const trimmed = m[1].trim();
+      if (/^(local|global)(?:[:.]|\(([^)]*)\))/i.test(trimmed)) {
+        return;
+      }
+      const raw = trimmed.split('.')[0].trim();
       let varName = null;
       if (/^[A-Za-z][A-Za-z0-9]*$/.test(raw)) {
         varName = raw;

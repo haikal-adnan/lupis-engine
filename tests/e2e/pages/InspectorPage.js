@@ -553,14 +553,22 @@ export class InspectorPage {
     }
   }
 
+  async setPhysicsMotionMode(modeLabel) {
+    await this.controls.selectOption('physics-motion-mode-select', modeLabel, this.physicsSection);
+  }
+
+  async setPhysicsDrag(drag) {
+    const input = this.page.getByTestId('physics-drag-input').locator('input').first();
+    await input.fill(String(drag));
+    await input.press('Enter');
+  }
+
   async setPhysicsBodyType(typeLabel) {
-    await this.controls.selectOption('physics-body-type-select', typeLabel, this.physicsSection);
+    await this.controls.selectOption('physics-motion-mode-select', typeLabel, this.physicsSection);
   }
 
   async setPhysicsMass(mass) {
-    const input = this.page.getByTestId('physics-mass-input').locator('input').first();
-    await input.fill(String(mass));
-    await input.press('Enter');
+    await this.setPhysicsDrag(mass);
   }
 
   async setPhysicsGravityScale(scale) {
