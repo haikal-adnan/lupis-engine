@@ -46,7 +46,7 @@
           "type": "table",
           "headers": ["Requirement", "Configuration"],
           "rows": [
-            ["[Physics Body](components/physics_body)", "Set **Body Type** to **Dynamic (Standard)**, **Gravity Scale** to **0.00**, and **Linear Drag** to **5.00** or higher so the character stops crisply."],
+            ["[Physics Body](components/physics_body)", "Set **Motion Mode** to **Top-Down** and **Linear Drag** to **5.00** or higher so the character stops crisply (gravity is automatically 0)."],
             ["[Multi-Collider](components/multi_collider)", "Attach a **Solid (Physics)** box or circle collider positioned around the character's feet or torso."],
             ["[Image Renderer](components/renderers/sprite_renderer) & [Sprite Animator](components/sprite_animator)", "Create directional clips (such as **idle_down**, **walk_down**, **walk_up**, **walk_side**) or single clips for rotation mode."],
             ["[Script Controller](components/script_controller)", "Attach to the character entity to run the top-down script."]

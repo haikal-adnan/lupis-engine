@@ -47,7 +47,7 @@
           "headers": ["Requirement", "Configuration"],
           "rows": [
             ["[Image Renderer](components/renderers/sprite_renderer) & [Sprite Animator](components/sprite_animator)", "Attach both to the player entity and create animation clips such as **idle**, **run**, **jump**, and **fall**."],
-            ["[Physics Body](components/physics_body)", "Attach to the player entity with **Body Type** set to **Dynamic (Standard)** and **Gravity Scale** set between **1.5** and **2.5**."],
+            ["[Physics Body](components/physics_body)", "Attach to the player entity with **Motion Mode** set to **Platformer (Side-Scroll)** and **Gravity Scale** set between **1.5** and **2.5**."],
             ["[Multi-Collider](components/multi_collider)", "Attach a **Solid (Physics)** collider to the player (increase **Corner Radius (Capsule)** so the feet do not snag on tile seams) and to your floor or [Tilemap](components/renderers/tilemap)."],
             ["[Script Controller](components/script_controller)", "Attach to the player entity to run the platformer visual script."]
           ]

@@ -554,7 +554,16 @@ export class InspectorPage {
   }
 
   async setPhysicsMotionMode(modeLabel) {
-    await this.controls.selectOption('physics-motion-mode-select', modeLabel, this.physicsSection);
+    let resolvedLabel = modeLabel;
+    const lower = String(modeLabel || '').trim().toLowerCase();
+    if (lower === 'platformer' || lower === 'platformer (side-scroll)' || lower === 'dynamic (standard)' || lower === 'dynamic') {
+      resolvedLabel = 'Platformer (Side-Scroll)';
+    } else if (lower === 'topdown' || lower === 'top-down') {
+      resolvedLabel = 'Top-Down';
+    } else if (lower === 'custom' || lower === 'custom / arcade' || lower === 'arcade' || lower.includes('kinematic') || lower.includes('static')) {
+      resolvedLabel = 'Custom / Arcade';
+    }
+    await this.controls.selectOption('physics-motion-mode-select', resolvedLabel, this.physicsSection);
   }
 
   async setPhysicsDrag(drag) {
@@ -564,7 +573,7 @@ export class InspectorPage {
   }
 
   async setPhysicsBodyType(typeLabel) {
-    await this.controls.selectOption('physics-motion-mode-select', typeLabel, this.physicsSection);
+    await this.setPhysicsMotionMode(typeLabel);
   }
 
   async setPhysicsMass(mass) {

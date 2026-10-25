@@ -243,11 +243,14 @@ export class InspectorCrudObject {
     await this.inspector.toggleColliderAutoFit(autoFit);
   }
 
-  async setupPhysics(bodyType = 'Dynamic (Standard)', mass = 1.0, gravityScale = 1.0) {
+  async setupPhysics(motionMode = 'Platformer (Side-Scroll)', drag = 1.0, gravityScale = 1.0) {
     await this.inspector.ensurePhysicsComponent();
-    await this.inspector.setPhysicsBodyType(bodyType);
-    await this.inspector.setPhysicsMass(mass);
-    await this.inspector.setPhysicsGravityScale(gravityScale);
+    await this.inspector.setPhysicsMotionMode(motionMode);
+    await this.inspector.setPhysicsDrag(drag);
+    const isTopDown = typeof motionMode === 'string' && (motionMode.toLowerCase().includes('topdown') || motionMode.toLowerCase().includes('top-down'));
+    if (!isTopDown && gravityScale !== undefined && gravityScale !== null) {
+      await this.inspector.setPhysicsGravityScale(gravityScale);
+    }
   }
 
   // =========================================================================

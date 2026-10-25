@@ -23,7 +23,7 @@ test.describe('Blueprint Pyramid High-Level: Gameplay Systems, Extensible Templa
     const playerEntity = await hierarchyCrud.entity.create(worldLayer, 'empty');
     await playerEntity.click();
     await inspectorCrud.configureObjectMetaData({ scriptId: 'PlatformerHero' });
-    await inspectorCrud.setupPhysics('Dynamic (Standard)', 1.0, 1.0);
+    await inspectorCrud.setupPhysics('Platformer (Side-Scroll)', 1.0, 1.0);
 
     await blueprintRunner.runTest({
       testName: 'Platformer Controller - Idle Movement State',
@@ -61,7 +61,7 @@ test.describe('Blueprint Pyramid High-Level: Gameplay Systems, Extensible Templa
     const characterEntity = await hierarchyCrud.entity.create(worldLayer, 'empty');
     await characterEntity.click();
     await inspectorCrud.configureObjectMetaData({ scriptId: 'TopDownHero' });
-    await inspectorCrud.setupPhysics('Dynamic (Standard)', 1.0, 1.0);
+    await inspectorCrud.setupPhysics('Top-Down', 1.0);
 
     await blueprintRunner.runTest({
       testName: 'TopDown Controller - Directional State',

@@ -291,7 +291,7 @@ test.describe('Blueprint Pyramid Low-Level: Atomic & Primitive Nodes E2E Testing
     const physEntity = await hierarchyCrud.entity.create(worldLayer, 'empty');
     await physEntity.click();
     await inspectorCrud.configureObjectMetaData({ scriptId: 'FrozenEntity' });
-    await inspectorCrud.setupPhysics('Dynamic (Standard)', 1.0, 1.0);
+    await inspectorCrud.setupPhysics('Platformer (Side-Scroll)', 1.0, 1.0);
 
     await blueprintRunner.runTest({
       testName: 'Move and Slide - Frozen Entity Early Return',

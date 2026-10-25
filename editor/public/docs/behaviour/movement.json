@@ -14,7 +14,7 @@
         {
           "type": "alert",
           "variant": "tip",
-          "message": "Use **Dynamic (Standard)** bodies for player characters and **Kinematic (Scripted)** bodies for moving platforms that should not be pushed by gravity."
+          "message": "Use **Platformer (Side-Scroll)** or **Top-Down** motion modes for player characters, and **Custom / Arcade** for moving platforms that should not be pushed by gravity."
         }
       ]
     },
