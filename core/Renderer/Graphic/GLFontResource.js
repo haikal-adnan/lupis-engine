@@ -79,7 +79,7 @@ export default class GLFontResource {
           };
         } 
         else if (typeof opfsConfig === 'string' && opfsConfig.length > 0) {
-          const cleanBaseURL = opfsConfig.replace(/\/$/, "");
+          const cleanBaseURL = LupisPackageHelper.resolveAssetBaseUrl(opfsConfig);
           const isProtected = Boolean(asset.meta?.protected || asset.meta?.fntLupisData || asset.meta?.texLupisData);
 
           if (!isProtected && asset.fileUrl && (asset.fileUrl.startsWith('http') || asset.fileUrl.startsWith('/'))) {

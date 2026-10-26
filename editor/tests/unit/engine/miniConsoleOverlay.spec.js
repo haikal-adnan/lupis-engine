@@ -253,4 +253,43 @@ describe('MiniConsoleOverlay', () => {
         });
         expect(() => window.dispatchEvent(event)).not.toThrow();
     });
+
+    it('remains completely disabled in release mode regardless of active setting', () => {
+        globalThis.__LUPIS_BUILD_MODE__ = 'release';
+        try {
+            const overlay = new MiniConsoleOverlay(container, {
+                active: true,
+                position: 'top-left',
+                isPreview: false
+            });
+
+            expect(overlay.isVisible).toBe(false);
+            expect(overlay.domElement).toBeNull();
+            expect(overlay.config.active).toBe(false);
+            expect(container.children.length).toBe(0);
+
+            // Toggling should do nothing
+            overlay.toggle();
+            expect(overlay.isVisible).toBe(false);
+            expect(overlay.domElement).toBeNull();
+        } finally {
+            delete globalThis.__LUPIS_BUILD_MODE__;
+        }
+    });
+
+    it('remains disabled when __LUPIS_ENV__.MODE is production', () => {
+        globalThis.__LUPIS_ENV__ = { MODE: 'production' };
+        try {
+            const overlay = new MiniConsoleOverlay(container, {
+                active: true,
+                isPreview: true
+            });
+
+            expect(overlay.isVisible).toBe(false);
+            expect(overlay.domElement).toBeNull();
+            expect(overlay.config.active).toBe(false);
+        } finally {
+            delete globalThis.__LUPIS_ENV__;
+        }
+    });
 });

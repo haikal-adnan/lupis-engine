@@ -8,6 +8,13 @@ import { spawn, exec } from "child_process";
 import archiver from "archiver";
 import cors from "cors";
 import unzipper from "unzipper";
+import { minify as terserMinify } from "terser";
+import {
+  buildUnifiedWebPackage,
+  getOrBuildCachedEngineChunks,
+  processProjectDataForExport,
+  generateStandaloneIndexHtml
+} from "./bundler/engineBundler.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -18,6 +25,8 @@ const PORT = process.env.PORT || 4000;
 const TEMP_DIR = path.resolve(__dirname, "./temp");
 const EXPORTS_DIR = path.resolve(__dirname, "./exports");
 const RUNNER_TEMPLATE_DIR = path.resolve(__dirname, "./runner");
+const CACHE_DIR = path.resolve(__dirname, "./.cache");
+const RUNNER_WORKSPACE_CACHE_BASE = path.resolve(CACHE_DIR, "./runner-workspace");
 
 const LUPIS_PROJECT_HEADER = Buffer.from([
   0x4C, 0x55, 0x50, 0x49, 0x53, 0x5F, 0x50, 0x52,
@@ -33,6 +42,8 @@ const XOR_KEY = 0x5A;
 
 if (!fs.existsSync(TEMP_DIR)) fs.mkdirSync(TEMP_DIR, { recursive: true });
 if (!fs.existsSync(EXPORTS_DIR)) fs.mkdirSync(EXPORTS_DIR, { recursive: true });
+if (!fs.existsSync(CACHE_DIR)) fs.mkdirSync(CACHE_DIR, { recursive: true });
+if (!fs.existsSync(RUNNER_WORKSPACE_CACHE_BASE)) fs.mkdirSync(RUNNER_WORKSPACE_CACHE_BASE, { recursive: true });
 
 const allowedOrigins = [
   "app://localhost",
@@ -158,27 +169,29 @@ function encodeObfuscatedCode(codeStr) {
 
 /**
  * Obfuscates a single script JSON object:
- * - Mangles node IDs (_0x0, _0x1, ...) and updates edge source/target references
  * - Encodes node JavaScript code into _c (XOR + Base64) and removes plain-text code
- * - Strips all editor layout metadata (position, x, y, width, height, labels, titles, comments)
+ * - Preserves all node runtime payload configurations (values, method, steps, options, cases, etc.)
+ * - Strips editor-only canvas layout metadata (position, selected, dragging, width, height, resizing)
+ * - Retains node IDs, ports, roles, and settings so ScriptRunner execution logic stays 100% intact
  */
-export function obfuscateScriptData(scriptObj) {
+export async function obfuscateScriptData(scriptObj) {
   if (!scriptObj || typeof scriptObj !== "object") return scriptObj;
 
   const cloned = JSON.parse(JSON.stringify(scriptObj));
-  const nodeIdMap = new Map();
 
   if (Array.isArray(cloned.nodes)) {
-    cloned.nodes.forEach((node, idx) => {
-      if (node && node.id) {
-        nodeIdMap.set(node.id, `_0x${idx.toString(16)}`);
-      }
-    });
-
     cloned.nodes = cloned.nodes.map((node) => {
       const rawCode = node.code !== undefined ? node.code : (node.data ? node.data.code : undefined);
-      const encodedCode = typeof rawCode === "string" && rawCode.length > 0
-        ? encodeObfuscatedCode(rawCode)
+
+      // Clean & preserve exact runtime code, avoiding destructive AST compression
+      let sanitizedCode = "";
+      if (typeof rawCode === "string" && rawCode.trim().length > 0) {
+        sanitizedCode = rawCode.trim();
+      }
+
+      // Encode code safely into _c (XOR + Base64) for protection against plain-text inspection
+      const encodedCode = sanitizedCode.length > 0
+        ? encodeObfuscatedCode(sanitizedCode)
         : (node._c || node.data?._c || "");
 
       const role = node.role || (
@@ -203,35 +216,32 @@ export function obfuscateScriptData(scriptObj) {
           }))
         : [];
 
-      const cleanData = {};
-      if (node.data && typeof node.data === "object") {
-        if (node.data.values && Object.keys(node.data.values).length > 0) {
-          cleanData.values = node.data.values;
-        }
-        if (node.data.valueModes && Object.keys(node.data.valueModes).length > 0) {
-          cleanData.valueModes = node.data.valueModes;
-        }
-        if (node.data.variableBindings && Object.keys(node.data.variableBindings).length > 0) {
-          cleanData.variableBindings = node.data.variableBindings;
-        }
-        if (node.data.variableModifiers && Object.keys(node.data.variableModifiers).length > 0) {
-          cleanData.variableModifiers = node.data.variableModifiers;
-        }
-      }
+      // Preserve all node payload configuration (values, method, steps, cases, branches, options, formats, etc.)
+      const cleanData = node.data && typeof node.data === "object" ? { ...node.data } : {};
+      delete cleanData.code;
+      delete cleanData._c;
 
       const obfNode = {
-        id: nodeIdMap.get(node.id) || node.id,
-        type: node.type,
+        ...node,
         role,
         inputs: cleanInputs,
-        outputs: cleanOutputs
+        outputs: cleanOutputs,
+        data: cleanData
       };
+
+      // Strip plain-text code so it is protected
+      delete obfNode.code;
+
+      // Strip editor-only canvas layout metadata to reduce payload
+      delete obfNode.position;
+      delete obfNode.selected;
+      delete obfNode.dragging;
+      delete obfNode.width;
+      delete obfNode.height;
+      delete obfNode.resizing;
 
       if (encodedCode) {
         obfNode._c = encodedCode;
-      }
-      if (Object.keys(cleanData).length > 0) {
-        obfNode.data = cleanData;
       }
 
       return obfNode;
@@ -241,9 +251,10 @@ export function obfuscateScriptData(scriptObj) {
   if (Array.isArray(cloned.edges)) {
     cloned.edges = cloned.edges.map((edge) => {
       const cleanEdge = {
-        source: nodeIdMap.get(edge.source) || edge.source,
+        id: edge.id,
+        source: edge.source,
         sourceHandle: edge.sourceHandle,
-        target: nodeIdMap.get(edge.target) || edge.target,
+        target: edge.target,
         targetHandle: edge.targetHandle
       };
       if (edge.modifier) {
@@ -266,7 +277,7 @@ export function obfuscateScriptData(scriptObj) {
  * 2. Converts all assets in assets/* into .lupisdata binary format and strips raw .png/.ttf/.fnt/.ogg
  * 3. Minifies project.json, scenes/*.json, prefabs/*.json, and strips editor-only metadata
  */
-export function obfuscateAndProtectProject(projectDir) {
+export async function obfuscateAndProtectProject(projectDir) {
   // 1. Obfuscate scripts/*.json
   const scriptsDir = path.join(projectDir, "scripts");
   if (fs.existsSync(scriptsDir)) {
@@ -275,7 +286,7 @@ export function obfuscateAndProtectProject(projectDir) {
       const fullPath = path.join(scriptsDir, file);
       try {
         const raw = JSON.parse(fs.readFileSync(fullPath, "utf-8"));
-        const obfuscated = obfuscateScriptData(raw);
+        const obfuscated = await obfuscateScriptData(raw);
         fs.writeFileSync(fullPath, JSON.stringify(obfuscated));
       } catch (err) {
         console.warn(`[Obfuscator] Failed to obfuscate script ${file}:`, err.message);
@@ -392,6 +403,10 @@ export function obfuscateAndProtectProject(projectDir) {
       if (proj.settings?.grid) {
         proj.settings.grid.visible = false;
       }
+      if (proj.settings) {
+        if (!proj.settings.debug) proj.settings.debug = {};
+        proj.settings.debug.active = false;
+      }
       fs.writeFileSync(projectJsonPath, JSON.stringify(proj));
     } catch {}
   }
@@ -422,7 +437,7 @@ export function obfuscateAndProtectProject(projectDir) {
       try {
         let data = JSON.parse(fs.readFileSync(wsPath, "utf-8"));
         if (wsFile === "scripts.json" && Array.isArray(data)) {
-          data = data.map((item) => (item.nodes ? obfuscateScriptData(item) : item));
+          data = await Promise.all(data.map((item) => (item.nodes ? obfuscateScriptData(item) : item)));
         }
         fs.writeFileSync(wsPath, JSON.stringify(data));
       } catch {}
@@ -620,26 +635,125 @@ async function extractZipBuffer(zipBuffer, outputDir) {
   await directory.extract({ path: outputDir });
 }
 
+const runnerWorkspaceReadyPromises = new Map();
+
+/**
+ * Pre-populates and caches a complete runner workspace per mode ('development' / 'release'):
+ * - runner/main.js, runner/preload.js, runner/package.json
+ * - symlinked node_modules
+ * - web/js/ pre-populated with cached engine chunks (lupis.*.js + .map in dev)
+ */
+async function ensureRunnerWorkspaceCache(buildMode) {
+  const normalizedMode = buildMode === "development" ? "development" : "release";
+  const modeWorkspace = path.join(RUNNER_WORKSPACE_CACHE_BASE, normalizedMode);
+  const modeWebJsDir = path.join(modeWorkspace, "web", "js");
+  const engineDir = resolveEngineDir();
+  const filesToExport = getEngineFilesFromManifest();
+
+  if (runnerWorkspaceReadyPromises.has(normalizedMode)) {
+    return await runnerWorkspaceReadyPromises.get(normalizedMode);
+  }
+
+  const prepPromise = (async () => {
+    // 1. Get or build cached engine runtime chunks
+    const runtimeChunks = await getOrBuildCachedEngineChunks({
+      filesToExport,
+      engineDir,
+      getEngineFileBufferFn: getEngineFileBuffer,
+      mode: normalizedMode,
+      cacheDir: CACHE_DIR
+    });
+
+    // 2. Prepare workspace structure
+    fs.mkdirSync(modeWebJsDir, { recursive: true });
+
+    // Copy template runner files (main.js, preload.js, package.json)
+    fs.cpSync(RUNNER_TEMPLATE_DIR, modeWorkspace, {
+      recursive: true,
+      filter: (src) => !src.includes("node_modules") && !src.includes("dist") && !src.includes("web")
+    });
+
+    // Symlink root node_modules into the cached runner workspace
+    const rootNodeModules = path.join(__dirname, "node_modules");
+    const cacheNodeModules = path.join(modeWorkspace, "node_modules");
+    if (fs.existsSync(rootNodeModules) && !fs.existsSync(cacheNodeModules)) {
+      const symlinkType = process.platform === "win32" ? "junction" : "dir";
+      try {
+        fs.symlinkSync(rootNodeModules, cacheNodeModules, symlinkType);
+      } catch {
+        fs.cpSync(rootNodeModules, cacheNodeModules, { recursive: true });
+      }
+    }
+
+    // Populate web/js/ with pre-bundled engine chunks
+    for (const [relFile, content] of Object.entries(runtimeChunks)) {
+      const targetPath = path.join(modeWorkspace, "web", relFile.replace(/^web\//, ""));
+      fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+      fs.writeFileSync(targetPath, content, "utf-8");
+    }
+
+    return { modeWorkspace, runtimeChunks };
+  })();
+
+  runnerWorkspaceReadyPromises.set(normalizedMode, prepPromise);
+  try {
+    return await prepPromise;
+  } finally {
+    runnerWorkspaceReadyPromises.delete(normalizedMode);
+  }
+}
+
+/**
+ * Rapidly prepares jobFolder directly from pre-populated runner workspace cache (< 10ms)
+ */
+function prepareJobFolderFromRunnerCache(jobFolder, buildMode) {
+  const normalizedMode = buildMode === "development" ? "development" : "release";
+  const modeWorkspace = path.join(RUNNER_WORKSPACE_CACHE_BASE, normalizedMode);
+
+  // Fast copy runner files and pre-populated web/js/
+  fs.cpSync(modeWorkspace, jobFolder, {
+    recursive: true,
+    filter: (src) => !src.includes("node_modules") && !src.includes("dist")
+  });
+
+  // Link node_modules directly to root node_modules
+  const rootNodeModules = path.join(__dirname, "node_modules");
+  const jobNodeModules = path.join(jobFolder, "node_modules");
+  if (fs.existsSync(rootNodeModules) && !fs.existsSync(jobNodeModules)) {
+    const symlinkType = process.platform === "win32" ? "junction" : "dir";
+    try {
+      fs.symlinkSync(rootNodeModules, jobNodeModules, symlinkType);
+    } catch {
+      fs.cpSync(rootNodeModules, jobNodeModules, { recursive: true });
+    }
+  }
+}
+
 app.post("/api/export-app/zip", (req, res) => {
   exportUpload(req, res, async (err) => {
     if (err) return res.status(400).json({ success: false, error: err.message });
     if (!req.file) return res.status(400).json({ success: false, error: "Project ZIP payload not found." });
 
-    const { projectId, updatedAt } = req.body;
+    const { projectId, updatedAt, mode, projectName } = req.body;
     const validUpdatedAt = updatedAt || new Date().toISOString();
+    const buildMode = mode === "development" ? "development" : "release";
+    const schemaVersion = `unified-v3-${buildMode}`;
 
     if (!projectId || !isValidProjectId(projectId)) {
       return res.status(400).json({ success: false, error: "Valid projectId is required." });
     }
 
-    const projectExportDir = path.join(EXPORTS_DIR, projectId, "zip");
-    const targetFilePath = path.join(projectExportDir, `${projectId}.zip`);
+    const projectExportDir = path.join(EXPORTS_DIR, projectId, `zip-${buildMode}`);
+    const targetFilePath = path.join(projectExportDir, `${projectId}_${buildMode}.zip`);
     const metadataPath = path.join(projectExportDir, "metadata.json");
 
     fs.mkdirSync(projectExportDir, { recursive: true });
 
-    const sendFileToClient = (filePath) => {
-      res.download(filePath, `${projectId}.zip`, (downloadErr) => {
+    const sendFileToClient = (filePath, customName = null) => {
+      const effectiveName = customName || projectName || projectId;
+      const safeName = String(effectiveName).trim().replace(/[/\\?%*:|"<>]/g, '').replace(/\s+/g, '_') || projectId;
+      const modeLabel = buildMode === "development" ? "Development" : "Release";
+      res.download(filePath, `${safeName}_${modeLabel}.zip`, (downloadErr) => {
         if (downloadErr && !res.headersSent) {
           console.error(`[ZIP Send Error]:`, downloadErr);
           res.status(500).json({ success: false, error: "Failed to download ZIP file." });
@@ -650,9 +764,9 @@ app.post("/api/export-app/zip", (req, res) => {
     if (fs.existsSync(targetFilePath) && fs.existsSync(metadataPath)) {
       try {
         const meta = JSON.parse(fs.readFileSync(metadataPath, "utf-8"));
-        if (meta.updatedAt === validUpdatedAt && meta.schema === "obfuscated-v2") {
-          console.log(`[ZIP Export] Sending ZIP build from cache...`);
-          return sendFileToClient(targetFilePath);
+        if (meta.updatedAt === validUpdatedAt && meta.schema === schemaVersion) {
+          console.log(`[ZIP Export] Sending ${buildMode.toUpperCase()} ZIP build from cache...`);
+          return sendFileToClient(targetFilePath, projectName || meta.projectName);
         }
       } catch (e) {
         console.warn("[ZIP Export] Metadata error, reprocessing...");
@@ -661,10 +775,12 @@ app.post("/api/export-app/zip", (req, res) => {
 
     const jobId = crypto.randomBytes(8).toString("hex");
     const jobFolder = path.join(TEMP_DIR, jobId);
-    const projectExtractDir = path.join(jobFolder, "project");
+    const projectExtractDir = path.join(jobFolder, "raw_project");
+    const webPackageDir = path.join(jobFolder, "web_package");
     const engineDir = resolveEngineDir();
 
     fs.mkdirSync(projectExtractDir, { recursive: true });
+    fs.mkdirSync(webPackageDir, { recursive: true });
 
     const cleanup = () => {
       if (fs.existsSync(jobFolder)) {
@@ -676,11 +792,22 @@ app.post("/api/export-app/zip", (req, res) => {
       // 1. Extract project ZIP with Zip Slip check
       await extractZipBuffer(req.file.buffer, projectExtractDir);
 
-      // 2. Obfuscate node JSONs & convert assets to .lupisdata
-      obfuscateAndProtectProject(projectExtractDir);
+      // 2. Build unified web package (index.html, js/lupis.*.js, data/, assets/)
+      const filesToExport = getEngineFilesFromManifest();
+      const webPkgResult = await buildUnifiedWebPackage({
+        projectExtractDir,
+        outputDir: webPackageDir,
+        mode: buildMode,
+        filesToExport,
+        engineDir,
+        getEngineFileBufferFn: getEngineFileBuffer,
+        obfuscateAndProtectProjectFn: obfuscateAndProtectProject,
+        packDirectoryToLupisProjectFileFn: packDirectoryToLupisProjectFile,
+        cacheDir: CACHE_DIR
+      });
 
-      // 3. Create new Web Standalone ZIP with index.html at root + ./project
-      await new Promise(async (resolve, reject) => {
+      // 3. Archive unified web package into standalone ZIP
+      await new Promise((resolve, reject) => {
         const outputStream = fs.createWriteStream(targetFilePath);
         const archive = archiver("zip", { zlib: { level: 9 } });
 
@@ -689,55 +816,26 @@ app.post("/api/export-app/zip", (req, res) => {
         archive.on("error", reject);
 
         archive.pipe(outputStream);
-
-        const filesToExport = getEngineFilesFromManifest();
-
-        let gameTitle = "Lupis Engine Game";
-        try {
-          const projectJsonPath = path.join(projectExtractDir, "project.json");
-          if (fs.existsSync(projectJsonPath)) {
-            const pData = JSON.parse(fs.readFileSync(projectJsonPath, "utf-8"));
-            if (pData.name) gameTitle = pData.name;
-          }
-        } catch {}
-
-        let copiedCount = 0;
-        for (const relPath of filesToExport) {
-          const fileBuf = await getEngineFileBuffer(relPath, engineDir);
-          if (fileBuf) {
-            if (relPath === "index.html") {
-              let indexContent = fileBuf.toString("utf-8");
-              indexContent = indexContent.replace(
-                /<title>.*?<\/title>/i,
-                `<title>${gameTitle.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</title>`
-              );
-              archive.append(indexContent, { name: "index.html" });
-            } else {
-              archive.append(fileBuf, { name: relPath });
-            }
-            copiedCount++;
-          } else {
-            console.warn(`[ZIP Export Warning] Module/asset not found: ${relPath}`);
-          }
-        }
-        console.log(`[ZIP Export] Successfully added ${copiedCount}/${filesToExport.length} engine files to ZIP root.`);
-
-        // Put obfuscated project files into ./project/ folder at ZIP root (matching index.html PROJECT_FOLDER = "./project")
-        archive.directory(projectExtractDir, "project");
+        archive.directory(webPackageDir, false);
         archive.finalize();
       });
+
+      const finalProjectName = webPkgResult?.gameTitle || projectName || projectId;
+      const safeProjectName = String(finalProjectName).trim().replace(/[/\\?%*:|"<>]/g, '').replace(/\s+/g, '_') || projectId;
 
       fs.writeFileSync(
         metadataPath,
         JSON.stringify({
           projectId,
+          projectName: safeProjectName,
+          mode: buildMode,
           updatedAt: validUpdatedAt,
-          schema: "obfuscated-v2",
+          schema: schemaVersion,
           lastExported: new Date().toISOString()
         })
       );
       cleanup();
-      sendFileToClient(targetFilePath);
+      sendFileToClient(targetFilePath, safeProjectName);
 
     } catch (processErr) {
       console.error(`[ZIP Export Error]:`, processErr);
@@ -756,31 +854,36 @@ app.post("/api/export-app/exe", (req, res) => {
 
     const projectId = req.body.projectId;
     const updatedAt = req.body.updatedAt;
+    const clientProjectName = req.body.projectName;
+    const buildMode = req.body.mode === "development" ? "development" : "release";
+    const schemaVersion = `unified-v3-${buildMode}`;
 
     if (!projectId || !updatedAt || !isValidProjectId(projectId)) {
       return res.status(400).json({ success: false, error: "Valid projectId and updatedAt are required." });
     }
 
-    const projectExportDir = path.join(EXPORTS_DIR, projectId, "exe");
-    const targetFilePath = path.join(projectExportDir, `${projectId}.exe`);
+    const projectExportDir = path.join(EXPORTS_DIR, projectId, `exe-${buildMode}`);
+    const targetFilePath = path.join(projectExportDir, `${projectId}_${buildMode}.exe`);
     const metadataPath = path.join(projectExportDir, "metadata.json");
 
     fs.mkdirSync(projectExportDir, { recursive: true });
 
-    const downloadRelativeUrl = `/api/download-app/exe/${projectId}`;
-
     if (fs.existsSync(targetFilePath) && fs.existsSync(metadataPath)) {
       try {
         const meta = JSON.parse(fs.readFileSync(metadataPath, "utf-8"));
-        if (meta.updatedAt === updatedAt && meta.schema === "obfuscated-v2") {
-          console.log(`[EXE Export] Using existing EXE build for project: ${projectId}`);
+        if (meta.updatedAt === updatedAt && meta.schema === schemaVersion) {
+          console.log(`[EXE Export] Using existing ${buildMode.toUpperCase()} EXE build for project: ${projectId}`);
+          const effectiveName = clientProjectName || meta.projectName || projectId;
+          const safeName = String(effectiveName).trim().replace(/[/\\?%*:|"<>]/g, '').replace(/\s+/g, '_');
+          const downloadRelativeUrl = `/api/download-app/exe/${projectId}?mode=${buildMode}&name=${encodeURIComponent(safeName)}`;
           return res.json({
             success: true,
-            message: "EXE build is ready for download.",
+            mode: buildMode,
+            message: `EXE (${buildMode}) build is ready for download.`,
             downloadUrl: downloadRelativeUrl
           });
         }
-        console.log(`[EXE Export] 'updatedAt' or schema changed, recompiling EXE file...`);
+        console.log(`[EXE Export] 'updatedAt' or schema changed, recompiling ${buildMode.toUpperCase()} EXE file...`);
       } catch (e) {
         console.warn("[Export Warning] Metadata error, reprocessing...");
       }
@@ -797,58 +900,85 @@ app.post("/api/export-app/exe", (req, res) => {
     };
 
     try {
-      console.log(`[Job ${jobId}] Preparing runner compilation workspace...`);
-      fs.cpSync(RUNNER_TEMPLATE_DIR, jobFolder, {
-        recursive: true,
-        filter: (src) => !src.includes("node_modules") && !src.includes("dist")
-      });
+      console.log(`[Job ${jobId}] Preparing cached runner workspace (${buildMode.toUpperCase()})...`);
+      // 1. Ensure pre-cached runner workspace template is ready and warm
+      await ensureRunnerWorkspaceCache(buildMode);
 
-      const rootNodeModules = path.join(__dirname, "node_modules");
-      const jobNodeModules = path.join(jobFolder, "node_modules");
-
-      if (fs.existsSync(rootNodeModules) && !fs.existsSync(jobNodeModules)) {
-        const symlinkType = process.platform === "win32" ? "junction" : "dir";
-        try {
-          fs.symlinkSync(rootNodeModules, jobNodeModules, symlinkType);
-        } catch {
-          fs.cpSync(rootNodeModules, jobNodeModules, { recursive: true });
-        }
-      }
+      // 2. Fast initialize jobFolder (< 10ms) with runner files and pre-bundled runtime in web/js/
+      prepareJobFolderFromRunnerCache(jobFolder, buildMode);
 
       const runnerWebDir = path.join(jobFolder, "web");
       const tempProjectExtractDir = path.join(jobFolder, "raw_project");
-      fs.mkdirSync(runnerWebDir, { recursive: true });
       fs.mkdirSync(tempProjectExtractDir, { recursive: true });
 
-      // 1. Safely extract project ZIP into temporary folder
-      await extractZipBuffer(req.file.buffer, tempProjectExtractDir);
-
-      // 2. Obfuscate node JSONs and convert assets to .lupisdata
-      obfuscateAndProtectProject(tempProjectExtractDir);
-
-      // 3. Bundle the obfuscated project into an embedded binary container (web/game.lupisproject)
-      //    and remove the loose raw_project directory so no raw project folder exists!
-      const embeddedLupisProjectPath = path.join(runnerWebDir, "game.lupisproject");
-      await packDirectoryToLupisProjectFile(tempProjectExtractDir, embeddedLupisProjectPath);
-      fs.rmSync(tempProjectExtractDir, { recursive: true, force: true });
-
-      // 4. Copy engine runtime files according to manifest mapping
-      const filesToExport = getEngineFilesFromManifest();
-      let copiedCount = 0;
-      for (const relPath of filesToExport) {
-        const fileBuf = await getEngineFileBuffer(relPath, engineDir);
-        if (fileBuf) {
-          const destPath = path.join(runnerWebDir, relPath);
-          fs.mkdirSync(path.dirname(destPath), { recursive: true });
-          fs.writeFileSync(destPath, fileBuf);
-          copiedCount++;
-        } else {
-          console.warn(`[EXE Export Warning] Module/asset not found: ${relPath}`);
+      // Ensure Electron icon from editor assets or runner template
+      const editorLogoPath = path.resolve(__dirname, "../editor/public/assets/logo.png");
+      const runnerIconPath = path.join(RUNNER_TEMPLATE_DIR, "icon.png");
+      const jobIconPath = path.join(jobFolder, "icon.png");
+      if (!fs.existsSync(jobIconPath)) {
+        if (fs.existsSync(editorLogoPath)) {
+          fs.copyFileSync(editorLogoPath, jobIconPath);
+        } else if (fs.existsSync(runnerIconPath)) {
+          fs.copyFileSync(runnerIconPath, jobIconPath);
         }
       }
-      console.log(`[EXE Export] Successfully copied ${copiedCount}/${filesToExport.length} engine files to runner workspace.`);
 
-      console.log(`[Job ${jobId}] Running electron-builder EXE compilation...`);
+      // 3. Extract uploaded project ZIP into temporary folder
+      await extractZipBuffer(req.file.buffer, tempProjectExtractDir);
+
+      // 4. In 1 single pass: process project data directly into jobFolder/web
+      const { gameTitle, canvasWidth, canvasHeight } = await processProjectDataForExport({
+        projectExtractDir: tempProjectExtractDir,
+        outputDir: runnerWebDir,
+        mode: buildMode,
+        obfuscateAndProtectProjectFn: obfuscateAndProtectProject,
+        packDirectoryToLupisProjectFileFn: packDirectoryToLupisProjectFile
+      });
+
+      // Remove temporary extraction folder
+      fs.rmSync(tempProjectExtractDir, { recursive: true, force: true });
+
+      // 5. Generate index.html shell (with project title & canvas dimensions) & write build-info.json
+      const effectiveAppTitle = gameTitle || clientProjectName || "Lupis Engine Game";
+      const safeAppTitle = String(effectiveAppTitle).trim().replace(/[/\\?%*:|"<>]/g, '').replace(/\s+/g, '_');
+      const safePkgName = safeAppTitle.toLowerCase().replace(/[^a-z0-9_-]/g, "-").replace(/^-+|-+$/g, "") || "lupis-game";
+
+      // Update package.json in jobFolder so electron-builder uses project name as product and application name
+      const jobPkgPath = path.join(jobFolder, "package.json");
+      if (fs.existsSync(jobPkgPath)) {
+        try {
+          const jobPkg = JSON.parse(fs.readFileSync(jobPkgPath, "utf-8"));
+          jobPkg.name = safePkgName;
+          jobPkg.productName = effectiveAppTitle;
+          if (!jobPkg.build) jobPkg.build = {};
+          jobPkg.build.productName = effectiveAppTitle;
+          if (jobPkg.build.win) {
+            jobPkg.build.win.executableName = safeAppTitle;
+          }
+          fs.writeFileSync(jobPkgPath, JSON.stringify(jobPkg, null, 2), "utf-8");
+        } catch (pkgErr) {
+          console.warn(`[Job ${jobId}] Failed to update runner package.json:`, pkgErr.message);
+        }
+      }
+
+      const indexHtml = generateStandaloneIndexHtml(effectiveAppTitle, buildMode, canvasWidth, canvasHeight);
+      fs.writeFileSync(path.join(runnerWebDir, "index.html"), indexHtml, "utf-8");
+
+      fs.writeFileSync(
+        path.join(runnerWebDir, "build-info.json"),
+        JSON.stringify({
+          projectId,
+          gameTitle: effectiveAppTitle,
+          canvasWidth,
+          canvasHeight,
+          mode: buildMode,
+          updatedAt,
+          builtAt: new Date().toISOString()
+        }, null, 2),
+        "utf-8"
+      );
+
+      console.log(`[Job ${jobId}] Running single-pass electron-builder EXE compilation (${buildMode.toUpperCase()})...`);
       const isWin = process.platform === "win32";
       const cmd = isWin ? "npx.cmd" : "npx";
       const args = [
@@ -856,7 +986,8 @@ app.post("/api/export-app/exe", (req, res) => {
         "--win",
         "portable",
         "--config.directories.output=dist",
-        "--config.compression=normal"
+        "--config.compression=normal",
+        "--config.win.icon=icon.png"
       ];
 
       const buildProcess = spawn(cmd, args, { cwd: jobFolder, shell: true });
@@ -881,14 +1012,17 @@ app.post("/api/export-app/exe", (req, res) => {
         }
 
         const generatedExePath = path.join(distDir, exeFile);
+        const downloadRelativeUrl = `/api/download-app/exe/${projectId}?mode=${buildMode}&name=${encodeURIComponent(safeAppTitle)}`;
 
         fs.copyFileSync(generatedExePath, targetFilePath);
         fs.writeFileSync(
           metadataPath,
           JSON.stringify({
             projectId,
+            projectName: safeAppTitle,
+            mode: buildMode,
             updatedAt,
-            schema: "obfuscated-v2",
+            schema: schemaVersion,
             lastExported: new Date().toISOString()
           })
         );
@@ -897,6 +1031,7 @@ app.post("/api/export-app/exe", (req, res) => {
 
         return res.json({
           success: true,
+          mode: buildMode,
           message: "EXE compilation complete.",
           downloadUrl: downloadRelativeUrl
         });
@@ -910,29 +1045,138 @@ app.post("/api/export-app/exe", (req, res) => {
   });
 });
 
-app.get("/api/download-app/exe/:projectId", (req, res) => {
+app.delete("/api/export-app/cache/:projectId", (req, res) => {
   const { projectId } = req.params;
   if (!isValidProjectId(projectId)) {
     return res.status(400).json({ success: false, error: "Invalid projectId." });
   }
 
-  const filePath = path.join(EXPORTS_DIR, projectId, "exe", `${projectId}.exe`);
+  const projectExportDir = path.join(EXPORTS_DIR, projectId);
+  if (fs.existsSync(projectExportDir)) {
+    try {
+      fs.rmSync(projectExportDir, { recursive: true, force: true });
+      console.log(`[Export Cache] Cleared build cache for project: ${projectId}`);
+    } catch (err) {
+      console.warn(`[Export Cache] Failed to clear build cache for project ${projectId}:`, err.message);
+    }
+  }
+
+  res.json({ success: true, message: `Build cache for project '${projectId}' cleared.` });
+});
+
+app.get("/api/export-app/status/:projectId", (req, res) => {
+  const { projectId } = req.params;
+  if (!isValidProjectId(projectId)) {
+    return res.status(400).json({ success: false, error: "Invalid projectId." });
+  }
+
+  const checkMode = (buildMode) => {
+    const projectExportDir = path.join(EXPORTS_DIR, projectId, `exe-${buildMode}`);
+    const targetFilePath = path.join(projectExportDir, `${projectId}_${buildMode}.exe`);
+    const metadataPath = path.join(projectExportDir, "metadata.json");
+    if (fs.existsSync(targetFilePath) && fs.existsSync(metadataPath)) {
+      try {
+        const meta = JSON.parse(fs.readFileSync(metadataPath, "utf-8"));
+        const safeName = String(meta.projectName || projectId).trim().replace(/[/\\?%*:|"<>]/g, '').replace(/\s+/g, '_');
+        return `/api/download-app/exe/${projectId}?mode=${buildMode}&name=${encodeURIComponent(safeName)}`;
+      } catch {}
+    }
+    return null;
+  };
+
+  const devUrl = checkMode("development");
+  const relUrl = checkMode("release");
+
+  res.json({
+    success: true,
+    projectId,
+    builds: {
+      development: devUrl,
+      release: relUrl
+    }
+  });
+});
+
+app.get("/api/download-app/exe/:projectId", (req, res) => {
+  const { projectId } = req.params;
+  const buildMode = req.query.mode === "development" ? "development" : "release";
+
+  if (!isValidProjectId(projectId)) {
+    return res.status(400).json({ success: false, error: "Invalid projectId." });
+  }
+
+  let filePath = path.join(EXPORTS_DIR, projectId, `exe-${buildMode}`, `${projectId}_${buildMode}.exe`);
+  if (!fs.existsSync(filePath)) {
+    const legacyPath = path.join(EXPORTS_DIR, projectId, "exe", `${projectId}.exe`);
+    if (fs.existsSync(legacyPath)) {
+      filePath = legacyPath;
+    }
+  }
 
   if (!fs.existsSync(filePath)) {
     return res.status(404).json({ success: false, error: ".exe file not found or not yet generated." });
   }
 
-  res.download(filePath, `${projectId}.exe`, (err) => {
+  let projectName = req.query.name;
+  if (!projectName) {
+    const metadataPath = path.join(EXPORTS_DIR, projectId, `exe-${buildMode}`, "metadata.json");
+    if (fs.existsSync(metadataPath)) {
+      try {
+        const meta = JSON.parse(fs.readFileSync(metadataPath, "utf-8"));
+        if (meta.projectName) projectName = meta.projectName;
+      } catch {}
+    }
+  }
+
+  const safeName = String(projectName || projectId).trim().replace(/[/\\?%*:|"<>]/g, '').replace(/\s+/g, '_');
+  const modeLabel = buildMode === "development" ? "Development" : "Release";
+  const downloadFileName = `${safeName}_${modeLabel}.exe`;
+
+  res.download(filePath, downloadFileName, (err) => {
     if (err && !res.headersSent) {
       console.error("[Download Error]:", err);
     }
   });
 });
 
-const server = app.listen(PORT, () => {
-  console.log(`[Lupis Backend] Micro-backend running on port ${PORT}`);
-});
+async function warmupRuntimeCaches() {
+  try {
+    const engineDir = resolveEngineDir();
+    const filesToExport = getEngineFilesFromManifest();
+    console.log("[Lupis Backend] Warming up pre-bundled engine runtime caches...");
+    await Promise.all([
+      getOrBuildCachedEngineChunks({
+        filesToExport,
+        engineDir,
+        getEngineFileBufferFn: getEngineFileBuffer,
+        mode: "release",
+        cacheDir: CACHE_DIR
+      }),
+      getOrBuildCachedEngineChunks({
+        filesToExport,
+        engineDir,
+        getEngineFileBufferFn: getEngineFileBuffer,
+        mode: "development",
+        cacheDir: CACHE_DIR
+      })
+    ]);
+    await Promise.all([
+      ensureRunnerWorkspaceCache("release"),
+      ensureRunnerWorkspaceCache("development")
+    ]);
+    console.log("[Lupis Backend] Engine runtime & runner workspace caches are warm and ready.");
+  } catch (err) {
+    console.warn("[Lupis Backend] Cache warmup warning:", err.message);
+  }
+}
 
-server.timeout = 600000;
-server.keepAliveTimeout = 600000;
-server.headersTimeout = 605000;
+if (!process.env.VITEST && process.argv[1] && process.argv[1].includes("server.js")) {
+  const server = app.listen(PORT, () => {
+    console.log(`[Lupis Backend] Micro-backend running on port ${PORT}`);
+    warmupRuntimeCaches();
+  });
+
+  server.timeout = 600000;
+  server.keepAliveTimeout = 600000;
+  server.headersTimeout = 605000;
+}

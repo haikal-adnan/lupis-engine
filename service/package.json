@@ -17,6 +17,7 @@
     "express": "^5.2.1",
     "msdf-bmfont-xml": "^2.6.0",
     "multer": "^2.0.2",
+    "terser": "^5.51.2",
     "unzipper": "^0.12.3"
   },
   "devDependencies": {

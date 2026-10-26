@@ -11,13 +11,16 @@
     "removePackageScripts": true,
     "nodeGypRebuild": false,
     "buildDependenciesFromSource": false,
+    "icon": "icon.png",
     "files": [
       "main.js",
       "preload.js",
-      "web/**/*"
+      "web/**/*",
+      "icon.png"
     ],
     "win": {
       "target": ["portable"],
+      "icon": "icon.png",
       "signAndEditExecutable": false,
       "verifyUpdateCodeSignature": false
     }

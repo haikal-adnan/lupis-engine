@@ -298,22 +298,33 @@ export function useOPFSActions() {
   };
 
   // Packages and encodes a project into a .lupisproject download
-  const exportToLupisProject = async (projectId = null) => {
+  const exportToLupisProject = async (projectId = null, preferredProjectName = null) => {
     opfsStore.setLoading(true);
     try {
       const projectsRootDir = await getProjectsRootDirectory();
       const targetProjectDir = await resolveDirectoryPath(projectsRootDir, String(projectId), { create: false });
 
-      let fileName = String(projectId);
-      try {
-        const projectJsonHandle = await targetProjectDir.getFileHandle('project.json');
-        const projectJsonFile = await projectJsonHandle.getFile();
-        const projectData = JSON.parse(await projectJsonFile.text());
+      let fileName = preferredProjectName ? String(preferredProjectName).trim().replace(/[/\\?%*:|"<>]/g, '').replace(/\s+/g, '_') : null;
+      if (!fileName) {
+        try {
+          const projectJsonHandle = await targetProjectDir.getFileHandle('project.json');
+          const projectJsonFile = await projectJsonHandle.getFile();
+          const projectData = JSON.parse(await projectJsonFile.text());
 
-        const sanitizedName = projectData.name.trim().replace(/[/\\?%*:|"<>]/g, '').replace(/\s+/g, '_');
-        fileName = sanitizedName;
-      } catch (e) {
-        console.warn('Failed to read name from project.json, using ID as filename:', e);
+          if (projectData.name) {
+            fileName = projectData.name.trim().replace(/[/\\?%*:|"<>]/g, '').replace(/\s+/g, '_');
+          }
+        } catch (e) {
+          console.warn('Failed to read name from project.json, using fallback filename:', e);
+        }
+      }
+
+      if (!fileName && projectStore?.projectName) {
+        fileName = projectStore.projectName.trim().replace(/[/\\?%*:|"<>]/g, '').replace(/\s+/g, '_');
+      }
+
+      if (!fileName) {
+        fileName = String(projectId || 'project');
       }
 
       const zip = new JSZip();

@@ -33,7 +33,7 @@ export default class GLAudioResource {
         resolvedSrc = `opfs://projects/${opfsConfig.projectId}/${rawFileName}`;
       } 
       else if (typeof opfsConfig === 'string' && opfsConfig.length > 0) {
-        const cleanBaseURL = opfsConfig.replace(/\/$/, "");
+        const cleanBaseURL = LupisPackageHelper.resolveAssetBaseUrl(opfsConfig);
         const targetFile = (asset.meta?.protected || asset.meta?.lupisDataFile) ? protectedFileName : rawFileName;
 
         resolvedSrc = (asset.fileUrl && (asset.fileUrl.startsWith('http') || asset.fileUrl.startsWith('/')) && !asset.meta?.protected)

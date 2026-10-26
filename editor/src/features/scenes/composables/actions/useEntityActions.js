@@ -756,6 +756,15 @@ export function useEntityActions() {
         recordPropChange(entityId, propName, oldValue, value);
       }
 
+      if (engineBridge && engineBridge.updateEntityProp) {
+        engineBridge.updateEntityProp({ id: entityId, prop: propName, value });
+        if (propName === 'tags') {
+          engineBridge.updateEntityProp({ id: entityId, prop: 'tag', value: entity.tag });
+        } else if (propName === 'tag') {
+          engineBridge.updateEntityProp({ id: entityId, prop: 'tags', value: entity.tags });
+        }
+      }
+
       return { id: entityId, prop: propName, value };
     }
     return false;
@@ -839,6 +848,10 @@ export function useEntityActions() {
     if (recordHistory) {
       const { recordAddComponent } = useSceneHistory();
       recordAddComponent(entityId, componentName);
+    }
+
+    if (engineBridge && engineBridge.addComponent) {
+      engineBridge.addComponent({ entityId, componentName, data: newComponentData });
     }
 
     return { entityId, componentName, data: newComponentData };

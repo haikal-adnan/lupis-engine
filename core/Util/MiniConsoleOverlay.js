@@ -3,6 +3,19 @@ import Config from "../Core/Config.js";
 
 export default class MiniConsoleOverlay {
     constructor(container, debugConfig = {}) {
+        const isRelease = globalThis.__LUPIS_BUILD_MODE__ === 'release' || 
+                          globalThis.__LUPIS_ENV__?.MODE === 'production';
+        if (isRelease) {
+            this.container = null;
+            this.config = { active: false };
+            this.logs = [];
+            this.domElement = null;
+            this.logContainer = null;
+            this.isVisible = false;
+            this._listeners = [];
+            this._onKeyDown = null;
+            return;
+        }
         this.container = container || document.body;
         this.config = {
             active: debugConfig.active ?? true,

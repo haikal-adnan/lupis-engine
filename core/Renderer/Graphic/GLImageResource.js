@@ -27,7 +27,7 @@ export default class GLImageResource {
         objectUrl = await this._getOpfsBlobUrl(opfsConfig.projectId, rawFileName);
         srcForImage = objectUrl;
       } else if (typeof opfsConfig === 'string' && opfsConfig.length > 0) {
-        const cleanBaseURL = opfsConfig.replace(/\/$/, "");
+        const cleanBaseURL = LupisPackageHelper.resolveAssetBaseUrl(opfsConfig);
         const targetFile = (asset.meta?.protected || asset.meta?.lupisDataFile) ? protectedFileName : rawFileName;
 
         if (asset.fileUrl && (asset.fileUrl.startsWith('http') || asset.fileUrl.startsWith('/')) && !asset.meta?.protected) {
@@ -52,7 +52,7 @@ export default class GLImageResource {
             objectUrl = await LupisPackageHelper.createDecodedBlobUrl(srcForImage);
             srcForImage = objectUrl;
           } catch {
-            const cleanBaseURL = opfsConfig.replace(/\/$/, "");
+            const cleanBaseURL = LupisPackageHelper.resolveAssetBaseUrl(opfsConfig);
             const fallbackProtectedUrl = `${cleanBaseURL}/assets/${asset.fileKey}.lupisdata`;
             objectUrl = await LupisPackageHelper.createDecodedBlobUrl(fallbackProtectedUrl);
             srcForImage = objectUrl;

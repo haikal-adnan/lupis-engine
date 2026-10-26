@@ -22,7 +22,7 @@ export default class RuntimeLoader {
         };
 
         try {
-            reportProgress(`Menginisialisasi Sistem Core (${mode.toUpperCase()})...`, 10);
+            reportProgress("Initializing...", 10);
 
             bus.emit('console:log', {
                 type: 'log',
@@ -46,7 +46,7 @@ export default class RuntimeLoader {
                 : undefined;
             game.consoleBroadcaster = new ConsoleBroadcaster(consoleChannelName);
 
-            reportProgress("Membangun Prefab Library...", 30);
+            reportProgress("Building library...", 30);
             game.prefabSystem.initLibrary(prefabs);
             
             const totalScripts = Array.isArray(scripts) ? scripts.length : Object.keys(scripts).length;
@@ -57,7 +57,7 @@ export default class RuntimeLoader {
                 message: `Compiling and preparing ${totalScripts} blueprint scripts...`
             });
             
-            reportProgress("Mengkompilasi Blueprint Script...", 50);
+            reportProgress("Loading scripts...", 50);
             ScriptLoader.load(game, payload); 
             
             const totalAssets = Array.isArray(assets) ? assets.length : Object.keys(assets).length;
@@ -68,7 +68,7 @@ export default class RuntimeLoader {
                 message: `Loading ${totalAssets} project assets (Textures, Audio, Fonts)...`
             });
 
-            reportProgress(`Mengunduh ${totalAssets} Asset...`, 70);
+            reportProgress("Loading assets...", 70);
             
             const assetLoader = new AssetLoader(
                 new GLImageResource(game.renderer.gl),
@@ -79,7 +79,7 @@ export default class RuntimeLoader {
             
             await assetLoader.loadAsset(game.world, assets, baseURL, (assetMessage, assetProgress) => {
                 const scaledProgress = 70 + Math.floor((assetProgress / 100) * 20);
-                reportProgress(assetMessage, scaledProgress); 
+                reportProgress("Loading assets...", scaledProgress); 
             });
 
             bus.emit('console:log', {
@@ -89,18 +89,18 @@ export default class RuntimeLoader {
                 message: `All assets successfully cached into GPU memory.`
             });
 
-            reportProgress("Menyiapkan Scene Awal...", 90);
+            reportProgress("Loading scene...", 90);
             this._initScriptLibrary(game.world, scripts);
 
             const targetSceneId = project.settings?.initialSceneId;
             game.sceneSystem.setSceneCache(scenes, targetSceneId);
 
-            this._onPostInit(game, canvas, payload);
+            this._onPostInit(game, canvas, payload, mode);
 
-            reportProgress("Memulai Game Loop...", 98);
+            reportProgress("Starting...", 98);
             game.initLoop();
 
-            reportProgress("Game Siap!", 100);
+            reportProgress("Ready!", 100);
 
             bus.emit('console:log', {
                 type: 'log',
@@ -164,7 +164,19 @@ export default class RuntimeLoader {
         };
     }
 
-    _onPostInit(game, canvas, payload) {
+    _onPostInit(game, canvas, payload, mode) {
+        const isRelease = globalThis.__LUPIS_BUILD_MODE__ === 'release' || 
+                          globalThis.__LUPIS_ENV__?.MODE === 'production' ||
+                          mode === 'release' ||
+                          payload?.buildMode === 'release' ||
+                          payload?.project?.buildMode === 'release';
+        if (isRelease) {
+            if (game.miniConsole) {
+                game.miniConsole.destroy();
+                game.miniConsole = null;
+            }
+            return;
+        }
         const debugConfig = game.debugSettings;
         if (debugConfig && debugConfig.active !== false) {
             const parentElement = canvas.parentElement || document.body;

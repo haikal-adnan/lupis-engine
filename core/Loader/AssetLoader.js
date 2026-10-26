@@ -55,7 +55,7 @@ export default class AssetLoader {
         loadedAssets++;
         if (onProgress) {
           const percentage = Math.floor((loadedAssets / totalAssets) * 100);
-          onProgress(`Mengunduh ${asset.scriptId || 'Aset'}...`, percentage);
+          onProgress("Loading assets...", percentage);
         }
       }
     });

@@ -1,0 +1,75 @@
+{
+  "name": "lupis-engine",
+  "productName": "Lupis Engine",
+  "version": "0.1.0",
+  "description": "Lupis Engine - WebGL Game Engine & Visual Editor",
+  "main": "main.js",
+  "author": "Haikal Adnan",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron .",
+    "dev:live": "electron . --dev-server",
+    "build:editor": "cd ../editor && npm run build",
+    "pack": "npm run build:editor && electron-builder --dir",
+    "dist": "npm run build:editor && electron-builder --win nsis"
+  },
+  "build": {
+    "appId": "com.lupisengine.app",
+    "productName": "Lupis Engine",
+    "directories": {
+      "output": "dist",
+      "buildResources": "resources"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "!dist/**"
+    ],
+    "extraResources": [
+      {
+        "from": "../editor/dist",
+        "to": "editor/dist"
+      },
+      {
+        "from": "../service",
+        "to": "service",
+        "filter": [
+          "**/*",
+          "!temp/**",
+          "!exports/**",
+          "!.cache/**",
+          "!node_modules/electron/**",
+          "!node_modules/electron-builder/**"
+        ]
+      }
+    ],
+    "asar": true,
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "resources/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Lupis Engine",
+      "uninstallDisplayName": "Lupis Engine",
+      "deleteAppDataOnUninstall": false,
+      "runAfterFinish": true
+    }
+  },
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3"
+  }
+}

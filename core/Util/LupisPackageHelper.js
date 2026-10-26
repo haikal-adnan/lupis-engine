@@ -119,6 +119,17 @@ export class LupisPackageHelper {
     if (clean.startsWith('project/')) {
       clean = clean.slice('project/'.length);
     }
+    if (clean.startsWith('data/')) {
+      clean = clean.slice('data/'.length);
+    }
+    return clean;
+  }
+
+  static resolveAssetBaseUrl(baseURL = '') {
+    if (!baseURL || typeof baseURL !== 'string') return '.';
+    const clean = baseURL.replace(/\/$/, '');
+    if (clean === './data' || clean === 'data') return '.';
+    if (clean.endsWith('/data')) return clean.slice(0, -5) || '.';
     return clean;
   }
 
@@ -222,9 +233,34 @@ export class LupisPackageHelper {
         const rawBytes = this._virtualFiles.get(key);
         return this.decodeLupisDataBuffer(rawBytes);
       }
+      if ( !key.startsWith('assets/') && this._virtualFiles.has(`assets/${key}`) ) {
+        const rawBytes = this._virtualFiles.get(`assets/${key}`);
+        return this.decodeLupisDataBuffer(rawBytes);
+      }
     }
 
-    const res = await fetch(url);
+    let res = await fetch(url);
+    if (!res.ok) {
+      const altUrls = [];
+      if (url.includes('/data/assets/')) {
+        altUrls.push(url.replace('/data/assets/', '/assets/'));
+      } else if (url.includes('/project/assets/')) {
+        altUrls.push(url.replace('/project/assets/', '/assets/'));
+      } else if (url.startsWith('./assets/')) {
+        altUrls.push(url.replace('./assets/', './data/assets/'));
+        altUrls.push(url.replace('./assets/', './project/assets/'));
+      }
+      for (const altUrl of altUrls) {
+        try {
+          const altRes = await fetch(altUrl);
+          if (altRes.ok) {
+            res = altRes;
+            break;
+          }
+        } catch {}
+      }
+    }
+
     if (!res.ok) {
       throw new Error(`Failed to fetch asset buffer from ${url} (HTTP ${res.status})`);
     }

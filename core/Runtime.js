@@ -61,29 +61,50 @@ export async function startEngine(canvasSource, baseURL, initialData = {}, mode 
 
     try {
         let payload = initialData;
-        let effectiveBaseURL = baseURL || "./project";
+        let effectiveBaseURL = baseURL || "./data";
 
         if (!payload || !payload.assets) {
             let cleanBaseURL = effectiveBaseURL.replace(/\/$/, "");
 
-            if (cleanBaseURL.endsWith(".lupisproject")) {
-                const archiveLoaded = await LupisPackageHelper.tryLoadArchiveFromUrl(cleanBaseURL, "./project");
+            if (cleanBaseURL.endsWith(".lupisproject") || cleanBaseURL.endsWith(".data")) {
+                const targetAlias = cleanBaseURL.endsWith(".data") ? "./data" : "./project";
+                const archiveLoaded = await LupisPackageHelper.tryLoadArchiveFromUrl(cleanBaseURL, targetAlias);
                 if (!archiveLoaded) {
-                    throw new Error(`Failed to load or decode .lupisproject archive from ${cleanBaseURL}`);
+                    throw new Error(`Failed to load or decode binary archive from ${cleanBaseURL}`);
                 }
-                cleanBaseURL = "./project";
-                effectiveBaseURL = "./project";
+                cleanBaseURL = targetAlias;
+                effectiveBaseURL = targetAlias;
+            } else if (globalThis.__LUPIS_BUILD_MODE__ === "release" && !LupisPackageHelper.hasVirtualArchive()) {
+                await LupisPackageHelper.tryLoadArchiveFromUrl(`${cleanBaseURL}/game.data`, cleanBaseURL);
             }
 
-            const projectJsonUrl = `${cleanBaseURL}/project.json`;
+            let projectJsonUrl = `${cleanBaseURL}/project.json`;
             console.log(`[Main] ${mode.toUpperCase()} mode: Fetching project structure from ${cleanBaseURL}...`);
 
             let projectMeta = await LupisPackageHelper.fetchJson(projectJsonUrl, null);
 
             if (!projectMeta) {
-                const fallbackArchiveLoaded = await LupisPackageHelper.tryLoadArchiveFromUrl("./game.lupisproject", cleanBaseURL);
-                if (fallbackArchiveLoaded) {
-                    projectMeta = await LupisPackageHelper.fetchJson(projectJsonUrl, null);
+                const archiveCandidates = [
+                    `${cleanBaseURL}/game.data`,
+                    "./data/game.data",
+                    "./game.lupisproject"
+                ];
+                for (const candidateUrl of archiveCandidates) {
+                    const loaded = await LupisPackageHelper.tryLoadArchiveFromUrl(candidateUrl, cleanBaseURL);
+                    if (loaded) {
+                        projectMeta = await LupisPackageHelper.fetchJson(projectJsonUrl, null);
+                        if (projectMeta) break;
+                    }
+                }
+            }
+
+            if (!projectMeta && cleanBaseURL !== "./project") {
+                const legacyMeta = await LupisPackageHelper.fetchJson("./project/project.json", null);
+                if (legacyMeta) {
+                    projectMeta = legacyMeta;
+                    cleanBaseURL = "./project";
+                    effectiveBaseURL = "./project";
+                    projectJsonUrl = "./project/project.json";
                 }
             }
 
