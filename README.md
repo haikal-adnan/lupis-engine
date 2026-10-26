@@ -57,7 +57,7 @@ cd lupis-engine
 docker compose -f start.yml up
 ```
 
-Open **http://localhost:6500** to start using the editor.
+Open **http://localhost:37600** to start using the editor.
 
 ### Run without Docker
 
@@ -72,7 +72,7 @@ cd service && npm install && npm run dev
 cd editor && npm install && npm run dev
 ```
 
-Open **http://localhost:6500**, then load one of the sample projects from the [`examples/`](./examples) folder.
+Open **http://localhost:37600**, then load one of the sample projects from the [`examples/`](./examples) folder.
 
 ---
 
@@ -81,7 +81,7 @@ Open **http://localhost:6500**, then load one of the sample projects from the [`
 ```
 lupis-engine/
 ├── core/        # Engine runtime: WebGL renderer, physics, audio, ECS, scripting
-├── editor/      # Visual editor (Vue 3, Pinia, Vite), served on port 6500
+├── editor/      # Visual editor (Vue 3, Pinia, Vite), served on port 37600
 ├── service/     # Node.js backend: MSDF font generation, export, Electron packaging
 ├── tests/       # E2E and integration tests (Playwright)
 ├── examples/    # Ready-to-run sample projects
@@ -111,6 +111,7 @@ The full documentation is available **inside the editor** as a built-in help pan
 | --- | --- |
 | [`CONTRIBUTING.md`](./CONTRIBUTING.md) | Development setup, code style, pull request guidelines |
 | [`CHANGELOG.md`](./CHANGELOG.md) | Release history |
+| [`THIRD_PARTY.md`](./THIRD_PARTY.md) | Third-party notices and open source licenses |
 
 ---
 
@@ -168,3 +169,5 @@ The following items are planned and subject to change.
 ## License
 
 Released under the [MIT License](./LICENSE). Copyright © 2026 Haikal Adnan and contributors.
+
+For third-party software and font licenses, see [`THIRD_PARTY.md`](./THIRD_PARTY.md).

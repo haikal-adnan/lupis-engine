@@ -9,7 +9,7 @@ const chromiumUse = {
       '--ignore-gpu-blocklist',
       '--no-sandbox',
       '--disable-setuid-sandbox',
-      '--unsafely-treat-insecure-origin-as-secure=http://editor:6500,http://localhost:6500',
+      '--unsafely-treat-insecure-origin-as-secure=http://editor:37600,http://localhost:37600',
     ],
   },
 };
@@ -30,7 +30,7 @@ export default defineConfig({
     ['list'],
   ],
   use: {
-    baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:6500',
+    baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:37600',
     actionTimeout: 20_000,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
@@ -40,7 +40,7 @@ export default defineConfig({
     {
       command: 'node server.js',
       cwd: '../service',
-      url: 'http://localhost:4000/api/health',
+      url: 'http://localhost:37602/api/health',
       reuseExistingServer: !process.env.CI,
       timeout: 60_000,
       env: {
@@ -50,7 +50,7 @@ export default defineConfig({
     {
       command: 'npm run dev',
       cwd: '../editor',
-      url: 'http://localhost:6500',
+      url: 'http://localhost:37600',
       reuseExistingServer: !process.env.CI,
       timeout: 60_000,
       env: {

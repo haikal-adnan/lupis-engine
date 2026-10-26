@@ -1,7 +1,7 @@
 <template>
-  <div class="h-full flex flex-col justify-between p-2 sm:p-4 max-w-5xl mx-auto font-sans">
+  <div class="min-h-full flex flex-col justify-between p-1 sm:p-2 md:p-4 max-w-5xl mx-auto font-sans">
     
-    <div class="space-y-5">
+    <div class="space-y-4 sm:space-y-5">
       <!-- Section Header (Deskripsi Ringkas, Tanpa Icon) -->
       <div class="flex items-center justify-between pb-3 border-b border-border">
         <div>
@@ -18,7 +18,7 @@
       <div class="space-y-3.5">
         
         <!-- Option 1: Web Standalone (.ZIP) -->
-        <div class="bg-card/50 hover:bg-card border border-border hover:border-primary/40 rounded-xl p-4 transition-all duration-200 flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+        <div class="bg-card/50 hover:bg-card border border-border hover:border-primary/40 rounded-xl p-3.5 sm:p-4 transition-all duration-200 flex flex-col md:flex-row md:items-start justify-between gap-3 md:gap-4">
           <div class="space-y-1 flex-1 min-w-0">
             <div class="flex flex-wrap items-center gap-2">
               <h3 class="font-bold text-sm text-foreground">Web Standalone (.ZIP)</h3>
@@ -30,7 +30,7 @@
             </p>
           </div>
 
-          <div class="flex flex-col gap-2 shrink-0 w-full sm:w-48">
+          <div class="flex flex-col sm:flex-row md:flex-col gap-2 shrink-0 w-full md:w-48">
             <!-- Tombol Export Web Development -->
             <button
               data-testid="export-web-dev-btn"
@@ -56,7 +56,7 @@
         </div>
 
         <!-- Option 2: Windows Executable (.EXE) -->
-        <div class="bg-card/50 hover:bg-card border border-border hover:border-primary/40 rounded-xl p-4 transition-all duration-200 flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+        <div class="bg-card/50 hover:bg-card border border-border hover:border-primary/40 rounded-xl p-3.5 sm:p-4 transition-all duration-200 flex flex-col md:flex-row md:items-start justify-between gap-3 md:gap-4">
           <div class="space-y-1 flex-1 min-w-0">
             <div class="flex flex-wrap items-center gap-2">
               <h3 class="font-bold text-sm text-foreground">Desktop App (.EXE)</h3>
@@ -69,7 +69,7 @@
           </div>
 
           <!-- Dynamic Action Buttons in a Clean Column -->
-          <div class="flex flex-col gap-2 shrink-0 w-full sm:w-48">
+          <div class="flex flex-col sm:flex-row md:flex-col gap-2 shrink-0 w-full md:w-48">
             <!-- Build Dev EXE -->
             <button
               data-testid="export-exe-dev-btn"
@@ -95,7 +95,7 @@
         </div>
 
         <!-- Option 3: Lupis Project File (.lupisproject) -->
-        <div class="bg-card/50 hover:bg-card border border-border hover:border-emerald-500/40 rounded-xl p-4 transition-all duration-200 flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+        <div class="bg-card/50 hover:bg-card border border-border hover:border-emerald-500/40 rounded-xl p-3.5 sm:p-4 transition-all duration-200 flex flex-col md:flex-row md:items-start justify-between gap-3 md:gap-4">
           <div class="space-y-1 flex-1 min-w-0">
             <div class="flex items-center gap-2">
               <h3 class="font-bold text-sm text-foreground">Project Archive</h3>
@@ -106,7 +106,7 @@
             </p>
           </div>
 
-          <div class="flex flex-col gap-2 shrink-0 w-full sm:w-48">
+          <div class="flex flex-col gap-2 shrink-0 w-full md:w-48">
             <button
               @click="handleProjectExport"
               :disabled="isProcessing"

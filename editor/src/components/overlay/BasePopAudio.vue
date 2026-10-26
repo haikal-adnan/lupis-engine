@@ -24,7 +24,7 @@
     >
       <div 
         v-if="state.isOpen" 
-        class="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4 sm:p-6"
+        class="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-2.5 sm:p-4 md:p-6"
         @click.self="handleClose"
         role="dialog"
         aria-modal="true"
@@ -32,7 +32,7 @@
         data-testid="pop-audio-dialog"
       >
         <div 
-          class="bg-background border border-border rounded-lg shadow-2xl flex flex-col transform transition-all max-w-md w-full overflow-hidden"
+          class="bg-background border border-border rounded-lg shadow-2xl flex flex-col transform transition-all max-w-md w-full max-h-[calc(100vh-2rem)] overflow-hidden"
           :class="{ 'scale-100': state.isOpen, 'scale-95': !state.isOpen }"
         >
           <div class="px-4 py-3 border-b border-border bg-muted/30 flex justify-between items-center shrink-0">

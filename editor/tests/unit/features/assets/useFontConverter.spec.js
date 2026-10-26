@@ -16,7 +16,7 @@ describe('Unit Test: useFontConverter Composable', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
     workspaceStore = useWorkspaceStore();
-    workspaceStore.config.backendUrl = 'http://localhost:4000';
+    workspaceStore.config.backendUrl = 'http://localhost:37602';
 
     mockShowPop = vi.fn();
     vi.mocked(usePopAlert).mockReturnValue({ showPop: mockShowPop });
@@ -57,7 +57,7 @@ describe('Unit Test: useFontConverter Composable', () => {
     const result = await convertTtfToBmFont(mockFile);
 
     expect(global.fetch).toHaveBeenCalledWith(
-      'http://localhost:4000/api/convert-font',
+      'http://localhost:37602/api/convert-font',
       expect.objectContaining({
         method: 'POST',
         body: expect.any(FormData),

@@ -1,12 +1,15 @@
-const { app, protocol, BrowserWindow, ipcMain, shell, net } = require('electron');
+const { app, protocol, BrowserWindow, ipcMain, shell, net: electronNet } = require('electron');
 const path = require('path');
 const url = require('url');
 const fs = require('fs');
 const http = require('http');
-const { fork } = require('child_process');
+const net = require('net');
+const { fork, execSync } = require('child_process');
 
 let mainWindow = null;
 let backendProcess = null;
+let backendPort = 37602;
+let backendUrl = 'http://127.0.0.1:37602';
 
 // 1. Register 'app' custom scheme as standard & secure (Crucial for OPFS & Web Storage APIs)
 protocol.registerSchemesAsPrivileged([
@@ -51,43 +54,87 @@ function getServiceScriptPath() {
   return null;
 }
 
-// Check if backend service is already responding on port 4000
-function checkBackendActive(port = 4000) {
+// Check if a TCP port is currently free on 127.0.0.1
+function isPortAvailable(port) {
   return new Promise((resolve) => {
-    const req = http.get(`http://127.0.0.1:${port}/api/health`, (res) => {
-      resolve(res.statusCode < 500);
+    const tester = net.createServer();
+    tester.once('error', () => resolve(false));
+    tester.once('listening', () => {
+      tester.close(() => resolve(true));
     });
-    req.on('error', () => resolve(false));
-    req.setTimeout(1000, () => {
-      req.destroy();
-      resolve(false);
-    });
+    tester.listen(port, '127.0.0.1');
   });
 }
 
-// Start backend service in background if not already running
-async function ensureBackendRunning() {
-  const isActive = await checkBackendActive(4000);
-  if (isActive) {
-    console.log('[Lupis Electron] Service is already active on port 4000.');
-    return;
+// Find the first free TCP port starting from startPort
+async function findAvailablePort(startPort = 37602, maxAttempts = 50) {
+  for (let port = startPort; port < startPort + maxAttempts; port++) {
+    const available = await isPortAvailable(port);
+    if (available) return port;
   }
+  return startPort;
+}
 
+// Wait until backend service is up and responds to /api/health
+function waitForBackendReady(port, timeoutMs = 15000) {
+  const startTime = Date.now();
+  return new Promise((resolve) => {
+    const check = () => {
+      const req = http.get(`http://127.0.0.1:${port}/api/health`, (res) => {
+        if (res.statusCode < 500) {
+          resolve(true);
+        } else {
+          retry();
+        }
+      });
+      req.on('error', () => retry());
+      req.setTimeout(1000, () => {
+        req.destroy();
+        retry();
+      });
+    };
+
+    const retry = () => {
+      if (Date.now() - startTime > timeoutMs) {
+        resolve(false);
+      } else {
+        setTimeout(check, 200);
+      }
+    };
+
+    check();
+  });
+}
+
+// Start standalone backend service in background
+async function ensureBackendRunning() {
   const scriptPath = getServiceScriptPath();
   if (!scriptPath) {
     console.warn('[Lupis Electron] Backend script server.js not found, skipping background service start.');
     return;
   }
 
+  // Find a dedicated free port so standalone never collides with external Docker or other services
+  backendPort = await findAvailablePort(37602);
+  backendUrl = `http://127.0.0.1:${backendPort}`;
+  console.log(`[Lupis Electron] Spawning standalone backend on port ${backendPort} from: ${scriptPath}`);
+
   try {
-    console.log(`[Lupis Electron] Spawning backend service from: ${scriptPath}`);
+    const serviceCwd = path.dirname(scriptPath);
+    let userDataPath = '';
+    try {
+      userDataPath = app.getPath('userData');
+    } catch {}
+
     backendProcess = fork(scriptPath, [], {
-      cwd: path.dirname(scriptPath),
+      cwd: serviceCwd,
       env: {
         ...process.env,
-        PORT: '4000'
+        PORT: String(backendPort),
+        ELECTRON_RUN_AS_NODE: '1',
+        LUPIS_USER_DATA: userDataPath
       },
-      stdio: 'pipe'
+      stdio: ['pipe', 'pipe', 'pipe', 'ipc']
     });
 
     if (backendProcess.stdout) {
@@ -101,6 +148,13 @@ async function ensureBackendRunning() {
       console.log(`[Lupis Electron] Backend service exited with code ${code}, signal ${signal}`);
       backendProcess = null;
     });
+
+    const isReady = await waitForBackendReady(backendPort, 15000);
+    if (isReady) {
+      console.log(`[Lupis Electron] Standalone backend is active and ready on ${backendUrl}`);
+    } else {
+      console.warn(`[Lupis Electron] Standalone backend did not respond within 15s.`);
+    }
   } catch (err) {
     console.error('[Lupis Electron] Failed to start backend service process:', err);
   }
@@ -142,7 +196,7 @@ if (!gotSingleInstanceLock) {
           }
         }
 
-        return await net.fetch(url.pathToFileURL(targetFile).toString());
+        return await electronNet.fetch(url.pathToFileURL(targetFile).toString());
       } catch (err) {
         console.error('[Protocol app:// error]', err);
         return new Response('Not Found', { status: 404 });
@@ -168,8 +222,8 @@ function createMainWindow() {
     title: 'Lupis Engine',
     width: 1400,
     height: 900,
-    minWidth: 1024,
-    minHeight: 700,
+    minWidth: 800,
+    minHeight: 560,
     backgroundColor: '#1e2025',
     icon: path.join(__dirname, 'resources/icon.ico'),
     autoHideMenuBar: true,
@@ -218,7 +272,7 @@ function createMainWindow() {
 
   // Load URL
   if (process.argv.includes('--dev-server')) {
-    mainWindow.loadURL('http://localhost:6500');
+    mainWindow.loadURL('http://localhost:37600');
   } else {
     mainWindow.loadURL('app://localhost/index.html');
   }
@@ -268,18 +322,35 @@ ipcMain.handle('shell:open-path', async (_event, targetPath) => {
   if (targetPath) return shell.openPath(targetPath);
 });
 
-// Clean shutdown: ensure child backend process is terminated
-app.on('before-quit', () => {
+// Provide standalone backend URL to renderer process
+ipcMain.on('backend:get-url', (event) => {
+  event.returnValue = backendUrl;
+});
+
+ipcMain.handle('backend:get-url-async', () => {
+  return backendUrl;
+});
+
+// Clean shutdown: ensure child backend process and tree are terminated
+function terminateBackendProcess() {
   if (backendProcess) {
-    console.log('[Lupis Electron] Terminating backend service before quit...');
+    console.log('[Lupis Electron] Terminating standalone backend process before quit...');
     try {
-      backendProcess.kill('SIGTERM');
+      if (process.platform === 'win32' && backendProcess.pid) {
+        execSync(`taskkill /pid ${backendProcess.pid} /T /F`, { stdio: 'ignore' });
+      } else {
+        backendProcess.kill('SIGTERM');
+      }
     } catch (e) {
-      console.warn('[Lupis Electron] Error killing backend process:', e);
+      // Ignore if process has already stopped
     }
     backendProcess = null;
   }
-});
+}
+
+app.on('before-quit', terminateBackendProcess);
+app.on('will-quit', terminateBackendProcess);
+process.on('exit', terminateBackendProcess);
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {

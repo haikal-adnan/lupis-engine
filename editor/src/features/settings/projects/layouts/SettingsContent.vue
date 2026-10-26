@@ -1,10 +1,10 @@
 <template>
   <div class="flex-1 flex flex-col min-w-0 bg-background">
-    <div class="h-14 px-8 border-b border-border flex items-center justify-between shrink-0 bg-background z-10">
-      <div class="flex items-center gap-3">
-        <component :is="activeTabInfo.icon" class="w-5 h-5 text-muted-foreground" />
-        <div>
-          <h3 class="text-sm font-bold text-foreground">{{ activeTabInfo.label }}</h3>
+    <div class="h-12 sm:h-14 px-4 sm:px-6 md:px-8 border-b border-border flex items-center justify-between shrink-0 bg-background z-10">
+      <div class="flex items-center gap-2.5 sm:gap-3 min-w-0">
+        <component :is="activeTabInfo.icon" class="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground shrink-0" />
+        <div class="truncate">
+          <h3 class="text-xs sm:text-sm font-bold text-foreground truncate">{{ activeTabInfo.label }}</h3>
         </div>
       </div>
       <IconButton 
@@ -18,7 +18,7 @@
       </IconButton>
     </div>
 
-    <div class="flex-1 overflow-y-auto custom-scroll p-8 overscroll-contain">
+    <div class="flex-1 overflow-y-auto custom-scroll p-4 sm:p-6 md:p-8 overscroll-contain">
       <div class="max-w-2xl mx-auto w-full">
         <SettingsTabProject v-if="activeTabId === 'project'" :info="activeTabInfo" />
         <SettingsTabPreferences v-else-if="activeTabId === 'preferences'" :info="activeTabInfo" />

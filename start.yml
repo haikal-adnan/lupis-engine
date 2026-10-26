@@ -1,15 +1,15 @@
 x-ports:
-  editor_mapping: &editor_port "6500:6500"
-  core_mapping: &core_port "8080:80"
-  service_mapping: &service_port "4000:4000"
+  editor_mapping: &editor_port "37600:37600"
+  core_mapping: &core_port "37601:80"
+  service_mapping: &service_port "37602:37602"
 
-  editor_raw_port: &editor_raw_port "6500"
-  service_raw_port: &service_raw_port "4000"
+  editor_raw_port: &editor_raw_port "37600"
+  service_raw_port: &service_raw_port "37602"
 
 x-urls:
-  vite_core_url: &core_url "http://localhost:8080"
-  vite_service_url: &service_url "http://localhost:4000"
-  playwright_target_url: &e2e_editor_url "http://editor:6500"
+  vite_core_url: &core_url "http://localhost:37601"
+  vite_service_url: &service_url "http://localhost:37602"
+  playwright_target_url: &e2e_editor_url "http://editor:37600"
 
 services:
   core:
@@ -44,7 +44,7 @@ services:
       PORT: *service_raw_port
       CORE_URL: http://core
     healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://localhost:4000/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      test: ["CMD", "node", "-e", "fetch('http://localhost:37602/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
       interval: 5s
       timeout: 3s
       retries: 3

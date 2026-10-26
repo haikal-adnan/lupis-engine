@@ -19,16 +19,16 @@
           aria-modal="true"
           aria-label="New Project"
           data-testid="create-project-modal"
-          class="w-full max-w-sm bg-background border border-border rounded-lg shadow-xl overflow-hidden transform transition-all"
+          class="w-full max-w-sm max-h-[calc(100vh-2rem)] flex flex-col bg-background border border-border rounded-lg shadow-xl overflow-hidden transform transition-all"
           :class="{ 'scale-100': isOpen, 'scale-95': !isOpen }"
         >
-          <div class="px-4 py-3 border-b border-border bg-muted/30">
-            <h3 class="text-sm font-semibold text-foreground" data-testid="modal-title">
+          <div class="px-4 py-3 border-b border-border bg-muted/30 shrink-0">
+            <h3 class="text-sm font-semibold text-foreground truncate" data-testid="modal-title">
               New Project
             </h3>
           </div>
 
-          <div class="px-4 py-4 space-y-4">
+          <div class="px-4 py-4 space-y-4 overflow-y-auto custom-scroll">
             <div class="space-y-1.5">
               <BaseInput 
                 ref="inputRef"
@@ -51,7 +51,7 @@
             </div>
           </div>
 
-          <div class="px-4 py-3 bg-muted/30 border-t border-border flex justify-end gap-2">
+          <div class="px-4 py-3 bg-muted/30 border-t border-border flex justify-end gap-2 shrink-0">
             <BaseButton 
               ghost
               height-class="h-7"

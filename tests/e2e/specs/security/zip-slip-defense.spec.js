@@ -38,7 +38,7 @@ test.describe('Security: Zip Slip Defense', () => {
   });
 
   test('backend server rejects export app requests containing path traversal characters', async ({ request }) => {
-    const response = await request.post('http://localhost:4000/api/export-app/zip', {
+    const response = await request.post('http://localhost:37602/api/export-app/zip', {
       data: {
         projectId: '../../malicious',
       },

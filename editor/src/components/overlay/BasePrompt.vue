@@ -15,20 +15,20 @@
         data-testid="base-prompt-overlay"
       >
         <div 
-          class="w-full max-w-sm bg-background border border-border rounded-lg shadow-xl overflow-hidden transform transition-all"
+          class="w-full max-w-sm max-h-[calc(100vh-2rem)] flex flex-col bg-background border border-border rounded-lg shadow-xl overflow-hidden transform transition-all"
           :class="{ 'scale-100': state.isOpen, 'scale-95': !state.isOpen }"
           role="dialog"
           aria-modal="true"
           aria-labelledby="prompt-title"
           data-testid="base-prompt"
         >
-          <div class="px-4 py-3 border-b border-border bg-muted/30">
-            <h3 id="prompt-title" class="text-sm font-semibold text-foreground" data-testid="prompt-title">
+          <div class="px-4 py-3 border-b border-border bg-muted/30 shrink-0">
+            <h3 id="prompt-title" class="text-sm font-semibold text-foreground truncate" data-testid="prompt-title">
               {{ state.title }}
             </h3>
           </div>
 
-          <div class="px-4 py-4 space-y-3">
+          <div class="px-4 py-4 space-y-3 overflow-y-auto custom-scroll">
             <p v-if="state.message" class="text-sm text-muted-foreground leading-relaxed" data-testid="prompt-message">
               {{ state.message }}
             </p>
@@ -45,7 +45,7 @@
             />
           </div>
 
-          <div class="px-4 py-3 bg-muted/30 border-t border-border flex justify-end gap-2">
+          <div class="px-4 py-3 bg-muted/30 border-t border-border flex justify-end gap-2 shrink-0">
             <button 
               @click="handleCancel"
               type="button"

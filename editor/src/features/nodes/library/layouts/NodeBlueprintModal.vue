@@ -11,17 +11,17 @@
       <div 
         v-if="isOpen" 
         data-testid="node-library-modal-backdrop"
-        class="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-6"
+        class="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-2.5 sm:p-4 md:p-6"
         @mousedown="onOutsideMouseDown"
         @mouseup="onOutsideMouseUp"
       >
-        <div data-testid="node-library-modal" class="w-[900px] h-[650px] bg-card border border-border rounded-xl shadow-2xl flex flex-col relative overflow-hidden" @mousedown.stop>
+        <div data-testid="node-library-modal" class="w-full max-w-[900px] h-[min(650px,calc(100vh-1.5rem))] sm:h-[min(650px,calc(100vh-2.5rem))] max-h-[calc(100vh-1.5rem)] sm:max-h-[calc(100vh-2.5rem)] bg-card border border-border rounded-xl shadow-2xl flex flex-col relative overflow-hidden" @mousedown.stop>
           
-          <div class="p-5 border-b border-border bg-muted/10 shrink-0">
-            <div class="flex items-center justify-between mb-4">
+          <div class="p-3.5 sm:p-5 border-b border-border bg-muted/10 shrink-0">
+            <div class="flex items-center justify-between mb-3 sm:mb-4">
               <div>
-                <h2 class="text-lg font-bold flex items-center gap-2 text-foreground">
-                  <Component class="w-5 h-5 text-foreground" /> Node Blueprint Library
+                <h2 class="text-base sm:text-lg font-bold flex items-center gap-2 text-foreground">
+                  <Component class="w-4 h-4 sm:w-5 sm:h-5 text-foreground" /> Node Blueprint Library
                 </h2>
                 <p class="text-xs text-muted-foreground mt-0.5">Browse and double-click to add nodes to your graph</p>
               </div>
@@ -32,7 +32,7 @@
                 aria-label="Close"
                 @click="closeModal"
               >
-                <X class="w-5 h-5" />
+                <X class="w-4 h-4 sm:w-5 sm:h-5" />
               </IconButton>
             </div>
 
@@ -43,7 +43,7 @@
                 data-testid="node-library-modal-search-input"
                 v-model="searchQuery"
                 placeholder="Search nodes... (e.g. 'branch', 'add vector')" 
-                class="w-full h-10 pl-9 pr-10 text-sm bg-background border border-input rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-colors text-foreground"
+                class="w-full h-9 sm:h-10 pl-9 pr-10 text-xs sm:text-sm bg-background border border-input rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-colors text-foreground"
               />
               <button 
                 v-if="searchQuery"
@@ -58,7 +58,7 @@
 
           <div class="flex flex-1 min-h-0">
             
-            <div class="w-56 border-r border-border bg-muted/5 flex flex-col justify-between overflow-y-auto custom-scroll shrink-0 p-4 gap-6">
+            <div class="w-44 sm:w-56 border-r border-border bg-muted/5 flex flex-col justify-between overflow-y-auto custom-scroll shrink-0 p-3 sm:p-4 gap-4 sm:gap-6">
               <div>
                 <div class="flex items-center gap-2 text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">
                   <Clock class="w-3.5 h-3.5" /> Recent
@@ -94,7 +94,7 @@
               </div>
             </div>
 
-            <div class="flex-1 bg-background overflow-y-auto custom-scroll p-6 relative">
+            <div class="flex-1 bg-background overflow-y-auto custom-scroll p-4 sm:p-6 relative">
               
               <div v-if="activeGroup && !searchQuery">
                 <button data-testid="node-library-modal-back-btn" @click="activeGroup = null" class="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground mb-4 transition-colors">
@@ -109,7 +109,7 @@
                   </div>
                 </div>
                 
-                <div v-if="activeGroup.items?.length > 0" data-testid="node-library-modal-category-items" class="grid grid-cols-2 xl:grid-cols-3 gap-2">
+                <div v-if="activeGroup.items?.length > 0" data-testid="node-library-modal-category-items" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2 sm:gap-2.5">
                   <NodeListItem 
                     v-for="item in activeGroup.items" 
                     :key="item.type" 
@@ -123,7 +123,7 @@
               </div>
 
               <div v-else>
-                <div v-if="!searchQuery" class="grid grid-cols-2 xl:grid-cols-3 gap-4">
+                <div v-if="!searchQuery" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
                   <div 
                     v-for="group in libraryGroups" 
                     :key="group.label"
@@ -147,7 +147,7 @@
                     Search Results for "{{ searchQuery }}"
                   </div>
                   
-                  <div v-if="flatSearchResults.length > 0" data-testid="node-library-modal-search-results" class="grid grid-cols-2 xl:grid-cols-3 gap-2">
+                  <div v-if="flatSearchResults.length > 0" data-testid="node-library-modal-search-results" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2 sm:gap-2.5">
                     <NodeListItem 
                       v-for="item in flatSearchResults" 
                       :key="item.type" 

@@ -17,12 +17,6 @@ const routes = [
     redirect: '/dashboard'
   },
   {
-    path: '/about',
-    name: 'About',
-    component: () => import('@/layouts/AboutPage.vue'), 
-    meta: { layout: 'MainLayout' } 
-  },
-  {
     path: '/docs',
     redirect: '/docs/getting_started/introduction'
   },

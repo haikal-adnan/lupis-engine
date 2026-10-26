@@ -10,12 +10,12 @@ We are committed to providing a welcoming, inclusive, and harassment-free commun
 
 ---
 
-## üó∫Ô∏è How Can I Contribute?
+## üó∫ÅEÅEHow Can I Contribute?
 
 - **Report Bugs**: Submit detailed bug reports via our [GitHub Issue Chooser](https://github.com/haikal-adnan/lupis-engine/issues/new/choose) or review the [Bug Report Template](.github/ISSUE_TEMPLATE/bug_report.yml).
 - **Suggest Features**: Propose ideas and architectural enhancements via [GitHub Feature Request](https://github.com/haikal-adnan/lupis-engine/issues/new/choose) or review the [Feature Request Template](.github/ISSUE_TEMPLATE/feature_request.yml).
 - **Community Discussions**: Ask questions, share ideas, and connect with other developers on [GitHub Discussions](https://github.com/haikal-adnan/lupis-engine/discussions).
-- **Improve Documentation**: Fix typos, add tutorials, or expand API explanations in [`docs/`](docs/).
+- **Improve Documentation**: Fix typos, add tutorials, or expand API explanations in [`editor/public/docs/`](editor/public/docs/).
 - **Submit Code**: Implement bug fixes, performance optimizations, or new Blueprint nodes adhering to the 10 consolidated domain modules.
 
 ---
@@ -38,9 +38,9 @@ git checkout -b feature/my-awesome-feature
 ```bash
 docker compose -f start.yml up
 ```
-- Editor: `http://localhost:6500`
-- Engine Core: `http://localhost:8080`
-- Backend Service: `http://localhost:4000`
+- Editor: `http://localhost:37600`
+- Engine Core: `http://localhost:37601`
+- Backend Service: `http://localhost:37602`
 
 ### 4. Running Locally (Without Docker)
 ```bash

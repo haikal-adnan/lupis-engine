@@ -157,7 +157,7 @@
         {
           "type": "alert",
           "variant": "warning",
-          "message": "Compiling a **Desktop App (.EXE)** requires the backend service running on port **4000** (see [Installation & Setup](getting_started/installation#run-with-docker))."
+          "message": "Compiling a **Desktop App (.EXE)** requires the backend service running on port **37602** (see [Installation & Setup](getting_started/installation#run-with-docker))."
         }
       ]
     },

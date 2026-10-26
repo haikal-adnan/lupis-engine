@@ -1,7 +1,7 @@
 <template>
   <div class="h-10 w-full flex items-center justify-between bg-background border-t border-border select-none relative z-50">
     
-    <div class="flex items-end h-full">
+    <div class="flex items-end h-full overflow-x-auto no-scrollbar">
       <button 
         v-for="tab in visibleTabs" 
         :key="tab.id"

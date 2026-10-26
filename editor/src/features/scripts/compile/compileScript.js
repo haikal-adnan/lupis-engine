@@ -1,4 +1,3 @@
-import { SCHEMA_VERSION } from '../../nodes/contract/scriptPayload.js';
 import { getNodeRole } from '../../nodes/contract/nodeRoles.js';
 import { coercePortValue } from './coerceByPort.js';
 import { normalizeScript } from './normalizeScript.js';
@@ -106,7 +105,6 @@ export function compileScript(rawScript, options = {}) {
   });
 
   return {
-    schemaVersion: SCHEMA_VERSION,
     id: normalized.id,
     scriptId: normalized.scriptId,
     variables: normalized.variables,

@@ -30,10 +30,10 @@ vi.mock('@composables/composables.js', () => ({
     isExporting: ref(false),
     exportType: ref('exe'),
     exportMode: ref('release'),
-    exeDownloadUrl: ref('http://localhost:4000/api/download-app/exe/proj_test_123?mode=release&name=My_Super_Game'),
+    exeDownloadUrl: ref('http://localhost:37602/api/download-app/exe/proj_test_123?mode=release&name=My_Super_Game'),
     exeDownloadUrls: ref({
-      development: 'http://localhost:4000/api/download-app/exe/proj_test_123?mode=development',
-      release: 'http://localhost:4000/api/download-app/exe/proj_test_123?mode=release'
+      development: 'http://localhost:37602/api/download-app/exe/proj_test_123?mode=development',
+      release: 'http://localhost:37602/api/download-app/exe/proj_test_123?mode=release'
     }),
     showExportModal: ref(false),
     closeExportModal: mockCloseExportModal,

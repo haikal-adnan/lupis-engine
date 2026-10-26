@@ -8,13 +8,13 @@ import svgLoader from 'vite-svg-loader';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const PORT = Number(process.env.PORT) || 6500;
+const PORT = Number(process.env.PORT) || 37600;
 
 export default defineConfig({
   server: {
     host: '0.0.0.0',
     port: PORT,
-    strictPort: true,
+    strictPort: false,
     watch: {
       usePolling: true,
       interval: 100, 

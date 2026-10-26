@@ -125,17 +125,17 @@
           "rows": [
             [
               "**Visual Editor**",
-              "http://localhost:6500",
+              "http://localhost:37600",
               "Main dashboard, scene editor, and visual scripting studio."
             ],
             [
               "**Core Runtime**",
-              "http://localhost:8080",
+              "http://localhost:37601",
               "Standalone WebGL game runtime server."
             ],
             [
               "**Backend Service**",
-              "http://localhost:4000",
+              "http://localhost:37602",
               "Processes custom font atlases and compiles Windows **.EXE** builds."
             ]
           ]
@@ -154,21 +154,21 @@
           "type": "steps",
           "items": [
             "Clone the [Lupis Engine GitHub Repository](https://github.com/haikal-adnan/lupis-engine) to your computer.",
-            "Open a terminal in the **service** folder, install dependencies, and start the backend server on port **4000**.",
-            "Open a second terminal in the **editor** folder, install dependencies, and start the visual editor on port **6500**.",
-            "Optionally, open a third terminal in the **core** folder and serve the standalone runtime on port **8080**.",
-            "Navigate to **http://localhost:6500** in your browser to open the studio."
+            "Open a terminal in the **service** folder, install dependencies, and start the backend server on port **37602**.",
+            "Open a second terminal in the **editor** folder, install dependencies, and start the visual editor on port **37600**.",
+            "Optionally, open a third terminal in the **core** folder and serve the standalone runtime on port **37601**.",
+            "Navigate to **http://localhost:37600** in your browser to open the studio."
           ]
         },
         {
           "type": "code",
           "language": "bash",
-          "snippet": "# Terminal 1: Backend service (http://localhost:4000)\ncd service && npm install && npm run dev\n\n# Terminal 2: Visual editor (http://localhost:6500)\ncd editor && npm install && npm run dev\n\n# Terminal 3: Standalone core runtime (optional, http://localhost:8080)\ncd core && npx serve -l 8080 ."
+          "snippet": "# Terminal 1: Backend service (http://localhost:37602)\ncd service && npm install && npm run dev\n\n# Terminal 2: Visual editor (http://localhost:37600)\ncd editor && npm install && npm run dev\n\n# Terminal 3: Standalone core runtime (optional, http://localhost:37601)\ncd core && npx serve -l 37601 ."
         },
         {
           "type": "alert",
           "variant": "tip",
-          "message": "Keep the backend **service** terminal running on port **4000** whenever you import custom **.ttf** or **.otf** fonts or build a Windows **.EXE** package."
+          "message": "Keep the backend **service** terminal running on port **37602** whenever you import custom **.ttf** or **.otf** fonts or build a Windows **.EXE** package."
         }
       ]
     },

@@ -98,14 +98,27 @@ export default class Game {
         this.events.emit('game:restart');
     }
 
-    quitGame() {
+    quitGame(options = {}) {
+        const closeWindow = typeof options === 'boolean'
+            ? options
+            : (options && typeof options === 'object' && 'closeWindow' in options ? options.closeWindow : true);
+
         this.events.emit('game:quit');
 
         if (this.loop && typeof this.loop.stop === 'function') {
             this.loop.stop();
         }
 
+        if (!closeWindow) {
+            return;
+        }
+
         if (typeof window !== 'undefined') {
+            // Never attempt to close the window if running within the editor
+            if (Config.ENGINE_MODE === 'editor') {
+                return;
+            }
+
             // 1. Electron standalone build environment
             if (window.electronAPI && typeof window.electronAPI.quit === 'function') {
                 window.electronAPI.quit();
@@ -117,10 +130,18 @@ export default class Game {
             }
 
             // 2. Preview mode / browser tab environment
-            try {
-                window.close();
-            } catch (e) {
-                console.warn('[Game] Unable to close window automatically:', e);
+            // Browsers allow window.close() only if opened via script (window.opener exists or test environment)
+            const isTestEnv = typeof process !== 'undefined' && process.env?.NODE_ENV === 'test';
+            const canClose = Boolean(window.opener || isTestEnv);
+
+            if (canClose) {
+                try {
+                    window.close();
+                } catch (e) {
+                    console.warn('[Game] Unable to close window automatically:', e);
+                }
+            } else {
+                console.info('[Game] quitGame executed (window was not opened by script; browser prevents closing tab directly).');
             }
         }
     }
@@ -180,7 +201,7 @@ export default class Game {
     }
 
     destroy() {
-        this.quitGame();
+        this.quitGame({ closeWindow: false });
 
         if (this.input && typeof this.input.destroy === 'function') {
             this.input.destroy();

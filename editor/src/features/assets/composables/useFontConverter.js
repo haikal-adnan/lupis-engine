@@ -14,7 +14,7 @@ export function useFontConverter() {
     isConverting.value = true;
 
     try {
-      const backendUrl = workspaceStore.backendBaseUrl || 'http://localhost:4000';
+      const backendUrl = workspaceStore.backendBaseUrl || 'http://localhost:37602';
       const formData = new FormData();
       formData.append('file', fontFile);
 

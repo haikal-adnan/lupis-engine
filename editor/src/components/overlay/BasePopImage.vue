@@ -18,7 +18,7 @@
         data-testid="pop-image-dialog"
       >
         <div 
-          class="bg-background border border-border rounded-lg shadow-2xl flex flex-col transform transition-all max-w-3xl w-full"
+          class="bg-background border border-border rounded-lg shadow-2xl flex flex-col transform transition-all max-w-3xl w-full max-h-[calc(100vh-2rem)] overflow-hidden"
           :class="{ 'scale-100': state.isOpen, 'scale-95': !state.isOpen }"
         >
           <div class="px-4 py-3 border-b border-border bg-muted/30 flex justify-between items-center shrink-0">
@@ -39,7 +39,7 @@
           </div>
 
           <div 
-            class="relative w-full aspect-square overflow-hidden bg-black flex items-center justify-center rounded-b-lg group"
+            class="relative w-full h-[min(70vh,560px)] max-h-[calc(100vh-7rem)] overflow-hidden bg-black flex items-center justify-center rounded-b-lg group"
             :class="isDragging ? 'cursor-grabbing' : 'cursor-grab'"
             @wheel.prevent="handleZoom"
             @mousedown.prevent="startDrag"

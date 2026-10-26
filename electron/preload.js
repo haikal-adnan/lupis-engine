@@ -1,9 +1,19 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
+// Synchronously query backend URL from main process
+let backendUrl = 'http://127.0.0.1:37602';
+try {
+  backendUrl = ipcRenderer.sendSync('backend:get-url') || backendUrl;
+} catch (e) {
+  console.warn('[Preload] Failed to query backend URL:', e);
+}
+
 // Expose safe, structured API to renderer process
 contextBridge.exposeInMainWorld('electronAPI', {
   isElectron: true,
   platform: process.platform,
+  backendUrl,
+  getBackendUrl: () => ipcRenderer.invoke('backend:get-url-async'),
   versions: {
     node: process.versions.node,
     chrome: process.versions.chrome,

@@ -46,7 +46,7 @@ body:
       label: Steps to Reproduce
       description: Step-by-step instructions to reproduce the behavior.
       placeholder: |
-        1. Open Editor at http://localhost:6500
+        1. Open Editor at http://localhost:37600
         2. Create a new Entity with Physics component
         3. Set gravityScale to 1.5
         4. Click 'Play Preview'

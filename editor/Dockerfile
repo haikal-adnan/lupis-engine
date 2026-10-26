@@ -10,6 +10,6 @@ COPY editor/ .
 
 COPY core/ /core/
 
-EXPOSE 6500
+EXPOSE 37600
 
 CMD ["npm", "run", "dev"]

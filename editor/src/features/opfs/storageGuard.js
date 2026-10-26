@@ -22,7 +22,7 @@ export async function initStoragePersistence() {
       if (isPersisted) {
         console.log('[StorageGuard] Storage persistence granted by browser. Auto-eviction disabled.');
       } else {
-        console.warn('[StorageGuard] Storage persistence not granted yet by browser. Storage remains best-effort.');
+        console.info('[StorageGuard] Storage persistence not granted yet by browser. Storage remains best-effort.');
       }
     } else {
       console.log('[StorageGuard] Storage is already persistent.');

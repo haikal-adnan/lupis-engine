@@ -10,7 +10,7 @@
     >
       <div
         v-if="isOpen"
-        class="fixed inset-0 z-[250] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 select-none"
+        class="fixed inset-0 z-[250] flex items-center justify-center bg-black/80 backdrop-blur-sm p-2 sm:p-4 select-none"
         @click.stop
         @mousedown.stop
         @wheel.prevent
@@ -21,7 +21,7 @@
         data-testid="export-app-modal-overlay"
       >
         <div
-          class="w-full max-w-md bg-card border border-border rounded-xl shadow-2xl p-5 sm:p-6 flex flex-col gap-5 text-foreground transform transition-all"
+          class="w-full max-w-md max-h-[calc(100vh-1.5rem)] sm:max-h-[calc(100vh-2rem)] bg-card border border-border rounded-xl shadow-2xl p-4 sm:p-6 flex flex-col gap-4 sm:gap-5 text-foreground transform transition-all overflow-y-auto custom-scroll"
           data-testid="export-app-modal"
         >
           <!-- Modal Header -->
@@ -98,7 +98,7 @@
           </div>
 
           <!-- Modal Action Buttons -->
-          <div class="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 border-t border-border">
+          <div class="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 border-t border-border shrink-0">
             <template v-if="isExporting">
               <button
                 disabled

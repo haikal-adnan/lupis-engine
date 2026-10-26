@@ -20,12 +20,32 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = process.env.PORT || 4000;
+const PORT = process.env.PORT || 37602;
 
-const TEMP_DIR = path.resolve(__dirname, "./temp");
-const EXPORTS_DIR = path.resolve(__dirname, "./exports");
+function getStorageBaseDir() {
+  if (process.env.LUPIS_USER_DATA) {
+    return process.env.LUPIS_USER_DATA;
+  }
+  try {
+    const testFile = path.join(__dirname, `.write_test_${Date.now()}`);
+    fs.writeFileSync(testFile, 'ok');
+    fs.unlinkSync(testFile);
+    return __dirname;
+  } catch {
+    const fallback = path.join(
+      process.env.APPDATA || process.env.HOME || path.join(__dirname, 'temp'),
+      'LupisEngine'
+    );
+    if (!fs.existsSync(fallback)) fs.mkdirSync(fallback, { recursive: true });
+    return fallback;
+  }
+}
+
+const BASE_STORAGE_DIR = getStorageBaseDir();
+const TEMP_DIR = path.resolve(BASE_STORAGE_DIR, "./temp");
+const EXPORTS_DIR = path.resolve(BASE_STORAGE_DIR, "./exports");
 const RUNNER_TEMPLATE_DIR = path.resolve(__dirname, "./runner");
-const CACHE_DIR = path.resolve(__dirname, "./.cache");
+const CACHE_DIR = path.resolve(BASE_STORAGE_DIR, "./.cache");
 const RUNNER_WORKSPACE_CACHE_BASE = path.resolve(CACHE_DIR, "./runner-workspace");
 
 const LUPIS_PROJECT_HEADER = Buffer.from([
@@ -47,15 +67,21 @@ if (!fs.existsSync(RUNNER_WORKSPACE_CACHE_BASE)) fs.mkdirSync(RUNNER_WORKSPACE_C
 
 const allowedOrigins = [
   "app://localhost",
-  "http://localhost:6500",
-  "http://localhost:8080",
-  "http://localhost:4000"
+  "http://localhost:37600",
+  "http://localhost:37601",
+  "http://localhost:37602"
 ];
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin) || origin.startsWith("app://")) {
+      if (
+        !origin ||
+        allowedOrigins.includes(origin) ||
+        origin.startsWith("app://") ||
+        origin.startsWith("http://localhost:") ||
+        origin.startsWith("http://127.0.0.1:")
+      ) {
         return callback(null, true);
       }
       return callback(new Error("Blocked by CORS policy"), false);
@@ -96,6 +122,10 @@ function resolveEngineDir() {
   if (fs.existsSync("/engine")) return "/engine";
   const coreDir = path.resolve(__dirname, "../core");
   if (fs.existsSync(coreDir)) return coreDir;
+  if (process.resourcesPath) {
+    const resCore = path.join(process.resourcesPath, "core");
+    if (fs.existsSync(resCore)) return resCore;
+  }
   return path.resolve(__dirname, "../engine");
 }
 
@@ -114,7 +144,7 @@ async function getEngineFileBuffer(relPath, engineDir) {
     process.env.CORE_URL ? `${process.env.CORE_URL.replace(/\/$/, "")}/${relPath}` : null,
     `http://core/${relPath}`,
     `http://lupis-core/${relPath}`,
-    `http://localhost:8080/${relPath}`
+    `http://localhost:37601/${relPath}`
   ].filter(Boolean);
 
   for (const url of candidateUrls) {
@@ -502,7 +532,8 @@ app.post("/api/convert-font", (req, res) => {
 
     fs.writeFileSync(inputFontPath, req.file.buffer);
 
-    const msdfBin = path.join(__dirname, "node_modules", ".bin", "msdf-bmfont");
+    const msdfCli = path.join(__dirname, "node_modules", "msdf-bmfont-xml", "cli.js");
+    const fallbackMsdfBin = path.join(__dirname, "node_modules", ".bin", process.platform === "win32" ? "msdf-bmfont.cmd" : "msdf-bmfont");
     const primarySize = 32;
 
     const cleanup = () => {
@@ -513,11 +544,18 @@ app.post("/api/convert-font", (req, res) => {
     };
 
     const runConversion = (fontSize, isRetry = false) => {
-      const cmd = `"${msdfBin}" "${inputFontPath}" -o "${outputFntPath}" -s ${fontSize} --fieldType msdf --texture-size 2048,2048 --distance-range 8 --texture-padding 8 --smart-size --pot --square`;
+      const nodeExec = process.execPath;
+      const cmd = fs.existsSync(msdfCli)
+        ? `"${nodeExec}" "${msdfCli}" "${inputFontPath}" -o "${outputFntPath}" -s ${fontSize} --fieldType msdf --texture-size 2048,2048 --distance-range 8 --texture-padding 8 --smart-size --pot --square`
+        : `"${fallbackMsdfBin}" "${inputFontPath}" -o "${outputFntPath}" -s ${fontSize} --fieldType msdf --texture-size 2048,2048 --distance-range 8 --texture-padding 8 --smart-size --pot --square`;
 
       console.log(`[Job ${jobId}] Running MSDF BMFont conversion (size: ${fontSize}px${isRetry ? ', retry' : ''})...`);
 
-      exec(cmd, { timeout: 15000, maxBuffer: 10 * 1024 * 1024 }, (error, stdout, stderr) => {
+      exec(cmd, {
+        env: { ...process.env, ELECTRON_RUN_AS_NODE: "1" },
+        timeout: 15000,
+        maxBuffer: 10 * 1024 * 1024
+      }, (error, stdout, stderr) => {
         if (error) {
           if (!isRetry) {
             console.warn(`[Job ${jobId}] Conversion attempt at ${fontSize}px failed: ${error.message}. Retrying with alternate size (34px)...`);
@@ -980,17 +1018,37 @@ app.post("/api/export-app/exe", (req, res) => {
 
       console.log(`[Job ${jobId}] Running single-pass electron-builder EXE compilation (${buildMode.toUpperCase()})...`);
       const isWin = process.platform === "win32";
-      const cmd = isWin ? "npx.cmd" : "npx";
-      const args = [
-        "electron-builder",
-        "--win",
-        "portable",
-        "--config.directories.output=dist",
-        "--config.compression=normal",
-        "--config.win.icon=icon.png"
-      ];
+      const localEbCli = path.join(__dirname, "node_modules", "electron-builder", "out", "cli", "cli.js");
+      let buildProcess;
 
-      const buildProcess = spawn(cmd, args, { cwd: jobFolder, shell: true });
+      if (fs.existsSync(localEbCli)) {
+        const ebArgs = [
+          localEbCli,
+          "--win",
+          "portable",
+          "--config.directories.output=dist",
+          "--config.compression=normal",
+          "--config.win.icon=icon.png"
+        ];
+        buildProcess = spawn(process.execPath, ebArgs, {
+          cwd: jobFolder,
+          env: {
+            ...process.env,
+            ELECTRON_RUN_AS_NODE: "1"
+          }
+        });
+      } else {
+        const cmd = isWin ? "npx.cmd" : "npx";
+        const args = [
+          "electron-builder",
+          "--win",
+          "portable",
+          "--config.directories.output=dist",
+          "--config.compression=normal",
+          "--config.win.icon=icon.png"
+        ];
+        buildProcess = spawn(cmd, args, { cwd: jobFolder, shell: true });
+      }
 
       buildProcess.stdout?.on("data", (d) => console.log(`[electron-builder stdout]: ${d.toString()}`));
       buildProcess.stderr?.on("data", (d) => console.error(`[electron-builder stderr]: ${d.toString()}`));
@@ -1170,13 +1228,41 @@ async function warmupRuntimeCaches() {
   }
 }
 
-if (!process.env.VITEST && process.argv[1] && process.argv[1].includes("server.js")) {
-  const server = app.listen(PORT, () => {
-    console.log(`[Lupis Backend] Micro-backend running on port ${PORT}`);
+function startServer(port, maxRetries = 20) {
+  const server = app.listen(port, () => {
+    console.log(`[Lupis Backend] Micro-backend running on port ${port}`);
     warmupRuntimeCaches();
+  });
+
+  server.on("error", (err) => {
+    if (err.code === "EADDRINUSE" && maxRetries > 0) {
+      console.warn(`[Lupis Backend] Port ${port} is in use, retrying on port ${port + 1}...`);
+      startServer(port + 1, maxRetries - 1);
+    } else {
+      console.error("[Lupis Backend] Server error:", err.message);
+      process.exit(1);
+    }
   });
 
   server.timeout = 600000;
   server.keepAliveTimeout = 600000;
   server.headersTimeout = 605000;
+
+  // Gracefully terminate if parent process disconnects or signals exit
+  process.on("disconnect", () => {
+    server.close(() => process.exit(0));
+    setTimeout(() => process.exit(0), 1000).unref();
+  });
+  process.on("SIGTERM", () => {
+    server.close(() => process.exit(0));
+    setTimeout(() => process.exit(0), 1000).unref();
+  });
+  process.on("SIGINT", () => {
+    server.close(() => process.exit(0));
+    setTimeout(() => process.exit(0), 1000).unref();
+  });
+}
+
+if (!process.env.VITEST && process.argv[1] && process.argv[1].includes("server.js")) {
+  startServer(Number(PORT));
 }

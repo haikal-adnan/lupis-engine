@@ -2,7 +2,7 @@ import { test, expect } from '../../fixtures.js';
 
 test.describe('Security: Microservice Path Traversal Hardening', () => {
   test('rejects path traversal in export app zip endpoint', async ({ request }) => {
-    const response = await request.post('http://localhost:4000/api/export-app/zip', {
+    const response = await request.post('http://localhost:37602/api/export-app/zip', {
       data: {
         projectId: '../../../etc/shadow',
       },

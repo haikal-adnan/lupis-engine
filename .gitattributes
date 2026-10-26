@@ -1,0 +1,68 @@
+# ==========================================
+# Lupis Engine - Git Attributes Configuration
+# ==========================================
+
+# ------------------------------------------
+# Line Endings & Normalization
+# ------------------------------------------
+* text=auto eol=lf
+
+# Explicit text files
+*.js text eol=lf
+*.json text eol=lf
+*.vue text eol=lf
+*.html text eol=lf
+*.css text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.conf text eol=lf
+*.fnt text eol=lf
+Dockerfile text eol=lf
+
+# ------------------------------------------
+# Binary Files
+# Prevent line ending conversions and diff corruption
+# ------------------------------------------
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.ogg binary
+*.wav binary
+*.mp3 binary
+*.ttf binary
+*.otf binary
+*.woff binary
+*.woff2 binary
+*.zip binary
+*.lupisproject binary
+
+# ------------------------------------------
+# Third-Party & Vendored Resources
+# Flags external/third-party resources so GitHub
+# excludes them from repository language stats & diffs
+# ------------------------------------------
+
+# Sample projects containing third-party game assets (sprites, tilesets, UI, audio)
+examples/** linguist-vendored
+
+# Third-party font resources (Inter MSDF font assets)
+core/Assets/** linguist-vendored
+
+# Third-party / fixture test data
+tests/test-data/** linguist-vendored
+
+# ------------------------------------------
+# Generated Files
+# ------------------------------------------
+core/Assets/Fonts/defaultFont.js linguist-generated
+package-lock.json linguist-generated
+*/package-lock.json linguist-generated
+
+# ------------------------------------------
+# Documentation Files
+# ------------------------------------------
+*.md linguist-documentation
+editor/public/docs/** linguist-documentation

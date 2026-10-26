@@ -14,14 +14,14 @@
         aria-modal="true"
         aria-label="Project Settings"
         data-testid="editor-settings-modal"
-        class="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4 sm:p-6 overscroll-none"
+        class="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-2.5 sm:p-4 md:p-6 overscroll-none"
         @mousedown="onOutsideMouseDown"
         @mouseup="onOutsideMouseUp"
         @wheel.prevent
         @touchmove.prevent
       >
         <div 
-          class="w-full max-w-[1100px] h-[700px] bg-background border border-border rounded-xl shadow-2xl flex relative overflow-hidden overscroll-contain" 
+          class="w-full max-w-[1100px] h-[min(700px,calc(100vh-1.5rem))] sm:h-[min(700px,calc(100vh-2.5rem))] max-h-[calc(100vh-1.5rem)] sm:max-h-[calc(100vh-2.5rem)] bg-background border border-border rounded-xl shadow-2xl flex relative overflow-hidden overscroll-contain" 
           @mousedown.stop
           @wheel.stop
           @touchmove.stop

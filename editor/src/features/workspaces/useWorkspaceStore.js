@@ -28,7 +28,7 @@ export const useWorkspaceStore = defineStore('workspace', {
     },
     config: {
       cdnUrl: import.meta.env.VITE_STORAGE_URL || '',
-      backendUrl: import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000',
+      backendUrl: (typeof window !== 'undefined' && window.electronAPI?.backendUrl) || import.meta.env.VITE_BACKEND_URL || 'http://localhost:37602',
       isDebug: import.meta.env.VITE_GAME_DEBUG === 'true'
     },
     

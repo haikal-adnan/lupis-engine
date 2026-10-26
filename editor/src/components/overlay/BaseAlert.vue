@@ -15,7 +15,7 @@
         data-testid="base-alert-overlay"
       >
         <div 
-          class="w-full max-w-sm bg-background border border-border rounded-lg shadow-xl overflow-hidden transform transition-all"
+          class="w-full max-w-sm max-h-[calc(100vh-2rem)] flex flex-col bg-background border border-border rounded-lg shadow-xl overflow-hidden transform transition-all"
           :class="{ 'scale-100': state.isOpen, 'scale-95': !state.isOpen }"
           role="alertdialog"
           aria-modal="true"
@@ -25,25 +25,25 @@
           :data-type="state.type"
         >
           
-          <div class="px-4 py-3 border-b border-border bg-muted/30 flex items-center gap-2">
+          <div class="px-4 py-3 border-b border-border bg-muted/30 flex items-center gap-2 shrink-0">
             <component 
               :is="iconMap[state.type]" 
               class="w-4 h-4"
               :class="colorMap[state.type]"
               aria-hidden="true"
             />
-            <h3 id="alert-title" class="text-sm font-semibold text-foreground" data-testid="alert-title">
+            <h3 id="alert-title" class="text-sm font-semibold text-foreground truncate" data-testid="alert-title">
               {{ state.title }}
             </h3>
           </div>
 
-          <div class="px-4 py-4">
+          <div class="px-4 py-4 overflow-y-auto custom-scroll">
             <p id="alert-message" class="text-sm text-muted-foreground leading-relaxed" data-testid="alert-message">
               {{ state.message }}
             </p>
           </div>
 
-          <div class="px-4 py-3 bg-muted/30 border-t border-border flex justify-end">
+          <div class="px-4 py-3 bg-muted/30 border-t border-border flex justify-end shrink-0">
             <button 
               @click="handleClose"
               ref="okButtonRef"

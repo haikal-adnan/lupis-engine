@@ -55,7 +55,7 @@ export function useExportApp() {
 
     if (targetPid) {
       try {
-        const backendUrl = workspaceStore.config?.backendUrl || workspaceStore.backendBaseUrl || 'http://localhost:4000';
+        const backendUrl = workspaceStore.config?.backendUrl || workspaceStore.backendBaseUrl || 'http://localhost:37602';
         fetch(`${backendUrl}/api/export-app/cache/${targetPid}`, {
           method: 'DELETE',
           signal: AbortSignal.timeout(3000)
@@ -157,7 +157,7 @@ export function useExportApp() {
   const checkProjectExeBuilds = async (projectId) => {
     if (!projectId) return;
     try {
-      const backendUrl = workspaceStore.config?.backendUrl || workspaceStore.backendBaseUrl || 'http://localhost:4000';
+      const backendUrl = workspaceStore.config?.backendUrl || workspaceStore.backendBaseUrl || 'http://localhost:37602';
       const isHealthy = await _checkBackendHealth(backendUrl);
       if (!isHealthy) return;
 
@@ -254,7 +254,7 @@ export function useExportApp() {
     let serverPollTimer = null;
 
     try {
-      const backendUrl = workspaceStore.config?.backendUrl || workspaceStore.backendBaseUrl || 'http://localhost:4000';
+      const backendUrl = workspaceStore.config?.backendUrl || workspaceStore.backendBaseUrl || 'http://localhost:37602';
 
       const isHealthy = await _checkBackendHealth(backendUrl);
       if (!isHealthy) {

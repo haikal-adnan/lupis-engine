@@ -32,6 +32,10 @@
         "to": "editor/dist"
       },
       {
+        "from": "../core",
+        "to": "core"
+      },
+      {
         "from": "../service",
         "to": "service",
         "filter": [
@@ -39,8 +43,7 @@
           "!temp/**",
           "!exports/**",
           "!.cache/**",
-          "!node_modules/electron/**",
-          "!node_modules/electron-builder/**"
+          "!node_modules/electron/dist/**"
         ]
       }
     ],

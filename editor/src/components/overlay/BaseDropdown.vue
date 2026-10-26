@@ -16,7 +16,7 @@
           ref="menuRef"
           role="menu"
           data-testid="dropdown-menu"
-          class="fixed z-[9999] w-auto whitespace-nowrap rounded-md border border-border bg-popover text-popover-foreground shadow-lg focus:outline-none flex flex-col overflow-hidden py-1"
+          class="fixed z-[9999] w-auto whitespace-nowrap rounded-md border border-border bg-popover text-popover-foreground shadow-lg focus:outline-none flex flex-col max-h-[min(80vh,400px)] overflow-y-auto overflow-x-hidden py-1"
           :style="menuStyle"
           tabindex="-1"
         >
@@ -61,6 +61,9 @@ const calculatePosition = () => {
 
   if (top + menuRect.height > innerHeight) {
     top = triggerRect.top - menuRect.height - props.offset;
+  }
+  if (top < 10) {
+    top = 10;
   }
 
   menuStyle.value = {

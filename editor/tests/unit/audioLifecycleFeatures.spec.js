@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import Game from '@core/Core/Game.js';
+import Config from '@core/Core/Config.js';
 import AudioSystem from '@core/System/AudioSystem.js';
 import ContextSystem from '@core/Script/ContextSystem.js';
 import { componentSchema } from '@scenes/schemas/componentSchema.js';
@@ -218,6 +219,36 @@ describe('Audio & Lifecycle Features Unit & Integration Tests', () => {
       game.quitGame();
 
       expect(closeSpy).toHaveBeenCalled();
+      closeSpy.mockRestore();
+    });
+
+    it('does not close window when closeWindow is false', () => {
+      const closeSpy = vi.spyOn(window, 'close').mockImplementation(() => {});
+
+      game.quitGame({ closeWindow: false });
+
+      expect(closeSpy).not.toHaveBeenCalled();
+      closeSpy.mockRestore();
+    });
+
+    it('does not close window when in editor mode', () => {
+      const closeSpy = vi.spyOn(window, 'close').mockImplementation(() => {});
+      const prevMode = Config.ENGINE_MODE;
+      Config.ENGINE_MODE = 'editor';
+
+      game.quitGame();
+
+      expect(closeSpy).not.toHaveBeenCalled();
+      Config.ENGINE_MODE = prevMode;
+      closeSpy.mockRestore();
+    });
+
+    it('does not close window during destroy()', () => {
+      const closeSpy = vi.spyOn(window, 'close').mockImplementation(() => {});
+
+      game.destroy();
+
+      expect(closeSpy).not.toHaveBeenCalled();
       closeSpy.mockRestore();
     });
 

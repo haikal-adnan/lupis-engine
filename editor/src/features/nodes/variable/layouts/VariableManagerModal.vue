@@ -10,17 +10,17 @@
     >
       <div 
         v-if="isOpen" 
-        class="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4 md:p-8 overflow-y-auto"
+        class="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-2.5 sm:p-4 md:p-6 overflow-y-auto"
         @mousedown="onOutsideMouseDown"
         @mouseup="onOutsideMouseUp"
       >
         <div 
-          class="w-full md:w-[920px] max-w-5xl h-[85vh] max-h-[800px] bg-card border border-border rounded-xl shadow-2xl flex flex-col relative overflow-hidden my-auto" 
+          class="w-full max-w-5xl h-[min(800px,calc(100vh-1.5rem))] sm:h-[min(800px,calc(100vh-2.5rem))] max-h-[calc(100vh-1.5rem)] sm:max-h-[calc(100vh-2.5rem)] bg-card border border-border rounded-xl shadow-2xl flex flex-col relative overflow-hidden my-auto"
           data-testid="variable-modal"
           @mousedown.stop
         >
           <!-- Top Bar Header -->
-          <div class="flex items-center justify-between px-5 py-3 border-b border-border bg-muted/20 shrink-0 gap-3">
+          <div class="flex flex-wrap sm:flex-nowrap items-center justify-between px-3 sm:px-5 py-2 sm:py-3 border-b border-border bg-muted/20 shrink-0 gap-2 sm:gap-3">
             <div class="flex items-center bg-muted/60 p-1 rounded-lg border border-border shrink-0">
               <button 
                 @click="switchScope('Global')"
@@ -68,7 +68,7 @@
                 v-model="searchQuery" 
                 placeholder="Search variables..." 
                 data-testid="variable-modal-search-input"
-                class="w-40 sm:w-52"
+                class="w-32 sm:w-44 md:w-52"
               />
 
               <button 
@@ -93,7 +93,7 @@
 
           <!-- Content Body -->
           <div ref="scrollContainerRef" class="w-full flex-1 min-h-0 bg-background overflow-y-auto custom-scroll">
-            <div class="p-6 flex flex-col min-h-full">
+            <div class="p-3 sm:p-6 flex flex-col min-h-full">
               
               <!-- Quick Add to Canvas Hint Badge -->
               <div v-if="isRootLevel" class="flex items-center justify-between text-[10px] text-muted-foreground bg-muted/30 px-3 py-1.5 rounded-md border border-border mb-3 font-mono select-none">
@@ -284,7 +284,7 @@
             </div>
           </div>
 
-          <div class="flex items-center justify-end px-5 py-3 border-t border-border bg-muted/20 gap-3 shrink-0">
+          <div class="flex items-center justify-end px-3 sm:px-5 py-2.5 sm:py-3 border-t border-border bg-muted/20 gap-3 shrink-0">
             <BaseButton @click="handleClose" variant="ghost" class="px-5">
               Done & Close
             </BaseButton>

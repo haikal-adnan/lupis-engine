@@ -190,8 +190,9 @@ const updatePosition = () => {
   const spaceBelow = window.innerHeight - rect.bottom - GAP;
   const spaceAbove = rect.top - GAP;
 
+  const clampedLeft = Math.max(10, Math.min(rect.left, window.innerWidth - (rect.width || 200) - 10));
   let style = {
-    left: `${rect.left}px`,
+    left: `${clampedLeft}px`,
     minWidth: `${rect.width}px` 
   };
 
