@@ -1,4 +1,5 @@
 import { bus } from "./EventBus.js";
+import { formatScriptPrefix } from "./ScriptContextUtils.js";
 
 class EngineConsole {
   constructor() {
@@ -34,13 +35,24 @@ class EngineConsole {
       const node = context.node || 'Node';
       ctx = { scene, entityScriptId: entity, script, node };
 
-      const prefix = `[${scene}] [${entity}] [${script}] [${node}]`;
+      const prefix = formatScriptPrefix(entity, script);
       if (!finalMessage.startsWith(prefix)) {
         finalMessage = `${prefix} ${finalMessage}`;
       }
     }
 
-    const entry = { type, message: finalMessage, source, ...(ctx ? { context: ctx } : {}), time: Date.now() };
+    const lastIndex = this.logs.length - 1;
+    if (lastIndex >= 0) {
+      const last = this.logs[lastIndex];
+      if (last.type === type && last.message === finalMessage) {
+        last.count = (last.count || 1) + 1;
+        last.time = Date.now();
+        bus.emit(`console:${type}`, { ...last, isRepeat: true });
+        return;
+      }
+    }
+
+    const entry = { type, message: finalMessage, source, ...(ctx ? { context: ctx } : {}), time: Date.now(), count: 1 };
     this.logs.push(entry);
     bus.emit(`console:${type}`, entry);
   }

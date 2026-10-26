@@ -497,7 +497,7 @@ describe('useNodeBlueprint Integration', () => {
         payload: {
           type: 'log',
           source: 'Script',
-          message: '[Scene] [ent_1] [Script] [testNode] Player health: 100 {"state":"alive"}'
+          message: '[ent_1] Player health: 100 {"state":"alive"}'
         }
       });
       expect(emittedEvents[1]).toMatchObject({
@@ -505,7 +505,7 @@ describe('useNodeBlueprint Integration', () => {
         payload: {
           type: 'warn',
           source: 'Script',
-          message: '[Scene] [ent_1] [Script] [testNode] Low stamina warning'
+          message: '[ent_1] Low stamina warning'
         }
       });
       expect(emittedEvents[2]).toMatchObject({
@@ -513,7 +513,7 @@ describe('useNodeBlueprint Integration', () => {
         payload: {
           type: 'error',
           source: 'Script',
-          message: '[Scene] [ent_1] [Script] [testNode] Failed to load asset 404'
+          message: '[ent_1] Failed to load asset 404'
         }
       });
     });

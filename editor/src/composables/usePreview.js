@@ -2,6 +2,7 @@ import { ref, watch, onMounted, onUnmounted, getCurrentInstance } from "vue";
 import { prepareEngineData } from "@engines/engines.js";
 import { useProjectStore } from '@projects/projects.js';
 import { useWorkspaceStore } from '@workspaces/workspaces.js';
+import { useConsoleStore } from '@consoles/consoles.js';
 
 const BROADCAST_CHANNEL_NAME = "lupis_engine_preview_channel";
 
@@ -55,6 +56,17 @@ export function usePreview() {
       } else if (type === "PREVIEW_READY" || type === "PREVIEW_PONG") {
         isPreviewing.value = true;
       } else if (type === "PREVIEW_CLOSED") {
+        if (isPreviewing.value) {
+          try {
+            const consoleStore = useConsoleStore();
+            consoleStore.addLog({
+              type: 'warn',
+              source: 'Engine Lifecycle',
+              message: 'Preview window closed. Engine stopped.',
+              time: Date.now()
+            });
+          } catch {}
+        }
         isPreviewing.value = false;
         previewWindow.value = null;
         if (checkWindowInterval) {
@@ -63,6 +75,11 @@ export function usePreview() {
         }
       }
     };
+
+    try {
+      const consoleStore = useConsoleStore();
+      consoleStore.initListeners(workspaceStore.activeProjectId ?? projectStore.project?.id);
+    } catch {}
 
     channel.postMessage({
       type: "PREVIEW_PING",
@@ -130,6 +147,17 @@ export function usePreview() {
     
     checkWindowInterval = setInterval(() => {
       if (previewWindow.value && previewWindow.value.closed) {
+        if (isPreviewing.value) {
+          try {
+            const consoleStore = useConsoleStore();
+            consoleStore.addLog({
+              type: 'warn',
+              source: 'Engine Lifecycle',
+              message: 'Preview window closed. Engine stopped.',
+              time: Date.now()
+            });
+          } catch {}
+        }
         isPreviewing.value = false;
         clearInterval(checkWindowInterval);
         checkWindowInterval = null;

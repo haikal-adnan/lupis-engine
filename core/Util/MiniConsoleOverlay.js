@@ -284,7 +284,7 @@ export default class MiniConsoleOverlay {
             wordBreak: 'break-all'
         });
 
-        const hasContext = Boolean(logEntry.context) || /^\[.*?\]\s*\[.*?\]\s*\[.*?\]\s*\[.*?\]/.test(logEntry.message);
+        const hasContext = Boolean(logEntry.context) || /^\[.*?\]\s*\[.*?\]\s*\[.*?\]\s*\[.*?\]/.test(logEntry.message) || /^\[.*?::.*?\]/.test(logEntry.message);
         const sourceHtml = hasContext
             ? ''
             : `<span style="color: #64748b; font-size: 9px; shrink: 0;">[${logEntry.source}]</span>`;

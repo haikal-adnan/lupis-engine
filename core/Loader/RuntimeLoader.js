@@ -24,11 +24,20 @@ export default class RuntimeLoader {
         try {
             reportProgress("Initializing...", 10);
 
+            const consoleChannelName = project?.id 
+                ? `lupis_engine_preview_channel_${project.id}` 
+                : undefined;
+            game.consoleBroadcaster = new ConsoleBroadcaster(consoleChannelName);
+
+            if (game.isPreview || payload?.isPreview) {
+                bus.emit('console:clear');
+            }
+
             bus.emit('console:log', {
                 type: 'log',
                 time: Date.now(),
                 source: 'System',
-                message: `Starting initialization in ${mode.toUpperCase()} mode...`
+                message: `Preview session started (${mode.toUpperCase()} mode)`
             });
 
             game.baseURL = baseURL;
@@ -40,11 +49,6 @@ export default class RuntimeLoader {
             if (project.globalVariables && game.variables) {
                 game.variables.initGlobals(project.globalVariables);
             }
-            
-            const consoleChannelName = project?.id 
-                ? `lupis_engine_preview_channel_${project.id}` 
-                : undefined;
-            game.consoleBroadcaster = new ConsoleBroadcaster(consoleChannelName);
 
             reportProgress("Building library...", 30);
             game.prefabSystem.initLibrary(prefabs);
@@ -252,10 +256,6 @@ export default class RuntimeLoader {
                 source: 'Engine Lifecycle'
             });
 
-            if (game.consoleBroadcaster) {
-                game.consoleBroadcaster.destroy();
-            }
-
             this.destroyGame(game);
         };
 
@@ -265,6 +265,14 @@ export default class RuntimeLoader {
     destroyGame(game) {
         if (game.loop && typeof game.loop.stop === 'function') {
             game.loop.stop();
+        }
+
+        if (game.consoleBroadcaster) {
+            const broadcaster = game.consoleBroadcaster;
+            game.consoleBroadcaster = null;
+            setTimeout(() => {
+                broadcaster.destroy();
+            }, 100);
         }
 
         if (game.miniConsole) {

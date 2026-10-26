@@ -2,9 +2,10 @@
 import { ref, computed, watch } from 'vue'; 
 import { useRoute, useRouter } from 'vue-router';
 import { 
-  Search, BookOpen, LayoutDashboard, Sun, Moon, Menu, X 
+  Search, BookOpen, LayoutDashboard, Sun, Moon, Menu, X, Github 
 } from 'lucide-vue-next';
 import { useTheme } from '@composables/composables.js';
+import { GITHUB_URL, ENGINE_VERSION } from '@utils/constanta.js';
 
 const route = useRoute();
 const router = useRouter();
@@ -41,7 +42,7 @@ watch(() => route.fullPath, () => {
         <div @click="router.push('/dashboard')" class="flex items-center gap-2.5 cursor-pointer min-w-fit shrink-0 group">
           <img :src="'/assets/logo.svg'" alt="Lupis Engine Logo" class="w-8 h-8 object-contain" />
           <span class="font-bold tracking-tight text-lg">Lupis Engine</span>
-          <span v-if="isDocsPage" class="hidden lg:inline-flex text-[10px] bg-cyan-500/10 text-cyan-500 px-1.5 py-0.5 rounded font-bold border border-cyan-500/20 ml-1">v0.1.0</span>
+          <span v-if="isDocsPage" class="hidden lg:inline-flex text-[10px] bg-cyan-500/10 text-cyan-500 px-1.5 py-0.5 rounded font-bold border border-cyan-500/20 ml-1">v{{ ENGINE_VERSION }}</span>
         </div>
 
         <div class="flex-1 max-w-xl hidden md:block">
@@ -67,6 +68,17 @@ watch(() => route.fullPath, () => {
           <router-link to="/docs" class="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors hidden md:flex" active-class="text-foreground">
             <BookOpen class="w-4 h-4" /> Documentation
           </router-link>
+
+          <a 
+            :href="GITHUB_URL" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            data-testid="topbar-github-link"
+            class="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors hidden md:flex"
+            title="GitHub Repository"
+          >
+            <Github class="w-4 h-4" /> GitHub
+          </a>
 
           <button 
             type="button"
@@ -99,9 +111,19 @@ watch(() => route.fullPath, () => {
             <LayoutDashboard class="w-5 h-5 text-muted-foreground" /> Dashboard
           </router-link>
           
-          <router-link to="/docs" class="flex items-center gap-2 text-base font-medium text-foreground py-2">
+          <router-link to="/docs" class="flex items-center gap-2 text-base font-medium text-foreground py-2 border-b border-border">
             <BookOpen class="w-5 h-5 text-muted-foreground" /> Documentation
           </router-link>
+
+          <a 
+            :href="GITHUB_URL" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            data-testid="mobile-github-link"
+            class="flex items-center gap-2 text-base font-medium text-foreground py-2"
+          >
+            <Github class="w-5 h-5 text-muted-foreground" /> GitHub
+          </a>
         </div>
       </transition>
     </header>

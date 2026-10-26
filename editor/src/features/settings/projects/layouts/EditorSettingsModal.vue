@@ -44,7 +44,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
-import { Activity, Wind, Grid3X3, FolderSync, Database, BugPlay, Box, SlidersHorizontal } from 'lucide-vue-next';
+import { Activity, Wind, Grid3X3, FolderSync, Database, BugPlay, Box, SlidersHorizontal, Info } from 'lucide-vue-next';
 
 import { SettingsSidebar, SettingsContent } from '@settings/settings.js';
 
@@ -59,7 +59,8 @@ const TABS = [
   { id: 'grid', label: 'Grid & Camera', icon: Grid3X3, desc: 'Visual guidelines for the editor and default viewport camera perspectives.' },
   { id: 'resources', label: 'Resources', icon: Database, desc: 'Global configurations for asset management, compression, and audio volume.' },
   { id: 'debug', label: 'Debugging', icon: BugPlay, desc: 'Visual utility tools for tracking and measuring game runtime performance.' },
-  { id: 'publish', label: 'Publish & Export', icon: Box, desc: 'Compile and bundle your project into independent standalone applications.' }
+  { id: 'publish', label: 'Publish & Export', icon: Box, desc: 'Compile and bundle your project into independent standalone applications.' },
+  { id: 'about', label: 'About', icon: Info, desc: 'Engine version details, official repository, and community channels.' }
 ];
 
 const activeTab = ref('project');

@@ -77,6 +77,27 @@ describe('Integration Test: useConsoleStore', () => {
       expect(store.logs[0].formattedTime).toBeDefined()
     })
 
+    it('deduplicates consecutive identical logs at the last index and increments count', () => {
+      store.addLog({ type: 'log', message: 'Tick event', source: 'Loop' })
+      store.addLog({ type: 'log', message: 'Tick event', source: 'Loop' })
+      store.addLog({ type: 'log', message: 'Tick event', source: 'Loop' })
+
+      expect(store.logs).toHaveLength(1)
+      expect(store.logs[0].message).toBe('Tick event')
+      expect(store.logs[0].count).toBe(3)
+    })
+
+    it('creates a new log line when an identical log arrives but not at the last index', () => {
+      store.addLog({ type: 'log', message: 'Tick event' })
+      store.addLog({ type: 'warn', message: 'Warning alert' })
+      store.addLog({ type: 'log', message: 'Tick event' })
+
+      expect(store.logs).toHaveLength(3)
+      expect(store.logs[0].count).toBe(1)
+      expect(store.logs[1].count).toBe(1)
+      expect(store.logs[2].count).toBe(1)
+    })
+
     it('limits logs array length to maximum 1000 items', () => {
       for (let i = 1; i <= 1005; i++) {
         store.addLog({ type: 'info', message: `Log ${i}` })
@@ -170,6 +191,21 @@ describe('Integration Test: useConsoleStore', () => {
       })
 
       expect(store.logs).toEqual([])
+    })
+
+    it('handles PREVIEW_CLOSED message from BroadcastChannel onmessage callback', () => {
+      store.initListeners()
+
+      store.channel.onmessage({
+        data: { type: 'PREVIEW_CLOSED' }
+      })
+
+      expect(store.logs).toHaveLength(1)
+      expect(store.logs[0]).toMatchObject({
+        type: 'warn',
+        source: 'Engine Lifecycle',
+        message: 'Preview window closed. Engine stopped.'
+      })
     })
   })
 

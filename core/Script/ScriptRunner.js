@@ -1,6 +1,7 @@
 import { applyModifiers } from './ValueModifier.js';
 import { ScriptAssertionError } from './ContextSystem.js';
 import LupisPackageHelper from '../Util/LupisPackageHelper.js';
+import { formatScriptPrefix } from '../Util/ScriptContextUtils.js';
 
 // Visual script graph executor managing flow propagation, data resolution, and node lifecycles
 export default class ScriptRunner {
@@ -170,7 +171,7 @@ export default class ScriptRunner {
             entityScriptId: String(entityScriptId),
             script: scriptName,
             node: nodeName,
-            prefix: `[${sceneName}] [${entityScriptId}] [${scriptName}] [${nodeName}]`
+            prefix: formatScriptPrefix(entityScriptId, scriptName)
         };
     }
 

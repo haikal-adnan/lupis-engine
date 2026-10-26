@@ -26,13 +26,30 @@ export const useConsoleStore = defineStore('engine-console', {
         ...entry, 
         type: entry.type === 'log' ? 'info' : entry.type,
         source: entry.source || 'System', 
-        formattedTime: this.formatTime(entry.time || Date.now())
+        formattedTime: this.formatTime(entry.time || Date.now()),
+        count: entry.count || 1
       }
     },
 
-    // Appends a log entry to the buffer, capped at 1,000 entries
+    // Appends a log entry to the buffer, capped at 1,000 entries.
+    // Deduplicates consecutive logs if the incoming log matches the last log.
     addLog(entry) {
-      this.logs.push(this.processLogEntry(entry))
+      if (!entry) return
+      const processed = this.processLogEntry(entry)
+
+      const lastIndex = this.logs.length - 1
+      if (lastIndex >= 0) {
+        const lastLog = this.logs[lastIndex]
+        if (lastLog.message === processed.message && lastLog.type === processed.type) {
+          lastLog.count = (lastLog.count || 1) + (processed.count || 1)
+          lastLog.time = processed.time || Date.now()
+          lastLog.formattedTime = processed.formattedTime
+          return
+        }
+      }
+
+      processed.count = processed.count || 1
+      this.logs.push(processed)
       if (this.logs.length > 1000) this.logs.shift()
     },
 
@@ -61,6 +78,13 @@ export const useConsoleStore = defineStore('engine-console', {
           this.addLog(payload)
         } else if (type === "ENGINE_CONSOLE_CLEAR") {
           this.logs = []
+        } else if (type === "PREVIEW_CLOSED") {
+          this.addLog({
+            type: 'warn',
+            source: 'Engine Lifecycle',
+            message: 'Preview window closed. Engine stopped.',
+            time: Date.now()
+          })
         }
       }
     },

@@ -57,6 +57,27 @@ describe('MainLayout Component', () => {
     expect(wrapper.text()).not.toContain('Settings')
   })
 
+  it('renders GitHub link with icon to the right of documentation', () => {
+    const wrapper = mount(MainLayout, {
+      global: {
+        stubs: {
+          'router-link': {
+            props: ['to'],
+            template: '<a :href="to"><slot /></a>'
+          },
+          'router-view': true
+        }
+      }
+    })
+
+    const githubLink = wrapper.find('[data-testid="topbar-github-link"]')
+    expect(githubLink.exists()).toBe(true)
+    expect(githubLink.attributes('href')).toBe('https://github.com/haikal-adnan/lupis-engine')
+    expect(githubLink.attributes('target')).toBe('_blank')
+    expect(githubLink.text()).toContain('GitHub')
+    expect(githubLink.find('svg').exists()).toBe(true)
+  })
+
   it('provides a theme toggle icon button that switches theme between light and dark', async () => {
     const wrapper = mount(MainLayout, {
       global: {

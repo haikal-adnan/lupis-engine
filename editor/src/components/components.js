@@ -27,3 +27,5 @@ export { default as BasePopAudio } from '@components/overlay/BasePopAudio.vue'
 export { default as BasePopImage } from '@components/overlay/BasePopImage.vue'
 export { default as BasePrompt } from '@components/overlay/BasePrompt.vue'
 export { default as ScrollArea } from '@components/overlay/ScrollArea.vue'
+
+export { default as DiscordIcon } from '@components/icons/DiscordIcon.vue'

@@ -60,7 +60,7 @@ describe('Context Console Mapping Integration', () => {
       expect(meta.entityScriptId).toBe('player_hero')
       expect(meta.script).toBe('PlayerController')
       expect(meta.node).toBe('JumpAction')
-      expect(meta.prefix).toBe('[TestScene] [player_hero] [PlayerController] [JumpAction]')
+      expect(meta.prefix).toBe('[player_hero::PlayerController]')
     })
 
     it('falls back to entity id when scriptId is not provided', () => {
@@ -68,7 +68,7 @@ describe('Context Console Mapping Integration', () => {
       const meta = getScriptContextMetadata(mockGame, mockRunner, mockNode)
 
       expect(meta.entityScriptId).toBe('ent_999')
-      expect(meta.prefix).toBe('[TestScene] [ent_999] [PlayerController] [JumpAction]')
+      expect(meta.prefix).toBe('[ent_999::PlayerController]')
     })
 
     it('falls back to Global when owner is null', () => {
@@ -76,7 +76,7 @@ describe('Context Console Mapping Integration', () => {
       const meta = getScriptContextMetadata(mockGame, mockRunner, mockNode)
 
       expect(meta.entityScriptId).toBe('Global')
-      expect(meta.prefix).toBe('[TestScene] [Global] [PlayerController] [JumpAction]')
+      expect(meta.prefix).toBe('[PlayerController]')
     })
   })
 
@@ -89,12 +89,12 @@ describe('Context Console Mapping Integration', () => {
       execContext = contextSystem.createExecutionContext(mockRunner, mockNode)
     })
 
-    it('maps context.console.log with [Scene] [Entity] [Script] [Node]', () => {
+    it('maps context.console.log with [Entity::Script]', () => {
       execContext.console.log('Player jumped successfully')
 
       expect(mockGame.events.emit).toHaveBeenCalledWith('console:log', expect.objectContaining({
         type: 'log',
-        message: '[TestScene] [player_hero] [PlayerController] [JumpAction] Player jumped successfully',
+        message: '[player_hero::PlayerController] Player jumped successfully',
         source: 'Script',
         context: {
           scene: 'TestScene',
@@ -105,12 +105,12 @@ describe('Context Console Mapping Integration', () => {
       }))
     })
 
-    it('maps context.console.warn with [Scene] [Entity] [Script] [Node]', () => {
+    it('maps context.console.warn with [Entity::Script]', () => {
       execContext.console.warn('Low stamina!')
 
       expect(mockGame.events.emit).toHaveBeenCalledWith('console:warn', expect.objectContaining({
         type: 'warn',
-        message: '[TestScene] [player_hero] [PlayerController] [JumpAction] Low stamina!',
+        message: '[player_hero::PlayerController] Low stamina!',
         source: 'Script',
         context: {
           scene: 'TestScene',
@@ -121,12 +121,12 @@ describe('Context Console Mapping Integration', () => {
       }))
     })
 
-    it('maps context.console.error with [Scene] [Entity] [Script] [Node]', () => {
+    it('maps context.console.error with [Entity::Script]', () => {
       execContext.console.error('Cannot jump while stunned')
 
       expect(mockGame.events.emit).toHaveBeenCalledWith('console:error', expect.objectContaining({
         type: 'error',
-        message: '[TestScene] [player_hero] [PlayerController] [JumpAction] Cannot jump while stunned',
+        message: '[player_hero::PlayerController] Cannot jump while stunned',
         source: 'Script',
         context: {
           scene: 'TestScene',
@@ -142,7 +142,7 @@ describe('Context Console Mapping Integration', () => {
 
       expect(mockGame.events.emit).toHaveBeenCalledWith('console:log', expect.objectContaining({
         type: 'log',
-        message: '[TestScene] [player_hero] [PlayerController] [JumpAction] Checkpoint reached',
+        message: '[player_hero::PlayerController] Checkpoint reached',
         source: 'Notification',
         context: {
           scene: 'TestScene',
@@ -157,7 +157,7 @@ describe('Context Console Mapping Integration', () => {
 
       expect(mockGame.events.emit).toHaveBeenCalledWith('console:warn', expect.objectContaining({
         type: 'warn',
-        message: '[TestScene] [player_hero] [PlayerController] [JumpAction] Warning: boss ahead',
+        message: '[player_hero::PlayerController] Warning: boss ahead',
         source: 'UserAlert'
       }))
     })
@@ -169,7 +169,7 @@ describe('Context Console Mapping Integration', () => {
       const expectedPrettyList = JSON.stringify(sampleList, null, 2)
       expect(mockGame.events.emit).toHaveBeenCalledWith('console:log', expect.objectContaining({
         type: 'log',
-        message: `[TestScene] [player_hero] [PlayerController] [JumpAction] ${expectedPrettyList}`,
+        message: `[player_hero::PlayerController] ${expectedPrettyList}`,
         source: 'Inventory'
       }))
 
@@ -179,7 +179,7 @@ describe('Context Console Mapping Integration', () => {
       const expectedPrettyMap = JSON.stringify(sampleMap, null, 2)
       expect(mockGame.events.emit).toHaveBeenCalledWith('console:log', expect.objectContaining({
         type: 'log',
-        message: `[TestScene] [player_hero] [PlayerController] [JumpAction] ${expectedPrettyMap}`,
+        message: `[player_hero::PlayerController] ${expectedPrettyMap}`,
         source: 'Stats'
       }))
 
@@ -188,19 +188,19 @@ describe('Context Console Mapping Integration', () => {
       const expectedPrettyES6Map = JSON.stringify({ health: 50 }, null, 2)
       expect(mockGame.events.emit).toHaveBeenCalledWith('console:log', expect.objectContaining({
         type: 'log',
-        message: `[TestScene] [player_hero] [PlayerController] [JumpAction] ${expectedPrettyES6Map}`,
+        message: `[player_hero::PlayerController] ${expectedPrettyES6Map}`,
         source: 'ES6Map'
       }))
     })
 
-    it('maps context.assert errors with [Scene] [Entity] [Script] [Node] [Assert Error] and shows node name', () => {
+    it('maps context.assert errors with [Entity::Script] [Assert Error] and shows node name', () => {
       expect(() => {
         execContext.assert.isTrue(false, 'Expected health > 0')
       }).toThrow(ScriptAssertionError)
 
       expect(mockGame.events.emit).toHaveBeenCalledWith('console:error', expect.objectContaining({
         type: 'error',
-        message: expect.stringContaining("[TestScene] [player_hero] [PlayerController] [JumpAction] [Assert Error] Expected health > 0 (node: 'JumpAction')"),
+        message: expect.stringContaining("[player_hero::PlayerController] [Assert Error] Expected health > 0 (node: 'JumpAction')"),
         source: 'Assert'
       }))
     })
@@ -230,7 +230,7 @@ describe('Context Console Mapping Integration', () => {
 
       expect(mockGame.events.emit).toHaveBeenCalledWith('console:error', expect.objectContaining({
         type: 'error',
-        message: '[TestScene] [player_hero] [CombatScript] [CrashNode] Simulated node crash',
+        message: '[player_hero::CombatScript] Simulated node crash',
         source: 'ScriptRunner',
         context: {
           scene: 'TestScene',
@@ -255,10 +255,10 @@ describe('Context Console Mapping Integration', () => {
       })
 
       expect(econsole.logs).toHaveLength(1)
-      expect(econsole.logs[0].message).toBe('[SceneLevel1] [npc_merchant] [DialogueSystem] [ShowDialogue] Custom engine warning')
+      expect(econsole.logs[0].message).toBe('[npc_merchant::DialogueSystem] Custom engine warning')
       expect(busEmitSpy).toHaveBeenCalledWith('console:error', expect.objectContaining({
         type: 'error',
-        message: '[SceneLevel1] [npc_merchant] [DialogueSystem] [ShowDialogue] Custom engine warning'
+        message: '[npc_merchant::DialogueSystem] Custom engine warning'
       }))
     })
   })

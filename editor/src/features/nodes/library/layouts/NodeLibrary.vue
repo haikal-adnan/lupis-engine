@@ -71,11 +71,10 @@
           <button
             type="button"
             @click="handleAddCustomNodeToCanvas"
-            class="w-full mt-2.5 flex items-center justify-center gap-1.5 py-1.5 px-2 text-xs font-medium rounded border border-dashed border-purple-500/40 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 hover:text-purple-300 transition-colors cursor-pointer group"
+            class="w-full mt-2.5 flex items-center justify-center gap-1.5 py-1.5 px-2 text-xs font-medium rounded border border-dashed border-purple-100/40 bg-primary-500/10 hover:bg-primary-500/20 text-primary-400 hover:text-primary-300 transition-colors cursor-pointer group"
             data-testid="node-library-add-custom-node-btn"
             title="Add Custom Node directly to Graph"
           >
-            <Cpu class="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
             <span>+ Add Custom Node</span>
           </button>
         </div>

@@ -11,7 +11,26 @@ export class ScriptAssertionError extends Error {
   }
 }
 
-// Resolves diagnostic prefix [Scene] [Entity] [Script] [Node] for console events
+// Resolves a clean, professional diagnostic prefix like [Entity::Script] or [Script]
+export function formatScriptPrefix(entityScriptId, scriptName) {
+  const entity = entityScriptId && entityScriptId !== 'Global' && entityScriptId !== 'Entity'
+    ? entityScriptId
+    : null;
+  const script = scriptName && scriptName !== 'Script' ? scriptName : null;
+
+  if (entity && script) {
+    return `[${entity}::${script}]`;
+  }
+  if (entity) {
+    return `[${entity}]`;
+  }
+  if (script) {
+    return `[${script}]`;
+  }
+  return '[Engine]';
+}
+
+// Resolves diagnostic metadata and compact prefix for console events
 export function getScriptContextMetadata(game, runner, node) {
   if (runner && typeof runner.getContextMetadata === 'function') {
     return runner.getContextMetadata(node);
@@ -48,7 +67,7 @@ export function getScriptContextMetadata(game, runner, node) {
     entityScriptId: String(entityScriptId),
     script: scriptName,
     node: nodeName,
-    prefix: `[${sceneName}] [${entityScriptId}] [${scriptName}] [${nodeName}]`
+    prefix: formatScriptPrefix(entityScriptId, scriptName)
   };
 }
 

@@ -28,6 +28,7 @@
         <SettingsTabResources v-else-if="activeTabId === 'resources'" :info="activeTabInfo" />
         <SettingsTabDebug v-else-if="activeTabId === 'debug'" :info="activeTabInfo" />
         <SettingsTabPublish v-else-if="activeTabId === 'publish'" :info="activeTabInfo" />
+        <SettingsTabAbout v-else-if="activeTabId === 'about'" :info="activeTabInfo" />
       </div>
     </div>
   </div>
@@ -44,7 +45,8 @@ import {
   SettingsTabDebug,
   SettingsTabPublish,
   SettingsTabProject,
-  SettingsTabPreferences
+  SettingsTabPreferences,
+  SettingsTabAbout
 } from '@settings/settings.js'
 
 defineProps({

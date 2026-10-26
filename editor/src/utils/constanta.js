@@ -4,3 +4,7 @@ export const LUPIS_HEADER = new Uint8Array([
 ]); 
 
 export const XOR_KEY = 0x5A; 
+
+export const ENGINE_VERSION = '0.1.0';
+export const GITHUB_URL = 'https://github.com/haikal-adnan/lupis-engine';
+export const DISCORD_URL = 'https://discord.gg/lupis-engine';

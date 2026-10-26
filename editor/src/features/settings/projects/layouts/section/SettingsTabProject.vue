@@ -270,7 +270,7 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { 
-  Info, CloudUpload, RotateCcw, UploadCloud, Trash2, Camera, Gamepad2 
+  Info, CloudUpload, RotateCcw, UploadCloud, Trash2, Camera, Gamepad2, Github 
 } from 'lucide-vue-next';
 
 import {
@@ -280,7 +280,10 @@ import {
   BaseNumber,
   BaseCheckbox,
   BaseButton,
+  DiscordIcon,
 } from '@components/components.js';
+
+import { ENGINE_VERSION, GITHUB_URL, DISCORD_URL } from '@utils/constanta.js';
 
 import { useProjectStore } from '@projects/projects.js';
 import { useWorkspaceStore } from '@workspaces/workspaces.js';

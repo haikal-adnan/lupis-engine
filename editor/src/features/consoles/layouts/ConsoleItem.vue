@@ -14,33 +14,13 @@
         {{ log.formattedTime }}
       </span>
       
-      <!-- Mapped Context Badges: [Scene Name] [Entity Script ID] [Script Name] [Node Name] -->
+      <!-- Compact Context Badge like Unity/Godot/Unreal -->
       <template v-if="parsedContext">
-        <span class="inline-flex flex-wrap items-center gap-1 mr-2 align-middle select-none">
-          <span 
-            class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-secondary/80 text-foreground/90 border border-border/50"
-            :title="`Scene: ${parsedContext.scene}`"
-          >
-            [{{ parsedContext.scene }}]
-          </span>
-          <span 
-            class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20"
-            :title="`Entity Script ID: ${parsedContext.entityScriptId}`"
-          >
-            [{{ parsedContext.entityScriptId }}]
-          </span>
-          <span 
-            class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20"
-            :title="`Script: ${parsedContext.script}`"
-          >
-            [{{ parsedContext.script }}]
-          </span>
-          <span 
-            class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
-            :title="`Node: ${parsedContext.node}`"
-          >
-            [{{ parsedContext.node }}]
-          </span>
+        <span 
+          class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20 mr-2 align-middle select-none shrink-0"
+          :title="contextTooltip"
+        >
+          {{ contextBadgeText }}
         </span>
         <span :class="messageColorClass">
           {{ displayMessage }}
@@ -63,6 +43,16 @@
         </span>
       </template>
     </div>
+
+    <!-- Repeat count multiplier (e.g. 2, 3) -->
+    <div v-if="log.count && log.count > 1" class="shrink-0 self-center">
+      <span 
+        class="inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-muted text-foreground/80 border border-border select-none"
+        :title="`Repeated ${log.count} times`"
+      >
+        {{ log.count > 999 ? '999+' : log.count }}
+      </span>
+    </div>
   </div>
 </template>
 
@@ -75,7 +65,7 @@ const props = defineProps({
 })
 
 const parsedContext = computed(() => {
-  if (props.log.context && (props.log.context.scene || props.log.context.node)) {
+  if (props.log.context && (props.log.context.scene || props.log.context.node || props.log.context.script || props.log.context.entityScriptId)) {
     return {
       scene: props.log.context.scene || 'Scene',
       entityScriptId: props.log.context.entityScriptId || props.log.context.entity || 'Entity',
@@ -84,23 +74,62 @@ const parsedContext = computed(() => {
     }
   }
 
-  const match = props.log.message?.match(/^\[(.*?)\]\s*\[(.*?)\]\s*\[(.*?)\]\s*\[(.*?)\]\s*([\s\S]*)$/)
-  if (match) {
+  // Fallback regex matching legacy [scene] [entity] [script] [node]
+  const legacyMatch = props.log.message?.match(/^\[(.*?)\]\s*\[(.*?)\]\s*\[(.*?)\]\s*\[(.*?)\]\s*([\s\S]*)$/)
+  if (legacyMatch) {
     return {
-      scene: match[1],
-      entityScriptId: match[2],
-      script: match[3],
-      node: match[4]
+      scene: legacyMatch[1],
+      entityScriptId: legacyMatch[2],
+      script: legacyMatch[3],
+      node: legacyMatch[4]
     }
   }
+
+  // Fallback regex matching modern [entity::script] or [script]
+  const modernMatch = props.log.message?.match(/^\[(.*?)\]\s+([\s\S]*)$/)
+  if (modernMatch && modernMatch[1].includes('::')) {
+    const parts = modernMatch[1].split('::')
+    return {
+      scene: 'Scene',
+      entityScriptId: parts[0] || 'Entity',
+      script: parts[1] || 'Script',
+      node: 'Node'
+    }
+  }
+
   return null
 })
 
+const contextBadgeText = computed(() => {
+  if (!parsedContext.value) return ''
+  const { entityScriptId, script } = parsedContext.value
+  if (entityScriptId && entityScriptId !== 'Global' && entityScriptId !== 'Entity') {
+    return script && script !== 'Script' ? `[${entityScriptId}::${script}]` : `[${entityScriptId}]`
+  }
+  return `[${script || entityScriptId || 'Script'}]`
+})
+
+const contextTooltip = computed(() => {
+  if (!parsedContext.value) return ''
+  const { scene, entityScriptId, script, node } = parsedContext.value
+  return `Scene: ${scene} | Entity: ${entityScriptId} | Script: ${script} | Node: ${node}`
+})
+
 const displayMessage = computed(() => {
-  if (parsedContext.value) {
-    const match = props.log.message?.match(/^\[(.*?)\]\s*\[(.*?)\]\s*\[(.*?)\]\s*\[(.*?)\]\s*([\s\S]*)$/)
-    if (match) {
-      return match[5]
+  if (parsedContext.value && props.log.message) {
+    // Strip legacy 4 brackets if present
+    const legacyMatch = props.log.message.match(/^\[(.*?)\]\s*\[(.*?)\]\s*\[(.*?)\]\s*\[(.*?)\]\s*([\s\S]*)$/)
+    if (legacyMatch) {
+      return legacyMatch[5]
+    }
+    // Strip modern prefix [entity::script] or [script] if matching badge
+    const badge = contextBadgeText.value
+    if (badge && props.log.message.startsWith(badge)) {
+      return props.log.message.slice(badge.length).trimStart()
+    }
+    const modernMatch = props.log.message.match(/^\[.*?\]\s+([\s\S]*)$/)
+    if (modernMatch) {
+      return modernMatch[1]
     }
   }
   return props.log.message
