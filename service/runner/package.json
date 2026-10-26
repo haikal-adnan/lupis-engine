@@ -1,8 +1,12 @@
 {
   "name": "lupis-runner",
   "version": "0.1.0",
+  "author": "Lupis Engine",
   "description": "Lupis Engine Standalone Runner",
   "main": "main.js",
+  "devDependencies": {
+    "electron": "^31.0.0"
+  },
   "build": {
     "appId": "com.lupis.runner",
     "productName": "Lupis Engine Standalone",

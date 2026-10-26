@@ -3,9 +3,41 @@ import { useScriptStore } from '@scripts/scripts.js';
 import { useScriptHistory } from '@historys/historys.js';
 import { usePopAlert, usePrompt } from '@composables/composables.js';
 import { useNodeBlueprint } from '@nodes/nodes.js';
-import { PROTECTED_PORTS } from '../../contract/portIds.js';
-import { keyToPortId } from '../../contract/keyPortNames.js';
+import { PORT_ID_REGEX, PROTECTED_PORTS, KEY_NAME_MAP } from '../../nodeConstants.js';
 import { isUserCustomNode } from '../layouts/custom/index.js';
+
+export function isValidPortId(id) {
+  return typeof id === 'string' && PORT_ID_REGEX.test(id);
+}
+
+export function isProtectedPort(id) {
+  return PROTECTED_PORTS.includes(id);
+}
+
+export function keyToPortId(rawKey) {
+  if (!rawKey || typeof rawKey !== 'string') return 'onKey';
+  const cleanKey = rawKey.trim().toLowerCase();
+
+  if (KEY_NAME_MAP[cleanKey]) {
+    return `on${KEY_NAME_MAP[cleanKey]}`;
+  }
+
+  if (/^[0-9]$/.test(cleanKey)) {
+    return `onKey${cleanKey}`;
+  }
+
+  if (/^[a-z]$/.test(cleanKey)) {
+    return `on${cleanKey.toUpperCase()}`;
+  }
+
+  if (/^[a-z0-9]+$/.test(cleanKey)) {
+    const capitalized = cleanKey.charAt(0).toUpperCase() + cleanKey.slice(1);
+    return `on${capitalized}`;
+  }
+
+  const safeStr = cleanKey.replace(/[^a-z0-9]/gi, '');
+  return safeStr ? `on${safeStr.charAt(0).toUpperCase() + safeStr.slice(1)}` : 'onKey';
+}
 
 // Shared target dropdown state across components
 const activeDropdownTarget = ref(null);
@@ -556,6 +588,8 @@ export function useDynamicPortManager() {
     canDeleteInputPort,
     canDeleteOutputPort,
     syncSwitchCases,
-    isProtectedPort: (portId) => PROTECTED_PORTS.includes(portId)
+    isProtectedPort,
+    isValidPortId,
+    keyToPortId
   };
 }

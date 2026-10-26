@@ -42,8 +42,7 @@
           "**/*",
           "!temp/**",
           "!exports/**",
-          "!.cache/**",
-          "!node_modules/electron/dist/**"
+          "!.cache/**"
         ]
       }
     ],

@@ -99,7 +99,7 @@
           <div class="space-y-1 flex-1 min-w-0">
             <div class="flex items-center gap-2">
               <h3 class="font-bold text-sm text-foreground">Project Archive</h3>
-              <span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">Backup</span>
+              <span class="text-[10px] font-semibold px-2 py-0.5 rounded text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">Backup</span>
             </div>
             <p class="text-xs text-muted-foreground leading-relaxed">
               Export raw project data, scenes, and assets into a single backup file.

@@ -3,9 +3,47 @@ import { useScriptStore } from '@scripts/scripts.js';
 import { useScriptHistory } from '@historys/historys.js';
 import { useWorkspaceStore } from '@workspaces/workspaces.js';
 import { useDynamicPortManager } from '@nodes/nodes.js';
-import { PORT_ID_REGEX } from '../../contract/portIds.js';
-import { getPortColor } from '../../contract/portTypes.js';
+import { PORT_ID_REGEX, PORT_COLORS, NODE_ROLES } from '../../nodeConstants.js';
 import { isUserCustomNode } from '../layouts/custom/index.js';
+
+export {
+  stripComments,
+  stripStringsAndComments,
+  extractUsedInputs,
+  extractUsedOutputs,
+  extractUsedLocalVariables,
+  extractUsedGlobalVariables,
+  extractContextAccesses,
+  validateCodePanelContract,
+  generateDefaultNodeCode
+} from '@core/Script/contract/codePanelContract.js';
+
+import { validateCodePanelContract } from '@core/Script/contract/codePanelContract.js';
+
+export function getPortColor(dataType) {
+  const norm = String(dataType || 'any').toLowerCase();
+  return PORT_COLORS[norm] || PORT_COLORS.any;
+}
+
+export function getNodeRole(nodeDef) {
+  if (nodeDef && nodeDef.role) {
+    return nodeDef.role;
+  }
+
+  const inputs = Array.isArray(nodeDef?.inputs) ? nodeDef.inputs : [];
+  const outputs = Array.isArray(nodeDef?.outputs) ? nodeDef.outputs : [];
+
+  const hasExecIn = inputs.some(p => String(p.dataType || '').toLowerCase() === 'execution');
+  const hasExecOut = outputs.some(p => String(p.dataType || '').toLowerCase() === 'execution');
+
+  if (hasExecIn) {
+    return NODE_ROLES.ACTION;
+  }
+  if (hasExecOut) {
+    return NODE_ROLES.EVENT;
+  }
+  return NODE_ROLES.PURE;
+}
 
 // Manages node inspector state, port reconfiguration, and structural edits
 export function useNodeLogic() {
@@ -276,6 +314,9 @@ export function useNodeLogic() {
     addFromDropdown,
     removeDynamicInput,
     canDeleteInputPort,
-    canDeleteOutputPort
+    canDeleteOutputPort,
+    getPortColor,
+    getNodeRole,
+    validateCodePanelContract
   };
 }

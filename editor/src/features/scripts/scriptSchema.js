@@ -1,5 +1,5 @@
 import { GenerateUUID, sanitizeScriptId } from '@utils/utils.js';
-import { getNodeRole } from '@nodes/contract/nodeRoles.js';
+import { getNodeRole } from '@nodes/inspector/composables/useNodeLogic.js';
 
 // Graph node pin port factory
 export const createScriptPort = (data = {}) => ({

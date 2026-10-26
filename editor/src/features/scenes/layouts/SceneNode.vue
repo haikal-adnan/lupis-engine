@@ -30,7 +30,7 @@
       :aria-disabled="isInactive ? 'true' : 'false'"
       :class="[
         isSelected
-          ? 'bg-primary/15 text-primary font-semibold dark:bg-primary/25 dark:text-primary-foreground'
+          ? 'bg-blue-600/20 text-white'
           : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground',
         isDragOver && dragPosition === 'inside'
           ? 'ring-2 ring-blue-500 ring-inset bg-blue-500/10 z-10'
@@ -59,7 +59,7 @@
           class="w-3 h-3 transition-transform pointer-events-none"
           :class="[
             (!hasChildren && node.type !== 'layer') ? 'opacity-0' : 'opacity-70',
-            isSelected ? 'text-primary dark:text-primary-foreground' : 'text-muted-foreground'
+            isSelected ? 'text-white' : 'text-muted-foreground'
           ]"
         />
       </button>
@@ -68,9 +68,9 @@
         :is="getIcon"
         class="w-3.5 h-3.5 mr-2 shrink-0 pointer-events-none"
         :class="[
-            isSelected ? 'text-primary dark:text-primary-foreground' : '',
+            isSelected ? 'text-white' : '',
             node.type === 'layer' ? 'text-blue-500' : 
-            (isPrefab && !isSelected ? 'text-sky-600 dark:text-sky-400' : 'opacity-70')
+            (isPrefab && !isSelected ? 'text-sky-400' : 'opacity-70')
         ]"
       />
 
@@ -78,7 +78,7 @@
         class="py-1 pointer-events-none mr-2 flex-grow flex items-center gap-2 whitespace-nowrap" 
         :class="{ 
             'font-bold': node.type === 'layer',
-            'text-sky-600 dark:text-sky-400 font-medium': isPrefab && !isSelected,
+            'text-sky-400 font-medium': isPrefab && !isSelected,
             'opacity-50': !visible || isInactive 
         }"
       >
@@ -101,7 +101,7 @@
             ? 'opacity-100 pointer-events-auto' 
             : 'opacity-0 pointer-events-none group-hover/node:opacity-100 group-hover/node:pointer-events-auto',
           isSelected 
-            ? 'bg-primary/15 dark:bg-slate-800 text-foreground dark:text-white' 
+            ? 'bg-[#1e293b] text-white' 
             : 'bg-background group-hover/node:bg-muted'
         ]"
       >

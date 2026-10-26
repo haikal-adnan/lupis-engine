@@ -57,6 +57,23 @@
             </button>
           </div>
         </PropertyRow>
+
+        <PropertyRow label="Quick Toggle">
+          <div class="flex items-center gap-3">
+            <BaseButton
+              data-testid="theme-toggle-btn"
+              :data-theme="isDark ? 'dark' : 'light'"
+              @click="toggleTheme"
+            >
+              <Moon v-if="isDark" class="w-4 h-4 mr-2 text-blue-400" />
+              <Sun v-else class="w-4 h-4 mr-2 text-amber-500" />
+              <span>{{ isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode' }}</span>
+            </BaseButton>
+            <span class="text-xs text-muted-foreground">
+              Current active theme: <strong class="font-mono text-foreground capitalize">{{ isDark ? 'dark' : 'light' }}</strong>
+            </span>
+          </div>
+        </PropertyRow>
       </div>
     </section>
 

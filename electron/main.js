@@ -132,6 +132,7 @@ async function ensureBackendRunning() {
         ...process.env,
         PORT: String(backendPort),
         ELECTRON_RUN_AS_NODE: '1',
+        ELECTRON_NO_ASAR: '1',
         LUPIS_USER_DATA: userDataPath
       },
       stdio: ['pipe', 'pipe', 'pipe', 'ipc']

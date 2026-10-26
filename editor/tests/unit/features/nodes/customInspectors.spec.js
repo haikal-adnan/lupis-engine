@@ -15,7 +15,7 @@ import {
 } from '@nodes/nodes.js';
 import { useScriptStore } from '@scripts/scripts.js';
 import { useProjectStore } from '@projects/projects.js';
-import { PORT_ID_REGEX } from '@nodes/contract/portIds.js';
+import { PORT_ID_REGEX } from '@nodes/nodes.js';
 
 describe('Custom Inspectors & Custom Script Management', () => {
   beforeEach(() => {

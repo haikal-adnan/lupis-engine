@@ -4,6 +4,7 @@ import path from "path";
 import fs from "fs";
 import crypto from "crypto";
 import { fileURLToPath } from "url";
+import { createRequire } from "module";
 import { spawn, exec } from "child_process";
 import archiver from "archiver";
 import cors from "cors";
@@ -15,6 +16,9 @@ import {
   processProjectDataForExport,
   generateStandaloneIndexHtml
 } from "./bundler/engineBundler.js";
+
+const require = createRequire(import.meta.url);
+process.env.ELECTRON_NO_ASAR = "1";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -673,6 +677,44 @@ async function extractZipBuffer(zipBuffer, outputDir) {
   await directory.extract({ path: outputDir });
 }
 
+/**
+ * Safely creates a symlink/junction or copies node_modules into destination directory.
+ * Handles broken symlinks, pre-existing entries, cross-platform differences, and avoids EISDIR.
+ */
+function safeLinkOrCopyNodeModules(sourceDir, destDir) {
+  if (!fs.existsSync(sourceDir)) return;
+
+  try {
+    const stat = fs.lstatSync(destDir);
+    if (stat.isSymbolicLink()) {
+      try {
+        if (fs.existsSync(destDir)) {
+          const currentTarget = fs.realpathSync(destDir);
+          const expectedTarget = fs.realpathSync(sourceDir);
+          if (currentTarget === expectedTarget) return;
+        }
+      } catch {}
+      try { fs.unlinkSync(destDir); } catch { fs.rmSync(destDir, { recursive: true, force: true }); }
+    } else if (stat.isDirectory()) {
+      return;
+    } else {
+      fs.unlinkSync(destDir);
+    }
+  } catch {}
+
+  const symlinkType = process.platform === "win32" ? "junction" : "dir";
+  try {
+    fs.symlinkSync(sourceDir, destDir, symlinkType);
+  } catch (symlinkErr) {
+    try { fs.rmSync(destDir, { recursive: true, force: true }); } catch {}
+    try {
+      fs.cpSync(sourceDir, destDir, { recursive: true });
+    } catch (cpErr) {
+      console.error(`[Runner Link] cpSync failed: ${cpErr.message}`);
+    }
+  }
+}
+
 const runnerWorkspaceReadyPromises = new Map();
 
 /**
@@ -711,17 +753,10 @@ async function ensureRunnerWorkspaceCache(buildMode) {
       filter: (src) => !src.includes("node_modules") && !src.includes("dist") && !src.includes("web")
     });
 
-    // Symlink root node_modules into the cached runner workspace
+    // Safely link root node_modules into the cached runner workspace
     const rootNodeModules = path.join(__dirname, "node_modules");
     const cacheNodeModules = path.join(modeWorkspace, "node_modules");
-    if (fs.existsSync(rootNodeModules) && !fs.existsSync(cacheNodeModules)) {
-      const symlinkType = process.platform === "win32" ? "junction" : "dir";
-      try {
-        fs.symlinkSync(rootNodeModules, cacheNodeModules, symlinkType);
-      } catch {
-        fs.cpSync(rootNodeModules, cacheNodeModules, { recursive: true });
-      }
-    }
+    safeLinkOrCopyNodeModules(rootNodeModules, cacheNodeModules);
 
     // Populate web/js/ with pre-bundled engine chunks
     for (const [relFile, content] of Object.entries(runtimeChunks)) {
@@ -754,17 +789,10 @@ function prepareJobFolderFromRunnerCache(jobFolder, buildMode) {
     filter: (src) => !src.includes("node_modules") && !src.includes("dist")
   });
 
-  // Link node_modules directly to root node_modules
+  // Safely link node_modules directly to root node_modules
   const rootNodeModules = path.join(__dirname, "node_modules");
   const jobNodeModules = path.join(jobFolder, "node_modules");
-  if (fs.existsSync(rootNodeModules) && !fs.existsSync(jobNodeModules)) {
-    const symlinkType = process.platform === "win32" ? "junction" : "dir";
-    try {
-      fs.symlinkSync(rootNodeModules, jobNodeModules, symlinkType);
-    } catch {
-      fs.cpSync(rootNodeModules, jobNodeModules, { recursive: true });
-    }
-  }
+  safeLinkOrCopyNodeModules(rootNodeModules, jobNodeModules);
 }
 
 app.post("/api/export-app/zip", (req, res) => {
@@ -879,7 +907,7 @@ app.post("/api/export-app/zip", (req, res) => {
       console.error(`[ZIP Export Error]:`, processErr);
       cleanup();
       if (!res.headersSent) {
-        res.status(500).json({ success: false, error: "Failed to process ZIP export." });
+        res.status(500).json({ success: false, error: processErr.message || "Failed to process ZIP export." });
       }
     }
   });
@@ -1017,88 +1045,154 @@ app.post("/api/export-app/exe", (req, res) => {
       );
 
       console.log(`[Job ${jobId}] Running single-pass electron-builder EXE compilation (${buildMode.toUpperCase()})...`);
-      const isWin = process.platform === "win32";
-      const localEbCli = path.join(__dirname, "node_modules", "electron-builder", "out", "cli", "cli.js");
-      let buildProcess;
 
-      if (fs.existsSync(localEbCli)) {
-        const ebArgs = [
-          localEbCli,
-          "--win",
-          "portable",
-          "--config.directories.output=dist",
-          "--config.compression=normal",
-          "--config.win.icon=icon.png"
-        ];
-        buildProcess = spawn(process.execPath, ebArgs, {
-          cwd: jobFolder,
-          env: {
-            ...process.env,
-            ELECTRON_RUN_AS_NODE: "1"
-          }
-        });
-      } else {
-        const cmd = isWin ? "npx.cmd" : "npx";
-        const args = [
-          "electron-builder",
-          "--win",
-          "portable",
-          "--config.directories.output=dist",
-          "--config.compression=normal",
-          "--config.win.icon=icon.png"
-        ];
-        buildProcess = spawn(cmd, args, { cwd: jobFolder, shell: true });
+      // Ensure ELECTRON_NO_ASAR is active so electron-builder can package asar archives safely
+      process.env.ELECTRON_NO_ASAR = "1";
+
+      let electronBuilder = null;
+      try {
+        electronBuilder = require("electron-builder");
+      } catch {
+        try {
+          electronBuilder = require(path.join(__dirname, "node_modules", "electron-builder"));
+        } catch (ebErr) {
+          console.warn("[electron-builder] Could not require electron-builder directly:", ebErr.message);
+        }
       }
 
-      buildProcess.stdout?.on("data", (d) => console.log(`[electron-builder stdout]: ${d.toString()}`));
-      buildProcess.stderr?.on("data", (d) => console.error(`[electron-builder stderr]: ${d.toString()}`));
+      // Check for candidate local offline electron dist (clean unpacked binaries)
+      const candidateElectronDists = [
+        path.join(__dirname, "node_modules", "electron", "dist"),
+        path.resolve(__dirname, "../../node_modules/electron/dist"),
+        process.resourcesPath ? path.join(process.resourcesPath, "service", "node_modules", "electron", "dist") : null
+      ].filter(Boolean);
 
-      buildProcess.on("close", (code) => {
-        if (code !== 0) {
-          console.error(`[Job ${jobId}] electron-builder exited with code ${code}`);
-          cleanup();
-          return res.status(500).json({ success: false, error: "Failed to compile EXE file." });
+      let foundElectronDist = null;
+      for (const cand of candidateElectronDists) {
+        if (fs.existsSync(cand) && (fs.existsSync(path.join(cand, "electron.exe")) || fs.existsSync(path.join(cand, "electron")))) {
+          foundElectronDist = cand;
+          break;
         }
+      }
 
+      const buildConfig = {
+        directories: {
+          output: "dist"
+        },
+        compression: "normal",
+        win: {
+          icon: "icon.png",
+          executableName: safeAppTitle
+        }
+      };
+
+      if (foundElectronDist) {
+        console.log(`[Job ${jobId}] Using local offline electronDist: ${foundElectronDist}`);
+        buildConfig.electronDist = foundElectronDist;
+      }
+
+      let generatedExePath = null;
+
+      if (electronBuilder && typeof electronBuilder.build === "function") {
+        console.log(`[Job ${jobId}] Invoking electron-builder programmatic API...`);
+        const buildOptions = {
+          projectDir: jobFolder,
+          targets: electronBuilder.Platform.WINDOWS.createTarget(["portable"]),
+          config: buildConfig
+        };
+
+        const buildResult = await electronBuilder.build(buildOptions);
+        console.log(`[Job ${jobId}] Programmatic build completed with result:`, buildResult);
+
+        if (Array.isArray(buildResult) && buildResult.length > 0) {
+          const matched = buildResult.find((f) => typeof f === "string" && f.endsWith(".exe") && fs.existsSync(f));
+          if (matched) {
+            generatedExePath = matched;
+          }
+        }
+      } else {
+        console.log(`[Job ${jobId}] Programmatic electron-builder unavailable, running via child script runner...`);
+        const runnerScript = path.join(jobFolder, "_build_runner.cjs");
+        const ebModulePath = path.join(__dirname, "node_modules", "electron-builder").replace(/\\/g, "/");
+        const runnerCode = `
+process.env.ELECTRON_NO_ASAR = "1";
+const eb = require(${JSON.stringify(ebModulePath)});
+eb.build(${JSON.stringify({
+  projectDir: jobFolder,
+  targets: [{ name: "portable" }],
+  config: buildConfig
+})}).then(() => process.exit(0)).catch((err) => {
+  console.error(err);
+  process.exit(1);
+});
+`;
+        fs.writeFileSync(runnerScript, runnerCode, "utf-8");
+
+        await new Promise((resolve, reject) => {
+          const child = spawn(process.execPath, [runnerScript], {
+            cwd: jobFolder,
+            env: {
+              ...process.env,
+              ELECTRON_RUN_AS_NODE: "1",
+              ELECTRON_NO_ASAR: "1"
+            }
+          });
+
+          child.stdout?.on("data", (d) => console.log(`[electron-builder stdout]: ${d.toString().trim()}`));
+          child.stderr?.on("data", (d) => console.error(`[electron-builder stderr]: ${d.toString().trim()}`));
+
+          child.on("error", reject);
+          child.on("close", (code) => {
+            if (code === 0) resolve();
+            else reject(new Error(`Executable compilation failed with code ${code}.`));
+          });
+        });
+      }
+
+      if (!generatedExePath) {
         const distDir = path.join(jobFolder, "dist");
         const distFiles = fs.existsSync(distDir) ? fs.readdirSync(distDir) : [];
         const exeFile = distFiles.find((f) => f.endsWith(".exe"));
-
-        if (!exeFile) {
-          cleanup();
-          return res.status(500).json({ success: false, error: "EXE output not found." });
+        if (exeFile) {
+          generatedExePath = path.join(distDir, exeFile);
         }
+      }
 
-        const generatedExePath = path.join(distDir, exeFile);
-        const downloadRelativeUrl = `/api/download-app/exe/${projectId}?mode=${buildMode}&name=${encodeURIComponent(safeAppTitle)}`;
-
-        fs.copyFileSync(generatedExePath, targetFilePath);
-        fs.writeFileSync(
-          metadataPath,
-          JSON.stringify({
-            projectId,
-            projectName: safeAppTitle,
-            mode: buildMode,
-            updatedAt,
-            schema: schemaVersion,
-            lastExported: new Date().toISOString()
-          })
-        );
-
+      if (!generatedExePath || !fs.existsSync(generatedExePath)) {
         cleanup();
+        return res.status(500).json({ success: false, error: "EXE output file not found in build directory." });
+      }
 
-        return res.json({
-          success: true,
+      const downloadRelativeUrl = `/api/download-app/exe/${projectId}?mode=${buildMode}&name=${encodeURIComponent(safeAppTitle)}`;
+
+      fs.copyFileSync(generatedExePath, targetFilePath);
+      fs.writeFileSync(
+        metadataPath,
+        JSON.stringify({
+          projectId,
+          projectName: safeAppTitle,
           mode: buildMode,
-          message: "EXE compilation complete.",
-          downloadUrl: downloadRelativeUrl
-        });
+          updatedAt,
+          schema: schemaVersion,
+          lastExported: new Date().toISOString()
+        })
+      );
+
+      cleanup();
+
+      return res.json({
+        success: true,
+        mode: buildMode,
+        message: "EXE compilation complete.",
+        downloadUrl: downloadRelativeUrl
       });
 
     } catch (processErr) {
       console.error(`[EXE Process Error]:`, processErr);
       cleanup();
-      if (!res.headersSent) res.status(500).json({ success: false, error: "Failed to process EXE export." });
+      if (!res.headersSent) {
+        res.status(500).json({ success: false, error: processErr.message || "Failed to process EXE export." });
+      }
     }
   });
 });

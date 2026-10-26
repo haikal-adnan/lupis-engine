@@ -1,6 +1,10 @@
 // Exports visual script node graph components, inspector composables, and contracts.
 
-export { useGraphEditor } from '@nodes/graph/composables/useGraphEditor.js'
+export { 
+  useGraphEditor,
+  isTypeCompatible,
+  validatePayloadShape
+} from '@nodes/graph/composables/useGraphEditor.js'
 export { useNodeMenu } from '@nodes/graph/composables/useNodeMenu.js'
 
 export { default as GraphNode } from '@nodes/graph/layouts/GraphNode.vue'
@@ -27,9 +31,27 @@ export { default as NodeBlueprintModal } from '@nodes/library/layouts/NodeBluepr
 export { default as NodeLibrary } from '@nodes/library/layouts/NodeLibrary.vue'
 export { default as NodeListItem } from '@nodes/library/layouts/NodeListItem.vue'
 
-export { useDynamicPortManager } from '@nodes/inspector/composables/useDynamicPortManager.js';
+export { 
+  useDynamicPortManager,
+  isValidPortId,
+  isProtectedPort,
+  keyToPortId
+} from '@nodes/inspector/composables/useDynamicPortManager.js';
 
-export { useNodeLogic } from '@nodes/inspector/composables/useNodeLogic.js'
+export { 
+  useNodeLogic,
+  getPortColor,
+  getNodeRole,
+  validateCodePanelContract,
+  stripComments,
+  stripStringsAndComments,
+  extractUsedInputs,
+  extractUsedOutputs,
+  extractUsedLocalVariables,
+  extractUsedGlobalVariables,
+  extractContextAccesses,
+  generateDefaultNodeCode
+} from '@nodes/inspector/composables/useNodeLogic.js'
 export { useNodeInspector } from '@nodes/inspector/composables/useNodeInspector.js'
 
 export { default as VariableSelect } from '@nodes/inspector/layouts/VariableSelect.vue'
@@ -41,6 +63,6 @@ export { default as NodeEdge } from '@nodes/inspector/layouts/NodeEdge.vue'
 export { default as NodePorts } from '@nodes/inspector/layouts/NodePorts.vue'
 export * from './inspector/layouts/custom/index.js'
 
-// --- Contracts and blueprints ---
-export * from './contract/index.js';
+// --- Constants and blueprints ---
+export * from './nodeConstants.js';
 export * from './library/blueprints/index.js';

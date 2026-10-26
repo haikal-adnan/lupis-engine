@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { BlueprintInput } from '@nodes/library/blueprints/BlueprintInput.js';
 import { BlueprintAnimation } from '@nodes/library/blueprints/BlueprintAnimation.js';
-import { validateCodePanelContract } from '@nodes/contract/codePanelContract.js';
+import { validateCodePanelContract } from '@nodes/nodes.js';
 import { layerSchema } from '@scenes/scenes.js';
 import LayerSystem from '@core/System/LayerSystem.js';
 import PointerRaycast from '@core/System/PointerRaycast.js';

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { findBlueprintByType, ALL_BLUEPRINTS } from '../../../../src/features/nodes/library/blueprints/index.js';
 import { BlueprintFlow } from '../../../../src/features/nodes/library/blueprints/BlueprintFlow.js';
-import { validateCodePanelContract } from '../../../../src/features/nodes/contract/codePanelContract.js';
+import { validateCodePanelContract } from '../../../../src/features/nodes/nodes.js';
 
 describe('BlueprintTimer (logicTimer) Specification (Seconds & Decimals)', () => {
   function createTestEnvironment(inputs = {}, initialState = {}) {

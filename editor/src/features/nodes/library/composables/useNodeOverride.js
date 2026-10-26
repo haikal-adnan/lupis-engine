@@ -5,7 +5,7 @@ import { useConfirm, usePopAlert } from '@composables/composables.js';
 import { useScriptHistory } from '@historys/historys.js';
 import { useProjectStore } from '@projects/projects.js';
 import { useWorkspaceStore } from '@workspaces/workspaces.js';
-import { getPortColor } from '../../contract/portTypes.js';
+import { getPortColor } from '../../inspector/composables/useNodeLogic.js';
 
 // Normalizes raw data types to canonical scripting types
 export function normalizeDataType(dataType) {

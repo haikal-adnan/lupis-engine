@@ -12,7 +12,7 @@ import {
   extractContextAccesses,
   validateCodePanelContract,
   generateDefaultNodeCode
-} from '@nodes/contract/codePanelContract.js';
+} from '@nodes/nodes.js';
 
 describe('CodePanel Contract & Blueprint Evaluation', () => {
   describe('Canonical Signatures & Constants', () => {

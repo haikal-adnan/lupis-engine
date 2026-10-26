@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { BlueprintLifecycle } from '@nodes/library/blueprints/BlueprintLifecycle.js';
-import { validateCodePanelContract } from '@nodes/contract/codePanelContract.js';
+import { validateCodePanelContract } from '@nodes/nodes.js';
 import Game from '@core/Core/Game.js';
 import ContextSystem from '@core/Script/ContextSystem.js';
 

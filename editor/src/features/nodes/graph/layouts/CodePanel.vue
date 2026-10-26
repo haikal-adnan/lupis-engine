@@ -179,7 +179,7 @@ import { useScriptStore } from '@scripts/scripts.js'
 import { useProjectStore } from '@projects/projects.js'
 import { useCodeHistory } from '@historys/historys.js'
 import { useConfirm, usePopAlert } from '@composables/composables.js'
-import { validateCodePanelContract } from '@nodes/contract/codePanelContract.js'
+import { validateCodePanelContract } from '@nodes/nodes.js'
 import { isUserCustomNode } from '../../inspector/layouts/custom/index.js'
 
 const workspaceStore = useWorkspaceStore()

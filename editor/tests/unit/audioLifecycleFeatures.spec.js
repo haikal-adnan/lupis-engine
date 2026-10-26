@@ -6,7 +6,7 @@ import ContextSystem from '@core/Script/ContextSystem.js';
 import { componentSchema } from '@scenes/schemas/componentSchema.js';
 import { BlueprintLifecycle } from '@nodes/library/blueprints/BlueprintLifecycle.js';
 import { BlueprintSystem } from '@nodes/library/blueprints/BlueprintSystem.js';
-import { validateCodePanelContract } from '@nodes/contract/codePanelContract.js';
+import { validateCodePanelContract } from '@nodes/nodes.js';
 
 describe('Audio & Lifecycle Features Unit & Integration Tests', () => {
   let game;

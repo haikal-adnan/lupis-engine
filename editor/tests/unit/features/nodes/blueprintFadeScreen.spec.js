@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { findBlueprintByType, ALL_BLUEPRINTS } from '../../../../src/features/nodes/library/blueprints/index.js';
 import { BlueprintRenderer } from '../../../../src/features/nodes/library/blueprints/BlueprintRenderer.js';
-import { validateCodePanelContract } from '../../../../src/features/nodes/contract/codePanelContract.js';
+import { validateCodePanelContract } from '../../../../src/features/nodes/nodes.js';
 import TransitionSystem from '../../../../../core/System/TransitionSystem.js';
 
 describe('Blueprint Fade Screen (actionFadeScreen) - Seconds & Decimals', () => {

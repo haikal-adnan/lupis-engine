@@ -1,6 +1,5 @@
 // Canvas viewport interactions, camera pan/zoom, wire connections, and marquee selection.
 
-import { isTypeCompatible } from '../../contract/portTypes.js';
 import { ref, shallowReactive, computed, nextTick } from 'vue'
 import { useScriptStore } from '@scripts/scripts.js'
 import { storeToRefs } from 'pinia'
@@ -8,6 +7,37 @@ import { GenerateUUID } from '@utils/utils.js'
 import { usePopAlert } from '@composables/composables.js'
 import { useScriptHistory } from '@historys/historys.js'
 import { useVariableLogic, useNodePreferences } from '@nodes/nodes.js'
+
+export function isTypeCompatible(sourceType, targetType) {
+  const s = String(sourceType || 'any').toLowerCase();
+  const t = String(targetType || 'any').toLowerCase();
+
+  if (s === 'execution' || t === 'execution') {
+    return s === 'execution' && t === 'execution';
+  }
+
+  if (s === 'any' || t === 'any') {
+    return true;
+  }
+
+  return s === t;
+}
+
+export function validatePayloadShape(payload) {
+  if (!payload || typeof payload !== 'object') {
+    return { valid: false, error: 'Payload must be an object' };
+  }
+  if (!payload.id || typeof payload.id !== 'string') {
+    return { valid: false, error: 'Payload must have a string id' };
+  }
+  if (!Array.isArray(payload.nodes)) {
+    return { valid: false, error: 'Payload.nodes must be an array' };
+  }
+  if (!Array.isArray(payload.edges)) {
+    return { valid: false, error: 'Payload.edges must be an array' };
+  }
+  return { valid: true };
+}
 
 const GRID_SIZE = 24
 const NODE_WIDTH = 200
@@ -688,5 +718,7 @@ export function useGraphEditor() {
     getSpawnPos,
     addNodeFromTemplate,
     addNodeAtSpawn,
+    isTypeCompatible,
+    validatePayloadShape
   }
 }

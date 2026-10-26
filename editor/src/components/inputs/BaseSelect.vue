@@ -181,7 +181,7 @@ const selectedLabel = computed(() => {
 })
 
 const updatePosition = () => {
-  if (!buttonRef.value || !isOpen.value) return
+  if (!buttonRef.value) return
   const rect = buttonRef.value.getBoundingClientRect()
   
   const GAP = 4; 
@@ -212,6 +212,7 @@ const updatePosition = () => {
 function toggle() { 
   isOpen.value = !isOpen.value 
   if (isOpen.value) {
+    updatePosition()
     nextTick(updatePosition)
     window.addEventListener('scroll', updatePosition, true)
     window.addEventListener('resize', updatePosition)

@@ -264,6 +264,49 @@
       </div>
     </section>
 
+    <!-- Section 4: About Lupis Engine -->
+    <section class="space-y-4">
+      <div class="border-b border-border pb-2">
+        <h4 class="text-sm font-bold text-foreground">About Lupis Engine</h4>
+        <p class="text-xs text-muted-foreground mt-0.5">Engine runtime version, official repository, and community channels.</p>
+      </div>
+
+      <div class="flex items-center justify-between flex-wrap gap-3 p-4 rounded-xl border border-border bg-muted/10">
+        <div class="flex items-center gap-3">
+          <span 
+            data-testid="project-engine-version"
+            class="text-xs font-mono font-bold px-2.5 py-1 rounded-md bg-primary/10 text-primary border border-primary/20"
+          >
+            v{{ ENGINE_VERSION }}
+          </span>
+          <span class="text-xs text-muted-foreground">WebGL Game Engine</span>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <a
+            :href="GITHUB_URL"
+            target="_blank"
+            rel="noopener noreferrer"
+            data-testid="project-github-link"
+            class="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <Github class="w-4 h-4" />
+            <span>GitHub</span>
+          </a>
+          <a
+            :href="DISCORD_URL"
+            target="_blank"
+            rel="noopener noreferrer"
+            data-testid="project-discord-link"
+            class="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <DiscordIcon class="w-4 h-4" />
+            <span>Discord</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
   </div>
 </template>
 

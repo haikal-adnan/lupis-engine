@@ -91,7 +91,7 @@
           <!-- Error Message Banner -->
           <div
             v-if="error"
-            class="text-xs text-destructive bg-destructive/10 border border-destructive/20 p-3 rounded-lg leading-relaxed"
+            class="text-xs text-destructive bg-destructive/10 border border-destructive p-3 rounded-lg leading-relaxed"
             data-testid="export-modal-error"
           >
             {{ error }}

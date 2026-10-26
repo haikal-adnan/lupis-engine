@@ -3,10 +3,8 @@ import { createPinia, setActivePinia } from 'pinia';
 import { applyModifier, applyModifiers } from '@core/Script/ValueModifier.js';
 import ScriptRunner from '@core/Script/ScriptRunner.js';
 import ContextSystem from '@core/Script/ContextSystem.js';
-import { normalizeScript } from '@scripts/compile/normalizeScript.js';
-import { compileScript } from '@scripts/compile/compileScript.js';
 import { useScriptHistory } from '@historys/historys.js';
-import { useScriptStore } from '@scripts/scripts.js';
+import { useScriptStore, useScriptLogic } from '@scripts/scripts.js';
 import { useWorkspaceStore } from '@workspaces/workspaces.js';
 import { setupMockScriptEnvironment, setupMockOPFS } from '@tests/tests.js';
 import { BlueprintSystem } from '@nodes/library/blueprints/BlueprintSystem.js';
@@ -27,11 +25,15 @@ vi.mock('@composables/composables.js', () => ({
   useConfirm: () => ({ confirm: vi.fn().mockResolvedValue(true) })
 }));
 
-vi.mock('@nodes/nodes.js', () => ({
-  useNodeBlueprint: () => ({
-    syncDynamicInputsAndCode: vi.fn()
-  })
-}));
+vi.mock('@nodes/nodes.js', async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    useNodeBlueprint: () => ({
+      syncDynamicInputsAndCode: vi.fn()
+    })
+  };
+});
 
 vi.mock('@opfs/opfs.js', () => ({
   useOPFSActions: () => ({
@@ -43,6 +45,7 @@ vi.mock('@opfs/opfs.js', () => ({
 }));
 
 describe('Edge Modifier & Notification System Integration', () => {
+  const { normalizeScript, compileScript } = useScriptLogic();
   describe('ValueModifier Unit Operations', () => {
     it('correctly handles numeric modifiers', () => {
       expect(applyModifier(10, { type: 'add', value: 5 })).toBe(15);

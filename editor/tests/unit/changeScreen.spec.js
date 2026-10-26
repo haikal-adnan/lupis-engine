@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import Game from '@core/Core/Game.js';
 import ScriptRunner from '@core/Script/ScriptRunner.js';
 import { BlueprintLifecycle } from '@nodes/library/blueprints/BlueprintLifecycle.js';
-import { validateCodePanelContract } from '@nodes/contract/codePanelContract.js';
+import { validateCodePanelContract } from '@nodes/nodes.js';
 
 describe('Change Screen Node & System Tests', () => {
   const changeScreenDef = BlueprintLifecycle.items.find(i => i.type === 'changeScreen');

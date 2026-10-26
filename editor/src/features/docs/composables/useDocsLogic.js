@@ -9,8 +9,7 @@ import {
   GraduationCap 
 } from 'lucide-vue-next';
 import { ALL_BLUEPRINTS, CUSTOM_NODE_TEMPLATE } from '@nodes/library/blueprints/index.js';
-import { CANONICAL_PORT_IDS } from '@nodes/contract/portIds.js';
-import { getNodeRole } from '@nodes/contract/nodeRoles.js';
+import { CANONICAL_PORT_IDS, getNodeRole } from '@nodes/nodes.js';
 
 const MODULE_DESCRIPTIONS = Object.freeze({
   flow_logic: 'Branching, conditional switches, loops, delays, cooldowns, timers, and flow control.',

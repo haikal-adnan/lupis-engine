@@ -48,6 +48,13 @@ export function useExportApp() {
   const workspaceStore = useWorkspaceStore();
   const { showPop } = usePopAlert();
 
+  const _getBackendUrl = () => {
+    if (typeof window !== 'undefined' && window.electronAPI?.backendUrl) {
+      return window.electronAPI.backendUrl;
+    }
+    return workspaceStore.config?.backendUrl || workspaceStore.backendBaseUrl || 'http://localhost:37602';
+  };
+
   const closeExportModal = async (projectId = null) => {
     if (isExporting.value) return;
     const targetPid = projectId || currentExportProjectId.value;
@@ -55,7 +62,7 @@ export function useExportApp() {
 
     if (targetPid) {
       try {
-        const backendUrl = workspaceStore.config?.backendUrl || workspaceStore.backendBaseUrl || 'http://localhost:37602';
+        const backendUrl = _getBackendUrl();
         fetch(`${backendUrl}/api/export-app/cache/${targetPid}`, {
           method: 'DELETE',
           signal: AbortSignal.timeout(3000)
@@ -157,7 +164,7 @@ export function useExportApp() {
   const checkProjectExeBuilds = async (projectId) => {
     if (!projectId) return;
     try {
-      const backendUrl = workspaceStore.config?.backendUrl || workspaceStore.backendBaseUrl || 'http://localhost:37602';
+      const backendUrl = _getBackendUrl();
       const isHealthy = await _checkBackendHealth(backendUrl);
       if (!isHealthy) return;
 
@@ -177,7 +184,7 @@ export function useExportApp() {
     } catch {}
   };
 
-  const downloadExeFile = (projectId, mode = null, customProjectName = null) => {
+  const downloadExeFile = async (projectId, mode = null, customProjectName = null) => {
     let targetUrl = null;
     const projectUrls = projectId ? projectExeDownloadUrls.value[projectId] : null;
     if (projectUrls && mode && projectUrls[mode]) {
@@ -208,22 +215,38 @@ export function useExportApp() {
       targetHref = `${targetHref}${sep}name=${encodeURIComponent(safeName)}`;
     }
 
-    if (window.electronAPI && window.electronAPI.openExternal) {
-      window.electronAPI.openExternal(targetHref);
-      return;
-    }
-
     const suffix = mode === 'development' ? '_Development' : (mode === 'release' ? '_Release' : '');
-    const link = document.createElement('a');
-    link.href = targetHref;
-    link.target = '_blank';
-    link.rel = 'noopener noreferrer';
-    link.setAttribute('download', `${safeName}${suffix}.exe`);
-    document.body.appendChild(link);
-    link.click();
-    setTimeout(() => {
-      if (link.parentNode) link.parentNode.removeChild(link);
-    }, 200);
+    const fileName = `${safeName}${suffix}.exe`;
+
+    try {
+      const response = await fetch(targetHref);
+      if (!response.ok) throw new Error(`HTTP error ${response.status}`);
+      const blob = await response.blob();
+      const downloadUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
+    } catch (fetchErr) {
+      console.warn('Direct blob download failed, falling back to external/window:', fetchErr);
+      if (window.electronAPI && window.electronAPI.openExternal) {
+        window.electronAPI.openExternal(targetHref);
+        return;
+      }
+      const link = document.createElement('a');
+      link.href = targetHref;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.setAttribute('download', fileName);
+      document.body.appendChild(link);
+      link.click();
+      setTimeout(() => {
+        if (link.parentNode) link.parentNode.removeChild(link);
+      }, 200);
+    }
   };
 
   const exportApp = async (projectId, format = 'exe', mode = 'release') => {
@@ -254,7 +277,7 @@ export function useExportApp() {
     let serverPollTimer = null;
 
     try {
-      const backendUrl = workspaceStore.config?.backendUrl || workspaceStore.backendBaseUrl || 'http://localhost:37602';
+      const backendUrl = _getBackendUrl();
 
       const isHealthy = await _checkBackendHealth(backendUrl);
       if (!isHealthy) {

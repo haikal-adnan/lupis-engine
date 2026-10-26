@@ -1,4 +1,17 @@
-// Standard dictionary, validation rules, and protected system ports for visual script nodes.
+// Central constants dictionary for visual script nodes, ports, types, and roles.
+
+import {
+  CODE_PANEL_PARAM_NAMES,
+  VALID_CONTEXT_PROPERTIES
+} from '@core/Script/contract/codePanelContract.js';
+
+import {
+  CONTEXT_NAMESPACES,
+  CONTEXT_ASSERT_METHODS,
+  CONTEXT_CONSOLE_METHODS,
+  CONTEXT_ROOT_METHODS,
+  CONTEXT_ROOT_PROPERTIES
+} from '@core/Script/contract/contextContract.js';
 
 export const PORT_ID_REGEX = /^[A-Za-z][A-Za-z0-9]{0,31}$/;
 
@@ -203,10 +216,104 @@ export const CANONICAL_PORT_IDS = Object.freeze({
   asBoolean: 'Result converted as boolean'
 });
 
-export function isValidPortId(id) {
-  return typeof id === 'string' && PORT_ID_REGEX.test(id);
-}
+export const PORT_DATA_TYPES = Object.freeze([
+  'execution',
+  'string',
+  'number',
+  'boolean',
+  'any',
+  'list',
+  'map'
+]);
 
-export function isProtectedPort(id) {
-  return PROTECTED_PORTS.includes(id);
-}
+export const PORT_COLORS = Object.freeze({
+  execution: '#FFFFFF',
+  string: '#F48FB1',
+  number: '#64B5F6',
+  boolean: '#E57373',
+  any: '#B0BEC5',
+  list: '#4DD0E1',
+  map: '#FF8A65'
+});
+
+export const NODE_ROLES = Object.freeze({
+  EVENT: 'event',
+  ACTION: 'action',
+  PURE: 'pure'
+});
+
+export const KEY_NAME_MAP = Object.freeze({
+  ',': 'Comma',
+  '+': 'Plus',
+  '-': 'Minus',
+  '.': 'Period',
+  '/': 'Slash',
+  ';': 'Semicolon',
+  ':': 'Colon',
+  '\'': 'Quote',
+  '"': 'DoubleQuote',
+  '[': 'BracketLeft',
+  ']': 'BracketRight',
+  '\\': 'Backslash',
+  '=': 'Equal',
+  '`': 'Backquote',
+  '~': 'Tilde',
+  '!': 'Exclamation',
+  '@': 'At',
+  '#': 'Hash',
+  '$': 'Dollar',
+  '%': 'Percent',
+  '^': 'Caret',
+  '&': 'Ampersand',
+  '*': 'Asterisk',
+  '(': 'ParenLeft',
+  ')': 'ParenRight',
+  '_': 'Underscore',
+  '?': 'Question',
+  '<': 'Less',
+  '>': 'Greater',
+  ' ': 'Space',
+  'space': 'Space',
+  'enter': 'Enter',
+  'return': 'Enter',
+  'escape': 'Escape',
+  'esc': 'Escape',
+  'tab': 'Tab',
+  'backspace': 'Backspace',
+  'delete': 'Delete',
+  'del': 'Delete',
+  'insert': 'Insert',
+  'home': 'Home',
+  'end': 'End',
+  'pageup': 'PageUp',
+  'pagedown': 'PageDown',
+  'arrowup': 'ArrowUp',
+  'up': 'ArrowUp',
+  'arrowdown': 'ArrowDown',
+  'down': 'ArrowDown',
+  'arrowleft': 'ArrowLeft',
+  'left': 'ArrowLeft',
+  'arrowright': 'ArrowRight',
+  'right': 'ArrowRight',
+  'shift': 'Shift',
+  'control': 'Control',
+  'ctrl': 'Control',
+  'alt': 'Alt',
+  'capslock': 'CapsLock',
+  'meta': 'Meta',
+  'win': 'Win',
+  'cmd': 'Command'
+});
+
+export {
+  CODE_PANEL_PARAM_NAMES,
+  VALID_CONTEXT_PROPERTIES
+};
+
+export {
+  CONTEXT_NAMESPACES,
+  CONTEXT_ASSERT_METHODS,
+  CONTEXT_CONSOLE_METHODS,
+  CONTEXT_ROOT_METHODS,
+  CONTEXT_ROOT_PROPERTIES
+};

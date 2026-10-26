@@ -227,6 +227,8 @@ export class BaseControlHelper {
     // 1. Trigger Dropdown
     const trigger = scope
       .getByTestId(labelOrTestId)
+      .locator('button[data-testid="select-trigger"], button[role="combobox"]')
+      .or(scope.getByTestId(labelOrTestId))
       .or(scope.getByTestId('select-trigger'))
       .or(scope.getByRole('combobox', { name: labelOrTestId }))
       .or(scope.locator('button', { hasText: labelOrTestId }))

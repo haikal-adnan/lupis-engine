@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { BlueprintAnimation } from '../../../../src/features/nodes/library/blueprints/BlueprintAnimation.js';
 import { findBlueprintByType, findBlueprintCategory, ALL_BLUEPRINTS } from '../../../../src/features/nodes/library/blueprints/index.js';
-import { validateCodePanelContract } from '../../../../src/features/nodes/contract/codePanelContract.js';
+import { validateCodePanelContract } from '../../../../src/features/nodes/nodes.js';
 
 describe('BlueprintAnimation Specification', () => {
   it('is registered in ALL_BLUEPRINTS with correct metadata', () => {

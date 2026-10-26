@@ -2,4 +2,8 @@ node_modules
 dist
 .git
 temp
+exports
+.cache
 *.log
+*.zip
+*.exe

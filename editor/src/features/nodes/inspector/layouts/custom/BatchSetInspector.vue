@@ -135,7 +135,7 @@ import { computed } from 'vue';
 import { Layers, Trash2, Plus, Unlock } from 'lucide-vue-next';
 import { useScriptStore } from '@scripts/scripts.js';
 import { useConfirm, usePopAlert } from '@composables/composables.js';
-import { getPortColor } from '@nodes/contract/portTypes.js';
+import { getPortColor } from '@nodes/nodes.js';
 import { PropertySection, BaseInput, BaseSelect, BaseNumber } from '@components/components.js';
 
 const props = defineProps({
