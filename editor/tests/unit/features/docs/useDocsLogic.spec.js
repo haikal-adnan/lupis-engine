@@ -19,7 +19,7 @@ describe('useDocsLogic & Node Library Documentation Contract', () => {
   it('provides the exact menu map conforming to docs/documentation-writing.md v0.1.0', () => {
     const { sidebarNav } = useDocsLogic();
 
-    expect(sidebarNav.value).toHaveLength(7);
+    expect(sidebarNav.value).toHaveLength(6);
 
     const titles = sidebarNav.value.map(s => s.title);
     expect(titles).toEqual([
@@ -28,8 +28,7 @@ describe('useDocsLogic & Node Library Documentation Contract', () => {
       'Components',
       'Visual Scripting',
       'Behaviour',
-      'Node Library',
-      'Tutorials'
+      'Node Library'
     ]);
 
     // Getting Started
@@ -97,14 +96,6 @@ describe('useDocsLogic & Node Library Documentation Contract', () => {
       'node_library/system_utilities',
       'node_library/helper_tool',
       'node_library/custom'
-    ]);
-
-    // Tutorials
-    const tutorials = sidebarNav.value[6].links.map(l => l.id);
-    expect(tutorials).toEqual([
-      'tutorials/first_platformer',
-      'tutorials/first_top_down',
-      'tutorials/building_game_ui'
     ]);
   });
 
@@ -208,5 +199,25 @@ describe('useDocsLogic & Node Library Documentation Contract', () => {
     const moveResults = searchDocs('moveAndSlide');
     expect(moveResults.length).toBeGreaterThanOrEqual(1);
     expect(moveResults[0].id).toBe('node_library/game_physics#node-moveAndSlide');
+  });
+
+  it('supports bilingual navigation switching between en and id', async () => {
+    const { sidebarNav, setLanguage, currentLang } = useDocsLogic();
+
+    expect(currentLang.value).toBe('en');
+    expect(sidebarNav.value[0].title).toBe('Getting Started');
+    expect(sidebarNav.value[0].links[0].name).toBe('Introduction');
+
+    await setLanguage('id');
+
+    expect(currentLang.value).toBe('id');
+    expect(sidebarNav.value[0].title).toBe('Memulai');
+    expect(sidebarNav.value[0].links[0].name).toBe('Pengenalan');
+    expect(sidebarNav.value[1].title).toBe('Antarmuka');
+    expect(sidebarNav.value[2].title).toBe('Komponen');
+
+    await setLanguage('en');
+    expect(currentLang.value).toBe('en');
+    expect(sidebarNav.value[0].title).toBe('Getting Started');
   });
 });

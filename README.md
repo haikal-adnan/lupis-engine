@@ -1,55 +1,102 @@
 <div align="center">
 
-<img alt="Lupis Engine logo" width="128" height="128" src="https://github.com/user-attachments/assets/54a69b7c-acfd-4ef6-b4ef-5a9397a169c4" />
+<img alt="Lupis Engine logo" width="128" height="128" src=".github/assets/logo/lupis-engine.png" />
 
 # Lupis Engine
 
-**A WebGL game engine written in native JavaScript, with a node-based visual editor.**
+**An open-source 2D game engine for the web, built on WebGL and native JavaScript, with a node-based visual editor.**
 
 [![Version](https://img.shields.io/badge/version-0.1.0_(early_release)-orange)](./CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 [![CI](https://github.com/haikal-adnan/lupis-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/haikal-adnan/lupis-engine/actions/workflows/ci.yml)
+[![Discord](https://img.shields.io/badge/Discord-Join%20Community-5865F2?logo=discord&logoColor=white)](https://haikal-adnan.github.io/lupis-engine-link?go=discord)
 
-> **Early Release.** v0.1.0 is the first public release. The public API and project file format may change before 1.0.
-
-<!-- TODO: Replace with an actual editor screenshot or GIF -->
-<img alt="Lupis Engine Editor preview" width="720" src="https://via.placeholder.com/720x405?text=Editor+Screenshot+Placeholder" />
-
-<br/>
-
-[Quick Start](#quick-start) · [Documentation](#documentation) · [Contributing](#contributing)
+[Web Editor](https://haikal-adnan.github.io/lupis-engine-link?go=web) · [Documentation](https://haikal-adnan.github.io/lupis-engine-link?go=docs-en) · [Examples](https://haikal-adnan.github.io/lupis-engine-link?go=example) · [Discord](https://haikal-adnan.github.io/lupis-engine-link?go=discord)
 
 </div>
+
+> **Early Release.** Version 0.1.0 is the first public release. The public API and the project file format may change before 1.0. See [Project Status](#project-status) for details.
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Features](#features)
+- [Getting Started](#getting-started)
+- [Documentation](#documentation)
+- [Repository Structure](#repository-structure)
+- [Project Status](#project-status)
+- [Security and Scripting Limitations](#security-and-scripting-limitations)
+- [Roadmap](#roadmap)
+- [Contributing](#contributing)
+- [Community and Support](#community-and-support)
+- [License](#license)
+
+---
+
+## Overview
+
+Lupis Engine is a 2D game engine and visual editor that runs entirely in the browser. The runtime renders exclusively through WebGL (2.0, with a 1.0 fallback). The editor is built with Vue 3 and lets you create complete games using a scene editor, an animator, a tilemap editor, and Blueprint-style visual scripting, with in-editor JavaScript available for custom logic.
+
+Lupis Engine is local-first. Projects can be created in the hosted Web Editor or run on your own machine, and finished games can be exported as ZIP archives or packaged as desktop applications with Electron.
 
 ---
 
 ## Features
 
-- **Pure WebGL rendering.** All rendering runs on WebGL (2.0 with a 1.0 fallback) and does not use the Canvas 2D API.
-- **Visual editor built with Vue 3.** Author scenes with the hierarchy, inspector, and asset browser directly in the browser.
-- **Blueprint-style visual scripting.** 100+ production nodes across 10 domains let you build game logic without writing code.
-- **In-editor JavaScript scripting.** Write JavaScript directly in the editor for logic that goes beyond the node graph.
-- **Built-in 2D engine tools.** Includes built-in editor management for Collision physics, Tilemaps, Geometry Shapes, and Animator systems.
-- **MSDF text rendering.** Text stays sharp at any size and does not depend on the Canvas 2D text API.
-- **Local-first.** Run the entire stack with a single `docker compose` command or `npm run dev`.
-- **Export and packaging.** Export projects as ZIP archives, or package them as desktop applications with Electron.
+### Editor
+
+#### Scene Editor
+Author scenes visually with multi-layer hierarchies, real-time transform gizmos, responsive canvas viewports, and property inspectors.
+
+![Scene Editor](.github/assets/features/scene-editor.png)
+
+#### Animator Editor
+Design frame-by-frame 2D sprite animations with category trees, clip timing, configurable loop modes, and real-time playback previews.
+
+![Animator Editor](.github/assets/features/animator-editor.png)
+
+#### Tilemap Editor
+Paint tilemaps directly into your scenes with tile brushes, layer management, and automatic solid collision generation.
+
+![Tilemap Editor](.github/assets/features/tilemap-editor.png)
+
+#### Visual Node Scripting
+Build game logic without writing code using more than 100 production-ready Blueprint nodes across 10 modular domains, with live data wires and support for custom nodes.
+
+![Visual Node Scripting](.github/assets/features/visual-node-scripting.png)
+
+#### Preview Game
+Run your game in the editor with a single click, inspect entity transforms, and apply live changes without restarting.
+
+![Preview Game](.github/assets/features/preview-game.png)
+
+### Engine
+
+- **WebGL rendering.** All rendering uses WebGL 2.0 with a WebGL 1.0 fallback. 
+- **MSDF text rendering.** Text remains sharp at any size and does not depend on the Canvas 2D text API.
+- **Built-in 2D systems.** Collision physics, tilemaps, geometry shapes, and animation are included out of the box.
+- **Dual scripting model.** Combine Blueprint visual scripting with JavaScript written directly in the editor.
+
+### Workflow
+
+- **Browser-based editor.** Built with Vue 3, with a hierarchy, inspector, and asset browser.
+- **Local-first.** Run the full stack with a single `docker compose` command or `npm run dev`.
+- **Export and packaging.** Export projects as ZIP archives or package them as desktop applications with Electron.
 
 ---
 
-## Project Status
+## Getting Started
 
- Lupis Engine v0.1.0 is an early release. While core rendering, the editor, and visual scripting are covered by automated tests, some features may not yet be fully covered. Currently, the editor and desktop tooling are available exclusively on Windows, with cross-platform support planned for future releases. Expect rough edges and breaking changes before 1.0. If you build on top of the engine, pin your dependencies to a specific version. Bug reports and feedback are highly appreciated—if you would like to contribute to the project, please see our Contribution Guidelines.
+### Try Online
 
----
-
-## Quick Start
+Launch the **[Web Editor](https://haikal-adnan.github.io/lupis-engine-link?go=web)** in your browser with no installation. Projects and assets are stored locally using the Origin Private File System (OPFS).
 
 ### Prerequisites
 
 - **Node.js** `^20.19` or `>=22.12`
 - **Docker and Docker Compose** (optional, for single-command setup)
 
-### Run with Docker (recommended)
+### Run with Docker (Recommended)
 
 ```bash
 git clone https://github.com/haikal-adnan/lupis-engine.git
@@ -72,7 +119,35 @@ cd service && npm install && npm run dev
 cd editor && npm install && npm run dev
 ```
 
-Open **http://localhost:37600**, then load one of the sample projects from the [`examples/`](./examples) folder.
+Open **http://localhost:37600**, then load one of the sample projects from the [`examples/`](./examples) folder, or explore them online at [Examples](https://haikal-adnan.github.io/lupis-engine-link?go=example).
+
+---
+
+## Documentation
+
+The full documentation is available [online](https://haikal-adnan.github.io/lupis-engine-link?go=docs-en) and inside the editor as a built-in bilingual help panel (English and Bahasa Indonesia). It can also be read directly from the Markdown files in [`editor/public/docs/en/`](./editor/public/docs/en) and [`editor/public/docs/id/`](./editor/public/docs/id).
+
+> **Note**  
+> Most of this documentation was generated with the assistance of AI due to the developer's limitations in manual technical writing and the fact that the developer's native language is Indonesian. If you would like to contribute by improving or writing new documentation, contributions are very welcome! Please check our [Contributing](#contributing) section.
+
+### For Game Developers
+
+| Category | Contents |
+| --- | --- |
+| [Getting Started](./editor/public/docs/en/getting_started) | Installation, introduction, quick start, projects, and export |
+| [Interface](./editor/public/docs/en/interface) | Editor overview, viewport, hierarchy, inspector, and shortcuts |
+| [Components](./editor/public/docs/en/components) | Transform, renderers, physics body, audio, animator, and more |
+| [Visual Scripting](./editor/public/docs/en/visual_scripting) | Graph concepts, context system, variables, and custom nodes |
+| [Behaviour](./editor/public/docs/en/behaviour) | Movement, physics and collision, and UI patterns |
+
+### For Contributors
+
+| Document | Description |
+| --- | --- |
+| [`CONTRIBUTING.md`](./CONTRIBUTING.md) | Development setup, code style, testing guidelines, and pull request workflow |
+| [`CHANGELOG.md`](./CHANGELOG.md) | Release history |
+| [`SECURITY.md`](./SECURITY.md) | Security policy and vulnerability reporting |
+| [`THIRD_PARTY.md`](./THIRD_PARTY.md) | Third-party notices and open source licenses |
 
 ---
 
@@ -82,36 +157,24 @@ Open **http://localhost:37600**, then load one of the sample projects from the [
 lupis-engine/
 ├── core/        # Engine runtime: WebGL renderer, physics, audio, ECS, scripting
 ├── editor/      # Visual editor (Vue 3, Pinia, Vite), served on port 37600
+├── electron/    # Desktop shell (Electron) and desktop installer packaging (NSIS)
 ├── service/     # Node.js backend: MSDF font generation, export, Electron packaging
-├── tests/       # E2E and integration tests (Playwright)
+├── tests/       # End-to-end and integration tests (Playwright)
 ├── examples/    # Ready-to-run sample projects
 └── .github/     # CI workflows and issue templates
 ```
 
 ---
 
-## Documentation
+## Project Status
 
-### For Game Developers
+Lupis Engine v0.1.0 is an early release. The core renderer, the editor, and visual scripting are covered by automated tests, but coverage is not yet complete across all features.
 
-The full documentation is available **inside the editor** as a built-in help panel. It can also be read directly from the JSON files in [`editor/public/docs/`](./editor/public/docs).
+- The editor and desktop tooling are currently tested only on **Windows**, so running on other operating systems may lead to instability. Broader cross-platform support and testing are planned for future releases.
+- The public API and project file format may change before 1.0. If you build on top of the engine, pin your dependencies to a specific version.
+- Expect rough edges and breaking changes.
 
-| Category | Contents |
-| --- | --- |
-| [Getting Started](./editor/public/docs/getting_started) | Installation, introduction, quick start, projects and export |
-| [Interface](./editor/public/docs/interface) | Editor overview, viewport, hierarchy, inspector, shortcuts |
-| [Components](./editor/public/docs/components) | Transform, renderers, physics body, audio, animator, and more |
-| [Visual Scripting](./editor/public/docs/visual_scripting) | Graph concepts, context system, variables, custom nodes |
-| [Behaviour](./editor/public/docs/behaviour) | Movement, physics and collision, UI patterns |
-| [Tutorials](./editor/public/docs/tutorials) | First platformer, top-down game, game UI |
-
-### For Contributors
-
-| Document | Description |
-| --- | --- |
-| [`CONTRIBUTING.md`](./CONTRIBUTING.md) | Development setup, code style, pull request guidelines |
-| [`CHANGELOG.md`](./CHANGELOG.md) | Release history |
-| [`THIRD_PARTY.md`](./THIRD_PARTY.md) | Third-party notices and open source licenses |
+Bug reports and feedback are highly appreciated. To contribute, see the [Contributing](#contributing) section.
 
 ---
 
@@ -126,43 +189,33 @@ For full details and instructions on reporting vulnerabilities, see [`SECURITY.m
 
 ---
 
-## Testing
+## Roadmap
 
-```bash
-# Editor unit and integration tests (Vitest)
-cd editor && npm run test:run
+The following items are planned for v0.2.0 and are subject to change.
 
-# Static standards checks
-node tests/scripts/check-standard.mjs
-
-# E2E browser tests (Playwright, Chromium)
-cd tests && npm test
-
-# Blueprint runtime tests (Playwright)
-cd tests && npm run test:blueprint
-```
-
-CI runs the full test suite on every push and pull request via GitHub Actions.
+- **Rendering performance.** Instanced draw calls and frustum culling for large scenes.
+- **Physics improvements.** Slope handling, one-way platforms, and physics materials.
+- **Plugin system.** An API for custom Blueprint nodes and editor panels.
+- **Mobile export.** A Capacitor or TWA wrapper for Android builds.
+- **Cross-platform tooling.** Editor and desktop tooling support beyond Windows.
 
 ---
 
 ## Contributing
 
-We welcome **bug reports**, **feedback on the engine and editor**, and **documentation improvements**. For larger features, please open an issue to discuss the proposal first. At this early stage, we want to keep the architecture stable.
+Contributions are welcome, including bug reports, feedback on the engine and editor, and documentation improvements. For larger features, please open an issue to discuss the proposal first. At this early stage, we aim to keep the architecture stable.
 
 See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for the complete guide.
 
 ---
 
-## Roadmap to v0.2.0
+## Community and Support
 
-The following items are planned and subject to change.
-
-- **Tilemap editor.** Paint tilemaps directly in the viewport.
-- **Rendering performance.** Instanced draw calls and frustum culling for large scenes.
-- **Physics improvements.** Slope handling, one-way platforms, and physics materials.
-- **Plugin system.** An API for custom Blueprint nodes and editor panels.
-- **Mobile export.** A Capacitor/TWA wrapper for Android builds.
+- **Discord:** [Join the community](https://haikal-adnan.github.io/lupis-engine-link?go=discord) to ask questions, share projects, and discuss ideas.
+- **GitHub Discussions:** [Start or join a discussion](https://github.com/haikal-adnan/lupis-engine/discussions)
+- **Issue Tracker:** [Report a bug or request a feature](https://github.com/haikal-adnan/lupis-engine/issues)
+- **Sample Projects:** [Lupis Engine Examples](https://haikal-adnan.github.io/lupis-engine-link?go=example)
+- **Web Editor:** [Lupis Engine Web Editor](https://haikal-adnan.github.io/lupis-engine-link?go=web)
 
 ---
 

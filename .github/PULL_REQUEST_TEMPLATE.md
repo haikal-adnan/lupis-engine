@@ -1,40 +1,40 @@
-## 📌 Description
+## Description
 
-<!-- Provide a brief summary of the changes introduced by this pull request. -->
+<!-- Briefly summarize what this pull request changes and why. -->
 
-## 🎯 Type of Change
+## Type of Change
 
-- [ ] 🐛 Bug fix (non-breaking change which fixes an issue)
-- [ ] ✨ New feature (non-breaking change which adds functionality)
-- [ ] 💥 Breaking change (fix or feature that would cause existing functionality to not work as expected)
-- [ ] 📝 Documentation update
-- [ ] 🎨 Code style / Refactoring (no functional changes)
-- [ ] 🧪 Tests (adding or fixing tests)
-- [ ] 🔧 Build / CI / Tooling improvement
+- [ ] Bug fix (non-breaking change that fixes an issue)
+- [ ] New feature (non-breaking change that adds functionality)
+- [ ] Breaking change (fix or feature that changes existing behavior)
+- [ ] Documentation update
+- [ ] Code style or refactoring (no functional changes)
+- [ ] Tests (adding or fixing tests)
+- [ ] Build, CI, or tooling improvement
 
-## 🧩 Affected Subsystems
+## Affected Subsystems
 
-- [ ] `core/` (WebGL Renderer, Physics, Audio, ECS, Runtime)
-- [ ] `editor/` (Vue 3 UI, Inspector, Hierarchy, NodeGraph, Viewport)
-- [ ] `service/` (Backend, Font MSDF Generator, Electron Exporter)
-- [ ] `tests/` (Playwright E2E Specs, Page Objects, Contract Tests)
+- [ ] `core/` (WebGL renderer, physics, audio, ECS, runtime)
+- [ ] `editor/` (Vue 3 UI, inspector, hierarchy, node graph, viewport)
+- [ ] `service/` (backend, MSDF font generator, Electron exporter)
+- [ ] `tests/` (Playwright E2E specs, page objects, contract tests)
 - [ ] `docs/` or `examples/`
 
-## 🔗 Related Issues
+## Related Issues
 
-<!-- Link any related issues: Fixes #123, Closes #456 -->
+<!-- Link related issues, for example: Fixes #123, Closes #456 -->
 Fixes #
 
-## 📋 Checklist
+## Checklist
 
 - [ ] My code follows the code style and guidelines of this project.
-- [ ] I have performed a self-review of my own code.
-- [ ] I have commented my code, particularly in hard-to-understand areas.
-- [ ] I have updated the documentation accordingly (if applicable).
-- [ ] My changes generate no new browser console errors or build warnings.
-- [ ] I have added tests that prove my fix is effective or that my feature works.
-- [ ] All new and existing tests pass locally (`npm run test:run` in editor, `node tests/scripts/check-standard.mjs`).
+- [ ] I have reviewed my own code.
+- [ ] I have added comments in areas that are hard to understand.
+- [ ] I have updated the documentation, if applicable.
+- [ ] My changes do not introduce new browser console errors or build warnings.
+- [ ] I have added tests that verify the fix or the new feature.
+- [ ] All new and existing tests pass locally (`npm run test:run` in `editor/` and `node tests/scripts/check-standard.mjs`).
 
-## 📸 Screenshots or Screen Recordings (if UI / visual change)
+## Screenshots or Screen Recordings
 
-<!-- Add screenshots or screen recordings showing before/after behavior. -->
+<!-- For UI or visual changes, add screenshots or recordings that show the behavior before and after your change. -->

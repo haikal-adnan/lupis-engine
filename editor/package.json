@@ -1,6 +1,8 @@
 {
-  "name": "editor-visual",
-  "version": "0.0.0",
+  "name": "lupis-editor",
+  "version": "0.1.0",
+  "author": "Haikal Adnan",
+  "license": "MIT",
   "private": true,
   "type": "module",
   "engines": {

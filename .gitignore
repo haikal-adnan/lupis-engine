@@ -92,5 +92,10 @@ tests/playwright-report/
 tests/test-results/
 tests/playwright/.cache/
 test-results
+test-result
+test-results/
+test-result/
+**/test-results/
+**/test-result/
 .cache/
 **/.cache/

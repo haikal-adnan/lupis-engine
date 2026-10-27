@@ -18,6 +18,9 @@ const {
   sidebarNav,
   activeContent,     
   currentDocId,
+  currentLang,
+  availableLanguages,
+  setLanguage,
   tocHeadings,
   activeHeadingId,
   contentContainer,
@@ -34,29 +37,50 @@ const searchResults = computed(() => {
   return searchDocs(props.searchQuery);
 });
 
-watch(() => route.params.docPath, async (newPath) => {
-  if (newPath) {
-    const pathId = Array.isArray(newPath) ? newPath.join('/') : newPath;
-    
-    if (pathId !== currentDocId.value) {
-      await changeDocument(pathId);
+watch(
+  () => [route.params.lang, route.params.docPath, route.hash],
+  async ([newLang, newPath, newHash]) => {
+    if (newLang === 'en' || newLang === 'id') {
+      if (newLang !== currentLang.value) {
+        await setLanguage(newLang);
+      }
     }
-    if (route.hash) {
-      const sectionId = route.hash.replace('#', '');
+
+    if (newPath) {
+      const pathId = Array.isArray(newPath) ? newPath.join('/') : newPath;
+      if (pathId && pathId !== currentDocId.value) {
+        await changeDocument(pathId);
+      }
+    }
+
+    if (newHash) {
+      const sectionId = newHash.replace('#', '');
       setTimeout(() => {
         scrollToHeading(sectionId);
       }, 150);
     }
-  }
-}, { immediate: true });
+  },
+  { immediate: true }
+);
+
+const onLanguageChange = async (newLang) => {
+  if (newLang !== 'en' && newLang !== 'id') return;
+  if (newLang === currentLang.value) return;
+  await setLanguage(newLang);
+  router.push({
+    path: `/docs/${newLang}/${currentDocId.value}`,
+    hash: route.hash || ''
+  });
+};
 
 const navigateAndPush = (docId) => {
   if (docId.includes('#')) {
     handleSmartRouting(docId);
     return;
   }
+  const targetLang = currentLang.value || 'en';
   if (docId !== currentDocId.value) {
-    router.push({ path: `/docs/${docId}` }); 
+    router.push({ path: `/docs/${targetLang}/${docId}` }); 
     changeDocument(docId); 
   }
 };
@@ -74,10 +98,25 @@ onUnmounted(() => {
 });
 
 const handleSmartRouting = async (url) => {
-  const [docId, sectionId] = url.split('#');
+  let [docId, sectionId] = url.split('#');
+  let targetLang = currentLang.value || 'en';
+
+  if (docId.startsWith('id/')) {
+    targetLang = 'id';
+    docId = docId.slice(3);
+  } else if (docId.startsWith('en/')) {
+    targetLang = 'en';
+    docId = docId.slice(3);
+  }
 
   if (docId && docId !== currentDocId.value) {
-    router.push({ path: `/docs/${docId}`, hash: sectionId ? `#${sectionId}` : '' });
+    router.push({ 
+      path: `/docs/${targetLang}/${docId}`, 
+      hash: sectionId ? `#${sectionId}` : '' 
+    });
+    if (targetLang !== currentLang.value) {
+      await setLanguage(targetLang);
+    }
     await changeDocument(docId); 
     
     if (sectionId) {
@@ -109,9 +148,12 @@ const handleSmartRouting = async (url) => {
     <DocsSidebarLeft 
       :nav-items="sidebarNav" 
       :current-doc-id="currentDocId"
+      :current-lang="currentLang"
+      :languages="availableLanguages"
       :is-open="isMobileSidebarOpen"
       @close="isMobileSidebarOpen = false"
       @navigate="navigateAndPush" 
+      @change-language="onLanguageChange"
     />
 
     <main class="flex-1 min-w-0 min-h-screen px-4 py-4 lg:py-8 lg:px-12 xl:pr-8 xl:pl-12 pb-24 w-full relative" ref="contentContainer">
@@ -166,6 +208,7 @@ const handleSmartRouting = async (url) => {
       class="hidden xl:block"
       :headings="tocHeadings" 
       :active-id="activeHeadingId" 
+      :current-lang="currentLang"
       @scroll-to="scrollToHeading" 
     />
 

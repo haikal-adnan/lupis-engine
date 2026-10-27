@@ -1,6 +1,6 @@
 {
   "name": "lupis-backend",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "type": "module",
   "description": "Micro-backend service for engine bundling and export tasks",
   "main": "server.js",
@@ -9,8 +9,8 @@
     "dev": "node --watch server.js"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "Haikal Adnan",
+  "license": "MIT",
   "dependencies": {
     "archiver": "^7.0.1",
     "cors": "^2.8.5",

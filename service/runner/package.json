@@ -1,7 +1,8 @@
 {
   "name": "lupis-runner",
   "version": "0.1.0",
-  "author": "Lupis Engine",
+  "author": "Haikal Adnan",
+  "license": "MIT",
   "description": "Lupis Engine Standalone Runner",
   "main": "main.js",
   "devDependencies": {

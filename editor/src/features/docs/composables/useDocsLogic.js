@@ -5,11 +5,11 @@ import {
   Boxes, 
   GitBranch, 
   Gamepad2, 
-  Library, 
-  GraduationCap 
+  Library 
 } from 'lucide-vue-next';
 import { ALL_BLUEPRINTS, CUSTOM_NODE_TEMPLATE } from '@nodes/library/blueprints/index.js';
 import { CANONICAL_PORT_IDS, getNodeRole } from '@nodes/nodes.js';
+import { parseMarkdownDoc } from '@docs/utils/docMarkdownParser.js';
 
 const MODULE_DESCRIPTIONS = Object.freeze({
   flow_logic: 'Branching, conditional switches, loops, delays, cooldowns, timers, and flow control.',
@@ -23,6 +23,117 @@ const MODULE_DESCRIPTIONS = Object.freeze({
   game_lifecycle: 'Scene loading, pause/resume states, and script lifecycle callbacks.',
   system_utilities: 'Audio playback, sound effects, blackboard variables, and string utilities.',
   helper_tool: 'Pre-packaged gameplay toolkits for UI widgets, dialogue, platformers, top-down, and AI.'
+});
+
+const I18N_NAV = Object.freeze({
+  en: {
+    categories: {
+      getting_started: 'Getting Started',
+      interface: 'Interface',
+      components: 'Components',
+      visual_scripting: 'Visual Scripting',
+      behaviour: 'Behaviour',
+      node_library: 'Node Library'
+    },
+    links: {
+      'getting_started/introduction': 'Introduction',
+      'getting_started/installation': 'Installation & Setup',
+      'getting_started/quick_start': 'Quick Start',
+      'getting_started/project_and_export': 'Project & Export',
+
+      'interface/editor_overview': 'Editor Overview',
+      'interface/scene_viewport': 'Scene Viewport',
+      'interface/scene_hierarchy': 'Scene Hierarchy',
+      'interface/property_inspector': 'Property Inspector',
+      'interface/shortcuts': 'Shortcuts Reference',
+
+      'components/entities_and_prefabs': 'Entities & Prefabs',
+      'components/transform': 'Transform & UI Transform',
+      'components/renderers': 'Visual Renderers',
+      'components/renderers/sprite_renderer': 'Image Renderer',
+      'components/renderers/shape_renderer': 'Shape Renderer',
+      'components/renderers/text_renderer': 'Text Renderer',
+      'components/renderers/tilemap': 'Tilemap',
+      'components/sprite_animator': 'Sprite Animator',
+      'components/physics_body': 'Physics Body',
+      'components/multi_collider': 'Multi-Collider',
+      'components/audio_source': 'Audio Source',
+      'components/script_controller': 'Script Controller',
+
+      'visual_scripting/graph_concepts': 'Graph & Node Concepts',
+      'visual_scripting/variables_and_collections': 'Variables & Collections',
+      'visual_scripting/custom_node_and_code': 'Custom Node & Code Panel',
+      'visual_scripting/context_system_api': 'Context System API',
+
+      'behaviour/movement': 'Movement',
+      'behaviour/movement/platformer': 'Platformer Movement',
+      'behaviour/movement/top_down': 'Top-Down Movement',
+      'behaviour/movement/basic_motion': 'Patrol & Basic Motion',
+      'behaviour/physics_and_collision': 'Physics & Collision',
+      'behaviour/physics_and_collision/physics_and_slopes': 'Physics & Slopes',
+      'behaviour/physics_and_collision/triggers_and_hitboxes': 'Triggers & Hitboxes',
+      'behaviour/ui': 'User Interface',
+      'behaviour/ui/interactive_widgets': 'Interactive Widgets',
+      'behaviour/ui/dynamic_ui': 'Dynamic UI & Data Binding',
+
+      'node_library/overview': 'Overview & Architecture',
+      'node_library/custom': 'Custom Node'
+    }
+  },
+  id: {
+    categories: {
+      getting_started: 'Memulai',
+      interface: 'Antarmuka',
+      components: 'Komponen',
+      visual_scripting: 'Visual Scripting',
+      behaviour: 'Perilaku',
+      node_library: 'Node Library'
+    },
+    links: {
+      'getting_started/introduction': 'Pengenalan',
+      'getting_started/installation': 'Instalasi & Pengaturan Awal',
+      'getting_started/quick_start': 'Mulai Cepat',
+      'getting_started/project_and_export': 'Proyek & Ekspor',
+
+      'interface/editor_overview': 'Gambaran Umum Editor',
+      'interface/scene_viewport': 'Scene Viewport',
+      'interface/scene_hierarchy': 'Scene Hierarchy',
+      'interface/property_inspector': 'Property Inspector',
+      'interface/shortcuts': 'Referensi Pintasan',
+
+      'components/entities_and_prefabs': 'Entity & Prefab',
+      'components/transform': 'Transform & UI Transform',
+      'components/renderers': 'Visual Renderer',
+      'components/renderers/sprite_renderer': 'Image Renderer',
+      'components/renderers/shape_renderer': 'Shape Renderer',
+      'components/renderers/text_renderer': 'Text Renderer',
+      'components/renderers/tilemap': 'Tilemap',
+      'components/sprite_animator': 'Sprite Animator',
+      'components/physics_body': 'Physics Body',
+      'components/multi_collider': 'Multi-Collider',
+      'components/audio_source': 'Audio Source',
+      'components/script_controller': 'Script Controller',
+
+      'visual_scripting/graph_concepts': 'Konsep Graph & Node',
+      'visual_scripting/variables_and_collections': 'Variabel & Koleksi',
+      'visual_scripting/custom_node_and_code': 'Custom Node & Code Panel',
+      'visual_scripting/context_system_api': 'Context System API',
+
+      'behaviour/movement': 'Pergerakan',
+      'behaviour/movement/platformer': 'Pergerakan Platformer',
+      'behaviour/movement/top_down': 'Pergerakan Top-Down',
+      'behaviour/movement/basic_motion': 'Patroli & Gerak Dasar',
+      'behaviour/physics_and_collision': 'Fisika & Tabrakan',
+      'behaviour/physics_and_collision/physics_and_slopes': 'Fisika & Permukaan Miring',
+      'behaviour/physics_and_collision/triggers_and_hitboxes': 'Trigger & Hitbox',
+      'behaviour/ui': 'Antarmuka Pengguna',
+      'behaviour/ui/interactive_widgets': 'Widget Interaktif',
+      'behaviour/ui/dynamic_ui': 'UI Dinamis & Data Binding',
+
+      'node_library/overview': 'Overview & Architecture',
+      'node_library/custom': 'Custom Node'
+    }
+  }
 });
 
 const formatTypeBadge = (type) => {
@@ -95,135 +206,122 @@ const formatDynamicMode = (mode) => {
 };
 
 export function useDocsLogic() {
-  // 1. Getting Started (Flat)
-  const gettingStartedLinks = [
-    { id: 'getting_started/introduction', name: 'Introduction' },
-    { id: 'getting_started/installation', name: 'Installation & Setup' },
-    { id: 'getting_started/quick_start', name: 'Quick Start' },
-    { id: 'getting_started/project_and_export', name: 'Project & Export' },
+  const currentLang = ref(
+    typeof localStorage !== 'undefined' && localStorage.getItem('lupis_docs_lang')
+      ? localStorage.getItem('lupis_docs_lang')
+      : 'en'
+  );
+
+  const availableLanguages = [
+    { code: 'id', label: 'Bahasa Indonesia', flag: '🇮🇩' },
+    { code: 'en', label: 'English', flag: '🇬🇧' }
   ];
 
-  // 2. Interface (Flat)
-  const interfaceLinks = [
-    { id: 'interface/editor_overview', name: 'Editor Overview' },
-    { id: 'interface/scene_viewport', name: 'Scene Viewport' },
-    { id: 'interface/scene_hierarchy', name: 'Scene Hierarchy' },
-    { id: 'interface/property_inspector', name: 'Property Inspector' },
-    { id: 'interface/shortcuts', name: 'Shortcuts Reference' },
-  ];
+  const sidebarNav = computed(() => {
+    const lang = currentLang.value;
+    const tCat = I18N_NAV[lang]?.categories || I18N_NAV.en.categories;
+    const tLink = (id, defaultName) => I18N_NAV[lang]?.links[id] || defaultName;
 
-  // 3. Components (Level 2 on Visual Renderers)
-  const componentsLinks = [
-    { id: 'components/entities_and_prefabs', name: 'Entities & Prefabs' },
-    { id: 'components/transform', name: 'Transform & UI Transform' },
-    {
-      id: 'components/renderers',
-      name: 'Visual Renderers',
-      children: [
-        { id: 'components/renderers/sprite_renderer', name: 'Image Renderer' },
-        { id: 'components/renderers/shape_renderer', name: 'Shape Renderer' },
-        { id: 'components/renderers/text_renderer', name: 'Text Renderer' },
-        { id: 'components/renderers/tilemap', name: 'Tilemap' },
-      ]
-    },
-    { id: 'components/sprite_animator', name: 'Sprite Animator' },
-    { id: 'components/physics_body', name: 'Physics Body' },
-    { id: 'components/multi_collider', name: 'Multi-Collider' },
-    { id: 'components/audio_source', name: 'Audio Source' },
-    { id: 'components/script_controller', name: 'Script Controller' },
-  ];
-
-  // 4. Visual Scripting (Flat)
-  const visualScriptingLinks = [
-    { id: 'visual_scripting/graph_concepts', name: 'Graph & Node Concepts' },
-    { id: 'visual_scripting/variables_and_collections', name: 'Variables & Collections' },
-    { id: 'visual_scripting/custom_node_and_code', name: 'Custom Node & Code Panel' },
-    { id: 'visual_scripting/context_system_api', name: 'Context System API' },
-  ];
-
-  // 5. Behaviour (Level 2)
-  const behaviourLinks = [
-    {
-      id: 'behaviour/movement',
-      name: 'Movement',
-      children: [
-        { id: 'behaviour/movement/platformer', name: 'Platformer Movement' },
-        { id: 'behaviour/movement/top_down', name: 'Top-Down Movement' },
-        { id: 'behaviour/movement/basic_motion', name: 'Patrol & Basic Motion' },
-      ]
-    },
-    {
-      id: 'behaviour/physics_and_collision',
-      name: 'Physics & Collision',
-      children: [
-        { id: 'behaviour/physics_and_collision/physics_and_slopes', name: 'Physics & Slopes' },
-        { id: 'behaviour/physics_and_collision/triggers_and_hitboxes', name: 'Triggers & Hitboxes' },
-      ]
-    },
-    {
-      id: 'behaviour/ui',
-      name: 'User Interface',
-      children: [
-        { id: 'behaviour/ui/interactive_widgets', name: 'Interactive Widgets' },
-        { id: 'behaviour/ui/dynamic_ui', name: 'Dynamic UI & Data Binding' },
-      ]
-    },
-  ];
-
-  // 6. Node Library (Dynamic from ALL_BLUEPRINTS)
-  const nodeLibraryLinks = [
-    { id: 'node_library/overview', name: 'Overview & Architecture' },
-    ...ALL_BLUEPRINTS.map(group => ({
-      id: `node_library/${group.id}`,
-      name: group.label
-    })),
-    { id: 'node_library/custom', name: 'Custom Node' }
-  ];
-
-  // 7. Tutorials (Flat)
-  const tutorialsLinks = [
-    { id: 'tutorials/first_platformer', name: 'Your First Platformer Game' },
-    { id: 'tutorials/first_top_down', name: 'Your First Top-Down RPG' },
-    { id: 'tutorials/building_game_ui', name: 'Your First Visual Novel Game' },
-  ];
-
-  const sidebarNav = ref([
-    {
-      title: 'Getting Started',
-      icon: markRaw(BookOpen),
-      links: gettingStartedLinks
-    },
-    {
-      title: 'Interface',
-      icon: markRaw(Layout),
-      links: interfaceLinks
-    },
-    {
-      title: 'Components',
-      icon: markRaw(Boxes),
-      links: componentsLinks
-    },
-    {
-      title: 'Visual Scripting',
-      icon: markRaw(GitBranch),
-      links: visualScriptingLinks
-    },
-    {
-      title: 'Behaviour',
-      icon: markRaw(Gamepad2),
-      links: behaviourLinks
-    },
-    {
-      title: 'Node Library',
-      icon: markRaw(Library),
-      links: nodeLibraryLinks
-    },
-    {
-      title: 'Tutorials',
-      icon: markRaw(GraduationCap),
-      links: tutorialsLinks
-    }
-  ]);
+    return [
+      {
+        title: tCat.getting_started,
+        icon: markRaw(BookOpen),
+        links: [
+          { id: 'getting_started/introduction', name: tLink('getting_started/introduction', 'Introduction') },
+          { id: 'getting_started/installation', name: tLink('getting_started/installation', 'Installation & Setup') },
+          { id: 'getting_started/quick_start', name: tLink('getting_started/quick_start', 'Quick Start') },
+          { id: 'getting_started/project_and_export', name: tLink('getting_started/project_and_export', 'Project & Export') },
+        ]
+      },
+      {
+        title: tCat.interface,
+        icon: markRaw(Layout),
+        links: [
+          { id: 'interface/editor_overview', name: tLink('interface/editor_overview', 'Editor Overview') },
+          { id: 'interface/scene_viewport', name: tLink('interface/scene_viewport', 'Scene Viewport') },
+          { id: 'interface/scene_hierarchy', name: tLink('interface/scene_hierarchy', 'Scene Hierarchy') },
+          { id: 'interface/property_inspector', name: tLink('interface/property_inspector', 'Property Inspector') },
+          { id: 'interface/shortcuts', name: tLink('interface/shortcuts', 'Shortcuts Reference') },
+        ]
+      },
+      {
+        title: tCat.components,
+        icon: markRaw(Boxes),
+        links: [
+          { id: 'components/entities_and_prefabs', name: tLink('components/entities_and_prefabs', 'Entities & Prefabs') },
+          { id: 'components/transform', name: tLink('components/transform', 'Transform & UI Transform') },
+          {
+            id: 'components/renderers',
+            name: tLink('components/renderers', 'Visual Renderers'),
+            children: [
+              { id: 'components/renderers/sprite_renderer', name: tLink('components/renderers/sprite_renderer', 'Image Renderer') },
+              { id: 'components/renderers/shape_renderer', name: tLink('components/renderers/shape_renderer', 'Shape Renderer') },
+              { id: 'components/renderers/text_renderer', name: tLink('components/renderers/text_renderer', 'Text Renderer') },
+              { id: 'components/renderers/tilemap', name: tLink('components/renderers/tilemap', 'Tilemap') },
+            ]
+          },
+          { id: 'components/sprite_animator', name: tLink('components/sprite_animator', 'Sprite Animator') },
+          { id: 'components/physics_body', name: tLink('components/physics_body', 'Physics Body') },
+          { id: 'components/multi_collider', name: tLink('components/multi_collider', 'Multi-Collider') },
+          { id: 'components/audio_source', name: tLink('components/audio_source', 'Audio Source') },
+          { id: 'components/script_controller', name: tLink('components/script_controller', 'Script Controller') },
+        ]
+      },
+      {
+        title: tCat.visual_scripting,
+        icon: markRaw(GitBranch),
+        links: [
+          { id: 'visual_scripting/graph_concepts', name: tLink('visual_scripting/graph_concepts', 'Graph & Node Concepts') },
+          { id: 'visual_scripting/variables_and_collections', name: tLink('visual_scripting/variables_and_collections', 'Variables & Collections') },
+          { id: 'visual_scripting/custom_node_and_code', name: tLink('visual_scripting/custom_node_and_code', 'Custom Node & Code Panel') },
+          { id: 'visual_scripting/context_system_api', name: tLink('visual_scripting/context_system_api', 'Context System API') },
+        ]
+      },
+      {
+        title: tCat.behaviour,
+        icon: markRaw(Gamepad2),
+        links: [
+          {
+            id: 'behaviour/movement',
+            name: tLink('behaviour/movement', 'Movement'),
+            children: [
+              { id: 'behaviour/movement/platformer', name: tLink('behaviour/movement/platformer', 'Platformer Movement') },
+              { id: 'behaviour/movement/top_down', name: tLink('behaviour/movement/top_down', 'Top-Down Movement') },
+              { id: 'behaviour/movement/basic_motion', name: tLink('behaviour/movement/basic_motion', 'Patrol & Basic Motion') },
+            ]
+          },
+          {
+            id: 'behaviour/physics_and_collision',
+            name: tLink('behaviour/physics_and_collision', 'Physics & Collision'),
+            children: [
+              { id: 'behaviour/physics_and_collision/physics_and_slopes', name: tLink('behaviour/physics_and_collision/physics_and_slopes', 'Physics & Slopes') },
+              { id: 'behaviour/physics_and_collision/triggers_and_hitboxes', name: tLink('behaviour/physics_and_collision/triggers_and_hitboxes', 'Triggers & Hitboxes') },
+            ]
+          },
+          {
+            id: 'behaviour/ui',
+            name: tLink('behaviour/ui', 'User Interface'),
+            children: [
+              { id: 'behaviour/ui/interactive_widgets', name: tLink('behaviour/ui/interactive_widgets', 'Interactive Widgets') },
+              { id: 'behaviour/ui/dynamic_ui', name: tLink('behaviour/ui/dynamic_ui', 'Dynamic UI & Data Binding') },
+            ]
+          },
+        ]
+      },
+      {
+        title: tCat.node_library,
+        icon: markRaw(Library),
+        links: [
+          { id: 'node_library/overview', name: tLink('node_library/overview', 'Overview & Architecture') },
+          ...ALL_BLUEPRINTS.map(group => ({
+            id: `node_library/${group.id}`,
+            name: group.label
+          })),
+          { id: 'node_library/custom', name: tLink('node_library/custom', 'Custom Node') }
+        ]
+      }
+    ];
+  });
 
   const flattenDocs = (items, parentPath = []) => {
     let result = [];
@@ -246,15 +344,10 @@ export function useDocsLogic() {
   };
 
   const allFlatDocs = computed(() => {
-    const staticDocs = [
-      ...flattenDocs(gettingStartedLinks, ['Getting Started']),
-      ...flattenDocs(interfaceLinks, ['Interface']),
-      ...flattenDocs(componentsLinks, ['Components']),
-      ...flattenDocs(visualScriptingLinks, ['Visual Scripting']),
-      ...flattenDocs(behaviourLinks, ['Behaviour']),
-      ...flattenDocs(nodeLibraryLinks, ['Node Library']),
-      ...flattenDocs(tutorialsLinks, ['Tutorials'])
-    ];
+    let staticDocs = [];
+    sidebarNav.value.forEach(section => {
+      staticDocs = staticDocs.concat(flattenDocs(section.links, [section.title]));
+    });
 
     const blueprintNodes = [];
     ALL_BLUEPRINTS.forEach(group => {
@@ -262,7 +355,7 @@ export function useDocsLogic() {
         blueprintNodes.push({
           id: `node_library/${group.id}#node-${node.type}`,
           name: `${node.label || node.type} (${node.type})`,
-          path: `Node Library > ${group.label} > ${node.label || node.type}`
+          path: `${I18N_NAV[currentLang.value]?.categories?.node_library || 'Node Library'} > ${group.label} > ${node.label || node.type}`
         });
       });
     });
@@ -270,7 +363,7 @@ export function useDocsLogic() {
     blueprintNodes.push({
       id: 'node_library/custom#node-customScript',
       name: `${CUSTOM_NODE_TEMPLATE.label || 'Custom Node'} (${CUSTOM_NODE_TEMPLATE.type || 'customScript'})`,
-      path: `Node Library > Custom Node > ${CUSTOM_NODE_TEMPLATE.label || 'Custom Script'}`
+      path: `${I18N_NAV[currentLang.value]?.categories?.node_library || 'Node Library'} > Custom Node > ${CUSTOM_NODE_TEMPLATE.label || 'Custom Script'}`
     });
 
     return [...staticDocs, ...blueprintNodes];
@@ -301,7 +394,7 @@ export function useDocsLogic() {
             blocks: [
               {
                 type: 'text',
-                content: `Visual scripting in Lupis Engine provides a complete library of event, action, and calculation nodes. Logic flows chronologically through execution pins, while data travels through typed value pins.`
+                content: 'Visual scripting in Lupis Engine provides a complete library of event, action, and calculation nodes. Logic flows chronologically through execution pins, while data travels through typed value pins.'
               },
               {
                 type: 'features',
@@ -338,14 +431,14 @@ export function useDocsLogic() {
                 type: 'table',
                 headers: ['Module', 'Module ID', 'Role / Focus', 'Node Count'],
                 rows: [
-                  ...ALL_BLUEPRINTS.map(g => [
-                    `[${g.label}](node_library/${g.id})`,
-                    g.id,
-                    MODULE_DESCRIPTIONS[g.id] || 'Gameplay logic and behavior.',
-                    String(g.items?.length || 0)
+                  ...ALL_BLUEPRINTS.map(group => [
+                    `[${group.label}](node_library/${group.id})`,
+                    group.id,
+                    MODULE_DESCRIPTIONS[group.id] || 'Gameplay logic and behavior.',
+                    String(group.items?.length || 0)
                   ]),
                   [
-                    `[Custom Node](node_library/custom)`,
+                    '[Custom Node](node_library/custom)',
                     'custom',
                     'Extensible JavaScript script template with user-defined ports.',
                     '1'
@@ -607,7 +700,10 @@ export function useDocsLogic() {
 
   const docsData = ref({}); 
   const currentDocId = ref('getting_started/introduction'); 
-  const activeContent = computed(() => docsData.value[currentDocId.value] || null);
+  const activeContent = computed(() => {
+    const key = `${currentLang.value}:${currentDocId.value}`;
+    return docsData.value[key] || docsData.value[currentDocId.value] || null;
+  });
 
   const tocHeadings = ref([]);
   const activeHeadingId = ref('');
@@ -707,47 +803,78 @@ export function useDocsLogic() {
   };
 
   const fetchDocumentData = async (docId) => {
-    if (docsData.value[docId]) return;
+    const key = `${currentLang.value}:${docId}`;
+    if (docsData.value[key]) return;
 
     // Check dynamic Node Library first
     if (docId.startsWith('node_library/')) {
       const generated = generateNodeLibraryDoc(docId);
       if (generated) {
-        docsData.value[docId] = generated;
+        docsData.value[key] = generated;
         return;
       }
     }
 
     try {
-      const response = await fetch(`/docs/${docId}.json`);
+      // 1. Primary: Try fetching markdown for current language
+      let response = await fetch(`/docs/${currentLang.value}/${docId}.md`);
+      
+      // 2. Fallback: If not found and language is not 'en', try fetching EN markdown
+      if (!response.ok && currentLang.value !== 'en') {
+        response = await fetch(`/docs/en/${docId}.md`);
+      }
+
+      // 3. Fallback: Check root markdown / legacy json
+      if (!response.ok) {
+        response = await fetch(`/docs/${docId}.md`);
+      }
+      if (!response.ok) {
+        response = await fetch(`/docs/${docId}.json`);
+      }
       
       if (!response.ok) {
         throw new Error(`Document ${docId} does not exist.`);
       }
 
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        throw new Error(`Document ${docId} did not return valid JSON.`);
+      const contentType = response.headers?.get?.('content-type') || '';
+      let data;
+      if (contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        const rawText = typeof response.text === 'function' ? await response.text() : '';
+        if (rawText && rawText.trim().startsWith('{')) {
+          try {
+            data = JSON.parse(rawText);
+          } catch {
+            data = parseMarkdownDoc(rawText);
+          }
+        } else {
+          data = parseMarkdownDoc(rawText);
+        }
       }
-      
-      const data = await response.json();
-      docsData.value[docId] = data; 
+
+      docsData.value[key] = data; 
       
     } catch (error) {
       console.warn(error.message);
       
-      docsData.value[docId] = {
-        title: 'Under Construction',
-        category: 'Work in Progress',
-        description: 'Documentation for this topic is currently being written.',
+      const isId = currentLang.value === 'id';
+      docsData.value[key] = {
+        title: isId ? 'Dalam Pengerjaan' : 'Under Construction',
+        category: isId ? 'Sedang Disusun' : 'Work in Progress',
+        description: isId 
+          ? 'Dokumentasi untuk topik ini sedang dalam proses penyusunan.'
+          : 'Documentation for this topic is currently being written.',
         sections: [
           {
             id: 'work-in-progress',
-            title: 'Coming Soon',
+            title: isId ? 'Segera Hadir' : 'Coming Soon',
             blocks: [
               { 
                 type: 'text', 
-                content: 'We are currently completing this section of the Lupis Engine documentation.' 
+                content: isId
+                  ? 'Kami sedang melengkapi bagian dokumentasi Lupis Engine ini.'
+                  : 'We are currently completing this section of the Lupis Engine documentation.' 
               }
             ]
           }
@@ -773,12 +900,28 @@ export function useDocsLogic() {
     }
   };
 
+  const setLanguage = async (newLang) => {
+    if (newLang !== 'en' && newLang !== 'id') return;
+    currentLang.value = newLang;
+    if (typeof localStorage !== 'undefined') {
+      try {
+        localStorage.setItem('lupis_docs_lang', newLang);
+      } catch {}
+    }
+    await fetchDocumentData(currentDocId.value);
+    destroyToc();
+    await initToc();
+  };
+
   fetchDocumentData(currentDocId.value);
 
   return {
     sidebarNav,
     activeContent,
     currentDocId,
+    currentLang,
+    availableLanguages,
+    setLanguage,
     tocHeadings,
     activeHeadingId,
     contentContainer,

@@ -1,7 +1,8 @@
 <script setup>
-import { ref } from 'vue';
-import { ChevronDown, X } from 'lucide-vue-next';
+import { ref, computed } from 'vue';
+import { X, ChevronDown } from 'lucide-vue-next';
 import { DocsSidebarItem } from '@docs/docs.js'; 
+import { BaseSelect } from '@components/components.js';
 
 const props = defineProps({
   navItems: {
@@ -15,10 +16,21 @@ const props = defineProps({
   isOpen: {
     type: Boolean,
     default: false
+  },
+  currentLang: {
+    type: String,
+    default: 'en'
+  },
+  languages: {
+    type: Array,
+    default: () => [
+      { code: 'id', label: 'Bahasa Indonesia', flag: '🇮🇩' },
+      { code: 'en', label: 'English', flag: '🇬🇧' }
+    ]
   }
 });
 
-const emit = defineEmits(['close', 'navigate']);
+const emit = defineEmits(['close', 'navigate', 'changeLanguage']);
 
 const openMenus = ref(props.navItems.map((_, index) => index));
 
@@ -34,6 +46,20 @@ const handleNavigation = (id) => {
   emit('navigate', id);
   emit('close'); 
 };
+
+const languageOptions = computed(() => {
+  return props.languages.map(lang => ({
+    value: lang.code,
+    label: `${lang.flag} ${lang.label}`
+  }));
+});
+
+const selectedLanguage = computed({
+  get: () => props.currentLang,
+  set: (val) => {
+    emit('changeLanguage', val);
+  }
+});
 </script>
 
 <template>
@@ -57,7 +83,7 @@ const handleNavigation = (id) => {
     :class="isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:shadow-none'"
   >
     
-    <div class="flex items-center justify-between mb-6 lg:hidden px-2">
+    <div class="flex items-center justify-between mb-4 lg:hidden px-2">
       <span class="font-bold text-lg text-foreground">Navigation</span>
       <button 
         @click="emit('close')" 
@@ -65,6 +91,18 @@ const handleNavigation = (id) => {
       >
         <X class="w-5 h-5" />
       </button>
+    </div>
+
+    <!-- Language Selector with Atomic BaseSelect -->
+    <div class="mb-6 px-1">
+      <BaseSelect
+        v-model="selectedLanguage"
+        :options="languageOptions"
+        :label="currentLang === 'id' ? 'Bahasa Dokumentasi' : 'Documentation Language'"
+        height="2.25rem"
+        placeholder="Select language..."
+        data-testid="docs-language-select"
+      />
     </div>
 
     <nav class="space-y-4">

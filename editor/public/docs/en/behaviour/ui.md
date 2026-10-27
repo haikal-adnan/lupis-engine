@@ -1,0 +1,29 @@
+---
+title: "User Interface"
+category: "Behaviour"
+description: "Build interactive menus, audio sliders, dialogue prompts, and data-driven HUD overlays."
+---
+
+## Overview {#overview}
+
+User Interface behaviors turn screen-space layers, sprites, and text entities into interactive menus, HUD overlays, dialogue boxes, and data-driven grids.
+
+:::features
+- **Interactive Controls**: Build animated buttons, draggable audio sliders, toggle switches, and branching visual novel dialogue prompts.
+- **Data-Driven HUD & Grids**: Bind live variables to text labels, animate health and progress bars, and populate inventory grids from prefab templates.
+:::
+
+## Choose a page {#choose-a-page}
+
+| Page | Use it when |
+| --- | --- |
+| [Interactive Widgets](behaviour/ui/interactive_widgets) | Create clickable buttons, volume sliders, toggle switches, and interactive dialogue choices. |
+| [Dynamic UI & Data Binding](behaviour/ui/dynamic_ui) | Bind gameplay variables to HUD text, animate fill bars, and spawn data-bound inventory grids. |
+
+## Related {#related}
+
+| Page | Use it when |
+| --- | --- |
+| [Text Renderer](components/renderers/text_renderer) | Configure font families, sizes, alignment, and live variable binding on UI labels. |
+| [Scene Hierarchy](interface/scene_hierarchy) | Create screen-space UI layers with parallax locked at zero so HUD elements stay fixed to the camera. |
+| [Helper Tool Nodes](node_library/helper_tool) | Browse all UI widget, slider, dialogue, and grid spawning blueprint nodes. |

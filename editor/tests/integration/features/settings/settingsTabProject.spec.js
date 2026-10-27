@@ -187,7 +187,7 @@ describe('SettingsTabProject Integration', () => {
 
     const discordLink = wrapper.find('[data-testid="project-discord-link"]');
     expect(discordLink.exists()).toBe(true);
-    expect(discordLink.attributes('href')).toBe('https://discord.gg/lupis-engine');
+    expect(discordLink.attributes('href')).toBe('https://haikal-adnan.github.io/lupis-engine-link?go=discord');
     expect(discordLink.find('svg').exists()).toBe(true);
   });
 });

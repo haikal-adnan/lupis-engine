@@ -18,13 +18,32 @@ const routes = [
   },
   {
     path: '/docs',
-    redirect: '/docs/getting_started/introduction'
+    redirect: () => {
+      const saved = typeof localStorage !== 'undefined' ? localStorage.getItem('lupis_docs_lang') : null;
+      const lang = saved === 'id' ? 'id' : 'en';
+      return `/docs/${lang}/getting_started/introduction`;
+    }
   },
   {
-    path: '/docs/:docPath(.*)*',
+    path: '/docs/:lang(id|en)',
+    redirect: to => `/docs/${to.params.lang}/getting_started/introduction`
+  },
+  {
+    path: '/docs/:lang(id|en)/:docPath(.*)*',
     name: 'Docs',
     component: () => import('@/features/docs/layouts/DocsPanel.vue'),
     meta: { layout: 'MainLayout' }
+  },
+  {
+    path: '/docs/:docPath(.*)*',
+    redirect: to => {
+      const saved = typeof localStorage !== 'undefined' ? localStorage.getItem('lupis_docs_lang') : null;
+      const lang = saved === 'id' ? 'id' : 'en';
+      const path = to.params.docPath
+        ? (Array.isArray(to.params.docPath) ? to.params.docPath.join('/') : to.params.docPath)
+        : 'getting_started/introduction';
+      return `/docs/${lang}/${path}`;
+    }
   },
   {
     path: '/settings',

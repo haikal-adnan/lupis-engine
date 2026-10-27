@@ -21,34 +21,34 @@ The Lupis Studio Visual Editor is a modern, responsive web-based game developmen
 
 ```text
 editor/
-├── public/                      # Static assets and in-app documentation JSON files
-━E  ├── docs/                    # In-editor interactive documentation database
-━E  └── favicon.ico
+├── public/                      # Static assets and in-app documentation files
+│   ├── docs/                    # In-editor interactive documentation database
+│   └── favicon.ico
 ├── src/
-━E  ├── app/                     # App bootstrapping and router configuration
-━E  ├── assets/                  # CSS stylesheets, animations, and global Tailwind imports
-━E  ├── features/                # Domain-driven feature modules
-━E  ━E  ├── animators/           # 2D Sprite Animator Editor and clip hierarchy
-━E  ━E  ├── assets/              # Asset browser, file uploading, and OPFS caching
-━E  ━E  ├── builders/            # Interactive shape builder and tilemap brush logic
-━E  ━E  ├── consoles/            # Real-time runtime console and log filters
-━E  ━E  ├── dashboards/          # Project dashboard and template creation
-━E  ━E  ├── docs/                # In-app documentation browser component
-━E  ━E  ├── engines/             # EventBus bridge and synchronization with WebGL core
-━E  ━E  ├── folders/             # Folder tree management for project assets
-━E  ━E  ├── historys/            # Atomic undo/redo transaction engine
-━E  ━E  ├── inspectors/          # Property inspector and ECS component bindings
-━E  ━E  ├── nodes/               # Visual scripting logic canvas
-━E  ━E  ├── opfs/                # Origin Private File System storage abstractions
-━E  ━E  ├── prefabs/             # Reusable entity-component templates
-━E  ━E  ├── projects/            # Project manifest serialization, persistence, and watchers
-━E  ━E  ├── scenes/              # Scene hierarchy, entity tree, and layer management
-━E  ━E  ├── scripts/             # Script compilation, normalization, and AST validation
-━E  ━E  ├── settings/            # Workspace and project settings modals
-━E  ━E  ├── viewports/           # WebGL viewport canvas, transform gizmo, and header tabs
-━E  ━E  └── workspaces/          # Multi-tab layout coordinator
-━E  ├── layouts/                 # Master shell layouts (EditorLayout, MainLayout, EditorView)
-━E  └── utils/                   # Binary project encoders, UUID generators, and transform math
+│   ├── app/                     # App bootstrapping and router configuration
+│   ├── assets/                  # CSS stylesheets, animations, and global Tailwind imports
+│   ├── features/                # Domain-driven feature modules
+│   │   ├── animators/           # 2D Sprite Animator Editor and clip hierarchy
+│   │   ├── assets/              # Asset browser, file uploading, and OPFS caching
+│   │   ├── builders/            # Interactive shape builder and tilemap brush logic
+│   │   ├── consoles/            # Real-time runtime console and log filters
+│   │   ├── dashboards/          # Project dashboard and template creation
+│   │   ├── docs/                # In-app documentation browser component
+│   │   ├── engines/             # EventBus bridge and synchronization with WebGL core
+│   │   ├── folders/             # Folder tree management for project assets
+│   │   ├── historys/            # Atomic undo/redo transaction engine
+│   │   ├── inspectors/          # Property inspector and ECS component bindings
+│   │   ├── nodes/               # Visual scripting logic canvas
+│   │   ├── opfs/                # Origin Private File System storage abstractions
+│   │   ├── prefabs/             # Reusable entity-component templates
+│   │   ├── projects/            # Project manifest serialization, persistence, and watchers
+│   │   ├── scenes/              # Scene hierarchy, entity tree, and layer management
+│   │   ├── scripts/             # Script compilation, normalization, and AST validation
+│   │   ├── settings/            # Workspace and project settings modals
+│   │   ├── viewports/           # WebGL viewport canvas, transform gizmo, and header tabs
+│   │   └── workspaces/          # Multi-tab layout coordinator
+│   ├── layouts/                 # Master shell layouts (EditorLayout, MainLayout, EditorView)
+│   └── utils/                   # Binary project encoders, UUID generators, and transform math
 └── tests/                       # Vitest integration and system test suite
 ```
 
