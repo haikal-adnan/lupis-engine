@@ -1,0 +1,31 @@
+import { useProjectStore } from '@/stores/useProjectStore.js';
+import { useSceneStore } from '@/stores/scene/useSceneStore.js';
+import { useAssetStore } from '@/stores/useAssetStore.js';
+import { useEditorStore } from '@/stores/useEditorStore.js';
+import { useScriptStore } from '@/stores/useScriptStore.js';
+import { usePrefabStore } from '@/stores/usePrefabStore.js';
+
+import { useEditorToEngine } from './sync/useEditorToEngine.js';
+import { useEngineToEditor } from './sync/useEngineToEditor.js';
+
+export function useEngineSync() {
+  const projectStore = useProjectStore();
+  const sceneStore = useSceneStore();
+  const assetStore = useAssetStore();
+  const editorStore = useEditorStore();
+  const scriptStore = useScriptStore();
+  const prefabStore = usePrefabStore();
+
+
+  const outgoing = useEditorToEngine(projectStore, sceneStore, assetStore, editorStore, scriptStore, prefabStore);
+  const incoming = useEngineToEditor(sceneStore);
+
+  const initSync = () => {
+    outgoing.listen();
+
+    incoming.listen();
+
+  };
+
+  return { initSync };
+}

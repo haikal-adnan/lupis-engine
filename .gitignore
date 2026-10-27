@@ -69,3 +69,22 @@ backup-*.zip
 
 # VPS or deployment scripts
 auto_commit.sh
+
+# Abaikan semua isi di dalam storage
+/storage/*
+!/storage/.gitkeep
+!/storage/projects/
+/storage/projects/*
+!/storage/projects/.gitkeep
+
+!/storage/published/
+/storage/published/*
+!/storage/published/.gitkeep
+
+!/storage/profiles/
+/storage/profiles/*
+!/storage/profiles/.gitkeep
+
+!/storage/thumbnails/
+/storage/thumbnails/*
+!/storage/thumbnails/.gitkeep
