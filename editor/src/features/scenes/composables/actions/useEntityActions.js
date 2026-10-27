@@ -722,6 +722,8 @@ export function useEntityActions() {
     entity.components[componentName] = JSON.parse(JSON.stringify(comp));
     entity.components = { ...entity.components };
 
+    engineBridge.updateComponentProp?.({ entityId, componentName, path, value });
+
     return { entityId, componentName, path, value };
   };
 

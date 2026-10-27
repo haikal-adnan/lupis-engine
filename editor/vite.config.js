@@ -1,4 +1,5 @@
 import { fileURLToPath, URL } from 'node:url';
+import fs from 'node:fs';
 import path from 'path';
 import { defineConfig, searchForWorkspaceRoot } from 'vite';
 import vue from '@vitejs/plugin-vue';
@@ -33,6 +34,7 @@ export default defineConfig({
         searchForWorkspaceRoot(process.cwd()),
         path.resolve(__dirname, 'src'),
         path.resolve(__dirname, '../core'),
+        path.resolve(__dirname, '../service'),
         path.resolve(__dirname, './'),
         path.resolve(__dirname, 'node_modules'),
       ],
@@ -91,6 +93,10 @@ export default defineConfig({
       '/core': path.resolve(__dirname, '../core'),
       '@engines': fileURLToPath(new URL('./src/features/engines', import.meta.url)),
       'vue': 'vue/dist/vue.esm-bundler.js',
+      'terser': fs.existsSync(path.resolve(__dirname, '../service/node_modules/terser'))
+        ? path.resolve(__dirname, '../service/node_modules/terser')
+        : 'terser',
+      'msdfgen-wasm': path.resolve(__dirname, 'node_modules/msdfgen-wasm/dist/cjs/index.js'),
     },
   },
 

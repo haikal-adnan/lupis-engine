@@ -507,7 +507,10 @@ app.get("/api/health", (req, res) => {
   });
 });
 
+// [LEGACY / DEPRECATED]: Font conversion is now handled client-side in Editor via msdfgen-wasm.
+// Retained as a fallback endpoint.
 app.post("/api/convert-font", (req, res) => {
+  console.warn("[Deprecated Endpoint]: /api/convert-font requested. Font conversion is now processed client-side.");
   upload(req, res, (err) => {
     if (err) {
       console.error(`[Upload Error]: ${err.message}`);

@@ -108,6 +108,9 @@ export default class AssetLoader {
     const fontResult = await this.fontResource.loadFontFromAsset(asset, baseURL);
     if (fontResult) {
       world.addFont(asset.id, fontResult);
+      if (asset.scriptId && asset.scriptId !== asset.id) {
+        world.addFont(asset.scriptId, fontResult);
+      }
     }
   }
 

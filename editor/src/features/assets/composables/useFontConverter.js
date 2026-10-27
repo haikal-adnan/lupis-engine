@@ -1,10 +1,8 @@
 import { ref } from 'vue';
-import JSZip from 'jszip';
-import { useWorkspaceStore } from '@workspaces/workspaces.js';
 import { usePopAlert } from '@composables/composables.js';
+import { generateMsdfBmFont } from './msdfGenerator.js';
 
 export function useFontConverter() {
-  const workspaceStore = useWorkspaceStore();
   const { showPop } = usePopAlert();
   const isConverting = ref(false);
 
@@ -14,55 +12,26 @@ export function useFontConverter() {
     isConverting.value = true;
 
     try {
-      const backendUrl = workspaceStore.backendBaseUrl || 'http://localhost:37602';
-      const formData = new FormData();
-      formData.append('file', fontFile);
-
-      const response = await fetch(`${backendUrl}/api/convert-font`, {
-        method: 'POST',
-        body: formData,
-        signal: AbortSignal.timeout(20000),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `Server error (${response.status})`);
-      }
-
-      const zipBuffer = await response.arrayBuffer();
-      const zip = new JSZip();
-      const zipContent = await zip.loadAsync(zipBuffer);
-
+      const fontBuffer = await fontFile.arrayBuffer();
       const lastDotIndex = fontFile.name.lastIndexOf('.');
       const baseName = lastDotIndex !== -1 ? fontFile.name.substring(0, lastDotIndex) : fontFile.name;
-      
-      let fntFile = null;
-      const pngFiles = [];
 
-      for (const [filename, fileObj] of Object.entries(zipContent.files)) {
-        if (fileObj.dir) continue;
+      const { fntContent, pngBuffers } = await generateMsdfBmFont(fontBuffer, {
+        faceName: baseName,
+        fileName: baseName,
+        fontSize: 32,
+        distanceRange: 8,
+        texturePadding: 8,
+        textureSize: 2048,
+      });
 
-        if (filename.endsWith('.fnt')) {
-          const blob = await fileObj.async('blob');
-          fntFile = new File([blob], `${baseName}.fnt`, { type: 'application/octet-stream' });
-        } else if (filename.endsWith('.png')) {
-          const blob = await fileObj.async('blob');
+      const fntFile = new File([fntContent], `${baseName}.fnt`, { type: 'application/octet-stream' });
+      const pngFiles = pngBuffers.map((buf, index) => {
+        const pngName = pngBuffers.length === 1 ? `${baseName}.png` : `${baseName}_${index}.png`;
+        return new File([buf], pngName, { type: 'image/png' });
+      });
 
-          let pngName = `${baseName}.png`;
-          if (filename !== 'font.png') {
-            const indexSuffix = filename.replace('font_', ''); 
-            pngName = `${baseName}_${indexSuffix}`;
-          }
-
-          pngFiles.push(new File([blob], pngName, { type: 'image/png' }));
-        }
-      }
-
-      if (!fntFile || pngFiles.length === 0) {
-        throw new Error('Incomplete ZIP extraction results (fnt/png not found).');
-      }
-
-      console.log('[FontConverter Success]:', {
+      console.log('[FontConverter Client Success]:', {
         fnt: fntFile.name,
         pngs: pngFiles.map(f => f.name)
       });
@@ -75,10 +44,7 @@ export function useFontConverter() {
 
     } catch (error) {
       console.error('[FontConverter Error]:', error);
-      let message = error.message || 'Failed to convert font file to BMFont.';
-      if (error.name === 'TimeoutError' || error.name === 'AbortError') {
-        message = 'Font conversion timed out (20 seconds).';
-      }
+      const message = error.message || 'Failed to convert font file to BMFont.';
       showPop({
         title: 'Font Conversion Failed',
         message,

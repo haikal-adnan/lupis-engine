@@ -18,12 +18,15 @@ import {
 
 import { useWorkspaceStore } from '@workspaces/workspaces.js';
 import { useAnimatorLogic, useAnimatorActions } from '@animators/animators.js'
+import { engineBridge } from '@engines/engines.js'
+import { useSceneHistory } from '@historys/historys.js'
 
 export function useAssetMenu(selectedIdRef, triggerUploadCb, logicActions) {
   const { deleteAsset, renameAsset } = useAssetActions()
   const { createNewFolder, deleteFolder, renameFolder } = useFolderActions()
   const sceneStore = useSceneStore()
   const { updateComponentProp } = useEntityActions()
+  const { recordComponentChange } = useSceneHistory()
   const { _getAnimatorClips, _saveAnimatorClips } = useAnimatorActions()
   const folderStore = useFolderStore()
   const workspaceStore = useWorkspaceStore()
@@ -61,7 +64,20 @@ export function useAssetMenu(selectedIdRef, triggerUploadCb, logicActions) {
     }
 
     try {
+      const oldVal = entity.components[componentName]?.assetId
       updateComponentProp(entityId, componentName, 'assetId', asset.id)
+      if (entity.prefabId) {
+        updateComponentProp(entityId, componentName, 'overridden', true)
+      }
+      engineBridge.updateComponentProp?.({
+        entityId,
+        componentName,
+        path: 'assetId',
+        value: asset.id
+      })
+      if (recordComponentChange) {
+        recordComponentChange(entityId, componentName, 'assetId', oldVal, asset.id)
+      }
       showPop({ title: 'Success', message: `Applied "${asset.scriptId || asset.id}" to ${componentName}.`, type: 'success' })
     } catch (error) {
       showPop({ title: 'Failed', message: 'Failed to apply asset.', type: 'error' })

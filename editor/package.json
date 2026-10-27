@@ -8,6 +8,8 @@
   },
   "scripts": {
     "dev": "vite --host 0.0.0.0",
+    "build:runtime": "node scripts/bundleRuntime.js",
+    "prebuild": "node scripts/bundleRuntime.js",
     "build": "vite build",
     "preview": "vite preview --host 0.0.0.0",
     "test": "vitest",
@@ -19,6 +21,7 @@
     "idb": "^8.0.3",
     "jszip": "^3.10.2",
     "lucide-vue-next": "^0.562.0",
+    "msdfgen-wasm": "^1.0.0",
     "nprogress": "^0.2.0",
     "pinia": "^3.0.4",
     "prismjs": "^1.30.0",

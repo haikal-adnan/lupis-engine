@@ -29,15 +29,49 @@
     <div class="flex gap-2.5 mb-2 pt-1 items-center">
       <div class="w-[52px] h-[52px] shrink-0 bg-muted/20 border border-border rounded flex items-center justify-center overflow-hidden relative group">
          <div class="absolute inset-0 opacity-10 pointer-events-none" style="background-image: radial-gradient(#444 1px, transparent 1px); background-size: 4px 4px;"></div>
-         <span class="text-sm font-bold select-none transition-all duration-200" :style="{ color: color, opacity: rawOpacity }">Aa</span>
+         <span class="text-sm font-bold select-none text-black dark:text-white transition-colors duration-200">Aa</span>
       </div>
 
       <div class="w-full space-y-1.5">
         <PropertyRow label="Font" :no-margin="true">
-          <button type="button" class="group flex items-center w-full relative text-left bg-secondary/40 border border-border rounded-md h-7 overflow-hidden" data-testid="text-renderer-font-btn">
-            <span class="flex-1 px-2 text-[11px] font-mono text-muted-foreground/90 truncate">Inter</span>
-            <div class="px-2 h-full flex items-center justify-center border-l border-border bg-muted/10"><FolderSearch class="w-3 h-3" /></div>
-          </button>
+          <div class="relative w-full">
+            <button 
+              type="button" 
+              @click="isFontMenuOpen = !isFontMenuOpen"
+              class="group flex items-center w-full relative text-left bg-secondary/40 border border-border rounded-md hover:bg-secondary/60 hover:border-primary/30 transition-all duration-200 cursor-pointer h-7 overflow-hidden focus:ring-1 focus:ring-primary" 
+              data-testid="text-renderer-font-btn"
+              title="Click to select font asset"
+            >
+              <span class="flex-1 px-2 text-[11px] font-mono text-muted-foreground/90 truncate select-none group-hover:text-foreground transition-colors">
+                {{ fontScriptId }}
+              </span>
+              <div class="px-2 h-full flex items-center justify-center border-l border-border bg-muted/10 text-muted-foreground/50 group-hover:text-primary transition-colors">
+                <FolderSearch class="w-3 h-3" />
+              </div>
+            </button>
+
+            <!-- Font Dropdown Popover -->
+            <div 
+              v-if="isFontMenuOpen" 
+              class="fixed inset-0 z-40" 
+              @click="isFontMenuOpen = false"
+            ></div>
+            <div 
+              v-if="isFontMenuOpen" 
+              class="absolute left-0 right-0 top-full mt-1 z-50 max-h-48 overflow-y-auto bg-popover border border-border rounded-md shadow-md py-1 text-xs"
+            >
+              <div 
+                v-for="opt in availableFontOptions" 
+                :key="opt.value ?? 'default'"
+                @click="selectFont(opt.value)"
+                class="px-2.5 py-1.5 cursor-pointer hover:bg-accent hover:text-accent-foreground flex items-center justify-between transition-colors"
+                :class="{ 'font-semibold text-primary bg-primary/10': (assetId === opt.value) || (!assetId && opt.value === null) }"
+              >
+                <span class="truncate">{{ opt.label }}</span>
+                <span v-if="(assetId === opt.value) || (!assetId && opt.value === null)" class="text-[10px] text-primary shrink-0 ml-1">✓</span>
+              </div>
+            </div>
+          </div>
         </PropertyRow>
         <PropertyRow label="Mode" :no-margin="true">
           <BaseSelect v-model="mode" :options="[{ label: 'Static', value: 'static' }, { label: 'Rich Text', value: 'rich' }]" data-testid="text-renderer-mode-select" />
@@ -160,7 +194,8 @@
 </template>
 
 <script setup>
-import { computed } from "vue";
+import { computed, ref } from "vue";
+import { useAssetStore } from "@assets/assets.js";
 import { 
   Type, Trash2, AlignLeft, AlignCenter, AlignRight, AlignJustify,
   AlignVerticalJustifyStart, AlignVerticalJustifyCenter, AlignVerticalJustifyEnd,
@@ -205,6 +240,40 @@ const {
 // --- Logic Komponen ---
 const hasComponent = computed(() => !!selectedEntity.value?.components?.TextRenderer);
 const overridden = getComponentOverrideStatus('TextRenderer');
+
+const assetStore = useAssetStore();
+const assetId = bindComponentProp('TextRenderer', 'assetId');
+const isFontMenuOpen = ref(false);
+
+const fontAsset = computed(() => {
+  if (!assetId.value) return null;
+  return assetStore.assets.find(a => a.id === assetId.value || a.scriptId === assetId.value);
+});
+
+const fontScriptId = computed(() => {
+  if (fontAsset.value) return fontAsset.value.scriptId || fontAsset.value.name || fontAsset.value.id;
+  if (assetId.value) return assetId.value;
+  return 'Inter';
+});
+
+const availableFontOptions = computed(() => {
+  const options = [
+    { label: 'Inter (Default)', value: null }
+  ];
+  const fonts = assetStore.fonts || [];
+  for (const f of fonts) {
+    options.push({
+      label: f.scriptId || f.name || f.id,
+      value: f.id
+    });
+  }
+  return options;
+});
+
+const selectFont = (fontValue) => {
+  assetId.value = fontValue;
+  isFontMenuOpen.value = false;
+};
 
 const textValue = bindComponentProp('TextRenderer', 'value');
 const mode = bindComponentProp('TextRenderer', 'mode');

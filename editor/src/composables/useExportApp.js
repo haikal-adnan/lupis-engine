@@ -3,6 +3,7 @@ import JSZip from 'jszip';
 import { useWorkspaceStore } from '@workspaces/workspaces.js';
 import { useProjectStore } from '@projects/projects.js';
 import { usePopAlert } from '@composables/composables.js';
+import { buildClientWebPackage } from '@/features/export/webExporter.js';
 
 const isExporting = ref(false);
 const exportType = ref(null);
@@ -277,14 +278,7 @@ export function useExportApp() {
     let serverPollTimer = null;
 
     try {
-      const backendUrl = _getBackendUrl();
-
-      const isHealthy = await _checkBackendHealth(backendUrl);
-      if (!isHealthy) {
-        throw new Error('Export backend service is not ready. Please wait a few seconds and try again.');
-      }
-
-      exportProgress.value = 15;
+      exportProgress.value = 10;
       exportStatus.value = 'Reading project files from storage...';
 
       if (!navigator.storage || !navigator.storage.getDirectory) {
@@ -329,7 +323,51 @@ export function useExportApp() {
 
       projectName = projectName.trim().replace(/[/\\?%*:|"<>]/g, '').replace(/\s+/g, '_') || projectId;
 
-      // 2. Compress OPFS folder with JSZip
+      // 2. Handle ZIP format (100% Client-Side without Backend)
+      if (targetFormat === 'zip') {
+        exportProgress.value = 15;
+        exportStatus.value = `Preparing Standalone Web (${modeLabel}) export...`;
+
+        const resultBlob = await buildClientWebPackage({
+          projectDirHandle: targetProjectDir,
+          mode: targetMode,
+          projectName,
+          onProgress: (percent, statusText) => {
+            exportProgress.value = percent;
+            if (statusText) exportStatus.value = statusText;
+          }
+        });
+
+        exportProgress.value = 100;
+        exportStatus.value = 'Web Standalone export completed!';
+        isExportComplete.value = true;
+
+        const downloadUrl = URL.createObjectURL(resultBlob);
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = `${projectName}_${modeLabel}.zip`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
+
+        showPop({
+          title: `Export ${modeLabel} Successful`,
+          message: `Standalone Web (${modeLabel}) (.zip) for project "${projectName}" downloaded successfully!`,
+          type: 'success'
+        });
+
+        return { success: true, mode: targetMode };
+      }
+
+      // 3. Handle EXE format (Requires native backend / Electron)
+      const backendUrl = _getBackendUrl();
+      const isHealthy = await _checkBackendHealth(backendUrl);
+      if (!isHealthy) {
+        throw new Error('Export backend service is not ready. Please wait a few seconds and try again.');
+      }
+
+      // Compress OPFS folder with JSZip for EXE packaging payload
       exportProgress.value = 20;
       exportStatus.value = 'Compressing project archive (0%)...';
       const projectZip = new JSZip();
@@ -345,7 +383,7 @@ export function useExportApp() {
         }
       );
 
-      // 3. Prepare unified FormData
+      // Prepare unified FormData for backend EXE compiler
       const formData = new FormData();
       formData.append('projectZip', projectBlob, `${projectId}.zip`);
       formData.append('projectId', projectId);
@@ -362,44 +400,6 @@ export function useExportApp() {
         exportStatus.value = `Uploading project package to server (${uploadPercent}%)...`;
       };
 
-      // 4. Handle ZIP format
-      if (targetFormat === 'zip') {
-        const uploadUrl = `${backendUrl}/api/export-app/zip`;
-        const resultPromise = _uploadWithProgress(uploadUrl, formData, 'blob', onUploadProgress);
-
-        serverPollTimer = setInterval(() => {
-          if (exportProgress.value >= 80 && exportProgress.value < 95) {
-            exportProgress.value += 1;
-            exportStatus.value = 'Building standalone web package on server...';
-          }
-        }, 500);
-
-        const resultBlob = await resultPromise;
-        if (serverPollTimer) clearInterval(serverPollTimer);
-
-        exportProgress.value = 100;
-        exportStatus.value = 'Web Standalone export completed!';
-        isExportComplete.value = true;
-
-        const downloadUrl = URL.createObjectURL(resultBlob);
-        const link = document.createElement('a');
-        link.href = downloadUrl;
-        link.download = `${projectName}_${modeLabel}.zip`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(downloadUrl);
-
-        showPop({
-          title: `Export ${modeLabel} Successful`,
-          message: `Standalone Web (${modeLabel}) (.zip) for project "${projectName}" downloaded successfully!`,
-          type: 'success'
-        });
-
-        return { success: true, mode: targetMode };
-      }
-
-      // 5. Handle EXE format
       const uploadUrl = `${backendUrl}/api/export-app/exe`;
       const resultPromise = _uploadWithProgress(uploadUrl, formData, 'json', onUploadProgress);
 

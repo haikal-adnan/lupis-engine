@@ -2,7 +2,7 @@
   "name": "lupis-backend",
   "version": "1.0.0",
   "type": "module",
-  "description": "Micro-backend service for font conversion and export tasks",
+  "description": "Micro-backend service for engine bundling and export tasks",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

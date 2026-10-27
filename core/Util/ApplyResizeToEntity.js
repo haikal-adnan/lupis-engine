@@ -21,8 +21,16 @@ export function ApplyResizeToEntity(ent, world, force = false) {
 
     if (ent.components.TextRenderer) {
         const tr = ent.components.TextRenderer;
-        let fontId = tr.assetId || Config.FONT;
-        let font = world?.assets?.fonts?.[fontId] || world?.assets?.fonts?.["system_default"];
+        let fontId = tr.assetId || tr.fontId || tr.font || Config.FONT;
+        let font = null;
+        if (fontId) {
+            font = world?.assets?.fonts?.[fontId];
+            if (!font && world?.assetMap?.[fontId]) {
+                const assetObj = world.assetMap[fontId];
+                font = world?.assets?.fonts?.[assetObj.id] || world?.assets?.fonts?.[assetObj.scriptId];
+            }
+        }
+        if (!font?.ready) font = world?.assets?.fonts?.["system_default"];
 
         if (font) {
             const textValue = tr.value ?? "Text";

@@ -513,7 +513,15 @@ export default class RenderUtils {
         const tx = comps?.TextRenderer;
         if (!tx) return;
         const a = (tx.opacity ?? 1) * currentOpacity;
-        let font = world?.assets?.fonts?.[tx.assetId];
+        const targetFontId = tx.assetId || tx.fontId || tx.font;
+        let font = null;
+        if (targetFontId) {
+            font = world?.assets?.fonts?.[targetFontId];
+            if (!font && world?.assetMap?.[targetFontId]) {
+                const assetObj = world.assetMap[targetFontId];
+                font = world?.assets?.fonts?.[assetObj.id] || world?.assets?.fonts?.[assetObj.scriptId];
+            }
+        }
         if (!font?.ready) font = world?.assets?.fonts?.["system_default"];
 
         if (a <= 0 || !font) return;
