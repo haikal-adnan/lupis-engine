@@ -1,0 +1,85 @@
+---
+title: "Multi-Collider"
+category: "Components"
+description: "Attaches one or more collision shapes to a single entity. Use Multi-Collider to combine solid physics bounds, trigger zones, attack hitboxes, and damage hurtboxes on one entity."
+---
+
+## Overview {#overview}
+
+The **Collider** component in the [Property Inspector](interface/property_inspector) supports multiple independent collision shapes on a single [entity](components/entities_and_prefabs). Instead of creating extra child entities, you can give one character a solid capsule for walking, a hurtbox for taking damage, and an offset hitbox for melee attacks.
+
+:::features
+- **Multiple Shapes**: Add as many named colliders as you need inside one **Collider** component.
+- **Four Collider Roles**: Switch each shape between **Solid**, **Trigger**, **Hitbox**, and **Hurtbox**.
+- **Capsule Rounding**: Increase **Corner Radius (Capsule)** to round box corners for smooth movement over edges and slopes.
+- **Auto Flip & Fit**: Automatically mirror offset hitboxes when an entity flips horizontally, or lock size to the transform.
+:::
+
+## Add the component {#add-the-component}
+
+:::steps
+1. Select an entity in the [Scene Hierarchy](interface/scene_hierarchy) or [Scene Viewport](interface/scene_viewport).
+2. In the [Property Inspector](interface/property_inspector), click **Add Component...** under **Actions** and choose **Collider**.
+3. To add another shape to the same entity, click the 3-dots button next to the **Attached Colliders** dropdown and select **Add Collider**.
+:::
+
+> [!TIP]
+> To see collider wireframes on the canvas, press **Esc** to clear your selection and check **Show Collider Solid Bounds**, **Trigger Bounds**, **Hitbox Bounds**, or **Hurtbox Bounds** under **Quick Actions** in the **Property Inspector**.
+
+## Properties {#properties}
+
+Select a shape from the **Attached Colliders** dropdown at the top of the **Collider** section to edit its properties.
+
+| Property | Type | Default | Description |
+| --- | --- | --- | --- |
+| Attached Colliders | String | col_solid_1 | Dropdown that switches which collider shape on the entity you are currently editing. |
+| Script ID | String | col_solid_1 | Unique identifier for this specific shape so visual scripts can target it by name. |
+| Status | Boolean | Enabled | Toggles **Enabled** or **Disabled** for this individual collider shape. |
+| Type | String | Solid (Physics) | Role of the shape: **Solid (Physics)** blocks movement, **Trigger (Zone)** detects overlaps without blocking, **Hitbox (Attack)** deals damage, and **Hurtbox (Damage Zone)** receives damage. |
+| Offset (X, Y) | Vector2 | 0, 0 | Pixel offset from the entity's position. |
+| Size (px) (W, H) | Vector2 | 32, 32 | Width (**W**) and height (**H**) of the collider box in pixels. |
+| Corner Radius (Capsule) | Number | 0 | Rounds the corners of the box into a capsule or circle (up to half of the smaller side). |
+| Rotation & Pivot | Number | 0 (0, 0) | Local rotation in degrees (0 to 359) and 3x3 origin pivot for the collider. |
+| Fit to Transform Size & Rotation | Boolean | false | Locks the collider's size, offset, rotation, and pivot to match the entity's [Transform & UI Transform](components/transform) automatically. |
+| Lock World Rotation (Stay Upright) | Boolean | false | Keeps the collider upright in world space even when the entity rotates (ideal for characters with slope alignment). |
+| Auto Flip with Facing / flipX | Boolean | true | Automatically mirrors horizontal **Offset (X)** when the entity flips left or right. |
+
+## Usage examples {#usage-examples}
+
+Set up a character with both a solid physics capsule and an attack hitbox on the same **Collider** component.
+
+:::steps
+1. Select your character entity and add a **Collider** component.
+2. Keep the first collider's **Script ID** as **col_solid_1**, set **Type** to **Solid (Physics)**, and increase **Corner Radius (Capsule)** so the bottom corners are rounded.
+3. Click the 3-dots button next to **Attached Colliders** and click **Add Collider**.
+4. Set the new collider's **Script ID** to **col_sword_hitbox** and change **Type** to **Hitbox (Attack)**.
+5. Set **Offset** **X** to **24** so the hitbox sits in front of the character, and keep **Auto Flip with Facing / flipX** checked so it flips when the character turns.
+:::
+
+## Scripting {#scripting}
+
+Use the nodes in [Physics & Collision](node_library/game_physics) and [Helper & Tool](node_library/helper_tool) to detect collisions, triggers, and combat hits by **Script ID**.
+
+| Node | Description |
+| --- | --- |
+| [Solid Collision](node_library/game_physics#node-solidCollision) | Checks for physical collisions against **Solid (Physics)** colliders and solid tilemaps. |
+| [Trigger Zone](node_library/game_physics#node-triggerZone) | Fires **onEnter**, **onStay**, and **onExit** when entities overlap a **Trigger**, **Hitbox**, or **Hurtbox** shape. |
+| [Manage Collider](node_library/game_physics#node-manageCollider) | Enables, disables, resizes, or updates a specific collider shape by its **Script ID** at runtime. |
+| [Raycast 2D](node_library/game_physics#node-raycast2D) | Casts a line of sight ray to detect colliders along a direction. |
+| [Platformer Combat](node_library/helper_tool#node-platformerCombat) | Activates attack **Hitbox** colliders during melee combos and detects hits against enemy **Hurtbox** shapes. |
+
+## Common issues {#common-issues}
+
+| Problem | Solution |
+| --- | --- |
+| Cannot edit **Offset**, **Size (px)**, or **Rotation** | **Fit to Transform Size & Rotation** is checked. Uncheck it to enter custom dimensions or offsets. |
+| Character snags on seams between floor tiles | Increase **Corner Radius (Capsule)** on the character's **Solid (Physics)** collider so its bottom edges are slightly rounded. |
+| Deleting a collider removes all shapes on the entity | Use the 3-dots menu next to the **Attached Colliders** dropdown and click **Remove Current** to delete only the selected shape. **Remove All Colliders** in the top section header removes the entire component. |
+
+## Related {#related}
+
+| Page | Use it when |
+| --- | --- |
+| [Physics Body](components/physics_body) | You want the entity to respond to gravity, velocity, and solid collisions. |
+| [Triggers & Hitboxes](behaviour/physics_and_collision/triggers_and_hitboxes) | You want to set up damage zones, pickups, and melee combat. |
+| [Physics & Slopes](behaviour/physics_and_collision/physics_and_slopes) | You want smooth movement over ramps and sloped shapes. |

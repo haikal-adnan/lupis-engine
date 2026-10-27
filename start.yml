@@ -1,0 +1,124 @@
+x-ports:
+  editor_mapping: &editor_port "37600:37600"
+  core_mapping: &core_port "37601:80"
+  service_mapping: &service_port "37602:37602"
+
+  editor_raw_port: &editor_raw_port "37600"
+  service_raw_port: &service_raw_port "37602"
+
+x-urls:
+  vite_core_url: &core_url "http://localhost:37601"
+  vite_service_url: &service_url "http://localhost:37602"
+  playwright_target_url: &e2e_editor_url "http://editor:37600"
+
+services:
+  core:
+    build:
+      context: ./core
+      dockerfile: Dockerfile
+    container_name: lupis-core
+    restart: always
+    ports:
+      - *core_port
+    networks:
+      - lupis-network
+    develop:
+      watch:
+        - action: sync
+          path: ./core
+          target: /usr/share/nginx/html
+          ignore:
+            - Dockerfile
+            - nginx.conf
+
+  service:
+    build:
+      context: ./service 
+      dockerfile: Dockerfile
+    container_name: lupis-service
+    restart: always
+    ports:
+      - *service_port
+    environment:
+      NODE_ENV: development
+      PORT: *service_raw_port
+      CORE_URL: http://core
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:37602/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+    networks:
+      - lupis-network
+    develop:
+      watch:
+        - action: sync
+          path: ./service
+          target: /app
+          ignore:
+            - node_modules/
+            - temp/
+        - action: sync
+          path: ./core
+          target: /engine
+        - action: rebuild
+          path: ./service/package.json
+        - action: rebuild
+          path: ./service/package-lock.json
+
+  editor:
+    build:
+      context: .
+      dockerfile: ./editor/Dockerfile
+    container_name: lupis-editor
+    restart: always
+    ports:
+      - *editor_port
+    environment:
+      NODE_ENV: development
+      PORT: *editor_raw_port
+      VITE_ENGINE_URL: *core_url
+      VITE_BACKEND_URL: *service_url
+      VITE_GAME_DEBUG: "true"
+      VITE_ENV: development
+      CHOKIDAR_USEPOLLING: "true"
+    depends_on:
+      - core
+      - service
+    networks:
+      - lupis-network
+    develop:
+      watch:
+        - action: sync
+          path: ./editor
+          target: /app
+          ignore:
+            - node_modules/
+            - dist/
+        - action: sync
+          path: ./core
+          target: /core
+        - action: rebuild
+          path: ./editor/package.json
+        - action: rebuild
+          path: ./editor/package-lock.json
+
+  e2e:
+    build:
+      context: ./tests
+      dockerfile: Dockerfile
+    container_name: lupis-e2e
+    profiles: ["testing"]
+    environment:
+      PLAYWRIGHT_BASE_URL: *e2e_editor_url
+    depends_on:
+      editor:
+        condition: service_started
+      service:
+        condition: service_started
+    networks:
+      - lupis-network
+
+networks:
+  lupis-network:
+    driver: bridge

@@ -1,0 +1,158 @@
+<template>
+  <div class="border border-border rounded-md bg-background/50 mb-2 overflow-hidden" data-testid="script-item-card" :data-script-index="index">
+    
+    <div class="flex items-center gap-2 p-2 bg-muted/20 border-b border-border/50 h-8">
+      
+      <button 
+        @click="active = !active"
+        class="text-muted-foreground hover:text-primary transition-colors focus:outline-none"
+        :class="{ 'text-primary': active }"
+        title="Toggle Script"
+        data-testid="script-item-power-toggle"
+        :data-active="active"
+      >
+        <Power class="w-3.5 h-3.5" />
+      </button>
+
+      <div class="flex-1 min-w-0 flex items-center gap-1.5 overflow-hidden">
+        <FileCode2 class="w-3.5 h-3.5 text-blue-500 dark:text-blue-400 shrink-0" />
+        <span class="text-xs font-medium truncate" :title="scriptName" data-testid="script-item-name">{{ scriptName }}</span>
+      </div>
+
+      <BaseDropdown align="right">
+        <template #trigger>
+          <button class="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground" data-testid="script-item-options-trigger">
+            <MoreHorizontal class="w-3.5 h-3.5" />
+          </button>
+        </template>
+        <template #default="{ close }">
+          <div class="flex flex-col min-w-[120px]">
+             <button @click="openGraph" class="flex items-center px-2 py-1.5 hover:bg-accent hover:text-accent-foreground text-xs text-left transition-colors" data-testid="script-item-open-graph-btn">
+                <Workflow class="w-3.5 h-3.5 mr-2" /> Open Graph
+             </button>
+             <div class="h-px bg-border my-1"></div>
+             <button @click="$emit('remove')" class="flex items-center px-2 py-1.5 hover:bg-destructive/10 text-destructive text-xs text-left transition-colors" data-testid="script-item-remove-btn">
+                <Trash2 class="w-3.5 h-3.5 mr-2" /> Remove
+             </button>
+          </div>
+        </template>
+      </BaseDropdown>
+    </div>
+
+    <div class="p-2 space-y-1" data-testid="script-item-variables-container">
+      
+      <div v-if="variables.length === 0" class="text-[10px] text-muted-foreground italic pl-6 py-1" data-testid="script-item-empty-vars">
+        No exposed variables.
+      </div>
+
+      <div v-else v-for="v in variables" :key="v.name" class="flex items-center gap-2" data-testid="script-item-variable-row" :data-variable-name="v.name">
+        <label class="w-[80px] text-[10px] text-muted-foreground truncate cursor-help" :title="v.name">
+          {{ v.name }}
+        </label>
+        
+        <div class="flex-1 min-w-0 flex items-center gap-1">
+           
+           <BaseNumber 
+             v-if="v.type === 'Number'" 
+             :model-value="v.value" 
+             @update:model-value="val => updateVar(v.name, val)"
+             class="h-6 text-[10px] w-full"
+             :class="{ 'border-primary/50 text-primary': v.overridden }"
+             data-testid="script-item-variable-number"
+           />
+           
+           <BaseCheckbox 
+             v-else-if="v.type === 'Boolean'"
+             :model-value="v.value"
+             @update:model-value="val => updateVar(v.name, val)"
+             data-testid="script-item-variable-boolean"
+           />
+           
+           <BaseInput 
+             v-else
+             :model-value="v.value"
+             @update:model-value="val => updateVar(v.name, val)"
+             class="h-6 text-[10px] w-full"
+             :class="{ 'border-primary/50 text-primary': v.overridden }"
+             data-testid="script-item-variable-input"
+           />
+
+           <button 
+             v-if="v.overridden"
+             @click="resetVar(v.name)"
+             class="h-6 w-6 flex items-center justify-center hover:bg-muted rounded text-muted-foreground hover:text-foreground transition-colors"
+             title="Reset to Default"
+             data-testid="script-item-variable-reset-btn"
+           >
+             <RotateCcw class="w-3 h-3" />
+           </button>
+           <div v-else class="w-6"></div> 
+        </div>
+      </div>
+
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed } from 'vue';
+import { FileCode2, Power, MoreHorizontal, Trash2, Workflow, RotateCcw } from 'lucide-vue-next';
+import { useScriptStore } from '@scripts/scripts.js';
+
+import { useInspectorBinding } from "@inspectors/inspectors.js";
+
+import {
+  BaseDropdown,
+  BaseInput,
+  BaseNumber,
+  BaseCheckbox
+} from '@components/components.js';
+
+const props = defineProps({
+  data: { type: Object, required: true },
+  index: { type: Number, required: true }
+});
+
+const emit = defineEmits(['remove']);
+
+const scriptStore = useScriptStore();
+
+const { updateScriptInstance } = useInspectorBinding();
+
+const def = computed(() => scriptStore.getScriptById(props.data.assetId));
+const scriptName = computed(() => def.value?.scriptId || 'Unknown Script');
+
+const active = computed({
+  get: () => props.data.active,
+  set: (val) => updateScriptInstance(props.index, 'active', val)
+});
+
+const variables = computed(() => {
+  if (!def.value) return [];
+  const overrides = props.data.variables || {};
+
+  return (def.value.localVariables || []).map(vDef => {
+    const overridden = Object.prototype.hasOwnProperty.call(overrides, vDef.name);
+    return {
+      name: vDef.name,
+      type: vDef.type,
+      value: overridden ? overrides[vDef.name] : vDef.defaultValue,
+      overridden
+    };
+  });
+});
+
+function updateVar(name, value) {
+  updateScriptInstance(props.index, `variables.${name}`, value);
+}
+
+function resetVar(name) {
+  const currentVars = { ...props.data.variables };
+  delete currentVars[name];
+  updateScriptInstance(props.index, 'variables', currentVars);
+}
+
+function openGraph() {
+  console.log('Open Graph Editor:', props.data.assetId);
+}
+</script>

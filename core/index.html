@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Lupis Engine Game</title>
+  
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body { 
+      width: 100%; 
+      height: 100%; 
+      overflow: hidden; 
+      background: #000000; 
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    #canvas_container {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    #lp_canvas_preview { 
+      display: block; 
+      outline: none; 
+      background: transparent;
+      box-shadow: none; 
+      max-width: 100%;
+      max-height: 100%;
+    }
+
+    #loading { 
+      position: absolute; 
+      inset: 0; 
+      display: flex; 
+      flex-direction: column; 
+      align-items: center; 
+      justify-content: center; 
+      color: #94a3b8; 
+      background: #0d0f12; 
+      z-index: 50; 
+      transition: opacity 0.3s ease;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .spinner {
+      width: 36px;
+      height: 36px;
+      border: 3px solid rgba(148, 163, 184, 0.2);
+      border-top-color: #38bdf8;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-bottom: 20px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loading-bar-wrapper {
+      width: 240px;
+      height: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 9999px;
+      overflow: hidden;
+      margin-bottom: 12px;
+      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4);
+    }
+
+    .loading-bar-fill {
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, #0284c7, #38bdf8);
+      border-radius: 9999px;
+      transition: width 0.15s ease-out;
+    }
+
+    #loading-percent {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      color: #94a3b8;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+    
+    .hidden { 
+      opacity: 0 !important; 
+      pointer-events: none !important; 
+    }
+  </style>
+</head>
+<body>
+  <div id="loading">
+    <div class="spinner"></div>
+    <div class="loading-bar-wrapper">
+      <div id="loading-progress" class="loading-bar-fill"></div>
+    </div>
+    <div id="loading-percent">0%</div>
+  </div>
+
+  <div id="canvas_container">
+    <canvas id="lp_canvas_preview" tabindex="0"></canvas>
+  </div>
+
+  <script type="module">
+    import { startEngine } from "./Runtime.js";
+
+    const PROJECT_FOLDER = "./data"; 
+    const loadingEl = document.getElementById("loading");
+    const loadingProgressEl = document.getElementById("loading-progress");
+    const loadingPercentEl = document.getElementById("loading-percent");
+    const canvasEl = document.getElementById("lp_canvas_preview");
+
+    function setupCanvasResponsiveness(refWidth = 1920, refHeight = 1080) {
+      canvasEl.width = refWidth;
+      canvasEl.height = refHeight;
+
+      const onResize = () => {
+        const winW = window.innerWidth;
+        const winH = window.innerHeight;
+        const targetRatio = refWidth / refHeight;
+        const winRatio = winW / winH;
+
+        let finalW, finalH;
+
+        if (winRatio > targetRatio) {
+          finalH = winH;
+          finalW = finalH * targetRatio;
+        } else {
+          finalW = winW;
+          finalH = finalW / targetRatio;
+        }
+
+        canvasEl.style.width = `${Math.floor(finalW)}px`;
+        canvasEl.style.height = `${Math.floor(finalH)}px`;
+      };
+
+      window.addEventListener("resize", onResize);
+      onResize(); 
+    }
+
+    async function initStandalone() {
+      try {
+        if (loadingEl) loadingEl.classList.remove("hidden");
+        if (loadingProgressEl) loadingProgressEl.style.width = "0%";
+        if (loadingPercentEl) loadingPercentEl.innerText = "0%";
+
+        let refWidth = 1920;
+        let refHeight = 1080;
+        try {
+          const resp = await fetch(`${PROJECT_FOLDER}/project.json`);
+          if (resp.ok) {
+            const pData = await resp.json();
+            const uiSettings = pData?.settings?.ui;
+            if (uiSettings?.width && !isNaN(Number(uiSettings.width))) {
+              refWidth = Number(uiSettings.width);
+            }
+            if (uiSettings?.height && !isNaN(Number(uiSettings.height))) {
+              refHeight = Number(uiSettings.height);
+            }
+          }
+        } catch {}
+
+        setupCanvasResponsiveness(refWidth, refHeight);
+
+        await startEngine(
+          canvasEl,
+          PROJECT_FOLDER,
+          {},
+          "runtime",
+          (message, percent) => {
+            const clamped = Math.max(0, Math.min(100, Math.round(percent || 0)));
+            if (loadingProgressEl) {
+              loadingProgressEl.style.width = clamped + "%";
+            }
+            if (loadingPercentEl) {
+              loadingPercentEl.innerText = clamped + "%";
+            }
+          }
+        );
+
+        if (loadingProgressEl) loadingProgressEl.style.width = "100%";
+        if (loadingPercentEl) loadingPercentEl.innerText = "100%";
+        if (loadingEl) loadingEl.classList.add("hidden");
+        canvasEl.focus();
+      } catch (error) {
+        console.error("[Standalone] Error starting game:", error);
+        if (loadingEl) {
+          loadingEl.classList.remove("hidden");
+          const spinner = loadingEl.querySelector(".spinner");
+          if (spinner) spinner.style.display = "none";
+          const barWrapper = loadingEl.querySelector(".loading-bar-wrapper");
+          if (barWrapper) barWrapper.style.display = "none";
+          if (loadingPercentEl) loadingPercentEl.style.display = "none";
+          let errorEl = document.getElementById("loading-error");
+          if (!errorEl) {
+            errorEl = document.createElement("div");
+            errorEl.id = "loading-error";
+            loadingEl.appendChild(errorEl);
+          }
+          errorEl.innerHTML = `
+            <div style="color: #ef4444; font-size: 16px; font-weight: bold; margin-bottom: 8px;">Game Launch Failed</div>
+            <div style="color: #94a3b8; font-size: 12px; max-width: 480px; word-break: break-word;">${error.message || error}</div>
+          `;
+        }
+      }
+    }
+
+    initStandalone();
+  </script>
+</body>
+</html>

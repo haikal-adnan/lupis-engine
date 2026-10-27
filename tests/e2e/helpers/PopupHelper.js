@@ -1,0 +1,179 @@
+import { expect } from '@playwright/test';
+
+const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+export class PopupHelper {
+  /**
+   * @param {import('@playwright/test').Page} page
+   */
+  constructor(page) {
+    this.page = page;
+  }
+
+  /**
+   * All active context menus (root + submenus), ordered from the root.
+   * Scoped to the `context-menu` test ID (BaseContextMenu), NOT `[role="menu"]`, because
+   * toolbar/section dropdowns also use role="menu" and would be counted as well.
+   */
+  get activeMenus() {
+    return this.page.getByTestId('context-menu');
+  }
+
+  /** Context menu item by label; level 0 = root, 1 = submenu, and so on. */
+  contextMenuItem(label, level = 0) {
+    return this.activeMenus
+      .nth(level)
+      .locator(`[data-testid="context-menu-item"][data-menu-item="${label}"]`);
+  }
+
+  async selectContextMenu(targetLocator, itemLabelOrPath) {
+    const menuPath = Array.isArray(itemLabelOrPath) ? itemLabelOrPath : [itemLabelOrPath];
+
+    await targetLocator.scrollIntoViewIfNeeded();
+    await expect(targetLocator).toBeVisible();
+
+    // 1. Blur the active input and wait one frame so the Vue render cycle is idle
+    await this.page.evaluate(() => {
+      if (document.activeElement && document.activeElement !== document.body) {
+        document.activeElement.blur();
+      }
+    });
+    await this.page.evaluate(() => new Promise((resolve) => requestAnimationFrame(resolve)));
+
+    // 2. Close a lingering menu, if any
+    if (await this.activeMenus.count() > 0) {
+      await this.page.keyboard.press('Escape');
+      await expect(this.activeMenus).toHaveCount(0);
+    }
+
+    // 3. Open the context menu
+    await targetLocator.click({ button: 'right' });
+
+    // 4. Make sure the root menu is rendered
+    await expect(this.activeMenus.first()).toBeVisible();
+
+    for (let i = 0; i < menuPath.length; i++) {
+      const menuItem = this.contextMenuItem(menuPath[i], i);
+      await expect(menuItem).toBeVisible();
+
+      if (i < menuPath.length - 1) {
+        await menuItem.hover();
+        await expect(this.activeMenus).toHaveCount(i + 2);
+      } else {
+        // 5. Click the item that was just verified as visible
+        await menuItem.dispatchEvent('click');
+
+        // Postcondition: every menu level is closed after the action
+        await expect(this.activeMenus).toHaveCount(0);
+      }
+    }
+  }
+
+  // ==========================================
+  // BASE PROMPT HELPER
+  // ==========================================
+  async fillPromptAndSubmit(title, value, confirmButtonText = 'Save') {
+    const promptModal = this.page
+      .getByRole('dialog', { name: title })
+      .or(this.page.getByRole('dialog'))
+      .or(this.page.getByRole('alertdialog'))
+      .first();
+
+    await expect(promptModal).toBeVisible();
+
+    const input = promptModal
+      .getByRole('textbox')
+      .or(promptModal.getByTestId('prompt-input'))
+      .or(promptModal.locator('input'))
+      .first();
+
+    await input.fill(value);
+
+    const submitBtn = promptModal
+      .getByRole('button', { name: confirmButtonText })
+      .or(promptModal.getByTestId('submit-prompt-btn'))
+      .or(promptModal.locator('button', { hasText: new RegExp(`^\\s*${escapeRegex(confirmButtonText)}\\s*$`, 'i') }))
+      .first();
+
+    await submitBtn.click();
+    await expect(promptModal).toHaveCount(0);
+  }
+
+  async fillPromptAndCancel(title, cancelButtonText = 'Cancel') {
+    const promptModal = this.page
+      .getByRole('dialog', { name: title })
+      .or(this.page.getByRole('dialog'))
+      .or(this.page.getByRole('alertdialog'))
+      .first();
+
+    await expect(promptModal).toBeVisible();
+
+    const cancelBtn = promptModal
+      .getByRole('button', { name: cancelButtonText })
+      .or(promptModal.getByTestId('cancel-prompt-btn'))
+      .or(promptModal.locator('button', { hasText: new RegExp(`^\\s*${escapeRegex(cancelButtonText)}\\s*$`, 'i') }))
+      .first();
+
+    await cancelBtn.click();
+    await expect(promptModal).toHaveCount(0);
+  }
+
+  // ==========================================
+  // BASE CONFIRM HELPER
+  // ==========================================
+  async confirmAction(titleOrText, options = {}) {
+    const action = options.action ?? 'confirm';
+
+    const modal = this.page
+      .getByRole('alertdialog')
+      .or(this.page.getByRole('dialog'))
+      .or(this.page.getByTestId('base-confirm'))
+      .filter({ hasText: titleOrText })
+      .first();
+
+    await expect(modal).toBeVisible();
+
+    const buttonText = action === 'confirm' ? (options.confirmText || 'Confirm') : (options.cancelText || 'Cancel');
+
+    const targetBtn = action === 'confirm'
+      ? modal.getByTestId('confirm-action-button').or(modal.getByRole('button', { name: buttonText })).or(modal.locator('button', { hasText: new RegExp(escapeRegex(buttonText), 'i') })).first()
+      : modal.getByTestId('confirm-cancel-button').or(modal.getByRole('button', { name: buttonText })).or(modal.locator('button', { hasText: new RegExp(escapeRegex(buttonText), 'i') })).first();
+
+    await targetBtn.click();
+    await expect(modal).toHaveCount(0);
+  }
+
+  // ==========================================
+  // BASE POP ALERT HELPER
+  // ==========================================
+  async expectPopAlert(title, options = {}) {
+    const alertBox = this.page
+      .getByRole('alert')
+      .or(this.page.getByTestId('pop-alert'))
+      .filter({ hasText: title })
+      .first();
+
+    await expect(alertBox).toBeVisible();
+
+    if (options.message) {
+      await expect(alertBox).toContainText(options.message);
+    }
+  }
+
+  async closePopAlert(title) {
+    const alertBox = this.page
+      .getByRole('alert')
+      .or(this.page.getByTestId('pop-alert'))
+      .filter({ hasText: title })
+      .first();
+
+    const closeBtn = alertBox
+      .getByTestId('pop-alert-close-btn')
+      .or(alertBox.getByRole('button', { name: /close/i }))
+      .or(alertBox.locator('button'))
+      .first();
+
+    await closeBtn.click();
+    await expect(alertBox).toHaveCount(0);
+  }
+}

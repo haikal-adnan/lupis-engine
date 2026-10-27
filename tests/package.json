@@ -1,0 +1,22 @@
+{
+  "name": "lupis-engine-tests",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "playwright test --project=chromium",
+    "test:all": "playwright test --project=chromium --project=blueprint",
+    "test:blueprint": "playwright test --project=blueprint",
+    "test:ui": "playwright test --project=chromium --ui",
+    "test:contract": "playwright test --project=contract",
+    "test:finalize": "playwright test",
+    "test:report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "eslint-plugin-playwright": "^2.12.1"
+  },
+  "dependencies": {
+    "jszip": "^3.10.2"
+  }
+}

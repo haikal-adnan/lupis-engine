@@ -1,0 +1,152 @@
+export default class World {
+    constructor() {
+        this.entities = []; 
+        
+        this.layersWorld = []; 
+        this.layersUI = []; 
+        
+        this.assets = { 
+            textures: {}, 
+            fonts: {} 
+        };
+        this.prefabs = {};
+
+        this.settings = {
+            tickRate: 60,
+            backgroundColor: "#222222",
+            worldBounds: { x: -1000, y: -1000, width: 2000, height: 2000, active: true },
+            grid: {
+                width: 32, height: 32, color: "#ffffff", opacity: 0.1, visible: true, snap: true
+            },
+            ui: {
+                width: 1920, height: 1080, showUIBorder: true, active: true, smartGuides: true, visible: true
+            },
+            world: {
+                active: true,
+                visible: true
+            },
+            colliders: {
+                solid: true,
+                trigger: true,
+                hitbox: true,
+                hurtbox: true
+            },
+            showRulers: true
+        };
+        
+        this._editors = {
+            activeTool: 'select',
+            activeTabId: null,
+            tilemapContext: { showOthers: true, opacity: 0.3, showGrid: true },
+            tabs: []
+        };
+    }
+
+    get allLayers() {
+        return [...this.layersWorld, ...this.layersUI];
+    }
+
+    addEntity(entity) {
+        if (!this.entities.some(e => e === entity || e.id === entity.id)) {
+            this.entities.push(entity);
+        }
+        
+        let targetLayer = this.layersWorld.find(l => l.id === entity.layerId);
+        
+        if (!targetLayer) {
+            targetLayer = this.layersUI.find(l => l.id === entity.layerId);
+        }
+
+        if (targetLayer) {
+            if (!targetLayer.entities) targetLayer.entities = [];
+            if (!targetLayer.entities.some(e => e === entity || e.id === entity.id)) {
+                targetLayer.entities.push(entity);
+            }
+        } else {
+            if (this.layersWorld.length > 0) {
+                 if (!this.layersWorld[0].entities) this.layersWorld[0].entities = [];
+                 if (!this.layersWorld[0].entities.some(e => e === entity || e.id === entity.id)) {
+                     this.layersWorld[0].entities.push(entity);
+                 }
+            }
+        }
+    }
+
+    removeEntity(entityId) {
+        const entityIndex = this.entities.findIndex(e => e.id === entityId);
+        if (entityIndex === -1) return;
+        
+        const entity = this.entities[entityIndex];
+        
+        if (entity.children) {
+            [...entity.children].forEach(child => this.removeEntity(child.id));
+        }
+
+        this.entities.splice(entityIndex, 1);
+
+        const all = this.allLayers;
+        for (const layer of all) {
+            if (layer.entities) {
+                const idx = layer.entities.findIndex(e => e.id === entityId);
+                if (idx !== -1) {
+                    layer.entities.splice(idx, 1);
+                    break;
+                }
+            }
+        }
+    }
+
+    removeLayer(layerId) {
+        this.layersWorld = this.layersWorld.filter(l => l.id !== layerId);
+        this.layersUI = this.layersUI.filter(l => l.id !== layerId);
+    }
+
+    setupLayers(worldData, uiData) { 
+        this.layersWorld = worldData || [];
+        this.layersUI = uiData || [];
+    }
+    
+    addTexture(id, data) { this.assets.textures[id] = data; }
+    addFont(id, data) { this.assets.fonts[id] = data; }
+
+    isAncestor(ancestorId, descendantId) {
+        let current = this.entities.find(e => e.id === descendantId);
+        while (current && current.parentId) {
+            if (current.parentId === ancestorId) return true;
+            current = this.entities.find(e => e.id === current.parentId);
+        }
+        return false;
+    }
+
+    setEntityParent(entityId, newParentId) {
+        if (entityId === newParentId) return false;
+        if (newParentId && this.isAncestor(entityId, newParentId)) {
+            return false;
+        }
+        const entity = this.entities.find(e => e.id === entityId);
+        if (!entity) return false;
+        entity.parentId = newParentId || null;
+        return true;
+    }
+
+    getAsset(idOrScriptId) {
+        if (!idOrScriptId) return null;
+        const search = String(idOrScriptId).trim();
+        const searchLower = search.toLowerCase();
+        const searchSlug = searchLower.replace(/\s+/g, '_');
+        if (this.assetMap?.[search]) return this.assetMap[search];
+        const list = this.assetList || [];
+        return list.find(a => 
+            a.id === search || 
+            (a.scriptId && (a.scriptId.toLowerCase() === searchLower || a.scriptId.toLowerCase() === searchSlug))
+        ) || null;
+    }
+
+    resolveAssetId(idOrScriptId) {
+        if (!idOrScriptId) return null;
+        const found = this.assetMap?.[idOrScriptId];
+        if (found && found.id) return found.id;
+        const matched = this.getAsset(idOrScriptId);
+        return matched ? matched.id : idOrScriptId;
+    }
+}

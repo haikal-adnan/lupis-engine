@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Discord Community
+    url: https://haikal-adnan.github.io/lupis-engine-link?go=discord
+    about: Chat with other developers and get quick help in our Discord community.
+  - name: GitHub Discussions
+    url: https://github.com/haikal-adnan/lupis-engine/discussions
+    about: Ask questions, share your games, or discuss ideas with the community.
+  - name: Documentation
+    url: https://haikal-adnan.github.io/lupis-engine-link?go=docs-en
+    about: Read the getting started guide, tutorials, and reference documentation.
