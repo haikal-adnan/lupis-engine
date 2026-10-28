@@ -147,18 +147,6 @@ Run these commands from the `tests` directory:
 
 ---
 
-## Visual Scripting Node Standards
-
-When you add or modify nodes in `editor/src/features/nodes/library/blueprints/`, follow these requirements:
-
-- **Use the consolidated module structure.** Every node must belong to one of the ten domain modules: `BlueprintFlow`, `BlueprintInput`, `BlueprintEntity`, `BlueprintPhysics`, `BlueprintRenderer`, `BlueprintAnimation`, `BlueprintCollections`, `BlueprintMath`, `BlueprintLifecycle`, and `BlueprintSystem`. Do not create standalone single-node files.
-- **Follow the port naming rule (T-001).** Every port identifier must match the regular expression `/^[A-Za-z][A-Za-z0-9]{0,31}$/`. Hyphens, underscores, and spaces are not allowed in port names.
-- **Use the context facades.** Nodes must interact with the runtime only through the formal `context` facades, such as `context.audio`, `context.scenes`, `context.transform`, and `context.variables`. Never access internal properties such as `context.game`.
-- **Do not add defensive null handling.** Do not use optional chaining (`?.`) or nullish coalescing (`??`) to guard against null inputs. Nodes can rely on the runtime to provide valid inputs.
-- **Verify the node contract.** Confirm that your node passes `validateCodePanelContract` in `editor/tests/unit/features/nodes/useNodeBlueprint.spec.js`.
-
----
-
 ## Commit Convention
 
 This project follows the [Conventional Commits](https://www.conventionalcommits.org/) specification:

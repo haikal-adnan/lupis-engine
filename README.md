@@ -156,7 +156,7 @@ The full documentation is available [online](https://haikal-adnan.github.io/lupi
 lupis-engine/
 ├── core/        # Engine runtime: WebGL renderer, physics, audio, ECS, scripting
 ├── editor/      # Visual editor (Vue 3, Pinia, Vite), served on port 37600
-├── electron/    # Desktop shell (Electron) and desktop installer packaging (NSIS)
+├── electron/    # Desktop shell (Electron) and desktop installer packaging 
 ├── service/     # Node.js backend: Electron packaging
 ├── tests/       # End-to-end and integration tests (Playwright)
 ├── examples/    # Ready-to-run sample projects
