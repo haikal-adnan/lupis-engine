@@ -242,6 +242,8 @@ export function usePrefabActions() {
     const { recordLinkPrefab } = useSceneHistory();
     recordLinkPrefab(oldEntitiesSnapshot, entitiesToUpdate);
 
+    projectStore.markAsDirty();
+
     showPop({ 
       title: 'Linked', 
       message: `${entitiesToUpdate.length} entities linked to "${prefab.scriptId}".`, 
@@ -371,6 +373,8 @@ export function usePrefabActions() {
 
     const { recordInstantiatePrefab } = useSceneHistory();
     recordInstantiatePrefab(allNewEntities);
+
+    projectStore.markAsDirty();
 
     showPop({ 
       title: 'Instantiated', 

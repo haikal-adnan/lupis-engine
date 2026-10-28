@@ -22,19 +22,20 @@ You need a character [entity](components/entities_and_prefabs) and a sloped grou
 | Entity | Required Components |
 | --- | --- |
 | Character Entity | [Physics Body](components/physics_body) (**Platformer**), [Multi-Collider](components/multi_collider) (**Solid (Physics)**), and a movement controller such as [Platformer Movement](behaviour/movement/platformer). |
-| Slope / Ramp Entity | [Shape Renderer](components/renderers/shape_renderer) with a closed **Polygon** ramp and **Solid** enabled in its **Physics** settings (or a rotated **Solid (Physics)** box collider). |
+| Slope / Ramp Entity | [Shape Renderer](components/renderers/shape_renderer) with a closed **Polygon** ramp and **Polygon Physics** enabled (or a rotated **Solid (Physics)** box collider). |
 
 ## Setup {#setup}
 
 Follow these steps to build a sloped ramp and configure your character to climb it smoothly.
 
 :::steps
-1. Create a ramp entity in your **World** layer, attach a [Shape Renderer](components/renderers/shape_renderer), and click **Edit Shape** in the [Property Inspector](interface/property_inspector).
-2. Press **G** to select the **Polygon** tool, draw a triangular or sloped ramp, and press **Enter** to commit the shape.
-3. In the **Shape Renderer** section of the **Property Inspector**, check **Solid** under **Physics**.
-4. Select your character entity, open its **Collider** section, and increase **Corner Radius (Capsule)** to half of the collider's width so the bottom forms a smooth capsule.
-5. Still in the character's **Collider** section, check **Lock World Rotation (Stay Upright)** so the physical collider never tips into the ramp.
-6. In the character's **Physics Body** section, check **Align to Slope**, set **Max Slope (deg)** to **60**, and click **Play** in the [Scene Viewport](interface/scene_viewport).
+1. In the **Scene Hierarchy**, locate the **World Layer** row under the **World** section. Right-click **World Layer**, choose **Add Entity** > **Shape**, then right-click the newly created entity and select **Rename Entity** (or press **F2**) to name it **Slope**.
+2. With **Slope** selected in the hierarchy, locate the **Shape Renderer** section in the [Property Inspector](interface/property_inspector) and click **Open Shape Editor** to open the interactive drawing tab.
+3. Press **G** to select the **Polygon Tool** (or **S** for the **Segment Tool**), click on the canvas to draw a triangular or sloped ramp, and press **Enter** to commit the shape.
+4. In the **Shape Renderer** section of the **Property Inspector**, check the **Polygon Physics** box to enable solid collision on the ramp geometry.
+5. Select your character entity in the **Scene Hierarchy**, open its **Collider** section, and increase **Corner Radius (Capsule)** to half of the collider's width (e.g. **8** to **16**) so the bottom forms a smooth capsule that does not snag on tile seams.
+6. Still in the character's **Collider** section, check **Lock World Rotation (Stay Upright)** so the physical collider never tips into the ramp.
+7. In the character's **Physics Body** section, check **Align to Slope**, set **Max Slope (deg)** to **60**, and click **Play** in the [Scene Viewport](interface/scene_viewport) to test your character climbing the slope.
 :::
 
 ## Settings {#settings}

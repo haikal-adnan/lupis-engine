@@ -30,8 +30,8 @@ Set up the following components and assets before binding gameplay data to your 
 Follow these steps to bind a live text counter, animate a health bar, and populate a data-driven inventory grid.
 
 :::steps
-1. Select your HUD label entity, inspect its [Text Renderer](components/renderers/text_renderer) component in the [Property Inspector](interface/property_inspector), set **Bind Variable** to your score variable, and set **Bind Format** to **Score: {value}**.
-2. To format multiple variables in a graph, pass a template string such as **HP: {hp}/{maxHp}** into [Format String](node_library/system_utilities#node-stringFormat) and connect **Result** to [Set Text](node_library/game_renderer#node-setText).
+1. In your HUD visual script graph, use the [Format String](node_library/system_utilities#node-stringFormat) node with a template string such as **Score: {score}** or **HP: {hp}/{maxHp}** to bind dynamic gameplay variables.
+2. Connect the **Result** output pin of **Format String** into the **Text** input pin of [Set Text](node_library/game_renderer#node-setText) targeting your HUD label [Text Renderer](components/renderers/text_renderer) entity.
 3. Create a health bar entity with a [Sprite Renderer](components/renderers/sprite_renderer) component placed over a background frame sprite on your UI layer.
 4. When the player's health changes, divide current health by max health, multiply by **100**, and pass the percentage into [Fill Amount](node_library/game_animation#node-tweenFillAmount) targeting the health bar sprite.
 5. To build an inventory grid, design a single slot entity with child entities named **Icon** (**Sprite Renderer**) and **Count** (**Text Renderer**), then save the slot as a reusable [Prefab](components/entities_and_prefabs).
@@ -77,4 +77,4 @@ Extend dynamic UI binding for modular HUD overlays, conditional slot highlightin
 | [Interactive Widgets](behaviour/ui/interactive_widgets) | Add click, hover, slider, and toggle interactions to your spawned or static UI elements. |
 | [Text Renderer](components/renderers/text_renderer) | Review inspector properties for font styling and built-in variable binding. |
 | [Variables & Collections](visual_scripting/variables_and_collections) | Construct the lists and maps passed into UI Grid Spawner and UI Prefab Data Binder. |
-| [Helper Tool Nodes](node_library/helper_tool) | Check port details for Interpolate Variables, UI Grid Spawner, and UI Prefab Data Binder. |
+| [Helper Tool Nodes](node_library/helper_tool) | Check port details for Format String, UI Grid Spawner, and UI Prefab Data Binder. |

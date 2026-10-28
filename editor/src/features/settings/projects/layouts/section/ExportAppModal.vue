@@ -28,7 +28,7 @@
           <div class="space-y-1.5 pb-3 border-b border-border">
             <div class="flex items-center justify-between">
               <span
-                class="text-[10px] font-bold uppercase tracking-wider py-0.5 rounded"
+                class="text-[10px] font-bold uppercase tracking-wider py-0.5 px-2 rounded border"
                 :class="statusBadgeClass"
               >
                 {{ statusBadgeText }}
@@ -212,12 +212,12 @@ const statusBadgeText = computed(() => {
 
 const statusBadgeClass = computed(() => {
   if (props.error) {
-    return 'bg-destructive/15 text-destructive border-destructive/30';
+    return 'text-destructive border-destructive';
   }
   if (props.isComplete) {
-    return 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30';
+    return 'text-emerald-600 dark:text-emerald-400 border-emerald-500';
   }
-  return 'bg-primary/15 text-primary border-primary/30';
+  return 'text-primary border-primary';
 });
 
 const progressBarClass = computed(() => {

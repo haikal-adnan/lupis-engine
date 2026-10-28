@@ -2,6 +2,7 @@
 
 import { defineStore } from 'pinia';
 import { useWorkspaceStore } from '@workspaces/workspaces.js';
+import { useProjectStore } from '@projects/projects.js';
 
 export const useFolderStore = defineStore('folder', {
   state: () => ({
@@ -71,6 +72,14 @@ export const useFolderStore = defineStore('folder', {
       await writable.close();
     },
 
+    _markDirtyIfReady() {
+      const workspaceStore = useWorkspaceStore();
+      const projectStore = useProjectStore();
+      if (!workspaceStore.isLoading && !workspaceStore.isSaving && projectStore.isProjectLoaded) {
+        projectStore.markAsDirty();
+      }
+    },
+
     async createFolder(folder) {
       const normalizedFolder = {
         id: folder.id,
@@ -80,6 +89,7 @@ export const useFolderStore = defineStore('folder', {
       };
       
       this.folders.push(normalizedFolder);
+      this._markDirtyIfReady();
       await this.syncFoldersToOPFS();
     },
 
@@ -87,6 +97,7 @@ export const useFolderStore = defineStore('folder', {
       const folderIndex = this.folders.findIndex(f => f.id === folderId);
       if (folderIndex !== -1) {
         this.folders[folderIndex].parentId = newParentId;
+        this._markDirtyIfReady();
         await this.syncFoldersToOPFS();
         return true;
       }
@@ -95,6 +106,7 @@ export const useFolderStore = defineStore('folder', {
 
     async deleteFolder(folderId) {
       this.folders = this.folders.filter(f => f.id !== folderId);
+      this._markDirtyIfReady();
       await this.syncFoldersToOPFS();
     },
 
@@ -105,6 +117,7 @@ export const useFolderStore = defineStore('folder', {
           ...this.folders[folderIndex],
           ...updates
         };
+        this._markDirtyIfReady();
         await this.syncFoldersToOPFS();
       }
     }

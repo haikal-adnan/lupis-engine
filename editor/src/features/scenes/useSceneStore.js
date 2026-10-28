@@ -2,6 +2,7 @@
 
 import { defineStore } from 'pinia';
 import { useProjectStore } from '@projects/projects.js';
+import { useWorkspaceStore } from '@workspaces/workspaces.js';
 
 export const useSceneStore = defineStore('scene', {
   state: () => ({
@@ -107,6 +108,11 @@ export const useSceneStore = defineStore('scene', {
       const entity = scene.entities.find(e => String(e.id) === String(entityId));
       if (entity?.components?.[componentName]) {
         Object.assign(entity.components[componentName], updates);
+        const workspaceStore = useWorkspaceStore();
+        const projectStore = useProjectStore();
+        if (!workspaceStore.isLoading && !workspaceStore.isSaving && projectStore.isProjectLoaded) {
+          projectStore.markAsDirty();
+        }
       }
     },
 
@@ -126,6 +132,12 @@ export const useSceneStore = defineStore('scene', {
         ...entity.components[componentName],
         ...data
       };
+
+      const workspaceStore = useWorkspaceStore();
+      const projectStore = useProjectStore();
+      if (!workspaceStore.isLoading && !workspaceStore.isSaving && projectStore.isProjectLoaded) {
+        projectStore.markAsDirty();
+      }
     },
 
     // Fast transform synchronization for gizmo drags and physics ticks
@@ -146,6 +158,12 @@ export const useSceneStore = defineStore('scene', {
           ...entity.components.UITransform,
           ...transformData 
         };
+      }
+
+      const workspaceStore = useWorkspaceStore();
+      const projectStore = useProjectStore();
+      if (!workspaceStore.isLoading && !workspaceStore.isSaving && projectStore.isProjectLoaded) {
+        projectStore.markAsDirty();
       }
     }
   }

@@ -8,57 +8,8 @@
       </div>
 
       <div class="space-y-4">
+
         <PropertyRow label="Theme Mode">
-          <div class="grid grid-cols-2 gap-4 w-full">
-            <!-- Dark Theme Option -->
-            <button
-              type="button"
-              data-testid="theme-option-dark"
-              @click="setDarkTheme(true)"
-              class="p-4 rounded-xl border text-left transition-all flex flex-col gap-3 group relative cursor-pointer outline-none"
-              :class="isDark ? 'border-primary ring-2 ring-primary/20 bg-primary/5' : 'border-border hover:border-primary/40 bg-muted/20'"
-            >
-              <div class="flex items-center justify-between w-full">
-                <div class="flex items-center gap-2 text-foreground font-semibold text-sm">
-                  <Moon class="w-4 h-4 text-blue-400" />
-                  <span>Dark Theme</span>
-                </div>
-                <div 
-                  v-if="isDark" 
-                  class="w-4 h-4 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-[10px] font-bold"
-                >
-                  ✓
-                </div>
-              </div>
-              <p class="text-xs text-muted-foreground">Deep slate dark color scheme optimized for game development.</p>
-            </button>
-
-            <!-- Light Theme Option -->
-            <button
-              type="button"
-              data-testid="theme-option-light"
-              @click="setDarkTheme(false)"
-              class="p-4 rounded-xl border text-left transition-all flex flex-col gap-3 group relative cursor-pointer outline-none"
-              :class="!isDark ? 'border-primary ring-2 ring-primary/20 bg-primary/5' : 'border-border hover:border-primary/40 bg-muted/20'"
-            >
-              <div class="flex items-center justify-between w-full">
-                <div class="flex items-center gap-2 text-foreground font-semibold text-sm">
-                  <Sun class="w-4 h-4 text-amber-500" />
-                  <span>Light Theme</span>
-                </div>
-                <div 
-                  v-if="!isDark" 
-                  class="w-4 h-4 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-[10px] font-bold"
-                >
-                  ✓
-                </div>
-              </div>
-              <p class="text-xs text-muted-foreground">Clean, high-contrast light theme for bright working environments.</p>
-            </button>
-          </div>
-        </PropertyRow>
-
-        <PropertyRow label="Quick Toggle">
           <div class="flex items-center gap-3">
             <BaseButton
               data-testid="theme-toggle-btn"

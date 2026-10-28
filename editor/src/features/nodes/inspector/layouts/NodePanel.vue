@@ -20,7 +20,7 @@
       class="flex-1 flex flex-col items-center justify-center text-muted-foreground p-4 text-center select-none"
       data-testid="node-inspector-multi-selected-state"
     >
-      <div class="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center mb-3 text-blue-500">
+      <div class="w-12 h-12 rounded-full border border-blue-500 flex items-center justify-center mb-3 text-blue-500">
         <Layers class="w-6 h-6" />
       </div>
       <p class="text-xs font-semibold text-foreground" data-testid="node-inspector-multi-selected-count">

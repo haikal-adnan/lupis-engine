@@ -6,8 +6,8 @@
         v-if="prefabId"
         class="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border select-none shrink-0"
         :class="overridden 
-          ? 'bg-amber-500/10 text-amber-500 border-amber-500/30' 
-          : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30'"
+          ? 'text-amber-500 border-amber-500' 
+          : 'text-emerald-500 border-emerald-500'"
           data-testid="ui-transform-prefab-badge"
       >
         {{ overridden ? 'Override' : 'Sync' }}

@@ -25,5 +25,5 @@ User Interface behaviors turn screen-space layers, sprites, and text entities in
 | Page | Use it when |
 | --- | --- |
 | [Text Renderer](components/renderers/text_renderer) | Configure font families, sizes, alignment, and live variable binding on UI labels. |
-| [Scene Hierarchy](interface/scene_hierarchy) | Create screen-space UI layers with parallax locked at zero so HUD elements stay fixed to the camera. |
+| [Scene Hierarchy](interface/scene_hierarchy) | Create screen-space UI layers so HUD elements stay fixed to the camera view. |
 | [Helper Tool Nodes](node_library/helper_tool) | Browse all UI widget, slider, dialogue, and grid spawning blueprint nodes. |

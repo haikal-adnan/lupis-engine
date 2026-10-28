@@ -22,19 +22,20 @@ Kamu memerlukan sebuah [entity](components/entities_and_prefabs) karakter dan se
 | Entity | Komponen yang Dibutuhkan |
 | --- | --- |
 | Entity Karakter | [Physics Body](components/physics_body) (**Platformer**), [Multi-Collider](components/multi_collider) (**Solid (Physics)**), dan movement controller seperti [Pergerakan Platformer](behaviour/movement/platformer). |
-| Entity Slope / Tanjakan | [Shape Renderer](components/renderers/shape_renderer) dengan bentuk slope **Polygon** tertutup dan opsi **Solid** diaktifkan pada pengaturan **Physics** (atau collider kotak **Solid (Physics)** yang diputar). |
+| Entity Slope / Tanjakan | [Shape Renderer](components/renderers/shape_renderer) dengan bentuk slope **Polygon** tertutup dan opsi **Polygon Physics** diaktifkan (atau collider kotak **Solid (Physics)** yang diputar). |
 
 ## Penyiapan {#setup}
 
 Ikuti langkah berikut untuk membuat slope dan menyiapkan karaktermu agar bisa mendakinya dengan mulus.
 
 :::steps
-1. Buat sebuah entity slope di dalam layer **World**, pasang [Shape Renderer](components/renderers/shape_renderer), lalu klik **Edit Shape** di [Property Inspector](interface/property_inspector).
-2. Tekan **G** untuk memilih alat **Polygon**, gambar bentuk segitiga atau slope, lalu tekan **Enter** untuk menerapkan bentuknya.
-3. Di bagian **Shape Renderer** pada **Property Inspector**, centang **Solid** di bawah **Physics**.
-4. Pilih entity karaktermu, buka bagian **Collider**, lalu naikkan nilai **Corner Radius (Capsule)** menjadi setengah dari lebar collider agar bagian bawahnya membentuk kapsul yang mulus.
-5. Masih di bagian **Collider** milik karakter, centang **Lock World Rotation (Stay Upright)** agar collider fisik tidak pernah miring menancap ke dalam slope.
-6. Di bagian **Physics Body** milik karakter, centang **Align to Slope**, atur **Max Slope (deg)** ke **60**, lalu klik **Play** di [Scene Viewport](interface/scene_viewport).
+1. Di panel **Scene Hierarchy**, klik kanan baris **World Layer**, pilih menu konteks **Add Entity** > **Shape**, lalu klik kanan entity baru tersebut dan pilih **Rename Entity** (atau tekan **F2**) untuk mengubah namanya menjadi **Slope**.
+2. Saat **Slope** dipilih di hierarchy, buka bagian **Shape Renderer** di [Property Inspector](interface/property_inspector) lalu klik **Open Shape Editor** untuk membuka tab penggambaran bentuk.
+3. Tekan **G** untuk memilih alat **Polygon Tool** (atau **S** untuk **Segment Tool**), klik di kanvas untuk menggambar bentuk bukit/slope segitiga, lalu tekan **Enter** untuk menerapkan bentuknya.
+4. Di bagian **Shape Renderer** pada **Property Inspector**, centang kotak **Polygon Physics** untuk mengaktifkan solid collision padat pada geometri slope tersebut.
+5. Pilih entity karaktermu di **Scene Hierarchy**, buka bagian **Collider**, lalu naikkan nilai **Corner Radius (Capsule)** menjadi setengah dari lebar collider (misalnya **8** hingga **16**) agar bagian bawahnya membentuk kapsul yang mulus dan tidak tersangkut sambungan tile.
+6. Masih di bagian **Collider** milik karakter, centang **Lock World Rotation (Stay Upright)** agar collider fisik tidak pernah miring menancap ke dalam slope.
+7. Di bagian **Physics Body** milik karakter, centang **Align to Slope**, atur **Max Slope (deg)** ke **60**, lalu klik **Play** di [Scene Viewport](interface/scene_viewport) untuk menguji karakter mendaki slope.
 :::
 
 ## Pengaturan {#settings}

@@ -2,6 +2,7 @@
 
 import { defineStore } from 'pinia';
 import { useWorkspaceStore } from '@workspaces/workspaces.js';
+import { useProjectStore } from '@projects/projects.js';
 import { useOPFSActions } from '@opfs/opfs.js';
 
 export const useAssetStore = defineStore('asset', {
@@ -20,6 +21,14 @@ export const useAssetStore = defineStore('asset', {
   },
 
   actions: {
+    _markDirtyIfReady() {
+      const workspaceStore = useWorkspaceStore();
+      const projectStore = useProjectStore();
+      if (!workspaceStore.isLoading && !workspaceStore.isSaving && projectStore.isProjectLoaded) {
+        projectStore.markAsDirty();
+      }
+    },
+
     setUploading(status) {
       this.isUploading = status;
     },
@@ -69,6 +78,7 @@ export const useAssetStore = defineStore('asset', {
       }
 
       this.assets.push(asset);
+      this._markDirtyIfReady();
       await this.syncAssetsToOPFS();
     },
 
@@ -76,6 +86,7 @@ export const useAssetStore = defineStore('asset', {
       const asset = this.assets.find(a => a.id === assetId);
       if (asset) {
         asset.folderId = targetFolderId;
+        this._markDirtyIfReady();
         await this.syncAssetsToOPFS();
       }
       return true;
@@ -106,6 +117,7 @@ export const useAssetStore = defineStore('asset', {
       }
 
       this.assets = this.assets.filter(a => a.id !== assetId);
+      this._markDirtyIfReady();
       await this.syncAssetsToOPFS();
     },
 
@@ -113,6 +125,7 @@ export const useAssetStore = defineStore('asset', {
       const asset = this.assets.find(a => a.id === assetId);
       if (asset) {
         Object.assign(asset, updates);
+        this._markDirtyIfReady();
         await this.syncAssetsToOPFS();
       }
     },
@@ -167,6 +180,7 @@ export const useAssetStore = defineStore('asset', {
       }
 
       this.assets.push(newAsset);
+      this._markDirtyIfReady();
       await this.syncAssetsToOPFS();
     },
 

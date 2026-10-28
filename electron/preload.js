@@ -27,6 +27,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getWindowState: () => ipcRenderer.invoke('window:get-state'),
   setAspectRatio: (width, height) => ipcRenderer.send('window:set-aspect-ratio', { width, height }),
 
+  // Dirty State and Close Confirmation
+  setDirty: (isDirty) => ipcRenderer.send('window:set-dirty', Boolean(isDirty)),
+  onRequestSaveAndClose: (callback) => {
+    if (typeof callback !== 'function') return () => {};
+    const subscription = () => callback();
+    ipcRenderer.on('app:request-save-and-close', subscription);
+    return () => ipcRenderer.removeListener('app:request-save-and-close', subscription);
+  },
+  confirmClose: (allowClose) => ipcRenderer.send('app:confirm-close', Boolean(allowClose)),
+
   // Window State Listener (used by engine preview / bundler)
   onWindowStateChange: (callback) => {
     if (typeof callback !== 'function') return;

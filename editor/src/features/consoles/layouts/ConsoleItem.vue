@@ -17,7 +17,7 @@
       <!-- Compact Context Badge like Unity/Godot/Unreal -->
       <template v-if="parsedContext">
         <span 
-          class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20 mr-2 align-middle select-none shrink-0"
+          class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold text-sky-600 dark:text-sky-400 border border-sky-500 mr-2 align-middle select-none shrink-0"
           :title="contextTooltip"
         >
           {{ contextBadgeText }}

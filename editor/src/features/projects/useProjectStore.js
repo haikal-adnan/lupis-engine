@@ -13,6 +13,12 @@ import { useFolderStore } from '@folders/folders.js';
 import { useWorkspaceStore } from '@workspaces/workspaces.js';
 import { useScriptStore } from '@scripts/scripts.js';
 
+const notifyElectronDirty = (isDirty) => {
+  if (typeof window !== 'undefined' && window.electronAPI?.setDirty) {
+    window.electronAPI.setDirty(isDirty);
+  }
+};
+
 export const useProjectStore = defineStore('project', {
   state: () => ({
     project: null,
@@ -39,13 +45,16 @@ export const useProjectStore = defineStore('project', {
   actions: {
     markAsDirty() {
       this.syncStatus = 'dirty';
+      notifyElectronDirty(true);
     },
 
     markAsSynced() {
       this.syncStatus = 'synced';
+      notifyElectronDirty(false);
     },
 
     clearProjectData() {
+      notifyElectronDirty(false);
       this.$reset();
       useSceneStore().$reset();
       useAssetStore().$reset();
@@ -92,6 +101,7 @@ export const useProjectStore = defineStore('project', {
       workspaceStore.setProjectId(this.project.id);
       workspaceStore.setActiveTab('scene');
       this.syncStatus = 'synced';
+      notifyElectronDirty(false);
       workspaceStore.setLoading(false);
     },
 
@@ -129,6 +139,7 @@ export const useProjectStore = defineStore('project', {
       scriptStore.initScripts(normalizedData.scripts);
 
       this.syncStatus = 'synced';
+      notifyElectronDirty(false);
 
       const rawPayload = {
         project: toRaw(this.project),
@@ -202,6 +213,7 @@ export const useProjectStore = defineStore('project', {
         await syncProject(this.project.id, syncPayload);
 
         this.syncStatus = 'synced';
+        notifyElectronDirty(false);
 
         if (!options.silent) {
           showPop({

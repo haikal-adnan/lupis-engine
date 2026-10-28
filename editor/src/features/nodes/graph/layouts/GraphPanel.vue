@@ -56,12 +56,12 @@
             :class="[
               interaction.mode === 'drag' ? 'transition-none' : '',
               selectedEdgeId === edge.id 
-                ? 'stroke-blue-500 shadow-glow filter drop-shadow(0 0 4px #3b82f6)' 
+                ? 'stroke-blue-500 shadow-none' 
                 : (edge.sourceHandle.includes('exec') 
                     ? (isDark ? 'stroke-slate-400' : 'stroke-slate-500')
                     : (isDark ? 'stroke-emerald-500' : 'stroke-emerald-600')),
               interaction.hoveredId === edge.id && selectedEdgeId !== edge.id
-                ? (isDark ? 'stroke-white shadow-glow filter drop-shadow(0 0 2px white)' : 'stroke-black shadow-none')
+                ? (isDark ? 'stroke-white shadow-none' : 'stroke-black shadow-none')
                 : (selectedNodeIds.length >= 2 
                     ? (selectedNodeIds.includes(edge.source) && selectedNodeIds.includes(edge.target) ? 'opacity-100' : 'opacity-20 grayscale')
                     : (isRelated(edge.id) ? 'opacity-100' : 'opacity-20 grayscale'))

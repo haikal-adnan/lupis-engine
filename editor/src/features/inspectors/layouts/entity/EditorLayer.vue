@@ -10,8 +10,8 @@
         <div 
           class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border select-none shrink-0"
           :class="isUISection 
-            ? 'bg-blue-500/10 text-blue-500 border-blue-500/30' 
-            : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30'"
+            ? 'text-blue-500 border-blue-500' 
+            : 'text-emerald-500 border-emerald-500'"
           data-testid="layer-type-badge"
         >
           {{ isUISection ? 'UI Layer' : 'World Layer' }}

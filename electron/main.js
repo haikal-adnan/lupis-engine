@@ -1,4 +1,4 @@
-const { app, protocol, BrowserWindow, ipcMain, shell, net: electronNet } = require('electron');
+const { app, protocol, BrowserWindow, ipcMain, shell, dialog, net: electronNet } = require('electron');
 const path = require('path');
 const url = require('url');
 const fs = require('fs');
@@ -10,6 +10,8 @@ let mainWindow = null;
 let backendProcess = null;
 let backendPort = 37602;
 let backendUrl = 'http://127.0.0.1:37602';
+let isProjectDirty = false;
+let isForceClosing = false;
 
 // 1. Register 'app' custom scheme as standard & secure (Crucial for OPFS & Web Storage APIs)
 protocol.registerSchemesAsPrivileged([
@@ -278,6 +280,41 @@ function createMainWindow() {
     mainWindow.loadURL('app://localhost/index.html');
   }
 
+  mainWindow.on('close', async (e) => {
+    if (isForceClosing) return;
+
+    if (isProjectDirty) {
+      e.preventDefault();
+
+      const { response } = await dialog.showMessageBox(mainWindow, {
+        type: 'warning',
+        title: 'Unsaved Changes',
+        message: 'You have unsaved changes in your project.',
+        detail: 'Do you want to save your changes before exiting?',
+        buttons: ['Save', "Don't Save", 'Cancel'],
+        defaultId: 0,
+        cancelId: 2,
+        noLink: true
+      });
+
+      if (response === 0) {
+        // Save: instruct renderer to save and reply
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send('app:request-save-and-close');
+        }
+      } else if (response === 1) {
+        // Don't Save: force close window
+        isProjectDirty = false;
+        isForceClosing = true;
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.close();
+        }
+      } else {
+        // Cancel: keep window open
+      }
+    }
+  });
+
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
@@ -297,6 +334,23 @@ ipcMain.on('window:maximize', () => {
 
 ipcMain.on('window:close', () => {
   if (mainWindow) mainWindow.close();
+});
+
+ipcMain.on('window:set-dirty', (_event, dirty) => {
+  isProjectDirty = Boolean(dirty);
+  if (mainWindow && !mainWindow.isDestroyed() && process.platform === 'darwin') {
+    mainWindow.setDocumentEdited(isProjectDirty);
+  }
+});
+
+ipcMain.on('app:confirm-close', (_event, allowClose) => {
+  if (allowClose) {
+    isProjectDirty = false;
+    isForceClosing = true;
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.close();
+    }
+  }
 });
 
 ipcMain.handle('window:get-state', () => {

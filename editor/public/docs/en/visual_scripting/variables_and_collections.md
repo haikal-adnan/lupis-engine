@@ -47,7 +47,9 @@ Create and structure your variables in the **Variable Manager** modal, then drag
 3. Check the **Panel** box to pin the variable to the sidebar, enter a **Variable Name**, and choose a **Type**.
 4. For a **number**, **string**, or **boolean**, enter its starting value directly in **Value / Structure**.
 5. For a **list** or **map**, click **Configure LIST** or **Configure MAP** to add nested items, or click the **Edit Raw JSON** icon in the header to paste a JSON array or object.
-6. Click **Done & Close**, then drag the variable from the **Variables** panel onto the canvas while holding **Ctrl** (to spawn **Get Variable**) or **Alt** (to spawn **Set Variable**).
+6. Click the modal close button. You can add variables to your graph canvas in several practical ways:
+   - **From the Variables Sidebar**: Drag the variable onto the canvas while holding **Ctrl** (to spawn **Get Variable**) or **Alt** (to spawn **Set Variable**).
+   - **From the Variable Manager Modal**: Press **Ctrl + Double Click** on a variable row to spawn a **Get Variable** node, press **Alt + Double Click** to spawn a **Set Variable** node, or open the 3-dots row menu and select **Add Get to Graph** or **Add Set to Graph**.
 :::
 
 You can also bind a variable directly to an unconnected node input port in the [Property Inspector](interface/property_inspector) or manipulate collections with [Collections & Data](node_library/data_collections) nodes.

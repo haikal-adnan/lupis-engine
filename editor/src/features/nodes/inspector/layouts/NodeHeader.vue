@@ -5,7 +5,7 @@
         <!-- Custom Label Badge (like Prefab badge in scene inspector) -->
         <div 
           v-if="isCustomNode"
-          class="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border select-none shrink-0 bg-purple-500/10 text-purple-400 border-purple-500/30"
+          class="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border select-none shrink-0 text-purple-400 border-purple-500"
           data-testid="node-inspector-header-custom-badge"
         >
           Custom

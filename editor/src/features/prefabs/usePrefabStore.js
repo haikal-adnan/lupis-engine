@@ -2,6 +2,7 @@
 
 import { defineStore } from 'pinia';
 import { useWorkspaceStore } from '@workspaces/workspaces.js';
+import { useProjectStore } from '@projects/projects.js';
 import { useOPFSActions } from '@opfs/opfs.js';
 
 export const usePrefabStore = defineStore('prefab', {
@@ -121,6 +122,11 @@ export const usePrefabStore = defineStore('prefab', {
       const prefab = this.prefabs.find(p => p.id === prefabId);
       if (prefab && prefab.data?.components?.[compName]) {
         prefab.data.components[compName][propName] = value;
+        const workspaceStore = useWorkspaceStore();
+        const projectStore = useProjectStore();
+        if (!workspaceStore.isLoading && !workspaceStore.isSaving && projectStore.isProjectLoaded) {
+          projectStore.markAsDirty();
+        }
       }
     }
   }

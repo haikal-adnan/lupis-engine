@@ -30,7 +30,7 @@ Attach the following components and prepare the required nodes before building t
 Follow these steps to configure a non-blocking trigger zone and an animated melee combat hitbox.
 
 :::steps
-1. In the [Scene Hierarchy](interface/scene_hierarchy), select the checkpoint or pickup entity, attach [Multi-Collider](components/multi_collider), and set its **Type** to **Trigger (Zone)** in the [Property Inspector](interface/property_inspector).
+1. In the [Scene Hierarchy](interface/scene_hierarchy), create an entity for your checkpoint or collectable item (right-click **World Layer** > **Add Entity** > **Sprite** or **Shape**), then in the [Property Inspector](interface/property_inspector) open the **Add Component...** dropdown under **Actions**, select **Collider** ([Multi-Collider](components/multi_collider)), and set its **Type** to **Trigger (Zone)**.
 2. Select the player entity and set its **Tag** field in the Property Inspector header to **player** so trigger nodes can filter overlaps.
 3. Open the trigger entity's [Logic Graph](visual_scripting/graph_concepts) and wire [On Tick](node_library/game_lifecycle#node-eventTick) into [Trigger Zone](node_library/game_physics#node-triggerZone) with **Target Tag** set to **player**.
 4. Connect the **On Enter** execution output of **Trigger Zone** to your checkpoint save, dialogue trigger, or hazard damage logic.

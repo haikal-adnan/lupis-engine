@@ -30,8 +30,8 @@ Siapkan komponen dan asset berikut sebelum mengikat data game ke layar HUD atau 
 Ikuti langkah berikut untuk mengikat counter teks langsung, menganimasikan health bar, dan mengisi grid inventaris berbasis data.
 
 :::steps
-1. Pilih entity label HUD milikmu, periksa komponen [Text Renderer](components/renderers/text_renderer) di [Property Inspector](interface/property_inspector), atur **Bind Variable** ke variabel skormu, lalu atur **Bind Format** ke **Score: {value}**.
-2. Untuk memformat beberapa variabel di dalam sebuah graph, masukkan template string seperti **HP: {hp}/{maxHp}** ke [Format String](node_library/system_utilities#node-stringFormat), lalu hubungkan **Result** ke [Set Text](node_library/game_renderer#node-setText).
+1. Di dalam graph visual script HUD milikmu, gunakan node [Format String](node_library/system_utilities#node-stringFormat) dengan template string seperti **Score: {score}** atau **HP: {hp}/{maxHp}** untuk menggabungkan variabel game dinamis.
+2. Hubungkan pin output **Result** dari **Format String** ke pin input **Text** pada node [Set Text](node_library/game_renderer#node-setText) yang menargetkan entity label HUD [Text Renderer](components/renderers/text_renderer) milikmu.
 3. Buat sebuah entity health bar dengan komponen [Image Renderer](components/renderers/sprite_renderer) yang ditempatkan di atas sprite bingkai latar pada layer UI milikmu.
 4. Saat HP pemain berubah, bagi HP saat ini dengan max HP, kalikan dengan **100**, lalu teruskan nilai persentase tersebut ke [Fill Amount](node_library/game_animation#node-tweenFillAmount) yang menargetkan sprite health bar.
 5. Untuk membangun grid inventaris, rancang satu entity slot yang memiliki child entity bernama **Icon** (**Image Renderer**) dan **Count** (**Text Renderer**), lalu simpan slot tersebut sebagai [prefab](components/entities_and_prefabs) yang dapat dipakai ulang.
@@ -77,4 +77,4 @@ Perluas data binding UI dinamis untuk tampilan HUD modular, penyorotan slot bers
 | [Widget Interaktif](behaviour/ui/interactive_widgets) | Kamu ingin menambahkan interaksi klik, hover, slider, dan toggle switch pada elemen UI. |
 | [Text Renderer](components/renderers/text_renderer) | Kamu ingin memeriksa properti inspector untuk gaya font dan variable binding bawaan. |
 | [Variabel & Koleksi](visual_scripting/variables_and_collections) | Kamu ingin menyusun list dan map yang diteruskan ke UI Grid Spawner serta UI Prefab Data Binder. |
-| [Helper & Tool](node_library/helper_tool) | Kamu ingin memeriksa detail port untuk Interpolate Variables, UI Grid Spawner, dan UI Prefab Data Binder. |
+| [Helper & Tool](node_library/helper_tool) | Kamu ingin memeriksa detail port untuk Format String, UI Grid Spawner, dan UI Prefab Data Binder. |

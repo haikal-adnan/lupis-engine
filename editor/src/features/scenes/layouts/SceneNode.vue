@@ -33,7 +33,7 @@
           ? 'bg-blue-600/20 text-white'
           : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground',
         isDragOver && dragPosition === 'inside'
-          ? 'ring-2 ring-blue-500 ring-inset bg-blue-500/10 z-10'
+          ? 'ring-2 ring-blue-500 ring-inset z-10'
           : ''
       ]"
       :style="{ paddingLeft: `${indentation}px` }"

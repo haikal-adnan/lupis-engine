@@ -175,7 +175,7 @@ const handleSmartRouting = async (url) => {
               v-for="doc in searchResults"
               :key="doc.id"
               @click="navigateAndPush(doc.id)"
-              class="group flex flex-col p-4 bg-card border border-border rounded-xl cursor-pointer hover:border-cyan-500/50 hover:shadow-lg hover:shadow-cyan-500/10 transition-all"
+              class="group flex flex-col p-4 bg-card border border-border rounded-xl cursor-pointer hover:border-cyan-500/50 hover:shadow-lg transition-all"
             >
                <h3 class="text-lg font-bold text-foreground group-hover:text-cyan-500 transition-colors">
                  {{ doc.name }}

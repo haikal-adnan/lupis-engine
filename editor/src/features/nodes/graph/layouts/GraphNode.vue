@@ -9,7 +9,7 @@
       isDragging ? 'transition-none' : '',
       'bg-white dark:bg-[#252526]',
       isSelected 
-        ? 'border-blue-500 ring-4 ring-blue-500/20 z-50 shadow-[0_0_20px_rgba(59,130,246,0.4)]' 
+        ? 'border-blue-500 z-50 shadow-lg dark:shadow-xl' 
         : 'border-slate-200 dark:border-[#3f3f46] hover:border-slate-300 dark:hover:border-[#52525b] z-10 ring-0 ring-transparent shadow-lg dark:shadow-xl',
       isDimmed ? 'opacity-30 grayscale filter' : 'opacity-100'
     ]"

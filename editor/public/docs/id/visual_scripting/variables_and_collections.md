@@ -47,7 +47,9 @@ Buat dan susun struktur variabelmu di modal **Variable Manager**, lalu seret ata
 3. Centang kotak **Panel** untuk menyematkan variabel ke sidebar, ketik **Variable Name**, lalu pilih **Type**.
 4. Untuk **number**, **string**, atau **boolean**, ketik nilai awalnya secara langsung di kolom **Value / Structure**.
 5. Untuk **list** atau **map**, klik **Configure LIST** atau **Configure MAP** untuk menambahkan item bersarang, atau klik ikon **Edit Raw JSON** di bagian judul untuk menempelkan array atau objek JSON.
-6. Klik **Done & Close**, lalu seret variabel dari panel **Variables** ke atas kanvas sambil menahan **Ctrl** (untuk membuat **Get Variable**) atau **Alt** (untuk membuat **Set Variable**).
+6. Klik tombol tutup modal. Kamu bisa menempatkan variabel ke dalam kanvas graph dengan beberapa cara praktis:
+   - **Dari Sidebar Variables**: Seret variabel ke atas kanvas sambil menahan **Ctrl** (untuk membuat **Get Variable**) atau **Alt** (untuk membuat **Set Variable**).
+   - **Dari Variable Manager Modal**: Tekan **Ctrl + Double Click** pada baris variabel untuk membuat node **Get**, tekan **Alt + Double Click** untuk membuat node **Set**, atau buka menu 3 titik pada baris variabel lalu pilih **Add Get to Graph** atau **Add Set to Graph**.
 :::
 
 Kamu juga bisa mengikat variabel secara langsung ke port input node yang tidak terhubung di [Property Inspector](interface/property_inspector) atau memanipulasi koleksi menggunakan node dari [Collections & Data](node_library/data_collections).

@@ -1,6 +1,8 @@
 // World and UI layer hierarchy operations, ordering, and synchronization.
 
 import { useSceneStore } from '@scenes/useSceneStore.js';
+import { useProjectStore } from '@projects/projects.js';
+import { useWorkspaceStore } from '@workspaces/workspaces.js';
 import { layerSchema } from '@scenes/schemas/layerSchema.js'; 
 import { engineBridge } from "@engines/engines.js";
 import { GenerateUUID, sanitizeScriptId, getValidUniqueScriptId, isScriptIdDuplicate } from '@utils/utils.js';
@@ -9,6 +11,14 @@ import { useSceneHistory } from '@historys/historys.js';
 
 export function useLayerActions() {
   const store = useSceneStore();
+
+  const markDirtyIfReady = () => {
+    const workspaceStore = useWorkspaceStore();
+    const projectStore = useProjectStore();
+    if (!workspaceStore.isLoading && !workspaceStore.isSaving && projectStore.isProjectLoaded) {
+      projectStore.markAsDirty();
+    }
+  };
 
   // Appends a new layer to the specified scene section and syncs with engine bridge
   const addLayer = (name, section = 'world', recordHistory = true) => {
@@ -41,6 +51,7 @@ export function useLayerActions() {
       recordAddLayer(newLayer, section);
     }
 
+    markDirtyIfReady();
     return newLayer;
   };
 
@@ -51,6 +62,7 @@ export function useLayerActions() {
     const collection = section === 'ui' ? scene.layersUI : scene.layersWorld;
     collection.push(layerData);
     engineBridge.addLayer(layerData);
+    markDirtyIfReady();
   };
 
   const updateLayerScriptId = (layerId, newScriptId) => {
@@ -78,6 +90,7 @@ export function useLayerActions() {
 
       const { recordLayerPropChange } = useSceneHistory();
       recordLayerPropChange(layerId, 'scriptId', oldScriptId, sanitized);
+      markDirtyIfReady();
       return true;
     }
     return true;
@@ -102,6 +115,7 @@ export function useLayerActions() {
         if (typeof engineBridge?.updateLayerProp === 'function') {
           engineBridge.updateLayerProp(layerId, 'zIndex', val);
         }
+        markDirtyIfReady();
       }
     }
   };
@@ -150,6 +164,7 @@ export function useLayerActions() {
     scene.layersUI = scene.layersUI.filter(l => l.id !== layerId);
 
     engineBridge.deleteLayer(layerId);
+    markDirtyIfReady();
   };
 
   // Reorders layers within the same section and Z-index tier
@@ -195,6 +210,7 @@ export function useLayerActions() {
 
     const { recordReorderLayer } = useSceneHistory();
     recordReorderLayer(draggedId, targetId, position, oldState, newState);
+    markDirtyIfReady();
   };
 
   const applyLayerOrderState = (orderState) => {
@@ -205,6 +221,7 @@ export function useLayerActions() {
       let layer = scene.layersWorld?.find(l => l.id === item.id) || scene.layersUI?.find(l => l.id === item.id);
       if (layer) layer.orderIndex = item.orderIndex;
     });
+    markDirtyIfReady();
   };
 
   // Bundles layer metadata and member entities for clipboard or duplication
@@ -303,6 +320,7 @@ export function useLayerActions() {
       recordAddLayer(newLayer, targetSection);
     });
 
+    markDirtyIfReady();
     return createdLayerIds;
   };
 
@@ -331,6 +349,7 @@ export function useLayerActions() {
       if (typeof engineBridge?.updateLayerProp === 'function') {
         engineBridge.updateLayerProp(layerId, propName, value);
       }
+      markDirtyIfReady();
       return { id: layerId, prop: propName, value };
     }
   };

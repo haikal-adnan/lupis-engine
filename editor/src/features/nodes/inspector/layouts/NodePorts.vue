@@ -5,7 +5,7 @@
     <div class="mb-3">
       <div class="px-2 mb-1 flex justify-between items-center">
         <span class="text-[10px] font-bold text-muted-foreground uppercase">Inputs</span>
-        <span v-if="isInputDynamic" class="text-[9px] text-blue-400 bg-blue-400/10 px-1 rounded uppercase">
+        <span v-if="isInputDynamic" class="text-[9px] text-blue-400 border border-blue-400 px-1 rounded uppercase">
           {{ dynamicModeLabel }}
         </span>
       </div>
@@ -201,7 +201,7 @@
     <div>
       <div class="px-2 mb-1 flex justify-between items-center">
         <span class="text-[10px] font-bold text-muted-foreground uppercase">Outputs</span>
-        <span v-if="isOutputDynamic" class="text-[9px] text-blue-400 bg-blue-400/10 px-1 rounded uppercase">
+        <span v-if="isOutputDynamic" class="text-[9px] text-blue-400 border border-blue-400 px-1 rounded uppercase">
           {{ dynamicModeLabel }}
         </span>
       </div>

@@ -49,8 +49,8 @@ onMounted(() => {
             class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all whitespace-nowrap text-left outline-none relative group"
             :class="[
               activeTab === item.id 
-                ? 'bg-cyan-500/10 text-cyan-500 font-bold' 
-                : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+                ? 'border border-cyan-500 text-cyan-500 font-bold' 
+                : 'border border-transparent text-muted-foreground hover:bg-muted/50 hover:text-foreground'
             ]"
           >
             <component :is="item.icon" class="w-4 h-4 shrink-0" :class="activeTab === item.id ? 'text-cyan-500' : ''" />
@@ -72,7 +72,7 @@ onMounted(() => {
               <button 
                 @click="setTheme('light')" 
                 class="flex flex-col items-center gap-3 p-4 rounded-xl border-2 transition-all outline-none" 
-                :class="currentTheme === 'light' ? 'border-cyan-500 bg-cyan-500/5' : 'border-border hover:border-border/80 hover:bg-muted/50'"
+                :class="currentTheme === 'light' ? 'border-cyan-500' : 'border-border hover:border-border/80 hover:bg-muted/50'"
               >
                 <div class="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center">
                   <Sun class="w-6 h-6 text-orange-500" />
@@ -83,7 +83,7 @@ onMounted(() => {
               <button 
                 @click="setTheme('dark')" 
                 class="flex flex-col items-center gap-3 p-4 rounded-xl border-2 transition-all outline-none" 
-                :class="currentTheme === 'dark' ? 'border-cyan-500 bg-cyan-500/5' : 'border-border hover:border-border/80 hover:bg-muted/50'"
+                :class="currentTheme === 'dark' ? 'border-cyan-500' : 'border-border hover:border-border/80 hover:bg-muted/50'"
               >
                 <div class="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center">
                   <Moon class="w-6 h-6 text-slate-300" />
@@ -94,7 +94,7 @@ onMounted(() => {
               <button 
                 @click="setTheme('system')" 
                 class="flex flex-col items-center gap-3 p-4 rounded-xl border-2 transition-all outline-none" 
-                :class="currentTheme === 'system' ? 'border-cyan-500 bg-cyan-500/5' : 'border-border hover:border-border/80 hover:bg-muted/50'"
+                :class="currentTheme === 'system' ? 'border-cyan-500' : 'border-border hover:border-border/80 hover:bg-muted/50'"
               >
                 <div class="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
                   <Laptop class="w-6 h-6 text-muted-foreground" />

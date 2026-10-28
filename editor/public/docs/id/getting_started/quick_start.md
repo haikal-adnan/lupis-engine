@@ -30,12 +30,12 @@ Mulai dari **Dashboard** (**My Projects**) untuk membuat container proyek baru.
 Selanjutnya, buat ground platform padat dan karakter pemain menggunakan [Scene Hierarchy](interface/scene_hierarchy), [Scene Viewport](interface/scene_viewport), dan [Property Inspector](interface/property_inspector).
 
 :::steps
-1. Di **Scene Hierarchy** di sebelah kiri, tambahkan sebuah entity ke layer dunia dan ubah namanya menjadi **Ground**.
-2. Saat **Ground** dipilih, klik **Add Component** di **Property Inspector**, lalu tambahkan [Shape Renderer](components/renderers/shape_renderer) dan [Multi-Collider](components/multi_collider).
-3. Di **Property Inspector**, atur **Size** pada [Transform & UI Transform](components/transform) milik **Ground** ke **800 x 40**, posisikan di dekat bagian bawah tampilan kamera, lalu pastikan **Type** pada **Multi-Collider** diatur ke **Solid (Physics)** agar berfungsi sebagai platform padat yang kokoh.
-4. Buat entity kedua di **Scene Hierarchy**, ubah namanya menjadi **Player**, dan posisikan di atas **Ground** pada **Scene Viewport**.
-5. Tambahkan **Shape Renderer** (atau [Image Renderer](components/renderers/sprite_renderer)), **Physics Body**, dan **Multi-Collider** ke **Player**.
-6. Pada **Physics Body** milik **Player**, biarkan **Motion Mode** diatur ke **Platformer (Side-Scroll)**, dan pada **Collider**, centang **Lock World Rotation (Stay Upright)** agar karakter tetap tegak.
+1. Di panel **Scene Hierarchy** di sebelah kiri, cari baris **World Layer** di bawah bagian **World**. Klik kanan pada baris **World Layer**, arahkan kursor ke menu konteks **Add Entity**, lalu pilih tipe entitas **Shape** untuk membuat entity bentuk geometri.
+2. Klik kanan entity baru tersebut di hierarchy, pilih **Rename Entity** (atau tekan **F2**), lalu ubah namanya menjadi **Ground** dan konfirmasi.
+3. Saat **Ground** dipilih, periksa panel **Property Inspector** di sebelah kanan. Entitas **Shape** sudah otomatis memiliki komponen [Transform & UI Transform](components/transform) dan [Shape Renderer](components/renderers/shape_renderer). Gulir ke bawah ke bagian **Actions**, buka dropdown **Add Component**, lalu pilih **Collider** (untuk memasang [Multi-Collider](components/multi_collider)).
+4. Di bagian **Transform & UI Transform**, atur **Size** milik **Ground** ke **800 x 40** (Width `800` dan Height `40`), posisikan di dekat bagian bawah tampilan kamera, lalu pada bagian **Collider**, pastikan **Type** diatur ke **Solid (Physics)** agar berfungsi sebagai platform padat yang kokoh.
+5. Buat entity karakter pemain: klik kanan kembali pada baris **World Layer** di **Scene Hierarchy**, pilih **Add Entity** > **Shape** (atau pilih **Sprite** jika ingin menggunakan gambar tekstur), lalu klik kanan entity baru tersebut dan pilih **Rename Entity** (atau tekan **F2**) untuk mengubah namanya menjadi **Player**. Posisikan **Player** tepat di atas platform **Ground** pada [Scene Viewport](interface/scene_viewport).
+6. Saat **Player** dipilih, buka dropdown **Add Component** di **Property Inspector** pada bagian **Actions**, lalu tambahkan [Physics Body](components/physics_body) dan [Multi-Collider](components/multi_collider) (**Collider**). Pada bagian **Physics Body**, pastikan **Motion Mode** diatur ke **Platformer (Side-Scroll)**, dan pada bagian **Collider**, centang kotak **Lock World Rotation (Stay Upright)** agar karakter tetap tegak dan tidak terguling saat bergerak.
 :::
 
 ## Tambahkan logika pergerakan {#add-movement-logic}
@@ -43,11 +43,12 @@ Selanjutnya, buat ground platform padat dan karakter pemain menggunakan [Scene H
 Sekarang pasang visual script ke **Player** agar kamu bisa berlari dan melompat menggunakan keyboard.
 
 :::steps
-1. Pilih **Player** di [Scene Hierarchy](interface/scene_hierarchy), klik **Add Component** di [Property Inspector](interface/property_inspector), lalu pilih [Script Controller](components/script_controller).
-2. Di bagian **Script Controller**, buat atau tetapkan sebuah script, lalu buka script tersebut di editor [Konsep Graph & Node](visual_scripting/graph_concepts) pada bottom dock.
-3. Klik kanan kanvas graph, cari [On Tick](node_library/game_lifecycle#node-eventTick), lalu tempatkan di dalam graph.
-4. Klik kanan kanvas lagi, tambahkan [Platformer Controller](node_library/helper_tool#node-platformerController), lalu hubungkan pin eksekusi berwarna putih dari **On Tick** ke **Platformer Controller**.
-5. Hubungkan pin output **deltaTime** dari **On Tick** ke pin input **deltaTime** milik **Platformer Controller**.
+1. Pilih **Player** di [Scene Hierarchy](interface/scene_hierarchy). Di bagian **Actions** pada [Property Inspector](interface/property_inspector), buka dropdown **Add Component** dan pilih [Script Controller](components/script_controller).
+2. Di panel bawah (bottom dock), buka tab **Scripts**. Klik tombol **+** (Create New Component), beri nama script seperti **PlayerMovement**, lalu klik **Create**.
+3. Di panel **Scripts**, klik kanan file script `PlayerMovement` yang baru dibuat, lalu pilih **Add to Player** (atau pasang melalui dropdown **Attached Scripts** di Property Inspector).
+4. Klik dua kali (double click) file `PlayerMovement` di panel Scripts (atau klik tombol **Source / Open Graph** di bagian Script Controller pada Property Inspector) untuk membuka kanvas visual scripting [Konsep Graph & Node](visual_scripting/graph_concepts).
+5. Klik kanan pada area kosong kanvas graph (atau cari dari panel Node Library di sebelah kiri kanvas), cari node [On Tick](node_library/game_lifecycle#node-eventTick), lalu klik untuk menempatkannya di graph.
+6. Klik kanan kanvas lagi, cari dan tambahkan [Platformer Controller](node_library/helper_tool#node-platformerController). Hubungkan pin eksekusi berwarna putih dari **On Tick** ke pin input eksekusi milik **Platformer Controller**, lalu hubungkan pin output numerik **deltaTime** dari **On Tick** ke pin input **deltaTime** pada **Platformer Controller**.
 :::
 
 ## Mainkan dan simpan {#play-and-save}

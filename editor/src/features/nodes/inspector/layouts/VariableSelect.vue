@@ -13,10 +13,10 @@
         <template v-if="selectedVariable">
           <!-- Badge Scope -->
           <span
-            class="text-[9px] px-1 py-0.2 rounded font-semibold uppercase tracking-wider shrink-0"
+            class="text-[9px] px-1 py-0.2 rounded font-semibold uppercase tracking-wider shrink-0 border"
             :class="selectedVariable.scope === 'Global' 
-              ? 'bg-blue-500/10 text-blue-500 border border-blue-500/20' 
-              : 'bg-purple-500/10 text-purple-500 border border-purple-500/20'"
+              ? 'text-blue-500 border-blue-500' 
+              : 'text-purple-500 border-purple-500'"
             data-testid="node-inspector-variable-select-scope-badge"
           >
             {{ selectedVariable.scope }}
@@ -78,10 +78,10 @@
             </div>
             
             <span
-              class="text-[9px] px-1 py-0.2 rounded font-mono uppercase tracking-tighter ml-2 shrink-0 opacity-80"
+              class="text-[9px] px-1 py-0.2 rounded font-mono uppercase tracking-tighter ml-2 shrink-0 border"
               :class="v.scope === 'Global' 
-                ? 'bg-blue-500/10 text-blue-400' 
-                : 'bg-purple-500/10 text-purple-400'"
+                ? 'text-blue-400 border-blue-400' 
+                : 'text-purple-400 border-purple-400'"
             >
               {{ v.scope }}
             </span>

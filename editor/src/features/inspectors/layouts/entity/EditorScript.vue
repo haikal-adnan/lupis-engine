@@ -11,8 +11,8 @@
         v-if="prefabId"
         class="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border select-none shrink-0"
         :class="overridden 
-          ? 'bg-amber-500/10 text-amber-500 border-amber-500/30' 
-          : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30'"
+          ? 'text-amber-500 border-amber-500' 
+          : 'text-emerald-500 border-emerald-500'"
         data-testid="script-controller-prefab-status"
       >
         {{ overridden ? 'Override' : 'Sync' }}
@@ -184,7 +184,7 @@
                     v-model="v.model.value" 
                     :scrubbable="true" 
                     class="w-full text-xs font-mono" 
-                    :class="{ 'border-amber-500/50 text-amber-500 bg-amber-500/5': v.overridden }" 
+                    :class="{ 'border-amber-500 text-amber-500': v.overridden }" 
                     data-testid="script-variable-number"
                   />
                   <BaseCheckbox 
@@ -196,7 +196,7 @@
                     v-else 
                     v-model="v.model.value" 
                     class="w-full text-xs" 
-                    :class="{ 'border-amber-500/50 text-amber-500 bg-amber-500/5': v.overridden }" 
+                    :class="{ 'border-amber-500 text-amber-500': v.overridden }" 
                     data-testid="script-variable-input"
                   />
                </div>
@@ -205,7 +205,7 @@
                  v-if="v.overridden" 
                  @click="v.reset()" 
                  title="Reset to default value"
-                 class="w-6 h-6 flex items-center justify-center hover:bg-amber-500/10 rounded text-amber-500 transition-colors"
+                 class="w-6 h-6 flex items-center justify-center hover:border border-amber-500 rounded text-amber-500 transition-colors"
                  data-testid="script-variable-reset-btn"
                >
                   <RotateCcw class="w-3 h-3" />

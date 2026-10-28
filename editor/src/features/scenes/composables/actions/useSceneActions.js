@@ -75,6 +75,11 @@ export function useSceneActions() {
       const projectStore = useProjectStore();
       if (projectStore.project?.settings?.initialSceneId === sceneId) {
         projectStore.project.settings.initialSceneId = store.scenes[0].id;
+      }
+
+      if (typeof projectStore.removeSceneFromProject === 'function') {
+        projectStore.removeSceneFromProject(sceneId);
+      } else {
         projectStore.markAsDirty();
       }
     }
@@ -92,6 +97,8 @@ export function useSceneActions() {
 
     scene.scriptId = sanitized;
     delete scene.name;
+    const projectStore = useProjectStore();
+    projectStore.markAsDirty();
     return true;
   };
 

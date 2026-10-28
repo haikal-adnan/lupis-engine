@@ -199,7 +199,7 @@
                   Minutes
                 </div>
               </div>
-              <div class="flex items-start gap-2 mt-1 p-2.5 rounded-lg bg-blue-500/10 border border-blue-500/20">
+              <div class="flex items-start gap-2 mt-1 p-2.5 rounded-lg border border-blue-500">
                 <Info class="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
                 <p class="text-[11px] text-blue-600 dark:text-blue-400 leading-tight">
                   When auto-save is enabled, Lupis Engine writes changes directly to storage every {{ autoSaveInterval }} minute{{ autoSaveInterval > 1 ? 's' : '' }} whenever unsaved modifications are detected.
@@ -214,7 +214,7 @@
           <div class="flex items-center gap-3">
             <div 
               class="w-3 h-3 rounded-full transition-all duration-300 shrink-0"
-              :class="projectStore.syncStatus === 'dirty' ? 'bg-red-500 shadow-sm shadow-red-500/50' : 'bg-emerald-500 shadow-sm shadow-emerald-500/50'"
+              :class="projectStore.syncStatus === 'dirty' ? 'bg-red-500 shadow-sm' : 'bg-emerald-500 shadow-sm'"
             ></div>
             <div>
               <div class="text-xs font-semibold text-foreground flex items-center gap-2">
@@ -263,50 +263,6 @@
 
       </div>
     </section>
-
-    <!-- Section 4: About Lupis Engine -->
-    <section class="space-y-4">
-      <div class="border-b border-border pb-2">
-        <h4 class="text-sm font-bold text-foreground">About Lupis Engine</h4>
-        <p class="text-xs text-muted-foreground mt-0.5">Engine runtime version, official repository, and community channels.</p>
-      </div>
-
-      <div class="flex items-center justify-between flex-wrap gap-3 p-4 rounded-xl border border-border bg-muted/10">
-        <div class="flex items-center gap-3">
-          <span 
-            data-testid="project-engine-version"
-            class="text-xs font-mono font-bold px-2.5 py-1 rounded-md bg-primary/10 text-primary border border-primary/20"
-          >
-            v{{ ENGINE_VERSION }}
-          </span>
-          <span class="text-xs text-muted-foreground">WebGL Game Engine</span>
-        </div>
-
-        <div class="flex items-center gap-3">
-          <a
-            :href="GITHUB_URL"
-            target="_blank"
-            rel="noopener noreferrer"
-            data-testid="project-github-link"
-            class="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <Github class="w-4 h-4" />
-            <span>GitHub</span>
-          </a>
-          <a
-            :href="DISCORD_URL"
-            target="_blank"
-            rel="noopener noreferrer"
-            data-testid="project-discord-link"
-            class="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <DiscordIcon class="w-4 h-4" />
-            <span>Discord</span>
-          </a>
-        </div>
-      </div>
-    </section>
-
   </div>
 </template>
 

@@ -1,10 +1,9 @@
 <template>
   <div class="space-y-10 relative">
     
-    <div class="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center gap-3">
-      <div class="w-2 h-2 rounded-full bg-blue-500 shrink-0"></div>
+    <div class="p-4 rounded-xl border border-blue-500 flex items-center gap-3">
       <p class="text-xs text-blue-600 dark:text-blue-400 font-medium">
-        Audio Settings features are currently under active development and temporarily disabled.
+        Resource Settings features are currently under active development and temporarily disabled.
       </p>
     </div>
 

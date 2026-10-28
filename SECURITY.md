@@ -28,4 +28,4 @@ We aim to acknowledge reports within **72 hours** and provide a fix or mitigatio
 
 - Iframe-sandboxed script execution (targeted for post-1.0)
 - Content Security Policy headers for hosted deployments
-- Server-side input validation for the export/font-generation endpoints
+- Server-side input validation for the export endpoints

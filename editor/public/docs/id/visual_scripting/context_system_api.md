@@ -38,7 +38,7 @@ Gunakan lifecycle hook, pemicu alur, pemeriksaan validasi, dan namespace logging
 | --- | --- | --- |
 | context.triggerFlow(portName) | triggerFlow('execOut') | Memicu pin output eksekusi bernama (seperti **onTrue** atau **onCollected**). |
 | context.onTick(callback) | onTick(callback) | Mendaftarkan fungsi pembaruan per frame yang menerima delta time (dt). |
-| Lifecycle Callbacks | onGameStart, onSceneStart, onGamePause, onGameResume, onGameRestart, onGameQuit | Mendaftarkan fungsi yang dijalankan saat status game atau scene aktif berubah. |
+| Lifecycle Callbacks | onGameStart, onSceneStart, onGamePause, onGameResume, onGameRestart, onGameQuit, onQuit | Mendaftarkan fungsi yang dijalankan saat status game atau scene aktif berubah. |
 | context.lifecycle | pause(), resume(), restart(), quit(), isPaused() | Menjeda, melanjutkan, memulai ulang, atau menghentikan sesi game yang sedang berjalan. |
 | context.signal | emit(signalName, data?), on(signalName, callback) | Memancarkan dan mendengarkan event khusus lintas entity dan script yang terpisah. |
 | context.assert | exists(val, msg?), hasComponent(entity, name, msg?), isNumber(val, msg?), isString(val, msg?), isBoolean(val, msg?), isObject(val, msg?), isArray(val, msg?), inRange(val, min, max, msg?), isTrue(cond, msg?), isFalse(cond, msg?), fail(msg?) | Memvalidasi syarat data dan langsung menghentikan node dengan pesan error di **Console** jika pemeriksaan gagal. |
@@ -66,8 +66,8 @@ Gunakan facade spasial, hierarki, fisika, dan input berikut untuk berinteraksi d
 | --- | --- | --- |
 | context.entity | get(targetId), destroy(entity), destroyByTag(tag), clone(entity), getParent(entity), getChildren(entity), getRoot(entity), findClosestByTag(tag, origin, y?), getAllByTag(tag), findByName(name), findByScriptId(scriptId) | Mengambil entity berdasarkan **'self'**, UUID, atau **scriptId**, menelusuri parent-child tree, memeriksa tag, serta menggandakan atau menghapus entity. |
 | context.prefab | spawn(prefabAssetId, x?, y?, layerId?, parentId?) | Men-spawn instance prefab baru ke dalam scene pada koordinat **(x, y)**. |
-| context.layer | get(layerId), destroy(layerId, destroyEntities?), freezeInput(layerId, active?, type?), isInputFrozen(layerId, type?) | Mengambil layer tampilan, menghapus layer, atau membekukan input kursor dan keyboard pada layer tertentu. |
-| context.collider | moveAndSlide(entity, moveX, moveY), checkSolid(entity), checkOverlap(entity, filterTag?) | Menggerakkan entity dengan wall sliding serta memeriksa solid collision atau overlap trigger pada bentuk [Multi-Collider](components/multi_collider). |
+| context.layer | get(layerId), destroy(layerId, destroyEntities?), freezeInput(layerId, active?, type?), isInputFrozen(layerId, type?), reset(sceneName?, layerName?) | Mengambil layer tampilan, menghapus layer, membekukan input kursor/keyboard pada layer tertentu, atau mengembalikan layer ke definisi template scene. |
+| context.collider | moveAndSlide(entity, moveX, moveY), checkSolid(entity), checkOverlap(entity, filterTag?), getShape(entity, scriptId), setShapeEnabled(entity, scriptId, enabled), checkHitbox(attacker, id, filterTag?, types?), getBounds(entity) | Menggerakkan entity dengan wall sliding, memeriksa collision solid atau overlap trigger, serta mengelola status shape dan query hitbox pada [Multi-Collider](components/multi_collider). |
 | context.input | getPointer(), mouse, keyboard.isDown(key), keyboard.isPressed(key), keyboard.isReleased(key), raycast.getTopEntity(), isPointerOver(entity, useRaycast?) | Membaca koordinat kursor, tombol mouse, status keyboard, dan entity dengan Z-Index tertinggi di bawah kursor. |
 
 Gunakan facade tampilan, audio, scene, dan toolkit game berikut untuk mengendalikan kamera, channel audio, transisi scene, serta mekanika tingkat tinggi.

@@ -79,8 +79,8 @@
                   <span 
                     class="text-[9px] font-semibold px-1.5 py-0.2 rounded flex items-center gap-1 border"
                     :class="item.scope === 'Global' 
-                      ? 'bg-sky-500/10 text-sky-500 border-sky-500/20' 
-                      : 'bg-amber-500/10 text-amber-500 border-amber-500/20'"
+                      ? 'text-sky-500 border-sky-500' 
+                      : 'text-amber-500 border-amber-500'"
                   >
                     <Globe v-if="item.scope === 'Global'" class="w-2.5 h-2.5" />
                     <FileCode v-else class="w-2.5 h-2.5" />

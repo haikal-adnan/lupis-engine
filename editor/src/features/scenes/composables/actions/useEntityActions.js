@@ -8,6 +8,7 @@ import { engineBridge } from "@engines/engines.js";
 import { useConfirm, usePopAlert } from '@composables/composables.js';
 import { useSceneHistory } from '@historys/historys.js';
 import { useWorkspaceStore } from '@workspaces/workspaces.js';
+import { useProjectStore } from '@projects/projects.js';
 
 const round = (num, decimals = 2) => {
   const factor = Math.pow(10, decimals);
@@ -43,6 +44,14 @@ const checkPrefabRestriction = (entities, entityId, targetParentId = null) => {
 
 export function useEntityActions() {
   const store = useSceneStore();
+
+  const markDirtyIfReady = () => {
+    const workspaceStore = useWorkspaceStore();
+    const projectStore = useProjectStore();
+    if (!workspaceStore.isLoading && !workspaceStore.isSaving && projectStore.isProjectLoaded) {
+      projectStore.markAsDirty();
+    }
+  };
 
   // Filters entity IDs to exclude descendants of selected ancestors
   const filterTopLevelEntityIds = (entityIds) => {
@@ -278,12 +287,14 @@ export function useEntityActions() {
     const { recordEntityCreate } = useSceneHistory();
     recordEntityCreate(newEntity);
 
+    markDirtyIfReady();
     return newEntity; 
   };
 
   const restoreEntity = (entityData) => {
     if (!store.activeScene) return;
     store.activeScene.entities.push(entityData);
+    markDirtyIfReady();
   };
 
   // Clones entities and subtrees, updating selections and engine state
@@ -341,6 +352,7 @@ export function useEntityActions() {
     const { recordEntityCreate } = useSceneHistory();
     allNewEntities.forEach(ent => recordEntityCreate(ent));
 
+    markDirtyIfReady();
     return allNewIds;
   };
 
@@ -402,6 +414,7 @@ export function useEntityActions() {
       const { recordEntityCreate } = useSceneHistory();
       allNewClones.forEach(ent => recordEntityCreate(ent));
 
+      markDirtyIfReady();
       return allNewIds;
   };
 
@@ -430,6 +443,7 @@ export function useEntityActions() {
         engineBridge.updateEntityProp({ id: entityId, prop: 'scriptId', value: sanitizedId });
       }
 
+      markDirtyIfReady();
       return { id: entityId, prop: 'scriptId', value: sanitizedId };
     }
     return false;
@@ -477,6 +491,7 @@ export function useEntityActions() {
 
     idsToDelete.forEach(id => engineBridge.deleteEntity(id));
 
+    markDirtyIfReady();
     return true;
   };
 
@@ -489,6 +504,7 @@ export function useEntityActions() {
         entity.orderIndex = orderIndex;
       }
     });
+    markDirtyIfReady();
   };
 
   // Moves or reparents an entity, recalculating local transform to preserve world placement
@@ -678,6 +694,7 @@ export function useEntityActions() {
       }
     }
 
+    markDirtyIfReady();
     return true;
   };
 
@@ -724,6 +741,7 @@ export function useEntityActions() {
 
     engineBridge.updateComponentProp?.({ entityId, componentName, path, value });
 
+    markDirtyIfReady();
     return { entityId, componentName, path, value };
   };
 
@@ -767,6 +785,7 @@ export function useEntityActions() {
         }
       }
 
+      markDirtyIfReady();
       return { id: entityId, prop: propName, value };
     }
     return false;
@@ -778,6 +797,7 @@ export function useEntityActions() {
     const entity = store.activeScene.entities.find(e => e.id === entityId);
     if (entity?.components?.Tilemap) {
       entity.components.Tilemap.data = newData;
+      markDirtyIfReady();
       return true;
     }
     return false;
@@ -856,6 +876,7 @@ export function useEntityActions() {
       engineBridge.addComponent({ entityId, componentName, data: newComponentData });
     }
 
+    markDirtyIfReady();
     return { entityId, componentName, data: newComponentData };
   };
 
@@ -922,6 +943,7 @@ export function useEntityActions() {
           showPop({ title: 'Success', message: `Component removed.`, type: 'success' });
         }
 
+        markDirtyIfReady();
         return { entityId, componentName };
     } catch (error) {
         showPop({ title: 'Failed', message: 'Could not remove component.', type: 'error' });

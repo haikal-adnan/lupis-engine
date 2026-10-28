@@ -86,8 +86,40 @@ const router = createRouter({
   }
 })
 
-router.beforeEach((to, from) => { 
+router.beforeEach(async (to, from) => { 
   NProgress.start();
+
+  const isLeavingCurrentProject = (from.name === 'Editor' || Boolean(from.path && from.path.startsWith('/editor'))) &&
+                                  (to.name !== 'Editor' || to.params?.idProject !== from.params?.idProject);
+
+  if (isLeavingCurrentProject) {
+    try {
+      const { useProjectStore } = await import('@projects/useProjectStore.js');
+      const projectStore = useProjectStore();
+
+      if (projectStore && projectStore.isDirty) {
+        const { useConfirm } = await import('@composables/composables.js');
+        const { confirm } = useConfirm();
+
+        const isConfirmed = await confirm({
+          title: 'Unsaved Changes',
+          message: 'You have unsaved changes. Are you sure you want to leave the editor? Unsaved changes will be lost.',
+          type: 'danger',
+          confirmText: 'Leave Without Saving'
+        });
+
+        if (!isConfirmed) {
+          NProgress.done();
+          return false;
+        }
+
+        projectStore.clearProjectData();
+      }
+    } catch (e) {
+      console.warn('[Router Guard] Warning verifying dirty status:', e);
+    }
+  }
+
   return true; 
 });
 

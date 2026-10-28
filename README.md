@@ -26,7 +26,6 @@
 - [Repository Structure](#repository-structure)
 - [Project Status](#project-status)
 - [Security and Scripting Limitations](#security-and-scripting-limitations)
-- [Roadmap](#roadmap)
 - [Contributing](#contributing)
 - [Community and Support](#community-and-support)
 - [License](#license)
@@ -158,7 +157,7 @@ lupis-engine/
 ├── core/        # Engine runtime: WebGL renderer, physics, audio, ECS, scripting
 ├── editor/      # Visual editor (Vue 3, Pinia, Vite), served on port 37600
 ├── electron/    # Desktop shell (Electron) and desktop installer packaging (NSIS)
-├── service/     # Node.js backend: MSDF font generation, export, Electron packaging
+├── service/     # Node.js backend: Electron packaging
 ├── tests/       # End-to-end and integration tests (Playwright)
 ├── examples/    # Ready-to-run sample projects
 └── .github/     # CI workflows and issue templates
@@ -186,18 +185,6 @@ User scripts (JavaScript and Blueprint) run in the context of the local editor i
 - Exported games contain user code that runs in the player's browser.
 
 For full details and instructions on reporting vulnerabilities, see [`SECURITY.md`](./SECURITY.md).
-
----
-
-## Roadmap
-
-The following items are planned for v0.2.0 and are subject to change.
-
-- **Rendering performance.** Instanced draw calls and frustum culling for large scenes.
-- **Physics improvements.** Slope handling, one-way platforms, and physics materials.
-- **Plugin system.** An API for custom Blueprint nodes and editor panels.
-- **Mobile export.** A Capacitor or TWA wrapper for Android builds.
-- **Cross-platform tooling.** Editor and desktop tooling support beyond Windows.
 
 ---
 

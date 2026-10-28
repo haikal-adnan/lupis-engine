@@ -27,7 +27,7 @@
       <!-- Callout for Collection -->
       <div 
         v-else-if="['list', 'map'].includes(edgeDataType)" 
-        class="p-2 bg-amber-500/10 border border-amber-500/30 rounded text-[11px] text-amber-500 leading-tight space-y-1"
+        class="p-2 border border-amber-500 rounded text-[11px] text-amber-500 leading-tight space-y-1"
         data-testid="node-inspector-edge-collection-callout"
       >
         <p class="font-medium">Direct Operations Disabled</p>

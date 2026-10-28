@@ -24,8 +24,8 @@ const props = defineProps({
   languages: {
     type: Array,
     default: () => [
-      { code: 'id', label: 'Bahasa Indonesia', flag: '🇮🇩' },
-      { code: 'en', label: 'English', flag: '🇬🇧' }
+      { code: 'id', label: 'Bahasa Indonesia' },
+      { code: 'en', label: 'English' }
     ]
   }
 });
@@ -50,7 +50,7 @@ const handleNavigation = (id) => {
 const languageOptions = computed(() => {
   return props.languages.map(lang => ({
     value: lang.code,
-    label: `${lang.flag} ${lang.label}`
+    label: lang.label
   }));
 });
 

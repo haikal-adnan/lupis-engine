@@ -242,8 +242,8 @@ const processImport = async (file) => {
             <div 
               class="w-20 h-20 rounded-2xl flex items-center justify-center mb-6 border transition-colors shadow-lg"
               :class="isInvalidFileDragged 
-                ? 'bg-destructive/10 border-destructive/30 text-destructive shadow-destructive/10' 
-                : 'bg-cyan-500/10 border-cyan-500/30 text-cyan-600 dark:text-cyan-400 shadow-cyan-500/10'"
+                ? 'border-destructive text-destructive' 
+                : 'border-cyan-500 text-cyan-600 dark:text-cyan-400'"
             >
               <AlertCircle v-if="isInvalidFileDragged" class="w-10 h-10" :stroke-width="2" />
               <FileCode2 v-else class="w-10 h-10" :stroke-width="2" />
@@ -264,8 +264,8 @@ const processImport = async (file) => {
               <span 
                 class="text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-wider border flex items-center gap-1.5"
                 :class="isInvalidFileDragged 
-                  ? 'text-red-500 dark:text-red-400 bg-red-500/10 border-red-500/20' 
-                  : 'text-cyan-600 dark:text-cyan-400 bg-cyan-500/10 border-cyan-500/20'"
+                  ? 'text-red-500 dark:text-red-400 border-red-500' 
+                  : 'text-cyan-600 dark:text-cyan-400 border-cyan-500'"
               >
                 <span class="w-1.5 h-1.5 rounded-full" :class="isInvalidFileDragged ? 'bg-red-500' : 'bg-cyan-500'"></span>
                 {{ isInvalidFileDragged ? '.lupisproject Only' : 'Ready to Import' }}
@@ -296,7 +296,7 @@ const processImport = async (file) => {
                 type="button"
                 data-testid="create-project-btn"
                 @click="isCreatePopupOpen = true"
-                class="flex items-center gap-1.5 bg-cyan-500 hover:bg-cyan-600 text-white px-3.5 py-1.5 rounded-full text-xs font-bold transition-all active:scale-95 shadow-sm shadow-cyan-500/20"
+                class="flex items-center gap-1.5 bg-cyan-500 hover:bg-cyan-600 text-white px-3.5 py-1.5 rounded-full text-xs font-bold transition-all active:scale-95 shadow-sm"
               >
                 <Plus class="w-3.5 h-3.5" :stroke-width="3" />
                 New
@@ -330,7 +330,7 @@ const processImport = async (file) => {
             type="button"
             data-testid="create-project-btn-mobile"
             @click="isCreatePopupOpen = true"
-            class="flex-1 flex justify-center items-center gap-2 bg-cyan-500 hover:bg-cyan-600 text-white px-4 py-2.5 rounded-xl text-sm font-bold transition-all active:scale-95 shadow-sm shadow-cyan-500/20"
+            class="flex-1 flex justify-center items-center gap-2 bg-cyan-500 hover:bg-cyan-600 text-white px-4 py-2.5 rounded-xl text-sm font-bold transition-all active:scale-95 shadow-sm"
           >
             <Plus class="w-4 h-4" :stroke-width="3" />
             New Project
@@ -394,7 +394,7 @@ const processImport = async (file) => {
             type="button"
             data-testid="empty-create-project-btn"
             @click="isCreatePopupOpen = true"
-            class="bg-cyan-500 hover:bg-cyan-600 text-white px-6 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg shadow-cyan-500/20 flex items-center gap-2"
+            class="bg-cyan-500 hover:bg-cyan-600 text-white px-6 py-2.5 rounded-xl text-sm font-bold transition-all shadow-md flex items-center gap-2"
           >
             <Plus class="w-4 h-4" :stroke-width="3" /> Create First Project
           </button>
@@ -439,7 +439,7 @@ const processImport = async (file) => {
           data-testid="project-card"
           :data-project-id="project.id"
           :data-project-name="project.name"
-          class="group bg-card border border-border rounded-2xl overflow-hidden cursor-pointer hover:border-cyan-500/40 transition-all duration-300 hover:-translate-y-1 shadow-sm hover:shadow-xl hover:shadow-cyan-500/5 flex flex-col"
+          class="group bg-card border border-border rounded-2xl overflow-hidden cursor-pointer hover:border-cyan-500/40 transition-all duration-300 hover:-translate-y-1 shadow-sm hover:shadow-xl flex flex-col"
           @click="openProject(project.id)"
           @contextmenu.prevent="handleContextMenu($event, project)"
         >

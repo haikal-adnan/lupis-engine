@@ -16,14 +16,14 @@ const emit = defineEmits(['smartNavigate']);
 const formatDataType = (text) => {
   const types = ['String', 'Number', 'Boolean', 'Vector2', 'Object', 'Array', 'Execution', 'Any'];
   if (types.includes(text)) {
-    let color = 'text-cyan-600 dark:text-cyan-400 bg-cyan-500/10 border-cyan-500/20'; 
-    if (text === 'String') color = 'text-pink-600 dark:text-pink-400 bg-pink-500/10 border-pink-500/20';
-    if (text === 'Number' || text === 'Vector2') color = 'text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/20';
-    if (text === 'Boolean') color = 'text-rose-600 dark:text-rose-400 bg-rose-500/10 border-rose-500/20';
-    if (text === 'Execution') color = 'text-slate-700 dark:text-slate-300 bg-slate-500/15 border-slate-500/30 font-semibold';
-    if (text === 'Any') color = 'text-slate-500 dark:text-slate-400 bg-slate-500/10 border-slate-500/20';
-    if (text === 'Array') color = 'text-cyan-600 dark:text-cyan-400 bg-cyan-500/10 border-cyan-500/20';
-    if (text === 'Object') color = 'text-orange-600 dark:text-orange-400 bg-orange-500/10 border-orange-500/20';
+    let color = 'text-cyan-600 dark:text-cyan-400 border-cyan-500'; 
+    if (text === 'String') color = 'text-pink-600 dark:text-pink-400 border-pink-500';
+    if (text === 'Number' || text === 'Vector2') color = 'text-amber-600 dark:text-amber-400 border-amber-500';
+    if (text === 'Boolean') color = 'text-rose-600 dark:text-rose-400 border-rose-500';
+    if (text === 'Execution') color = 'text-slate-700 dark:text-slate-300 border-slate-500 font-semibold';
+    if (text === 'Any') color = 'text-slate-500 dark:text-slate-400 border-slate-500';
+    if (text === 'Array') color = 'text-cyan-600 dark:text-cyan-400 border-cyan-500';
+    if (text === 'Object') color = 'text-orange-600 dark:text-orange-400 border-orange-500';
     
     return `<span class="px-1.5 py-0.5 rounded text-[11px] font-mono border ${color}">${text}</span>`;
   }
@@ -79,12 +79,12 @@ const handleContentClick = (e) => {
         <p v-if="block.type === 'text'" class="mb-6 text-foreground/90 leading-relaxed text-justify" v-html="renderMarkdown(block.content)"></p>
         
         <div v-else-if="block.type === 'alert'" 
-             class="my-6 p-4 rounded-lg border-l-4 not-prose"
+             class="my-6 p-4 rounded-lg border border-l-4 not-prose"
              :class="{
-               'bg-blue-500/10 border-blue-500 dark:bg-blue-950/30': block.variant === 'info',
-               'bg-amber-500/10 border-amber-500 dark:bg-amber-950/30': block.variant === 'warning',
-               'bg-rose-500/10 border-rose-500 dark:bg-rose-950/30': block.variant === 'danger',
-               'bg-emerald-500/10 border-emerald-500 dark:bg-emerald-950/30': block.variant === 'tip'
+               'border-blue-500': block.variant === 'info',
+               'border-amber-500': block.variant === 'warning',
+               'border-rose-500': block.variant === 'danger',
+               'border-emerald-500': block.variant === 'tip'
              }">
           <div class="flex items-center gap-2 font-bold mb-1.5 uppercase text-xs tracking-wider"
                :class="{
@@ -118,7 +118,7 @@ const handleContentClick = (e) => {
 
         <ol v-else-if="block.type === 'steps'" class="space-y-4 my-8 list-none p-0 not-prose">
           <li v-for="(step, idx) in block.items" :key="idx" class="flex gap-4 items-start bg-muted/20 p-4 rounded-lg border border-border">
-            <span class="flex-shrink-0 w-6 h-6 rounded-full bg-cyan-500 dark:bg-cyan-600 text-white flex items-center justify-center text-xs font-bold mt-0.5 shadow-sm shadow-cyan-500/20">
+            <span class="flex-shrink-0 w-6 h-6 rounded-full bg-cyan-500 dark:bg-cyan-600 text-white flex items-center justify-center text-xs font-bold mt-0.5 shadow-sm">
               {{ idx + 1 }}
             </span>
             <div class="text-sm text-foreground/90 leading-relaxed text-justify flex-1" v-html="renderMarkdown(step)"></div>

@@ -1,6 +1,7 @@
 import { reactive, watch } from 'vue';
 import { useWorkspaceStore } from '@workspaces/workspaces.js';
 import { useSceneStore } from '@scenes/scenes.js';
+import { useProjectStore } from '@projects/projects.js';
 
 const ENABLE_LOGS = true; 
 
@@ -91,6 +92,10 @@ export function useHistory(options = {}) {
       action.undo();
       history.redoStack.push(action);
       logHistory('UNDO PERFORMED');
+      const projectStore = useProjectStore();
+      if (!workspaceStore.isLoading && !workspaceStore.isSaving && projectStore.isProjectLoaded) {
+        projectStore.markAsDirty();
+      }
     }
   };
 
@@ -108,6 +113,10 @@ export function useHistory(options = {}) {
       action.redo();
       history.undoStack.push(action);
       logHistory('REDO PERFORMED');
+      const projectStore = useProjectStore();
+      if (!workspaceStore.isLoading && !workspaceStore.isSaving && projectStore.isProjectLoaded) {
+        projectStore.markAsDirty();
+      }
     }
   };
 

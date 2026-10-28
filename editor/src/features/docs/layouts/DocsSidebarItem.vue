@@ -32,7 +32,7 @@ const handleNavigate = (id) => {
     <div 
       class="w-full flex items-center justify-between py-1.5 text-sm transition-colors rounded-md px-2 -ml-2"
       :class="item.id === currentDocId 
-        ? 'text-cyan-500 font-medium bg-cyan-500/5' 
+        ? 'text-cyan-500 font-medium' 
         : 'text-muted-foreground hover:bg-muted/50'"
     >
       <span 

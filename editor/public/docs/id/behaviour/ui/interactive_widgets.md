@@ -20,7 +20,7 @@ Siapkan sebuah layer user interface (UI) screen-space dan pasang komponen visual
 
 | Persyaratan | Entity tujuan | Fungsi |
 | --- | --- | --- |
-| [Scene Hierarchy](interface/scene_hierarchy) | Layer UI | Menempelkan entity widget ke layar dengan mengatur **Parallax X** dan **Parallax Y** ke **0**. |
+| [Scene Hierarchy](interface/scene_hierarchy) | Layer UI | Menempatkan entity widget di dalam layer bagian **User Interface** agar otomatis menggunakan screen-space [UI Transform](components/transform). |
 | [Image Renderer](components/renderers/sprite_renderer) atau [Shape Renderer](components/renderers/shape_renderer) | Tombol, Track, dan Handle | Menampilkan batas visual yang digunakan untuk deteksi klik kursor mouse dan perubahan tampilan status. |
 | [Text Renderer](components/renderers/text_renderer) | Label dan Kotak Dialog | Menampilkan teks tombol, persentase slider, dan kalimat dialog efek typewriter. |
 | [Script Controller](components/script_controller) | Manajer UI atau Widget | Menjalankan [Button Scale Effect](node_library/game_animation#node-uiButtonScaleEffect), [Atomic Slider](node_library/helper_tool#node-atomicSlider), atau [Switch Button Shape](node_library/helper_tool#node-switchButtonShape). |
@@ -30,8 +30,8 @@ Siapkan sebuah layer user interface (UI) screen-space dan pasang komponen visual
 Ikuti langkah berikut untuk membangun tombol menu beranimasi, slider yang bisa di-drag, dan toggle switch di dalam sebuah layer UI.
 
 :::steps
-1. Di [Scene Hierarchy](interface/scene_hierarchy), buat sebuah layer **UI** khusus di atas layer game-mu, lalu atur **Parallax X** dan **Parallax Y** ke **0**.
-2. Buat sebuah entity tombol di dalam layer **UI** dengan komponen [Image Renderer](components/renderers/sprite_renderer) atau [Shape Renderer](components/renderers/shape_renderer), lalu tambahkan child entity berjenis [Text Renderer](components/renderers/text_renderer) sebagai labelnya.
+1. Di [Scene Hierarchy](interface/scene_hierarchy), pilih atau buat layer di bawah bagian **User Interface** (khusus screen-space) agar seluruh elemen HUD dan widget menempel pada layar dan menggunakan anchor [UI Transform](components/transform).
+2. Buat sebuah entity tombol di dalam layer **UI** tersebut (klik kanan layer > **Add UI Element** > **UI Shape** atau **UI Image**), lalu tambahkan child entity teks [Text Renderer](components/renderers/text_renderer) sebagai labelnya.
 3. Buka [Konsep Graph & Node](visual_scripting/graph_concepts) milik UI, tambahkan [On Tick](node_library/game_lifecycle#node-eventTick), lalu hubungkan ke [Button Scale Effect](node_library/game_animation#node-uiButtonScaleEffect) yang menargetkan entity tombol tersebut.
 4. Hubungkan output **On Click** dari **Button Scale Effect** ke [Change Scene](node_library/game_lifecycle#node-changeScene) atau logika action menumu.
 5. Untuk menambahkan slider nilai, buat sebuah entity bar horizontal dan sebuah child entity sebagai handle, lalu hubungkan **On Tick** ke [Atomic Slider](node_library/helper_tool#node-atomicSlider) dengan mengisi **Bar Entity** dan **Handler Entity**.
@@ -67,7 +67,7 @@ Gabungkan node interaksi untuk membangun mixer audio multi-channel, toggle switc
 | Masalah | Solusi |
 | --- | --- |
 | Mengklik tombol UI ikut memicu entity atau tombol lain di belakangnya | Aktifkan **Use Raycast** pada [Button Scale Effect](node_library/game_animation#node-uiButtonScaleEffect) atau [Entity Mouse Event](node_library/input_controls#node-mouseEntityInteract), atau kunci layer di bawahnya menggunakan [Freeze Layer Input](node_library/input_controls#node-freezeLayerInput). |
-| Tombol dan slider ikut bergeser keluar layar saat kamera bergerak | Buka pengaturan layer di [Scene Hierarchy](interface/scene_hierarchy), lalu atur **Parallax X** dan **Parallax Y** milik layer UI ke **0**. |
+| Tombol dan slider ikut bergeser keluar layar saat kamera bergerak | Pastikan entity widget ditempatkan di dalam layer pada bagian **User Interface** (bukan di dalam layer **World**), dan atur grid **Anchor** pada [UI Transform](components/transform) agar posisinya terkunci relatif terhadap layar. |
 | Handle [Atomic Slider](node_library/helper_tool#node-atomicSlider) bergerak melewati batas tepi bar | Pastikan **Bar Entity** memiliki komponen [Image Renderer](components/renderers/sprite_renderer) atau [Shape Renderer](components/renderers/shape_renderer) dengan nilai **Width** lebih besar dari nol agar slider bisa menghitung batas drag-nya. |
 | Deteksi hover dan klik terasa bergeser dari gambar tombol yang terlihat | Pastikan pivot milik entity tombol berada di tengah (**0.5, 0.5**) atau tambahkan [Multi-Collider](components/multi_collider) lalu aktifkan **Use Collider Bounds** pada **Entity Mouse Event**. |
 

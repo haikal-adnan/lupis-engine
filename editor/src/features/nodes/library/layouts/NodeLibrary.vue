@@ -54,8 +54,7 @@
                 group relative flex items-center gap-2 p-2 rounded border outline-none
                 transition-all duration-200 select-none cursor-grab active:cursor-grabbing
                 bg-card border-border text-muted-foreground text-xs
-                hover:bg-blue-500/5 hover:border-blue-500/30 hover:text-foreground
-                dark:hover:bg-blue-500/10 dark:hover:border-blue-500/40
+                hover:border-blue-500 hover:text-foreground
               "
               title="Double-click to add, Drag to drop on canvas"
             >
@@ -71,7 +70,7 @@
           <button
             type="button"
             @click="handleAddCustomNodeToCanvas"
-            class="w-full mt-2.5 flex items-center justify-center gap-1.5 py-1.5 px-2 text-xs font-medium rounded border border-dashed border-purple-100/40 bg-primary-500/10 hover:bg-primary-500/20 text-primary-400 hover:text-primary-300 transition-colors cursor-pointer group"
+            class="w-full mt-2.5 flex items-center justify-center gap-1.5 py-1.5 px-2 text-xs font-medium rounded border border-dashed border-primary text-primary-400 hover:text-primary-300 transition-colors cursor-pointer group"
             data-testid="node-library-add-custom-node-btn"
             title="Add Custom Node directly to Graph"
           >
@@ -99,8 +98,7 @@
               group relative flex flex-col gap-1 p-2 rounded border outline-none
               transition-all duration-200 select-none cursor-grab active:cursor-grabbing
               bg-card border-border text-muted-foreground text-xs
-              hover:bg-blue-500/5 hover:border-blue-500/30 hover:text-foreground
-              dark:hover:bg-blue-500/10 dark:hover:border-blue-500/40
+              hover:border-blue-500 hover:text-foreground
             "
             title="Double-click to add, Drag to drop on canvas"
           >

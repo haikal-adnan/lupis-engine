@@ -30,7 +30,7 @@ Pasang komponen berikut dan siapkan node yang dibutuhkan sebelum membuat zona tr
 Ikuti langkah berikut untuk mengatur zona trigger tanpa hambatan dan hitbox pertarungan jarak dekat beranimasi.
 
 :::steps
-1. Di [Scene Hierarchy](interface/scene_hierarchy), pilih entity checkpoint atau item collectable, pasang [Multi-Collider](components/multi_collider), lalu atur **Type** ke **Trigger (Zone)** di [Property Inspector](interface/property_inspector).
+1. Di [Scene Hierarchy](interface/scene_hierarchy), buat entity untuk checkpoint atau item collectable (klik kanan **World Layer** > **Add Entity** > **Sprite** atau **Shape**), lalu di [Property Inspector](interface/property_inspector) buka dropdown **Add Component...** di bawah **Actions**, pilih **Collider** ([Multi-Collider](components/multi_collider)), dan atur **Type** ke **Trigger (Zone)**.
 2. Pilih entity pemain dan atur kolom **Tag** di bagian atas Property Inspector menjadi **player** agar node trigger bisa memfilter overlap.
 3. Buka [Konsep Graph & Node](visual_scripting/graph_concepts) milik entity trigger, lalu hubungkan [On Tick](node_library/game_lifecycle#node-eventTick) ke [Trigger Zone](node_library/game_physics#node-triggerZone) dengan **Target Tag** diatur ke **player**.
 4. Hubungkan output eksekusi **On Enter** dari **Trigger Zone** ke logika penyimpanan checkpoint, pemicu dialog, atau pengurangan HP akibat rintangan.

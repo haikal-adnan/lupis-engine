@@ -213,8 +213,8 @@ export function useDocsLogic() {
   );
 
   const availableLanguages = [
-    { code: 'id', label: 'Bahasa Indonesia', flag: '🇮🇩' },
-    { code: 'en', label: 'English', flag: '🇬🇧' }
+    { code: 'en', label: 'English' },
+    { code: 'id', label: 'Bahasa Indonesia' },
   ];
 
   const sidebarNav = computed(() => {

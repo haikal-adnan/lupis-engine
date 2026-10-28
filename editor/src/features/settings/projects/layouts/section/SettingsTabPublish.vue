@@ -22,7 +22,7 @@
           <div class="space-y-1 flex-1 min-w-0">
             <div class="flex flex-wrap items-center gap-2">
               <h3 class="font-bold text-sm text-foreground">Web Standalone (.ZIP)</h3>
-              <span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary">HTML5</span>
+              <span class="text-[10px] font-semibold px-2 py-0.5 rounded text-primary border border-primary">HTML5</span>
               <span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-muted text-muted-foreground border border-border">Dev &amp; Release</span>
             </div>
             <p class="text-xs text-muted-foreground leading-relaxed">
@@ -37,7 +37,7 @@
               @click="handleAppExport('zip', 'development')"
               :disabled="isProcessing"
               title="Export Web Development Bundle with Source Maps and unminified assets"
-              class="w-full h-9 px-3 text-xs font-bold rounded-lg border border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              class="w-full h-9 px-3 text-xs font-bold rounded-lg border border-amber-500/40 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
               {{ isExporting && exportType === 'zip' && exportMode === 'development' ? 'Exporting Dev...' : 'Development (.ZIP)' }}
             </button>
@@ -60,7 +60,7 @@
           <div class="space-y-1 flex-1 min-w-0">
             <div class="flex flex-wrap items-center gap-2">
               <h3 class="font-bold text-sm text-foreground">Desktop App (.EXE)</h3>
-              <span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary">Windows</span>
+              <span class="text-[10px] font-semibold px-2 py-0.5 rounded text-primary border border-primary">Windows</span>
               <span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-muted text-muted-foreground border border-border">Dev &amp; Release</span>
             </div>
             <p class="text-xs text-muted-foreground leading-relaxed">
@@ -76,7 +76,7 @@
               @click="handleAppExport('exe', 'development')"
               :disabled="isProcessing"
               title="Build Windows executable with DevTools enabled and unminified code"
-              class="w-full h-9 px-3 text-xs font-bold rounded-lg border border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              class="w-full h-9 px-3 text-xs font-bold rounded-lg border border-amber-500/40 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
               {{ isExporting && exportType === 'exe' && exportMode === 'development' ? 'Building Dev...' : 'Development (.EXE)' }}
             </button>
@@ -99,7 +99,7 @@
           <div class="space-y-1 flex-1 min-w-0">
             <div class="flex items-center gap-2">
               <h3 class="font-bold text-sm text-foreground">Project Archive</h3>
-              <span class="text-[10px] font-semibold px-2 py-0.5 rounded text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">Backup</span>
+              <span class="text-[10px] font-semibold px-2 py-0.5 rounded text-emerald-600 dark:text-emerald-400 border border-emerald-500">Backup</span>
             </div>
             <p class="text-xs text-muted-foreground leading-relaxed">
               Export raw project data, scenes, and assets into a single backup file.
@@ -123,8 +123,7 @@
     <!-- Bottom Footer Status Info -->
     <div class="mt-6 pt-3 border-t border-border flex items-center justify-between text-[11px] text-muted-foreground font-mono">
       <span class="flex items-center gap-2">
-        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-        Target Project: <strong class="text-foreground" data-testid="target-project-name">{{ currentProjectName || 'None Selected' }}</strong>
+        Project: <strong class="text-foreground" data-testid="target-project-name">{{ currentProjectName || 'None Selected' }}</strong>
       </span>
       <span>Lupis Engine v0.1.0</span>
     </div>

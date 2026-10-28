@@ -10,8 +10,8 @@
         <!-- Auto Save / Synced Status Indicator -->
         <div class="flex items-center gap-1.5 font-sans text-[11px]">
           <span 
-            class="px-2 py-0.5 rounded font-medium transition-colors duration-200 flex items-center gap-1.5"
-            :class="isDirty ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'"
+            class="px-2 py-0.5 rounded font-medium transition-colors duration-200 flex items-center gap-1.5 border"
+            :class="isDirty ? 'text-amber-400 border-amber-500' : 'text-emerald-400 border-emerald-500'"
           >
             <span class="w-1.5 h-1.5 rounded-full" :class="isDirty ? 'bg-amber-400' : 'bg-emerald-400'"></span>
             {{ isDirty ? 'Saving...' : 'Synced' }}
@@ -22,19 +22,19 @@
         <div class="flex items-center gap-1.5 ml-1 font-sans text-[10px]">
           <span 
             v-if="validationResult.hasSyntaxError" 
-            class="px-2 py-0.5 rounded bg-red-500/20 text-red-400 border border-red-500/30 font-medium"
+            class="px-2 py-0.5 rounded text-red-400 border border-red-500 font-medium"
           >
             Syntax Error
           </span>
           <span 
             v-else-if="validationResult.isValid" 
-            class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-medium"
+            class="px-2 py-0.5 rounded text-emerald-400 border border-emerald-500 font-medium"
           >
             No Issues
           </span>
           <span 
             v-else 
-            class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 font-medium"
+            class="px-2 py-0.5 rounded text-amber-400 border border-amber-500 font-medium"
           >
             Warnings ({{ validationResult.issues.length }})
           </span>

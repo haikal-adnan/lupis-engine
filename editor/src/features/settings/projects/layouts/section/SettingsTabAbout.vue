@@ -8,20 +8,18 @@
       </div>
 
       <div class="p-6 rounded-2xl border border-border bg-muted/15 flex flex-col sm:flex-row sm:items-center gap-5">
-        <div class="w-16 h-16 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center shrink-0 shadow-sm">
-          <img :src="'/assets/logo.svg'" alt="Lupis Engine Logo" class="w-10 h-10 object-contain" />
-        </div>
+        <img :src="'/assets/logo.svg'" alt="Lupis Engine Logo" class="w-10 h-10 object-contain" />
 
         <div class="flex-1 space-y-1.5">
           <div class="flex items-center gap-2.5 flex-wrap">
             <h3 class="text-lg font-bold text-foreground tracking-tight">Lupis Engine</h3>
             <span 
               data-testid="about-engine-version-badge" 
-              class="text-xs px-2 py-0.5 rounded-md font-bold font-mono bg-cyan-500/10 text-cyan-500 border border-cyan-500/20"
+              class="text-xs px-2 py-0.5 rounded-md font-bold font-mono text-cyan-500 border border-cyan-500"
             >
               v{{ ENGINE_VERSION }}
             </span>
-            <span class="text-[10px] px-2 py-0.5 rounded-full font-semibold uppercase tracking-wider bg-orange-500/10 text-orange-400 border border-orange-500/20">
+            <span class="text-[10px] px-2 py-0.5 rounded-full font-semibold uppercase tracking-wider text-orange-400 border border-orange-500">
               Early Release
             </span>
           </div>

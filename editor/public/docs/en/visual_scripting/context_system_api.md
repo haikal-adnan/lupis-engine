@@ -38,7 +38,7 @@ Use lifecycle hooks, flow triggers, assertions, and logging namespaces to coordi
 | --- | --- | --- |
 | context.triggerFlow(portName) | triggerFlow('execOut') | Fires a named execution output pin (such as **onTrue** or **onCollected**). |
 | context.onTick(callback) | onTick(callback) | Registers a per-frame update callback that receives delta time (dt). |
-| Lifecycle Callbacks | onGameStart, onSceneStart, onGamePause, onGameResume, onGameRestart, onGameQuit | Registers callbacks that fire when the game or active scene changes state. |
+| Lifecycle Callbacks | onGameStart, onSceneStart, onGamePause, onGameResume, onGameRestart, onGameQuit, onQuit | Registers callbacks that fire when the game or active scene changes state. |
 | context.lifecycle | pause(), resume(), restart(), quit(), isPaused() | Pauses, resumes, restarts, or exits the active game session. |
 | context.signal | emit(signalName, data?), on(signalName, callback) | Broadcasts and listens for custom events across decoupled entities and scripts. |
 | context.assert | exists(val, msg?), hasComponent(entity, name, msg?), isNumber(val, msg?), isString(val, msg?), isBoolean(val, msg?), isObject(val, msg?), isArray(val, msg?), inRange(val, min, max, msg?), isTrue(cond, msg?), isFalse(cond, msg?), fail(msg?) | Validates contracts and halts the node immediately with a **Console** error if a check fails. |
@@ -66,8 +66,8 @@ Use these spatial, hierarchy, physics, and input facades to interact with entiti
 | --- | --- | --- |
 | context.entity | get(targetId), destroy(entity), destroyByTag(tag), clone(entity), getParent(entity), getChildren(entity), getRoot(entity), findClosestByTag(tag, origin, y?), getAllByTag(tag), findByName(name), findByScriptId(scriptId) | Resolves entities by **'self'**, UUID, or **scriptId**, traverses parent-child hierarchies, queries tags, and clones or destroys entities. |
 | context.prefab | spawn(prefabAssetId, x?, y?, layerId?, parentId?) | Spawns a new prefab instance into the scene at coordinates **(x, y)**. |
-| context.layer | get(layerId), destroy(layerId, destroyEntities?), freezeInput(layerId, active?, type?), isInputFrozen(layerId, type?) | Resolves display layers, removes layers, or freezes pointer and keyboard input on a specific layer. |
-| context.collider | moveAndSlide(entity, moveX, moveY), checkSolid(entity), checkOverlap(entity, filterTag?) | Moves entities with wall sliding and checks solid collisions or trigger overlaps on [Multi-Collider](components/multi_collider) shapes. |
+| context.layer | get(layerId), destroy(layerId, destroyEntities?), freezeInput(layerId, active?, type?), isInputFrozen(layerId, type?), reset(sceneName?, layerName?) | Resolves display layers, removes layers, freezes pointer and keyboard input on a specific layer, or restores a layer to its scene template definition. |
+| context.collider | moveAndSlide(entity, moveX, moveY), checkSolid(entity), checkOverlap(entity, filterTag?), getShape(entity, scriptId), setShapeEnabled(entity, scriptId, enabled), checkHitbox(attacker, id, filterTag?, types?), getBounds(entity) | Moves entities with wall sliding, checks solid collisions or trigger overlaps, and manages shape states and hitbox queries on [Multi-Collider](components/multi_collider) shapes. |
 | context.input | getPointer(), mouse, keyboard.isDown(key), keyboard.isPressed(key), keyboard.isReleased(key), raycast.getTopEntity(), isPointerOver(entity, useRaycast?) | Reads pointer coordinates, mouse buttons, keyboard state, and top Z-indexed entities under the cursor. |
 
 Use these presentation, audio, scene, and gameplay toolkit facades to control cameras, sound channels, scene transitions, and high-level mechanics.

@@ -20,7 +20,7 @@ Prepare a screen-space UI layer and attach visual and interaction components to 
 
 | Requirement | Target entity | Purpose |
 | --- | --- | --- |
-| [Scene Hierarchy](interface/scene_hierarchy) | UI Layer | Locks widget entities to the screen by setting **Parallax X** and **Parallax Y** to **0**. |
+| [Scene Hierarchy](interface/scene_hierarchy) | UI Layer | Places widget entities inside the **User Interface** section so they automatically use screen-space [UI Transform](components/transform). |
 | [Sprite Renderer](components/renderers/sprite_renderer) or [Shape Renderer](components/renderers/shape_renderer) | Buttons, Tracks & Knobs | Renders the visual bounds used for mouse raycast hit-testing and visual state changes. |
 | [Text Renderer](components/renderers/text_renderer) | Labels & Dialogue Box | Displays button captions, slider percentages, and typewriter dialogue strings. |
 | [Script Controller](components/script_controller) | UI Manager or Widget | Runs [Button Scale Effect](node_library/game_animation#node-uiButtonScaleEffect), [Atomic Slider](node_library/helper_tool#node-atomicSlider), or [Switch Button Shape](node_library/helper_tool#node-switchButtonShape). |
@@ -30,8 +30,8 @@ Prepare a screen-space UI layer and attach visual and interaction components to 
 Follow these steps to build an animated menu button, a draggable slider, and a toggle switch on a UI layer.
 
 :::steps
-1. In the [Scene Hierarchy](interface/scene_hierarchy), create a dedicated **UI** layer above your gameplay layers and set its **Parallax X** and **Parallax Y** to **0**.
-2. Create a button entity on the **UI** layer with a [Sprite Renderer](components/renderers/sprite_renderer) or [Shape Renderer](components/renderers/shape_renderer) component, and attach a child [Text Renderer](components/renderers/text_renderer) label.
+1. In the [Scene Hierarchy](interface/scene_hierarchy), select or create a layer under the **User Interface** section (dedicated screen-space) so all widgets stay fixed to the camera view and use [UI Transform](components/transform) anchors.
+2. Create a button entity inside that **UI** layer (right-click the layer > **Add UI Element** > **UI Shape** or **UI Image**), and attach a child [Text Renderer](components/renderers/text_renderer) label.
 3. Open the UI [Logic Graph](visual_scripting/graph_concepts), add [On Tick](node_library/game_lifecycle#node-eventTick), and connect it to [Button Scale Effect](node_library/game_animation#node-uiButtonScaleEffect) targeting the button entity.
 4. Connect the **On Click** output of **Button Scale Effect** to [Change Scene](node_library/game_lifecycle#node-changeScene) or your menu action logic.
 5. To add a value slider, create a horizontal bar entity and a knob child entity, then wire **On Tick** into [Atomic Slider](node_library/helper_tool#node-atomicSlider) with **Bar Entity** and **Handler Entity** assigned.
@@ -67,7 +67,7 @@ Combine interaction nodes to build multi-channel audio mixers, custom sprite swi
 | Problem | Solution |
 | --- | --- |
 | Clicking a UI button also triggers an entity or button behind it | Enable **Use Raycast** on [Button Scale Effect](node_library/game_animation#node-uiButtonScaleEffect) or [Entity Mouse Event](node_library/input_controls#node-mouseEntityInteract), or lock lower layers with [Freeze Layer Input](node_library/input_controls#node-freezeLayerInput). |
-| Buttons and sliders drift off screen when the camera moves | Open the [Scene Hierarchy](interface/scene_hierarchy) layer settings and set the UI layer's **Parallax X** and **Parallax Y** to **0**. |
+| Buttons and sliders drift off screen when the camera moves | Ensure widget entities are placed inside a layer under the **User Interface** section (rather than the **World** section), and configure **Anchor** points on their [UI Transform](components/transform) to lock their position relative to the viewport. |
 | [Atomic Slider](node_library/helper_tool#node-atomicSlider) knob moves beyond the bar edges | Ensure the **Bar Entity** has a [Sprite Renderer](components/renderers/sprite_renderer) or [Shape Renderer](components/renderers/shape_renderer) with an explicit **Width** greater than zero so the slider can calculate drag bounds. |
 | Hover and click detection feels offset from the visible button graphic | Check that the button entity's pivot is centered (**0.5, 0.5**) or add a [Multi Collider](components/multi_collider) and enable **Use Collider Bounds** on **Entity Mouse Event**. |
 

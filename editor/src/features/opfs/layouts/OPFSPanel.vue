@@ -1,39 +1,23 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { 
-  Folder, FileText, FolderPlus, FilePlus, Trash2, RefreshCw, 
+  Folder, FileText, RefreshCw, 
   ChevronRight, ChevronDown, Box, Code, Image as ImageIcon, 
-  Film, UploadCloud, FileCode, FileQuestion, Archive 
+  Film, FileCode, FileQuestion 
 } from 'lucide-vue-next';
 
 import { useOPFSStore, useOPFSActions } from '@opfs/opfs.js';
 import { useTheme } from '@composables/composables.js';
-import { BaseContextMenu } from '@components/components.js';
 
 const { isDark } = useTheme();
 
 const opfsStore = useOPFSStore();
 const { 
   refreshTree,
-  openFile, 
-  createEntry, 
-  deleteEntry, 
-  handleDropFiles,
-  exportToLupisProject 
+  openFile 
 } = useOPFSActions();
 
 const selectedItem = ref(null);
-const newItemName = ref('');
-const showNewModal = ref(false);
-const modalType = ref('file');
-const isDraggingOver = ref(false);
-
-const contextMenu = ref({
-  visible: false,
-  x: 0,
-  y: 0,
-  targetItem: null
-});
 
 // State & Getters dari Store
 const fileTree = computed(() => opfsStore.fileTree);
@@ -53,47 +37,7 @@ const toggleFolderUI = (path) => {
   }
 };
 
-const handleExportProject = async () => {
-  // Jika ada ID proyek yang aktif, teruskan ke fungsi ekspor
-  const activeProjectId = opfsStore.activeFile?.path?.split('/')[2] || null;
-  await exportToLupisProject(activeProjectId);
-};
-
-const handleItemContextMenu = (event, item) => {
-  event.preventDefault();
-  event.stopPropagation();
-  
-  selectedItem.value = item;
-
-  contextMenu.value = {
-    visible: true,
-    x: event.clientX,
-    y: event.clientY,
-    targetItem: item
-  };
-};
-
-const closeContextMenu = () => {
-  contextMenu.value.visible = false;
-  contextMenu.value.targetItem = null;
-};
-
-const contextMenuItems = computed(() => {
-  const item = contextMenu.value.targetItem;
-  if (!item) return [];
-
-  return [
-    {
-      label: `Delete ${item.kind === 'directory' ? 'Folder' : 'File'}`,
-      icon: Trash2,
-      danger: true,
-      action: () => handleDeleteItem(item)
-    }
-  ];
-});
-
 const handleSelectItem = async (item) => {
-  closeContextMenu();
   selectedItem.value = item;
   if (item.kind === 'file') {
     await openFile(item);
@@ -102,70 +46,8 @@ const handleSelectItem = async (item) => {
   }
 };
 
-const handleDragOver = (e) => {
-  e.preventDefault();
-  isDraggingOver.value = true;
-};
-
-const handleDragLeave = () => {
-  isDraggingOver.value = false;
-};
-
-const handleDrop = async (e) => {
-  e.preventDefault();
-  isDraggingOver.value = false;
-
-  const files = Array.from(e.dataTransfer.files);
-  if (!files.length) return;
-
-  let targetPath = '';
-  if (selectedItem.value) {
-    targetPath = selectedItem.value.kind === 'directory' 
-      ? selectedItem.value.path 
-      : selectedItem.value.path.split('/').slice(0, -1).join('/');
-  }
-
-  await handleDropFiles(files, targetPath);
-  await refreshTree();
-};
-
-const handleCreateItemSubmit = async () => {
-  if (!newItemName.value.trim()) return;
-
-  let targetPath = '';
-  if (selectedItem.value && selectedItem.value.kind === 'directory') {
-    targetPath = selectedItem.value.path;
-  }
-
-  const result = await createEntry(newItemName.value, modalType.value, targetPath);
-  if (result.success) {
-    newItemName.value = '';
-    showNewModal.value = false;
-    await refreshTree();
-  }
-};
-
-const handleDeleteItem = async (item) => {
-  closeContextMenu();
-  if (!confirm(`Delete "${item.name}"?`)) return;
-
-  const result = await deleteEntry(item);
-  if (result.success) {
-    if (selectedItem.value?.path === item.path) {
-      selectedItem.value = null;
-    }
-    await refreshTree();
-  }
-};
-
-const openCreateModal = (type) => {
-  closeContextMenu();
-  modalType.value = type;
-  showNewModal.value = true;
-};
-
 const getFileIcon = (name) => {
-  if (name === 'project.json') return Box;
+  if (name === 'project.json' || name === 'assets.json') return Box;
   if (name.endsWith('.json') || name.endsWith('.js') || name.endsWith('.ts')) return Code;
   if (name.endsWith('.png') || name.endsWith('.jpg') || name.endsWith('.jpeg') || name.endsWith('.webp')) return ImageIcon;
   if (name.endsWith('.scene') || name.endsWith('.prefab')) return Film;
@@ -174,12 +56,10 @@ const getFileIcon = (name) => {
 
 onMounted(() => {
   refreshTree();
-  window.addEventListener('click', closeContextMenu);
 });
 
 onBeforeUnmount(() => {
   opfsStore.clearActiveFile();
-  window.removeEventListener('click', closeContextMenu);
 });
 </script>
 
@@ -187,21 +67,7 @@ onBeforeUnmount(() => {
   <div 
     class="grid grid-cols-1 md:grid-cols-3 gap-4 h-[600px] w-full relative font-sans select-none p-2 transition-colors duration-300"
     :class="isDark ? 'bg-[#1e1e1e] text-slate-200' : 'bg-gray-50 text-slate-700'"
-    @dragover="handleDragOver"
-    @dragleave="handleDragLeave"
-    @drop="handleDrop"
-    @click="closeContextMenu"
   >
-    <!-- Overlay Drag Over -->
-    <div 
-      v-if="isDraggingOver" 
-      class="absolute inset-0 bg-cyan-500/10 border-2 border-dashed border-cyan-500 rounded-xl z-40 flex flex-col items-center justify-center text-cyan-500 transition-colors pointer-events-none"
-    >
-      <UploadCloud class="w-12 h-12 mb-2" />
-      <p class="font-semibold text-sm">Lepaskan file di sini untuk mengunggah</p>
-      <p class="text-xs opacity-75 mt-1">Hanya format .js, .json, .png, .jpg, .webp</p>
-    </div>
-
     <!-- Tree Explorer Side Panel -->
     <div 
       class="col-span-1 flex flex-col h-full border rounded-xl overflow-hidden shadow-sm transition-colors duration-300"
@@ -216,33 +82,6 @@ onBeforeUnmount(() => {
         </span>
 
         <div class="flex items-center gap-1">
-          <button 
-            @click="openCreateModal('file')" 
-            title="File Baru" 
-            class="p-1.5 rounded-lg transition-colors"
-            :class="isDark ? 'text-slate-400 hover:text-white hover:bg-white/10' : 'text-slate-500 hover:text-slate-900 hover:bg-black/5'"
-          >
-            <FilePlus class="w-4 h-4" />
-          </button>
-          <button 
-            @click="openCreateModal('folder')" 
-            title="Folder Baru" 
-            class="p-1.5 rounded-lg transition-colors"
-            :class="isDark ? 'text-slate-400 hover:text-white hover:bg-white/10' : 'text-slate-500 hover:text-slate-900 hover:bg-black/5'"
-          >
-            <FolderPlus class="w-4 h-4" />
-          </button>
-
-          <button 
-            @click="handleExportProject" 
-            title="Export Project (.lupisproject)" 
-            :disabled="isLoading"
-            class="p-1.5 rounded-lg transition-colors disabled:opacity-50"
-            :class="isDark ? 'text-slate-400 hover:text-cyan-400 hover:bg-white/10' : 'text-slate-500 hover:text-cyan-600 hover:bg-black/5'"
-          >
-            <Archive class="w-4 h-4" />
-          </button>
-
           <button 
             @click="refreshTree" 
             title="Refresh OPFS" 
@@ -271,14 +110,13 @@ onBeforeUnmount(() => {
               :is-dark="isDark"
               :get-icon="getFileIcon"
               @select="handleSelectItem"
-              @contextmenu="handleItemContextMenu"
             />
           </template>
         </template>
       </div>
     </div>
 
-    <!-- Preview Panel -->
+    <!-- Preview Panel (Read Only) -->
     <div 
       class="col-span-1 md:col-span-2 h-full border rounded-xl overflow-hidden shadow-sm flex flex-col transition-colors duration-300"
       :class="isDark ? 'bg-[#252526] border-white/10' : 'bg-white border-black/10'"
@@ -333,56 +171,6 @@ onBeforeUnmount(() => {
         </div>
       </div>
     </div>
-
-    <!-- Modal Create New Item -->
-    <div v-if="showNewModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" :class="isDark ? 'bg-black/80' : 'bg-black/60'">
-      <div 
-        class="p-5 rounded-xl max-w-sm w-full space-y-4 shadow-xl border transition-colors duration-300 font-sans"
-        :class="isDark ? 'bg-[#252526] border-white/10 text-slate-200' : 'bg-white border-black/10 text-slate-800'"
-      >
-        <h3 class="font-bold text-sm capitalize font-mono">New {{ modalType }}</h3>
-        
-        <p class="text-xs font-mono opacity-70" v-if="selectedItem?.kind === 'directory'">
-          Location: <span class="font-semibold">{{ selectedItem.path }}</span>
-        </p>
-
-        <input 
-          v-model="newItemName" 
-          type="text" 
-          :placeholder="modalType === 'file' ? 'filename.js' : 'Folder Name'"
-          class="w-full px-3 py-2 text-xs font-mono border rounded-lg focus:outline-none transition-colors"
-          :class="isDark ? 'bg-[#1e1e1e] border-white/10 focus:border-cyan-400 text-white' : 'bg-gray-50 border-black/10 focus:border-cyan-500 text-black'"
-          @keyup.enter="handleCreateItemSubmit"
-        />
-
-        <div class="flex justify-end gap-2 text-xs font-mono">
-          <button 
-            @click="showNewModal = false" 
-            class="px-3 py-1.5 rounded-lg transition-colors"
-            :class="isDark ? 'text-slate-400 hover:bg-white/10' : 'text-slate-600 hover:bg-black/5'"
-          >
-            Cancel
-          </button>
-          <button 
-            @click="handleCreateItemSubmit" 
-            class="px-3 py-1.5 font-semibold bg-cyan-500 hover:bg-cyan-600 text-white rounded-lg transition-colors"
-          >
-            Create
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Context Menu -->
-    <Teleport to="body">
-      <BaseContextMenu 
-        v-if="contextMenu.visible"
-        :position="{ x: contextMenu.x, y: contextMenu.y }"
-        :items="contextMenuItems"
-        @close="closeContextMenu"
-      />
-    </Teleport>
-
   </div>
 </template>
 
@@ -392,7 +180,7 @@ import { h } from 'vue';
 const TreeItemNode = {
   name: 'TreeItemNode',
   props: ['item', 'selectedItem', 'openFolders', 'isDark', 'getIcon'],
-  emits: ['select', 'contextmenu'],
+  emits: ['select'],
   render() {
     const { item, selectedItem, openFolders, isDark, getIcon } = this;
     const isSelected = selectedItem?.path === item.path;
@@ -402,7 +190,6 @@ const TreeItemNode = {
       return h('div', { class: 'text-xs font-mono space-y-0.5' }, [
         h('div', {
           onClick: () => this.$emit('select', item),
-          onContextmenu: (e) => this.$emit('contextmenu', e, item),
           class: [
             'group flex items-center justify-between px-2 py-1.5 rounded-lg cursor-pointer transition-colors',
             isSelected 
@@ -432,8 +219,7 @@ const TreeItemNode = {
               openFolders,
               isDark,
               getIcon,
-              onSelect: (i) => this.$emit('select', i),
-              onContextmenu: (e, i) => this.$emit('contextmenu', e, i)
+              onSelect: (i) => this.$emit('select', i)
             })))
           : null
       ]);
@@ -442,7 +228,6 @@ const TreeItemNode = {
 
       return h('div', {
         onClick: () => this.$emit('select', item),
-        onContextmenu: (e) => this.$emit('contextmenu', e, item),
         class: [
           'group flex items-center justify-between px-2 py-1.5 rounded-lg cursor-pointer transition-colors text-xs font-mono',
           isSelected 
