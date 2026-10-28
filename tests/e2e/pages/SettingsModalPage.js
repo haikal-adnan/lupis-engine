@@ -136,14 +136,6 @@ export class SettingsModalPage {
   }
 
   // Preferences section locators
-  get themeOptionDark() {
-    return this.modal.getByTestId('theme-option-dark');
-  }
-
-  get themeOptionLight() {
-    return this.modal.getByTestId('theme-option-light');
-  }
-
   get themeToggleBtn() {
     return this.modal.getByTestId('theme-toggle-btn');
   }

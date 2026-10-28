@@ -83,17 +83,16 @@ test.describe('Project Settings & Preferences Management', () => {
     await expect(settingsModal.preferencesTabContent).toBeVisible();
     await expect(settingsModal.contentHeaderTitle).toHaveText('Preferences');
 
-    // Check theme options are rendered
-    await expect(settingsModal.themeOptionDark).toBeVisible();
-    await expect(settingsModal.themeOptionLight).toBeVisible();
+    // Check theme toggle button is rendered
+    await expect(settingsModal.themeToggleBtn).toBeVisible();
 
-    // Select light theme option
-    await settingsModal.themeOptionLight.click();
-    await expect(settingsModal.themeToggleBtn).toHaveAttribute('data-theme', 'light');
-
-    // Select dark theme option to restore
-    await settingsModal.themeOptionDark.click();
+    // Toggle theme mode to dark
+    await settingsModal.themeToggleBtn.click();
     await expect(settingsModal.themeToggleBtn).toHaveAttribute('data-theme', 'dark');
+
+    // Toggle back to light
+    await settingsModal.themeToggleBtn.click();
+    await expect(settingsModal.themeToggleBtn).toHaveAttribute('data-theme', 'light');
 
     await settingsModal.close();
   });

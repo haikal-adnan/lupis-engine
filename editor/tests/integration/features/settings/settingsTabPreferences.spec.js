@@ -24,15 +24,13 @@ describe('SettingsTabPreferences Integration', () => {
     };
   });
 
-  it('renders theme mode options and quick toggle', () => {
+  it('renders theme mode quick toggle', () => {
     const wrapper = mount(SettingsTabPreferences, {
       props: {
         info: { id: 'preferences', label: 'Preferences', desc: 'Editor preferences' }
       }
     });
 
-    expect(wrapper.find('[data-testid="theme-option-dark"]').exists()).toBe(true);
-    expect(wrapper.find('[data-testid="theme-option-light"]').exists()).toBe(true);
     expect(wrapper.find('[data-testid="theme-toggle-btn"]').exists()).toBe(true);
   });
 
@@ -55,24 +53,16 @@ describe('SettingsTabPreferences Integration', () => {
     expect(projectStore.project.settings.codeEditor.zoom).toBe(120);
   });
 
-  it('switches to dark theme when dark option is selected', async () => {
-    const wrapper = mount(SettingsTabPreferences);
-
-    const darkOption = wrapper.find('[data-testid="theme-option-dark"]');
-    await darkOption.trigger('click');
-
-    expect(document.documentElement.classList.contains('dark')).toBe(true);
-    expect(wrapper.find('[data-testid="theme-toggle-btn"]').attributes('data-theme')).toBe('dark');
-  });
-
   it('toggles theme between dark and light via quick toggle button', async () => {
     const wrapper = mount(SettingsTabPreferences);
 
     const toggleBtn = wrapper.find('[data-testid="theme-toggle-btn"]');
     await toggleBtn.trigger('click');
     expect(document.documentElement.classList.contains('dark')).toBe(true);
+    expect(toggleBtn.attributes('data-theme')).toBe('dark');
 
     await toggleBtn.trigger('click');
     expect(document.documentElement.classList.contains('dark')).toBe(false);
+    expect(toggleBtn.attributes('data-theme')).toBe('light');
   });
 });

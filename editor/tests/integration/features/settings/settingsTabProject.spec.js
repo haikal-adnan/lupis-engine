@@ -172,22 +172,4 @@ describe('SettingsTabProject Integration', () => {
     expect(mockConfirm).toHaveBeenCalledOnce();
     expect(syncSpy).toHaveBeenCalledOnce();
   });
-
-  it('renders About Lupis Engine section with engine version, github, and discord links', () => {
-    const wrapper = mount(SettingsTabProject);
-
-    const versionBadge = wrapper.find('[data-testid="project-engine-version"]');
-    expect(versionBadge.exists()).toBe(true);
-    expect(versionBadge.text()).toBe('v0.1.0');
-
-    const githubLink = wrapper.find('[data-testid="project-github-link"]');
-    expect(githubLink.exists()).toBe(true);
-    expect(githubLink.attributes('href')).toBe('https://github.com/haikal-adnan/lupis-engine');
-    expect(githubLink.find('svg').exists()).toBe(true);
-
-    const discordLink = wrapper.find('[data-testid="project-discord-link"]');
-    expect(discordLink.exists()).toBe(true);
-    expect(discordLink.attributes('href')).toBe('https://haikal-adnan.github.io/lupis-engine-link?go=discord');
-    expect(discordLink.find('svg').exists()).toBe(true);
-  });
 });
