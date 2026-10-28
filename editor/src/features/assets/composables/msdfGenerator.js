@@ -65,6 +65,18 @@ export async function getMsdfgen(customWasm = null) {
   return await _cachedMsdfgenPromise;
 }
 
+// Pre-warm the WebAssembly MSDF generator during browser idle time to avoid first-upload latency
+if (typeof window !== 'undefined') {
+  const prewarm = () => {
+    getMsdfgen().catch(() => {});
+  };
+  if (typeof window.requestIdleCallback === 'function') {
+    window.requestIdleCallback(prewarm);
+  } else {
+    setTimeout(prewarm, 1000);
+  }
+}
+
 /**
  * Escapes characters for XML attribute strings.
  */

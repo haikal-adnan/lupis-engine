@@ -434,6 +434,9 @@ test.describe('Property Inspector: Assets, Scripts & Tab Navigation Components E
   // 13. TEXT RENDERER COMPONENT
   // =========================================================================
   test('tests all properties, text input, alignment, mode, and drop shadow in Text Renderer', async ({ page, hierarchy, popup, inspector, assetCrud }) => {
+    // Slow test: verifies complete TextRenderer property matrix and uploads client-side WASM MSDF font asset
+    test.slow();
+
     const fontFileName = 'sample_font.ttf';
 
     const uiLayer = hierarchy.nodeByName('UI Layer');

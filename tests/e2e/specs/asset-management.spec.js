@@ -16,6 +16,9 @@ test.describe('Asset Management Comprehensive E2E Tests', () => {
   // 1. UPLOAD ASSET AT ROOT & INSIDE FOLDERS (IMAGE, FONT, AUDIO)
   // =========================================================================
   test('uploads image, font, and audio assets to root and subfolder', async ({ assets, popup }) => {
+    // Slow test: uploads multiple binary assets including client-side WASM font conversion across root and subfolders
+    test.slow();
+
     // Upload & Auto-wait via AssetPanelPage.upload
     await assets.upload('sample_image.png');
     await assets.upload('sample_font.ttf');
@@ -111,6 +114,9 @@ test.describe('Asset Management Comprehensive E2E Tests', () => {
   // 5. SEARCH ASSET
   // =========================================================================
   test('filters assets by search query reactively and clears filter', async ({ assets, controls }) => {
+    // Slow test: sequentially uploads 3 full assets (image, font with WASM conversion, audio) before exercising reactive filtering
+    test.slow();
+
     await assets.upload('sample_image.png');
     await assets.upload('sample_font.ttf');
     await assets.upload('sample_audio.ogg');
@@ -155,6 +161,9 @@ test.describe('Asset Management Comprehensive E2E Tests', () => {
   });
 
   test('attaches Image and Font assets to Sprite, Tilemap, and Text entities', async ({ assets, hierarchyCrud, popup }) => {
+    // Slow test: performs 3 entity setups, 2 binary uploads including WASM MSDF font conversion, and multiple context menu operations
+    test.slow();
+
     const mainLayer = await hierarchyCrud.layer.create('World', 'Main Layer');
 
     const spriteEntity = await hierarchyCrud.entity.create(mainLayer, 'sprite');

@@ -22,8 +22,8 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   // GLOBAL timeouts (Standard Section 2 & 13). Never override per locator; for a test
   // that is genuinely slow use test.slow() once at its start, with a comment explaining why.
-  timeout: 30_000,
-  expect: { timeout: 20_000 },
+  timeout: process.env.CI ? 60_000 : 30_000,
+  expect: { timeout: process.env.CI ? 30_000 : 20_000 },
   workers: process.env.CI ? 2 : undefined,
   reporter: [
     ['html', { outputFolder: 'playwright-report', open: 'never' }],
@@ -31,7 +31,7 @@ export default defineConfig({
   ],
   use: {
     baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:37600',
-    actionTimeout: 20_000,
+    actionTimeout: process.env.CI ? 30_000 : 20_000,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',

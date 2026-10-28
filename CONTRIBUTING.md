@@ -159,13 +159,13 @@ This project follows the [Conventional Commits](https://www.conventionalcommits.
 
 | Type       | Purpose                                                     | Example                                                   |
 | ---------- | ----------------------------------------------------------- | --------------------------------------------------------- |
-| `feat`     | A new feature                                               | `feat(nodes): add vector math normalize node`             |
-| `fix`      | A bug fix                                                   | `fix(physics): resolve moveAndSlide corner snagging`      |
-| `docs`     | Documentation-only changes                                  | `docs(api): document audio system methods`                |
-| `refactor` | A code change that neither fixes a bug nor adds a feature   | `refactor(editor): simplify inspector state handling`     |
-| `perf`     | A code change that improves performance                     | `perf(core): reduce allocations in sprite batching`       |
-| `test`     | Adding or correcting tests                                  | `test(tests): replace fixed timeouts with explicit waits` |
-| `chore`    | Changes to the build process, CI workflows, or dependencies | `chore(ci): update Node.js version in workflow`           |
+| `feat`     | A new feature                                               | `feat: add vector math normalize node`             |
+| `fix`      | A bug fix                                                   | `fix: resolve moveAndSlide corner snagging`      |
+| `docs`     | Documentation-only changes                                  | `docs: document audio system methods`                |
+| `refactor` | A code change that neither fixes a bug nor adds a feature   | `refactor: simplify inspector state handling`     |
+| `perf`     | A code change that improves performance                     | `perf: reduce allocations in sprite batching`       |
+| `test`     | Adding or correcting tests                                  | `test: replace fixed timeouts with explicit waits` |
+| `chore`    | Changes to the build process, CI workflows, or dependencies | `chore: update Node.js version in workflow`           |
 
 ---
 
