@@ -528,11 +528,13 @@ export class InspectorPage {
     await this._settle();
     if ((await this.colliderSection.count()) === 0) {
       await this.addComponent('Collider');
+      await this.colliderSection.scrollIntoViewIfNeeded();
       await expect(this.colliderSection).toBeVisible();
     }
   }
 
   async setColliderType(typeLabel) {
+    await this.colliderSection.scrollIntoViewIfNeeded();
     await this.controls.selectOption('collider-type-select', typeLabel, this.colliderSection);
   }
 
@@ -549,6 +551,7 @@ export class InspectorPage {
     await this._settle();
     if ((await this.physicsSection.count()) === 0) {
       await this.addComponent('Physics');
+      await this.physicsSection.scrollIntoViewIfNeeded();
       await expect(this.physicsSection).toBeVisible();
     }
   }
@@ -563,6 +566,7 @@ export class InspectorPage {
     } else if (lower === 'custom' || lower === 'custom / arcade' || lower === 'arcade' || lower.includes('kinematic') || lower.includes('static')) {
       resolvedLabel = 'Custom / Arcade';
     }
+    await this.physicsSection.scrollIntoViewIfNeeded();
     await this.controls.selectOption('physics-motion-mode-select', resolvedLabel, this.physicsSection);
   }
 

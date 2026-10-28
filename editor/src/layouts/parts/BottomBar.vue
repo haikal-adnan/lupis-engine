@@ -35,6 +35,7 @@
 import { markRaw, watch, computed } from 'vue'
 import { FolderOpen, Terminal, Library, ScrollText, Film } from 'lucide-vue-next'
 import { useWorkspaceStore } from '@workspaces/workspaces.js';
+import { useFolderStore } from '@folders/folders.js';
 
 import { AssetPanel } from '@assets/assets.js'
 import { ConsolePanel } from '@consoles/consoles.js'
@@ -44,6 +45,7 @@ import { AnimatorTimeline } from '@animators/animators.js'
 
 const emit = defineEmits(['update:component'])
 const workspaceStore = useWorkspaceStore()
+const folderStore = useFolderStore()
 
 const allTabDefinitions = {
   assets: { id: 'assets', label: 'Assets', icon: FolderOpen, component: markRaw(AssetPanel) },
@@ -81,10 +83,15 @@ const handleTabClick = (tab) => {
 
 watch(
   () => workspaceStore.activeBottomTabId,
-  (newId) => {
+  (newId, oldId) => {
     const foundTab = allTabDefinitions[newId]
     if (foundTab) {
       emit('update:component', foundTab.component)
+    }
+    if (newId && oldId && newId !== oldId) {
+      folderStore.switchSection(newId, oldId)
+    } else if (newId && !oldId) {
+      folderStore.switchSection(newId)
     }
   },
   { immediate: true }

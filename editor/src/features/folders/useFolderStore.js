@@ -7,7 +7,15 @@ import { useProjectStore } from '@projects/projects.js';
 export const useFolderStore = defineStore('folder', {
   state: () => ({
     folders: [],
-    activeFolderId: null
+    activeFolderId: null,
+    sectionActiveFolderId: {
+      assets: null,
+      scripts: null,
+      prefabs: null,
+      'prefabs-world': null,
+      'prefabs-ui': null
+    },
+    lastPrefabSection: 'prefabs-world'
   }),
 
   getters: {
@@ -36,10 +44,97 @@ export const useFolderStore = defineStore('folder', {
         section: f.section || null,
         parentId: f.parentId || null
       }));
+      this.activeFolderId = null;
+      this.sectionActiveFolderId = {
+        assets: null,
+        scripts: null,
+        prefabs: null,
+        'prefabs-world': null,
+        'prefabs-ui': null
+      };
+      this.lastPrefabSection = 'prefabs-world';
     },
 
-    setActiveFolder(folderId) {
+    getActiveFolder(section = null) {
+      const targetSection = section || this._resolveCurrentSection();
+      if (this.sectionActiveFolderId && targetSection in this.sectionActiveFolderId) {
+        const folderId = this.sectionActiveFolderId[targetSection];
+        if (folderId && !this.folders.some(f => f.id === folderId)) {
+          this.sectionActiveFolderId[targetSection] = null;
+          return null;
+        }
+        return folderId;
+      }
+      return this.activeFolderId;
+    },
+
+    setActiveFolder(folderId, section = null) {
       this.activeFolderId = folderId;
+      const targetSection = section || this._resolveCurrentSection(folderId);
+      if (!this.sectionActiveFolderId) {
+        this.sectionActiveFolderId = {};
+      }
+      this.sectionActiveFolderId[targetSection] = folderId;
+      if (targetSection && targetSection.startsWith('prefabs-')) {
+        this.lastPrefabSection = targetSection;
+        this.sectionActiveFolderId['prefabs'] = folderId;
+      } else if (targetSection === 'prefabs') {
+        const sub = this.lastPrefabSection || 'prefabs-world';
+        this.sectionActiveFolderId[sub] = folderId;
+      }
+    },
+
+    switchSection(newSection, oldSection = null) {
+      if (!this.sectionActiveFolderId) {
+        this.sectionActiveFolderId = {};
+      }
+
+      if (oldSection) {
+        let saveKey = oldSection;
+        if (saveKey === 'prefabs' && this.lastPrefabSection) {
+          saveKey = this.lastPrefabSection;
+        }
+        this.sectionActiveFolderId[saveKey] = this.activeFolderId;
+        if (oldSection === 'prefabs') {
+          this.sectionActiveFolderId['prefabs'] = this.activeFolderId;
+        }
+      }
+
+      let loadKey = newSection;
+      if (loadKey === 'prefabs' && this.lastPrefabSection) {
+        loadKey = this.lastPrefabSection;
+      }
+      if (newSection && newSection.startsWith('prefabs-')) {
+        this.lastPrefabSection = newSection;
+      }
+
+      let restored = this.sectionActiveFolderId[loadKey] ?? null;
+      if (restored && !this.folders.some(f => f.id === restored)) {
+        this.sectionActiveFolderId[loadKey] = null;
+        restored = null;
+      }
+
+      this.activeFolderId = restored;
+      return this.activeFolderId;
+    },
+
+    _resolveCurrentSection(folderId = null) {
+      if (folderId) {
+        const folder = this.getFolderById(folderId);
+        if (folder && folder.section) {
+          return folder.section;
+        }
+      }
+      try {
+        const workspaceStore = useWorkspaceStore();
+        const tab = workspaceStore.activeBottomTabId || 'assets';
+        if (tab === 'prefabs') {
+          return this.lastPrefabSection || 'prefabs-world';
+        }
+        return tab;
+      } catch (_) {
+        return 'assets';
+      }
     },
 
     // Resolves OPFS workspace directory handle for active project
@@ -106,6 +201,16 @@ export const useFolderStore = defineStore('folder', {
 
     async deleteFolder(folderId) {
       this.folders = this.folders.filter(f => f.id !== folderId);
+      if (this.activeFolderId === folderId) {
+        this.activeFolderId = null;
+      }
+      if (this.sectionActiveFolderId) {
+        for (const sec in this.sectionActiveFolderId) {
+          if (this.sectionActiveFolderId[sec] === folderId) {
+            this.sectionActiveFolderId[sec] = null;
+          }
+        }
+      }
       this._markDirtyIfReady();
       await this.syncFoldersToOPFS();
     },

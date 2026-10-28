@@ -200,8 +200,12 @@ const {
   clipboard
 } = prefabLogic;
 
-watch(activeTab, () => {
-  folderStore.setActiveFolder(null);
+watch(activeTab, (newTab, oldTab) => {
+  if (oldTab && folderStore.switchSection) {
+    folderStore.switchSection(`prefabs-${newTab}`, `prefabs-${oldTab}`);
+  } else {
+    folderStore.setActiveFolder(null);
+  }
   selectedId.value = null;
 });
 

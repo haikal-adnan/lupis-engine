@@ -37,6 +37,8 @@ export function useProjectWatcher() {
     'selectedNodeIds',
     'selectedEdgeId',
     'activeFolderId',
+    'sectionActiveFolderId',
+    'lastPrefabSection',
     'selectedAssetId',
     'searchQuery',
     'activeScript',

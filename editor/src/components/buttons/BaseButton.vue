@@ -15,9 +15,9 @@
       isActive 
         ? 'bg-blue-500/10 text-blue-600 border-blue-500/40 dark:bg-blue-500/20 dark:text-blue-400 dark:border-blue-500/50 shadow-sm ' +
           'hover:bg-blue-500/20 hover:border-blue-500/60' 
-        : ghost
-          ? 'bg-transparent border-transparent text-muted-foreground ' +
-            'hover:bg-muted/40 hover:border-border hover:text-foreground' 
+        : isGhost
+          ? 'bg-transparent border-border text-muted-foreground ' +
+            'hover:bg-accent hover:border-border hover:text-accent-foreground' 
           : 'bg-white dark:bg-slate-900 text-foreground border-slate-200 dark:border-slate-700 shadow-sm ' +
             'hover:border-blue-500/40 hover:text-blue-600 hover:bg-slate-50 dark:hover:text-blue-400 dark:hover:bg-slate-800'
     ]"
@@ -51,10 +51,13 @@ const props = defineProps({
   tooltip: { type: String, default: null },
   active: { type: Boolean, default: false },
   ghost: { type: Boolean, default: false },
+  variant: { type: String, default: null },
   disabled: { type: Boolean, default: false }
 })
 
 const model = defineModel({ type: Boolean, default: undefined })
+
+const isGhost = computed(() => props.ghost || props.variant === 'ghost' || props.variant === 'outline')
 
 const isActive = computed(() => {
   if (model.value !== undefined) return model.value
