@@ -127,7 +127,7 @@ Open **http://localhost:37600**, then load one of the sample projects from the [
 The full documentation is available [online](https://haikal-adnan.github.io/lupis-engine-link?go=docs-en) and inside the editor as a built-in bilingual help panel (English and Bahasa Indonesia). It can also be read directly from the Markdown files in [`editor/public/docs/en/`](./editor/public/docs/en) and [`editor/public/docs/id/`](./editor/public/docs/id).
 
 > **Note**  
-> Most of this documentation was generated with the assistance of AI due to the developer's limitations in manual technical writing and the fact that the developer's native language is Indonesian. If you would like to contribute by improving or writing new documentation, contributions are very welcome! Please check our [Contributing](#contributing) section.
+> Most of this documentation was generated with the assistance of AI due to the developer's limitations in manual technical writing. If you would like to contribute by improving or writing new documentation, contributions are very welcome! Please check our [Contributing](#contributing) section.
 
 ### For Game Developers
 
